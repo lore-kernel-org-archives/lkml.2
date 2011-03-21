@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452Ab1CUXlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:41:31 -0400
-Received: from kroah.org ([198.145.64.141]:49570 "EHLO coco.kroah.org"
+	id S932605Ab1CUXlk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:41:40 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51946 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755527Ab1CUXQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:16:05 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:15 2011
-Message-Id: <20110321230715.814823844@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:07:03 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Przemyslaw Bruski <pbruskispam@op.pl>, Takashi Iwai <tiwai@suse.de>
-Subject: [64/87] ALSA: ctxfi - Fix incorrect SPDIF status bit mask
-In-Reply-To: <20110321230732.GA26510@kroah.com>
+	id S932093Ab1CUXlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:41:36 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: Hot plug issue on 2.6.38
+Date: Tue, 22 Mar 2011 00:41:50 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Yinghai Lu <yinghai@kernel.org>,
+        linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>
+References: <201103052254.48515.rjw@sisk.pl> <20110321223408.GA17412@srcf.ucam.org> <20110321233104.GA4334@xanatos>
+In-Reply-To: <20110321233104.GA4334@xanatos>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103220041.51154.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+On Tuesday, March 22, 2011, Sarah Sharp wrote:
+> On Mon, Mar 21, 2011 at 10:34:08PM +0000, Matthew Garrett wrote:
+> > Try setting CONFIG_HOTPLUG_PCI_ACPI to y as well, just to rule that out?
+> 
+> It's set to build as a module, do you want me to compile it in?
 
-------------------
+Yes, if poss.  But as I said before, please make sure you have the ASPM patch
+applied.
 
-From: Przemyslaw Bruski <pbruskispam@op.pl>
-
-commit 4c1847e884efddcc3ede371f7839e5e65b25c34d upstream.
-
-SPDIF status mask creation was incorrect.
-
-Signed-off-by: Przemyslaw Bruski <pbruskispam@op.pl>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- sound/pci/ctxfi/ctatc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/sound/pci/ctxfi/ctatc.c
-+++ b/sound/pci/ctxfi/ctatc.c
-@@ -869,7 +869,7 @@ spdif_passthru_playback_setup(struct ct_
- 	mutex_lock(&atc->atc_mutex);
- 	dao->ops->get_spos(dao, &status);
- 	if (((status >> 24) & IEC958_AES3_CON_FS) != iec958_con_fs) {
--		status &= ((~IEC958_AES3_CON_FS) << 24);
-+		status &= ~(IEC958_AES3_CON_FS << 24);
- 		status |= (iec958_con_fs << 24);
- 		dao->ops->set_spos(dao, status);
- 		dao->ops->commit_write(dao);
-
-
+Rafael
