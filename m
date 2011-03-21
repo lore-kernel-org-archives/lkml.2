@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab1CUX52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:57:28 -0400
-Received: from kroah.org ([198.145.64.141]:49090 "EHLO coco.kroah.org"
+	id S1755941Ab1CUX5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:57:48 -0400
+Received: from kroah.org ([198.145.64.141]:49080 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755029Ab1CUXOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:14:01 -0400
+	id S1755086Ab1CUXOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:14:00 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:53 2011
-Message-Id: <20110321231053.754570720@clark.kroah.org>
+Message-Id: <20110321231053.660790916@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:10:10 -0700
+Date: Mon, 21 Mar 2011 16:10:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [30/44] perf, powerpc: Handle events that raise an exception without overflowing
+Subject: [29/44] perf: Handle stopped state with tracepoints
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,76 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 0837e3242c73566fc1c0196b4ec61779c25ffc93 upstream.
+commit a0f7d0f7fc02465bb9758501f611f63381792996 upstream.
 
-Events on POWER7 can roll back if a speculative event doesn't
-eventually complete. Unfortunately in some rare cases they will
-raise a performance monitor exception. We need to catch this to
-ensure we reset the PMC. In all cases the PMC will be 256 or less
-cycles from overflow.
+We toggle the state from start and stop callbacks but actually
+don't check it when the event triggers. Do it so that
+these callbacks actually work.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20110309143842.6c22845e@kryten>
+LKML-Reference: <1299529629-18280-2-git-send-email-fweisbec@gmail.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/include/asm/reg.h   |    1 +
- arch/powerpc/kernel/perf_event.c |   24 +++++++++++++++++++++++-
- 2 files changed, 24 insertions(+), 1 deletion(-)
+ kernel/perf_event.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -858,6 +858,7 @@
- #define PV_970		0x0039
- #define PV_POWER5	0x003A
- #define PV_POWER5p	0x003B
-+#define PV_POWER7	0x003F
- #define PV_970FX	0x003C
- #define PV_630		0x0040
- #define PV_630p	0x0041
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -1220,6 +1220,28 @@ unsigned long perf_instruction_pointer(s
- 	return ip;
- }
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4167,6 +4167,8 @@ static void tp_perf_event_destroy(struct
  
-+static bool pmc_overflow(unsigned long val)
-+{
-+	if ((int)val < 0)
-+		return true;
-+
-+	/*
-+	 * Events on POWER7 can roll back if a speculative event doesn't
-+	 * eventually complete. Unfortunately in some rare cases they will
-+	 * raise a performance monitor exception. We need to catch this to
-+	 * ensure we reset the PMC. In all cases the PMC will be 256 or less
-+	 * cycles from overflow.
-+	 *
-+	 * We only do this if the first pass fails to find any overflowing
-+	 * PMCs because a user might set a period of less than 256 and we
-+	 * don't want to mistakenly reset them.
-+	 */
-+	if (__is_processor(PV_POWER7) && ((0x80000000 - val) <= 256))
-+		return true;
-+
-+	return false;
-+}
-+
- /*
-  * Performance monitor interrupt stuff
-  */
-@@ -1267,7 +1289,7 @@ static void perf_event_interrupt(struct
- 			if (is_limited_pmc(i + 1))
- 				continue;
- 			val = read_pmc(i + 1);
--			if ((int)val < 0)
-+			if (pmc_overflow(val))
- 				write_pmc(i + 1, 0);
- 		}
- 	}
+ static const struct pmu *tp_perf_event_init(struct perf_event *event)
+ {
++	if (event->hw.state & PERF_HES_STOPPED)
++		return 0;
+ 	/*
+ 	 * Raw tracepoint data is a severe data leak, only allow root to
+ 	 * have these.
 
 
