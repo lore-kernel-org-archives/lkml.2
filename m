@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab1CUUis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 16:38:48 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:58878 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754148Ab1CUUiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 16:38:46 -0400
-Date: Mon, 21 Mar 2011 15:37:46 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
-Message-ID: <20110321203746.GA17419@sgi.com>
-References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <20110321175110.GL1239@redhat.com> <20110321182235.GA14562@sgi.com> <20110321193740.GN1239@redhat.com>
+	id S1754465Ab1CUUl1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 16:41:27 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59045 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394Ab1CUUlZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 16:41:25 -0400
+Date: Mon, 21 Mar 2011 16:41:19 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+cc: Ashwin Chaugule <ashbertslists@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Po-Yu Chuang <ratbert@faraday-tech.com>, tony@atomide.com,
+        lkml <linux-kernel@vger.kernel.org>, joe@perches.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] arm: cmpxchg syscall should data abort if page not
+ write
+In-Reply-To: <AANLkTi=Zq0fiVf+GcRC8M+CPakwmEWn1rrqq_U4OehNy@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1103211639470.11889@xanadu.home>
+References: <1300098516-1601-1-git-send-email-ratbert.chuang@gmail.com> <1300169637-1628-1-git-send-email-ratbert.chuang@gmail.com> <alpine.LFD.2.00.1103171301030.26889@xanadu.home> <AANLkTik1oEkLX3R-adK9-_2W+ku4j9YDikr+Z4vzfGtb@mail.gmail.com>
+ <alpine.LFD.2.00.1103171344270.26889@xanadu.home> <AANLkTi=Zq0fiVf+GcRC8M+CPakwmEWn1rrqq_U4OehNy@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110321193740.GN1239@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1230036926-1300740081=:11889"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 03:37:40PM -0400, Don Zickus wrote:
-> On Mon, Mar 21, 2011 at 01:22:35PM -0500, Jack Steiner wrote:
-> > On Mon, Mar 21, 2011 at 01:51:10PM -0400, Don Zickus wrote:
-> > > On Mon, Mar 21, 2011 at 07:26:51PM +0300, Cyrill Gorcunov wrote:
-> > > > On 03/21/2011 07:14 PM, Ingo Molnar wrote:
-> > > > > 
-> > > > > * Jack Steiner <steiner@sgi.com> wrote:
-> > > > > 
-> > > > >> This fixes a problem seen on UV systems handling NMIs from the node controller.
-> > > > >> The original code used the DIE notifier as the hook to get to the UV NMI
-> > > > >> handler. This does not work if performance counters are active - the hw_perf
-> > > > >> code consumes the NMI and the UV handler is not called.
-> > > 
-> > > Well that is a bug in the perf code.  We have been dealing with 'perf'
-> > > swallowing NMIs for a couple of releases now.  I think we got rid of most
-> > > of the cases (p4 and acme's core2 quad are the only cases I know that are
-> > > still an issue).
-> > > 
-> > > I would much prefer to investigate the reason why this is happening
-> > > because the perf nmi handler is supposed to check the global interrupt bit
-> > > to determine if the perf counters caused the nmi or not otherwise fall
-> > > through to other handler like SGI's nmi button in this case.
-> > 
-> > The patch that I posted is based on a RHEL6.1 patch that I'm running internally.
-> > Unless something has very recently changed in the RH sources, the perf
-> > NMI handler unconditionally returns NOTIFY_STOP if it handles an NMI.
-> > If no NMI was handled, it returns NOTIFY_DONE. This sometimes works
-> > and allows the platform generated NMI to be processed but if both NMI
-> > sources trigger at about he same time, the lower priority event
-> > will be lost.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-1230036926-1300740081=:11889
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 18 Mar 2011, Po-Yu Chuang wrote:
+
+> On Fri, Mar 18, 2011 at 1:57 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> > Nope.  The code being fixed here was suptly broken so it needs fixing.
+> > However this code is almost never used, if at all, as it is a fall-back
+> > solution for when all the better alternatives are not available for some
+> > reasons (and I'm still wondering what those reasons are for Po-Yu Chuang
+> > to actually use that code).  In practice this bug should have affected
+> > no one.
 > 
-> Not necessarily, if both are triggered, you should still get _two_ NMIs.
-> It may get processed in the wrong order but it should still get correctly
-> processed.
+> We met this problem while porting an v5 SMP processor because kernel
+> selects NEEDS_SYSCALL_FOR_CMPXCHG by default if CPU_32v5.
+> 
+> After we added our own implementation of __kuser_cmpxchg, this code
+> is not needed anymore. But since this is actually a bug, it is still a good
+> idea to submit a patch. :-)
+
+Yes.  Please send to RMK's patch system with my ACK.
 
 
-Let me do some more testing with the UV NMI priority set higher than the hw_perf
-priority. When I tried this earlier, I thought I saw problems but I'm
-not certain that it was not caused by a different error.
-
-
-> 
-> > 
-> > The root cause of the problem is that architecturally, x86 does not
-> > have a way to identifies the source(s) that cause an NMI. If multiple
-> > events occur at about the same time, there is no way that I can see that the
-> > OS can detect it.
-> 
-> There are registers we can check to see who owns trigger the NMI (at least
-> for the perf code, the SGI code maybe not, which is why I set it to a
-> lower priority to be a catch-all).
-> 
-> I'm not aware of the x86 architecture dropping NMIs, so they should all
-> get processed.  It is just a matter of which subsystems get determine if
-> they are the source of the NMI or not.
-> 
-> > 
-> > > 
-> > > My first impression is the skip nmi logic in the perf handler is probably
-> > > accidentally thinking the SGI external nmi is the perf's 'extra' nmi it is
-> > > supposed to skip and thus swallows it.  At least that is the impression I
-> > 
-> > Agree
-> > 
-> > 
-> > > get from the RedHat bugzilla which says SGI is running 'perf top', getting
-> > > a hang, then pressing their nmi button to see the stack traces.
-> > > 
-> > > Jack,
-> > > 
-> > > I worked through a number of these issues upstream and I already talked to
-> > > George and Russ over here at RedHat about working through the issue over
-> > > here with them.  They can help me get access to your box to help debug.
-> > 
-> > Russ is right down the hall.
-> 
-> Great!
-> 
-> Cheers,
-> Don
+Nicolas
+--8323328-1230036926-1300740081=:11889--
