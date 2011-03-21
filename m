@@ -1,158 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab1CVABo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 20:01:44 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:57873 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754986Ab1CVABj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 20:01:39 -0400
-Date: Tue, 22 Mar 2011 09:01:33 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Julian Anastasov <ja@ssi.bg>,
-        Hans Schillstrom <hans@schillstrom.com>
-Subject: Re: [slab poison overwritten] Re: [GIT] Networking
-Message-ID: <20110322000130.GC27019@verge.net.au>
-References: <20110320.195156.226769634.davem@davemloft.net>
- <20110321125320.GA23490@elte.hu>
- <1300714346.2884.284.camel@edumazet-laptop>
- <20110321161528.GA28580@elte.hu>
- <20110321164238.GA5303@elte.hu>
- <20110321173941.GB3892@elte.hu>
- <1300730838.2884.578.camel@edumazet-laptop>
- <1300738540.2837.5.camel@edumazet-laptop>
- <20110321221357.GF22625@verge.net.au>
- <20110321232921.GG22625@verge.net.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110321232921.GG22625@verge.net.au>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756076Ab1CVABa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 20:01:30 -0400
+Received: from kroah.org ([198.145.64.141]:48939 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754506Ab1CUXNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:13:35 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:51 2011
+Message-Id: <20110321231051.466688015@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Mon, 21 Mar 2011 16:09:47 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [07/44] ftrace: Fix memory leak with function graph and cpu hotplug
+In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 08:29:21AM +0900, Simon Horman wrote:
-> On Tue, Mar 22, 2011 at 07:13:58AM +0900, Simon Horman wrote:
-> > On Mon, Mar 21, 2011 at 09:15:40PM +0100, Eric Dumazet wrote:
-> > > Le lundi 21 mars 2011 à 19:07 +0100, Eric Dumazet a écrit :
-> > > > Le lundi 21 mars 2011 à 18:39 +0100, Ingo Molnar a écrit :
-> > > > > here's the same but with kallsyms enabled.
-> > > > > 
-> > > > > Thanks,
-> > > > > 
-> > > > > 	Ingo
-> > > > > 
-> > > > > [    9.585627] initcall 0xffffffff81d5b806 returned 0 after 0 usecs
-> > > > > [    9.588960] calling  0xffffffff81d5b9da @ 1
-> > > > > [    9.592303] IPVS: Creating netns size=1272 id=0
-> > > > > [    9.595646] IPVS: __ip_vs_control_init(): alloc_percpu.
-> > > > > [    9.602298] IPVS: cannot register namespace.
-> > > > > [    9.605627] IPVS: can't setup control
-> > > > 
-> > > > It seems IPVS is busted in case of memory allocation error in 
-> > > > __ip_vs_control_init()
-> > > > 
-> > > > IPVS deinits its "struct netns_ipvs" space, but something (in IPVS) uses
-> > > > it after free.
-> > > > 
-> > > > __ip_vs_init() seems to be called before ip_vs_init() completes
-> > > > correctly. We then keep in net->ipvs a pointer to some freed memory.
-> > > > 
-> > > > Commit 14e405461e664b7 did some changes in this area
-> > > > 
-> > > > Simon, any idea ?
-> > > > 
-> > > > 
-> > > 
-> > > For the time being, we can avoid the false memory allocation error (and
-> > > leak)
-> > 
-> > Sorry, that typo is my work.
-> 
-> With your patch applied I now see the following
-> 
-> ffff880003bbf1a0 corresponds to &ipvs->app_key in __ip_vs_app_init().
-> I'll continue looking into this.
-> 
-> [   12.610000] IPVS: Creating netns size=2456 id=0
-> [   12.630000] IPVS: Registered protocols (TCP, UDP, SCTP, AH, ESP)
-> [   12.640000] BUG: key ffff880003bbf1a0 not in .data!
-> [   12.640000] ------------[ cut here ]------------
-> [   12.640000] WARNING: at kernel/lockdep.c:2701
-> lockdep_init_map+0x37b/0x570()
-> [   12.640000] Hardware name: Bochs
-> [   12.640000] Pid: 1, comm: swapper Tainted: G        W
-> 2.6.38-kexec-06330-g69b7efe-dirty #122
-> [   12.650000] Call Trace:
-> [   12.650000]  [<ffffffff8102e685>] warn_slowpath_common+0x75/0xb0
-> [   12.650000]  [<ffffffff8102e6d5>] warn_slowpath_null+0x15/0x20
-> [   12.650000]  [<ffffffff8105967b>] lockdep_init_map+0x37b/0x570
-> [   12.650000]  [<ffffffff8105829d>] ? trace_hardirqs_on+0xd/0x10
-> [   12.650000]  [<ffffffff81055ad8>] debug_mutex_init+0x38/0x50
-> [   12.650000]  [<ffffffff8104bc4c>] __mutex_init+0x5c/0x70
-> [   12.650000]  [<ffffffff81685ee7>] __ip_vs_app_init+0x64/0x86
-> [   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
-> [   12.660000]  [<ffffffff811b1c33>] T.620+0x43/0x170
-> [   12.660000]  [<ffffffff811b1e9a>] ? register_pernet_subsys+0x1a/0x40
-> [   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
-> [   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
-> [   12.660000]  [<ffffffff811b1db7>] register_pernet_operations+0x57/0xb0
-> [   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
-> [   12.670000]  [<ffffffff811b1ea9>] register_pernet_subsys+0x29/0x40
-> [   12.670000]  [<ffffffff81685f19>] ip_vs_app_init+0x10/0x12
-> [   12.670000]  [<ffffffff81685a87>] ip_vs_init+0x4c/0xff
-> [   12.670000]  [<ffffffff8166562c>] do_one_initcall+0x7a/0x12e
-> [   12.670000]  [<ffffffff8166583e>] kernel_init+0x13e/0x1c2
-> [   12.670000]  [<ffffffff8128c134>] kernel_thread_helper+0x4/0x10
-> [   12.670000]  [<ffffffff8128ad40>] ? restore_args+0x0/0x30
-> [   12.680000]  [<ffffffff81665700>] ? kernel_init+0x0/0x1c2
-> [   12.680000]  [<ffffffff8128c130>] ? kernel_thread_helper+0x0/0x10
-> [   12.680000] ---[ end trace 4eaa2a86a8e2da23 ]---
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-It seems that the problem above was introduced by
-ab8a5e8408c3 ("IPVS: netns awareness to ip_vs_app").
-I assume the hungs are the cause:
+------------------
 
-diff --git a/net/netfilter/ipvs/ip_vs_app.c b/net/netfilter/ipvs/ip_vs_app.c
-index 40b09cc..286f465 100644
---- a/net/netfilter/ipvs/ip_vs_app.c
-+++ b/net/netfilter/ipvs/ip_vs_app.c
-@@ -43,11 +43,6 @@ EXPORT_SYMBOL(register_ip_vs_app);
- EXPORT_SYMBOL(unregister_ip_vs_app);
- EXPORT_SYMBOL(register_ip_vs_app_inc);
+From: Steven Rostedt <srostedt@redhat.com>
+
+commit 868baf07b1a259f5f3803c1dc2777b6c358f83cf upstream.
+
+When the fuction graph tracer starts, it needs to make a special
+stack for each task to save the real return values of the tasks.
+All running tasks have this stack created, as well as any new
+tasks.
+
+On CPU hot plug, the new idle task will allocate a stack as well
+when init_idle() is called. The problem is that cpu hotplug does
+not create a new idle_task. Instead it uses the idle task that
+existed when the cpu went down.
+
+ftrace_graph_init_task() will add a new ret_stack to the task
+that is given to it. Because a clone will make the task
+have a stack of its parent it does not check if the task's
+ret_stack is already NULL or not. When the CPU hotplug code
+starts a CPU up again, it will allocate a new stack even
+though one already existed for it.
+
+The solution is to treat the idle_task specially. In fact, the
+function_graph code already does, just not at init_idle().
+Instead of using the ftrace_graph_init_task() for the idle task,
+which that function expects the task to be a clone, have a
+separate ftrace_graph_init_idle_task(). Also, we will create a
+per_cpu ret_stack that is used by the idle task. When we call
+ftrace_graph_init_idle_task() it will check if the idle task's
+ret_stack is NULL, if it is, then it will assign it the per_cpu
+ret_stack.
+
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ include/linux/ftrace.h |    2 +
+ kernel/sched.c         |    2 -
+ kernel/trace/ftrace.c  |   52 ++++++++++++++++++++++++++++++++++++++++++-------
+ 3 files changed, 48 insertions(+), 8 deletions(-)
+
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -412,6 +412,7 @@ extern void unregister_ftrace_graph(void
  
--/* ipvs application list head */
--static LIST_HEAD(ip_vs_app_list);
--static DEFINE_MUTEX(__ip_vs_app_mutex);
--
--
- /*
-  *	Get an ip_vs_app object
-  */
-
-@@ -571,9 +580,13 @@ static const struct file_operations ip_vs_app_fops = {
+ extern void ftrace_graph_init_task(struct task_struct *t);
+ extern void ftrace_graph_exit_task(struct task_struct *t);
++extern void ftrace_graph_init_idle_task(struct task_struct *t, int cpu);
  
- static int __net_init __ip_vs_app_init(struct net *net)
+ static inline int task_curr_ret_stack(struct task_struct *t)
  {
-+	struct netns_ipvs *ipvs = net_ipvs(net);
-+
- 	if (!net_eq(net, &init_net))	/* netns not enabled yet */
- 		return -EPERM;
+@@ -435,6 +436,7 @@ static inline void unpause_graph_tracing
  
-+	INIT_LIST_HEAD(&ipvs->app_list);
-+	__mutex_init(&ipvs->app_mutex, "ipvs->app_mutex", &ipvs->app_key);
- 	proc_net_fops_create(net, "ip_vs_app", 0, &ip_vs_app_fops);
- 	return 0;
+ static inline void ftrace_graph_init_task(struct task_struct *t) { }
+ static inline void ftrace_graph_exit_task(struct task_struct *t) { }
++static inline void ftrace_graph_init_idle_task(struct task_struct *t, int cpu) { }
+ 
+ static inline int task_curr_ret_stack(struct task_struct *tsk)
+ {
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -7290,7 +7290,7 @@ void __cpuinit init_idle(struct task_str
+ 	 * The idle tasks have their own, simple scheduling class:
+ 	 */
+ 	idle->sched_class = &idle_sched_class;
+-	ftrace_graph_init_task(idle);
++	ftrace_graph_init_idle_task(idle, cpu);
  }
-
+ 
+ /*
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3172,7 +3172,7 @@ static int start_graph_tracing(void)
+ 	/* The cpu_boot init_task->ret_stack will never be freed */
+ 	for_each_online_cpu(cpu) {
+ 		if (!idle_task(cpu)->ret_stack)
+-			ftrace_graph_init_task(idle_task(cpu));
++			ftrace_graph_init_idle_task(idle_task(cpu), cpu);
+ 	}
+ 
+ 	do {
+@@ -3262,6 +3262,49 @@ void unregister_ftrace_graph(void)
+ 	mutex_unlock(&ftrace_lock);
+ }
+ 
++static DEFINE_PER_CPU(struct ftrace_ret_stack *, idle_ret_stack);
++
++static void
++graph_init_task(struct task_struct *t, struct ftrace_ret_stack *ret_stack)
++{
++	atomic_set(&t->tracing_graph_pause, 0);
++	atomic_set(&t->trace_overrun, 0);
++	t->ftrace_timestamp = 0;
++	/* make curr_ret_stack visable before we add the ret_stack */
++	smp_wmb();
++	t->ret_stack = ret_stack;
++}
++
++/*
++ * Allocate a return stack for the idle task. May be the first
++ * time through, or it may be done by CPU hotplug online.
++ */
++void ftrace_graph_init_idle_task(struct task_struct *t, int cpu)
++{
++	t->curr_ret_stack = -1;
++	/*
++	 * The idle task has no parent, it either has its own
++	 * stack or no stack at all.
++	 */
++	if (t->ret_stack)
++		WARN_ON(t->ret_stack != per_cpu(idle_ret_stack, cpu));
++
++	if (ftrace_graph_active) {
++		struct ftrace_ret_stack *ret_stack;
++
++		ret_stack = per_cpu(idle_ret_stack, cpu);
++		if (!ret_stack) {
++			ret_stack = kmalloc(FTRACE_RETFUNC_DEPTH
++					    * sizeof(struct ftrace_ret_stack),
++					    GFP_KERNEL);
++			if (!ret_stack)
++				return;
++			per_cpu(idle_ret_stack, cpu) = ret_stack;
++		}
++		graph_init_task(t, ret_stack);
++	}
++}
++
+ /* Allocate a return stack for newly created task */
+ void ftrace_graph_init_task(struct task_struct *t)
+ {
+@@ -3277,12 +3320,7 @@ void ftrace_graph_init_task(struct task_
+ 				GFP_KERNEL);
+ 		if (!ret_stack)
+ 			return;
+-		atomic_set(&t->tracing_graph_pause, 0);
+-		atomic_set(&t->trace_overrun, 0);
+-		t->ftrace_timestamp = 0;
+-		/* make curr_ret_stack visable before we add the ret_stack */
+-		smp_wmb();
+-		t->ret_stack = ret_stack;
++		graph_init_task(t, ret_stack);
+ 	}
+ }
+ 
 
 
