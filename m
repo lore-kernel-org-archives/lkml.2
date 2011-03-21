@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab1CUXS2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:18:28 -0400
-Received: from kroah.org ([198.145.64.141]:52665 "EHLO coco.kroah.org"
+	id S932315Ab1CUXXM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:23:12 -0400
+Received: from kroah.org ([198.145.64.141]:52789 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932316Ab1CUXSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:07 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:26 2011
-Message-Id: <20110321230326.124854632@clark.kroah.org>
+	id S932416Ab1CUXS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:29 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:28 2011
+Message-Id: <20110321230328.403103871@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:59 -0700
+Date: Mon, 21 Mar 2011 16:02:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [43/78] ALSA: hda - Initialize special cases for input src in init phase
+        Milton Miller <miltonm@bga.com>
+Subject: [65/78] call_function_many: fix list delete vs add race
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,94 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Milton Miller <miltonm@bga.com>
 
-commit 584c0c4c359bdac37d94157f8d7fc513d26c8328 upstream.
+commit e6cd1e07a185d5f9b0aa75e020df02d3c1c44940 upstream.
 
-Currently some special handling for the unusual case like dual-ADCs
-or a single-input-src is done in the tree-parse time in
-set_capture_mixer().  But this setup could be overwritten by static
-init verbs.
+Peter pointed out there was nothing preventing the list_del_rcu in
+smp_call_function_interrupt from running before the list_add_rcu in
+smp_call_function_many.
 
-This patch moves the initialization into the init phase so that
-such input-src setup won't be lost.
+Fix this by not setting refs until we have gotten the lock for the list.
+Take advantage of the wmb in list_add_rcu to save an explicit additional
+one.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+I tried to force this race with a udelay before the lock & list_add and
+by mixing all 64 online cpus with just 3 random cpus in the mask, but
+was unsuccessful.  Still, inspection shows a valid race, and the fix is
+a extension of the existing protection window in the current code.
+
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Milton Miller <miltonm@bga.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ kernel/smp.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -394,6 +394,7 @@ struct alc_spec {
- 	/* other flags */
- 	unsigned int no_analog :1; /* digital I/O only */
- 	unsigned int dual_adc_switch:1; /* switch ADCs (for ALC275) */
-+	unsigned int single_input_src:1;
- 	int init_amp;
- 	int codec_variant;	/* flag for other variants */
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -491,14 +491,15 @@ void smp_call_function_many(const struct
+ 	cpumask_clear_cpu(this_cpu, data->cpumask);
  
-@@ -3919,6 +3920,8 @@ static struct hda_amp_list alc880_lg_loo
-  * Common callbacks
-  */
+ 	/*
+-	 * To ensure the interrupt handler gets an complete view
+-	 * we order the cpumask and refs writes and order the read
+-	 * of them in the interrupt handler.  In addition we may
+-	 * only clear our own cpu bit from the mask.
++	 * We reuse the call function data without waiting for any grace
++	 * period after some other cpu removes it from the global queue.
++	 * This means a cpu might find our data block as it is writen.
++	 * The interrupt handler waits until it sees refs filled out
++	 * while its cpu mask bit is set; here we may only clear our
++	 * own cpu mask bit, and must wait to set refs until we are sure
++	 * previous writes are complete and we have obtained the lock to
++	 * add the element to the queue.
+ 	 */
+-	smp_wmb();
+-
+-	atomic_set(&data->refs, cpumask_weight(data->cpumask));
  
-+static void alc_init_special_input_src(struct hda_codec *codec);
-+
- static int alc_init(struct hda_codec *codec)
- {
- 	struct alc_spec *spec = codec->spec;
-@@ -3929,6 +3932,7 @@ static int alc_init(struct hda_codec *co
+ 	raw_spin_lock_irqsave(&call_function.lock, flags);
+ 	/*
+@@ -507,6 +508,11 @@ void smp_call_function_many(const struct
+ 	 * will not miss any other list entries:
+ 	 */
+ 	list_add_rcu(&data->csd.list, &call_function.queue);
++	/*
++	 * We rely on the wmb() in list_add_rcu to order the writes
++	 * to func, data, and cpumask before this write to refs.
++	 */
++	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+ 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
  
- 	for (i = 0; i < spec->num_init_verbs; i++)
- 		snd_hda_sequence_write(codec, spec->init_verbs[i]);
-+	alc_init_special_input_src(codec);
- 
- 	if (spec->init_hook)
- 		spec->init_hook(codec);
-@@ -5590,6 +5594,7 @@ static void fixup_single_adc(struct hda_
- 			spec->capsrc_nids += i;
- 		spec->adc_nids += i;
- 		spec->num_adc_nids = 1;
-+		spec->single_input_src = 1;
- 	}
- }
- 
-@@ -5601,6 +5606,16 @@ static void fixup_dual_adc_switch(struct
- 	init_capsrc_for_pin(codec, spec->int_mic.pin);
- }
- 
-+/* initialize some special cases for input sources */
-+static void alc_init_special_input_src(struct hda_codec *codec)
-+{
-+	struct alc_spec *spec = codec->spec;
-+	if (spec->dual_adc_switch)
-+		fixup_dual_adc_switch(codec);
-+	else if (spec->single_input_src)
-+		init_capsrc_for_pin(codec, spec->autocfg.inputs[0].pin);
-+}
-+
- static void set_capture_mixer(struct hda_codec *codec)
- {
- 	struct alc_spec *spec = codec->spec;
-@@ -5616,7 +5631,7 @@ static void set_capture_mixer(struct hda
- 		int mux = 0;
- 		int num_adcs = spec->num_adc_nids;
- 		if (spec->dual_adc_switch)
--			fixup_dual_adc_switch(codec);
-+			num_adcs = 1;
- 		else if (spec->auto_mic)
- 			fixup_automic_adc(codec);
- 		else if (spec->input_mux) {
-@@ -5625,8 +5640,6 @@ static void set_capture_mixer(struct hda
- 			else if (spec->input_mux->num_items == 1)
- 				fixup_single_adc(codec);
- 		}
--		if (spec->dual_adc_switch)
--			num_adcs = 1;
- 		spec->cap_mixer = caps[mux][num_adcs - 1];
- 	}
- }
+ 	/*
 
 
