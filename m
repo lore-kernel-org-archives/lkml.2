@@ -1,155 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab1CUSf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:35:26 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:43629 "EHLO mx01.d-labs.de"
+	id S1752908Ab1CUSli (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:41:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:33311 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754183Ab1CUSeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:34:03 -0400
-From: Florian Mickler <florian@mickler.org>
-To: mchehab@infradead.org
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, js@linuxtv.org,
-        tskd2@yahoo.co.jp, liplianin@me.by, g.marco@freenet.de,
-        aet@rasterburn.org, pb@linuxtv.org, mkrufky@linuxtv.org,
-        nick@nick-andrew.net, max@veneto.com, janne-dvb@grunau.be,
-        Florian Mickler <florian@mickler.org>
-Subject: [PATCH 2/6 v2] [media] vp7045: get rid of on-stack dma buffers
-Date: Mon, 21 Mar 2011 19:33:42 +0100
-Message-Id: <1300732426-18958-3-git-send-email-florian@mickler.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300732426-18958-1-git-send-email-florian@mickler.org>
-References: <1300732426-18958-1-git-send-email-florian@mickler.org>
+	id S1751305Ab1CUSlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 14:41:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,220,1299484800"; 
+   d="scan'208";a="899598579"
+Message-ID: <4D879BDF.3060004@intel.com>
+Date: Mon, 21 Mar 2011 11:41:35 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: "Jiang, Dave" <dave.jiang@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Danecki, Jacek" <jacek.danecki@intel.com>,
+        "Ciechanowski, Ed" <ed.ciechanowski@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dmilburn@redhat.com" <dmilburn@redhat.com>,
+        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
+        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] firmware/efi: export a routine to retrieve efi-variables
+ by GUID
+References: <20110318221606.26841.92271.stgit@localhost6.localdomain6> <20110318225016.GB15921@suse.de> <AANLkTim+HB0GWzGiif=MvYHaiXMSLuVB6R0=UK3906xU@mail.gmail.com> <20110319002246.GB14249@suse.de> <4D8403C3.6020300@intel.com> <20110320001459.GA9237@suse.de>
+In-Reply-To: <20110320001459.GA9237@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usb_control_msg initiates (and waits for completion of) a dma transfer using
-the supplied buffer. That buffer thus has to be seperately allocated on
-the heap.
+On 3/19/2011 5:14 PM, Greg KH wrote:
+> On Fri, Mar 18, 2011 at 06:15:47PM -0700, Dan Williams wrote:
+>> On 3/18/2011 5:22 PM, Greg KH wrote:
+>>> On Fri, Mar 18, 2011 at 04:10:10PM -0700, Dan Williams wrote:
+>>>>> I needed all patches in linux-next _before_ the merge window opened to
+>>>>> be able to accept it.
+>>>>
+>>>> Yes, I know, and as dmaengine maintainer I also hate being ambushed by
+>>>> last minute patches, but now I am unfortunately one of those annoying
+>>>> people on the other side of the coin.
+>>>
+>>> Then you should know better than to try to go around the well-known
+>>> rules :)
+>>
+>> Yes...
+>>
+>> /me about to push his luck
+>
+> <snip>
+>
+>> As Jeff pointed out:
+>> "It seemed like this was turning into another driver that would get
+>> held outside the kernel until it's "perfect."  If that is the case,
+>> Linus has also made it clear we should get drivers for high volume,
+>> shipping hardware into the kernel, even if its staging, if the
+>> alternative is to deny users the driver."
+>
+> That's fine, _BUT_ you are trying to go around the rules for the merge
+> window, which isn't acceptable.   Also note that your driver isn't
+> self-contained, it needs this change at the least, right?  Any others?
 
-In lib/dma_debug.c the function check_for_stack even warns about it:
-	WARNING: at lib/dma-debug.c:866 check_for_stack
+This efi export was a late discovery, we tried to use the existing 
+exports (raw efi runtime services) but it was not clean (needed to 
+duplicate utf-8 encoding in the driver).  The other external changes/bug 
+fixes needed for this driver were submitted weeks ago.
 
-Note: This change is tested to compile only, as I don't have the hardware.
+>> So yes, we are targeting that exception.  I'm up for taking the heat
+>> directly if you want...  because the pull request will need to
+>> backed up with justification.
+>
+> No, sorry, I'll not take this for .40, all of my trees are merged with
+> Linus now for .40 and I'll only be sending him bugfixes until the .41
+> merge window opens up.
+>
+> Remember, it's only a 3 month wait, you knew about this _WAY_ in
+> advance, so it's not like this is something new, or out of the ordinary
+> at all.  Because of that, I fail to see why this is somehow not
+> expected.
 
-Signed-off-by: Florian Mickler <florian@mickler.org>
+Yes, we knew about this way in advance, we brought you in too late for a 
+.39-staging discussion.  Appreciate the consideration and understand the 
+outcome.
 
----
-[v2: pulled buffer access under the mutex]
-
-drivers/media/dvb/dvb-usb/vp7045.c |   47 ++++++++++++++++++++++++++----------
- 1 files changed, 34 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/media/dvb/dvb-usb/vp7045.c b/drivers/media/dvb/dvb-usb/vp7045.c
-index ab0ab3c..3db89e3 100644
---- a/drivers/media/dvb/dvb-usb/vp7045.c
-+++ b/drivers/media/dvb/dvb-usb/vp7045.c
-@@ -28,9 +28,9 @@ DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
- int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in, int inlen, int msec)
- {
- 	int ret = 0;
--	u8 inbuf[12] = { 0 }, outbuf[20] = { 0 };
-+	u8 *buf = d->priv;
- 
--	outbuf[0] = cmd;
-+	buf[0] = cmd;
- 
- 	if (outlen > 19)
- 		outlen = 19;
-@@ -38,19 +38,21 @@ int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in,
- 	if (inlen > 11)
- 		inlen = 11;
- 
-+	ret = mutex_lock_interruptible(&d->usb_mutex);
-+	if (ret)
-+		return ret;
-+
- 	if (out != NULL && outlen > 0)
--		memcpy(&outbuf[1], out, outlen);
-+		memcpy(&buf[1], out, outlen);
- 
- 	deb_xfer("out buffer: ");
--	debug_dump(outbuf,outlen+1,deb_xfer);
-+	debug_dump(buf, outlen+1, deb_xfer);
- 
--	if ((ret = mutex_lock_interruptible(&d->usb_mutex)))
--		return ret;
- 
- 	if (usb_control_msg(d->udev,
- 			usb_sndctrlpipe(d->udev,0),
- 			TH_COMMAND_OUT, USB_TYPE_VENDOR | USB_DIR_OUT, 0, 0,
--			outbuf, 20, 2000) != 20) {
-+			buf, 20, 2000) != 20) {
- 		err("USB control message 'out' went wrong.");
- 		ret = -EIO;
- 		goto unlock;
-@@ -61,17 +63,17 @@ int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in,
- 	if (usb_control_msg(d->udev,
- 			usb_rcvctrlpipe(d->udev,0),
- 			TH_COMMAND_IN, USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
--			inbuf, 12, 2000) != 12) {
-+			buf, 12, 2000) != 12) {
- 		err("USB control message 'in' went wrong.");
- 		ret = -EIO;
- 		goto unlock;
- 	}
- 
- 	deb_xfer("in buffer: ");
--	debug_dump(inbuf,12,deb_xfer);
-+	debug_dump(buf, 12, deb_xfer);
- 
- 	if (in != NULL && inlen > 0)
--		memcpy(in,&inbuf[1],inlen);
-+		memcpy(in, &buf[1], inlen);
- 
- unlock:
- 	mutex_unlock(&d->usb_mutex);
-@@ -222,8 +224,26 @@ static struct dvb_usb_device_properties vp7045_properties;
- static int vp7045_usb_probe(struct usb_interface *intf,
- 		const struct usb_device_id *id)
- {
--	return dvb_usb_device_init(intf, &vp7045_properties,
--				   THIS_MODULE, NULL, adapter_nr);
-+	struct dvb_usb_device *d;
-+	int ret = dvb_usb_device_init(intf, &vp7045_properties,
-+				   THIS_MODULE, &d, adapter_nr);
-+	if (ret)
-+		return ret;
-+
-+	d->priv = kmalloc(20, GFP_KERNEL);
-+	if (!d->priv) {
-+		dvb_usb_device_exit(intf);
-+		return -ENOMEM;
-+	}
-+
-+	return ret;
-+}
-+
-+static void vp7045_usb_disconnect(struct usb_interface *intf)
-+{
-+	struct dvb_usb_device *d = usb_get_intfdata(intf);
-+	kfree(d->priv);
-+	dvb_usb_device_exit(intf);
- }
- 
- static struct usb_device_id vp7045_usb_table [] = {
-@@ -238,6 +258,7 @@ MODULE_DEVICE_TABLE(usb, vp7045_usb_table);
- static struct dvb_usb_device_properties vp7045_properties = {
- 	.usb_ctrl = CYPRESS_FX2,
- 	.firmware = "dvb-usb-vp7045-01.fw",
-+	.size_of_priv = sizeof(u8 *),
- 
- 	.num_adapters = 1,
- 	.adapter = {
-@@ -284,7 +305,7 @@ static struct dvb_usb_device_properties vp7045_properties = {
- static struct usb_driver vp7045_usb_driver = {
- 	.name		= "dvb_usb_vp7045",
- 	.probe		= vp7045_usb_probe,
--	.disconnect = dvb_usb_device_exit,
-+	.disconnect	= vp7045_usb_disconnect,
- 	.id_table	= vp7045_usb_table,
- };
- 
--- 
-1.7.4.1
-
+--
+Dan
