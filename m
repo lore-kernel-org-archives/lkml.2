@@ -1,86 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab1CUURk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 16:17:40 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:44108 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754484Ab1CUURf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 16:17:35 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=DEH/M8AiRrKGte/4CsA22+V+WKLGLWknLMmnR8z4ERZnpl0dK9KGDvuulVLBwflApM2ZKObSMKrqgmGX+By43B9P5hTv/QJMUN3Xp2UnahvC5I3WITNPYdWblknOtK6x;
-Date: Mon, 21 Mar 2011 13:17:32 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Alan Ott <alan@signal11.us>
-Cc: Jonathan Corbet <corbet@lwn.net>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefani Seibold <stefani@seibold.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH v5 0/2] Documentation and Sample for hidraw
-Message-Id: <20110321131732.8e8906a8.rdunlap@xenotime.net>
-In-Reply-To: <1300580985-10726-1-git-send-email-alan@signal11.us>
-References: <1297829209-10511-1-git-send-email-alan@signal11.us>
-	<1300580985-10726-1-git-send-email-alan@signal11.us>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
+	id S1753983Ab1CUUXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 16:23:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48045 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752468Ab1CUUXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 16:23:49 -0400
+Date: Mon, 21 Mar 2011 16:23:46 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Justin TerAvest <teravest@google.com>
+Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Don't update group weights when on service tree.
+Message-ID: <20110321202346.GA9870@redhat.com>
+References: <1300374357-30686-1-git-send-email-teravest@google.com>
+ <20110321192757.GK2694@redhat.com>
+ <AANLkTik9r-5zXQKCHf9+8U9M1-3Y84mv9Aid7GsTaj2R@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik9r-5zXQKCHf9+8U9M1-3Y84mv9Aid7GsTaj2R@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Mar 2011 20:29:43 -0400 Alan Ott wrote:
+On Mon, Mar 21, 2011 at 01:15:33PM -0700, Justin TerAvest wrote:
+> On Mon, Mar 21, 2011 at 12:27 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Thu, Mar 17, 2011 at 08:05:57AM -0700, Justin TerAvest wrote:
+> >> Version 3 is updated to apply to for-2.6.39/core.
+> >>
+> >> For version 2, I took Vivek's advice and made sure we update the group
+> >> weight from cfq_group_service_tree_add().
+> >>
+> >> If a weight was updated while a group is on the service tree, the
+> >> calculation for the total weight of the service tree can be adjusted
+> >> improperly, which either leads to bad service tree weights, or
+> >> potentially crashes (if total_weight becomes 0).
+> >>
+> >> This patch defers updates to the weight until a group is off the service
+> >> tree.
+> >>
+> >> Signed-off-by: Justin TerAvest <teravest@google.com>
+> >> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> >> ---
+> >>  block/cfq-iosched.c |   53 +++++++++++++++++++++++++++++++++++++++-----------
+> >>  1 files changed, 41 insertions(+), 12 deletions(-)
+> >>
+> >> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> >> index 89e0d1c..12e380b 100644
+> >> --- a/block/cfq-iosched.c
+> >> +++ b/block/cfq-iosched.c
+> >> @@ -178,6 +178,8 @@ struct cfq_group {
+> >>       /* group service_tree key */
+> >>       u64 vdisktime;
+> >>       unsigned int weight;
+> >> +     unsigned int new_weight;
+> >> +     bool needs_update;
+> >>
+> >>       /* number of cfqq currently on this group */
+> >>       int nr_cfqq;
+> >> @@ -853,7 +855,27 @@ __cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
+> >>  }
+> >>
+> >>  static void
+> >> -cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+> >> +cfq_update_group_weight(struct cfq_group *cfqg)
+> >> +{
+> >> +     BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
+> >> +     if (cfqg->needs_update) {
+> >> +             cfqg->weight = cfqg->new_weight;
+> >> +             cfqg->needs_update = false;
+> >> +     }
+> >> +}
+> >
+> > thinking more about it, looks like this code is still racy. If somebody
+> > updates the weights again while we are about to process previous weight
+> > change, we might lose the new weight and set needs_update=false. We might
+> > have to use xchg() to update cfqg->needs_update.
+> 
+> I think you're right, Vivek.
+> 
+> I wish we could just take a lock on blkcg->lock when updating, we
+> should expect the weights to be updated that often, right? I'm not
+> sure if there's a feasible way to do that, though.
+> 
 
-> Sorry I've been slack in getting v5 of this patch out. Because
-> it's been so long, I'll recap what happened last time:
-> 
->  * Jon Corbet suggested that the example programs be moved into samples/ .
->  * Randy Dunlap indicated his acked-by when this was done.
-> 
-> These patches add hidraw.txt to a new Documentation/hid/ directory.
-> 
-> It creates an example program which is now in samples/ with a Kconfig item.
-> 
-> The existing hiddev.txt has been moved from Documentation/usb/ to
-> Documentation/hid/
+I think taking blkcg->lock while updating cfqg->needs_update in CFQ will
+also solve the issue. We should already be holding blkcg->lock in cgroup
+updation path.
 
-Jiri,
+Do put a comment explaining it well in case you end up taking this path.
 
-I suppose that you will merge these patches?
-or did you want me to do it?
+Thanks
+Vivek
 
-
-> This is based on .38+
+> I'll explore both options, I'd just prefer to not add xchg() code if I
+> don't have to, as it requires a bit more thinking.
 > 
-> Alan Ott (2):
->   HID: Documentation for hidraw
->   HID: Move hiddev.txt to the new Documentation/HID directory
-> 
->  Documentation/{usb => hid}/hiddev.txt |    0
->  Documentation/hid/hidraw.txt          |  119 +++++++++++++++++++++++
->  samples/Kconfig                       |    6 +
->  samples/Makefile                      |    2 +-
->  samples/hidraw/Makefile               |    8 ++
->  samples/hidraw/hid-example.c          |  167 +++++++++++++++++++++++++++++++++
->  6 files changed, 301 insertions(+), 1 deletions(-)
->  rename Documentation/{usb => hid}/hiddev.txt (100%)
->  create mode 100644 Documentation/hid/hidraw.txt
->  create mode 100644 samples/hidraw/Makefile
->  create mode 100644 samples/hidraw/hid-example.c
+> Thanks,
+> Justin
 > 
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-doc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> >
+> > Thanks
+> > Vivek
+> >
