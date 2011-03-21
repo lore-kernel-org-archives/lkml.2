@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab1CUXPs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:15:48 -0400
-Received: from kroah.org ([198.145.64.141]:49338 "EHLO coco.kroah.org"
+	id S1755461Ab1CUXou (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:44:50 -0400
+Received: from kroah.org ([198.145.64.141]:49483 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755292Ab1CUXP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:26 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
-Message-Id: <20110321230712.047034457@clark.kroah.org>
+	id S1755436Ab1CUXPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:47 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:14 2011
+Message-Id: <20110321230714.253363592@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:27 -0700
+Date: Mon, 21 Mar 2011 16:06:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [28/87] libata: fix hotplug for drivers which dont implement LPM
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [49/87] xhci: Update internal dequeue pointers after stalls.
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit eb0e85e36b971ec31610eda7e3ff5c11c1c44785 upstream.
+commit bf161e85fb153c0dd5a95faca73fd6a9d237c389 upstream.
 
-ata_eh_analyze_serror() suppresses hotplug notifications if LPM is
-being used because LPM generates spurious hotplug events.  It compared
-whether link->lpm_policy was different from ATA_LPM_MAX_POWER to
-determine whether LPM is enabled; however, this is incorrect as for
-drivers which don't implement LPM, lpm_policy is always
-ATA_LPM_UNKNOWN.  This disabled hotplug detection for all drivers
-which don't implement LPM.
+When an endpoint stalls, the xHCI driver must move the endpoint ring's
+dequeue pointer past the stalled transfer.  To do that, the driver issues
+a Set TR Dequeue Pointer command, which will complete some time later.
 
-Fix it by comparing whether lpm_policy is greater than
-ATA_LPM_MAX_POWER.
+Takashi was having issues with USB 1.1 audio devices that stalled, and his
+analysis of the code was that the old code would not update the xHCI
+driver's ring dequeue pointer after the command completes.  However, the
+dequeue pointer is set in xhci_find_new_dequeue_state(), just before the
+set command is issued to the hardware.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Setting the dequeue pointer before the Set TR Dequeue Pointer command
+completes is a dangerous thing to do, since the xHCI hardware can fail the
+command.  Instead, store the new dequeue pointer in the xhci_virt_ep
+structure, and update the ring's dequeue pointer when the Set TR dequeue
+pointer command completes.
+
+While we're at it, make sure we can't queue another Set TR Dequeue Command
+while the first one is still being processed.  This just won't work with
+the internal xHCI state code.  I'm still not sure if this is the right
+thing to do, since we might have a case where a driver queues multiple
+URBs to a control ring, one of the URBs Stalls, and then the driver tries
+to cancel the second URB.  There may be a race condition there where the
+xHCI driver might try to issue multiple Set TR Dequeue Pointer commands,
+but I would have to think very hard about how the Stop Endpoint and
+cancellation code works.  Keep the fix simple until when/if we run into
+that case.
+
+This patch should be queued to kernels all the way back to 2.6.31.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-eh.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-ring.c |   29 ++++++++++++++++++++++++++---
+ drivers/usb/host/xhci.h      |    9 +++++++++
+ 2 files changed, 35 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -1618,7 +1618,7 @@ static void ata_eh_analyze_serror(struct
- 	 * host links.  For disabled PMP links, only N bit is
- 	 * considered as X bit is left at 1 for link plugging.
- 	 */
--	if (link->lpm_policy != ATA_LPM_MAX_POWER)
-+	if (link->lpm_policy > ATA_LPM_MAX_POWER)
- 		hotplug_mask = 0;	/* hotplug doesn't work w/ LPM */
- 	else if (!(link->flags & ATA_LFLAG_DISABLED) || ata_is_host_link(link))
- 		hotplug_mask = SERR_PHYRDY_CHG | SERR_DEV_XCHG;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -511,9 +511,6 @@ void xhci_find_new_dequeue_state(struct
+ 	addr = xhci_trb_virt_to_dma(state->new_deq_seg, state->new_deq_ptr);
+ 	xhci_dbg(xhci, "New dequeue pointer = 0x%llx (DMA)\n",
+ 			(unsigned long long) addr);
+-	xhci_dbg(xhci, "Setting dequeue pointer in internal ring state.\n");
+-	ep_ring->dequeue = state->new_deq_ptr;
+-	ep_ring->deq_seg = state->new_deq_seg;
+ }
+ 
+ static void td_to_noop(struct xhci_hcd *xhci, struct xhci_ring *ep_ring,
+@@ -956,9 +953,26 @@ static void handle_set_deq_completion(st
+ 	} else {
+ 		xhci_dbg(xhci, "Successful Set TR Deq Ptr cmd, deq = @%08llx\n",
+ 				ep_ctx->deq);
++		if (xhci_trb_virt_to_dma(dev->eps[ep_index].queued_deq_seg,
++					dev->eps[ep_index].queued_deq_ptr) ==
++				(ep_ctx->deq & ~(EP_CTX_CYCLE_MASK))) {
++			/* Update the ring's dequeue segment and dequeue pointer
++			 * to reflect the new position.
++			 */
++			ep_ring->deq_seg = dev->eps[ep_index].queued_deq_seg;
++			ep_ring->dequeue = dev->eps[ep_index].queued_deq_ptr;
++		} else {
++			xhci_warn(xhci, "Mismatch between completed Set TR Deq "
++					"Ptr command & xHCI internal state.\n");
++			xhci_warn(xhci, "ep deq seg = %p, deq ptr = %p\n",
++					dev->eps[ep_index].queued_deq_seg,
++					dev->eps[ep_index].queued_deq_ptr);
++		}
+ 	}
+ 
+ 	dev->eps[ep_index].ep_state &= ~SET_DEQ_PENDING;
++	dev->eps[ep_index].queued_deq_seg = NULL;
++	dev->eps[ep_index].queued_deq_ptr = NULL;
+ 	/* Restart any rings with pending URBs */
+ 	ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
+ }
+@@ -3218,6 +3232,7 @@ static int queue_set_tr_deq(struct xhci_
+ 	u32 trb_ep_index = EP_ID_FOR_TRB(ep_index);
+ 	u32 trb_stream_id = STREAM_ID_FOR_TRB(stream_id);
+ 	u32 type = TRB_TYPE(TRB_SET_DEQ);
++	struct xhci_virt_ep *ep;
+ 
+ 	addr = xhci_trb_virt_to_dma(deq_seg, deq_ptr);
+ 	if (addr == 0) {
+@@ -3226,6 +3241,14 @@ static int queue_set_tr_deq(struct xhci_
+ 				deq_seg, deq_ptr);
+ 		return 0;
+ 	}
++	ep = &xhci->devs[slot_id]->eps[ep_index];
++	if ((ep->ep_state & SET_DEQ_PENDING)) {
++		xhci_warn(xhci, "WARN Cannot submit Set TR Deq Ptr\n");
++		xhci_warn(xhci, "A Set TR Deq Ptr command is pending.\n");
++		return 0;
++	}
++	ep->queued_deq_seg = deq_seg;
++	ep->queued_deq_ptr = deq_ptr;
+ 	return queue_command(xhci, lower_32_bits(addr) | cycle_state,
+ 			upper_32_bits(addr), trb_stream_id,
+ 			trb_slot_id | trb_ep_index | type, false);
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -648,6 +648,9 @@ struct xhci_ep_ctx {
+ #define AVG_TRB_LENGTH_FOR_EP(p)	((p) & 0xffff)
+ #define MAX_ESIT_PAYLOAD_FOR_EP(p)	(((p) & 0xffff) << 16)
+ 
++/* deq bitmasks */
++#define EP_CTX_CYCLE_MASK		(1 << 0)
++
+ 
+ /**
+  * struct xhci_input_control_context
+@@ -750,6 +753,12 @@ struct xhci_virt_ep {
+ 	struct timer_list	stop_cmd_timer;
+ 	int			stop_cmds_pending;
+ 	struct xhci_hcd		*xhci;
++	/* Dequeue pointer and dequeue segment for a submitted Set TR Dequeue
++	 * command.  We'll need to update the ring's dequeue segment and dequeue
++	 * pointer after the command completes.
++	 */
++	struct xhci_segment	*queued_deq_seg;
++	union xhci_trb		*queued_deq_ptr;
+ 	/*
+ 	 * Sometimes the xHC can not process isochronous endpoint ring quickly
+ 	 * enough, and it will miss some isoc tds on the ring and generate
 
 
