@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab1CUTYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 15:24:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33941 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751541Ab1CUTYf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 15:24:35 -0400
+	id S1753957Ab1CUT0B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 15:26:01 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:47302 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751803Ab1CUT0A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 15:26:00 -0400
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX1+4uZBcqGK4xfNSD25pB1RYsDR5xWx43xhKzd6DT0
+	FvKUiUbDGoAom2
+From: =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Kosina <trivial@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+Subject: [PATCH v2] sched.h: fix a typo ("its")
+Date: Mon, 21 Mar 2011 20:24:47 +0100
+Message-Id: <1300735487-2406-1-git-send-email-j.neuschaefer@gmx.net>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20110321180845.GC4849@elte.hu>
+References: <20110321180845.GC4849@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <20110320.195156.226769634.davem@davemloft.net>
-References: <20110320.195156.226769634.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 21 Mar 2011 12:24:12 -0700
-Message-ID: <AANLkTinN3qszBjbJdkXb2TPBkAW0mXGC=Ri1zKL9gdNg@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 20, 2011 at 7:51 PM, David Miller <davem@davemloft.net> wrote:
->
-> 1) The R8169 PHY fix from Eric Dumazet, which I see you've added to
-> † your tree too. :-)
+The sentence uses the possessive pronoun, which is spelled without
+an apostrophe.
 
-Yeah, since my machine didn't have networking without it, and I could
-test it myself, I didn't wait to pull.
+Signed-off-by: Jonathan Neusch√§fer <j.neuschaefer@gmx.net>
+---
+ v2: correctly spell "sentence" in the commit message itself
 
-That said, I'm delaying this pull request due to the known issues with
-it - let me know when you've updated it with the fix for the
-use-after-free fixes and the slab corruptor (the latter of which I
-haven't seen a patch for yet)
+ include/linux/sched.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-                         Linus
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index c15936f..e89f129 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -516,7 +516,7 @@ struct thread_group_cputimer {
+ struct autogroup;
+ 
+ /*
+- * NOTE! "signal_struct" does not have it's own
++ * NOTE! "signal_struct" does not have its own
+  * locking, because a shared signal_struct always
+  * implies a shared sighand_struct, so locking
+  * sighand_struct is always a proper superset of
+-- 
+1.7.4.1
+
