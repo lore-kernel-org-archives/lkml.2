@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab1CUSeL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:34:11 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:43641 "EHLO mx01.d-labs.de"
+	id S1754328Ab1CUSei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:34:38 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:43669 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754204Ab1CUSeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:34:04 -0400
+	id S1754218Ab1CUSeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 14:34:08 -0400
 From: Florian Mickler <florian@mickler.org>
 To: mchehab@infradead.org
 Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, js@linuxtv.org,
@@ -13,9 +13,9 @@ Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, js@linuxtv.org,
         aet@rasterburn.org, pb@linuxtv.org, mkrufky@linuxtv.org,
         nick@nick-andrew.net, max@veneto.com, janne-dvb@grunau.be,
         Florian Mickler <florian@mickler.org>
-Subject: [PATCH 3/6] [media] friio: get rid of on-stack dma buffers
-Date: Mon, 21 Mar 2011 19:33:43 +0100
-Message-Id: <1300732426-18958-4-git-send-email-florian@mickler.org>
+Subject: [PATCH 6/6] [media] opera1: get rid of on-stack dma buffer
+Date: Mon, 21 Mar 2011 19:33:46 +0100
+Message-Id: <1300732426-18958-7-git-send-email-florian@mickler.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300732426-18958-1-git-send-email-florian@mickler.org>
 References: <1300732426-18958-1-git-send-email-florian@mickler.org>
@@ -34,76 +34,61 @@ Note: This change is tested to compile only, as I don't have the hardware.
 
 Signed-off-by: Florian Mickler <florian@mickler.org>
 ---
- drivers/media/dvb/dvb-usb/friio.c |   23 +++++++++++++++++++----
- 1 files changed, 19 insertions(+), 4 deletions(-)
+ drivers/media/dvb/dvb-usb/opera1.c |   31 ++++++++++++++++++++-----------
+ 1 files changed, 20 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/media/dvb/dvb-usb/friio.c b/drivers/media/dvb/dvb-usb/friio.c
-index 14a65b4..76159ae 100644
---- a/drivers/media/dvb/dvb-usb/friio.c
-+++ b/drivers/media/dvb/dvb-usb/friio.c
-@@ -142,17 +142,20 @@ static u32 gl861_i2c_func(struct i2c_adapter *adapter)
- 	return I2C_FUNC_I2C;
- }
- 
--
- static int friio_ext_ctl(struct dvb_usb_adapter *adap,
- 			 u32 sat_color, int lnb_on)
+diff --git a/drivers/media/dvb/dvb-usb/opera1.c b/drivers/media/dvb/dvb-usb/opera1.c
+index 1f1b7d6..2ca6e87 100644
+--- a/drivers/media/dvb/dvb-usb/opera1.c
++++ b/drivers/media/dvb/dvb-usb/opera1.c
+@@ -53,27 +53,36 @@ static int opera1_xilinx_rw(struct usb_device *dev, u8 request, u16 value,
+ 			    u8 * data, u16 len, int flags)
  {
- 	int i;
  	int ret;
- 	struct i2c_msg msg;
--	u8 buf[2];
+-	u8 r;
+-	u8 u8buf[len];
+-
++	u8 tmp;
 +	u8 *buf;
- 	u32 mask;
- 	u8 lnb = (lnb_on) ? FRIIO_CTL_LNB : 0;
+ 	unsigned int pipe = (flags == OPERA_READ_MSG) ?
+ 		usb_rcvctrlpipe(dev,0) : usb_sndctrlpipe(dev, 0);
+ 	u8 request_type = (flags == OPERA_READ_MSG) ? USB_DIR_IN : USB_DIR_OUT;
  
-+	buf = kmalloc(2, GFP_KERNEL);
++	buf = kmalloc(len, GFP_KERNEL);
 +	if (!buf)
 +		return -ENOMEM;
 +
- 	msg.addr = 0x00;
- 	msg.flags = 0;
- 	msg.len = 2;
-@@ -189,6 +192,7 @@ static int friio_ext_ctl(struct dvb_usb_adapter *adap,
- 	buf[1] |= FRIIO_CTL_CLK;
- 	ret += gl861_i2c_xfer(&adap->dev->i2c_adap, &msg, 1);
+ 	if (flags == OPERA_WRITE_MSG)
+-		memcpy(u8buf, data, len);
+-	ret =
+-		usb_control_msg(dev, pipe, request, request_type | USB_TYPE_VENDOR,
+-			value, 0x0, u8buf, len, 2000);
++		memcpy(buf, data, len);
++	ret = usb_control_msg(dev, pipe, request,
++			request_type | USB_TYPE_VENDOR, value, 0x0,
++			buf, len, 2000);
  
+ 	if (request == OPERA_TUNER_REQ) {
++		tmp = buf[0];
+ 		if (usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
+-				OPERA_TUNER_REQ, USB_DIR_IN | USB_TYPE_VENDOR,
+-				0x01, 0x0, &r, 1, 2000)<1 || r!=0x08)
+-					return 0;
++			    OPERA_TUNER_REQ, USB_DIR_IN | USB_TYPE_VENDOR,
++			    0x01, 0x0, buf, 1, 2000) < 1 || buf[0] != 0x08) {
++			ret = 0;
++			goto out;
++		}
++		buf[0] = tmp;
+ 	}
+ 	if (flags == OPERA_READ_MSG)
+-		memcpy(data, u8buf, len);
++		memcpy(data, buf, len);
++out:
 +	kfree(buf);
- 	return (ret == 70);
+ 	return ret;
  }
  
-@@ -219,11 +223,20 @@ static int friio_initialize(struct dvb_usb_device *d)
- 	int ret;
- 	int i;
- 	int retry = 0;
--	u8 rbuf[2];
--	u8 wbuf[3];
-+	u8 *rbuf, *wbuf;
- 
- 	deb_info("%s called.\n", __func__);
- 
-+	wbuf = kmalloc(3, GFP_KERNEL);
-+	if (!wbuf)
-+		return -ENOMEM;
-+
-+	rbuf = kmalloc(2, GFP_KERNEL);
-+	if (!rbuf) {
-+		kfree(wbuf);
-+		return -ENOMEM;
-+	}
-+
- 	/* use gl861_i2c_msg instead of gl861_i2c_xfer(), */
- 	/* because the i2c device is not set up yet. */
- 	wbuf[0] = 0x11;
-@@ -358,6 +371,8 @@ restart:
- 	return 0;
- 
- error:
-+	kfree(wbuf);
-+	kfree(rbuf);
- 	deb_info("%s:ret == %d\n", __func__, ret);
- 	return -EIO;
- }
 -- 
 1.7.4.1
 
