@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab1CUSRx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:17:53 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47940 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344Ab1CUSRu (ORCPT
+	id S1754084Ab1CUSSz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:18:55 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:57329 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752425Ab1CUSSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:17:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=k6rFW/j8ARbYX0qKbM9oLZ4OaP9TRCvoe5ebY77jpcITIvxZ3o/WBf/0qdDvRetPJp
-         Aes9+gRqKdH2GNsKncjhXqD6j+wiPQVqlnQuGf9OCcmcGSOOuZMiG08klvrJFJ5ABepn
-         dKuZ3QqGTexAdAkgsVSM7D8F0s2FYw7IBbDg0=
-Message-ID: <4D8795A8.4060909@gmail.com>
-Date: Mon, 21 Mar 2011 21:15:04 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	Mon, 21 Mar 2011 14:18:52 -0400
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 21 Mar 2011 19:22:10 +0100
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] Migrations to hid-multitouch, round 3
+Message-ID: <20110321182210.GA5181@polaris.bitmath.org>
+References: <1300454876-5017-1-git-send-email-benjamin.tissoires@enac.fr>
+ <alpine.LNX.2.00.1103211707520.19969@pobox.suse.cz>
 MIME-Version: 1.0
-To: Jack Steiner <steiner@sgi.com>
-CC: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
-        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
-References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <4D878042.9080708@gmail.com> <4D878445.6090709@gmail.com> <20110321170832.GC12718@sgi.com>
-In-Reply-To: <20110321170832.GC12718@sgi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1103211707520.19969@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.254.52.20
+X-Scan-Result: No virus found in message 1Q1jgM-0002QB-78.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1Q1jgM-0002QB-78 4844623c33bf1373cf36f74c5606d048
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2011 08:08 PM, Jack Steiner wrote:
-...
-> 
-> We use KDB internally, and yes, it has the same issue. The version of the
-> patch that uses KDB OR's the "handled" status for both KDB & the UV NMI handler.
-> If either KDB or the UV NMI handler returns "handled", the code in traps.c exits
-> after the call to the first die notifier.
-> 
-> Not particularily pretty but I could not find a better way to do it.
-> 
-> --- jack
+Hi,
 
-  Btw Jack, I somehow missed (sorry) this patch only handles UV NMI handler so
-for KGDB case you need some other patch on top?
+On Mon, Mar 21, 2011 at 05:09:14PM +0100, Jiri Kosina wrote:
+> On Fri, 18 Mar 2011, Benjamin Tissoires wrote:
+> 
+> > This is the third version for this patch series.
+> > 
+> > Since last time, I mainly modified the patch #1 to adapt
+> > Henrik's comments. I also added #4 as the code path was confusing.
+> 
+> Thanks a lot to everyone for working on this.
+> 
+> I have applied all the patches except for 5/5, where Henrik has reported 
+> problems with testing against 1968 model. The problem hasn't been 
 
--- 
-    Cyrill
+s/1968/2256/
+
+> understood/debugged yet.
+
+The reason is that the 2256 model sends extra data in each packet,
+data that is not intercepted by the mt_event() function. The
+last_field_index is therefore never seen, and no data is emitted. I
+will reply to the original patch with a fix.
+
+Thanks,
+Henrik
