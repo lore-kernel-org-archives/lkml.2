@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab1CUXid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:38:33 -0400
-Received: from kroah.org ([198.145.64.141]:49594 "EHLO coco.kroah.org"
+	id S1755550Ab1CUXQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:16:08 -0400
+Received: from kroah.org ([198.145.64.141]:49492 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755558Ab1CUXQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:16:11 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:16 2011
-Message-Id: <20110321230716.429058703@clark.kroah.org>
+	id S1755447Ab1CUXPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:49 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:14 2011
+Message-Id: <20110321230714.473276688@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:07:09 -0700
+Date: Mon, 21 Mar 2011 16:06:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [70/87] perf: Fix the software events state check
+        Paul Zimmerman <paulz@synopsys.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [51/87] USB: Add support for SuperSpeed isoc endpoints
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,35 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
 
-commit 91b2f482e62ad0d444222253026a5cbca28c4ab9 upstream.
+commit 500132a0f26ad7d9916102193cbc6c1b1becb373 upstream.
 
-Fix the mistakenly inverted check of events state.
+Use the Mult and bMaxBurst values from the endpoint companion
+descriptor to calculate the max length of an isoc transfer.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <1299529629-18280-1-git-send-email-fweisbec@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Add USB_SS_MULT macro to access Mult field of bmAttributes, at
+Sarah's suggestion.
+
+This patch should be queued for the 2.6.36 and 2.6.37 stable trees, since
+those were the first kernels to have isochronous support for SuperSpeed
+devices.
+
+Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/perf_event.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/urb.c  |   11 ++++++++++-
+ include/linux/usb/ch9.h |    2 ++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4414,7 +4414,7 @@ static int perf_exclude_event(struct per
- 			      struct pt_regs *regs)
- {
- 	if (event->hw.state & PERF_HES_STOPPED)
--		return 0;
-+		return 1;
+--- a/drivers/usb/core/urb.c
++++ b/drivers/usb/core/urb.c
+@@ -366,7 +366,16 @@ int usb_submit_urb(struct urb *urb, gfp_
+ 	if (xfertype == USB_ENDPOINT_XFER_ISOC) {
+ 		int	n, len;
  
- 	if (regs) {
- 		if (event->attr.exclude_user && user_mode(regs))
+-		/* FIXME SuperSpeed isoc endpoints have up to 16 bursts */
++		/* SuperSpeed isoc endpoints have up to 16 bursts of up to
++		 * 3 packets each
++		 */
++		if (dev->speed == USB_SPEED_SUPER) {
++			int     burst = 1 + ep->ss_ep_comp.bMaxBurst;
++			int     mult = USB_SS_MULT(ep->ss_ep_comp.bmAttributes);
++			max *= burst;
++			max *= mult;
++		}
++
+ 		/* "high bandwidth" mode, 1-3 packets/uframe? */
+ 		if (dev->speed == USB_SPEED_HIGH) {
+ 			int	mult = 1 + ((max >> 11) & 0x03);
+--- a/include/linux/usb/ch9.h
++++ b/include/linux/usb/ch9.h
+@@ -575,6 +575,8 @@ struct usb_ss_ep_comp_descriptor {
+ #define USB_DT_SS_EP_COMP_SIZE		6
+ /* Bits 4:0 of bmAttributes if this is a bulk endpoint */
+ #define USB_SS_MAX_STREAMS(p)		(1 << (p & 0x1f))
++/* Bits 1:0 of bmAttributes if this is an isoc endpoint */
++#define USB_SS_MULT(p)			(1 + ((p) & 0x3))
+ 
+ /*-------------------------------------------------------------------------*/
+ 
 
 
