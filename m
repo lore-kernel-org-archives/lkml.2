@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab1CUXP6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:15:58 -0400
-Received: from kroah.org ([198.145.64.141]:49456 "EHLO coco.kroah.org"
+	id S1755167Ab1CUXQS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:16:18 -0400
+Received: from kroah.org ([198.145.64.141]:49556 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755412Ab1CUXPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:40 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:13 2011
-Message-Id: <20110321230713.534675893@clark.kroah.org>
+	id S1755503Ab1CUXQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:16:01 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:15 2011
+Message-Id: <20110321230715.610365623@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:41 -0700
+Date: Mon, 21 Mar 2011 16:07:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [42/87] USB: serial: option: Apply OPTION_BLACKLIST_SENDSETUP also for ZTE MF626
+        Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [62/87] ALSA: sound/pci/asihpi: check adapter index in hpi_ioctl
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 7a89e4cb9cdaba92f5fbc509945cf4e3c48db4e2 upstream.
+commit 4a122c10fbfe9020df469f0f669da129c5757671 upstream.
 
-On https://bugs.launchpad.net/ubuntu/+source/linux/+bug/636091, one of
-the cases reported is a big timeout on option_send_setup, which causes
-some side effects as tty_lock is held. Looks like some of ZTE MF626
-devices also don't like the RTS/DTR setting in option_send_setup, like
-with 4G XS Stick W14. The reporter confirms which this it solves the
-long freezes in his system.
+The user-supplied index into the adapters array needs to be checked, or
+an out-of-bounds kernel pointer could be accessed and used, leading to
+potentially exploitable memory corruption.
 
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/asihpi/hpioctl.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -653,7 +653,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0028, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0029, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0030, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF626, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF626, 0xff,
-+	  0xff, 0xff), .driver_info = (kernel_ulong_t)&four_g_w14_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0032, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0033, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0034, 0xff, 0xff, 0xff) },
+--- a/sound/pci/asihpi/hpioctl.c
++++ b/sound/pci/asihpi/hpioctl.c
+@@ -155,6 +155,11 @@ long asihpi_hpi_ioctl(struct file *file,
+ 		goto out;
+ 	}
+ 
++	if (hm->h.adapter_index >= HPI_MAX_ADAPTERS) {
++		err = -EINVAL;
++		goto out;
++	}
++
+ 	pa = &adapters[hm->h.adapter_index];
+ 	hr->h.size = 0;
+ 	if (hm->h.object == HPI_OBJ_SUBSYSTEM) {
 
 
