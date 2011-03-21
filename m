@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab1CUXP0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:15:26 -0400
-Received: from kroah.org ([198.145.64.141]:49265 "EHLO coco.kroah.org"
+	id S1755392Ab1CUXtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:49:19 -0400
+Received: from kroah.org ([198.145.64.141]:49342 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754880Ab1CUXPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:16 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:11 2011
-Message-Id: <20110321230711.037243920@clark.kroah.org>
+	id S1755225Ab1CUXP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:27 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
+Message-Id: <20110321230712.151474742@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:17 -0700
+Date: Mon, 21 Mar 2011 16:06:28 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, linux-mips@linux-mips.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Florian Fainelli <florian@openwrt.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [18/87] MIPS: MTX-1: Make au1000_eth probe all PHY addresses
+        Sean Hefty <sean.hefty@intel.com>, Doug Ledford <dledford@redhat.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [29/87] RDMA/cma: Fix crash in request handlers
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Fainelli <florian@openwrt.org>
+From: Sean Hefty <sean.hefty@intel.com>
 
-commit bf3a1eb85967dcbaae42f4fcb53c2392cec32677 upstream.
+commit 25ae21a10112875763c18b385624df713a288a05 upstream.
 
-When au1000_eth probes the MII bus for PHY address, if we do not set
-au1000_eth platform data's phy_search_highest_address, the MII probing
-logic will exit early and will assume a valid PHY is found at address 0.
-For MTX-1, the PHY is at address 31, and without this patch, the link
-detection/speed/duplex would not work correctly.
+Doug Ledford and Red Hat reported a crash when running the rdma_cm on
+a real-time OS.  The crash has the following call trace:
 
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
-To: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/2111/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+    cm_process_work
+       cma_req_handler
+          cma_disable_callback
+          rdma_create_id
+             kzalloc
+             init_completion
+          cma_get_net_info
+          cma_save_net_info
+          cma_any_addr
+             cma_zero_addr
+          rdma_translate_ip
+             rdma_copy_addr
+          cma_acquire_dev
+             rdma_addr_get_sgid
+             ib_find_cached_gid
+             cma_attach_to_dev
+          ucma_event_handler
+             kzalloc
+             ib_copy_ah_attr_to_user
+          cma_comp
+
+[ preempted ]
+
+    cma_write
+        copy_from_user
+        ucma_destroy_id
+           copy_from_user
+           _ucma_find_context
+           ucma_put_ctx
+           ucma_free_ctx
+              rdma_destroy_id
+                 cma_exch
+                 cma_cancel_operation
+                 rdma_node_get_transport
+
+        rt_mutex_slowunlock
+        bad_area_nosemaphore
+        oops_enter
+
+They were able to reproduce the crash multiple times with the
+following details:
+
+    Crash seems to always happen on the:
+            mutex_unlock(&conn_id->handler_mutex);
+    as conn_id looks to have been freed during this code path.
+
+An examination of the code shows that a race exists in the request
+handlers.  When a new connection request is received, the rdma_cm
+allocates a new connection identifier.  This identifier has a single
+reference count on it.  If a user calls rdma_destroy_id() from another
+thread after receiving a callback, rdma_destroy_id will proceed to
+destroy the id and free the associated memory.  However, the request
+handlers may still be in the process of running.  When control returns
+to the request handlers, they can attempt to access the newly created
+identifiers.
+
+Fix this by holding a reference on the newly created rdma_cm_id until
+the request handler is through accessing it.
+
+Signed-off-by: Sean Hefty <sean.hefty@intel.com>
+Acked-by: Doug Ledford <dledford@redhat.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/mips/alchemy/mtx-1/platform.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/infiniband/core/cma.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/arch/mips/alchemy/mtx-1/platform.c
-+++ b/arch/mips/alchemy/mtx-1/platform.c
-@@ -28,6 +28,8 @@
- #include <linux/mtd/physmap.h>
- #include <mtd/mtd-abi.h>
+--- a/drivers/infiniband/core/cma.c
++++ b/drivers/infiniband/core/cma.c
+@@ -1210,6 +1210,11 @@ static int cma_req_handler(struct ib_cm_
+ 	cm_id->context = conn_id;
+ 	cm_id->cm_handler = cma_ib_handler;
  
-+#include <asm/mach-au1x00/au1xxx_eth.h>
-+
- static struct gpio_keys_button mtx1_gpio_button[] = {
- 	{
- 		.gpio = 207,
-@@ -140,10 +142,17 @@ static struct __initdata platform_device
- 	&mtx1_mtd,
- };
++	/*
++	 * Protect against the user destroying conn_id from another thread
++	 * until we're done accessing it.
++	 */
++	atomic_inc(&conn_id->refcount);
+ 	ret = conn_id->id.event_handler(&conn_id->id, &event);
+ 	if (!ret) {
+ 		/*
+@@ -1222,8 +1227,10 @@ static int cma_req_handler(struct ib_cm_
+ 			ib_send_cm_mra(cm_id, CMA_CM_MRA_SETTING, NULL, 0);
+ 		mutex_unlock(&lock);
+ 		mutex_unlock(&conn_id->handler_mutex);
++		cma_deref_id(conn_id);
+ 		goto out;
+ 	}
++	cma_deref_id(conn_id);
  
-+static struct au1000_eth_platform_data mtx1_au1000_eth0_pdata = {
-+	.phy_search_highest_addr	= 1,
-+	.phy1_search_mac0 		= 1,
-+};
+ 	/* Destroy the CM ID by returning a non-zero value. */
+ 	conn_id->cm_id.ib = NULL;
+@@ -1425,17 +1432,25 @@ static int iw_conn_req_handler(struct iw
+ 	event.param.conn.private_data_len = iw_event->private_data_len;
+ 	event.param.conn.initiator_depth = attr.max_qp_init_rd_atom;
+ 	event.param.conn.responder_resources = attr.max_qp_rd_atom;
 +
- static int __init mtx1_register_devices(void)
- {
- 	int rc;
++	/*
++	 * Protect against the user destroying conn_id from another thread
++	 * until we're done accessing it.
++	 */
++	atomic_inc(&conn_id->refcount);
+ 	ret = conn_id->id.event_handler(&conn_id->id, &event);
+ 	if (ret) {
+ 		/* User wants to destroy the CM ID */
+ 		conn_id->cm_id.iw = NULL;
+ 		cma_exch(conn_id, CMA_DESTROYING);
+ 		mutex_unlock(&conn_id->handler_mutex);
++		cma_deref_id(conn_id);
+ 		rdma_destroy_id(&conn_id->id);
+ 		goto out;
+ 	}
  
-+	au1xxx_override_eth_cfg(0, &mtx1_au1000_eth0_pdata);
-+
- 	rc = gpio_request(mtx1_gpio_button[0].gpio,
- 					mtx1_gpio_button[0].desc);
- 	if (rc < 0) {
+ 	mutex_unlock(&conn_id->handler_mutex);
++	cma_deref_id(conn_id);
+ 
+ out:
+ 	if (dev)
 
 
