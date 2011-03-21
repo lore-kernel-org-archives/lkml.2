@@ -1,82 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab1CUSEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:04:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55416 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909Ab1CUSEK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:04:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=AAM6kenLwjRkkQWBfIGH2Hz+FY0V3K9ppOaXTOA2cbaLz3fhFN7j9YazqjoUoZmPeL
-         YowApUjP+igJURAALJf6Vofx5fWd7lLbLy2fbHeWmzAS14X/c9VMZXmgw2znjH31MO7T
-         FE03XvxvY0re8ntiAalIqgQlBO9prl6ncviJM=
-Message-ID: <4D879238.1010502@gmail.com>
-Date: Mon, 21 Mar 2011 21:00:24 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1754097Ab1CUSE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:04:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25492 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754081Ab1CUSE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 14:04:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,220,1299484800"; 
+   d="scan'208";a="722512314"
+Message-ID: <4D879328.1080006@intel.com>
+Date: Mon, 21 Mar 2011 11:04:24 -0700
+From: Joseph Cihula <joseph.cihula@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
-References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <20110321175110.GL1239@redhat.com>
-In-Reply-To: <20110321175110.GL1239@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Wang, Shane" <shane.wang@intel.com>, "Wei, Gang" <gang.wei@intel.com>
+Subject: [PATCH] intel_iommu: disable all VT-d PMRs when TXT launched
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2011 08:51 PM, Don Zickus wrote:
-> On Mon, Mar 21, 2011 at 07:26:51PM +0300, Cyrill Gorcunov wrote:
->> On 03/21/2011 07:14 PM, Ingo Molnar wrote:
->>>
->>> * Jack Steiner <steiner@sgi.com> wrote:
->>>
->>>> This fixes a problem seen on UV systems handling NMIs from the node controller.
->>>> The original code used the DIE notifier as the hook to get to the UV NMI
->>>> handler. This does not work if performance counters are active - the hw_perf
->>>> code consumes the NMI and the UV handler is not called.
-> 
-> Well that is a bug in the perf code.  We have been dealing with 'perf'
-> swallowing NMIs for a couple of releases now.  I think we got rid of most
-> of the cases (p4 and acme's core2 quad are the only cases I know that are
-> still an issue).
+Intel VT-d Protected Memory Regions (PMRs) are supposed to be disabled,
+on each VT-d engine, after DMA remapping is enabled on the engines.
+This is because the behavior of having both enabled is not deterministic
+and because, if TXT has been used to launch the kernel, the PMRs may be
+programmed to cover memory regions that will be used for DMA.
 
-p4 has the issue if only smp-kgdb case happens as far as i know, which in turn
-'cause of IPI called inside nmi handler and other cpus are waiting for such nmi
-arrival and if perf is enabled same time we might end up that ipi nmi sent by kgdb
-will be eaten by perf subsystem (if my analysis is correct, Jason?). So for this
-case we might need pre-regular nmi notifier call chain I guess or platform ops
-as Jack proposed but still all become incredibly messy for me :(
+Under some circumstances (certain quirks detected, lack of multiple
+devices, etc.), the current code does not set up DMA remapping on some
+VT-d engines.  In such cases it also skips disabling the PMRs.  This
+causes failures when the kernel is launched with TXT (most often this
+occurs on the graphics engine and results in colored vertical bars on
+the display).
 
-> 
-> I would much prefer to investigate the reason why this is happening
-> because the perf nmi handler is supposed to check the global interrupt bit
-> to determine if the perf counters caused the nmi or not otherwise fall
-> through to other handler like SGI's nmi button in this case.
-> 
-> My first impression is the skip nmi logic in the perf handler is probably
-> accidentally thinking the SGI external nmi is the perf's 'extra' nmi it is
-> supposed to skip and thus swallows it.  At least that is the impression I
-> get from the RedHat bugzilla which says SGI is running 'perf top', getting
-> a hang, then pressing their nmi button to see the stack traces.
-> 
-> Jack,
-> 
-> I worked through a number of these issues upstream and I already talked to
-> George and Russ over here at RedHat about working through the issue over
-> here with them.  They can help me get access to your box to help debug.
-> 
-> Cheers,
-> Don
+This patch detects when the kernel has been launched with TXT and then
+disables the PMRs on all VT-d engines.  In some cases where the reason
+that remapping is not being enabled is due to possible ACPI DMAR table
+errors, the VT-d engine addresses may not be correct and thus not able
+to be safely programmed even to disable PMRs.  Because part of the TXT
+launch process is the verification of these addresses, it will always be
+safe to disable PMRs if the TXT launch has succeeded and hence only
+doing this in such cases.
 
+Signed-off-by: Joseph Cihula <joseph.cihula@intel.com>
 
--- 
-    Cyrill
+diff -uprN -X linux-2.6.38-rc3/Documentation/dontdiff
+linux-2.6.38-rc3/drivers/pci/intel-iommu.c
+linux-2.6.38-rc3-vtd/drivers/pci/intel-iommu.c
+--- linux-2.6.38-rc3/drivers/pci/intel-iommu.c	2011-01-31
+19:05:49.000000000 -0800
++++ linux-2.6.38-rc3-vtd/drivers/pci/intel-iommu.c	2011-02-18
+15:42:36.778301210 -0800
+@@ -1299,7 +1299,7 @@ static void iommu_detach_domain(struct d
+ static struct iova_domain reserved_iova_list;
+ static struct lock_class_key reserved_rbtree_key;
+
+-static void dmar_init_reserved_ranges(void)
++static int dmar_init_reserved_ranges(void)
+ {
+ 	struct pci_dev *pdev = NULL;
+ 	struct iova *iova;
+@@ -1313,8 +1313,10 @@ static void dmar_init_reserved_ranges(vo
+ 	/* IOAPIC ranges shouldn't be accessed by DMA */
+ 	iova = reserve_iova(&reserved_iova_list, IOVA_PFN(IOAPIC_RANGE_START),
+ 		IOVA_PFN(IOAPIC_RANGE_END));
+-	if (!iova)
++	if (!iova) {
+ 		printk(KERN_ERR "Reserve IOAPIC range failed\n");
++		return -ENODEV;
++	}
+
+ 	/* Reserve all PCI MMIO to avoid peer-to-peer access */
+ 	for_each_pci_dev(pdev) {
+@@ -1327,11 +1329,13 @@ static void dmar_init_reserved_ranges(vo
+ 			iova = reserve_iova(&reserved_iova_list,
+ 					    IOVA_PFN(r->start),
+ 					    IOVA_PFN(r->end));
+-			if (!iova)
++			if (!iova) {
+ 				printk(KERN_ERR "Reserve iova failed\n");
++				return -ENODEV;
++			}
+ 		}
+ 	}
+-
++	return 0;
+ }
+
+ static void domain_reserve_special_ranges(struct dmar_domain *domain)
+@@ -2213,7 +2217,7 @@ static int __init iommu_prepare_static_i
+ 	return 0;
+ }
+
+-int __init init_dmars(void)
++static int __init init_dmars(int force_on)
+ {
+ 	struct dmar_drhd_unit *drhd;
+ 	struct dmar_rmrr_unit *rmrr;
+@@ -2393,8 +2397,15 @@ int __init init_dmars(void)
+ 	 *   enable translation
+ 	 */
+ 	for_each_drhd_unit(drhd) {
+-		if (drhd->ignored)
++		if (drhd->ignored) {
++			/*
++			 * we always have to disable PMRs or DMA may fail on
++			 * this device
++			 */
++			if (force_on)
++				iommu_disable_protect_mem_regions(drhd->iommu);
+ 			continue;
++		}
+ 		iommu = drhd->iommu;
+
+ 		iommu_flush_write_buffer(iommu);
+@@ -3297,12 +3308,21 @@ int __init intel_iommu_init(void)
+ 	if (no_iommu || dmar_disabled)
+ 		return -ENODEV;
+
+-	iommu_init_mempool();
+-	dmar_init_reserved_ranges();
++	if (iommu_init_mempool()) {
++		if (force_on)
++			panic("tboot: Failed to initialize iommu memory\n");
++		return 	-ENODEV;
++	}
++
++	if (dmar_init_reserved_ranges()) {
++		if (force_on)
++			panic("tboot: Failed to reserve iommu ranges\n");
++		return 	-ENODEV;
++	}
+
+ 	init_no_remapping_devices();
+
+-	ret = init_dmars();
++	ret = init_dmars(force_on);
+ 	if (ret) {
+ 		if (force_on)
+ 			panic("tboot: Failed to initialize DMARs\n");
