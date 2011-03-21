@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab1CUXNt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:13:49 -0400
-Received: from kroah.org ([198.145.64.141]:49000 "EHLO coco.kroah.org"
+	id S1755066Ab1CUXN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:13:56 -0400
+Received: from kroah.org ([198.145.64.141]:49032 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754893Ab1CUXNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:13:44 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:52 2011
-Message-Id: <20110321231052.388064347@clark.kroah.org>
+	id S1755029Ab1CUXNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:13:53 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:53 2011
+Message-Id: <20110321231052.988200630@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:09:56 -0700
+Date: Mon, 21 Mar 2011 16:10:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [16/44] ath9k_hw: Fix incorrect macversion and macrev checks
+        Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Renninger <trenn@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [22/44] PCI: add more checking to ICH region quirks
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Senthil Balasubramanian <senthilkumar@atheros.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit ac45c12dfb3f727a5a7a3332ed9c11b4a5ab287e upstream.
+commit cdb9755849fbaf2bb9c0a009ba5baa817a0f152d upstream.
 
-There are few places where we are checking for macversion and revsions
-before RTC is powered ON. However we are reading the macversion and
-revisions only after RTC is powered ON and so both macversion and
-revisions are actully zero and this leads to incorrect srev checks
+Per ICH4 and ICH6 specs, ACPI and GPIO regions are valid iff ACPI_EN
+and GPIO_EN bits are set to 1. Add checks for these bits into the
+quirks prior to the region creation.
 
-Incorrect srev checks can cause registers to be configured wrongly and can
-cause unexpected behavior. Fixing this seems to address the ASPM issue that
-we have observed. The laptop becomes very slow and hangs mostly with ASPM L1
-enabled without this fix.
+While at it, name the constants by macros.
 
-fix this by reading the macversion and revisisons even before we start
-using them. There is no reason why should we delay reading this info
-until RTC is powered on as this is just a register information.
-
-Signed-off-by: Senthil Balasubramanian <senthilkumar@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pci/quirks.c |   49 +++++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 39 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -917,6 +917,8 @@ int ath9k_hw_init(struct ath_hw *ah)
- 	ath9k_hw_init_defaults(ah);
- 	ath9k_hw_init_config(ah);
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -506,6 +506,17 @@ static void __devinit quirk_piix4_acpi(s
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82371AB_3,	quirk_piix4_acpi);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82443MX_3,	quirk_piix4_acpi);
  
-+	ath9k_hw_read_revisions(ah);
++#define ICH_PMBASE	0x40
++#define ICH_ACPI_CNTL	0x44
++#define  ICH4_ACPI_EN	0x10
++#define  ICH6_ACPI_EN	0x80
++#define ICH4_GPIOBASE	0x58
++#define ICH4_GPIO_CNTL	0x5c
++#define  ICH4_GPIO_EN	0x10
++#define ICH6_GPIOBASE	0x48
++#define ICH6_GPIO_CNTL	0x4c
++#define  ICH6_GPIO_EN	0x10
 +
- 	if (!ath9k_hw_set_reset_reg(ah, ATH9K_RESET_POWER_ON)) {
- 		DPRINTF(ah->ah_sc, ATH_DBG_FATAL, "Couldn't reset chip\n");
- 		return -EIO;
-@@ -1758,8 +1760,6 @@ static bool ath9k_hw_set_reset_power_on(
- 		return false;
- 	}
+ /*
+  * ICH4, ICH4-M, ICH5, ICH5-M ACPI: Three IO regions pointed to by longwords at
+  *	0x40 (128 bytes of ACPI, GPIO & TCO registers)
+@@ -514,12 +525,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_I
+ static void __devinit quirk_ich4_lpc_acpi(struct pci_dev *dev)
+ {
+ 	u32 region;
++	u8 enable;
  
--	ath9k_hw_read_revisions(ah);
+-	pci_read_config_dword(dev, 0x40, &region);
+-	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH4 ACPI/GPIO/TCO");
 -
- 	return ath9k_hw_set_reset(ah, ATH9K_RESET_WARM);
+-	pci_read_config_dword(dev, 0x58, &region);
+-	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH4 GPIO");
++	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
++	if (enable & ICH4_ACPI_EN) {
++		pci_read_config_dword(dev, ICH_PMBASE, &region);
++		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++				"ICH4 ACPI/GPIO/TCO");
++	}
++
++	pci_read_config_byte(dev, ICH4_GPIO_CNTL, &enable);
++	if (enable & ICH4_GPIO_EN) {
++		pci_read_config_dword(dev, ICH4_GPIOBASE, &region);
++		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
++				"ICH4 GPIO");
++	}
+ }
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AA_0,		quirk_ich4_lpc_acpi);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AB_0,		quirk_ich4_lpc_acpi);
+@@ -535,12 +555,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_I
+ static void __devinit ich6_lpc_acpi_gpio(struct pci_dev *dev)
+ {
+ 	u32 region;
++	u8 enable;
+ 
+-	pci_read_config_dword(dev, 0x40, &region);
+-	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH6 ACPI/GPIO/TCO");
+-
+-	pci_read_config_dword(dev, 0x48, &region);
+-	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH6 GPIO");
++	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
++	if (enable & ICH6_ACPI_EN) {
++		pci_read_config_dword(dev, ICH_PMBASE, &region);
++		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++				"ICH6 ACPI/GPIO/TCO");
++	}
++
++	pci_read_config_byte(dev, ICH6_GPIO_CNTL, &enable);
++	if (enable & ICH4_GPIO_EN) {
++		pci_read_config_dword(dev, ICH6_GPIOBASE, &region);
++		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
++				"ICH6 GPIO");
++	}
  }
  
+ static void __devinit ich6_lpc_generic_decode(struct pci_dev *dev, unsigned reg, const char *name, int dynsize)
 
 
