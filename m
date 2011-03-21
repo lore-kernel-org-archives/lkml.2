@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab1CUM5i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 08:57:38 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:51391 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753334Ab1CUM5h (ORCPT
+	id S1753408Ab1CUNNS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 09:13:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:59160 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752550Ab1CUNNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 08:57:37 -0400
-X-Authenticated: #41721828
-X-Provags-ID: V01U2FsdGVkX1+x7C1Uap+xENy6VnxLZMdoQcM1Tkuc6XhSNJMZov
-	mp75FlcVZf+ixX
-From: =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
-Subject: [PATCH] sched.h: fix a typo ("its")
-Date: Mon, 21 Mar 2011 13:54:00 +0100
-Message-Id: <1300712040-7778-1-git-send-email-j.neuschaefer@gmx.net>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 21 Mar 2011 09:13:17 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=d6KjmF4z1lEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=TNQApoaQx8nLwWLAopQA:9 a=Ag3VQhgm64_9YTiNb0Q451UmgM8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] checkpatch: Test for kmalloc/memset(0) pairs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alejandro Riveira =?ISO-8859-1?Q?Fern=E1ndez?= 
+	<ariveira@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Julia Lawall <julia@diku.dk>,
+        Pekka Enberg <penberg@kernel.org>,
+        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>, LKML <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@shadowen.org>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nicolas Palix <npalix@diku.dk>, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20110320154827.7ba3358b@varda>
+References: <1300416744.16880.904.camel@gandalf.stny.rr.com>
+	 <20110317211548.646b04d2@tpl.lwn.net>
+	 <1300419170.16880.956.camel@gandalf.stny.rr.com>
+	 <AANLkTikZK278BR5o1fP_w2u5PUPbgub9QT4XxzSmEhL5@mail.gmail.com>
+	 <AANLkTi=2d8S_Pi8kuZMXAmNvHa_2KrOs6K+_FF6P7-pU@mail.gmail.com>
+	 <Pine.LNX.4.64.1103200852080.28495@ask.diku.dk>
+	 <AANLkTi=MMKvA-9pFiM1K_JSXjS71JLRCem8THnhu-0=N@mail.gmail.com>
+	 <Pine.LNX.4.64.1103201007430.28495@ask.diku.dk>
+	 <20110320105412.GA11266@elte.hu>  <20110320154827.7ba3358b@varda>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 21 Mar 2011 09:13:12 -0400
+Message-ID: <1300713192.16880.5789.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sectence uses the possessive pronoun, which is spelled without
-an apostrophe.
+On Sun, 2011-03-20 at 15:48 +0100, Alejandro Riveira Fern·ndez wrote:
+> El Sun, 20 Mar 2011 11:54:12 +0100
+> Ingo Molnar <mingo@elte.hu> escribiÛ:
+> 
 
-Signed-off-by: Jonathan Neusch√§fer <j.neuschaefer@gmx.net>
----
- include/linux/sched.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>  But a perl interpreter is not shipped with the kernel, is it? neither a
+>  posix shell or a python interpreter ...
+>  The scripts are already shipped with the kernel, the "interpreter" have
+>  to be installed in the dev machine like you have to install perl, make,
+>  gcc, etc
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c15936f..e89f129 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -516,7 +516,7 @@ struct thread_group_cputimer {
- struct autogroup;
- 
- /*
-- * NOTE! "signal_struct" does not have it's own
-+ * NOTE! "signal_struct" does not have its own
-  * locking, because a shared signal_struct always
-  * implies a shared sighand_struct, so locking
-  * sighand_struct is always a proper superset of
--- 
-1.7.4.1
+We don't ship gcc either. Note, there are some cases where you need a
+perl interpreter to build the kernel.
+
+-- Steve
+
 
