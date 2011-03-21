@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab1CUR6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 13:58:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28879 "EHLO mx1.redhat.com"
+	id S1753537Ab1CUR6g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 13:58:36 -0400
+Received: from realvnc.com ([146.101.152.142]:47608 "EHLO realvnc.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751372Ab1CUR6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 13:58:11 -0400
-Date: Mon, 21 Mar 2011 18:48:45 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 8/8] job control: Don't send duplicate job control stop
-	notification while ptraced
-Message-ID: <20110321174845.GA31039@redhat.com>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org> <1299614199-25142-9-git-send-email-tj@kernel.org>
+	id S1751410Ab1CUR6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 13:58:35 -0400
+Message-ID: <4D8791C9.1080407@realvnc.com>
+Date: Mon, 21 Mar 2011 17:58:33 +0000
+From: Toby Gray <toby.gray@realvnc.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299614199-25142-9-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: cdc-acm: Prevent data loss when filling tty buffer.
+References: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com> <20110321165612.0f764046@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110321165612.0f764046@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08, Tejun Heo wrote:
->
->  static bool task_participate_group_stop(struct task_struct *task)
->  {
-> @@ -284,7 +288,11 @@ static bool task_participate_group_stop(struct task_struct *task)
->  	if (!WARN_ON_ONCE(sig->group_stop_count == 0))
->  		sig->group_stop_count--;
->  
-> -	if (!sig->group_stop_count) {
-> +	/*
-> +	 * Tell the caller to notify completion iff we are entering into a
-> +	 * fresh group stop.  Read comment in do_signal_stop() for details.
-> +	 */
-> +	if (!sig->group_stop_count && !(sig->flags & SIGNAL_STOP_STOPPED)) {
->  		sig->flags = SIGNAL_STOP_STOPPED;
->  		return true;
+On 21/03/2011 16:56, Alan Cox wrote:
+> On Mon, 21 Mar 2011 15:52:25 +0000
+> Toby Gray<toby.gray@realvnc.com>  wrote:
 
-Ah, indeed. And this fixes the problems with the extra notification I
-mentioned when I was looking at 1/8.
+>> This patch adds checking for how many bytes have been inserted into the tty
+>> buffer and returns any remaining bytes back to the filled read buffer list.
+> How does ACM handle flow control - is the expectation that it gets flow
+> controlled in hardware by not having the opportunity to send bits
+> to the host end ? If so this seems to make sense.
+Yes, the expectation is that it is flow controlled in hardware if a bulk 
+endpoint is used. To this end cdc-acm.ko doesn't issue any new read 
+requests while the tty is throttled. This works as flow control most of 
+the time, but not when the data is arriving quickly (a few megabytes per 
+second).
 
-Oleg.
+Thank you for your other comments. I had initially gone for the memmove 
+thinking that having a buffer head as well as a base would have 
+needlessly complicated the rest of the code.
 
+Having made the required changes it seems I'd greatly overestimated the 
+changes and it is definitely far cleaner without the memmove.
+
+Regards,
+
+Toby
