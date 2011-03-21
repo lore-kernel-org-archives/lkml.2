@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab1CUIVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 04:21:36 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35106 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab1CUIVf (ORCPT
+	id S1752393Ab1CUIeZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 04:34:25 -0400
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:46770 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab1CUIeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 04:21:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=GGdT1U+zDv4GS7VYUDT6UtT7175z4m1bu/ZrRG0Yu6YDY03S4lgIAjNlb2I2ltrFPI
-         v3qhQhJCBKTLdgsddvDu6ktPS+DfVAJYhtAzOD6huUbVOp7J+texbj1i7Bc7ZgU5/I8i
-         yFhJO28nkveCacUQOxjpFVMWK5w97gmTJ4uX4=
-MIME-Version: 1.0
-In-Reply-To: <20110321122615.8a639909.sfr@canb.auug.org.au>
-References: <20110321122615.8a639909.sfr@canb.auug.org.au>
-Date: Mon, 21 Mar 2011 09:21:34 +0100
-X-Google-Sender-Auth: EdgmRxMGaDexlQYmvPAuHFm86SA
-Message-ID: <AANLkTikoF9fkZshaoop7gfuCKjjtUjbwwOG6hWyeGCHJ@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the mfd tree with Linus' tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Philippe Langlais <philippe.langlais@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 21 Mar 2011 04:34:22 -0400
+Date: Mon, 21 Mar 2011 09:34:12 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Prasad Joshi <prasadjoshi124@gmail.com>
+Cc: heiko.carstens@de.ibm.com, linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mitra@kqinfotech.com
+Subject: Re: [RFC][PATCH v3 09/22] mm, s390: add gfp flags variant of pud,
+ pte, and pte allocations
+Message-ID: <20110321093412.2776a69f@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <20110318195643.GJ4746@prasad-kvm>
+References: <20110318194135.GA4746@prasad-kvm>
+	<20110318194341.GB4746@prasad-kvm>
+	<20110318194600.GC4746@prasad-kvm>
+	<20110318194740.GD4746@prasad-kvm>
+	<20110318194929.GE4746@prasad-kvm>
+	<20110318195035.GF4746@prasad-kvm>
+	<20110318195141.GG4746@prasad-kvm>
+	<20110318195307.GH4746@prasad-kvm>
+	<20110318195507.GI4746@prasad-kvm>
+	<20110318195643.GJ4746@prasad-kvm>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/21 Stephen Rothwell <sfr@canb.auug.org.au>:
+On Fri, 18 Mar 2011 19:56:44 +0000
+Prasad Joshi <prasadjoshi124@gmail.com> wrote:
 
-> I fixed them up (see below) and can carry the fix as necessary.
+> - Added function __crst_table_alloc() which is similar to crst_table_alloc()
+>   but accepts an extra argument gfp_t. The function uses given allocation
+>   flag to allocate pages.
+> 
+> - Added a function __page_table_alloc() to allocate page table entries. This
+>   function is allows caller to specify the page allocation flag. The
+>   allocation flag is then passed to alloc_page(). The rest of the function is
+>   copy of the original page_table_alloc().
 
-Fix looks correct, Sam if you push this to the MFD tree before
-the pull request I'll be happy.
+The approach of this patch series seems straightforward, the only nitpick I
+have is the fact that two new functions __crst_table_alloc/__page_table_alloc
+are introduced. There aren't many call sites for the two original functions,
+namely 4 for crst_table_alloc and 3 for page_table_alloc. Why not add the
+gfp flag GFP_KERNEL to these call sites? Then the two additional functions
+would not be needed.
 
-Yours,
-Linus Walleij
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
