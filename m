@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab1CUX5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:57:48 -0400
-Received: from kroah.org ([198.145.64.141]:49080 "EHLO coco.kroah.org"
+	id S1755082Ab1CUX6C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:58:02 -0400
+Received: from kroah.org ([198.145.64.141]:49076 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755086Ab1CUXOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:14:00 -0400
+	id S1755079Ab1CUXN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:13:59 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:53 2011
-Message-Id: <20110321231053.660790916@clark.kroah.org>
+Message-Id: <20110321231053.558701745@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:10:09 -0700
+Date: Mon, 21 Mar 2011 16:10:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [29/44] perf: Handle stopped state with tracepoints
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [28/44] SUNRPC: Ensure we always run the tk_callback before tk_action
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,37 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit a0f7d0f7fc02465bb9758501f611f63381792996 upstream.
+commit e020c6800c9621a77223bf2c1ff68180e41e8ebf upstream.
 
-We toggle the state from start and stop callbacks but actually
-don't check it when the event triggers. Do it so that
-these callbacks actually work.
+This fixes a race in which the task->tk_callback() puts the rpc_task
+to sleep, setting a new callback. Under certain circumstances, the current
+code may end up executing the task->tk_action before it gets round to the
+callback.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1299529629-18280-2-git-send-email-fweisbec@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/perf_event.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/sunrpc/sched.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4167,6 +4167,8 @@ static void tp_perf_event_destroy(struct
- 
- static const struct pmu *tp_perf_event_init(struct perf_event *event)
- {
-+	if (event->hw.state & PERF_HES_STOPPED)
-+		return 0;
- 	/*
- 	 * Raw tracepoint data is a severe data leak, only allow root to
- 	 * have these.
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -627,14 +627,12 @@ static void __rpc_execute(struct rpc_tas
+ 			save_callback = task->tk_callback;
+ 			task->tk_callback = NULL;
+ 			save_callback(task);
+-		}
+-
+-		/*
+-		 * Perform the next FSM step.
+-		 * tk_action may be NULL when the task has been killed
+-		 * by someone else.
+-		 */
+-		if (!RPC_IS_QUEUED(task)) {
++		} else {
++			/*
++			 * Perform the next FSM step.
++			 * tk_action may be NULL when the task has been killed
++			 * by someone else.
++			 */
+ 			if (task->tk_action == NULL)
+ 				break;
+ 			task->tk_action(task);
 
 
