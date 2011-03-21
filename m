@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab1CUXPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:15:55 -0400
-Received: from kroah.org ([198.145.64.141]:49393 "EHLO coco.kroah.org"
+	id S1755524Ab1CUXnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:43:11 -0400
+Received: from kroah.org ([198.145.64.141]:49526 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754967Ab1CUXPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:34 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
-Message-Id: <20110321230712.885736359@clark.kroah.org>
+	id S1754967Ab1CUXP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:56 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:15 2011
+Message-Id: <20110321230715.189834540@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:35 -0700
+Date: Mon, 21 Mar 2011 16:06:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [36/87] drm: Hold the mode mutex whilst probing for sysfs status
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Yu Zhao <yu.zhao@intel.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [58/87] PCI: remove quirk for pre-production systems
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,65 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Brandeburg, Jesse <jesse.brandeburg@intel.com>
 
-commit 007c80a5497a3f9c8393960ec6e6efd30955dcb1 upstream.
+commit b99af4b002e4908d1a5cdaf424529bdf1dc69768 upstream.
 
-As detect will use hw registers and may modify structures, it needs to be
-serialised by use of the dev->mode_config.mutex. Make it so.
+Revert commit 7eb93b175d4de9438a4b0af3a94a112cb5266944
+Author: Yu Zhao <yu.zhao@intel.com>
+Date:   Fri Apr 3 15:18:11 2009 +0800
 
-Otherwise, we may cause random crashes as the sysfs file is queried
-whilst a concurrent hotplug poll is being run. For example:
+    PCI: SR-IOV quirk for Intel 82576 NIC
 
-[ 1189.189626] BUG: unable to handle kernel NULL pointer dereference at 00000100
-[ 1189.189821] IP: [<e0c22019>] intel_tv_detect_type+0xa2/0x203 [i915]
-[ 1189.190020] *pde = 00000000
-[ 1189.190104] Oops: 0000 [#1] SMP
-[ 1189.190209] last sysfs file: /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-SVIDEO-1/status
-[ 1189.190412] Modules linked in: mperf cpufreq_conservative cpufreq_userspace cpufreq_powersave cpufreq_stats decnet uinput fuse loop joydev snd_hd a_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm i915 snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq drm_kms_helper snd_timer uvcvideo d rm snd_seq_device eeepc_laptop tpm_tis usbhid videodev i2c_algo_bit v4l1_compat snd sparse_keymap i2c_core hid serio_raw tpm psmouse evdev tpm_bios rfkill shpchp ac processor rng_c ore battery video power_supply soundcore pci_hotplug button output snd_page_alloc usb_storage uas ext3 jbd mbcache sd_mod crc_t10dif ata_generic ahci libahci ata_piix libata uhci_h cd ehci_hcd scsi_mod usbcore thermal atl2 thermal_sys nls_base [last unloaded: scsi_wait_scan]
-[ 1189.192007]
-[ 1189.192007] Pid: 1464, comm: upowerd Not tainted 2.6.37-2-686 #1 ASUSTeK Computer INC. 701/701
-[ 1189.192007] EIP: 0060:[<e0c22019>] EFLAGS: 00010246 CPU: 0
-[ 1189.192007] EIP is at intel_tv_detect_type+0xa2/0x203 [i915]
-[ 1189.192007] EAX: 00000000 EBX: dca74000 ECX: e0f68004 EDX: 00068004
-[ 1189.192007] ESI: dd110c00 EDI: 400c0c37 EBP: dca7429c ESP: de365e2c
-[ 1189.192007]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[ 1189.192007] Process upowerd (pid: 1464, ti=de364000 task=dcc8acb0 task.ti=de364000)
-[ 1189.192007] Stack: Mar 15 03:43:23 hostname kernel: [ 1189.192007]  e0c2cda4 70000000 400c0c30 00000000 dd111000 de365e54 de365f24 dd110c00
-[ 1189.192007]  e0c22203 01000000 00000003 00000000 00000000 00000000 00000000 4353544e
-[ 1189.192007]  30383420 00000069 00000000 00000000 00000000 00000000 00000000 00000000
-[ 1189.192007] Call Trace: Mar 15 03:43:23 hostname kernel: [ 1189.192007]  [<e0c22203>] ?  intel_tv_detect+0x89/0x12d [i915]
-[ 1189.192007]  [<e0a9dcef>] ?  status_show+0x0/0x2f [drm]
-[ 1189.192007]  [<e0a9dd03>] ?  status_show+0x14/0x2f [drm]
+    If BIOS doesn't allocate resources for the SR-IOV BARs, zero the Flash
+    BAR and program the SR-IOV BARs to use the old Flash Memory Space.
 
-[Digression: what is upowerd doing reading those power hungry files?]
+    Please refer to Intel 82576 Gigabit Ethernet Controller Datasheet
+    section 7.9.2.14.2 for details.
+    http://download.intel.com/design/network/datashts/82576_Datasheet.pdf
 
-Reported-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+    Signed-off-by: Yu Zhao <yu.zhao@intel.com>
+    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+
+This quirk was added before SR-IOV was in production and now all machines that
+originally had this issue alreayd have bios updates to correct the issue. The
+quirk itself is no longer needed and in fact causes bugs if run.  Remove it.
+
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+CC: Yu Zhao <yu.zhao@intel.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_sysfs.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/pci/quirks.c |   52 ---------------------------------------------------
+ 1 file changed, 52 deletions(-)
 
---- a/drivers/gpu/drm/drm_sysfs.c
-+++ b/drivers/gpu/drm/drm_sysfs.c
-@@ -158,8 +158,15 @@ static ssize_t status_show(struct device
- {
- 	struct drm_connector *connector = to_drm_connector(device);
- 	enum drm_connector_status status;
-+	int ret;
-+
-+	ret = mutex_lock_interruptible(&connector->dev->mode_config.mutex);
-+	if (ret)
-+		return ret;
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2618,58 +2618,6 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
  
- 	status = connector->funcs->detect(connector, true);
-+	mutex_unlock(&connector->dev->mode_config.mutex);
-+
- 	return snprintf(buf, PAGE_SIZE, "%s\n",
- 			drm_get_connector_status_name(status));
- }
+ #endif /* CONFIG_PCI_MSI */
+ 
+-#ifdef CONFIG_PCI_IOV
+-
+-/*
+- * For Intel 82576 SR-IOV NIC, if BIOS doesn't allocate resources for the
+- * SR-IOV BARs, zero the Flash BAR and program the SR-IOV BARs to use the
+- * old Flash Memory Space.
+- */
+-static void __devinit quirk_i82576_sriov(struct pci_dev *dev)
+-{
+-	int pos, flags;
+-	u32 bar, start, size;
+-
+-	if (PAGE_SIZE > 0x10000)
+-		return;
+-
+-	flags = pci_resource_flags(dev, 0);
+-	if ((flags & PCI_BASE_ADDRESS_SPACE) !=
+-			PCI_BASE_ADDRESS_SPACE_MEMORY ||
+-	    (flags & PCI_BASE_ADDRESS_MEM_TYPE_MASK) !=
+-			PCI_BASE_ADDRESS_MEM_TYPE_32)
+-		return;
+-
+-	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_SRIOV);
+-	if (!pos)
+-		return;
+-
+-	pci_read_config_dword(dev, pos + PCI_SRIOV_BAR, &bar);
+-	if (bar & PCI_BASE_ADDRESS_MEM_MASK)
+-		return;
+-
+-	start = pci_resource_start(dev, 1);
+-	size = pci_resource_len(dev, 1);
+-	if (!start || size != 0x400000 || start & (size - 1))
+-		return;
+-
+-	pci_resource_flags(dev, 1) = 0;
+-	pci_write_config_dword(dev, PCI_BASE_ADDRESS_1, 0);
+-	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR, start);
+-	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR + 12, start + size / 2);
+-
+-	dev_info(&dev->dev, "use Flash Memory Space for SR-IOV BARs\n");
+-}
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10c9, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e6, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e7, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e8, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150a, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150d, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1518, quirk_i82576_sriov);
+-
+-#endif	/* CONFIG_PCI_IOV */
+-
+ /* Allow manual resource allocation for PCI hotplug bridges
+  * via pci=hpmemsize=nnM and pci=hpiosize=nnM parameters. For
+  * some PCI-PCI hotplug bridges, like PLX 6254 (former HINT HB6),
 
 
