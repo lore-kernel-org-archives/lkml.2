@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab1CUXsC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:48:02 -0400
-Received: from kroah.org ([198.145.64.141]:49386 "EHLO coco.kroah.org"
+	id S1755684Ab1CUXsU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:48:20 -0400
+Received: from kroah.org ([198.145.64.141]:49371 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755373Ab1CUXPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:33 -0400
+	id S1754987Ab1CUXPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:32 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
-Message-Id: <20110321230712.777322760@clark.kroah.org>
+Message-Id: <20110321230712.680406240@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:34 -0700
+Date: Mon, 21 Mar 2011 16:06:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        James Morris <jmorris@namei.org>
-Subject: [35/87] TOMOYO: Fix memory leak upon file open.
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [34/87] x86: stop_machine_text_poke() should issue sync_core()
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-commit eae61f3c829439f8f9121b5cd48a14be04df451f upstream.
+commit 0e00f7aed6af21fc09b2a94d28bc34e449bd3a53 upstream.
 
-In tomoyo_check_open_permission() since 2.6.36, TOMOYO was by error
-recalculating already calculated pathname when checking allow_rewrite
-permission. As a result, memory will leak whenever a file is opened for writing
-without O_APPEND flag. Also, performance will degrade because TOMOYO is
-calculating pathname regardless of profile configuration.
-This patch fixes the leak and performance degrade.
+Intel Archiecture Software Developer's Manual section 7.1.3 specifies that a
+core serializing instruction such as "cpuid" should be executed on _each_ core
+before the new instruction is made visible.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: James Morris <jmorris@namei.org>
+Failure to do so can lead to unspecified behavior (Intel XMC erratas include
+General Protection Fault in the list), so we should avoid this at all cost.
+
+This problem can affect modified code executed by interrupt handlers after
+interrupt are re-enabled at the end of stop_machine, because no core serializing
+instruction is executed between the code modification and the moment interrupts
+are reenabled.
+
+Because stop_machine_text_poke performs the text modification from the first CPU
+decrementing stop_machine_first, modified code executed in thread context is
+also affected by this problem. To explain why, we have to split the CPUs in two
+categories: the CPU that initiates the text modification (calls text_poke_smp)
+and all the others. The scheduler, executed on all other CPUs after
+stop_machine, issues an "iret" core serializing instruction, and therefore
+handles core serialization for all these CPUs. However, the text modification
+initiator can continue its execution on the same thread and access the modified
+text without any scheduler call. Given that the CPU that initiates the code
+modification is not guaranteed to be the one actually performing the code
+modification, it falls into the XMC errata.
+
+Q: Isn't this executed from an IPI handler, which will return with IRET (a
+   serializing instruction) anyway?
+A: No, now stop_machine uses per-cpu workqueue, so that handler will be
+   executed from worker threads. There is no iret anymore.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+LKML-Reference: <20110303160137.GB1590@Krystal>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/tomoyo/file.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ arch/x86/kernel/alternative.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/security/tomoyo/file.c
-+++ b/security/tomoyo/file.c
-@@ -927,7 +927,7 @@ int tomoyo_check_open_permission(struct
- 				 struct path *path, const int flag)
- {
- 	const u8 acc_mode = ACC_MODE(flag);
--	int error = -ENOMEM;
-+	int error = 0;
- 	struct tomoyo_path_info buf;
- 	struct tomoyo_request_info r;
- 	int idx;
-@@ -938,9 +938,6 @@ int tomoyo_check_open_permission(struct
- 	buf.name = NULL;
- 	r.mode = TOMOYO_CONFIG_DISABLED;
- 	idx = tomoyo_read_lock();
--	if (!tomoyo_get_realpath(&buf, path))
--		goto out;
--	error = 0;
- 	/*
- 	 * If the filename is specified by "deny_rewrite" keyword,
- 	 * we need to check "allow_rewrite" permission when the filename is not
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -417,7 +417,12 @@ int alternatives_text_reserved(void *sta
+ 				return 1;
+ 		}
+ 	}
+-
++	/*
++	 * Intel Archiecture Software Developer's Manual section 7.1.3 specifies
++	 * that a core serializing instruction such as "cpuid" should be
++	 * executed on _each_ core before the new instruction is made visible.
++	 */
++	sync_core();
+ 	return 0;
+ }
+ #endif
 
 
