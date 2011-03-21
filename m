@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab1CUUXv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 16:23:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48045 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468Ab1CUUXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 16:23:49 -0400
-Date: Mon, 21 Mar 2011 16:23:46 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Don't update group weights when on service tree.
-Message-ID: <20110321202346.GA9870@redhat.com>
-References: <1300374357-30686-1-git-send-email-teravest@google.com>
- <20110321192757.GK2694@redhat.com>
- <AANLkTik9r-5zXQKCHf9+8U9M1-3Y84mv9Aid7GsTaj2R@mail.gmail.com>
+	id S1754148Ab1CUU15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 16:27:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47386 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab1CUU1z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 16:27:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=Exj7g92wgTloehre7GHKlLWB274Q1pz2R86f2GzIwrPrlAdcBuOGuBqGTwYU8n9xX3
+         dfNTSizLqh77yJCRgXpmRUayl0JBu9d9IhJB7TDKr66M++on5u5vdGyHbJd4P35LLkFH
+         YU4PKOKq12uIluMGKJcwrooOAI27QSvA5l3CA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik9r-5zXQKCHf9+8U9M1-3Y84mv9Aid7GsTaj2R@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C14F5A465@USINDEVS01.corp.hds.com>
+References: <4d8797d74168a6441@agluck-desktop.sc.intel.com>
+	<5C4C569E8A4B9B42A84A977CF070A35B2C14F5A465@USINDEVS01.corp.hds.com>
+Date: Mon, 21 Mar 2011 13:27:54 -0700
+X-Google-Sender-Auth: DF6g3WTv40dEaFQ7aTVyViRkxKE
+Message-ID: <AANLkTinG0381opyEFtM4P-OuFoG++b7kvpTC4McoL9E8@mail.gmail.com>
+Subject: Re: [RFC] pstore: Don't use persistent store for normal shutdown
+From: Tony Luck <tony.luck@intel.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 01:15:33PM -0700, Justin TerAvest wrote:
-> On Mon, Mar 21, 2011 at 12:27 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Thu, Mar 17, 2011 at 08:05:57AM -0700, Justin TerAvest wrote:
-> >> Version 3 is updated to apply to for-2.6.39/core.
-> >>
-> >> For version 2, I took Vivek's advice and made sure we update the group
-> >> weight from cfq_group_service_tree_add().
-> >>
-> >> If a weight was updated while a group is on the service tree, the
-> >> calculation for the total weight of the service tree can be adjusted
-> >> improperly, which either leads to bad service tree weights, or
-> >> potentially crashes (if total_weight becomes 0).
-> >>
-> >> This patch defers updates to the weight until a group is off the service
-> >> tree.
-> >>
-> >> Signed-off-by: Justin TerAvest <teravest@google.com>
-> >> Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> >> ---
-> >>  block/cfq-iosched.c |   53 +++++++++++++++++++++++++++++++++++++++-----------
-> >>  1 files changed, 41 insertions(+), 12 deletions(-)
-> >>
-> >> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> >> index 89e0d1c..12e380b 100644
-> >> --- a/block/cfq-iosched.c
-> >> +++ b/block/cfq-iosched.c
-> >> @@ -178,6 +178,8 @@ struct cfq_group {
-> >>       /* group service_tree key */
-> >>       u64 vdisktime;
-> >>       unsigned int weight;
-> >> +     unsigned int new_weight;
-> >> +     bool needs_update;
-> >>
-> >>       /* number of cfqq currently on this group */
-> >>       int nr_cfqq;
-> >> @@ -853,7 +855,27 @@ __cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
-> >>  }
-> >>
-> >>  static void
-> >> -cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
-> >> +cfq_update_group_weight(struct cfq_group *cfqg)
-> >> +{
-> >> +     BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
-> >> +     if (cfqg->needs_update) {
-> >> +             cfqg->weight = cfqg->new_weight;
-> >> +             cfqg->needs_update = false;
-> >> +     }
-> >> +}
-> >
-> > thinking more about it, looks like this code is still racy. If somebody
-> > updates the weights again while we are about to process previous weight
-> > change, we might lose the new weight and set needs_update=false. We might
-> > have to use xchg() to update cfqg->needs_update.
-> 
-> I think you're right, Vivek.
-> 
-> I wish we could just take a lock on blkcg->lock when updating, we
-> should expect the weights to be updated that often, right? I'm not
-> sure if there's a feasible way to do that, though.
-> 
+On Mon, Mar 21, 2011 at 12:49 PM, Seiji Aguchi <seiji.aguchi@hds.com> wrote:
+> I think we should save the tail of kernel log into persistent store
+> for both every shutdown and kexec path because these data are useful
+> in enterprise area.
+>
+> I already described the useful case in lkml (see below).
+>
+> normal shutdown:
+> https://lkml.org/lkml/2010/11/17/249
 
-I think taking blkcg->lock while updating cfqg->needs_update in CFQ will
-also solve the issue. We should already be holding blkcg->lock in cgroup
-updation path.
+I hadn't thought about the forensic opportunities to show that a reboot/halt
+was the cause of a server shutdown - but these do look useful.  Should
+I still try to save as much data in these cases? Saving 1 Kbyte would be
+enough to have the last dozen+ lines, including the critical
+    <0>[  536.970556] Restarting system.
+that you'd like to see.
 
-Do put a comment explaining it well in case you end up taking this path.
+> kexec:
+> https://lkml.org/lkml/2011/2/23/325
 
-Thanks
-Vivek
+In the case of kexec used as a "fast reboot" to another kernel, it might
+also be valid to save some small amount of kernel log - but in the case
+of kexec to take a kernel dump after a serious problem, it might be good
+to have as much kernel log as possible to make sure that we have no
+gaps in saved data.  If there isn't an easy way to tell these two kexec
+cases apart, we should just save more data in both cases.
 
-> I'll explore both options, I'd just prefer to not add xchg() code if I
-> don't have to, as it requires a bit more thinking.
-> 
-> Thanks,
-> Justin
-> 
-> 
-> >
-> > Thanks
-> > Vivek
-> >
+I'll make a new patch incorporating these changes.
+
+-Tony
