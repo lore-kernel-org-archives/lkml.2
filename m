@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab1CUXmG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:42:06 -0400
-Received: from kroah.org ([198.145.64.141]:49556 "EHLO coco.kroah.org"
+	id S932626Ab1CUXm1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:42:27 -0400
+Received: from kroah.org ([198.145.64.141]:49548 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755516Ab1CUXQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:16:03 -0400
+	id S1754977Ab1CUXP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:59 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:15 2011
-Message-Id: <20110321230715.703755511@clark.kroah.org>
+Message-Id: <20110321230715.512657828@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:07:02 -0700
+Date: Mon, 21 Mar 2011 16:07:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [63/87] ALSA: aloop - Fix possible IRQ lock inversion
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [61/87] PCI: sysfs: Fix failure path for addition of "vpd" attribute
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,67 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 98d21df431ad55281e1abf780f8d51e3391900b2 upstream.
+commit 0f12a4e29368a9476076515881d9ef4e5876c6e2 upstream.
 
-loopback_pos_update() can be called in the timer callback, thus the lock
-held should be irq-safe.  Otherwise you'll get AB/BA deadlock together
-with substream->self_group.lock.
+Commit 280c73d ("PCI: centralize the capabilities code in
+pci-sysfs.c") changed the initialisation of the "rom" and "vpd"
+attributes, and made the failure path for the "vpd" attribute
+incorrect.  We must free the new attribute structure (attr), but
+instead we currently free dev->vpd->attr.  That will normally be NULL,
+resulting in a memory leak, but it might be a stale pointer, resulting
+in a double-free.
 
-Reported-and-tested-by: Knut Petersen <Knut_Petersen@t-online.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Found by inspection; compile-tested only.
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/drivers/aloop.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ drivers/pci/pci-sysfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/drivers/aloop.c
-+++ b/sound/drivers/aloop.c
-@@ -482,8 +482,9 @@ static unsigned int loopback_pos_update(
- 			cable->streams[SNDRV_PCM_STREAM_CAPTURE];
- 	unsigned long delta_play = 0, delta_capt = 0;
- 	unsigned int running;
-+	unsigned long flags;
- 
--	spin_lock(&cable->lock);	
-+	spin_lock_irqsave(&cable->lock, flags);
- 	running = cable->running ^ cable->pause;
- 	if (running & (1 << SNDRV_PCM_STREAM_PLAYBACK)) {
- 		delta_play = jiffies - dpcm_play->last_jiffies;
-@@ -495,10 +496,8 @@ static unsigned int loopback_pos_update(
- 		dpcm_capt->last_jiffies += delta_capt;
- 	}
- 
--	if (delta_play == 0 && delta_capt == 0) {
--		spin_unlock(&cable->lock);
--		return running;
--	}
-+	if (delta_play == 0 && delta_capt == 0)
-+		goto unlock;
- 		
- 	if (delta_play > delta_capt) {
- 		loopback_bytepos_update(dpcm_play, delta_play - delta_capt,
-@@ -510,14 +509,14 @@ static unsigned int loopback_pos_update(
- 		delta_capt = delta_play;
- 	}
- 
--	if (delta_play == 0 && delta_capt == 0) {
--		spin_unlock(&cable->lock);
--		return running;
--	}
-+	if (delta_play == 0 && delta_capt == 0)
-+		goto unlock;
-+
- 	/* note delta_capt == delta_play at this moment */
- 	loopback_bytepos_update(dpcm_capt, delta_capt, BYTEPOS_UPDATE_COPY);
- 	loopback_bytepos_update(dpcm_play, delta_play, BYTEPOS_UPDATE_POSONLY);
--	spin_unlock(&cable->lock);
-+ unlock:
-+	spin_unlock_irqrestore(&cable->lock, flags);
- 	return running;
- }
- 
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -1088,7 +1088,7 @@ static int pci_create_capabilities_sysfs
+ 		attr->write = write_vpd_attr;
+ 		retval = sysfs_create_bin_file(&dev->dev.kobj, attr);
+ 		if (retval) {
+-			kfree(dev->vpd->attr);
++			kfree(attr);
+ 			return retval;
+ 		}
+ 		dev->vpd->attr = attr;
 
 
