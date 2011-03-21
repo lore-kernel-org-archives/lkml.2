@@ -1,106 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab1CUXON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:14:13 -0400
-Received: from kroah.org ([198.145.64.141]:49122 "EHLO coco.kroah.org"
+	id S1755288Ab1CUXPL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:15:11 -0400
+Received: from kroah.org ([198.145.64.141]:49228 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755135Ab1CUXOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:14:07 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:54 2011
-Message-Id: <20110321231054.377933321@clark.kroah.org>
+	id S1755221Ab1CUXPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:03 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:09 2011
+Message-Id: <20110321230709.791490708@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:10:16 -0700
+Date: Mon, 21 Mar 2011 16:06:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Beulich <jbeulich@novell.com>, Milton Miller <miltonm@bga.com>
-Subject: [36/44] smp_call_function_many: handle concurrent clearing of mask
-In-Reply-To: <20110321231105.GA1744@kroah.com>
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        Michael Cashwell <mboards@prograde.net>,
+        Stefan Bigler <stefan.bigler@keymile.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [06/87] mtd: fix race in cfi_cmdset_0001 driver
+In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Milton Miller <miltonm@bga.com>
+From: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
 
-commit 723aae25d5cdb09962901d36d526b44d4be1051c upstream.
+commit ecf3fde07c8dcb92a1bf3fbdfe70905d85cd00e1 upstream.
 
-Mike Galbraith reported finding a lockup ("perma-spin bug") where the
-cpumask passed to smp_call_function_many was cleared by other cpu(s)
-while a cpu was preparing its call_data block, resulting in no cpu to
-clear the last ref and unlock the block.
+As inval_cache_and_wait_for_operation() drop and reclaim the lock
+to invalidate the cache, some other thread may suspend the operation
+before reaching the for(;;) loop. Therefore the loop must start with
+checking the chip->state before reading status from the chip.
 
-Having cpus clear their bit asynchronously could be useful on a mask of
-cpus that might have a translation context, or cpus that need a push to
-complete an rcu window.
-
-Instead of adding a BUG_ON and requiring yet another cpumask copy, just
-detect the race and handle it.
-
-Note: arch_send_call_function_ipi_mask must still handle an empty
-cpumask because the data block is globally visible before the that arch
-callback is made.  And (obviously) there are no guarantees to which cpus
-are notified if the mask is changed during the call; only cpus that were
-online and had their mask bit set during the whole call are guaranteed
-to be called.
-
-Reported-by: Mike Galbraith <efault@gmx.de>
-Reported-by: Jan Beulich <JBeulich@novell.com>
-Acked-by: Jan Beulich <jbeulich@novell.com>
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+Acked-by: Michael Cashwell <mboards@prograde.net>
+Acked-by: Stefan Bigler <stefan.bigler@keymile.com>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/smp.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/mtd/chips/cfi_cmdset_0001.c |   43 ++++++++++++++++++------------------
+ 1 file changed, 22 insertions(+), 21 deletions(-)
 
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -388,7 +388,7 @@ void smp_call_function_many(const struct
- {
- 	struct call_function_data *data;
- 	unsigned long flags;
--	int cpu, next_cpu, this_cpu = smp_processor_id();
-+	int refs, cpu, next_cpu, this_cpu = smp_processor_id();
+--- a/drivers/mtd/chips/cfi_cmdset_0001.c
++++ b/drivers/mtd/chips/cfi_cmdset_0001.c
+@@ -1229,10 +1229,32 @@ static int inval_cache_and_wait_for_oper
+ 	sleep_time = chip_op_time / 2;
  
- 	/*
- 	 * Can deadlock when called with interrupts disabled.
-@@ -399,7 +399,7 @@ void smp_call_function_many(const struct
- 	WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
- 		     && !oops_in_progress);
- 
--	/* So, what's a CPU they want? Ignoring this one. */
-+	/* Try to fastpath.  So, what's a CPU they want? Ignoring this one. */
- 	cpu = cpumask_first_and(mask, cpu_online_mask);
- 	if (cpu == this_cpu)
- 		cpu = cpumask_next_and(cpu, mask, cpu_online_mask);
-@@ -457,6 +457,13 @@ void smp_call_function_many(const struct
- 	/* We rely on the "and" being processed before the store */
- 	cpumask_and(data->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
-+	refs = cpumask_weight(data->cpumask);
+ 	for (;;) {
++		if (chip->state != chip_state) {
++			/* Someone's suspended the operation: sleep */
++			DECLARE_WAITQUEUE(wait, current);
++			set_current_state(TASK_UNINTERRUPTIBLE);
++			add_wait_queue(&chip->wq, &wait);
++			mutex_unlock(&chip->mutex);
++			schedule();
++			remove_wait_queue(&chip->wq, &wait);
++			mutex_lock(&chip->mutex);
++			continue;
++		}
 +
-+	/* Some callers race with other cpus changing the passed mask */
-+	if (unlikely(!refs)) {
-+		csd_unlock(&data->csd);
-+		return;
-+	}
+ 		status = map_read(map, cmd_adr);
+ 		if (map_word_andequal(map, status, status_OK, status_OK))
+ 			break;
  
- 	spin_lock_irqsave(&call_function.lock, flags);
- 	/*
-@@ -470,7 +477,7 @@ void smp_call_function_many(const struct
- 	 * to the cpumask before this write to refs, which indicates
- 	 * data is on the list and is ready to be processed.
- 	 */
--	atomic_set(&data->refs, cpumask_weight(data->cpumask));
-+	atomic_set(&data->refs, refs);
- 	spin_unlock_irqrestore(&call_function.lock, flags);
++		if (chip->erase_suspended && chip_state == FL_ERASING)  {
++			/* Erase suspend occured while sleep: reset timeout */
++			timeo = reset_timeo;
++			chip->erase_suspended = 0;
++		}
++		if (chip->write_suspended && chip_state == FL_WRITING)  {
++			/* Write suspend occured while sleep: reset timeout */
++			timeo = reset_timeo;
++			chip->write_suspended = 0;
++		}
+ 		if (!timeo) {
+ 			map_write(map, CMD(0x70), cmd_adr);
+ 			chip->state = FL_STATUS;
+@@ -1256,27 +1278,6 @@ static int inval_cache_and_wait_for_oper
+ 			timeo--;
+ 		}
+ 		mutex_lock(&chip->mutex);
+-
+-		while (chip->state != chip_state) {
+-			/* Someone's suspended the operation: sleep */
+-			DECLARE_WAITQUEUE(wait, current);
+-			set_current_state(TASK_UNINTERRUPTIBLE);
+-			add_wait_queue(&chip->wq, &wait);
+-			mutex_unlock(&chip->mutex);
+-			schedule();
+-			remove_wait_queue(&chip->wq, &wait);
+-			mutex_lock(&chip->mutex);
+-		}
+-		if (chip->erase_suspended && chip_state == FL_ERASING)  {
+-			/* Erase suspend occured while sleep: reset timeout */
+-			timeo = reset_timeo;
+-			chip->erase_suspended = 0;
+-		}
+-		if (chip->write_suspended && chip_state == FL_WRITING)  {
+-			/* Write suspend occured while sleep: reset timeout */
+-			timeo = reset_timeo;
+-			chip->write_suspended = 0;
+-		}
+ 	}
  
- 	/*
+ 	/* Done and happy. */
 
 
