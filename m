@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab1CUXfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:35:10 -0400
-Received: from kroah.org ([198.145.64.141]:49675 "EHLO coco.kroah.org"
+	id S1755875Ab1CUXfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:35:33 -0400
+Received: from kroah.org ([198.145.64.141]:49667 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932120Ab1CUXQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:16:24 -0400
+	id S932107Ab1CUXQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:16:22 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:17 2011
-Message-Id: <20110321230717.844189559@clark.kroah.org>
+Message-Id: <20110321230717.640735102@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:07:23 -0700
+Date: Mon, 21 Mar 2011 16:07:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [84/87] mmc: sdio: remember new card RCA when redetecting card
+        Roman Fietze <roman.fietze@telemotive.de>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [82/87] i2c: Fix typo in instantiating-devices document
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+From: Roman Fietze <roman.fietze@telemotive.de>
 
-commit 0aab3995485b8a994bf29a995a008c9ea4a28054 upstream.
+commit 6ced9e6b3901af4ab6ac0a11231402c888286ea6 upstream.
 
-During redetection of a SDIO card, a request for a new card RCA
-was submitted to the card, but was then overwritten by the old RCA.
-This caused the card to be deselected instead of selected when using
-the incorrect RCA.  This bug's been present since the "oldcard"
-handling was introduced in 2.6.32.
+The struct i2c_board_info member holding the name is "type", not
+"name".
 
-Signed-off-by: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@stericsson.com>
-Reviewed-by: Pawel Wieczorkiewicz <pawel.wieczorkiewicz@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/core/sdio.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ Documentation/i2c/instantiating-devices |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -395,6 +395,14 @@ static int mmc_sdio_init_card(struct mmc
- 		if (err)
- 			goto remove;
- 
-+		/*
-+		 * Update oldcard with the new RCA received from the SDIO
-+		 * device -- we're doing this so that it's updated in the
-+		 * "card" struct when oldcard overwrites that later.
-+		 */
-+		if (oldcard)
-+			oldcard->rca = card->rca;
-+
- 		mmc_set_bus_mode(host, MMC_BUSMODE_PUSHPULL);
- 	}
- 
+--- a/Documentation/i2c/instantiating-devices
++++ b/Documentation/i2c/instantiating-devices
+@@ -100,7 +100,7 @@ static int __devinit usb_hcd_pnx4008_pro
+ 	(...)
+ 	i2c_adap = i2c_get_adapter(2);
+ 	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
+-	strlcpy(i2c_info.name, "isp1301_pnx", I2C_NAME_SIZE);
++	strlcpy(i2c_info.type, "isp1301_pnx", I2C_NAME_SIZE);
+ 	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
+ 						   normal_i2c, NULL);
+ 	i2c_put_adapter(i2c_adap);
 
 
