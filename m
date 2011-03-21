@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab1CUXN4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:13:56 -0400
-Received: from kroah.org ([198.145.64.141]:49032 "EHLO coco.kroah.org"
+	id S1755026Ab1CUXNw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:13:52 -0400
+Received: from kroah.org ([198.145.64.141]:49010 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755029Ab1CUXNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:13:53 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:53 2011
-Message-Id: <20110321231052.988200630@clark.kroah.org>
+	id S1754999Ab1CUXNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:13:49 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:52 2011
+Message-Id: <20110321231052.578927263@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:10:02 -0700
+Date: Mon, 21 Mar 2011 16:09:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Renninger <trenn@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [22/44] PCI: add more checking to ICH region quirks
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [18/44] USB: serial: ch341: add new id
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,100 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: wangyanqing <udknight@gmail.com>
 
-commit cdb9755849fbaf2bb9c0a009ba5baa817a0f152d upstream.
+commit d0781383038e983a63843a9a6a067ed781db89c1 upstream.
 
-Per ICH4 and ICH6 specs, ACPI and GPIO regions are valid iff ACPI_EN
-and GPIO_EN bits are set to 1. Add checks for these bits into the
-quirks prior to the region creation.
+I picked up a new DAK-780EX(professional digitl reverb/mix system),
+which use CH341T chipset to communication with computer on 3/2011
+and the CH341T's vendor code is 1a86
 
-While at it, name the constants by macros.
+Looking up the CH341T's vendor and product id's I see:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+1a86  QinHeng Electronics
+  5523  CH341 in serial mode, usb to serial port converter
+
+CH341T,CH341 are the products of the same company, maybe
+have some common hardware, and I test the ch341.c works
+well with CH341T
+
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |   49 +++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 39 insertions(+), 10 deletions(-)
+ drivers/usb/serial/ch341.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -506,6 +506,17 @@ static void __devinit quirk_piix4_acpi(s
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82371AB_3,	quirk_piix4_acpi);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82443MX_3,	quirk_piix4_acpi);
- 
-+#define ICH_PMBASE	0x40
-+#define ICH_ACPI_CNTL	0x44
-+#define  ICH4_ACPI_EN	0x10
-+#define  ICH6_ACPI_EN	0x80
-+#define ICH4_GPIOBASE	0x58
-+#define ICH4_GPIO_CNTL	0x5c
-+#define  ICH4_GPIO_EN	0x10
-+#define ICH6_GPIOBASE	0x48
-+#define ICH6_GPIO_CNTL	0x4c
-+#define  ICH6_GPIO_EN	0x10
-+
- /*
-  * ICH4, ICH4-M, ICH5, ICH5-M ACPI: Three IO regions pointed to by longwords at
-  *	0x40 (128 bytes of ACPI, GPIO & TCO registers)
-@@ -514,12 +525,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_I
- static void __devinit quirk_ich4_lpc_acpi(struct pci_dev *dev)
- {
- 	u32 region;
-+	u8 enable;
- 
--	pci_read_config_dword(dev, 0x40, &region);
--	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH4 ACPI/GPIO/TCO");
--
--	pci_read_config_dword(dev, 0x58, &region);
--	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH4 GPIO");
-+	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
-+	if (enable & ICH4_ACPI_EN) {
-+		pci_read_config_dword(dev, ICH_PMBASE, &region);
-+		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
-+				"ICH4 ACPI/GPIO/TCO");
-+	}
-+
-+	pci_read_config_byte(dev, ICH4_GPIO_CNTL, &enable);
-+	if (enable & ICH4_GPIO_EN) {
-+		pci_read_config_dword(dev, ICH4_GPIOBASE, &region);
-+		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
-+				"ICH4 GPIO");
-+	}
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AA_0,		quirk_ich4_lpc_acpi);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AB_0,		quirk_ich4_lpc_acpi);
-@@ -535,12 +555,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_I
- static void __devinit ich6_lpc_acpi_gpio(struct pci_dev *dev)
- {
- 	u32 region;
-+	u8 enable;
- 
--	pci_read_config_dword(dev, 0x40, &region);
--	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH6 ACPI/GPIO/TCO");
--
--	pci_read_config_dword(dev, 0x48, &region);
--	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH6 GPIO");
-+	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
-+	if (enable & ICH6_ACPI_EN) {
-+		pci_read_config_dword(dev, ICH_PMBASE, &region);
-+		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
-+				"ICH6 ACPI/GPIO/TCO");
-+	}
-+
-+	pci_read_config_byte(dev, ICH6_GPIO_CNTL, &enable);
-+	if (enable & ICH4_GPIO_EN) {
-+		pci_read_config_dword(dev, ICH6_GPIOBASE, &region);
-+		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
-+				"ICH6 GPIO");
-+	}
- }
- 
- static void __devinit ich6_lpc_generic_decode(struct pci_dev *dev, unsigned reg, const char *name, int dynsize)
+--- a/drivers/usb/serial/ch341.c
++++ b/drivers/usb/serial/ch341.c
+@@ -73,6 +73,7 @@ static int debug;
+ static struct usb_device_id id_table [] = {
+ 	{ USB_DEVICE(0x4348, 0x5523) },
+ 	{ USB_DEVICE(0x1a86, 0x7523) },
++	{ USB_DEVICE(0x1a86, 0x5523) },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
 
 
