@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1CURL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 13:11:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55208 "EHLO mx1.redhat.com"
+	id S1753961Ab1CURMr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 13:12:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40934 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752259Ab1CURLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 13:11:55 -0400
-Subject: Re: [PATCH] tmpfs: implement security.capability xattrs
-From: Eric Paris <eparis@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Eric Paris <eparis@parisplace.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <alpine.LSU.2.00.1103202108160.21738@sister.anvils>
-References: <20110111210710.32348.1642.stgit@paris.rdu.redhat.com>
-	 <AANLkTi=wyaLP6gFmNxajp+HtYu3B9_KGf2o4BnYA+rwy@mail.gmail.com>
-	 <AANLkTi=7GyY=O2eTupPXQijcnT_55a3RnHAruJpm_5Jo@mail.gmail.com>
-	 <alpine.LSU.2.00.1103202108160.21738@sister.anvils>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Mar 2011 12:43:05 -0400
-Message-ID: <1300725785.2744.57.camel@unknown001a4b0c2895>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751541Ab1CURMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 13:12:45 -0400
+Date: Mon, 21 Mar 2011 17:39:50 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 4/8] job control: Allow access to job control events
+	through ptracees
+Message-ID: <20110321163950.GA27409@redhat.com>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org> <1299614199-25142-5-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299614199-25142-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-03-20 at 22:17 -0700, Hugh Dickins wrote:
-> On Wed, 2 Mar 2011, Eric Paris wrote:
+On 03/08, Tejun Heo wrote:
+>
+> Currently a real parent can't access job control stopped/continued
+> events through a ptraced child.  This utterly breaks job control when
+> the children are ptraced.
 
-> > >>  include/linux/shmem_fs.h |    8 +++
-> > >>  mm/shmem.c               |  112 ++++++++++++++++++++++++++++++++++++++++++++--
-> > >>  2 files changed, 116 insertions(+), 4 deletions(-)
-> 
-> No change to fs/Kconfig?  You seem to smuggle the xattr and security
-> support in under CONFIG_TMPFS_POSIX_ACL, and leave it unsupported
-> without.  It's probably a fair assumption that the people with that
-> option selected are the people who will be interested in this, so
-> no need for the maze of separate config options which a grownup
-> filesystem would have here.  But at the very least you need to say
-> more in the TMPFS_POSIX_ACL Kconfig entry (a new name may be more
-> trouble than it's worth).
+Yes. This is what we need.
 
-Will update text.
+Oh. I'll try to recheck this all once again later, there are too many
+combinations we should worry about. But looks correct.
 
-> > >> @@ -2071,24 +2076,123 @@ static size_t shmem_xattr_security_list(struct dentry *dentry, char *list,
-> > >>                                        size_t list_len, const char *name,
-> > >>                                        size_t name_len, int handler_flags)
-> > >>  {
-> > >> -       return security_inode_listsecurity(dentry->d_inode, list, list_len);
-> > >> +       struct shmem_xattr *xattr;
-> > >> +       struct shmem_inode_info *shmem_i;
-> 
-> It's a nit, but (almost) everywhere else in shmem.c the shmem_inode_info
-> pointer is known as "info": easy for me to fix up if I care, but nicer
-> if you follow local custom.
+Minor problem:
 
-Will fix.  I certainly don't like breaking conventions needlessly.
+> One situation to be careful about is when the real parent is ptracing.
+> The parent is the recipient of both ptrace and job control stop events
+> and one stop can be reported as both job control and ptrace stops.  As
+> this can break the current ptrace users, suppress job control stopped
+> events for these cases.
 
-> > >> +       size_t used;
-> > >> +       char *buf = NULL;
-> > >> +
-> > >> +       used = security_inode_listsecurity(dentry->d_inode, list, list_len);
-> > >> +
-> > >> +       shmem_i = SHMEM_I(dentry->d_inode);
-> > >> +       if (list)
-> > >> +               buf = list + used;
-> 
-> This is the place that caused me most trouble.  On a minor note:
-> it worried me that security_inode_listsecurity() might return an
-> error, whereas I think you know and assume that the worst it can
-> return is 0 - might be worth a comment.
+Yes, but
 
-Will fix.
+> @@ -1580,15 +1582,37 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+>  			wo->notask_error = 0;
+>  	} else {
+>  		/*
+> +		 * If %current is ptracing @p, hide group stop/continued
+> +		 * state when looking at @p as the real parent; otherwise,
+> +		 * a single stop can be reported twice as group and ptrace
+> +		 * stops.
+> +		 *
+> +		 * If a ptracer wants to distinguish the two events for its
+> +		 * own children, it should create a separate task which
+> +		 * takes the role of real parent.
+> +		 */
+> +		if (likely(!ptrace) && task_ptrace(p) && p->parent == current)
+> +			return 0;
 
-> But more major: I found it very odd that you collect one set of things
-> from security_inode_listsecurity(), then proceed to tack on some more
-> below from the shmem inode.  I looked at other filesystems (well, ext2!)
-> and couldn't find a precedent.  What's this about?  Is it because other
-> filesystems have an on-disk format which determines what they're capable
-> of, whereas tmpfs is plastic and can reflect what the running system has?
-> Or is it to allow for future xattrs which might be added to tmpfs, but
-> frankly I'd rather do without until they're defined?
+This doesn't look exactly right. Ignoring __WNOTHREAD, do_wait() should work
+the same way for every thread in parent/debugger's thread group. IOW, we
+should probably check same_thread_group(p->parent, p->real_parent) instead
+of "== current".
 
-So there is a belief (based I think on an erroneous comment in the code
-somewhere which I plan to find and fix) that the VFS provides some form
-of generic xattr support if filesystems do not provide their own xattr
-support.  This isn't true.  What actually happens is that the VFS will
-directly call special LSM functions, if the filesystem provides no xattr
-methods.  If the filesystem provides any xattr methods, which tmpfs does
-when CONFIG_TMPFS_POSIX_ACL is set, then the VFS does different
-stupi^wmagic things with regard to xattr calls.  I only really know the
-SELinux LSM and will use it as an example, but I believe that SMACK does
-very similar things.  When you run with SELinux enabled it will provide
-support for ONLY security.selinux.  It provides this support by storing
-the security.selinux xattr information inside the inode->i_security->sid
-field.  I might be making this already weird interface even worse
-because I'm trying to take advantage of the SELinux handling for
-security.selinux rather than be required to store those in the
-shmem_inode_info as well.  Other filesystems don't play this trick.
 
-I'll try to rewrite the code to just be completely generic for
-security.* and see if it is cleaner even if we waste some space storing
-strings in ram we don't technically need to....
+
+OTOH, this is minor, perhaps we do not care. And  we have more oddities
+like this. In fact I think we should just change ptrace_reparented() to
+use same_thread_group(), this makes wait_task_zombie() more consistent.
+But, again, this needs another discussion and off-topic right now.
+
+Oleg.
 
