@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab1CUXjW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:39:22 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51892 "EHLO ogre.sisk.pl"
+	id S932591Ab1CUXkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:40:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51875 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932242Ab1CUXjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:39:07 -0400
+	id S932227Ab1CUXjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:39:04 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 6/6] Introduce ARCH_NO_SYSDEV_OPS config option (v2)
-Date: Tue, 22 Mar 2011 00:38:49 +0100
+Subject: [PATCH 4/6] KVM: Use syscore_ops instead of sysdev class and sysdev
+Date: Tue, 22 Mar 2011 00:37:06 +0100
 User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
         Kay Sievers <kay.sievers@suse.de>,
@@ -25,157 +25,127 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103220038.49425.rjw@sisk.pl>
+Message-Id: <201103220037.06465.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Introduce Kconfig option allowing architectures where sysdev
-operations used during system suspend, resume and shutdown have been
-completely replaced with struct sycore_ops operations to avoid
-building sysdev code that will never be used.
-
-Make callbacks in struct sys_device and struct sysdev_driver depend
-on ARCH_NO_SYSDEV_OPS to allows us to verify if all of the references
-have been actually removed from the code the given architecture
-depends on.
-
-Make x86 select ARCH_NO_SYSDEV_OPS.
+KVM uses a sysdev class and a sysdev for executing kvm_suspend()
+after interrupts have been turned off on the boot CPU (during system
+suspend) and for executing kvm_resume() before turning on interrupts
+on the boot CPU (during system resume).  However, since both of these
+functions ignore their arguments, the entire mechanism may be
+replaced with a struct syscore_ops object which is simpler.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/x86/Kconfig       |    1 +
- drivers/base/Kconfig   |    7 +++++++
- drivers/base/sys.c     |    3 ++-
- include/linux/device.h |    4 ++++
- include/linux/pm.h     |   10 ++++++++--
- include/linux/sysdev.h |    7 +++++--
- 6 files changed, 27 insertions(+), 5 deletions(-)
+ virt/kvm/kvm_main.c |   34 ++++++++--------------------------
+ 1 file changed, 8 insertions(+), 26 deletions(-)
 
-Index: linux-2.6/include/linux/pm.h
+Index: linux-2.6/virt/kvm/kvm_main.c
 ===================================================================
---- linux-2.6.orig/include/linux/pm.h
-+++ linux-2.6/include/linux/pm.h
-@@ -529,13 +529,19 @@ struct dev_power_domain {
-  */
- 
- #ifdef CONFIG_PM_SLEEP
--extern void device_pm_lock(void);
-+#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
-+extern int sysdev_suspend(pm_message_t state);
- extern int sysdev_resume(void);
-+#else
-+static inline int sysdev_suspend(pm_message_t state) { return 0; }
-+static inline int sysdev_resume(void) { return 0; }
-+#endif
-+
-+extern void device_pm_lock(void);
- extern void dpm_resume_noirq(pm_message_t state);
- extern void dpm_resume_end(pm_message_t state);
- 
- extern void device_pm_unlock(void);
--extern int sysdev_suspend(pm_message_t state);
- extern int dpm_suspend_noirq(pm_message_t state);
- extern int dpm_suspend_start(pm_message_t state);
- 
-Index: linux-2.6/include/linux/sysdev.h
-===================================================================
---- linux-2.6.orig/include/linux/sysdev.h
-+++ linux-2.6/include/linux/sysdev.h
-@@ -33,12 +33,13 @@ struct sysdev_class {
- 	const char *name;
- 	struct list_head	drivers;
- 	struct sysdev_class_attribute **attrs;
--
-+	struct kset		kset;
-+#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
- 	/* Default operations for these types of devices */
- 	int	(*shutdown)(struct sys_device *);
- 	int	(*suspend)(struct sys_device *, pm_message_t state);
- 	int	(*resume)(struct sys_device *);
--	struct kset		kset;
-+#endif
- };
- 
- struct sysdev_class_attribute {
-@@ -76,9 +77,11 @@ struct sysdev_driver {
- 	struct list_head	entry;
- 	int	(*add)(struct sys_device *);
- 	int	(*remove)(struct sys_device *);
-+#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
- 	int	(*shutdown)(struct sys_device *);
- 	int	(*suspend)(struct sys_device *, pm_message_t state);
- 	int	(*resume)(struct sys_device *);
-+#endif
- };
- 
- 
-Index: linux-2.6/include/linux/device.h
-===================================================================
---- linux-2.6.orig/include/linux/device.h
-+++ linux-2.6/include/linux/device.h
-@@ -633,8 +633,12 @@ static inline int devtmpfs_mount(const c
- /* drivers/base/power/shutdown.c */
- extern void device_shutdown(void);
- 
-+#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
- /* drivers/base/sys.c */
- extern void sysdev_shutdown(void);
-+#else
-+static inline void sysdev_shutdown(void) { }
-+#endif
- 
- /* debugging and troubleshooting/diagnostic helpers. */
- extern const char *dev_driver_string(const struct device *dev);
-Index: linux-2.6/arch/x86/Kconfig
-===================================================================
---- linux-2.6.orig/arch/x86/Kconfig
-+++ linux-2.6/arch/x86/Kconfig
-@@ -71,6 +71,7 @@ config X86
- 	select GENERIC_IRQ_SHOW
- 	select IRQ_FORCED_THREADING
- 	select USE_GENERIC_SMP_HELPERS if SMP
-+	select ARCH_NO_SYSDEV_OPS
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
-Index: linux-2.6/drivers/base/sys.c
-===================================================================
---- linux-2.6.orig/drivers/base/sys.c
-+++ linux-2.6/drivers/base/sys.c
-@@ -329,7 +329,7 @@ void sysdev_unregister(struct sys_device
+--- linux-2.6.orig/virt/kvm/kvm_main.c
++++ linux-2.6/virt/kvm/kvm_main.c
+@@ -30,7 +30,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/highmem.h>
+ #include <linux/file.h>
+-#include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/cpu.h>
+ #include <linux/sched.h>
+ #include <linux/cpumask.h>
+@@ -2447,33 +2447,26 @@ static void kvm_exit_debug(void)
+ 	debugfs_remove(kvm_debugfs_dir);
  }
  
- 
--
-+#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
- /**
-  *	sysdev_shutdown - Shut down all system devices.
-  *
-@@ -524,6 +524,7 @@ int sysdev_resume(void)
+-static int kvm_suspend(struct sys_device *dev, pm_message_t state)
++static int kvm_suspend(void)
+ {
+ 	if (kvm_usage_count)
+ 		hardware_disable_nolock(NULL);
  	return 0;
  }
- EXPORT_SYMBOL_GPL(sysdev_resume);
-+#endif /* CONFIG_ARCH_NO_SYSDEV_OPS */
  
- int __init system_bus_init(void)
+-static int kvm_resume(struct sys_device *dev)
++static void kvm_resume(void)
  {
-Index: linux-2.6/drivers/base/Kconfig
-===================================================================
---- linux-2.6.orig/drivers/base/Kconfig
-+++ linux-2.6/drivers/base/Kconfig
-@@ -168,4 +168,11 @@ config SYS_HYPERVISOR
- 	bool
- 	default n
+ 	if (kvm_usage_count) {
+ 		WARN_ON(raw_spin_is_locked(&kvm_lock));
+ 		hardware_enable_nolock(NULL);
+ 	}
+-	return 0;
+ }
  
-+config ARCH_NO_SYSDEV_OPS
-+	bool
-+	---help---
-+	  To be selected by architectures that don't use sysdev class or
-+	  sysdev driver power management (suspend/resume) and shutdown
-+	  operations.
+-static struct sysdev_class kvm_sysdev_class = {
+-	.name = "kvm",
++static struct syscore_ops kvm_syscore_ops = {
+ 	.suspend = kvm_suspend,
+ 	.resume = kvm_resume,
+ };
+ 
+-static struct sys_device kvm_sysdev = {
+-	.id = 0,
+-	.cls = &kvm_sysdev_class,
+-};
+-
+ struct page *bad_page;
+ pfn_t bad_pfn;
+ 
+@@ -2557,14 +2550,6 @@ int kvm_init(void *opaque, unsigned vcpu
+ 		goto out_free_2;
+ 	register_reboot_notifier(&kvm_reboot_notifier);
+ 
+-	r = sysdev_class_register(&kvm_sysdev_class);
+-	if (r)
+-		goto out_free_3;
+-
+-	r = sysdev_register(&kvm_sysdev);
+-	if (r)
+-		goto out_free_4;
+-
+ 	/* A kmem cache lets us meet the alignment requirements of fx_save. */
+ 	if (!vcpu_align)
+ 		vcpu_align = __alignof__(struct kvm_vcpu);
+@@ -2572,7 +2557,7 @@ int kvm_init(void *opaque, unsigned vcpu
+ 					   0, NULL);
+ 	if (!kvm_vcpu_cache) {
+ 		r = -ENOMEM;
+-		goto out_free_5;
++		goto out_free_3;
+ 	}
+ 
+ 	r = kvm_async_pf_init();
+@@ -2589,6 +2574,8 @@ int kvm_init(void *opaque, unsigned vcpu
+ 		goto out_unreg;
+ 	}
+ 
++	register_syscore_ops(&kvm_syscore_ops);
 +
- endmenu
+ 	kvm_preempt_ops.sched_in = kvm_sched_in;
+ 	kvm_preempt_ops.sched_out = kvm_sched_out;
+ 
+@@ -2600,10 +2587,6 @@ out_unreg:
+ 	kvm_async_pf_deinit();
+ out_free:
+ 	kmem_cache_destroy(kvm_vcpu_cache);
+-out_free_5:
+-	sysdev_unregister(&kvm_sysdev);
+-out_free_4:
+-	sysdev_class_unregister(&kvm_sysdev_class);
+ out_free_3:
+ 	unregister_reboot_notifier(&kvm_reboot_notifier);
+ 	unregister_cpu_notifier(&kvm_cpu_notifier);
+@@ -2631,8 +2614,7 @@ void kvm_exit(void)
+ 	misc_deregister(&kvm_dev);
+ 	kmem_cache_destroy(kvm_vcpu_cache);
+ 	kvm_async_pf_deinit();
+-	sysdev_unregister(&kvm_sysdev);
+-	sysdev_class_unregister(&kvm_sysdev_class);
++	unregister_syscore_ops(&kvm_syscore_ops);
+ 	unregister_reboot_notifier(&kvm_reboot_notifier);
+ 	unregister_cpu_notifier(&kvm_cpu_notifier);
+ 	on_each_cpu(hardware_disable_nolock, NULL, 1);
 
