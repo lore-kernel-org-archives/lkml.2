@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab1CUT2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 15:28:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9648 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753812Ab1CUT2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 15:28:01 -0400
-Date: Mon, 21 Mar 2011 15:27:57 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Don't update group weights when on service tree.
-Message-ID: <20110321192757.GK2694@redhat.com>
-References: <1300374357-30686-1-git-send-email-teravest@google.com>
+	id S1754110Ab1CUTaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 15:30:00 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:18080 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609Ab1CUT36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 15:29:58 -0400
+Date: Mon, 21 Mar 2011 20:29:49 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com
+Subject: [PATCH][resend] Don't leak memory in failure paths of
+ gfs2_acl_get()
+Message-ID: <alpine.LNX.2.00.1103212025500.15815@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300374357-30686-1-git-send-email-teravest@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 08:05:57AM -0700, Justin TerAvest wrote:
-> Version 3 is updated to apply to for-2.6.39/core.
-> 
-> For version 2, I took Vivek's advice and made sure we update the group
-> weight from cfq_group_service_tree_add().
-> 
-> If a weight was updated while a group is on the service tree, the
-> calculation for the total weight of the service tree can be adjusted
-> improperly, which either leads to bad service tree weights, or
-> potentially crashes (if total_weight becomes 0).
-> 
-> This patch defers updates to the weight until a group is off the service
-> tree.
-> 
-> Signed-off-by: Justin TerAvest <teravest@google.com>
-> Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  block/cfq-iosched.c |   53 +++++++++++++++++++++++++++++++++++++++-----------
->  1 files changed, 41 insertions(+), 12 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 89e0d1c..12e380b 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -178,6 +178,8 @@ struct cfq_group {
->  	/* group service_tree key */
->  	u64 vdisktime;
->  	unsigned int weight;
-> +	unsigned int new_weight;
-> +	bool needs_update;
->  
->  	/* number of cfqq currently on this group */
->  	int nr_cfqq;
-> @@ -853,7 +855,27 @@ __cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
->  }
->  
->  static void
-> -cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
-> +cfq_update_group_weight(struct cfq_group *cfqg)
-> +{
-> +	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
-> +	if (cfqg->needs_update) {
-> +		cfqg->weight = cfqg->new_weight;
-> +		cfqg->needs_update = false;
-> +	}
-> +}
+In fs/gfs2/acl.c::gfs2_acl_get() we may leak memory in failure scenarios.
+gfs2_xattr_acl_get() may return <=0 after having dynamically allocated 
+memory for its last argument ('data' in the gfs2_acl_get() caller) and in 
+that case the caller leaks the memory.
+This patch initializes 'data' to NULL and calls kfree() on 'data' in the 
+failure paths. This ensures that we always free the memory on failure or 
+that we just call kfree(NULL) on failures where no memory has actually 
+been allocated yet.
 
-thinking more about it, looks like this code is still racy. If somebody
-updates the weights again while we are about to process previous weight
-change, we might lose the new weight and set needs_update=false. We might
-have to use xchg() to update cfqg->needs_update.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ acl.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-Thanks
-Vivek
+ Patch against Linus' tree as of right now.
+ Compile tested only.
+
+diff --git a/fs/gfs2/acl.c b/fs/gfs2/acl.c
+index cbc0715..7d231fb 100644
+--- a/fs/gfs2/acl.c
++++ b/fs/gfs2/acl.c
+@@ -42,7 +42,7 @@ static struct posix_acl *gfs2_acl_get(struct gfs2_inode *ip, int type)
+ {
+ 	struct posix_acl *acl;
+ 	const char *name;
+-	char *data;
++	char *data = NULL;
+ 	int len;
+ 
+ 	if (!ip->i_eattr)
+@@ -57,10 +57,14 @@ static struct posix_acl *gfs2_acl_get(struct gfs2_inode *ip, int type)
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	len = gfs2_xattr_acl_get(ip, name, &data);
+-	if (len < 0)
++	if (len < 0) {
++		kfree(data);
+ 		return ERR_PTR(len);
+-	if (len == 0)
++	}
++	if (len == 0) {
++		kfree(data);
+ 		return NULL;
++	}
+ 
+ 	acl = posix_acl_from_xattr(data, len);
+ 	kfree(data);
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
