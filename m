@@ -1,100 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab1CUVNQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 17:13:16 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:35493 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754374Ab1CUVNO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 17:13:14 -0400
-Subject: Re: [RFC-v4 00/12] iSCSI target v4.1.0-rc1 series for .39-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Jesper Juhl <jj@chaosbits.net>
-In-Reply-To: <1300741629.10634.46.camel@mulgrave.site>
-References: <1300613497-2091-1-git-send-email-nab@linux-iscsi.org>
-	 <1300740867.21880.12.camel@haakon2.linux-iscsi.org>
-	 <1300741629.10634.46.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Mon, 21 Mar 2011 14:06:01 -0700
-Message-Id: <1300741561.21880.22.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1754599Ab1CUVOb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 17:14:31 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:37005 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754546Ab1CUVO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 17:14:29 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201103212114.p2LLELei031028@stout.americas.sgi.com>
+Date: Mon, 21 Mar 2011 16:14:21 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 2.6.39-rc1
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.5 7/5/10
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-21 at 16:07 -0500, James Bottomley wrote:
-> On Mon, 2011-03-21 at 13:54 -0700, Nicholas A. Bellinger wrote:
-> > On Sun, 2011-03-20 at 02:31 -0700, Nicholas A. Bellinger wrote:
-> > > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > > 
-> > > Greetings all,
-> > > 
-> > > This is the forth RFC series of the RisingTide Systems iSCSI target fabric
-> > > module compatible with mainline target core v4 -> for-39 target infrastructure.
-> > > 
-> > > More information about iscsi_target_mod is available here:
-> > > 
-> > > http://linux-iscsi.org/wiki/ISCSI/configFS
-> > > 
-> > > This series contains the updated drivers/target/iscsi/ source tree for modern
-> > > mainline code based on feedback from Christoph Hellwig that has been recently
-> > > pushed into the lio-core-2.6.git/lio-4.1 development branch.  This includes
-> > > another round of iSCSI network portal changes to use proper Linux/Net code
-> > > w/ IPv6/IPv4 iscsi_np->np_sockaddr, conversion of iSCSI TX thread context
-> > > to use schedule_timeout_interruptible(), and the renaming the majority of
-> > > functions to use the 'iscsit_*' function prefix based upon hch's feedback.
-> > > 
-> > > This series is currently rebased against .38-FINAL using target core v4.0.0-rc7-ml.
-> > > 
-> > > The full RFC-v4 series for iscsi-target is available here:
-> > > 
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-39-iscsi-target-v4
-> > > 
+The following changes since commit 10effcb548c170d59ea1d2152f2ee0ad45ce4c9d:
 
-<SNIP>
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6 (2011-03-21 10:06:51 -0700)
 
-> > > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > > 
-> > 
-> > Hi Christoph, James and Co,
-> > 
-> > At this point I have no further changes beyond RFC-v4 for the initial
-> > merge of iscsi-target.  Please let me know if anything was missed from
-> > your review for the above changes, and I will get any remaining items
-> > addressed ASAP.
-> 
-> OK ... so if you're ready, you can send the next one as a patch not rfc.
-> 
+are available in the git repository at:
 
-Ok, I will give 1-2 days for the final round of feedback on RFC-v4, and
-post the next series as [PATCH].  Please let me know if this should
-happen sooner in order not to miss the second round of SCSI patches
-going to Linus this week.
+  git://oss.sgi.com/xfs/xfs for-linus
 
-> > Also James, how do you prefer this series be sent out for the initial
-> > merge in order avoid the vger lists max character limit..?
-> 
-> I don't really care ... it's fairly easy to combine stuff.  It's nice if
-> the first patch has the complete changelog ...
-> 
+Alex Elder (2):
+      xfs: zero proper structure size for geometry calls
+      xfs: don't name variables "panic"
 
-Ok, so I will send out the 12 part series tagged as [PATCH], and will
-include a full changelog in the first patch, intending for the rest of
-the patches to be squashed into the first.
+Christoph Hellwig (8):
+      xfs: only lock the rt bitmap inode once per allocation
+      xfs: fix xfs_get_extsz_hint for a zero extent size hint
+      xfs: add lockdep annotations for the rt inodes
+      xfs: stop using xfs_trans_iget in the RT allocator
+      xfs: more sensible inode refcounting for ialloc
+      xfs: enable delaylog by default
+      xfs: clean up the xfs_alloc_compute_aligned calling convention
+      xfs: factor agf counter updates into a helper
 
-Thank you,
+Dan Rosenberg (1):
+      xfs: prevent leaking uninitialized stack memory in FSGEOMETRY_V1
 
---nab
+Dave Chinner (11):
+      xfs: introduce new logging API.
+      xfs: Convert linux-2.6/ files to new logging interface
+      xfs: Convert xlog_warn to new logging interface
+      xfs: convert xfs_cmn_err to xfs_alert_tag
+      xfs: kill xfs_fs_repair_cmn_err() macro
+      xfs: kill xfs_fs_mount_cmn_err() macro
+      xfs: convert xfs_fs_cmn_err to new error logging API
+      xfs: rename xfs_cmn_err_fsblock_zero()
+      xfs: convert the quota debug prints to new API
+      xfs: Convert remaining cmn_err() callers to new API
+      xfs: kill support/debug.[ch]
 
+Lukas Czerner (1):
+      xfs: check if device support discard in xfs_ioc_trim()
+
+ .../filesystems/xfs-delayed-logging-design.txt     |    7 -
+ fs/xfs/Makefile                                    |    5 +-
+ fs/xfs/linux-2.6/kmem.c                            |    9 +-
+ fs/xfs/linux-2.6/xfs_aops.c                        |    6 +-
+ fs/xfs/linux-2.6/xfs_buf.c                         |   17 +-
+ fs/xfs/linux-2.6/xfs_discard.c                     |    2 +
+ fs/xfs/linux-2.6/xfs_ioctl.c                       |   11 +-
+ fs/xfs/linux-2.6/xfs_linux.h                       |   23 ++-
+ fs/xfs/linux-2.6/xfs_message.c                     |  133 ++++++++++++
+ fs/xfs/linux-2.6/xfs_message.h                     |   38 ++++
+ fs/xfs/linux-2.6/xfs_super.c                       |  128 +++++------
+ fs/xfs/linux-2.6/xfs_sync.c                        |    5 +-
+ fs/xfs/linux-2.6/xfs_sysctl.c                      |    2 +-
+ fs/xfs/quota/xfs_dquot.c                           |   48 +++--
+ fs/xfs/quota/xfs_dquot_item.c                      |    5 +-
+ fs/xfs/quota/xfs_qm.c                              |   49 ++---
+ fs/xfs/quota/xfs_qm_bhv.c                          |    3 +-
+ fs/xfs/quota/xfs_qm_syscalls.c                     |   85 ++++----
+ fs/xfs/quota/xfs_trans_dquot.c                     |    5 +-
+ fs/xfs/support/debug.c                             |  107 ----------
+ fs/xfs/support/debug.h                             |   61 ------
+ fs/xfs/xfs_alloc.c                                 |  160 +++++++-------
+ fs/xfs/xfs_bmap.c                                  |   24 ++-
+ fs/xfs/xfs_buf_item.c                              |   15 +-
+ fs/xfs/xfs_da_btree.c                              |    9 +-
+ fs/xfs/xfs_dfrag.c                                 |    4 +-
+ fs/xfs/xfs_dir2.c                                  |    2 +-
+ fs/xfs/xfs_dir2_node.c                             |   25 +--
+ fs/xfs/xfs_error.c                                 |   22 +-
+ fs/xfs/xfs_error.h                                 |   19 +--
+ fs/xfs/xfs_fsops.c                                 |    9 +-
+ fs/xfs/xfs_ialloc.c                                |   82 +++-----
+ fs/xfs/xfs_inode.c                                 |  129 +++++------
+ fs/xfs/xfs_inode.h                                 |   23 ++-
+ fs/xfs/xfs_iomap.c                                 |   12 +-
+ fs/xfs/xfs_log.c                                   |  124 +++++------
+ fs/xfs/xfs_log_priv.h                              |    4 -
+ fs/xfs/xfs_log_recover.c                           |  223 ++++++++++----------
+ fs/xfs/xfs_mount.c                                 |  148 +++++++-------
+ fs/xfs/xfs_quota.h                                 |    3 +-
+ fs/xfs/xfs_rtalloc.c                               |   92 ++++-----
+ fs/xfs/xfs_rtalloc.h                               |    2 +-
+ fs/xfs/xfs_rw.c                                    |   58 ++---
+ fs/xfs/xfs_trans.h                                 |    2 -
+ fs/xfs/xfs_trans_ail.c                             |    2 +-
+ fs/xfs/xfs_trans_buf.c                             |    6 +-
+ fs/xfs/xfs_trans_inode.c                           |   22 --
+ fs/xfs/xfs_vnodeops.c                              |   74 ++-----
+ 48 files changed, 961 insertions(+), 1083 deletions(-)
+ create mode 100644 fs/xfs/linux-2.6/xfs_message.c
+ create mode 100644 fs/xfs/linux-2.6/xfs_message.h
+ delete mode 100644 fs/xfs/support/debug.c
+ delete mode 100644 fs/xfs/support/debug.h
