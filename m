@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab1CUXvz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:51:55 -0400
-Received: from kroah.org ([198.145.64.141]:49265 "EHLO coco.kroah.org"
+	id S1755995Ab1CUXv6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:51:58 -0400
+Received: from kroah.org ([198.145.64.141]:49260 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755276Ab1CUXPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755271Ab1CUXPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Mar 2011 19:15:10 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:10 2011
-Message-Id: <20110321230710.503017570@clark.kroah.org>
+Message-Id: <20110321230710.405117080@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:12 -0700
+Date: Mon, 21 Mar 2011 16:06:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: [13/87] rt2x00: Fix crash on USB unplug
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [12/87] netfilter: fix export secctx error handling
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,80 +26,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivo van Doorn <ivdoorn@gmail.com>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit 070192dd2975c0e97bbdeac7623b755235c6db7d upstream.
+commit cba85b532e4aabdb97f44c18987d45141fd93faa upstream.
 
-By not scheduling the TX/RX completion worker threads
-when Radio is disabled, or hardware has been unplugged,
-the queues cannot be completely cleaned.
+In 1ae4de0cdf855305765592647025bde55e85e451, the secctx was exported
+via the /proc/net/netfilter/nf_conntrack and ctnetlink interfaces
+instead of the secmark.
 
-This causes crashes when the hardware has been unplugged while
-the radio is still enabled.
+That patch introduced the use of security_secid_to_secctx() which may
+return a non-zero value on error.
 
-Signed-off-by: Ivo van Doorn <IvDoorn@gmail.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+In one of my setups, I have NF_CONNTRACK_SECMARK enabled but no
+security modules. Thus, security_secid_to_secctx() returns a negative
+value that results in the breakage of the /proc and `conntrack -L'
+outputs. To fix this, we skip the inclusion of secctx if the
+aforementioned function fails.
+
+This patch also fixes the dynamic netlink message size calculation
+if security_secid_to_secctx() returns an error, since its logic is
+also wrong.
+
+This problem exists in Linux kernel >= 2.6.37.
+
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00dev.c |   12 ++++++++++--
- drivers/net/wireless/rt2x00/rt2x00usb.c |    8 ++------
- 2 files changed, 12 insertions(+), 8 deletions(-)
+ net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c |    2 -
+ net/netfilter/nf_conntrack_netlink.c                  |   25 ++++++++++--------
+ net/netfilter/nf_conntrack_standalone.c               |    2 -
+ 3 files changed, 16 insertions(+), 13 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -486,6 +486,10 @@ void rt2x00lib_rxdone(struct queue_entry
- 	unsigned int header_length;
- 	int rate_idx;
+--- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
++++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+@@ -97,7 +97,7 @@ static int ct_show_secctx(struct seq_fil
  
-+	if (!test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags) ||
-+	    !test_bit(DEVICE_STATE_ENABLED_RADIO, &rt2x00dev->flags))
-+		goto submit_entry;
-+
- 	if (test_bit(ENTRY_DATA_IO_FAILED, &entry->flags))
- 		goto submit_entry;
+ 	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
+ 	if (ret)
+-		return ret;
++		return 0;
  
-@@ -570,9 +574,13 @@ void rt2x00lib_rxdone(struct queue_entry
- 	entry->skb = skb;
+ 	ret = seq_printf(s, "secctx=%s ", secctx);
  
- submit_entry:
--	rt2x00dev->ops->lib->clear_entry(entry);
--	rt2x00queue_index_inc(entry->queue, Q_INDEX);
-+	entry->flags = 0;
- 	rt2x00queue_index_inc(entry->queue, Q_INDEX_DONE);
-+	if (test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags) &&
-+	    test_bit(DEVICE_STATE_ENABLED_RADIO, &rt2x00dev->flags)) {
-+		rt2x00dev->ops->lib->clear_entry(entry);
-+		rt2x00queue_index_inc(entry->queue, Q_INDEX);
-+	}
- }
- EXPORT_SYMBOL_GPL(rt2x00lib_rxdone);
+--- a/net/netfilter/nf_conntrack_netlink.c
++++ b/net/netfilter/nf_conntrack_netlink.c
+@@ -254,7 +254,7 @@ ctnetlink_dump_secctx(struct sk_buff *sk
  
---- a/drivers/net/wireless/rt2x00/rt2x00usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
-@@ -226,9 +226,7 @@ static void rt2x00usb_interrupt_txdone(s
- 	 * Schedule the delayed work for reading the TX status
- 	 * from the device.
- 	 */
--	if (test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags) &&
--	    test_bit(DEVICE_STATE_ENABLED_RADIO, &rt2x00dev->flags))
--		ieee80211_queue_work(rt2x00dev->hw, &rt2x00dev->txdone_work);
-+	ieee80211_queue_work(rt2x00dev->hw, &rt2x00dev->txdone_work);
+ 	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
+ 	if (ret)
+-		return ret;
++		return 0;
+ 
+ 	ret = -1;
+ 	nest_secctx = nla_nest_start(skb, CTA_SECCTX | NLA_F_NESTED);
+@@ -453,16 +453,22 @@ ctnetlink_counters_size(const struct nf_
+ 	       ;
  }
  
- static void rt2x00usb_kick_tx_entry(struct queue_entry *entry)
-@@ -424,9 +422,7 @@ static void rt2x00usb_interrupt_rxdone(s
- 	 * Schedule the delayed work for reading the RX status
- 	 * from the device.
- 	 */
--	if (test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags) &&
--	    test_bit(DEVICE_STATE_ENABLED_RADIO, &rt2x00dev->flags))
--		ieee80211_queue_work(rt2x00dev->hw, &rt2x00dev->rxdone_work);
-+	ieee80211_queue_work(rt2x00dev->hw, &rt2x00dev->rxdone_work);
- }
+-#ifdef CONFIG_NF_CONNTRACK_SECMARK
+-static int ctnetlink_nlmsg_secctx_size(const struct nf_conn *ct)
++static inline int
++ctnetlink_secctx_size(const struct nf_conn *ct)
+ {
+-	int len;
++#ifdef CONFIG_NF_CONNTRACK_SECMARK
++	int len, ret;
  
- /*
+-	security_secid_to_secctx(ct->secmark, NULL, &len);
++	ret = security_secid_to_secctx(ct->secmark, NULL, &len);
++	if (ret)
++		return 0;
+ 
+-	return sizeof(char) * len;
+-}
++	return nla_total_size(0) /* CTA_SECCTX */
++	       + nla_total_size(sizeof(char) * len); /* CTA_SECCTX_NAME */
++#else
++	return 0;
+ #endif
++}
+ 
+ static inline size_t
+ ctnetlink_nlmsg_size(const struct nf_conn *ct)
+@@ -479,10 +485,7 @@ ctnetlink_nlmsg_size(const struct nf_con
+ 	       + nla_total_size(0) /* CTA_PROTOINFO */
+ 	       + nla_total_size(0) /* CTA_HELP */
+ 	       + nla_total_size(NF_CT_HELPER_NAME_LEN) /* CTA_HELP_NAME */
+-#ifdef CONFIG_NF_CONNTRACK_SECMARK
+-	       + nla_total_size(0) /* CTA_SECCTX */
+-	       + nla_total_size(ctnetlink_nlmsg_secctx_size(ct)) /* CTA_SECCTX_NAME */
+-#endif
++	       + ctnetlink_secctx_size(ct)
+ #ifdef CONFIG_NF_NAT_NEEDED
+ 	       + 2 * nla_total_size(0) /* CTA_NAT_SEQ_ADJ_ORIG|REPL */
+ 	       + 6 * nla_total_size(sizeof(u_int32_t)) /* CTA_NAT_SEQ_OFFSET */
+--- a/net/netfilter/nf_conntrack_standalone.c
++++ b/net/netfilter/nf_conntrack_standalone.c
+@@ -118,7 +118,7 @@ static int ct_show_secctx(struct seq_fil
+ 
+ 	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
+ 	if (ret)
+-		return ret;
++		return 0;
+ 
+ 	ret = seq_printf(s, "secctx=%s ", secctx);
+ 
 
 
