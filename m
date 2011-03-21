@@ -1,142 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612Ab1CUEcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 00:32:09 -0400
-Received: from [220.231.59.163] ([220.231.59.163]:53982 "EHLO
-	mail2.thunderst.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab1CUEcI (ORCPT
+	id S1751837Ab1CUEka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 00:40:30 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60271 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751409Ab1CUEk2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 00:32:08 -0400
-X-Greylist: delayed 1834 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Mar 2011 00:32:07 EDT
-Subject: Re: [PATCH] code cleanup on fs/super.c
-From: LiuQi <liuqi@thunderst.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Liu <lingjiujianke@gmail.com>, randy.dunlap@oracle.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dchinner@redhat.com
-In-Reply-To: <20110217173615.GJ22723@ZenIV.linux.org.uk>
-References: <AANLkTi=50m7xULN+Mob1942b+qBEgMcqUPDWSd3inan6@mail.gmail.com>
-	 <AANLkTim2fg5OUw2aZXA-4V4O7PUQ6T4mhoWxvjNdtYcc@mail.gmail.com>
-	 <20110217173615.GJ22723@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Mar 2011 12:00:58 +0800
-Message-ID: <1300680058.3967.11.camel@btg>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
-Content-Transfer-Encoding: 8bit
+	Mon, 21 Mar 2011 00:40:28 -0400
+From: "Janorkar, Mayuresh" <mayur@ti.com>
+To: Carl Vanderlip <carlv@codeaurora.org>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+CC: Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Colin Cross <ccross@android.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 21 Mar 2011 10:10:09 +0530
+Subject: RE: [PATCH 07/20] video: msm: Allow users to request a larger x and
+ y virtual fb
+Thread-Topic: [PATCH 07/20] video: msm: Allow users to request a larger x
+ and y virtual fb
+Thread-Index: AcvlvRtjYuoO3VPYSoK3AiaRNj9ztABw2boQ
+Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB033D22EAE7@dbde02.ent.ti.com>
+References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
+ <1300485381-27201-1-git-send-email-carlv@codeaurora.org>
+In-Reply-To: <1300485381-27201-1-git-send-email-carlv@codeaurora.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-and this one?
-在 2011-02-17四的 17:36 +0000，Al Viro写道：
-> On Thu, Feb 17, 2011 at 08:20:31AM -0800, Linus Torvalds wrote:
-> > On Thu, Feb 17, 2011 at 12:59 AM, Steven Liu <lingjiujianke@gmail.com> wrote:
-> > >
-> > > ? Clean up the unsed code on fs/super.c, all filesystem using mount_bdev
-> > > ? and mount_nodev to replace get_sb_bdev and get_sb_nodev.
-> > 
-> > There might easily be external modules that still use this.
+
+
+> -----Original Message-----
+> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
+> owner@vger.kernel.org] On Behalf Of Carl Vanderlip
+> Sent: Saturday, March 19, 2011 3:26 AM
+> To: David Brown; Daniel Walker; Bryan Huntsman
+> Cc: Brian Swetland; Dima Zavin; Rebecca Schultz Zavin; Colin Cross; linux-
+> fbdev@vger.kernel.org; Carl Vanderlip; linux-arm-
+> kernel@lists.infradead.org; linux-arm-msm@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: [PATCH 07/20] video: msm: Allow users to request a larger x and y
+> virtual fb
 > 
-> *nod*
+> As long as the total size fits inside the memory allocated to the
+> framebuffer
+> users can request a larger size. This change allows users to request a
+> triple
+> buffered fb.
 > 
-> They would be trivial to convert from ->get_sb() to ->mount(), but until
-> we are ready to remove the former (next cycle, once ->mnt_devname stuff
-> gets tested and merged) there's no real reason to remove them.  Precisely
-> because the remaining instances of get_sb_bdev() and friends will be
-> trivial to remove when the time comes; it's not something that will be
-> an obstacle to transition.
+> Authors:
+> Dima Zavin <dima@android.com>
+> Rebecca Schultz Zavin <rebecca@android.com>
+> Colin Cross <ccross@android.com>
 > 
-> Typical conversion looks so:
-> -static int minix_get_sb(struct file_system_type *fs_type,
-> -       int flags, const char *dev_name, void *data, struct vfsmount *mnt)
-> +static struct dentry *minix_mount(struct file_system_type *fs_type,
-> +       int flags, const char *dev_name, void *data)
+> Signed-off-by: Carl Vanderlip <carlv@codeaurora.org>
+> ---
+>  drivers/video/msm/msm_fb.c |   63 ++++++++++++++++++++++++++++++++++-----
+> ----
+>  1 files changed, 50 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/video/msm/msm_fb.c b/drivers/video/msm/msm_fb.c
+> index 04d0067..6af8b41 100644
+> --- a/drivers/video/msm/msm_fb.c
+> +++ b/drivers/video/msm/msm_fb.c
+> @@ -53,6 +53,9 @@ do { \
+>  		printk(KERN_INFO "msmfb: "fmt, ##args); \
+>  } while (0)
+> 
+> +#define BITS_PER_PIXEL(info) (info->fb->var.bits_per_pixel)
+> +#define BYTES_PER_PIXEL(info) (info->fb->var.bits_per_pixel >> 3)
+> +
+>  static int msmfb_debug_mask;
+>  module_param_named(msmfb_debug_mask, msmfb_debug_mask, int,
+>  		   S_IRUGO | S_IWUSR | S_IWGRP);
+> @@ -161,9 +164,10 @@ static int msmfb_start_dma(struct msmfb_info *msmfb)
+>  	}
+>  	spin_unlock_irqrestore(&msmfb->update_lock, irq_flags);
+> 
+> -	addr = ((msmfb->xres * (yoffset + y) + x) * 2);
+> +	addr = ((msmfb->xres * (yoffset + y) + x) * BYTES_PER_PIXEL(msmfb));
+>  	mdp->dma(mdp, addr + msmfb->fb->fix.smem_start,
+> -		 msmfb->xres * 2, w, h, x, y, &msmfb->dma_callback,
+> +		 msmfb->xres * BYTES_PER_PIXEL(msmfb), w, h, x, y,
+> +		 &msmfb->dma_callback,
+>  		 panel->interface_type);
+>  	return 0;
+>  error:
+> @@ -323,14 +327,46 @@ error:
+> 
+>  static int msmfb_check_var(struct fb_var_screeninfo *var, struct fb_info
+> *info)
 >  {
-> -       return get_sb_bdev(fs_type, flags, dev_name, data, minix_fill_super,
-> -                          mnt);
-> +       return mount_bdev(fs_type, flags, dev_name, data, minix_fill_super);
+> +	u32 size;
+> +
+>  	if ((var->xres != info->var.xres) ||
+>  	    (var->yres != info->var.yres) ||
+> -	    (var->xres_virtual != info->var.xres_virtual) ||
+> -	    (var->yres_virtual != info->var.yres_virtual) ||
+>  	    (var->xoffset != info->var.xoffset) ||
+>  	    (var->bits_per_pixel != info->var.bits_per_pixel) ||
+>  	    (var->grayscale != info->var.grayscale))
+>  		 return -EINVAL;
+> +
+> +	size = var->xres_virtual * var->yres_virtual *
+> +		(var->bits_per_pixel >> 3);
+
+How about defining a new macro BYTES_PER_PIXEL_VAR for fb_var_screeninfo also? That would make code more readable.
+
+> +	if (size > info->fix.smem_len)
+> +		return -EINVAL;
+> +	return 0;
+> +}
+> +
+> +static int msmfb_set_par(struct fb_info *info)
+> +{
+> +	struct fb_var_screeninfo *var = &info->var;
+> +	struct fb_fix_screeninfo *fix = &info->fix;
+> +
+> +	/* we only support RGB ordering for now */
+> +	if (var->bits_per_pixel == 32 || var->bits_per_pixel == 24) {
+> +		var->red.offset = 0;
+> +		var->red.length = 8;
+> +		var->green.offset = 8;
+> +		var->green.length = 8;
+> +		var->blue.offset = 16;
+> +		var->blue.length = 8;
+
+var->red is a fb_bitfield variable.
+It provides offset, length and msb_right.
+
+struct fb_bitfield {
+    __u32 offset;                   /* beginning of bitfield        */
+    __u32 length;                   /* length of bitfield           */
+    __u32 msb_right;                /* != 0 : Most significant bit is */ 
+                                    /* right */ 
+}
+Please don't keep msb_right unassigned.
+
+> +	} else if (var->bits_per_pixel == 16) {
+> +		var->red.offset = 11;
+> +		var->red.length = 5;
+> +		var->green.offset = 5;
+> +		var->green.length = 6;
+> +		var->blue.offset = 0;
+> +		var->blue.length = 5;
+> +	} else
+> +		return -1;
+
+Please use standard error code provided by Linux kernel -EINVAL
+(-22 Invalid argument)
+
+> +	fix->line_length = var->xres * var->bits_per_pixel / 8;
+Why to divide by 8? Atleast use >>3, bitwise operations that would take less cpu cycles)
+As I stated earlier define a new macro for var also.
+
+> +
+>  	return 0;
 >  }
->  
->  static struct file_system_type minix_fs_type = {
->         .owner          = THIS_MODULE,
->         .name           = "minix",
-> -       .get_sb         = minix_get_sb,
-> +       .mount          = minix_mount,
 > 
-> IOW, take foo_get_sb(), lose the vfsmount argument, call mount_bdev() instead
-> of get_sb_bdev() and you've got your replacement ->mount() instance.
+> @@ -427,6 +463,7 @@ static struct fb_ops msmfb_ops = {
+>  	.fb_open = msmfb_open,
+>  	.fb_release = msmfb_release,
+>  	.fb_check_var = msmfb_check_var,
+> +	.fb_set_par = msmfb_set_par,
+>  	.fb_pan_display = msmfb_pan_display,
+>  	.fb_fillrect = msmfb_fillrect,
+>  	.fb_copyarea = msmfb_copyarea,
+> @@ -438,8 +475,6 @@ static unsigned PP[16];
 > 
-> The trickier conversions are for filesystems that may return a subtree
-> or mess with something unexpected in *mnt (like several nfs variants
-> do with mnt_devname, for very bad reasons).  But those won't be using
-> get_sb_bdev().  IOW, keeping that around until we are finished with
-> ->mount() is not going to cause us any trouble.
 > 
-> Right now the only surviving in-tree ->get_sb() instances are in nfs
-> due to mnt_devname abuse.  Once these are gone, ->get_sb() will be,
-> and a good riddance - it was a bad API choice.  Mine, at that ;-/
 > 
-> Basically, we used to have ->read_super(), which filled a superblock
-> allocated by VFS code.  Filesystem type flags were used by VFS to
-> decide what to do before calling ->read_super() (basically "does
-> that want block device or is it anonymous").  It returned NULL or
-> the same struct super_block * it received to fill.
+> -#define BITS_PER_PIXEL 16
+> -
+>  static void setup_fb_info(struct msmfb_info *msmfb)
+>  {
+>  	struct fb_info *fb_info = msmfb->fb;
+> @@ -462,7 +497,7 @@ static void setup_fb_info(struct msmfb_info *msmfb)
+>  	fb_info->var.height = msmfb->panel->fb_data->height;
+>  	fb_info->var.xres_virtual = msmfb->xres;
+>  	fb_info->var.yres_virtual = msmfb->yres * 2;
+> -	fb_info->var.bits_per_pixel = BITS_PER_PIXEL;
+> +	fb_info->var.bits_per_pixel = 16;
+>  	fb_info->var.accel_flags = 0;
 > 
-> Then we switched to ->get_sb(), which asked for allocation itself and
-> did things like opening block device/grabbing anon device as well, so
-> that VFS code around mount() path could be nice and fs_type-agnostic.
+>  	fb_info->var.yoffset = 0;
+> @@ -497,28 +532,30 @@ static int setup_fbmem(struct msmfb_info *msmfb,
+> struct platform_device *pdev)
+>  	struct fb_info *fb = msmfb->fb;
+>  	struct resource *resource;
+>  	unsigned long size = msmfb->xres * msmfb->yres *
+> -			     (BITS_PER_PIXEL >> 3) * 2;
+> +		BYTES_PER_PIXEL(msmfb) * 2;
+> +	unsigned long resource_size;
+>  	unsigned char *fbram;
 > 
-> That's when get_sb_bdev() et.al. had appeared - they did work common
-> for e.g. fs on block device, with callback provided by the caller to
-> do the rest of work.
+>  	/* board file might have attached a resource describing an fb */
+>  	resource = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (!resource)
+>  		return -EINVAL;
+> +	resource_size = resource->end - resource->start + 1;
 > 
-> We still were returning struct super_block *.  Note, however, that this
-> was *NOT* a superblock constructor - we were allowed to return a new
-> reference to existing superblock as well (and that was immediately used
-> for things like procfs, etc.)
+>  	/* check the resource is large enough to fit the fb */
+> -	if (resource->end - resource->start < size) {
+> -		printk(KERN_ERR "allocated resource is too small for "
+> +	if (resource_size < size) {
+> +		printk(KERN_ERR "msmfb: allocated resource is too small for "
+>  				"fb\n");
+>  		return -ENOMEM;
+>  	}
+>  	fb->fix.smem_start = resource->start;
+> -	fb->fix.smem_len = resource->end - resource->start;
+> -	fbram = ioremap(resource->start,
+> -			resource->end - resource->start);
+> +	fb->fix.smem_len = resource_size;
+> +	fbram = ioremap(resource->start, resource_size);
+>  	if (fbram == 0) {
+>  		printk(KERN_ERR "msmfb: cannot allocate fbram!\n");
+>  		return -ENOMEM;
+>  	}
+> +
+>  	fb->screen_base = fbram;
+>  	return 0;
+>  }
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 > 
-> About the same time we got vfsmount tree - each contained a reference
-> to superblock and root of dentry subtree on it.  mount --bind allowed
-> to create a new vfsmount with ->mnt_root pointing at the root of subtree
-> smaller than the entire dentry tree for ->mnt_sb, but normal mount
-> still gave us the whole thing.  Not a problem, we just set ->mnt_root
-> to ->mnt_sb->s_root when we mounted a filesystem.
-> 
-> Then NFS folks had come and said "we want mount() to give us a subtree
-> of existing superblock".  Now ->mnt_root could not be derived from
-> ->mnt_sb.  Original proposal, IIRC, was to have root dentry returned
-> via struct dentry **, which was ugly.  I proposed to avoid the problems
-> with returning two values (superblock + dentry) by passing vfsmount we were
-> going to put them into anyway.
-> 
-> What I had missed at the time was that while ->mnt_root could not be
-> derived from ->mnt_sb, there was another property that still held:
-> mnt->mnt_root->d_sb == mnt->mnt_sb.  And that held for all vfsmounts,
-> full tree or not.  In other words, we didn't need to return the pair;
-> we just needed to turn the thing over and return *dentry*, deriving
-> superblock from it.  No need to pass half-filled vfsmount to fs code,
-> no need to call helper to set it, no need to do direct assignments
-> if we want a smaller subtree.
-> 
-> Alas, we went with "let's pass struct vfsmount * to be filled" variant.
-> Of course, the structure passed is the structure abused, so we ended up
-> growing very odd uses of those half-filled vfsmounts.  Fortunately,
-> most turned out to be easy to get rid of.  The only tricky one is what
-> nfs ended up doing, but there's a sane solution for that one (still
-> needs to be merged).
-> 
-> So right now we have
-> 	* much saner interface available and used by almost everything in
-> tree.
-> 	* ->get_sb() still there for the sake of NFS; out-of-tree users
-> are strongly[1] recommended to convert to ->mount().
-> 	* ->get_sb() is going away very soon.
-> 	* common boilerplates for use in ->get_sb() are left around until
-> then.
-> 
-> [1] well, as strong as I can feel about out-of-tree users, which is not
-> a damn lot.
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
