@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab1CURGy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 13:06:54 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:36825 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523Ab1CURGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 13:06:51 -0400
-Date: Mon, 21 Mar 2011 18:06:49 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Daniel Trautmann <dtrautmann@ibhsoftec-sps.de>
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, hjk@hansjkoch.de,
-        manut@linutronix.de
-Subject: Re: [PATCH v2] uio_netx: Add support for netPLC cards
-Message-ID: <20110321170649.GA2750@local>
-References: <1300718195.3457.43.camel@ubuntu-vm>
+	id S1753797Ab1CURJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 13:09:33 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:42568 "HELO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752220Ab1CURJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 13:09:31 -0400
+Date: Mon, 21 Mar 2011 12:08:32 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
+Message-ID: <20110321170832.GC12718@sgi.com>
+References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <4D878042.9080708@gmail.com> <4D878445.6090709@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300718195.3457.43.camel@ubuntu-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D878445.6090709@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 03:36:35PM +0100, Daniel Trautmann wrote:
-> This patch adds support for Hilscher / IBHsoftec netPLC cards to uio_netx userspace IO driver.
+On Mon, Mar 21, 2011 at 08:00:53PM +0300, Cyrill Gorcunov wrote:
+> On 03/21/2011 07:43 PM, Cyrill Gorcunov wrote:
+> ...
+> > 
+> > I think Jack might need to setup priority for his notifier, like
+> > 
+> > static struct notifier_block uv_dump_stack_nmi_nb = {
+> > 	.notifier_call	= uv_handle_nmi,
+> > 	.priority	= NMI_LOCAL_HIGH_PRIOR+1,
+> > };
+> > 
+> > so it would be called before perf nmi. Don, am I right?
+> > 
+> > Since for perf nmis we do have
+> > 
+> > static __read_mostly struct notifier_block perf_event_nmi_notifier = {
+> > 	.notifier_call		= perf_event_nmi_handler,
+> > 	.next			= NULL,
+> > 	.priority		= NMI_LOCAL_LOW_PRIOR,
+> > };
+> > 
 > 
-> Changes from v1 -> v2:
-> Fixed whitespace errors reported by scripts/checkpatch.pl which were caused by email client.
+>   I must admit I've missed the fact that Jack has tried NMIs priorities, right?
+> x86_platform_ops seems to be a cleaner indeed (btw I think p4 pmu kgdb issue
+> is exactly the same problem) but same time this might end up in over-swelled
+> ideas behind this small code snippet. Dunno. Probably we need some per-cpu
+> system status for nmi reasons other than unknown nmis...
 
-Looks OK to me.
+We use KDB internally, and yes, it has the same issue. The version of the
+patch that uses KDB OR's the "handled" status for both KDB & the UV NMI handler.
+If either KDB or the UV NMI handler returns "handled", the code in traps.c exits
+after the call to the first die notifier.
 
-Thanks for your contribution,
-Hans
+Not particularily pretty but I could not find a better way to do it.
 
-> 
-> Signed-off-by: Daniel Trautmann <dtrautmann@ibhsoftec-sps.de>
-
-Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
-
-> ---
->  drivers/uio/uio_netx.c |   19 +++++++++++++++++++
->  1 files changed, 19 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/uio/uio_netx.c b/drivers/uio/uio_netx.c
-> index 5ffdb48..a879fd5 100644
-> --- a/drivers/uio/uio_netx.c
-> +++ b/drivers/uio/uio_netx.c
-> @@ -18,6 +18,9 @@
->  
->  #define PCI_VENDOR_ID_HILSCHER		0x15CF
->  #define PCI_DEVICE_ID_HILSCHER_NETX	0x0000
-> +#define PCI_DEVICE_ID_HILSCHER_NETPLC	0x0010
-> +#define PCI_SUBDEVICE_ID_NETPLC_RAM	0x0000
-> +#define PCI_SUBDEVICE_ID_NETPLC_FLASH	0x0001
->  #define PCI_SUBDEVICE_ID_NXSB_PCA	0x3235
->  #define PCI_SUBDEVICE_ID_NXPCA		0x3335
->  
-> @@ -66,6 +69,10 @@ static int __devinit netx_pci_probe(struct pci_dev *dev,
->  		bar = 0;
->  		info->name = "netx";
->  		break;
-> +	case PCI_DEVICE_ID_HILSCHER_NETPLC:
-> +		bar = 0;
-> +		info->name = "netplc";
-> +		break;
->  	default:
->  		bar = 2;
->  		info->name = "netx_plx";
-> @@ -134,6 +141,18 @@ static struct pci_device_id netx_pci_ids[] = {
->  		.subdevice =	0,
->  	},
->  	{
-> +		.vendor =       PCI_VENDOR_ID_HILSCHER,
-> +		.device =       PCI_DEVICE_ID_HILSCHER_NETPLC,
-> +		.subvendor =    PCI_VENDOR_ID_HILSCHER,
-> +		.subdevice =    PCI_SUBDEVICE_ID_NETPLC_RAM,
-> +	},
-> +	{
-> +		.vendor =       PCI_VENDOR_ID_HILSCHER,
-> +		.device =       PCI_DEVICE_ID_HILSCHER_NETPLC,
-> +		.subvendor =    PCI_VENDOR_ID_HILSCHER,
-> +		.subdevice =    PCI_SUBDEVICE_ID_NETPLC_FLASH,
-> +	},
-> +	{
->  		.vendor =	PCI_VENDOR_ID_PLX,
->  		.device =	PCI_DEVICE_ID_PLX_9030,
->  		.subvendor =	PCI_VENDOR_ID_PLX,
-> 
-> 
-> 
+--- jack
