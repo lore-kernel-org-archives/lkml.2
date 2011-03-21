@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1CUHsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 03:48:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60105 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab1CUHsI (ORCPT
+	id S1752599Ab1CUHzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 03:55:04 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48928 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab1CUHzC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 03:48:08 -0400
-Date: Mon, 21 Mar 2011 08:47:48 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michal Marek <mmarek@suse.cz>, bp@alien8.de, dot@dotat.at,
-        mikew@google.com, randy.dunlap@oracle.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [GIT] kbuild core updates for 2.6.39-rc1
-Message-ID: <20110321074748.GF27124@pengutronix.de>
-References: <20110319085802.GA18336@sepie.suse.cz>
- <AANLkTin5vYaU83K0YOdD1OgCS24LA8XBSvNfmGFnjhGF@mail.gmail.com>
+	Mon, 21 Mar 2011 03:55:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=jJwPzBVSU2AQ6FMzKC/0c3w3MfNE0S0EIwzTVF3p8MObCnzQgiwOJLhGHPbvA4b4cX
+         sQM/s4UCa9/acEs1I3bbZlSHanNOXbgwOA3tBqOC9TRb3xu5IuYuG9cfk1uuvK8+Kbl/
+         mi5ektpFnkkxyRLlii8vK+UHIdtq9OlxN9ZNU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTin5vYaU83K0YOdD1OgCS24LA8XBSvNfmGFnjhGF@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1300361405.3133.175.camel@edumazet-laptop>
+References: <1299744517-1896-1-git-send-email-ratbert.chuang@gmail.com>
+ <1300355238-1619-1-git-send-email-ratbert.chuang@gmail.com>
+ <1300357457.3133.92.camel@edumazet-laptop> <AANLkTino6LzGTZF4fNSkV9pbAfnmAc8wJjk0L8HfHDiJ@mail.gmail.com>
+ <1300361405.3133.175.camel@edumazet-laptop>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Mon, 21 Mar 2011 15:54:41 +0800
+Message-ID: <AANLkTinibrF_bJBbYwCSnGv1iD_9Dn7uBn2cqgcTrKHi@mail.gmail.com>
+Subject: Re: [PATCH v2] net: add Faraday FTGMAC100 Gigabit Ethernet driver
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ratbert@faraday-tech.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 20, 2011 at 05:53:24PM -0700, Linus Torvalds wrote:
-> On Sat, Mar 19, 2011 at 1:58 AM, Michal Marek <mmarek@suse.cz> wrote:
-> >
-> > * Section mismatch analysis enabled by default
-> >  - there are only a few warnings for defconfig builds,
-> >    all{yes,mod}config still has a lot of them. Depending on the general
-> >    perception of this change, we might disable it later in the rc phase
-> >    again.
-> 
-> No.
-> 
-> We don't enable stuff like this by default. Not when it actually
-> changes some really fundamental compiler flags, and thus the whole "we
-> can disable it late in -rc again" is a totally broken option, since if
-> we have any compiler issues, we'd want to know it early.
-Note that the default y doesn't result from the patch in this pull
-request but from 
-	1d53661 (blackfin: enable DEBUG_SECTION_MISMATCH)
-. I admit I didn't think deeply about it, but keeping it seemed OK for
-me.
+Hi Eric,
 
-> And we _know_ we are going to disable it, since it enables the "don't
-> inline" flag to gcc for called-once functions. So there's no question
-> at all what the default should be in any release kernel.
-I wasn't aware of that, Mike so even "default y if BLACKFIN" seems to be
-a bad idea.
+On Thu, Mar 17, 2011 at 7:30 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le jeudi 17 mars 2011 Ã  18:56 +0800, Po-Yu Chuang a Ã©crit :
+>> On Thu, Mar 17, 2011 at 6:24 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> > Le jeudi 17 mars 2011 Ã  17:47 +0800, Po-Yu Chuang a Ã©crit :
+>> >> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+>> >>
+>> >> FTGMAC100 Ethernet Media Access Controller supports 10/100/1000 Mbps
+>> >> and MII/GMII. Â This driver has been working on some ARM/NDS32 SoC's
+>> >> including Faraday A369 and Andes AG102.
+>> >>
+>> >> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
+>> >> ---
+>> >
+>> > Did you tried GRO support ?
+>>
+>> No, I don't understand how to do that yet. Let me do some study first.
+>> I'd really appreciate it if you could provide me some pointers about GRO. :-)
+>> Is there any document about it?
+>
+> Should be easy and might help performance too.
+>
+> Take a look at commit :
+>
+> 2edae08e5b75269855fef3c74fe4292c066e7c33 (r8169: add gro support)
 
-Michal, do you want just remove the default y and squash it into the
-commit?
-And something that just occured my now is that the warning about
-CONFIG_DEBUG_SECTION_MISMATCH in scripts/mod/modpost.c could get an
-update, too.  Something like:
+It seems to work fine so far at least the driver is not broken, but I did not
+see much difference in performance though. How do I know if GRO is
+working indeed?
 
- 		warn("modpost: Found %d section mismatch(es).\n"
--		     "To see full details build your kernel with:\n"
--		     "'make CONFIG_DEBUG_SECTION_MISMATCH=y'\n",
-+		     "To see full details enable CONFIG_DEBUG_SECTION_MISMATCH in your .config.\n"
-		     sec_mismatch_count);
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Best regards,
+Po-Yu Chuang
