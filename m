@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab1CUXns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:43:48 -0400
-Received: from kroah.org ([198.145.64.141]:49510 "EHLO coco.kroah.org"
+	id S1755457Ab1CUXPu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:15:50 -0400
+Received: from kroah.org ([198.145.64.141]:49348 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755464Ab1CUXPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:53 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:14 2011
-Message-Id: <20110321230714.877813896@clark.kroah.org>
+	id S1755341Ab1CUXP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:28 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
+Message-Id: <20110321230712.269067867@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:54 -0700
+Date: Mon, 21 Mar 2011 16:06:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [55/87] ALSA: hda - Initialize special cases for input src in init phase
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [30/87] Increase OSF partition limit from 8 to 18
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,94 +24,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 584c0c4c359bdac37d94157f8d7fc513d26c8328 upstream.
+commit 34d211a2d5df4984a35b18d8ccacbe1d10abb067 upstream.
 
-Currently some special handling for the unusual case like dual-ADCs
-or a single-input-src is done in the tree-parse time in
-set_capture_mixer().  But this setup could be overwritten by static
-init verbs.
+It turns out that while a maximum of 8 partitions may be what people
+"should" have had, you can actually fit up to 18 entries(*) in a sector.
 
-This patch moves the initialization into the init phase so that
-such input-src setup won't be lost.
+And some people clearly were taking advantage of that, like Michael
+Cree, who had ten partitions on one of his OSF disks.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+(*) The OSF partition data starts at byte offset 64 in the first sector,
+    and the array of 16-byte partition entries start at offset 148 in
+    the on-disk partition structure.
+
+Reported-by: Michael Cree <mcree@orcon.net.nz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ fs/partitions/osf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -393,6 +393,7 @@ struct alc_spec {
- 	/* other flags */
- 	unsigned int no_analog :1; /* digital I/O only */
- 	unsigned int dual_adc_switch:1; /* switch ADCs (for ALC275) */
-+	unsigned int single_input_src:1;
- 	int init_amp;
- 	int codec_variant;	/* flag for other variants */
+--- a/fs/partitions/osf.c
++++ b/fs/partitions/osf.c
+@@ -10,7 +10,7 @@
+ #include "check.h"
+ #include "osf.h"
  
-@@ -3798,6 +3799,8 @@ static struct hda_amp_list alc880_lg_loo
-  * Common callbacks
-  */
+-#define MAX_OSF_PARTITIONS 8
++#define MAX_OSF_PARTITIONS 18
  
-+static void alc_init_special_input_src(struct hda_codec *codec);
-+
- static int alc_init(struct hda_codec *codec)
+ int osf_partition(struct parsed_partitions *state)
  {
- 	struct alc_spec *spec = codec->spec;
-@@ -3808,6 +3811,7 @@ static int alc_init(struct hda_codec *co
- 
- 	for (i = 0; i < spec->num_init_verbs; i++)
- 		snd_hda_sequence_write(codec, spec->init_verbs[i]);
-+	alc_init_special_input_src(codec);
- 
- 	if (spec->init_hook)
- 		spec->init_hook(codec);
-@@ -5441,6 +5445,7 @@ static void fixup_single_adc(struct hda_
- 			spec->capsrc_nids += i;
- 		spec->adc_nids += i;
- 		spec->num_adc_nids = 1;
-+		spec->single_input_src = 1;
- 	}
- }
- 
-@@ -5452,6 +5457,16 @@ static void fixup_dual_adc_switch(struct
- 	init_capsrc_for_pin(codec, spec->int_mic.pin);
- }
- 
-+/* initialize some special cases for input sources */
-+static void alc_init_special_input_src(struct hda_codec *codec)
-+{
-+	struct alc_spec *spec = codec->spec;
-+	if (spec->dual_adc_switch)
-+		fixup_dual_adc_switch(codec);
-+	else if (spec->single_input_src)
-+		init_capsrc_for_pin(codec, spec->autocfg.inputs[0].pin);
-+}
-+
- static void set_capture_mixer(struct hda_codec *codec)
- {
- 	struct alc_spec *spec = codec->spec;
-@@ -5467,7 +5482,7 @@ static void set_capture_mixer(struct hda
- 		int mux = 0;
- 		int num_adcs = spec->num_adc_nids;
- 		if (spec->dual_adc_switch)
--			fixup_dual_adc_switch(codec);
-+			num_adcs = 1;
- 		else if (spec->auto_mic)
- 			fixup_automic_adc(codec);
- 		else if (spec->input_mux) {
-@@ -5476,8 +5491,6 @@ static void set_capture_mixer(struct hda
- 			else if (spec->input_mux->num_items == 1)
- 				fixup_single_adc(codec);
- 		}
--		if (spec->dual_adc_switch)
--			num_adcs = 1;
- 		spec->cap_mixer = caps[mux][num_adcs - 1];
- 	}
- }
 
 
