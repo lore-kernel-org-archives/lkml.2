@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab1CVSDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 14:03:43 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35785 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545Ab1CVSDl (ORCPT
+	id S1752743Ab1CVSFT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 14:05:19 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43984 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab1CVSFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 14:03:41 -0400
-MIME-Version: 1.0
-X-Originating-IP: [172.22.72.22]
-Date: Tue, 22 Mar 2011 11:03:40 -0700
-Message-ID: <AANLkTimfNwZxzAmerLtCX9eS_YD5DtAUngXkD=XHYZ=g@mail.gmail.com>
-Subject: [ANNOUNCE] Upstart 1.2 released
-From: Scott James Remnant <scott@netsplit.com>
-To: Upstart Dev List <upstart-devel@lists.ubuntu.com>,
-        upstart-devel@upstart.at, upstart-release@upstart.at
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Mar 2011 14:05:15 -0400
+Subject: Re: [PATCH] regulator: Remove more wm831x-specific IRQ operations
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1300452215-30119-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1300452215-30119-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Mar 2011 18:05:07 +0000
+Message-ID: <1300817107.3356.12.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Brown paper bag release to fix an important bug in 1.1 that broke
-people with pdksh as /bin/sh
+On Fri, 2011-03-18 at 12:43 +0000, Mark Brown wrote:
+> These are the last users in the tree.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/regulator/wm831x-dcdc.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
 
+Applied.
 
-1.2  2011-03-22  "This sort of thing is my bag, baby"
+Thanks
 
-        * Fixed incorrect shell redirection syntax that broke at least
-          pdksh.  (Bug: #739984)
+Liam
 
-
-The tarball can be found here:
-
-      http://upstart.at/download/1.x
-
-For more information on upstart:
-
-      http://upstart.at/
-
-
-Scott
