@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab1CVM71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 08:59:27 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51102 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab1CVM7Z (ORCPT
+	id S932110Ab1CVM7d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 08:59:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754228Ab1CVM73 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 08:59:25 -0400
-Date: Tue, 22 Mar 2011 12:59:24 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mike Galbraith <mgalbraith@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [sound] !CONFIG_REGULATOR + CONFIG_SND_SOC_ALL_CODECS  ->
-	CONFIG_SND_SOC_SGTL5000=m -> build failure
-Message-ID: <20110322125923.GA2202@sirena.org.uk>
-References: <1300767919.7483.6.camel@marge.simson.net>
+	Tue, 22 Mar 2011 08:59:29 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] First round of SCSI updates for 2.6.38 merge window
+References: <1300392635.17266.5.camel@mulgrave.site>
+	<AANLkTinvwKzYiy5M=Eoae_ViRQwVBF-TgedKspP0qagE@mail.gmail.com>
+	<yq1fwqfu6dd.fsf@sermon.lab.mkp.net>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 22 Mar 2011 08:59:14 -0400
+In-Reply-To: <yq1fwqfu6dd.fsf@sermon.lab.mkp.net> (Martin K. Petersen's
+	message of "Tue, 22 Mar 2011 00:27:42 -0400")
+Message-ID: <x49zkons44d.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300767919.7483.6.camel@marge.simson.net>
-X-Cookie: I smell a RANCID CORN DOG!
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 05:25:19AM +0100, Mike Galbraith wrote:
-> v2.6.38-6671-geddecbb
-> 
-> marge:/usr/local/src/kernel/linux-2.6.39.git # make -j4 && make modules_install install
+"Martin K. Petersen" <martin.petersen@oracle.com> writes:
 
-A patch has been sent for this.
+>>>>>> "Geert" == Geert Uytterhoeven <geert@linux-m68k.org> writes:
+>
+> Geert> drivers/scsi/sd.c: In function ‘sd_prep_fn’:
+> Geert> drivers/scsi/sd.c:544: warning: ‘ret’ may be used uninitialized
+> Geert> in this function
+>
+> Sorry about that.
+>
+>
+> sd: Fail discard requests when logical block provisioning has been disabled
+>
+> Ensure that we kill discard requests after logical block provisioning
+> has been disabled in sysfs.
+>
+> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-When sending patches or problem reports please always make some effort
-to include relevant maintainers and relevant patch authors in your mail.
-Mail sent only to a list, particularly a list not relevant to the
-affected code, is likely to get missed.
+Tao Ma posted a similar patch.  Anyway, either looks good to me.  This
+one will avoid an unecessary extra setting of ret, but I doubt that
+matters.
+
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
