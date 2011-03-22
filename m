@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab1CVUc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 16:32:58 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57534 "EHLO ogre.sisk.pl"
+	id S932202Ab1CVUdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 16:33:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39036 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717Ab1CVUc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 16:32:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 0/6] Do not use sysdevs for implementing "core" PM operations on x86
-Date: Tue, 22 Mar 2011 21:33:13 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
-        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Avi Kivity <avi@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
-        kvm@vger.kernel.org, iommu@lists.linux-foundation.org,
-        cpufreq@vger.kernel.org
-References: <201103100131.58206.rjw@sisk.pl> <201103220031.22729.rjw@sisk.pl> <20110322103258.GC4448@elte.hu>
-In-Reply-To: <20110322103258.GC4448@elte.hu>
+	id S932110Ab1CVUdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 16:33:49 -0400
+Date: Tue, 22 Mar 2011 16:33:19 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Lina Lu <lulina_nuaa@foxmail.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] blk-throttle: Reset group slice when limits are changed
+Message-ID: <20110322203319.GL3757@redhat.com>
+References: <20110315175456.GC2587@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103222133.14054.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110315175456.GC2587@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 22, 2011, Ingo Molnar wrote:
-> 
-> * Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> 
-> > > If there are no objectsions, I'd like to push these patches through the suspend
-> > > tree.
-> > 
-> > [1/8] has been merged in the meantime and [3/8] has been included into the
-> > ACPI tree.  if there are no objections, I'm going to push the following
-> > patches to Linus this week through the suspend-2.6 tree:
-> > 
-> > [1/6] - Convert sysdev users in arch/x86 to using struct syscore_ops.
-> > 
-> > [2/6] - Make timekeeping use struct syscore_ops for suspend/resume.
-> >  
-> > [3/6] - Make Intel IOMMU use struct syscore_ops for suspend/resume.
-> > 
-> > [4/6] - Make KVM use struct syscore_ops for suspend/resume.
-> > 
-> > [5/6] - Make cpufreq use struct syscore_ops for boot CPU suspend/resume.
-> > 
-> > [6/6] - Introduce config switch allowing architectures to skip sysdev
-> >         suspend/resume/shutdown code.
-> 
-> The x86 bits look fine.
-> 
-> Acked-by: Ingo Molnar <mingo@elte.hu>
+On Tue, Mar 15, 2011 at 01:54:56PM -0400, Vivek Goyal wrote:
+> Lina reported that if throttle limits are initially very high and then
+> dropped, then no new bio might be dispatched for a long time. And the
+> reason being that after dropping the limits we don't reset the existing
+> slice and do the rate calculation with new low rate and account the bios
+> dispatched at high rate. To fix it, reset the slice upon rate change.
 
-Thanks!
+Hi Jens,
 
-> The patches affect a lot of hardware so please make sure they are tested well 
-> before pushing them to Linus :-)
+Can you please apply this patch too.
 
-I have tested the majority, but unfortunately I have no hardware to test
-the Intel IOMMU patch on it.
+Thanks
+Vivek
 
-Thanks,
-Rafael
+> 
+> https://lkml.org/lkml/2011/3/10/298
+> 
+> Another problem with very high limit is that we never queued the
+> bio on throtl service tree. That means we kept on extending the
+> group slice but never trimmed it. Fix that also by regulary
+> trimming the slice even if bio is not being queued up.
+> 
+> Reported-by: Lina Lu <lulina_nuaa@foxmail.com>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  block/blk-throttle.c |   25 ++++++++++++++++++++++++-
+>  1 file changed, 24 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6-block/block/blk-throttle.c
+> ===================================================================
+> --- linux-2.6-block.orig/block/blk-throttle.c	2011-03-15 13:37:04.122389034 -0400
+> +++ linux-2.6-block/block/blk-throttle.c	2011-03-15 13:37:26.328370086 -0400
+> @@ -756,6 +756,15 @@ static void throtl_process_limit_change(
+>  			" riops=%u wiops=%u", tg->bps[READ], tg->bps[WRITE],
+>  			tg->iops[READ], tg->iops[WRITE]);
+>  
+> +		/*
+> +		 * Restart the slices for both READ and WRITES. It
+> +		 * might happen that a group's limit are dropped
+> +		 * suddenly and we don't want to account recently
+> +		 * dispatched IO with new low rate
+> +		 */
+> +		throtl_start_new_slice(td, tg, 0);
+> +		throtl_start_new_slice(td, tg, 1);
+> +
+>  		if (throtl_tg_on_rr(tg))
+>  			tg_update_disptime(td, tg);
+>  	}
+> @@ -821,7 +830,8 @@ throtl_schedule_delayed_work(struct thro
+>  
+>  	struct delayed_work *dwork = &td->throtl_work;
+>  
+> -	if (total_nr_queued(td) > 0) {
+> +	/* schedule work if limits changed even if no bio is queued */
+> +	if (total_nr_queued(td) > 0 || td->limits_changed) {
+>  		/*
+>  		 * We might have a work scheduled to be executed in future.
+>  		 * Cancel that and schedule a new one.
+> @@ -1002,6 +1012,19 @@ int blk_throtl_bio(struct request_queue 
+>  	/* Bio is with-in rate limit of group */
+>  	if (tg_may_dispatch(td, tg, bio, NULL)) {
+>  		throtl_charge_bio(tg, bio);
+> +
+> +		/*
+> +		 * We need to trim slice even when bios are not being queued
+> +		 * otherwise it might happen that a bio is not queued for
+> +		 * a long time and slice keeps on extending and trim is not
+> +		 * called for a long time. Now if limits are reduced suddenly
+> +		 * we take into account all the IO dispatched so far at new
+> +		 * low rate and * newly queued IO gets a really long dispatch
+> +		 * time.
+> +		 *
+> +		 * So keep on trimming slice even if bio is not queued.
+> +		 */
+> +		throtl_trim_slice(td, tg, rw);
+>  		goto out;
+>  	}
+>  
