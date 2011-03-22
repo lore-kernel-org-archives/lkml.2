@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab1CVXVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 19:21:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38109 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932135Ab1CVXVV (ORCPT
+	id S1755901Ab1CVXVR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 19:21:17 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42660 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755838Ab1CVXVO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 19:21:21 -0400
-Date: Tue, 22 Mar 2011 16:21:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, oakad@yahoo.com,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATH 0/4] Memstick patches for 2.6.39
-Message-Id: <20110322162108.a4b70291.akpm@linux-foundation.org>
-In-Reply-To: <1300621371.15768.11.camel@maxim-laptop>
-References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
-	<1299947013.17988.0.camel@maxim-laptop>
-	<1300219210.13493.0.camel@MAIN>
-	<20110315140402.334cc55c.akpm@linux-foundation.org>
-	<1300590545.15453.3.camel@maxim-laptop>
-	<20110319234701.0eab3744.akpm@linux-foundation.org>
-	<1300621371.15768.11.camel@maxim-laptop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Mar 2011 19:21:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nolxyZgy+pBqXnRMQyugFNluSZgkdxg1JdIvpMLuvVFerzfjubAZG7QKRjRfk4tc+W
+         yv22gc+/v8tcH3wgVxKocX9malZEvKWt8cUd5AJ9/dzMeAUy8Vzp9QReTbRuZksPdvbd
+         +KapxfUazc2M4vpyk80wz80z9QLTaLqcSkkPE=
+MIME-Version: 1.0
+In-Reply-To: <20110322200759.B067.A69D9226@jp.fujitsu.com>
+References: <20110315153801.3526.A69D9226@jp.fujitsu.com>
+	<20110322194721.B05E.A69D9226@jp.fujitsu.com>
+	<20110322200759.B067.A69D9226@jp.fujitsu.com>
+Date: Wed, 23 Mar 2011 08:21:12 +0900
+Message-ID: <AANLkTikN835dfU9xozTWbOh6cjSEG0XgU_Ayn+dRqDug@mail.gmail.com>
+Subject: Re: [PATCH 3/5] oom: create oom autogroup
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Mar 2011 13:42:51 +0200
-Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-
-> On Sat, 2011-03-19 at 23:47 -0700, Andrew Morton wrote:
-> > On Sun, 20 Mar 2011 05:09:05 +0200 Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > 
-> 
-> ...
+On Tue, Mar 22, 2011 at 8:08 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> When plenty processes (eg fork bomb) are running, the TIF_MEMDIE task
+> never exit, at least, human feel it's never. therefore kernel become
+> hang-up.
 >
-> Also, I don't have much time now to improve the ms_block driver till
-> this summer (studying).
-> The driver works. Yes it has a flaw in regard to scatterlist processing,
-> because I didn't find a better way to deal with this monster, but I will
-> fix that later. I am not the kind of guy that runs away after a merge.
-> It would be nice to just see my code in kernel, code I wrote more that a
-> year ago.
-> 
-> This flaw is purely theoretical. Driver does work.
+> "perf sched" tell us a hint.
+>
+>  ------------------------------------------------------------------------------
+>  Task                  |   Runtime ms  | Average delay ms | Maximum delay ms |
+>  ------------------------------------------------------------------------------
+>  python:1754           |      0.197 ms | avg: 1731.727 ms | max: 3433.805 ms |
+>  python:1843           |      0.489 ms | avg: 1707.433 ms | max: 3622.955 ms |
+>  python:1715           |      0.220 ms | avg: 1707.125 ms | max: 3623.246 ms |
+>  python:1818           |      2.127 ms | avg: 1527.331 ms | max: 3622.553 ms |
+>  ...
+>  ...
+>
+> Processes flood makes crazy scheduler delay. and then the victim process
+> can't run enough. Grr. Should we do?
+>
+> Fortunately, we already have anti process flood framework, autogroup!
+> This patch reuse this framework and avoid kernel live lock.
 
-Lots of code is "flawed but works".  The place for such code is
-drivers/staging/ - it gets put in there so the code is available for
-those who need the driver and the code is later moved over into
-drivers/ once the flaws have been addressed.
+That's cool idea but I have a concern.
 
-So a path forward here would be for us to put the driver and the
-sglist extensions into a directory under drivers/staging/.
+You remove boosting priority in [2/5] and move victim tasks into autogroup.
+If I understand autogroup right, victim process and threads in the
+process take less schedule chance than now.
+
+Could it make unnecessary killing of other tasks?
+I am not sure. Just out of curiosity.
+
+Thanks for nice work, Kosaki.
+-- 
+Kind regards,
+Minchan Kim
