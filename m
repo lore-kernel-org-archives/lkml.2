@@ -1,549 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab1CVSpD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 14:45:03 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39386 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587Ab1CVSpB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 14:45:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=LCyPAeF2qrk37xH9SS9NAj31SVhluUTYq2BfvA2DmbWE5317BQm6OY66BxQ9bJdB1p
-         3+eBfDbcp+fdLf2S58KgISiKzU0XYe2b10vg+EpsgVMsZJ+MdY4SrG+y87syItODfQsw
-         a2O0a4D/aHp268mOc9fMNrJXstCDQnnV6ufpY=
-Message-ID: <4D88EDF5.2070400@gmail.com>
-Date: Tue, 22 Mar 2011 15:44:05 -0300
-From: Mauro Carvalho Chehab <maurochehab@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1753618Ab1CVSpT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 14:45:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753364Ab1CVSpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 14:45:14 -0400
+Date: Tue, 22 Mar 2011 14:44:50 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jack Steiner <steiner@sgi.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
+Message-ID: <20110322184450.GU1239@redhat.com>
+References: <20110321160135.GA31562@sgi.com>
+ <20110321161425.GC23614@elte.hu>
+ <4D877C4B.9090602@gmail.com>
+ <20110321175110.GL1239@redhat.com>
+ <20110321182235.GA14562@sgi.com>
+ <20110321193740.GN1239@redhat.com>
+ <20110322171118.GA6294@sgi.com>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Ondrej Zary <linux@rainbow-software.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>, jirislaby@gmail.com,
-        alsa-devel@alsa-project.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-media@vger.kernel.org
-Subject: Re: [RFC PATCH 4/3] remove radio-maestro
-References: <201103121919.05657.linux@rainbow-software.org> <201103141128.01259.linux@rainbow-software.org> <33b29bfb135fbe2ddcba88d342d67526.squirrel@webmail.xs4all.nl> <201103191723.52732.linux@rainbow-software.org>
-In-Reply-To: <201103191723.52732.linux@rainbow-software.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322171118.GA6294@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
+On Tue, Mar 22, 2011 at 12:11:18PM -0500, Jack Steiner wrote:
+> How certain are you that multiple NMIs triggered at about the same time will
+> deliver discrete NMI events? I updated the patch so that I'm running with:
 
-Em 19-03-2011 13:23, Ondrej Zary escreveu:
-> Remove broken radio-maestro driver as the radio functionality is now
-> integrated in the es1968 driver.
-
-I prefer if you could also add it on your tree, as we want to make sure that
-this patch will be applied together with the patches that moved Maestro
-support into the es1968 driver.
-
-I have no means to test if the es1968 changes work with a Maestro radio (as I
-don't have this hardware), but I'm OK with this change. So:
-
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+I think as long as there isn't more than two (1 active, 1 latched), you
+would be ok.  A third one looks like it would get dropped.
 
 > 
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> 	- no special code in traps.c (I removed the traps.c code that was
+> 	  in the patch I posted)
+> 	- used die_notifier for calling the UV nmi handler
+> 	- UV priority is higher than the hw_perf priority
 > 
-> diff -urNp linux-2.6.38-rc4-orig/drivers/media/radio/Kconfig linux-2.6.38-rc4/drivers/media/radio/Kconfig
-> --- linux-2.6.38-rc4-orig/drivers/media/radio/Kconfig	2011-02-08 01:03:55.000000000 +0100
-> +++ linux-2.6.38-rc4/drivers/media/radio/Kconfig	2011-03-19 17:12:32.000000000 +0100
-> @@ -166,21 +166,6 @@ config RADIO_MAXIRADIO
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called radio-maxiradio.
->  
-> -config RADIO_MAESTRO
-> -	tristate "Maestro on board radio"
-> -	depends on VIDEO_V4L2 && PCI
-> -	---help---
-> -	  Say Y here to directly support the on-board radio tuner on the
-> -	  Maestro 2 or 2E sound card.
-> -
-> -	  In order to control your radio card, you will need to use programs
-> -	  that are compatible with the Video For Linux API.  Information on
-> -	  this API and pointers to "v4l" programs may be found at
-> -	  <file:Documentation/video4linux/API.html>.
-> -
-> -	  To compile this driver as a module, choose M here: the
-> -	  module will be called radio-maestro.
-> -
->  config RADIO_MIROPCM20
->  	tristate "miroSOUND PCM20 radio"
->  	depends on ISA && VIDEO_V4L2 && SND
-> diff -urNp linux-2.6.38-rc4-orig/drivers/media/radio/Makefile linux-2.6.38-rc4/drivers/media/radio/Makefile
-> --- linux-2.6.38-rc4-orig/drivers/media/radio/Makefile	2011-02-08 01:03:55.000000000 +0100
-> +++ linux-2.6.38-rc4/drivers/media/radio/Makefile	2011-03-19 17:12:39.000000000 +0100
-> @@ -16,7 +16,6 @@ obj-$(CONFIG_RADIO_GEMTEK) += radio-gemt
->  obj-$(CONFIG_RADIO_TRUST) += radio-trust.o
->  obj-$(CONFIG_I2C_SI4713) += si4713-i2c.o
->  obj-$(CONFIG_RADIO_SI4713) += radio-si4713.o
-> -obj-$(CONFIG_RADIO_MAESTRO) += radio-maestro.o
->  obj-$(CONFIG_RADIO_MIROPCM20) += radio-miropcm20.o
->  obj-$(CONFIG_USB_DSBR) += dsbr100.o
->  obj-$(CONFIG_RADIO_SI470X) += si470x/
-> diff -urNp linux-2.6.38-rc4-orig/drivers/media/radio/radio-maestro.c linux-2.6.38-rc4/drivers/media/radio/radio-maestro.c
-> --- linux-2.6.38-rc4-orig/drivers/media/radio/radio-maestro.c	2011-02-08 01:03:55.000000000 +0100
-> +++ linux-2.6.38-rc4/drivers/media/radio/radio-maestro.c	1970-01-01 01:00:00.000000000 +0100
-> @@ -1,452 +0,0 @@
-> -/* Maestro PCI sound card radio driver for Linux support
-> - * (c) 2000 A. Tlalka, atlka@pg.gda.pl
-> - * Notes on the hardware
-> - *
-> - *  + Frequency control is done digitally
-> - *  + No volume control - only mute/unmute - you have to use Aux line volume
-> - *  control on Maestro card to set the volume
-> - *  + Radio status (tuned/not_tuned and stereo/mono) is valid some time after
-> - *  frequency setting (>100ms) and only when the radio is unmuted.
-> - *  version 0.02
-> - *  + io port is automatically detected - only the first radio is used
-> - *  version 0.03
-> - *  + thread access locking additions
-> - *  version 0.04
-> - * + code improvements
-> - * + VIDEO_TUNER_LOW is permanent
-> - *
-> - * Converted to V4L2 API by Mauro Carvalho Chehab <mchehab@infradead.org>
-> - */
-> -
-> -#include <linux/module.h>
-> -#include <linux/init.h>
-> -#include <linux/ioport.h>
-> -#include <linux/delay.h>
-> -#include <linux/version.h>      /* for KERNEL_VERSION MACRO     */
-> -#include <linux/pci.h>
-> -#include <linux/videodev2.h>
-> -#include <linux/io.h>
-> -#include <linux/slab.h>
-> -#include <media/v4l2-device.h>
-> -#include <media/v4l2-ioctl.h>
-> -
-> -MODULE_AUTHOR("Adam Tlalka, atlka@pg.gda.pl");
-> -MODULE_DESCRIPTION("Radio driver for the Maestro PCI sound card radio.");
-> -MODULE_LICENSE("GPL");
-> -
-> -static int radio_nr = -1;
-> -module_param(radio_nr, int, 0);
-> -
-> -#define RADIO_VERSION KERNEL_VERSION(0, 0, 6)
-> -#define DRIVER_VERSION	"0.06"
-> -
-> -#define GPIO_DATA	0x60   /* port offset from ESS_IO_BASE */
-> -
-> -#define IO_MASK		4      /* mask      register offset from GPIO_DATA
-> -				bits 1=unmask write to given bit */
-> -#define IO_DIR		8      /* direction register offset from GPIO_DATA
-> -				bits 0/1=read/write direction */
-> -
-> -#define GPIO6		0x0040 /* mask bits for GPIO lines */
-> -#define GPIO7		0x0080
-> -#define GPIO8		0x0100
-> -#define GPIO9		0x0200
-> -
-> -#define STR_DATA	GPIO6  /* radio TEA5757 pins and GPIO bits */
-> -#define STR_CLK		GPIO7
-> -#define STR_WREN	GPIO8
-> -#define STR_MOST	GPIO9
-> -
-> -#define FREQ_LO		 50*16000
-> -#define FREQ_HI		150*16000
-> -
-> -#define FREQ_IF		171200 /* 10.7*16000   */
-> -#define FREQ_STEP	200    /* 12.5*16      */
-> -
-> -#define FREQ2BITS(x)	((((unsigned int)(x)+FREQ_IF+(FREQ_STEP<<1))\
-> -			/(FREQ_STEP<<2))<<2) /* (x==fmhz*16*1000) -> bits */
-> -
-> -#define BITS2FREQ(x)	((x) * FREQ_STEP - FREQ_IF)
-> -
-> -struct maestro {
-> -	struct v4l2_device v4l2_dev;
-> -	struct video_device vdev;
-> -	struct pci_dev *pdev;
-> -	struct mutex lock;
-> -
-> -	u16	io;	/* base of Maestro card radio io (GPIO_DATA)*/
-> -	u16	muted;	/* VIDEO_AUDIO_MUTE */
-> -	u16	stereo;	/* VIDEO_TUNER_STEREO_ON */
-> -	u16	tuned;	/* signal strength (0 or 0xffff) */
-> -};
-> -
-> -static inline struct maestro *to_maestro(struct v4l2_device *v4l2_dev)
-> -{
-> -	return container_of(v4l2_dev, struct maestro, v4l2_dev);
-> -}
-> -
-> -static u32 radio_bits_get(struct maestro *dev)
-> -{
-> -	u16 io = dev->io, l, rdata;
-> -	u32 data = 0;
-> -	u16 omask;
-> -
-> -	omask = inw(io + IO_MASK);
-> -	outw(~(STR_CLK | STR_WREN), io + IO_MASK);
-> -	outw(0, io);
-> -	udelay(16);
-> -
-> -	for (l = 24; l--;) {
-> -		outw(STR_CLK, io);		/* HI state */
-> -		udelay(2);
-> -		if (!l)
-> -			dev->tuned = inw(io) & STR_MOST ? 0 : 0xffff;
-> -		outw(0, io);			/* LO state */
-> -		udelay(2);
-> -		data <<= 1;			/* shift data */
-> -		rdata = inw(io);
-> -		if (!l)
-> -			dev->stereo = (rdata & STR_MOST) ?  0 : 1;
-> -		else if (rdata & STR_DATA)
-> -			data++;
-> -		udelay(2);
-> -	}
-> -
-> -	if (dev->muted)
-> -		outw(STR_WREN, io);
-> -
-> -	udelay(4);
-> -	outw(omask, io + IO_MASK);
-> -
-> -	return data & 0x3ffe;
-> -}
-> -
-> -static void radio_bits_set(struct maestro *dev, u32 data)
-> -{
-> -	u16 io = dev->io, l, bits;
-> -	u16 omask, odir;
-> -
-> -	omask = inw(io + IO_MASK);
-> -	odir = (inw(io + IO_DIR) & ~STR_DATA) | (STR_CLK | STR_WREN);
-> -	outw(odir | STR_DATA, io + IO_DIR);
-> -	outw(~(STR_DATA | STR_CLK | STR_WREN), io + IO_MASK);
-> -	udelay(16);
-> -	for (l = 25; l; l--) {
-> -		bits = ((data >> 18) & STR_DATA) | STR_WREN;
-> -		data <<= 1;			/* shift data */
-> -		outw(bits, io);			/* start strobe */
-> -		udelay(2);
-> -		outw(bits | STR_CLK, io);	/* HI level */
-> -		udelay(2);
-> -		outw(bits, io);			/* LO level */
-> -		udelay(4);
-> -	}
-> -
-> -	if (!dev->muted)
-> -		outw(0, io);
-> -
-> -	udelay(4);
-> -	outw(omask, io + IO_MASK);
-> -	outw(odir, io + IO_DIR);
-> -	msleep(125);
-> -}
-> -
-> -static int vidioc_querycap(struct file *file, void  *priv,
-> -					struct v4l2_capability *v)
-> -{
-> -	struct maestro *dev = video_drvdata(file);
-> -
-> -	strlcpy(v->driver, "radio-maestro", sizeof(v->driver));
-> -	strlcpy(v->card, "Maestro Radio", sizeof(v->card));
-> -	snprintf(v->bus_info, sizeof(v->bus_info), "PCI:%s", pci_name(dev->pdev));
-> -	v->version = RADIO_VERSION;
-> -	v->capabilities = V4L2_CAP_TUNER | V4L2_CAP_RADIO;
-> -	return 0;
-> -}
-> -
-> -static int vidioc_g_tuner(struct file *file, void *priv,
-> -					struct v4l2_tuner *v)
-> -{
-> -	struct maestro *dev = video_drvdata(file);
-> -
-> -	if (v->index > 0)
-> -		return -EINVAL;
-> -
-> -	mutex_lock(&dev->lock);
-> -	radio_bits_get(dev);
-> -
-> -	strlcpy(v->name, "FM", sizeof(v->name));
-> -	v->type = V4L2_TUNER_RADIO;
-> -	v->rangelow = FREQ_LO;
-> -	v->rangehigh = FREQ_HI;
-> -	v->rxsubchans = V4L2_TUNER_SUB_MONO | V4L2_TUNER_SUB_STEREO;
-> -	v->capability = V4L2_TUNER_CAP_LOW;
-> -	if (dev->stereo)
-> -		v->audmode = V4L2_TUNER_MODE_STEREO;
-> -	else
-> -		v->audmode = V4L2_TUNER_MODE_MONO;
-> -	v->signal = dev->tuned;
-> -	mutex_unlock(&dev->lock);
-> -	return 0;
-> -}
-> -
-> -static int vidioc_s_tuner(struct file *file, void *priv,
-> -					struct v4l2_tuner *v)
-> -{
-> -	return v->index ? -EINVAL : 0;
-> -}
-> -
-> -static int vidioc_s_frequency(struct file *file, void *priv,
-> -					struct v4l2_frequency *f)
-> -{
-> -	struct maestro *dev = video_drvdata(file);
-> -
-> -	if (f->tuner != 0 || f->type != V4L2_TUNER_RADIO)
-> -		return -EINVAL;
-> -	if (f->frequency < FREQ_LO || f->frequency > FREQ_HI)
-> -		return -EINVAL;
-> -	mutex_lock(&dev->lock);
-> -	radio_bits_set(dev, FREQ2BITS(f->frequency));
-> -	mutex_unlock(&dev->lock);
-> -	return 0;
-> -}
-> -
-> -static int vidioc_g_frequency(struct file *file, void *priv,
-> -					struct v4l2_frequency *f)
-> -{
-> -	struct maestro *dev = video_drvdata(file);
-> -
-> -	if (f->tuner != 0)
-> -		return -EINVAL;
-> -	f->type = V4L2_TUNER_RADIO;
-> -	mutex_lock(&dev->lock);
-> -	f->frequency = BITS2FREQ(radio_bits_get(dev));
-> -	mutex_unlock(&dev->lock);
-> -	return 0;
-> -}
-> -
-> -static int vidioc_queryctrl(struct file *file, void *priv,
-> -					struct v4l2_queryctrl *qc)
-> -{
-> -	switch (qc->id) {
-> -	case V4L2_CID_AUDIO_MUTE:
-> -		return v4l2_ctrl_query_fill(qc, 0, 1, 1, 1);
-> -	}
-> -	return -EINVAL;
-> -}
-> -
-> -static int vidioc_g_ctrl(struct file *file, void *priv,
-> -					struct v4l2_control *ctrl)
-> -{
-> -	struct maestro *dev = video_drvdata(file);
-> -
-> -	switch (ctrl->id) {
-> -	case V4L2_CID_AUDIO_MUTE:
-> -		ctrl->value = dev->muted;
-> -		return 0;
-> -	}
-> -	return -EINVAL;
-> -}
-> -
-> -static int vidioc_s_ctrl(struct file *file, void *priv,
-> -					struct v4l2_control *ctrl)
-> -{
-> -	struct maestro *dev = video_drvdata(file);
-> -	u16 io = dev->io;
-> -	u16 omask;
-> -
-> -	switch (ctrl->id) {
-> -	case V4L2_CID_AUDIO_MUTE:
-> -		mutex_lock(&dev->lock);
-> -		omask = inw(io + IO_MASK);
-> -		outw(~STR_WREN, io + IO_MASK);
-> -		dev->muted = ctrl->value;
-> -		outw(dev->muted ? STR_WREN : 0, io);
-> -		udelay(4);
-> -		outw(omask, io + IO_MASK);
-> -		msleep(125);
-> -		mutex_unlock(&dev->lock);
-> -		return 0;
-> -	}
-> -	return -EINVAL;
-> -}
-> -
-> -static int vidioc_g_input(struct file *filp, void *priv, unsigned int *i)
-> -{
-> -	*i = 0;
-> -	return 0;
-> -}
-> -
-> -static int vidioc_s_input(struct file *filp, void *priv, unsigned int i)
-> -{
-> -	return i ? -EINVAL : 0;
-> -}
-> -
-> -static int vidioc_g_audio(struct file *file, void *priv,
-> -					struct v4l2_audio *a)
-> -{
-> -	a->index = 0;
-> -	strlcpy(a->name, "Radio", sizeof(a->name));
-> -	a->capability = V4L2_AUDCAP_STEREO;
-> -	return 0;
-> -}
-> -
-> -static int vidioc_s_audio(struct file *file, void *priv,
-> -					struct v4l2_audio *a)
-> -{
-> -	return a->index ? -EINVAL : 0;
-> -}
-> -
-> -static const struct v4l2_file_operations maestro_fops = {
-> -	.owner		= THIS_MODULE,
-> -	.unlocked_ioctl	= video_ioctl2,
-> -};
-> -
-> -static const struct v4l2_ioctl_ops maestro_ioctl_ops = {
-> -	.vidioc_querycap    = vidioc_querycap,
-> -	.vidioc_g_tuner     = vidioc_g_tuner,
-> -	.vidioc_s_tuner     = vidioc_s_tuner,
-> -	.vidioc_g_audio     = vidioc_g_audio,
-> -	.vidioc_s_audio     = vidioc_s_audio,
-> -	.vidioc_g_input     = vidioc_g_input,
-> -	.vidioc_s_input     = vidioc_s_input,
-> -	.vidioc_g_frequency = vidioc_g_frequency,
-> -	.vidioc_s_frequency = vidioc_s_frequency,
-> -	.vidioc_queryctrl   = vidioc_queryctrl,
-> -	.vidioc_g_ctrl      = vidioc_g_ctrl,
-> -	.vidioc_s_ctrl      = vidioc_s_ctrl,
-> -};
-> -
-> -static u16 __devinit radio_power_on(struct maestro *dev)
-> -{
-> -	register u16 io = dev->io;
-> -	register u32 ofreq;
-> -	u16 omask, odir;
-> -
-> -	omask = inw(io + IO_MASK);
-> -	odir = (inw(io + IO_DIR) & ~STR_DATA) | (STR_CLK | STR_WREN);
-> -	outw(odir & ~STR_WREN, io + IO_DIR);
-> -	dev->muted = inw(io) & STR_WREN ? 0 : 1;
-> -	outw(odir, io + IO_DIR);
-> -	outw(~(STR_WREN | STR_CLK), io + IO_MASK);
-> -	outw(dev->muted ? 0 : STR_WREN, io);
-> -	udelay(16);
-> -	outw(omask, io + IO_MASK);
-> -	ofreq = radio_bits_get(dev);
-> -
-> -	if ((ofreq < FREQ2BITS(FREQ_LO)) || (ofreq > FREQ2BITS(FREQ_HI)))
-> -		ofreq = FREQ2BITS(FREQ_LO);
-> -	radio_bits_set(dev, ofreq);
-> -
-> -	return (ofreq == radio_bits_get(dev));
-> -}
-> -
-> -static int __devinit maestro_probe(struct pci_dev *pdev,
-> -	const struct pci_device_id *ent)
-> -{
-> -	struct maestro *dev;
-> -	struct v4l2_device *v4l2_dev;
-> -	int retval;
-> -
-> -	retval = pci_enable_device(pdev);
-> -	if (retval) {
-> -		dev_err(&pdev->dev, "enabling pci device failed!\n");
-> -		goto err;
-> -	}
-> -
-> -	retval = -ENOMEM;
-> -
-> -	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-> -	if (dev == NULL) {
-> -		dev_err(&pdev->dev, "not enough memory\n");
-> -		goto err;
-> -	}
-> -
-> -	v4l2_dev = &dev->v4l2_dev;
-> -	mutex_init(&dev->lock);
-> -	dev->pdev = pdev;
-> -
-> -	strlcpy(v4l2_dev->name, "maestro", sizeof(v4l2_dev->name));
-> -
-> -	retval = v4l2_device_register(&pdev->dev, v4l2_dev);
-> -	if (retval < 0) {
-> -		v4l2_err(v4l2_dev, "Could not register v4l2_device\n");
-> -		goto errfr;
-> -	}
-> -
-> -	dev->io = pci_resource_start(pdev, 0) + GPIO_DATA;
-> -
-> -	strlcpy(dev->vdev.name, v4l2_dev->name, sizeof(dev->vdev.name));
-> -	dev->vdev.v4l2_dev = v4l2_dev;
-> -	dev->vdev.fops = &maestro_fops;
-> -	dev->vdev.ioctl_ops = &maestro_ioctl_ops;
-> -	dev->vdev.release = video_device_release_empty;
-> -	video_set_drvdata(&dev->vdev, dev);
-> -
-> -	if (!radio_power_on(dev)) {
-> -		retval = -EIO;
-> -		goto errfr1;
-> -	}
-> -
-> -	retval = video_register_device(&dev->vdev, VFL_TYPE_RADIO, radio_nr);
-> -	if (retval) {
-> -		v4l2_err(v4l2_dev, "can't register video device!\n");
-> -		goto errfr1;
-> -	}
-> -
-> -	v4l2_info(v4l2_dev, "version " DRIVER_VERSION "\n");
-> -
-> -	return 0;
-> -errfr1:
-> -	v4l2_device_unregister(v4l2_dev);
-> -errfr:
-> -	kfree(dev);
-> -err:
-> -	return retval;
-> -
-> -}
-> -
-> -static void __devexit maestro_remove(struct pci_dev *pdev)
-> -{
-> -	struct v4l2_device *v4l2_dev = dev_get_drvdata(&pdev->dev);
-> -	struct maestro *dev = to_maestro(v4l2_dev);
-> -
-> -	video_unregister_device(&dev->vdev);
-> -	v4l2_device_unregister(&dev->v4l2_dev);
-> -}
-> -
-> -static struct pci_device_id maestro_r_pci_tbl[] = {
-> -	{ PCI_DEVICE(PCI_VENDOR_ID_ESS, PCI_DEVICE_ID_ESS_ESS1968),
-> -		.class = PCI_CLASS_MULTIMEDIA_AUDIO << 8,
-> -		.class_mask = 0xffff00 },
-> -	{ PCI_DEVICE(PCI_VENDOR_ID_ESS, PCI_DEVICE_ID_ESS_ESS1978),
-> -		.class = PCI_CLASS_MULTIMEDIA_AUDIO << 8,
-> -		.class_mask = 0xffff00 },
-> -	{ 0 }
-> -};
-> -MODULE_DEVICE_TABLE(pci, maestro_r_pci_tbl);
-> -
-> -static struct pci_driver maestro_r_driver = {
-> -	.name		= "maestro_radio",
-> -	.id_table	= maestro_r_pci_tbl,
-> -	.probe		= maestro_probe,
-> -	.remove		= __devexit_p(maestro_remove),
-> -};
-> -
-> -static int __init maestro_radio_init(void)
-> -{
-> -	int retval = pci_register_driver(&maestro_r_driver);
-> -
-> -	if (retval)
-> -		printk(KERN_ERR "error during registration pci driver\n");
-> -
-> -	return retval;
-> -}
-> -
-> -static void __exit maestro_radio_exit(void)
-> -{
-> -	pci_unregister_driver(&maestro_r_driver);
-> -}
-> -
-> -module_init(maestro_radio_init);
-> -module_exit(maestro_radio_exit);
-> 
-> 
+> Both hw_perf (perf top) & UV NMIs work correctly under light loads. However, if I
+> run for 10 - 15 minutes injecting UV NMIs at a rate of about 30/min, "perf top"
+> stops generating output. Strace shows that it continues to poll() but no data
+> is received.
 
+That's a low frequency and it still gets stuck?
+
+> 
+> While "perf top" is hung, if I inject an NMI into the system in a way that will NOT
+> be consumed by the UV nmi handler, "perf top" resumes output but will stop again after
+> a few minutes.
+
+So that means the PMU set its interrupt bit but the cpu failed to get the
+NMI.
+
+> 
+> 
+> AFAICT, the UV nmi handler is not consuming extra NMI interrupts. I can't
+> rule out that I'm missing something but I don't see it.
+
+What happens if you put the UV nmi handler below the hw_perf handler in
+priority?  I assume the DIE_NMIUNKNOWN snippet in the hw_perf handler will
+swallow some of the UV NMIs, but more importantly does it still generate
+the hang you see?
+
+> 
+> 
+> Do you have any ideas or clues???
+
+Part of the problem is most of the NMI testing is done with perf and maybe
+kgdb.  So high frequency NMI sharing is probably exposing more bugs.
+
+Also is it a problem to move your testing on to the latest upstream code
+instead of RHEL-6?  Not all the latest NMI work is there.  I want to make
+sure we are all starting at the same code. :-)
+
+Cheers,
+Don
+
+> 
+> 
+> > 
+> > > 
+> > > The root cause of the problem is that architecturally, x86 does not
+> > > have a way to identifies the source(s) that cause an NMI. If multiple
+> > > events occur at about the same time, there is no way that I can see that the
+> > > OS can detect it.
+> > 
+> > There are registers we can check to see who owns trigger the NMI (at least
+> > for the perf code, the SGI code maybe not, which is why I set it to a
+> > lower priority to be a catch-all).
+> > 
+> > I'm not aware of the x86 architecture dropping NMIs, so they should all
+> > get processed.  It is just a matter of which subsystems get determine if
+> > they are the source of the NMI or not.
+> > 
+> > > 
+> > > > 
+> > > > My first impression is the skip nmi logic in the perf handler is probably
+> > > > accidentally thinking the SGI external nmi is the perf's 'extra' nmi it is
+> > > > supposed to skip and thus swallows it.  At least that is the impression I
+> > > 
+> > > Agree
+> > > 
+> > > 
+> > > > get from the RedHat bugzilla which says SGI is running 'perf top', getting
+> > > > a hang, then pressing their nmi button to see the stack traces.
+> > > > 
+> > > > Jack,
+> > > > 
+> > > > I worked through a number of these issues upstream and I already talked to
+> > > > George and Russ over here at RedHat about working through the issue over
+> > > > here with them.  They can help me get access to your box to help debug.
+> > > 
+> > > Russ is right down the hall.
+> > 
+> > Great!
+> > 
+> > Cheers,
+> > Don
