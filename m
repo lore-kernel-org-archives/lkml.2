@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab1CVGUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 02:20:07 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51748 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754048Ab1CVGUE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 02:20:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=mMBiMy3B9H0yv3b0x8TqSAQ1ojWYzwJFwnjNGh/gq5MTjoxUhu/AfmIm5CGXj7m5uW
-         3wz6bUam0agsYefm80jUpjF0NvO6iQpf0aSKvLCher5czSBpUyUW8399e2hZ1awS0MNO
-         YjhX4yuXXDtyINdLhNDKru5I47V1AjOaKaXq0=
-Date: Mon, 21 Mar 2011 23:19:58 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Aaro Koskinen <aaro.koskinen@nokia.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: tsc2005: fix locking issue
-Message-ID: <20110322061958.GA7990@core.coreip.homeip.net>
-References: <1300724650-6641-1-git-send-email-aaro.koskinen@nokia.com>
+	id S1754599Ab1CVGb6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 02:31:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29344 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751884Ab1CVGb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 02:31:56 -0400
+Message-ID: <4D884250.3040302@redhat.com>
+Date: Tue, 22 Mar 2011 14:31:44 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300724650-6641-1-git-send-email-aaro.koskinen@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+        Takao Indoh <tindoh@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Len Brown <lenb@kernel.org>, linux-doc@vger.kernel.org,
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Patch] acpi: introduce "acpi_addr=" parameter for kdump
+References: <1299766243-494-1-git-send-email-amwang@redhat.com> <20110310143923.GB29464@redhat.com> <m1oc5ig90b.fsf@fess.ebiederm.org> <20110310185019.GB23105@srcf.ucam.org> <4D86F2C2.9080707@redhat.com> <m1hbawkifj.fsf@fess.ebiederm.org> <20110321155629.GF2694@redhat.com>
+In-Reply-To: <20110321155629.GF2694@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 06:24:10PM +0200, Aaro Koskinen wrote:
-> Commit 0b950d3 (Input: tsc2005 - add open/close) introduced a
-> locking issue with the ESD watchdog: __tsc2005_disable() is calling
-> cancel_delayed_work_sync() with mutex held, and the work also needs the
-> same mutex.
-> 
-> Fix the problem by using cancel_delayed_work() on disable. If
-> the ESD work was running it will check if the device is closed
-> or suspended, and in that case it will do nothing and skip
-> re-arming. cancel_delayed_work_sync() is still needed when the module
-> is removed.
+于 2011年03月21日 23:56, Vivek Goyal 写道:
+>
+> Matthew and I were chatting in general about it couple of days back and
+> mattew suggested how about if we embrace the idea of booting the kernel
+> always in physical mode (both first and second) and keep that extra set
+> of pagetables around to make EFI calls. That way kexec/kdump should just
+> work and kernel changes also might not be too much.
+>
+> The potential problem with this is that this might expose various kind
+> of BIOS issues with different vendors as vendors might not test the
+> physical path.
 
-Hmm, indeed. However, instead of moving cancel_delayed_work_sync() to
-remove maybe we should use mutex_trylock() in tsc2005_esd_work()?
-If trylock fails that means that device is in the middle of open/close
-transition. We should just reschedule the work and get out of there.
- 
+First I have to say I know a little about EFI.
+
+I am wondering what benefits we will lose if we use physical mode?
+comparing it with virtual mode? If very few, this could be a solution.
+
 Thanks.
-
--- 
-Dmitry
