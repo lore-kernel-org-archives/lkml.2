@@ -1,645 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab1CVH2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 03:28:47 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48727 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab1CVH2o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 03:28:44 -0400
-Message-ID: <9D35ABAF307441FFAE50B3EAA521C4E0@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Arnd Bergmann" <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: <davinci-linux-open-source@linux.davincidsp.com>,
-        <sachi@mistralsolutions.com>, <nsekhar@ti.com>,
-        "open list" <linux-kernel@vger.kernel.org>,
-        "open list:CAN NETWORK DRIVERS" <socketcan-core@lists.berlios.de>,
-        "open list:CAN NETWORK DRIVERS" <netdev@vger.kernel.org>,
-        <m-watkins@ti.com>, "Wolfgang Grandegger" <wg@grandegger.com>
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com> <201102181607.20787.arnd@arndb.de>
-In-Reply-To: <201102181607.20787.arnd@arndb.de>
-Subject: Re: [PATCH v2 09/13] can: pruss CAN driver.
-Date: Tue, 22 Mar 2011 13:00:57 +0530
-Organization: Mistral Solutions
+	id S1754847Ab1CVHb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 03:31:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57839 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751361Ab1CVHb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 03:31:56 -0400
+Date: Tue, 22 Mar 2011 08:31:50 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg: consider per-cpu stock reserves when returning
+ RES_USAGE for _MEM
+Message-ID: <20110322073150.GA12940@tiehlicka.suse.cz>
+References: <20110318152532.GB18450@tiehlicka.suse.cz>
+ <20110321093419.GA26047@tiehlicka.suse.cz>
+ <20110321102420.GB26047@tiehlicka.suse.cz>
+ <20110322091014.27677ab3.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110322104723.fd81dddc.nishimura@mxp.nes.nec.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322104723.fd81dddc.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-> This is a detailed walk through the can driver. The pruss_can.c
-> file mostly looks good, there are very tiny changes that I'm
-> suggesting to improve the code. I assume that you wrote that file.
->
-> The pruss_can_api.c is a bit of a mess and looks like it was copied
-> from some other code base and just barely changed to follow Linux
-> coding style. I can tell from the main driver file that you can do
-> better than that.
-> My recommendation for that would be to throw it away and reimplement
-> the few parts that you actually need, in proper coding style.
-> You can also try to fix the file according to the comments I give
-> you below, but I assume that would be signficantly more work.
->
-> Moving everything into one file also makes things easier to read
-> here and lets you identifer more quickly what is unused.
-
-SG - I have almost re-implemented the API layer, will be merging with the 
-driver file itself.
-
-
->> +#ifdef __CAN_DEBUG
->> +#define __can_debug(fmt, args...) printk(KERN_DEBUG "can_debug: " fmt, 
->> ## args)
->> +#else
->> +#define __can_debug(fmt, args...)
->> +#endif
->> +#define __can_err(fmt, args...) printk(KERN_ERR "can_err: " fmt, ## 
->> args)
->
-> Better use the existing dev_dbg() and dev_err() macros that provide the
-> same functionality in a more standard way. You already use them in
-> some places, as I noticed.
->
-> If you don't have a way to pass a meaningful device, you can use
-> pr_debug/pr_err.
->
-SG - Ok
-
->> +void omapl_pru_can_rx_wQ(struct work_struct *work)
->> +{
->
-> This is only used in the same file, so better make it static.
-
-SG - This is removed, used NAPI as recommended.
-
->
->> + if (-1 == pru_can_get_intr_status(priv->dev, &priv->can_rx_hndl))
->> + return;
->
-> Don't make up your own return values, just use the standard error codes,
-> e.g. -EIO or -EAGAIN, whatever fits.
-
-SG - Ok
-
->
-> The more common way to write the comparison would be the other way round,
->
-> if (pru_can_get_intr_status(priv->dev, &priv->can_rx_hndl) == -EAGAIN)
-> return;
->
-> or, simpler
->
-> if (pru_can_get_intr_status(priv->dev, &priv->can_rx_hndl))
-> return;
-
-SG - Ok
-
->
->> +irqreturn_t omapl_tx_can_intr(int irq, void *dev_id)
->> +{
->
-> This also should be static
-
-SG - Ok
-
->
->> + for (bit_set = 0; ((priv->can_tx_hndl.u32interruptstatus & 0xFF)
->> + >> bit_set != 0); bit_set++)
->> + ;
->
-> bit_set = fls(priv->can_tx_hndl.u32interruptstatus & 0xFF); ?
->
-
-SG - Ok
-
->> +irqreturn_t omapl_rx_can_intr(int irq, void *dev_id)
->
-> static
-
-SG - Ok
-
-
->
->> diff --git a/drivers/net/can/da8xx_pruss/pruss_can_api.c 
->> b/drivers/net/can/da8xx_pruss/pruss_can_api.c
->> new file mode 100644
->> index 0000000..2f7438a
->> --- /dev/null
->> +++ b/drivers/net/can/da8xx_pruss/pruss_can_api.c
->
-> A lot of code in this file seems to be unused. Is that right?
-> I would suggest adding only the code that is actually being
-> used. If you add more functionality later, you can always
-> add back the low-level functions, but dead code usually
-> turns into broken code quickly.
->
-
-SG - Ok
-
->> +static can_emu_drv_inst gstr_can_inst[ecanmaxinst];
->
-> This is global data and probably needs some for of locking
-
-SG - Ok
-
->
->> +/*
->> + * pru_can_set_brp() Updates the  BRP register of PRU0
->> + * and PRU1 of OMAP L138. This API will be called by the
->> + * Application to updtae the BRP register of PRU0 and PRU1
->> + *
->> + * param u16bitrateprescaler The can bus bitrate
->> + * prescaler value be set
->> + *
->> + * return   SUCCESS or FAILURE
->> + */
->> +s16 pru_can_set_brp(struct device *dev, u16 u16bitrateprescaler)
->> +{
->
-> unused.
-
-SG - Ok
-
->
->> + u32 u32offset;
->> +
->> + if (u16bitrateprescaler > 255) {
->> + return -1;
->> + }
->
-> non-standard error code. It also doesn't match the comment, which
-> claims it is SUCCESS or FAILURE, both of which are (rightfully)
-> not defined.
-
-SG - Ok
-
->
->> + u32offset = (PRU_CAN_RX_CLOCK_BRP_REGISTER);
->> + pruss_writel(dev, u32offset, (u32 *) &u16bitrateprescaler, 1);
->> +
->> + u32offset = (PRU_CAN_TX_CLOCK_BRP_REGISTER);
->> + pruss_writel(dev, u32offset, (u32 *) &u16bitrateprescaler, 1);
->
-
-SG - Ok
-
-
-> You pass a 32 bit pointer to a 16 bit local variable here.
-> This has an undefined effect, and if you build this code on
-> a big-endian platform, it cannot possibly do anything good.
->
-> pruss_writel() is defined in a funny way if it takes a thirty-two bit
-> input argument by reference, rather than by value. What is going
-> on there?
->
->> +s16 pru_can_set_bit_timing(struct device *dev,
->> + can_bit_timing_consts *pstrbittiming)
->
-> unused.
->
-
-SG - Ok
-
-
->> + u32 u32offset;
->> + u32 u32serregister;
->
-> It's a bit silly to put the name of the type into the name
-> of a variable. You already spell it out in the definition.
-
-SG - Ok
-
->
->> +s16 pru_can_write_data_to_mailbox(struct device *dev,
->> + can_emu_app_hndl *pstremuapphndl)
->> +{
->> + s16 s16subrtnretval;
->> + u32 u32offset;
->> +
->> + if (pstremuapphndl == NULL) {
->> + return -1;
->> + }
->
-> nonstandard error code. Also, why the heck is type function
-> return type s16 when the only possible return values are 0
-> and -1? Just make this an int.
-
-SG - Ok
-
->
->> + switch ((u8) pstremuapphndl->ecanmailboxnumber) {
->> + case 0:
->> + u32offset = (PRU_CAN_TX_MAILBOX0);
->> + break;
->> + case 1:
->> + u32offset = (PRU_CAN_TX_MAILBOX1);
->> + break;
->> + case 2:
->> + u32offset = (PRU_CAN_TX_MAILBOX2);
->> + break;
->> + case 3:
->> + u32offset = (PRU_CAN_TX_MAILBOX3);
->> + break;
->> + case 4:
->> + u32offset = (PRU_CAN_TX_MAILBOX4);
->> + break;
->> + case 5:
->> + u32offset = (PRU_CAN_TX_MAILBOX5);
->> + break;
->> + case 6:
->> + u32offset = (PRU_CAN_TX_MAILBOX6);
->> + break;
->> + case 7:
->> + u32offset = (PRU_CAN_TX_MAILBOX7);
->> + break;
->> + default:
->> + return -1;
->> + }
->
-> Lovely switch statement. I'm sure you find a better way to express this 
-> ;-)
-
-SG - Ok.
-
->
->> + s16subrtnretval = pruss_writel(dev, u32offset,
->> + (u32 *) &(pstremuapphndl->strcanmailbox), 4);
->> + if (s16subrtnretval == -1) {
->> + return -1;
->> + }
->> + return 0;
->> +}
->
-> return pruss_writel(...) ?
-
-SG - Ok.
-
->
->> +
->> +/*
->> + * pru_can_get_intr_status()
->> + * Gets the interrupts status register value.
->> + * This API will be called by the Application
->> + * to get the interrupts status register value
->> + *
->> + * param  u8prunumber PRU number for which IntStatusReg
->> + * has to be read
->> + *
->> + * return   SUCCESS or FAILURE
->> + */
->> +s16 pru_can_get_intr_status(struct device *dev,
->> + can_emu_app_hndl *pstremuapphndl)
->> +{
->> + u32 u32offset;
->> + s16 s16subrtnretval = -1;
->> +
->> + if (pstremuapphndl == NULL) {
->> + return -1;
->> + }
->
-> In every function you check that pstremuapphndl is present. This seems
-> rather pointless. How about just making sure you never pass a NULL
-> value to these functions? That should not be hard at all from the
-> high-level driver.
-
-SG - OK.
-
-
->
->> + if (pstremuapphndl->u8prunumber == DA8XX_PRUCORE_1) {
->> + u32offset = (PRU_CAN_TX_INTERRUPT_STATUS_REGISTER);
->> + } else if (pstremuapphndl->u8prunumber == DA8XX_PRUCORE_0) {
->> + u32offset = (PRU_CAN_RX_INTERRUPT_STATUS_REGISTER);
->> + } else {
->> + return -1;
->> + }
->> +
->> + s16subrtnretval = pruss_readl(dev, u32offset,
->> + (u32 *) &pstremuapphndl->u32interruptstatus, 1);
->> + if (s16subrtnretval == -1) {
->> + return -1;
->> + }
->
-> You can also get rid of all these {} braces around one-line statements.
-
-SG - OK.
-
->
->> +/*
->> + * pru_can_get_mailbox_status() Gets the mailbox status
->> + * register value. This API will be called by the Application
->> + * to get the mailbox status register value
->> + *
->> + * return   SUCCESS or FAILURE
->> + */
->> +s16 pru_can_get_mailbox_status(struct device *dev,
->> + can_emu_app_hndl *pstremuapphndl)
->
-> unused
-.
-SG - OK.
-
->
->> +/*
->> + * pru_can_config_mode_set() Sets the timing value
->> + * for data transfer. This API will be called by the Application
->> + * to set timing valus for data transfer
->> + *
->> + * return   SUCCESS or FAILURE
->> + */
->> +s16 pru_can_config_mode_set(struct device *dev, bool bconfigmodeflag)
->
-> unused.
-
-SG - OK.
-
->
->> + u32offset = (PRU_CAN_TX_GLOBAL_CONTROL_REGISTER & 0xFFFF);
->> + u32value = 0x00000000;
->> + s16subrtnretval = pruss_writel(dev, u32offset, (u32 *) &u32value, 1);
->> + if (s16subrtnretval == -1) {
->> + return -1;
->> + }
->> +
->> + u32offset = (PRU_CAN_TX_GLOBAL_STATUS_REGISTER & 0xFFFF);
->> + u32value = 0x00000040;
->> + s16subrtnretval = pruss_writel(dev, u32offset, (u32 *) &u32value, 1);
->> + if (s16subrtnretval == -1) {
->> + return -1;
->> + }
->> + u32offset = (PRU_CAN_RX_GLOBAL_STATUS_REGISTER & 0xFFFF);
->> + u32value = 0x00000040;
->> + s16subrtnretval = pruss_writel(dev, u32offset, (u32 *) &u32value, 1);
->> + if (s16subrtnretval == -1) {
->> + return -1;
->> + }
->
-> <skipping 50 (!) more of these>
->
-> After the third time of writing the same code, you should have noticed 
-> that
-> there is some duplication involved that can trivially be reduced. A good
-> way to express the same would be a table with the contents:
->
-
-SG - OK.
-                 Thanks for taking the pain to review this. But, the good 
-part is that
-                 everything works fine. All this got cluttered as 
-development &
-                 design changes happened. Hopefully, the cleaned up code 
-will
-                also work as well :-)
-
-> static struct pru_can_register_init {
-> u16 offset;
-> u32 value;
-> } = {
-> { PRU_CAN_TX_GLOBAL_CONTROL_REGISTER, 0, },
-> { PRU_CAN_TX_GLOBAL_STATUS_REGISTER, 0x40, },
-> { PRU_CAN_RX_GLOBAL_STATUS_REGISTER, 0x40, },
-> ...
-> };
->
->
->> +
->> +
->> +/*
->> + * pru_can_emu_open() Opens the can emu for
->> + * application to use. This API will be called by the Application
->> + * to Open the can emu for application to use.
->> + *
->> + * param pstremuapphndl Pointer to application handler
->> + * structure
->> + *
->> + * return   SUCCESS or FAILURE
->> + */
->> +s16 pru_can_emu_open(struct device *dev, can_emu_app_hndl 
->> *pstremuapphndl)
->
-> unused.
-
-SG - OK.
-
->
->> +/*
->> + * brief    pru_can_emu_close() Closes the can emu for other
->> + * applications to use. This API will be called by the Application to 
->> Close
->> + * the can emu for other applications to use
->> + *
->> + * param pstremuapphndl Pointer to application handler structure
->> + *
->> + * return   SUCCESS or FAILURE
->> + */
->> +s16 pru_can_emu_close(struct device *dev, can_emu_app_hndl 
->> *pstremuapphndl)
->
-> unused
-
-SG - OK.
-
->
->> +s16 pru_can_emu_sreset(struct device *dev)
->> +{
->> + return 0;
->> +}
->
-> pointless.
-
-SG - OK.
-
->
->> +s16 pru_can_tx(struct device *dev, u8 u8mailboxnumber, u8 u8prunumber)
->> +{
->> + u32 u32offset = 0;
->> + u32 u32value = 0;
->> + s16 s16subrtnretval = -1;
->> +
->> + if (DA8XX_PRUCORE_1 == u8prunumber) {
->> + switch (u8mailboxnumber) {
->> + case 0:
->> + u32offset = (PRU_CAN_TX_MAILBOX0_STATUS_REGISTER & 0xFFFF);
->> + u32value = 0x00000080;
->> + s16subrtnretval = pruss_writel(dev, u32offset,
->> + (u32 *) &u32value, 1);
->> + if (s16subrtnretval == -1) {
->> + return -1;
->> + }
->> + break;
->> + case 1:
->> + u32offset = (PRU_CAN_TX_MAILBOX1_STATUS_REGISTER & 0xFFFF);
->> + u32value = 0x00000080;
->> + s16subrtnretval = pruss_writel(dev, u32offset,
->> + (u32 *) &u32value, 1);
->> + if (s16subrtnretval == -1) {
->> + return -1;
->> + }
->> + break;
->> + case 2:
->> + u32offset = (PRU_CAN_TX_MAILBOX2_STATUS_REGISTER & 0xFFFF);
->
-> Another pointless switch statement.
-
-SG - OK.
-
->
->> +s16 pru_can_mask_ints(struct device *dev, u32 int_mask)
->> +{
->> + return 0;
->> +}
->> +
->> +int pru_can_get_error_cnt(struct device *dev, u8 u8prunumber)
->> +{
->> + return 0;
->> +}
->
-> useless.
-
-SG - OK.
-
->
->> +int pru_can_get_intc_status(struct device *dev)
->> +{
->> + u32 u32offset = 0;
->> + u32 u32getvalue = 0;
->> + u32 u32clrvalue = 0;
->> +
->> + u32offset = (PRUSS_INTC_STATCLRINT1 & 0xFFFF);
->> + pruss_readl(dev, u32offset, (u32 *) &u32getvalue, 1);
->> +
->> + if (u32getvalue & 4)
->> + u32clrvalue = 34; /* CLR Event 34 */
->> +
->> + if (u32getvalue & 2)
->> + u32clrvalue = 33; /* CLR Event 33  */
->> +
->> + if (u32clrvalue) {
->> + u32offset = (PRUSS_INTC_STATIDXCLR & 0xFFFF);
->> + pruss_writel(dev, u32offset, &u32clrvalue, 1);
->> + } else
->> + return -1;
->
-> Could the controller signal both event 34 and 33 simultaneously?
-> The only user of this function looks at the individual bits
-> of the return value again, which looks wrong for all possible
-> return values here.
->
-
-SG - OK. The System Events are mapped to 10 host interrupts (PRU to 
-ARM/DSP),
-                   as I our case two system events can be mapped to a single 
-host interrupt.
-
-
->> +#ifndef _PRU_CAN_API_H_
->> +#define CAN_BIT_TIMINGS (0x273)
->> +
->> +/* Timer Clock is sourced from DDR freq (PLL1 SYS CLK 2) */
->> +#define TIMER_CLK_FREQ 132000000
->> +
->> +#define TIMER_SETUP_DELAY 14
->> +#define GPIO_SETUP_DELAY 150
->> +
->> +#define CAN_RX_PRU_0 PRUSS_NUM0
->> +#define CAN_TX_PRU_1 PRUSS_NUM1
->> +
->> +/* Number of Instruction in the Delay loop */
->> +#define DELAY_LOOP_LENGTH 2
->> +
->> +#define PRU1_BASE_ADDR 0x2000
->> +
->> +#define PRU_CAN_TX_GLOBAL_CONTROL_REGISTER (PRU1_BASE_ADDR)
->> +#define PRU_CAN_TX_GLOBAL_STATUS_REGISTER (PRU1_BASE_ADDR + 0x04)
->> +#define PRU_CAN_TX_INTERRUPT_MASK_REGISTER (PRU1_BASE_ADDR + 0x08)
->> +#define PRU_CAN_TX_INTERRUPT_STATUS_REGISTER (PRU1_BASE_ADDR + 0x0C)
->> +#define PRU_CAN_TX_MAILBOX0_STATUS_REGISTER (PRU1_BASE_ADDR + 0x10)
->> +#define PRU_CAN_TX_MAILBOX1_STATUS_REGISTER (PRU1_BASE_ADDR + 0x14)
->
-> The header file should be used for interfaces between the two .c files,
-> don't mix that with hardware specific definitions. Sometimes you may want
-> to have register number lists in a header, if that list is going to be
-> used in multiple places. In this case, there is just one user, so better
-> move all those definitions over there.
-
-SG - OK.
-
->
->> +typedef enum {
->> + ecaninst0 = 0,
->> + ecaninst1,
->> + ecanmaxinst
->> +} can_instance_enum;
->> +
->> +typedef enum {
->> + ecanmailbox0 = 0,
->> + ecanmailbox1,
->> + ecanmailbox2,
->> + ecanmailbox3,
->> + ecanmailbox4,
->> + ecanmailbox5,
->> + ecanmailbox6,
->> + ecanmailbox7
->> +} can_mailbox_number;
->> +
->> +typedef enum {
->> + ecandirectioninit = 0,
->> + ecantransmit,
->> + ecanreceive
->> +} can_transfer_direction;
->
-> The values are all unused, you only use the typedefs.
-> IMHO it would be more sensible to just pass these as unsigned int
-> or u32 values, but if you prefer, there is no reason to just do
->
-> typedef u32 can_mailbox_number;
->
-> etc.
-
-SG - OK.
-
->
->> +typedef struct {
->> + u16 u16extendedidentifier;
->> + u16 u16baseidentifier;
->> + u8 u8data7;
->> + u8 u8data6;
->> + u8 u8data5;
->> + u8 u8data4;
->> + u8 u8data3;
->> + u8 u8data2;
->> + u8 u8data1;
->> + u8 u8data0;
->> + u16 u16datalength;
->> + u16 u16crc;
->> +} can_mail_box_structure;
->
-> Please don't use typedef for complex data structures, and learn about
-> better naming of identifiers. I would suggest writing this as
->
-> struct pru_can_mailbox {
-> u16 ext_id;
-> u16 base_id;
-> u8 data[8]; /* note: reverse order */
-> u16 len;
-> u16 crc;
-> };
->
-> Sames rules apply to the other structures.
-
-SG - OK.
-
->
-> Arnd 
-
+On Tue 22-03-11 10:47:23, Daisuke Nishimura wrote:
+> On Tue, 22 Mar 2011 09:10:14 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Mon, 21 Mar 2011 11:24:20 +0100
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > [Sorry for reposting but I forgot to fully refresh the patch before
+> > > posting...]
+> > > 
+> > > On Mon 21-03-11 10:34:19, Michal Hocko wrote:
+> > > > On Fri 18-03-11 16:25:32, Michal Hocko wrote:
+> > > > [...]
+> > > > > According to our documention this is a reasonable test case:
+> > > > > Documentation/cgroups/memory.txt:
+> > > > > memory.usage_in_bytes           # show current memory(RSS+Cache) usage.
+> > > > > 
+> > > > > This however doesn't work after your commit:
+> > > > > cdec2e4265d (memcg: coalesce charging via percpu storage)
+> > > > > 
+> > > > > because since then we are charging in bulks so we can end up with
+> > > > > rss+cache <= usage_in_bytes.
+> > > > [...]
+> > > > > I think we have several options here
+> > > > > 	1) document that the value is actually >= rss+cache and it shows
+> > > > > 	   the guaranteed charges for the group
+> > > > > 	2) use rss+cache rather then res->count
+> > > > > 	3) remove the file
+> > > > > 	4) call drain_all_stock_sync before asking for the value in
+> > > > > 	   mem_cgroup_read
+> > > > > 	5) collect the current amount of stock charges and subtract it
+> > > > > 	   from the current res->count value
+> > > > > 
+> > > > > 1) and 2) would suggest that the file is actually not very much useful.
+> > > > > 3) is basically the interface change as well
+> > > > > 4) sounds little bit invasive as we basically lose the advantage of the
+> > > > > pool whenever somebody reads the file. Btw. for who is this file
+> > > > > intended?
+> > > > > 5) sounds like a compromise
+> > > > 
+> > > > I guess that 4) is really too invasive - for no good reason so here we
+> > > > go with the 5) solution.
+> > 
+> > I think the test in LTP is bad...(it should be fuzzy.) because we cannot
+> > avoid races...
+> I agree.
+
+I think that as well. In fact, I quite do not understand what it is
+testing actually (that we account charges correctly? If yes then what if
+both values are wrong?). The other point is, though, we have exported this
+interface and documented its semantic. This is the reason I have asked
+for the initial purpose of the file in the first place. Is this
+something for debugging only? Can we make use of the value somehow
+(other than a shortcut for rss+cache)?
+
+If there is realy no strong reason for the file existence I would rather
+vote for its removing than having a unusable semantic.
+
+[...]
+> > > Index: linus_tree/mm/memcontrol.c
+> > > ===================================================================
+> > > --- linus_tree.orig/mm/memcontrol.c	2011-03-18 16:09:11.000000000 +0100
+> > > +++ linus_tree/mm/memcontrol.c	2011-03-21 10:21:55.000000000 +0100
+> > > @@ -3579,13 +3579,30 @@ static unsigned long mem_cgroup_recursiv
+> > >  	return val;
+> > >  }
+> > >  
+> > > +static u64 mem_cgroup_current_usage(struct mem_cgroup *mem)
+> > > +{
+> > > +	u64 val = res_counter_read_u64(&mem->res, RES_USAGE);
+> > > +	u64 per_cpu_val = 0;
+> > > +	int cpu;
+> > > +
+> > > +	get_online_cpus();
+> > > +	for_each_online_cpu(cpu) {
+> > > +		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
+> > > +
+> > > +		per_cpu_val += stock->nr_pages * PAGE_SIZE;
+> > 
+> > 		if (memcg_stock->cached == mem)
+> > 			per_cpu_val += stock->nr_pages * PAGE_SIZE;
+
+OK, thanks for pointing that out.
+
+> > AND I think you doesn't handle batched uncharge.
+> > Do you have any idea ?
+
+Hmm, missed that... And this will be really hard as the batch structure
+is embeded in the task struct (strange why we simply cannot uncharge
+same way as we do charges?).
+
+> > (Peter Zilstra's patch will make error size of
+> > bached uncharge bigger.)
+> > 
+> > So....rather than this, just always using root memcg's code is
+> > a good way. Could you try ?
+> > ==
+> >         usage = mem_cgroup_recursive_stat(mem, MEM_CGROUP_STAT_CACHE);
+> >         usage += mem_cgroup_recursive_stat(mem, MEM_CGROUP_STAT_RSS);
+> > 
+> >         if (swap)
+> >                 val += mem_cgroup_recursive_stat(mem, MEM_CGROUP_STAT_SWAPOUT);
+> > 
+> >         return val << PAGE_SHIFT;
+> > ==
+> > 
+> So, option 2) above.
+> 
+
+I have tried that and it really works but what is the point of the file
+then? Or should we do this as a workaround for some time frame until we
+remove the file completely?
+
+> As Michal already said, this change will make *.usage_in_bytes not so useful,
+> i.e. we can use memory.stat instead.
+
+It would be useful in that regard that we do not have to grep out two
+values from .stat file and sum them up. But I am missing the point. If
+we want to have a sum we should add it to the .stat file, right? (like
+we do in other exported files - e.g. meminfo etc...)
+
+> 
+> I don't have any good idea, but I tend to agree to 1) or 3)(or rename the file names) now.
+
+The more I think about it the more I think the same.
+
+> Considering batched uncharge, I think 4) and 5) is difficult.
+
+Thanks for comments.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
