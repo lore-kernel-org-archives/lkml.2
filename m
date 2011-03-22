@@ -1,130 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1CVOxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 10:53:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47769 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab1CVOxF (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 22 Mar 2011 10:53:05 -0400
-Date: Tue, 22 Mar 2011 10:50:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-Cc: arjan@linux.intel.com, peterz@infradead.org, lenb@kernel.org,
-        suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
-        xen-devel@lists.xensource.com
-Subject: Re: [RFC PATCH V4 4/5] cpuidle: driver for xen
-Message-ID: <20110322145054.GB26952@dumpdata.com>
-References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
- <20110322123324.28725.3131.stgit@tringupt.in.ibm.com>
+	id S1754875Ab1CVOyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 10:54:03 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62721 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab1CVOyB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 10:54:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=B2BaKZYK2E6cuxELKrDWerHdGVaNk2xdMZGWCcDi5onjSCMeQe9699RNu1A3DvYnwo
+         Q8KHhW/gNoJlP2S1+nipNqAn+78wtQO/zvhoHzWz+c4YqmA1NgFFa6C+qtn8CL3WWXcD
+         iFNNOIGGLYrguHveQoJALPUJgq9uq+U/M3wDc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110322123324.28725.3131.stgit@tringupt.in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D88B752.0061,ss=1,fgs=0
+In-Reply-To: <1296607359-19332-1-git-send-email-vapier@gentoo.org>
+References: <1294656834-6293-1-git-send-email-vapier@gentoo.org> <1296607359-19332-1-git-send-email-vapier@gentoo.org>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Tue, 22 Mar 2011 10:53:38 -0400
+X-Google-Sender-Auth: yJQry7ormCRbxJOIzc9bYr1Cs6M
+Message-ID: <AANLkTi=Cj0qZOEYsHCqkgotBwuZkgzNAT9zKd-+JfpAm@mail.gmail.com>
+Subject: Re: [PATCH] scripts/checkpatch.pl: reset rpt_cleaners warnings
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 06:03:28PM +0530, Trinabh Gupta wrote:
-> This patch implements a default cpuidle driver for xen.
-> Earlier pm_idle was flipped to default_idle. Maybe there
-> is a better way to ensure default_idle is called
-> without using this cpuidle driver.
+On Tue, Feb 1, 2011 at 19:42, Mike Frysinger wrote:
+> If you run checkpatch against multiple patches, and one of them has a
+> whitespace issue which can be helped via a script (rpt_cleaners), you
+> will see the same NOTE over and over for all subsequent patches.  It
+> makes it seem like those patches also have whitespace problems when in
+> reality, there's only one or two bad apples.
+>
+> So reset rpt_cleaners back to 0 after we've issued the note so that it
+> only shows up near the patch with the actual problems.
 
-Please also CC the Xen devel mailing list (I did this for you)
-
-I couldn't find it in the description, but I was wondering
-what is that you are trying to fix? What is the problem description?
-
-Two, you mention in your description that it was tested on x86 systems. did
-you test this with Xen? If so, what version.
-
-> 
-> Signed-off-by: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-> ---
-> 
->  arch/x86/xen/setup.c |   42 +++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 41 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index a8a66a5..4fce4cd 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -9,6 +9,8 @@
->  #include <linux/mm.h>
->  #include <linux/pm.h>
->  #include <linux/memblock.h>
-> +#include <linux/cpuidle.h>
-> +#include <linux/slab.h>
->  
->  #include <asm/elf.h>
->  #include <asm/vdso.h>
-> @@ -321,6 +323,44 @@ void __cpuinit xen_enable_syscall(void)
->  #endif /* CONFIG_X86_64 */
->  }
->  
-> +static struct cpuidle_driver xen_idle_driver = {
-> +	.name = "xen_idle",
-> +	.owner = THIS_MODULE,
-> +	.priority = 1,
-> +};
-> +
-> +extern struct cpuidle_state state_default_state;
-> +
-> +static int setup_cpuidle(int cpu)
-> +{
-> +	struct cpuidle_device *dev = kzalloc(sizeof(struct cpuidle_device),
-> +					GFP_KERNEL);
-
-No checking to see if dev == NULL?
-> +	int count = CPUIDLE_DRIVER_STATE_START;
-> +	dev->cpu = cpu;
-> +	dev->drv = &xen_idle_driver;
-> +
-> +	dev->states[count] = state_default_idle;
-> +	count++;
-> +
-> +	dev->state_count = count;
-> +
-> +	if (cpuidle_register_device(dev))
-> +		return -EIO; 
-No cleanup of the 'dev' so that we don't leak memory?
-
-> +	return 0;
-> +}
-> +
-> +static int xen_idle_init(void)
-> +{
-> +	int retval, i;
-> +	retval = cpuidle_register_driver(&xen_idle_driver);
-> +
-> +	for_each_online_cpu(i) {
-> +		setup_cpuidle(i);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  void __init xen_arch_setup(void)
->  {
->  	xen_panic_handler_init();
-> @@ -354,7 +394,7 @@ void __init xen_arch_setup(void)
->  #ifdef CONFIG_X86_32
->  	boot_cpu_data.hlt_works_ok = 1;
->  #endif
-> -	pm_idle = default_idle;
-> +	xen_idle_init();
->  	boot_option_idle_override = IDLE_HALT;
->  
->  	fiddle_vdso();
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ping ...
+-mike
