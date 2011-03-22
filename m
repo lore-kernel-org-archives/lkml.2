@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab1CVDjl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 23:39:41 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47409
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752298Ab1CVDji (ORCPT
+	id S1753091Ab1CVDtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 23:49:41 -0400
+Received: from ausc60ps301.us.dell.com ([143.166.148.206]:64155 "EHLO
+	ausc60ps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab1CVDtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 23:39:38 -0400
-Date: Mon, 21 Mar 2011 20:40:17 -0700 (PDT)
-Message-Id: <20110321.204017.27801246.davem@davemloft.net>
-To: horms@verge.net.au
-Cc: eric.dumazet@gmail.com, mingo@elte.hu, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, arnd@arndb.de, penberg@cs.helsinki.fi, ja@ssi.bg,
-        hans@schillstrom.com
-Subject: Re: [slab poison overwritten] Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110322011801.GE27019@verge.net.au>
-References: <20110322000130.GC27019@verge.net.au>
-	<20110322001706.GD27019@verge.net.au>
-	<20110322011801.GE27019@verge.net.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 21 Mar 2011 23:49:39 -0400
+X-Loopcount0: from 143.166.82.43
+Date: Mon, 21 Mar 2011 22:49:37 -0500
+From: Matt Domsch <Matt_Domsch@dell.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: gregkh@suse.de, Dave Jiang <dave.jiang@intel.com>,
+        linux-scsi@vger.kernel.org, jacek.danecki@intel.com,
+        ed.ciechanowski@intel.com, linux-kernel@vger.kernel.org,
+        dmilburn@redhat.com, edmund.nadolski@intel.com,
+        Mike Waychison <mikew@google.com>
+Subject: Re: [PATCH] firmware/efi: export a routine to retrieve efi-variables by GUID
+Message-ID: <20110322034937.GA20235@auslistsprd01.us.dell.com>
+References: <20110318221606.26841.92271.stgit@localhost6.localdomain6>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110318221606.26841.92271.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Simon Horman <horms@verge.net.au>
-Date: Tue, 22 Mar 2011 10:18:01 +0900
+On Fri, Mar 18, 2011 at 03:16:22PM -0700, Dan Williams wrote:
+> From: Dave Jiang <dave.jiang@intel.com>
+> 
+> The efivars module already scans all available variables, normalizes the
+> variable names, and stores them in a list.  Rather than duplicate this
+> to efi runtime services interface let drivers query variable data by
+> GUID.
 
-> IPVS: Use global mutex in ip_vs_app.c
-> 
-> As part of the work to make IPVS network namespace aware
-> __ip_vs_app_mutex was replaced by a per-namespace lock,
-> ipvs->app_mutex. ipvs->app_key is also supplied for debugging purposes.
-> 
-> Unfortunately this implementation results in ipvs->app_key residing
-> in non-static storage which at the very least causes a lockdep warning.
-> 
-> This patch takes the rather heavy-handed approach of reinstating
-> __ip_vs_app_mutex which will cover access to the ipvs->list_head
-> of all network namespaces.
- ...
-> Signed-off-by: Simon Horman <horms@verge.net.au>
+Mike Waychison made a lot of good edits to the driver which are staged
+for .39 in gregkh's tree.  Some of those changes will conflict with
+your patch here, specifically the definition of struct efi_variable
+moved similar to what you have done here.
 
-Applied, thanks Simon.
+You'll want to rebase your changes accordingly.
+
+Thanks,
+Matt
+
+-- 
+Matt Domsch
+Technology Strategist
+Dell | Office of the CTO
