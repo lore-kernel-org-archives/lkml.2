@@ -1,107 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1CVTz4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 15:55:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:14274 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab1CVTzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 15:55:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,226,1299484800"; 
-   d="scan'208";a="670090273"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Cc: linux-kernel@vger.kernel.org, Seiji Aguchi <seiji.aguchi@hds.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] pstore: Don't use persistent store for normal shutdown
-In-Reply-To: <1300783365.2735.12.camel@localhost>
-Date: Tue, 22 Mar 2011 12:55:53 -0700
-Message-Id: <4d88fec9598644f42@agluck-desktop.sc.intel.com>
+	id S1754817Ab1CVT4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 15:56:22 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:40622 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab1CVT4U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 15:56:20 -0400
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: miklos@szeredi.hu, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de
+In-reply-to: <20110322193807.GX22723@ZenIV.linux.org.uk> (message from Al Viro
+	on Tue, 22 Mar 2011 19:38:07 +0000)
+Subject: Re: [PATCH 0/6 v7] overlay filesystem - request for inclusion
+References: <20110322152602.053930811@szeredi.hu>
+ <AANLkTinxD2rZnso3zfX0=-HQ9m7=zAjEtUepFO=uMe2Q@mail.gmail.com>
+ <20110322183919.GV22723@ZenIV.linux.org.uk>
+ <AANLkTinU-F+fHaG9u7c4Tf0GNx5BJvHg7BGOAFGaiDn1@mail.gmail.com>
+ <E1Q26mX-0001Tt-Jq@pomaz-ex.szeredi.hu> <20110322193807.GX22723@ZenIV.linux.org.uk>
+Message-Id: <E1Q27gd-0001i7-Q3@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Tue, 22 Mar 2011 20:56:15 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tony Luck <tony.luck@intel.com>
+On Tue, 22 Mar 2011, Al Viro wrote:
+> On Tue, Mar 22, 2011 at 07:58:17PM +0100, Miklos Szeredi wrote:
+> 
+> > > >  and its protection against renames is
+> > > > nowhere near enough. ??I might be missing something subtle, but...
+> > 
+> > Protection is exactly as for userspace callers.  AFAICT.
+> 
+> BTW, what filesystems can act as upper layers and how are you going to
+> prevent modifications of upper layer in normal way?  It is mounted,
+> after all, or you would be unable to find it when mounting overlayfs.
+> And it might be mounted in any number of places, not all even visible to
+> you...  I realize that you have it listed as a problem, but do you have
+> any ideas on how to deal with that?
 
-pstore_dump() can be called with many different "reason" codes. Save
-the name of the code in the persistent store record.
+Yes, I have some patches, but decided that that should be a separate
+set, once the basics are ironed out.
 
-Also - only worthwhile calling pstore_mkfile for KMSG_DUMP_OOPS - that
-is the only one where the kernel will continue running.
+Since the locking guarantees are separated on the upper/lower fs from
+the overlayfs, allowing modification is not a huge problem.  The worst
+that can happen is that an attacker who has access to both the overlay
+and the upper or lower fs then can "build" an arbitrarily deep
+directory tree on the overlayfs.  Not a big issue.  There won't be
+deadlocks or filesystem corruption.
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+> If you allow NFS as upper layer, you really have a problem; with this
+> approach you probably want to prevent that very forcibly.  Not that
+> your open() handling would work correctly with NFS, even with no modifications
+> from other clients or from server...
 
----
+Upper layer doesn't work on NFS for multiple reasons.
 
-Artem Bityutskiy said:
-> If you ask me, this smells like policy in the kernel. I'd look into the
-> direction of having only the mechanisms in the kernel and letting the
-> user-space making policy decisions by choosing what he wants to filter
-> out and what he wants to store via some pstore interfaces.
-
-Perhaps I'll just leave all the policy out then and keep logging
-the same for all dmesg reason codes.  Seiji Aguchi sounded quite
-lukewarm to the idea of logging less for shutdown/restart etc.
-Providing an option that lets the user ask pstore to filter away
-the restart/shutdown logs would defeat the purpose for which these
-reason codes were added - providing a neat trail that simple tools
-can use to show that a system rebooted because some root process
-issued a reboot(2) syscall.
-
-Here's a simpler clean up of the fs/pstore/platform.c code that
-makes sure that we log a meaningful string for each reason code
-(rather than "Oops"!) and that only tries to add an entry to the
-mounted filesystem for the KMSG_TYPE_OOPS case (since that is the
-only case where the system stays up for some process to see it).
-
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index ce9ad84..f835a25 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -48,6 +48,10 @@ void pstore_set_kmsg_bytes(int bytes)
- /* Tag each group of saved records with a sequence number */
- static int	oopscount;
- 
-+static char *reason_str[] = {
-+	"Oops", "Panic", "Kexec", "Restart", "Halt", "Poweroff", "Emergency"
-+};
-+
- /*
-  * callback from kmsg_dump. (s2,l2) has the most recently
-  * written bytes, older bytes are in (s1,l1). Save as much
-@@ -61,15 +65,20 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 	unsigned long	s1_start, s2_start;
- 	unsigned long	l1_cpy, l2_cpy;
- 	unsigned long	size, total = 0;
--	char		*dst;
-+	char		*dst, *why;
- 	u64		id;
- 	int		hsize, part = 1;
- 
-+	if (reason < ARRAY_SIZE(reason_str))
-+		why = reason_str[reason];
-+	else
-+		why = "Unknown";
-+
- 	mutex_lock(&psinfo->buf_mutex);
- 	oopscount++;
- 	while (total < kmsg_bytes) {
- 		dst = psinfo->buf;
--		hsize = sprintf(dst, "Oops#%d Part%d\n", oopscount, part++);
-+		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part++);
- 		size = psinfo->bufsize - hsize;
- 		dst += hsize;
- 
-@@ -86,7 +95,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 		memcpy(dst + l1_cpy, s2 + s2_start, l2_cpy);
- 
- 		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy);
--		if (pstore_is_mounted())
-+		if (reason == KMSG_DUMP_OOPS && pstore_is_mounted())
- 			pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id,
- 				      psinfo->buf, hsize + l1_cpy + l2_cpy,
- 				      CURRENT_TIME, psinfo->erase);
+Thanks,
+Miklos
