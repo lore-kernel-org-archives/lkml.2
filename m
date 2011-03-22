@@ -1,124 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab1CVXrH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 19:47:07 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:4336 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755081Ab1CVXrD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 19:47:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sAcSBXKD/Ehl/OMVMrcEY6wg0oSXK2IlDCwJgtfUNmV5TrFyGkLVuv6Ffz1+uBeeTk
-         BIOQhiPMCNUFpdxluxCQ==
+	id S1755987Ab1CVXr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 19:47:56 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58122 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755125Ab1CVXrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 19:47:51 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kay Sievers <kay.sievers@suse.de>
+Subject: Re: [PATCH 9/10] sh: Use struct syscore_ops instead of sysdev class and sysdev
+Date: Wed, 23 Mar 2011 00:47:58 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
+        Greg KH <gregkh@suse.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
+References: <201103100131.58206.rjw@sisk.pl> <201103222305.01808.rjw@sisk.pl> <1300835111.1815.69.camel@zag>
+In-Reply-To: <1300835111.1815.69.camel@zag>
 MIME-Version: 1.0
-In-Reply-To: <20110322181231.GJ3757@redhat.com>
-References: <1300756245-12380-1-git-send-email-ctalbott@google.com>
-	<20110322150905.GD3757@redhat.com>
-	<AANLkTinTiEAFG1F1df380BiDtVFVr=nCsSqhM9__XdQ4@mail.gmail.com>
-	<20110322181231.GJ3757@redhat.com>
-Date: Tue, 22 Mar 2011 16:46:59 -0700
-Message-ID: <AANLkTi=fsw8QjA0H2SALc5Tbh+7CLwHkt2Vx9H6VPtpX@mail.gmail.com>
-Subject: Re: [PATCH 0/3] cfq-iosched: Fair cross-group preemption
-From: Chad Talbott <ctalbott@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org, mrubin@google.com,
-        teravest@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103230047.58221.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Would it be a better approach to avoid calling the feature real-time?
-Or perhaps to use another service tree to allow strict preemption (as
-is done at the task level today)?
+On Wednesday, March 23, 2011, Kay Sievers wrote:
+> On Tue, 2011-03-22 at 23:05 +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, March 22, 2011, Kay Sievers wrote:
+> 
+> > >> Because they are devices, and there is a lot to win, if the kernel
+> > > exports all "devices" in the same way. This is not about saving an inode
+> > > in /sys, it's the ability to do runtime device configuration with common
+> > > tools.
+> > 
+> > If I understand you correctly, the goal is to have everything under
+> > /sys/devices/ been represented by struct device objects and there are good
+> > reasons to do that.
+> > 
+> > In that case we either have to move the things exported via sysdevs somewhere
+> > else (presumably having to create that "somewhere" before), or we have to
+> > introduce struct device objects specifically for exporting them.  I don't
+> > really think the latter approach will be very popular, so quite likely we'll
+> > need to have a plan for moving those things to different locations.
+> 
+> Ok, now that we sorted the misunderstanding out, let's start this topic
+> from here again. (I really read your reply as: "let's move the CPUS
+> somewhere else")
 
-I don't like the approach of tuning tiny slices and taking a
-throughput hit all the time - even if there is no latency sensitive
-group on the system.
+Well, I didn't mean that. :-)
 
-Chad
+> What's the list of stuff you discovered using sysdevs, which is not a
+> device at all, and has never more than a single instance of stuff of the
+> same type? The clocksource?
+> 
+> And let's find some place for them to put their properties instead of
+> messing around with device from the driver core.
 
-On Tue, Mar 22, 2011 at 11:12 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Tue, Mar 22, 2011 at 10:39:36AM -0700, Chad Talbott wrote:
->> On Tue, Mar 22, 2011 at 8:09 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > Why not just implement simply RT class groups and always allow an RT
->> > group to preempt an BE class. Same thing we do for cfq queues. I will
->> > not worry too much about a run away application consuming all the
->> > bandwidth. If that's a concern we could use blkio controller to limit
->> > the IO rate of a latency sensitive applicaiton to make sure it does
->> > not starve BE applications.
->>
->> That is not quite the same semantics.  This limited preemption patch
->> is still work-conserving.  If the RT task in the only task on the
->> system with IO, it will be able to use all available disk time.
->>
->
-> It is not same semantics but it feels like too much of special casing
-> for a single use case.
->
-> You are using the generic notion of a RT thread (which in general means
-> that it gets all the cpu or all the disk ahead of BE task). But you have
-> changed the definition of RT for this special use case. And also now
-> group RT is different from queue RT definition.
->
-> Why not have similar mechanism for cpu scheduler also then. This
-> application first should be able to get cpu bandwidth in same predictable
-> manner before it gets the disk bandwidth.
->
-> And I think your generation number patch should address this issue up
-> to great extent. Isn't it? If a latency sensitive task is not using
-> its fair quota, it will get a lower vdisktime and get to dispatch soon?
->
-> If that soon is not enough, then we could operate with reduce base slice
-> length so that we allocate smaller slices to groups and get better IO
-> latencies at the cost of total throughput.
->
->> > If RT starving BE is an issue, then it is an issue with plain cfq queue
->> > also. First we shall have to fix it there.
->> >
->> > This definition that a latency sensitive task get prioritized only
->> > till it is consuming its fair share and if task starts using more than
->> > fair share then CFQ automatically stops prioritizing it sounds little
->> > odd to me. If you are looking for predictability, then we lost it. We
->> > shall have to very well know that task is not eating more than its
->> > fair share before we can gurantee any kind of latencies to that task. And
->> > if we know that task is not hogging the disk, there is anyway no risk
->> > of it starving other groups/tasks completely.
->>
->> In a shared environment, we have to be a little bit defensive.  We
->> hope that a latency sensitive task is well characterized and won't
->> exceed its share of the disk, and that we haven't over-committed the
->> disk.  If the app does do more IO than expected, then we'd like them
->> to bear the burden.  We have a choice of two outcomes.  A single job
->> sometimes failing to achieve low disk latency when it's very busy.  Or
->> all jobs on a disk sometimes being very slow when another (unrelated)
->> job is very busy.  The first is easier to understand and debug.
->
-> To me you are trying to come up with a new scheduling class which is
-> not RT and you are trying to overload the meaning of RT for your use
-> case and that's the issue I have.
->
-> Coming up with a new scheduling class is also not desirable as that
-> will demand another service tree and we already have too many. Also
-> it should probably be also done for task and not just group otherwise
-> extending this concept to hierarchical setup will get complicated. Queues
-> and groups will just not gel well.
->
-> Frankly speaking, the problem you are having should be solved by your
-> generation number patch and by having smaller base slices.
->
-> Or You could put latency sensitive applications in an RT class and
-> then throttle them using blkio controller. That way you get good
-> latencies as well as you don't starve other tasks.
->
-> But I don't think overloading the meaning for RT or this specific use
-> case is a good idea.
->
-> Thanks
-> Vivek
->
+On x86 the clocksource will be the only remaining one after my changes
+recently posted.  In fact, it will be the only remaining one except for the
+CPUs. :-)
+
+The other architectures are a mixed bag, though.  First, there's some exported
+stuff similar to the clocksource.  For one example, there's the "leds" sysdev
+in arch/arm/kernel/leds.c that appears to export one attribute (in addition
+to implementing suspend/resume/shutdown which I'm going to move to syscore_ops).
+Second, there's some outright abuse here-and-there that may be removed entirely.
+Finally, there are things that probably may be converted to struct devices,
+in the powerpc tree in particular IIRC.
+
+IMHO all of these things will have to be considered on the case-by-case basis
+and discussed with the appropriate maintainers.
+
+Thanks,
+Rafael
