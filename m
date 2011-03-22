@@ -1,150 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab1CVOLR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 10:11:17 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34736 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293Ab1CVOLG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 10:11:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=hpBBpOyvi86MpRocymawrs9PyChnyNFDocUVKiKN+rF4P1hMnPOVwzNcoR0PhM9gZT
-         8POxsnbfgmdInSLJpj+k5afleLQBVASt1esp08x0SRkQc3/MQRokT3W9oKNaQAL5VKn6
-         Hj2SnW9G3Fs8KeUxDREqesYQ4Oo/6t2hzxnb8=
+	id S1756182Ab1CVOLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 10:11:15 -0400
+Received: from realvnc.com ([146.101.152.142]:45010 "EHLO realvnc.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754408Ab1CVOLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 10:11:09 -0400
+Message-ID: <4D88ADFB.10206@realvnc.com>
+Date: Tue, 22 Mar 2011 14:11:07 +0000
+From: Toby Gray <toby.gray@realvnc.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-From: "vooon341@gmail.com" <vooon341@gmail.com>
-Date: Tue, 22 Mar 2011 17:10:46 +0300
-Message-ID: <AANLkTimXn_ekXD5knEqAUCckdWWzRSKavWrvirKuT8DY@mail.gmail.com>
-Subject: Re: [PATCH 3/3,v2] fs_enet: Add PHY interface selection for MPC5121 fs_enet.
-To: linuxppc-dev@lists.ozlabs.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Vitaly Bordug <vbordug@ru.mvista.com>
-Content-Type: text/plain; charset=UTF-8
+To: Johan Hovold <jhovold@gmail.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Oliver Neukum <oliver@neukum.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] USB: cdc-acm: Prevent data loss when filling tty buffer.
+References: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com> <1300730698-17099-1-git-send-email-toby.gray@realvnc.com> <20110322100526.GB21343@localhost>
+In-Reply-To: <20110322100526.GB21343@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add PHY interface selection for MPC5121 fs_enet.
+On 22/03/2011 10:05, Johan Hovold wrote:
+> Say you fill up the tty buffer using the last of the sixteen buffers and
+> return in the else clause above, how will the tasklet ever get
+> re-scheduled?
+That's a good point. I did check that this was happening during testing, 
+but looking into n_tty.c some more it seems that I probably just got 
+lucky with  n_tty_receive_buf running to completion (and so throttling) 
+before  n_tty_read got to run (and so un-throttling).
 
-Adds phy-connection-type optional property for ethernet node.
-It should be rmii or mii.
+However I'm not 100% sure that I'm correctly understanding how 
+n_tty_receive_buf and n_tty_read interact. I can't see why it's safe for 
+n_tty_receive_buf to not have any sort of synchronization mechanism 
+between checking tty->receive_room and calling tty_throttle.
 
-Signed-off-by: Vladimir Ermakov <vooon341@gmail.com>
----
-v2:
- - replace Kconfig to device tree
- - add phy-connection-type for mpc5121-fec nodes
----
- drivers/net/fs_enet/fec.h          |    6 ++++--
- drivers/net/fs_enet/fs_enet-main.c |   14 ++++++++++++--
- drivers/net/fs_enet/mac-fec.c      |    9 ++++++---
- 3 files changed, 22 insertions(+), 7 deletions(-)
+Is there a mechanism preventing a different thread from running 
+n_tty_read between n_tty_receive_buf finding receive_room to be below 
+the threshold and tty_throttle being called? If not then isn't there a 
+race condition when the following happens:
 
-diff --git a/drivers/net/fs_enet/fec.h b/drivers/net/fs_enet/fec.h
-index e980527..9fd1ff5 100644
---- a/drivers/net/fs_enet/fec.h
-+++ b/drivers/net/fs_enet/fec.h
-@@ -23,6 +23,10 @@
- #define FEC_ECNTRL_ETHER_EN	0x00000002
- #define FEC_ECNTRL_RESET	0x00000001
+         1. n_tty_receive_buf fills up the buffer so that the free space 
+is below TTY_THRESHOLD_THROTTLE
+         2. n_tty_receive_buf comes to the check at the end and decide 
+that it needs to call tty_throttle
+         3. Thread rescheduling happens and a different thread runs 
+n_tty_read which empties the buffer
+         4. After emptying the buffer n_tty_read calls tty_unthrottle, 
+which does nothing as the throttling bit isn't set
+         5. The n_tty_receive_buf thread is executed again, calling 
+tty_throttle, causing throttling, but with an empty buffer.
 
-+/* RMII mode enabled only when MII_MODE bit is set too. */
-+#define FEC_RCNTRL_RMII_MODE	(0x00000100 | \
-+		FEC_RCNTRL_MII_MODE | FEC_RCNTRL_FCE)
-+#define FEC_RCNTRL_FCE		0x00000020
- #define FEC_RCNTRL_BC_REJ	0x00000010
- #define FEC_RCNTRL_PROM		0x00000008
- #define FEC_RCNTRL_MII_MODE	0x00000004
-@@ -33,8 +37,6 @@
- #define FEC_TCNTRL_HBC		0x00000002
- #define FEC_TCNTRL_GTS		0x00000001
+Or have I not understood a complexity in the interactions within n_tty.c?
 
--
--
- /*
-  * Delay to wait for FEC reset command to complete (in us)
-  */
-diff --git a/drivers/net/fs_enet/fs_enet-main.c
-b/drivers/net/fs_enet/fs_enet-main.c
-index 24cb953..c424159 100644
---- a/drivers/net/fs_enet/fs_enet-main.c
-+++ b/drivers/net/fs_enet/fs_enet-main.c
-@@ -788,16 +788,20 @@ static int fs_init_phy(struct net_device *dev)
- {
- 	struct fs_enet_private *fep = netdev_priv(dev);
- 	struct phy_device *phydev;
-+	phy_interface_t iface;
+> [By the way, did you see Filippe Balbi's patch posted today claiming to
+> fix a bug in n_tty which could cause data loss at high speeds?]
+I'd not seen that. Thanks for pointing that out.
+> I was just about to submit a patch series killing the rx tasklet and
+> heavily simplifying the cdc-acm driver when you posted last night. I
+> think that if this mechanism is needed it is more straight-forwardly
+> implemented on top of those as they removes a lot of complexity and
+> makes it easier to spot corner cases such as the one pointed out above.
+Makes sense. The cdc-acm driver is certainly far more readable with your 
+changes.
+> I would also prefer a more generic solution to the problem so that we
+> don't need to re-introduce driver buffering again. Since we already have
+> the throttelling mechanism in place, if we could only be notified/find
+> out that the tty buffers are say half-full, we could throttle (from
+> within the driver) but still push the remaining buffer still on the wire
+> as they arrive. It would of course require a guarantee that such a
+> throttle-is-about-to-happen notification is actually followed by (a
+> throttle and) unthrottle. Thoughts on that?
+I was thinking about this too. Would it be good enough to add the 
+ability for forcing tty throttling and to call that instead of issuing 
+another URB read when the space remaining in the buffer would then be 
+less than the pending URB reads? Or would having a notification at a 
+particular level be more useful for other drivers?
 
- 	fep->oldlink = 0;
- 	fep->oldspeed = 0;
- 	fep->oldduplex = -1;
+Regards,
 
-+	iface = (fep->fpi->use_rmii) ?
-+		PHY_INTERFACE_MODE_RMII : PHY_INTERFACE_MODE_MII;
-+
- 	phydev = of_phy_connect(dev, fep->fpi->phy_node, &fs_adjust_link, 0,
--				PHY_INTERFACE_MODE_MII);
-+				iface);
- 	if (!phydev) {
- 		phydev = of_phy_connect_fixed_link(dev, &fs_adjust_link,
--						   PHY_INTERFACE_MODE_MII);
-+						   iface);
- 	}
- 	if (!phydev) {
- 		dev_err(&dev->dev, "Could not attach to PHY\n");
-@@ -1005,6 +1009,7 @@ static int __devinit fs_enet_probe(struct
-platform_device *ofdev)
- 	struct fs_platform_info *fpi;
- 	const u32 *data;
- 	const u8 *mac_addr;
-+	char *phy_connection_type;
- 	int privsize, len, ret = -ENODEV;
-
- 	if (!ofdev->dev.of_match)
-@@ -1032,6 +1037,11 @@ static int __devinit fs_enet_probe(struct
-platform_device *ofdev)
- 						  NULL)))
- 		goto out_free_fpi;
-
-+	phy_connection_type = of_get_property(ofdev->dev.of_node,
-+			"phy-connection-type", NULL);
-+	if (phy_connection_type && strcmp("rmii", phy_connection_type) == 0)
-+		fpi->use_rmii = 1;
-+
- 	privsize = sizeof(*fep) +
- 	           sizeof(struct sk_buff **) *
- 	           (fpi->rx_ring + fpi->tx_ring);
-diff --git a/drivers/net/fs_enet/mac-fec.c b/drivers/net/fs_enet/mac-fec.c
-index 61035fc..7ba36c1 100644
---- a/drivers/net/fs_enet/mac-fec.c
-+++ b/drivers/net/fs_enet/mac-fec.c
-@@ -322,10 +322,11 @@ static void restart(struct net_device *dev)
- 	FW(fecp, r_cntrl, FEC_RCNTRL_MII_MODE);	/* MII enable */
- #else
- 	/*
--	 * Only set MII mode - do not touch maximum frame length
-+	 * Only set MII/RMII mode - do not touch maximum frame length
- 	 * configured before.
- 	 */
--	FS(fecp, r_cntrl, FEC_RCNTRL_MII_MODE);
-+	FS(fecp, r_cntrl, (fpi->use_rmii) ?
-+			FEC_RCNTRL_RMII_MODE : FEC_RCNTRL_MII_MODE);
- #endif
- 	/*
- 	 * adjust to duplex mode
-@@ -381,7 +382,9 @@ static void stop(struct net_device *dev)
-
- 	/* shut down FEC1? that's where the mii bus is */
- 	if (fpi->has_phy) {
--		FS(fecp, r_cntrl, FEC_RCNTRL_MII_MODE);	/* MII enable */
-+		FS(fecp, r_cntrl, (fpi->use_rmii) ?
-+				FEC_RCNTRL_RMII_MODE :
-+				FEC_RCNTRL_MII_MODE);	/* MII/RMII enable */
- 		FS(fecp, ecntrl, FEC_ECNTRL_PINMUX | FEC_ECNTRL_ETHER_EN);
- 		FW(fecp, ievent, FEC_ENET_MII);
- 		FW(fecp, mii_speed, feci->mii_speed);
--- 
-1.7.1
+Toby
