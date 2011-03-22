@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab1CVPjy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 11:39:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56440 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756269Ab1CVPjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 11:39:52 -0400
-Date: Tue, 22 Mar 2011 11:39:27 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Lina Lu <lulina_nuaa@foxmail.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: Re: cfq-iosched.c: panic in cfq_dispatch_requests
-Message-ID: <20110322153927.GF3757@redhat.com>
-References: <201103201523220468314@foxmail.com>
- <201103222332465003523@foxmail.com>
+	id S1754190Ab1CVPmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 11:42:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35107 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab1CVPmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 11:42:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=v+iNb3p2DqiYlqP05Fxl6teB/DP/J8/5FE1xSeUP6MtVd6Ty8AtFqKl2vL2OukHfMQ
+         B2DBApYDKirS5SobT8OVQpRI+yhTD6T+j+nUnPDGbmeZeP1YLW6mUFTgi9G3TJ2VRGCH
+         116SR8u3hyzNZD72/XQwo0Cma4RN/9d66c9JM=
+Date: Tue, 22 Mar 2011 08:42:02 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Aaro Koskinen <aaro.koskinen@nokia.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: tsc2005: fix locking issue
+Message-ID: <20110322154202.GA24772@core.coreip.homeip.net>
+References: <1300724650-6641-1-git-send-email-aaro.koskinen@nokia.com>
+ <20110322061958.GA7990@core.coreip.homeip.net>
+ <alpine.DEB.1.10.1103221655370.2634@esdhcp041196.research.nokia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201103222332465003523@foxmail.com>
+In-Reply-To: <alpine.DEB.1.10.1103221655370.2634@esdhcp041196.research.nokia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 11:32:47PM +0800, Lina Lu wrote:
-> On 2011-03-21 22:08:19, Vivek Goyal wrote:
-> >On Sun, Mar 20, 2011 at 03:23:23PM +0800, Lina Lu wrote:
-> >> Hi Vivek,
-> >> 
-> >> I did some test with blkio weight policy these days. The kernel panic 
-> >> once in a while. 
-> >> 	
-> >> From the calltrace, It 's in func cfq_dispatch_requests(+0x058D).
-> >> And I caught a divide by zero error with system monitor tools.
-> >
-> >Hi Lina,
-> >
-> >Can you please paste the full backtrace here.
-> >
-> >> 	
-> >> The panic happens when I first set 100 weight to two IO pids, then 
-> >> change the weight to 200, and begin to perform IO. The kernel panic
-> >> accurately when the IO begin.
-> >
-> >So you notice this only if weights are changed otherwise not?
+On Tue, Mar 22, 2011 at 04:59:02PM +0200, Aaro Koskinen wrote:
+> Hi,
 > 
-> Hi Vivek
+> On Mon, 21 Mar 2011, Dmitry Torokhov wrote:
+> >On Mon, Mar 21, 2011 at 06:24:10PM +0200, Aaro Koskinen wrote:
+> >>Commit 0b950d3 (Input: tsc2005 - add open/close) introduced a
+> >>locking issue with the ESD watchdog: __tsc2005_disable() is calling
+> >>cancel_delayed_work_sync() with mutex held, and the work also needs the
+> >>same mutex.
+> >>
+> >>Fix the problem by using cancel_delayed_work() on disable. If
+> >>the ESD work was running it will check if the device is closed
+> >>or suspended, and in that case it will do nothing and skip
+> >>re-arming. cancel_delayed_work_sync() is still needed when the module
+> >>is removed.
+> >
+> >Hmm, indeed. However, instead of moving cancel_delayed_work_sync() to
+> >remove maybe we should use mutex_trylock() in tsc2005_esd_work()?
+> >If trylock fails that means that device is in the middle of open/close
+> >transition. We should just reschedule the work and get out of there.
 > 
-> Thanks for this patch! I did objdump and find place that divide by zero.
-> It's in cfq_group_slice function, the st->total_weight is zero in my issue.
-> As described in the patch, this is because I change the weight when the
-> group on service tree. 
+> But I guess the reschedule should not happen if we are in the middle of
+> close/disable? And without the mutex we cannot know that.
 
-Ok, so this patch did solve the issue you are facing? 
+It should be OK to reschedule even as we enabling/disabling because
+cancel_delayed_work_sync() handles re-arming works so even if ESD work
+is being executed at the time we closing the device it will be killed
+off completely.
 
-Thanks
-Vivek
+Thanks.
+
+-- 
+Dmitry
