@@ -1,53 +1,373 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab1CVTAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 15:00:13 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50939 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705Ab1CVTAF (ORCPT
+	id S1754853Ab1CVTAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 15:00:09 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:13563 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab1CVTAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Mar 2011 15:00:05 -0400
-Date: Tue, 22 Mar 2011 19:00:02 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
-        neilb@suse.de
-Subject: Re: [PATCH 0/6 v7] overlay filesystem - request for inclusion
-Message-ID: <20110322190002.GW22723@ZenIV.linux.org.uk>
-References: <20110322152602.053930811@szeredi.hu>
- <AANLkTinxD2rZnso3zfX0=-HQ9m7=zAjEtUepFO=uMe2Q@mail.gmail.com>
- <20110322183919.GV22723@ZenIV.linux.org.uk>
- <AANLkTinU-F+fHaG9u7c4Tf0GNx5BJvHg7BGOAFGaiDn1@mail.gmail.com>
- <E1Q26mX-0001Tt-Jq@pomaz-ex.szeredi.hu>
+X-IronPort-AV: E=McAfee;i="5400,1158,6293"; a="81426747"
+Message-ID: <4D88F1B4.2060903@codeaurora.org>
+Date: Tue, 22 Mar 2011 12:00:04 -0700
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1Q26mX-0001Tt-Jq@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: davidb@codeaurora.org, dwalker@fifo99.com,
+        Samuel Ortiz <sameo@linux.intel.com>, grant.likely@secretlab.ca
+CC: Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-msm-owner@vger.kernel.org,
+        linux-arm-kernel@lists.intradead.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linux.walleij@linaro.org>,
+        Thomas Glexiner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PM8921 MFD V4 1/6] mfd: pm8921: Add PMIC 8921 core driver
+References: <1300422118-13888-1-git-send-email-adharmap@codeaurora.org> <1300422118-13888-2-git-send-email-adharmap@codeaurora.org>
+In-Reply-To: <1300422118-13888-2-git-send-email-adharmap@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 07:58:17PM +0100, Miklos Szeredi wrote:
-> On Tue, 22 Mar 2011, Linus Torvalds wrote:
-> > On Tue, Mar 22, 2011 at 11:39 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > >
-> > > Locking analysis would be really nice; AFAICS, it violates locking order
-> > > when called from e.g. ->setattr()
-> 
-> Locking order is always:
-> 
-> -> overlayfs locks
->    -> upper fs locks
->    -> lower fs locks
-> 
-> So it's really pretty simple and easy to validate.
+Sameul Ortiz,
 
-In which *order* on the upper fs?
+  Can you please review/ack this one?
 
-> Protection is exactly as for userspace callers.  AFAICT.
+Abhijeet
 
-Pardon?  You traverse the chain of ancestors; fine, but who says it stays
-anywhere near being relevant as you go?
+adharmap@codeaurora.org wrote:
+> Add support for the Qualcomm PM8921 PMIC chip. The core driver
+> will communicate with the PMIC chip via the MSM SSBI bus.
+> 
+> Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+> ---
+>  drivers/mfd/Kconfig               |   18 ++++
+>  drivers/mfd/Makefile              |    1 +
+>  drivers/mfd/pm8921-core.c         |  158 +++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/pm8xxx/core.h   |   71 +++++++++++++++++
+>  include/linux/mfd/pm8xxx/pm8921.h |   27 ++++++
+>  5 files changed, 275 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/mfd/pm8921-core.c
+>  create mode 100644 include/linux/mfd/pm8xxx/core.h
+>  create mode 100644 include/linux/mfd/pm8xxx/pm8921.h
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index fd01836..c7cb258 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -624,6 +624,24 @@ config MFD_WL1273_CORE
+>  	  driver connects the radio-wl1273 V4L2 module and the wl1273
+>  	  audio codec.
+>  
+> +config MFD_PM8XXX
+> +	tristate
+> +
+> +config MFD_PM8921_CORE
+> +	tristate "Qualcomm PM8921 PMIC chip"
+> +	depends on MSM_SSBI
+> +	select MFD_CORE
+> +	select MFD_PM8XXX
+> +	help
+> +	  If you say yes to this option, support will be included for the
+> +	  built-in PM8921 PMIC chip.
+> +
+> +	  This is required if your board has a PM8921 and uses its features,
+> +	  such as: MPPs, GPIOs, regulators, interrupts, and PWM.
+> +
+> +	  Say M here if you want to include support for PM8921 chip as a module.
+> +	  This will build a module called "pm8921-core".
+> +
+>  endif # MFD_SUPPORT
+>  
+>  menu "Multimedia Capabilities Port drivers"
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index a54e2c7..ec158da 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -83,3 +83,4 @@ obj-$(CONFIG_MFD_TPS6586X)	+= tps6586x.o
+>  obj-$(CONFIG_MFD_VX855)		+= vx855.o
+>  obj-$(CONFIG_MFD_WL1273_CORE)	+= wl1273-core.o
+>  obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
+> +obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o
+> diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
+> new file mode 100644
+> index 0000000..a2ecd32
+> --- /dev/null
+> +++ b/drivers/mfd/pm8921-core.c
+> @@ -0,0 +1,158 @@
+> +/*
+> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#define pr_fmt(fmt) "%s: " fmt, __func__
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/msm_ssbi.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/mfd/pm8xxx/pm8921.h>
+> +#include <linux/mfd/pm8xxx/core.h>
+> +
+> +#define REG_HWREV		0x002  /* PMIC4 revision */
+> +#define REG_HWREV_2		0x0E8  /* PMIC4 revision 2 */
+> +
+> +struct pm8921 {
+> +	struct device			*dev;
+> +};
+> +
+> +static int pm8921_readb(const struct device *dev, u16 addr, u8 *val)
+> +{
+> +	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
+> +	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+> +
+> +	return msm_ssbi_read(pmic->dev->parent, addr, val, 1);
+> +}
+> +
+> +static int pm8921_writeb(const struct device *dev, u16 addr, u8 val)
+> +{
+> +	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
+> +	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+> +
+> +	return msm_ssbi_write(pmic->dev->parent, addr, &val, 1);
+> +}
+> +
+> +static int pm8921_read_buf(const struct device *dev, u16 addr, u8 *buf,
+> +									int cnt)
+> +{
+> +	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
+> +	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+> +
+> +	return msm_ssbi_read(pmic->dev->parent, addr, buf, cnt);
+> +}
+> +
+> +static int pm8921_write_buf(const struct device *dev, u16 addr, u8 *buf,
+> +									int cnt)
+> +{
+> +	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
+> +	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+> +
+> +	return msm_ssbi_write(pmic->dev->parent, addr, buf, cnt);
+> +}
+> +
+> +static struct pm8xxx_drvdata pm8921_drvdata = {
+> +	.pmic_readb		= pm8921_readb,
+> +	.pmic_writeb		= pm8921_writeb,
+> +	.pmic_read_buf		= pm8921_read_buf,
+> +	.pmic_write_buf		= pm8921_write_buf,
+> +};
+> +
+> +static int __devinit pm8921_probe(struct platform_device *pdev)
+> +{
+> +	const struct pm8921_platform_data *pdata = pdev->dev.platform_data;
+> +	struct pm8921 *pmic;
+> +	int rc;
+> +	u8 val;
+> +
+> +	if (!pdata) {
+> +		pr_err("missing platform data\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	pmic = kzalloc(sizeof(struct pm8921), GFP_KERNEL);
+> +	if (!pmic) {
+> +		pr_err("Cannot alloc pm8921 struct\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	/* Read PMIC chip revision */
+> +	rc = msm_ssbi_read(pdev->dev.parent, REG_HWREV, &val, sizeof(val));
+> +	if (rc) {
+> +		pr_err("Failed to read hw rev reg %d:rc=%d\n", REG_HWREV, rc);
+> +		goto err_read_rev;
+> +	}
+> +	pr_info("PMIC revision 1: %02X\n", val);
+> +
+> +	/* Read PMIC chip revision 2 */
+> +	rc = msm_ssbi_read(pdev->dev.parent, REG_HWREV_2, &val, sizeof(val));
+> +	if (rc) {
+> +		pr_err("Failed to read hw rev 2 reg %d:rc=%d\n",
+> +			REG_HWREV_2, rc);
+> +		goto err_read_rev;
+> +	}
+> +	pr_info("PMIC revision 2: %02X\n", val);
+> +
+> +	pmic->dev = &pdev->dev;
+> +	pm8921_drvdata.pm_chip_data = pmic;
+> +	platform_set_drvdata(pdev, &pm8921_drvdata);
+> +
+> +	return 0;
+> +
+> +err_read_rev:
+> +	kfree(pmic);
+> +	return rc;
+> +}
+> +
+> +static int __devexit pm8921_remove(struct platform_device *pdev)
+> +{
+> +	struct pm8xxx_drvdata *drvdata;
+> +	struct pm8921 *pmic = NULL;
+> +
+> +	drvdata = platform_get_drvdata(pdev);
+> +	if (drvdata)
+> +		pmic = drvdata->pm_chip_data;
+> +	if (pmic)
+> +		mfd_remove_devices(pmic->dev);
+> +	platform_set_drvdata(pdev, NULL);
+> +	kfree(pmic);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver pm8921_driver = {
+> +	.probe		= pm8921_probe,
+> +	.remove		= __devexit_p(pm8921_remove),
+> +	.driver		= {
+> +		.name	= "pm8921-core",
+> +		.owner	= THIS_MODULE,
+> +	},
+> +};
+> +
+> +static int __init pm8921_init(void)
+> +{
+> +	return platform_driver_register(&pm8921_driver);
+> +}
+> +subsys_initcall(pm8921_init);
+> +
+> +static void __exit pm8921_exit(void)
+> +{
+> +	platform_driver_unregister(&pm8921_driver);
+> +}
+> +module_exit(pm8921_exit);
+> +
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_DESCRIPTION("PMIC 8921 core driver");
+> +MODULE_VERSION("1.0");
+> +MODULE_ALIAS("platform:pm8921-core");
+> diff --git a/include/linux/mfd/pm8xxx/core.h b/include/linux/mfd/pm8xxx/core.h
+> new file mode 100644
+> index 0000000..36ccb33
+> --- /dev/null
+> +++ b/include/linux/mfd/pm8xxx/core.h
+> @@ -0,0 +1,71 @@
+> +/*
+> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +/*
+> + * Qualcomm PMIC 8xxx driver header file
+> + *
+> + */
+> +
+> +#ifndef __MFD_PM8XXX_CORE_H
+> +#define __MFD_PM8XXX_CORE_H
+> +
+> +#include <linux/mfd/core.h>
+> +
+> +struct pm8xxx_drvdata {
+> +	int	(*pmic_readb) (const struct device *dev, u16 addr, u8 *val);
+> +	int	(*pmic_writeb) (const struct device *dev, u16 addr, u8 val);
+> +	int	(*pmic_read_buf) (const struct device *dev, u16 addr, u8 *buf,
+> +									int n);
+> +	int	(*pmic_write_buf) (const struct device *dev, u16 addr, u8 *buf,
+> +									int n);
+> +	void	*pm_chip_data;
+> +};
+> +
+> +static inline int pm8xxx_readb(const struct device *dev, u16 addr, u8 *val)
+> +{
+> +	struct pm8xxx_drvdata *dd = dev_get_drvdata(dev);
+> +
+> +	if (!dd)
+> +		return -EINVAL;
+> +	return dd->pmic_readb(dev, addr, val);
+> +}
+> +
+> +static inline int pm8xxx_writeb(const struct device *dev, u16 addr, u8 val)
+> +{
+> +	struct pm8xxx_drvdata *dd = dev_get_drvdata(dev);
+> +
+> +	if (!dd)
+> +		return -EINVAL;
+> +	return dd->pmic_writeb(dev, addr, val);
+> +}
+> +
+> +static inline int pm8xxx_read_buf(const struct device *dev, u16 addr, u8 *buf,
+> +									int n)
+> +{
+> +	struct pm8xxx_drvdata *dd = dev_get_drvdata(dev);
+> +
+> +	if (!dd)
+> +		return -EINVAL;
+> +	return dd->pmic_read_buf(dev, addr, buf, n);
+> +}
+> +
+> +static inline int pm8xxx_write_buf(const struct device *dev, u16 addr, u8 *buf,
+> +									int n)
+> +{
+> +	struct pm8xxx_drvdata *dd = dev_get_drvdata(dev);
+> +
+> +	if (!dd)
+> +		return -EINVAL;
+> +	return dd->pmic_write_buf(dev, addr, buf, n);
+> +}
+> +
+> +#endif
+> diff --git a/include/linux/mfd/pm8xxx/pm8921.h b/include/linux/mfd/pm8xxx/pm8921.h
+> new file mode 100644
+> index 0000000..33fbe9c
+> --- /dev/null
+> +++ b/include/linux/mfd/pm8xxx/pm8921.h
+> @@ -0,0 +1,27 @@
+> +/*
+> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +/*
+> + * Qualcomm PMIC 8921 driver header file
+> + *
+> + */
+> +
+> +#ifndef __MFD_PM8921_H
+> +#define __MFD_PM8921_H
+> +
+> +#include <linux/device.h>
+> +
+> +struct pm8921_platform_data {
+> +	int					irq_base;
+> +};
+> +
+> +#endif
+
+
+-- 
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
+Innovation Center, Inc. is a member of the Code Aurora Forum.
