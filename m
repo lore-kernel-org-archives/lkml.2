@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab1CVKHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 06:07:07 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39126 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab1CVKHF (ORCPT
+	id S1754033Ab1CVKKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 06:10:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64354 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab1CVKKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 06:07:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=N5adKt0RR8k0kXlr0TizhKgFLHfrPolDW7m8qrZxjrsJDikinYyLGuY5/TzUVqzkpg
-         X8T5T700t3zQzs/y3mw8uLcdjT/SzIXoh2QZ90a/K4k/4Kkh6QpRSzK0s9evtykWhjRU
-         t5KnoXWmru4Yu3+sWnDqCbxnVRTfvXT4msaOw=
-Subject: Re: [PATCH 3/3] memcg: move page-freeing code outside of lock
-From: Namhyung Kim <namhyung@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110322135619.90593f5d.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1300452855-10194-1-git-send-email-namhyung@gmail.com>
-	 <1300452855-10194-3-git-send-email-namhyung@gmail.com>
-	 <20110322085938.0691f7f4.kamezawa.hiroyu@jp.fujitsu.com>
-	 <1300763079.1483.21.camel@leonhard>
-	 <20110322135619.90593f5d.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Mar 2011 19:06:57 +0900
-Message-ID: <1300788417.1492.2.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 22 Mar 2011 06:10:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org, Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH] ARM: Use asm-generic/sizes.h
+Date: Tue, 22 Mar 2011 11:10:20 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
+References: <1300751462-1494-1-git-send-email-sboyd@codeaurora.org> <201103220934.50435.arnd@arndb.de> <20110322092113.GB17264@n2100.arm.linux.org.uk>
+In-Reply-To: <20110322092113.GB17264@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103221110.20861.arnd@arndb.de>
+X-Provags-ID: V02:K0:Z03CszQQ+iS0otjoiicts2Jxqp4f4q+IzeU/tsCqOL8
+ RUnuWtxMWFQTqHLL24Qd+PE4aWnxtFsG7QMleWgllYwlcOzuFH
+ 20nQgg1MD7/v3HF8cnCW7YVlf3F6as3TjwhRUQ28ay6kP7HBpY
+ ooyWQqoq+0t8PnQCjVz6BwdmMQxrpaMR65WChOuEIElhZj2clw
+ 10rLiRg6SpBSqC5DF7cvw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011-03-22 (화), 13:56 +0900, KAMEZAWA Hiroyuki:
-> On Tue, 22 Mar 2011 12:04:39 +0900
-> Namhyung Kim <namhyung@gmail.com> wrote:
-> 
-> > 2011-03-22 (화), 08:59 +0900, KAMEZAWA Hiroyuki:
-> > > On Fri, 18 Mar 2011 21:54:15 +0900
-> > > Namhyung Kim <namhyung@gmail.com> wrote:
+On Tuesday 22 March 2011, Russell King - ARM Linux wrote:
+> On Tue, Mar 22, 2011 at 09:34:50AM +0100, Arnd Bergmann wrote:
+> > On Tuesday 22 March 2011, Stephen Boyd wrote:
+> > > Commit d232b12 (asm-generic headers: add sizes.h, 2011-01-15)
+> > > introduced a generic sizes.h. Use that instead of the ARM specific
+> > > version.
 > > > 
-> > > > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> > > > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > > 
-> > > What is the benefit of this patch ?
-> > > 
-> > > -Kame
-> > > 
+> > > Cc: Arnd Bergmann <arnd@arndb.de>
+> > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 > > 
-> > Oh, I just thought generally it'd better call such a (potentially)
-> > costly function outside of locks and it could reduce few of theoretical
-> > contentions between swapons and/or offs. If it doesn't help any
-> > realistic cases I don't mind discarding it.
-> > 
+> > Acked-by: Arnd Bergmann <arnd@arndb.de
 > 
-> My point is, please write patch description which shows for what this patc is.
-> All cleanup are okay to me if it reasonable. But without patch description as
-> "this is just a cleanup, no functional change, and the reason is...."
-> we cannot maintain patches.
-> 
-> Thanks,
-> -Kame
-> 
+> I assume the generic version was derived from the ARM version.  Is there
+> a reason why ARM Ltd's copyright was seemingly dropped?
 
-OK, I will do that in the future. Anyway, do you want me to resend the
-patch with new description?
+I'll let Guan Xuetao answer that, he introduced the file along with the
+unicore32 architecture.
 
-Thanks.
+I doubt that the contents of this file are copyrightable, but of course
+that is normally no reason to remove the notice.
 
-
--- 
-Regards,
-Namhyung Kim
-
-
+	Arnd
