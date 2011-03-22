@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab1CVK16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 06:27:58 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52981 "EHLO mx3.mail.elte.hu"
+	id S1754562Ab1CVKdb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 06:33:31 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54665 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753590Ab1CVK1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 06:27:55 -0400
-Date: Tue, 22 Mar 2011 11:27:41 +0100
+	id S1752270Ab1CVKd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 06:33:27 -0400
+Date: Tue, 22 Mar 2011 11:32:58 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Eric Paris <eparis@redhat.com>, Roman Zippel <zippel@linux-m68k.org>,
-        linux-kbuild@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: PATCH][RFC][resend] CC_OPTIMIZE_FOR_SIZE should default to N
-Message-ID: <20110322102741.GA4448@elte.hu>
-References: <alpine.LNX.2.00.1103212105490.15815@swampdragon.chaosbits.net>
- <AANLkTinmAJsXy=iJ5Fq-+CLTAGXTtLGhULRUf=Q1rkY1@mail.gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
+        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Avi Kivity <avi@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
+        kvm@vger.kernel.org, iommu@lists.linux-foundation.org,
+        cpufreq@vger.kernel.org
+Subject: Re: [PATCH 0/6] Do not use sysdevs for implementing "core" PM
+ operations on x86
+Message-ID: <20110322103258.GC4448@elte.hu>
+References: <201103100131.58206.rjw@sisk.pl>
+ <201103122212.40828.rjw@sisk.pl>
+ <201103220031.22729.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinmAJsXy=iJ5Fq-+CLTAGXTtLGhULRUf=Q1rkY1@mail.gmail.com>
+In-Reply-To: <201103220031.22729.rjw@sisk.pl>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
 X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
 	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Pekka Enberg <penberg@kernel.org> wrote:
+* Rafael J. Wysocki <rjw@sisk.pl> wrote:
 
-> Hi Jesper,
+> > If there are no objectsions, I'd like to push these patches through the suspend
+> > tree.
 > 
-> On Mon, Mar 21, 2011 at 10:08 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > I believe that the majority of systems we are built on want a -O2 compiled
-> > kernel. Optimizing for size (-Os) is mainly benneficial for embedded
-> > systems and systems with very small CPU caches (correct me if I'm wrong).
+> [1/8] has been merged in the meantime and [3/8] has been included into the
+> ACPI tree.  if there are no objections, I'm going to push the following
+> patches to Linus this week through the suspend-2.6 tree:
 > 
-> Please take a look at commit 0910b44 ("Expose "Optimize for size"
-> option for everybody") for the reasoning behind defaulting to -Os.
+> [1/6] - Convert sysdev users in arch/x86 to using struct syscore_ops.
+> 
+> [2/6] - Make timekeeping use struct syscore_ops for suspend/resume.
+>  
+> [3/6] - Make Intel IOMMU use struct syscore_ops for suspend/resume.
+> 
+> [4/6] - Make KVM use struct syscore_ops for suspend/resume.
+> 
+> [5/6] - Make cpufreq use struct syscore_ops for boot CPU suspend/resume.
+> 
+> [6/6] - Introduce config switch allowing architectures to skip sysdev
+>         suspend/resume/shutdown code.
 
-If that situation has changed - if GCC has regressed in this area then a commit 
-changing the default IMHO gains a lot of credibility if it is backed by careful 
-measurements using perf stat --repeat or similar tools.
+The x86 bits look fine.
 
-See the hard numbers in this upstream commit for example:
+Acked-by: Ingo Molnar <mingo@elte.hu>
 
-  ea7145477a46: x86: Separate out entry text section
-
-there we were able to prove the positive effects of a pretty subtle change to 
-the layout of the instruction cache, with a measurement noise in the 0.1% 
-range.
-
-Thanks,
+The patches affect a lot of hardware so please make sure they are tested well 
+before pushing them to Linus :-)
 
 	Ingo
