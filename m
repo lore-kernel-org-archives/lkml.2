@@ -1,45 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab1CVBRl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 21:17:41 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37977
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755227Ab1CVBRi (ORCPT
+	id S1756237Ab1CVBSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 21:18:10 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:37439 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab1CVBSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 21:17:38 -0400
-Date: Mon, 21 Mar 2011 18:18:16 -0700 (PDT)
-Message-Id: <20110321.181816.15242871.davem@davemloft.net>
-To: arnd@arndb.de
-Cc: eric.dumazet@gmail.com, mingo@elte.hu, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de
-Subject: Re: [held lock freed] Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201103211622.40851.arnd@arndb.de>
-References: <201103211550.10694.arnd@arndb.de>
-	<1300719332.2884.370.camel@edumazet-laptop>
-	<201103211622.40851.arnd@arndb.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Mar 2011 21:18:07 -0400
+Date: Tue, 22 Mar 2011 10:18:01 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Julian Anastasov <ja@ssi.bg>,
+        Hans Schillstrom <hans@schillstrom.com>
+Subject: Re: [slab poison overwritten] Re: [GIT] Networking
+Message-ID: <20110322011801.GE27019@verge.net.au>
+References: <1300714346.2884.284.camel@edumazet-laptop>
+ <20110321161528.GA28580@elte.hu>
+ <20110321164238.GA5303@elte.hu>
+ <20110321173941.GB3892@elte.hu>
+ <1300730838.2884.578.camel@edumazet-laptop>
+ <1300738540.2837.5.camel@edumazet-laptop>
+ <20110321221357.GF22625@verge.net.au>
+ <20110321232921.GG22625@verge.net.au>
+ <20110322000130.GC27019@verge.net.au>
+ <20110322001706.GD27019@verge.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110322001706.GD27019@verge.net.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Mon, 21 Mar 2011 16:22:40 +0100
+On Tue, Mar 22, 2011 at 09:17:07AM +0900, Simon Horman wrote:
+> On Tue, Mar 22, 2011 at 09:01:33AM +0900, Simon Horman wrote:
+> > On Tue, Mar 22, 2011 at 08:29:21AM +0900, Simon Horman wrote:
+> > > On Tue, Mar 22, 2011 at 07:13:58AM +0900, Simon Horman wrote:
+> > > > On Mon, Mar 21, 2011 at 09:15:40PM +0100, Eric Dumazet wrote:
+> > > > > Le lundi 21 mars 2011 à 19:07 +0100, Eric Dumazet a écrit :
+> > > > > > Le lundi 21 mars 2011 à 18:39 +0100, Ingo Molnar a écrit :
+> > > > > > > here's the same but with kallsyms enabled.
+> > > > > > > 
+> > > > > > > Thanks,
+> > > > > > > 
+> > > > > > > 	Ingo
+> > > > > > > 
+> > > > > > > [    9.585627] initcall 0xffffffff81d5b806 returned 0 after 0 usecs
+> > > > > > > [    9.588960] calling  0xffffffff81d5b9da @ 1
+> > > > > > > [    9.592303] IPVS: Creating netns size=1272 id=0
+> > > > > > > [    9.595646] IPVS: __ip_vs_control_init(): alloc_percpu.
+> > > > > > > [    9.602298] IPVS: cannot register namespace.
+> > > > > > > [    9.605627] IPVS: can't setup control
+> > > > > > 
+> > > > > > It seems IPVS is busted in case of memory allocation error in 
+> > > > > > __ip_vs_control_init()
+> > > > > > 
+> > > > > > IPVS deinits its "struct netns_ipvs" space, but something (in IPVS) uses
+> > > > > > it after free.
+> > > > > > 
+> > > > > > __ip_vs_init() seems to be called before ip_vs_init() completes
+> > > > > > correctly. We then keep in net->ipvs a pointer to some freed memory.
+> > > > > > 
+> > > > > > Commit 14e405461e664b7 did some changes in this area
+> > > > > > 
+> > > > > > Simon, any idea ?
+> > > > > > 
+> > > > > > 
+> > > > > 
+> > > > > For the time being, we can avoid the false memory allocation error (and
+> > > > > leak)
+> > > > 
+> > > > Sorry, that typo is my work.
+> > > 
+> > > With your patch applied I now see the following
+> > > 
+> > > ffff880003bbf1a0 corresponds to &ipvs->app_key in __ip_vs_app_init().
+> > > I'll continue looking into this.
+> > > 
+> > > [   12.610000] IPVS: Creating netns size=2456 id=0
+> > > [   12.630000] IPVS: Registered protocols (TCP, UDP, SCTP, AH, ESP)
+> > > [   12.640000] BUG: key ffff880003bbf1a0 not in .data!
+> > > [   12.640000] ------------[ cut here ]------------
+> > > [   12.640000] WARNING: at kernel/lockdep.c:2701
+> > > lockdep_init_map+0x37b/0x570()
+> > > [   12.640000] Hardware name: Bochs
+> > > [   12.640000] Pid: 1, comm: swapper Tainted: G        W
+> > > 2.6.38-kexec-06330-g69b7efe-dirty #122
+> > > [   12.650000] Call Trace:
+> > > [   12.650000]  [<ffffffff8102e685>] warn_slowpath_common+0x75/0xb0
+> > > [   12.650000]  [<ffffffff8102e6d5>] warn_slowpath_null+0x15/0x20
+> > > [   12.650000]  [<ffffffff8105967b>] lockdep_init_map+0x37b/0x570
+> > > [   12.650000]  [<ffffffff8105829d>] ? trace_hardirqs_on+0xd/0x10
+> > > [   12.650000]  [<ffffffff81055ad8>] debug_mutex_init+0x38/0x50
+> > > [   12.650000]  [<ffffffff8104bc4c>] __mutex_init+0x5c/0x70
+> > > [   12.650000]  [<ffffffff81685ee7>] __ip_vs_app_init+0x64/0x86
+> > > [   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+> > > [   12.660000]  [<ffffffff811b1c33>] T.620+0x43/0x170
+> > > [   12.660000]  [<ffffffff811b1e9a>] ? register_pernet_subsys+0x1a/0x40
+> > > [   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+> > > [   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+> > > [   12.660000]  [<ffffffff811b1db7>] register_pernet_operations+0x57/0xb0
+> > > [   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+> > > [   12.670000]  [<ffffffff811b1ea9>] register_pernet_subsys+0x29/0x40
+> > > [   12.670000]  [<ffffffff81685f19>] ip_vs_app_init+0x10/0x12
+> > > [   12.670000]  [<ffffffff81685a87>] ip_vs_init+0x4c/0xff
+> > > [   12.670000]  [<ffffffff8166562c>] do_one_initcall+0x7a/0x12e
+> > > [   12.670000]  [<ffffffff8166583e>] kernel_init+0x13e/0x1c2
+> > > [   12.670000]  [<ffffffff8128c134>] kernel_thread_helper+0x4/0x10
+> > > [   12.670000]  [<ffffffff8128ad40>] ? restore_args+0x0/0x30
+> > > [   12.680000]  [<ffffffff81665700>] ? kernel_init+0x0/0x1c2
+> > > [   12.680000]  [<ffffffff8128c130>] ? kernel_thread_helper+0x0/0x10
+> > > [   12.680000] ---[ end trace 4eaa2a86a8e2da23 ]---
+> > 
+> > It seems that the problem above was introduced by
+> > ab8a5e8408c3 ("IPVS: netns awareness to ip_vs_app").
+> > I assume the hungs are the cause:
+> 
+> s/hungs/hunks below/
+> 
+> I am a little unsure of what to do about this.
+> 
+> The problem seems to be that ipvs->app_key is not in static storage.
+> But I'm not sure how to resolve that given that the struct netns_ipvs is
+> per-network namespace. So I guess that the locking needs to be re-worked.
+> Again, I'm a little unsure of what the best way forward is.
 
-> net/appletalk: fix atalk_release use after free
-> 
-> The BKL removal in appletalk introduced a use-after-free problem,
-> where atalk_destroy_socket frees a sock, but we still release
-> the socket lock on it.
-> 
-> An easy fix is to take an extra reference on the sock and sock_put
-> it when returning from atalk_release.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+I had an idea for a fix over breakfast.
 
-Applied, thanks Arnd.
+IPVS: Use global mutex in ip_vs_app.c
+
+As part of the work to make IPVS network namespace aware
+__ip_vs_app_mutex was replaced by a per-namespace lock,
+ipvs->app_mutex. ipvs->app_key is also supplied for debugging purposes.
+
+Unfortunately this implementation results in ipvs->app_key residing
+in non-static storage which at the very least causes a lockdep warning.
+
+This patch takes the rather heavy-handed approach of reinstating
+__ip_vs_app_mutex which will cover access to the ipvs->list_head
+of all network namespaces.
+
+[   12.610000] IPVS: Creating netns size=2456 id=0
+[   12.630000] IPVS: Registered protocols (TCP, UDP, SCTP, AH, ESP)
+[   12.640000] BUG: key ffff880003bbf1a0 not in .data!
+[   12.640000] ------------[ cut here ]------------
+[   12.640000] WARNING: at kernel/lockdep.c:2701 lockdep_init_map+0x37b/0x570()
+[   12.640000] Hardware name: Bochs
+[   12.640000] Pid: 1, comm: swapper Tainted: G        W 2.6.38-kexec-06330-g69b7efe-dirty #122
+[   12.650000] Call Trace:
+[   12.650000]  [<ffffffff8102e685>] warn_slowpath_common+0x75/0xb0
+[   12.650000]  [<ffffffff8102e6d5>] warn_slowpath_null+0x15/0x20
+[   12.650000]  [<ffffffff8105967b>] lockdep_init_map+0x37b/0x570
+[   12.650000]  [<ffffffff8105829d>] ? trace_hardirqs_on+0xd/0x10
+[   12.650000]  [<ffffffff81055ad8>] debug_mutex_init+0x38/0x50
+[   12.650000]  [<ffffffff8104bc4c>] __mutex_init+0x5c/0x70
+[   12.650000]  [<ffffffff81685ee7>] __ip_vs_app_init+0x64/0x86
+[   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+[   12.660000]  [<ffffffff811b1c33>] T.620+0x43/0x170
+[   12.660000]  [<ffffffff811b1e9a>] ? register_pernet_subsys+0x1a/0x40
+[   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+[   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+[   12.660000]  [<ffffffff811b1db7>] register_pernet_operations+0x57/0xb0
+[   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+[   12.670000]  [<ffffffff811b1ea9>] register_pernet_subsys+0x29/0x40
+[   12.670000]  [<ffffffff81685f19>] ip_vs_app_init+0x10/0x12
+[   12.670000]  [<ffffffff81685a87>] ip_vs_init+0x4c/0xff
+[   12.670000]  [<ffffffff8166562c>] do_one_initcall+0x7a/0x12e
+[   12.670000]  [<ffffffff8166583e>] kernel_init+0x13e/0x1c2
+[   12.670000]  [<ffffffff8128c134>] kernel_thread_helper+0x4/0x10
+[   12.670000]  [<ffffffff8128ad40>] ? restore_args+0x0/0x30
+[   12.680000]  [<ffffffff81665700>] ? kernel_init+0x0/0x1c2
+[   12.680000]  [<ffffffff8128c130>] ? kernel_thread_helper+0x0/0x1global0
+
+Signed-off-by: Simon Horman <horms@verge.net.au>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Julian Anastasov <ja@ssi.bg>
+Cc: Hans Schillstrom <hans@schillstrom.com>
+---
+ include/net/ip_vs.h            |    2 --
+ net/netfilter/ipvs/ip_vs_app.c |   23 ++++++++++-------------
+ 2 files changed, 10 insertions(+), 15 deletions(-)
+
+diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
+index 272f593..30b49ed 100644
+--- a/include/net/ip_vs.h
++++ b/include/net/ip_vs.h
+@@ -801,8 +801,6 @@ struct netns_ipvs {
+ 	struct list_head	rs_table[IP_VS_RTAB_SIZE];
+ 	/* ip_vs_app */
+ 	struct list_head	app_list;
+-	struct mutex		app_mutex;
+-	struct lock_class_key	app_key;	/* mutex debuging */
+ 
+ 	/* ip_vs_proto */
+ 	#define IP_VS_PROTO_TAB_SIZE	32	/* must be power of 2 */
+diff --git a/net/netfilter/ipvs/ip_vs_app.c b/net/netfilter/ipvs/ip_vs_app.c
+index 5c48ffb..2dc6de1 100644
+--- a/net/netfilter/ipvs/ip_vs_app.c
++++ b/net/netfilter/ipvs/ip_vs_app.c
+@@ -43,6 +43,8 @@ EXPORT_SYMBOL(register_ip_vs_app);
+ EXPORT_SYMBOL(unregister_ip_vs_app);
+ EXPORT_SYMBOL(register_ip_vs_app_inc);
+ 
++static DEFINE_MUTEX(__ip_vs_app_mutex);
++
+ /*
+  *	Get an ip_vs_app object
+  */
+@@ -167,14 +169,13 @@ int
+ register_ip_vs_app_inc(struct net *net, struct ip_vs_app *app, __u16 proto,
+ 		       __u16 port)
+ {
+-	struct netns_ipvs *ipvs = net_ipvs(net);
+ 	int result;
+ 
+-	mutex_lock(&ipvs->app_mutex);
++	mutex_lock(&__ip_vs_app_mutex);
+ 
+ 	result = ip_vs_app_inc_new(net, app, proto, port);
+ 
+-	mutex_unlock(&ipvs->app_mutex);
++	mutex_unlock(&__ip_vs_app_mutex);
+ 
+ 	return result;
+ }
+@@ -189,11 +190,11 @@ int register_ip_vs_app(struct net *net, struct ip_vs_app *app)
+ 	/* increase the module use count */
+ 	ip_vs_use_count_inc();
+ 
+-	mutex_lock(&ipvs->app_mutex);
++	mutex_lock(&__ip_vs_app_mutex);
+ 
+ 	list_add(&app->a_list, &ipvs->app_list);
+ 
+-	mutex_unlock(&ipvs->app_mutex);
++	mutex_unlock(&__ip_vs_app_mutex);
+ 
+ 	return 0;
+ }
+@@ -205,10 +206,9 @@ int register_ip_vs_app(struct net *net, struct ip_vs_app *app)
+  */
+ void unregister_ip_vs_app(struct net *net, struct ip_vs_app *app)
+ {
+-	struct netns_ipvs *ipvs = net_ipvs(net);
+ 	struct ip_vs_app *inc, *nxt;
+ 
+-	mutex_lock(&ipvs->app_mutex);
++	mutex_lock(&__ip_vs_app_mutex);
+ 
+ 	list_for_each_entry_safe(inc, nxt, &app->incs_list, a_list) {
+ 		ip_vs_app_inc_release(net, inc);
+@@ -216,7 +216,7 @@ void unregister_ip_vs_app(struct net *net, struct ip_vs_app *app)
+ 
+ 	list_del(&app->a_list);
+ 
+-	mutex_unlock(&ipvs->app_mutex);
++	mutex_unlock(&__ip_vs_app_mutex);
+ 
+ 	/* decrease the module use count */
+ 	ip_vs_use_count_dec();
+@@ -501,7 +501,7 @@ static void *ip_vs_app_seq_start(struct seq_file *seq, loff_t *pos)
+ 	struct net *net = seq_file_net(seq);
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+ 
+-	mutex_lock(&ipvs->app_mutex);
++	mutex_lock(&__ip_vs_app_mutex);
+ 
+ 	return *pos ? ip_vs_app_idx(ipvs, *pos - 1) : SEQ_START_TOKEN;
+ }
+@@ -535,9 +535,7 @@ static void *ip_vs_app_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ 
+ static void ip_vs_app_seq_stop(struct seq_file *seq, void *v)
+ {
+-	struct netns_ipvs *ipvs = net_ipvs(seq_file_net(seq));
+-
+-	mutex_unlock(&ipvs->app_mutex);
++	mutex_unlock(&__ip_vs_app_mutex);
+ }
+ 
+ static int ip_vs_app_seq_show(struct seq_file *seq, void *v)
+@@ -583,7 +581,6 @@ static int __net_init __ip_vs_app_init(struct net *net)
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+ 
+ 	INIT_LIST_HEAD(&ipvs->app_list);
+-	__mutex_init(&ipvs->app_mutex, "ipvs->app_mutex", &ipvs->app_key);
+ 	proc_net_fops_create(net, "ip_vs_app", 0, &ip_vs_app_fops);
+ 	return 0;
+ }
+-- 
+1.7.2.3
+
