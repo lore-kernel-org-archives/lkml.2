@@ -1,373 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab1CVTAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 15:00:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:13563 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab1CVTAF (ORCPT
+	id S1754668Ab1CVTDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 15:03:13 -0400
+Received: from smtp-vbr4.xs4all.nl ([194.109.24.24]:4371 "EHLO
+	smtp-vbr4.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756Ab1CVTDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 15:00:05 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6293"; a="81426747"
-Message-ID: <4D88F1B4.2060903@codeaurora.org>
-Date: Tue, 22 Mar 2011 12:00:04 -0700
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
+	Tue, 22 Mar 2011 15:03:11 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Ondrej Zary <linux@rainbow-software.org>
+Subject: Re: [RFC PATCH 1/3] tea575x-tuner: various improvements
+Date: Tue, 22 Mar 2011 20:02:30 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8-tschai; KDE/4.6.1; x86_64; ; )
+Cc: "Takashi Iwai" <tiwai@suse.de>, jirislaby@gmail.com,
+        alsa-devel@alsa-project.org,
+        "Kernel development list" <linux-kernel@vger.kernel.org>,
+        linux-media@vger.kernel.org
+References: <201103121919.05657.linux@rainbow-software.org> <33b29bfb135fbe2ddcba88d342d67526.squirrel@webmail.xs4all.nl> <201103191632.58347.linux@rainbow-software.org>
+In-Reply-To: <201103191632.58347.linux@rainbow-software.org>
 MIME-Version: 1.0
-To: davidb@codeaurora.org, dwalker@fifo99.com,
-        Samuel Ortiz <sameo@linux.intel.com>, grant.likely@secretlab.ca
-CC: Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-msm-owner@vger.kernel.org,
-        linux-arm-kernel@lists.intradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linux.walleij@linaro.org>,
-        Thomas Glexiner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PM8921 MFD V4 1/6] mfd: pm8921: Add PMIC 8921 core driver
-References: <1300422118-13888-1-git-send-email-adharmap@codeaurora.org> <1300422118-13888-2-git-send-email-adharmap@codeaurora.org>
-In-Reply-To: <1300422118-13888-2-git-send-email-adharmap@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103222002.31074.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sameul Ortiz,
-
-  Can you please review/ack this one?
-
-Abhijeet
-
-adharmap@codeaurora.org wrote:
-> Add support for the Qualcomm PM8921 PMIC chip. The core driver
-> will communicate with the PMIC chip via the MSM SSBI bus.
+On Saturday, March 19, 2011 16:32:53 Ondrej Zary wrote:
+> Improve tea575x-tuner with various good things from radio-maestro:
+> - extend frequency range to 50-150MHz
+> - fix querycap(): card name, CAP_RADIO
+> - improve g_tuner(): CAP_STEREO, stereo and tuned indication
+> - improve g_frequency(): tuner index checking and reading frequency from HW
+> - improve s_frequency(): tuner index and type checking
 > 
-> Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-> ---
->  drivers/mfd/Kconfig               |   18 ++++
->  drivers/mfd/Makefile              |    1 +
->  drivers/mfd/pm8921-core.c         |  158 +++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/pm8xxx/core.h   |   71 +++++++++++++++++
->  include/linux/mfd/pm8xxx/pm8921.h |   27 ++++++
->  5 files changed, 275 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/mfd/pm8921-core.c
->  create mode 100644 include/linux/mfd/pm8xxx/core.h
->  create mode 100644 include/linux/mfd/pm8xxx/pm8921.h
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+
+Acked-by: Hans Verkuil <hverkuil@xs4all.nl>
+
+BTW, can you run the v4l2-compliance utility for the two boards that use
+this radio tuner?
+
+This utility is part of the v4l-utils repository (http://git.linuxtv.org/v4l-utils.git).
+
+Run as 'v4l2-compliance -r /dev/radioX -v2'.
+
+I'm sure there will be some errors/warnings (warnings regarding G/S_PRIORITY
+are to be expected). But I can use it to make a patch for 2.6.40 that fixes
+any issues.
+
+Regards,
+
+	Hans
+
 > 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index fd01836..c7cb258 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -624,6 +624,24 @@ config MFD_WL1273_CORE
->  	  driver connects the radio-wl1273 V4L2 module and the wl1273
->  	  audio codec.
+> --- linux-2.6.38-rc4-orig/sound/i2c/other/tea575x-tuner.c	2011-02-08 01:03:55.000000000 +0100
+> +++ linux-2.6.38-rc4/sound/i2c/other/tea575x-tuner.c	2011-03-19 15:40:14.000000000 +0100
+> @@ -37,8 +37,8 @@ static int radio_nr = -1;
+>  module_param(radio_nr, int, 0);
 >  
-> +config MFD_PM8XXX
-> +	tristate
-> +
-> +config MFD_PM8921_CORE
-> +	tristate "Qualcomm PM8921 PMIC chip"
-> +	depends on MSM_SSBI
-> +	select MFD_CORE
-> +	select MFD_PM8XXX
-> +	help
-> +	  If you say yes to this option, support will be included for the
-> +	  built-in PM8921 PMIC chip.
-> +
-> +	  This is required if your board has a PM8921 and uses its features,
-> +	  such as: MPPs, GPIOs, regulators, interrupts, and PWM.
-> +
-> +	  Say M here if you want to include support for PM8921 chip as a module.
-> +	  This will build a module called "pm8921-core".
-> +
->  endif # MFD_SUPPORT
+>  #define RADIO_VERSION KERNEL_VERSION(0, 0, 2)
+> -#define FREQ_LO		 (87 * 16000)
+> -#define FREQ_HI		(108 * 16000)
+> +#define FREQ_LO		 (50UL * 16000)
+> +#define FREQ_HI		(150UL * 16000)
 >  
->  menu "Multimedia Capabilities Port drivers"
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index a54e2c7..ec158da 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -83,3 +83,4 @@ obj-$(CONFIG_MFD_TPS6586X)	+= tps6586x.o
->  obj-$(CONFIG_MFD_VX855)		+= vx855.o
->  obj-$(CONFIG_MFD_WL1273_CORE)	+= wl1273-core.o
->  obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
-> +obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o
-> diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
-> new file mode 100644
-> index 0000000..a2ecd32
-> --- /dev/null
-> +++ b/drivers/mfd/pm8921-core.c
-> @@ -0,0 +1,158 @@
-> +/*
-> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#define pr_fmt(fmt) "%s: " fmt, __func__
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-> +#include <linux/msm_ssbi.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/mfd/pm8xxx/pm8921.h>
-> +#include <linux/mfd/pm8xxx/core.h>
-> +
-> +#define REG_HWREV		0x002  /* PMIC4 revision */
-> +#define REG_HWREV_2		0x0E8  /* PMIC4 revision 2 */
-> +
-> +struct pm8921 {
-> +	struct device			*dev;
-> +};
-> +
-> +static int pm8921_readb(const struct device *dev, u16 addr, u8 *val)
+>  /*
+>   * definitions
+> @@ -77,15 +77,29 @@ static struct v4l2_queryctrl radio_qctrl
+>   * lowlevel part
+>   */
+>  
+> +static void snd_tea575x_get_freq(struct snd_tea575x *tea)
 > +{
-> +	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
-> +	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+> +	unsigned long freq;
 > +
-> +	return msm_ssbi_read(pmic->dev->parent, addr, val, 1);
+> +	freq = tea->ops->read(tea) & TEA575X_BIT_FREQ_MASK;
+> +	/* freq *= 12.5 */
+> +	freq *= 125;
+> +	freq /= 10;
+> +	/* crystal fixup */
+> +	if (tea->tea5759)
+> +		freq += tea->freq_fixup;
+> +	else
+> +		freq -= tea->freq_fixup;
+> +
+> +	tea->freq = freq * 16;		/* from kHz */
 > +}
 > +
-> +static int pm8921_writeb(const struct device *dev, u16 addr, u8 val)
-> +{
-> +	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
-> +	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+>  static void snd_tea575x_set_freq(struct snd_tea575x *tea)
+>  {
+>  	unsigned long freq;
+>  
+> -	freq = tea->freq / 16;		/* to kHz */
+> -	if (freq > 108000)
+> -		freq = 108000;
+> -	if (freq < 87000)
+> -		freq = 87000;
+> +	freq = clamp(tea->freq, FREQ_LO, FREQ_HI);
+> +	freq /= 16;		/* to kHz */
+>  	/* crystal fixup */
+>  	if (tea->tea5759)
+>  		freq -= tea->freq_fixup;
+> @@ -109,29 +123,33 @@ static int vidioc_querycap(struct file *
+>  {
+>  	struct snd_tea575x *tea = video_drvdata(file);
+>  
+> -	strcpy(v->card, tea->tea5759 ? "TEA5759" : "TEA5757");
+>  	strlcpy(v->driver, "tea575x-tuner", sizeof(v->driver));
+> -	strlcpy(v->card, "Maestro Radio", sizeof(v->card));
+> +	strlcpy(v->card, tea->tea5759 ? "TEA5759" : "TEA5757", sizeof(v->card));
+>  	sprintf(v->bus_info, "PCI");
+>  	v->version = RADIO_VERSION;
+> -	v->capabilities = V4L2_CAP_TUNER;
+> +	v->capabilities = V4L2_CAP_TUNER | V4L2_CAP_RADIO;
+>  	return 0;
+>  }
+>  
+>  static int vidioc_g_tuner(struct file *file, void *priv,
+>  					struct v4l2_tuner *v)
+>  {
+> +	struct snd_tea575x *tea = video_drvdata(file);
 > +
-> +	return msm_ssbi_write(pmic->dev->parent, addr, &val, 1);
-> +}
+>  	if (v->index > 0)
+>  		return -EINVAL;
+>  
+> +	tea->ops->read(tea);
 > +
-> +static int pm8921_read_buf(const struct device *dev, u16 addr, u8 *buf,
-> +									int cnt)
-> +{
-> +	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
-> +	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+>  	strcpy(v->name, "FM");
+>  	v->type = V4L2_TUNER_RADIO;
+> +	v->capability = V4L2_TUNER_CAP_LOW | V4L2_TUNER_CAP_STEREO;
+>  	v->rangelow = FREQ_LO;
+>  	v->rangehigh = FREQ_HI;
+> -	v->rxsubchans = V4L2_TUNER_SUB_MONO|V4L2_TUNER_SUB_STEREO;
+> -	v->capability = V4L2_TUNER_CAP_LOW;
+> -	v->audmode = V4L2_TUNER_MODE_MONO;
+> -	v->signal = 0xffff;
+> +	v->rxsubchans = V4L2_TUNER_SUB_MONO | V4L2_TUNER_SUB_STEREO;
+> +	v->audmode = tea->stereo ? V4L2_TUNER_MODE_STEREO : V4L2_TUNER_MODE_MONO;
+> +	v->signal = tea->tuned ? 0xffff : 0;
 > +
-> +	return msm_ssbi_read(pmic->dev->parent, addr, buf, cnt);
-> +}
-> +
-> +static int pm8921_write_buf(const struct device *dev, u16 addr, u8 *buf,
-> +									int cnt)
-> +{
-> +	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
-> +	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
-> +
-> +	return msm_ssbi_write(pmic->dev->parent, addr, buf, cnt);
-> +}
-> +
-> +static struct pm8xxx_drvdata pm8921_drvdata = {
-> +	.pmic_readb		= pm8921_readb,
-> +	.pmic_writeb		= pm8921_writeb,
-> +	.pmic_read_buf		= pm8921_read_buf,
-> +	.pmic_write_buf		= pm8921_write_buf,
-> +};
-> +
-> +static int __devinit pm8921_probe(struct platform_device *pdev)
-> +{
-> +	const struct pm8921_platform_data *pdata = pdev->dev.platform_data;
-> +	struct pm8921 *pmic;
-> +	int rc;
-> +	u8 val;
-> +
-> +	if (!pdata) {
-> +		pr_err("missing platform data\n");
+>  	return 0;
+>  }
+>  
+> @@ -148,7 +166,10 @@ static int vidioc_g_frequency(struct fil
+>  {
+>  	struct snd_tea575x *tea = video_drvdata(file);
+>  
+> +	if (f->tuner != 0)
 > +		return -EINVAL;
-> +	}
-> +
-> +	pmic = kzalloc(sizeof(struct pm8921), GFP_KERNEL);
-> +	if (!pmic) {
-> +		pr_err("Cannot alloc pm8921 struct\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	/* Read PMIC chip revision */
-> +	rc = msm_ssbi_read(pdev->dev.parent, REG_HWREV, &val, sizeof(val));
-> +	if (rc) {
-> +		pr_err("Failed to read hw rev reg %d:rc=%d\n", REG_HWREV, rc);
-> +		goto err_read_rev;
-> +	}
-> +	pr_info("PMIC revision 1: %02X\n", val);
-> +
-> +	/* Read PMIC chip revision 2 */
-> +	rc = msm_ssbi_read(pdev->dev.parent, REG_HWREV_2, &val, sizeof(val));
-> +	if (rc) {
-> +		pr_err("Failed to read hw rev 2 reg %d:rc=%d\n",
-> +			REG_HWREV_2, rc);
-> +		goto err_read_rev;
-> +	}
-> +	pr_info("PMIC revision 2: %02X\n", val);
-> +
-> +	pmic->dev = &pdev->dev;
-> +	pm8921_drvdata.pm_chip_data = pmic;
-> +	platform_set_drvdata(pdev, &pm8921_drvdata);
-> +
-> +	return 0;
-> +
-> +err_read_rev:
-> +	kfree(pmic);
-> +	return rc;
-> +}
-> +
-> +static int __devexit pm8921_remove(struct platform_device *pdev)
-> +{
-> +	struct pm8xxx_drvdata *drvdata;
-> +	struct pm8921 *pmic = NULL;
-> +
-> +	drvdata = platform_get_drvdata(pdev);
-> +	if (drvdata)
-> +		pmic = drvdata->pm_chip_data;
-> +	if (pmic)
-> +		mfd_remove_devices(pmic->dev);
-> +	platform_set_drvdata(pdev, NULL);
-> +	kfree(pmic);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver pm8921_driver = {
-> +	.probe		= pm8921_probe,
-> +	.remove		= __devexit_p(pm8921_remove),
-> +	.driver		= {
-> +		.name	= "pm8921-core",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init pm8921_init(void)
-> +{
-> +	return platform_driver_register(&pm8921_driver);
-> +}
-> +subsys_initcall(pm8921_init);
-> +
-> +static void __exit pm8921_exit(void)
-> +{
-> +	platform_driver_unregister(&pm8921_driver);
-> +}
-> +module_exit(pm8921_exit);
-> +
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_DESCRIPTION("PMIC 8921 core driver");
-> +MODULE_VERSION("1.0");
-> +MODULE_ALIAS("platform:pm8921-core");
-> diff --git a/include/linux/mfd/pm8xxx/core.h b/include/linux/mfd/pm8xxx/core.h
-> new file mode 100644
-> index 0000000..36ccb33
-> --- /dev/null
-> +++ b/include/linux/mfd/pm8xxx/core.h
-> @@ -0,0 +1,71 @@
-> +/*
-> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +/*
-> + * Qualcomm PMIC 8xxx driver header file
-> + *
-> + */
-> +
-> +#ifndef __MFD_PM8XXX_CORE_H
-> +#define __MFD_PM8XXX_CORE_H
-> +
-> +#include <linux/mfd/core.h>
-> +
-> +struct pm8xxx_drvdata {
-> +	int	(*pmic_readb) (const struct device *dev, u16 addr, u8 *val);
-> +	int	(*pmic_writeb) (const struct device *dev, u16 addr, u8 val);
-> +	int	(*pmic_read_buf) (const struct device *dev, u16 addr, u8 *buf,
-> +									int n);
-> +	int	(*pmic_write_buf) (const struct device *dev, u16 addr, u8 *buf,
-> +									int n);
-> +	void	*pm_chip_data;
-> +};
-> +
-> +static inline int pm8xxx_readb(const struct device *dev, u16 addr, u8 *val)
-> +{
-> +	struct pm8xxx_drvdata *dd = dev_get_drvdata(dev);
-> +
-> +	if (!dd)
+>  	f->type = V4L2_TUNER_RADIO;
+> +	snd_tea575x_get_freq(tea);
+>  	f->frequency = tea->freq;
+>  	return 0;
+>  }
+> @@ -158,6 +179,9 @@ static int vidioc_s_frequency(struct fil
+>  {
+>  	struct snd_tea575x *tea = video_drvdata(file);
+>  
+> +	if (f->tuner != 0 || f->type != V4L2_TUNER_RADIO)
 > +		return -EINVAL;
-> +	return dd->pmic_readb(dev, addr, val);
-> +}
 > +
-> +static inline int pm8xxx_writeb(const struct device *dev, u16 addr, u8 val)
-> +{
-> +	struct pm8xxx_drvdata *dd = dev_get_drvdata(dev);
-> +
-> +	if (!dd)
-> +		return -EINVAL;
-> +	return dd->pmic_writeb(dev, addr, val);
-> +}
-> +
-> +static inline int pm8xxx_read_buf(const struct device *dev, u16 addr, u8 *buf,
-> +									int n)
-> +{
-> +	struct pm8xxx_drvdata *dd = dev_get_drvdata(dev);
-> +
-> +	if (!dd)
-> +		return -EINVAL;
-> +	return dd->pmic_read_buf(dev, addr, buf, n);
-> +}
-> +
-> +static inline int pm8xxx_write_buf(const struct device *dev, u16 addr, u8 *buf,
-> +									int n)
-> +{
-> +	struct pm8xxx_drvdata *dd = dev_get_drvdata(dev);
-> +
-> +	if (!dd)
-> +		return -EINVAL;
-> +	return dd->pmic_write_buf(dev, addr, buf, n);
-> +}
-> +
-> +#endif
-> diff --git a/include/linux/mfd/pm8xxx/pm8921.h b/include/linux/mfd/pm8xxx/pm8921.h
-> new file mode 100644
-> index 0000000..33fbe9c
-> --- /dev/null
-> +++ b/include/linux/mfd/pm8xxx/pm8921.h
-> @@ -0,0 +1,27 @@
-> +/*
-> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +/*
-> + * Qualcomm PMIC 8921 driver header file
-> + *
-> + */
-> +
-> +#ifndef __MFD_PM8921_H
-> +#define __MFD_PM8921_H
-> +
-> +#include <linux/device.h>
-> +
-> +struct pm8921_platform_data {
-> +	int					irq_base;
-> +};
-> +
-> +#endif
-
-
--- 
---
-Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
-Innovation Center, Inc. is a member of the Code Aurora Forum.
+>  	if (f->frequency < FREQ_LO || f->frequency > FREQ_HI)
+>  		return -EINVAL;
+>  
+> --- linux-2.6.38-rc4-orig/include/sound/tea575x-tuner.h	2011-02-08 01:03:55.000000000 +0100
+> +++ linux-2.6.38-rc4/include/sound/tea575x-tuner.h	2011-03-19 14:18:06.000000000 +0100
+> @@ -38,8 +38,10 @@ struct snd_tea575x {
+>  	struct snd_card *card;
+>  	struct video_device *vd;	/* video device */
+>  	int dev_nr;			/* requested device number + 1 */
+> -	int tea5759;			/* 5759 chip is present */
+> -	int mute;			/* Device is muted? */
+> +	bool tea5759;			/* 5759 chip is present */
+> +	bool mute;			/* Device is muted? */
+> +	bool stereo;			/* receiving stereo */
+> +	bool tuned;			/* tuned to a station */
+>  	unsigned int freq_fixup;	/* crystal onboard */
+>  	unsigned int val;		/* hw value */
+>  	unsigned long freq;		/* frequency */
+> 
+> 
+> 
