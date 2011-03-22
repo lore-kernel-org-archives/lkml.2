@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab1CVIpc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 04:45:32 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:53908 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753875Ab1CVIpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 04:45:30 -0400
-Subject: Re: [RFC] pstore: Don't use persistent store for normal shutdown
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reply-To: Artem.Bityutskiy@nokia.com
-To: "ext Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Seiji Aguchi <seiji.aguchi@hds.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <4d8797d74168a6441@agluck-desktop.sc.intel.com>
-References: <4d8797d74168a6441@agluck-desktop.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Tue, 22 Mar 2011 10:42:45 +0200
-Message-ID: <1300783365.2735.12.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+	id S1755557Ab1CVIr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 04:47:59 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45540 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755320Ab1CVIr5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 04:47:57 -0400
+Date: Tue, 22 Mar 2011 04:47:55 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Alexander Beregalov <a.beregalov@gmail.com>
+Cc: xfs@oss.sgi.com, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.39-rc0: xfs: kernel BUG at mm/page_alloc.c:738
+Message-ID: <20110322084755.GA14129@infradead.org>
+References: <AANLkTincs+MyYf+2tt2Y3LMQdmF8PUAxKMxMXuKB72hZ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTincs+MyYf+2tt2Y3LMQdmF8PUAxKMxMXuKB72hZ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-21 at 11:24 -0700, ext Luck, Tony wrote:
-> In commit 04c6862c055fb687c90d9652f32c11a063df15cf
-> kmsg_dump: add kmsg_dump() calls to the reboot, halt, poweroff and emergency_restart paths
+On Mon, Mar 21, 2011 at 04:34:46AM +0300, Alexander Beregalov wrote:
+> Hi
 > 
-> Seiji Aguchi added kmsg_dump options for all the "normal" ways
-> that a system can be shut down (KEXEC, RESTART, HALT and POWEROFF).
-> It doesn't seem useful to save the kernel log to persistent store
-> in these cases.
+> Steps to reproduce:
+> run xfs_fsr on xfs device
 > 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
+> arch is x86 UP, kernel is 2.6.38-06507-ga952baa
 > 
-> ---
-> 
-> My /dev/pstore changes have been merged - and I immediately noticed that they
-> now save a record on every shutdown.  Some simple detective work with git found
-> that kmsg_dump now has some new "reasons" for calling its subscribers.
-> 
-> This patch excludes the four "normal shutdown" cases from being logged
-> to persistent store, on the assumption that we don't want to clutter up
-> a limited amount of storage space with routine data.  My presumption is
-> that there is some other subscriber to kmsg_dump that is doing something
-> with these reason codes ... is that right?  Or do you think that we should
-> save the tail of kernel log into persistent store for every shutdown?
-> 
-> Perhaps we could save less data for these new reasons? Other ideas?
+> kernel BUG at mm/page_alloc.c:738!
+> invalid opcode: 0000 [#1]
+> last sysfs file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
+> Modules linked in: hwmon_vid sata_sil i2c_nforce2
 
-If you ask me, this smells like policy in the kernel. I'd look into the
-direction of having only the mechanisms in the kernel and letting the
-user-space making policy decisions by choosing what he wants to filter
-out and what he wants to store via some pstore interfaces.
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+I don't really see anything XFS-specific in here.  The page allocator
+is unhappy, and we get there through the generic read code, which just
+has a tiny xfs wrapper.
 
