@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab1CVHy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 03:54:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37899 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755053Ab1CVHy0 (ORCPT
+	id S1755158Ab1CVH4g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 03:56:36 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:47364 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048Ab1CVH4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 03:54:26 -0400
-Message-ID: <4D8855AD.8040804@infradead.org>
-Date: Tue, 22 Mar 2011 04:54:21 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-References: <20110322121409.f4bb8a4e.sfr@canb.auug.org.au>
-In-Reply-To: <20110322121409.f4bb8a4e.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Mar 2011 03:56:32 -0400
+Date: Tue, 22 Mar 2011 08:56:24 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Prasad Joshi <prasadjoshi124@gmail.com>
+Cc: heiko.carstens@de.ibm.com, linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mitra@kqinfotech.com
+Subject: Re: [RFC][PATCH v3 09/22] mm, s390: add gfp flags variant of pud,
+ pte, and pte allocations
+Message-ID: <20110322085624.6a7efecf@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <20110321190239.GA6541@prasad-kvm>
+References: <20110318194341.GB4746@prasad-kvm>
+	<20110318194600.GC4746@prasad-kvm>
+	<20110318194740.GD4746@prasad-kvm>
+	<20110318194929.GE4746@prasad-kvm>
+	<20110318195035.GF4746@prasad-kvm>
+	<20110318195141.GG4746@prasad-kvm>
+	<20110318195307.GH4746@prasad-kvm>
+	<20110318195507.GI4746@prasad-kvm>
+	<20110318195643.GJ4746@prasad-kvm>
+	<20110321093412.2776a69f@mschwide.boeblingen.de.ibm.com>
+	<20110321190239.GA6541@prasad-kvm>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 21-03-2011 22:14, Stephen Rothwell escreveu:
-> Hi Mauro,
+On Mon, 21 Mar 2011 19:02:39 +0000
+Prasad Joshi <prasadjoshi124@gmail.com> wrote:
+
+> On Mon, Mar 21, 2011 at 09:34:12AM +0100, Martin Schwidefsky wrote:
+> > On Fri, 18 Mar 2011 19:56:44 +0000
+> > Prasad Joshi <prasadjoshi124@gmail.com> wrote:
+> > 
+> > > - Added function __crst_table_alloc() which is similar to crst_table_alloc()
+> > >   but accepts an extra argument gfp_t. The function uses given allocation
+> > >   flag to allocate pages.
+> > > 
+> > > - Added a function __page_table_alloc() to allocate page table entries. This
+> > >   function is allows caller to specify the page allocation flag. The
+> > >   allocation flag is then passed to alloc_page(). The rest of the function is
+> > >   copy of the original page_table_alloc().
+> > 
+> > The approach of this patch series seems straightforward, the only nitpick I
+> > have is the fact that two new functions __crst_table_alloc/__page_table_alloc
+> > are introduced. There aren't many call sites for the two original functions,
+> > namely 4 for crst_table_alloc and 3 for page_table_alloc. Why not add the
+> > gfp flag GFP_KERNEL to these call sites? Then the two additional functions
+> > would not be needed.
 > 
-> After merging the v4l-dvb tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/media/media-devnode.c:40:28: error: linux/smp_lock.h: No such file or directory
+> Thanks a lot Martin for your reply. Here is a new patch, which the changes
+> you suggested.
 
-It got removed by this commit: 4ba8216cd90560bc402f52076f64d8546e8aefcb.
+Looks good now. For the s390 architecture part:
 
-There's no reason for the header to be there at media-devnode.c, as it doesn't use
-BKL.
+Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-> 
-> Caused by commit cb3c186e31be ("[media] media: Media device node
-> support").  The BKL is no more ...
-> 
-> Why is a patch with Author date 2009-12-09 turning up in linux-next today?
+-- 
+blue skies,
+   Martin.
 
-Because the Media Controller stuff is under development since 2008, but it took a long
-time to be mature enough to be merged.
+"Reality continues to ruin my life." - Calvin.
 
-> 
-> I have used the v4l-dvb tree from next-20110321 for today.
-> 
-
-The fix patch is as simple as the enclosed one. I'm folding it together with the
-original changeset (cb3c186e31be), in order to avoid bisect issues.
-
-Thanks!
-Mauro
-
--
-
-commit 1941c46894a60f4c5365fdcce9258f86d3691ae3
-Author: Mauro Carvalho Chehab <mchehab@redhat.com>
-Date:   Tue Mar 22 04:43:47 2011 -0300
-
-    [media] media-devnode: Don't include linux/smp_lock.h
-    
-    drivers/media/media-devnode.c:40:28: error: linux/smp_lock.h: No such file or directory
-    
-    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/drivers/media/media-devnode.c b/drivers/media/media-devnode.c
-index 5509984..af5263c 100644
---- a/drivers/media/media-devnode.c
-+++ b/drivers/media/media-devnode.c
-@@ -37,7 +37,6 @@
- #include <linux/kmod.h>
- #include <linux/slab.h>
- #include <linux/mm.h>
--#include <linux/smp_lock.h>
- #include <linux/string.h>
- #include <linux/types.h>
- #include <linux/uaccess.h>
