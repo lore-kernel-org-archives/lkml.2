@@ -1,42 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab1CVTD4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 15:03:56 -0400
-Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:1483 "EHLO
-	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab1CVTDy (ORCPT
+	id S1754951Ab1CVTEf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 15:04:35 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:25013 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901Ab1CVTEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 15:03:54 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Ondrej Zary <linux@rainbow-software.org>
-Subject: Re: [RFC PATCH 4/3] remove radio-maestro
-Date: Tue, 22 Mar 2011 20:03:27 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8-tschai; KDE/4.6.1; x86_64; ; )
-Cc: "Takashi Iwai" <tiwai@suse.de>, jirislaby@gmail.com,
-        alsa-devel@alsa-project.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>,
-        linux-media@vger.kernel.org
-References: <201103121919.05657.linux@rainbow-software.org> <33b29bfb135fbe2ddcba88d342d67526.squirrel@webmail.xs4all.nl> <201103191723.52732.linux@rainbow-software.org>
-In-Reply-To: <201103191723.52732.linux@rainbow-software.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103222003.27131.hverkuil@xs4all.nl>
+	Tue, 22 Mar 2011 15:04:32 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Tue, 22 Mar 2011 15:04:16 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Miroslaw <mirq-linux@rere.qmqm.pl>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Sascha Sommer <saschasommer@freenet.de>, linux-mmc@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] drivers/mmc/host/mvsdio.c: Convert release_resource to
+ release_mem_region
+In-reply-to: <1300814095-25278-1-git-send-email-julia@diku.dk>
+Message-id: <alpine.LFD.2.00.1103221503100.11889@xanadu.home>
+References: <1300814095-25278-1-git-send-email-julia@diku.dk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, March 19, 2011 17:23:47 Ondrej Zary wrote:
-> Remove broken radio-maestro driver as the radio functionality is now
-> integrated in the es1968 driver.
+On Tue, 22 Mar 2011, Julia Lawall wrote:
+
+> Request_mem_region should be used with release_mem_region, not
+> release_resource.
 > 
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> A semantic patch that partially fixes this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @b@
+> expression x,E;
+> @@
+> 
+> x = request_mem_region(x->start,...)
+> ... when != release_mem_region(x->start,...)
+>     when != x = E
+> (
+> - release_resource(x);
+> - kfree(x);
+> +  release_mem_region(x->start,resource_size(x));
+> |
+> ?- release_resource(x);
+> +  release_mem_region(x->start,resource_size(x));
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Acked-by: Hans Verkuil <hverkuil@xs4all.nl>
+Acked-by: Nicolas Pitre <nico@fluxnic.net>
 
-Also for patches 2 & 3 :-)
-
-Regards,
-
-	Hans
+> ---
+>  drivers/mmc/host/mvsdio.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
+> index a5bf60e..4606087 100644
+> --- a/drivers/mmc/host/mvsdio.c
+> +++ b/drivers/mmc/host/mvsdio.c
+> @@ -825,7 +825,7 @@ out:
+>  			iounmap(host->base);
+>  	}
+>  	if (r)
+> -		release_resource(r);
+> +		release_mem_region(r->start, resource_size(r));
+>  	if (mmc)
+>  		mmc_free_host(mmc);
+>  
+> @@ -850,7 +850,7 @@ static int __exit mvsd_remove(struct platform_device *pdev)
+>  		del_timer_sync(&host->timer);
+>  		mvsd_power_down(host);
+>  		iounmap(host->base);
+> -		release_resource(host->res);
+> +		release_mem_region(host->res->start, resource_size(host->res));
+>  		mmc_free_host(mmc);
+>  	}
+>  	platform_set_drvdata(pdev, NULL);
+> 
