@@ -1,132 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab1CVV0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 17:26:19 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:56618 "HELO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753858Ab1CVV0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 17:26:17 -0400
-Date: Tue, 22 Mar 2011 16:25:19 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
-Message-ID: <20110322212519.GA12076@sgi.com>
-References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <20110321175110.GL1239@redhat.com> <20110321182235.GA14562@sgi.com> <20110321193740.GN1239@redhat.com> <20110322171118.GA6294@sgi.com> <20110322184450.GU1239@redhat.com>
+	id S932307Ab1CVVcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 17:32:32 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51333 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754616Ab1CVVc3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 17:32:29 -0400
+Date: Tue, 22 Mar 2011 16:32:11 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: kirkland@canonical.com, dhowells@redhat.com, jmorris@namei.org,
+        linux-fsdevel@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, ecryptfs-devel@lists.launchpad.net
+Subject: Re: [PATCH v2 0/5] eCryptfs key locking patches
+Message-ID: <20110322213211.GB12197@boyd.l.tihix.com>
+References: <1300719658-3184-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110322184450.GU1239@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1300719658-3184-1-git-send-email-roberto.sassu@polito.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 02:44:50PM -0400, Don Zickus wrote:
-> On Tue, Mar 22, 2011 at 12:11:18PM -0500, Jack Steiner wrote:
-> > How certain are you that multiple NMIs triggered at about the same time will
-> > deliver discrete NMI events? I updated the patch so that I'm running with:
+On Mon Mar 21, 2011 at 04:00:50PM +0100, Roberto Sassu <roberto.sassu@polito.it> wrote:
+> This patch set modifies the eCryptfs code in order to lock requested keys
+> while authentication tokens are used to encrypt or decrypt files.
 > 
-> I think as long as there isn't more than two (1 active, 1 latched), you
-> would be ok.  A third one looks like it would get dropped.
-> 
-> > 
-> > 	- no special code in traps.c (I removed the traps.c code that was
-> > 	  in the patch I posted)
-> > 	- used die_notifier for calling the UV nmi handler
-> > 	- UV priority is higher than the hw_perf priority
-> > 
-> > Both hw_perf (perf top) & UV NMIs work correctly under light loads. However, if I
-> > run for 10 - 15 minutes injecting UV NMIs at a rate of about 30/min, "perf top"
-> > stops generating output. Strace shows that it continues to poll() but no data
-> > is received.
-> 
-> That's a low frequency and it still gets stuck?
-> 
-> > 
-> > While "perf top" is hung, if I inject an NMI into the system in a way that will NOT
-> > be consumed by the UV nmi handler, "perf top" resumes output but will stop again after
-> > a few minutes.
-> 
-> So that means the PMU set its interrupt bit but the cpu failed to get the
-> NMI.
-> 
-> > 
-> > 
-> > AFAICT, the UV nmi handler is not consuming extra NMI interrupts. I can't
-> > rule out that I'm missing something but I don't see it.
-> 
-> What happens if you put the UV nmi handler below the hw_perf handler in
-> priority?  I assume the DIE_NMIUNKNOWN snippet in the hw_perf handler will
-> swallow some of the UV NMIs, but more importantly does it still generate
-> the hang you see?
+> Changelog:
+>   - removed patch "eCryptfs: ecryptfs_keyring_auth_tok_for_sig() bug fix"
+> 	(already applied to the eCryptfs git repository at git.kernel.org);
+>   - added new patch "eCryptfs: removed num_global_auth_toks from 
+> 	ecryptfs_mount_crypt_stat";
+>   - patch 3/5: avoid invalidating a global authentication token only if
+> 	key_validate() returns the error -EKEYEXPIRED;
+>   - patch 3/5: added new function
+> 	process_find_global_auth_tok_for_sig_err() to handle errors
+> 	returned by ecryptfs_find_global_auth_tok_for_sig();
+>   - patch 3/5: return an error in the function
+> 	ecryptfs_generate_key_packet_set() if at least one global
+> 	authentication token cannot be retrieved.
 
-I verified that the failures ("perf top" stops) are the same on both RHEL6.1 & the
-latest x86 2.6.38+ tree.
+Thanks Roberto - This revision looks good to me. I'll keep the patch set
+in my tree for another day or two, to see if anyone else has comments,
+and then set up a pull request to try to get it into the rc1 release.
 
-I switched priorities & as expected, "perf top" no longer hangs. I see an occassional
-missed UV NMI - about 1 every minute. I also see a few "dazed" messages as
-well - 3 in a 5 minute period. This testing was done on a 2.6.38+ kernel.
-
-I'm running on a 48p system.
-
-Ideas?
+Tyler
 
 > 
-> > 
-> > 
-> > Do you have any ideas or clues???
+> Roberto Sassu
 > 
-> Part of the problem is most of the NMI testing is done with perf and maybe
-> kgdb.  So high frequency NMI sharing is probably exposing more bugs.
 > 
-> Also is it a problem to move your testing on to the latest upstream code
-> instead of RHEL-6?  Not all the latest NMI work is there.  I want to make
-> sure we are all starting at the same code. :-)
+> Roberto Sassu (5):
+>   eCryptfs: removed num_global_auth_toks from ecryptfs_mount_crypt_stat
+>   eCryptfs: modified size of keysig in the ecryptfs_key_sig structure
+>   eCryptfs: verify authentication tokens before their use
+>   eCryptfs: move ecryptfs_find_auth_tok_for_sig() call before
+>     mutex_lock
+>   eCryptfs: write lock requested keys
 > 
-> Cheers,
-> Don
+>  fs/ecryptfs/crypto.c          |    1 -
+>  fs/ecryptfs/ecryptfs_kernel.h |    4 +-
+>  fs/ecryptfs/keystore.c        |  280 ++++++++++++++++++++++++++---------------
+>  fs/ecryptfs/main.c            |    8 +-
+>  4 files changed, 185 insertions(+), 108 deletions(-)
 > 
-> > 
-> > 
-> > > 
-> > > > 
-> > > > The root cause of the problem is that architecturally, x86 does not
-> > > > have a way to identifies the source(s) that cause an NMI. If multiple
-> > > > events occur at about the same time, there is no way that I can see that the
-> > > > OS can detect it.
-> > > 
-> > > There are registers we can check to see who owns trigger the NMI (at least
-> > > for the perf code, the SGI code maybe not, which is why I set it to a
-> > > lower priority to be a catch-all).
-> > > 
-> > > I'm not aware of the x86 architecture dropping NMIs, so they should all
-> > > get processed.  It is just a matter of which subsystems get determine if
-> > > they are the source of the NMI or not.
-> > > 
-> > > > 
-> > > > > 
-> > > > > My first impression is the skip nmi logic in the perf handler is probably
-> > > > > accidentally thinking the SGI external nmi is the perf's 'extra' nmi it is
-> > > > > supposed to skip and thus swallows it.  At least that is the impression I
-> > > > 
-> > > > Agree
-> > > > 
-> > > > 
-> > > > > get from the RedHat bugzilla which says SGI is running 'perf top', getting
-> > > > > a hang, then pressing their nmi button to see the stack traces.
-> > > > > 
-> > > > > Jack,
-> > > > > 
-> > > > > I worked through a number of these issues upstream and I already talked to
-> > > > > George and Russ over here at RedHat about working through the issue over
-> > > > > here with them.  They can help me get access to your box to help debug.
-> > > > 
-> > > > Russ is right down the hall.
-> > > 
-> > > Great!
-> > > 
-> > > Cheers,
-> > > Don
+> -- 
+> 1.7.4
+> 
+
+
