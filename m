@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab1CVPuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 11:50:19 -0400
-Received: from smtpbg52.qq.com ([64.71.138.43]:36453 "HELO smtpbg52.qq.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932096Ab1CVPuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 11:50:14 -0400
-X-QQ-mid: esmtp3t1300808894t338t15176
-X-QQ-SSF: 00000000000000F0FF300F000000000
-Date: Tue, 22 Mar 2011 23:48:16 +0800
-From: "Lina Lu" <lulina_nuaa@foxmail.com>
-To: "Vivek Goyal" <vgoyal@redhat.com>
-Cc: "linux kernel mailing list" <linux-kernel@vger.kernel.org>
-References: <201103201523220468314@foxmail.com>,
- <201103222332465003523@foxmail.com>
-Subject: Re: Re: Re: cfq-iosched.c: panic in cfq_dispatch_requests
-Message-ID: <201103222348152343383@foxmail.com>
-X-mailer: Foxmail 6, 15, 201, 23 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="gb2312"
-Content-Transfer-Encoding: 7bit
+	id S1755994Ab1CVPu4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 11:50:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42732 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751733Ab1CVPuy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 11:50:54 -0400
+Date: Tue, 22 Mar 2011 15:50:51 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Zeng Zhaoming <b32542@freescale.com>
+Subject: Re: [build failure] Re: [GIT PULL] sound updates for 2.6.39-rc1
+Message-ID: <20110322155051.GD22583@opensource.wolfsonmicro.com>
+References: <s5hr5a4ttfi.wl%tiwai@suse.de>
+ <20110321153719.GA12325@elte.hu>
+ <20110321155836.GE2570@opensource.wolfsonmicro.com>
+ <20110321161102.GB23614@elte.hu>
+ <20110321163849.GF2570@opensource.wolfsonmicro.com>
+ <20110321164937.GA6381@elte.hu>
+ <20110321165827.GG2570@opensource.wolfsonmicro.com>
+ <20110322122436.GA6834@opensource.wolfsonmicro.com>
+ <20110322083839.caab0520.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322083839.caab0520.randy.dunlap@oracle.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-22 23:39:48, Vivek Goyal wrote:
->On Tue, Mar 22, 2011 at 11:32:47PM +0800, Lina Lu wrote:
->> On 2011-03-21 22:08:19, Vivek Goyal wrote:
->> >On Sun, Mar 20, 2011 at 03:23:23PM +0800, Lina Lu wrote:
->> >> Hi Vivek,
->> >> 
->> >> I did some test with blkio weight policy these days. The kernel panic 
->> >> once in a while. 
->> >> 	
->> >> From the calltrace, It 's in func cfq_dispatch_requests(+0x058D).
->> >> And I caught a divide by zero error with system monitor tools.
->> >
->> >Hi Lina,
->> >
->> >Can you please paste the full backtrace here.
->> >
->> >> 	
->> >> The panic happens when I first set 100 weight to two IO pids, then 
->> >> change the weight to 200, and begin to perform IO. The kernel panic
->> >> accurately when the IO begin.
->> >
->> >So you notice this only if weights are changed otherwise not?
->> 
->> Hi Vivek
->> 
->> Thanks for this patch! I did objdump and find place that divide by zero.
->> It's in cfq_group_slice function, the st->total_weight is zero in my issue.
->> As described in the patch, this is because I change the weight when the
->> group on service tree. 
->
->Ok, so this patch did solve the issue you are facing? 
->
+On Tue, Mar 22, 2011 at 08:38:39AM -0700, Randy Dunlap wrote:
+> On Tue, 22 Mar 2011 12:24:36 +0000 Mark Brown wrote:
 
-Yes, this patch did solve the issue. 
+> > And indeed it was - in the absence of any response from Zeng I've now
+> > sent a patch for review.
 
-And I will do more test these days, if there is any other problem, I will keep
-you know.
+> Where was the patch sent, please?
 
-Thanks
-Lina
+SOUND - SOC LAYER / DYNAMIC AUDIO POWER MANAGEMENT (ASoC)
+M:      Liam Girdwood <lrg@slimlogic.co.uk>
+M:      Mark Brown <broonie@opensource.wolfsonmicro.com>
+T:      git git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound-2.6.git
+L:      alsa-devel@alsa-project.org (moderated for non-subscribers)
 
-
+plus Zeng.
