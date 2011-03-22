@@ -1,115 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284Ab1CVU7L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 16:59:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932265Ab1CVU7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 16:59:09 -0400
-Date: Tue, 22 Mar 2011 16:59:05 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cfq-iosched: Don't set active queue in preempt
-Message-ID: <20110322205905.GM3757@redhat.com>
-References: <1300825050-11371-1-git-send-email-teravest@google.com>
- <1300825050-11371-2-git-send-email-teravest@google.com>
+	id S1755429Ab1CVVAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 17:00:38 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33875 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab1CVVAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 17:00:35 -0400
+Date: Tue, 22 Mar 2011 17:00:34 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: merging discard request in the block layer
+Message-ID: <20110322210034.GA9349@infradead.org>
+References: <20110322194755.GA20122@infradead.org>
+ <4D88FE5E.1010204@fusionio.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300825050-11371-2-git-send-email-teravest@google.com>
+In-Reply-To: <4D88FE5E.1010204@fusionio.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 01:17:29PM -0700, Justin TerAvest wrote:
-> Commit "Add unaccounted time to timeslice_used" changed the behavior of
-> cfq_preempt_queue to set cfqq active. Vivek pointed out that other
-> preemption rules might get involved, so we shouldn't manually set which
-> queue is active.
+On Tue, Mar 22, 2011 at 08:54:06PM +0100, Jens Axboe wrote:
+> > Index: xfs/block/blk-merge.c
+> > ===================================================================
+> > --- xfs.orig/block/blk-merge.c	2011-03-22 13:07:24.733857580 +0100
+> > +++ xfs/block/blk-merge.c	2011-03-22 13:08:17.448856577 +0100
+> > @@ -373,7 +373,7 @@ static int attempt_merge(struct request_
+> >  	/*
+> >  	 * Don't merge file system requests and discard requests
+> >  	 */
+> > -	if ((req->cmd_flags & REQ_DISCARD) != (next->cmd_flags & REQ_DISCARD))
+> > +	if ((req->cmd_flags & REQ_DISCARD) || (next->cmd_flags & REQ_DISCARD))
+> >  		return 0;
+> >  
+> >  	/*
 > 
-> This cleans up the code to just clear the queue stats at preemption
-> time.
-> 
-> Signed-off-by: Justin TerAvest <teravest@google.com>
-> ---
->  block/cfq-iosched.c |   39 +++++++++++++++++++++++----------------
->  1 files changed, 23 insertions(+), 16 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 12e380b..69208d7 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -1620,27 +1620,33 @@ static inline void cfq_del_timer(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  	cfq_blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
->  }
->  
-> +static void cfq_clear_queue_stats(struct cfq_data *cfqd,
-> +				  struct cfq_queue *cfqq)
-> +{
-> +	cfq_blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
-> +	cfqq->slice_start = 0;
-> +	cfqq->dispatch_start = jiffies;
-> +	cfqq->allocated_slice = 0;
-> +	cfqq->slice_end = 0;
-> +	cfqq->slice_dispatch = 0;
-> +	cfqq->nr_sectors = 0;
-> +
-> +	cfq_clear_cfqq_wait_request(cfqq);
-> +	cfq_clear_cfqq_must_dispatch(cfqq);
-> +	cfq_clear_cfqq_must_alloc_slice(cfqq);
-> +	cfq_clear_cfqq_fifo_expire(cfqq);
-> +	cfq_mark_cfqq_slice_new(cfqq);
-> +
-> +	cfq_del_timer(cfqd, cfqq);
-> +}
-> +
->  static void __cfq_set_active_queue(struct cfq_data *cfqd,
->  				   struct cfq_queue *cfqq)
->  {
->  	if (cfqq) {
->  		cfq_log_cfqq(cfqd, cfqq, "set_active wl_prio:%d wl_type:%d",
->  				cfqd->serving_prio, cfqd->serving_type);
-> -		cfq_blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
-> -		cfqq->slice_start = 0;
-> -		cfqq->dispatch_start = jiffies;
-> -		cfqq->allocated_slice = 0;
-> -		cfqq->slice_end = 0;
-> -		cfqq->slice_dispatch = 0;
-> -		cfqq->nr_sectors = 0;
-> -
-> -		cfq_clear_cfqq_wait_request(cfqq);
-> -		cfq_clear_cfqq_must_dispatch(cfqq);
-> -		cfq_clear_cfqq_must_alloc_slice(cfqq);
-> -		cfq_clear_cfqq_fifo_expire(cfqq);
-> -		cfq_mark_cfqq_slice_new(cfqq);
-> -
-> -		cfq_del_timer(cfqd, cfqq);
-> +		cfq_clear_queue_stats(cfqd, cfqq);
->  	}
->  
->  	cfqd->active_queue = cfqq;
-> @@ -3332,7 +3338,8 @@ static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  	BUG_ON(!cfq_cfqq_on_rr(cfqq));
->  
->  	cfq_service_tree_add(cfqd, cfqq, 1);
-> -	__cfq_set_active_queue(cfqd, cfqq);
-> +
-> +	cfq_clear_queue_stats(cfqd, cfqq);
+> That's not going to be enough, you want to disable the bio to request
+> merging of discards as well in elevator.c:elv_rq_merge_ok(). Does
+> that then fix it?
 
-Hi Justin,
+Applying the same fix in elv_rq_merge_ok seems to fix the issue, at
+least the xfstests testcase that usually hits it is completes ok.
 
-Why do we have to clear queue stats here for the preempting queue?
-
-Especially look at cfqq->dispatch_start = jiffies. We have not started
-the dispatch yet. When this queue is selected next, then we will start
-the dispatch.
-
-So this patch has introduced another bug now. Now after preemption if
-we don't select this group, then we have a queue with wrong dispatch
-start and that will result in huge slice_used for the queue and
-it will not get its fair share.
-
-Thanks
-Vivek
