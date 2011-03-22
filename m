@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab1CVKKl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 06:10:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64354 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab1CVKKj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 06:10:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org, Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH] ARM: Use asm-generic/sizes.h
-Date: Tue, 22 Mar 2011 11:10:20 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
-References: <1300751462-1494-1-git-send-email-sboyd@codeaurora.org> <201103220934.50435.arnd@arndb.de> <20110322092113.GB17264@n2100.arm.linux.org.uk>
-In-Reply-To: <20110322092113.GB17264@n2100.arm.linux.org.uk>
+	id S1754214Ab1CVKQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 06:16:40 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:64863 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753732Ab1CVKQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 06:16:37 -0400
+Date: Tue, 22 Mar 2011 12:11:21 +0200
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Andrew Morton <akpm@linux-foundation.org>
+Cc: menage@google.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] list.h: add debug version of list_empty
+Message-ID: <20110322101121.GB30552@esdhcp04044.research.nokia.com>
+References: <1300194523-19325-1-git-send-email-ext-phil.2.carmody@nokia.com> <1300194523-19325-2-git-send-email-ext-phil.2.carmody@nokia.com> <20110321165206.1deaf0ab.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103221110.20861.arnd@arndb.de>
-X-Provags-ID: V02:K0:Z03CszQQ+iS0otjoiicts2Jxqp4f4q+IzeU/tsCqOL8
- RUnuWtxMWFQTqHLL24Qd+PE4aWnxtFsG7QMleWgllYwlcOzuFH
- 20nQgg1MD7/v3HF8cnCW7YVlf3F6as3TjwhRUQ28ay6kP7HBpY
- ooyWQqoq+0t8PnQCjVz6BwdmMQxrpaMR65WChOuEIElhZj2clw
- 10rLiRg6SpBSqC5DF7cvw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110321165206.1deaf0ab.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 March 2011, Russell King - ARM Linux wrote:
-> On Tue, Mar 22, 2011 at 09:34:50AM +0100, Arnd Bergmann wrote:
-> > On Tuesday 22 March 2011, Stephen Boyd wrote:
-> > > Commit d232b12 (asm-generic headers: add sizes.h, 2011-01-15)
-> > > introduced a generic sizes.h. Use that instead of the ARM specific
-> > > version.
-> > > 
-> > > Cc: Arnd Bergmann <arnd@arndb.de>
-> > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > 
-> > Acked-by: Arnd Bergmann <arnd@arndb.de
+On 21/03/11 16:52 -0700, ext Andrew Morton wrote:
+> On Tue, 15 Mar 2011 15:08:42 +0200
+> Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
+> > +int list_empty(const struct list_head *head)
+> > +{
+> > +	if ((head->prev == LIST_POISON2) || (head->prev == LIST_POISON1))
+> > +		WARN(1, "list_empty performed on a node "
+> > +		     "at %p removed from a list.\n", head);
+> > +	else
+> > +		WARN((head->prev == head) != (head->next == head),
+> > +		     "list_empty corruption. %p<-%p->%p is half-empty.\n",
+> > +		     head->prev, head, head->next);
+ 
+> The second warning here is triggering maybe a hundred times from all
+> over the place just when booting the kernel.
 > 
-> I assume the generic version was derived from the ARM version.  Is there
-> a reason why ARM Ltd's copyright was seemingly dropped?
+> Here's the first two:
+> 
+> [   64.295941] WARNING: at lib/list_debug.c:89 list_empty+0x79/0x85()
+> [   64.296129] list_empty corruption. ffff880255bcb788<-ffff880255bcb788->ffff88024c3a3c20 is half-empty.
 
-I'll let Guan Xuetao answer that, he introduced the file along with the
-unicore32 architecture.
 
-I doubt that the contents of this file are copyrightable, but of course
-that is normally no reason to remove the notice.
+OK, so the patch is working as expected. Perhaps my expectations were wrong.
 
-	Arnd
+Looking at list.h I was sure that lists should always be either circular or
+poisoned both ends. The above is a rho-shape, this == prev.
+
+Traditional list_empty() returns false on such a node, so it should be
+possible to list_del() it. But then next->prev will be set to this->prev 
+which is this. So this will never be deleted from the list. That situation
+rings warning bells in my head. Which I guess is what the patch was trying
+to concretise.
+
+I presume the above are x86_64, I'll see if I can get access to such a 
+machine in the next few days, or reproduce it on one of the architectures
+I do have here.
+
+Phil
+
+
