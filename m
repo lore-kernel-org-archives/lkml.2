@@ -1,69 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab1CVLFi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 07:05:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32736 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754582Ab1CVLFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 07:05:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,224,1299484800"; 
-   d="scan'208";a="722824030"
-Date: Tue, 22 Mar 2011 12:05:31 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Denis Turischev <denis@compulab.co.il>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: linux-next: manual merge of the spi tree with the mfd tree
-Message-ID: <20110322110530.GC2351@sortiz-mobl>
-References: <20110318154017.e45aa888.sfr@canb.auug.org.au>
- <20110318051627.GE18545@angua.secretlab.ca>
+	id S1755197Ab1CVLGB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 07:06:01 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34967 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754235Ab1CVLF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 07:05:57 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 1/5] vmscan: remove all_unreclaimable check from direct reclaim path completely
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <20110322194721.B05E.A69D9226@jp.fujitsu.com>
+References: <20110315153801.3526.A69D9226@jp.fujitsu.com> <20110322194721.B05E.A69D9226@jp.fujitsu.com>
+Message-Id: <20110322200523.B061.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110318051627.GE18545@angua.secretlab.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 22 Mar 2011 20:05:55 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+all_unreclaimable check in direct reclaim has been introduced at 2.6.19
+by following commit.
 
-On Thu, Mar 17, 2011 at 11:16:27PM -0600, Grant Likely wrote:
-> On Fri, Mar 18, 2011 at 03:40:17PM +1100, Stephen Rothwell wrote:
-> > Hi Grant,
-> > 
-> > Today's linux-next merge of the spi tree got a conflict in
-> > drivers/gpio/Kconfig between commit 390ff13830e5 ("gpio: Add Tunnel Creek
-> > support to sch_gpio") from the mfd tree and commit 61ab3fe57e45 ("gpio;
-> > Make Intel chipset gpio drivers depend on x86") from the spi tree.
-> > 
-> > Just context changes.  I fixed it up (see below) and can carry the fix as
-> > necessary.  I am assuming that the Tunnel Creek stuff should also depend
-> > on X86?
-> 
-> It would appear so.  Thanks Stephen.
-I fixed the merge issue in my tree now, since Grant's GPIO bits are in it
-seems.
+	2006 Sep 25; commit 408d8544; oom: use unreclaimable info
 
+And it went through strange history. firstly, following commit broke
+the logic unintentionally.
 
-> BTW Samuel, looking at the commit message for 390ff13830e5:
-> 
-> commit 390ff13830e5bcc4f8585b396e3d15b1c04c0282
-> Author: Denis Turischev <denis@compulab.co.il>
-> Date:   Mon Mar 14 12:53:05 2011 +0200
-> [...]
->     Signed-off-by: Denis Turischev <denis@compulab.co.il>
->     Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-> 
-> My Acked-by seems to be missing from the commit log.
-This was a temporary commit pushed to my tree before getting your ACK. Commit
-10022449a9d0ff4deeae1b8fddae3e35d62b7958 should have it now.
+	2008 Apr 29; commit a41f24ea; page allocator: smarter retry of
+				      costly-order allocations
 
-Cheers,
-Samuel.
+Two years later, I've found obvious meaningless code fragment and
+restored original intention by following commit.
 
+	2010 Jun 04; commit bb21c7ce; vmscan: fix do_try_to_free_pages()
+				      return value when priority==0
+
+But, the logic didn't works when 32bit highmem system goes hibernation
+and Minchan slightly changed the algorithm and fixed it .
+
+	2010 Sep 22: commit d1908362: vmscan: check all_unreclaimable
+				      in direct reclaim path
+
+But, recently, Andrey Vagin found the new corner case. Look,
+
+	struct zone {
+	  ..
+	        int                     all_unreclaimable;
+	  ..
+	        unsigned long           pages_scanned;
+	  ..
+	}
+
+zone->all_unreclaimable and zone->pages_scanned are neigher atomic
+variables nor protected by lock. Therefore a zone can become a state
+of zone->page_scanned=0 and zone->all_unreclaimable=1. In this case,
+current all_unreclaimable() return false even though
+zone->all_unreclaimabe=1.
+
+Is this ignorable minor issue? No. Unfortunatelly, x86 has very
+small dma zone and it become zone->all_unreclamble=1 easily. and
+if it becase all_unreclaimable, it never return all_unreclaimable=0
+beucase it typicall don't have reclaimable pages.
+
+Eventually, oom-killer never works on such systems.  Let's remove
+this problematic logic completely.
+
+Reported-by: Andrey Vagin <avagin@openvz.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/vmscan.c |   36 +-----------------------------------
+ 1 files changed, 1 insertions(+), 35 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 060e4c1..254aada 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1989,33 +1989,6 @@ static bool zone_reclaimable(struct zone *zone)
+ }
+ 
+ /*
+- * As hibernation is going on, kswapd is freezed so that it can't mark
+- * the zone into all_unreclaimable. It can't handle OOM during hibernation.
+- * So let's check zone's unreclaimable in direct reclaim as well as kswapd.
+- */
+-static bool all_unreclaimable(struct zonelist *zonelist,
+-		struct scan_control *sc)
+-{
+-	struct zoneref *z;
+-	struct zone *zone;
+-	bool all_unreclaimable = true;
+-
+-	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+-			gfp_zone(sc->gfp_mask), sc->nodemask) {
+-		if (!populated_zone(zone))
+-			continue;
+-		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+-			continue;
+-		if (zone_reclaimable(zone)) {
+-			all_unreclaimable = false;
+-			break;
+-		}
+-	}
+-
+-	return all_unreclaimable;
+-}
+-
+-/*
+  * This is the main entry point to direct page reclaim.
+  *
+  * If a full scan of the inactive list fails to free enough memory then we
+@@ -2105,14 +2078,7 @@ out:
+ 	delayacct_freepages_end();
+ 	put_mems_allowed();
+ 
+-	if (sc->nr_reclaimed)
+-		return sc->nr_reclaimed;
+-
+-	/* top priority shrink_zones still had more to do? don't OOM, then */
+-	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
+-		return 1;
+-
+-	return 0;
++	return sc->nr_reclaimed;
+ }
+ 
+ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.6.5.2
+
+
+
