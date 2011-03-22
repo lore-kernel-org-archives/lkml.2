@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab1CVRDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 13:03:14 -0400
-Received: from ch-smtp04.sth.basefarm.net ([80.76.153.5]:33166 "EHLO
-	ch-smtp04.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752265Ab1CVRDM (ORCPT
+	id S1756370Ab1CVRGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 13:06:34 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:21436 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab1CVRGc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 13:03:12 -0400
-X-Greylist: delayed 500 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Mar 2011 13:03:11 EDT
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 22 Mar 2011 17:58:15 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] hid-multitouch: migrate 3M PCT touch screens to
- hid-multitouch
-Message-ID: <20110322165815.GA6706@polaris.bitmath.org>
-References: <AANLkTimFF3pgMMgOcEhYnRm5adgsCL5S6Hjkz+GFcpCT@mail.gmail.com>
- <1300811641-3327-1-git-send-email-benjamin.tissoires@enac.fr>
+	Tue, 22 Mar 2011 13:06:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=x9ygAgYF5i6yo4m5pW6p92yAJpOd5kxTgp1IKGqtdxqoGhljOOanJ1+7Hh+F/bbyUi
+         kKTdJmIas9+h4OHVpVkA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1300811641-3327-1-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1Q24qb-0007QO-FQ.
-X-Scan-Signature: ch-smtp04.sth.basefarm.net 1Q24qb-0007QO-FQ f54e172c1a3eab2e637d4450bb338d53
+In-Reply-To: <20110322073514.GB12940@tiehlicka.suse.cz>
+References: <20110318152532.GB18450@tiehlicka.suse.cz>
+	<20110321093419.GA26047@tiehlicka.suse.cz>
+	<AANLkTimkcYcZVifaq4pH4exkWUVNXpwXA=9oyeAn_EqR@mail.gmail.com>
+	<20110322073514.GB12940@tiehlicka.suse.cz>
+Date: Tue, 22 Mar 2011 10:06:27 -0700
+Message-ID: <AANLkTi=2t_tL=Vt4athAyQ1tDhLDGpqtmu-iAOjdbPBJ@mail.gmail.com>
+Subject: Re: cgroup: real meaning of memory.usage_in_bytes
+From: Ying Han <yinghan@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 05:34:01PM +0100, Benjamin Tissoires wrote:
-> This patch merges the hid-3m-pct driver into hid-multitouch.
-> To keep devices working the same way they used to with hid-3m-pct,
-> we need to add two signal/noise ratios for width and height.
-> We also need to work on width/height to send proper
-> ABS_MT_ORIENTATION flag.
-> 
-> Importing 3M into hid-multitouch also solved the bug in which
-> devices handling width and height in their report descriptors
-> did not show ABS_MT_TOUCH_MAJOR and ABS_MT_TOUCH_MINOR.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> Reviewed-by: Stéphane Chatty <chatty@enac.fr>
-> ---
-[...]
-> Henrik, do I still have your Reviewed-and-tested-by ?
+On Tue, Mar 22, 2011 at 12:35 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Mon 21-03-11 10:22:41, Ying Han wrote:
+> [...]
+>>
+>> Michal,
+>>
+>> Can you help to post the test result after applying the patch?
+>
+> The result of the LTP test is:
+> TEST 4: MEMORY CONTROLLER TESTING
+> RUNNING SETUP.....
+> WARN:/dev/memctl already exist..overwriting
+> Cleanup called
+> TEST STARTED: Please avoid using system while this test executes
+> memory usage from memory.usage_in_bytes= 62955520
+> memory usage from memory.stat= 62955520
+> TINFO   Memory Resource Controller: stat check test passes first run
+> Test continues to run the second step.
+> memory usage from memory.usage_in_bytes= 78643200
+> memory usage from memory.stat=78643200
+> TPASS   Memory Resource Controller: stat check test PASSED
+> Memory Resource Controller test executed successfully.
+> Cleanup called
+>
+> The attached simple test case result is:
+> # mkdir /dev/memctl; mount -t cgroup -omemory cgroup /dev/memctl; cd /dev/memctl
+> # mkdir group_1; cd group_1; echo 100M > memory.limit_in_bytes
+> # cat memory.{usage_in_bytes,stat}
+> 0
+> cache 0
+> rss 0
+> [start the test case, add its pid to the group and let it fault in]
+>
+> # cat memory.{usage_in_bytes,stat}
+> 4096
+> cache 0
+> rss 4096
+>
+> [let it finish]
+> # cat memory.{usage_in_bytes,stat}
+> 0
+> cache 0
+> rss 0
+>
+> Thanks
 
-Yep, looks good. One more thing, though:
+Thanks Michal for fixing it up. Regardless of the performance
+overhead, the change make sense to me.
 
-> @@ -332,11 +351,18 @@ static void mt_emit_event(struct mt_device *td, struct input_dev *input)
->  		input_mt_report_slot_state(input, MT_TOOL_FINGER,
->  			s->touch_state);
->  		if (s->touch_state) {
-> +			/* this finger is on the screen */
-> +			int wide = (s->w > s->h);
-> +			/* divided by two to match visual scale of touch */
-> +			int major = max(s->w, s->h) >> 1;
-> +			int minor = min(s->w, s->h) >> 1;
+--Ying
 
-This scaling is most likely not correct for all devices. I went
-through a set of devices some time ago, running mtview on all of them,
-visually inspecting the touch size. Some were low by a factor of two,
-some were high by a factor of two. A confirmation that the other
-devices supported by this driver seem right would be good. If not, a
-quirk should probably be added here.
-
-> +
->  			input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
->  			input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
-> +			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
->  			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
-> -			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, s->w);
-> -			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR, s->h);
-> +			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
-> +			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR, minor);
->  		}
->  		s->seen_in_this_frame = false;
-
-Thanks,
-Henrik
+> --
+> Michal Hocko
+> SUSE Labs
+> SUSE LINUX s.r.o.
+> Lihovarska 1060/12
+> 190 00 Praha 9
+> Czech Republic
+>
