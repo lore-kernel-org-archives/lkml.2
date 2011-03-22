@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092Ab1CVHwP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 03:52:15 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:36599 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386Ab1CVHwM (ORCPT
+	id S1755136Ab1CVHy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 03:54:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37899 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab1CVHy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 03:52:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=A0ijOQEul1WsZgnX4rq/pZu6LMrhQ7fdJzjLpVgpUEH9ew4+SXIQAyH0lJZAVus5TK
-         rQ65e9Oq3mgO9Mhmgicx8achwuYgRuWq2w42e8OU8UFhgLS8Ak4SXyP0oBa32M7oHC/7
-         OBiuo49JhuBkKHuYQQXK9q53l/W9HbaDBstl8=
+	Tue, 22 Mar 2011 03:54:26 -0400
+Message-ID: <4D8855AD.8040804@infradead.org>
+Date: Tue, 22 Mar 2011 04:54:21 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimjmdi8sFTTjSPerOVgHQ+pjjwwMvCUX3AJ16At@mail.gmail.com>
-References: <AANLkTimjmdi8sFTTjSPerOVgHQ+pjjwwMvCUX3AJ16At@mail.gmail.com>
-Date: Tue, 22 Mar 2011 08:52:12 +0100
-Message-ID: <AANLkTimxrdhhukoVP76c4PUzeWsKOEy-_bHOgCCFabxc@mail.gmail.com>
-Subject: [bisect] kernel 2.6.38 regression with root nfs mounting
-From: Belisko Marek <marek.belisko@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+References: <20110322121409.f4bb8a4e.sfr@canb.auug.org.au>
+In-Reply-To: <20110322121409.f4bb8a4e.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: also lkml
+Em 21-03-2011 22:14, Stephen Rothwell escreveu:
+> Hi Mauro,
+> 
+> After merging the v4l-dvb tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/media/media-devnode.c:40:28: error: linux/smp_lock.h: No such file or directory
 
-After update from 2.6.38-rc8 to 2.6.38 is mounting rootfs over nfs not possible.
-Log:
-VFS: Mounted root (nfs filesystem) on device 0:14.
-Freeing init memory: 132K
-nfs: server 10.146.1.21 not responding, still trying
-nfs: server 10.146.1.21 not responding, still trying
+It got removed by this commit: 4ba8216cd90560bc402f52076f64d8546e8aefcb.
 
-This is never ending. I make short bisect (not too much commits
-between versions)
-and bad commit was reported: 53d4737580535e073963b91ce87d4216e434fab5
+There's no reason for the header to be there at media-devnode.c, as it doesn't use
+BKL.
 
-NFS: NFSROOT should default to "proto=udp"
+> 
+> Caused by commit cb3c186e31be ("[media] media: Media device node
+> support").  The BKL is no more ...
+> 
+> Why is a patch with Author date 2009-12-09 turning up in linux-next today?
 
-I've tested on mini2440 board (DM9000, static IP).
-Is there some missing option or something else to be checked?
+Because the Media Controller stuff is under development since 2008, but it took a long
+time to be mature enough to be merged.
 
-Regards,
+> 
+> I have used the v4l-dvb tree from next-20110321 for today.
+> 
 
-marek
+The fix patch is as simple as the enclosed one. I'm folding it together with the
+original changeset (cb3c186e31be), in order to avoid bisect issues.
 
---
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+Thanks!
+Mauro
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+-
+
+commit 1941c46894a60f4c5365fdcce9258f86d3691ae3
+Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date:   Tue Mar 22 04:43:47 2011 -0300
+
+    [media] media-devnode: Don't include linux/smp_lock.h
+    
+    drivers/media/media-devnode.c:40:28: error: linux/smp_lock.h: No such file or directory
+    
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/media-devnode.c b/drivers/media/media-devnode.c
+index 5509984..af5263c 100644
+--- a/drivers/media/media-devnode.c
++++ b/drivers/media/media-devnode.c
+@@ -37,7 +37,6 @@
+ #include <linux/kmod.h>
+ #include <linux/slab.h>
+ #include <linux/mm.h>
+-#include <linux/smp_lock.h>
+ #include <linux/string.h>
+ #include <linux/types.h>
+ #include <linux/uaccess.h>
