@@ -1,116 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1CVLeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 07:34:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58152 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220Ab1CVLel (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 07:34:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=NCUgLtpoP3KRP12mTGLcqX5tYugG56l95qGG85u5u52mXUz+9R1PvEH0xksBXCy8G4
-         Pit6WHnlGKeJHADm94xhSv+prO2dP+aspt7y2BWeEcLHED7cqar4gcH/upOcSfLKdLc7
-         Ld9dL9WkmU1i4OBxMzTTzK20IKGvMqX6h8M1Y=
-Date: Tue, 22 Mar 2011 12:34:35 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Toby Gray <toby.gray@realvnc.com>, Oliver Neukum <oliver@neukum.name>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+	id S1755637Ab1CVLiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 07:38:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60157 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753809Ab1CVLiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 07:38:10 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: netdev@vger.kernel.org
+Cc: WANG Cong <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Changli Gao <xiaosuo@gmail.com>,
+        Tom Herbert <therbert@google.com>, Jesse Gross <jesse@nicira.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] USB: cdc-acm: Prevent data loss when filling tty
- buffer.
-Message-ID: <20110322113435.GC21027@localhost>
-References: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com>
- <1300730698-17099-1-git-send-email-toby.gray@realvnc.com>
- <20110322100526.GB21343@localhost>
- <20110322103534.2284099e@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110322103534.2284099e@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Subject: 
+Date: Tue, 22 Mar 2011 19:56:11 +0800
+Message-Id: <1300794973-24581-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 10:35:34AM +0000, Alan Cox wrote:
-> > re-submitted. So the only way this will work is if it can be guaranteed
-> > that the line discipline will throttle and later unthrottle us. I
-> > doubt that is the case, but perhaps Alan can give a more definite
-> > answer?
-> 
-> If an ldisc throttles it should always later unthrottle. However flow
-> control is async so at high enough data rates it'll be too slow.
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-So my suspicion that no guarantees can be made that ldisc will _eventually_
-throttle us, is correct?
+---
+ net/core/dev.c |   54 ------------------------------------------------------
+ 1 files changed, 0 insertions(+), 54 deletions(-)
 
-The patch would introduce its parallel throttling scheme (through not
-rescheduling the tasklet), and will only work if a throttle request is
-guaranteed to eventually arrive:
-
-	16 x read_urb_bulk 
-	 - queues up 16 urbs and buffers
-
-	rx_tasklet
-	 - attempt to push 16 buffers -- one is only partially pushed,
-	   e.g.  64k of tty buffers full (or out of mem?)
-	 - returns without resubmitting any urb or rescheduling tasklet
-		
-	Q: will ldisc always throttle us as the 64K worth of data is
-	   later propagated to ldisc?
-
-	A: Yes -- ldisc will throttle and later unthrottle, thereby
-	          rescheduling tasklet which resumes reading.
-
-	   No -- read will lock up
-
-> > I would also prefer a more generic solution to the problem so that we
-> > don't need to re-introduce driver buffering again. Since we already have
-> > the throttelling mechanism in place, if we could only be notified/find
-> > out that the tty buffers are say half-full, we could throttle (from
-> 
-> The tty layer actually knows this fact
-> 
-> > within the driver) but still push the remaining buffer still on the wire
-> > as they arrive. It would of course require a guarantee that such a
-> > throttle-is-about-to-happen notification is actually followed by (a
-> > throttle and) unthrottle. Thoughts on that?
-> 
-> tty throttling is at the ldisc layer, the tty buffers are below this. The
-> space left being 64K - tty->buf.memory_used
-> 
-> So you can certainly add the following routine
-> 
-> int tty_constipated(struct tty *t)
-> {
-> 	if (tty->buf.memory_used > 49152)
-> 		return 1;
-> 	return 0;
-> }
-> EXPORT_SYMBOL_GPL(tty_constipated);
-> 
-> to drivers/tty/tty_buffer.c
-> 
-> The wakeup side is a bit trickier.
-> 
-> The down side of this of course is that you are likely to run at below
-> peak performance as you'll keep throttling back the hardware, whereas if
-> you have a tickless kernel with HZ set to 1000 it's probably sufficient
-> to bump the buffer sizes.
-> 
-> Right now (see tty_buffer.c) it's simply set to 64K as a sanity check
-> against throttled devices not stopping, but there isn't actually any
-> reason it couldn't be configurable at port setup time.
-
-So you suggest increasing the tty buffering instead of solving the wake
-up problem? Would this really be sufficient, though? What if a driver
-pushes and resubmits from interrupt context and with sufficiently many
-bulk urbs on the wire at high speeds manage to starve the tty work
-queue so nothing gets flushed to the ldisc? Or this cannot happen?
-
-Thanks,
-Johan
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 0b88eba..2c2f243 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1140,9 +1140,6 @@ static int __dev_open(struct net_device *dev)
+ 
+ 	ASSERT_RTNL();
+ 
+-	/*
+-	 *	Is it even present?
+-	 */
+ 	if (!netif_device_present(dev))
+ 		return -ENODEV;
+ 
+@@ -1151,9 +1148,6 @@ static int __dev_open(struct net_device *dev)
+ 	if (ret)
+ 		return ret;
+ 
+-	/*
+-	 *	Call device private open method
+-	 */
+ 	set_bit(__LINK_STATE_START, &dev->state);
+ 
+ 	if (ops->ndo_validate_addr)
+@@ -1162,31 +1156,12 @@ static int __dev_open(struct net_device *dev)
+ 	if (!ret && ops->ndo_open)
+ 		ret = ops->ndo_open(dev);
+ 
+-	/*
+-	 *	If it went open OK then:
+-	 */
+-
+ 	if (ret)
+ 		clear_bit(__LINK_STATE_START, &dev->state);
+ 	else {
+-		/*
+-		 *	Set the flags.
+-		 */
+ 		dev->flags |= IFF_UP;
+-
+-		/*
+-		 *	Enable NET_DMA
+-		 */
+ 		net_dmaengine_get();
+-
+-		/*
+-		 *	Initialize multicasting status
+-		 */
+ 		dev_set_rx_mode(dev);
+-
+-		/*
+-		 *	Wakeup transmit queue engine
+-		 */
+ 		dev_activate(dev);
+ 	}
+ 
+@@ -1209,22 +1184,13 @@ int dev_open(struct net_device *dev)
+ {
+ 	int ret;
+ 
+-	/*
+-	 *	Is it already up?
+-	 */
+ 	if (dev->flags & IFF_UP)
+ 		return 0;
+ 
+-	/*
+-	 *	Open device
+-	 */
+ 	ret = __dev_open(dev);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	/*
+-	 *	... and announce new interface.
+-	 */
+ 	rtmsg_ifinfo(RTM_NEWLINK, dev, IFF_UP|IFF_RUNNING);
+ 	call_netdevice_notifiers(NETDEV_UP, dev);
+ 
+@@ -1240,10 +1206,6 @@ static int __dev_close_many(struct list_head *head)
+ 	might_sleep();
+ 
+ 	list_for_each_entry(dev, head, unreg_list) {
+-		/*
+-		 *	Tell people we are going down, so that they can
+-		 *	prepare to death, when device is still operating.
+-		 */
+ 		call_netdevice_notifiers(NETDEV_GOING_DOWN, dev);
+ 
+ 		clear_bit(__LINK_STATE_START, &dev->state);
+@@ -1272,15 +1234,7 @@ static int __dev_close_many(struct list_head *head)
+ 		if (ops->ndo_stop)
+ 			ops->ndo_stop(dev);
+ 
+-		/*
+-		 *	Device is now down.
+-		 */
+-
+ 		dev->flags &= ~IFF_UP;
+-
+-		/*
+-		 *	Shutdown NET_DMA
+-		 */
+ 		net_dmaengine_put();
+ 	}
+ 
+@@ -1309,9 +1263,6 @@ static int dev_close_many(struct list_head *head)
+ 
+ 	__dev_close_many(head);
+ 
+-	/*
+-	 * Tell people we are down
+-	 */
+ 	list_for_each_entry(dev, head, unreg_list) {
+ 		rtmsg_ifinfo(RTM_NEWLINK, dev, IFF_UP|IFF_RUNNING);
+ 		call_netdevice_notifiers(NETDEV_DOWN, dev);
+@@ -1368,11 +1319,6 @@ EXPORT_SYMBOL(dev_disable_lro);
+ 
+ static int dev_boot_phase = 1;
+ 
+-/*
+- *	Device change register/unregister. These are not inline or static
+- *	as we export them to the world.
+- */
+-
+ /**
+  *	register_netdevice_notifier - register a network notifier block
+  *	@nb: notifier
