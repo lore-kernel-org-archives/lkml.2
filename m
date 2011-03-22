@@ -1,100 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab1CVKFe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 06:05:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46941 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab1CVKFb (ORCPT
+	id S1754015Ab1CVKHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 06:07:07 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39126 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab1CVKHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 06:05:31 -0400
+	Tue, 22 Mar 2011 06:07:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UG6LnN/1EZTB9XINUFHpAt39ziuA5z6ntQvEjv5S6xbvDm8kYkoIX2CkMasjg/0xO2
-         5eEmh0xOYix9MIICQkxJjY6DQqePyqo5zdDq6D8syMhoSGj0uU8B7st1S9OabaagRkni
-         DtZvbZBG6F1FVrISKZOHluu7xmK4EiK/9GAHI=
-Date: Tue, 22 Mar 2011 11:05:26 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Toby Gray <toby.gray@realvnc.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] USB: cdc-acm: Prevent data loss when filling tty
- buffer.
-Message-ID: <20110322100526.GB21343@localhost>
-References: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com>
- <1300730698-17099-1-git-send-email-toby.gray@realvnc.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300730698-17099-1-git-send-email-toby.gray@realvnc.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=N5adKt0RR8k0kXlr0TizhKgFLHfrPolDW7m8qrZxjrsJDikinYyLGuY5/TzUVqzkpg
+         X8T5T700t3zQzs/y3mw8uLcdjT/SzIXoh2QZ90a/K4k/4Kkh6QpRSzK0s9evtykWhjRU
+         t5KnoXWmru4Yu3+sWnDqCbxnVRTfvXT4msaOw=
+Subject: Re: [PATCH 3/3] memcg: move page-freeing code outside of lock
+From: Namhyung Kim <namhyung@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110322135619.90593f5d.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1300452855-10194-1-git-send-email-namhyung@gmail.com>
+	 <1300452855-10194-3-git-send-email-namhyung@gmail.com>
+	 <20110322085938.0691f7f4.kamezawa.hiroyu@jp.fujitsu.com>
+	 <1300763079.1483.21.camel@leonhard>
+	 <20110322135619.90593f5d.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Mar 2011 19:06:57 +0900
+Message-ID: <1300788417.1492.2.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 06:04:58PM +0000, Toby Gray wrote:
-> When sending large quantities of data through a CDC ACM channel it is possible
-> for data to be lost when attempting to copy the data to the tty buffer. This
-> occurs due to the return value from tty_insert_flip_string not being checked.
+2011-03-22 (화), 13:56 +0900, KAMEZAWA Hiroyuki:
+> On Tue, 22 Mar 2011 12:04:39 +0900
+> Namhyung Kim <namhyung@gmail.com> wrote:
 > 
-> This patch adds checking for how many bytes have been inserted into the tty
-> buffer and returns any remaining bytes back to the filled read buffer list.
+> > 2011-03-22 (화), 08:59 +0900, KAMEZAWA Hiroyuki:
+> > > On Fri, 18 Mar 2011 21:54:15 +0900
+> > > Namhyung Kim <namhyung@gmail.com> wrote:
+> > > 
+> > > > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> > > > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > 
+> > > What is the benefit of this patch ?
+> > > 
+> > > -Kame
+> > > 
+> > 
+> > Oh, I just thought generally it'd better call such a (potentially)
+> > costly function outside of locks and it could reduce few of theoretical
+> > contentions between swapons and/or offs. If it doesn't help any
+> > realistic cases I don't mind discarding it.
+> > 
+> 
+> My point is, please write patch description which shows for what this patc is.
+> All cleanup are okay to me if it reasonable. But without patch description as
+> "this is just a cleanup, no functional change, and the reason is...."
+> we cannot maintain patches.
+> 
+> Thanks,
+> -Kame
+> 
 
-[...]
+OK, I will do that in the future. Anyway, do you want me to resend the
+patch with new description?
 
-> @@ -392,6 +393,7 @@ static void acm_rx_tasklet(unsigned long _acm)
+Thanks.
 
-[...]
 
-> -	spin_lock_irqsave(&acm->read_lock, flags);
-> -	list_add(&buf->list, &acm->spare_read_bufs);
-> -	spin_unlock_irqrestore(&acm->read_lock, flags);
-> +	buf->head += copied;
-> +	buf->size -= copied;
-> +
-> +	if (buf->size == 0) {
-> +		spin_lock_irqsave(&acm->read_lock, flags);
-> +		list_add(&buf->list, &acm->spare_read_bufs);
-> +		spin_unlock_irqrestore(&acm->read_lock, flags);
-> +	} else {
-> +		tty_kref_put(tty);
-> +		dbg("Partial buffer fill");
-> +		spin_lock_irqsave(&acm->read_lock, flags);
-> +		list_add(&buf->list, &acm->filled_read_bufs);
-> +		spin_unlock_irqrestore(&acm->read_lock, flags);
-> +		return;
-> +	}
-> +
+-- 
+Regards,
+Namhyung Kim
 
-Say you fill up the tty buffer using the last of the sixteen buffers and
-return in the else clause above, how will the tasklet ever get
-re-scheduled?
 
-The problem is that the tasklet is only scheduled on urb completion and
-unthrottle (after open), and if you return above no urb will get
-re-submitted. So the only way this will work is if it can be guaranteed
-that the line discipline will throttle and later unthrottle us. I
-doubt that is the case, but perhaps Alan can give a more definite
-answer?
-
-[By the way, did you see Filippe Balbi's patch posted today claiming to
-fix a bug in n_tty which could cause data loss at high speeds?]
-
-I was just about to submit a patch series killing the rx tasklet and
-heavily simplifying the cdc-acm driver when you posted last night. I
-think that if this mechanism is needed it is more straight-forwardly
-implemented on top of those as they removes a lot of complexity and
-makes it easier to spot corner cases such as the one pointed out above.
-
-I would also prefer a more generic solution to the problem so that we
-don't need to re-introduce driver buffering again. Since we already have
-the throttelling mechanism in place, if we could only be notified/find
-out that the tty buffers are say half-full, we could throttle (from
-within the driver) but still push the remaining buffer still on the wire
-as they arrive. It would of course require a guarantee that such a
-throttle-is-about-to-happen notification is actually followed by (a
-throttle and) unthrottle. Thoughts on that?
-
-Thanks,
-Johan
