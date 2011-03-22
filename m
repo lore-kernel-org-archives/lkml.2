@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab1CVE21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 00:28:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51608 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab1CVE2Z convert rfc822-to-8bit (ORCPT
+	id S1752688Ab1CVEa3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 00:30:29 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:39400 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750820Ab1CVEaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 00:28:25 -0400
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] First round of SCSI updates for 2.6.38 merge window
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1300392635.17266.5.camel@mulgrave.site>
-	<AANLkTinvwKzYiy5M=Eoae_ViRQwVBF-TgedKspP0qagE@mail.gmail.com>
-Date: Tue, 22 Mar 2011 00:27:42 -0400
-In-Reply-To: <AANLkTinvwKzYiy5M=Eoae_ViRQwVBF-TgedKspP0qagE@mail.gmail.com>
-	(Geert Uytterhoeven's message of "Sat, 19 Mar 2011 21:00:50 +0100")
-Message-ID: <yq1fwqfu6dd.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110013 (No Gnus v0.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt357.oracle.com [141.146.40.157]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4D882543.006F,ss=1,fgs=0
+	Tue, 22 Mar 2011 00:30:24 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-Identified-User;
+	b=pQ8bJrJaFbG5xkv7UeNCZtCRr/KA8gXdVtRCLWT8VcgnPHsCfRrFEuUf4qJxHPZGvIV6HPxqKVtRBqkyHCKkxYejyCkp/Iw5HWIKx1LgydQ6z/ZijBnUaDzHpiNNnBta;
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] usb_wwan: fix build error in play_delayed.
+Date: Tue, 22 Mar 2011 12:29:22 +0800
+Message-Id: <1300768162-18394-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.1
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Geert" == Geert Uytterhoeven <geert@linux-m68k.org> writes:
+From: Tao Ma <boyu.mt@taobao.com>
 
-Geert> drivers/scsi/sd.c: In function ‘sd_prep_fn’:
-Geert> drivers/scsi/sd.c:544: warning: ‘ret’ may be used uninitialized
-Geert> in this function
+There is a build error in today's linus tree.
+drivers/usb/serial/usb_wwan.c: In function ‘play_delayed’:
+drivers/usb/serial/usb_wwan.c:702: error: ‘struct dev_pm_info’ has no member named ‘usage_count’
+The reason is that usage_count is wrapped with macro CONFIG_PM_RUNTIME
+now in dev_pm_info.
 
-Sorry about that.
+So use the corresponding pm_runtime_get_noresume instead.
 
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ drivers/usb/serial/usb_wwan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-sd: Fail discard requests when logical block provisioning has been disabled
+diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+index a65ddd5..5858ce4 100644
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -699,7 +699,7 @@ static void play_delayed(struct usb_serial_port *port)
+ 			do {
+ 				unbusy_queued_urb(urb, portdata);
+ 				//extremely dirty
+-				atomic_dec(&port->serial->interface->dev.power.usage_count);
++				pm_runtime_get_noresume(&port->serial->interface->dev);
+ 			} while ((urb = usb_get_from_anchor(&portdata->delayed)));
+ 			break;
+ 		}
+-- 
+1.6.3.GIT
 
-Ensure that we kill discard requests after logical block provisioning
-has been disabled in sysfs.
-
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 3be5db5..7ff61d7 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -597,6 +597,7 @@ static int scsi_setup_discard_cmnd(struct scsi_device *sdp, struct request *rq)
- 		break;
- 
- 	default:
-+		ret = BLKPREP_KILL;
- 		goto out;
- 	}
- 
