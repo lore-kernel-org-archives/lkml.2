@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab1CVUzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 16:55:38 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:43413 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755416Ab1CVUzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 16:55:35 -0400
-X-ASG-Debug-ID: 1300827333-01de284cf8a7630001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D890CC1.7070602@fusionio.com>
-Date: Tue, 22 Mar 2011 21:55:29 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S932262Ab1CVU6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 16:58:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39929 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932124Ab1CVU6a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 16:58:30 -0400
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Lina Lu <lulina_nuaa@foxmail.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] blk-throttle: Reset group slice when limits are changed
-References: <20110315175456.GC2587@redhat.com> <20110322203319.GL3757@redhat.com>
-X-ASG-Orig-Subj: Re: [PATCH] blk-throttle: Reset group slice when limits are changed
-In-Reply-To: <20110322203319.GL3757@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1300827333
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58670
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <1300782452-528-1-git-send-email-hs@denx.de>
+References: <1291451028-22532-1-git-send-email-hs@denx.de> <1300782452-528-1-git-send-email-hs@denx.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 22 Mar 2011 14:58:09 -0600
+X-Google-Sender-Auth: J6m0IQZNcaYo_rNyUgIwzb3sDq4
+Message-ID: <AANLkTi=Da06s2WeA0+9fshBV2ME-ADHPBWxZ5iL6rM_T@mail.gmail.com>
+Subject: Re: [PATCH v6 0/6] powerpc, 52xx: add charon board support
+To: Heiko Schocher <hs@denx.de>
+Cc: linuxppc-dev@lists.ozlabs.org, Wolfram Sang <w.sang@pengutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-fbdev@vger.kernel.org, devicetree-discuss@ozlabs.org,
+        Ben Dooks <ben@simtec.co.uk>, Vincent Sanders <vince@simtec.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, Wolfgang Denk <wd@denx.de>,
+        Paul Mundt <lethal@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-22 21:33, Vivek Goyal wrote:
-> On Tue, Mar 15, 2011 at 01:54:56PM -0400, Vivek Goyal wrote:
->> Lina reported that if throttle limits are initially very high and then
->> dropped, then no new bio might be dispatched for a long time. And the
->> reason being that after dropping the limits we don't reset the existing
->> slice and do the rate calculation with new low rate and account the bios
->> dispatched at high rate. To fix it, reset the slice upon rate change.
-> 
-> Hi Jens,
-> 
-> Can you please apply this patch too.
+On Tue, Mar 22, 2011 at 2:27 AM, Heiko Schocher <hs@denx.de> wrote:
+> cc: Wolfram Sang <w.sang@pengutronix.de>
+> cc: Grant Likely <grant.likely@secretlab.ca>
+> cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> cc: linux-fbdev@vger.kernel.org
+> cc: devicetree-discuss@ozlabs.org
+> cc: Ben Dooks <ben@simtec.co.uk>
+> cc: Vincent Sanders <vince@simtec.co.uk>
+> cc: Samuel Ortiz <sameo@linux.intel.com>
+> cc: linux-kernel@vger.kernel.org
+> cc: Randy Dunlap <rdunlap@xenotime.net>
+> cc: Wolfgang Denk <wd@denx.de>
+> cc: Paul Mundt <lethal@linux-sh.org>
+>
+> changes since v5:
+> - repost complete patchseries, as Paul Mundt suggested
+> - rebased against current head
+> - add Acked-by from Samuel Ortiz (MFD parts)
+>  http://www.spinics.net/lists/linux-fbdev/msg02550.html
+>  http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
+>
+>  and Benjamin Herrenschmidt (DTS parts)
+>  http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
+> - removed patch
+>  "powerpc, mpc5200: update mpc5200_defconfig to fit for charon board."
+>  therefore added
+>  "powerpc, tqm5200: update tqm5200_defconfig to fit for charon board."
 
-Yep, applied. Thanks for the reminder :-)
+Why?  As Wolfram mentioned, I'd rather see mpc5200 defconfig used.
+Eventually I'd like to remove tqm5200_defconfig
 
--- 
-Jens Axboe
+I'll look through the rest of the patches soon.
 
+g.
