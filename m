@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762Ab1CVKz3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 06:55:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:55878 "EHLO mga02.intel.com"
+	id S1754711Ab1CVKzu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 06:55:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37862 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751855Ab1CVKzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 06:55:23 -0400
+	id S1753283Ab1CVKzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 06:55:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,224,1299484800"; 
-   d="scan'208";a="722820011"
+   d="scan'208";a="722820023"
 From: Oren Weil <oren.jer.weil@intel.com>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, david@woodhou.se,
         Oren Weil <oren.jer.weil@intel.com>
-Subject: [PATCH 5/7] char/mei: Hardware and MEI driver internal struct definition
-Date: Tue, 22 Mar 2011 12:51:30 +0200
-Message-Id: <1300791092-14319-6-git-send-email-oren.jer.weil@intel.com>
+Subject: [PATCH 6/7] char/mei: Header file contain the Userland API, (IOCTL and its struct)
+Date: Tue, 22 Mar 2011 12:51:31 +0200
+Message-Id: <1300791092-14319-7-git-send-email-oren.jer.weil@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com>
 References: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com>
@@ -25,534 +25,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-define the MEI protocol msg structs and
-HW registers, also define the MEI internal status and struct
-
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Itzhak Tzeel-Krupp <itzhak.tzeel-krupp@intel.com>
 Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
 ---
- drivers/char/mei/hw.h |  511 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 511 insertions(+), 0 deletions(-)
- create mode 100644 drivers/char/mei/hw.h
+ include/linux/mei.h |  109 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 109 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/mei.h
 
-diff --git a/drivers/char/mei/hw.h b/drivers/char/mei/hw.h
+diff --git a/include/linux/mei.h b/include/linux/mei.h
 new file mode 100644
-index 0000000..4d99bfc
+index 0000000..1ac6a41
 --- /dev/null
-+++ b/drivers/char/mei/hw.h
-@@ -0,0 +1,511 @@
++++ b/include/linux/mei.h
+@@ -0,0 +1,109 @@
 +/*
-+ *
-+ * Intel Management Engine Interface (Intel MEI) Linux driver
-+ * Copyright (c) 2003-2011, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
 +
-+#ifndef _MEI_DATA_STRUCTURES_H_
-+#define _MEI_DATA_STRUCTURES_H_
++  Intel Management Engine Interface (Intel MEI) Linux driver
++  Intel MEI Interface Header
 +
-+#include <linux/io.h>
-+#include <linux/wait.h>
++  This file is provided under a dual BSD/GPLv2 license.  When using or
++  redistributing this file, you may do so under either license.
++
++  GPL LICENSE SUMMARY
++
++  Copyright(c) 2003-2011 Intel Corporation. All rights reserved.
++
++  This program is free software; you can redistribute it and/or modify
++  it under the terms of version 2 of the GNU General Public License as
++  published by the Free Software Foundation.
++
++  This program is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++  General Public License for more details.
++
++  Contact Information:
++	  Intel Corporation.
++	  linux-mei@linux.intel.com
++	  http://www.intel.com
++
++
++  BSD LICENSE
++
++  Copyright(c) 2003-2011 Intel Corporation. All rights reserved.
++  All rights reserved.
++
++  Redistribution and use in source and binary forms, with or without
++  modification, are permitted provided that the following conditions
++  are met:
++
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++
++#ifndef _LINUX_MEI_H
++#define _LINUX_MEI_H
++
 +#include <linux/uuid.h>
 +
-+#define MEI_FC_MESSAGE_RESERVED_LENGTH           5
++/*
++ *
++ * This IOCTL is use to associate the current file descriptor with a
++ * FW Client (given by UUID). Before this IOCTL is invoked the
++ * "communication channel" (file descriptor) between Host client and
++ * FW client is not valid. Only after invoking this IOCTL a "connection" is
++ * establish to the FW client. From this point every read and write will
++ * communicate with the FW client that was associated.
++ * Only in close() (file_operation release()) the communication between
++ * the clients is disconnected.
++ *
++ * The IOCTL argument is a struct with a union the contain the input parameter
++ * and out parameter for this IOCTL.
++ *
++ * The input parameter is UUID for the FW Client.
++ * The output parameter is the FW client properties that we just connected
++ * (FW Protocol Version and Max Message Size).
++ *
++ */
++#define IOCTL_MEI_CONNECT_CLIENT \
++	_IOWR('H' , 0x01, struct mei_connect_client_data)
 +
 +/*
-+ * Number of queue lists used by this driver
++ * Intel MEI client information struct
 + */
-+#define MEI_IO_LISTS_NUMBER        7
-+
-+#define MEI_CLIENTS_MAX 255
-+
-+/*
-+ * MEI HW Section
-+ */
-+
-+/* MEI registers */
-+/* H_CB_WW - Host Circular Buffer (CB) Write Window register */
-+#define H_CB_WW    0
-+/* H_CSR - Host Control Status register */
-+#define H_CSR      4
-+/* ME_CB_RW - ME Circular Buffer Read Window register (read only) */
-+#define ME_CB_RW   8
-+/* ME_CSR_HA - ME Control Status Host Access register (read only) */
-+#define ME_CSR_HA  0xC
-+
-+
-+/* register bits of H_CSR (Host Control Status register) */
-+/* Host Circular Buffer Depth - maximum number of 32-bit entries in CB */
-+#define H_CBD             0xFF000000
-+/* Host Circular Buffer Write Pointer */
-+#define H_CBWP            0x00FF0000
-+/* Host Circular Buffer Read Pointer */
-+#define H_CBRP            0x0000FF00
-+/* Host Reset */
-+#define H_RST             0x00000010
-+/* Host Ready */
-+#define H_RDY             0x00000008
-+/* Host Interrupt Generate */
-+#define H_IG              0x00000004
-+/* Host Interrupt Status */
-+#define H_IS              0x00000002
-+/* Host Interrupt Enable */
-+#define H_IE              0x00000001
-+
-+
-+/* register bits of ME_CSR_HA (ME Control Status Host Access register) */
-+/* ME CB (Circular Buffer) Depth HRA (Host Read Access) - host read only
-+access to ME_CBD */
-+#define ME_CBD_HRA        0xFF000000
-+/* ME CB Write Pointer HRA - host read only access to ME_CBWP */
-+#define ME_CBWP_HRA       0x00FF0000
-+/* ME CB Read Pointer HRA - host read only access to ME_CBRP */
-+#define ME_CBRP_HRA       0x0000FF00
-+/* ME Reset HRA - host read only access to ME_RST */
-+#define ME_RST_HRA        0x00000010
-+/* ME Ready HRA - host read only access to ME_RDY */
-+#define ME_RDY_HRA        0x00000008
-+/* ME Interrupt Generate HRA - host read only access to ME_IG */
-+#define ME_IG_HRA         0x00000004
-+/* ME Interrupt Status HRA - host read only access to ME_IS */
-+#define ME_IS_HRA         0x00000002
-+/* ME Interrupt Enable HRA - host read only access to ME_IE */
-+#define ME_IE_HRA         0x00000001
-+
-+#define MEI_MINORS_BASE	1
-+#define MEI_MINORS_COUNT	1
-+
-+#define  MEI_MINOR_NUMBER	1
-+#define  MEI_MAX_OPEN_HANDLE_COUNT	253
-+
-+/*
-+ * time to wait for MEI to become ready after init
-+ */
-+#define MEI_INTEROP_TIMEOUT    (HZ * 7)
-+
-+/*
-+ * watch dog definition
-+ */
-+#define MEI_WATCHDOG_DATA_SIZE         16
-+#define MEI_START_WD_DATA_SIZE         20
-+#define MEI_WD_PARAMS_SIZE             4
-+#define MEI_WD_STATE_INDEPENDENCE_MSG_SENT       (1 << 0)
-+
-+#define MEI_WD_HOST_CLIENT_ID          1
-+#define MEI_IAMTHIF_HOST_CLIENT_ID     2
-+
-+
-+/* File state */
-+enum file_state {
-+	MEI_FILE_INITIALIZING = 0,
-+	MEI_FILE_CONNECTING,
-+	MEI_FILE_CONNECTED,
-+	MEI_FILE_DISCONNECTING,
-+	MEI_FILE_DISCONNECTED
-+};
-+
-+/* MEI device states */
-+enum mei_states {
-+	MEI_INITIALIZING = 0,
-+	MEI_INIT_CLIENTS,
-+	MEI_ENABLED,
-+	MEI_RESETING,
-+	MEI_DISABLED,
-+	MEI_RECOVERING_FROM_RESET,
-+	MEI_POWER_DOWN,
-+	MEI_POWER_UP
-+};
-+
-+/* init clients  states*/
-+enum mei_init_clients_states {
-+	MEI_START_MESSAGE = 0,
-+	MEI_ENUM_CLIENTS_MESSAGE,
-+	MEI_CLIENT_PROPERTIES_MESSAGE
-+};
-+
-+enum iamthif_states {
-+	MEI_IAMTHIF_IDLE,
-+	MEI_IAMTHIF_WRITING,
-+	MEI_IAMTHIF_FLOW_CONTROL,
-+	MEI_IAMTHIF_READING,
-+	MEI_IAMTHIF_READ_COMPLETE
-+};
-+
-+enum mei_file_transaction_states {
-+	MEI_IDLE,
-+	MEI_WRITING,
-+	MEI_WRITE_COMPLETE,
-+	MEI_FLOW_CONTROL,
-+	MEI_READING,
-+	MEI_READ_COMPLETE
-+};
-+
-+/* MEI CB */
-+enum mei_cb_major_types {
-+	MEI_READ = 0,
-+	MEI_WRITE,
-+	MEI_IOCTL,
-+	MEI_OPEN,
-+	MEI_CLOSE
-+};
-+
-+/*
-+ * Intel MEI user data struct
-+ */
-+struct mei_message_data {
-+	u32 size;
-+	char *data;
-+} __packed;
-+
-+
-+
-+#define MEI_CONNECT_TIMEOUT	3	/* at least 2 seconds */
-+#define IAMTHIF_STALL_TIMER	12	/* seconds */
-+#define IAMTHIF_READ_TIMER	10000	/* ms */
-+
-+struct mei_cb_private {
-+	struct list_head cb_list;
-+	enum mei_cb_major_types major_file_operations;
-+	void *file_private;
-+	struct mei_message_data request_buffer;
-+	struct mei_message_data response_buffer;
-+	unsigned long information;
-+	unsigned long read_time;
-+	struct file *file_object;
-+};
-+
-+/* Private file struct */
-+struct mei_file_private {
-+	struct list_head link;
-+	struct file *file;
-+	enum file_state state;
-+	wait_queue_head_t tx_wait;
-+	wait_queue_head_t rx_wait;
-+	wait_queue_head_t wait;
-+	int read_pending;
-+	int status;
-+	/* ID of client connected */
-+	u8 host_client_id;
-+	u8 me_client_id;
-+	u8 mei_flow_ctrl_creds;
-+	u8 timer_count;
-+	enum mei_file_transaction_states reading_state;
-+	enum mei_file_transaction_states writing_state;
-+	int sm_state;
-+	struct mei_cb_private *read_cb;
-+};
-+
-+struct io_mei_list {
-+	struct mei_cb_private mei_cb;
-+	int status;
-+	struct mei_device *device_extension;
-+};
-+
-+/*
-+ *  MEI BUS Interface Section
-+ */
-+struct mei_msg_hdr {
-+	u32 me_addr:8;
-+	u32 host_addr:8;
-+	u32 length:9;
-+	u32 reserved:6;
-+	u32 msg_complete:1;
-+} __packed;
-+
-+
-+struct hbm_cmd {
-+	u8 cmd:7;
-+	u8 is_response:1;
-+} __packed;
-+
-+
-+struct mei_bus_message {
-+	struct hbm_cmd cmd;
-+	u8 command_specific_data[];
-+} __packed;
-+
-+struct hbm_version {
-+	u8 minor_version;
-+	u8 major_version;
-+} __packed;
-+
-+struct hbm_host_version_request {
-+	struct hbm_cmd cmd;
-+	u8 reserved;
-+	struct hbm_version host_version;
-+} __packed;
-+
-+struct hbm_host_version_response {
-+	struct hbm_cmd cmd;
-+	int host_version_supported;
-+	struct hbm_version me_max_version;
-+} __packed;
-+
-+struct hbm_host_stop_request {
-+	struct hbm_cmd cmd;
-+	u8 reason;
-+	u8 reserved[2];
-+} __packed;
-+
-+struct hbm_host_stop_response {
-+	struct hbm_cmd cmd;
-+	u8 reserved[3];
-+} __packed;
-+
-+struct hbm_me_stop_request {
-+	struct hbm_cmd cmd;
-+	u8 reason;
-+	u8 reserved[2];
-+} __packed;
-+
-+struct hbm_host_enum_request {
-+	struct hbm_cmd cmd;
-+	u8 reserved[3];
-+} __packed;
-+
-+struct hbm_host_enum_response {
-+	struct hbm_cmd cmd;
-+	u8 reserved[3];
-+	u8 valid_addresses[32];
-+} __packed;
-+
-+struct mei_client_properties {
-+	uuid_le protocol_name;
-+	u8 protocol_version;
-+	u8 max_number_of_connections;
-+	u8 fixed_address;
-+	u8 single_recv_buf;
++struct mei_client {
 +	u32 max_msg_length;
++	u8 protocol_version;
++	u8 reserved[3];
 +} __packed;
-+
-+struct hbm_props_request {
-+	struct hbm_cmd cmd;
-+	u8 address;
-+	u8 reserved[2];
-+} __packed;
-+
-+
-+struct hbm_props_response {
-+	struct hbm_cmd cmd;
-+	u8 address;
-+	u8 status;
-+	u8 reserved[1];
-+	struct mei_client_properties client_properties;
-+} __packed;
-+
-+struct hbm_client_connect_request {
-+	struct hbm_cmd cmd;
-+	u8 me_addr;
-+	u8 host_addr;
-+	u8 reserved;
-+} __packed;
-+
-+struct hbm_client_connect_response {
-+	struct hbm_cmd cmd;
-+	u8 me_addr;
-+	u8 host_addr;
-+	u8 status;
-+} __packed;
-+
-+struct hbm_client_disconnect_request {
-+	struct hbm_cmd cmd;
-+	u8 me_addr;
-+	u8 host_addr;
-+	u8 reserved[1];
-+} __packed;
-+
-+struct hbm_flow_control {
-+	struct hbm_cmd cmd;
-+	u8 me_addr;
-+	u8 host_addr;
-+	u8 reserved[MEI_FC_MESSAGE_RESERVED_LENGTH];
-+} __packed;
-+
-+struct mei_me_client {
-+	struct mei_client_properties props;
-+	u8 client_id;
-+	u8 mei_flow_ctrl_creds;
-+} __packed;
-+
-+/* MEI private device struct */
-+struct mei_device {
-+	struct pci_dev *pdev;	/* pointer to pci device struct */
-+	/*
-+	 * lists of queues
-+	 */
-+	 /* array of pointers to aio lists */
-+	struct io_mei_list *io_list_array[MEI_IO_LISTS_NUMBER];
-+	struct io_mei_list read_list;		/* driver read queue */
-+	struct io_mei_list write_list;		/* driver write queue */
-+	struct io_mei_list write_waiting_list;	/* write waiting queue */
-+	struct io_mei_list ctrl_wr_list;	/* managed write IOCTL list */
-+	struct io_mei_list ctrl_rd_list;	/* managed read IOCTL list */
-+	struct io_mei_list amthi_cmd_list;	/* amthi list for cmd waiting */
-+
-+	/* driver managed amthi list for reading completed amthi cmd data */
-+	struct io_mei_list amthi_read_complete_list;
-+	/*
-+	 * list of files
-+	 */
-+	struct list_head file_list;
-+	/*
-+	 * memory of device
-+	 */
-+	unsigned int mem_base;
-+	unsigned int mem_length;
-+	void __iomem *mem_addr;
-+	/*
-+	 * lock for the device
-+	 */
-+	struct mutex device_lock; /* device lock */
-+	int recvd_msg;
-+	struct delayed_work wd_work;	/* watch dog deleye work */
-+	/*
-+	 * hw states of host and fw(ME)
-+	 */
-+	u32 host_hw_state;
-+	u32 me_hw_state;
-+	/*
-+	 * waiting queue for receive message from FW
-+	 */
-+	wait_queue_head_t wait_recvd_msg;
-+	wait_queue_head_t wait_stop_wd;
-+
-+	/*
-+	 * mei device  states
-+	 */
-+	enum mei_states mei_state;
-+	enum mei_init_clients_states init_clients_state;
-+	u16 init_clients_timer;
-+	int stop;
-+
-+	u32 extra_write_index;
-+	u32 rd_msg_buf[128];	/* used for control messages */
-+	u32 wr_msg_buf[128];	/* used for control messages */
-+	u32 ext_msg_buf[8];	/* for control responses */
-+	u32 rd_msg_hdr;
-+
-+	struct hbm_version version;
-+
-+	int mei_host_buffer_is_empty;
-+	struct mei_file_private wd_file_ext;
-+	struct mei_me_client *me_clients; /* Note: memory has to be allocated */
-+	DECLARE_BITMAP(me_clients_map, MEI_CLIENTS_MAX);
-+	DECLARE_BITMAP(host_clients_map, MEI_CLIENTS_MAX);
-+	u8 num_mei_me_clients;
-+	u8 me_client_presentation_num;
-+	u8 me_client_index;
-+
-+	int wd_pending;
-+	int wd_stopped;
-+	u16 wd_timeout;	/* seconds ((wd_data[1] << 8) + wd_data[0]) */
-+	unsigned char wd_data[MEI_START_WD_DATA_SIZE];
-+
-+
-+	u16 wd_due_counter;
-+	int wd_bypass;	/* if 1, don't refresh watchdog ME client */
-+
-+	struct file *iamthif_file_object;
-+	struct mei_file_private iamthif_file_ext;
-+	int iamthif_ioctl;
-+	int iamthif_canceled;
-+	int iamthif_mtu;
-+	u32 iamthif_timer;
-+	u32 iamthif_stall_timer;
-+	unsigned char *iamthif_msg_buf; /* Note: memory has to be allocated */
-+	u32 iamthif_msg_buf_size;
-+	u32 iamthif_msg_buf_index;
-+	int iamthif_flow_control_pending;
-+	enum iamthif_states iamthif_state;
-+
-+	struct mei_cb_private *iamthif_current_cb;
-+	u8 write_hang;
-+	int need_reset;
-+	long open_handle_count;
-+
-+};
-+
-+/**
-+ * mei_reg_read - Reads 32bit data from the mei device
-+ *
-+ * @dev: the device structure
-+ * @offset: offset from which to read the data
-+ *
-+ * returns the byte read.
-+ */
-+static inline u32 mei_reg_read(struct mei_device *dev,
-+				unsigned long offset)
-+{
-+	return ioread32(dev->mem_addr + offset);
-+}
-+
-+/**
-+ * mei_reg_write - Writes 32bit data to the mei device
-+ *
-+ * @dev: the device structure
-+ * @offset: offset from which to write the data
-+ * @value: the byte to write
-+ */
-+static inline void mei_reg_write(struct mei_device *dev,
-+				unsigned long offset, u32 value)
-+{
-+	iowrite32(value, dev->mem_addr + offset);
-+}
-+
-+/**
-+ * mei_hcsr_read - Reads 32bit data from the host CSR
-+ *
-+ * @dev: the device structure
-+ *
-+ * returns the byte read.
-+ */
-+static inline u32 mei_hcsr_read(struct mei_device *dev)
-+{
-+	return mei_reg_read(dev, H_CSR);
-+}
-+
-+/**
-+ * mei_mecsr_read - Reads 32bit data from the ME CSR
-+ *
-+ * @dev: the device structure
-+ *
-+ * returns ME_CSR_HA register value (u32)
-+ */
-+static inline u32 mei_mecsr_read(struct mei_device *dev)
-+{
-+	return mei_reg_read(dev, ME_CSR_HA);
-+}
-+
-+/**
-+ * get_me_cb_rw - Reads 32bit data from the mei ME_CB_RW register
-+ *
-+ * @dev: the device structure
-+ *
-+ * returns ME_CB_RW register value (u32)
-+ */
-+static inline u32 mei_mecbrw_read(struct mei_device *dev)
-+{
-+	return mei_reg_read(dev, ME_CB_RW);
-+}
-+
 +
 +/*
-+ * mei interface function prototypes
++ * IOCTL Connect Client Data structure
 + */
-+void mei_hcsr_set(struct mei_device *dev);
-+void mei_csr_clear_his(struct mei_device *dev);
++struct mei_connect_client_data {
++	union {
++		uuid_le in_client_uuid;
++		struct mei_client out_client_propeties;
++	} d;
++} __packed;
 +
-+void mei_enable_interrupts(struct mei_device *dev);
-+void mei_disable_interrupts(struct mei_device *dev);
-+#endif /* _MEI_DATA_STRUCTURES_H_ */
++
++#endif
 -- 
 1.7.1
 
