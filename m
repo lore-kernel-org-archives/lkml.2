@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab1CVS7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 14:59:07 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:45893 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753410Ab1CVS7E convert rfc822-to-8bit (ORCPT
+	id S1754901Ab1CVTAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 15:00:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50939 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705Ab1CVTAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 14:59:04 -0400
+	Tue, 22 Mar 2011 15:00:05 -0400
+Date: Tue, 22 Mar 2011 19:00:02 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de
+Subject: Re: [PATCH 0/6 v7] overlay filesystem - request for inclusion
+Message-ID: <20110322190002.GW22723@ZenIV.linux.org.uk>
+References: <20110322152602.053930811@szeredi.hu>
+ <AANLkTinxD2rZnso3zfX0=-HQ9m7=zAjEtUepFO=uMe2Q@mail.gmail.com>
+ <20110322183919.GV22723@ZenIV.linux.org.uk>
+ <AANLkTinU-F+fHaG9u7c4Tf0GNx5BJvHg7BGOAFGaiDn1@mail.gmail.com>
+ <E1Q26mX-0001Tt-Jq@pomaz-ex.szeredi.hu>
 MIME-Version: 1.0
-In-Reply-To: <4D88EC5C.9030809@linaro.org>
-References: <4D79F068.2080009@linaro.org>
-	<AANLkTikEtneWEu4iQgfKw-zkAT3Z=e7ohXgDq7oJAQvv@mail.gmail.com>
-	<4D88C884.4020600@linaro.org>
-	<AANLkTikArWRWcJJRu-3rbJYanHxa4jKu2oovtLztUsk9@mail.gmail.com>
-	<4D88EC5C.9030809@linaro.org>
-Date: Wed, 23 Mar 2011 00:29:01 +0530
-Message-ID: <AANLkTimrH31ZE_ra6giWBun+Vp61V+3csghG5sOWk58h@mail.gmail.com>
-Subject: Re: RFC: Platform data for onboard USB assets
-From: Jaswinder Singh <jaswinder.singh@linaro.org>
-To: andy.green@linaro.org
-Cc: Andy Green <andy@warmcat.com>, Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        greg@kroah.com, benh@kernel.crashing.org, grant.likely@secretlab.ca,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1Q26mX-0001Tt-Jq@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 March 2011 00:07, Andy Green <andy@warmcat.com> wrote:
-> On 03/22/2011 06:19 PM, Somebody in the thread at some point said:
+On Tue, Mar 22, 2011 at 07:58:17PM +0100, Miklos Szeredi wrote:
+> On Tue, 22 Mar 2011, Linus Torvalds wrote:
+> > On Tue, Mar 22, 2011 at 11:39 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > >
+> > > Locking analysis would be really nice; AFAICS, it violates locking order
+> > > when called from e.g. ->setattr()
+> 
+> Locking order is always:
+> 
+> -> overlayfs locks
+>    -> upper fs locks
+>    -> lower fs locks
+> 
+> So it's really pretty simple and easy to validate.
 
->> If yes, isn't that possible by specifying a _Panda_ specific udev rule
->> to find and rename a network interface based only on its type and
->> devpath without needing its MAC address?  Greg ?
->> The udev rule could be a part of some hwpack.
->
-> We are in a privileged position to suggest to stick all kinds in our distro
-> support that's specific to the target, and maintain it.  However just doing
-> that relies on the current situation that people are cooking rootfs-es that
-> only work on one target.  With the move to multi-target single kernel
-> images, and the corresponding multi-target bootloader support along the same
-> lines that's coming, it'll eventually be possible to provide single SD
-> images that run on many targets with common rootfs.  Adding more static
-> hacks into hwpacks on the assumption it is "a panda rootfs" goes in the
-> wrong direction for that.
-Yes I know it's not a very elegant solution.
-But we must remember, we are catering to users that lose sleep over
-not having to call 'fixed RJ-45 port over USB' as eth0 :)
+In which *order* on the upper fs?
 
->>>> (b) IMHO, though stable enough, the most obvious method of 'devpath
->>>> association'
->>>>  is indeed not future-proof.
->>>
->>> What're you thinking it's not future-proof against?
->>
->> Even if the rootfilesystem remains the same, the devpath association will
->> fail if, say, Linux USB core decides to number usb busses in reverse order
->> as
->> a part of some code restructuring.
->> After all the USB spec doesn't say about the bus/port ordering.
->
-> No that won't hurt anything since, as I said, the static paths are in the
-> same tree, and can be updated to the new -- equally deterministic -- name at
-> the same time as people start numbering their buses backwards. For example,
-> the Panda SDIO module WLAN function is at path "mmc1:0001:2", if a patchset
-> comes and decides to call these guys sdio0 on that bus instead it just has
-> to grep the board definition files for mmc.\: and fix those up to the
-> appropriate sdioN convention at the same time and everything is cool.
+> Protection is exactly as for userspace callers.  AFAICT.
 
-I was not just talking about mmc -> sdio change. Rather the bus/port numbering.
-Say, mmc1:0001:2 becomes mmc7:0201:1 by some new addressing scheme.
-I agree the fix is as easy as it is to break old devpath assumption in
-this case.
-
-And yes, bus numbering also depends on things like modprobe order, which may not
-be fixed for all platforms. Any change there too can break the devpath
-association.
-
-Let's see what other veterans suggest.
-
-Best of luck.
+Pardon?  You traverse the chain of ancestors; fine, but who says it stays
+anywhere near being relevant as you go?
