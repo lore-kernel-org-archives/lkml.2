@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab1CVUby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 16:31:54 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:55227 "EHLO
-	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755066Ab1CVUbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 16:31:52 -0400
-Subject: [PATCH] Downgrade i8042 selftest error message to dbg()
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Mar 2011 21:31:48 +0100
-Message-ID: <1300825908.20447.1.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+	id S932163Ab1CVUc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 16:32:58 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:57534 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752717Ab1CVUc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 16:32:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 0/6] Do not use sysdevs for implementing "core" PM operations on x86
+Date: Tue, 22 Mar 2011 21:33:13 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
+        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Avi Kivity <avi@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
+        kvm@vger.kernel.org, iommu@lists.linux-foundation.org,
+        cpufreq@vger.kernel.org
+References: <201103100131.58206.rjw@sisk.pl> <201103220031.22729.rjw@sisk.pl> <20110322103258.GC4448@elte.hu>
+In-Reply-To: <20110322103258.GC4448@elte.hu>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103222133.14054.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a "really fragile" latop I noticed a single
-    i8042.c: i8042 controller selftest failed. (0x1 != 0x55)
+On Tuesday, March 22, 2011, Ingo Molnar wrote:
+> 
+> * Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> 
+> > > If there are no objectsions, I'd like to push these patches through the suspend
+> > > tree.
+> > 
+> > [1/8] has been merged in the meantime and [3/8] has been included into the
+> > ACPI tree.  if there are no objections, I'm going to push the following
+> > patches to Linus this week through the suspend-2.6 tree:
+> > 
+> > [1/6] - Convert sysdev users in arch/x86 to using struct syscore_ops.
+> > 
+> > [2/6] - Make timekeeping use struct syscore_ops for suspend/resume.
+> >  
+> > [3/6] - Make Intel IOMMU use struct syscore_ops for suspend/resume.
+> > 
+> > [4/6] - Make KVM use struct syscore_ops for suspend/resume.
+> > 
+> > [5/6] - Make cpufreq use struct syscore_ops for boot CPU suspend/resume.
+> > 
+> > [6/6] - Introduce config switch allowing architectures to skip sysdev
+> >         suspend/resume/shutdown code.
+> 
+> The x86 bits look fine.
+> 
+> Acked-by: Ingo Molnar <mingo@elte.hu>
 
-error in the log. But there's no reason to print this message at
-KERN_ERR level each time that loop fails, especially since the message
-telling about the overall selftest failure is printed at KERN_INFO level
-(on X86).
+Thanks!
 
-Add an actual error message for non-X86 systems, where a selftest
-failure is (apparently) more serious. Remove a space in an another error
-message.
+> The patches affect a lot of hardware so please make sure they are tested well 
+> before pushing them to Linus :-)
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Compile tested only.
+I have tested the majority, but unfortunately I have no hardware to test
+the Intel IOMMU patch on it.
 
- drivers/input/serio/i8042.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-index ac4c936..d37a48e 100644
---- a/drivers/input/serio/i8042.c
-+++ b/drivers/input/serio/i8042.c
-@@ -869,15 +869,15 @@ static int i8042_controller_selftest(void)
- 	do {
- 
- 		if (i8042_command(&param, I8042_CMD_CTL_TEST)) {
--			pr_err("i8042 controller self test timeout\n");
-+			pr_err("i8042 controller selftest timeout\n");
- 			return -ENODEV;
- 		}
- 
- 		if (param == I8042_RET_CTL_TEST)
- 			return 0;
- 
--		pr_err("i8042 controller selftest failed. (%#x != %#x)\n",
--		       param, I8042_RET_CTL_TEST);
-+		dbg("i8042 controller selftest: %#x != %#x\n",
-+		    param, I8042_RET_CTL_TEST);
- 		msleep(50);
- 	} while (i++ < 5);
- 
-@@ -891,6 +891,7 @@ static int i8042_controller_selftest(void)
- 	pr_info("giving up on controller selftest, continuing anyway...\n");
- 	return 0;
- #else
-+	pr_err("i8042 controller selftest failed\n");
- 	return -EIO;
- #endif
- }
--- 
-1.7.4
-
+Thanks,
+Rafael
