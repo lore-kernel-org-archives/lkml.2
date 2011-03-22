@@ -1,107 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab1CVWhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 18:37:51 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60643 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab1CVWhq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 18:37:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
-         :subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=ld4W6Zb3C8ggnm8qofRe4bP6Iu4M5zI1U4pOCQuoMaMgsEGyNwdOP/QKB2GrpiEJL1
-         M6f8HJKzE6IJlqJdj7tB3Ia5joBd7RgnyGCFzH9fOMEJ01hw58W5kUbH08OfV432wbsa
-         xtGMpeGOSrbwc/LluSrEQPOmBYoA2cCSjjTOU=
-Message-ID: <4D8924B6.8040403@linaro.org>
-Date: Tue, 22 Mar 2011 22:37:42 +0000
-From: Andy Green <andy@warmcat.com>
-Reply-To: andy.green@linaro.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
+	id S1753696Ab1CVWme (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 18:42:34 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:57948 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751750Ab1CVWmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 18:42:31 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kay Sievers <kay.sievers@suse.de>
+Subject: Re: [PATCH 9/10] sh: Use struct syscore_ops instead of sysdev class and sysdev
+Date: Tue, 22 Mar 2011 23:42:20 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
+        Greg KH <gregkh@suse.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
+References: <201103100131.58206.rjw@sisk.pl> <201103222305.01808.rjw@sisk.pl> <1300832411.1815.35.camel@zag>
+In-Reply-To: <1300832411.1815.35.camel@zag>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        greg@kroah.com, grant.likely@secretlab.ca,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-References: <4D79F068.2080009@linaro.org>	 <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com> <1300828125.2402.300.camel@pasglop>
-In-Reply-To: <1300828125.2402.300.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103222342.20526.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2011 09:08 PM, Somebody in the thread at some point said:
->> Q(b) If yes, what 'key' is most suitable for identifying the right
->> device
->>    to attach the data to ?
->
-> We already pointed out that in the case of soldered-in device, the
-> "path" as in the series of -physical- ports leading to the device is
-> going to be stable.
+On Tuesday, March 22, 2011, Kay Sievers wrote:
+> On Tue, 2011-03-22 at 23:05 +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, March 22, 2011, Kay Sievers wrote:
+> > > On Tue, 2011-03-22 at 22:00 +0100, Rafael J. Wysocki wrote:
+> > > > On Tuesday, March 22, 2011, Kay Sievers wrote:
+> > > > > On Tue, 2011-03-22 at 21:30 +0100, Rafael J. Wysocki wrote:
+> > > > > > 
+> > > > > > Perhaps there's a more straightforward way to make some files show up in
+> > > > > > sysfs on a specific path than defininig an otherwise useless bus type and
+> > > > > > device object?
+> > > > > 
+> > > > > That's absolutely not the point. Please don't get yourself into that
+> > > > > thinking. If people want to "export stuff to userspace", they must not
+> > > > > invent new things. We need to get rid of the silly special cases.
+> > > > 
+> > > > Why exactly?  Do they actually hurt anyone and if so then how?
+> > > 
+> > > Sure, "devices" are devices, and devices have well-defines set of
+> > > properties, not some magic directory, people can mess around with the
+> > > way they like.
+> > 
+> > So it looks like the the problem is that the exported attributes happen to
+> > be under /sys/devices/.  Would it still be a problem if they were somewhere
+> > else?
+> 
+> We are not going to invent another location for any devices. They need
+> to stay in /devices if they are devices. And all devices need to be
+> "struct device".
 
-Agreed.
+_They_ _are_ _not_ _devices_.
 
-> For anything else, there's no solution. If the device doesn't have a
-> unique ID, you are toast, period.
+Please take clocksource as an example.  It needs to export two attributes,
+available_clocksource and current_clocksource, which are _useful_ user space
+interfaces.  Why the heck are you trying to convince me it's a good idea to
+create a special bus type and struct device _specifically_ for exporting them?!
 
-If you mean pluggable device tagging then I also agree it's for sure not 
-in scope for this kind of action.
+Moreover, is there anything device-alike in those two attributes?  I don't
+really think so.
 
-> On the other hand, I still think platform_data suck big time. Grant made
-> some good points about the lack of proper typing for example. I believe
+So please stop arguing this way, because it simply isn't going to fly and
+people will always say a big fat "no" to such ideas, for a good reason.
 
-Well, you share that opinion with Grant at least, although reasons to 
-back it up were in shorter supply.  "Proper typing" as a serious issue 
-with platform_data rather than just being an impressive-sounding claim 
--- or a "good point" -- doesn't resonate with me at all  -->
+> > > > > Userspace is not meant to learn subsystem specific rules for every new
+> > > > > thing.
+> > > > 
+> > > > That depends a good deal of who's writing the user space in question.  If
+> > > > that's the same person who's working on the particular part of the kernel,
+> > > > I don't see a big problem.
+> > > 
+> > > Not for "devices". There are rules for devices, which are defined by the
+> > > driver core, and the sysdev stuff needs to go, because it does not fit
+> > > into that model.
+> > 
+> > OK, I understand that.
+> > 
+> > Now, there's stuff that doesn't really match the "device" model.  Where is
+> > the right place to export that?  Perhaps we should add something like
+> > /sys/platform/ (in analogy with /sys/firmware/)?
+> 
+> No, add a subsystem (bus_type) for any of them, and register them. There
+> is no such thing as "devices which do not fit the device model", they
+> are all fine there. Please stop optimizing single bytes and creating a
+> mess in /sys. Every device is a "struct device".
 
-There is proper typing for the all the members of the platform_data 
-structs on both sides; both the board definition file and the driver 
-both deal with a member u8 mac[6] as a u8 mac[6], say.  The only time a 
-void * is involved is so the generic struct device can point to the 
-driver-specific platform_data struct.  I guess we agree about that much, 
-that the scope of untyped members is just void * one per struct device, 
-to the platform_data.  Otherwise the thing is typesafe either side for 
-members.
+Again.  Those things are _not_ devices.  Am I not clear enough?
 
-If the board definition file put a pointer to the wrong platform data 
-struct in a device, it's true it'd accept it at compiletime and crash 
-and burn at runtime.  But it'd be a gross bug in the code that'd always 
-be wrong, like attaching platform data for configuring a usb host to a 
-uart device or so.  It seems the guy writing this will notice quickly 
-his uart doesn't work or blows OOPSes and investigate and permanently 
-fix it.  The fallout of the void * involved is limited to that situation 
-alone.
+> Think of "struct bus_type" as "struct subsystem", we will rename that
+> when we are ready. It is just a group of devices which are of the same
+> type, it has nothing to do with a bus in the sense of hardware.
+> 
+> We need unified exports of _all devices to userspace, not custom layouts
+> in /sys.
+> 
+> There's is a pretty much outdated Documentation/sysfs-rules.txt, wich
+> covers part of the history and the plans.
 
-Likewise if the device path mapping stuff works as it seems is now 
-generally accepted it would within restrictions typical for SoC 
-environment, you either wrote code to deliver the right or the wrong 
-platform_data there.  If it can't be you soldered a WLAN module on mmc1, 
-you attach async platform_data appropriate for the WLAN module's driver, 
-but actually, a WiMAX driver got applied and now the platform_data via 
-the void * is wrong; the whole situation would be wrong because the 
-wrong driver came.
+You seem to be thinking that anything exported through sysfs needs to be
+device, which I don't think is event approximately correct (what about
+/sys/firmware/ or /sys/kernel/ or /sys/fs/ , for a few examples?).
 
-So while I see the point about void * and no type checking, it doesn't 
-allow any more subtle error than pointing at the wrong or the right 
-platform_data struct in the code.  In practice, you will notice that 
-whatever it is you thought you were setting via platform_data is getting 
-set to something uncontrolled if it is "not the platform_data you are 
-looking for" and go fix it in the code.  For these reasons of its 
-problem being in such a narrow domain, it seems to me quite a weak stick 
-to wave at platform_data.
+Think this way: it is useful (and IMHO correct) to export some things to
+user space that without necessarily regarding them as "devices", physical
+or not.  Some of them _happen_ to be exported through sysdevs, but that
+doesn't really mean the _are_ devices.  They are simply _software_ interfaces
+to things that have no device representation and don't _need_ one.
 
-> that a device-tree based approach is much better in the long run (and
-> more flexible) despite Andy odd quasi-religious aversion for it.
+> > > > > There is _one_ way to export device attributes, and that is
+> > > > > "struct device" today.
+> > > > > 
+> > > > > If that's to expensive for anybody, just don't use sysfs. It's the rule
+> > > > > we have today. :)
+> > > > 
+> > > > Oh, good to know.  It's changed a bit since I last heard.  Never mind.
+> > > 
+> > > Oh, don't get me wrong, this is all is about "devices" not any other
+> > > controls.
+> > >
+> > > > Still, I won't let you change the things in /sys/power to struct devices,
+> > > > sorry about that. ;-)
+> > > 
+> > > Fine as long as they are power specific things, and not "devices". You
+> > > don't have sysdevs there, right? :)
+> > 
+> > No, I don't.
+> 
+> Then all is fine. All other stuff is more like /proc, and can never be
+> really unified.
 
-As Mark Brown wrote earlier about this, the Device Tree "implementation 
-just isn't there in mainline".
+YES!  And _that_'s precisely what I'm (and Paul is) talking about.
 
--Andy
+> All we care about is devices, which have common methods
+> for userspace to trigger and consume, and need to be unified. Power
+> specific control files seems all fine in its kobject use.
+
+I understand that, really.
+
+> > > > And I wonder how are you going to deal with clocksource exporting things
+> > > > via the sysdev interface right now.  I'd simply create two directories and
+> > > > put the two files into them and be done with that, but I guess that
+> > > > wouldn't fit into the model somehow, right?
+> > > 
+> > > Nope, register a bus_type, and use struct device for all of them, Parent
+> > > them to /sys/devices/system/ if they should keep their location and
+> > > layout.
+> > 
+> > Well, I'll be watching what happens to the patch trying to do that, but I'm
+> > not going to bet anything on its success. ;-)
+> 
+> It should be pretty straight-forward. We will need to do that for CPUs I
+> guess, because the interface is kinda commonly used.
+
+No.  CPUs are _very_ special.
+
+> > > > > > > That way userspace can properly enumerate them in a flat list
+> > > > > > > in /sys/bus/<bus_type name>/devices/*, and gets proper events on module
+> > > > > > > load and during system coldplug, and can hook into the usual hotplug
+> > > > > > > pathes to set/get these values instead of crawling magicly defined and
+> > > > > > > decoupled locations in /sys which can not express proper hierarchy,
+> > > > > > > classicication, or anything else that all other devices can just do.
+> > > > > > 
+> > > > > > There's no hotplug involved or anything remotely like that AFAICS.
+> > > > > > There are simply static files as I said above, they are created
+> > > > > > early during system initialization and simply stay there.
+> > > > > 
+> > > > > That's not the point. It's about a single way to retrieve information
+> > > > > about devices, extendability, and coldplug during bootup, where existing
+> > > > > devices need to be handled only after userspace is up.
+> > > > 
+> > > > I'd say the case at hand has nothing to do with that.
+> > > 
+> > > It has. As for CPUs. We can not do proper CPU-dependent module
+> > > autoloading, because the events happen before userspace runs, and
+> > > clodplug can not see the broken sysdevs, because they have no events to
+> > > re-trigger, like all others have.
+> > 
+> > Well, as I said, would it be OK if the things in question happened to be
+> > located somewhere outside of /sys/devices/ ?
+> 
+> No, no device directory can be outside of /sys/devices.
+
+Sorry, I'm repeating that for the last time.  I'm not talking about devices.
+I'm talking about _totally_ _random_ _stuff_ which is "like /proc, and can
+never be really unified" (your own words) which _happens_ to be exported
+through the sysdev interface, because that happend to be _easy_ at one point.
+Can we agree on that at least?
+
+Thanks,
+Rafael
