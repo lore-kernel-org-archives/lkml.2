@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab1CVRMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 13:12:31 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:32783 "EHLO mgw2.diku.dk"
+	id S1756507Ab1CVRM3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 13:12:29 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:32774 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756480Ab1CVRM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 13:12:26 -0400
+	id S1756479Ab1CVRMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 13:12:25 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: kernel-janitors@vger.kernel.org, Niels de Vos <ndevos@redhat.com>,
+To: "David S. Miller" <davem@davemloft.net>
+Cc: kernel-janitors@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Jinqiu Yang <crindy646@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] drivers/parport/parport_pc.c: Convert release_resource to release_region/release_mem_region
-Date: Tue, 22 Mar 2011 18:15:22 +0100
-Message-Id: <1300814123-25314-2-git-send-email-julia@diku.dk>
+Subject: [PATCH 1/3] drivers/net/ariadne.c: Convert release_resource to release_region/release_mem_region
+Date: Tue, 22 Mar 2011 18:15:21 +0100
+Message-Id: <1300814123-25314-1-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Request_region should be used with release_region, not
+Request_mem_region should be used with release_mem_region, not
 release_resource.
-
-base_res is also dropped because it is no longer needed.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -30,8 +30,8 @@ The semantic match that finds this problem is as follows:
 @@
 expression x,E;
 @@
-*x = request_region(...)
-... when != release_region(x)
+*x = request_mem_region(...)
+... when != release_mem_region(x)
     when != x = E
 * release_resource(x);
 // </smpl>
@@ -39,44 +39,40 @@ expression x,E;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-In the original code, the second argument of request_region is 32 and the
-second argument of the following release_region is 0x8.  I have thus used
-0x8 as the second argument of the call to release_region introduced to
-replace the call to release_resource.  But shouldn't the second arguments
-of all of the functions be the same?
+ drivers/net/ariadne.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
- drivers/parport/parport_pc.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
-index 8d62fb7..320a4df 100644
---- a/drivers/parport/parport_pc.c
-+++ b/drivers/parport/parport_pc.c
-@@ -2550,7 +2550,6 @@ static int __devinit sio_ite_8872_probe(struct pci_dev *pdev, int autoirq,
- 					 const struct parport_pc_via_data *via)
- {
- 	short inta_addr[6] = { 0x2A0, 0x2C0, 0x220, 0x240, 0x1E0 };
--	struct resource *base_res;
- 	u32 ite8872set;
- 	u32 ite8872_lpt, ite8872_lpthi;
- 	u8 ite8872_irq, type;
-@@ -2561,8 +2560,7 @@ static int __devinit sio_ite_8872_probe(struct pci_dev *pdev, int autoirq,
+diff --git a/drivers/net/ariadne.c b/drivers/net/ariadne.c
+index 7ca0ede..b7f45cd 100644
+--- a/drivers/net/ariadne.c
++++ b/drivers/net/ariadne.c
+@@ -182,14 +182,14 @@ static int __devinit ariadne_init_one(struct zorro_dev *z,
+ 	return -EBUSY;
+     r2 = request_mem_region(mem_start, ARIADNE_RAM_SIZE, "RAM");
+     if (!r2) {
+-	release_resource(r1);
++	release_mem_region(base_addr, sizeof(struct Am79C960));
+ 	return -EBUSY;
+     }
  
- 	/* make sure which one chip */
- 	for (i = 0; i < 5; i++) {
--		base_res = request_region(inta_addr[i], 32, "it887x");
--		if (base_res) {
-+		if (request_region(inta_addr[i], 32, "it887x")) {
- 			int test;
- 			pci_write_config_dword(pdev, 0x60,
- 						0xe5000000 | inta_addr[i]);
-@@ -2635,7 +2633,7 @@ static int __devinit sio_ite_8872_probe(struct pci_dev *pdev, int autoirq,
- 	/*
- 	 * Release the resource so that parport_pc_probe_port can get it.
- 	 */
--	release_resource(base_res);
-+	release_region(inta_addr[i], 0x8);
- 	if (parport_pc_probe_port(ite8872_lpt, ite8872_lpthi,
- 				   irq, PARPORT_DMA_NONE, &pdev->dev, 0)) {
- 		printk(KERN_INFO
+     dev = alloc_etherdev(sizeof(struct ariadne_private));
+     if (dev == NULL) {
+-	release_resource(r1);
+-	release_resource(r2);
++	release_mem_region(base_addr, sizeof(struct Am79C960));
++	release_mem_region(mem_start, ARIADNE_RAM_SIZE);
+ 	return -ENOMEM;
+     }
+ 
+@@ -213,8 +213,8 @@ static int __devinit ariadne_init_one(struct zorro_dev *z,
+ 
+     err = register_netdev(dev);
+     if (err) {
+-	release_resource(r1);
+-	release_resource(r2);
++	release_mem_region(base_addr, sizeof(struct Am79C960));
++	release_mem_region(mem_start, ARIADNE_RAM_SIZE);
+ 	free_netdev(dev);
+ 	return err;
+     }
 
