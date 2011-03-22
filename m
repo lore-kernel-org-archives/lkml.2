@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab1CVCwk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 22:52:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:36788 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754593Ab1CVCwh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 22:52:37 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=XYJHFtupD_QA:10 a=fucuynXdN2IA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=0azM3ZO7AAAA:8 a=meVymXHHAAAA:8 a=nVMPjS_WAhhwoBtgleMA:9 a=_lFbgV5Y7aH-bUuSRkLIKcgqQpgA:4 a=CjuIK1q_8ugA:10 a=BGWj8ct6lkoA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Mon, 21 Mar 2011 22:52:32 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Daniel Lezcano <daniel.lezcano@free.fr>,
-        Eric Paris <eparis@redhat.com>, Roman Zippel <zippel@linux-m68k.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: PATCH][RFC][resend] CC_OPTIMIZE_FOR_SIZE should default to N
-Message-ID: <20110322025232.GL14675@home.goodmis.org>
-References: <alpine.LNX.2.00.1103212105490.15815@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1103212105490.15815@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751444Ab1CVDBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 23:01:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14154 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867Ab1CVDBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 23:01:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,223,1299484800"; 
+   d="scan'208";a="722689234"
+Subject: Re: [PATCH 0/7] ACPI, APEI patches for 2.6.39
+From: Huang Ying <ying.huang@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20110303000112.GG32215@one.firstfloor.org>
+References: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
+	 <alpine.LFD.2.02.1103021750250.12344@x980>
+	 <20110303000112.GG32215@one.firstfloor.org>
+Content-Type: text/plain; charset="us-ascii"
+Date: Tue, 22 Mar 2011 11:01:32 +0800
+Message-ID: <1300762892.3616.12.camel@yhuang-mobile.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 09:08:24PM +0100, Jesper Juhl wrote:
-> I believe that the majority of systems we are built on want a -O2 compiled 
-> kernel. Optimizing for size (-Os) is mainly benneficial for embedded 
-> systems and systems with very small CPU caches (correct me if I'm wrong).
-> So it seems wrong to me that CC_OPTIMIZE_FOR_SIZE defaults to 'y' and 
-> recommends saying 'Y' if unsure. I believe it should default to 'n' and 
-> recommend that if unsure. People who bennefit from -Os know who they are 
-> and can enable the option if needed/wanted - the majority shouldn't 
-> select this. Right?
+Hi, Andrew,
+
+On Thu, 2011-03-03 at 08:01 +0800, Andi Kleen wrote:
+> On Wed, Mar 02, 2011 at 05:51:24PM -0500, Len Brown wrote:
+> > On Mon, 21 Feb 2011, Huang Ying wrote:
+> > 
+> > > [PATCH 1/7] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
+> > > [PATCH 2/7] lib, Add lock-less NULL terminated single list
+> > > [PATCH 3/7] ACPI, APEI, Add ERST record ID cache
+> > > [PATCH 4/7] PCIe, AER, use pre-generated prefix in error information printing
+> > > [PATCH 5/7] ACPI, APEI, Add PCIe AER error information printing support
+> > > [PATCH 6/7] lib, Make gen_pool memory allocator lockless
+> > > [PATCH 7/7] ACPI, APEI, GHES, printk support for recoverable error via NMI
+> > 
+> > I've put this series into acpi-test, so it will be visible in linux-next;
+> > but I'm not the right person to review the generic lockless stuff,
+> > who is?
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> I reviewed it earlier and it seemed good to me (unless it has 
+> changed), but Linus wanted non Intel reviewers too. Any takers?
 
-I've actually seen nothing but problems with -Os.
+As for
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+[PATCH 1/7] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
+[PATCH 2/7] lib, Add lock-less NULL terminated single list
+[PATCH 6/7] lib, Make gen_pool memory allocator lockless
 
--- Steve
+they are general kernel patches.  I remember you have reviewed some
+earlier version of these patches, and merged 1/2 into -mm tree.  Do you
+have time to review these patches?  Although Andi has reviewed them, we
+really need some non-Intel reviewers.
+
+Thanks,
+Huang Ying
+b
 
