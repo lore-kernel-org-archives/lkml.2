@@ -1,85 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab1CVOLP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 10:11:15 -0400
-Received: from realvnc.com ([146.101.152.142]:45010 "EHLO realvnc.com"
+	id S1756251Ab1CVOND (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 10:13:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41649 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754408Ab1CVOLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 10:11:09 -0400
-Message-ID: <4D88ADFB.10206@realvnc.com>
-Date: Tue, 22 Mar 2011 14:11:07 +0000
-From: Toby Gray <toby.gray@realvnc.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Johan Hovold <jhovold@gmail.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Oliver Neukum <oliver@neukum.name>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] USB: cdc-acm: Prevent data loss when filling tty buffer.
-References: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com> <1300730698-17099-1-git-send-email-toby.gray@realvnc.com> <20110322100526.GB21343@localhost>
-In-Reply-To: <20110322100526.GB21343@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755240Ab1CVONB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 10:13:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,224,1299484800"; 
+   d="scan'208";a="669943437"
+From: Youquan Song <youquan.song@intel.com>
+To: linux-kernel@vger.kernel.org, hpa@linux.intel.com,
+        david.woodhouse@intel.com
+Cc: suresh.b.siddha@intel.com, allen.m.kay@intel.com, kent.liu@intel.com,
+        Youquan Song <youquan.song@linux.intel.com>,
+        Youquan Song <youquan.song@intel.com>
+Subject: [PATCH] enable x2apic opt out
+Date: Tue, 22 Mar 2011 22:06:47 +0800
+Message-Id: <1300802807-7742-1-git-send-email-youquan.song@intel.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/03/2011 10:05, Johan Hovold wrote:
-> Say you fill up the tty buffer using the last of the sixteen buffers and
-> return in the else clause above, how will the tasklet ever get
-> re-scheduled?
-That's a good point. I did check that this was happening during testing, 
-but looking into n_tty.c some more it seems that I probably just got 
-lucky with  n_tty_receive_buf running to completion (and so throttling) 
-before  n_tty_read got to run (and so un-throttling).
+New version of VT-d2 specification includes a new feature that provide firmware
+ a way to request system software to opt out of enable x2APIC mode.
+DMAR ACPI table newly define flags.1 bit: x2APIC_OPT_OUT which is set to request
+System software opt out xAPIC mode if flags.0 bit:INTR_REMAP is also set.
 
-However I'm not 100% sure that I'm correctly understanding how 
-n_tty_receive_buf and n_tty_read interact. I can't see why it's safe for 
-n_tty_receive_buf to not have any sort of synchronization mechanism 
-between checking tty->receive_room and calling tty_throttle.
+This patch enable the feature. Also re-define x2apic_supported() to address
+platform x2apic support needs 1)processor has x2apic capability 2)interrupt
+remapping support 3)firmware does not request opt-out.
 
-Is there a mechanism preventing a different thread from running 
-n_tty_read between n_tty_receive_buf finding receive_room to be below 
-the threshold and tty_throttle being called? If not then isn't there a 
-race condition when the following happens:
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+---
+ arch/x86/include/asm/apic.h |    2 --
+ arch/x86/kernel/apic/apic.c |   13 +++++++++----
+ drivers/pci/dmar.c          |   28 ++++++++++++++++++++++++++--
+ include/linux/dmar.h        |    3 +++
+ include/linux/intel-iommu.h |    4 ++++
+ 5 files changed, 42 insertions(+), 8 deletions(-)
 
-         1. n_tty_receive_buf fills up the buffer so that the free space 
-is below TTY_THRESHOLD_THROTTLE
-         2. n_tty_receive_buf comes to the check at the end and decide 
-that it needs to call tty_throttle
-         3. Thread rescheduling happens and a different thread runs 
-n_tty_read which empties the buffer
-         4. After emptying the buffer n_tty_read calls tty_unthrottle, 
-which does nothing as the throttling bit isn't set
-         5. The n_tty_receive_buf thread is executed again, calling 
-tty_throttle, causing throttling, but with an empty buffer.
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 3c89694..aa3fc82 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -192,7 +192,6 @@ static inline int x2apic_enabled(void)
+ 	return 0;
+ }
+ 
+-#define x2apic_supported()	(cpu_has_x2apic)
+ static inline void x2apic_force_phys(void)
+ {
+ 	x2apic_phys = 1;
+@@ -213,7 +212,6 @@ static inline void x2apic_force_phys(void)
+ }
+ 
+ #define	x2apic_preenabled 0
+-#define	x2apic_supported()	0
+ #endif
+ 
+ extern void enable_IR_x2apic(void);
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 76b96d7..6c96c45 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1449,11 +1449,11 @@ void __init enable_IR_x2apic(void)
+ {
+ 	unsigned long flags;
+ 	struct IO_APIC_route_entry **ioapic_entries = NULL;
+-	int ret, x2apic_enabled = 0;
++	int ret = 0, x2apic_enabled = 0;
+ 	int dmar_table_init_ret;
+ 
+ 	dmar_table_init_ret = dmar_table_init();
+-	if (dmar_table_init_ret && !x2apic_supported())
++	if (dmar_table_init_ret && !cpu_has_x2apic)
+ 		return;
+ 
+ 	ioapic_entries = alloc_ioapic_entries();
+@@ -1465,6 +1465,7 @@ void __init enable_IR_x2apic(void)
+ 	ret = save_IO_APIC_setup(ioapic_entries);
+ 	if (ret) {
+ 		pr_info("Saving IO-APIC state failed: %d\n", ret);
++		ret = 0;
+ 		goto out;
+ 	}
+ 
+@@ -1491,7 +1492,8 @@ void __init enable_IR_x2apic(void)
+ 		x2apic_force_phys();
+ 	}
+ 
+-	x2apic_enabled = 1;
++	if (x2apic_supported())
++		x2apic_enabled = 1;
+ 
+ 	if (x2apic_supported() && !x2apic_mode) {
+ 		x2apic_mode = 1;
+@@ -1514,8 +1516,11 @@ out:
+ 
+ 	if (x2apic_preenabled)
+ 		panic("x2apic: enabled by BIOS but kernel init failed.");
+-	else if (cpu_has_x2apic)
++	else if (!ret && cpu_has_x2apic) /* IR enabling failed */
+ 		pr_info("Not enabling x2apic, Intr-remapping init failed.\n");
++	else if (!x2apic_supported() && cpu_has_x2apic)
++		pr_info("Not enabling x2apic, firmware requests OS opt-out "
++			  "x2apic.\n");
+ }
+ 
+ #ifdef CONFIG_X86_64
+diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
+index 09933eb..a35dca9 100644
+--- a/drivers/pci/dmar.c
++++ b/drivers/pci/dmar.c
+@@ -705,7 +705,7 @@ int __init detect_intel_iommu(void)
+ 		 * is added, we will not need this any more.
+ 		 */
+ 		dmar = (struct acpi_table_dmar *) dmar_tbl;
+-		if (ret && cpu_has_x2apic && dmar->flags & 0x1)
++		if (ret && x2apic_supported() && dmar->flags & DMAR_INTR_REMAP)
+ 			printk(KERN_INFO
+ 			       "Queued invalidation will be enabled to support "
+ 			       "x2apic and Intr-remapping.\n");
+@@ -1461,6 +1461,30 @@ int __init dmar_ir_support(void)
+ 	dmar = (struct acpi_table_dmar *)dmar_tbl;
+ 	if (!dmar)
+ 		return 0;
+-	return dmar->flags & 0x1;
++	return dmar->flags & DMAR_INTR_REMAP;
+ }
++
++/*
++ * Check if the platform support x2apic
++ * three necessary conditions:
++ * a. processor support x2apic
++ * b. interrupt remapping support
++ * c. when interrupt reamapping support,bit of x2APIC_OPT_OUT at "DMAR flags"
++ *  is not set which means firmware does not tell OS opt out x2apic
++ */
++int __init x2apic_supported(void)
++{
++	struct acpi_table_dmar *dmar;
++	unsigned int flags = 0;
++
++	if (!cpu_has_x2apic)
++		return 0;
++
++	dmar = (struct acpi_table_dmar *)dmar_tbl;
++	if (!dmar)
++		return 0;
++	flags = DMAR_INTR_REMAP | DMAR_X2APIC_OPT_OUT;
++	return ((dmar->flags & flags) == DMAR_INTR_REMAP);
++}
++
+ IOMMU_INIT_POST(detect_intel_iommu);
+diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+index 7b776d7..73c9bff 100644
+--- a/include/linux/dmar.h
++++ b/include/linux/dmar.h
+@@ -228,8 +228,11 @@ struct dmar_atsr_unit {
+ };
+ 
+ extern int intel_iommu_init(void);
++extern int x2apic_supported(void);
++
+ #else /* !CONFIG_DMAR: */
+ static inline int intel_iommu_init(void) { return -ENODEV; }
++static inline int x2apic_supported(void) { return 0; }
+ #endif /* CONFIG_DMAR */
+ 
+ #endif /* __DMAR_H__ */
+diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+index 9310c69..2d086e5 100644
+--- a/include/linux/intel-iommu.h
++++ b/include/linux/intel-iommu.h
+@@ -29,6 +29,10 @@
+ #include <asm/cacheflush.h>
+ #include <asm/iommu.h>
+ 
++/* DMAR Flags bits */
++#define DMAR_INTR_REMAP 0x1
++#define DMAR_X2APIC_OPT_OUT 0x2
++
+ /*
+  * Intel IOMMU register specification per version 1.0 public spec.
+  */
+-- 
+1.6.4.2
 
-Or have I not understood a complexity in the interactions within n_tty.c?
-
-> [By the way, did you see Filippe Balbi's patch posted today claiming to
-> fix a bug in n_tty which could cause data loss at high speeds?]
-I'd not seen that. Thanks for pointing that out.
-> I was just about to submit a patch series killing the rx tasklet and
-> heavily simplifying the cdc-acm driver when you posted last night. I
-> think that if this mechanism is needed it is more straight-forwardly
-> implemented on top of those as they removes a lot of complexity and
-> makes it easier to spot corner cases such as the one pointed out above.
-Makes sense. The cdc-acm driver is certainly far more readable with your 
-changes.
-> I would also prefer a more generic solution to the problem so that we
-> don't need to re-introduce driver buffering again. Since we already have
-> the throttelling mechanism in place, if we could only be notified/find
-> out that the tty buffers are say half-full, we could throttle (from
-> within the driver) but still push the remaining buffer still on the wire
-> as they arrive. It would of course require a guarantee that such a
-> throttle-is-about-to-happen notification is actually followed by (a
-> throttle and) unthrottle. Thoughts on that?
-I was thinking about this too. Would it be good enough to add the 
-ability for forcing tty throttling and to call that instead of issuing 
-another URB read when the space remaining in the buffer would then be 
-less than the pending URB reads? Or would having a notification at a 
-particular level be more useful for other drivers?
-
-Regards,
-
-Toby
