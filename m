@@ -1,191 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab1CVOND (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 10:13:03 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41649 "EHLO mga11.intel.com"
+	id S1753809Ab1CVOOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 10:14:47 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:43387 "EHLO mgw-da02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755240Ab1CVONB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 10:13:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,224,1299484800"; 
-   d="scan'208";a="669943437"
-From: Youquan Song <youquan.song@intel.com>
-To: linux-kernel@vger.kernel.org, hpa@linux.intel.com,
-        david.woodhouse@intel.com
-Cc: suresh.b.siddha@intel.com, allen.m.kay@intel.com, kent.liu@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH] enable x2apic opt out
-Date: Tue, 22 Mar 2011 22:06:47 +0800
-Message-Id: <1300802807-7742-1-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
+	id S1751409Ab1CVOOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 10:14:44 -0400
+Message-ID: <4D88AF6F.4050508@nokia.com>
+Date: Tue, 22 Mar 2011 16:17:19 +0200
+From: Roger Quadros <roger.quadros@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: <stern@rowland.harvard.edu>
+CC: <gregkh@suse.de>, <sshtylyov@mvista.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] usb: gadget: file_storage: Make CD-ROM emulation
+ work with Mac OS-X
+References: <1300705159-24386-1-git-send-email-roger.quadros@nokia.com> <1300705159-24386-2-git-send-email-roger.quadros@nokia.com> <1300705159-24386-3-git-send-email-roger.quadros@nokia.com>
+In-Reply-To: <1300705159-24386-3-git-send-email-roger.quadros@nokia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.21.23.108]
+X-OriginalArrivalTime: 22 Mar 2011 14:14:24.0677 (UTC) FILETIME=[7261AD50:01CBE89B]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New version of VT-d2 specification includes a new feature that provide firmware
- a way to request system software to opt out of enable x2APIC mode.
-DMAR ACPI table newly define flags.1 bit: x2APIC_OPT_OUT which is set to request
-System software opt out xAPIC mode if flags.0 bit:INTR_REMAP is also set.
+Hi,
 
-This patch enable the feature. Also re-define x2apic_supported() to address
-platform x2apic support needs 1)processor has x2apic capability 2)interrupt
-remapping support 3)firmware does not request opt-out.
+On 03/21/2011 12:59 PM, ext Roger Quadros wrote:
+> @@ -1703,18 +1705,21 @@ static int do_read_toc(struct fsg_dev *fsg, struct fsg_buffhd *bh)
+>   		return -EINVAL;
+>   	}
+>
+> -	memset(buf, 0, 20);
+> -	buf[1] = (20-2);		/* TOC data length */
+> -	buf[2] = 1;			/* First track number */
+> -	buf[3] = 1;			/* Last track number */
+> -	buf[5] = 0x16;			/* Data track, copying allowed */
+> -	buf[6] = 0x01;			/* Only track is number 1 */
+> -	store_cdrom_address(&buf[8], msf, 0);
+> +	format = fsg->cmnd[2]&  0xf;
+> +	/*
+> +	 * Check if CDB is old style SFF-8020i
+> +	 * i.e. format is in 2 MSBs of byte 9
+> +	 * Mac OS-X host sends us this.
+> +	 */
+> +	if (format == 0)
+> +		format = (fsg->cmnd[9]>>  6)&  0x3;
+>
+> -	buf[13] = 0x16;			/* Lead-out track is data */
+> -	buf[14] = 0xAA;			/* Lead-out track number */
+> -	store_cdrom_address(&buf[16], msf, curlun->num_sectors);
+> -	return 20;
+> +	ret = fsg_get_toc(curlun, msf, format, buf);
+> +	if (ret<  0) {
+> +		curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
+> +		return -EINVAL;
+> +	}
+> +	return ret;
+>   }
 
-Signed-off-by: Youquan Song <youquan.song@intel.com>
----
- arch/x86/include/asm/apic.h |    2 --
- arch/x86/kernel/apic/apic.c |   13 +++++++++----
- drivers/pci/dmar.c          |   28 ++++++++++++++++++++++++++--
- include/linux/dmar.h        |    3 +++
- include/linux/intel-iommu.h |    4 ++++
- 5 files changed, 42 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 3c89694..aa3fc82 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -192,7 +192,6 @@ static inline int x2apic_enabled(void)
- 	return 0;
- }
- 
--#define x2apic_supported()	(cpu_has_x2apic)
- static inline void x2apic_force_phys(void)
- {
- 	x2apic_phys = 1;
-@@ -213,7 +212,6 @@ static inline void x2apic_force_phys(void)
- }
- 
- #define	x2apic_preenabled 0
--#define	x2apic_supported()	0
- #endif
- 
- extern void enable_IR_x2apic(void);
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 76b96d7..6c96c45 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1449,11 +1449,11 @@ void __init enable_IR_x2apic(void)
- {
- 	unsigned long flags;
- 	struct IO_APIC_route_entry **ioapic_entries = NULL;
--	int ret, x2apic_enabled = 0;
-+	int ret = 0, x2apic_enabled = 0;
- 	int dmar_table_init_ret;
- 
- 	dmar_table_init_ret = dmar_table_init();
--	if (dmar_table_init_ret && !x2apic_supported())
-+	if (dmar_table_init_ret && !cpu_has_x2apic)
- 		return;
- 
- 	ioapic_entries = alloc_ioapic_entries();
-@@ -1465,6 +1465,7 @@ void __init enable_IR_x2apic(void)
- 	ret = save_IO_APIC_setup(ioapic_entries);
- 	if (ret) {
- 		pr_info("Saving IO-APIC state failed: %d\n", ret);
-+		ret = 0;
- 		goto out;
- 	}
- 
-@@ -1491,7 +1492,8 @@ void __init enable_IR_x2apic(void)
- 		x2apic_force_phys();
- 	}
- 
--	x2apic_enabled = 1;
-+	if (x2apic_supported())
-+		x2apic_enabled = 1;
- 
- 	if (x2apic_supported() && !x2apic_mode) {
- 		x2apic_mode = 1;
-@@ -1514,8 +1516,11 @@ out:
- 
- 	if (x2apic_preenabled)
- 		panic("x2apic: enabled by BIOS but kernel init failed.");
--	else if (cpu_has_x2apic)
-+	else if (!ret && cpu_has_x2apic) /* IR enabling failed */
- 		pr_info("Not enabling x2apic, Intr-remapping init failed.\n");
-+	else if (!x2apic_supported() && cpu_has_x2apic)
-+		pr_info("Not enabling x2apic, firmware requests OS opt-out "
-+			  "x2apic.\n");
- }
- 
- #ifdef CONFIG_X86_64
-diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
-index 09933eb..a35dca9 100644
---- a/drivers/pci/dmar.c
-+++ b/drivers/pci/dmar.c
-@@ -705,7 +705,7 @@ int __init detect_intel_iommu(void)
- 		 * is added, we will not need this any more.
- 		 */
- 		dmar = (struct acpi_table_dmar *) dmar_tbl;
--		if (ret && cpu_has_x2apic && dmar->flags & 0x1)
-+		if (ret && x2apic_supported() && dmar->flags & DMAR_INTR_REMAP)
- 			printk(KERN_INFO
- 			       "Queued invalidation will be enabled to support "
- 			       "x2apic and Intr-remapping.\n");
-@@ -1461,6 +1461,30 @@ int __init dmar_ir_support(void)
- 	dmar = (struct acpi_table_dmar *)dmar_tbl;
- 	if (!dmar)
- 		return 0;
--	return dmar->flags & 0x1;
-+	return dmar->flags & DMAR_INTR_REMAP;
- }
-+
-+/*
-+ * Check if the platform support x2apic
-+ * three necessary conditions:
-+ * a. processor support x2apic
-+ * b. interrupt remapping support
-+ * c. when interrupt reamapping support,bit of x2APIC_OPT_OUT at "DMAR flags"
-+ *  is not set which means firmware does not tell OS opt out x2apic
-+ */
-+int __init x2apic_supported(void)
-+{
-+	struct acpi_table_dmar *dmar;
-+	unsigned int flags = 0;
-+
-+	if (!cpu_has_x2apic)
-+		return 0;
-+
-+	dmar = (struct acpi_table_dmar *)dmar_tbl;
-+	if (!dmar)
-+		return 0;
-+	flags = DMAR_INTR_REMAP | DMAR_X2APIC_OPT_OUT;
-+	return ((dmar->flags & flags) == DMAR_INTR_REMAP);
-+}
-+
- IOMMU_INIT_POST(detect_intel_iommu);
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index 7b776d7..73c9bff 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -228,8 +228,11 @@ struct dmar_atsr_unit {
- };
- 
- extern int intel_iommu_init(void);
-+extern int x2apic_supported(void);
-+
- #else /* !CONFIG_DMAR: */
- static inline int intel_iommu_init(void) { return -ENODEV; }
-+static inline int x2apic_supported(void) { return 0; }
- #endif /* CONFIG_DMAR */
- 
- #endif /* __DMAR_H__ */
-diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
-index 9310c69..2d086e5 100644
---- a/include/linux/intel-iommu.h
-+++ b/include/linux/intel-iommu.h
-@@ -29,6 +29,10 @@
- #include <asm/cacheflush.h>
- #include <asm/iommu.h>
- 
-+/* DMAR Flags bits */
-+#define DMAR_INTR_REMAP 0x1
-+#define DMAR_X2APIC_OPT_OUT 0x2
-+
- /*
-  * Intel IOMMU register specification per version 1.0 public spec.
-  */
+I have a question here.
+
+The host can request us to send less or more than the actual TOC size, since it 
+has no clue how big it is.
+e.g. Linux host requests us to send only 12 bytes even though our formatted TOC 
+length is 20. In this case should we return fsg->data_size_from_cmnd instead of 
+actual TOC length?
+
+e.g. Mac requests us to send 65534 bytes but our RAW TOC length is 37.
+The file storage driver seems to be zero padding our data response. So we 
+respond with 65534 bytes, 37 of TOC and remaining zero padded.
+
+Can we do something like this to avoid unnecessary zero padded transfers?
+
+         ret = fsg_get_toc(curlun, msf, format, buf);
+         if (ret < 0) {
+                 curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
+                 return -EINVAL;
+         } else if (ret > fsg->data_size_from_cmnd) {
+                 ret = fsg->data_size_from_cmnd;
+         } else {
+                 fsg->residue = ret;
+         }
+         return ret;
+
 -- 
-1.6.4.2
-
+regards,
+-roger
