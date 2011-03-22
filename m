@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab1CVPeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 11:34:50 -0400
-Received: from smtpbg55.qq.com ([64.71.138.44]:36309 "HELO smtpbg55.qq.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753239Ab1CVPer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 11:34:47 -0400
-X-QQ-mid: esmtp10t1300807965t827t02904
-X-QQ-SSF: 00000000000000F0FF300F000000000
-Date: Tue, 22 Mar 2011 23:32:47 +0800
-From: "Lina Lu" <lulina_nuaa@foxmail.com>
-To: "Vivek Goyal" <vgoyal@redhat.com>
-Cc: "linux kernel mailing list" <linux-kernel@vger.kernel.org>
-References: <201103201523220468314@foxmail.com>
-Subject: Re: Re: cfq-iosched.c: panic in cfq_dispatch_requests
-Message-ID: <201103222332465003523@foxmail.com>
-X-mailer: Foxmail 6, 15, 201, 23 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="gb2312"
-Content-Transfer-Encoding: 7bit
+	id S1754508Ab1CVPh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 11:37:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48238 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751926Ab1CVPh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 11:37:27 -0400
+Date: Tue, 22 Mar 2011 15:36:55 GMT
+From: tip-bot for Rakib Mullick <rakib.mullick@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rakib.mullick@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rakib.mullick@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <AANLkTinsUfGc=NG_GeH_B+zFVu+DXJzZbJKdQLscqfuH@mail.gmail.com>
+References: <AANLkTinsUfGc=NG_GeH_B+zFVu+DXJzZbJKdQLscqfuH@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, mpparse: Move check_slot into CONFIG_X86_IO_APIC context
+Message-ID: <tip-cbb84c4cc1ad0ab8faaffd899ccc9b14a88c91be@git.kernel.org>
+Git-Commit-ID: cbb84c4cc1ad0ab8faaffd899ccc9b14a88c91be
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 22 Mar 2011 15:37:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-21 22:08:19, Vivek Goyal wrote:
->On Sun, Mar 20, 2011 at 03:23:23PM +0800, Lina Lu wrote:
->> Hi Vivek,
->> 
->> I did some test with blkio weight policy these days. The kernel panic 
->> once in a while. 
->> 	
->> From the calltrace, It 's in func cfq_dispatch_requests(+0x058D).
->> And I caught a divide by zero error with system monitor tools.
->
->Hi Lina,
->
->Can you please paste the full backtrace here.
->
->> 	
->> The panic happens when I first set 100 weight to two IO pids, then 
->> change the weight to 200, and begin to perform IO. The kernel panic
->> accurately when the IO begin.
->
->So you notice this only if weights are changed otherwise not?
+Commit-ID:  cbb84c4cc1ad0ab8faaffd899ccc9b14a88c91be
+Gitweb:     http://git.kernel.org/tip/cbb84c4cc1ad0ab8faaffd899ccc9b14a88c91be
+Author:     Rakib Mullick <rakib.mullick@gmail.com>
+AuthorDate: Tue, 22 Mar 2011 15:24:54 +0600
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 22 Mar 2011 13:00:22 +0100
 
-Hi Vivek
+x86, mpparse: Move check_slot into CONFIG_X86_IO_APIC context
 
-Thanks for this patch! I did objdump and find place that divide by zero.
-It's in cfq_group_slice function, the st->total_weight is zero in my issue.
-As described in the patch, this is because I change the weight when the
-group on service tree. 
+When CONFIG_X86_MPPARSE=y and CONFIG_X86_IO_APIC=n, then we get
+the following warning:
 
-Thanks
-Lina
+  arch/x86/kernel/mpparse.c:723: warning: 'check_slot' defined but not used
 
->
->Recently Justin fixed a bug in CFQ where crash can happen when weights
->are changed. This fix in Jens's block tree. Can you please apply this
->patch and see if it resolves your issue too.
->
->commit 8184f93eced1e304721c2a55c00d87d5a14f8907
->Author: Justin TerAvest <teravest@google.com>
->Date:   Thu Mar 17 16:12:36 2011 +0100
->
->    cfq-iosched: Don't update group weights when on service tree
->
->Thanks
->Vivek
-@
+So, put check_slot into CONFIG_X86_IO_APIC context. Its only
+called from CONFIG_X86_IO_APIC=y context.
+
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+LKML-Reference: <AANLkTinsUfGc=NG_GeH_B+zFVu+DXJzZbJKdQLscqfuH@mail.gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/mpparse.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 6f789a8..5a532ce 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -714,10 +714,6 @@ static void __init check_irq_src(struct mpc_intsrc *m, int *nr_m_spare)
+ 		*nr_m_spare += 1;
+ 	}
+ }
+-#else /* CONFIG_X86_IO_APIC */
+-static
+-inline void __init check_irq_src(struct mpc_intsrc *m, int *nr_m_spare) {}
+-#endif /* CONFIG_X86_IO_APIC */
+ 
+ static int
+ check_slot(unsigned long mpc_new_phys, unsigned long mpc_new_length, int count)
+@@ -731,6 +727,10 @@ check_slot(unsigned long mpc_new_phys, unsigned long mpc_new_length, int count)
+ 
+ 	return ret;
+ }
++#else /* CONFIG_X86_IO_APIC */
++static
++inline void __init check_irq_src(struct mpc_intsrc *m, int *nr_m_spare) {}
++#endif /* CONFIG_X86_IO_APIC */
+ 
+ static int  __init replace_intsrc_all(struct mpc_table *mpc,
+ 					unsigned long mpc_new_phys,
