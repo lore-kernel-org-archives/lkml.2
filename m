@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab1CVH4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 03:56:36 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:47364 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab1CVH4c (ORCPT
+	id S1755233Ab1CVIEw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 04:04:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62469 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196Ab1CVIEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 03:56:32 -0400
-Date: Tue, 22 Mar 2011 08:56:24 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Prasad Joshi <prasadjoshi124@gmail.com>
-Cc: heiko.carstens@de.ibm.com, linux390@de.ibm.com, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mitra@kqinfotech.com
-Subject: Re: [RFC][PATCH v3 09/22] mm, s390: add gfp flags variant of pud,
- pte, and pte allocations
-Message-ID: <20110322085624.6a7efecf@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <20110321190239.GA6541@prasad-kvm>
-References: <20110318194341.GB4746@prasad-kvm>
-	<20110318194600.GC4746@prasad-kvm>
-	<20110318194740.GD4746@prasad-kvm>
-	<20110318194929.GE4746@prasad-kvm>
-	<20110318195035.GF4746@prasad-kvm>
-	<20110318195141.GG4746@prasad-kvm>
-	<20110318195307.GH4746@prasad-kvm>
-	<20110318195507.GI4746@prasad-kvm>
-	<20110318195643.GJ4746@prasad-kvm>
-	<20110321093412.2776a69f@mschwide.boeblingen.de.ibm.com>
-	<20110321190239.GA6541@prasad-kvm>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Mar 2011 04:04:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MBnYpJUexaxCoDZ9azbYTeD2Q1WCTUDSaLGbWzoO1hdKORH9kM6yqe5w2wTTQ6jMFh
+         maAMKpAAJrFSyR/9D8pYFmAjI/KWks/cqCxxhBoWGcap00s9iXoh815iBZyV+BNQ22iC
+         5eeN7aKJe9lv0ngU79SntphO7/TSrT7UjloW0=
+Date: Tue, 22 Mar 2011 09:04:44 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 7/8] job control: Notify the real parent of job control
+ events regardless of ptrace
+Message-ID: <20110322080444.GM12003@htj.dyndns.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+ <1299614199-25142-8-git-send-email-tj@kernel.org>
+ <20110321174306.GA29895@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110321174306.GA29895@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Mar 2011 19:02:39 +0000
-Prasad Joshi <prasadjoshi124@gmail.com> wrote:
-
-> On Mon, Mar 21, 2011 at 09:34:12AM +0100, Martin Schwidefsky wrote:
-> > On Fri, 18 Mar 2011 19:56:44 +0000
-> > Prasad Joshi <prasadjoshi124@gmail.com> wrote:
-> > 
-> > > - Added function __crst_table_alloc() which is similar to crst_table_alloc()
-> > >   but accepts an extra argument gfp_t. The function uses given allocation
-> > >   flag to allocate pages.
-> > > 
-> > > - Added a function __page_table_alloc() to allocate page table entries. This
-> > >   function is allows caller to specify the page allocation flag. The
-> > >   allocation flag is then passed to alloc_page(). The rest of the function is
-> > >   copy of the original page_table_alloc().
-> > 
-> > The approach of this patch series seems straightforward, the only nitpick I
-> > have is the fact that two new functions __crst_table_alloc/__page_table_alloc
-> > are introduced. There aren't many call sites for the two original functions,
-> > namely 4 for crst_table_alloc and 3 for page_table_alloc. Why not add the
-> > gfp flag GFP_KERNEL to these call sites? Then the two additional functions
-> > would not be needed.
+On Mon, Mar 21, 2011 at 06:43:06PM +0100, Oleg Nesterov wrote:
+> > + * Test whether the target task of the usual cldstop notification - the
+> > + * real_parent of the group_leader of @child - is the ptracer.
+> > + */
+> > +static bool real_parent_is_ptracer(struct task_struct *child)
+> > +{
+> > +	return child->parent == child->group_leader->real_parent;
+> > +}
 > 
-> Thanks a lot Martin for your reply. Here is a new patch, which the changes
-> you suggested.
+> Again, I am not sure we do not need same_thread_group(), but this
+> is minor.
 
-Looks good now. For the s390 architecture part:
+Yeah, same_thread_group() would be better.
 
-Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Hmm... in fact I can't convince myself we really need to look at
+> child->group_leader, will recheck... Anyway, this is minor too.
+
+Care to elaborate?
+
+> > @@ -1757,7 +1768,20 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
+> >  	spin_unlock_irq(&current->sighand->siglock);
+> >  	read_lock(&tasklist_lock);
+> >  	if (may_ptrace_stop()) {
+> > -		do_notify_parent_cldstop(current, task_ptrace(current), why);
+> > +		/*
+> > +		 * Notify parents of the stop.
+> > +		 *
+> > +		 * While ptraced, there are two parents - the ptracer and
+> > +		 * the real_parent of the group_leader.  The ptracer should
+> > +		 * know about every stop while the real parent is only
+> > +		 * interested in the completion of group stop.  The states
+> > +		 * for the two don't interact with each other.  Notify
+> > +		 * separately unless they're gonna be duplicates.
+> > +		 */
+> > +		do_notify_parent_cldstop(current, true, why);
+> > +		if (gstop_done && !real_parent_is_ptracer(current))
+> > +			do_notify_parent_cldstop(current, false, why);
+> 
+> OK.
+> 
+> But what about "else" branch? If gstop_done == T but debugger has gone
+> between spin_unlock(siglock) and read_lock(tasklist), we should do
+> something.
+> 
+> ptrace_untrace() restores GROUP_STOP_PENDING in this case, so this task
+> will stop again. But notification is lost.
+> 
+> Just in case, it is not that I blame this patch. Just I think we need
+> a bit more changes here. Unless I missed something.
+
+You mean when may_ptrace_stop() fails, right?  Yeah, we need
+notification in the else clause.  Will add it.
+
+Thanks.
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+tejun
