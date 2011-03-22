@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab1CVNcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 09:32:17 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:40828 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754189Ab1CVNcN (ORCPT
+	id S1756174Ab1CVNeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 09:34:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35682 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072Ab1CVNeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 09:32:13 -0400
-X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX1+gpLIctoqg0EL5MlikywAVzFAreAfq9R80KVxEHH
-	k9/mS22/L0CeFT
-Date: Tue, 22 Mar 2011 14:32:08 +0100
-From: torbenh <torbenh@gmx.de>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/5] RFC genirq: Add IRQ timestamping
-Message-ID: <20110322133208.GB5507@siel.b>
-Mail-Followup-To: john stultz <johnstul@us.ibm.com>,
-	linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-References: <1300708760-27910-1-git-send-email-torbenh@gmx.de>
- <AANLkTikt95R5DT3cTkPbTia9PpJqUr55v_g_xVN_AQtf@mail.gmail.com>
+	Tue, 22 Mar 2011 09:34:12 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=XYJHFtupD_QA:10 a=w6ZHtbzEN-4A:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=G3MgQ9XIAAAA:8 a=DZbqwH4ksJXkRW4qaFcA:9 a=w1E88A5RFzMlPn5_uXwA:7 a=gCaFlZj-XcHtoyQgt7r02k9jQPgA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Tue, 22 Mar 2011 09:34:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Brian Downing <bdowning@lavos.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [bisect] kernel 2.6.38 regression with root nfs mounting
+Message-ID: <20110322133409.GN14675@home.goodmis.org>
+References: <AANLkTimjmdi8sFTTjSPerOVgHQ+pjjwwMvCUX3AJ16At@mail.gmail.com>
+ <AANLkTimxrdhhukoVP76c4PUzeWsKOEy-_bHOgCCFabxc@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikt95R5DT3cTkPbTia9PpJqUr55v_g_xVN_AQtf@mail.gmail.com>
+In-Reply-To: <AANLkTimxrdhhukoVP76c4PUzeWsKOEy-_bHOgCCFabxc@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 07:33:26PM -0700, john stultz wrote:
-> On Mon, Mar 21, 2011 at 4:59 AM, Torben Hohn <torbenh@gmx.de> wrote:
-> > +       if (desc->status & IRQ_TIMESTAMP)
-> > +               getrawmonotonic(&desc->last_timestamp);
-> > +
-> 
-> I suspect you probably want some very clear comments around why you
-> chose timestamps based on CLOCK_MONOTONIC_RAW instead of
-> CLOCK_MONOTONIC. Likely in the code as well as in the commit log.
+On Tue, Mar 22, 2011 at 08:52:12AM +0100, Belisko Marek wrote:
+> CC: also lkml
 
-I really dont know which clock would be the most useful one.
-CLOCK_MONOTONIC_RAW seems to be more suitable to drive dlls.
-But the network layer probably wants CLOCK_MONOTONIC or
-even CLOCK_REALTIME.
+And please Cc those that are on that commit.
 
-I didnt put much thought in this point, because it requires a broader
-discussion, I think.
 
 > 
-> thanks
-> -john
+> After update from 2.6.38-rc8 to 2.6.38 is mounting rootfs over nfs not possible.
+> Log:
+> VFS: Mounted root (nfs filesystem) on device 0:14.
+> Freeing init memory: 132K
+> nfs: server 10.146.1.21 not responding, still trying
+> nfs: server 10.146.1.21 not responding, still trying
+> 
+> This is never ending. I make short bisect (not too much commits
+> between versions)
+> and bad commit was reported: 53d4737580535e073963b91ce87d4216e434fab5
+> 
+> NFS: NFSROOT should default to "proto=udp"
+> 
+> I've tested on mini2440 board (DM9000, static IP).
+> Is there some missing option or something else to be checked?
 
--- 
-torben Hohn
+Sometimes git bisect messes up. Did you verify that commit broke the
+kernel? It's easy to do:
+
+git checkout 53d4737580535e073963b91ce87d4216e434fab5~1
+
+then build and boot the kernel and test if it works.
+
+git checkout 53d4737580535e073963b91ce87d4216e434fab5
+
+then build and boot again and test if it fails.
+
+If the first checkout works and the second fails, then you have verified
+that is the guilty commit.
+
+Thanks,
+
+-- Steve
+
+> 
+> Regards,
+> 
+> marek
+> 
+> --
+> as simple and primitive as possible
+> -------------------------------------------------
+> Marek Belisko - OPEN-NANDRA
+> Freelance Developer
+> 
+> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+> Tel: +421 915 052 184
+> skype: marekwhite
+> icq: 290551086
+> web: http://open-nandra.com
