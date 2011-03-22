@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab1CVJfc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 05:35:32 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46646 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752295Ab1CVJf1 (ORCPT
+	id S1753508Ab1CVJf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 05:35:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41489 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751877Ab1CVJf1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Mar 2011 05:35:27 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] dma: let IMX_DMA depend on IMX_HAVE_DMA_V1 instead of an explicit list of SoCs
-Date: Tue, 22 Mar 2011 10:35:17 +0100
-Message-Id: <1300786517-3695-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Watkins, Melissa" <m-watkins@ti.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>
+Date: Tue, 22 Mar 2011 15:05:07 +0530
+Subject: RE: [PATCH v3 1/7] mfd: add pruss mfd driver.
+Thread-Topic: [PATCH v3 1/7] mfd: add pruss mfd driver.
+Thread-Index: AcvlaYI3wUiX7dfGRFiMdHbMtqNo/ADBPeBA
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024C47D5EE@dbde02.ent.ti.com>
+References: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com>
+ <1299592667-21367-2-git-send-email-subhasish@mistralsolutions.com>
+ <B85A65D85D7EB246BE421B3FB0FBB593024C3B85A5@dbde02.ent.ti.com>
+ <20110318123917.GC27129@sirena.org.uk>
+In-Reply-To: <20110318123917.GC27129@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As a side effect this makes IMX_DMA selectable on i.MX21 again, because
-the symbol ARCH_MX21 doesn't exist (MACH_MX21 would have been more correct).
+Hi Mark,
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/dma/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Fri, Mar 18, 2011 at 18:09:17, Mark Brown wrote:
+> On Fri, Mar 18, 2011 at 05:29:39PM +0530, Nori, Sekhar wrote:
+> 
+> > PRUSS as an IP is not really tied to the DA8xx SoC architecture.
+> > So, can you please name the files ti-pruss* or even just pruss if
+> > MFD folks are okay with it?
+> 
+> This...
+> 
+> > > +EXPORT_SYMBOL(pruss_get_clk_freq);
+> 
+> > This looks strange. Why do we need this? There
+> > is clk_get_rate() API in the kernel would would
+> > seem more suitable.
+> 
+> ...unfortunately conflicts with this - currently all clock API
+> implementations are unique to the platform and there's no way of adding
+> clocks that works over multiple platforms.
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 1c28816..f2463b4 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -221,7 +221,7 @@ config IMX_SDMA
- 
- config IMX_DMA
- 	tristate "i.MX DMA support"
--	depends on ARCH_MX1 || ARCH_MX21 || MACH_MX27
-+	depends on IMX_HAVE_DMA_V1
- 	select DMA_ENGINE
- 	help
- 	  Support the i.MX DMA engine. This engine is integrated into
--- 
-1.7.2.3
+Hmm, I guess I have a limited view of this. We do have drivers which
+use clock API and work across OMAP and DaVinci series of ARM SoCs.
+The clock implementation in this case is under mach-omap and mach-davinci
+respectively.
+
+Thanks,
+Sekhar
 
