@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab1CVAVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 20:21:36 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:27215 "EHLO
+	id S1756127Ab1CVA1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 20:27:10 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:7852 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab1CVAVd (ORCPT
+	with ESMTP id S1754841Ab1CVA1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 20:21:33 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6292"; a="81270308"
-Message-ID: <94462146d712916438b435acb20c9f00.squirrel@www.codeaurora.org>
-In-Reply-To: <EAF47CD23C76F840A9E7FCE10091EFAB033D22EAE7@dbde02.ent.ti.com>
+	Mon, 21 Mar 2011 20:27:00 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6292"; a="81270884"
+Message-ID: <2f8cf83e58884833fa8c67e536dd5620.squirrel@www.codeaurora.org>
+In-Reply-To: <20110320092215.GA16646@n2100.arm.linux.org.uk>
 References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
-    <1300485381-27201-1-git-send-email-carlv@codeaurora.org>
-    <EAF47CD23C76F840A9E7FCE10091EFAB033D22EAE7@dbde02.ent.ti.com>
-Date: Mon, 21 Mar 2011 17:21:10 -0700 (PDT)
-Subject: RE: [PATCH 07/20] video: msm: Allow users to request a larger x 
-     and y virtual fb
+    <1300485423-27281-1-git-send-email-carlv@codeaurora.org>
+    <20110320092215.GA16646@n2100.arm.linux.org.uk>
+Date: Mon, 21 Mar 2011 17:26:37 -0700 (PDT)
+Subject: Re: [PATCH 09/20] video: msm: Split out MDP2.2 HW specific code.
 From: "Carl Vanderlip" <carlv@codeaurora.org>
-To: "Janorkar, Mayuresh" <mayur@ti.com>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
 Cc: "Carl Vanderlip" <carlv@codeaurora.org>,
         "David Brown" <davidb@codeaurora.org>,
         "Daniel Walker" <dwalker@fifo99.com>,
@@ -25,12 +24,9 @@ Cc: "Carl Vanderlip" <carlv@codeaurora.org>,
         "Brian Swetland" <swetland@google.com>,
         "Dima Zavin" <dima@android.com>,
         "Rebecca Schultz Zavin" <rebecca@android.com>,
-        "Colin Cross" <ccross@android.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+        "Colin Cross" <ccross@android.com>, linux-fbdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -41,96 +37,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> diff --git a/drivers/video/msm/msm_fb.c b/drivers/video/msm/msm_fb.c
->> index 04d0067..6af8b41 100644
->> --- a/drivers/video/msm/msm_fb.c
->> +++ b/drivers/video/msm/msm_fb.c
-
->> @@ -323,14 +327,46 @@ error:
->>
->>  static int msmfb_check_var(struct fb_var_screeninfo *var, struct
->> fb_info
->> *info)
->>  {
->> +	u32 size;
->> +
->>  	if ((var->xres != info->var.xres) ||
->>  	    (var->yres != info->var.yres) ||
->> -	    (var->xres_virtual != info->var.xres_virtual) ||
->> -	    (var->yres_virtual != info->var.yres_virtual) ||
->>  	    (var->xoffset != info->var.xoffset) ||
->>  	    (var->bits_per_pixel != info->var.bits_per_pixel) ||
->>  	    (var->grayscale != info->var.grayscale))
->>  		 return -EINVAL;
->> +
->> +	size = var->xres_virtual * var->yres_virtual *
->> +		(var->bits_per_pixel >> 3);
->
-> How about defining a new macro BYTES_PER_PIXEL_VAR for fb_var_screeninfo
-> also? That would make code more readable.
->
->> +	if (size > info->fix.smem_len)
->> +		return -EINVAL;
->> +	return 0;
->> +}
-
-Name might be a little easy to confuse with the other BYTES_PER_PIXEL, but
-overall readability would increase IMHO; Done.
-
->> +static int msmfb_set_par(struct fb_info *info)
+> On Fri, Mar 18, 2011 at 02:57:03PM -0700, Carl Vanderlip wrote:
+>> +int mdp_ppp_cfg_edge_cond(struct mdp_blit_req *req, struct ppp_regs
+>> *regs)
 >> +{
->> +	struct fb_var_screeninfo *var = &info->var;
->> +	struct fb_fix_screeninfo *fix = &info->fix;
+>> +	int32_t luma_interp[4];
+>> +	int32_t luma_repeat[4];
+>> +	int32_t chroma_interp[4];
+>> +	int32_t chroma_bound[4];
+>> +	int32_t chroma_repeat[4];
+>> +	uint32_t dst_w, dst_h;
 >> +
->> +	/* we only support RGB ordering for now */
->> +	if (var->bits_per_pixel == 32 || var->bits_per_pixel == 24) {
->> +		var->red.offset = 0;
->> +		var->red.length = 8;
->> +		var->green.offset = 8;
->> +		var->green.length = 8;
->> +		var->blue.offset = 16;
->> +		var->blue.length = 8;
->
-> var->red is a fb_bitfield variable.
-> It provides offset, length and msb_right.
->
-> struct fb_bitfield {
->     __u32 offset;                   /* beginning of bitfield        */
->     __u32 length;                   /* length of bitfield           */
->     __u32 msb_right;                /* != 0 : Most significant bit is */
->                                     /* right */
-> }
-> Please don't keep msb_right unassigned.
->
->> +	} else if (var->bits_per_pixel == 16) {
->> +		var->red.offset = 11;
->> +		var->red.length = 5;
->> +		var->green.offset = 5;
->> +		var->green.length = 6;
->> +		var->blue.offset = 0;
->> +		var->blue.length = 5;
->> +	} else
+>> +	memset(&luma_interp, 0, sizeof(int32_t) * 4);
+>> +	memset(&luma_repeat, 0, sizeof(int32_t) * 4);
+>> +	memset(&chroma_interp, 0, sizeof(int32_t) * 4);
+>> +	memset(&chroma_bound, 0, sizeof(int32_t) * 4);
+>> +	memset(&chroma_repeat, 0, sizeof(int32_t) * 4);
+>> +	regs->edge = 0;
+>> +
+>> +	if (req->flags & MDP_ROT_90) {
+>> +		dst_w = req->dst_rect.h;
+>> +		dst_h = req->dst_rect.w;
+>> +	} else {
+>> +		dst_w = req->dst_rect.w;
+>> +		dst_h = req->dst_rect.h;
+>> +	}
+>> +
+>> +	if (regs->op & (PPP_OP_SCALE_Y_ON | PPP_OP_SCALE_X_ON)) {
+>> +		get_edge_info(req->src_rect.h, req->src_rect.y, dst_h,
+>> +			      &luma_interp[IMG_TOP], &luma_interp[IMG_BOTTOM],
+>> +			      &luma_repeat[IMG_TOP], &luma_repeat[IMG_BOTTOM]);
+>> +		get_edge_info(req->src_rect.w, req->src_rect.x, dst_w,
+>> +			      &luma_interp[IMG_LEFT], &luma_interp[IMG_RIGHT],
+>> +			      &luma_repeat[IMG_LEFT], &luma_repeat[IMG_RIGHT]);
+>> +	} else {
+>> +		luma_interp[IMG_LEFT] = req->src_rect.x;
+>> +		luma_interp[IMG_RIGHT] = req->src_rect.x + req->src_rect.w - 1;
+>> +		luma_interp[IMG_TOP] = req->src_rect.y;
+>> +		luma_interp[IMG_BOTTOM] = req->src_rect.y + req->src_rect.h - 1;
+>> +		luma_repeat[IMG_LEFT] = 0;
+>> +		luma_repeat[IMG_TOP] = 0;
+>> +		luma_repeat[IMG_RIGHT] = 0;
+>> +		luma_repeat[IMG_BOTTOM] = 0;
+>> +	}
+>> +
+>> +	chroma_interp[IMG_LEFT] = luma_interp[IMG_LEFT];
+>> +	chroma_interp[IMG_RIGHT] = luma_interp[IMG_RIGHT];
+>> +	chroma_interp[IMG_TOP] = luma_interp[IMG_TOP];
+>> +	chroma_interp[IMG_BOTTOM] = luma_interp[IMG_BOTTOM];
+>> +
+>> +	chroma_bound[IMG_LEFT] = req->src_rect.x;
+>> +	chroma_bound[IMG_RIGHT] = req->src_rect.x + req->src_rect.w - 1;
+>> +	chroma_bound[IMG_TOP] = req->src_rect.y;
+>> +	chroma_bound[IMG_BOTTOM] = req->src_rect.y + req->src_rect.h - 1;
+>> +
+>> +	if (IS_YCRCB(req->src.format)) {
+>> +		chroma_interp[IMG_LEFT] = chroma_interp[IMG_LEFT] >> 1;
+>> +		chroma_interp[IMG_RIGHT] = (chroma_interp[IMG_RIGHT] + 1) >> 1;
+>> +
+>> +		chroma_bound[IMG_LEFT] = chroma_bound[IMG_LEFT] >> 1;
+>> +		chroma_bound[IMG_RIGHT] = chroma_bound[IMG_RIGHT] >> 1;
+>> +	}
+>> +
+>> +	if (req->src.format == MDP_Y_CBCR_H2V2 ||
+>> +	    req->src.format == MDP_Y_CRCB_H2V2) {
+>> +		chroma_interp[IMG_TOP] = (chroma_interp[IMG_TOP] - 1) >> 1;
+>> +		chroma_interp[IMG_BOTTOM] = (chroma_interp[IMG_BOTTOM] + 1)
+>> +					    >> 1;
+>> +		chroma_bound[IMG_TOP] = (chroma_bound[IMG_TOP] + 1) >> 1;
+>> +		chroma_bound[IMG_BOTTOM] = chroma_bound[IMG_BOTTOM] >> 1;
+>> +	}
+>> +
+>> +	chroma_repeat[IMG_LEFT] = chroma_bound[IMG_LEFT] -
+>> +				  chroma_interp[IMG_LEFT];
+>> +	chroma_repeat[IMG_RIGHT] = chroma_interp[IMG_RIGHT] -
+>> +				  chroma_bound[IMG_RIGHT];
+>> +	chroma_repeat[IMG_TOP] = chroma_bound[IMG_TOP] -
+>> +				  chroma_interp[IMG_TOP];
+>> +	chroma_repeat[IMG_BOTTOM] = chroma_interp[IMG_BOTTOM] -
+>> +				  chroma_bound[IMG_BOTTOM];
+>> +
+>> +	if (chroma_repeat[IMG_LEFT] < 0 || chroma_repeat[IMG_LEFT] > 3 ||
+>> +	    chroma_repeat[IMG_RIGHT] < 0 || chroma_repeat[IMG_RIGHT] > 3 ||
+>> +	    chroma_repeat[IMG_TOP] < 0 || chroma_repeat[IMG_TOP] > 3 ||
+>> +	    chroma_repeat[IMG_BOTTOM] < 0 || chroma_repeat[IMG_BOTTOM] > 3 ||
+>> +	    luma_repeat[IMG_LEFT] < 0 || luma_repeat[IMG_LEFT] > 3 ||
+>> +	    luma_repeat[IMG_RIGHT] < 0 || luma_repeat[IMG_RIGHT] > 3 ||
+>> +	    luma_repeat[IMG_TOP] < 0 || luma_repeat[IMG_TOP] > 3 ||
+>> +	    luma_repeat[IMG_BOTTOM] < 0 || luma_repeat[IMG_BOTTOM] > 3)
 >> +		return -1;
 >
-> Please use standard error code provided by Linux kernel -EINVAL
-> (-22 Invalid argument)
+> Lazy programming strikes again.  Public functions really should not
+> return things that look like errno codes, rather they should return
+> real errno codes.
 >
->> +	fix->line_length = var->xres * var->bits_per_pixel / 8;
-> Why to divide by 8? Atleast use >>3, bitwise operations that would take
-> less cpu cycles)
-> As I stated earlier define a new macro for var also.
+> Secondly, why is this stuff, which looks very driver like, under arch/arm
+> and not in drivers/ somewhere?
 >
->> +
->>  	return 0;
->>  }
 
-And Done. And done again... and while I'm at it, all the changes you
-suggested are being pulled into v2 (except for updating Google's copyright
-date (see: Brian Swetland's response)).
+Fixed.
 
-Thank you for reviewing my patches :)
-
-   -Carl V.
+Secondly, I think this code in particular is in drivers/video/msm; I think
+you've been included since there are some Kconfig updates under arch/arm
+(additionally, I think David B. will be pulling this into his for-next
+tree if approved).
 
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
