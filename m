@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab1CVQqe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 12:46:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51824 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753370Ab1CVQqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 12:46:32 -0400
-Date: Tue, 22 Mar 2011 09:44:54 -0700
-From: Greg KH <gregkh@suse.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb_wwan: fix build error in play_delayed.
-Message-ID: <20110322164454.GB15916@suse.de>
-References: <1300768162-18394-1-git-send-email-tm@tao.ma>
- <1300773955.2837.24.camel@edumazet-laptop>
+	id S1755928Ab1CVQs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 12:48:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36152 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755220Ab1CVQsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 12:48:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1300773955.2837.24.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTimQ2tHwbkbd5qRgtpuzm25Hf0PEzUVQp=LKLOPu@mail.gmail.com>
+References: <1300455630-21577-1-git-send-email-lucas.demarchi@profusion.mobi>
+ <1300455630-21577-2-git-send-email-lucas.demarchi@profusion.mobi>
+ <20110322103735.GD4448@elte.hu> <AANLkTik7wKdf_yCukg7RAAE5PWXw5YkAG=hSBuSn1wn9@mail.gmail.com>
+ <20110322114405.GE4448@elte.hu> <AANLkTinqC33LE7V-2VzEJ_xnZdmokg8P7px1KP8m2DFf@mail.gmail.com>
+ <20110322123357.GA14352@elte.hu> <AANLkTimQ2tHwbkbd5qRgtpuzm25Hf0PEzUVQp=LKLOPu@mail.gmail.com>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Tue, 22 Mar 2011 13:48:04 -0300
+Message-ID: <AANLkTika3HadrdTDsuAei17HwVmPHOttCD=tSRtXLLLg@mail.gmail.com>
+Subject: Re: [PATCH 2/4] perf: fix common misspellings
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Lucas De Marchi <lucas.de.marchi@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Randy Dunlap <randy.dunlap@oracle.com>, jason.wessel@windriver.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 07:05:55AM +0100, Eric Dumazet wrote:
-> Le mardi 22 mars 2011 à 12:29 +0800, Tao Ma a écrit :
-> > From: Tao Ma <boyu.mt@taobao.com>
-> > 
-> > There is a build error in today's linus tree.
-> > drivers/usb/serial/usb_wwan.c: In function ‘play_delayed’:
-> > drivers/usb/serial/usb_wwan.c:702: error: ‘struct dev_pm_info’ has no member named ‘usage_count’
-> > The reason is that usage_count is wrapped with macro CONFIG_PM_RUNTIME
-> > now in dev_pm_info.
-> > 
-> > So use the corresponding pm_runtime_get_noresume instead.
-> > 
-> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> > Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-> > ---
-> >  drivers/usb/serial/usb_wwan.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-> > index a65ddd5..5858ce4 100644
-> > --- a/drivers/usb/serial/usb_wwan.c
-> > +++ b/drivers/usb/serial/usb_wwan.c
-> > @@ -699,7 +699,7 @@ static void play_delayed(struct usb_serial_port *port)
-> >  			do {
-> >  				unbusy_queued_urb(urb, portdata);
-> >  				//extremely dirty
-> > -				atomic_dec(&port->serial->interface->dev.power.usage_count);
-> > +				pm_runtime_get_noresume(&port->serial->interface->dev);
-> >  			} while ((urb = usb_get_from_anchor(&portdata->delayed)));
-> >  			break;
-> >  		}
-> 
-> Oh well, thats the third time this patch is sent
+On Tue, Mar 22, 2011 at 1:31 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>> Anyway, it's all up to Linus whether he'll take a big patch.
+>
+> I can take a big patch, but not during the merge window when there are
+> outstanding pull reqeuests etc. But possibly soon after -rc1, if it
+> gets some review and I feel comfortable that the patch is clearly only
+> spelling in comments (or whatever the exact rules are for codespell)
 
-Yes, sorry, been busy with other stuff, this will get fixed soon, I have
-enough copies of it in my queue :)
+I care most about misspellings in user visible strings like docs and
+printks, but there is no such distinction. In real code though changes
+are usually not done (var names and the like).
 
-thanks,
 
-greg k-h
+
+Lucas De Marchi
