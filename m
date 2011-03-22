@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab1CVFER (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 01:04:17 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:37922 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab1CVFEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 01:04:16 -0400
-Message-ID: <4D882DDF.3040901@cs.wisc.edu>
-Date: Tue, 22 Mar 2011 00:04:31 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1753775Ab1CVFIr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 01:08:47 -0400
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.61]:34746 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753623Ab1CVFIp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 01:08:45 -0400
+Date: Tue, 22 Mar 2011 01:08:21 -0400
+From: Ben Blum <bblum@andrew.cmu.edu>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, akpm@linux-foundation.org,
+        ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com,
+        oleg@redhat.com, David Rientjes <rientjes@google.com>,
+        Miao Xie <miaox@cn.fujitsu.com>
+Subject: Re: [PATCH v8 3/3] cgroups: make procs file writable
+Message-ID: <20110322050821.GA11447@ghc17.ghc.andrew.cmu.edu>
+References: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>
+ <20110208013950.GF31569@ghc17.ghc.andrew.cmu.edu>
+ <AANLkTinEnNsu8=PEktXL_EECzGYqsgdf+uogGxe7k4W+@mail.gmail.com>
+ <20110310061831.GA23736@ghc17.ghc.andrew.cmu.edu>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Jesper Juhl <jj@chaosbits.net>
-Subject: Re: [RFC-v4 11/12] iscsi-target: Add misc utility and debug logic
-References: <1300613497-2091-1-git-send-email-nab@linux-iscsi.org> <1300613497-2091-12-git-send-email-nab@linux-iscsi.org> <4D881FC0.5080100@cs.wisc.edu>
-In-Reply-To: <4D881FC0.5080100@cs.wisc.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110310061831.GA23736@ghc17.ghc.andrew.cmu.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.3.18.170322
+X-SMTP-Spam-Clean: 8% (
+ FROM_SAME_AS_TO 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1300_1399 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __FROM_SAME_AS_TO2 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __USER_AGENT 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2011 11:04 PM, Mike Christie wrote:
->> +
->> +void iscsit_ntoa2(unsigned char *buf, u32 ip)
->> +{
->> + memset(buf, 0, 18);
->> + sprintf(buf, "%u.%u.%u.%u", ((ip>> 24)& 0xff), ((ip>> 16)& 0xff),
->> + ((ip>> 8)& 0xff), (ip& 0xff));
->> +}
->
-> I think we have a function like this already.
->
->
-> If not, I think this should be:
->
-> sprintf(buf, "%pI4",
->
-> What s up with ipv6 btw? That uses %pI6.
->
+On Thu, Mar 10, 2011 at 01:18:31AM -0500, Ben Blum wrote:
+> > > + ? ? ? ? ? ? ? ? ? ? ? /* optimization for the single-task-only case */
+> > > + ? ? ? ? ? ? ? ? ? ? ? rcu_read_unlock();
+> > > + ? ? ? ? ? ? ? ? ? ? ? cgroup_unlock();
+> > > ? ? ? ? ? ? ? ? ? ? ? ?return -ESRCH;
+> > > ? ? ? ? ? ? ? ?}
+> > >
+> > > + ? ? ? ? ? ? ? /*
+> > > + ? ? ? ? ? ? ? ?* even if we're attaching all tasks in the thread group, we
+> > > + ? ? ? ? ? ? ? ?* only need to check permissions on one of them.
+> > > + ? ? ? ? ? ? ? ?*/
+> > > ? ? ? ? ? ? ? ?tcred = __task_cred(tsk);
+> > > ? ? ? ? ? ? ? ?if (cred->euid &&
+> > > ? ? ? ? ? ? ? ? ? ?cred->euid != tcred->uid &&
+> > > ? ? ? ? ? ? ? ? ? ?cred->euid != tcred->suid) {
+> > > ? ? ? ? ? ? ? ? ? ? ? ?rcu_read_unlock();
+> > > + ? ? ? ? ? ? ? ? ? ? ? cgroup_unlock();
+> > > ? ? ? ? ? ? ? ? ? ? ? ?return -EACCES;
+> > 
+> > Maybe turn these returns into "goto out;" statements and put the
+> > unlock after the out: label?
+> > 
+> 
+> Maybe; I didn't look too hard at that function. If I revise the patch I
+> can do this, though.
 
+Looking back, I think I like it the way it is. Coalescing those unlock
+paths would make it less clear... rcu_read is unlocked in the middle of
+the function (on the success path), so having a bailout path moves the
+failure path far removed from where it's relevant.
 
->> + if (tpg_np->tpg_np->np_sockaddr.ss_family == AF_INET6) {
->> + ip =&tpg_np->tpg_np->np_ipv6[0];
->
->
-> Is ip supposed to be a string with the ip address in it? If so is that
-> right? Is np_ipv6 a string with the ip address in human readable format,
-> but below np_ipv4 is the integer representation then you convert it.
-
-Ignore those, I see in the other patches it is different. Why is that?
+-- Ben
