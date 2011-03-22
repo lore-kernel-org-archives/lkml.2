@@ -1,39 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab1CVWR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 18:17:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36197 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751584Ab1CVWRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 18:17:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,227,1299484800"; 
-   d="scan'208";a="616436995"
-Date: Tue, 22 Mar 2011 21:57:59 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Oren Weil <oren.jer.weil@intel.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, david@woodhou.se
-Subject: Re: [PATCH 1/7] char/mei: PCI device and char driver support.
-Message-ID: <20110322215759.2d982e06@bob.linux.org.uk>
-In-Reply-To: <201103221822.43780.arnd@arndb.de>
-References: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com>
-	<1300791092-14319-2-git-send-email-oren.jer.weil@intel.com>
-	<201103221822.43780.arnd@arndb.de>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752136Ab1CVWSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 18:18:12 -0400
+Received: from usindmx01.hds.com ([207.126.252.12]:40216 "EHLO
+	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab1CVWSK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 18:18:10 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 22 Mar 2011 18:17:16 -0400
+Subject: RE: [RFC] pstore: Don't use persistent store for normal shutdown
+Thread-Topic: [RFC] pstore: Don't use persistent store for normal shutdown
+Thread-Index: AcvoyyhirdmLJXvzRnW98K72gc6MnwAE3ffA
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C14F5AA6A@USINDEVS01.corp.hds.com>
+References: <1300783365.2735.12.camel@localhost>
+ <4d88fec9598644f42@agluck-desktop.sc.intel.com>
+In-Reply-To: <4d88fec9598644f42@agluck-desktop.sc.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> * In the PCI probe function, create a misc character device for
->   every instance you find behind each device. Remove the global
->   variables and constants.
+>-----Original Message-----
+>From: Luck, Tony [mailto:tony.luck@intel.com]
+>Sent: Tuesday, March 22, 2011 3:56 PM
+>To: Artem Bityutskiy
+>Cc: linux-kernel@vger.kernel.org; Seiji Aguchi; David Woodhouse; Marco Stornelli; KOSAKI Motohiro; Andrew Morton; Linus
+>Torvalds
+>Subject: Re: [RFC] pstore: Don't use persistent store for normal shutdown
+>
+>From: Tony Luck <tony.luck@intel.com>
+>
+>pstore_dump() can be called with many different "reason" codes. Save
+>the name of the code in the persistent store record.
+>
+>Also - only worthwhile calling pstore_mkfile for KMSG_DUMP_OOPS - that
+>is the only one where the kernel will continue running.
+>
+>Signed-off-by: Tony Luck <tony.luck@intel.com>
+>
 
-The current code is complex and could be a ton simpler *but* don't
-abuse misc devices when you have one per PCI instance please.
+Looks good to me.
 
-Alan (Miscdevice police)
+Reviewed-by: Seiji Aguchi <seiji.aguchi@hds.com>
+
