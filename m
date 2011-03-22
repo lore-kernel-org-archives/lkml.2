@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab1CVQlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 12:41:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63058 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755460Ab1CVQlb (ORCPT
+	id S1756012Ab1CVQlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 12:41:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51579 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755446Ab1CVQla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 12:41:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH 6/7] char/mei: Header file contain the Userland API, (IOCTL and its struct)
-Date: Tue, 22 Mar 2011 17:41:17 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Oren Weil <oren.jer.weil@intel.com>, linux-kernel@vger.kernel.org,
-        alan@linux.intel.com, david@woodhou.se
-References: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com> <1300791092-14319-7-git-send-email-oren.jer.weil@intel.com> <20110322162603.GB14737@suse.de>
-In-Reply-To: <20110322162603.GB14737@suse.de>
+	Tue, 22 Mar 2011 12:41:30 -0400
+Date: Tue, 22 Mar 2011 16:41:28 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Takashi Iwai <tiwai@suse.de>, Randy Dunlap <randy.dunlap@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Zeng Zhaoming <b32542@freescale.com>
+Subject: Re: [build failure] Re: [GIT PULL] sound updates for 2.6.39-rc1
+Message-ID: <20110322164128.GE22583@opensource.wolfsonmicro.com>
+References: <20110321153719.GA12325@elte.hu>
+ <20110321155836.GE2570@opensource.wolfsonmicro.com>
+ <20110321161102.GB23614@elte.hu>
+ <20110321163849.GF2570@opensource.wolfsonmicro.com>
+ <20110321164937.GA6381@elte.hu>
+ <20110321165827.GG2570@opensource.wolfsonmicro.com>
+ <20110322122436.GA6834@opensource.wolfsonmicro.com>
+ <20110322083839.caab0520.randy.dunlap@oracle.com>
+ <s5hk4frnog6.wl%tiwai@suse.de>
+ <20110322160055.GA22128@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103221741.18141.arnd@arndb.de>
-X-Provags-ID: V02:K0:DWfYfroXUWOVQhQglbS5NL/rtHRF4SMEF7EEGjVIWWR
- Ir0IW3gJ3qZPYfzSre7KtWAz2WbaIhJtJuONnW2jvnZvvkFzrn
- yzPNTGjNHUfBu3TCNH7qt9hoKI6QZQxUDsygsVmkd8WpEnINnk
- t/6gA9Mw4s2VxV8a9CGl+hJUMKdy+2KKqhiOkh+Nhj6jyYEV6z
- /l0TEPlDiu6WCm/Esk0cA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322160055.GA22128@elte.hu>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 March 2011, Greg KH wrote:
-> On Tue, Mar 22, 2011 at 12:51:31PM +0200, Oren Weil wrote:
-> > +/*
-> > + * Intel MEI client information struct
-> > + */
-> > +struct mei_client {
-> > +     u32 max_msg_length;
-> > +     u8 protocol_version;
-> > +     u8 reserved[3];
-> > +} __packed;
-> 
-> As this is passing the kernel/user boundry, you need to use the proper
-> data types for it.
-> 
-> So use __u32 and __u8 here please.
+On Tue, Mar 22, 2011 at 05:00:55PM +0100, Ingo Molnar wrote:
 
-Also, __packed should not be used in APIs, because it is a gcc extension
-and makes the code less efficient.
+> Btw., ldo_regulator_remove() returns an int, but none of the call sites make 
+> use of the return value. Also, ldo_regulator_remove() can only ever return 0.
 
-> > +/*
-> > + * IOCTL Connect Client Data structure
-> > + */
-> > +struct mei_connect_client_data {
-> > +     union {
-> > +             uuid_le in_client_uuid;
-> > +             struct mei_client out_client_propeties;
-> > +     } d;
-> 
-> Why not an anonymous union?
+Yup, the return value is a complete waste of time.  But that's a
+separate issue and a separate patch if someone wants to spend the time
+on the driver.
 
-That would also incompatible with some compilers. I would recommend
-not using a union at all, but simply to put all in one struct.
+> More importantly, it would be cleaner to wrap the !regulator case by making 
+> sgtl5000->ldo NULL (this should already be the case) and making 
+> regulator_unregister() available in the !REGULATOR case as well, as an inline 
+> stub.
 
-	Arnd
+Yeah, though I'm a bit ambivalent on stubbing only one half of the pair
+it'd not be a real problem.  And obviously there's a trivial text size
+saving from compling out the unregistration code entirely.  Separate
+patch again, though.
