@@ -1,729 +1,645 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab1CVHZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 03:25:22 -0400
-Received: from nwd2mail11.analog.com ([137.71.25.57]:36227 "EHLO
-	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab1CVHZR (ORCPT
+	id S1754838Ab1CVH2r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 03:28:47 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48727 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab1CVH2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 03:25:17 -0400
-X-IronPort-AV: E=Sophos;i="4.63,224,1299474000"; 
-   d="scan'208";a="30612510"
-From: "Cai, Cliff" <Cliff.Cai@analog.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Drivers <Drivers@analog.com>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>,
-        Cliff Cai <cliff@analog.com>
-Date: Tue, 22 Mar 2011 03:29:41 -0400
-Subject: RE: [PATCH RESEND v2]IIO driver for Analog Devices Digital Output
- Gyroscope ADXRS450
-Thread-Topic: [PATCH RESEND v2]IIO driver for Analog Devices Digital Output
- Gyroscope ADXRS450
-Thread-Index: Acvn7uiiVPkrIiCsR/yxiW16KskFDAAcjugg
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D167E03359CD@NWD2CMBX1.ad.analog.com>
-References: <1300526846-27183-1-git-send-email-cliff.cai@analog.com>
- <4D878D8B.6070902@cam.ac.uk>
-In-Reply-To: <4D878D8B.6070902@cam.ac.uk>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="gb2312"
+	Tue, 22 Mar 2011 03:28:44 -0400
+Message-ID: <9D35ABAF307441FFAE50B3EAA521C4E0@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Arnd Bergmann" <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>,
+        <sachi@mistralsolutions.com>, <nsekhar@ti.com>,
+        "open list" <linux-kernel@vger.kernel.org>,
+        "open list:CAN NETWORK DRIVERS" <socketcan-core@lists.berlios.de>,
+        "open list:CAN NETWORK DRIVERS" <netdev@vger.kernel.org>,
+        <m-watkins@ti.com>, "Wolfgang Grandegger" <wg@grandegger.com>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com> <201102181607.20787.arnd@arndb.de>
+In-Reply-To: <201102181607.20787.arnd@arndb.de>
+Subject: Re: [PATCH v2 09/13] can: pruss CAN driver.
+Date: Tue, 22 Mar 2011 13:00:57 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2M7Pf5A005070
 
+Hello,
 
-
->-----Original Message-----
->From: Jonathan Cameron [mailto:jic23@cam.ac.uk]
->Sent: 2011Äê3ÔÂ22ÈÕ 1:40
->To: Cai, Cliff
->Cc: linux-iio@vger.kernel.org; linux-kernel@vger.kernel.org;
->Drivers; device-drivers-devel@blackfin.uclinux.org; Cliff Cai
->Subject: Re: [PATCH RESEND v2]IIO driver for Analog Devices
->Digital Output Gyroscope ADXRS450
+> This is a detailed walk through the can driver. The pruss_can.c
+> file mostly looks good, there are very tiny changes that I'm
+> suggesting to improve the code. I assume that you wrote that file.
 >
->On 03/19/11 09:27, cliff.cai@analog.com wrote:
->> From: Cliff Cai <cliff.cai@analog.com>
->>
->> Change v2:v1:
->>
->> Make modification according to Michael Hennerich's comments, correct
->> the spi transfer way,use existing sysfs interfaces.
->Hi Cliff,
+> The pruss_can_api.c is a bit of a mess and looks like it was copied
+> from some other code base and just barely changed to follow Linux
+> coding style. I can tell from the main driver file that you can do
+> better than that.
+> My recommendation for that would be to throw it away and reimplement
+> the few parts that you actually need, in proper coding style.
+> You can also try to fix the file according to the comments I give
+> you below, but I assume that would be signficantly more work.
 >
->As you are proposing a couple of new interfaces we need to
->have documentation for them. They are quad and dynamic_null_correction.
->We need to first establish whether they are of general utility
->and hence should be in the main abi doc. The quadrature one
->isn't something I've seen before. Is it common in gyros?
+> Moving everything into one file also makes things easier to read
+> here and lets you identifer more quickly what is unused.
 
-I'm not sure about this.
-Michael,do you have any ideas?
+SG - I have almost re-implemented the API layer, will be merging with the 
+driver file itself.
 
->Dynamic null correction looks like it should be
->gyro_z_calibbias to me but I could be wrong.  The doc says "
->The user can make small adjustments to the rateout of the
->device by asserting these bits. This 10-bit register allows
->the user to adjust the static rateout of the device by up to ¡À6.4¡ã/sec.
->"
->
->which makes me think it is an internally applied offset on the
->output signal and hence calibbias in our abi.
 
-Thanks
+>> +#ifdef __CAN_DEBUG
+>> +#define __can_debug(fmt, args...) printk(KERN_DEBUG "can_debug: " fmt, 
+>> ## args)
+>> +#else
+>> +#define __can_debug(fmt, args...)
+>> +#endif
+>> +#define __can_err(fmt, args...) printk(KERN_ERR "can_err: " fmt, ## 
+>> args)
+>
+> Better use the existing dev_dbg() and dev_err() macros that provide the
+> same functionality in a more standard way. You already use them in
+> some places, as I noticed.
+>
+> If you don't have a way to pass a meaningful device, you can use
+> pr_debug/pr_err.
+>
+SG - Ok
 
->Other than that, various minor nitpicks inline.
+>> +void omapl_pru_can_rx_wQ(struct work_struct *work)
+>> +{
 >
->Jonathan
+> This is only used in the same file, so better make it static.
+
+SG - This is removed, used NAPI as recommended.
+
 >
+>> + if (-1 == pru_can_get_intr_status(priv->dev, &priv->can_rx_hndl))
+>> + return;
 >
->>
->> Signed-off-by: Cliff Cai<cliff@analog.com>
->> ---
->>  drivers/staging/iio/gyro/Kconfig         |   10 +
->>  drivers/staging/iio/gyro/Makefile        |    3 +
->>  drivers/staging/iio/gyro/adxrs450.h      |   59 ++++
->>  drivers/staging/iio/gyro/adxrs450_core.c |  471
->> ++++++++++++++++++++++++++++++
->>  4 files changed, 543 insertions(+), 0 deletions(-)  create mode
->> 100644 drivers/staging/iio/gyro/adxrs450.h
->>  create mode 100644 drivers/staging/iio/gyro/adxrs450_core.c
->>
->> diff --git a/drivers/staging/iio/gyro/Kconfig
->> b/drivers/staging/iio/gyro/Kconfig
->> index 236f15f..3432967 100644
->> --- a/drivers/staging/iio/gyro/Kconfig
->> +++ b/drivers/staging/iio/gyro/Kconfig
->> @@ -45,3 +45,13 @@ config ADIS16251
->>
->>        This driver can also be built as a module.  If so, the module
->>        will be called adis16251.
->> +
->> +config ADXRS450
->> +    tristate "Analog Devices ADXRS450 Digital Output
->Gyroscope SPI driver"
->> +    depends on SPI
->> +    help
->> +      Say yes here to build support for Analog Devices
->ADXRS450 programmable
->> +      digital output gyroscope.
->> +
->> +      This driver can also be built as a module.  If so, the module
->> +      will be called adxrs450.
->> diff --git a/drivers/staging/iio/gyro/Makefile
->> b/drivers/staging/iio/gyro/Makefile
->> index 2764c15..2212240 100644
->> --- a/drivers/staging/iio/gyro/Makefile
->> +++ b/drivers/staging/iio/gyro/Makefile
->> @@ -17,3 +17,6 @@ obj-$(CONFIG_ADIS16260) += adis16260.o
->>
->>  adis16251-y             := adis16251_core.o
->>  obj-$(CONFIG_ADIS16251) += adis16251.o
->> +
->> +adxrs450-y             := adxrs450_core.o
->> +obj-$(CONFIG_ADXRS450) += adxrs450.o
->> diff --git a/drivers/staging/iio/gyro/adxrs450.h
->> b/drivers/staging/iio/gyro/adxrs450.h
+> Don't make up your own return values, just use the standard error codes,
+> e.g. -EIO or -EAGAIN, whatever fits.
+
+SG - Ok
+
+>
+> The more common way to write the comparison would be the other way round,
+>
+> if (pru_can_get_intr_status(priv->dev, &priv->can_rx_hndl) == -EAGAIN)
+> return;
+>
+> or, simpler
+>
+> if (pru_can_get_intr_status(priv->dev, &priv->can_rx_hndl))
+> return;
+
+SG - Ok
+
+>
+>> +irqreturn_t omapl_tx_can_intr(int irq, void *dev_id)
+>> +{
+>
+> This also should be static
+
+SG - Ok
+
+>
+>> + for (bit_set = 0; ((priv->can_tx_hndl.u32interruptstatus & 0xFF)
+>> + >> bit_set != 0); bit_set++)
+>> + ;
+>
+> bit_set = fls(priv->can_tx_hndl.u32interruptstatus & 0xFF); ?
+>
+
+SG - Ok
+
+>> +irqreturn_t omapl_rx_can_intr(int irq, void *dev_id)
+>
+> static
+
+SG - Ok
+
+
+>
+>> diff --git a/drivers/net/can/da8xx_pruss/pruss_can_api.c 
+>> b/drivers/net/can/da8xx_pruss/pruss_can_api.c
 >> new file mode 100644
->> index 0000000..4633ef9
+>> index 0000000..2f7438a
 >> --- /dev/null
->> +++ b/drivers/staging/iio/gyro/adxrs450.h
->> @@ -0,0 +1,59 @@
->> +#ifndef SPI_ADXRS450_H_
->> +#define SPI_ADXRS450_H_
->> +
->> +#define ADXRS450_STARTUP_DELAY      50 /* ms */
->> +
->> +/* The MSB for the spi commands */
->> +#define ADXRS450_SENSOR_DATA    0x20
->> +#define ADXRS450_WRITE_DATA 0x40
->> +#define ADXRS450_READ_DATA  0x80
->> +
->> +#define ADXRS450_RATE1      0x00    /* Rate Registers */
->> +#define ADXRS450_TEMP1      0x02    /* Temperature Registers */
->> +#define ADXRS450_LOCST1     0x04    /* Low CST Memory Registers */
->> +#define ADXRS450_HICST1     0x06    /* High CST Memory Registers */
->> +#define ADXRS450_QUAD1      0x08    /* Quad Memory Registers */
->> +#define ADXRS450_FAULT1     0x0A    /* Fault Registers */
->> +#define ADXRS450_PID1       0x0C    /* Part ID Register 1 */
->> +#define ADXRS450_PID0       0x0D    /* Part ID Register 0 */
->> +#define ADXRS450_SNH        0x0E    /* Serial Number
->Registers, 4 bytes */
->> +#define ADXRS450_SNL        0x10
->> +#define ADXRS450_DNC1       0x12    /* Dynamic Null
->Correction Registers */
->> +/* Check bits */
->> +#define ADXRS450_P  0x01
->> +#define ADXRS450_CHK        0x02
->> +#define ADXRS450_CST        0x04
->> +#define ADXRS450_PWR        0x08
->> +#define ADXRS450_POR        0x10
->> +#define ADXRS450_NVM        0x20
->> +#define ADXRS450_Q  0x40
->> +#define ADXRS450_PLL        0x80
->> +#define ADXRS450_UV 0x100
->> +#define ADXRS450_OV 0x200
->> +#define ADXRS450_AMP        0x400
->> +#define ADXRS450_FAIL       0x800
->> +
->> +#define ADXRS450_WRERR_MASK (0x7 << 29)
->> +
->> +#define ADXRS450_MAX_RX 8
->> +#define ADXRS450_MAX_TX 8
->> +
->> +#define ADXRS450_GET_ST(a)  ((a >> 26) & 0x3)
->> +
->> +/**
->> + * struct adxrs450_state - device instance specific data
->> + * @us:                     actual spi_device
->> + * @indio_dev:              industrial I/O device structure
->> + * @tx:                     transmit buffer
->> + * @rx:                     recieve buffer
->> + * @buf_lock:               mutex to protect tx and rx
->> + **/
->> +struct adxrs450_state {
->> +    struct spi_device               *us;
->> +    struct iio_dev                  *indio_dev;
->> +    u8                              *tx;
->> +    u8                              *rx;
->> +    struct mutex                    buf_lock;
->> +};
->> +
->> +#endif /* SPI_ADXRS450_H_ */
->> diff --git a/drivers/staging/iio/gyro/adxrs450_core.c
->> b/drivers/staging/iio/gyro/adxrs450_core.c
->> new file mode 100644
->> index 0000000..f4f9d49
->> --- /dev/null
->> +++ b/drivers/staging/iio/gyro/adxrs450_core.c
->> @@ -0,0 +1,471 @@
+>> +++ b/drivers/net/can/da8xx_pruss/pruss_can_api.c
+>
+> A lot of code in this file seems to be unused. Is that right?
+> I would suggest adding only the code that is actually being
+> used. If you add more functionality later, you can always
+> add back the low-level functions, but dead code usually
+> turns into broken code quickly.
+>
+
+SG - Ok
+
+>> +static can_emu_drv_inst gstr_can_inst[ecanmaxinst];
+>
+> This is global data and probably needs some for of locking
+
+SG - Ok
+
+>
 >> +/*
->> + * ADXRS450 Digital Output Gyroscope Driver
+>> + * pru_can_set_brp() Updates the  BRP register of PRU0
+>> + * and PRU1 of OMAP L138. This API will be called by the
+>> + * Application to updtae the BRP register of PRU0 and PRU1
 >> + *
->> + * Copyright 2010 Analog Devices Inc.
+>> + * param u16bitrateprescaler The can bus bitrate
+>> + * prescaler value be set
 >> + *
->> + * Licensed under the GPL-2 or later.
+>> + * return   SUCCESS or FAILURE
 >> + */
->> +
->> +#include <linux/interrupt.h>
->> +#include <linux/irq.h>
->> +#include <linux/gpio.h>
->> +#include <linux/delay.h>
->> +#include <linux/mutex.h>
->> +#include <linux/device.h>
->> +#include <linux/kernel.h>
->> +#include <linux/spi/spi.h>
->> +#include <linux/slab.h>
->> +#include <linux/sysfs.h>
->> +#include <linux/list.h>
->> +
->> +#include "../iio.h"
->> +#include "../sysfs.h"
->> +#include "gyro.h"
->> +#include "../adc/adc.h"
->> +
->> +#include "adxrs450.h"
->> +
->This is only used in one place, I'd hard code it there.
->> +#define DRIVER_NAME         "ADXRS450"
->> +
->> +/**
->> + * adxrs450_spi_read_reg_16() - read 2 bytes from a register pair
->> + * @dev: device associated with child of actual device (iio_dev or
->> +iio_trig)
->> + * @reg_address: the address of the lower of the two
->registers,which
->> +should be an even address,
->> + * Second register's address is reg_address + 1.
->> + * @val: somewhere to pass back the value read  **/ static int
->> +adxrs450_spi_read_reg_16(struct device *dev,
->> +            u8 reg_address,
->> +            u16 *val)
+>> +s16 pru_can_set_brp(struct device *dev, u16 u16bitrateprescaler)
 >> +{
->> +    struct spi_message msg;
->> +    struct iio_dev *indio_dev = dev_get_drvdata(dev);
->> +    struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
->> +    int ret;
->  The array only has one element. Please make it not be an array.
->> +    struct spi_transfer xfers[] = {
->> +            {
->> +                    .tx_buf = st->tx,
->> +                    .rx_buf = st->rx,
->> +                    .bits_per_word = 8,
->> +                    .len = 4,
->> +            },
->> +    };
->> +    /* Needs to send the command twice to get the wanted value */
->> +    mutex_lock(&st->buf_lock);
->> +    st->tx[0] = ADXRS450_READ_DATA | reg_address >> 7;
->> +    st->tx[1] = reg_address << 1;
->> +    st->tx[2] = 0;
->> +    st->tx[3] = 0;
->> +    spi_message_init(&msg);
->> +    spi_message_add_tail(&xfers[0], &msg);
->> +    ret = spi_sync(st->us, &msg);
->> +    if (ret) {
->> +            dev_err(&st->us->dev, "problem while reading 16
->bit register 0x%02x\n",
->> +                            reg_address);
->> +            goto error_ret;
->> +    }
->> +
->> +    spi_message_init(&msg);
->> +    spi_message_add_tail(&xfers[0], &msg);
->> +    ret = spi_sync(st->us, &msg);
->> +    if (ret) {
->> +            dev_err(&st->us->dev, "problem while reading 16
->bit register 0x%02x\n",
->> +                            reg_address);
->> +            goto error_ret;
->> +    }
->> +
->> +    *val = (st->rx[1] & 0x1f) << 11 | st->rx[2] << 3 | (st->rx[3] &
->> +0xe0) >> 5;
->> +
->> +error_ret:
->> +    mutex_unlock(&st->buf_lock);
->> +    return ret;
->> +}
->> +
->> +/**
->> + * adxrs450_spi_write_reg_16() - write 2 bytes data to a register
->> +pair
->> + * @dev: device associated with child of actual device (iio_dev or
->> +iio_trig)
->If it's an iio_trig, casting it to an iio_dev will give you
->somewhat interresting results!
->> + * @reg_address: the address of the lower of the two
->registers,which
->> +should be an even address,
->> + * Second register's address is reg_address + 1.
->> + * @val: value to be written.
->> + **/
->> +static int adxrs450_spi_write_reg_16(struct device *dev,
->> +            u8 reg_address,
->> +            u16 *val)
->> +{
->> +    struct spi_message msg;
->> +    struct iio_dev *indio_dev = dev_get_drvdata(dev);
->> +    struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
->> +    int ret;
->Again, shouldn't be an array.
->> +    struct spi_transfer xfers[] = {
->> +            {
->> +                    .tx_buf = st->tx,
->> +                    .rx_buf = st->rx,
->> +                    .bits_per_word = 8,
->> +                    .len = 4,
->> +            },
->> +    };
->> +
->> +    mutex_lock(&st->buf_lock);
->> +    st->tx[0] = ADXRS450_WRITE_DATA | reg_address >> 7;
->> +    st->tx[1] = reg_address << 1 | *val >> 15;
->> +    st->tx[2] = *val >> 7;
->> +    st->tx[3] = *val << 1;
->> +    spi_message_init(&msg);
->> +    spi_message_add_tail(&xfers[0], &msg);
->> +    ret = spi_sync(st->us, &msg);
->> +    if (ret) {
->> +            dev_err(&st->us->dev, "problem while writing 16
->bit register 0x%02x\n",
->> +                            reg_address);
->> +            goto error_ret;
->only going to next line so don't need the goto and as a result
->no need for the brackets either.
->> +    }
->> +
->> +error_ret:
->> +    mutex_unlock(&st->buf_lock);
->> +    return ret;
->> +}
->> +
->> +/**
->> + * adxrs450_spi_sensor_data() - read 2 bytes sensor data
->> + * @dev: device associated with child of actual device (iio_dev or
->> +iio_trig)
->> + * @val: somewhere to pass back the value read  **/ static int
->> +adxrs450_spi_sensor_data(struct device *dev, u16 *val) {
->> +    struct spi_message msg;
->> +    struct iio_dev *indio_dev = dev_get_drvdata(dev);
->> +    struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
->> +    int ret;
->Same array comment.
->> +    struct spi_transfer xfers[] = {
->> +            {
->> +                    .tx_buf = st->tx,
->> +                    .rx_buf = st->rx,
->> +                    .bits_per_word = 8,
->> +                    .len = 4,
->> +            }
->> +    };
->> +
->> +    mutex_lock(&st->buf_lock);
->> +    st->tx[0] = ADXRS450_SENSOR_DATA;
->> +    st->tx[1] = 0;
->> +    st->tx[2] = 0;
->> +    st->tx[3] = 0;
->> +
->> +    spi_message_init(&msg);
->> +    spi_message_add_tail(&xfers[0], &msg);
->> +    ret = spi_sync(st->us, &msg);
->> +    if (ret) {
->> +            dev_err(&st->us->dev, "Problem while reading
->sensor data\n");
->> +            goto error_ret;
->> +    }
->> +
->> +    spi_message_init(&msg);
->> +    spi_message_add_tail(&xfers[0], &msg);
->> +    ret = spi_sync(st->us, &msg);
->> +    if (ret) {
->> +            dev_err(&st->us->dev, "Problem while reading
->sensor data\n");
->> +            goto error_ret;
->> +    }
->> +
->> +    *val = (st->rx[0] & 0x03) << 14 | st->rx[1] << 6 | (st->rx[2] &
->> +0xfc) >> 2;
->> +error_ret:
->> +    mutex_unlock(&st->buf_lock);
->> +    return ret;
->> +}
->> +
 >
->This looks to only be called from initial setup. Might as well
->just make it take an adxrs450_state directly and save the
->careful indirection that is currently going on to ensure it
->gets the same dev as the other write functions.
->> +/**
->> + * adxrs450_spi_initial() - use for initializing procedure.
->> + * @dev: device associated with child of actual device (iio_dev or
->> +iio_trig)
->> + * @val: somewhere to pass back the value read  **/ static int
->> +adxrs450_spi_initial(struct device *dev,
->> +            u32 *val, char chk)
->> +{
->> +    struct spi_message msg;
->> +    struct iio_dev *indio_dev = dev_get_drvdata(dev);
->> +    struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
->> +    int ret;
->Another unneeded array.
->> +    struct spi_transfer xfers[] = {
->> +            {
->> +                    .tx_buf = st->tx,
->> +                    .rx_buf = st->rx,
->> +                    .bits_per_word = 8,
->> +                    .len = 4,
->> +            },
->> +    };
->> +
->> +    mutex_lock(&st->buf_lock);
->> +    st->tx[0] = ADXRS450_SENSOR_DATA;
->> +    st->tx[1] = 0;
->> +    st->tx[2] = 0;
->> +    st->tx[3] = 0;
->> +    if (chk)
->> +            st->tx[3] |= (ADXRS450_CHK | ADXRS450_P);
->> +    spi_message_init(&msg);
->> +    spi_message_add_tail(&xfers[0], &msg);
->> +    ret = spi_sync(st->us, &msg);
->> +    if (ret) {
->> +            dev_err(&st->us->dev, "Problem while reading
->initializing data\n");
->> +            goto error_ret;
->> +    }
->> +
->Looks like an endinaness conversion to me. be32tocpu.
+> unused.
+
+SG - Ok
+
 >
->> +    *val = st->rx[0] << 24 | st->rx[1] << 16 | st->rx[2] << 8 |
->> +st->rx[3];
+>> + u32 u32offset;
 >> +
->> +error_ret:
->> +    mutex_unlock(&st->buf_lock);
->> +    return ret;
->> +}
->> +
->> +static ssize_t adxrs450_read_temp(struct device *dev,
->> +            struct device_attribute *attr,
->> +            char *buf)
->> +{
->> +    int ret, len = 0;
->No need to initialize len.
->> +    u16 t;
->> +    ret = adxrs450_spi_read_reg_16(dev,
->> +                    ADXRS450_TEMP1,
->> +                    &t);
->> +    if (ret)
->> +            return ret;
->> +    len = sprintf(buf, "%d\n", t);
->> +    return len;
->> +}
->> +
->> +static ssize_t adxrs450_read_quad(struct device *dev,
->> +            struct device_attribute *attr,
->> +            char *buf)
->> +{
->> +    int ret, len = 0;
->Same for this len
->> +    u16 t;
->> +    ret = adxrs450_spi_read_reg_16(dev,
->> +                    ADXRS450_QUAD1,
->> +                    &t);
->> +    if (ret)
->> +            return ret;
->> +    len = sprintf(buf, "%d\n", t);
->> +    return len;
->> +}
->> +
->> +static ssize_t adxrs450_write_dnc(struct device *dev,
->> +            struct device_attribute *attr,
->> +            const char *buf,
->> +            size_t len)
->> +{
->> +    int ret;
->> +    u16 val;
->> +
->> +    if (len == 0 || len > 2)
->> +            return -EINVAL;
->> +    memcpy(&val, buf, len);
->> +    ret = adxrs450_spi_write_reg_16(dev,
->> +                    ADXRS450_DNC1,
->> +                    &val);
->Err, so what is meant to be written to this?  Looks like
->you'll be dumping a random single character in to the register...
->Documentation would clear this up.
+>> + if (u16bitrateprescaler > 255) {
+>> + return -1;
+>> + }
 >
->> +    return ret ? ret : len;
->> +}
+> non-standard error code. It also doesn't match the comment, which
+> claims it is SUCCESS or FAILURE, both of which are (rightfully)
+> not defined.
+
+SG - Ok
+
+>
+>> + u32offset = (PRU_CAN_RX_CLOCK_BRP_REGISTER);
+>> + pruss_writel(dev, u32offset, (u32 *) &u16bitrateprescaler, 1);
 >> +
->> +static ssize_t adxrs450_read_sensor_data(struct device *dev,
->> +            struct device_attribute *attr,
->> +            char *buf)
+>> + u32offset = (PRU_CAN_TX_CLOCK_BRP_REGISTER);
+>> + pruss_writel(dev, u32offset, (u32 *) &u16bitrateprescaler, 1);
+>
+
+SG - Ok
+
+
+> You pass a 32 bit pointer to a 16 bit local variable here.
+> This has an undefined effect, and if you build this code on
+> a big-endian platform, it cannot possibly do anything good.
+>
+> pruss_writel() is defined in a funny way if it takes a thirty-two bit
+> input argument by reference, rather than by value. What is going
+> on there?
+>
+>> +s16 pru_can_set_bit_timing(struct device *dev,
+>> + can_bit_timing_consts *pstrbittiming)
+>
+> unused.
+>
+
+SG - Ok
+
+
+>> + u32 u32offset;
+>> + u32 u32serregister;
+>
+> It's a bit silly to put the name of the type into the name
+> of a variable. You already spell it out in the definition.
+
+SG - Ok
+
+>
+>> +s16 pru_can_write_data_to_mailbox(struct device *dev,
+>> + can_emu_app_hndl *pstremuapphndl)
 >> +{
->> +    int ret, len = 0;
->another unneeded init of len
->> +    u16 t;
+>> + s16 s16subrtnretval;
+>> + u32 u32offset;
 >> +
->> +    ret = adxrs450_spi_sensor_data(dev, &t);
->> +    if (ret)
->> +            return ret;
->> +
->> +    len = sprintf(buf, "%d\n", t);
->> +    return len;
->> +}
->> +
->> +/* Recommended Startup Sequence by spec */ static int
->> +adxrs450_initial_setup(struct adxrs450_state *st) {
->> +    u32 t;
->> +    u16 data;
->> +    int ret;
->> +    struct device *dev = &st->indio_dev->dev;
->> +
->> +    msleep(ADXRS450_STARTUP_DELAY*2);
->> +    ret = adxrs450_spi_initial(dev, &t, 1);
->> +    if (ret)
->> +            return ret;
->> +    if (t != 0x01) {
->> +            dev_err(&st->us->dev, "The initial response is
->not correct!\n");
->> +            return -ENODEV;
->> +
->> +    }
->> +
->> +    msleep(ADXRS450_STARTUP_DELAY);
->> +    ret = adxrs450_spi_initial(dev, &t, 0);
->> +    if (ret)
->> +            return ret;
->> +
->> +    msleep(ADXRS450_STARTUP_DELAY);
->> +    ret = adxrs450_spi_initial(dev, &t, 0);
->> +    if (ret)
->> +            return ret;
->> +    if (((t & 0xff) | 0x01) != 0xff || ADXRS450_GET_ST(t) != 2) {
->> +            dev_err(&st->us->dev, "The second response is
->not correct!\n");
->> +            return -EIO;
->> +
->> +    }
->> +    ret = adxrs450_spi_initial(dev, &t, 0);
->> +    if (ret)
->> +            return ret;
->> +    if (((t & 0xff) | 0x01) != 0xff || ADXRS450_GET_ST(t) != 2) {
->> +            dev_err(&st->us->dev, "The third response is
->not correct!\n");
->> +            return -EIO;
->> +
->> +    }
->> +    ret = adxrs450_spi_read_reg_16(dev, ADXRS450_FAULT1, &data);
->> +    if (ret)
->> +            return ret;
->> +    if (data & 0x0fff) {
->> +            dev_err(&st->us->dev, "The device is not in
->normal status!\n");
->> +            return -EINVAL;
->> +    }
->> +    ret = adxrs450_spi_read_reg_16(dev, ADXRS450_PID1, &data);
->> +    if (ret)
->> +            return ret;
->> +    dev_info(&st->us->dev, "The Part ID is 0x%x\n", data);
->> +
->> +    ret = adxrs450_spi_read_reg_16(dev, ADXRS450_SNL, &data);
->> +    if (ret)
->> +            return ret;
->> +    t = data;
->> +    ret = adxrs450_spi_read_reg_16(dev, ADXRS450_SNH, &data);
->> +    if (ret)
->> +            return ret;
->> +    t |= data << 16;
->> +    dev_info(&st->us->dev, "The Serial Number is 0x%x\n", t);
->> +
->> +    dev_info(&st->us->dev, "%s at CS%d\n", DRIVER_NAME,
->> +                    st->us->chip_select);
->Not really useful info to the average reader of the log.
->Please clean this one out.
->> +
->> +    return 0;
->> +}
->> +
->I note there are two versions of this chip (from datasheet).
->We should probably support changing this axis according to
->which one we have.  Z is out of chip plane. The other two are
->arbitrary if we only have 1 axis on the chip.
->> +static IIO_DEV_ATTR_GYRO_Z(adxrs450_read_sensor_data, 0); static
->> +IIO_DEV_ATTR_TEMP_RAW(adxrs450_read_temp);
->> +static IIO_DEVICE_ATTR(quad, S_IRUGO,
->> +            adxrs450_read_quad, NULL, 0);
->> +static IIO_DEVICE_ATTR(dynamic_null_correction, S_IWUGO,
->IWUSR please. People get nervous for any greater permissions than that.
->> +            NULL, adxrs450_write_dnc, 0);
->> +static IIO_CONST_ATTR(name, "adxrs450");
->> +
->> +static struct attribute *adxrs450_attributes[] = {
->bonus blank line here. Please remove.
->> +
->> +    &iio_dev_attr_gyro_z_raw.dev_attr.attr,
->> +    &iio_dev_attr_temp_raw.dev_attr.attr,
->> +    &iio_dev_attr_quad.dev_attr.attr,
->> +    &iio_dev_attr_dynamic_null_correction.dev_attr.attr,
->> +    &iio_const_attr_name.dev_attr.attr,
->> +    NULL
->> +};
->> +
->> +static const struct attribute_group adxrs450_attribute_group = {
->> +    .attrs = adxrs450_attributes,
->> +};
->> +
->> +static int __devinit adxrs450_probe(struct spi_device *spi) {
->> +    int ret, regdone = 0;
->> +    struct adxrs450_state *st = kzalloc(sizeof *st, GFP_KERNEL);
->> +    if (!st) {
->> +            ret =  -ENOMEM;
->> +            goto error_ret;
->> +    }
->> +    /* This is only used for removal purposes */
->> +    spi_set_drvdata(spi, st);
->> +
->> +    /* Allocate the comms buffers */
->> +    st->rx = kzalloc(sizeof(*st->rx)*ADXRS450_MAX_RX, GFP_KERNEL);
->> +    if (st->rx == NULL) {
->> +            ret = -ENOMEM;
->> +            goto error_free_st;
->> +    }
->> +    st->tx = kzalloc(sizeof(*st->tx)*ADXRS450_MAX_TX, GFP_KERNEL);
->> +    if (st->tx == NULL) {
->> +            ret = -ENOMEM;
->> +            goto error_free_rx;
->> +    }
->> +    st->us = spi;
->> +    mutex_init(&st->buf_lock);
->> +    /* setup the industrialio driver allocated elements */
->> +    st->indio_dev = iio_allocate_device();
->> +    if (st->indio_dev == NULL) {
->> +            ret = -ENOMEM;
->> +            goto error_free_tx;
->> +    }
->> +
->> +    st->indio_dev->dev.parent = &spi->dev;
->> +    st->indio_dev->attrs = &adxrs450_attribute_group;
->> +    st->indio_dev->dev_data = (void *)(st);
->> +    st->indio_dev->driver_module = THIS_MODULE;
->> +    st->indio_dev->modes = INDIO_DIRECT_MODE;
->> +
->> +    ret = iio_device_register(st->indio_dev);
->> +    if (ret)
->> +            goto error_free_dev;
->> +    regdone = 1;
->> +
->> +    /* Get the device into a sane initial state */
->> +    ret = adxrs450_initial_setup(st);
->> +    if (ret)
->> +            goto error_initial;
->> +    return 0;
->> +
->> +error_initial:
->> +error_free_dev:
->> +    if (regdone)
->> +            iio_device_unregister(st->indio_dev);
->> +    else
->> +            iio_free_device(st->indio_dev);
->> +error_free_tx:
->> +    kfree(st->tx);
->> +error_free_rx:
->> +    kfree(st->rx);
->> +error_free_st:
->> +    kfree(st);
->> +error_ret:
->> +    return ret;
->> +}
->> +
->> +/* fixme, confirm ordering in this function */ static int
->> +adxrs450_remove(struct spi_device *spi) {
->> +    struct adxrs450_state *st = spi_get_drvdata(spi);
+>> + if (pstremuapphndl == NULL) {
+>> + return -1;
+>> + }
 >
->Might as well just go with
+> nonstandard error code. Also, why the heck is type function
+> return type s16 when the only possible return values are 0
+> and -1? Just make this an int.
+
+SG - Ok
+
 >
->iio_device_unregister(st->indio_dev);
->> +    struct iio_dev *indio_dev = st->indio_dev;
->> +
->> +    iio_device_unregister(indio_dev);
->> +    kfree(st->tx);
->> +    kfree(st->rx);
->> +    kfree(st);
->> +
->> +    return 0;
+>> + switch ((u8) pstremuapphndl->ecanmailboxnumber) {
+>> + case 0:
+>> + u32offset = (PRU_CAN_TX_MAILBOX0);
+>> + break;
+>> + case 1:
+>> + u32offset = (PRU_CAN_TX_MAILBOX1);
+>> + break;
+>> + case 2:
+>> + u32offset = (PRU_CAN_TX_MAILBOX2);
+>> + break;
+>> + case 3:
+>> + u32offset = (PRU_CAN_TX_MAILBOX3);
+>> + break;
+>> + case 4:
+>> + u32offset = (PRU_CAN_TX_MAILBOX4);
+>> + break;
+>> + case 5:
+>> + u32offset = (PRU_CAN_TX_MAILBOX5);
+>> + break;
+>> + case 6:
+>> + u32offset = (PRU_CAN_TX_MAILBOX6);
+>> + break;
+>> + case 7:
+>> + u32offset = (PRU_CAN_TX_MAILBOX7);
+>> + break;
+>> + default:
+>> + return -1;
+>> + }
+>
+> Lovely switch statement. I'm sure you find a better way to express this 
+> ;-)
+
+SG - Ok.
+
+>
+>> + s16subrtnretval = pruss_writel(dev, u32offset,
+>> + (u32 *) &(pstremuapphndl->strcanmailbox), 4);
+>> + if (s16subrtnretval == -1) {
+>> + return -1;
+>> + }
+>> + return 0;
 >> +}
+>
+> return pruss_writel(...) ?
+
+SG - Ok.
+
+>
 >> +
->> +static struct spi_driver adxrs450_driver = {
->> +    .driver = {
->> +            .name = "adxrs450",
->> +            .owner = THIS_MODULE,
->> +    },
->> +    .probe = adxrs450_probe,
->> +    .remove = __devexit_p(adxrs450_remove), };
+>> +/*
+>> + * pru_can_get_intr_status()
+>> + * Gets the interrupts status register value.
+>> + * This API will be called by the Application
+>> + * to get the interrupts status register value
+>> + *
+>> + * param  u8prunumber PRU number for which IntStatusReg
+>> + * has to be read
+>> + *
+>> + * return   SUCCESS or FAILURE
+>> + */
+>> +s16 pru_can_get_intr_status(struct device *dev,
+>> + can_emu_app_hndl *pstremuapphndl)
+>> +{
+>> + u32 u32offset;
+>> + s16 s16subrtnretval = -1;
 >> +
->> +static __init int adxrs450_init(void) {
->> +    return spi_register_driver(&adxrs450_driver);
->> +}
->> +module_init(adxrs450_init);
+>> + if (pstremuapphndl == NULL) {
+>> + return -1;
+>> + }
+>
+> In every function you check that pstremuapphndl is present. This seems
+> rather pointless. How about just making sure you never pass a NULL
+> value to these functions? That should not be hard at all from the
+> high-level driver.
+
+SG - OK.
+
+
+>
+>> + if (pstremuapphndl->u8prunumber == DA8XX_PRUCORE_1) {
+>> + u32offset = (PRU_CAN_TX_INTERRUPT_STATUS_REGISTER);
+>> + } else if (pstremuapphndl->u8prunumber == DA8XX_PRUCORE_0) {
+>> + u32offset = (PRU_CAN_RX_INTERRUPT_STATUS_REGISTER);
+>> + } else {
+>> + return -1;
+>> + }
 >> +
->> +static __exit void adxrs450_exit(void) {
->> +    spi_unregister_driver(&adxrs450_driver);
->> +}
->> +module_exit(adxrs450_exit);
+>> + s16subrtnretval = pruss_readl(dev, u32offset,
+>> + (u32 *) &pstremuapphndl->u32interruptstatus, 1);
+>> + if (s16subrtnretval == -1) {
+>> + return -1;
+>> + }
+>
+> You can also get rid of all these {} braces around one-line statements.
+
+SG - OK.
+
+>
+>> +/*
+>> + * pru_can_get_mailbox_status() Gets the mailbox status
+>> + * register value. This API will be called by the Application
+>> + * to get the mailbox status register value
+>> + *
+>> + * return   SUCCESS or FAILURE
+>> + */
+>> +s16 pru_can_get_mailbox_status(struct device *dev,
+>> + can_emu_app_hndl *pstremuapphndl)
+>
+> unused
+.
+SG - OK.
+
+>
+>> +/*
+>> + * pru_can_config_mode_set() Sets the timing value
+>> + * for data transfer. This API will be called by the Application
+>> + * to set timing valus for data transfer
+>> + *
+>> + * return   SUCCESS or FAILURE
+>> + */
+>> +s16 pru_can_config_mode_set(struct device *dev, bool bconfigmodeflag)
+>
+> unused.
+
+SG - OK.
+
+>
+>> + u32offset = (PRU_CAN_TX_GLOBAL_CONTROL_REGISTER & 0xFFFF);
+>> + u32value = 0x00000000;
+>> + s16subrtnretval = pruss_writel(dev, u32offset, (u32 *) &u32value, 1);
+>> + if (s16subrtnretval == -1) {
+>> + return -1;
+>> + }
 >> +
->> +MODULE_AUTHOR("Cliff Cai <cliff.cai@analog.com>");
->> +MODULE_DESCRIPTION("Analog Devices ADXRS450 Gyroscope SPI driver");
->> +MODULE_LICENSE("GPL v2");
+>> + u32offset = (PRU_CAN_TX_GLOBAL_STATUS_REGISTER & 0xFFFF);
+>> + u32value = 0x00000040;
+>> + s16subrtnretval = pruss_writel(dev, u32offset, (u32 *) &u32value, 1);
+>> + if (s16subrtnretval == -1) {
+>> + return -1;
+>> + }
+>> + u32offset = (PRU_CAN_RX_GLOBAL_STATUS_REGISTER & 0xFFFF);
+>> + u32value = 0x00000040;
+>> + s16subrtnretval = pruss_writel(dev, u32offset, (u32 *) &u32value, 1);
+>> + if (s16subrtnretval == -1) {
+>> + return -1;
+>> + }
+>
+> <skipping 50 (!) more of these>
+>
+> After the third time of writing the same code, you should have noticed 
+> that
+> there is some duplication involved that can trivially be reduced. A good
+> way to express the same would be a table with the contents:
+>
+
+SG - OK.
+                 Thanks for taking the pain to review this. But, the good 
+part is that
+                 everything works fine. All this got cluttered as 
+development &
+                 design changes happened. Hopefully, the cleaned up code 
+will
+                also work as well :-)
+
+> static struct pru_can_register_init {
+> u16 offset;
+> u32 value;
+> } = {
+> { PRU_CAN_TX_GLOBAL_CONTROL_REGISTER, 0, },
+> { PRU_CAN_TX_GLOBAL_STATUS_REGISTER, 0x40, },
+> { PRU_CAN_RX_GLOBAL_STATUS_REGISTER, 0x40, },
+> ...
+> };
 >
 >
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>> +
+>> +
+>> +/*
+>> + * pru_can_emu_open() Opens the can emu for
+>> + * application to use. This API will be called by the Application
+>> + * to Open the can emu for application to use.
+>> + *
+>> + * param pstremuapphndl Pointer to application handler
+>> + * structure
+>> + *
+>> + * return   SUCCESS or FAILURE
+>> + */
+>> +s16 pru_can_emu_open(struct device *dev, can_emu_app_hndl 
+>> *pstremuapphndl)
+>
+> unused.
+
+SG - OK.
+
+>
+>> +/*
+>> + * brief    pru_can_emu_close() Closes the can emu for other
+>> + * applications to use. This API will be called by the Application to 
+>> Close
+>> + * the can emu for other applications to use
+>> + *
+>> + * param pstremuapphndl Pointer to application handler structure
+>> + *
+>> + * return   SUCCESS or FAILURE
+>> + */
+>> +s16 pru_can_emu_close(struct device *dev, can_emu_app_hndl 
+>> *pstremuapphndl)
+>
+> unused
+
+SG - OK.
+
+>
+>> +s16 pru_can_emu_sreset(struct device *dev)
+>> +{
+>> + return 0;
+>> +}
+>
+> pointless.
+
+SG - OK.
+
+>
+>> +s16 pru_can_tx(struct device *dev, u8 u8mailboxnumber, u8 u8prunumber)
+>> +{
+>> + u32 u32offset = 0;
+>> + u32 u32value = 0;
+>> + s16 s16subrtnretval = -1;
+>> +
+>> + if (DA8XX_PRUCORE_1 == u8prunumber) {
+>> + switch (u8mailboxnumber) {
+>> + case 0:
+>> + u32offset = (PRU_CAN_TX_MAILBOX0_STATUS_REGISTER & 0xFFFF);
+>> + u32value = 0x00000080;
+>> + s16subrtnretval = pruss_writel(dev, u32offset,
+>> + (u32 *) &u32value, 1);
+>> + if (s16subrtnretval == -1) {
+>> + return -1;
+>> + }
+>> + break;
+>> + case 1:
+>> + u32offset = (PRU_CAN_TX_MAILBOX1_STATUS_REGISTER & 0xFFFF);
+>> + u32value = 0x00000080;
+>> + s16subrtnretval = pruss_writel(dev, u32offset,
+>> + (u32 *) &u32value, 1);
+>> + if (s16subrtnretval == -1) {
+>> + return -1;
+>> + }
+>> + break;
+>> + case 2:
+>> + u32offset = (PRU_CAN_TX_MAILBOX2_STATUS_REGISTER & 0xFFFF);
+>
+> Another pointless switch statement.
+
+SG - OK.
+
+>
+>> +s16 pru_can_mask_ints(struct device *dev, u32 int_mask)
+>> +{
+>> + return 0;
+>> +}
+>> +
+>> +int pru_can_get_error_cnt(struct device *dev, u8 u8prunumber)
+>> +{
+>> + return 0;
+>> +}
+>
+> useless.
+
+SG - OK.
+
+>
+>> +int pru_can_get_intc_status(struct device *dev)
+>> +{
+>> + u32 u32offset = 0;
+>> + u32 u32getvalue = 0;
+>> + u32 u32clrvalue = 0;
+>> +
+>> + u32offset = (PRUSS_INTC_STATCLRINT1 & 0xFFFF);
+>> + pruss_readl(dev, u32offset, (u32 *) &u32getvalue, 1);
+>> +
+>> + if (u32getvalue & 4)
+>> + u32clrvalue = 34; /* CLR Event 34 */
+>> +
+>> + if (u32getvalue & 2)
+>> + u32clrvalue = 33; /* CLR Event 33  */
+>> +
+>> + if (u32clrvalue) {
+>> + u32offset = (PRUSS_INTC_STATIDXCLR & 0xFFFF);
+>> + pruss_writel(dev, u32offset, &u32clrvalue, 1);
+>> + } else
+>> + return -1;
+>
+> Could the controller signal both event 34 and 33 simultaneously?
+> The only user of this function looks at the individual bits
+> of the return value again, which looks wrong for all possible
+> return values here.
+>
+
+SG - OK. The System Events are mapped to 10 host interrupts (PRU to 
+ARM/DSP),
+                   as I our case two system events can be mapped to a single 
+host interrupt.
+
+
+>> +#ifndef _PRU_CAN_API_H_
+>> +#define CAN_BIT_TIMINGS (0x273)
+>> +
+>> +/* Timer Clock is sourced from DDR freq (PLL1 SYS CLK 2) */
+>> +#define TIMER_CLK_FREQ 132000000
+>> +
+>> +#define TIMER_SETUP_DELAY 14
+>> +#define GPIO_SETUP_DELAY 150
+>> +
+>> +#define CAN_RX_PRU_0 PRUSS_NUM0
+>> +#define CAN_TX_PRU_1 PRUSS_NUM1
+>> +
+>> +/* Number of Instruction in the Delay loop */
+>> +#define DELAY_LOOP_LENGTH 2
+>> +
+>> +#define PRU1_BASE_ADDR 0x2000
+>> +
+>> +#define PRU_CAN_TX_GLOBAL_CONTROL_REGISTER (PRU1_BASE_ADDR)
+>> +#define PRU_CAN_TX_GLOBAL_STATUS_REGISTER (PRU1_BASE_ADDR + 0x04)
+>> +#define PRU_CAN_TX_INTERRUPT_MASK_REGISTER (PRU1_BASE_ADDR + 0x08)
+>> +#define PRU_CAN_TX_INTERRUPT_STATUS_REGISTER (PRU1_BASE_ADDR + 0x0C)
+>> +#define PRU_CAN_TX_MAILBOX0_STATUS_REGISTER (PRU1_BASE_ADDR + 0x10)
+>> +#define PRU_CAN_TX_MAILBOX1_STATUS_REGISTER (PRU1_BASE_ADDR + 0x14)
+>
+> The header file should be used for interfaces between the two .c files,
+> don't mix that with hardware specific definitions. Sometimes you may want
+> to have register number lists in a header, if that list is going to be
+> used in multiple places. In this case, there is just one user, so better
+> move all those definitions over there.
+
+SG - OK.
+
+>
+>> +typedef enum {
+>> + ecaninst0 = 0,
+>> + ecaninst1,
+>> + ecanmaxinst
+>> +} can_instance_enum;
+>> +
+>> +typedef enum {
+>> + ecanmailbox0 = 0,
+>> + ecanmailbox1,
+>> + ecanmailbox2,
+>> + ecanmailbox3,
+>> + ecanmailbox4,
+>> + ecanmailbox5,
+>> + ecanmailbox6,
+>> + ecanmailbox7
+>> +} can_mailbox_number;
+>> +
+>> +typedef enum {
+>> + ecandirectioninit = 0,
+>> + ecantransmit,
+>> + ecanreceive
+>> +} can_transfer_direction;
+>
+> The values are all unused, you only use the typedefs.
+> IMHO it would be more sensible to just pass these as unsigned int
+> or u32 values, but if you prefer, there is no reason to just do
+>
+> typedef u32 can_mailbox_number;
+>
+> etc.
+
+SG - OK.
+
+>
+>> +typedef struct {
+>> + u16 u16extendedidentifier;
+>> + u16 u16baseidentifier;
+>> + u8 u8data7;
+>> + u8 u8data6;
+>> + u8 u8data5;
+>> + u8 u8data4;
+>> + u8 u8data3;
+>> + u8 u8data2;
+>> + u8 u8data1;
+>> + u8 u8data0;
+>> + u16 u16datalength;
+>> + u16 u16crc;
+>> +} can_mail_box_structure;
+>
+> Please don't use typedef for complex data structures, and learn about
+> better naming of identifiers. I would suggest writing this as
+>
+> struct pru_can_mailbox {
+> u16 ext_id;
+> u16 base_id;
+> u8 data[8]; /* note: reverse order */
+> u16 len;
+> u16 crc;
+> };
+>
+> Sames rules apply to the other structures.
+
+SG - OK.
+
+>
+> Arnd 
+
