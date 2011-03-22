@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab1CVPFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 11:05:43 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:65246 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036Ab1CVPFl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 11:05:41 -0400
+	id S1756158Ab1CVPJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 11:09:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754341Ab1CVPJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 11:09:13 -0400
+Date: Tue, 22 Mar 2011 11:09:05 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chad Talbott <ctalbott@google.com>
+Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org, mrubin@google.com,
+        teravest@google.com
+Subject: Re: [PATCH 0/3] cfq-iosched: Fair cross-group preemption
+Message-ID: <20110322150905.GD3757@redhat.com>
+References: <1300756245-12380-1-git-send-email-ctalbott@google.com>
 MIME-Version: 1.0
-In-Reply-To: <4D79F068.2080009@linaro.org>
-References: <4D79F068.2080009@linaro.org>
-Date: Tue, 22 Mar 2011 20:35:40 +0530
-Message-ID: <AANLkTikEtneWEu4iQgfKw-zkAT3Z=e7ohXgDq7oJAQvv@mail.gmail.com>
-Subject: Re: RFC: Platform data for onboard USB assets
-From: Jaswinder Singh <jaswinder.singh@linaro.org>
-To: andy.green@linaro.org
-Cc: Andy Green <andy@warmcat.com>, Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        greg@kroah.com, benh@kernel.crashing.org, grant.likely@secretlab.ca,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300756245-12380-1-git-send-email-ctalbott@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC'ed interested parties in retrospect and resent in plain text]
+On Mon, Mar 21, 2011 at 06:10:42PM -0700, Chad Talbott wrote:
+> This patchset introduces fair cross-group preemption.  Right now, we
+> don't have strict isolation between processes in different cgroups.
+> For example: currently an RT ioprio thread in one group can preempt a
+> BE ioprio thread in another group.  We would like to have an
+> application specify the relative priorities of its threads, but still
+> allow strict isolation between applications.
+> 
+> With this patch series, we can configure an entire cgroup as needing
+> low-latency service.  Then that group will be able to preempt another
+> group.  To prevent a runaway application from starving other
+> applications, we allow this preemption only until it has exceeded its
+> fair share (as specified by its relative weight).  So a rate-limited,
+> but latency sensative application (like streaming audio or video) can
+> get front-of-the-line service without fear of it hogging a whole
+> disk's IO.
 
-On 11 March 2011 15:20, Andy Green <andy@warmcat.com> wrote:
->
-> Hi -
->
-> platform_data is a well established way in Linux to pass configuration data up to on-board assets from a machine file like mach-xyz.c.  It's also supported to pass platform_data up to devices that are probed asynchronously from busses like i2c as well, which is very handy.
->
-> However AFAIK it's not possible to bind platform_data to probed USB devices as it stands.
->
-> There are now boards which have on-board USB assets, for example OMAP4 Panda which has a USB <-> Ethernet bridge wired up permanently.  It'd be convenient to also be able to pass optional platform_data to these devices when they are asynchronously probed.
->
-> So what's the feeling about a new api to register an array of platform_data pointers bound to static "devpath" names in the machine file?
->
-> When a usb device is instantiated, it can check through this array if it exists, matching on devname, and attach the platform_data to the underlying probed usb device's dev->platform_data, which it seems is currently unused.
->
-> The particular use that suggested this is on Panda, it would be ideal to be able to set a flag in the usb device's platform data that forces it to be named eth%d since it's a hardwired asset on the board with an RJ45 socket.
->
-> Comments, implementation suggestions, enquiries as to my level of crack consumption etc welcomed ^^
+Chad,
 
+Why not just implement simply RT class groups and always allow an RT
+group to preempt an BE class. Same thing we do for cfq queues. I will
+not worry too much about a run away application consuming all the 
+bandwidth. If that's a concern we could use blkio controller to limit
+the IO rate of a latency sensitive applicaiton to make sure it does
+not starve BE applications.
 
-Hi Andy,
+If RT starving BE is an issue, then it is an issue with plain cfq queue
+also. First we shall have to fix it there.
 
- Personally, I wouldn't have bothered thinking about some kernel-wide
-solution to the Panda SMSC9514 issue. I think defining Panda specific
- udev rules to 'rename the SMSC9614 on USB1(?) to ETH0' is sufficient and
-legal to do. Bus enumeration algos change neither often nor enough.
-I believe there would be far riskier assumptions in filesystems already.
+This definition that a latency sensitive task get prioritized only
+till it is consuming its fair share and if task starts using more than
+fair share then CFQ automatically stops prioritizing it sounds little
+odd to me. If you are looking for predictability, then we lost it. We
+shall have to very well know that task is not eating more than its
+fair share before we can gurantee any kind of latencies to that task. And
+if we know that task is not hogging the disk, there is anyway no risk
+of it starving other groups/tasks completely.
 
-But I do agree it is nice to have system wide solutions whenever due.
-Like this attempted patchset. Which is based upon two questions :-
+Or we could implement something where once in a while we do allow BE
+class tasks to dispatch some IO so that RT tasks do not completely
+starve BE class tasks. I guess this will be similar to what cpu scheduler
+was trying where an RT tasks got 95% of cpu and 5% bandwidth was reserved
+for admin to kill RT tasks if some RT tasks goes wild and locks up the
+cpus.
 
-Q(a) Can discoverable buses(USB, SDIO etc) legally need platform_data
-or similar?
-
-Q(b) If yes, what 'key' is most suitable for identifying the right device
-  to attach the data to ?
-
-(a) We already have a good example, of Panda's missing MAC. I am sure there
- would be more to think of.
-   Though it is illegal for a NIC to not have MAC address, no spec demands the
- MAC be on some EEPROM or like. Theoretically, the NIC vendor could
-hand me a NIC
-and a note with it's unique MAC address scribbled :)
- As Mark already noted, savings pile if we could save eeproms when a device is
-expected to ship in tens of thousands.
- IIANM, Greg acknowledged passing MAC via board specific data
-structure(albeit via DT)
-It's a different matter that DT has many hearts to win(at least in ARM Linux)
-So, perhaps the answer to Q(a) is - Yes.
-
-(b) IMHO, though stable enough, the most obvious method of 'devpath association'
- is indeed not future-proof.
- Having parent pointers to compare sounds like a bit too intrusive.
- People might want to suggest?
-
-Thanks.
+Thanks
+Vivek
