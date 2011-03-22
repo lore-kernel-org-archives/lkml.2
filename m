@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074Ab1CVLQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 07:16:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38688 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab1CVLQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 07:16:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,224,1299484800"; 
-   d="scan'208";a="722827345"
-Date: Tue, 22 Mar 2011 12:16:52 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Philippe Langlais <philippe.langlais@linaro.org>
-Subject: Re: linux-next: manual merge of the mfd tree with Linus' tree
-Message-ID: <20110322111651.GE2351@sortiz-mobl>
-References: <20110321122615.8a639909.sfr@canb.auug.org.au>
- <AANLkTikoF9fkZshaoop7gfuCKjjtUjbwwOG6hWyeGCHJ@mail.gmail.com>
+	id S1755419Ab1CVLRZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 07:17:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39661 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755337Ab1CVLRY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 07:17:24 -0400
+Date: Tue, 22 Mar 2011 12:17:20 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Esben Haabendal <eha@dev.doredevelopment.dk>
+cc: Esben Haabendal <eha@doredevelopment.dk>, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH] Support IRQ_NOAUTOEN flag in set_irq_chained_handler()
+In-Reply-To: <87hbavv83c.fsf@eha.doredevelopment.dk>
+Message-ID: <alpine.LFD.2.00.1103221215000.31464@localhost6.localdomain6>
+References: <1300435389-11048-1-git-send-email-eha@doredevelopment.dk> <alpine.LFD.2.00.1103182135260.2787@localhost6.localdomain6> <87hbavv83c.fsf@eha.doredevelopment.dk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikoF9fkZshaoop7gfuCKjjtUjbwwOG6hWyeGCHJ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 22 Mar 2011, Esben Haabendal wrote:
 
-On Mon, Mar 21, 2011 at 09:21:34AM +0100, Linus Walleij wrote:
-> 2011/3/21 Stephen Rothwell <sfr@canb.auug.org.au>:
+> Thomas Gleixner <tglx@linutronix.de> writes:
 > 
-> > I fixed them up (see below) and can carry the fix as necessary.
+> > On Fri, 18 Mar 2011, eha@doredevelopment.dk wrote:
+> >
+> >> From: Esben Haabendal <eha@doredevelopment.dk>
+> >> 
+> >> Handle IRQ_NOAUTOEN in __set_irq_handler() (ie. for
+> >> set_irq_chained_handler()) instead of just silently ignoring it, and in
+> >> the same way as is done in __setup_irq() (ie. request_irq()).
+> >> 
+> >> This give a more consistent interface, and also adheres better to
+> >> the rule of least surprise.
+> >
+> > Well, that might be less surprising for you, but you will be surprised
+> > that such a change would be a real big surprise for all users of
+> > chained handlers in arch/arm. They simply would not work anymore.
 > 
-> Fix looks correct, Sam if you push this to the MFD tree before
-> the pull request I'll be happy.
-I have just dropped 00423735a08e0d4030688496bca93f25c5e60111, since you were
-willing to carry it out after the MFD tree merge. Is that still your plan ?
+> How is that?  I don't see any use of IRQ_NOAUTOEN flag in arch/arm at
+> all.  Is there some other way that IRQ_NOAUTOEN get's enabled in
+> arch/arm?  Or is my patch broken in some way that it does change irq
+> handler setup when IRQ_NOAUTOEN is not set?
 
-Cheers,
-Samuel.
+Ooops, sorry. I had it somewhere in the back of my memory that ARM
+marked all interrupts IRQ_NOAUTOEN by default. Confused that with
+NOPROBE.
+ 
+> The idea of the patch is that it will do exactly the same as
+> before, unless you specifically set IRQ_NOAUTOEN before calling
+> set_irq_chained_handler...
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+I understand the patch :)
+ 
+> > So we _cannot_ change the semantics here. All we can do is document
+> > it.
+> 
+> With the current semantics, how are one supposed to be able use
+> set_irq_chained_handler without having the handler enabled immediately?
+
+Not at all. Why do you want to do that ?
+
+Thanks,
+
+	tglx
