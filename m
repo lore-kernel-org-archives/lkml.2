@@ -1,93 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab1CWDli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 23:41:38 -0400
-Received: from kroah.org ([198.145.64.141]:37673 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914Ab1CWDlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 23:41:36 -0400
-Date: Tue, 22 Mar 2011 20:42:02 -0700
-From: Greg KH <greg@kroah.com>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, oakad@yahoo.com
-Subject: Re: [PATH 0/4] Memstick patches for 2.6.39
-Message-ID: <20110323034202.GC11329@kroah.com>
-References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
- <1299947013.17988.0.camel@maxim-laptop>
- <1300219210.13493.0.camel@MAIN>
- <20110315140402.334cc55c.akpm@linux-foundation.org>
- <1300590545.15453.3.camel@maxim-laptop>
- <20110319234701.0eab3744.akpm@linux-foundation.org>
- <1300621371.15768.11.camel@maxim-laptop>
- <20110322162108.a4b70291.akpm@linux-foundation.org>
- <1300841974.3588.4.camel@maxim-laptop>
+	id S1753760Ab1CWDrM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 23:47:12 -0400
+Received: from nm8-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.95]:46585 "HELO
+	nm8-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752600Ab1CWDrL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 23:47:11 -0400
+X-Greylist: delayed 349 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Mar 2011 23:47:11 EDT
+X-Yahoo-Newman-Id: 983777.73716.bm@omp1028.mail.bf1.yahoo.com
+X-Yahoo-SMTP: YBMmU.6swBAfEmKvx2CW14lW2dVrrxEiPThtEy4wtmoq
+X-YMail-OSG: bcB3RgYVM1kMdU3wLZUXgBWxC9LpBIOb2kyNQ8aZ.3WZiGl
+ sptSMO3Ckk0ukm5z97X9skYb_Z3d65d64aHPtguh5I1wwKuz4GTgT86xfw4J
+ F.HMmuB72o1evQK_aoRzImCfpMBzWahpm9UgUMtWVbB1hx8Ps2p0O3oS4RYU
+ v85LDK_7T6YVvYi0qm1RMHogFnhFwEFwtZb5qu_Ricpd3ZmO.o5LSxUbo1ca
+ f4puNSqZu1gTIoA6Zny19aw0kMG9XKPCWAQavAi1r8o.l
+X-Yahoo-Newman-Property: ymail-3
+From: "Larry Yab" <universal.lg@att.net>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: larryyab224@gmail.com
+Date: Wed, 23 Mar 2011 02:16:58 +0800
+Subject: NEED YOUR SWIFT RESPONSE !!
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300841974.3588.4.camel@maxim-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-ID: <USER468D5282A293c1ff5231af4b04baec6350876ca952@user468d5282a2>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 02:59:34AM +0200, Maxim Levitsky wrote:
-> On Tue, 2011-03-22 at 16:21 -0700, Andrew Morton wrote:
-> > On Sun, 20 Mar 2011 13:42:51 +0200
-> > Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > 
-> > > On Sat, 2011-03-19 at 23:47 -0700, Andrew Morton wrote:
-> > > > On Sun, 20 Mar 2011 05:09:05 +0200 Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > > > 
-> > > 
-> > > ...
-> > >
-> > > Also, I don't have much time now to improve the ms_block driver till
-> > > this summer (studying).
-> > > The driver works. Yes it has a flaw in regard to scatterlist processing,
-> > > because I didn't find a better way to deal with this monster, but I will
-> > > fix that later. I am not the kind of guy that runs away after a merge.
-> > > It would be nice to just see my code in kernel, code I wrote more that a
-> > > year ago.
-> > > 
-> > > This flaw is purely theoretical. Driver does work.
-> > 
-> > Lots of code is "flawed but works".  The place for such code is
-> > drivers/staging/ - it gets put in there so the code is available for
-> > those who need the driver and the code is later moved over into
-> > drivers/ once the flaws have been addressed.
-> > 
-> > So a path forward here would be for us to put the driver and the
-> > sglist extensions into a directory under drivers/staging/.
-> Ok, I won't be fighting with you over this one.
-> 
-> However, I ask for this:
-> 
-> 
-> 1. Please merge r592.c, it doesn't depend on anything.
 
-What type of driver is that?
+Attn,
 
-> 2. Please review ms_block.c for other problems that might prevent merge.
-> For example when I published the sg list helpers, nobody told me that I
-> am not allowed to add them. Actually the opposite, I was told to put
-> them in scatterlist.c.
-> When I did so, again I was told that I didn't do the kerneldoc comments
-> right, and also was told to improve few of the functions.
-> Now I did all that, and I am told that scatterlist usage in my driver is
-> no-go. OK. But what else is there that you don't like?
+  I am Larry Yab a legal practitioner. I am contacting you because a deceased client of mine died 2009.This was due to the death of all the members of his family.He shares the same last name with yours,leaving a deposit value of $19 million dollars.
+The bank has issued me a notice to contact the next of kin. My proposition to you is to seek your consent and to present you as the next of kin and beneficiary of my late client.
 
-Ick, that's not nice, but formatting issues are usually the easiest to
-pick on, sorry for that happening.
+Contact me immediately for further details, if  you are interested.
 
-So the result is to use the block layer functions instead, right?  How
-much work do you imagine that would take to do?
+Best regards,
+Larry Yab(Esq.),
+larryyab224@gmail.com
 
-If it's a bunch, care to put the code in drivers/staging/ now?  I'll
-gladly take the patches to queue them up for .40.
-
-thanks,
-
-greg k-h
