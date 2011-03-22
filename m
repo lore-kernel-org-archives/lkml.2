@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab1CVWKt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 18:10:49 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:56594 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755576Ab1CVWKr (ORCPT
+	id S1755548Ab1CVWO0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 18:14:26 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:38675 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430Ab1CVWOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 18:10:47 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:X-X-Sender:To:cc:Subject:In-Reply-To:Message-ID:References:User-Agent:MIME-Version:Content-Type:X-Identified-User;
-	b=rkj0o+rRl1YSJ4sDOQC/+uLQTQ7ClnItBRD/VYVS9ih1BccLTWwXf2/DaOMcQ67xBSQFEO+YJzwDsKqb85tC/dufN8gDFo2mSphVl00z4AwI+2RLJL46tmG0R7Sc6Ae+;
-Date: Tue, 22 Mar 2011 15:10:33 -0700 (PDT)
-From: Randy Dunlap <rdunlap@xenotime.net>
-X-X-Sender: rddunlap@chimera.site
-To: Linda Walsh <lkml@tlinx.org>, axboe@kernel.dk
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Documentation/iostats.txt: bit-size reference etc.
-In-Reply-To: <4D83D188.3000909@tlinx.org>
-Message-ID: <alpine.LFD.2.00.1103221509030.20572@chimera.site>
-References: <4D83D188.3000909@tlinx.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
+	Tue, 22 Mar 2011 18:14:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=mCbEE7NIwj7QixvVbay6BTQOk2iaaJFO9kPW1HlCl5KPNEaMt8onkbuZrwcJngLmq
+	8pWXU+4S7EeWyJUpf8Ivg==
+From: Justin TerAvest <teravest@google.com>
+To: jaxboe@fusionio.com, vgoyal@redhat.com
+Cc: linux-kernel@vger.kernel.org, Justin TerAvest <teravest@google.com>
+Subject: [PATCH] cfq-iosched: Don't clear queue stats when preempt.
+Date: Tue, 22 Mar 2011 15:14:12 -0700
+Message-Id: <1300832052-404-1-git-send-email-teravest@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Previous commit "cfq-iosched: Don't set active queue in preempt" wrongly
+cleared stats for preempting queues when it shouldn't have, because when
+we choose a queue to preempt, it still isn't necessarily scheduled next.
 
-- correction that disk stats values are native-word-sized
-   32-bit or 64-bit values, not always 32-bi values
-- drop "Last modified" entry; use git for that
-- fix a few typos
-- change "cpu" to "CPU"
+Thanks to Vivek Goyal for figuring this out and understanding how the
+preemption code works.
 
-Reported-by: Linda Walsh <lkml@tlinx.org>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Justin TerAvest <teravest@google.com>
 ---
-  Documentation/iostats.txt |   17 ++++++++---------
-  1 file changed, 8 insertions(+), 9 deletions(-)
+ block/cfq-iosched.c |   38 +++++++++++++++-----------------------
+ 1 files changed, 15 insertions(+), 23 deletions(-)
 
---- linux-2.6.38-git11.orig/Documentation/iostats.txt
-+++ linux-2.6.38-git11/Documentation/iostats.txt
-@@ -1,8 +1,6 @@
-  I/O statistics fields
-  ---------------
-
--Last modified Sep 30, 2003
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 69208d7..efa1f30 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1620,33 +1620,27 @@ static inline void cfq_del_timer(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 	cfq_blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
+ }
+ 
+-static void cfq_clear_queue_stats(struct cfq_data *cfqd,
+-				  struct cfq_queue *cfqq)
+-{
+-	cfq_blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
+-	cfqq->slice_start = 0;
+-	cfqq->dispatch_start = jiffies;
+-	cfqq->allocated_slice = 0;
+-	cfqq->slice_end = 0;
+-	cfqq->slice_dispatch = 0;
+-	cfqq->nr_sectors = 0;
 -
-  Since 2.4.20 (and some versions before, with patches), and 2.5.45,
-  more extensive disk statistics have been introduced to help measure disk
-  activity. Tools such as sar and iostat typically interpret these and do
-@@ -46,11 +44,12 @@ the above example, the first field of st
-  By contrast, in 2.6 if you look at /sys/block/hda/stat, you'll
-  find just the eleven fields, beginning with 446216.  If you look at
-  /proc/diskstats, the eleven fields will be preceded by the major and
--minor device numbers, and device name.  Each of these formats provide
-+minor device numbers, and device name.  Each of these formats provides
-  eleven fields of statistics, each meaning exactly the same things.
-  All fields except field 9 are cumulative since boot.  Field 9 should
--go to zero as I/Os complete; all others only increase.  Yes, these are
--32 bit unsigned numbers, and on a very busy or long-lived system they
-+go to zero as I/Os complete; all others only increase (unless they
-+overflow and wrap).  Yes, these are (32-bit or 64-bit) unsigned long
-+(native word size) numbers, and on a very busy or long-lived system they
-  may wrap. Applications should be prepared to deal with that; unless
-  your observations are measured in large numbers of minutes or hours,
-  they should not wrap twice before you notice them.
-@@ -96,11 +95,11 @@ introduced when changes collide, so (for
-  read I/Os issued per partition should equal those made to the disks ...
-  but due to the lack of locking it may only be very close.
-
--In 2.6, there are counters for each cpu, which made the lack of locking
--almost a non-issue.  When the statistics are read, the per-cpu counters
--are summed (possibly overflowing the unsigned 32-bit variable they are
-+In 2.6, there are counters for each CPU, which make the lack of locking
-+almost a non-issue.  When the statistics are read, the per-CPU counters
-+are summed (possibly overflowing the unsigned long variable they are
-  summed to) and the result given to the user.  There is no convenient
--user interface for accessing the per-cpu counters themselves.
-+user interface for accessing the per-CPU counters themselves.
-
-  Disks vs Partitions
-  -------------------
+-	cfq_clear_cfqq_wait_request(cfqq);
+-	cfq_clear_cfqq_must_dispatch(cfqq);
+-	cfq_clear_cfqq_must_alloc_slice(cfqq);
+-	cfq_clear_cfqq_fifo_expire(cfqq);
+-	cfq_mark_cfqq_slice_new(cfqq);
+-
+-	cfq_del_timer(cfqd, cfqq);
+-}
+-
+ static void __cfq_set_active_queue(struct cfq_data *cfqd,
+ 				   struct cfq_queue *cfqq)
+ {
+ 	if (cfqq) {
+ 		cfq_log_cfqq(cfqd, cfqq, "set_active wl_prio:%d wl_type:%d",
+ 				cfqd->serving_prio, cfqd->serving_type);
+-		cfq_clear_queue_stats(cfqd, cfqq);
++		cfq_blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
++		cfqq->slice_start = 0;
++		cfqq->dispatch_start = jiffies;
++		cfqq->allocated_slice = 0;
++		cfqq->slice_end = 0;
++		cfqq->slice_dispatch = 0;
++		cfqq->nr_sectors = 0;
++
++		cfq_clear_cfqq_wait_request(cfqq);
++		cfq_clear_cfqq_must_dispatch(cfqq);
++		cfq_clear_cfqq_must_alloc_slice(cfqq);
++		cfq_clear_cfqq_fifo_expire(cfqq);
++		cfq_mark_cfqq_slice_new(cfqq);
++
++		cfq_del_timer(cfqd, cfqq);
+ 	}
+ 
+ 	cfqd->active_queue = cfqq;
+@@ -3338,8 +3332,6 @@ static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 	BUG_ON(!cfq_cfqq_on_rr(cfqq));
+ 
+ 	cfq_service_tree_add(cfqd, cfqq, 1);
+-
+-	cfq_clear_queue_stats(cfqd, cfqq);
+ }
+ 
+ /*
+-- 
+1.7.3.1
 
