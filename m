@@ -1,228 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab1CVW4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 18:56:47 -0400
-Received: from charybdis-ext.suse.de ([195.135.221.2]:51067 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753097Ab1CVW4p (ORCPT
+	id S1754733Ab1CVW7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 18:59:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35705 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804Ab1CVW7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 18:56:45 -0400
-Subject: Re: [PATCH 9/10] sh: Use struct syscore_ops instead of sysdev
- class and sysdev
-From: Kay Sievers <kay.sievers@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
-        Greg KH <gregkh@suse.de>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-In-Reply-To: <201103222342.20526.rjw@sisk.pl>
-References: <201103100131.58206.rjw@sisk.pl>
-	 <201103222305.01808.rjw@sisk.pl> <1300832411.1815.35.camel@zag>
-	 <201103222342.20526.rjw@sisk.pl>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 22 Mar 2011 23:56:20 +0100
-Message-ID: <1300834580.1815.64.camel@zag>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Mar 2011 18:59:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=s3ULQxGnHfjr2fJq5307T8G6oxunEhbf64tg5LeOLDXK8g5X7Bmpzvj9fyFCX/oPwk
+         ghCFDZXVsalPuMSsFHb6joV9IEMUndeOggsliaUnYrC1gBaaD6JPAVDyHnJC5uLnB3rQ
+         0aBEvbgyPTU9UirDY61hnwdsJnDinJf6Zu6gs=
+Date: Wed, 23 Mar 2011 01:59:24 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Ralf Thielow <ralf.thielow@googlemail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        egooon@gmail.com
+Subject: Re: [PATCH] staging: keucr: smscsi: fixed coding style issues
+Message-ID: <20110322225924.GS2008@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Ralf Thielow <ralf.thielow@googlemail.com>, gregkh@suse.de,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+	egooon@gmail.com
+References: <1300828889-8273-1-git-send-email-ralf.thielow@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300828889-8273-1-git-send-email-ralf.thielow@googlemail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-22 at 23:42 +0100, Rafael J. Wysocki wrote:
-> On Tuesday, March 22, 2011, Kay Sievers wrote:
-> > On Tue, 2011-03-22 at 23:05 +0100, Rafael J. Wysocki wrote:
-> > > On Tuesday, March 22, 2011, Kay Sievers wrote:
-> > > > On Tue, 2011-03-22 at 22:00 +0100, Rafael J. Wysocki wrote:
-> > > > > On Tuesday, March 22, 2011, Kay Sievers wrote:
-> > > > > > On Tue, 2011-03-22 at 21:30 +0100, Rafael J. Wysocki wrote:
-> > > > > > > 
-> > > > > > > Perhaps there's a more straightforward way to make some files show up in
-> > > > > > > sysfs on a specific path than defininig an otherwise useless bus type and
-> > > > > > > device object?
-> > > > > > 
-> > > > > > That's absolutely not the point. Please don't get yourself into that
-> > > > > > thinking. If people want to "export stuff to userspace", they must not
-> > > > > > invent new things. We need to get rid of the silly special cases.
-> > > > > 
-> > > > > Why exactly?  Do they actually hurt anyone and if so then how?
-> > > > 
-> > > > Sure, "devices" are devices, and devices have well-defines set of
-> > > > properties, not some magic directory, people can mess around with the
-> > > > way they like.
-> > > 
-> > > So it looks like the the problem is that the exported attributes happen to
-> > > be under /sys/devices/.  Would it still be a problem if they were somewhere
-> > > else?
-> > 
-> > We are not going to invent another location for any devices. They need
-> > to stay in /devices if they are devices. And all devices need to be
-> > "struct device".
-> 
-> _They_ _are_ _not_ _devices_.
+On Tue, Mar 22, 2011 at 10:21:29PM +0100, Ralf Thielow wrote:
+> Fixed coding style issues.
 
-Ah, I see. Then they should not ever have been created as a sysdev in
-the first place. I thought you did only talk about stuff that needs
-pm_ops. If they don't do anything like a device, they need to go
-somewhere else, yes.
+This patch description is not very good.
 
-> Please take clocksource as an example.  It needs to export two attributes,
-> available_clocksource and current_clocksource, which are _useful_ user space
-> interfaces.  Why the heck are you trying to convince me it's a good idea to
-> create a special bus type and struct device _specifically_ for exporting them?!
-> 
-> Moreover, is there anything device-alike in those two attributes?  I don't
-> really think so.
-> 
-> So please stop arguing this way, because it simply isn't going to fly and
-> people will always say a big fat "no" to such ideas, for a good reason.
+> diff --git a/drivers/staging/keucr/smscsi.c b/drivers/staging/keucr/smscsi.c
+> index 6211686..821a162 100644
+> --- a/drivers/staging/keucr/smscsi.c
+> +++ b/drivers/staging/keucr/smscsi.c
+> @@ -9,76 +9,78 @@
+>  #include "usb.h"
+>  #include "scsiglue.h"
+>  #include "transport.h"
+> -//#include "smcommon.h"
+> +/* #include "smcommon.h" */
 
-I never expected anything like that to use a sysdev. I'm not tryin gto
-convince you about anything, I'm just surprised what people do, well I'm
-not after all the years. :)
+Just delete this comment.
 
-> > > > > > Userspace is not meant to learn subsystem specific rules for every new
-> > > > > > thing.
-> > > > > 
-> > > > > That depends a good deal of who's writing the user space in question.  If
-> > > > > that's the same person who's working on the particular part of the kernel,
-> > > > > I don't see a big problem.
-> > > > 
-> > > > Not for "devices". There are rules for devices, which are defined by the
-> > > > driver core, and the sysdev stuff needs to go, because it does not fit
-> > > > into that model.
-> > > 
-> > > OK, I understand that.
-> > > 
-> > > Now, there's stuff that doesn't really match the "device" model.  Where is
-> > > the right place to export that?  Perhaps we should add something like
-> > > /sys/platform/ (in analogy with /sys/firmware/)?
-> > 
-> > No, add a subsystem (bus_type) for any of them, and register them. There
-> > is no such thing as "devices which do not fit the device model", they
-> > are all fine there. Please stop optimizing single bytes and creating a
-> > mess in /sys. Every device is a "struct device".
-> 
-> Again.  Those things are _not_ devices.  Am I not clear enough?
+>  #include "smil.h"
+>  
+> -int SM_SCSI_Test_Unit_Ready (struct us_data *us, struct scsi_cmnd *srb);
+> -int SM_SCSI_Inquiry         (struct us_data *us, struct scsi_cmnd *srb);
+> -int SM_SCSI_Mode_Sense      (struct us_data *us, struct scsi_cmnd *srb);
+> -int SM_SCSI_Start_Stop      (struct us_data *us, struct scsi_cmnd *srb);
+> -int SM_SCSI_Read_Capacity   (struct us_data *us, struct scsi_cmnd *srb);
+> -int SM_SCSI_Read            (struct us_data *us, struct scsi_cmnd *srb);
+> -int SM_SCSI_Write           (struct us_data *us, struct scsi_cmnd *srb);
+> -
+> -extern struct SSFDCTYPE     Ssfdc;
+> -extern struct ADDRESS       Media;
+> -extern PBYTE                SMHostAddr;
+> -extern DWORD                ErrXDCode;
 
-No that wasn't clear. They need to leave the driver core then, if they
-are not devices. :)
+Why move these to a seperate header file?  That should have been
+explained in the changelog.  You forgot to include the header file.
+Also you didn't compile this crap...  :/
 
-> > Think of "struct bus_type" as "struct subsystem", we will rename that
-> > when we are ready. It is just a group of devices which are of the same
-> > type, it has nothing to do with a bus in the sense of hardware.
-> > 
-> > We need unified exports of _all devices to userspace, not custom layouts
-> > in /sys.
-> > 
-> > There's is a pretty much outdated Documentation/sysfs-rules.txt, wich
-> > covers part of the history and the plans.
-> 
-> You seem to be thinking that anything exported through sysfs needs to be
-> device, which I don't think is event approximately correct (what about
-> /sys/firmware/ or /sys/kernel/ or /sys/fs/ , for a few examples?).
+> -
+> -//----- SM_SCSIIrp() --------------------------------------------------
+> +/* ----- SM_SCSIIrp() -------------------------------------------------- */
 
-All fine. Again, I'm only talking about "devices", which is class/,
-block/, bus/, dev/, devices/ in /sys.
+There are a lot of comments here that should just be deleted.  For
+example this one is worthless.  If it were in kernel doc format then
+it would be worthwhile, but as it is, you may as well just delete it.
 
-> Think this way: it is useful (and IMHO correct) to export some things to
-> user space that without necessarily regarding them as "devices", physical
-> or not.  Some of them _happen_ to be exported through sysdevs, but that
-> doesn't really mean the _are_ devices.  They are simply _software_ interfaces
-> to things that have no device representation and don't _need_ one.
+All the commented out debug code should just be deleted as well.  Maybe
+send 2 patches.  The first just deletes things and the second fixes up
+style issues.
 
-Fine, they need to leave the driver core stuff alone, and not pretend to
-be a device.
+>  int SM_SCSIIrp(struct us_data *us, struct scsi_cmnd *srb)
+>  {
+>  	int    result;
+>  
+>  	us->SrbStatus = SS_SUCCESS;
+> -	switch (srb->cmnd[0])
+> -	{
+> -		case TEST_UNIT_READY :  result = SM_SCSI_Test_Unit_Ready (us, srb);  break; //0x00
+> -		case INQUIRY         :  result = SM_SCSI_Inquiry         (us, srb);  break; //0x12
+> -		case MODE_SENSE      :  result = SM_SCSI_Mode_Sense      (us, srb);  break; //0x1A
+> -		case READ_CAPACITY   :  result = SM_SCSI_Read_Capacity   (us, srb);  break; //0x25
+> -		case READ_10         :  result = SM_SCSI_Read            (us, srb);  break; //0x28
+> -		case WRITE_10        :  result = SM_SCSI_Write           (us, srb);  break; //0x2A
 
-> > > > > > There is _one_ way to export device attributes, and that is
-> > > > > > "struct device" today.
-> > > > > > 
-> > > > > > If that's to expensive for anybody, just don't use sysfs. It's the rule
-> > > > > > we have today. :)
-> > > > > 
-> > > > > Oh, good to know.  It's changed a bit since I last heard.  Never mind.
-> > > > 
-> > > > Oh, don't get me wrong, this is all is about "devices" not any other
-> > > > controls.
-> > > >
-> > > > > Still, I won't let you change the things in /sys/power to struct devices,
-> > > > > sorry about that. ;-)
-> > > > 
-> > > > Fine as long as they are power specific things, and not "devices". You
-> > > > don't have sysdevs there, right? :)
-> > > 
-> > > No, I don't.
-> > 
-> > Then all is fine. All other stuff is more like /proc, and can never be
-> > really unified.
-> 
-> YES!  And _that_'s precisely what I'm (and Paul is) talking about.
+If you want you could just leave this as is.  It's readable.
+checkpatch.pl is there to serve you and not the other way
+around.
 
-Good.
+> -
+> -		default:
+> -			us->SrbStatus = SS_ILLEGAL_REQUEST;
+> -			result = USB_STOR_TRANSPORT_FAILED;
+> -			break;
+> +	switch (srb->cmnd[0]) {
+> +	case TEST_UNIT_READY:
+> +		result = SM_SCSI_Test_Unit_Ready(us, srb);
+> +		break; /* 0x00 */
+                       ^^^^^^^^^^
 
-> > All we care about is devices, which have common methods
-> > for userspace to trigger and consume, and need to be unified. Power
-> > specific control files seems all fine in its kobject use.
-> 
-> I understand that, really.
-> 
-> > > > > And I wonder how are you going to deal with clocksource exporting things
-> > > > > via the sysdev interface right now.  I'd simply create two directories and
-> > > > > put the two files into them and be done with that, but I guess that
-> > > > > wouldn't fit into the model somehow, right?
-> > > > 
-> > > > Nope, register a bus_type, and use struct device for all of them, Parent
-> > > > them to /sys/devices/system/ if they should keep their location and
-> > > > layout.
-> > > 
-> > > Well, I'll be watching what happens to the patch trying to do that, but I'm
-> > > not going to bet anything on its success. ;-)
-> > 
-> > It should be pretty straight-forward. We will need to do that for CPUs I
-> > guess, because the interface is kinda commonly used.
-> 
-> No.  CPUs are _very_ special.
+This should have been on the same line as TEST_UNIT_READY.  But actually
+it's a worthless comment.  Delete if you want.  Or leave it as it was as
+I said before.
 
-Not in the view of the driver core or the associated user space
-interfaces. They are just like any other device.
+> -//----- SM_SCSI_Test_Unit_Ready() --------------------------------------------------
+> +/* ----- SM_SCSI_Test_Unit_Ready() ----------------------------------------- */
+>  int SM_SCSI_Test_Unit_Ready(struct us_data *us, struct scsi_cmnd *srb)
+>  {
+> -	//printk("SM_SCSI_Test_Unit_Ready\n");
+> +	/* printk("SM_SCSI_Test_Unit_Ready\n"); */
 
-> > > > > > > > That way userspace can properly enumerate them in a flat list
-> > > > > > > > in /sys/bus/<bus_type name>/devices/*, and gets proper events on module
-> > > > > > > > load and during system coldplug, and can hook into the usual hotplug
-> > > > > > > > pathes to set/get these values instead of crawling magicly defined and
-> > > > > > > > decoupled locations in /sys which can not express proper hierarchy,
-> > > > > > > > classicication, or anything else that all other devices can just do.
-> > > > > > > 
-> > > > > > > There's no hotplug involved or anything remotely like that AFAICS.
-> > > > > > > There are simply static files as I said above, they are created
-> > > > > > > early during system initialization and simply stay there.
-> > > > > > 
-> > > > > > That's not the point. It's about a single way to retrieve information
-> > > > > > about devices, extendability, and coldplug during bootup, where existing
-> > > > > > devices need to be handled only after userspace is up.
-> > > > > 
-> > > > > I'd say the case at hand has nothing to do with that.
-> > > > 
-> > > > It has. As for CPUs. We can not do proper CPU-dependent module
-> > > > autoloading, because the events happen before userspace runs, and
-> > > > clodplug can not see the broken sysdevs, because they have no events to
-> > > > re-trigger, like all others have.
-> > > 
-> > > Well, as I said, would it be OK if the things in question happened to be
-> > > located somewhere outside of /sys/devices/ ?
-> > 
-> > No, no device directory can be outside of /sys/devices.
-> 
-> Sorry, I'm repeating that for the last time.  I'm not talking about devices.
-> I'm talking about _totally_ _random_ _stuff_ which is "like /proc, and can
-> never be really unified" (your own words) which _happens_ to be exported
-> through the sysdev interface, because that happend to be _easy_ at one point.
-> Can we agree on that at least?
+This is what I mean by debug code that should just be deleted.
 
-Sure, they should leave the driver core alone, and should never been a
-sysdev or any other device in the first place. We should not create
-anything for them.
+> @@ -98,49 +100,52 @@ int SM_SCSI_Read_Capacity(struct us_data *us, struct scsi_cmnd *srb)
+>  	WORD    bl_len;
+>  	BYTE    buf[8];
+>  
+> -	printk("SM_SCSI_Read_Capacity\n");
+> +	printk(KERN_INFO, "SM_SCSI_Read_Capacity\n");
 
-Kay
+Use KERN_DEBUG or pr_debug().  In the end, we'll have to delete these
+before it gets moved out of staging.  There was a similar issue in a 
+different change you made.
 
+These are behavior changes and behavior changes should always be
+mentioned in the changelod.
+
+>  
+>  	bl_len = 0x200;
+>  	bl_num = Ssfdc.MaxLogBlocks * Ssfdc.MaxSectors * Ssfdc.MaxZones - 1;
+> -	//printk("MaxLogBlocks = %x\n", Ssfdc.MaxLogBlocks);
+> -	//printk("MaxSectors   = %x\n", Ssfdc.MaxSectors);
+> -	//printk("MaxZones     = %x\n", Ssfdc.MaxZones);
+> -	//printk("bl_num       = %x\n", bl_num);
+> +	/* printk("MaxLogBlocks = %x\n", Ssfdc.MaxLogBlocks);
+> +	printk("MaxSectors   = %x\n", Ssfdc.MaxSectors);
+> +	printk("MaxZones     = %x\n", Ssfdc.MaxZones);
+> +	printk("bl_num       = %x\n", bl_num); */
+
+This is not the right way to do multi-line comments.  Read CodingStyle.
+>  
+>  	us->bl_num = bl_num;
+> -	printk("bl_len = %x\n", bl_len);
+> -	printk("bl_num = %x\n", bl_num);
+> -
+> -	//srb->request_bufflen = 8;
+> -	buf[0] = (bl_num>>24) & 0xff;
+> -	buf[1] = (bl_num>>16) & 0xff;
+> -	buf[2] = (bl_num>> 8) & 0xff;
+> -	buf[3] = (bl_num>> 0) & 0xff;
+> -	buf[4] = (bl_len>>24) & 0xff;
+> -	buf[5] = (bl_len>>16) & 0xff;
+> -	buf[6] = (bl_len>> 8) & 0xff;
+> -	buf[7] = (bl_len>> 0) & 0xff;
+> -	
+> +	printk(KERN_INFO, "bl_len = %x\n", bl_len);
+> +	printk(KERN_INFO, "bl_num = %x\n", bl_num);
+
+DEBUG.
+
+Etc.
+
+regards,
+dan carpenter
