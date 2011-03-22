@@ -1,137 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab1CVLJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 07:09:33 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56794 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754875Ab1CVLJb (ORCPT
+	id S1755272Ab1CVLKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 07:10:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35768 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab1CVLKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 07:09:31 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 5/5] x86,mm: make pagefault killable
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110322194721.B05E.A69D9226@jp.fujitsu.com>
-References: <20110315153801.3526.A69D9226@jp.fujitsu.com> <20110322194721.B05E.A69D9226@jp.fujitsu.com>
-Message-Id: <20110322200945.B06D.A69D9226@jp.fujitsu.com>
+	Tue, 22 Mar 2011 07:10:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=H8vtcCFuKLzO5rXqLH2GB1iKDdl83nYXuSSy8wZs2IgGmfTheTImMkBgO6xCFPtQQV
+         Hd8CWLQRI7Gc1sp/dRcOukgxiUD0ulC4u1gvNPUsGQUb+rpalfGIsi99xUAtiP+o+kSE
+         MhndDqczQNc0Axjtp1hS4PsakC7pjSrxoYPr4=
+Date: Tue, 22 Mar 2011 12:10:39 +0100
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
+        vda.linux@googlemail.com
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: [PATCH UPDATED 4/8] job control: Allow access to job control
+ events through ptracees
+Message-ID: <20110322111039.GQ12003@htj.dyndns.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+ <1299614199-25142-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 22 Mar 2011 20:09:29 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299614199-25142-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When oom killer occured, almost processes are getting stuck following
-two points.
+Currently a real parent can't access job control stopped/continued
+events through a ptraced child.  This utterly breaks job control when
+the children are ptraced.
 
-	1) __alloc_pages_nodemask
-	2) __lock_page_or_retry
+For example, if a program is run from an interactive shell and then
+strace(1) attaches to it, pressing ^Z would send SIGTSTP and strace(1)
+would notice it but the shell has no way to tell whether the child
+entered job control stop and thus can't tell when to take over the
+terminal - leading to awkward lone ^Z on the terminal.
 
-1) is not much problematic because TIF_MEMDIE lead to make allocation
-failure and get out from page allocator. 2) is more problematic. When
-OOM situation, Zones typically don't have page cache at all and Memory
-starvation might lead to reduce IO performance largely. When fork bomb
-occur, TIF_MEMDIE task don't die quickly mean fork bomb may create
-new process quickly rather than oom-killer kill it. Then, the system
-may become livelock.
+Because the job control and ptrace stopped states are independent,
+there is no reason to prevent real parents from accessing the stopped
+state regardless of ptrace.  The continued state isn't separate but
+ptracers don't have any use for them as ptracees can never resume
+without explicit command from their ptracers, so as long as ptracers
+don't consume it, it should be fine.
 
-This patch makes pagefault interruptible by SIGKILL.
+Although this is a behavior change, because the previous behavior is
+utterly broken when viewed from real parents and the change is only
+visible to real parents, I don't think it's necessary to make this
+behavior optional.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+One situation to be careful about is when a task from the real
+parent's group is ptracing.  The parent group is the recipient of both
+ptrace and job control stop events and one stop can be reported as
+both job control and ptrace stops.  As this can break the current
+ptrace users, suppress job control stopped events for these cases.
+
+If a real parent ptracer wants to know about both job control and
+ptrace stops, it can create a separate process to serve the role of
+real parent.
+
+Note that this only updates wait(2) side of things.  The real parent
+can access the states via wait(2) but still is not properly notified
+(woken up and delivered signal).  Test case polls wait(2) with WNOHANG
+to work around.  Notification will be updated by future patches.
+
+Test case follows.
+
+  #include <stdio.h>
+  #include <unistd.h>
+  #include <time.h>
+  #include <errno.h>
+  #include <sys/types.h>
+  #include <sys/ptrace.h>
+  #include <sys/wait.h>
+
+  int main(void)
+  {
+	  const struct timespec ts100ms = { .tv_nsec = 100000000 };
+	  pid_t tracee, tracer;
+	  siginfo_t si;
+	  int i;
+
+	  tracee = fork();
+	  if (tracee == 0) {
+		  while (1) {
+			  printf("tracee: SIGSTOP\n");
+			  raise(SIGSTOP);
+			  nanosleep(&ts100ms, NULL);
+			  printf("tracee: SIGCONT\n");
+			  raise(SIGCONT);
+			  nanosleep(&ts100ms, NULL);
+		  }
+	  }
+
+	  waitid(P_PID, tracee, &si, WSTOPPED | WNOHANG | WNOWAIT);
+
+	  tracer = fork();
+	  if (tracer == 0) {
+		  nanosleep(&ts100ms, NULL);
+		  ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
+
+		  for (i = 0; i < 11; i++) {
+			  si.si_pid = 0;
+			  waitid(P_PID, tracee, &si, WSTOPPED);
+			  if (si.si_pid && si.si_code == CLD_TRAPPED)
+				  ptrace(PTRACE_CONT, tracee, NULL,
+					 (void *)(long)si.si_status);
+		  }
+		  printf("tracer: EXITING\n");
+		  return 0;
+	  }
+
+	  while (1) {
+		  si.si_pid = 0;
+		  waitid(P_PID, tracee, &si,
+			 WSTOPPED | WCONTINUED | WEXITED | WNOHANG);
+		  if (si.si_pid)
+			  printf("mommy : WAIT status=%02d code=%02d\n",
+				 si.si_status, si.si_code);
+		  nanosleep(&ts100ms, NULL);
+	  }
+	  return 0;
+  }
+
+Before the patch, while ptraced, the parent can't see any job control
+events.
+
+  tracee: SIGSTOP
+  mommy : WAIT status=19 code=05
+  tracee: SIGCONT
+  tracee: SIGSTOP
+  tracee: SIGCONT
+  tracee: SIGSTOP
+  tracee: SIGCONT
+  tracee: SIGSTOP
+  tracer: EXITING
+  mommy : WAIT status=19 code=05
+  ^C
+
+After the patch,
+
+  tracee: SIGSTOP
+  mommy : WAIT status=19 code=05
+  tracee: SIGCONT
+  mommy : WAIT status=18 code=06
+  tracee: SIGSTOP
+  mommy : WAIT status=19 code=05
+  tracee: SIGCONT
+  mommy : WAIT status=18 code=06
+  tracee: SIGSTOP
+  mommy : WAIT status=19 code=05
+  tracee: SIGCONT
+  mommy : WAIT status=18 code=06
+  tracee: SIGSTOP
+  tracer: EXITING
+  mommy : WAIT status=19 code=05
+  ^C
+
+-v2: Oleg pointed out that wait(2) should be suppressed for the real
+     parent's group instead of only the real parent task itself.
+     Updated accordingly.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/mm/fault.c |    9 +++++++++
- include/linux/mm.h  |    1 +
- mm/filemap.c        |   22 +++++++++++++++++-----
- 3 files changed, 27 insertions(+), 5 deletions(-)
+ kernel/exit.c |   41 +++++++++++++++++++++++++++++++++--------
+ 1 file changed, 33 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 20e3f87..797c7d0 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -1035,6 +1035,7 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	if (user_mode_vm(regs)) {
- 		local_irq_enable();
- 		error_code |= PF_USER;
-+		flags |= FAULT_FLAG_KILLABLE;
- 	} else {
- 		if (regs->flags & X86_EFLAGS_IF)
- 			local_irq_enable();
-@@ -1138,6 +1139,14 @@ good_area:
- 	}
- 
- 	/*
-+	 * Pagefault was interrupted by SIGKILL. We have no reason to
-+	 * continue pagefault.
-+	 */
-+	if ((flags & FAULT_FLAG_KILLABLE) && (fault & VM_FAULT_RETRY) &&
-+	    fatal_signal_pending(current))
-+		return;
-+
-+	/*
- 	 * Major/minor page fault accounting is only done on the
- 	 * initial attempt. If we go through a retry, it is extremely
- 	 * likely that the page will be found in page cache at that point.
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 0716517..9e7c567 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -152,6 +152,7 @@ extern pgprot_t protection_map[16];
- #define FAULT_FLAG_MKWRITE	0x04	/* Fault was mkwrite of existing pte */
- #define FAULT_FLAG_ALLOW_RETRY	0x08	/* Retry fault if blocking */
- #define FAULT_FLAG_RETRY_NOWAIT	0x10	/* Don't drop mmap_sem and wait when retrying */
-+#define FAULT_FLAG_KILLABLE	0x20	/* The fault task is in SIGKILL killable region */
- 
- /*
-  * This interface is used by x86 PAT code to identify a pfn mapping that is
-diff --git a/mm/filemap.c b/mm/filemap.c
-index f5f9ac2..affba94 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -719,15 +719,27 @@ void __lock_page_nosync(struct page *page)
- int __lock_page_or_retry(struct page *page, struct mm_struct *mm,
- 			 unsigned int flags)
- {
--	if (!(flags & FAULT_FLAG_ALLOW_RETRY)) {
--		__lock_page(page);
--		return 1;
--	} else {
-+	int ret;
-+
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
- 		if (!(flags & FAULT_FLAG_RETRY_NOWAIT)) {
- 			up_read(&mm->mmap_sem);
--			wait_on_page_locked(page);
-+			if (flags & FAULT_FLAG_KILLABLE)
-+				wait_on_page_locked_killable(page);
-+			else
-+				wait_on_page_locked(page);
- 		}
+Index: work/kernel/exit.c
+===================================================================
+--- work.orig/kernel/exit.c
++++ work/kernel/exit.c
+@@ -1541,17 +1541,19 @@ static int wait_consider_task(struct wai
+ 	if (p->exit_state == EXIT_DEAD)
  		return 0;
-+	} else {
-+		if (flags & FAULT_FLAG_KILLABLE) {
-+			ret = __lock_page_killable(page);
-+			if (ret) {
-+				up_read(&mm->mmap_sem);
-+				return 0;
-+			}
-+		} else
-+			__lock_page(page);
-+		return 1;
+ 
+-	if (likely(!ptrace) && unlikely(task_ptrace(p))) {
++	/* slay zombie? */
++	if (p->exit_state == EXIT_ZOMBIE) {
+ 		/*
+-		 * This child is hidden by ptrace.
+-		 * We aren't allowed to see it now, but eventually we will.
++		 * A zombie ptracee is only visible to its ptracer.
++		 * Notification and reaping will be cascaded to the real
++		 * parent when the ptracer detaches.
+ 		 */
+-		wo->notask_error = 0;
+-		return 0;
+-	}
++		if (likely(!ptrace) && unlikely(task_ptrace(p))) {
++			/* it will become visible, clear notask_error */
++			wo->notask_error = 0;
++			return 0;
++		}
+ 
+-	/* slay zombie? */
+-	if (p->exit_state == EXIT_ZOMBIE) {
+ 		/* we don't reap group leaders with subthreads */
+ 		if (!delay_group_leader(p))
+ 			return wait_task_zombie(wo, p);
+@@ -1580,15 +1582,38 @@ static int wait_consider_task(struct wai
+ 			wo->notask_error = 0;
+ 	} else {
+ 		/*
++		 * If @p is ptraced by a task in its real parent's group,
++		 * hide group stop/continued state when looking at @p as
++		 * the real parent; otherwise, a single stop can be
++		 * reported twice as group and ptrace stops.
++		 *
++		 * If a ptracer wants to distinguish the two events for its
++		 * own children, it should create a separate process which
++		 * takes the role of real parent.
++		 */
++		if (likely(!ptrace) && task_ptrace(p) &&
++		    same_thread_group(p->parent, p->real_parent))
++			return 0;
++
++		/*
+ 		 * @p is alive and it's gonna stop, continue or exit, so
+ 		 * there always is something to wait for.
+ 		 */
+ 		wo->notask_error = 0;
  	}
+ 
++	/*
++	 * Wait for stopped.  Depending on @ptrace, different stopped state
++	 * is used and the two don't interact with each other.
++	 */
+ 	if (task_stopped_code(p, ptrace))
+ 		return wait_task_stopped(wo, ptrace, p);
+ 
++	/*
++	 * Wait for continued.  There's only one continued state and the
++	 * ptracer can consume it which can confuse the real parent.  Don't
++	 * use WCONTINUED from ptracer.  You don't need or want it.
++	 */
+ 	return wait_task_continued(wo, p);
  }
  
--- 
-1.6.5.2
-
-
-
