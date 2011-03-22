@@ -1,195 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab1CVOuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 10:50:08 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56391 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473Ab1CVOuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 10:50:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UCR/jbuGfQJVJmMMa5C7WWc+mGygv6yVw2uWpuobzJiHN/aAy8yLAxOdo0JwKf1slw
-         Rwp5ZxEYK3ODNe8G6TW3tUszyBUQ8gVoEAxAv/c++52GJRaR+TESd8RXPldiB200/wx4
-         /orwBKKw0uxgsxCOAB2HeR7/hpBREn2gzsMQg=
-Date: Tue, 22 Mar 2011 23:49:50 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nick Piggin <npiggin@kernel.dk>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/5] vmscan: remove all_unreclaimable check from direct
- reclaim path completely
-Message-ID: <20110322144950.GA2628@barrios-desktop>
-References: <20110315153801.3526.A69D9226@jp.fujitsu.com>
- <20110322194721.B05E.A69D9226@jp.fujitsu.com>
- <20110322200523.B061.A69D9226@jp.fujitsu.com>
+	id S1753743Ab1CVOw1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 10:52:27 -0400
+Received: from mailin.studentenwerk.mhn.de ([141.84.225.229]:44049 "EHLO
+	email.studentenwerk.mhn.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751830Ab1CVOwY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 10:52:24 -0400
+From: Wolfgang Walter <wolfgang.walter@stwm.de>
+Organization: Studentenwerk =?iso-8859-1?q?M=FCnchen?=
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: problem with nfs4: rpciod seems to loop in rpc_shutdown_client forever
+Date: Tue, 22 Mar 2011 15:52:21 +0100
+User-Agent: KMail/1.9.9
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+References: <201103182349.22331.wolfgang.walter@stwm.de> <20110321232857.GC472@fieldses.org>
+In-Reply-To: <20110321232857.GC472@fieldses.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20110322200523.B061.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201103221552.21826.wolfgang.walter@stwm.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kosaki,
+Am Dienstag, 22. März 2011 schrieb J. Bruce Fields:
+> On Fri, Mar 18, 2011 at 11:49:21PM +0100, Wolfgang Walter wrote:
+> > Hello,
+> >
+> > I have a problem with our nfs-server (stable 2.6.32.33 but also with
+> > .31 or .32 and probably older ones): sometimes
+> > one or more rpciod get stuck. I used
+> >
+> > 	rpcdebug -m rpc -s all
+> >
+> > I get messages as the following one about every second:
+> >
+> > Mar 18 11:15:37 au kernel: [44640.906793] RPC:       killing all tasks
+> > for client ffff88041c51de00 Mar 18 11:15:38 au kernel: [44641.906793]
+> > RPC:       killing all tasks for client ffff88041c51de00 Mar 18 11:15:39
+> > au kernel: [44642.906795] RPC:       killing all tasks for client
+> > ffff88041c51de00 Mar 18 11:15:40 au kernel: [44643.906793] RPC:      
+> > killing all tasks for client ffff88041c51de00 Mar 18 11:15:41 au kernel:
+> > [44644.906795] RPC:       killing all tasks for client ffff88041c51de00
+> > Mar 18 11:15:42 au kernel: [44645.906794] RPC:       killing all tasks
+> > for client ffff88041c51de00
+> >
+> > and I get this messages:
+> >
+> > Mar 18 22:45:57 au kernel: [86061.779008]   174 0381     -5
+> > ffff88041c51de00   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL
+> > a:rpc_exit_task q:none
+> >
+> > My theorie is this one:
+> >
+> > * this async task is runnable but does not progress (calling
+> > rpc_exit_task). * this is because the same rpciod which handles this task
+> > loops in rpc_shutdown_client waiting for this task to go away.
+> > * because rpc_shutdown_client is called from an async rpc, too
+>
+> Off hand I don't see any place where rpc_shutdown_client() is called
+> from rpciod; do you?
 
-On Tue, Mar 22, 2011 at 08:05:55PM +0900, KOSAKI Motohiro wrote:
-> all_unreclaimable check in direct reclaim has been introduced at 2.6.19
-> by following commit.
-> 
-> 	2006 Sep 25; commit 408d8544; oom: use unreclaimable info
-> 
-> And it went through strange history. firstly, following commit broke
-> the logic unintentionally.
-> 
-> 	2008 Apr 29; commit a41f24ea; page allocator: smarter retry of
-> 				      costly-order allocations
-> 
-> Two years later, I've found obvious meaningless code fragment and
-> restored original intention by following commit.
-> 
-> 	2010 Jun 04; commit bb21c7ce; vmscan: fix do_try_to_free_pages()
-> 				      return value when priority==0
-> 
-> But, the logic didn't works when 32bit highmem system goes hibernation
-> and Minchan slightly changed the algorithm and fixed it .
-> 
-> 	2010 Sep 22: commit d1908362: vmscan: check all_unreclaimable
-> 				      in direct reclaim path
-> 
-> But, recently, Andrey Vagin found the new corner case. Look,
-> 
-> 	struct zone {
-> 	  ..
-> 	        int                     all_unreclaimable;
-> 	  ..
-> 	        unsigned long           pages_scanned;
-> 	  ..
-> 	}
-> 
-> zone->all_unreclaimable and zone->pages_scanned are neigher atomic
-> variables nor protected by lock. Therefore a zone can become a state
-> of zone->page_scanned=0 and zone->all_unreclaimable=1. In this case,
+I'm not familiar with the code.
 
-Possible although it's very rare.
+But could it be that this is in fs/nfsd/nfs4state.c ?
 
-> current all_unreclaimable() return false even though
-> zone->all_unreclaimabe=1.
+Just a guess because 2.6.38 does not have this problem and in 2.6.38 it seems 
+to have a workqueue of its own.
 
-The case is very rare since we reset zone->all_unreclaimabe to zero
-right before resetting zone->page_scanned to zero.
-But I admit it's possible.
+>
+> > At the beginning is is always one or more tasks as above.
+> >
+> > Once a rpciod hangs more an more other tasks hang forever:
+> >
+> > Mar 18 22:45:57 au kernel: [86061.778809] -pid- flgs status -client-
+> > --rqstp- -timeout ---ops-- Mar 18 22:45:57 au kernel: [86061.778819]  
+> > 300 0281    -13 ffff8801ef5d0600   (null)        0 ffffffff817211a0
+> > nfs4_cbv1 CB_NULL a:call_refreshresult q:none Mar 18 22:45:57 au kernel:
+> > [86061.778823]   289 0281      0 ffff880142a49800 ffff8802a1dde000       
+> > 0 ffffffff817a3fd0 rpcbindv2 GETPORT a:call_status q:none Mar 18 22:45:57
+> > au kernel: [86061.778827]   286 0281      0 ffff880349f57e00
+> > ffff88010affe000        0 ffffffff817a3fd0 rpcbindv2 GETPORT
+> > a:call_status q:none Mar 18 22:45:57 au kernel: [86061.778830]   283 0281
+> >      0 ffff88041d19ac00 ffff880418650000        0 ffffffff817a3fd0
+> > rpcbindv2 GETPORT a:call_status q:none
+>
+> There's a lot of these GETPORT calls.  Is portmap/rpcbind down?
 
-        CPU 0                                           CPU 1
-free_pcppages_bulk                              balance_pgdat
-        zone->all_unreclaimabe = 0
-                                                        zone->all_unreclaimabe = 1
-        zone->pages_scanned = 0
-> 
-> Is this ignorable minor issue? No. Unfortunatelly, x86 has very
-> small dma zone and it become zone->all_unreclamble=1 easily. and
-> if it becase all_unreclaimable, it never return all_unreclaimable=0
-        ^^^^^ it's very important verb.    ^^^^^ return? reset?
+No, it is running.
 
-        I can't understand your point due to the typo. Please correct the typo.
+I think that these getports get scheduled as tasks for the hanging rpciod.
 
-> beucase it typicall don't have reclaimable pages.
 
-If DMA zone have very small reclaimable pages or zero reclaimable pages,
-zone_reclaimable() can return false easily so all_unreclaimable() could return
-true. Eventually oom-killer might works.
-
-In my test, I saw the livelock, too so apparently we have a problem.
-I couldn't dig in it recently by another urgent my work.
-I think you know root cause but the description in this patch isn't enough
-for me to be persuaded.
-
-Could you explain the root cause in detail?
-
-> 
-> Eventually, oom-killer never works on such systems.  Let's remove
-> this problematic logic completely.
-> 
-> Reported-by: Andrey Vagin <avagin@openvz.org>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/vmscan.c |   36 +-----------------------------------
->  1 files changed, 1 insertions(+), 35 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 060e4c1..254aada 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1989,33 +1989,6 @@ static bool zone_reclaimable(struct zone *zone)
->  }
->  
->  /*
-> - * As hibernation is going on, kswapd is freezed so that it can't mark
-> - * the zone into all_unreclaimable. It can't handle OOM during hibernation.
-> - * So let's check zone's unreclaimable in direct reclaim as well as kswapd.
-> - */
-> -static bool all_unreclaimable(struct zonelist *zonelist,
-> -		struct scan_control *sc)
-> -{
-> -	struct zoneref *z;
-> -	struct zone *zone;
-> -	bool all_unreclaimable = true;
-> -
-> -	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> -			gfp_zone(sc->gfp_mask), sc->nodemask) {
-> -		if (!populated_zone(zone))
-> -			continue;
-> -		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-> -			continue;
-> -		if (zone_reclaimable(zone)) {
-> -			all_unreclaimable = false;
-> -			break;
-> -		}
-> -	}
-> -
-> -	return all_unreclaimable;
-> -}
-> -
-> -/*
->   * This is the main entry point to direct page reclaim.
->   *
->   * If a full scan of the inactive list fails to free enough memory then we
-> @@ -2105,14 +2078,7 @@ out:
->  	delayacct_freepages_end();
->  	put_mems_allowed();
->  
-> -	if (sc->nr_reclaimed)
-> -		return sc->nr_reclaimed;
-> -
-> -	/* top priority shrink_zones still had more to do? don't OOM, then */
-> -	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
-> -		return 1;
-> -
-> -	return 0;
-> +	return sc->nr_reclaimed;
->  }
->  
->  unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
-> -- 
-> 1.6.5.2
-> 
-> 
-> 
-
+Regards,
 -- 
-Kind regards,
-Minchan Kim
+Wolfgang Walter
+Studentenwerk München
+Anstalt des öffentlichen Rechts
+
