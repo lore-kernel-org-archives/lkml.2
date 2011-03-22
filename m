@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab1CVVEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 17:04:06 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:43467 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932268Ab1CVVEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 17:04:04 -0400
-X-ASG-Debug-ID: 1300827843-01de284cf8a7740001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D890EBD.1090103@fusionio.com>
-Date: Tue, 22 Mar 2011 22:03:57 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S932275Ab1CVVGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 17:06:35 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:58371 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab1CVVGc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 17:06:32 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmxtMZ80VwmRVV7cZ5
+X-RZG-CLASS-ID: mo00
+Date: Tue, 22 Mar 2011 22:06:28 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hv: pass u32 to process_chn_event()
+Message-ID: <20110322210627.GB17724@aepfle.de>
+References: <20110322210207.GA17724@aepfle.de>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: merging discard request in the block layer
-References: <20110322194755.GA20122@infradead.org> <4D88FE5E.1010204@fusionio.com>
-X-ASG-Orig-Subj: Re: merging discard request in the block layer
-In-Reply-To: <4D88FE5E.1010204@fusionio.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1300827843
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58672
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110322210207.GA17724@aepfle.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-22 20:54, Jens Axboe wrote:
-> On 2011-03-22 20:47, Christoph Hellwig wrote:
->> It seems the current block layer wil happily try to merge discard
->> requests that were split because they are at the max that bi_size
->> can hold together again.  At least that's what the
->>
->> 	blk: request botched
-> 
-> That would seem to indicate a bug in the merging logic instead.
+Change types in vmbus_on_event() to u32 since the input is u32 as well.
+Pass u32 to process_chn_event() instead of casting arg to void* and back.
+Update printk to reflect type change.
 
-What kind of max discard size does you device have? If the max discard
-size is smaller than the regular request size, this could help.
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
 
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index cfcc37c..76cdfb7 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -232,8 +232,12 @@ int ll_back_merge_fn(struct request_queue *q, struct request *req,
+---
+compile tested only.
+
+ drivers/staging/hv/connection.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
+
+Index: linux-2.6/drivers/staging/hv/connection.c
+===================================================================
+--- linux-2.6.orig/drivers/staging/hv/connection.c
++++ linux-2.6/drivers/staging/hv/connection.c
+@@ -255,10 +255,9 @@ struct vmbus_channel *relid2channel(u32
+ /*
+  * process_chn_event - Process a channel event notification
+  */
+-static void process_chn_event(void *context)
++static void process_chn_event(u32 relid)
+ {
+ 	struct vmbus_channel *channel;
+-	u32 relid = (u32)(unsigned long)context;
  
- 	if (unlikely(req->cmd_type == REQ_TYPE_BLOCK_PC))
- 		max_sectors = queue_max_hw_sectors(q);
--	else
--		max_sectors = queue_max_sectors(q);
-+	else {
-+		if (req->cmd_flags & REQ_DISCARD)
-+			max_sectors = q->limits.max_discard_sectors;
-+		else
-+			max_sectors = queue_max_sectors(q);
-+	}
+ 	/* ASSERT(relId > 0); */
  
- 	if (blk_rq_sectors(req) + bio_sectors(bio) > max_sectors) {
- 		req->cmd_flags |= REQ_NOMERGE;
-@@ -256,9 +260,12 @@ int ll_front_merge_fn(struct request_queue *q, struct request *req,
+@@ -276,7 +275,7 @@ static void process_chn_event(void *cont
+ 		 *			  (void*)channel);
+ 		 */
+ 	} else {
+-		DPRINT_ERR(VMBUS, "channel not found for relid - %d.", relid);
++		DPRINT_ERR(VMBUS, "channel not found for relid - %u.", relid);
+ 	}
+ }
  
- 	if (unlikely(req->cmd_type == REQ_TYPE_BLOCK_PC))
- 		max_sectors = queue_max_hw_sectors(q);
--	else
--		max_sectors = queue_max_sectors(q);
--
-+	else {
-+		if (req->cmd_flags & REQ_DISCARD)
-+			max_sectors = q->limits.max_discard_sectors;
-+		else
-+			max_sectors = queue_max_sectors(q);
-+	}
+@@ -285,10 +284,10 @@ static void process_chn_event(void *cont
+  */
+ void vmbus_on_event(unsigned long data)
+ {
+-	int dword;
+-	int maxdword = MAX_NUM_CHANNELS_SUPPORTED >> 5;
++	u32 dword;
++	u32 maxdword = MAX_NUM_CHANNELS_SUPPORTED >> 5;
+ 	int bit;
+-	int relid;
++	u32 relid;
+ 	u32 *recv_int_page = vmbus_connection.recv_int_page;
  
- 	if (blk_rq_sectors(req) + bio_sectors(bio) > max_sectors) {
- 		req->cmd_flags |= REQ_NOMERGE;
-
-
--- 
-Jens Axboe
-
+ 	/* Check events */
+@@ -300,14 +299,14 @@ void vmbus_on_event(unsigned long data)
+ 		for (bit = 0; bit < 32; bit++) {
+ 			if (sync_test_and_clear_bit(bit, (unsigned long *)&recv_int_page[dword])) {
+ 				relid = (dword << 5) + bit;
+-				DPRINT_DBG(VMBUS, "event detected for relid - %d", relid);
++				DPRINT_DBG(VMBUS, "event detected for relid - %u", relid);
+ 
+ 				if (relid == 0) {
+ 					/* special case - vmbus channel protocol msg */
+-					DPRINT_DBG(VMBUS, "invalid relid - %d", relid);
++					DPRINT_DBG(VMBUS, "invalid relid - %u", relid);
+ 					continue;
+ 				}
+-				process_chn_event((void *) (unsigned long)relid);
++				process_chn_event(relid);
+ 			}
+ 		}
+ 	}
