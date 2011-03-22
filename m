@@ -1,50 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab1CVPBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 11:01:39 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:16588 "EHLO mgw-da02.nokia.com"
+	id S1755575Ab1CVPBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 11:01:53 -0400
+Received: from fieldses.org ([174.143.236.118]:46908 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099Ab1CVPBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 11:01:37 -0400
-Date: Tue, 22 Mar 2011 16:59:02 +0200 (EET)
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
-X-X-Sender: aakoskin@esdhcp041196.research.nokia.com
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-cc: Aaro Koskinen <aaro.koskinen@nokia.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: tsc2005: fix locking issue
-In-Reply-To: <20110322061958.GA7990@core.coreip.homeip.net>
-Message-ID: <alpine.DEB.1.10.1103221655370.2634@esdhcp041196.research.nokia.com>
-References: <1300724650-6641-1-git-send-email-aaro.koskinen@nokia.com> <20110322061958.GA7990@core.coreip.homeip.net>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	id S1755168Ab1CVPBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 11:01:52 -0400
+Date: Tue, 22 Mar 2011 11:01:47 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Wolfgang Walter <wolfgang.walter@stwm.de>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: problem with nfs4: rpciod seems to loop in rpc_shutdown_client
+ forever
+Message-ID: <20110322150147.GA14627@fieldses.org>
+References: <201103182349.22331.wolfgang.walter@stwm.de>
+ <20110321232857.GC472@fieldses.org>
+ <201103221552.21826.wolfgang.walter@stwm.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201103221552.21826.wolfgang.walter@stwm.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Mar 22, 2011 at 03:52:21PM +0100, Wolfgang Walter wrote:
+> Am Dienstag, 22. März 2011 schrieb J. Bruce Fields:
+> > On Fri, Mar 18, 2011 at 11:49:21PM +0100, Wolfgang Walter wrote:
+> > > Hello,
+> > >
+> > > I have a problem with our nfs-server (stable 2.6.32.33 but also with
+> > > .31 or .32 and probably older ones): sometimes
+> > > one or more rpciod get stuck. I used
+> > >
+> > > 	rpcdebug -m rpc -s all
+> > >
+> > > I get messages as the following one about every second:
+> > >
+> > > Mar 18 11:15:37 au kernel: [44640.906793] RPC:       killing all tasks
+> > > for client ffff88041c51de00 Mar 18 11:15:38 au kernel: [44641.906793]
+> > > RPC:       killing all tasks for client ffff88041c51de00 Mar 18 11:15:39
+> > > au kernel: [44642.906795] RPC:       killing all tasks for client
+> > > ffff88041c51de00 Mar 18 11:15:40 au kernel: [44643.906793] RPC:      
+> > > killing all tasks for client ffff88041c51de00 Mar 18 11:15:41 au kernel:
+> > > [44644.906795] RPC:       killing all tasks for client ffff88041c51de00
+> > > Mar 18 11:15:42 au kernel: [44645.906794] RPC:       killing all tasks
+> > > for client ffff88041c51de00
+> > >
+> > > and I get this messages:
+> > >
+> > > Mar 18 22:45:57 au kernel: [86061.779008]   174 0381     -5
+> > > ffff88041c51de00   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL
+> > > a:rpc_exit_task q:none
+> > >
+> > > My theorie is this one:
+> > >
+> > > * this async task is runnable but does not progress (calling
+> > > rpc_exit_task). * this is because the same rpciod which handles this task
+> > > loops in rpc_shutdown_client waiting for this task to go away.
+> > > * because rpc_shutdown_client is called from an async rpc, too
+> >
+> > Off hand I don't see any place where rpc_shutdown_client() is called
+> > from rpciod; do you?
+> 
+> I'm not familiar with the code.
+> 
+> But could it be that this is in fs/nfsd/nfs4state.c ?
+> 
+> Just a guess because 2.6.38 does not have this problem and in 2.6.38 it seems 
+> to have a workqueue of its own.
 
-On Mon, 21 Mar 2011, Dmitry Torokhov wrote:
-> On Mon, Mar 21, 2011 at 06:24:10PM +0200, Aaro Koskinen wrote:
->> Commit 0b950d3 (Input: tsc2005 - add open/close) introduced a
->> locking issue with the ESD watchdog: __tsc2005_disable() is calling
->> cancel_delayed_work_sync() with mutex held, and the work also needs the
->> same mutex.
->>
->> Fix the problem by using cancel_delayed_work() on disable. If
->> the ESD work was running it will check if the device is closed
->> or suspended, and in that case it will do nothing and skip
->> re-arming. cancel_delayed_work_sync() is still needed when the module
->> is removed.
->
-> Hmm, indeed. However, instead of moving cancel_delayed_work_sync() to
-> remove maybe we should use mutex_trylock() in tsc2005_esd_work()?
-> If trylock fails that means that device is in the middle of open/close
-> transition. We should just reschedule the work and get out of there.
+Well, spotted, yes it's true that 2.6.32 had called put_nfs4_client()
+from an rpc_call_done callback, that put_nfs4_client() can end up
+calling rpc_shutdown_client, and that that's since been fixed....
 
-But I guess the reschedule should not happen if we are in the middle of
-close/disable? And without the mutex we cannot know that.
+If someone wants to backport the fix to 2.6.32.y....
 
-A.
+Actually I think it might be sufficient just to apply
+147efd0dd702ce2f1ab44449bd70369405ef68fd ?  But I haven't tried.
+
+--b.
+
+commit 147efd0dd702ce2f1ab44449bd70369405ef68fd
+Author: J. Bruce Fields <bfields@citi.umich.edu>
+Date:   Sun Feb 21 17:41:19 2010 -0800
+
+    nfsd4: shutdown callbacks on expiry
+    
+    Once we've expired the client, there's no further purpose to the
+    callbacks; go ahead and shut down the callback client rather than
+    waiting for the last reference to go.
+    
+    Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index efef7f2..9ce5831 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -697,9 +697,6 @@ shutdown_callback_client(struct nfs4_client *clp)
+ static inline void
+ free_client(struct nfs4_client *clp)
+ {
+-	shutdown_callback_client(clp);
+-	if (clp->cl_cb_xprt)
+-		svc_xprt_put(clp->cl_cb_xprt);
+ 	if (clp->cl_cred.cr_group_info)
+ 		put_group_info(clp->cl_cred.cr_group_info);
+ 	kfree(clp->cl_principal);
+@@ -752,6 +749,9 @@ expire_client(struct nfs4_client *clp)
+ 				 se_perclnt);
+ 		release_session(ses);
+ 	}
++	shutdown_callback_client(clp);
++	if (clp->cl_cb_xprt)
++		svc_xprt_put(clp->cl_cb_xprt);
+ 	put_nfs4_client(clp);
+ }
+ 
