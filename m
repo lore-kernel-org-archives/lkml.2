@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab1CVTEf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 15:04:35 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:25013 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901Ab1CVTEc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 15:04:32 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Tue, 22 Mar 2011 15:04:16 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Julia Lawall <julia@diku.dk>
-Cc: kernel-janitors@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Miroslaw <mirq-linux@rere.qmqm.pl>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Sascha Sommer <saschasommer@freenet.de>, linux-mmc@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] drivers/mmc/host/mvsdio.c: Convert release_resource to
- release_mem_region
-In-reply-to: <1300814095-25278-1-git-send-email-julia@diku.dk>
-Message-id: <alpine.LFD.2.00.1103221503100.11889@xanadu.home>
-References: <1300814095-25278-1-git-send-email-julia@diku.dk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753030Ab1CVTRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 15:17:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61084 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752520Ab1CVTRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 15:17:20 -0400
+Date: Tue, 22 Mar 2011 20:08:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 3/8] job control: Fix ptracer wait(2) hang and explain
+	notask_error clearing
+Message-ID: <20110322190812.GB28038@redhat.com>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org> <1299614199-25142-4-git-send-email-tj@kernel.org> <20110321151941.GA20917@redhat.com> <20110321161236.GF12003@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110321161236.GF12003@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Mar 2011, Julia Lawall wrote:
+On 03/21, Tejun Heo wrote:
+>
+> On Mon, Mar 21, 2011 at 04:19:41PM +0100, Oleg Nesterov wrote:
+> > But the main problem is, I do not think do_wait() should block in this
+> > case, and thus I am starting to think this patch is not "complete".
 
-> Request_mem_region should be used with release_mem_region, not
-> release_resource.
-> 
-> A semantic patch that partially fixes this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @b@
-> expression x,E;
-> @@
-> 
-> x = request_mem_region(x->start,...)
-> ... when != release_mem_region(x->start,...)
->     when != x = E
-> (
-> - release_resource(x);
-> - kfree(x);
-> +  release_mem_region(x->start,resource_size(x));
-> |
-> ?- release_resource(x);
-> +  release_mem_region(x->start,resource_size(x));
-> )
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+Just in case... But of course I didn't mean this patch should be
+updated to handle the EXIT_ZOMBIE case.
 
-Acked-by: Nicolas Pitre <nico@fluxnic.net>
+> > Your test-case could use waitid(WEXITED) instead WSTOPPED with the same
+> > result, it should hang. Why it hangs? The tracee is dead, we can't do
+> > ptrace(PTRACE_DETACH), and we can do nothing until other threads exit.
+> > This looks equally strange.
+> >
+> > IOW. Assuming that ptrace == T and WEXITED is set, perhaps we should
+> > do something like this pseudo-code
+> >
+> > 	if (p->exit_state == EXIT_ZOMBIE) {
+> > 		if (!delay_group_leader(p))
+> > 			return wait_task_zombie(wo, p);
+> >
+> > 		ptrace_unlink();
+> > 		wait_task_zombie(WNOWAIT);
+> > 	}
+> >
+> > However. This is another user-visible change, we need another discussion
+> > even if I am right. In particular, it is not clear what should we do
+> > if parent == real_parent. And probably this can confuse gdb, but iirc
+> > gdb already have the problems with the dead leader anyway.
+>
+> Interesting point.  Yeah, I agree.  wait(WEXITED) from the ptracer
+> should only wait for the tracee itself, not the group.  When they are
+> one and the same, I don't think we need to do anything differently
+> from now.
+>
+> If we change the behavior that way, it would also fit better with the
+> rest of the new behavior where the real parent and ptracer have
+> separate roles when wait(2)ing for stopped states.
+>
+> The question is how the change would affect the existing users.
 
-> ---
->  drivers/mmc/host/mvsdio.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
-> index a5bf60e..4606087 100644
-> --- a/drivers/mmc/host/mvsdio.c
-> +++ b/drivers/mmc/host/mvsdio.c
-> @@ -825,7 +825,7 @@ out:
->  			iounmap(host->base);
->  	}
->  	if (r)
-> -		release_resource(r);
-> +		release_mem_region(r->start, resource_size(r));
->  	if (mmc)
->  		mmc_free_host(mmc);
->  
-> @@ -850,7 +850,7 @@ static int __exit mvsd_remove(struct platform_device *pdev)
->  		del_timer_sync(&host->timer);
->  		mvsd_power_down(host);
->  		iounmap(host->base);
-> -		release_resource(host->res);
-> +		release_mem_region(host->res->start, resource_size(host->res));
->  		mmc_free_host(mmc);
->  	}
->  	platform_set_drvdata(pdev, NULL);
-> 
+Yes, of course. Perhaps we can never do this.
+
+> When
+> the debugee is a direct child, nothing will change.
+
+Actually, I think this is the most problematic case... Perhaps
+it would be safer to add WEXITED_THREAD for ptrace. I dunno.
+
+> When attaching to
+> a separate group, I don't think it even matters.  Does gdb handle
+> group leader any differently from the rest when attached to an
+> unrelated group?
+
+gdb certainly has some problems with the dead leaders. But I can't
+recall what exactly. Will try to check later...
+
+In any case, I only tried to discuss what else we can do with the
+current strange semantics. When it comes to ptrace, group_leader
+should not represent the whole process.
+
+Oleg.
+
