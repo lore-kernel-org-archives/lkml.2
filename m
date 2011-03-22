@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab1CVNb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 09:31:28 -0400
-Received: from linux-sh.org ([111.68.239.195]:33548 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754189Ab1CVNb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 09:31:26 -0400
-Date: Tue, 22 Mar 2011 22:30:45 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: page allocator: Silence build_all_zonelists() section mismatch.
-Message-ID: <20110322133045.GA24498@linux-sh.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756199Ab1CVNcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 09:32:17 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:40828 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754189Ab1CVNcN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 09:32:13 -0400
+X-Authenticated: #911537
+X-Provags-ID: V01U2FsdGVkX1+gpLIctoqg0EL5MlikywAVzFAreAfq9R80KVxEHH
+	k9/mS22/L0CeFT
+Date: Tue, 22 Mar 2011 14:32:08 +0100
+From: torbenh <torbenh@gmx.de>
+To: john stultz <johnstul@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/5] RFC genirq: Add IRQ timestamping
+Message-ID: <20110322133208.GB5507@siel.b>
+Mail-Followup-To: john stultz <johnstul@us.ibm.com>,
+	linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+References: <1300708760-27910-1-git-send-email-torbenh@gmx.de>
+ <AANLkTikt95R5DT3cTkPbTia9PpJqUr55v_g_xVN_AQtf@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikt95R5DT3cTkPbTia9PpJqUr55v_g_xVN_AQtf@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory hotplug case involves calling to build_all_zonelists() which
-in turns calls in to setup_zone_pageset(). The latter is marked
-__meminit while build_all_zonelists() itself has no particular
-annotation. build_all_zonelists() is only handed a non-NULL pointer in
-the case of memory hotplug through an existing __meminit path, so the
-setup_zone_pageset() reference is always safe.
+On Mon, Mar 21, 2011 at 07:33:26PM -0700, john stultz wrote:
+> On Mon, Mar 21, 2011 at 4:59 AM, Torben Hohn <torbenh@gmx.de> wrote:
+> > +       if (desc->status & IRQ_TIMESTAMP)
+> > +               getrawmonotonic(&desc->last_timestamp);
+> > +
+> 
+> I suspect you probably want some very clear comments around why you
+> chose timestamps based on CLOCK_MONOTONIC_RAW instead of
+> CLOCK_MONOTONIC. Likely in the code as well as in the commit log.
 
-The options as such are either to flag build_all_zonelists() as __ref (as
-per __build_all_zonelists()), or to simply discard the __meminit
-annotation from setup_zone_pageset().
+I really dont know which clock would be the most useful one.
+CLOCK_MONOTONIC_RAW seems to be more suitable to drive dlls.
+But the network layer probably wants CLOCK_MONOTONIC or
+even CLOCK_REALTIME.
 
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+I didnt put much thought in this point, because it requires a broader
+discussion, I think.
 
----
+> 
+> thanks
+> -john
 
-While discarding the __meminit annotation from setup_zone_pageset() is
-probably cleanest I expected some people would take issue with this so
-opted for the more visually offensive __ref route. I can resend for the
-other way if people prefer, or someone else can do it given that it's a
-trivial change.
-
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 7945247..134e0b8 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3110,7 +3110,7 @@ static __init_refok int __build_all_zonelists(void *data)
-  * Called with zonelists_mutex held always
-  * unless system_state == SYSTEM_BOOTING.
-  */
--void build_all_zonelists(void *data)
-+void __ref build_all_zonelists(void *data)
- {
- 	set_zonelist_order();
- 
+-- 
+torben Hohn
