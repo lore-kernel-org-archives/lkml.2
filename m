@@ -1,122 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab1CVPBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 11:01:53 -0400
-Received: from fieldses.org ([174.143.236.118]:46908 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755168Ab1CVPBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 11:01:52 -0400
-Date: Tue, 22 Mar 2011 11:01:47 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Wolfgang Walter <wolfgang.walter@stwm.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: problem with nfs4: rpciod seems to loop in rpc_shutdown_client
- forever
-Message-ID: <20110322150147.GA14627@fieldses.org>
-References: <201103182349.22331.wolfgang.walter@stwm.de>
- <20110321232857.GC472@fieldses.org>
- <201103221552.21826.wolfgang.walter@stwm.de>
+	id S1756072Ab1CVPFn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 11:05:43 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:65246 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754036Ab1CVPFl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 11:05:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201103221552.21826.wolfgang.walter@stwm.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D79F068.2080009@linaro.org>
+References: <4D79F068.2080009@linaro.org>
+Date: Tue, 22 Mar 2011 20:35:40 +0530
+Message-ID: <AANLkTikEtneWEu4iQgfKw-zkAT3Z=e7ohXgDq7oJAQvv@mail.gmail.com>
+Subject: Re: RFC: Platform data for onboard USB assets
+From: Jaswinder Singh <jaswinder.singh@linaro.org>
+To: andy.green@linaro.org
+Cc: Andy Green <andy@warmcat.com>, Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
+        greg@kroah.com, benh@kernel.crashing.org, grant.likely@secretlab.ca,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 03:52:21PM +0100, Wolfgang Walter wrote:
-> Am Dienstag, 22. MÃ¤rz 2011 schrieb J. Bruce Fields:
-> > On Fri, Mar 18, 2011 at 11:49:21PM +0100, Wolfgang Walter wrote:
-> > > Hello,
-> > >
-> > > I have a problem with our nfs-server (stable 2.6.32.33 but also with
-> > > .31 or .32 and probably older ones): sometimes
-> > > one or more rpciod get stuck. I used
-> > >
-> > > 	rpcdebug -m rpc -s all
-> > >
-> > > I get messages as the following one about every second:
-> > >
-> > > Mar 18 11:15:37 au kernel: [44640.906793] RPC:       killing all tasks
-> > > for client ffff88041c51de00 Mar 18 11:15:38 au kernel: [44641.906793]
-> > > RPC:       killing all tasks for client ffff88041c51de00 Mar 18 11:15:39
-> > > au kernel: [44642.906795] RPC:       killing all tasks for client
-> > > ffff88041c51de00 Mar 18 11:15:40 au kernel: [44643.906793] RPC:      
-> > > killing all tasks for client ffff88041c51de00 Mar 18 11:15:41 au kernel:
-> > > [44644.906795] RPC:       killing all tasks for client ffff88041c51de00
-> > > Mar 18 11:15:42 au kernel: [44645.906794] RPC:       killing all tasks
-> > > for client ffff88041c51de00
-> > >
-> > > and I get this messages:
-> > >
-> > > Mar 18 22:45:57 au kernel: [86061.779008]   174 0381     -5
-> > > ffff88041c51de00   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL
-> > > a:rpc_exit_task q:none
-> > >
-> > > My theorie is this one:
-> > >
-> > > * this async task is runnable but does not progress (calling
-> > > rpc_exit_task). * this is because the same rpciod which handles this task
-> > > loops in rpc_shutdown_client waiting for this task to go away.
-> > > * because rpc_shutdown_client is called from an async rpc, too
-> >
-> > Off hand I don't see any place where rpc_shutdown_client() is called
-> > from rpciod; do you?
-> 
-> I'm not familiar with the code.
-> 
-> But could it be that this is in fs/nfsd/nfs4state.c ?
-> 
-> Just a guess because 2.6.38 does not have this problem and in 2.6.38 it seems 
-> to have a workqueue of its own.
+[CC'ed interested parties in retrospect and resent in plain text]
 
-Well, spotted, yes it's true that 2.6.32 had called put_nfs4_client()
-from an rpc_call_done callback, that put_nfs4_client() can end up
-calling rpc_shutdown_client, and that that's since been fixed....
+On 11 March 2011 15:20, Andy Green <andy@warmcat.com> wrote:
+>
+> Hi -
+>
+> platform_data is a well established way in Linux to pass configuration data up to on-board assets from a machine file like mach-xyz.c.  It's also supported to pass platform_data up to devices that are probed asynchronously from busses like i2c as well, which is very handy.
+>
+> However AFAIK it's not possible to bind platform_data to probed USB devices as it stands.
+>
+> There are now boards which have on-board USB assets, for example OMAP4 Panda which has a USB <-> Ethernet bridge wired up permanently.  It'd be convenient to also be able to pass optional platform_data to these devices when they are asynchronously probed.
+>
+> So what's the feeling about a new api to register an array of platform_data pointers bound to static "devpath" names in the machine file?
+>
+> When a usb device is instantiated, it can check through this array if it exists, matching on devname, and attach the platform_data to the underlying probed usb device's dev->platform_data, which it seems is currently unused.
+>
+> The particular use that suggested this is on Panda, it would be ideal to be able to set a flag in the usb device's platform data that forces it to be named eth%d since it's a hardwired asset on the board with an RJ45 socket.
+>
+> Comments, implementation suggestions, enquiries as to my level of crack consumption etc welcomed ^^
 
-If someone wants to backport the fix to 2.6.32.y....
 
-Actually I think it might be sufficient just to apply
-147efd0dd702ce2f1ab44449bd70369405ef68fd ?  But I haven't tried.
+Hi Andy,
 
---b.
+ Personally, I wouldn't have bothered thinking about some kernel-wide
+solution to the Panda SMSC9514 issue. I think defining Panda specific
+ udev rules to 'rename the SMSC9614 on USB1(?) to ETH0' is sufficient and
+legal to do. Bus enumeration algos change neither often nor enough.
+I believe there would be far riskier assumptions in filesystems already.
 
-commit 147efd0dd702ce2f1ab44449bd70369405ef68fd
-Author: J. Bruce Fields <bfields@citi.umich.edu>
-Date:   Sun Feb 21 17:41:19 2010 -0800
+But I do agree it is nice to have system wide solutions whenever due.
+Like this attempted patchset. Which is based upon two questions :-
 
-    nfsd4: shutdown callbacks on expiry
-    
-    Once we've expired the client, there's no further purpose to the
-    callbacks; go ahead and shut down the callback client rather than
-    waiting for the last reference to go.
-    
-    Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Q(a) Can discoverable buses(USB, SDIO etc) legally need platform_data
+or similar?
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index efef7f2..9ce5831 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -697,9 +697,6 @@ shutdown_callback_client(struct nfs4_client *clp)
- static inline void
- free_client(struct nfs4_client *clp)
- {
--	shutdown_callback_client(clp);
--	if (clp->cl_cb_xprt)
--		svc_xprt_put(clp->cl_cb_xprt);
- 	if (clp->cl_cred.cr_group_info)
- 		put_group_info(clp->cl_cred.cr_group_info);
- 	kfree(clp->cl_principal);
-@@ -752,6 +749,9 @@ expire_client(struct nfs4_client *clp)
- 				 se_perclnt);
- 		release_session(ses);
- 	}
-+	shutdown_callback_client(clp);
-+	if (clp->cl_cb_xprt)
-+		svc_xprt_put(clp->cl_cb_xprt);
- 	put_nfs4_client(clp);
- }
- 
+Q(b) If yes, what 'key' is most suitable for identifying the right device
+  to attach the data to ?
+
+(a) We already have a good example, of Panda's missing MAC. I am sure there
+ would be more to think of.
+   Though it is illegal for a NIC to not have MAC address, no spec demands the
+ MAC be on some EEPROM or like. Theoretically, the NIC vendor could
+hand me a NIC
+and a note with it's unique MAC address scribbled :)
+ As Mark already noted, savings pile if we could save eeproms when a device is
+expected to ship in tens of thousands.
+ IIANM, Greg acknowledged passing MAC via board specific data
+structure(albeit via DT)
+It's a different matter that DT has many hearts to win(at least in ARM Linux)
+So, perhaps the answer to Q(a) is - Yes.
+
+(b) IMHO, though stable enough, the most obvious method of 'devpath association'
+ is indeed not future-proof.
+ Having parent pointers to compare sounds like a bit too intrusive.
+ People might want to suggest?
+
+Thanks.
