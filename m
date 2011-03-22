@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637Ab1CVLiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 07:38:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60157 "EHLO mx1.redhat.com"
+	id S1755617Ab1CVLlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 07:41:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10300 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753809Ab1CVLiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 07:38:10 -0400
+	id S1750803Ab1CVLli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 07:41:38 -0400
 From: Amerigo Wang <amwang@redhat.com>
-To: netdev@vger.kernel.org
+To: linux-kernel@vger.kernel.org
 Cc: WANG Cong <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Eric Dumazet <eric.dumazet@gmail.com>, Changli Gao <xiaosuo@gmail.com>,
         Tom Herbert <therbert@google.com>, Jesse Gross <jesse@nicira.com>,
-        linux-kernel@vger.kernel.org
-Subject: 
-Date: Tue, 22 Mar 2011 19:56:11 +0800
-Message-Id: <1300794973-24581-1-git-send-email-amwang@redhat.com>
+        netdev@vger.kernel.org
+Subject: [Patch] net: remove useless comments in net/core/dev.c
+Date: Tue, 22 Mar 2011 19:59:47 +0800
+Message-Id: <1300795189-24655-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+The code itself can explain what it is doing, no need these comments.
 
 Signed-off-by: WANG Cong <amwang@redhat.com>
 
