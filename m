@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab1CVNML (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 09:12:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38177 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756020Ab1CVNMJ convert rfc822-to-8bit (ORCPT
+	id S1756089Ab1CVNNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 09:13:43 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:33783 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752154Ab1CVNNj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 09:12:09 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Florian Mickler <florian@mickler.org>
-Subject: Re: [PATCH 0/6] get rid of on-stack dma buffers
-Date: Tue, 22 Mar 2011 14:12:46 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "Greg Kroah-Hartman" <greg@kroah.com>,
-        "janne-dvb@grunau.be" <janne-dvb@grunau.be>,
-        "g.marco@freenet.de" <g.marco@freenet.de>,
-        "tskd2@yahoo.co.jp" <tskd2@yahoo.co.jp>,
-        "liplianin@me.by" <liplianin@me.by>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pb@linuxtv.org" <pb@linuxtv.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "max@veneto.com" <max@veneto.com>,
-        "mchehab@infradead.org" <mchehab@infradead.org>,
-        "aet@rasterburn.org" <aet@rasterburn.org>,
-        "mkrufky@linuxtv.org" <mkrufky@linuxtv.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "js@linuxtv.org" <js@linuxtv.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andy Walls <awalls@md.metrocast.net>,
-        "nick@nick-andrew.net" <nick@nick-andrew.net>
-References: <1300732426-18958-1-git-send-email-florian@mickler.org> <20110322104426.GA20444@amd.com> <AANLkTimXobrwc-XHgoVN1dD5NCTde64dykbyvtJMo229@mail.gmail.com>
-In-Reply-To: <AANLkTimXobrwc-XHgoVN1dD5NCTde64dykbyvtJMo229@mail.gmail.com>
-Organization: SUSE
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Tue, 22 Mar 2011 09:13:39 -0400
+X-Amavis-Alert: BAD HEADER SECTION, Improper folded header field made up
+	entirely of whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n
+	jycPrvgA\n\t\n R1goSzOnkp14Y[...]
+Subject: Re: [RFC PATCH v2] Utilize the PCI API in the TTM framework.
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: dri-devel@lists.freedesktop.org, thomas@shipmail.org, airlied@linux.ie,
+        linux-kernel@vger.kernel.org, konrad@darnok.org
+In-Reply-To: <20110321231835.GA20159@dumpdata.com>
+References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
+	 <1300713067.8042.13.camel@thor.local> <20110321231835.GA20159@dumpdata.com>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA	
+ R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201103221412.46507.oneukum@suse.de>
+Date: Tue, 22 Mar 2011 14:13:19 +0100
+Message-ID: <1300799599.3522.6.camel@thor.local>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 22. M�rz 2011, 14:08:17 schrieb Florian Mickler:
-> Am 22.03.2011 12:10 schrieb "Roedel, Joerg" <Joerg.Roedel@amd.com>:
-> >
-> > On Mon, Mar 21, 2011 at 05:03:15PM -0400, Florian Mickler wrote:
-> > > I guess (not verified), that the dma api takes sufficient precautions
-> > > to abort the dma transfer if a timeout happens.  So freeing _should_
-> > > not be an issue. (At least, I would expect big fat warnings everywhere
-> > > if that were the case)
-> >
-> > Freeing is very well an issue. All you can expect from the DMA-API is to
-> > give you a valid DMA handle for your device. But it can not prevent that
-> > a device uses this handle after you returned it. You need to make sure
-> > yourself that any pending DMA is canceled before calling kfree().
+On Mon, 2011-03-21 at 19:18 -0400, Konrad Rzeszutek Wilk wrote: 
+> On Mon, Mar 21, 2011 at 02:11:07PM +0100, Michel Dänzer wrote:
+> > On Fre, 2011-01-07 at 12:11 -0500, Konrad Rzeszutek Wilk wrote: 
+> > > 
+> > > 1) The 'NULL' when doing dma_alloc_coherent is unsightly. I was toying
+> > > with modifying the TTM API to pass in 'struct device' or 'struct pci_device'
+> > > but figured it would make first sense to get your guys input before heading that route.
+> > 
+> > It's worse than unsightly: It breaks TTM on PPC. See
+> > arch/powerpc/include/asm/dma-mapping.h: get_dma_ops() returns NULL if
+> > NULL is passed in for the device, and most of its callers BUG in that
+> > case. The exception being dma_supported(), so a possible solution might
+> > be to use that for checking if dma_alloc_coherent can be used.
+> > 
+> > Dave, please prevent this change from entering mainline before there's a
+> > solution for this.
 > 
-> Does usb_control_msg do this? It waits for completion but takes also a
-> timeout parameter. I will recheck this once I'm home.
+> We do have a fix for it: 
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/ttm.pci-api.v5
+> 
+> Can you tell me if that works for you?
 
-It uses usb_start_wait_urb() which upon a timeout kills the URB. The
-buffer is unused after usb_control_msg() returns.
+Yeah,
+http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commitdiff;h=02bbfbab7dd6a107ea2f5d6e882631cd31c72eda and http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commitdiff;h=733301920082553b52ce4453493fe6abf6aa7d1a fix the problem.
 
-	HTH
-		Oliver
+
+-- 
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
+
+
+
