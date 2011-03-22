@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab1CVMj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 08:39:58 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39034 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755692Ab1CVMj5 convert rfc822-to-8bit (ORCPT
+	id S1755231Ab1CVMrv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 08:47:51 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:41815 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab1CVMru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 08:39:57 -0400
+	Tue, 22 Mar 2011 08:47:50 -0400
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Subject: [RFC PATCH V1 0/2] cpuidle: global registration of idle states with
+	per-cpu statistics
+To: arjan@linux.intel.com, peterz@infradead.org, lenb@kernel.org,
+        suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
+        ak@linux.intel.com
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 22 Mar 2011 18:17:45 +0530
+Message-ID: <20110322124724.29408.12885.stgit@tringupt.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20110322123357.GA14352@elte.hu>
-References: <1300455630-21577-1-git-send-email-lucas.demarchi@profusion.mobi>
- <1300455630-21577-2-git-send-email-lucas.demarchi@profusion.mobi>
- <20110322103735.GD4448@elte.hu> <AANLkTik7wKdf_yCukg7RAAE5PWXw5YkAG=hSBuSn1wn9@mail.gmail.com>
- <20110322114405.GE4448@elte.hu> <AANLkTinqC33LE7V-2VzEJ_xnZdmokg8P7px1KP8m2DFf@mail.gmail.com>
- <20110322123357.GA14352@elte.hu>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Tue, 22 Mar 2011 09:39:37 -0300
-Message-ID: <AANLkTinfYiU-gkfuUyn6gxciq+QvQL8dFManDg1QeJXR@mail.gmail.com>
-Subject: Re: [PATCH 2/4] perf: fix common misspellings
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Randy Dunlap <randy.dunlap@oracle.com>, jason.wessel@windriver.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 9:33 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Lucas De Marchi <lucas.demarchi@profusion.mobi> wrote:
->
->>  2530 files changed, 4988 insertions(+), 4988 deletions(-)
->
-> Hm, i definitely think we do not want hundreds of commits per cycle to have a
-> 'split up' patchset for these spelling fixes.
->
-> A once per cycle patch to fix such things would be the most optimal model IMHO
-> - and hopefully with time the patches will be getting (much) smaller :-)
+This patch series is an early RFC to discuss the feasibility of
+avoiding registering of idle states from each cpu.
+
+The core change is to split the cpuidle_device structure into parts
+that can be global and parts that has to remain per-cpu.  The per-cpu
+pieces are mostly generic statistics that can be independent of
+current running driver.
+
+Motivation:
+* Simplify the cpuidle subsystem framework and have
+  registration/unregistration done by single cpu.
+
+* Minimise the data structure that needs to be maintained for multiple
+  cpuidle drivers
+
+* Reference: https://lkml.org/lkml/2011/2/10/37
+
+Advantages:
+* Make the cpuidle framework simple for most use cases where C-States
+  are symmetric.  In case there are asymmetric C-States detected,
+  fallback mechanism should be incorporated to maintain the system
+  functional
+  https://lkml.org/lkml/2011/2/10/257
+  https://lkml.org/lkml/2011/2/10/37
+
+* Non x86 archs that does not have asymmetric C-States like POWER, may
+  not need the fallback mechanism and hence the framework will be
+  simple for most use cases.
+
+Disadvantages:
+* Asymmetric C-States are part of x86 ACPI specification.  Incorrect
+  handling may functionally affect the system
+
+* Incorporating per-cpu masks for each state to allow/dis-allow global
+  states on subset of CPUs may result in an implementation that is
+  not better than current solution of having per-cpu states.
+
+This patch series applies on top of the pm_idle cleanup patch
+https://lkml.org/lkml/2011/3/22/150 (cpuidle: Cleanup pm_idle and 
+include driver/cpuidle.c in-kernel)
+
+This patch series is tested on x86 Nehalem system with multiple ACPI
+C-States.
+
+This patch series has limitations of not handling multiple driver
+registration and switching between drivers on all CPUs mainly due to
+incomplete handling of per-cpu enable/disable and driver_data.
+
+Please let us know your comments and suggest possible approaches to
+the problem.
+
+---
+
+Trinabh Gupta (2):
+      cpuidle: API changes in callers using new cpuidle_state_stats
+      cpuidle: Data structure changes for global cpuidle device
 
 
-I don't think a patchset per cycle is needed. Or at least some cycles
-could be skipped.
+ drivers/acpi/processor_driver.c    |   19 +---
+ drivers/acpi/processor_idle.c      |   45 ++++++----
+ drivers/cpuidle/cpuidle.c          |  169 ++++++++++++++++++++++--------------
+ drivers/cpuidle/cpuidle.h          |    4 -
+ drivers/cpuidle/driver.c           |   24 -----
+ drivers/cpuidle/governor.c         |   10 +-
+ drivers/cpuidle/governors/Makefile |    2
+ drivers/cpuidle/governors/menu.c   |   16 ++-
+ drivers/cpuidle/sysfs.c            |   62 +++++++------
+ drivers/idle/default_driver.c      |   39 +++-----
+ include/linux/cpuidle.h            |   70 ++++++++++-----
+ 11 files changed, 245 insertions(+), 215 deletions(-)
 
-Maybe this check could be added to checkpatch.
-
-
-Lucas De Marchi
+--
+-Trinabh
