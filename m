@@ -1,78 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab1CVMIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 08:08:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59018 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab1CVMH7 (ORCPT
+	id S1755582Ab1CVMYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 08:24:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59493 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753492Ab1CVMYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 08:07:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=cFBIE5iSzSFQ+vSDHIcn0G85gha5r+wztCtgP9ufUVlt+B4WRpeItZcX+J9a77xH0g
-         TEYuDnW1X07vnSvC9CO7xzJDggIx11GqmB45RbPtD34+Rr0PVT6gE5/7PFmZ3EvdsMYz
-         F0TXWwbassSFr6//WbDCiMh0geewlj8nmkDnI=
-Date: Tue, 22 Mar 2011 14:11:02 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] jffs2: unused variables cleanup in jffs2_lookup and
- jffs2_readdir
-Message-ID: <20110322121102.GC5086@swordfish.minsk.epam.com>
+	Tue, 22 Mar 2011 08:24:23 -0400
+Date: Tue, 22 Mar 2011 12:24:36 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+        Zeng Zhaoming <b32542@freescale.com>
+Subject: Re: [build failure] Re: [GIT PULL] sound updates for 2.6.39-rc1
+Message-ID: <20110322122436.GA6834@opensource.wolfsonmicro.com>
+References: <s5hr5a4ttfi.wl%tiwai@suse.de>
+ <20110321153719.GA12325@elte.hu>
+ <20110321155836.GE2570@opensource.wolfsonmicro.com>
+ <20110321161102.GB23614@elte.hu>
+ <20110321163849.GF2570@opensource.wolfsonmicro.com>
+ <20110321164937.GA6381@elte.hu>
+ <20110321165827.GG2570@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110321165827.GG2570@opensource.wolfsonmicro.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jffs2: cleanup unused jffs2_sb_info *c variable and JFFS2_SB_INFO call from jffs2_lookup 
-and jffs2_readdir
+On Mon, Mar 21, 2011 at 04:58:27PM +0000, Mark Brown wrote:
+> That's the breakage, yes.  It should be very straightforward to make the
+> driver build no matter how CONFIG_REGULATOR is set.
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
----
-
- fs/jffs2/dir.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
-
-diff --git a/fs/jffs2/dir.c b/fs/jffs2/dir.c
-index 82faddd..4bca6a2 100644
---- a/fs/jffs2/dir.c
-+++ b/fs/jffs2/dir.c
-@@ -75,7 +75,6 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
- 				   struct nameidata *nd)
- {
- 	struct jffs2_inode_info *dir_f;
--	struct jffs2_sb_info *c;
- 	struct jffs2_full_dirent *fd = NULL, *fd_list;
- 	uint32_t ino = 0;
- 	struct inode *inode = NULL;
-@@ -86,7 +85,6 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
- 		return ERR_PTR(-ENAMETOOLONG);
- 
- 	dir_f = JFFS2_INODE_INFO(dir_i);
--	c = JFFS2_SB_INFO(dir_i->i_sb);
- 
- 	mutex_lock(&dir_f->sem);
- 
-@@ -119,7 +117,6 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
- static int jffs2_readdir(struct file *filp, void *dirent, filldir_t filldir)
- {
- 	struct jffs2_inode_info *f;
--	struct jffs2_sb_info *c;
- 	struct inode *inode = filp->f_path.dentry->d_inode;
- 	struct jffs2_full_dirent *fd;
- 	unsigned long offset, curofs;
-@@ -127,7 +124,6 @@ static int jffs2_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 	D1(printk(KERN_DEBUG "jffs2_readdir() for dir_i #%lu\n", filp->f_path.dentry->d_inode->i_ino));
- 
- 	f = JFFS2_INODE_INFO(inode);
--	c = JFFS2_SB_INFO(inode->i_sb);
- 
- 	offset = filp->f_pos;
- 
-
+And indeed it was - in the absence of any response from Zeng I've now
+sent a patch for review.
