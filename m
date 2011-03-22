@@ -1,82 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427Ab1CVVyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 17:54:35 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34250 "EHLO mx1.suse.de"
+	id S932443Ab1CVVyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 17:54:51 -0400
+Received: from mailhost.tue.nl ([131.155.3.8]:51207 "EHLO mailhost.tue.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932391Ab1CVVyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 17:54:33 -0400
-Date: Tue, 22 Mar 2011 22:54:30 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Andreas Dilger <adilger@dilger.ca>, Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Jan Kara <jack@suse.cz>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation
- problem
-Message-ID: <20110322215430.GD19716@quack.suse.cz>
-References: <1298493173-sup-8301@think>
- <20110224164758.GH23042@quack.suse.cz>
- <1298566775-sup-730@think>
- <20110224182732.GV27190@tux1.beaverton.ibm.com>
- <1298897186-sup-9394@think>
- <20110304210724.GF27190@tux1.beaverton.ibm.com>
- <20110308045626.GD1956@dastard>
- <20110319000755.GD1110@tux1.beaverton.ibm.com>
- <E2EA0861-6143-4F91-805A-63736F45C514@dilger.ca>
- <20110322192301.GE1110@tux1.beaverton.ibm.com>
+	id S932391Ab1CVVys convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 17:54:48 -0400
+X-Greylist: delayed 670 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Mar 2011 17:54:48 EDT
+From: "Ven, A.M.A. van de" <a.m.a.v.d.ven@tue.nl>
+Date: Tue, 22 Mar 2011 22:43:11 +0100
+Subject: Upgrade Your Mailbox
+Thread-Topic: Upgrade Your Mailbox
+Thread-Index: AQHL6NojWMZHUACs+0yIStNq+VsENQ==
+Message-ID: <3E3367A41E018B4E8242B6277BBA2F76F8FEFE006D@EXCHANGE10.campus.tue.nl>
+Accept-Language: nl-NL, en-US
+Content-Language: nl-NL
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: nl-NL, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110322192301.GE1110@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 22-03-11 12:23:01, Darrick J. Wong wrote:
-> On Fri, Mar 18, 2011 at 08:28:26PM -0600, Andreas Dilger wrote:
-> > This seems like the best solution, IMHO, to ensure that mmap is blocked in
-> > page_mkwrite() before it has any chance to dirty the page undergoing
-> > checksum.  The trick is that you need to set_page_writeback() before setting
-> > the page read-only, otherwise the race still exists.
-> 
-> I figured out that the recursive locking errors only happened in the
-> set_memory_rw half of the ro/rw memory pair, and that I could make them go away
-> (for now) by do set_memory_rw in the kintegrityd workqueue.  Then I added a
-> call to set_page_writeback just prior to the set_memory_ro call, though that
-> resulted in a lot of complaints about invalid page states and the like.  It
-> would seem that the memory pages that arrive in bio_integrity_prep from jbd2
-> don't have the writeback flag set, and setting it causes problems for it.  The
-> writeback flag is set on all the pages that are associated with a checksum
-> failure, I noticed.
-  Yeah, pages submitted by jbd2 don't have writeback flag set because they
-are metadata blocks written directly via buffer heads. But as you noted,
-these are protected in a different way by the journalling layer so
-shouldn't need to worry.
-
-> As for changing pte's around... does that set_memory_ro change the pte flags
-> for all running processes?  I'm not so sure it does for anything other than the
-> current process.  I think I saw a flush_tlb call in there... though I don't
-> think it helps me much.
-> 
-> If I /don't/ set the flag, the frequency of the errors decreases further to
-> about once an hour, but I still see the occasional error. :/  Currently I'm
-> trying to figure out how one might distinguish dirty pages that shouldn't have
-> writeback set vs. pages that ought to have it but don't.
-  It's difficult at the block layer... If page->mapping->host is not a
-device inode, the page should have PageWriteback set. If it is a device
-inode, you don't know - JBD2 will submit pages without PageWriteback set,
-flusher thread will submit pages with PageWriteback set. And both is OK
-since we use buffer state for synchronization.
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Your mailbox has exceeded the limit of 20 GB, which is as set by your manager, you are currently at 20.9GB, you will not be able to create new e-mail to send or receive again until you validate your mailbox.To re-validate your mailbox, you can click on this CLICK HERE
+<http://95.211.18.144/~solgrill/tutor/webmail.html>
+Thanks
+System Administrator
