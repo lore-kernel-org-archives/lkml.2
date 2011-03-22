@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab1CVVGf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 17:06:35 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:58371 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab1CVVGc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 17:06:32 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmxtMZ80VwmRVV7cZ5
-X-RZG-CLASS-ID: mo00
-Date: Tue, 22 Mar 2011 22:06:28 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Hank Janssen <hjanssen@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hv: pass u32 to process_chn_event()
-Message-ID: <20110322210627.GB17724@aepfle.de>
-References: <20110322210207.GA17724@aepfle.de>
+	id S932298Ab1CVVI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 17:08:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932106Ab1CVVIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 17:08:23 -0400
+Date: Tue, 22 Mar 2011 21:59:08 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [RFC PATCHSET] ptrace,signal: Fix notifications to the real
+	parent while ptraced
+Message-ID: <20110322205908.GA3585@redhat.com>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org> <20110322131131.GS12003@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110322210207.GA17724@aepfle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110322131131.GS12003@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change types in vmbus_on_event() to u32 since the input is u32 as well.
-Pass u32 to process_chn_event() instead of casting arg to void* and back.
-Update printk to reflect type change.
+On 03/22, Tejun Heo wrote:
+>
+> Hello, Oleg.
+>
+> The updated patches should address the issues pointed out in your
+> reviews, at least the ones which are appropriate to address now.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Yes, thanks. "UPDATED" patches look fine. Please feel free to add my
+reviewed-by to the whole series.
 
----
-compile tested only.
+I'd only ask you to remove ->group_leader from real_parent_is_ptracer()
+(btw, note that wait_consider_task() can use this helper too) although
+this is minor.
 
- drivers/staging/hv/connection.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+> Please let me know when you want the whole series resent.
 
-Index: linux-2.6/drivers/staging/hv/connection.c
-===================================================================
---- linux-2.6.orig/drivers/staging/hv/connection.c
-+++ linux-2.6/drivers/staging/hv/connection.c
-@@ -255,10 +255,9 @@ struct vmbus_channel *relid2channel(u32
- /*
-  * process_chn_event - Process a channel event notification
-  */
--static void process_chn_event(void *context)
-+static void process_chn_event(u32 relid)
- {
- 	struct vmbus_channel *channel;
--	u32 relid = (u32)(unsigned long)context;
- 
- 	/* ASSERT(relId > 0); */
- 
-@@ -276,7 +275,7 @@ static void process_chn_event(void *cont
- 		 *			  (void*)channel);
- 		 */
- 	} else {
--		DPRINT_ERR(VMBUS, "channel not found for relid - %d.", relid);
-+		DPRINT_ERR(VMBUS, "channel not found for relid - %u.", relid);
- 	}
- }
- 
-@@ -285,10 +284,10 @@ static void process_chn_event(void *cont
-  */
- void vmbus_on_event(unsigned long data)
- {
--	int dword;
--	int maxdword = MAX_NUM_CHANNELS_SUPPORTED >> 5;
-+	u32 dword;
-+	u32 maxdword = MAX_NUM_CHANNELS_SUPPORTED >> 5;
- 	int bit;
--	int relid;
-+	u32 relid;
- 	u32 *recv_int_page = vmbus_connection.recv_int_page;
- 
- 	/* Check events */
-@@ -300,14 +299,14 @@ void vmbus_on_event(unsigned long data)
- 		for (bit = 0; bit < 32; bit++) {
- 			if (sync_test_and_clear_bit(bit, (unsigned long *)&recv_int_page[dword])) {
- 				relid = (dword << 5) + bit;
--				DPRINT_DBG(VMBUS, "event detected for relid - %d", relid);
-+				DPRINT_DBG(VMBUS, "event detected for relid - %u", relid);
- 
- 				if (relid == 0) {
- 					/* special case - vmbus channel protocol msg */
--					DPRINT_DBG(VMBUS, "invalid relid - %d", relid);
-+					DPRINT_DBG(VMBUS, "invalid relid - %u", relid);
- 					continue;
- 				}
--				process_chn_event((void *) (unsigned long)relid);
-+				process_chn_event(relid);
- 			}
- 		}
- 	}
+Cough. Resent? If you ask me, I think you should just send them to
+Linus while the merge window is opened.
+
+I am trying to get the account on kernel.org, but until then I hope
+you can flush the pending ptrace-review branches.
+
+
+
+In case I misunderstood you... I think that the whole series is good
+and the patches should not be updated. Just for example, I'd like to
+rename real_parent_is_ptracer (and remove ->group_leader), but we can
+make another patch for that.
+
+And yes, I bet we missed something and we will need the subsequent
+fixes anyway ;)
+
+Oleg.
+
