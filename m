@@ -1,78 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab1CVRM4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 13:12:56 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:32794 "EHLO mgw2.diku.dk"
+	id S1756558Ab1CVRNO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 13:13:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55423 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756492Ab1CVRM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 13:12:28 -0400
-From: Julia Lawall <julia@diku.dk>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: kernel-janitors@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Jiri Pirko <jpirko@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, netdev@vger.kernel.org,
+	id S1756480Ab1CVRNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 13:13:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,225,1299484800"; 
+   d="scan'208";a="722972818"
+Date: Tue, 22 Mar 2011 10:12:51 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: linux-usb@vger.kernel.org, libusb-devel@lists.sourceforge.net,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] drivers/net/a2065.c: Convert release_resource to release_region/release_mem_region
-Date: Tue, 22 Mar 2011 18:15:23 +0100
-Message-Id: <1300814123-25314-3-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+Subject: Any USB gadget AIO interface users?
+Message-ID: <20110322171251.GA4455@xanatos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Request_mem_region should be used with release_mem_region, not
-release_resource.
+Has anyone successfully used the asynchronous I/O gadgetfs interface
+before?  Specifically, has anyone used it for high-bandwidth isochronous
+traffic?
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+I ask because I remember discovering about four years ago that there
+were several brain-twisty bugs in the in-kernel asynchronous I/O layer
+that gadgetfs uses.  The AIO core also seemed to be largely
+unmaintained.  Is this still true?
 
-// <smpl>
-@@
-expression x,E;
-@@
-*x = request_mem_region(...)
-... when != release_mem_region(x)
-    when != x = E
-* release_resource(x);
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/net/a2065.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/a2065.c b/drivers/net/a2065.c
-index f142cc2..deaa8bc 100644
---- a/drivers/net/a2065.c
-+++ b/drivers/net/a2065.c
-@@ -711,14 +711,14 @@ static int __devinit a2065_init_one(struct zorro_dev *z,
- 		return -EBUSY;
- 	r2 = request_mem_region(mem_start, A2065_RAM_SIZE, "RAM");
- 	if (!r2) {
--		release_resource(r1);
-+		release_mem_region(base_addr, sizeof(struct lance_regs));
- 		return -EBUSY;
- 	}
- 
- 	dev = alloc_etherdev(sizeof(struct lance_private));
- 	if (dev == NULL) {
--		release_resource(r1);
--		release_resource(r2);
-+		release_mem_region(base_addr, sizeof(struct lance_regs));
-+		release_mem_region(mem_start, A2065_RAM_SIZE);
- 		return -ENOMEM;
- 	}
- 
-@@ -764,8 +764,8 @@ static int __devinit a2065_init_one(struct zorro_dev *z,
- 
- 	err = register_netdev(dev);
- 	if (err) {
--		release_resource(r1);
--		release_resource(r2);
-+		release_mem_region(base_addr, sizeof(struct lance_regs));
-+		release_mem_region(mem_start, A2065_RAM_SIZE);
- 		free_netdev(dev);
- 		return err;
- 	}
-
+Sarah Sharp
