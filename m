@@ -1,174 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab1CVWF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 18:05:28 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57797 "EHLO ogre.sisk.pl"
+	id S932493Ab1CVWFi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 18:05:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47979 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932410Ab1CVWF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 18:05:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kay Sievers <kay.sievers@suse.de>
-Subject: Re: [PATCH 9/10] sh: Use struct syscore_ops instead of sysdev class and sysdev
-Date: Tue, 22 Mar 2011 23:05:01 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
-        Greg KH <gregkh@suse.de>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-References: <201103100131.58206.rjw@sisk.pl> <201103222200.52131.rjw@sisk.pl> <1300828356.1815.15.camel@zag>
-In-Reply-To: <1300828356.1815.15.camel@zag>
+	id S932476Ab1CVWFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 18:05:33 -0400
+Date: Tue, 22 Mar 2011 18:05:05 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jack Steiner <steiner@sgi.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
+Message-ID: <20110322220505.GB13453@redhat.com>
+References: <20110321160135.GA31562@sgi.com>
+ <20110321161425.GC23614@elte.hu>
+ <4D877C4B.9090602@gmail.com>
+ <20110321175110.GL1239@redhat.com>
+ <20110321182235.GA14562@sgi.com>
+ <20110321193740.GN1239@redhat.com>
+ <20110322171118.GA6294@sgi.com>
+ <20110322184450.GU1239@redhat.com>
+ <20110322212519.GA12076@sgi.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103222305.01808.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322212519.GA12076@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 22, 2011, Kay Sievers wrote:
-> On Tue, 2011-03-22 at 22:00 +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, March 22, 2011, Kay Sievers wrote:
-> > > On Tue, 2011-03-22 at 21:30 +0100, Rafael J. Wysocki wrote:
-> > > > 
-> > > > Perhaps there's a more straightforward way to make some files show up in
-> > > > sysfs on a specific path than defininig an otherwise useless bus type and
-> > > > device object?
-> > > 
-> > > That's absolutely not the point. Please don't get yourself into that
-> > > thinking. If people want to "export stuff to userspace", they must not
-> > > invent new things. We need to get rid of the silly special cases.
+On Tue, Mar 22, 2011 at 04:25:19PM -0500, Jack Steiner wrote:
+> > > AFAICT, the UV nmi handler is not consuming extra NMI interrupts. I can't
+> > > rule out that I'm missing something but I don't see it.
 > > 
-> > Why exactly?  Do they actually hurt anyone and if so then how?
+> > What happens if you put the UV nmi handler below the hw_perf handler in
+> > priority?  I assume the DIE_NMIUNKNOWN snippet in the hw_perf handler will
+> > swallow some of the UV NMIs, but more importantly does it still generate
+> > the hang you see?
 > 
-> Sure, "devices" are devices, and devices have well-defines set of
-> properties, not some magic directory, people can mess around with the
-> way they like.
+> I verified that the failures ("perf top" stops) are the same on both RHEL6.1 & the
+> latest x86 2.6.38+ tree.
 
-So it looks like the the problem is that the exported attributes happen to
-be under /sys/devices/.  Would it still be a problem if they were somewhere
-else?
+Thanks for testing that.
 
-> > > Userspace is not meant to learn subsystem specific rules for every new
-> > > thing.
-> > 
-> > That depends a good deal of who's writing the user space in question.  If
-> > that's the same person who's working on the particular part of the kernel,
-> > I don't see a big problem.
 > 
-> Not for "devices". There are rules for devices, which are defined by the
-> driver core, and the sysdev stuff needs to go, because it does not fit
-> into that model.
-
-OK, I understand that.
-
-Now, there's stuff that doesn't really match the "device" model.  Where is
-the right place to export that?  Perhaps we should add something like
-/sys/platform/ (in analogy with /sys/firmware/)?
-
-> > > There is _one_ way to export device attributes, and that is
-> > > "struct device" today.
-> > > 
-> > > If that's to expensive for anybody, just don't use sysfs. It's the rule
-> > > we have today. :)
-> > 
-> > Oh, good to know.  It's changed a bit since I last heard.  Never mind.
+> I switched priorities & as expected, "perf top" no longer hangs. I see an occassional
+> missed UV NMI - about 1 every minute. I also see a few "dazed" messages as
+> well - 3 in a 5 minute period. This testing was done on a 2.6.38+ kernel.
 > 
-> Oh, don't get me wrong, this is all is about "devices" not any other
-> controls.
->
-> > Still, I won't let you change the things in /sys/power to struct devices,
-> > sorry about that. ;-)
+> I'm running on a 48p system.
 > 
-> Fine as long as they are power specific things, and not "devices". You
-> don't have sysdevs there, right? :)
+> Ideas?
 
-No, I don't.
+Wow, interesting.
 
-> > And I wonder how are you going to deal with clocksource exporting things
-> > via the sysdev interface right now.  I'd simply create two directories and
-> > put the two files into them and be done with that, but I guess that
-> > wouldn't fit into the model somehow, right?
-> 
-> Nope, register a bus_type, and use struct device for all of them, Parent
-> them to /sys/devices/system/ if they should keep their location and
-> layout.
+The first thing is in 'uv_handle_nmi' can you change that from
+DIE_NMIUNKNOWN back to DIE_NMI.  Originally I set it to DIE_NMIUNKNOWN
+because I didn't think you guys had the ability to determine if your BMC
+generated the NMI or not.  Recently George B. said you guys add a register
+bit to determine this, so I am wondering if by promoting this would fix
+the missed UV NMI.  I am speculating this is being swallowed by the
+hw_perf DIE_NMIUNKNOWN exception path.
 
-Well, I'll be watching what happens to the patch trying to do that, but I'm
-not going to bet anything on its success. ;-)
+Second the "dazed" messages are being seen on other machines (currently
+core2quads) when using perf with lots of NMI events.  So you might be
+seeing a second more common issue there.  I still need to find time to
+debug that.
 
-> > > > > That way userspace can properly enumerate them in a flat list
-> > > > > in /sys/bus/<bus_type name>/devices/*, and gets proper events on module
-> > > > > load and during system coldplug, and can hook into the usual hotplug
-> > > > > pathes to set/get these values instead of crawling magicly defined and
-> > > > > decoupled locations in /sys which can not express proper hierarchy,
-> > > > > classicication, or anything else that all other devices can just do.
-> > > > 
-> > > > There's no hotplug involved or anything remotely like that AFAICS.
-> > > > There are simply static files as I said above, they are created
-> > > > early during system initialization and simply stay there.
-> > > 
-> > > That's not the point. It's about a single way to retrieve information
-> > > about devices, extendability, and coldplug during bootup, where existing
-> > > devices need to be handled only after userspace is up.
-> > 
-> > I'd say the case at hand has nothing to do with that.
-> 
-> It has. As for CPUs. We can not do proper CPU-dependent module
-> autoloading, because the events happen before userspace runs, and
-> clodplug can not see the broken sysdevs, because they have no events to
-> re-trigger, like all others have.
+Finally, I am trying to scratch my head about the 'perf top' no longer
+hangs part.  The only thing I can think of is under high perf load (with
+out extra NMIs by your BMC), we have seen extra NMIs get generated while
+processing the current NMI (mainly because Nehalems have I think 4 or 8
+PMUs that can be activate at once, so multiple NMIs can trigger here).
+But we can recover from this because we check _all_ the PMIs during the
+NMI (which currently always comes from the PMU).
 
-Well, as I said, would it be OK if the things in question happened to be
-located somewhere outside of /sys/devices/ ?
+Now this extra NMI from the PMU can also happen on a singlely activated
+PMU because we reload the PMU, then check the events to see if we should
+disable it.  By the time we finish checking (and determine we are not done
+yet), the event could have rolled over and generated another NMI before we
+have finished processing the current one.
 
-> > > That is just a case of "hotplug" that has the same codepath for userspace,
-> > > even when the devices can never really come and go.
-> > 
-> > My impression is that when you say "user space", you actually mean some
-> > _specific_ user space, don't you?
-> 
-> On usual boxes it's udev/libudev and all the stuff around it. But
-> andreoid has the same stuff in their own way of doing it. So it's not
-> about an implementation in userspace, it's about a sane event and
-> classification interface for kernel-exported devices. Again tis is not
-> about any other stuff in /sys, only the "devices", and we want to have
-> only a single type, and a single way to handle it in userspace.
+So throw in an external NMI into the above situation (which gets dropped
+as the third NMI I believe if I read the history of these NMI things
+correctly), then it is possible that if uv_handle_nmi is called first it
+could swallow the extra NMI as its own and leave the hw_perf hanging.
+(that's a mouthful, huh?)
 
-OK
+Then again with the priorities switched I guess the opposite is true too,
+that your BMC is left missing an event.
 
-> > > > > There is really no reason for any device being a magic and conceptually
-> > > > > broken sysdev today - just to be different from any other device the
-> > > > > kernel exports to userspace.
-> > > > 
-> > > > It's not a "device being a sysdev", it's sysdevs being used for creating
-> > > > a user space interface, which isn't broken by itself.
-> > > 
-> > > Yeah , absolutely. But if any device wants to export anything is _must_
-> > > be a "struct device" today. If that does not fit, it must not use sysfs
-> > > at all.
-> > 
-> > Well, it's not a "device wants to export something".  It's platform code
-> > wanting to export some information related to the platform and I really
-> > don't see a reason why it should create bus types and device objects
-> > _specifically_ for that.  It's just too wasteful, both in terms of memory
-> > and time needed for handling that in the device core.
-> 
-> Because they are devices, and there is a lot to win, if the kernel
-> exports all "devices" in the same way. This is not about saving an inode
-> in /sys, it's the ability to do runtime device configuration with common
-> tools.
+This sort of supports the need for your patch earlier or something similar
+which says ignore the handler's return code and process all the events on
+the die_chain anyway.  And if noone has handled the NMI, then trigger an
+unknown NMI.
 
-If I understand you correctly, the goal is to have everything under
-/sys/devices/ been represented by struct device objects and there are good
-reasons to do that.
+Unless there is a way to determine if an NMI is latched or not before
+issuing the iret and if so assumed we dropped an NMI and process everyone.
 
-In that case we either have to move the things exported via sysdevs somewhere
-else (presumably having to create that "somewhere" before), or we have to
-introduce struct device objects specifically for exporting them.  I don't
-really think the latter approach will be very popular, so quite likely we'll
-need to have a plan for moving those things to different locations.
+I'll need to think of a way to prove all this in the morning (or maybe
+later).
 
-Thanks,
-Rafael
+I hope that makes some sense as it is late and my brain is shutting down.
+
+Cheers,
+Don
