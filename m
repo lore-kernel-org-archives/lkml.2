@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773Ab1CVPXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 11:23:05 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:33617 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab1CVPXC convert rfc822-to-8bit (ORCPT
+	id S1756153Ab1CVPaV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 11:30:21 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:46975 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab1CVPaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 11:23:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110322151248.GC22583@opensource.wolfsonmicro.com>
-References: <4D79F068.2080009@linaro.org>
-	<AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com>
-	<20110322151248.GC22583@opensource.wolfsonmicro.com>
-Date: Tue, 22 Mar 2011 20:53:01 +0530
-Message-ID: <AANLkTim4K=8PGGMgdm_DcOUU7kw=ruSOGQKXixE26gC9@mail.gmail.com>
-Subject: Re: RFC: Platform data for onboard USB assets
-From: Jaswinder Singh <jaswinder.singh@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: andy.green@linaro.org, Andy Green <andy@warmcat.com>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        roger.quadros@nokia.com, greg@kroah.com, benh@kernel.crashing.org,
-        grant.likely@secretlab.ca, Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 Mar 2011 11:30:20 -0400
+Message-Id: <20110322153015.922856251@szeredi.hu>
+References: <20110322152602.053930811@szeredi.hu>
+User-Agent: quilt/0.46-1
+Date: Tue, 22 Mar 2011 16:26:04 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        apw@canonical.com, nbd@openwrt.org, neilb@suse.de
+Subject: [PATCH 2/6 v7] vfs: export do_splice_direct() to modules
+Content-Disposition: inline; filename=vfs-export-do_splice_direct.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 March 2011 20:42, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Mar 22, 2011 at 08:32:28PM +0530, Jaswinder Singh wrote:
->
->> It's a different matter that DT has many hearts to win(at least in ARM
->> Linux)
->> So, perhaps the answer to Q(a) is - Yes.
->
-> It's not really a question of hearts to win.  Even for people who are
-> fully won over the implementation just isn't there in mainline and it's
-> not clear when it'll be delivered.  Right now device tree can only be
-> used on SPARC, PowerPC and (I beleive) some x86 platforms.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Well, the most important heart of all is yet to be won - RMK.
-And perhaps the least important (and easiest) of all too - I :)
+Export do_splice_direct() to modules.  Needed by overlay filesystem.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/splice.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6/fs/splice.c
+===================================================================
+--- linux-2.6.orig/fs/splice.c	2011-03-22 15:11:27.000000000 +0100
++++ linux-2.6/fs/splice.c	2011-03-22 15:11:32.000000000 +0100
+@@ -1296,6 +1296,7 @@ long do_splice_direct(struct file *in, l
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL(do_splice_direct);
+ 
+ static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
+ 			       struct pipe_inode_info *opipe,
+
+-- 
