@@ -1,102 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab1CVWbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 18:31:47 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55551 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752338Ab1CVWbp (ORCPT
+	id S1755069Ab1CVWfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 18:35:32 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:44897 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab1CVWf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 18:31:45 -0400
-Date: Tue, 22 Mar 2011 22:31:57 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Collins <collinsd@codeaurora.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Deadlock scenario in regulator core
-Message-ID: <20110322223156.GA10782@opensource.wolfsonmicro.com>
-References: <4D891C59.1030009@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D891C59.1030009@codeaurora.org>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 22 Mar 2011 18:35:29 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=vKGeoCk7fHaZc/gu/4cnO2+l42PJ7GW9U/SxovPC9hJPj+DWxXl5f+Y5lvYLlHKgw
+	6pBLpyPEhDt3He5A+uxHA==
+From: Justin TerAvest <teravest@google.com>
+To: jaxboe@fusionio.com, vgoyal@redhat.com
+Cc: linux-kernel@vger.kernel.org, Justin TerAvest <teravest@google.com>
+Subject: [PATCH v2] cfq-iosched: Don't clear queue stats when preempt.
+Date: Tue, 22 Mar 2011 15:35:18 -0700
+Message-Id: <1300833318-1072-1-git-send-email-teravest@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 03:02:01PM -0700, David Collins wrote:
+For v2, I added back lines to cfq_preempt_queue() that were removed
+during updates for accounting unaccounted_time. Thanks for pointing out
+that I'd missed these, Vivek.
 
-> The locks for S1 and L2 are taken in opposite orders in the two threads;
-> therefore, it is possible to achieve deadlock.  I am not sure about the
-> best way to resolve this situation.  Is there a correctness requirement
-> that regulator_enable holds the child regulator's lock when it attempts to
-> enable the parent regulator?  Likewise, is the lock around
-> _notifier_call_chain required?
+Previous commit "cfq-iosched: Don't set active queue in preempt" wrongly
+cleared stats for preempting queues when it shouldn't have, because when
+we choose a queue to preempt, it still isn't necessarily scheduled next.
 
-No need to hold the child lock, when we take the reference on the supply
-we own the reference.  It's just that the systems which need to use
-daisychained regulators (mostly a DCDC to power LDOs for better
-efficiency) are moderately rare and tend to not bother representing the
-supply relationship as the parent regulator tends to be always on.
+Thanks to Vivek Goyal for figuring this out and understanding how the
+preemption code works.
 
-In fact it looks rather like the refcounting for supplies is wrong
-anyway, regulator_disable() unconditionally drops references to supplies
-but regulator_enable() only enables them if the refcount was previously
-zero, and it appears we don't clean up supplies after failed enables.
-The below patch (which I've not even compile tested) should resolve both
-issues, could you give it a spin and let me know if it works for you
-please?
+Signed-off-by: Justin TerAvest <teravest@google.com>
+---
+ block/cfq-iosched.c |   39 +++++++++++++++++----------------------
+ 1 files changed, 17 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 3ffc697..0a7fbde 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1284,19 +1284,6 @@ static int _regulator_enable(struct regulator_dev *rdev)
- {
- 	int ret, delay;
- 
--	if (rdev->use_count == 0) {
--		/* do we need to enable the supply regulator first */
--		if (rdev->supply) {
--			mutex_lock(&rdev->supply->mutex);
--			ret = _regulator_enable(rdev->supply);
--			mutex_unlock(&rdev->supply->mutex);
--			if (ret < 0) {
--				rdev_err(rdev, "failed to enable: %d\n", ret);
--				return ret;
--			}
--		}
--	}
--
- 	/* check voltage and requested load before enabling */
- 	if (rdev->constraints &&
- 	    (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_DRMS))
-@@ -1370,10 +1357,27 @@ int regulator_enable(struct regulator *regulator)
- {
- 	struct regulator_dev *rdev = regulator->rdev;
- 	int ret = 0;
-+	int disret;
-+
-+	if (rdev->supply) {
-+		ret = regulator_enable(rdev->supply);
-+		if (ret < 0) {
-+			rdev_err(rdev, "failed to enable supply: %d\n", ret);
-+			return ret;
-+		}
-+	}
- 
- 	mutex_lock(&rdev->mutex);
- 	ret = _regulator_enable(rdev);
- 	mutex_unlock(&rdev->mutex);
-+
-+	if (ret != 0 && rdev->supply) {
-+		disret = regulator_disable(rdev->supply);
-+		if (disret < 0)
-+			rdev_err(rdev, "failed to disable supply: %d\n",
-+				 disret);
-+	}
-+
- 	return ret;
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 69208d7..fea1b5a 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1620,33 +1620,27 @@ static inline void cfq_del_timer(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 	cfq_blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
  }
- EXPORT_SYMBOL_GPL(regulator_enable);
+ 
+-static void cfq_clear_queue_stats(struct cfq_data *cfqd,
+-				  struct cfq_queue *cfqq)
+-{
+-	cfq_blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
+-	cfqq->slice_start = 0;
+-	cfqq->dispatch_start = jiffies;
+-	cfqq->allocated_slice = 0;
+-	cfqq->slice_end = 0;
+-	cfqq->slice_dispatch = 0;
+-	cfqq->nr_sectors = 0;
+-
+-	cfq_clear_cfqq_wait_request(cfqq);
+-	cfq_clear_cfqq_must_dispatch(cfqq);
+-	cfq_clear_cfqq_must_alloc_slice(cfqq);
+-	cfq_clear_cfqq_fifo_expire(cfqq);
+-	cfq_mark_cfqq_slice_new(cfqq);
+-
+-	cfq_del_timer(cfqd, cfqq);
+-}
+-
+ static void __cfq_set_active_queue(struct cfq_data *cfqd,
+ 				   struct cfq_queue *cfqq)
+ {
+ 	if (cfqq) {
+ 		cfq_log_cfqq(cfqd, cfqq, "set_active wl_prio:%d wl_type:%d",
+ 				cfqd->serving_prio, cfqd->serving_type);
+-		cfq_clear_queue_stats(cfqd, cfqq);
++		cfq_blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
++		cfqq->slice_start = 0;
++		cfqq->dispatch_start = jiffies;
++		cfqq->allocated_slice = 0;
++		cfqq->slice_end = 0;
++		cfqq->slice_dispatch = 0;
++		cfqq->nr_sectors = 0;
++
++		cfq_clear_cfqq_wait_request(cfqq);
++		cfq_clear_cfqq_must_dispatch(cfqq);
++		cfq_clear_cfqq_must_alloc_slice(cfqq);
++		cfq_clear_cfqq_fifo_expire(cfqq);
++		cfq_mark_cfqq_slice_new(cfqq);
++
++		cfq_del_timer(cfqd, cfqq);
+ 	}
+ 
+ 	cfqd->active_queue = cfqq;
+@@ -3339,7 +3333,8 @@ static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 
+ 	cfq_service_tree_add(cfqd, cfqq, 1);
+ 
+-	cfq_clear_queue_stats(cfqd, cfqq);
++	cfqq->slice_end = 0;
++	cfq_mark_cfqq_slice_new(cfqq);
+ }
+ 
+ /*
+-- 
+1.7.3.1
+
