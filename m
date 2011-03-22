@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab1CVGGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 02:06:04 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48811 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754313Ab1CVGGD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 02:06:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ghiXOmafB+BmwwhkPqvGlMms45XFabeeurA4ie/KyAX7PuGJMZHr1yMtKp/hO5UR0j
-         GsRfanFDxEQhEZoXoGeSedvxLKRNhLuJLID4hh21iaFcsI1I5D9SMrM5A0+tpNyDseM4
-         4t9fGax+fs+8Q6bu643bQMW+A0wRYn2VYoMPI=
-Subject: Re: [PATCH] usb_wwan: fix build error in play_delayed.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-In-Reply-To: <1300768162-18394-1-git-send-email-tm@tao.ma>
-References: <1300768162-18394-1-git-send-email-tm@tao.ma>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Mar 2011 07:05:55 +0100
-Message-ID: <1300773955.2837.24.camel@edumazet-laptop>
+	id S1754547Ab1CVGPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 02:15:10 -0400
+Received: from linux-sh.org ([111.68.239.195]:51479 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754046Ab1CVGPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 02:15:07 -0400
+Date: Tue, 22 Mar 2011 15:14:25 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@nokia.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 06/13] omap: use list_move() instead of list_del()/list_add() combination
+Message-ID: <20110322061425.GC25925@linux-sh.org>
+References: <1300229605-14499-1-git-send-email-kirill@shutemov.name> <1300229605-14499-7-git-send-email-kirill@shutemov.name> <1300229605-14499-1-git-send-email-kirill@shutemov.name> <1300229605-14499-6-git-send-email-kirill@shutemov.name> <1300275829.1917.94.camel@lappyti>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300229605-14499-7-git-send-email-kirill@shutemov.name> <1300275829.1917.94.camel@lappyti>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 22 mars 2011 à 12:29 +0800, Tao Ma a écrit :
-> From: Tao Ma <boyu.mt@taobao.com>
+On Wed, Mar 16, 2011 at 05:13:49PM +0530, Tomi Valkeinen wrote:
+> On Tue, 2011-03-15 at 17:53 -0500, Kirill A. Shutemov wrote:
+> > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> > Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>
+> > Cc: linux-fbdev@vger.kernel.org
+> > Cc: linux-omap@vger.kernel.org
+> > ---
+> >  drivers/video/omap/blizzard.c |    3 +--
+> >  drivers/video/omap/hwa742.c   |    3 +--
+> >  2 files changed, 2 insertions(+), 4 deletions(-)
 > 
-> There is a build error in today's linus tree.
-> drivers/usb/serial/usb_wwan.c: In function ‘play_delayed’:
-> drivers/usb/serial/usb_wwan.c:702: error: ‘struct dev_pm_info’ has no member named ‘usage_count’
-> The reason is that usage_count is wrapped with macro CONFIG_PM_RUNTIME
-> now in dev_pm_info.
-> 
-> So use the corresponding pm_runtime_get_noresume instead.
-> 
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+
+On Wed, Mar 16, 2011 at 12:53:19AM +0200, Kirill A. Shutemov wrote:
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: linux-fbdev@vger.kernel.org
 > ---
->  drivers/usb/serial/usb_wwan.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  drivers/video/vermilion/vermilion.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-> index a65ddd5..5858ce4 100644
-> --- a/drivers/usb/serial/usb_wwan.c
-> +++ b/drivers/usb/serial/usb_wwan.c
-> @@ -699,7 +699,7 @@ static void play_delayed(struct usb_serial_port *port)
->  			do {
->  				unbusy_queued_urb(urb, portdata);
->  				//extremely dirty
-> -				atomic_dec(&port->serial->interface->dev.power.usage_count);
-> +				pm_runtime_get_noresume(&port->serial->interface->dev);
->  			} while ((urb = usb_get_from_anchor(&portdata->delayed)));
->  			break;
->  		}
-
-Oh well, thats the third time this patch is sent
-
-
+Both applied, thanks.
