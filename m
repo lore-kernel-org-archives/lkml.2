@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab1CVLvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 07:51:41 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15554 "EHLO mga14.intel.com"
+	id S1754010Ab1CVLzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 07:55:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:34173 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757Ab1CVLvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 07:51:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,224,1299484800"; 
-   d="scan'208";a="406371828"
-Date: Tue, 22 Mar 2011 12:51:35 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Kyungmin Park <kyungmin.park@samsung.com>, myungjoo.ham@gmail.com
-Subject: Re: [PATCH v7] MAX8997/8966 MFD: Add IRQ control feature
-Message-ID: <20110322115134.GF2351@sortiz-mobl>
-References: <20110321135910.267f367f.sfr@canb.auug.org.au>
- <1300694904-29856-1-git-send-email-myungjoo.ham@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300694904-29856-1-git-send-email-myungjoo.ham@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752034Ab1CVLzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 07:55:44 -0400
+From: David Sterba <dsterba@suse.cz>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Sterba <dsterba@suse.cz>,
+        David Miller <davem@davemloft.net>, stable@kernel.org
+Subject: [PATCH] netfilter: h323: bug in parsing of ASN1 SEQOF field
+Date: Tue, 22 Mar 2011 12:55:29 +0100
+Message-Id: <1300794929-1541-1-git-send-email-dsterba@suse.cz>
+X-Mailer: git-send-email 1.7.4.1.176.g501cc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi MyungJoo,
+Static analyzer of clang found a dead store which appears to be a bug in
+reading count of items in SEQOF field, only the lower byte of word is
+stored. This may lead to corrupted read and communication shutdown.
 
-On Mon, Mar 21, 2011 at 05:08:24PM +0900, MyungJoo Ham wrote:
-> +static struct irq_chip max8997_irq_chip = {
-> +	.name			= "max8997",
-> +#ifdef CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED
-> +	.irq_bus_lock		= max8997_irq_lock,
-> +	.irq_bus_sync_unlock	= max8997_irq_sync_unlock,
-> +	.irq_mask		= max8997_irq_mask,
-> +	.irq_unmask		= max8997_irq_unmask,
-> +#else /* CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED */
-> +	.bus_lock		= max8997_irq_lock,
-> +	.bus_sync_unlock	= max8997_irq_sync_unlock,
-> +	.mask			= max8997_irq_mask,
-> +	.unmask			= max8997_irq_unmask,
-> +#endif /* CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED */
-> +};
-You actually don't need to define both pointer sets. Setting the irq_* ones
-should be enough for both configs.
+The bug has been in the module since it's first inclusion into linux
+kernel.
 
-Cheers,
-Samuel.
+Signed-off-by: David Sterba <dsterba@suse.cz>
+CC: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org
+CC: stable@kernel.org
+---
+ net/netfilter/nf_conntrack_h323_asn1.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/net/netfilter/nf_conntrack_h323_asn1.c b/net/netfilter/nf_conntrack_h323_asn1.c
+index 8678823..bcd5ed6 100644
+--- a/net/netfilter/nf_conntrack_h323_asn1.c
++++ b/net/netfilter/nf_conntrack_h323_asn1.c
+@@ -631,7 +631,7 @@ static int decode_seqof(bitstr_t *bs, const struct field_t *f,
+ 		CHECK_BOUND(bs, 2);
+ 		count = *bs->cur++;
+ 		count <<= 8;
+-		count = *bs->cur++;
++		count += *bs->cur++;
+ 		break;
+ 	case SEMI:
+ 		BYTE_ALIGN(bs);
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.4.1.176.g501cc
+
