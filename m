@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab1CVWCF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 18:02:05 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:60770 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932391Ab1CVWCC (ORCPT
+	id S932474Ab1CVWDG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 18:03:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54199 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932393Ab1CVWDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 18:02:02 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6293"; a="81261755"
-Message-ID: <4D891C59.1030009@codeaurora.org>
-Date: Tue, 22 Mar 2011 15:02:01 -0700
-From: David Collins <collinsd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Tue, 22 Mar 2011 18:03:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=kzPEDQRuxY2wNb+0gTybvJwL2HyWBIOVjsA6M0RWVa2T2mehkUDkRqM1jnxj4KVIJX
+         IZyEor6zNUlrgoDbEcDdvWAffN0MeLKbJ2C23By8RhysBz0PtrBpU7aul86/OVefRHAx
+         tX9U/N0Dpqgh2jW9SW88rynDJAl9gyV/l46ME=
+Message-ID: <4D891C93.8070502@gmail.com>
+Date: Wed, 23 Mar 2011 01:02:59 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-To: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Deadlock scenario in regulator core
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jack Steiner <steiner@sgi.com>
+CC: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
+References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <20110321175110.GL1239@redhat.com> <20110321182235.GA14562@sgi.com> <20110321193740.GN1239@redhat.com> <20110322171118.GA6294@sgi.com> <20110322184450.GU1239@redhat.com> <20110322212519.GA12076@sgi.com>
+In-Reply-To: <20110322212519.GA12076@sgi.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Liam and Mark,
+On 03/23/2011 12:25 AM, Jack Steiner wrote:
+> On Tue, Mar 22, 2011 at 02:44:50PM -0400, Don Zickus wrote:
+>> On Tue, Mar 22, 2011 at 12:11:18PM -0500, Jack Steiner wrote:
+>>> How certain are you that multiple NMIs triggered at about the same time will
+>>> deliver discrete NMI events? I updated the patch so that I'm running with:
+>>
+>> I think as long as there isn't more than two (1 active, 1 latched), you
+>> would be ok.  A third one looks like it would get dropped.
+>>
+>>>
+>>> 	- no special code in traps.c (I removed the traps.c code that was
+>>> 	  in the patch I posted)
+>>> 	- used die_notifier for calling the UV nmi handler
+>>> 	- UV priority is higher than the hw_perf priority
+>>>
+>>> Both hw_perf (perf top) & UV NMIs work correctly under light loads. However, if I
+>>> run for 10 - 15 minutes injecting UV NMIs at a rate of about 30/min, "perf top"
+>>> stops generating output. Strace shows that it continues to poll() but no data
+>>> is received.
+>>
+>> That's a low frequency and it still gets stuck?
+>>
+>>>
+>>> While "perf top" is hung, if I inject an NMI into the system in a way that will NOT
+>>> be consumed by the UV nmi handler, "perf top" resumes output but will stop again after
+>>> a few minutes.
+>>
+>> So that means the PMU set its interrupt bit but the cpu failed to get the
+>> NMI.
+>>
+>>>
+>>>
+>>> AFAICT, the UV nmi handler is not consuming extra NMI interrupts. I can't
+>>> rule out that I'm missing something but I don't see it.
+>>
+>> What happens if you put the UV nmi handler below the hw_perf handler in
+>> priority?  I assume the DIE_NMIUNKNOWN snippet in the hw_perf handler will
+>> swallow some of the UV NMIs, but more importantly does it still generate
+>> the hang you see?
+> 
+> I verified that the failures ("perf top" stops) are the same on both RHEL6.1 & the
+> latest x86 2.6.38+ tree.
+> 
+> I switched priorities & as expected, "perf top" no longer hangs. I see an occassional
+> missed UV NMI - about 1 every minute. I also see a few "dazed" messages as
+> well - 3 in a 5 minute period. This testing was done on a 2.6.38+ kernel.
+> 
+> I'm running on a 48p system.
+> 
+> Ideas?
+> 
 
-I was analyzing the mutex lock usage in drivers/regulator/core.c and found
-at least one way to reach deadlock: regulator_enable is called for a
-regulator at the same time that regulator_disable is called for that
-regulator's supply.  Consider this simple example.  There are two
-regulators: S1 and L2, as well as two consumers: A and B.  They are
-connected as follows:
+  I fear there is always a probability for eaten nmi (due to inflight nmi logic
+we have) or missed nmi (due to non-instant deliery of nmi).  Say the following
+scenario may happen:
 
-S1 --> L2 --> B
-|
-|--> A
+1) perf-nmi-0 (from counter 0) issued
+2) uv-nmi issued
+3) perf-nmi-0 latched
+4) perf-nmi-1 (from counter 1) not yet issued but couter overflowed
+5) nmi-handler
+6) uv-nmi-latched
+7) nmi-handler eats both nmis from perf-nmi-0 and uv-nmi because of in-flight
+   nmi logic we have
+8) finally perf-nmi-1 should appear on line but counter already pulled down so
+   no nmi
 
-Assume that A has already called regulator_enable for S1 some time in the
-past.
-
-Consumer A thread execution:
-	regulator_disable(S1)
-	mutex_lock(S1)
-	_regulator_disable(S1)
-	_notifier_call_chain(S1)
-	mutex_lock(L2)
-
-Consumer B thread execution:
-	regulator_enable(L2)
-	mutex_lock(L2)
-	_regulator_enable(L2)
-	mutex_lock(S1)
-
-The locks for S1 and L2 are taken in opposite orders in the two threads;
-therefore, it is possible to achieve deadlock.  I am not sure about the
-best way to resolve this situation.  Is there a correctness requirement
-that regulator_enable holds the child regulator's lock when it attempts to
-enable the parent regulator?  Likewise, is the lock around
-_notifier_call_chain required?
-
-Thanks,
-David Collins
-
+and here you get missed nmi you expect from uv. I *guess*, not sure if it's possible.
+If you disable nmi-watchdog on boot line, does it help?
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+    Cyrill
