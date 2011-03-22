@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab1CVJKk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 05:10:40 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52146 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab1CVJKi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 05:10:38 -0400
-Date: Tue, 22 Mar 2011 10:10:27 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Heiko Schocher <hs@denx.de>
-Cc: linuxppc-dev@lists.ozlabs.org, Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-fbdev@vger.kernel.org, devicetree-discuss@ozlabs.org,
-        Ben Dooks <ben@simtec.co.uk>, Vincent Sanders <vince@simtec.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, Wolfgang Denk <wd@denx.de>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH v6 6/6] powerpc, tqm5200: update tqm5200_defconfig to
- fit for charon board.
-Message-ID: <20110322091027.GC2134@pengutronix.de>
-References: <1291451028-22532-1-git-send-email-hs@denx.de>
- <1300782452-528-1-git-send-email-hs@denx.de>
- <1300782452-528-7-git-send-email-hs@denx.de>
+	id S1753226Ab1CVJTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 05:19:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53550 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751792Ab1CVJTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 05:19:38 -0400
+Message-ID: <4D88696C.6060203@redhat.com>
+Date: Tue, 22 Mar 2011 11:18:36 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RIYY1s2vRbPFwWeW"
-Content-Disposition: inline
-In-Reply-To: <1300782452-528-7-git-send-email-hs@denx.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
+        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        David Woodhouse <dwmw2@infradead.org>, kvm@vger.kernel.org,
+        iommu@lists.linux-foundation.org, cpufreq@vger.kernel.org
+Subject: Re: [PATCH 4/6] KVM: Use syscore_ops instead of sysdev class and
+ sysdev
+References: <201103100131.58206.rjw@sisk.pl> <201103122212.40828.rjw@sisk.pl> <201103220031.22729.rjw@sisk.pl> <201103220037.06465.rjw@sisk.pl>
+In-Reply-To: <201103220037.06465.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/22/2011 01:37 AM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki<rjw@sisk.pl>
+>
+> KVM uses a sysdev class and a sysdev for executing kvm_suspend()
+> after interrupts have been turned off on the boot CPU (during system
+> suspend) and for executing kvm_resume() before turning on interrupts
+> on the boot CPU (during system resume).  However, since both of these
+> functions ignore their arguments, the entire mechanism may be
+> replaced with a struct syscore_ops object which is simpler.
+>
 
---RIYY1s2vRbPFwWeW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Avi Kivity <avi@redhat.com>
 
->     As this board is tqm5200 based, added necessary changes
->     to the tqm5200_defconfig. In previous patchserie I added
->     the changes to mpc5200_defconfig, as Wolfram Sang mentioned,
->     but as tqm5200_defconfig is in mainline, and the board is
->     tqm5200 based, I think, thats the appropriate place, as
+-- 
+error compiling committee.c: too many arguments to function
 
-I'd think the perfect solution would have been to merge the
-tqm-defconfig into the mpc5200-defconfig entirely and get rid of it.
-That being said, I don't think this issue is big enough to block this
-series, so fine enough with me.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---RIYY1s2vRbPFwWeW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk2IZ4MACgkQD27XaX1/VRu7cQCfWpwfinmAeGn8hGBfiiU0IqlG
-MkoAoLaw5f0WowSPgUmyBzmU9YvG4B6b
-=7p51
------END PGP SIGNATURE-----
-
---RIYY1s2vRbPFwWeW--
