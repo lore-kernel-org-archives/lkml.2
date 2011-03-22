@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab1CVGPK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 02:15:10 -0400
-Received: from linux-sh.org ([111.68.239.195]:51479 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754046Ab1CVGPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 02:15:07 -0400
-Date: Tue, 22 Mar 2011 15:14:25 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomi Valkeinen <tomi.valkeinen@nokia.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 06/13] omap: use list_move() instead of list_del()/list_add() combination
-Message-ID: <20110322061425.GC25925@linux-sh.org>
-References: <1300229605-14499-1-git-send-email-kirill@shutemov.name> <1300229605-14499-7-git-send-email-kirill@shutemov.name> <1300229605-14499-1-git-send-email-kirill@shutemov.name> <1300229605-14499-6-git-send-email-kirill@shutemov.name> <1300275829.1917.94.camel@lappyti>
-Mime-Version: 1.0
+	id S1754569Ab1CVGUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 02:20:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51748 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754048Ab1CVGUE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 02:20:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mMBiMy3B9H0yv3b0x8TqSAQ1ojWYzwJFwnjNGh/gq5MTjoxUhu/AfmIm5CGXj7m5uW
+         3wz6bUam0agsYefm80jUpjF0NvO6iQpf0aSKvLCher5czSBpUyUW8399e2hZ1awS0MNO
+         YjhX4yuXXDtyINdLhNDKru5I47V1AjOaKaXq0=
+Date: Mon, 21 Mar 2011 23:19:58 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Aaro Koskinen <aaro.koskinen@nokia.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: tsc2005: fix locking issue
+Message-ID: <20110322061958.GA7990@core.coreip.homeip.net>
+References: <1300724650-6641-1-git-send-email-aaro.koskinen@nokia.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300229605-14499-7-git-send-email-kirill@shutemov.name> <1300275829.1917.94.camel@lappyti>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <1300724650-6641-1-git-send-email-aaro.koskinen@nokia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 05:13:49PM +0530, Tomi Valkeinen wrote:
-> On Tue, 2011-03-15 at 17:53 -0500, Kirill A. Shutemov wrote:
-> > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> > Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>
-> > Cc: linux-fbdev@vger.kernel.org
-> > Cc: linux-omap@vger.kernel.org
-> > ---
-> >  drivers/video/omap/blizzard.c |    3 +--
-> >  drivers/video/omap/hwa742.c   |    3 +--
-> >  2 files changed, 2 insertions(+), 4 deletions(-)
+On Mon, Mar 21, 2011 at 06:24:10PM +0200, Aaro Koskinen wrote:
+> Commit 0b950d3 (Input: tsc2005 - add open/close) introduced a
+> locking issue with the ESD watchdog: __tsc2005_disable() is calling
+> cancel_delayed_work_sync() with mutex held, and the work also needs the
+> same mutex.
 > 
-> Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Fix the problem by using cancel_delayed_work() on disable. If
+> the ESD work was running it will check if the device is closed
+> or suspended, and in that case it will do nothing and skip
+> re-arming. cancel_delayed_work_sync() is still needed when the module
+> is removed.
 
-On Wed, Mar 16, 2011 at 12:53:19AM +0200, Kirill A. Shutemov wrote:
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: linux-fbdev@vger.kernel.org
-> ---
->  drivers/video/vermilion/vermilion.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-Both applied, thanks.
+Hmm, indeed. However, instead of moving cancel_delayed_work_sync() to
+remove maybe we should use mutex_trylock() in tsc2005_esd_work()?
+If trylock fails that means that device is in the middle of open/close
+transition. We should just reschedule the work and get out of there.
+ 
+Thanks.
+
+-- 
+Dmitry
