@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab1CVVI5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 17:08:57 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:11027 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab1CVVIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 17:08:55 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmxtMZ80VwmRVV7cZ5
-X-RZG-CLASS-ID: mo00
-Date: Tue, 22 Mar 2011 22:08:50 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Hank Janssen <hjanssen@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] hv: pass integer to tasklet_init()
-Message-ID: <20110322210850.GC17724@aepfle.de>
-References: <20110322210207.GA17724@aepfle.de>
- <20110322210627.GB17724@aepfle.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110322210627.GB17724@aepfle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932337Ab1CVVJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 17:09:14 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43750 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932230Ab1CVVJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 17:09:12 -0400
+Subject: Re: RFC: Platform data for onboard USB assets
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Jaswinder Singh <jaswinder.singh@linaro.org>
+Cc: andy.green@linaro.org, Andy Green <andy@warmcat.com>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
+        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
+        greg@kroah.com, grant.likely@secretlab.ca,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+In-Reply-To: <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com>
+References: <4D79F068.2080009@linaro.org>
+	 <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 08:08:45 +1100
+Message-ID: <1300828125.2402.300.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tasklet_init() takes an integer, so use one right away.
+> Q(b) If yes, what 'key' is most suitable for identifying the right
+> device
+>   to attach the data to ?
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
+We already pointed out that in the case of soldered-in device, the
+"path" as in the series of -physical- ports leading to the device is
+going to be stable.
 
----
- drivers/staging/hv/vmbus_drv.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+For anything else, there's no solution. If the device doesn't have a
+unique ID, you are toast, period.
 
-Index: linux-2.6/drivers/staging/hv/vmbus_drv.c
-===================================================================
---- linux-2.6.orig/drivers/staging/hv/vmbus_drv.c
-+++ linux-2.6/drivers/staging/hv/vmbus_drv.c
-@@ -454,10 +454,8 @@ static int vmbus_bus_init(void)
- 	vmbus_drv_ctx->bus.name = driver_name;
- 
- 	/* Initialize the bus context */
--	tasklet_init(&vmbus_drv_ctx->msg_dpc, vmbus_on_msg_dpc,
--		     (unsigned long)NULL);
--	tasklet_init(&vmbus_drv_ctx->event_dpc, vmbus_on_event,
--		     (unsigned long)NULL);
-+	tasklet_init(&vmbus_drv_ctx->msg_dpc, vmbus_on_msg_dpc, 0);
-+	tasklet_init(&vmbus_drv_ctx->event_dpc, vmbus_on_event, 0);
- 
- 	/* Now, register the bus  with LDM */
- 	ret = bus_register(&vmbus_drv_ctx->bus);
+On the other hand, I still think platform_data suck big time. Grant made
+some good points about the lack of proper typing for example. I believe
+that a device-tree based approach is much better in the long run (and
+more flexible) despite Andy odd quasi-religious aversion for it.
+
+Cheers,
+Ben.
+
