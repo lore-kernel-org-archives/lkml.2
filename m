@@ -1,114 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756304Ab1CVCQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 22:16:33 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39636 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756141Ab1CVCQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 22:16:32 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4D880665.5010006@jp.fujitsu.com>
-Date: Tue, 22 Mar 2011 11:16:05 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: "Chumbalkar, Nagananda" <Nagananda.Chumbalkar@hp.com>
-CC: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [RFC][PATCH v2]: PCI: PCIe links may not get configured for ASPM
- under POWERSAVE mode
-References: <20110318041801.2349.33357.sendpatchset@nchumbalkar.americas.hpqcorp.net> <4D82EDAC.8070307@jp.fujitsu.com> <66D9D2F0CDB5C9428E6166B01EC85EE162ED1DE852@GVW0676EXC.americas.hpqcorp.net>
-In-Reply-To: <66D9D2F0CDB5C9428E6166B01EC85EE162ED1DE852@GVW0676EXC.americas.hpqcorp.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756333Ab1CVCYD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 22:24:03 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:33932 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756299Ab1CVCYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 22:24:00 -0400
+Date: Mon, 21 Mar 2011 19:19:35 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: dsd@laptop.org, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: [PATCH] mfd-core: add mfd_clone_cell(), convert cs5535-mfd/olpc-xo1
+ to it
+Message-ID: <20110321191935.7ddf0a70@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/03/18 23:52), Chumbalkar, Nagananda wrote:
->
->> -----Original Message-----
->> From: Kenji Kaneshige [mailto:kaneshige.kenji@jp.fujitsu.com]
->> Sent: Friday, March 18, 2011 12:29 AM
->> To: Chumbalkar, Nagananda
->> Cc: jbarnes@virtuousgeek.org; rjw@sisk.pl; mjg59@srcf.ucam.org; linux-
->> kernel@vger.kernel.org; linux-pci@vger.kernel.org
->> Subject: Re: [RFC][PATCH v2]: PCI: PCIe links may not get configured for
->> ASPM under POWERSAVE mode
->>
->> (2011/03/18 13:21), Naga Chumbalkar wrote:
->>> v2 ->   v1:
->>> 	. Kept the logic in pci_raw_set_power_state
->>> 	. Changed the ASPM enabling logic
->>> 	. Modified the text that describes the problem
->>>
->>> v1	: http://marc.info/?l=linux-pci&m=130013164703283&w=2
->>>
->>> The assumption made in commit 41cd766b065970ff6f6c89dd1cf55fa706c84a3d
->>> (PCI: Don't enable aspm before drivers have had a chance to veto it)
->> that
->>> pci_enable_device() will result in re-configuring ASPM when
->> aspm_policy is
->>> POWERSAVE is no longer valid.  This is due to commit
->>> 97c145f7c87453cec90e91238fba5fe2c1561b32 (PCI: read current power
->> state
->>> at enable time) which resets dev->current_state to D0. This makes the
->>> equality check (below) become true, so pcie_aspm_pm_state_change()
->> never
->>> gets called.
->>> ./drivers/pci/pci.c: pci_raw_set_pci_power_state()
->>> 546         /* Check if we're already there */
->>> 547         if (dev->current_state == state)
->>> 548                 return 0;
->>>
->>> So OSPM doesnn't configure the PCIe links for ASPM.
->>>
->>> The patch below does the following:
->>> At the end of each Root Bridge scan make a call to configure ASPM when
->> the
->>> ASPM policy is set to "powersave" mode. Note that if a previous pass
->> had
->>> completed the configuration for all devices under that Bridge then the
->>> configuration will not take place again because
->> pcie_config_aspm_link()
->>> checks to see if the link is already in the requested state.
->>> We won't reconfigure ASPM when _OSC control is not granted.
->>
->> Which _OSC controls do we need for configuring ASPM?
->
-> There is no _OSC Control bit for ASPM. However, we expect the BIOS to
-> support _OSC for a Root Bridge that originates a PCIe hierarchy. If this
-> is not the case - would it be okay to disable ASPM also?
->
-> Commit 852972acff8f10f3a15679be2059bb94916cba5d (ACPI: Disable ASPM if the
-> Platform won't provide _OSC control for PCIe) describes the above scenario.
->
-> To quote from there:
-> The PCI SIG documentation for the _OSC OS/firmware handshaking interface
-> states:
->
-> "If the _OSC control method is absent from the scope of a host bridge
-> device, then the operating system must not enable or attempt to use any
-> features defined in this section for the hierarchy originated by the host
-> bridge."
->
-> The obvious interpretation of this is that the OS should not attempt to use
-> PCIe hotplug, PME or AER - however, the specification also notes that an
-> _OSC method is *required* for PCIe hierarchies, and experimental validation
-> with An Alternative OS indicates that it doesn't use any PCIe functionality
-> if the _OSC method is missing. That arguably means we shouldn't be using
-> MSI or extended config space, but right now our problems seem to be limited
-> to vendors being surprised when ASPM gets enabled on machines when other
-> OSs refuse to do so. So, for now, let's just disable ASPM if the _OSC
-> method doesn't exist or refuses to hand over PCIe capability control.
->
 
-I understood. Thank you for clarification.
+Replace mfd_shared_platform_driver_register with mfd_clone_cell.  The
+former was called by an mfd client, and registered both a platform driver
+and device.  The latter is called by an mfd driver, and registers only a
+platform device.
 
-Regards,
-Kenji Kaneshige
+The downside of this is that mfd drivers need to be modified whenever
+new clients are added that share a cell; the upside is that it fits
+Linux's driver model better.  It's also simpler.
+
+This also converts cs5535-mfd/olpc-xo1 from the old API.  cs5535-mfd
+now creates the olpc-xo1-{acpi,pms} devices, while olpc-xo1 binds to
+them via platform drivers.
+
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ arch/x86/platform/olpc/olpc-xo1.c |   11 +++----
+ drivers/mfd/cs5535-mfd.c          |   18 ++++++++++++
+ drivers/mfd/mfd-core.c            |   53 +++++++-----------------------------
+ include/linux/mfd/core.h          |   27 ++++++++++++------
+ 4 files changed, 52 insertions(+), 57 deletions(-)
+
+diff --git a/arch/x86/platform/olpc/olpc-xo1.c b/arch/x86/platform/olpc/olpc-xo1.c
+index 9951364..386e3a1 100644
+--- a/arch/x86/platform/olpc/olpc-xo1.c
++++ b/arch/x86/platform/olpc/olpc-xo1.c
+@@ -121,22 +121,21 @@ static int __init olpc_xo1_init(void)
+ {
+ 	int r;
+ 
+-	r = mfd_shared_platform_driver_register(&cs5535_pms_drv, "cs5535-pms");
++	r = platform_driver_register(&cs5535_pms_drv);
+ 	if (r)
+ 		return r;
+ 
+-	r = mfd_shared_platform_driver_register(&cs5535_acpi_drv,
+-			"cs5535-acpi");
++	r = platform_driver_register(&cs5535_acpi_drv);
+ 	if (r)
+-		mfd_shared_platform_driver_unregister(&cs5535_pms_drv);
++		platform_driver_unregister(&cs5535_pms_drv);
+ 
+ 	return r;
+ }
+ 
+ static void __exit olpc_xo1_exit(void)
+ {
+-	mfd_shared_platform_driver_unregister(&cs5535_acpi_drv);
+-	mfd_shared_platform_driver_unregister(&cs5535_pms_drv);
++	platform_driver_unregister(&cs5535_acpi_drv);
++	platform_driver_unregister(&cs5535_pms_drv);
+ }
+ 
+ MODULE_AUTHOR("Daniel Drake <dsd@laptop.org>");
+diff --git a/drivers/mfd/cs5535-mfd.c b/drivers/mfd/cs5535-mfd.c
+index 886a068..24959dd 100644
+--- a/drivers/mfd/cs5535-mfd.c
++++ b/drivers/mfd/cs5535-mfd.c
+@@ -27,6 +27,7 @@
+ #include <linux/mfd/core.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
++#include <asm/olpc.h>
+ 
+ #define DRV_NAME "cs5535-mfd"
+ 
+@@ -111,6 +112,22 @@ static __devinitdata struct mfd_cell cs5535_mfd_cells[] = {
+ 	},
+ };
+ 
++#ifdef CONFIG_OLPC
++static void __devinit cs5535_clone_olpc_cells(void)
++{
++	const char *acpi_clones[] = { "olpc-xo1-acpi" };
++	const char *pms_clones[] = { "olpc-xo1-pms" };
++
++	if (!machine_is_olpc())
++		return;
++
++	mfd_clone_cell("cs5535-acpi", acpi_clones, ARRAY_SIZE(acpi_clones));
++	mfd_clone_cell("cs5535-pms", pms_clones, ARRAY_SIZE(pms_clones));
++}
++#else
++static void cs5535_clone_olpc_cells(void) { }
++#endif
++
+ static int __devinit cs5535_mfd_probe(struct pci_dev *pdev,
+ 		const struct pci_device_id *id)
+ {
+@@ -139,6 +156,7 @@ static int __devinit cs5535_mfd_probe(struct pci_dev *pdev,
+ 		dev_err(&pdev->dev, "MFD add devices failed: %d\n", err);
+ 		goto err_disable;
+ 	}
++	cs5535_clone_olpc_cells();
+ 
+ 	dev_info(&pdev->dev, "%zu devices registered.\n",
+ 			ARRAY_SIZE(cs5535_mfd_cells));
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index 79eda02..d01574d 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -184,16 +184,12 @@ void mfd_remove_devices(struct device *parent)
+ }
+ EXPORT_SYMBOL(mfd_remove_devices);
+ 
+-static int add_shared_platform_device(const char *cell, const char *name)
++int mfd_clone_cell(const char *cell, const char **clones, size_t n_clones)
+ {
+ 	struct mfd_cell cell_entry;
+ 	struct device *dev;
+ 	struct platform_device *pdev;
+-	int err;
+-
+-	/* check if we've already registered a device (don't fail if we have) */
+-	if (bus_find_device_by_name(&platform_bus_type, NULL, name))
+-		return 0;
++	int i;
+ 
+ 	/* fetch the parent cell's device (should already be registered!) */
+ 	dev = bus_find_device_by_name(&platform_bus_type, NULL, cell);
+@@ -206,44 +202,17 @@ static int add_shared_platform_device(const char *cell, const char *name)
+ 
+ 	WARN_ON(!cell_entry.enable);
+ 
+-	cell_entry.name = name;
+-	err = mfd_add_device(pdev->dev.parent, -1, &cell_entry, NULL, 0);
+-	if (err)
+-		dev_err(dev, "MFD add devices failed: %d\n", err);
+-	return err;
+-}
+-
+-int mfd_shared_platform_driver_register(struct platform_driver *drv,
+-		const char *cellname)
+-{
+-	int err;
+-
+-	err = add_shared_platform_device(cellname, drv->driver.name);
+-	if (err)
+-		printk(KERN_ERR "failed to add platform device %s\n",
+-				drv->driver.name);
+-
+-	err = platform_driver_register(drv);
+-	if (err)
+-		printk(KERN_ERR "failed to add platform driver %s\n",
+-				drv->driver.name);
+-
+-	return err;
+-}
+-EXPORT_SYMBOL(mfd_shared_platform_driver_register);
+-
+-void mfd_shared_platform_driver_unregister(struct platform_driver *drv)
+-{
+-	struct device *dev;
+-
+-	dev = bus_find_device_by_name(&platform_bus_type, NULL,
+-			drv->driver.name);
+-	if (dev)
+-		platform_device_unregister(to_platform_device(dev));
++	for (i = 0; i < n_clones; i++) {
++		cell_entry.name = clones[i];
++		/* don't give up if a single call fails; just report error */
++		if (mfd_add_device(pdev->dev.parent, -1, &cell_entry, NULL, 0))
++			dev_err(dev, "failed to create platform device '%s'\n",
++					clones[i]);
++	}
+ 
+-	platform_driver_unregister(drv);
++	return 0;
+ }
+-EXPORT_SYMBOL(mfd_shared_platform_driver_unregister);
++EXPORT_SYMBOL(mfd_clone_cell);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Ian Molton, Dmitry Baryshkov");
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index 1408bf8..ad1b19a 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -63,6 +63,24 @@ extern int mfd_cell_enable(struct platform_device *pdev);
+ extern int mfd_cell_disable(struct platform_device *pdev);
+ 
+ /*
++ * "Clone" multiple platform devices for a single cell. This is to be used
++ * for devices that have multiple users of a cell.  For example, if an mfd
++ * driver wants the cell "foo" to be used by a GPIO driver, an MTD driver,
++ * and a platform driver, the following bit of code would be use after first
++ * calling mfd_add_devices():
++ *
++ * const char *fclones[] = { "foo-gpio", "foo-mtd" };
++ * err = mfd_clone_cells("foo", fclones, ARRAY_SIZE(fclones));
++ *
++ * Each driver (MTD, GPIO, and platform driver) would then register
++ * platform_drivers for "foo-mtd", "foo-gpio", and "foo", respectively.
++ * The cell's .enable/.disable hooks should be used to deal with hardware
++ * resource contention.
++ */
++extern int mfd_clone_cell(const char *cell, const char **clones,
++		size_t n_clones);
++
++/*
+  * Given a platform device that's been created by mfd_add_devices(), fetch
+  * the mfd_cell that created it.
+  */
+@@ -87,13 +105,4 @@ extern int mfd_add_devices(struct device *parent, int id,
+ 
+ extern void mfd_remove_devices(struct device *parent);
+ 
+-/*
+- * For MFD drivers with clients sharing access to resources, these create
+- * multiple platform devices per cell.  Contention handling must still be
+- * handled via drivers (ie, with enable/disable hooks).
+- */
+-extern int mfd_shared_platform_driver_register(struct platform_driver *drv,
+-		const char *cellname);
+-extern void mfd_shared_platform_driver_unregister(struct platform_driver *drv);
+-
+ #endif
+-- 
+1.7.2.5
 
