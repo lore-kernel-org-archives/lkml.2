@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab1CVTyO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 15:54:14 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:38122 "EHLO mx1.fusionio.com"
+	id S1754672Ab1CVTz4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 15:55:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14274 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab1CVTyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 15:54:12 -0400
-X-ASG-Debug-ID: 1300823651-03d6a54f60bc680001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D88FE5E.1010204@fusionio.com>
-Date: Tue, 22 Mar 2011 20:54:06 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: merging discard request in the block layer
-References: <20110322194755.GA20122@infradead.org>
-X-ASG-Orig-Subj: Re: merging discard request in the block layer
-In-Reply-To: <20110322194755.GA20122@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1300823651
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58667
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1753341Ab1CVTzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 15:55:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,226,1299484800"; 
+   d="scan'208";a="670090273"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Cc: linux-kernel@vger.kernel.org, Seiji Aguchi <seiji.aguchi@hds.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC] pstore: Don't use persistent store for normal shutdown
+In-Reply-To: <1300783365.2735.12.camel@localhost>
+Date: Tue, 22 Mar 2011 12:55:53 -0700
+Message-Id: <4d88fec9598644f42@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-22 20:47, Christoph Hellwig wrote:
-> It seems the current block layer wil happily try to merge discard
-> requests that were split because they are at the max that bi_size
-> can hold together again.  At least that's what the
-> 
-> 	blk: request botched
+From: Tony Luck <tony.luck@intel.com>
 
-That would seem to indicate a bug in the merging logic instead.
+pstore_dump() can be called with many different "reason" codes. Save
+the name of the code in the persistent store record.
 
-> make me believe when testing XFS code that allows multiple
-> asynchronous discard request, unlike the current blkdev_issue_discard
-> which always waits for one before starting the next.
-> 
-> I tried this little sniplet to prevent it:
-> 
-> Index: xfs/block/blk-merge.c
-> ===================================================================
-> --- xfs.orig/block/blk-merge.c	2011-03-22 13:07:24.733857580 +0100
-> +++ xfs/block/blk-merge.c	2011-03-22 13:08:17.448856577 +0100
-> @@ -373,7 +373,7 @@ static int attempt_merge(struct request_
->  	/*
->  	 * Don't merge file system requests and discard requests
->  	 */
-> -	if ((req->cmd_flags & REQ_DISCARD) != (next->cmd_flags & REQ_DISCARD))
-> +	if ((req->cmd_flags & REQ_DISCARD) || (next->cmd_flags & REQ_DISCARD))
->  		return 0;
->  
->  	/*
+Also - only worthwhile calling pstore_mkfile for KMSG_DUMP_OOPS - that
+is the only one where the kernel will continue running.
 
-That's not going to be enough, you want to disable the bio to request
-merging of discards as well in elevator.c:elv_rq_merge_ok(). Does
-that then fix it?
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 
+---
 
--- 
-Jens Axboe
+Artem Bityutskiy said:
+> If you ask me, this smells like policy in the kernel. I'd look into the
+> direction of having only the mechanisms in the kernel and letting the
+> user-space making policy decisions by choosing what he wants to filter
+> out and what he wants to store via some pstore interfaces.
 
+Perhaps I'll just leave all the policy out then and keep logging
+the same for all dmesg reason codes.  Seiji Aguchi sounded quite
+lukewarm to the idea of logging less for shutdown/restart etc.
+Providing an option that lets the user ask pstore to filter away
+the restart/shutdown logs would defeat the purpose for which these
+reason codes were added - providing a neat trail that simple tools
+can use to show that a system rebooted because some root process
+issued a reboot(2) syscall.
+
+Here's a simpler clean up of the fs/pstore/platform.c code that
+makes sure that we log a meaningful string for each reason code
+(rather than "Oops"!) and that only tries to add an entry to the
+mounted filesystem for the KMSG_TYPE_OOPS case (since that is the
+only case where the system stays up for some process to see it).
+
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index ce9ad84..f835a25 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -48,6 +48,10 @@ void pstore_set_kmsg_bytes(int bytes)
+ /* Tag each group of saved records with a sequence number */
+ static int	oopscount;
+ 
++static char *reason_str[] = {
++	"Oops", "Panic", "Kexec", "Restart", "Halt", "Poweroff", "Emergency"
++};
++
+ /*
+  * callback from kmsg_dump. (s2,l2) has the most recently
+  * written bytes, older bytes are in (s1,l1). Save as much
+@@ -61,15 +65,20 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 	unsigned long	s1_start, s2_start;
+ 	unsigned long	l1_cpy, l2_cpy;
+ 	unsigned long	size, total = 0;
+-	char		*dst;
++	char		*dst, *why;
+ 	u64		id;
+ 	int		hsize, part = 1;
+ 
++	if (reason < ARRAY_SIZE(reason_str))
++		why = reason_str[reason];
++	else
++		why = "Unknown";
++
+ 	mutex_lock(&psinfo->buf_mutex);
+ 	oopscount++;
+ 	while (total < kmsg_bytes) {
+ 		dst = psinfo->buf;
+-		hsize = sprintf(dst, "Oops#%d Part%d\n", oopscount, part++);
++		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part++);
+ 		size = psinfo->bufsize - hsize;
+ 		dst += hsize;
+ 
+@@ -86,7 +95,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		memcpy(dst + l1_cpy, s2 + s2_start, l2_cpy);
+ 
+ 		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy);
+-		if (pstore_is_mounted())
++		if (reason == KMSG_DUMP_OOPS && pstore_is_mounted())
+ 			pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id,
+ 				      psinfo->buf, hsize + l1_cpy + l2_cpy,
+ 				      CURRENT_TIME, psinfo->erase);
