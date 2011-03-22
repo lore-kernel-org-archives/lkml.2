@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab1CVKzu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 06:55:50 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37862 "EHLO mga02.intel.com"
+	id S1754313Ab1CVKzs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 06:55:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:55878 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753283Ab1CVKzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 06:55:24 -0400
+	id S1753449Ab1CVKz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 06:55:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,224,1299484800"; 
-   d="scan'208";a="722820023"
+   d="scan'208";a="722820037"
 From: Oren Weil <oren.jer.weil@intel.com>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, david@woodhou.se,
         Oren Weil <oren.jer.weil@intel.com>
-Subject: [PATCH 6/7] char/mei: Header file contain the Userland API, (IOCTL and its struct)
-Date: Tue, 22 Mar 2011 12:51:31 +0200
-Message-Id: <1300791092-14319-7-git-send-email-oren.jer.weil@intel.com>
+Subject: [PATCH 7/7] char/mei: Updates to char/Kconfig ane char/Makefile
+Date: Tue, 22 Mar 2011 12:51:32 +0200
+Message-Id: <1300791092-14319-8-git-send-email-oren.jer.weil@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com>
 References: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com>
@@ -25,129 +25,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes of Kconfig and Makefile in driver/char
+for adding the Intel MEI Driver to the Linux kernel.
+New Makefile building for MEI Driver.
+
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Itzhak Tzeel-Krupp <itzhak.tzeel-krupp@intel.com>
 Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
 ---
- include/linux/mei.h |  109 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 109 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/mei.h
+ drivers/char/Kconfig      |   12 +++++++++++-
+ drivers/char/Makefile     |    1 +
+ drivers/char/mei/Makefile |   19 +++++++++++++++++++
+ 3 files changed, 31 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/char/mei/Makefile
 
-diff --git a/include/linux/mei.h b/include/linux/mei.h
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 04f8b2d..694dc0e 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -608,5 +608,15 @@ config RAMOOPS
+ 	  This enables panic and oops messages to be logged to a circular
+ 	  buffer in RAM where it can be read back at some later point.
+ 
+-endmenu
++config INTEL_MEI
++	tristate "Intel Management Engine Interface (Intel MEI)"
++	depends on X86 && EXPERIMENTAL
++	help
++		The Intel Management Engine (Intel ME) provides Manageability,
++		Security and Media services for system containing Intel chipsets.
++		if selected /dev/mei misc device will be created.
+ 
++		For more information see
++		<http://software.intel.com/en-us/manageability/>
++
++endmenu
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index 057f654..778b816 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -61,4 +61,5 @@ obj-$(CONFIG_PS3_FLASH)		+= ps3flash.o
+ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
+ 
+ obj-$(CONFIG_JS_RTC)		+= js-rtc.o
++obj-$(CONFIG_INTEL_MEI)		+= mei/
+ js-rtc-y = rtc.o
+diff --git a/drivers/char/mei/Makefile b/drivers/char/mei/Makefile
 new file mode 100644
-index 0000000..1ac6a41
+index 0000000..5a6b011
 --- /dev/null
-+++ b/include/linux/mei.h
-@@ -0,0 +1,109 @@
-+/*
-+
-+  Intel Management Engine Interface (Intel MEI) Linux driver
-+  Intel MEI Interface Header
-+
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+
-+  Copyright(c) 2003-2011 Intel Corporation. All rights reserved.
-+
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+	  Intel Corporation.
-+	  linux-mei@linux.intel.com
-+	  http://www.intel.com
-+
-+
-+  BSD LICENSE
-+
-+  Copyright(c) 2003-2011 Intel Corporation. All rights reserved.
-+  All rights reserved.
-+
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+
-+*/
-+
-+
-+#ifndef _LINUX_MEI_H
-+#define _LINUX_MEI_H
-+
-+#include <linux/uuid.h>
-+
-+/*
-+ *
-+ * This IOCTL is use to associate the current file descriptor with a
-+ * FW Client (given by UUID). Before this IOCTL is invoked the
-+ * "communication channel" (file descriptor) between Host client and
-+ * FW client is not valid. Only after invoking this IOCTL a "connection" is
-+ * establish to the FW client. From this point every read and write will
-+ * communicate with the FW client that was associated.
-+ * Only in close() (file_operation release()) the communication between
-+ * the clients is disconnected.
-+ *
-+ * The IOCTL argument is a struct with a union the contain the input parameter
-+ * and out parameter for this IOCTL.
-+ *
-+ * The input parameter is UUID for the FW Client.
-+ * The output parameter is the FW client properties that we just connected
-+ * (FW Protocol Version and Max Message Size).
-+ *
-+ */
-+#define IOCTL_MEI_CONNECT_CLIENT \
-+	_IOWR('H' , 0x01, struct mei_connect_client_data)
-+
-+/*
-+ * Intel MEI client information struct
-+ */
-+struct mei_client {
-+	u32 max_msg_length;
-+	u8 protocol_version;
-+	u8 reserved[3];
-+} __packed;
-+
-+/*
-+ * IOCTL Connect Client Data structure
-+ */
-+struct mei_connect_client_data {
-+	union {
-+		uuid_le in_client_uuid;
-+		struct mei_client out_client_propeties;
-+	} d;
-+} __packed;
-+
-+
-+#endif
++++ b/drivers/char/mei/Makefile
+@@ -0,0 +1,19 @@
++#
++# Makefile - Intel Management Engine Interface (Intel MEI) Linux driver
++# Copyright (c) 2010-2011, Intel Corporation.
++#
++# This program is free software; you can redistribute it and/or modify it
++# under the terms and conditions of the GNU General Public License,
++# version 2, as published by the Free Software Foundation.
++#
++# This program is distributed in the hope it will be useful, but WITHOUT
++# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++# more details.
++#
++obj-$(CONFIG_INTEL_MEI) += mei.o
++mei-objs := init.o
++mei-objs += interrupt.o
++mei-objs += interface.o
++mei-objs += iorw.o
++mei-objs += main.o
 -- 
 1.7.1
 
