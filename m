@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab1CVXVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 19:21:09 -0400
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:48017 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753924Ab1CVXVI (ORCPT
+	id S932326Ab1CVXVY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 19:21:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38109 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932135Ab1CVXVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 19:21:08 -0400
-Message-ID: <4D892ED9.4040405@lougher.demon.co.uk>
-Date: Tue, 22 Mar 2011 23:20:57 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Squashfs: Use vmalloc rather than kmalloc for zlib workspace
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 22 Mar 2011 19:21:21 -0400
+Date: Tue, 22 Mar 2011 16:21:08 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, oakad@yahoo.com,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATH 0/4] Memstick patches for 2.6.39
+Message-Id: <20110322162108.a4b70291.akpm@linux-foundation.org>
+In-Reply-To: <1300621371.15768.11.camel@maxim-laptop>
+References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
+	<1299947013.17988.0.camel@maxim-laptop>
+	<1300219210.13493.0.camel@MAIN>
+	<20110315140402.334cc55c.akpm@linux-foundation.org>
+	<1300590545.15453.3.camel@maxim-laptop>
+	<20110319234701.0eab3744.akpm@linux-foundation.org>
+	<1300621371.15768.11.camel@maxim-laptop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 20 Mar 2011 13:42:51 +0200
+Maxim Levitsky <maximlevitsky@gmail.com> wrote:
 
-Bugzilla bug 31422 reports occasional "page allocation failure. order:4"
-at Squashfs mount time.  Fix this by making zlib workspace allocation
-use vmalloc rather than kmalloc.
+> On Sat, 2011-03-19 at 23:47 -0700, Andrew Morton wrote:
+> > On Sun, 20 Mar 2011 05:09:05 +0200 Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> > 
+> 
+> ...
+>
+> Also, I don't have much time now to improve the ms_block driver till
+> this summer (studying).
+> The driver works. Yes it has a flaw in regard to scatterlist processing,
+> because I didn't find a better way to deal with this monster, but I will
+> fix that later. I am not the kind of guy that runs away after a merge.
+> It would be nice to just see my code in kernel, code I wrote more that a
+> year ago.
+> 
+> This flaw is purely theoretical. Driver does work.
 
-Reported-by: Mehmet Giritli <mehmet@giritli.eu>
-Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
----
-  fs/squashfs/zlib_wrapper.c |    6 +++---
-  1 files changed, 3 insertions(+), 3 deletions(-)
+Lots of code is "flawed but works".  The place for such code is
+drivers/staging/ - it gets put in there so the code is available for
+those who need the driver and the code is later moved over into
+drivers/ once the flaws have been addressed.
 
-diff --git a/fs/squashfs/zlib_wrapper.c b/fs/squashfs/zlib_wrapper.c
-index 195b0d0..517688b 100644
---- a/fs/squashfs/zlib_wrapper.c
-+++ b/fs/squashfs/zlib_wrapper.c
-@@ -26,6 +26,7 @@
-  #include <linux/buffer_head.h>
-  #include <linux/slab.h>
-  #include <linux/zlib.h>
-+#include <linux/vmalloc.h>
-
-  #include "squashfs_fs.h"
-  #include "squashfs_fs_sb.h"
-@@ -37,8 +38,7 @@ static void *zlib_init(struct squashfs_sb_info *dummy, void *buff, int len)
-  	z_stream *stream = kmalloc(sizeof(z_stream), GFP_KERNEL);
-  	if (stream == NULL)
-  		goto failed;
--	stream->workspace = kmalloc(zlib_inflate_workspacesize(),
--		GFP_KERNEL);
-+	stream->workspace = vmalloc(zlib_inflate_workspacesize());
-  	if (stream->workspace == NULL)
-  		goto failed;
-
-@@ -56,7 +56,7 @@ static void zlib_free(void *strm)
-  	z_stream *stream = strm;
-
-  	if (stream)
--		kfree(stream->workspace);
-+		vfree(stream->workspace);
-  	kfree(stream);
-  }
-
--- 
-1.7.1
-
+So a path forward here would be for us to put the driver and the
+sglist extensions into a directory under drivers/staging/.
