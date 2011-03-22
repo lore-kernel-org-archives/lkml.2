@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab1CVO1f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 10:27:35 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:46867 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755239Ab1CVO1e convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 10:27:34 -0400
+	id S1756063Ab1CVOb5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 10:31:57 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54318 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab1CVObz (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 22 Mar 2011 10:31:55 -0400
+Date: Tue, 22 Mar 2011 10:31:37 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Thomas Hellstrom <thomas@shipmail.org>
+Cc: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org, Alex Deucher <alexdeucher@gmail.com>,
+        Jerome Glisse <j.glisse@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [PATCH] cleanup: Add 'struct dev' in the TTM layer to be
+ passed in for DMA API calls.
+Message-ID: <20110322143137.GA25113@dumpdata.com>
+References: <1299598789-20402-1-git-send-email-konrad.wilk@oracle.com>
+ <4D769726.2030307@shipmail.org>
 MIME-Version: 1.0
-In-Reply-To: <20110322104426.GA20444@amd.com>
-References: <1300732426-18958-1-git-send-email-florian@mickler.org>
-	<a08d026a-d4c3-4ee5-b01a-d561f755b1ec@email.android.com>
-	<20110321220315.7545a61a@schatten.dmk.lab>
-	<20110322104426.GA20444@amd.com>
-Date: Tue, 22 Mar 2011 15:27:30 +0100
-Message-ID: <AANLkTimJm-Fd0siuuOKgmHWq2L7h0LB=wZ-6E_ZuK=wK@mail.gmail.com>
-Subject: Re: [PATCH 0/6] get rid of on-stack dma buffers
-From: Florian Mickler <florian@mickler.org>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: Andy Walls <awalls@md.metrocast.net>,
-        "mchehab@infradead.org" <mchehab@infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "js@linuxtv.org" <js@linuxtv.org>,
-        "tskd2@yahoo.co.jp" <tskd2@yahoo.co.jp>,
-        "liplianin@me.by" <liplianin@me.by>,
-        "g.marco@freenet.de" <g.marco@freenet.de>,
-        "aet@rasterburn.org" <aet@rasterburn.org>,
-        "pb@linuxtv.org" <pb@linuxtv.org>,
-        "mkrufky@linuxtv.org" <mkrufky@linuxtv.org>,
-        "nick@nick-andrew.net" <nick@nick-andrew.net>,
-        "max@veneto.com" <max@veneto.com>,
-        "janne-dvb@grunau.be" <janne-dvb@grunau.be>,
-        Oliver Neukum <oliver@neukum.org>, Greg Kroah-Hartman <greg@kroah.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D769726.2030307@shipmail.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D88B2CC.0042,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/22 Roedel, Joerg <Joerg.Roedel@amd.com>:
-> On Mon, Mar 21, 2011 at 05:03:15PM -0400, Florian Mickler wrote:
->> I guess (not verified), that the dma api takes sufficient precautions
->> to abort the dma transfer if a timeout happens.  So freeing _should_
->> not be an issue. (At least, I would expect big fat warnings everywhere
->> if that were the case)
->
-> Freeing is very well an issue. All you can expect from the DMA-API is to
-> give you a valid DMA handle for your device. But it can not prevent that
-> a device uses this handle after you returned it. You need to make sure
-> yourself that any pending DMA is canceled before calling kfree().
+On Tue, Mar 08, 2011 at 09:52:54PM +0100, Thomas Hellstrom wrote:
+> Hi, Konrad,
+> 
+> Is passing a struct device to the DMA api really *strictly* necessary?
 
-sorry, I meant usb_control_msg above when I said 'dma api'... as that
-is the function these
-drivers use to do the dma.
+Soo.. it seems it is on PowerPC, which I sadly didn't check for, does require
+this.
+> 
+> I'd like to avoid that at all cost, since we don't want pages that
+> are backing buffer objects
+> (coherent pages) to be associated with a specific device.
+> 
+> The reason for this is that we probably soon will want to move ttm
+> buffer objects between devices, and that should ideally be a simple
+> operation: If the memory type the buffer object currently resides in
+> is not shared between two devices, then move it out to system memory
+> and change its struct bo_device pointer.
 
-Regards,
-Flo
+I was thinking about this a bit after I found that the PowerPC requires
+the 'struct dev'. But I got a question first, what do you with pages
+that were allocated to a device that can do 64-bit DMA and then
+move it to a device than can 32-bit DMA? Obviously the 32-bit card would
+set the TTM_PAGE_FLAG_DMA32 flag, but the 64-bit would not. What is the
+process then? Allocate a new page from the 32-bit device and then copy over the
+page from the 64-bit TTM and put the 64-bit TTM page?
+
+> 
+> If pages are associated with a specific device, this will become
+> much harder. Basically we need to change backing pages and copy all
+
+what if you track it. Right now you need to track two things:
+'struct page *' and 'dma_addr_t'. What if you had also to track
+'struct dev *' with the page in question? Something like this:
+
+diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
+index efed082..1986761 100644
+--- a/include/drm/ttm/ttm_bo_driver.h
++++ b/include/drm/ttm/ttm_bo_driver.h
+@@ -158,9 +158,14 @@ enum ttm_caching_state {
+  * memory.
+  */
+ 
++struct ttm_tt_page {
++	struct page *page;
++	dma_addr_t *dma_addr;
++	struct dev *dev;
++}
+ struct ttm_tt {
+ 	struct page *dummy_read_page;
+-	struct page **pages;
++	struct ttm_tt_page **pages;
+ 	long first_himem_page;
+ 	long last_lomem_page;
+ 	uint32_t page_flags;
+@@ -176,7 +181,6 @@ struct ttm_tt {
+ 		tt_unbound,
+ 		tt_unpopulated,
+ 	} state;
+-	dma_addr_t *dma_address;
+ };
+ 
+ #define TTM_MEMTYPE_FLAG_FIXED         (1 << 0)	/* Fixed (on-card) PCI memory */
+
+could do it. And when you pass the 'page' to the other TTM, it is just the matter
+of passing in the 'struct ttm_tt_page' now.
