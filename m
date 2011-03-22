@@ -1,172 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab1CVKUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 06:20:53 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54891 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab1CVKUv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 06:20:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cd97Wop2VYYe+p/YffQIE9ZrE7fDsMWzsJ5eyMtdO9IYIXzfg2v5LkyjJ757XQzJ+O
-         x9bVtWRpMKvsmT3frzFgfmt9Ih3dMdgz1ZB9tG+/sdimmFwEHkyzzaPhOrq9Ee1IqNyw
-         pffsSSmOUh1KFEsjk0/QxawsxMdNQLnjkmcqc=
-Date: Tue, 22 Mar 2011 11:20:46 +0100
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
-        vda.linux@googlemail.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: [PATCH 0.2/8] ptrace: Always put ptracee into appropriate
- execution state
-Message-ID: <20110322102046.GO12003@htj.dyndns.org>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+	id S1754368Ab1CVK16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 06:27:58 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52981 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753590Ab1CVK1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 06:27:55 -0400
+Date: Tue, 22 Mar 2011 11:27:41 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Eric Paris <eparis@redhat.com>, Roman Zippel <zippel@linux-m68k.org>,
+        linux-kbuild@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: PATCH][RFC][resend] CC_OPTIMIZE_FOR_SIZE should default to N
+Message-ID: <20110322102741.GA4448@elte.hu>
+References: <alpine.LNX.2.00.1103212105490.15815@swampdragon.chaosbits.net>
+ <AANLkTinmAJsXy=iJ5Fq-+CLTAGXTtLGhULRUf=Q1rkY1@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299614199-25142-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTinmAJsXy=iJ5Fq-+CLTAGXTtLGhULRUf=Q1rkY1@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, __ptrace_unlink() wakes up the tracee iff it's in
-TASK_TRACED.  For unlinking from PTRACE_DETACH, this is correct as the
-tracee is guaranteed to be in TASK_TRACED or dead; however, unlinking
-also happens when the ptracer exits and in this case the ptracee can
-be in any state and ptrace might be left running even if the group it
-belongs to is stopped.
 
-This patch updates __ptrace_unlink() such that GROUP_STOP_PENDING is
-reinstated regardless of the ptracee's current state as long as it's
-alive and makes sure that signal_wake_up() is called if execution
-state transition is necessary.
+* Pekka Enberg <penberg@kernel.org> wrote:
 
-Test case follows.
+> Hi Jesper,
+> 
+> On Mon, Mar 21, 2011 at 10:08 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> > I believe that the majority of systems we are built on want a -O2 compiled
+> > kernel. Optimizing for size (-Os) is mainly benneficial for embedded
+> > systems and systems with very small CPU caches (correct me if I'm wrong).
+> 
+> Please take a look at commit 0910b44 ("Expose "Optimize for size"
+> option for everybody") for the reasoning behind defaulting to -Os.
 
-  #include <unistd.h>
-  #include <time.h>
-  #include <sys/types.h>
-  #include <sys/ptrace.h>
-  #include <sys/wait.h>
+If that situation has changed - if GCC has regressed in this area then a commit 
+changing the default IMHO gains a lot of credibility if it is backed by careful 
+measurements using perf stat --repeat or similar tools.
 
-  static const struct timespec ts1s = { .tv_sec = 1 };
+See the hard numbers in this upstream commit for example:
 
-  int main(void)
-  {
-	  pid_t tracee;
-	  siginfo_t si;
+  ea7145477a46: x86: Separate out entry text section
 
-	  tracee = fork();
-	  if (tracee == 0) {
-		  while (1) {
-			  nanosleep(&ts1s, NULL);
-			  write(1, ".", 1);
-		  }
-	  }
+there we were able to prove the positive effects of a pretty subtle change to 
+the layout of the instruction cache, with a measurement noise in the 0.1% 
+range.
 
-	  ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
-	  waitid(P_PID, tracee, &si, WSTOPPED);
-	  ptrace(PTRACE_CONT, tracee, NULL, (void *)(long)si.si_status);
-	  waitid(P_PID, tracee, &si, WSTOPPED);
-	  ptrace(PTRACE_CONT, tracee, NULL, (void *)(long)si.si_status);
-	  write(1, "exiting", 7);
-	  return 0;
-  }
+Thanks,
 
-Before the patch, after the parent process exits, the child is left
-running and prints out "." every second.
-
-  exiting..... (continues)
-
-After the patch, the group stop initiated by the implied SIGSTOP from
-PTRACE_ATTACH is re-established when the parent exits.
-
-  exiting
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/ptrace.c |   59 +++++++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 39 insertions(+), 20 deletions(-)
-
-Index: work/kernel/ptrace.c
-===================================================================
---- work.orig/kernel/ptrace.c
-+++ work/kernel/ptrace.c
-@@ -41,7 +41,26 @@ void __ptrace_link(struct task_struct *c
-  * __ptrace_unlink - unlink ptracee and restore its execution state
-  * @child: ptracee to be unlinked
-  *
-- * Remove @child from the ptrace list, move it back to the original parent.
-+ * Remove @child from the ptrace list, move it back to the original parent,
-+ * and restore the execution state so that it conforms to the group stop
-+ * state.
-+ *
-+ * Unlinking can happen via two paths - explicit PTRACE_DETACH or ptracer
-+ * exiting.  For PTRACE_DETACH, unless the ptracee has been killed between
-+ * ptrace_check_attach() and here, it's guaranteed to be in TASK_TRACED.
-+ * If the ptracer is exiting, the ptracee can be in any state.
-+ *
-+ * After detach, the ptracee should be in a state which conforms to the
-+ * group stop.  If the group is stopped or in the process of stopping, the
-+ * ptracee should be put into TASK_STOPPED; otherwise, it should be woken
-+ * up from TASK_TRACED.
-+ *
-+ * If the ptracee is in TASK_TRACED and needs to be moved to TASK_STOPPED,
-+ * it goes through TRACED -> RUNNING -> STOPPED transition which is similar
-+ * to but in the opposite direction of what happens while attaching to a
-+ * stopped task.  However, in this direction, the intermediate RUNNING
-+ * state is not hidden even from the current ptracer and if it immediately
-+ * re-attaches and performs a WNOHANG wait(2), it may fail.
-  *
-  * CONTEXT:
-  * write_lock_irq(tasklist_lock)
-@@ -55,25 +74,25 @@ void __ptrace_unlink(struct task_struct
- 	list_del_init(&child->ptrace_entry);
- 
- 	spin_lock(&child->sighand->siglock);
--	if (task_is_traced(child)) {
--		/*
--		 * If group stop is completed or in progress, it should
--		 * participate in the group stop.  Set GROUP_STOP_PENDING
--		 * before kicking it.
--		 *
--		 * This involves TRACED -> RUNNING -> STOPPED transition
--		 * which is similar to but in the opposite direction of
--		 * what happens while attaching to a stopped task.
--		 * However, in this direction, the intermediate RUNNING
--		 * state is not hidden even from the current ptracer and if
--		 * it immediately re-attaches and performs a WNOHANG
--		 * wait(2), it may fail.
--		 */
--		if (child->signal->flags & SIGNAL_STOP_STOPPED ||
--		    child->signal->group_stop_count)
--			child->group_stop |= GROUP_STOP_PENDING;
--		signal_wake_up(child, 1);
--	}
-+
-+	/*
-+	 * Reinstate GROUP_STOP_PENDING if group stop is in effect and
-+	 * @child isn't dead.
-+	 */
-+	if (!(child->flags & PF_EXITING) &&
-+	    (child->signal->flags & SIGNAL_STOP_STOPPED ||
-+	     child->signal->group_stop_count))
-+		child->group_stop |= GROUP_STOP_PENDING;
-+
-+	/*
-+	 * If transition to TASK_STOPPED is pending or in TASK_TRACED, kick
-+	 * @child in the butt.  Note that @resume should be used iff @child
-+	 * is in TASK_TRACED; otherwise, we might unduly disrupt
-+	 * TASK_KILLABLE sleeps.
-+	 */
-+	if (child->group_stop & GROUP_STOP_PENDING || task_is_traced(child))
-+		signal_wake_up(child, task_is_traced(child));
-+
- 	spin_unlock(&child->sighand->siglock);
- }
- 
+	Ingo
