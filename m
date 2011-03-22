@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab1CVPmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 11:42:11 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35107 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab1CVPmJ (ORCPT
+	id S1754543Ab1CVPuI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 11:50:08 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:48473 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751555Ab1CVPuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 11:42:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=v+iNb3p2DqiYlqP05Fxl6teB/DP/J8/5FE1xSeUP6MtVd6Ty8AtFqKl2vL2OukHfMQ
-         B2DBApYDKirS5SobT8OVQpRI+yhTD6T+j+nUnPDGbmeZeP1YLW6mUFTgi9G3TJ2VRGCH
-         116SR8u3hyzNZD72/XQwo0Cma4RN/9d66c9JM=
-Date: Tue, 22 Mar 2011 08:42:02 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Aaro Koskinen <aaro.koskinen@nokia.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: tsc2005: fix locking issue
-Message-ID: <20110322154202.GA24772@core.coreip.homeip.net>
-References: <1300724650-6641-1-git-send-email-aaro.koskinen@nokia.com>
- <20110322061958.GA7990@core.coreip.homeip.net>
- <alpine.DEB.1.10.1103221655370.2634@esdhcp041196.research.nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.1.10.1103221655370.2634@esdhcp041196.research.nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 Mar 2011 11:50:04 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=WYbX/Y1gxO+5t+uEbB1VEJVPPYZhwCKzIbVmtQzJLhFbmVMp56Wg559/gZBTglUMRtp3XL7L7qS+EnFofgqFkTMXiIWUiNnFFqkhSP9+IFqLRL9GVXfHTsYxcd/iWiRi;
+Date: Tue, 22 Mar 2011 08:49:58 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Andreas Hartmann <andihartmann@freenet.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: intel_ips produces constant load of 1
+Message-ID: <20110322084958.7fa17ae3@jbarnes-desktop>
+In-Reply-To: <4D884917.2010400@dualc.maya.org>
+References: <im2ik4$3dd$1@ID-44327.news.uni-berlin.de>
+	<20110321110404.6a71a404@jbarnes-desktop>
+	<4D884917.2010400@dualc.maya.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 04:59:02PM +0200, Aaro Koskinen wrote:
-> Hi,
-> 
-> On Mon, 21 Mar 2011, Dmitry Torokhov wrote:
-> >On Mon, Mar 21, 2011 at 06:24:10PM +0200, Aaro Koskinen wrote:
-> >>Commit 0b950d3 (Input: tsc2005 - add open/close) introduced a
-> >>locking issue with the ESD watchdog: __tsc2005_disable() is calling
-> >>cancel_delayed_work_sync() with mutex held, and the work also needs the
-> >>same mutex.
+On Tue, 22 Mar 2011 08:00:39 +0100
+Andreas Hartmann <andihartmann@freenet.de> wrote:
+
+> Jesse Barnes wrote:
+> > On Sat, 19 Mar 2011 16:38:38 +0100
+> > Andreas Hartmann <andihartmann@01019freenet.de> wrote:
+> > 
+> >> Hello,
 > >>
-> >>Fix the problem by using cancel_delayed_work() on disable. If
-> >>the ESD work was running it will check if the device is closed
-> >>or suspended, and in that case it will do nothing and skip
-> >>re-arming. cancel_delayed_work_sync() is still needed when the module
-> >>is removed.
-> >
-> >Hmm, indeed. However, instead of moving cancel_delayed_work_sync() to
-> >remove maybe we should use mutex_trylock() in tsc2005_esd_work()?
-> >If trylock fails that means that device is in the middle of open/close
-> >transition. We should just reschedule the work and get out of there.
+> >> on my MSI CR620 laptop, intel_ips produces a constant load of 1, even if
+> >> the machine is idle.
+> >>
+> >> The ips-monitor hangs in D state:
+> >>
+> >> ps aux | grep ips
+> >> root       593  0.0  0.0      0     0 ?        S    17:20   0:00
+> >> [ips-adjust]
+> >> root       594  0.0  0.0      0     0 ?        D    17:20   0:00
+> >> [ips-monitor]
+> >>
+> >> If the module isn't loaded, the load of the machine in idle mode is 0 as
+> >> expected.
+> > 
+> > This is a reporting problem, and probably due to the schedule() call
+> > and associated task state in the ips-monitor thread.  I thought setting
+> > the task state to interruptible would prevent this, but it seems like
+> > it's not enough for the deferrable on-stack timers?
+> > 
+> > At any rate, it's not actually causing increased CPU usage, so you can
+> > safely ignore it until we have a fix.
+> > 
 > 
-> But I guess the reschedule should not happen if we are in the middle of
-> close/disable? And without the mutex we cannot know that.
+> I've got one more question (I found
+> http://forum.soft32.com/linux/RFC-Intelligent-power-sharing-driver-ftopict510146.html):
+> 
+> Where is the difference to the functionality the bios provides? I can't
+> see (and hear :-)) any difference between with intel_ips and without
+> intel_ips.
+> The fan always runs at a minimal speed, very quiet.
+> The fan is getting loader, if the load is getting high (during
+> compile-sessions e.g.). If the compile session is ready, the fan get's
+> slower again.
+> 
+> If I check the "cpu MHz" in /proc/cpuinfo with or without intel_ips, I
+> can't see any difference. The value never exceeds the value given in the
+> model name. The lowest values are equal, too.
+> 
+> 
+> What is the added value compared to the bios functionality? How can I
+> check it?
 
-It should be OK to reschedule even as we enabling/disabling because
-cancel_delayed_work_sync() handles re-arming works so even if ESD work
-is being executed at the time we closing the device it will be killed
-off completely.
-
-Thanks.
+Loading the IPS driver will allow graphics turbo.  This can improve gfx
+performance quite a bit (up to 3x on some synthetic workloads).  If
+you're not really using gfx though, the driver won't really do anything
+for you.
 
 -- 
-Dmitry
+Jesse Barnes, Intel Open Source Technology Center
