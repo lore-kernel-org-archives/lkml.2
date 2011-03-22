@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab1CVGcl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 02:32:41 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48321 "EHLO e7.ny.us.ibm.com"
+	id S1754822Ab1CVGvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 02:51:45 -0400
+Received: from linux-sh.org ([111.68.239.195]:36671 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753171Ab1CVGci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 02:32:38 -0400
-Date: Mon, 21 Mar 2011 23:32:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Preeti Khurana <Preeti.Khurana@guavus.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "mel@csn.ul.ie" <mel@csn.ul.ie>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_sched_state detected stall on CPU issue
-Message-ID: <20110322063210.GH2322@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110316101820.GA17540@linux.vnet.ibm.com>
- <20110317085938.C938.A69D9226@jp.fujitsu.com>
- <20110317022506.GG2304@linux.vnet.ibm.com>
- <9F0C2539CB50A743894F8FCEEB1D56920818B0@mx1.guavus.com>
- <9F0C2539CB50A743894F8FCEEB1D5692083439@mx1.guavus.com>
-MIME-Version: 1.0
+	id S1754710Ab1CVGvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 02:51:42 -0400
+Date: Tue, 22 Mar 2011 15:51:13 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Ondrej Zary <linux@rainbow-software.org>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] s3fb: various changes
+Message-ID: <20110322065113.GD25925@linux-sh.org>
+References: <201103012018.01607.linux@rainbow-software.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9F0C2539CB50A743894F8FCEEB1D5692083439@mx1.guavus.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <201103012018.01607.linux@rainbow-software.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 04:44:46AM +0000, Preeti Khurana wrote:
+On Tue, Mar 01, 2011 at 08:17:59PM +0100, Ondrej Zary wrote:
+> This patch set adds new hardware support, fixes some display problems and also
+> improves performance of s3fb driver.
 > 
+> Everything was tested on various Trio32, Trio64V+, Trio64V2/DX, Virge, 
+> Virge/DX, Trio3D and Trio3D/2X cards.
 > 
-> >     I will try patching with the commits & test the same, though patches don't
-> > cleanly fit because they are on top of the changes which are not there in
-> > 2.6.35  ( have come in 2.6.37), so it's a lttle challenge.
-> > Meanwhile, I  am trying out the changes specified in thread
-> > https://lkml.org/lkml/2011/1/6/131 because I think that also might issue.
+> It assumes that David Miller's "Make SVGA oriented FBs work on multi-domain 
+> PCI" patch set is applied.
 > 
+> Signed-off-by: David S. Miller <davem@davemloft.net>
 > 
-> 	The patch at  https://lkml.org/lkml/2011/1/6/131 (commit 88f5acf88ae6a9778f6d25d0d5d7ec2d57764a97) has solved the issue.
-
-Glad it worked for you!
-
-							Thanx, Paul
+Both series are now applied.
