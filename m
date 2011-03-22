@@ -1,77 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab1CVXVR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 19:21:17 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42660 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab1CVXVO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 19:21:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nolxyZgy+pBqXnRMQyugFNluSZgkdxg1JdIvpMLuvVFerzfjubAZG7QKRjRfk4tc+W
-         yv22gc+/v8tcH3wgVxKocX9malZEvKWt8cUd5AJ9/dzMeAUy8Vzp9QReTbRuZksPdvbd
-         +KapxfUazc2M4vpyk80wz80z9QLTaLqcSkkPE=
+	id S1755867Ab1CVXWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 19:22:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:41445 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755708Ab1CVXWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 19:22:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,228,1299484800"; 
+   d="scan'208";a="616464008"
+Date: Tue, 22 Mar 2011 16:22:46 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [RFC] checkpatch: add option to change warning return value.
+Message-ID: <20110322232246.GA7450@xanatos>
+References: <20110322231310.GA7338@xanatos>
 MIME-Version: 1.0
-In-Reply-To: <20110322200759.B067.A69D9226@jp.fujitsu.com>
-References: <20110315153801.3526.A69D9226@jp.fujitsu.com>
-	<20110322194721.B05E.A69D9226@jp.fujitsu.com>
-	<20110322200759.B067.A69D9226@jp.fujitsu.com>
-Date: Wed, 23 Mar 2011 08:21:12 +0900
-Message-ID: <AANLkTikN835dfU9xozTWbOh6cjSEG0XgU_Ayn+dRqDug@mail.gmail.com>
-Subject: Re: [PATCH 3/5] oom: create oom autogroup
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322231310.GA7338@xanatos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 8:08 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> When plenty processes (eg fork bomb) are running, the TIF_MEMDIE task
-> never exit, at least, human feel it's never. therefore kernel become
-> hang-up.
->
-> "perf sched" tell us a hint.
->
->  ------------------------------------------------------------------------------
->  Task                  |   Runtime ms  | Average delay ms | Maximum delay ms |
->  ------------------------------------------------------------------------------
->  python:1754           |      0.197 ms | avg: 1731.727 ms | max: 3433.805 ms |
->  python:1843           |      0.489 ms | avg: 1707.433 ms | max: 3622.955 ms |
->  python:1715           |      0.220 ms | avg: 1707.125 ms | max: 3623.246 ms |
->  python:1818           |      2.127 ms | avg: 1527.331 ms | max: 3622.553 ms |
->  ...
->  ...
->
-> Processes flood makes crazy scheduler delay. and then the victim process
-> can't run enough. Grr. Should we do?
->
-> Fortunately, we already have anti process flood framework, autogroup!
-> This patch reuse this framework and avoid kernel live lock.
+On Tue, Mar 22, 2011 at 04:13:10PM -0700, Sarah Sharp wrote:
+> There are a lot of warnings in checkpatch.pl that are rather subjective.
+> For instance, when a line is 81 characters long, and the patch submitter
+> is just cleaning up existing code, a maintainer may not care that
+> checkpatch.pl warns about the over 80-character line.  It should be up to
+> the maintainer what warnings they want to pay attention to.
+> 
+> Unfortunately, if you try to run checkpatch.pl as part of a git pre-commit
+> hook and a patch in a series being applied by git-am fails checkpatch.pl,
+> the whole process stops.  At that point I usually end up just disabling
+> that git hook, which means I don't see real errors in the patches.
+> 
+> Add an option to checkpatch.pl to print the warnings, but not return an
+> error code when the --lazy flag is present.  (Anyone with a better name
+> can pipe up, lazy just seemed to be the opposite to strict.)  This allows
+> the maintainer to view the warnings, but still allow the patch application
+> process to continue.
 
-That's cool idea but I have a concern.
+BTW, I'm not a perl hacker, and I don't really understand the reporting code,
+so someone who knows it (Andy?) should make the correct patch.  I didn't notice
+before sending, but right now the warning count reporting is bogus, although
+the warnings don't make the script return an error code:
 
-You remove boosting priority in [2/5] and move victim tasks into autogroup.
-If I understand autogroup right, victim process and threads in the
-process take less schedule chance than now.
+sarah@xanatos:~/git/kernels/xhci$ git am ~/Maildir.fetchmail/.to-apply/
+Applying: USB: xhci - fix unsafe macro definitions
+total: 0 errors, 0 warnings, 21 lines checked
 
-Could it make unnecessary killing of other tasks?
-I am not sure. Just out of curiosity.
+Your patch has no obvious style problems and is ready for submission.
+Applying: USB: xhci: unsigned char never equals -1
+total: 0 errors, 0 warnings, 55 lines checked
 
-Thanks for nice work, Kosaki.
--- 
-Kind regards,
-Minchan Kim
+Your patch has no obvious style problems and is ready for submission.
+Applying: USB: xhci: simplify logic of skipping missed isoc TDs
+WARNING: line over 80 characters
+#12: FILE: drivers/usb/host/xhci-ring.c:1669:
++	struct xhci_ring *ep_ring = xhci_dma_to_transfer_ring(ep, event->buffer);
+
+WARNING: line over 80 characters
+#136: FILE: drivers/usb/host/xhci-ring.c:1743:
++	struct xhci_ring *ep_ring = xhci_dma_to_transfer_ring(ep, event->buffer);
+
+WARNING: line over 80 characters
+#164: FILE: drivers/usb/host/xhci-ring.c:1770:
++	struct xhci_ring *ep_ring = xhci_dma_to_transfer_ring(ep, event->buffer);
+
+total: 0 errors, 0 warnings, 231 lines checked
+
+Your patch has no obvious style problems and is ready for submission.
+Applying: USB: fix formatting of SuperSpeed endpoints in /proc/bus/usb/devices
+total: 0 errors, 0 warnings, 28 lines checked
+
+Your patch has no obvious style problems and is ready for submission.
+
+
+Note that second-to-last patch should have said 3 warnings.  So my patch needs
+to be changed, but I really do want this functionality.
+
+Sarah Sharp
+
+
+> Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> ---
+>  scripts/checkpatch.pl |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 4c0383d..4519b5b 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -15,6 +15,7 @@ my $V = '0.31';
+>  use Getopt::Long qw(:config no_auto_abbrev);
+>  
+>  my $quiet = 0;
+> +my $lazy = 0;
+>  my $tree = 1;
+>  my $chk_signoff = 1;
+>  my $chk_patch = 1;
+> @@ -46,6 +47,7 @@ Options:
+>    --terse                    one line per report
+>    -f, --file                 treat FILE as regular source file
+>    --subjective, --strict     enable more subjective tests
+> +  --lazy                     print warnings, but don't return an error condition
+>    --root=PATH                PATH to the kernel tree root
+>    --no-summary               suppress the per-file summary
+>    --mailback                 only produce a report in case of warnings/errors
+> @@ -80,6 +82,7 @@ GetOptions(
+>  
+>  	'debug=s'	=> \%debug,
+>  	'test-only=s'	=> \$tst_only,
+> +	'lazy+'		=> \$lazy,
+>  	'h|help'	=> \$help,
+>  	'version'	=> \$help
+>  ) or help(1);
+> @@ -1096,6 +1099,9 @@ sub report {
+>  
+>  	push(our @report, $line);
+>  
+> +	if ($lazy == 1) {
+> +		return 0;
+> +	}
+>  	return 1;
+>  }
+>  sub report_dump {
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
