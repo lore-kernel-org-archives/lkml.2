@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab1CVJvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 05:51:46 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:43651 "EHLO mgw-da01.nokia.com"
+	id S1753856Ab1CVJ5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 05:57:11 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35361 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752270Ab1CVJvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 05:51:42 -0400
-Subject: Re: [RFC PATCHv4 0/7] HSI framework and drivers
-From: Carlos Chinea <carlos.chinea@nokia.com>
-To: ext Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        pawel.szyszuk@stericsson.com
-In-Reply-To: <AANLkTimTfOyhDR6BsHD_1VvzOPGbYqo6L784wPkQMi_8@mail.gmail.com>
-References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
-	 <AANLkTimTfOyhDR6BsHD_1VvzOPGbYqo6L784wPkQMi_8@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Mar 2011 11:50:04 +0200
-Message-ID: <1300787404.8008.116.camel@groo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+	id S1753772Ab1CVJ5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 05:57:09 -0400
+Date: Tue, 22 Mar 2011 10:56:38 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>
+Subject: Re: [slab poison overwritten] Re: [GIT] Networking
+Message-ID: <20110322095638.GA26130@elte.hu>
+References: <20110320.195156.226769634.davem@davemloft.net>
+ <20110321125320.GA23490@elte.hu>
+ <1300714346.2884.284.camel@edumazet-laptop>
+ <20110321161528.GA28580@elte.hu>
+ <20110321164238.GA5303@elte.hu>
+ <20110321173941.GB3892@elte.hu>
+ <1300730838.2884.578.camel@edumazet-laptop>
+ <1300738540.2837.5.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300738540.2837.5.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Mon, 2011-03-21 at 09:16 +0100, ext Linus Walleij wrote:
-> 2010/12/14 Carlos Chinea <carlos.chinea@nokia.com>:
-> 
-> > Here you have the fourth round of the HSI framework patches.
-> 
-> I'd like to notify that this out-of-tree framework is also in use for
-> the ST-Ericsson
-> Ux500s, and we've had great success with it. You can add my:
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
+* Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-Thanks I will add the Ack to the next round of patches.
+> [PATCH] ipvs: fix a typo in __ip_vs_control_init()
 
-We are currently working on the hsi_char module. Apart from addressing
-the comments from Alan,  we are planning to drop also the non-blocking
-support from it. The current version is not fully honoring the
-non-blocking behavior.
+This fix and Simon's:
 
-> Possibly some ST-Ericsson people can add Tested-by tags as well.
-> 
-> We will integrate Ux500 support whenever it's suitable, either after the merge
-> or as add-on patches for Carlos patch series. (If Carlos would like to keep
-> them in his series.)
-> 
+  IPVS: Use global mutex in ip_vs_app.c
 
-Either way is fine, for me. Could you send the patches for review ?
+Did the trick here, the IPVS related SLAB corruptions are now gone.
 
-Br,
-Carlos
--- 
-Carlos Chinea <carlos.chinea@nokia.com>
+Thanks guys!
 
+	Ingo
