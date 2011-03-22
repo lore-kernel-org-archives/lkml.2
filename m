@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab1CVVI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 17:08:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932106Ab1CVVIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 17:08:23 -0400
-Date: Tue, 22 Mar 2011 21:59:08 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [RFC PATCHSET] ptrace,signal: Fix notifications to the real
-	parent while ptraced
-Message-ID: <20110322205908.GA3585@redhat.com>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org> <20110322131131.GS12003@htj.dyndns.org>
+	id S932319Ab1CVVI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 17:08:57 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:11027 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab1CVVIz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 17:08:55 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmxtMZ80VwmRVV7cZ5
+X-RZG-CLASS-ID: mo00
+Date: Tue, 22 Mar 2011 22:08:50 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] hv: pass integer to tasklet_init()
+Message-ID: <20110322210850.GC17724@aepfle.de>
+References: <20110322210207.GA17724@aepfle.de>
+ <20110322210627.GB17724@aepfle.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110322131131.GS12003@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110322210627.GB17724@aepfle.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22, Tejun Heo wrote:
->
-> Hello, Oleg.
->
-> The updated patches should address the issues pointed out in your
-> reviews, at least the ones which are appropriate to address now.
+tasklet_init() takes an integer, so use one right away.
 
-Yes, thanks. "UPDATED" patches look fine. Please feel free to add my
-reviewed-by to the whole series.
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
 
-I'd only ask you to remove ->group_leader from real_parent_is_ptracer()
-(btw, note that wait_consider_task() can use this helper too) although
-this is minor.
+---
+ drivers/staging/hv/vmbus_drv.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-> Please let me know when you want the whole series resent.
-
-Cough. Resent? If you ask me, I think you should just send them to
-Linus while the merge window is opened.
-
-I am trying to get the account on kernel.org, but until then I hope
-you can flush the pending ptrace-review branches.
-
-
-
-In case I misunderstood you... I think that the whole series is good
-and the patches should not be updated. Just for example, I'd like to
-rename real_parent_is_ptracer (and remove ->group_leader), but we can
-make another patch for that.
-
-And yes, I bet we missed something and we will need the subsequent
-fixes anyway ;)
-
-Oleg.
-
+Index: linux-2.6/drivers/staging/hv/vmbus_drv.c
+===================================================================
+--- linux-2.6.orig/drivers/staging/hv/vmbus_drv.c
++++ linux-2.6/drivers/staging/hv/vmbus_drv.c
+@@ -454,10 +454,8 @@ static int vmbus_bus_init(void)
+ 	vmbus_drv_ctx->bus.name = driver_name;
+ 
+ 	/* Initialize the bus context */
+-	tasklet_init(&vmbus_drv_ctx->msg_dpc, vmbus_on_msg_dpc,
+-		     (unsigned long)NULL);
+-	tasklet_init(&vmbus_drv_ctx->event_dpc, vmbus_on_event,
+-		     (unsigned long)NULL);
++	tasklet_init(&vmbus_drv_ctx->msg_dpc, vmbus_on_msg_dpc, 0);
++	tasklet_init(&vmbus_drv_ctx->event_dpc, vmbus_on_event, 0);
+ 
+ 	/* Now, register the bus  with LDM */
+ 	ret = bus_register(&vmbus_drv_ctx->bus);
