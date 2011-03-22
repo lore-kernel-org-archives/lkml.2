@@ -1,271 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab1CVLaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 07:30:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56951 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab1CVLaN (ORCPT
+	id S1755439Ab1CVLeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 07:34:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58152 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220Ab1CVLel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 07:30:13 -0400
+	Tue, 22 Mar 2011 07:34:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+        h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=WuYYW0R62qYxb7EThXw3USuMjVrM5mDPYyw5pGMtKUFCRLgMQlPHo7tfoKsGz7dnLy
-         DFaxXBpvg/WQXXYgkY6UWLdPCpAWHHTxjKzn0umHuRyrquAoNfUtWWPQlpKiuMOTx9Gf
-         FVhV8oRRmwUTjqb+NfWWyqKFVpG2wMbQmxWQ0=
-Date: Tue, 22 Mar 2011 12:30:08 +0100
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
-        vda.linux@googlemail.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: [PATCH UPDATED 7/8] job control: Notify the real parent of job
- control events regardless of ptrace
-Message-ID: <20110322113008.GR12003@htj.dyndns.org>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org>
- <1299614199-25142-8-git-send-email-tj@kernel.org>
+        b=NCUgLtpoP3KRP12mTGLcqX5tYugG56l95qGG85u5u52mXUz+9R1PvEH0xksBXCy8G4
+         Pit6WHnlGKeJHADm94xhSv+prO2dP+aspt7y2BWeEcLHED7cqar4gcH/upOcSfLKdLc7
+         Ld9dL9WkmU1i4OBxMzTTzK20IKGvMqX6h8M1Y=
+Date: Tue, 22 Mar 2011 12:34:35 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Toby Gray <toby.gray@realvnc.com>, Oliver Neukum <oliver@neukum.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] USB: cdc-acm: Prevent data loss when filling tty
+ buffer.
+Message-ID: <20110322113435.GC21027@localhost>
+References: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com>
+ <1300730698-17099-1-git-send-email-toby.gray@realvnc.com>
+ <20110322100526.GB21343@localhost>
+ <20110322103534.2284099e@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299614199-25142-8-git-send-email-tj@kernel.org>
+In-Reply-To: <20110322103534.2284099e@lxorguk.ukuu.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent changes, job control and ptrace stopped states are
-properly separated and accessible to the real parent and the ptracer
-respectively; however, notifications of job control stopped/continued
-events to the real parent while ptraced are still missing.
+On Tue, Mar 22, 2011 at 10:35:34AM +0000, Alan Cox wrote:
+> > re-submitted. So the only way this will work is if it can be guaranteed
+> > that the line discipline will throttle and later unthrottle us. I
+> > doubt that is the case, but perhaps Alan can give a more definite
+> > answer?
+> 
+> If an ldisc throttles it should always later unthrottle. However flow
+> control is async so at high enough data rates it'll be too slow.
 
-A ptracee participates in group stop in ptrace_stop() but the
-completion isn't notified.  If participation results in completion of
-group stop, notify the real parent of the event.  The ptrace and group
-stops are separate and can be handled as such.
+So my suspicion that no guarantees can be made that ldisc will _eventually_
+throttle us, is correct?
 
-However, when the real parent and the ptracer are in the same thread
-group, only the ptrace stop event is visible through wait(2) and the
-duplicate notifications are different from the current behavior and
-are confusing.  Suppress group stop notification in such cases.
+The patch would introduce its parallel throttling scheme (through not
+rescheduling the tasklet), and will only work if a throttle request is
+guaranteed to eventually arrive:
 
-The continued state is shared between the real parent and the ptracer
-but is only meaningful to the real parent.  Always notify the real
-parent and notify the ptracer too for backward compatibility.  Similar
-to stop notification, if the real parent is the ptracer, suppress a
-duplicate notification.
+	16 x read_urb_bulk 
+	 - queues up 16 urbs and buffers
 
-Test case follows.
+	rx_tasklet
+	 - attempt to push 16 buffers -- one is only partially pushed,
+	   e.g.  64k of tty buffers full (or out of mem?)
+	 - returns without resubmitting any urb or rescheduling tasklet
+		
+	Q: will ldisc always throttle us as the 64K worth of data is
+	   later propagated to ldisc?
 
-  #include <stdio.h>
-  #include <unistd.h>
-  #include <time.h>
-  #include <errno.h>
-  #include <sys/types.h>
-  #include <sys/ptrace.h>
-  #include <sys/wait.h>
+	A: Yes -- ldisc will throttle and later unthrottle, thereby
+	          rescheduling tasklet which resumes reading.
 
-  int main(void)
-  {
-	  const struct timespec ts100ms = { .tv_nsec = 100000000 };
-	  pid_t tracee, tracer;
-	  siginfo_t si;
-	  int i;
+	   No -- read will lock up
 
-	  tracee = fork();
-	  if (tracee == 0) {
-		  while (1) {
-			  printf("tracee: SIGSTOP\n");
-			  raise(SIGSTOP);
-			  nanosleep(&ts100ms, NULL);
-			  printf("tracee: SIGCONT\n");
-			  raise(SIGCONT);
-			  nanosleep(&ts100ms, NULL);
-		  }
-	  }
+> > I would also prefer a more generic solution to the problem so that we
+> > don't need to re-introduce driver buffering again. Since we already have
+> > the throttelling mechanism in place, if we could only be notified/find
+> > out that the tty buffers are say half-full, we could throttle (from
+> 
+> The tty layer actually knows this fact
+> 
+> > within the driver) but still push the remaining buffer still on the wire
+> > as they arrive. It would of course require a guarantee that such a
+> > throttle-is-about-to-happen notification is actually followed by (a
+> > throttle and) unthrottle. Thoughts on that?
+> 
+> tty throttling is at the ldisc layer, the tty buffers are below this. The
+> space left being 64K - tty->buf.memory_used
+> 
+> So you can certainly add the following routine
+> 
+> int tty_constipated(struct tty *t)
+> {
+> 	if (tty->buf.memory_used > 49152)
+> 		return 1;
+> 	return 0;
+> }
+> EXPORT_SYMBOL_GPL(tty_constipated);
+> 
+> to drivers/tty/tty_buffer.c
+> 
+> The wakeup side is a bit trickier.
+> 
+> The down side of this of course is that you are likely to run at below
+> peak performance as you'll keep throttling back the hardware, whereas if
+> you have a tickless kernel with HZ set to 1000 it's probably sufficient
+> to bump the buffer sizes.
+> 
+> Right now (see tty_buffer.c) it's simply set to 64K as a sanity check
+> against throttled devices not stopping, but there isn't actually any
+> reason it couldn't be configurable at port setup time.
 
-	  waitid(P_PID, tracee, &si, WSTOPPED | WNOHANG | WNOWAIT);
+So you suggest increasing the tty buffering instead of solving the wake
+up problem? Would this really be sufficient, though? What if a driver
+pushes and resubmits from interrupt context and with sufficiently many
+bulk urbs on the wire at high speeds manage to starve the tty work
+queue so nothing gets flushed to the ldisc? Or this cannot happen?
 
-	  tracer = fork();
-	  if (tracer == 0) {
-		  nanosleep(&ts100ms, NULL);
-		  ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
-
-		  for (i = 0; i < 11; i++) {
-			  si.si_pid = 0;
-			  waitid(P_PID, tracee, &si, WSTOPPED);
-			  if (si.si_pid && si.si_code == CLD_TRAPPED)
-				  ptrace(PTRACE_CONT, tracee, NULL,
-					 (void *)(long)si.si_status);
-		  }
-		  printf("tracer: EXITING\n");
-		  return 0;
-	  }
-
-	  while (1) {
-		  si.si_pid = 0;
-		  waitid(P_PID, tracee, &si, WSTOPPED | WCONTINUED | WEXITED);
-		  if (si.si_pid)
-			  printf("mommy : WAIT status=%02d code=%02d\n",
-				 si.si_status, si.si_code);
-	  }
-	  return 0;
-  }
-
-Before this patch, while ptraced, the real parent doesn't get
-notifications for job control events, so although it can access those
-events, the later waitid(2) call never wakes up.
-
-  tracee: SIGSTOP
-  mommy : WAIT status=19 code=05
-  tracee: SIGCONT
-  tracee: SIGSTOP
-  tracee: SIGCONT
-  tracee: SIGSTOP
-  tracee: SIGCONT
-  tracee: SIGSTOP
-  tracer: EXITING
-  mommy : WAIT status=19 code=05
-  ^C
-
-After this patch, it works as expected.
-
-  tracee: SIGSTOP
-  mommy : WAIT status=19 code=05
-  tracee: SIGCONT
-  mommy : WAIT status=18 code=06
-  tracee: SIGSTOP
-  mommy : WAIT status=19 code=05
-  tracee: SIGCONT
-  mommy : WAIT status=18 code=06
-  tracee: SIGSTOP
-  mommy : WAIT status=19 code=05
-  tracee: SIGCONT
-  mommy : WAIT status=18 code=06
-  tracee: SIGSTOP
-  tracer: EXITING
-  mommy : WAIT status=19 code=05
-  ^C
-
--v2: Oleg pointed out that
-
-     * Group stop notification to the real parent should also happen
-       when ptracer detach races with ptrace_stop().
-
-     * real_parent_is_ptracer() should be testing thread group
-       equality not the task itself as wait(2) and stop/cont
-       notifications are normally thread-group wide.
-
-     Both issues are fixed accordingly.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- kernel/signal.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 52 insertions(+), 3 deletions(-)
-
-Index: work/kernel/signal.c
-===================================================================
---- work.orig/kernel/signal.c
-+++ work/kernel/signal.c
-@@ -1694,6 +1694,17 @@ static int sigkill_pending(struct task_s
- }
- 
- /*
-+ * Test whether the target task of the usual cldstop notification - the
-+ * real_parent of the group_leader of @child - is in the same group as the
-+ * ptracer.
-+ */
-+static bool real_parent_is_ptracer(struct task_struct *child)
-+{
-+	return same_thread_group(child->parent,
-+				 child->group_leader->real_parent);
-+}
-+
-+/*
-  * This must be called with current->sighand->siglock held.
-  *
-  * This should be the path for all ptrace stops.
-@@ -1708,6 +1719,8 @@ static void ptrace_stop(int exit_code, i
- 	__releases(&current->sighand->siglock)
- 	__acquires(&current->sighand->siglock)
- {
-+	bool gstop_done = false;
-+
- 	if (arch_ptrace_stop_needed(exit_code, info)) {
- 		/*
- 		 * The arch code has something special to do before a
-@@ -1735,7 +1748,7 @@ static void ptrace_stop(int exit_code, i
- 	 * is entered - ignore it.
- 	 */
- 	if (why == CLD_STOPPED && (current->group_stop & GROUP_STOP_PENDING))
--		task_participate_group_stop(current);
-+		gstop_done = task_participate_group_stop(current);
- 
- 	current->last_siginfo = info;
- 	current->exit_code = exit_code;
-@@ -1757,7 +1770,20 @@ static void ptrace_stop(int exit_code, i
- 	spin_unlock_irq(&current->sighand->siglock);
- 	read_lock(&tasklist_lock);
- 	if (may_ptrace_stop()) {
--		do_notify_parent_cldstop(current, task_ptrace(current), why);
-+		/*
-+		 * Notify parents of the stop.
-+		 *
-+		 * While ptraced, there are two parents - the ptracer and
-+		 * the real_parent of the group_leader.  The ptracer should
-+		 * know about every stop while the real parent is only
-+		 * interested in the completion of group stop.  The states
-+		 * for the two don't interact with each other.  Notify
-+		 * separately unless they're gonna be duplicates.
-+		 */
-+		do_notify_parent_cldstop(current, true, why);
-+		if (gstop_done && !real_parent_is_ptracer(current))
-+			do_notify_parent_cldstop(current, false, why);
-+
- 		/*
- 		 * Don't want to allow preemption here, because
- 		 * sys_ptrace() needs this task to be inactive.
-@@ -1772,7 +1798,16 @@ static void ptrace_stop(int exit_code, i
- 		/*
- 		 * By the time we got the lock, our tracer went away.
- 		 * Don't drop the lock yet, another tracer may come.
-+		 *
-+		 * If @gstop_done, the ptracer went away between group stop
-+		 * completion and here.  During detach, it would have set
-+		 * GROUP_STOP_PENDING on us and we'll re-enter TASK_STOPPED
-+		 * in do_signal_stop() on return, so notifying the real
-+		 * parent of the group stop completion is enough.
- 		 */
-+		if (gstop_done)
-+			do_notify_parent_cldstop(current, false, why);
-+
- 		__set_current_state(TASK_RUNNING);
- 		if (clear_code)
- 			current->exit_code = 0;
-@@ -2017,10 +2052,24 @@ relock:
- 
- 		spin_unlock_irq(&sighand->siglock);
- 
-+		/*
-+		 * Notify the parent that we're continuing.  This event is
-+		 * always per-process and doesn't make whole lot of sense
-+		 * for ptracers, who shouldn't consume the state via
-+		 * wait(2) either, but, for backward compatibility, notify
-+		 * the ptracer of the group leader too unless it's gonna be
-+		 * a duplicate.
-+		 */
- 		read_lock(&tasklist_lock);
-+
-+		do_notify_parent_cldstop(current, false, why);
-+
- 		leader = current->group_leader;
--		do_notify_parent_cldstop(leader, task_ptrace(leader), why);
-+		if (task_ptrace(leader) && !real_parent_is_ptracer(leader))
-+			do_notify_parent_cldstop(leader, true, why);
-+
- 		read_unlock(&tasklist_lock);
-+
- 		goto relock;
- 	}
- 
+Thanks,
+Johan
