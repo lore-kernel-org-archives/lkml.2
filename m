@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab1CVQlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 12:41:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51579 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755446Ab1CVQla (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 12:41:30 -0400
-Date: Tue, 22 Mar 2011 16:41:28 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Takashi Iwai <tiwai@suse.de>, Randy Dunlap <randy.dunlap@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Zeng Zhaoming <b32542@freescale.com>
-Subject: Re: [build failure] Re: [GIT PULL] sound updates for 2.6.39-rc1
-Message-ID: <20110322164128.GE22583@opensource.wolfsonmicro.com>
-References: <20110321153719.GA12325@elte.hu>
- <20110321155836.GE2570@opensource.wolfsonmicro.com>
- <20110321161102.GB23614@elte.hu>
- <20110321163849.GF2570@opensource.wolfsonmicro.com>
- <20110321164937.GA6381@elte.hu>
- <20110321165827.GG2570@opensource.wolfsonmicro.com>
- <20110322122436.GA6834@opensource.wolfsonmicro.com>
- <20110322083839.caab0520.randy.dunlap@oracle.com>
- <s5hk4frnog6.wl%tiwai@suse.de>
- <20110322160055.GA22128@elte.hu>
+	id S1755370Ab1CVQqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 12:46:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51824 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753370Ab1CVQqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 12:46:32 -0400
+Date: Tue, 22 Mar 2011 09:44:54 -0700
+From: Greg KH <gregkh@suse.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb_wwan: fix build error in play_delayed.
+Message-ID: <20110322164454.GB15916@suse.de>
+References: <1300768162-18394-1-git-send-email-tm@tao.ma>
+ <1300773955.2837.24.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110322160055.GA22128@elte.hu>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1300773955.2837.24.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 05:00:55PM +0100, Ingo Molnar wrote:
+On Tue, Mar 22, 2011 at 07:05:55AM +0100, Eric Dumazet wrote:
+> Le mardi 22 mars 2011 à 12:29 +0800, Tao Ma a écrit :
+> > From: Tao Ma <boyu.mt@taobao.com>
+> > 
+> > There is a build error in today's linus tree.
+> > drivers/usb/serial/usb_wwan.c: In function ‘play_delayed’:
+> > drivers/usb/serial/usb_wwan.c:702: error: ‘struct dev_pm_info’ has no member named ‘usage_count’
+> > The reason is that usage_count is wrapped with macro CONFIG_PM_RUNTIME
+> > now in dev_pm_info.
+> > 
+> > So use the corresponding pm_runtime_get_noresume instead.
+> > 
+> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> > ---
+> >  drivers/usb/serial/usb_wwan.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+> > index a65ddd5..5858ce4 100644
+> > --- a/drivers/usb/serial/usb_wwan.c
+> > +++ b/drivers/usb/serial/usb_wwan.c
+> > @@ -699,7 +699,7 @@ static void play_delayed(struct usb_serial_port *port)
+> >  			do {
+> >  				unbusy_queued_urb(urb, portdata);
+> >  				//extremely dirty
+> > -				atomic_dec(&port->serial->interface->dev.power.usage_count);
+> > +				pm_runtime_get_noresume(&port->serial->interface->dev);
+> >  			} while ((urb = usb_get_from_anchor(&portdata->delayed)));
+> >  			break;
+> >  		}
+> 
+> Oh well, thats the third time this patch is sent
 
-> Btw., ldo_regulator_remove() returns an int, but none of the call sites make 
-> use of the return value. Also, ldo_regulator_remove() can only ever return 0.
+Yes, sorry, been busy with other stuff, this will get fixed soon, I have
+enough copies of it in my queue :)
 
-Yup, the return value is a complete waste of time.  But that's a
-separate issue and a separate patch if someone wants to spend the time
-on the driver.
+thanks,
 
-> More importantly, it would be cleaner to wrap the !regulator case by making 
-> sgtl5000->ldo NULL (this should already be the case) and making 
-> regulator_unregister() available in the !REGULATOR case as well, as an inline 
-> stub.
-
-Yeah, though I'm a bit ambivalent on stubbing only one half of the pair
-it'd not be a real problem.  And obviously there's a trivial text size
-saving from compling out the unregistration code entirely.  Separate
-patch again, though.
+greg k-h
