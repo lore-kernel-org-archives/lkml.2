@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab1CVLXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 07:23:49 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:23856 "EHLO
+	id S1755490Ab1CVLXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 07:23:52 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:23864 "EHLO
 	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754471Ab1CVLXo (ORCPT
+	by vger.kernel.org with ESMTP id S1755337Ab1CVLXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 07:23:44 -0400
+	Tue, 22 Mar 2011 07:23:47 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApkEAK8jiE15LK5JgWdsb2JhbAClQxUBARYmJcQUhWQEkmc
+X-IronPort-Anti-Spam-Result: ApkEAK8jiE15LK5JgWdsb2JhbAClQxUBARYmJcQUgn6CZgSSZw
 From: Dave Chinner <david@fromorbit.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 4/8] fs: remove inode_lock from iput_final and prune_icache
-Date: Tue, 22 Mar 2011 22:23:39 +1100
-Message-Id: <1300793023-3775-5-git-send-email-david@fromorbit.com>
+Subject: [PATCH 7/8] fs: rename inode_lock to inode_hash_lock
+Date: Tue, 22 Mar 2011 22:23:42 +1100
+Message-Id: <1300793023-3775-8-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1300793023-3775-1-git-send-email-david@fromorbit.com>
 References: <1300793023-3775-1-git-send-email-david@fromorbit.com>
@@ -24,214 +24,451 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Now that inode state changes are protected by the inode->i_lock and
-the inode LRU manipulations by the inode_lru_lock, we can remove the
-inode_lock from prune_icache and the initial part of iput_final().
-
-instead of using the inode_lock to protect the inode during
-iput_final, use the inode->i_lock instead. This protects the inode
-against new references being taken while we change the inode state
-to I_FREEING, as well as preventing prune_icache from grabbing the
-inode while we are manipulating it. Hence we no longer need the
-inode_lock in iput_final prior to setting I_FREEING on the inode.
-
-For prune_icache, we no longer need the inode_lock to protect the
-LRU list, and the inodes themselves are protected against freeing
-races by the inode->i_lock. Hence we can lift the inode_lock from
-prune_icache as well.
+All that remains of the inode_lock is protecting the inode hash list
+manipulation and traversals. Rename the inode_lock to
+inode_hash_lock to reflect it's actual function.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- Documentation/filesystems/Locking |    2 +-
- Documentation/filesystems/porting |   16 +++++++++++-----
- Documentation/filesystems/vfs.txt |    2 +-
- fs/inode.c                        |   17 +++--------------
- fs/logfs/inode.c                  |    2 +-
- 5 files changed, 17 insertions(+), 22 deletions(-)
+ fs/inode.c                |  111 +++++++++++++++++++++++++--------------------
+ fs/notify/inode_mark.c    |    1 -
+ fs/notify/mark.c          |    1 -
+ fs/notify/vfsmount_mark.c |    1 -
+ fs/ntfs/inode.c           |    4 +-
+ include/linux/writeback.h |    1 -
+ 6 files changed, 63 insertions(+), 56 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index 2e994ef..61b31ac 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -128,7 +128,7 @@ alloc_inode:
- destroy_inode:
- dirty_inode:				(must not sleep)
- write_inode:
--drop_inode:				!!!inode_lock!!!
-+drop_inode:				!!!inode->i_lock!!!
- evict_inode:
- put_super:		write
- write_super:		read
-diff --git a/Documentation/filesystems/porting b/Documentation/filesystems/porting
-index 0c986c9..6e29954 100644
---- a/Documentation/filesystems/porting
-+++ b/Documentation/filesystems/porting
-@@ -298,11 +298,14 @@ be used instead.  It gets called whenever the inode is evicted, whether it has
- remaining links or not.  Caller does *not* evict the pagecache or inode-associated
- metadata buffers; getting rid of those is responsibility of method, as it had
- been for ->delete_inode().
--	->drop_inode() returns int now; it's called on final iput() with inode_lock
--held and it returns true if filesystems wants the inode to be dropped.  As before,
--generic_drop_inode() is still the default and it's been updated appropriately.
--generic_delete_inode() is also alive and it consists simply of return 1.  Note that
--all actual eviction work is done by caller after ->drop_inode() returns.
-+
-+	->drop_inode() returns int now; it's called on final iput() with
-+inode->i_lock held and it returns true if filesystems wants the inode to be
-+dropped.  As before, generic_drop_inode() is still the default and it's been
-+updated appropriately.  generic_delete_inode() is also alive and it consists
-+simply of return 1.  Note that all actual eviction work is done by caller after
-+->drop_inode() returns.
-+
- 	clear_inode() is gone; use end_writeback() instead.  As before, it must
- be called exactly once on each call of ->evict_inode() (as it used to be for
- each call of ->delete_inode()).  Unlike before, if you are using inode-associated
-@@ -397,6 +400,9 @@ a file off.
- 
- --
- [mandatory]
-+
-+--
-+[mandatory]
- 	->get_sb() is gone.  Switch to use of ->mount().  Typically it's just
- a matter of switching from calling get_sb_... to mount_... and changing the
- function type.  If you were doing it manually, just switch from setting ->mnt_root
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 306f0ae..80815ed 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -254,7 +254,7 @@ or bottom half).
- 	should be synchronous or not, not all filesystems check this flag.
- 
-   drop_inode: called when the last access to the inode is dropped,
--	with the inode_lock spinlock held.
-+	with the inode->i_lock spinlock held.
- 
- 	This method should be either NULL (normal UNIX filesystem
- 	semantics) or "generic_delete_inode" (for filesystems that do not
 diff --git a/fs/inode.c b/fs/inode.c
-index f6e6e37..5ecd880 100644
+index 5a7f8ef..730ddd6 100644
 --- a/fs/inode.c
 +++ b/fs/inode.c
-@@ -649,7 +649,6 @@ static void prune_icache(int nr_to_scan)
- 	unsigned long reap = 0;
+@@ -38,10 +38,10 @@
+  *   sb->s_inodes, inode->i_sb_list
+  * inode_wb_list_lock protects:
+  *   bdi->wb.b_{dirty,io,more_io}, inode->i_wb_list
++ * inode_hash_lock protects:
++ *   inode_hashtable, inode->i_hash
+  *
+  * Lock ordering:
+- * inode_lock
+- *   inode->i_lock
+  *
+  * inode_sb_list_lock
+  *   inode->i_lock
+@@ -49,6 +49,13 @@
+  *
+  * inode_wb_list_lock
+  *   inode->i_lock
++ *
++ * inode_hash_lock
++ *   inode_sb_list_lock
++ *   inode->i_lock
++ *
++ * iunique_lock
++ *   inode_hash_lock
+  */
  
- 	down_read(&iprune_sem);
--	spin_lock(&inode_lock);
- 	spin_lock(&inode_lru_lock);
- 	for (nr_scanned = 0; nr_scanned < nr_to_scan; nr_scanned++) {
- 		struct inode *inode;
-@@ -675,8 +674,8 @@ static void prune_icache(int nr_to_scan)
- 		 */
- 		if (atomic_read(&inode->i_count) ||
- 		    (inode->i_state & ~I_REFERENCED)) {
--			spin_unlock(&inode->i_lock);
- 			list_del_init(&inode->i_lru);
-+			spin_unlock(&inode->i_lock);
- 			inodes_stat.nr_unused--;
- 			continue;
- 		}
-@@ -684,20 +683,18 @@ static void prune_icache(int nr_to_scan)
- 		/* recently referenced inodes get one more pass */
- 		if (inode->i_state & I_REFERENCED) {
- 			inode->i_state &= ~I_REFERENCED;
--			spin_unlock(&inode->i_lock);
- 			list_move(&inode->i_lru, &inode_lru);
-+			spin_unlock(&inode->i_lock);
- 			continue;
- 		}
- 		if (inode_has_buffers(inode) || inode->i_data.nrpages) {
- 			__iget(inode);
- 			spin_unlock(&inode->i_lock);
- 			spin_unlock(&inode_lru_lock);
--			spin_unlock(&inode_lock);
- 			if (remove_inode_buffers(inode))
- 				reap += invalidate_mapping_pages(&inode->i_data,
- 								0, -1);
- 			iput(inode);
--			spin_lock(&inode_lock);
- 			spin_lock(&inode_lru_lock);
+ /*
+@@ -84,6 +91,8 @@
  
- 			if (inode != list_entry(inode_lru.next,
-@@ -723,7 +720,6 @@ static void prune_icache(int nr_to_scan)
- 	else
- 		__count_vm_events(PGINODESTEAL, reap);
- 	spin_unlock(&inode_lru_lock);
--	spin_unlock(&inode_lock);
+ static unsigned int i_hash_mask __read_mostly;
+ static unsigned int i_hash_shift __read_mostly;
++static struct hlist_head *inode_hashtable __read_mostly;
++static __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_hash_lock);
  
- 	dispose_list(&freeable);
- 	up_read(&iprune_sem);
-@@ -1081,7 +1077,6 @@ EXPORT_SYMBOL(iunique);
+ /*
+  * Each inode can be on two separate lists. One is
+@@ -99,15 +108,6 @@ static unsigned int i_hash_shift __read_mostly;
  
- struct inode *igrab(struct inode *inode)
+ static LIST_HEAD(inode_lru);
+ static DEFINE_SPINLOCK(inode_lru_lock);
+-static struct hlist_head *inode_hashtable __read_mostly;
+-
+-/*
+- * A simple spinlock to protect the list manipulations.
+- *
+- * NOTE! You also have to own the lock if you change
+- * the i_state of an inode while it is in use..
+- */
+-DEFINE_SPINLOCK(inode_lock);
+ 
+ __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_sb_list_lock);
+ __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_wb_list_lock);
+@@ -432,11 +432,11 @@ void __insert_inode_hash(struct inode *inode, unsigned long hashval)
  {
+ 	struct hlist_head *b = inode_hashtable + hash(inode->i_sb, hashval);
+ 
 -	spin_lock(&inode_lock);
++	spin_lock(&inode_hash_lock);
  	spin_lock(&inode->i_lock);
- 	if (!(inode->i_state & (I_FREEING|I_WILL_FREE))) {
- 		__iget(inode);
-@@ -1095,7 +1090,6 @@ struct inode *igrab(struct inode *inode)
- 		 */
- 		inode = NULL;
- 	}
--	spin_unlock(&inode_lock);
- 	return inode;
- }
- EXPORT_SYMBOL(igrab);
-@@ -1438,7 +1432,6 @@ static void iput_final(struct inode *inode)
- 	const struct super_operations *op = inode->i_sb->s_op;
- 	int drop;
- 
--	spin_lock(&inode->i_lock);
- 	WARN_ON(inode->i_state & I_NEW);
- 
- 	if (op && op->drop_inode)
-@@ -1451,16 +1444,13 @@ static void iput_final(struct inode *inode)
- 		if (!(inode->i_state & (I_DIRTY|I_SYNC)))
- 			inode_lru_list_add(inode);
- 		spin_unlock(&inode->i_lock);
--		spin_unlock(&inode_lock);
- 		return;
- 	}
- 
- 	if (!drop) {
- 		inode->i_state |= I_WILL_FREE;
- 		spin_unlock(&inode->i_lock);
--		spin_unlock(&inode_lock);
- 		write_inode_now(inode, 1);
--		spin_lock(&inode_lock);
- 		spin_lock(&inode->i_lock);
- 		WARN_ON(inode->i_state & I_NEW);
- 		inode->i_state &= ~I_WILL_FREE;
-@@ -1469,7 +1459,6 @@ static void iput_final(struct inode *inode)
- 	inode->i_state |= I_FREEING;
- 	inode_lru_list_del(inode);
+ 	hlist_add_head(&inode->i_hash, b);
  	spin_unlock(&inode->i_lock);
 -	spin_unlock(&inode_lock);
- 
- 	evict(inode);
++	spin_unlock(&inode_hash_lock);
  }
-@@ -1488,7 +1477,7 @@ void iput(struct inode *inode)
- 	if (inode) {
- 		BUG_ON(inode->i_state & I_CLEAR);
+ EXPORT_SYMBOL(__insert_inode_hash);
  
--		if (atomic_dec_and_lock(&inode->i_count, &inode_lock))
-+		if (atomic_dec_and_lock(&inode->i_count, &inode->i_lock))
- 			iput_final(inode);
- 	}
- }
-diff --git a/fs/logfs/inode.c b/fs/logfs/inode.c
-index 03b8c24..edfea7a 100644
---- a/fs/logfs/inode.c
-+++ b/fs/logfs/inode.c
-@@ -293,7 +293,7 @@ static int logfs_write_inode(struct inode *inode, struct writeback_control *wbc)
- 	return ret;
- }
- 
--/* called with inode_lock held */
-+/* called with inode->i_lock held */
- static int logfs_drop_inode(struct inode *inode)
+@@ -448,11 +448,11 @@ EXPORT_SYMBOL(__insert_inode_hash);
+  */
+ void remove_inode_hash(struct inode *inode)
  {
- 	struct logfs_super *super = logfs_super(inode->i_sb);
+-	spin_lock(&inode_lock);
++	spin_lock(&inode_hash_lock);
+ 	spin_lock(&inode->i_lock);
+ 	hlist_del_init(&inode->i_hash);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
++	spin_unlock(&inode_hash_lock);
+ }
+ EXPORT_SYMBOL(remove_inode_hash);
+ 
+@@ -777,11 +777,15 @@ static struct inode *find_inode(struct super_block *sb,
+ 
+ repeat:
+ 	hlist_for_each_entry(inode, node, head, i_hash) {
+-		if (inode->i_sb != sb)
++		spin_lock(&inode->i_lock);
++		if (inode->i_sb != sb) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
+-		if (!test(inode, data))
++		}
++		if (!test(inode, data)) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
+-		spin_lock(&inode->i_lock);
++		}
+ 		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+ 			__wait_on_freeing_inode(inode);
+ 			goto repeat;
+@@ -805,11 +809,15 @@ static struct inode *find_inode_fast(struct super_block *sb,
+ 
+ repeat:
+ 	hlist_for_each_entry(inode, node, head, i_hash) {
+-		if (inode->i_ino != ino)
++		spin_lock(&inode->i_lock);
++		if (inode->i_ino != ino) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
+-		if (inode->i_sb != sb)
++		}
++		if (inode->i_sb != sb) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
+-		spin_lock(&inode->i_lock);
++		}
+ 		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+ 			__wait_on_freeing_inode(inode);
+ 			goto repeat;
+@@ -923,7 +931,7 @@ void unlock_new_inode(struct inode *inode)
+ EXPORT_SYMBOL(unlock_new_inode);
+ 
+ /*
+- * This is called without the inode lock held.. Be careful.
++ * This is called without the inode hash lock held.. Be careful.
+  *
+  * We no longer cache the sb_flags in i_flags - see fs.h
+  *	-- rmk@arm.uk.linux.org
+@@ -940,7 +948,7 @@ static struct inode *get_new_inode(struct super_block *sb,
+ 	if (inode) {
+ 		struct inode *old;
+ 
+-		spin_lock(&inode_lock);
++		spin_lock(&inode_hash_lock);
+ 		/* We released the lock, so.. */
+ 		old = find_inode(sb, head, test, data);
+ 		if (!old) {
+@@ -952,7 +960,7 @@ static struct inode *get_new_inode(struct super_block *sb,
+ 			hlist_add_head(&inode->i_hash, head);
+ 			spin_unlock(&inode->i_lock);
+ 			inode_sb_list_add(inode);
+-			spin_unlock(&inode_lock);
++			spin_unlock(&inode_hash_lock);
+ 
+ 			/* Return the locked inode with I_NEW set, the
+ 			 * caller is responsible for filling in the contents
+@@ -965,7 +973,7 @@ static struct inode *get_new_inode(struct super_block *sb,
+ 		 * us. Use the old inode instead of the one we just
+ 		 * allocated.
+ 		 */
+-		spin_unlock(&inode_lock);
++		spin_unlock(&inode_hash_lock);
+ 		destroy_inode(inode);
+ 		inode = old;
+ 		wait_on_inode(inode);
+@@ -973,7 +981,7 @@ static struct inode *get_new_inode(struct super_block *sb,
+ 	return inode;
+ 
+ set_failed:
+-	spin_unlock(&inode_lock);
++	spin_unlock(&inode_hash_lock);
+ 	destroy_inode(inode);
+ 	return NULL;
+ }
+@@ -991,7 +999,7 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
+ 	if (inode) {
+ 		struct inode *old;
+ 
+-		spin_lock(&inode_lock);
++		spin_lock(&inode_hash_lock);
+ 		/* We released the lock, so.. */
+ 		old = find_inode_fast(sb, head, ino);
+ 		if (!old) {
+@@ -1001,7 +1009,7 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
+ 			hlist_add_head(&inode->i_hash, head);
+ 			spin_unlock(&inode->i_lock);
+ 			inode_sb_list_add(inode);
+-			spin_unlock(&inode_lock);
++			spin_unlock(&inode_hash_lock);
+ 
+ 			/* Return the locked inode with I_NEW set, the
+ 			 * caller is responsible for filling in the contents
+@@ -1014,7 +1022,7 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
+ 		 * us. Use the old inode instead of the one we just
+ 		 * allocated.
+ 		 */
+-		spin_unlock(&inode_lock);
++		spin_unlock(&inode_hash_lock);
+ 		destroy_inode(inode);
+ 		inode = old;
+ 		wait_on_inode(inode);
+@@ -1035,10 +1043,14 @@ static int test_inode_iunique(struct super_block *sb, unsigned long ino)
+ 	struct hlist_node *node;
+ 	struct inode *inode;
+ 
++	spin_lock(&inode_hash_lock);
+ 	hlist_for_each_entry(inode, node, b, i_hash) {
+-		if (inode->i_ino == ino && inode->i_sb == sb)
++		if (inode->i_ino == ino && inode->i_sb == sb) {
++			spin_unlock(&inode_hash_lock);
+ 			return 0;
++		}
+ 	}
++	spin_unlock(&inode_hash_lock);
+ 
+ 	return 1;
+ }
+@@ -1068,7 +1080,6 @@ ino_t iunique(struct super_block *sb, ino_t max_reserved)
+ 	static unsigned int counter;
+ 	ino_t res;
+ 
+-	spin_lock(&inode_lock);
+ 	spin_lock(&iunique_lock);
+ 	do {
+ 		if (counter <= max_reserved)
+@@ -1076,7 +1087,6 @@ ino_t iunique(struct super_block *sb, ino_t max_reserved)
+ 		res = counter++;
+ 	} while (!test_inode_iunique(sb, res));
+ 	spin_unlock(&iunique_lock);
+-	spin_unlock(&inode_lock);
+ 
+ 	return res;
+ }
+@@ -1118,7 +1128,7 @@ EXPORT_SYMBOL(igrab);
+  *
+  * Otherwise NULL is returned.
+  *
+- * Note, @test is called with the inode_lock held, so can't sleep.
++ * Note, @test is called with the inode_hash_lock held, so can't sleep.
+  */
+ static struct inode *ifind(struct super_block *sb,
+ 		struct hlist_head *head, int (*test)(struct inode *, void *),
+@@ -1126,15 +1136,15 @@ static struct inode *ifind(struct super_block *sb,
+ {
+ 	struct inode *inode;
+ 
+-	spin_lock(&inode_lock);
++	spin_lock(&inode_hash_lock);
+ 	inode = find_inode(sb, head, test, data);
+ 	if (inode) {
+-		spin_unlock(&inode_lock);
++		spin_unlock(&inode_hash_lock);
+ 		if (likely(wait))
+ 			wait_on_inode(inode);
+ 		return inode;
+ 	}
+-	spin_unlock(&inode_lock);
++	spin_unlock(&inode_hash_lock);
+ 	return NULL;
+ }
+ 
+@@ -1158,14 +1168,14 @@ static struct inode *ifind_fast(struct super_block *sb,
+ {
+ 	struct inode *inode;
+ 
+-	spin_lock(&inode_lock);
++	spin_lock(&inode_hash_lock);
+ 	inode = find_inode_fast(sb, head, ino);
+ 	if (inode) {
+-		spin_unlock(&inode_lock);
++		spin_unlock(&inode_hash_lock);
+ 		wait_on_inode(inode);
+ 		return inode;
+ 	}
+-	spin_unlock(&inode_lock);
++	spin_unlock(&inode_hash_lock);
+ 	return NULL;
+ }
+ 
+@@ -1188,7 +1198,7 @@ static struct inode *ifind_fast(struct super_block *sb,
+  *
+  * Otherwise NULL is returned.
+  *
+- * Note, @test is called with the inode_lock held, so can't sleep.
++ * Note, @test is called with the inode_hash_lock held, so can't sleep.
+  */
+ struct inode *ilookup5_nowait(struct super_block *sb, unsigned long hashval,
+ 		int (*test)(struct inode *, void *), void *data)
+@@ -1216,7 +1226,7 @@ EXPORT_SYMBOL(ilookup5_nowait);
+  *
+  * Otherwise NULL is returned.
+  *
+- * Note, @test is called with the inode_lock held, so can't sleep.
++ * Note, @test is called with the inode_hash_lock held, so can't sleep.
+  */
+ struct inode *ilookup5(struct super_block *sb, unsigned long hashval,
+ 		int (*test)(struct inode *, void *), void *data)
+@@ -1267,7 +1277,8 @@ EXPORT_SYMBOL(ilookup);
+  * inode and this is returned locked, hashed, and with the I_NEW flag set. The
+  * file system gets to fill it in before unlocking it via unlock_new_inode().
+  *
+- * Note both @test and @set are called with the inode_lock held, so can't sleep.
++ * Note both @test and @set are called with the inode_hash_lock held, so can't
++ * sleep.
+  */
+ struct inode *iget5_locked(struct super_block *sb, unsigned long hashval,
+ 		int (*test)(struct inode *, void *),
+@@ -1327,7 +1338,7 @@ int insert_inode_locked(struct inode *inode)
+ 	while (1) {
+ 		struct hlist_node *node;
+ 		struct inode *old = NULL;
+-		spin_lock(&inode_lock);
++		spin_lock(&inode_hash_lock);
+ 		hlist_for_each_entry(old, node, head, i_hash) {
+ 			if (old->i_ino != ino)
+ 				continue;
+@@ -1345,12 +1356,12 @@ int insert_inode_locked(struct inode *inode)
+ 			inode->i_state |= I_NEW;
+ 			hlist_add_head(&inode->i_hash, head);
+ 			spin_unlock(&inode->i_lock);
+-			spin_unlock(&inode_lock);
++			spin_unlock(&inode_hash_lock);
+ 			return 0;
+ 		}
+ 		__iget(old);
+ 		spin_unlock(&old->i_lock);
+-		spin_unlock(&inode_lock);
++		spin_unlock(&inode_hash_lock);
+ 		wait_on_inode(old);
+ 		if (unlikely(!inode_unhashed(old))) {
+ 			iput(old);
+@@ -1371,7 +1382,7 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+ 		struct hlist_node *node;
+ 		struct inode *old = NULL;
+ 
+-		spin_lock(&inode_lock);
++		spin_lock(&inode_hash_lock);
+ 		hlist_for_each_entry(old, node, head, i_hash) {
+ 			if (old->i_sb != sb)
+ 				continue;
+@@ -1389,12 +1400,12 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+ 			inode->i_state |= I_NEW;
+ 			hlist_add_head(&inode->i_hash, head);
+ 			spin_unlock(&inode->i_lock);
+-			spin_unlock(&inode_lock);
++			spin_unlock(&inode_hash_lock);
+ 			return 0;
+ 		}
+ 		__iget(old);
+ 		spin_unlock(&old->i_lock);
+-		spin_unlock(&inode_lock);
++		spin_unlock(&inode_hash_lock);
+ 		wait_on_inode(old);
+ 		if (unlikely(!inode_unhashed(old))) {
+ 			iput(old);
+@@ -1673,10 +1684,10 @@ static void __wait_on_freeing_inode(struct inode *inode)
+ 	wq = bit_waitqueue(&inode->i_state, __I_NEW);
+ 	prepare_to_wait(wq, &wait.wait, TASK_UNINTERRUPTIBLE);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
++	spin_unlock(&inode_hash_lock);
+ 	schedule();
+ 	finish_wait(wq, &wait.wait);
+-	spin_lock(&inode_lock);
++	spin_lock(&inode_hash_lock);
+ }
+ 
+ static __initdata unsigned long ihash_entries;
+diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
+index fb3b3c5..07ea8d3 100644
+--- a/fs/notify/inode_mark.c
++++ b/fs/notify/inode_mark.c
+@@ -22,7 +22,6 @@
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/spinlock.h>
+-#include <linux/writeback.h> /* for inode_lock */
+ 
+ #include <asm/atomic.h>
+ 
+diff --git a/fs/notify/mark.c b/fs/notify/mark.c
+index 325185e..50c0085 100644
+--- a/fs/notify/mark.c
++++ b/fs/notify/mark.c
+@@ -91,7 +91,6 @@
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/srcu.h>
+-#include <linux/writeback.h> /* for inode_lock */
+ 
+ #include <asm/atomic.h>
+ 
+diff --git a/fs/notify/vfsmount_mark.c b/fs/notify/vfsmount_mark.c
+index 85eebff..e86577d 100644
+--- a/fs/notify/vfsmount_mark.c
++++ b/fs/notify/vfsmount_mark.c
+@@ -23,7 +23,6 @@
+ #include <linux/mount.h>
+ #include <linux/mutex.h>
+ #include <linux/spinlock.h>
+-#include <linux/writeback.h> /* for inode_lock */
+ 
+ #include <asm/atomic.h>
+ 
+diff --git a/fs/ntfs/inode.c b/fs/ntfs/inode.c
+index a627ed8..0b56c6b 100644
+--- a/fs/ntfs/inode.c
++++ b/fs/ntfs/inode.c
+@@ -54,7 +54,7 @@
+  *
+  * Return 1 if the attributes match and 0 if not.
+  *
+- * NOTE: This function runs with the inode_lock spin lock held so it is not
++ * NOTE: This function runs with the inode->i_lock spin lock held so it is not
+  * allowed to sleep.
+  */
+ int ntfs_test_inode(struct inode *vi, ntfs_attr *na)
+@@ -98,7 +98,7 @@ int ntfs_test_inode(struct inode *vi, ntfs_attr *na)
+  *
+  * Return 0 on success and -errno on error.
+  *
+- * NOTE: This function runs with the inode_lock spin lock held so it is not
++ * NOTE: This function runs with the inode->i_lock spin lock held so it is not
+  * allowed to sleep. (Hence the GFP_ATOMIC allocation.)
+  */
+ static int ntfs_init_locked_inode(struct inode *vi, ntfs_attr *na)
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index 3f5fee7..17e7ccc 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -9,7 +9,6 @@
+ 
+ struct backing_dev_info;
+ 
+-extern spinlock_t inode_lock;
+ extern spinlock_t inode_wb_list_lock;
+ 
+ /*
 -- 
 1.7.2.3
 
