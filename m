@@ -1,181 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab1CVKvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 06:51:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59470 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab1CVKvd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 06:51:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=k0BW2+ijGrZttLfgnVSEdanhAIbX74eIvZ2LNW9AbyzMxqtGXAR241ubZXKYvmyrJD
-         +pq+MQqPyB4PFk0yU9SzIuo+W5GscRxbeyOkXBNlHmjMytmcsuNHgUWwu1YE2/tu+PHH
-         JDzXXwgPC/6DLWen6bm0yKsKPIX3cIykthe0E=
-Date: Tue, 22 Mar 2011 11:51:28 +0100
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
-        vda.linux@googlemail.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: [PATCH UPDATED 3/8] job control: Fix ptracer wait(2) hang and
- explain notask_error clearing
-Message-ID: <20110322105128.GP12003@htj.dyndns.org>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org>
- <1299614199-25142-4-git-send-email-tj@kernel.org>
+	id S1752141Ab1CVKzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 06:55:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:55878 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750868Ab1CVKzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 06:55:11 -0400
+Content-Type: multipart/mixed; boundary="===============0314157842=="
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299614199-25142-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,224,1299484800"; 
+   d="scan'208";a="722819944"
+From: Oren Weil <oren.jer.weil@intel.com>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, david@woodhou.se,
+        Oren Weil <oren.jer.weil@intel.com>
+Subject: [PATCH 0/7] char/mei: Intel MEI Driver
+Date: Tue, 22 Mar 2011 12:51:25 +0200
+Message-Id: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wait(2) and friends allow access to stopped/continued states through
-zombies, which is required as the states are process-wide and should
-be accessible whether the leader task is alive or undead.
-wait_consider_task() implements this by always clearing notask_error
-and going through wait_task_stopped/continued() for unreaped zombies.
+--===============0314157842==
+MIME-Version: 1.0
 
-However, while ptraced, the stopped state is per-task and as such if
-the ptracee became a zombie, there's no further stopped event to
-listen to and wait(2) and friends should return -ECHILD on the tracee.
+﻿Intel MEI Driver
+=======================
+The Intel Management Engine (Intel ME) is an isolated and 
+protected computing resources (Coprocessor) residing inside 
+Intel chipsets. The Intel ME provides support for computer/IT 
+management features.
+The Feature set depends on Intel chipset SKU. 
 
-Fix it by clearing notask_error only if WCONTINUED | WEXITED is set
-for ptraced zombies.  While at it, document why clearing notask_error
-is safe for each case.
+The Intel Management Engine Interface (Intel MEI, previous known 
+as HECI) is interface between the Host and Intel ME. 
+This interface is exposed to the host as PCI device. 
+The Intel MEI Driver is in charge of the communication channel 
+between host application and ME feature.
 
-Test case follows.
+Each ME feature (ME Client) is addressed by GUID/UUID 
+and each feature defines its own protocol. 
+The protocol is message based with header and payload up to
+512 bytes.
 
-  #include <stdio.h>
-  #include <unistd.h>
-  #include <pthread.h>
-  #include <time.h>
-  #include <sys/types.h>
-  #include <sys/ptrace.h>
-  #include <sys/wait.h>
+The driver exposes character device called /dev/mei.
 
-  static void *nooper(void *arg)
-  {
-	  pause();
-	  return NULL;
-  }
+Application maintain communication with a ME feature while 
+/dev/mei is open. The feature binding is preformed by calling
+MEI_CONNECT_CLIENT_IOCTL which pass the desired UUID.
+The number of instances of a ME feature that can be opened 
+at the same time depends on the ME feature, but most of the 
+features allow only single instance
 
-  int main(void)
-  {
-	  const struct timespec ts1s = { .tv_sec = 1 };
-	  pid_t tracee, tracer;
-	  siginfo_t si;
+Intel AMT Host Interface (AMTHI) feature requires multiple 
+user application maintaining therefore the MEI driver handle 
+it internally by maintaining requests queues for it.
 
-	  tracee = fork();
-	  if (tracee == 0) {
-		  pthread_t thr;
+Because some of the ME features can change the system 
+configuration, the driver by default allowing only privilege
+user to access it.
 
-		  pthread_create(&thr, NULL, nooper, NULL);
-		  nanosleep(&ts1s, NULL);
-		  printf("tracee exiting\n");
-		  pthread_exit(NULL);	/* let subthread run */
-	  }
 
-	  tracer = fork();
-	  if (tracer == 0) {
-		  ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
-		  while (1) {
-			  if (waitid(P_PID, tracee, &si, WSTOPPED) < 0) {
-				  perror("waitid");
-				  break;
-			  }
-			  ptrace(PTRACE_CONT, tracee, NULL,
-				 (void *)(long)si.si_status);
-		  }
-		  return 0;
-	  }
+pseudo code:
+	struct mei_connect_client_data data;
+	fd = open(MEI_DEVICE);
 
-	  waitid(P_PID, tracer, &si, WEXITED);
-	  kill(tracee, SIGKILL);
-	  return 0;
-  }
+	data.d.in_client_uuid = AMTHI_UUID;
 
-Before the patch, after the tracee becomes a zombie, the tracer's
-waitid(WSTOPPED) never returns and the program doesn't terminate.
+	ioctl(fd, IOCTL_MEI_CONNECT_CLIENT, &data);
 
-  tracee exiting
-  ^C
+	printf(“Ver=%d, MaxLen=%ld\n”, 
+			data.d.in_client_uuid.protocol_version,
+			data.d.in_client_uuid.max_msg_length);
+	
+	[...]
+	
+	write(fd, amthi_req_data, amthi_req_data_len);
+	
+	[...]
+	
+	read(fd, &amthi_res_data, amthi_res_data_len);
+	
+	[...]
 
-After the patch, tracee exiting triggers waitid() to fail.
+Module Parameters
+=================
+watchdog_timeout - in order to change the watchdog timeout setting 
+the user can use this module parameter.
+this value set the Intel AMT watchdog timeout interval in seconds, 
+the default value is 120sec.
+to disable the watchdog set the value 0.
 
-  tracee exiting
-  waitid: No child processes
+The AMT watchdog is used for monitoring the OS health. 
 
--v2: Oleg pointed out that exited in addition to continued can happen
-     for ptraced dead group leader.  Clear notask_error for ptraced
-     child on WEXITED too.
+Note: We are aware that this code is not in its best shape
+we are working to make it better and we will appreciate any feedbacks 
+and reviews that you can give to improve it.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
-WEXITED bug fixed.  Let's tackle the ptraced per-task wait(2) thing
-later.  Thanks.
 
- kernel/exit.c |   44 ++++++++++++++++++++++++++++++++++----------
- 1 file changed, 34 insertions(+), 10 deletions(-)
+Oren Weil (7):
+  char/mei: PCI device and char driver support.
+  char/mei: Interrupt handling.
+  char/mei: MEI "Link" layer code - MEI Hardware communications.
+  char/mei: MEI driver init flow.
+  char/mei: Hardware and MEI driver internal struct definition
+  char/mei: Header file contain the Userland API, (IOCTL and its
+    struct)
+  char/mei: Updates to char/Kconfig ane char/Makefile
 
-Index: work/kernel/exit.c
-===================================================================
---- work.orig/kernel/exit.c
-+++ work/kernel/exit.c
-@@ -1550,17 +1550,41 @@ static int wait_consider_task(struct wai
- 		return 0;
- 	}
- 
--	/*
--	 * We don't reap group leaders with subthreads.
--	 */
--	if (p->exit_state == EXIT_ZOMBIE && !delay_group_leader(p))
--		return wait_task_zombie(wo, p);
-+	/* slay zombie? */
-+	if (p->exit_state == EXIT_ZOMBIE) {
-+		/* we don't reap group leaders with subthreads */
-+		if (!delay_group_leader(p))
-+			return wait_task_zombie(wo, p);
- 
--	/*
--	 * It's stopped or running now, so it might
--	 * later continue, exit, or stop again.
--	 */
--	wo->notask_error = 0;
-+		/*
-+		 * Allow access to stopped/continued state via zombie by
-+		 * falling through.  Clearing of notask_error is complex.
-+		 *
-+		 * When !@ptrace:
-+		 *
-+		 * If WEXITED is set, notask_error should naturally be
-+		 * cleared.  If not, subset of WSTOPPED|WCONTINUED is set,
-+		 * so, if there are live subthreads, there are events to
-+		 * wait for.  If all subthreads are dead, it's still safe
-+		 * to clear - this function will be called again in finite
-+		 * amount time once all the subthreads are released and
-+		 * will then return without clearing.
-+		 *
-+		 * When @ptrace:
-+		 *
-+		 * Stopped state is per-task and thus can't change once the
-+		 * target task dies.  Only continued and exited can happen.
-+		 * Clear notask_error if WCONTINUED | WEXITED.
-+		 */
-+		if (likely(!ptrace) || (wo->wo_flags & (WCONTINUED | WEXITED)))
-+			wo->notask_error = 0;
-+	} else {
-+		/*
-+		 * @p is alive and it's gonna stop, continue or exit, so
-+		 * there always is something to wait for.
-+		 */
-+		wo->notask_error = 0;
-+	}
- 
- 	if (task_stopped_code(p, ptrace))
- 		return wait_task_stopped(wo, ptrace, p);
+ drivers/char/Kconfig           |   12 +-
+ drivers/char/Makefile          |    1 +
+ drivers/char/mei/Makefile      |   19 +
+ drivers/char/mei/hw.h          |  511 +++++++++++++
+ drivers/char/mei/init.c        |  834 +++++++++++++++++++++
+ drivers/char/mei/interface.c   |  478 ++++++++++++
+ drivers/char/mei/interface.h   |  122 +++
+ drivers/char/mei/interrupt.c   | 1582 ++++++++++++++++++++++++++++++++++++++++
+ drivers/char/mei/iorw.c        |  608 +++++++++++++++
+ drivers/char/mei/main.c        | 1442 ++++++++++++++++++++++++++++++++++++
+ drivers/char/mei/mei.h         |  156 ++++
+ drivers/char/mei/mei_version.h |   31 +
+ include/linux/mei.h            |  109 +++
+ 13 files changed, 5904 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/char/mei/Makefile
+ create mode 100644 drivers/char/mei/hw.h
+ create mode 100644 drivers/char/mei/init.c
+ create mode 100644 drivers/char/mei/interface.c
+ create mode 100644 drivers/char/mei/interface.h
+ create mode 100644 drivers/char/mei/interrupt.c
+ create mode 100644 drivers/char/mei/iorw.c
+ create mode 100644 drivers/char/mei/main.c
+ create mode 100644 drivers/char/mei/mei.h
+ create mode 100644 drivers/char/mei/mei_version.h
+ create mode 100644 include/linux/mei.h
+
+
+--===============0314157842==
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
+
+---------------------------------------------------------------------
+Intel Israel (74) Limited
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+
+--===============0314157842==--
