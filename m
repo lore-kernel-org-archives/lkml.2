@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab1CVRjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 13:39:41 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:57863 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756503Ab1CVRjj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 13:39:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=XZoKEFDCj4jIpqoflASTtWe1aaDQHE4zYLrfVBt/S8vHWHZf86N36kxOO57vAEypaj
-         QHrloRQGPMZocaFKP5vA==
-MIME-Version: 1.0
-In-Reply-To: <20110322150905.GD3757@redhat.com>
-References: <1300756245-12380-1-git-send-email-ctalbott@google.com>
-	<20110322150905.GD3757@redhat.com>
-Date: Tue, 22 Mar 2011 10:39:36 -0700
-Message-ID: <AANLkTinTiEAFG1F1df380BiDtVFVr=nCsSqhM9__XdQ4@mail.gmail.com>
-Subject: Re: [PATCH 0/3] cfq-iosched: Fair cross-group preemption
-From: Chad Talbott <ctalbott@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org, mrubin@google.com,
-        teravest@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S932239Ab1CVRk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 13:40:56 -0400
+Received: from linux-sh.org ([111.68.239.195]:55052 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756554Ab1CVRkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 13:40:52 -0400
+Date: Wed, 23 Mar 2011 02:39:50 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Thomas Hellstrom <thomas@shipmail.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org, Alex Deucher <alexdeucher@gmail.com>,
+        Jerome Glisse <j.glisse@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [PATCH] cleanup: Add 'struct dev' in the TTM layer to be passed in for DMA API calls.
+Message-ID: <20110322173950.GA5190@linux-sh.org>
+References: <1299598789-20402-1-git-send-email-konrad.wilk@oracle.com> <4D769726.2030307@shipmail.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D769726.2030307@shipmail.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 8:09 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> Why not just implement simply RT class groups and always allow an RT
-> group to preempt an BE class. Same thing we do for cfq queues. I will
-> not worry too much about a run away application consuming all the
-> bandwidth. If that's a concern we could use blkio controller to limit
-> the IO rate of a latency sensitive applicaiton to make sure it does
-> not starve BE applications.
+On Tue, Mar 08, 2011 at 09:52:54PM +0100, Thomas Hellstrom wrote:
+> Is passing a struct device to the DMA api really *strictly* necessary?
+> 
+Yes.
 
-That is not quite the same semantics.  This limited preemption patch
-is still work-conserving.  If the RT task in the only task on the
-system with IO, it will be able to use all available disk time.
+> I'd like to avoid that at all cost, since we don't want pages that are 
+> backing buffer objects
+> (coherent pages) to be associated with a specific device.
+> 
+And what do you do when coherent memory for a given device can only be
+obtained from that bus or that device alone?
 
-> If RT starving BE is an issue, then it is an issue with plain cfq queue
-> also. First we shall have to fix it there.
->
-> This definition that a latency sensitive task get prioritized only
-> till it is consuming its fair share and if task starts using more than
-> fair share then CFQ automatically stops prioritizing it sounds little
-> odd to me. If you are looking for predictability, then we lost it. We
-> shall have to very well know that task is not eating more than its
-> fair share before we can gurantee any kind of latencies to that task. And
-> if we know that task is not hogging the disk, there is anyway no risk
-> of it starving other groups/tasks completely.
+This API permits for cases where system memory is non-coherent or you are
+handling transactions across busses lacking coherency protocols between
+each other and so on. There are plenty of cases where coherent DMA
+buffers for PCI devices need to be allocated within the context of the
+PCI bus and no other coherent memory is possible. More complex examples
+exist as well. There are MFDs where DMA transactions are only coherent
+with regards to local SRAM that in turn is mapped in and out of an 8051
+microcontroller's address space, and so on. The kernel deals with all of
+these sorts of cases by way of that dev pointer in the DMA API, and any
+attempt to move beyond that scope makes non-portable assumptions about
+the nature of coherent memory pools.
 
-In a shared environment, we have to be a little bit defensive.  We
-hope that a latency sensitive task is well characterized and won't
-exceed its share of the disk, and that we haven't over-committed the
-disk.  If the app does do more IO than expected, then we'd like them
-to bear the burden.  We have a choice of two outcomes.  A single job
-sometimes failing to achieve low disk latency when it's very busy.  Or
-all jobs on a disk sometimes being very slow when another (unrelated)
-job is very busy.  The first is easier to understand and debug.
-
-Chad
+> The reason for this is that we probably soon will want to move ttm 
+> buffer objects between devices, and that should ideally be a simple 
+> operation: If the memory type the buffer object currently resides in is 
+> not shared between two devices, then move it out to system memory and 
+> change its struct bo_device pointer.
+> 
+> If pages are associated with a specific device, this will become much 
+> harder. Basically we need to change backing pages and copy all the data.
+> 
+That won't work if a device has consistent buffers locally but system
+memory is non-coherent. A not too uncommon situation for embedded
+platforms with a PCI bus hanging off of the CPU local bus.
