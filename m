@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab1CVRk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 13:40:56 -0400
-Received: from linux-sh.org ([111.68.239.195]:55052 "EHLO linux-sh.org"
+	id S1756580Ab1CVRqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 13:46:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7362 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756554Ab1CVRkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 13:40:52 -0400
-Date: Wed, 23 Mar 2011 02:39:50 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Thomas Hellstrom <thomas@shipmail.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-        dri-devel@lists.freedesktop.org, Alex Deucher <alexdeucher@gmail.com>,
-        Jerome Glisse <j.glisse@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: Re: [PATCH] cleanup: Add 'struct dev' in the TTM layer to be passed in for DMA API calls.
-Message-ID: <20110322173950.GA5190@linux-sh.org>
-References: <1299598789-20402-1-git-send-email-konrad.wilk@oracle.com> <4D769726.2030307@shipmail.org>
-Mime-Version: 1.0
+	id S1751615Ab1CVRqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 13:46:17 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "Alex\,Shi" <alex.shi@intel.com>, Corrado Zoccolo <czoccolo@gmail.com>,
+        "Li\, Shaohua" <shaohua.li@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "tytso\@mit.edu" <tytso@mit.edu>,
+        "jaxboe\@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen\, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [performance bug] kernel building regression on 64 LCPUs machine
+References: <AANLkTinAeQMy-OoYYpbYeX=EjZ_-uT=67Ktk1PbE=A7_@mail.gmail.com>
+	<x49hbbmpqbo.fsf@segfault.boston.devel.redhat.com>
+	<20110302094246.GA7496@quack.suse.cz>
+	<x491v2p4i0u.fsf@segfault.boston.devel.redhat.com>
+	<20110302211748.GF7496@quack.suse.cz>
+	<x49lj0x0zve.fsf@segfault.boston.devel.redhat.com>
+	<20110304153248.GC2649@quack.suse.cz>
+	<x49d3m6j35j.fsf@segfault.boston.devel.redhat.com>
+	<x491v2mivv6.fsf@segfault.boston.devel.redhat.com>
+	<1300779499.30136.353.camel@debian>
+	<20110322161405.GB19716@quack.suse.cz>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 22 Mar 2011 13:46:06 -0400
+In-Reply-To: <20110322161405.GB19716@quack.suse.cz> (Jan Kara's message of
+	"Tue, 22 Mar 2011 17:14:05 +0100")
+Message-ID: <x49r59zrqu9.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D769726.2030307@shipmail.org>
-User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 09:52:54PM +0100, Thomas Hellstrom wrote:
-> Is passing a struct device to the DMA api really *strictly* necessary?
-> 
-Yes.
+Jan Kara <jack@suse.cz> writes:
 
-> I'd like to avoid that at all cost, since we don't want pages that are 
-> backing buffer objects
-> (coherent pages) to be associated with a specific device.
-> 
-And what do you do when coherent memory for a given device can only be
-obtained from that bus or that device alone?
+> Jeff, I suppose the log files of fs_mark processes are on the same
+> device as the test directory, aren't they - that might explain the
+> flusher thread doing IO? The patch below
 
-This API permits for cases where system memory is non-coherent or you are
-handling transactions across busses lacking coherency protocols between
-each other and so on. There are plenty of cases where coherent DMA
-buffers for PCI devices need to be allocated within the context of the
-PCI bus and no other coherent memory is possible. More complex examples
-exist as well. There are MFDs where DMA transactions are only coherent
-with regards to local SRAM that in turn is mapped in and out of an 8051
-microcontroller's address space, and so on. The kernel deals with all of
-these sorts of cases by way of that dev pointer in the DMA API, and any
-attempt to move beyond that scope makes non-portable assumptions about
-the nature of coherent memory pools.
+No.  My test environments are sane.  The file system is on a completely
+separate disk and it is unmounted and remounted in between each run.
+That should take care of any lost flushes.
 
-> The reason for this is that we probably soon will want to move ttm 
-> buffer objects between devices, and that should ideally be a simple 
-> operation: If the memory type the buffer object currently resides in is 
-> not shared between two devices, then move it out to system memory and 
-> change its struct bo_device pointer.
-> 
-> If pages are associated with a specific device, this will become much 
-> harder. Basically we need to change backing pages and copy all the data.
-> 
-That won't work if a device has consistent buffers locally but system
-memory is non-coherent. A not too uncommon situation for embedded
-platforms with a PCI bus hanging off of the CPU local bus.
+Did you receive my last couple of private emails commenting on the trace
+data?
+
+Cheers,
+Jeff
