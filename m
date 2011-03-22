@@ -1,224 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab1CVPNz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 11:13:55 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34358 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753239Ab1CVPNv (ORCPT
+	id S1756305Ab1CVPPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 11:15:03 -0400
+Received: from anchor-post-1.mail.demon.net ([195.173.77.132]:57477 "EHLO
+	anchor-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753239Ab1CVPO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 11:13:51 -0400
-Date: Tue, 22 Mar 2011 11:13:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <roger.quadros@nokia.com>
-cc: gregkh@suse.de, <sshtylyov@mvista.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] usb: gadget: file_storage: Make CD-ROM emulation
- work with Mac OS-X
-In-Reply-To: <4D88B490.9060606@nokia.com>
-Message-ID: <Pine.LNX.4.44L0.1103221044370.2292-100000@iolanthe.rowland.org>
+	Tue, 22 Mar 2011 11:14:59 -0400
+X-Greylist: delayed 2634 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Mar 2011 11:14:59 EDT
+Date: Tue, 22 Mar 2011 14:31:04 +0000
+From: Darren Salt <linux@youmustbejoking.demon.co.uk>
+To: linux-input@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 2.6.38] Mode button quirk for Saitek Cyborg R.A.T. 7
+Message-ID: <mpro.ligqzs1xd6elc0462.linux@youmustbejoking.demon.co.uk>
+Mail-Followup-To: linux-input@vger.kernel.org, dmitry.torokhov@gmail.com, 
+ linux-kernel@vger.kernel.org, Darren Salt <linux@youmustbejoking.demon.co.uk>
+User-Agent: Messenger-Pro/2.66.6.3353 (Qt/4.6.3) (Linux-x86_64)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+X-SA-Exim-Connect-IP: 192.168.0.5
+X-SA-Exim-Mail-From: linux@youmustbejoking.demon.co.uk
+X-SA-Exim-Scanned: No (on pentagram.youmustbejoking.demon.co.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Mar 2011, Roger Quadros wrote:
+This patch implements a quirk for the Saitek Cyborg R.A.T. 7 mouse. It has a
+"mode" button, to the left of button 1, which behaves strangely: it cycles
+through three logical button numbers (8, 9 and 10 as seen by the kernel and
+13, 14 and 15, as seen by X), and defers sending the release event until the
+next time this button is pressed. This, I've noticed, confuses X into
+thinking that a drag operation is in progress when this button is clicked.
 
-> However, if host asked for data more than the TOC length then residue will be 
-> greater than zero and this will result in zero padded transfers.
-> 
-> Not a big issue but should we be fixing it?
-> 
-> one way could be to set fsg->residue to actual TOC length. in do_read_toc().
+The only sensible workaround is, I think, to have these logical buttons
+treated as instant-release.
 
-The current behavior is required by the the Bulk-Only Transport
-specification.  The spec says (section 6.7.2, case (4) or (5)):
+(Other R.A.T. mice are almost certainly affected.)
 
-If the device intends to send less data than the host indicated, then:
-    The device shall send the intended data.
-	The device may send fill data to pad up to a total of 
-	dCBWDataTransferLength.
-	If the device actually transfers less data than the host indicated, 
-	then:
-	    The device may end the transfer with a short packet.
-	    The device shall STALL the Bulk-In pipe.
+Signed-off-by: Darren Salt <linux@youmustbejoking.demon.co.uk>
 
-You're loading the mass-storage gadget with the "stall=n" module
-parameter, right?  Therefore the driver is not allowed to halt the
-Bulk-In endpoint, and therefore the driver is not allowed to send less
-data than the host indicated, which means the data has to be padded.
-
-On the other hand, I don't think any implementations would get upset if 
-we simply ended the transfer with a short packet instead of adhering 
-strictly to the spec.
-
-The patch below should do what you want.  I haven't tested it.
-
-Alan Stern
-
-
-
- drivers/usb/gadget/f_mass_storage.c |   54 +++++++-----------------------------
- drivers/usb/gadget/file_storage.c   |   53 ++++++++---------------------------
- 2 files changed, 23 insertions(+), 84 deletions(-)
-
-Index: usb-2.6/drivers/usb/gadget/f_mass_storage.c
-===================================================================
---- usb-2.6.orig/drivers/usb/gadget/f_mass_storage.c
-+++ usb-2.6/drivers/usb/gadget/f_mass_storage.c
-@@ -1584,37 +1584,6 @@ static int wedge_bulk_in_endpoint(struct
- 	return rc;
- }
+diff -ur linux-2.6.38.orig/drivers/hid/hid-ids.h
+linux-2.6.38/drivers/hid/hid-ids.h
+--- linux-2.6.38.orig/drivers/hid/hid-ids.h	2011-03-15 01:20:32.000000000
++0000
++++ linux-2.6.38/drivers/hid/hid-ids.h	2011-03-22 12:55:13.413659466 +0000
+@@ -502,6 +502,7 @@
+ #define USB_DEVICE_ID_ROCCAT_PYRA_WIRELESS	0x2cf6
  
--static int pad_with_zeros(struct fsg_dev *fsg)
--{
--	struct fsg_buffhd	*bh = fsg->common->next_buffhd_to_fill;
--	u32			nkeep = bh->inreq->length;
--	u32			nsend;
--	int			rc;
--
--	bh->state = BUF_STATE_EMPTY;		/* For the first iteration */
--	fsg->common->usb_amount_left = nkeep + fsg->common->residue;
--	while (fsg->common->usb_amount_left > 0) {
--
--		/* Wait for the next buffer to be free */
--		while (bh->state != BUF_STATE_EMPTY) {
--			rc = sleep_thread(fsg->common);
--			if (rc)
--				return rc;
--		}
--
--		nsend = min(fsg->common->usb_amount_left, FSG_BUFLEN);
--		memset(bh->buf + nkeep, 0, nsend - nkeep);
--		bh->inreq->length = nsend;
--		bh->inreq->zero = 0;
--		start_transfer(fsg, fsg->bulk_in, bh->inreq,
--			       &bh->inreq_busy, &bh->state);
--		bh = fsg->common->next_buffhd_to_fill = bh->next;
--		fsg->common->usb_amount_left -= nsend;
--		nkeep = 0;
--	}
--	return 0;
--}
--
- static int throw_away_data(struct fsg_common *common)
- {
- 	struct fsg_buffhd	*bh;
-@@ -1702,6 +1671,10 @@ static int finish_reply(struct fsg_commo
- 		if (common->data_size == 0) {
- 			/* Nothing to send */
+ #define USB_VENDOR_ID_SAITEK		0x06a3
++#define USB_DEVICE_ID_SAITEK_RAT7	0x0ccb
+ #define USB_DEVICE_ID_SAITEK_RUMBLEPAD	0xff17
  
-+		/* Don't know what to do if common->fsg is NULL */
-+		} else if (!common->fsg) {
-+			rc = -EIO;
+ #define USB_VENDOR_ID_SAMSUNG		0x0419
+diff -ur linux-2.6.38.orig/drivers/hid/hid-input.c
+linux-2.6.38/drivers/hid/hid-input.c
+--- linux-2.6.38.orig/drivers/hid/hid-input.c	2011-03-15 01:20:32.000000000
++0000
++++ linux-2.6.38/drivers/hid/hid-input.c	2011-03-22 13:45:47.507874406 +0000
+@@ -790,6 +790,13 @@
+ 
+ 	if ((field->flags & HID_MAIN_ITEM_RELATIVE) && (usage->type == EV_KEY))
+ 		input_event(input, usage->type, usage->code, 0);
 +
- 		/* If there's no residue, simply send the last buffer */
- 		} else if (common->residue == 0) {
- 			bh->inreq->zero = 0;
-@@ -1710,24 +1683,19 @@ static int finish_reply(struct fsg_commo
- 			common->next_buffhd_to_fill = bh->next;
- 
- 		/*
--		 * For Bulk-only, if we're allowed to stall then send the
--		 * short packet and halt the bulk-in endpoint.  If we can't
--		 * stall, pad out the remaining data with 0's.
-+		 * For Bulk-only, mark the end of the data with a short
-+		 * packet.  If we are allowed to stall, halt the bulk-in
-+		 * endpoint.  (Note: This violates the Bulk-Only Transport
-+		 * specification, which requires us to pad the data if we
-+		 * don't halt the endpoint.  Presumably nobody will mind.)
- 		 */
--		} else if (common->can_stall) {
-+		} else {
- 			bh->inreq->zero = 1;
- 			if (!start_in_transfer(common, bh))
--				/* Don't know what to do if
--				 * common->fsg is NULL */
- 				rc = -EIO;
- 			common->next_buffhd_to_fill = bh->next;
--			if (common->fsg)
-+			if (common->can_stall)
- 				rc = halt_bulk_in_endpoint(common->fsg);
--		} else if (fsg_is_set(common)) {
--			rc = pad_with_zeros(common->fsg);
--		} else {
--			/* Don't know what to do if common->fsg is NULL */
--			rc = -EIO;
- 		}
- 		break;
- 
-Index: usb-2.6/drivers/usb/gadget/file_storage.c
-===================================================================
---- usb-2.6.orig/drivers/usb/gadget/file_storage.c
-+++ usb-2.6/drivers/usb/gadget/file_storage.c
-@@ -1947,37 +1947,6 @@ static int wedge_bulk_in_endpoint(struct
- 	return rc;
++        /* hack for Saitek RAT mice which report release events for their
++         * mode button on the NEXT press event
++         */
++	if ((*quirks & HID_QUIRK_RAT_BROKEN_BUTTON_RELEASE) &&
++            (usage->code >= BTN_MOUSE + 8) && (usage->code <= BTN_MOUSE +
+10))
++		input_event(input, usage->type, usage->code, 0);
  }
  
--static int pad_with_zeros(struct fsg_dev *fsg)
--{
--	struct fsg_buffhd	*bh = fsg->next_buffhd_to_fill;
--	u32			nkeep = bh->inreq->length;
--	u32			nsend;
--	int			rc;
--
--	bh->state = BUF_STATE_EMPTY;		// For the first iteration
--	fsg->usb_amount_left = nkeep + fsg->residue;
--	while (fsg->usb_amount_left > 0) {
--
--		/* Wait for the next buffer to be free */
--		while (bh->state != BUF_STATE_EMPTY) {
--			rc = sleep_thread(fsg);
--			if (rc)
--				return rc;
--		}
--
--		nsend = min(fsg->usb_amount_left, (u32) mod_data.buflen);
--		memset(bh->buf + nkeep, 0, nsend - nkeep);
--		bh->inreq->length = nsend;
--		bh->inreq->zero = 0;
--		start_transfer(fsg, fsg->bulk_in, bh->inreq,
--				&bh->inreq_busy, &bh->state);
--		bh = fsg->next_buffhd_to_fill = bh->next;
--		fsg->usb_amount_left -= nsend;
--		nkeep = 0;
--	}
--	return 0;
--}
--
- static int throw_away_data(struct fsg_dev *fsg)
- {
- 	struct fsg_buffhd	*bh;
-@@ -2082,18 +2051,20 @@ static int finish_reply(struct fsg_dev *
- 			}
- 		}
+ void hidinput_report_event(struct hid_device *hid, struct hid_report
+*report)
+diff -ur linux-2.6.38.orig/drivers/hid/usbhid/hid-quirks.c
+linux-2.6.38/drivers/hid/usbhid/hid-quirks.c
+--- linux-2.6.38.orig/drivers/hid/usbhid/hid-quirks.c	2011-03-15
+01:20:32.000000000 +0000
++++ linux-2.6.38/drivers/hid/usbhid/hid-quirks.c	2011-03-22
+12:58:23.016556607 +0000
+@@ -85,6 +85,8 @@
  
--		/* For Bulk-only, if we're allowed to stall then send the
--		 * short packet and halt the bulk-in endpoint.  If we can't
--		 * stall, pad out the remaining data with 0's. */
-+		/*
-+		 * For Bulk-only, mark the end of the data with a short
-+		 * packet.  If we are allowed to stall, halt the bulk-in
-+		 * endpoint.  (Note: This violates the Bulk-Only Transport
-+		 * specification, which requires us to pad the data if we
-+		 * don't halt the endpoint.  Presumably nobody will mind.)
-+		 */
- 		else {
--			if (mod_data.can_stall) {
--				bh->inreq->zero = 1;
--				start_transfer(fsg, fsg->bulk_in, bh->inreq,
--						&bh->inreq_busy, &bh->state);
--				fsg->next_buffhd_to_fill = bh->next;
-+			bh->inreq->zero = 1;
-+			start_transfer(fsg, fsg->bulk_in, bh->inreq,
-+					&bh->inreq_busy, &bh->state);
-+			fsg->next_buffhd_to_fill = bh->next;
-+			if (mod_data.can_stall)
- 				rc = halt_bulk_in_endpoint(fsg);
--			} else
--				rc = pad_with_zeros(fsg);
- 		}
- 		break;
+ 	{ USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_MULTI_TOUCH,
+HID_QUIRK_MULTI_INPUT },
+ 	{ USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS,
+HID_QUIRK_MULTI_INPUT },
++
++	{ USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_RAT7,
+HID_QUIRK_RAT_BROKEN_BUTTON_RELEASE },
+ 	{ 0, 0 }
+ };
  
+diff -ur linux-2.6.38.orig/include/linux/hid.h
+linux-2.6.38/include/linux/hid.h
+--- linux-2.6.38.orig/include/linux/hid.h	2011-03-15 01:20:32.000000000 +0000
++++ linux-2.6.38/include/linux/hid.h	2011-03-22 12:58:12.688834637 +0000
+@@ -312,6 +312,7 @@
+ #define HID_QUIRK_BADPAD			0x00000020
+ #define HID_QUIRK_MULTI_INPUT			0x00000040
+ #define HID_QUIRK_HIDINPUT_FORCE		0x00000080
++#define HID_QUIRK_RAT_BROKEN_BUTTON_RELEASE	0x00000100
+ #define HID_QUIRK_SKIP_OUTPUT_REPORTS		0x00010000
+ #define HID_QUIRK_FULLSPEED_INTERVAL		0x10000000
+ #define HID_QUIRK_NO_INIT_REPORTS		0x20000000
 
+-- 
+| Darren Salt            | linux at youmustbejoking | nr. Ashington, | Toon
+| using Debian GNU/Linux | or ds    ,demon,co,uk    | Northumberland | back!
+| + Buy less and make it last longer.         INDUSTRY CAUSES GLOBAL WARMING.
+
+A clean desk is a sign of a sick mind.
