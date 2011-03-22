@@ -1,137 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab1CVV7M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 17:59:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:47734 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932353Ab1CVV7K convert rfc822-to-8bit (ORCPT
+	id S932452Ab1CVWBV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 18:01:21 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:47938 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932391Ab1CVWBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 17:59:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=vv5HkNBMhQDUH9AcyJtMCGcGDdhzqWB31iNH5AhLzdUs3yufj+fomi5fHinQljwroP
-         xXLIm1G3ACwzxSsCwTXQ==
-MIME-Version: 1.0
-In-Reply-To: <20110322205905.GM3757@redhat.com>
-References: <1300825050-11371-1-git-send-email-teravest@google.com>
- <1300825050-11371-2-git-send-email-teravest@google.com> <20110322205905.GM3757@redhat.com>
-From: Justin TerAvest <teravest@google.com>
-Date: Tue, 22 Mar 2011 14:58:48 -0700
-Message-ID: <AANLkTi=GcnW2JCrc0JE4+y5PwSgNjcaquEn-btydS4NT@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cfq-iosched: Don't set active queue in preempt
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 22 Mar 2011 18:01:20 -0400
+Subject: Re: [PATCH 9/10] sh: Use struct syscore_ops instead of sysdev
+ class and sysdev
+From: Kay Sievers <kay.sievers@suse.de>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
+In-Reply-To: <20110322214922.GA7503@linux-sh.org>
+References: <201103100131.58206.rjw@sisk.pl>
+	 <201103222130.46603.rjw@sisk.pl> <1300826390.1815.5.camel@zag>
+	 <201103222200.52131.rjw@sisk.pl> <1300828356.1815.15.camel@zag>
+	 <20110322214922.GA7503@linux-sh.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 22 Mar 2011 23:00:56 +0100
+Message-ID: <1300831256.1815.22.camel@zag>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 1:59 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Tue, Mar 22, 2011 at 01:17:29PM -0700, Justin TerAvest wrote:
->> Commit "Add unaccounted time to timeslice_used" changed the behavior of
->> cfq_preempt_queue to set cfqq active. Vivek pointed out that other
->> preemption rules might get involved, so we shouldn't manually set which
->> queue is active.
->>
->> This cleans up the code to just clear the queue stats at preemption
->> time.
->>
->> Signed-off-by: Justin TerAvest <teravest@google.com>
->> ---
->>  block/cfq-iosched.c |   39 +++++++++++++++++++++++----------------
->>  1 files changed, 23 insertions(+), 16 deletions(-)
->>
->> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
->> index 12e380b..69208d7 100644
->> --- a/block/cfq-iosched.c
->> +++ b/block/cfq-iosched.c
->> @@ -1620,27 +1620,33 @@ static inline void cfq_del_timer(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->>       cfq_blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
->>  }
->>
->> +static void cfq_clear_queue_stats(struct cfq_data *cfqd,
->> +                               struct cfq_queue *cfqq)
->> +{
->> +     cfq_blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
->> +     cfqq->slice_start = 0;
->> +     cfqq->dispatch_start = jiffies;
->> +     cfqq->allocated_slice = 0;
->> +     cfqq->slice_end = 0;
->> +     cfqq->slice_dispatch = 0;
->> +     cfqq->nr_sectors = 0;
->> +
->> +     cfq_clear_cfqq_wait_request(cfqq);
->> +     cfq_clear_cfqq_must_dispatch(cfqq);
->> +     cfq_clear_cfqq_must_alloc_slice(cfqq);
->> +     cfq_clear_cfqq_fifo_expire(cfqq);
->> +     cfq_mark_cfqq_slice_new(cfqq);
->> +
->> +     cfq_del_timer(cfqd, cfqq);
->> +}
->> +
->>  static void __cfq_set_active_queue(struct cfq_data *cfqd,
->>                                  struct cfq_queue *cfqq)
->>  {
->>       if (cfqq) {
->>               cfq_log_cfqq(cfqd, cfqq, "set_active wl_prio:%d wl_type:%d",
->>                               cfqd->serving_prio, cfqd->serving_type);
->> -             cfq_blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
->> -             cfqq->slice_start = 0;
->> -             cfqq->dispatch_start = jiffies;
->> -             cfqq->allocated_slice = 0;
->> -             cfqq->slice_end = 0;
->> -             cfqq->slice_dispatch = 0;
->> -             cfqq->nr_sectors = 0;
->> -
->> -             cfq_clear_cfqq_wait_request(cfqq);
->> -             cfq_clear_cfqq_must_dispatch(cfqq);
->> -             cfq_clear_cfqq_must_alloc_slice(cfqq);
->> -             cfq_clear_cfqq_fifo_expire(cfqq);
->> -             cfq_mark_cfqq_slice_new(cfqq);
->> -
->> -             cfq_del_timer(cfqd, cfqq);
->> +             cfq_clear_queue_stats(cfqd, cfqq);
->>       }
->>
->>       cfqd->active_queue = cfqq;
->> @@ -3332,7 +3338,8 @@ static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->>       BUG_ON(!cfq_cfqq_on_rr(cfqq));
->>
->>       cfq_service_tree_add(cfqd, cfqq, 1);
->> -     __cfq_set_active_queue(cfqd, cfqq);
->> +
->> +     cfq_clear_queue_stats(cfqd, cfqq);
->
-> Hi Justin,
->
-> Why do we have to clear queue stats here for the preempting queue?
->
-> Especially look at cfqq->dispatch_start = jiffies. We have not started
-> the dispatch yet. When this queue is selected next, then we will start
-> the dispatch.
->
-> So this patch has introduced another bug now. Now after preemption if
-> we don't select this group, then we have a queue with wrong dispatch
-> start and that will result in huge slice_used for the queue and
-> it will not get its fair share.
+On Wed, 2011-03-23 at 06:49 +0900, Paul Mundt wrote:
+> On Tue, Mar 22, 2011 at 10:12:36PM +0100, Kay Sievers wrote:
+> > On Tue, 2011-03-22 at 22:00 +0100, Rafael J. Wysocki wrote:
+> > > On Tuesday, March 22, 2011, Kay Sievers wrote:
+> > > > On Tue, 2011-03-22 at 21:30 +0100, Rafael J. Wysocki wrote:
+> > > > > 
+> > > > > Perhaps there's a more straightforward way to make some files show up in
+> > > > > sysfs on a specific path than defininig an otherwise useless bus type and
+> > > > > device object?
+> > > > 
+> > > > That's absolutely not the point. Please don't get yourself into that
+> > > > thinking. If people want to "export stuff to userspace", they must not
+> > > > invent new things. We need to get rid of the silly special cases.
+> > > 
+> > > Why exactly?  Do they actually hurt anyone and if so then how?
+> > 
+> > Sure, "devices" are devices, and devices have well-defines set of
+> > properties, not some magic directory, people can mess around with the
+> > way they like.
+> > 
+> This is starting to get silly. In the case of interrupt controllers as
+> with clocksources the bus abstraction is completely meaningless. I could
+> register a type of "system" bus, but how would that be any different from
+> what we have from sysdevs already today? All it does is force people to
+> duplicate crap all over the place instead and pretend like extra busses
+> exist in order to fit some arbitrary definition of how the driver model
+> should work.
+> 
+> You talk about inventing special interfaces to bypass the device model,
+> but that's not the case here. Rolling my own interface with kobjects and
+> attribute groups as with /sys/power or making an arbitrary bus type for a
+> single class of system devices seems infinitely more hackish than the
+> current sysdev model.
+> 
+> The comment at the top of sys.c says:
+> 
+>  * sys.c - pseudo-bus for system 'devices' (cpus, PICs, timers, etc)
 
-Hi Vivek,
+Which is what we need to get rid of. It does not make any sense on the
+global picture to have anything like that exported to userspace.
 
-Ugh, you're right. Sorry, I had some bad ideas in my head for how
-preemption worked that clearly aren't true.
-I think that if the stats aren't cleared here, everything should then
-be fine because jiffies will then be picked up when the active queue
-is set. Does that sound sane to you?
+> Which is precisely where I would expect interrupt controllers and timers
+> and CPUs to go. I'm not going to make an IRQ bus or a timer bus and
+> arbitrarily map some things there and some things somewhere else in the
+> name of some abstraction insanity. These interrupt controllers all have
+> consistent attributes that make the sysdev class model work well, but
+> there are also many other types of interrupt controllers on the same CPUs
+> that use a different abstraction.
+> 
+> Beyond that, we also have sysdev class utilization for DMA controllers,
+> per-CPU store queues, etc, etc. all of which would need to be converted
+> to something else (see for example arch/sh/kernel/cpu/sh4/sq.c -- which
+> in turn was modelled after the cpufreq code, which also would need to
+> change to something else). It's not entirely obvious how to convert these
+> things, or why one should even bother. I can live with the struct device
+> overhead even if I find it to be a meaningless abstraction in this case,
+> but what sort of bus/class model to shoe horn these things in to is
+> rather beyond me.
+> 
+> Indeed it seems to me that these are precisely the sorts of things that
+> sysdevs are intended for, which is why I elected to use them from the
+> onset. Simply saying "don't use sysdevs" and "pretend like you have some
+> sort of a magical pseudo-bus that's not a system bus" doesn't quite do it
+> for me.
 
-Thanks for explaining this problem.
+Nope, a device has a "name", a "subsystem" and a "devpath", has
+well-defined core-maintained properties at the device directory. It is
+not some random custom directory which people can put where they like
+it. Userspace has expectations about devices which need to be met, and
+that can only happen if these devices are "struct device".
 
-Justin
+All real devices sort into a hierarchy, possibly in different parent
+locations, and have a single point of classification which is the
+devices/ directory and contains symlinks. Only that way we can cope with
+it in userspace.
 
->
-> Thanks
-> Vivek
->
+People should really stop messing around in /sys for optimization
+purposes. We have a common device model, and need to use it. Sysdevs do
+not fit into that model.
+
+I can't tell how that fits into your use case, but please use something
+else than sysfs, if you need device information exported, but you can't
+use "struct device".
+
+Thanks,
+Kay
+
