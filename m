@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab1CVTSr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 15:18:47 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:52223 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573Ab1CVTSp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 15:18:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:message-id:mime-version:content-type; q=dns; s=
-	newdream.net; b=Pa0Zc6BPJ36BOmobBRCXmyuk7gaFTsnZsq5yu/R7jZU3j1Zm
-	8DlAd1ALtbh4zp7aG/DT7PlbydprrEnL1uKP3AH/gNih0esQD8HXu0pCLCb4hN3C
-	+ivcak9NzpXB38mzad+syKNstEzdrgD51cP30yhc3dTxlmZRAnraN8ovli8=
-Date: Tue, 22 Mar 2011 12:21:25 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates for 2.6.39-rc1
-Message-ID: <Pine.LNX.4.64.1103211602260.15400@cobra.newdream.net>
+	id S1753539Ab1CVTXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 15:23:11 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:42355 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757Ab1CVTXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 15:23:08 -0400
+Date: Tue, 22 Mar 2011 12:23:01 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
+        Jan Kara <jack@suse.cz>, Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation
+	problem
+Message-ID: <20110322192301.GE1110@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110319000755.GD1110@tux1.beaverton.ibm.com> <E2EA0861-6143-4F91-805A-63736F45C514@dilger.ca>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E2EA0861-6143-4F91-805A-63736F45C514@dilger.ca>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Mar 18, 2011 at 08:28:26PM -0600, Andreas Dilger wrote:
+> On 2011-03-18, at 6:07 PM, Darrick J. Wong wrote:
+> >> Ok, here's what I have so far.  I took everyone's suggestions of where to add
+> >> calls to wait_on_page_writeback, which seems to handle the multiple-write case
+> >> adequately.  Unfortunately, it is still possible to generate checksum errors by
+> >> scribbling furiously on a mmap'd region, even after adding the writeback wait
+> >> in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
+> >> removing its wait_for_page_writeback call, so I suspect there's a bit more
+> >> going on in btrfs than I've been able to figure out.
+> 
+> > I wonder, is it possible for this to happen:
+> > 
+> > 1. Thread A mmaps a page and tries to write to it.  ext4_page_mkwrite executes,
+> >   but there's no ongoing writeback, so it returns without delay.
+> > 2. Thread A starts writing furiously to the page.
+> > 3. Thread B runs fsync() or something that results in the page being
+> >   checksummed and scheduled for writeout.
+> > 4. Thread A continues to write furiously(!) on that same page before the
+> >   controller finishes the DMA transfer.
+> 
+> Right, page_mkwrite() is only called for the ro->rw transition.
+> 
+> > 5. Disk gets the page, which now doesn't match its checksum, and *boom*
+> > 
+> > After letting the stress tool run for a few days, I can say fairly confidently
+> > that the write() case doesn't seem to fail regardless of the O_DIRECT setting.
+> > However, with writes to mmap regions, failures happen about once every 20-40
+> > minutes, even with O_DIRECT set.  To me this suggests some sort of race
+> > condition that we seem to win except once every 20 minutes.
+> > 
+> > I then thought, if page_mkwrite contains a wait_on_page_writeback, then perhaps
+> > there's something that I could do just prior to calculating the DIF checksum
+> > that would cause any subsequent write attempts to be shuffled back into
+> > page_mkwrite.  I tried the set_memory_ro thing again, though that led to some
+> > recursive lock errors and I noticed that those functions only seem to exist in
+> > arch/x86/.  Next I tried directly mucking with PTEs, in addition to feeling
+> > messy, only seemed to corrupt memory. :)
+> 
+> This seems like the best solution, IMHO, to ensure that mmap is blocked in
+> page_mkwrite() before it has any chance to dirty the page undergoing
+> checksum.  The trick is that you need to set_page_writeback() before setting
+> the page read-only, otherwise the race still exists.
 
-Please pull the following Ceph and RBD updates from
+I figured out that the recursive locking errors only happened in the
+set_memory_rw half of the ro/rw memory pair, and that I could make them go away
+(for now) by do set_memory_rw in the kintegrityd workqueue.  Then I added a
+call to set_page_writeback just prior to the set_memory_ro call, though that
+resulted in a lot of complaints about invalid page states and the like.  It
+would seem that the memory pages that arrive in bio_integrity_prep from jbd2
+don't have the writeback flag set, and setting it causes problems for it.  The
+writeback flag is set on all the pages that are associated with a checksum
+failure, I noticed.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git master
+As for changing pte's around... does that set_memory_ro change the pte flags
+for all running processes?  I'm not so sure it does for anything other than the
+current process.  I think I saw a flush_tlb call in there... though I don't
+think it helps me much.
 
-The biggest item is support for the object watch/notify framework that 
-allows an RBD block device to get/send notifications about snapshot 
-creation.  There is also some code refactoring in the osd_client that 
-cleans things up and improves failure handling.  A few bug fixes for 
-synchronous IO came in from Henry, there's an ino32 mount option to expose 
-32 bit inos to 32 bit userspace, and there's some miscellaneous code 
-cleanup.
+If I /don't/ set the flag, the frequency of the errors decreases further to
+about once an hour, but I still see the occasional error. :/  Currently I'm
+trying to figure out how one might distinguish dirty pages that shouldn't have
+writeback set vs. pages that ought to have it but don't.
 
-The other piece of pending work is the dentry caching stuff, but that 
-needs an ack on the d_prune dentry_operation.
+I suppose I could pull out the 're-checksum and resubmit' patch I made a while
+back, though it seems like a bandaid.
 
-Thanks!
-sage
+> > Is there a "correct" way to take a writeable page and make it so that any
+> > process trying to write to it ends up hitting the page fault handler where we
+> > can then wait for writeback?  Or perhaps I am simply barking up the wrong tree?
+> > 
+> > (Just FYI I took the old copy-everything-to-bounce-buffers patch that few
+> > people liked for a second spin, and the errors did not surface regardless of
+> > what combination of write/mmap and directio/bufferedio I told it to use.)
+> 
+> I wouldn't be so much against memcpy() for mmap pages, but it does seem kind
+> of gross that mmap is forcing data copies when a major reason to use mmap is
+> to AVOID data copies.
 
+Yeah.  We probably want to avoid having to find extra pages too. :(
 
-Henry C Chang (2):
-      ceph: remove request from unsafe list if it is canceled/timed out
-      ceph: add request to the tail of unsafe write list
-
-Sage Weil (6):
-      ceph: preserve I_COMPLETE across rename
-      libceph: fix osd request queuing on osdmap updates
-      ceph: remove debugfs debug cruft
-      ceph: move readahead default to fs/ceph from libceph
-      ceph: rename dentry_release -> d_release, fix comment
-      rbd: update email address in Documentation
-
-Tommi Virtanen (1):
-      libceph: Fix base64-decoding when input ends in newline.
-
-Yehuda Sadeh (4):
-      ceph: update common header files
-      ceph: add ino32 mount option
-      libceph: add lingering request and watch/notify event framework
-      rbd: use watch/notify for changes in rbd header
-
- Documentation/ABI/testing/sysfs-bus-rbd |    2 +-
- drivers/block/rbd.c                     |  361 +++++++++++++++++--
- fs/ceph/debugfs.c                       |    6 -
- fs/ceph/dir.c                           |   24 +-
- fs/ceph/file.c                          |   10 +-
- fs/ceph/inode.c                         |   25 +-
- fs/ceph/super.c                         |    9 +-
- fs/ceph/super.h                         |   66 +++-
- include/linux/ceph/ceph_fs.h            |   19 +-
- include/linux/ceph/libceph.h            |    1 -
- include/linux/ceph/osd_client.h         |   57 +++-
- include/linux/ceph/rados.h              |   39 ++-
- net/ceph/armor.c                        |    4 +-
- net/ceph/ceph_common.c                  |    1 +
- net/ceph/osd_client.c                   |  624 ++++++++++++++++++++++++-------
- 15 files changed, 1018 insertions(+), 230 deletions(-)
+--D
