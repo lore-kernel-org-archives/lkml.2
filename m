@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab1CVUjV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 16:39:21 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:56668 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755030Ab1CVUjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 16:39:20 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] percpu: cast away printk format warning
-Date: Tue, 22 Mar 2011 16:39:48 -0400
-Message-Id: <1300826388-22881-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755351Ab1CVUkL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 16:40:11 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:51722 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755030Ab1CVUkI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 16:40:08 -0400
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: viro@ZenIV.linux.org.uk, miklos@szeredi.hu, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de
+In-reply-to: <E1Q28EK-0001rI-9v@pomaz-ex.szeredi.hu> (message from Miklos
+	Szeredi on Tue, 22 Mar 2011 21:31:04 +0100)
+Subject: Re: [PATCH 0/6 v7] overlay filesystem - request for inclusion
+References: <20110322152602.053930811@szeredi.hu>
+ <AANLkTinxD2rZnso3zfX0=-HQ9m7=zAjEtUepFO=uMe2Q@mail.gmail.com>
+ <20110322183919.GV22723@ZenIV.linux.org.uk>
+ <AANLkTinU-F+fHaG9u7c4Tf0GNx5BJvHg7BGOAFGaiDn1@mail.gmail.com>
+ <E1Q26mX-0001Tt-Jq@pomaz-ex.szeredi.hu>
+ <20110322190002.GW22723@ZenIV.linux.org.uk>
+ <E1Q27U5-0001eO-AL@pomaz-ex.szeredi.hu>
+ <20110322195331.GY22723@ZenIV.linux.org.uk>
+ <E1Q27qg-0001kq-IO@pomaz-ex.szeredi.hu> <20110322201101.GZ22723@ZenIV.linux.org.uk> <E1Q28EK-0001rI-9v@pomaz-ex.szeredi.hu>
+Message-Id: <E1Q28N4-0001tv-O6@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Tue, 22 Mar 2011 21:40:06 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 32-bit systems which don't happen to implicitly define or cast
-VMALLOC_START and/or VMALLOC_END to long in their arch headers, the
-printk in the percpu code will cause a warning to be emitted:
+On Tue, 22 Mar 2011, Miklos Szeredi wrote:
+> On Tue, 22 Mar 2011, Al Viro wrote:
+> > On Tue, Mar 22, 2011 at 09:06:38PM +0100, Miklos Szeredi wrote:
+> > > On Tue, 22 Mar 2011, Al Viro wrote:
+> > > > Proceeding with rename is not interesting; proceeding with copyup is.
+> > > > 
+> > > > Who said that by the time we get to copy_up_locked you will still have
+> > > > dentry (and upper) match lowerpath?  Or that ->d_parent on overlay and
+> > > > on upper will change in sync, for that matter - there are two d_move()
+> > > > calls involved...
+> > > 
+> > > If rename is involved, than rename itself already did the copy up.
+> > > And that's checked before proceeding with the actual copy up.  If
+> > > there was no rename, then that guarantees that things are in sync, at
+> > > least for the duration of the copy up.
+> > 
+> > What do you mean, before?  It's not atomic...  What happens if e.g.
+> > you get
+> > 
+> > A: decided to do copy_up_locked
+> >    blocked on i_mutex
+> > 
+> > B: did copy_up
+> >    did rename(), complete with d_move()
+> >    did unlink() in new place
+> > 
+> > A: got CPU back, got i_mutex
+> 
+> Here it can check if the file was copied up or not.  OK, I see the
+> code doesn't quite get that right.
+> 
+> Patch below would fix it, I think.
 
-mm/percpu.c: In function 'pcpu_embed_first_chunk':
-mm/percpu.c:1648: warning: format '%lx' expects type 'long unsigned int',
-	but argument 3 has type 'unsigned int'
+Scratch that, d_move() on overlayfs would also have to be under
+i_mutex of upper.  But that should be doable as well.  I'll fix that
+tomorrow when my brain is a little fresher.
 
-So add an explicit cast to unsigned long here.
-
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- mm/percpu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 3f93001..6897e02 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1647,7 +1647,7 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
- 	if (max_distance > (VMALLOC_END - VMALLOC_START) * 3 / 4) {
- 		pr_warning("PERCPU: max_distance=0x%zx too large for vmalloc "
- 			   "space 0x%lx\n",
--			   max_distance, VMALLOC_END - VMALLOC_START);
-+			   max_distance, (unsigned long)(VMALLOC_END - VMALLOC_START));
- #ifdef CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK
- 		/* and fail if we have fallback */
- 		rc = -EINVAL;
--- 
-1.7.4.1
-
+Thanks,
+Miklos
