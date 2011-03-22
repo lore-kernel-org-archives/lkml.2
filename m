@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab1CVMvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 08:51:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8611 "EHLO mx1.redhat.com"
+	id S1755991Ab1CVM55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 08:57:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29012 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755699Ab1CVMvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 08:51:11 -0400
-Date: Tue, 22 Mar 2011 14:50:53 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jean-philippe.menil@univ-nantes.fr,
-        stable@kernel.org, Jason Wang <jasowang@redhat.com>
-Subject: Re: [PATCH] kvm: fix crash on irqfd deassign
-Message-ID: <20110322125053.GB32414@redhat.com>
-References: <20110317085333.GA7336@redhat.com>
- <4D889807.6000307@redhat.com>
+	id S1755358Ab1CVM5z convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 08:57:55 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sd: Free the page in case of unknown provisioning_mode in scsi_setup_discard_cmnd.
+References: <1300766648-18095-1-git-send-email-tm@tao.ma>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 22 Mar 2011 08:57:51 -0400
+In-Reply-To: <1300766648-18095-1-git-send-email-tm@tao.ma> (Tao Ma's message
+	of "Tue, 22 Mar 2011 12:04:08 +0800")
+Message-ID: <x494o6vtir4.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D889807.6000307@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 02:37:27PM +0200, Avi Kivity wrote:
-> On 03/17/2011 10:53 AM, Michael S. Tsirkin wrote:
-> >irqfd in kvm used flush_work incorrectly:
-> >it assumed that work scheduled previously can't run
-> >after flush_work, but since kvm uses a non-reentrant
-> >workqueue (by means of schedule_work)
-> >we need flush_work_sync to get that guarantee.
-> >
-> >Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
-> >Reported-by: Jean-Philippe Menil<jean-philippe.menil@univ-nantes.fr>
-> >Tested-by: Jean-Philippe Menil<jean-philippe.menil@univ-nantes.fr>
-> >---
-> >
-> >Note: this is needed for kernel 2.6.39 and earlier.
-> >
-> 
-> What about kvm.git master?
+Tao Ma <tm@tao.ma> writes:
 
-Sorry about the confusion.
+> From: Tao Ma <boyu.mt@taobao.com>
+>
+> This patch is inspired by a build waring.
+> drivers/scsi/sd.c:544: warning: ‘ret’ may be used uninitialized in this function
+>
+> So we need to set a default value to ret here.
+> But a deep look at scsi_setup_discard_cmnd makes me think
+> of which value should be set. Now we have BLKPREP_KILL and
+> BLKPREP_DEFER to indicate an error. As in case of an
+> unknown sdkp->provisioning_mode, we goto out directly. So
+> I guess we should return BLKPREP_KILL here and free the page.
 
-Clarification: this is needed on  kvm.git master,
-as well as 2.6.39 and earlier.
+Yeah, there's no point in deferring it.
 
-> -- 
-> error compiling committee.c: too many arguments to function
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
