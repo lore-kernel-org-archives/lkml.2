@@ -1,89 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab1CVB7K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 21:59:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37352 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754711Ab1CVB7H (ORCPT
+	id S1756304Ab1CVCQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 22:16:33 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39636 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141Ab1CVCQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 21:59:07 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Antony Pavlov <antony@niisi.msk.ru>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Guillaume LECERF <glecerf@gmail.com>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20110321231050.942106776@clark.kroah.org>
-References: <20110321231050.942106776@clark.kroah.org>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-pmNtEsa7vvYH7c89RG6j"
-Date: Tue, 22 Mar 2011 01:58:53 +0000
-Message-ID: <1300759133.26693.354.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [Stable-review] [02/44] mtd: jedec_probe: Change variable name
- from cfi_p to cfi
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
+	Mon, 21 Mar 2011 22:16:32 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4D880665.5010006@jp.fujitsu.com>
+Date: Tue, 22 Mar 2011 11:16:05 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: "Chumbalkar, Nagananda" <Nagananda.Chumbalkar@hp.com>
+CC: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [RFC][PATCH v2]: PCI: PCIe links may not get configured for ASPM
+ under POWERSAVE mode
+References: <20110318041801.2349.33357.sendpatchset@nchumbalkar.americas.hpqcorp.net> <4D82EDAC.8070307@jp.fujitsu.com> <66D9D2F0CDB5C9428E6166B01EC85EE162ED1DE852@GVW0676EXC.americas.hpqcorp.net>
+In-Reply-To: <66D9D2F0CDB5C9428E6166B01EC85EE162ED1DE852@GVW0676EXC.americas.hpqcorp.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2011/03/18 23:52), Chumbalkar, Nagananda wrote:
+>
+>> -----Original Message-----
+>> From: Kenji Kaneshige [mailto:kaneshige.kenji@jp.fujitsu.com]
+>> Sent: Friday, March 18, 2011 12:29 AM
+>> To: Chumbalkar, Nagananda
+>> Cc: jbarnes@virtuousgeek.org; rjw@sisk.pl; mjg59@srcf.ucam.org; linux-
+>> kernel@vger.kernel.org; linux-pci@vger.kernel.org
+>> Subject: Re: [RFC][PATCH v2]: PCI: PCIe links may not get configured for
+>> ASPM under POWERSAVE mode
+>>
+>> (2011/03/18 13:21), Naga Chumbalkar wrote:
+>>> v2 ->   v1:
+>>> 	. Kept the logic in pci_raw_set_power_state
+>>> 	. Changed the ASPM enabling logic
+>>> 	. Modified the text that describes the problem
+>>>
+>>> v1	: http://marc.info/?l=linux-pci&m=130013164703283&w=2
+>>>
+>>> The assumption made in commit 41cd766b065970ff6f6c89dd1cf55fa706c84a3d
+>>> (PCI: Don't enable aspm before drivers have had a chance to veto it)
+>> that
+>>> pci_enable_device() will result in re-configuring ASPM when
+>> aspm_policy is
+>>> POWERSAVE is no longer valid.  This is due to commit
+>>> 97c145f7c87453cec90e91238fba5fe2c1561b32 (PCI: read current power
+>> state
+>>> at enable time) which resets dev->current_state to D0. This makes the
+>>> equality check (below) become true, so pcie_aspm_pm_state_change()
+>> never
+>>> gets called.
+>>> ./drivers/pci/pci.c: pci_raw_set_pci_power_state()
+>>> 546         /* Check if we're already there */
+>>> 547         if (dev->current_state == state)
+>>> 548                 return 0;
+>>>
+>>> So OSPM doesnn't configure the PCIe links for ASPM.
+>>>
+>>> The patch below does the following:
+>>> At the end of each Root Bridge scan make a call to configure ASPM when
+>> the
+>>> ASPM policy is set to "powersave" mode. Note that if a previous pass
+>> had
+>>> completed the configuration for all devices under that Bridge then the
+>>> configuration will not take place again because
+>> pcie_config_aspm_link()
+>>> checks to see if the link is already in the requested state.
+>>> We won't reconfigure ASPM when _OSC control is not granted.
+>>
+>> Which _OSC controls do we need for configuring ASPM?
+>
+> There is no _OSC Control bit for ASPM. However, we expect the BIOS to
+> support _OSC for a Root Bridge that originates a PCIe hierarchy. If this
+> is not the case - would it be okay to disable ASPM also?
+>
+> Commit 852972acff8f10f3a15679be2059bb94916cba5d (ACPI: Disable ASPM if the
+> Platform won't provide _OSC control for PCIe) describes the above scenario.
+>
+> To quote from there:
+> The PCI SIG documentation for the _OSC OS/firmware handshaking interface
+> states:
+>
+> "If the _OSC control method is absent from the scope of a host bridge
+> device, then the operating system must not enable or attempt to use any
+> features defined in this section for the hierarchy originated by the host
+> bridge."
+>
+> The obvious interpretation of this is that the OS should not attempt to use
+> PCIe hotplug, PME or AER - however, the specification also notes that an
+> _OSC method is *required* for PCIe hierarchies, and experimental validation
+> with An Alternative OS indicates that it doesn't use any PCIe functionality
+> if the _OSC method is missing. That arguably means we shouldn't be using
+> MSI or extended config space, but right now our problems seem to be limited
+> to vendors being surprised when ASPM gets enabled on machines when other
+> OSs refuse to do so. So, for now, let's just disable ASPM if the _OSC
+> method doesn't exist or refuses to hand over PCIe capability control.
+>
 
---=-pmNtEsa7vvYH7c89RG6j
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I understood. Thank you for clarification.
 
-On Mon, 2011-03-21 at 16:09 -0700, Greg KH wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let u=
-s know.
->=20
-> ------------------
->=20
-> From: Antony Pavlov <antony@niisi.msk.ru>
->=20
-> commit efba2e313ea1b1bd69a7c4659263becf43bb1adc upstream.
->=20
-> In the following commit, we'll need to use the CMD() macro in order to
-> fix the initialisation of the sector_erase_cmd field. That requires the
-> local variable to be called 'cfi', so change it first in a simple patch.
-[...]
+Regards,
+Kenji Kaneshige
 
-The following change in this series is 'mtd: add "platform:" prefix for
-platform modalias', which surely doesn't depend on this one.
-
-So it looks like the commit this was preparing for has been dropped
-somewhere along the way to stable.
-
-Ben.
-
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-pmNtEsa7vvYH7c89RG6j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATYgCWOe/yOyVhhEJAQo5BBAAyeCExshUugLNnSZV5WMaPpbsKna7zqCP
-ku1VCCPcymtI8In+kckQUycHbo3AqLWcW2HUKi1B5vOjmq0oHwUpww0RKxR8Jiot
-0dE53fU8JgFYsnHQ67RuGTCLxHoAwtA3GO4ll21QgAQhWWrUiwuFDlxpUgRaIJf2
-EScc8zQ19YOXwL5OsR4XsMaXmM1o+VBavl2Z6+JUvPFXWnYuZYo3KuAe2AYtpD3u
-NO5kFzsDo3b65W3TJ1cg8EstcB5A6jyQEQprxTPW1TVtYNZyqJ3YPDx/0uCkWmln
-+Ln9vcZmWIgUMkycGsQh+///4wdfVJTq9DmwuaaVKJvH5sqg4nMMM7cn+M/s+Tk0
-LNgJNLrYtFMMzuUJY7vKZTE+bw6f+gtRnvTaUIaaYnafx1JQSNgkCpklbaGzJLCR
-T811BgPPx9I5ZRGmjnQZBKYDp/pr8CFwumJrSqL1t77dEy417lbP1gy8zrw0RuMl
-m1PHRtXDkmxcxdbZjpgeZ6IS18nWeRQLOcVpwLSOoyte4Qc2VxwZOARkvkRbEHq5
-xdYAVw3P+1DsOTurPAW6qIi6fTf7vilKtAaDt2OvzKRznuEXSvueSIFf8ORyq+zo
-kkCCE0TAaajeM2NZcNow5OqbKyiYXw0frduckCNs7Vy4Y125/iNgpgY4QArVy6oK
-FMOMBZpm5Vc=
-=sxmq
------END PGP SIGNATURE-----
-
---=-pmNtEsa7vvYH7c89RG6j--
