@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab1CVXOE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 19:14:04 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50920 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754400Ab1CVXOC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 19:14:02 -0400
-From: "Hans-Peter Jansen" <hpj@urpla.net>
-To: Xianghua Xiao <xiaoxianghua@gmail.com>
-Subject: Re: [PATCH 0/6 v7] overlay filesystem - request for inclusion
-Date: Wed, 23 Mar 2011 00:13:41 +0100
-User-Agent: KMail/1.9.10
-Cc: Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
-        neilb@suse.de, aufs-users@lists.sourceforge.net,
-        sfjro@users.sourceforge.net
-References: <20110322152602.053930811@szeredi.hu> <4D88E8EF.8000001@openwrt.org> <AANLkTim-_h9_mp3hPQXndTc3gR+AJKj+keoN2yDZV2Sr@mail.gmail.com>
-In-Reply-To: <AANLkTim-_h9_mp3hPQXndTc3gR+AJKj+keoN2yDZV2Sr@mail.gmail.com>
+	id S1755773Ab1CVXOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 19:14:18 -0400
+Received: from kroah.org ([198.145.64.141]:34874 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753924Ab1CVXOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 19:14:16 -0400
+Date: Tue, 22 Mar 2011 15:30:13 -0700
+From: Greg KH <greg@kroah.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Brownell <david-b@pacbell.net>
+Subject: Re: Standard handling of boolean attributes in sysfs.
+Message-ID: <20110322223013.GB31312@kroah.com>
+References: <4D87AEE0.8000807@cam.ac.uk>
+ <20110321201411.GA1704@kroah.com>
+ <4D88811F.7060901@cam.ac.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201103230013.41936.hpj@urpla.net>
-X-Provags-ID: V02:K0:ypgGsHgH3orPJHJEPLNn8r8Q0FnP11HhF18uVSkJhaU
- K+fZn82pbCE88kI5xDrdaxRo9n2m/POYmwfXCKjl6T66OsN8nd
- ri8I/8LgRKyiLw8+DAnSXccasGLVscsoQ4xoknlmv8V7y2TtFA
- IRYrEI3tuo3iLb3fG1oxA/9Ye/8CJxd0h4Jhr+ehVTiZgJfiFA
- f6aiPiVacUuK4h5vGAOOSJW7vkMjuT2QcXKqunt0NM=
+In-Reply-To: <4D88811F.7060901@cam.ac.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 March 2011, 19:49:44 Xianghua Xiao wrote:
-> On Tue, Mar 22, 2011 at 1:22 PM, Felix Fietkau <nbd@openwrt.org> 
-wrote:
-> > On 2011-03-22 6:36 PM, Linus Torvalds wrote:
-> >> On Tue, Mar 22, 2011 at 8:26 AM, Miklos Szeredi <miklos@szeredi.hu> 
-wrote:
-> >>> Here's an updated version of the overlay filesystem.  I'd like to
-> >>> propose it for inclusion into mainline.
+On Tue, Mar 22, 2011 at 10:59:43AM +0000, Jonathan Cameron wrote:
+> On 03/21/11 20:14, Greg KH wrote:
+> > On Mon, Mar 21, 2011 at 08:02:40PM +0000, Jonathan Cameron wrote:
+> >> Hi All,
 > >>
-> >> So on the whole it looked pretty small and simple. And most of the
-> >> VFS level changes looked fine and I just reacted to the odd
-> >> calling convention for open (I really think you should aim for
-> >> ->open to have the basically same arguments as you made
-> >> __dentry_open have: 'struct path', 'struct filp' and 'struct
-> >> cred').
+> >> Just wondering what the feeling would be about having
+> >> a utility function similar to sysfs_streq to provide a
+> >> consistent option for all those sysfs attributes out there
+> >> where
 > >>
-> >> But I'd want Al's ack on the series. And also hear who uses it and
-> >> how it's been tested?
-> >
-> > We're using it in OpenWrt (an Embedded Linux distribution) for
-> > devices with tiny amounts of flash for the entire system (e.g. 4
-> > MB). We're using it to provide a writable on-flash root filesystem
-> > with squashfs for the read-only part and jffs2 for the writable
-> > overlay. This saves some precious flash space compared to using
-> > only jffs2, and it makes it easy for users to reset their device to
-> > defaults without having to reflash.
-> > With a backport of v6 of this series + my fixes that went into v7
-> > this is working quite well on 2.6.37 and 2.6.38 - I'm using it on a
-> > few wireless access points at home.
-> >
-> > - Felix
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
->
-> how is this filesystem related to mini_fo and unionfs?
+> >> 1, on, true -> 1
+> >> 0, off, false -> 0
+> >>
+> >> Or does such a beast already exist and I'm just being unobservant?
+> > 
+> > We have the one in debugfs that I think people use for sysfs.  Have you
+> > looked at that?
+> > 
+> Thanks for the pointer...
+> 
+> write_file_bool in fs/debugfs/file.c?  
+> 
+> What is there is pretty much what is needed, but it's not a general
+> use function like sysfs_streq. Clearly it would make sense to use
+> what is there as a basis of such a function. 
+> 
+> To save others looking it up, the relevant bit is:
+> 
+> 	switch (buf[0]) {
+> 	case 'y':
+> 	case 'Y':
+> 	case '1':
+> 		*val = 1;
+> 		break;
+> 	case 'n':
+> 	case 'N':
+> 	case '0':
+> 		*val = 0;
+> 		break;
+> 	}
+> 
+> There are a few cut and paste copies of this about (mostly in IIO drivers actually
+> hence why I asking if there is a better way :).
+> 
+> Unless there is demand for it elsewhere I'll just add a utility function to the IIO
+> core to do this and we can revisit the case for a general function when the need
+> turns up elsewhere.
 
-and aufs2: it's a minimalistic version of a layered filesystem, being 
-much less capable then its ancestors, but hopefully the right approach 
-to get the foot in the door.. Unfortunately, it's locking out NFS, 
-which is a big miss for diskless usage scenarios (where layered 
-filesystems are also used commonly since ages..).
+The other function that does this, and is what I was thinking of, is
+param_set_bool().  Care to merge both of these functions together into
+something "sane" and have everyone use it?
 
-Probably, it will grow up, Al gets the VFS sorted out from a FS layering 
-perspective, Valerie Aurora and friends get union mounts operating and 
-merged, and/or Linus finally merges Junjiro Okajima's aufs2, which is 
-often used in production environments today, where other layered 
-filesystem approaches are unusable or simply fail in practice.
+thanks,
 
-Btw: Fortunately, Junjiro, being a Tokio habitant, wasn't injured from 
-the earth quake nor the tzunami, and let us all pray five minutes for 
-success and survival of those brave guys, that try to fix the cooling 
-in the Fukushima atomic plant.
-
-Pete
+greg k-h
