@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab1CVXcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 19:32:46 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58073 "EHLO ogre.sisk.pl"
+	id S1754824Ab1CVXky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 19:40:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30689 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317Ab1CVXcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 19:32:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kay Sievers <kay.sievers@suse.de>
-Subject: Re: [PATCH 9/10] sh: Use struct syscore_ops instead of sysdev class and sysdev
-Date: Wed, 23 Mar 2011 00:32:37 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Paul Mundt <lethal@linux-sh.org>, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-References: <201103100131.58206.rjw@sisk.pl> <201103222323.42627.rjw@sisk.pl> <1300833843.1815.53.camel@zag>
-In-Reply-To: <1300833843.1815.53.camel@zag>
+	id S1753531Ab1CVXkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 19:40:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,228,1299484800"; 
+   d="scan'208";a="723117188"
+Date: Tue, 22 Mar 2011 16:40:49 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [RFC v2] Checkpatch: add option to change warning return value.
+Message-ID: <20110322234049.GA8083@xanatos>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103230032.37417.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322232246.GA7450@xanatos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 22, 2011, Kay Sievers wrote:
-> On Tue, 2011-03-22 at 23:23 +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, March 22, 2011, Kay Sievers wrote:
-...
-> > 
-> > Now, I can easily understand arguments about representing everything under
-> > /sys/devices/ by struct device objects, no question about that.  However,
-> > I also think there should be a place for things like those mentioned in the
-> > comment in sys.c, presumably outside of /sys/devices/.
-> 
-> No, please. We have all we need. Let's do one example, which you might
-> apply to any other thing, because you never know what's the next big
-> thing in hardware. We need to be a future-proof-as-possible, and that's
-> not some second-class out-of-scope sysfs directory.
-> 
-> Lets' take CPUs:
->   - they send events when registered
->   - they want to export device specific properties
->   - userspace wants to take actions when such devices are available
-> 
-> That all fits properly into the driver model in theory. Unless you do
-> coldplug and bootup a box.
-> 
-> These devices are already there before userspace even starts, hence we
-> find all these devices and "trigger" an fake uevent for all of them at
-> bootup. That will match execute all the rules specified for that device,
-> just as it would be hotplugges in that moment, hence we call it
-> coldplug, which works for all devices with the hotplug code, even when
-> they are never hot-pluggable.
-> 
-> What we do for coldplug is that we iterate over all flat lists of
-> subsystems and find the devices lists and trigger the event by poking in
-> the "uevent" sysfs file. Now all the sysdevs do not have a subsystem to
-> find, and do not have a standard "uevent" file.
-> 
-> Back to the CPUs, we have all the nice device directories which could
-> have all the CPU features in properties we need to make autoloading of
-> cpufreq, governer, kvm possible (patch exists from Andi Kleen already) 
-> 
-> But these dumb CPU sysfs device directories are completely invisible for
-> the *usual* logic, and should just join the model and all will just work
-> out-of-the-box.
+There are a lot of warnings in checkpatch.pl that are rather subjective.
+For instance, when a line is 81 characters long, and the patch submitter
+is just cleaning up existing code, a maintainer may not care that
+checkpatch.pl warns about the over 80-character line.  It should be up to
+the maintainer what warnings they want to pay attention to.
 
-That all is cool, but I'm not sure how it is related to things like
-available_clocksource and current_clocksource (which happen to be located
-under /sys/devices/system/clocksource/clocksource0/ being simply a path
-in sysfs).
+Unfortunately, if you try to run checkpatch.pl as part of a git pre-commit
+hook and a patch in a series being applied by git-am fails checkpatch.pl,
+the whole process stops.  At that point I usually end up just disabling
+that git hook, which means I don't see real errors in the patches.
 
-> When we started to clean up /sys (again only talking about devices, not
-> other stuff) we had:
->   /block/*
->   /class/<subsys>/*
->   /bus/<subsys>/devices/*
->   /devices/system/<subsys>/*
-> which are 4 different exports of exactly the same thing, a "device".
-> "Block" we converted to "class" already, "class" will be converted to
-> "bus", and "bus" will be renamed to "subsystem". All the current names
-> will be kept as compat symlinks, just as we did for "block". After that,
-> _all_ devices have a "subsystem" and a subsystem global directory where
-> people can add custom stuff shared by all devices-of-the-same-type. Ev
+Add an option to checkpatch.pl to print the warnings, but not return an
+error code when the --lazy flag is present.  (Anyone with a better name
+can pipe up, lazy just seemed to be the opposite to strict.)  This allows
+the maintainer to view the warnings, but still allow the patch application
+process to continue.
 
-OK, sounds good.
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+---
 
-> You can also argument from the other side, if a kernel device export is
-> not worth the few bytes of /sys/devices/ and a "subsystem" (struct
-> bus_type) it should not be in /sys at all, especially not hidden
-> somehwere outside of /sys/devices when it is something remotely close to
-> a device.
+Ok, I think this version works correctly.  My git hook returns an error
+when the code to be submitted causes a checkpatch error, and doesn't
+return an error code (but still prints the warnings) when the code to be
+committed triggers checkpatch warnings, when --lazy is used.  This
+version also changes the summary message to be unhappy when warnings are
+found.
 
-Well, Greg apparently thinks that available_clocksource and current_clocksource
-could be located under /sys/bus/clock/.  Perhaps other attributes now exported
-through sysdevs could be moved to places like this?
+ scripts/checkpatch.pl |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-Rafael
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 4c0383d..ad2d423 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -15,6 +15,7 @@ my $V = '0.31';
+ use Getopt::Long qw(:config no_auto_abbrev);
+ 
+ my $quiet = 0;
++my $lazy = 0;
+ my $tree = 1;
+ my $chk_signoff = 1;
+ my $chk_patch = 1;
+@@ -46,6 +47,7 @@ Options:
+   --terse                    one line per report
+   -f, --file                 treat FILE as regular source file
+   --subjective, --strict     enable more subjective tests
++  --lazy                     print warnings, but don't return an error condition
+   --root=PATH                PATH to the kernel tree root
+   --no-summary               suppress the per-file summary
+   --mailback                 only produce a report in case of warnings/errors
+@@ -80,6 +82,7 @@ GetOptions(
+ 
+ 	'debug=s'	=> \%debug,
+ 	'test-only=s'	=> \$tst_only,
++	'lazy+'		=> \$lazy,
+ 	'h|help'	=> \$help,
+ 	'version'	=> \$help
+ ) or help(1);
+@@ -1109,7 +1112,9 @@ sub ERROR {
+ }
+ sub WARN {
+ 	if (report("WARNING: $_[0]\n")) {
+-		our $clean = 0;
++		if ($lazy == 0) {
++			our $clean = 0;
++		}
+ 		our $cnt_warn++;
+ 	}
+ }
+@@ -2952,10 +2957,10 @@ sub process {
+ 		}
+ 	}
+ 
+-	if ($clean == 1 && $quiet == 0) {
++	if ($clean == 1 && $quiet == 0 && ($lazy == 0 || $cnt_warn == 0)) {
+ 		print "$vname has no obvious style problems and is ready for submission.\n"
+ 	}
+-	if ($clean == 0 && $quiet == 0) {
++	if (($clean == 0 && $quiet == 0) || ($lazy == 1 && $cnt_warn != 0)) {
+ 		print "$vname has style problems, please review.  If any of these errors\n";
+ 		print "are false positives report them to the maintainer, see\n";
+ 		print "CHECKPATCH in MAINTAINERS.\n";
+-- 
+1.7.1
+
