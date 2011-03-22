@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab1CVWo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 18:44:29 -0400
-Received: from charybdis-ext.suse.de ([195.135.221.2]:47812 "EHLO
+	id S1754323Ab1CVW4r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 18:56:47 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:51067 "EHLO
 	nat.nue.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752417Ab1CVWo0 (ORCPT
+	with ESMTP id S1753097Ab1CVW4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 18:44:26 -0400
+	Tue, 22 Mar 2011 18:56:45 -0400
 Subject: Re: [PATCH 9/10] sh: Use struct syscore_ops instead of sysdev
  class and sysdev
 From: Kay Sievers <kay.sievers@suse.de>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Paul Mundt <lethal@linux-sh.org>, LKML <linux-kernel@vger.kernel.org>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
         Greg KH <gregkh@suse.de>,
         Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
         Russell King <linux@arm.linux.org.uk>,
         Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-In-Reply-To: <201103222323.42627.rjw@sisk.pl>
+In-Reply-To: <201103222342.20526.rjw@sisk.pl>
 References: <201103100131.58206.rjw@sisk.pl>
-	 <20110322214922.GA7503@linux-sh.org> <1300831256.1815.22.camel@zag>
-	 <201103222323.42627.rjw@sisk.pl>
+	 <201103222305.01808.rjw@sisk.pl> <1300832411.1815.35.camel@zag>
+	 <201103222342.20526.rjw@sisk.pl>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 22 Mar 2011 23:44:03 +0100
-Message-ID: <1300833843.1815.53.camel@zag>
+Date: Tue, 22 Mar 2011 23:56:20 +0100
+Message-ID: <1300834580.1815.64.camel@zag>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
@@ -30,133 +30,199 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-22 at 23:23 +0100, Rafael J. Wysocki wrote:
+On Tue, 2011-03-22 at 23:42 +0100, Rafael J. Wysocki wrote:
 > On Tuesday, March 22, 2011, Kay Sievers wrote:
-> > On Wed, 2011-03-23 at 06:49 +0900, Paul Mundt wrote:
-> ...
-> > > You talk about inventing special interfaces to bypass the device model,
-> > > but that's not the case here. Rolling my own interface with kobjects and
-> > > attribute groups as with /sys/power or making an arbitrary bus type for a
-> > > single class of system devices seems infinitely more hackish than the
-> > > current sysdev model.
+> > On Tue, 2011-03-22 at 23:05 +0100, Rafael J. Wysocki wrote:
+> > > On Tuesday, March 22, 2011, Kay Sievers wrote:
+> > > > On Tue, 2011-03-22 at 22:00 +0100, Rafael J. Wysocki wrote:
+> > > > > On Tuesday, March 22, 2011, Kay Sievers wrote:
+> > > > > > On Tue, 2011-03-22 at 21:30 +0100, Rafael J. Wysocki wrote:
+> > > > > > > 
+> > > > > > > Perhaps there's a more straightforward way to make some files show up in
+> > > > > > > sysfs on a specific path than defininig an otherwise useless bus type and
+> > > > > > > device object?
+> > > > > > 
+> > > > > > That's absolutely not the point. Please don't get yourself into that
+> > > > > > thinking. If people want to "export stuff to userspace", they must not
+> > > > > > invent new things. We need to get rid of the silly special cases.
+> > > > > 
+> > > > > Why exactly?  Do they actually hurt anyone and if so then how?
+> > > > 
+> > > > Sure, "devices" are devices, and devices have well-defines set of
+> > > > properties, not some magic directory, people can mess around with the
+> > > > way they like.
 > > > 
-> > > The comment at the top of sys.c says:
-> > > 
-> > >  * sys.c - pseudo-bus for system 'devices' (cpus, PICs, timers, etc)
-> > > 
-> > > Which is precisely where I would expect interrupt controllers and timers
-> > > and CPUs to go. I'm not going to make an IRQ bus or a timer bus and
-> > > arbitrarily map some things there and some things somewhere else in the
-> > > name of some abstraction insanity. These interrupt controllers all have
-> > > consistent attributes that make the sysdev class model work well, but
-> > > there are also many other types of interrupt controllers on the same CPUs
-> > > that use a different abstraction.
-> > > 
-> > > Beyond that, we also have sysdev class utilization for DMA controllers,
-> > > per-CPU store queues, etc, etc. all of which would need to be converted
-> > > to something else (see for example arch/sh/kernel/cpu/sh4/sq.c -- which
-> > > in turn was modelled after the cpufreq code, which also would need to
-> > > change to something else). It's not entirely obvious how to convert these
-> > > things, or why one should even bother.
-> 
-> The reason why is, if I understand it correctly, because user space tools
-> generally expect /sys/devices/ to be consistent in terms of the representation
-> of things and /sys/devices/system/ currently violates that expectation which
-> leads to all sorts of problems with device discovery, hotplug etc.
-> 
-> Now, whether or not to convert all the things currently exported through
-> sysdevs to struct device objects is not too obvious to me.  I think it simply
-> may be better to move them into a different direcory in sysfs (presumably
-> creating one for this purpose).
-> 
-> > > I can live with the struct device overhead even if I find it to be a
-> > > meaningless abstraction in this case, but what sort of bus/class model to
-> > > shoe horn these things in to is rather beyond me.
-> > > 
-> > > Indeed it seems to me that these are precisely the sorts of things that
-> > > sysdevs are intended for, which is why I elected to use them from the
-> > > onset. Simply saying "don't use sysdevs" and "pretend like you have some
-> > > sort of a magical pseudo-bus that's not a system bus" doesn't quite do it
-> > > for me.
+> > > So it looks like the the problem is that the exported attributes happen to
+> > > be under /sys/devices/.  Would it still be a problem if they were somewhere
+> > > else?
 > > 
-> > Nope, a device has a "name", a "subsystem" and a "devpath", has
-> > well-defined core-maintained properties at the device directory. It is
-> > not some random custom directory which people can put where they like
-> > it. Userspace has expectations about devices which need to be met, and
-> > that can only happen if these devices are "struct device".
-> > 
-> > All real devices sort into a hierarchy, possibly in different parent
-> > locations, and have a single point of classification which is the
-> > devices/ directory and contains symlinks. Only that way we can cope with
-> > it in userspace.
-> > 
-> > People should really stop messing around in /sys for optimization
-> > purposes. We have a common device model, and need to use it. Sysdevs do
-> > not fit into that model.
-> > 
-> > I can't tell how that fits into your use case, but please use something
-> > else than sysfs, if you need device information exported, but you can't
-> > use "struct device".
+> > We are not going to invent another location for any devices. They need
+> > to stay in /devices if they are devices. And all devices need to be
+> > "struct device".
 > 
-> I really think you shouldn't say "sysfs" when you in fact you mean
-> "/sys/devices/". :-)
+> _They_ _are_ _not_ _devices_.
+
+Ah, I see. Then they should not ever have been created as a sysdev in
+the first place. I thought you did only talk about stuff that needs
+pm_ops. If they don't do anything like a device, they need to go
+somewhere else, yes.
+
+> Please take clocksource as an example.  It needs to export two attributes,
+> available_clocksource and current_clocksource, which are _useful_ user space
+> interfaces.  Why the heck are you trying to convince me it's a good idea to
+> create a special bus type and struct device _specifically_ for exporting them?!
 > 
-> Now, I can easily understand arguments about representing everything under
-> /sys/devices/ by struct device objects, no question about that.  However,
-> I also think there should be a place for things like those mentioned in the
-> comment in sys.c, presumably outside of /sys/devices/.
+> Moreover, is there anything device-alike in those two attributes?  I don't
+> really think so.
+> 
+> So please stop arguing this way, because it simply isn't going to fly and
+> people will always say a big fat "no" to such ideas, for a good reason.
 
-No, please. We have all we need. Let's do one example, which you might
-apply to any other thing, because you never know what's the next big
-thing in hardware. We need to be a future-proof-as-possible, and that's
-not some second-class out-of-scope sysfs directory.
+I never expected anything like that to use a sysdev. I'm not tryin gto
+convince you about anything, I'm just surprised what people do, well I'm
+not after all the years. :)
 
-Lets' take CPUs:
-  - they send events when registered
-  - they want to export device specific properties
-  - userspace wants to take actions when such devices are available
+> > > > > > Userspace is not meant to learn subsystem specific rules for every new
+> > > > > > thing.
+> > > > > 
+> > > > > That depends a good deal of who's writing the user space in question.  If
+> > > > > that's the same person who's working on the particular part of the kernel,
+> > > > > I don't see a big problem.
+> > > > 
+> > > > Not for "devices". There are rules for devices, which are defined by the
+> > > > driver core, and the sysdev stuff needs to go, because it does not fit
+> > > > into that model.
+> > > 
+> > > OK, I understand that.
+> > > 
+> > > Now, there's stuff that doesn't really match the "device" model.  Where is
+> > > the right place to export that?  Perhaps we should add something like
+> > > /sys/platform/ (in analogy with /sys/firmware/)?
+> > 
+> > No, add a subsystem (bus_type) for any of them, and register them. There
+> > is no such thing as "devices which do not fit the device model", they
+> > are all fine there. Please stop optimizing single bytes and creating a
+> > mess in /sys. Every device is a "struct device".
+> 
+> Again.  Those things are _not_ devices.  Am I not clear enough?
 
-That all fits properly into the driver model in theory. Unless you do
-coldplug and bootup a box.
+No that wasn't clear. They need to leave the driver core then, if they
+are not devices. :)
 
-These devices are already there before userspace even starts, hence we
-find all these devices and "trigger" an fake uevent for all of them at
-bootup. That will match execute all the rules specified for that device,
-just as it would be hotplugges in that moment, hence we call it
-coldplug, which works for all devices with the hotplug code, even when
-they are never hot-pluggable.
+> > Think of "struct bus_type" as "struct subsystem", we will rename that
+> > when we are ready. It is just a group of devices which are of the same
+> > type, it has nothing to do with a bus in the sense of hardware.
+> > 
+> > We need unified exports of _all devices to userspace, not custom layouts
+> > in /sys.
+> > 
+> > There's is a pretty much outdated Documentation/sysfs-rules.txt, wich
+> > covers part of the history and the plans.
+> 
+> You seem to be thinking that anything exported through sysfs needs to be
+> device, which I don't think is event approximately correct (what about
+> /sys/firmware/ or /sys/kernel/ or /sys/fs/ , for a few examples?).
 
-What we do for coldplug is that we iterate over all flat lists of
-subsystems and find the devices lists and trigger the event by poking in
-the "uevent" sysfs file. Now all the sysdevs do not have a subsystem to
-find, and do not have a standard "uevent" file.
+All fine. Again, I'm only talking about "devices", which is class/,
+block/, bus/, dev/, devices/ in /sys.
 
-Back to the CPUs, we have all the nice device directories which could
-have all the CPU features in properties we need to make autoloading of
-cpufreq, governer, kvm possible (patch exists from Andi Kleen already) 
+> Think this way: it is useful (and IMHO correct) to export some things to
+> user space that without necessarily regarding them as "devices", physical
+> or not.  Some of them _happen_ to be exported through sysdevs, but that
+> doesn't really mean the _are_ devices.  They are simply _software_ interfaces
+> to things that have no device representation and don't _need_ one.
 
-But these dumb CPU sysfs device directories are completely invisible for
-the *usual* logic, and should just join the model and all will just work
-out-of-the-box.
+Fine, they need to leave the driver core stuff alone, and not pretend to
+be a device.
 
-When we started to clean up /sys (again only talking about devices, not
-other stuff) we had:
-  /block/*
-  /class/<subsys>/*
-  /bus/<subsys>/devices/*
-  /devices/system/<subsys>/*
-which are 4 different exports of exactly the same thing, a "device".
-"Block" we converted to "class" already, "class" will be converted to
-"bus", and "bus" will be renamed to "subsystem". All the current names
-will be kept as compat symlinks, just as we did for "block". After that,
-_all_ devices have a "subsystem" and a subsystem global directory where
-people can add custom stuff shared by all devices-of-the-same-type. Ev
+> > > > > > There is _one_ way to export device attributes, and that is
+> > > > > > "struct device" today.
+> > > > > > 
+> > > > > > If that's to expensive for anybody, just don't use sysfs. It's the rule
+> > > > > > we have today. :)
+> > > > > 
+> > > > > Oh, good to know.  It's changed a bit since I last heard.  Never mind.
+> > > > 
+> > > > Oh, don't get me wrong, this is all is about "devices" not any other
+> > > > controls.
+> > > >
+> > > > > Still, I won't let you change the things in /sys/power to struct devices,
+> > > > > sorry about that. ;-)
+> > > > 
+> > > > Fine as long as they are power specific things, and not "devices". You
+> > > > don't have sysdevs there, right? :)
+> > > 
+> > > No, I don't.
+> > 
+> > Then all is fine. All other stuff is more like /proc, and can never be
+> > really unified.
+> 
+> YES!  And _that_'s precisely what I'm (and Paul is) talking about.
 
-You can also argument from the other side, if a kernel device export is
-not worth the few bytes of /sys/devices/ and a "subsystem" (struct
-bus_type) it should not be in /sys at all, especially not hidden
-somehwere outside of /sys/devices when it is something remotely close to
-a device.
+Good.
+
+> > All we care about is devices, which have common methods
+> > for userspace to trigger and consume, and need to be unified. Power
+> > specific control files seems all fine in its kobject use.
+> 
+> I understand that, really.
+> 
+> > > > > And I wonder how are you going to deal with clocksource exporting things
+> > > > > via the sysdev interface right now.  I'd simply create two directories and
+> > > > > put the two files into them and be done with that, but I guess that
+> > > > > wouldn't fit into the model somehow, right?
+> > > > 
+> > > > Nope, register a bus_type, and use struct device for all of them, Parent
+> > > > them to /sys/devices/system/ if they should keep their location and
+> > > > layout.
+> > > 
+> > > Well, I'll be watching what happens to the patch trying to do that, but I'm
+> > > not going to bet anything on its success. ;-)
+> > 
+> > It should be pretty straight-forward. We will need to do that for CPUs I
+> > guess, because the interface is kinda commonly used.
+> 
+> No.  CPUs are _very_ special.
+
+Not in the view of the driver core or the associated user space
+interfaces. They are just like any other device.
+
+> > > > > > > > That way userspace can properly enumerate them in a flat list
+> > > > > > > > in /sys/bus/<bus_type name>/devices/*, and gets proper events on module
+> > > > > > > > load and during system coldplug, and can hook into the usual hotplug
+> > > > > > > > pathes to set/get these values instead of crawling magicly defined and
+> > > > > > > > decoupled locations in /sys which can not express proper hierarchy,
+> > > > > > > > classicication, or anything else that all other devices can just do.
+> > > > > > > 
+> > > > > > > There's no hotplug involved or anything remotely like that AFAICS.
+> > > > > > > There are simply static files as I said above, they are created
+> > > > > > > early during system initialization and simply stay there.
+> > > > > > 
+> > > > > > That's not the point. It's about a single way to retrieve information
+> > > > > > about devices, extendability, and coldplug during bootup, where existing
+> > > > > > devices need to be handled only after userspace is up.
+> > > > > 
+> > > > > I'd say the case at hand has nothing to do with that.
+> > > > 
+> > > > It has. As for CPUs. We can not do proper CPU-dependent module
+> > > > autoloading, because the events happen before userspace runs, and
+> > > > clodplug can not see the broken sysdevs, because they have no events to
+> > > > re-trigger, like all others have.
+> > > 
+> > > Well, as I said, would it be OK if the things in question happened to be
+> > > located somewhere outside of /sys/devices/ ?
+> > 
+> > No, no device directory can be outside of /sys/devices.
+> 
+> Sorry, I'm repeating that for the last time.  I'm not talking about devices.
+> I'm talking about _totally_ _random_ _stuff_ which is "like /proc, and can
+> never be really unified" (your own words) which _happens_ to be exported
+> through the sysdev interface, because that happend to be _easy_ at one point.
+> Can we agree on that at least?
+
+Sure, they should leave the driver core alone, and should never been a
+sysdev or any other device in the first place. We should not create
+anything for them.
 
 Kay
 
