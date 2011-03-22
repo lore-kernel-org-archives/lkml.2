@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab1CVRbW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 13:31:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59024 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756393Ab1CVRbU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 13:31:20 -0400
+	id S932189Ab1CVRdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 13:33:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1731 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752951Ab1CVRdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 13:33:38 -0400
+Date: Tue, 22 Mar 2011 13:33:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Justin TerAvest <teravest@google.com>
+Cc: jaxboe@fusionio.com, ctalbott@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add unaccounted time to timeslice_used.
+Message-ID: <20110322173332.GH3757@redhat.com>
+References: <1299877572-30353-1-git-send-email-teravest@google.com>
+ <20110314135516.GA31120@redhat.com>
+ <AANLkTi=UwYRUkZ4WjqU3eiFcnmW4KnnB4xNBanopip9S@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110322153018.790784895@szeredi.hu>
-References: <20110322152602.053930811@szeredi.hu> <20110322153018.790784895@szeredi.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 22 Mar 2011 10:30:30 -0700
-Message-ID: <AANLkTimS-x-+JGvpEbHcWyEMcp-nCno8kwuaBAcTjDnV@mail.gmail.com>
-Subject: Re: [PATCH 4/6 v7] overlay filesystem prototype
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        apw@canonical.com, nbd@openwrt.org, neilb@suse.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=UwYRUkZ4WjqU3eiFcnmW4KnnB4xNBanopip9S@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 8:26 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->
->  fs/Kconfig               |    1
->  fs/Makefile              |    1
->  fs/overlayfs/Kconfig     |    4
->  fs/overlayfs/Makefile    |    5
->  fs/overlayfs/overlayfs.c | 2394 +++++++++++++++++++++++++++++++++++++++++++++++
->  5 files changed, 2405 insertions(+)
+On Mon, Mar 14, 2011 at 02:55:27PM -0700, Justin TerAvest wrote:
+> On Mon, Mar 14, 2011 at 6:55 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Fri, Mar 11, 2011 at 01:06:12PM -0800, Justin TerAvest wrote:
+> >> There are two kind of times that tasks are not charged for: the first
+> >> seek and the extra time slice used over the allocated timeslice. Both
+> >> of these exported as a new unaccounted_time stat.
+> >>
+> >> I think it would be good to have this reported in 'time' as well, but
+> >> that is probably a separate discussion.
+> >>
+> >
+> > Justin,
+> >
+> > I would say that for such optimization do make sure that you mention that
+> > these are useful only if one is driving a queue depth of 1.
+> 
+> Hi Vivek,
+> 
+> That's a good point. I should have mentioned that.
+> 
+> >
+> > Otherwise previous queue might have dumped bunch of requests in device
+> > and expired. Now new queue's first request completion time is also
+> > impacted by the requests dumped by other queues.
+> >
+> > There are already so many stats which I have never used so far and I have
+> > not encountered anybody else using these either. I think primary reason
+> > being that in general nobody forced the queue depth of 1 hence most of the
+> > timing stats are of no use.
+> 
+> We could probably put the data collected here back into "time"
+> eventually, but having it separate right now helps build confidence in
+> the accuracy of the stats.
+> 
+> >
+> > So personally I am not very keen on keep on increasing number of stats in
+> > CFQ which are useful only when using queue depth 1 as that might not be
+> > the common case. But Jens likes it, so....
+> >
+> > Also a comment inline.
+> >
+> > [..]
+> >> @@ -3314,9 +3321,7 @@ static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+> >>       BUG_ON(!cfq_cfqq_on_rr(cfqq));
+> >>
+> >>       cfq_service_tree_add(cfqd, cfqq, 1);
+> >> -
+> >> -     cfqq->slice_end = 0;
+> >> -     cfq_mark_cfqq_slice_new(cfqq);
+> >> +     __cfq_set_active_queue(cfqd, cfqq);
+> >
+> > So far a new queue selection was always in select_queue(). Now this will
+> > change it and new queue selection will also take place in
+> > cfq_preempt_queue().
+> >
+> > Also I think this is not right. It is not necessary that we select the
+> > preempting queue. For example a sync queue in one group can preempt the
+> > async in root group but it might happen that we still select again
+> > the root group's sync queue for dispatch.
+> >
+> > So queue selection logic should be driven by select_queue() which selects
+> > group first then workload with-in group and then queue with-in workload
+> > and we shoud not be setting active queue here.
+> 
+> That sounds reasonable. I will send out another version of the patch
+> that will only clear the stats for the cfqq.
 
-Just one single C file? Is there no structure to the code at all? No
-separate issues for directory lookup vs file operations, no helper
-libraries vs core ops? No "mount time" vs "runtime" structure to the
-code?
+Hi Justin,
 
-So 2400 lines isn't all that much, but things have a tendency to grow.
-So when I see one single file that tries to do everything, I go "hmm".
-Normal filesystems tend to have super.c for handling the mount itself,
-and dir.c vs file.c for directory ops vs file ops. Maybe this doesn't
-have a file.c because that's all delegated to the lower filesystems,
-but still.. Just one file?
+Are you planning to send a fix? 
 
-Yeah, yeah, we have those horrible drivers that have 10k+ files, and
-there are certainly filesystems with much bigger files, but I'd still
-wish for more structure.  You've got a whole subdirectory of your own.
+- do not set active queue in preempt_queue()
+- move unaccounted time under debug?
 
-                          Linus
+Thanks
+Vivek
