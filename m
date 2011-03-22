@@ -1,60 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab1CVM7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 08:59:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2726 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754228Ab1CVM73 convert rfc822-to-8bit (ORCPT
+	id S932129Ab1CVNBV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 09:01:21 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43852 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755431Ab1CVNBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 08:59:29 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] First round of SCSI updates for 2.6.38 merge window
-References: <1300392635.17266.5.camel@mulgrave.site>
-	<AANLkTinvwKzYiy5M=Eoae_ViRQwVBF-TgedKspP0qagE@mail.gmail.com>
-	<yq1fwqfu6dd.fsf@sermon.lab.mkp.net>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 22 Mar 2011 08:59:14 -0400
-In-Reply-To: <yq1fwqfu6dd.fsf@sermon.lab.mkp.net> (Martin K. Petersen's
-	message of "Tue, 22 Mar 2011 00:27:42 -0400")
-Message-ID: <x49zkons44d.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 Mar 2011 09:01:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=UC7wUFKNEGH1g04sWZHzkPuhwexio0Am6h4dRIVEYb2ViRmVrYBfHsRf2Iu6uU1Fgb
+         gY8c3pL18FGeXhlusjLhn0azI605+aYpe4oJ3W+jGG/b9yzT/jBU/6ZJLDvP9Wdog4cp
+         APj9prcj0Ao5f+VlDK0swV77Bj9cfBNWnjF4Y=
+Subject: Re: [PATH 0/4] Memstick patches for 2.6.39
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, oakad@yahoo.com
+In-Reply-To: <1300621371.15768.11.camel@maxim-laptop>
+References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
+	 <1299947013.17988.0.camel@maxim-laptop> <1300219210.13493.0.camel@MAIN>
+	 <20110315140402.334cc55c.akpm@linux-foundation.org>
+	 <1300590545.15453.3.camel@maxim-laptop>
+	 <20110319234701.0eab3744.akpm@linux-foundation.org>
+	 <1300621371.15768.11.camel@maxim-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Mar 2011 15:01:09 +0200
+Message-ID: <1300798869.10868.0.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Martin K. Petersen" <martin.petersen@oracle.com> writes:
+On Sun, 2011-03-20 at 13:42 +0200, Maxim Levitsky wrote:
+> On Sat, 2011-03-19 at 23:47 -0700, Andrew Morton wrote:
+> > On Sun, 20 Mar 2011 05:09:05 +0200 Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> > 
+> > > On Tue, 2011-03-15 at 14:04 -0700, Andrew Morton wrote:
+> > > > On Tue, 15 Mar 2011 22:00:10 +0200
+> > > > Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> > > > 
+> > > > > On Sat, 2011-03-12 at 18:23 +0200, Maxim Levitsky wrote:
+> > > > > > On Fri, 2011-03-04 at 06:16 +0200, Maxim Levitsky wrote:
+> > > > > > > Hi,
+> > > > > > > 
+> > > > > > > This is a repost of my patches for 2.6.39 inclusion, which I hope not to
+> > > > > > > miss this time.
+> > > > > > > 
+> > > > > > > I addressed the comments on the scatterlist issues.
+> > > > > > > 
+> > > > > > > Andrew, please note that my richoh memstick driver is standalone, unchanged from previos versions
+> > > > > > > has many users which use the version I posted at ubuntu's Launchpad and happy with it.
+> > > > > > > Please include it regardless of other patches.
+> > > > > > > 
+> > > > > > > The other half of my work is support for legacy memorysticks which consists of 2 patches,
+> > > > > > > first that adds few functions to scatterlist.c, and the other patch that adds the driver.
+> > > > > > > Driver is also stable and tested.
+> > > > > > > 
+> > > > > > > Best regards,
+> > > > > > > 	Maxim Levitsky
+> > > > > > 
+> > > > > > 
+> > > > > > Any update?
+> > > > > 
+> > > > > Any update?
+> > > > > 
+> > > > 
+> > > > I'm hoping that Alex will soon have time to (re)review these patches.
+> > > 
+> > > Andrew Morton, what the current state now?
+> > > 
+> > 
+> > Technical discussion is ongoing.  James has described what appears to
+> > be the architecturally preferred way of implementing this and there is
+> > as yet no followup to his suggestion.
+> > 
+> 
+> But I will at least see my r592 driver in kernel?
+> It doesn't depend on ether ms legacy driver nor on changes in
+> scatterlist.c
+> 
+> Also, I don't have much time now to improve the ms_block driver till
+> this summer (studying).
+> The driver works. Yes it has a flaw in regard to scatterlist processing,
+> because I didn't find a better way to deal with this monster, but I will
+> fix that later. I am not the kind of guy that runs away after a merge.
+> It would be nice to just see my code in kernel, code I wrote more that a
+> year ago.
+> 
+> This flaw is purely theoretical. Driver does work.
+> 
+> One of the ways to fix this is just use plain good kernel pointers.
+> Yes that means bouncing of high mem, but like they say "to hell with
+> that". The driver deals with legacy, and quite slow devices, so there
+> won't be any performance difference.
+> Besides, my other driver for that card reader, for xD portion, does
+> precisely that (more correctly common code in FTL frontend, the
+> mtd_blkdev.c does that) and the end result is quite good.
+> 
+> 
+> So, I am waiting for a word from you,
+Any update?
 
->>>>>> "Geert" == Geert Uytterhoeven <geert@linux-m68k.org> writes:
->
-> Geert> drivers/scsi/sd.c: In function ‘sd_prep_fn’:
-> Geert> drivers/scsi/sd.c:544: warning: ‘ret’ may be used uninitialized
-> Geert> in this function
->
-> Sorry about that.
->
->
-> sd: Fail discard requests when logical block provisioning has been disabled
->
-> Ensure that we kill discard requests after logical block provisioning
-> has been disabled in sysfs.
->
-> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Tao Ma posted a similar patch.  Anyway, either looks good to me.  This
-one will avoid an unecessary extra setting of ret, but I doubt that
-matters.
+-- 
+Best regards,
+        Maxim Levitsky
 
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Visit my blog: http://maximlevitsky.wordpress.com
+Warning: Above blog contains rants.
+
