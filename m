@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab1CVRW6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 13:22:58 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60513 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756426Ab1CVRWz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 13:22:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Oren Weil <oren.jer.weil@intel.com>
-Subject: Re: [PATCH 1/7] char/mei: PCI device and char driver support.
-Date: Tue, 22 Mar 2011 18:22:43 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, alan@linux.intel.com,
-        david@woodhou.se
-References: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com> <1300791092-14319-2-git-send-email-oren.jer.weil@intel.com>
-In-Reply-To: <1300791092-14319-2-git-send-email-oren.jer.weil@intel.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201103221822.43780.arnd@arndb.de>
-X-Provags-ID: V02:K0:rwbRAz77NQpicqReJ7xNmIBVFX0NFpYQrdOdXZc0/VR
- LUA1CeLAbyDZp7mjZuXp9X0FNoGYiYjAFoSPIy0SUkWQcrvtMF
- GOE7xSj9O/1wq9b4SEUNzmj6NhP3d9TsXNbz8xIghTrYmT846t
- KNpxFWHhQAXMDxA60bnyNvBk1s012bkZL724zCBDlZ5sB/sU1z
- 99yHrDje2gAzrvPdbmhxA==
+	id S932099Ab1CVR2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 13:28:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18753 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756393Ab1CVR2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 13:28:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,225,1299484800"; 
+   d="scan'208";a="900062208"
+Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
+ kfree_rcu()
+From: Robert Love <robert.w.love@intel.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
+        Jarek Poplawski <jarkao2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@open-fcoe.org" <devel@open-fcoe.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+In-Reply-To: <4D82D45A.30102@cn.fujitsu.com>
+References: <4D82D071.5020703@cn.fujitsu.com>
+	 <4D82D3FF.2080303@cn.fujitsu.com>  <4D82D45A.30102@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Mar 2011 10:28:33 -0700
+Message-ID: <1300814913.19083.427.camel@fritz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 March 2011, Oren Weil wrote:
-> +static ssize_t mei_read(struct file *file, char __user *ubuf,
-> +                        size_t length, loff_t *offset)
-> +{
-> +       int i;
-> +       int rets;
-> +       int err;
-> +       int if_num = iminor(file->f_dentry->d_inode);
-> +       struct mei_file_private *file_ext = file->private_data;
-> +       struct mei_cb_private *priv_cb_pos = NULL;
-> +       struct mei_cb_private *priv_cb = NULL;
-> +       struct mei_device *dev;
-> +
-> +       if (!mei_device)
-> +               return -ENODEV;
-> +
-> +       dev = pci_get_drvdata(mei_device);
-> +       if (if_num != MEI_MINOR_NUMBER || !dev || !file_ext)
-> +               return -ENODEV;
-> +
+On Thu, 2011-03-17 at 20:41 -0700, Lai Jiangshan wrote:
+> 
+> The rcu callback fc_rport_free_rcu() just calls a kfree(),
+> so we use kfree_rcu() instead of the call_rcu(fc_rport_free_rcu).
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  drivers/scsi/libfc/fc_rport.c |   14 +-------------
+>  1 files changed, 1 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/scsi/libfc/fc_rport.c b/drivers/scsi/libfc/fc_rport.c
+> index a7175ad..29abab0 100644
+> --- a/drivers/scsi/libfc/fc_rport.c
+> +++ b/drivers/scsi/libfc/fc_rport.c
+> @@ -151,18 +151,6 @@ static struct fc_rport_priv *fc_rport_create(struct fc_lport *lport,
+>  }
+>  
+>  /**
+> - * fc_rport_free_rcu() - Free a remote port
+> - * @rcu: The rcu_head structure inside the remote port
+> - */
+> -static void fc_rport_free_rcu(struct rcu_head *rcu)
+> -{
+> -	struct fc_rport_priv *rdata;
+> -
+> -	rdata = container_of(rcu, struct fc_rport_priv, rcu);
+> -	kfree(rdata);
+> -}
+> -
+> -/**
+>   * fc_rport_destroy() - Free a remote port after last reference is released
+>   * @kref: The remote port's kref
+>   */
+> @@ -171,7 +159,7 @@ static void fc_rport_destroy(struct kref *kref)
+>  	struct fc_rport_priv *rdata;
+>  
+>  	rdata = container_of(kref, struct fc_rport_priv, kref);
+> -	call_rcu(&rdata->rcu, fc_rport_free_rcu);
+> +	kfree_rcu(rdata, rcu);
 
-I'm very confused by this code and how you support multiple
-instances of PCI devices, cb_list entries and concurrent connections:
+I think this last line should be:
 
-* You look up a global pointer to mei_device, when there could
-  be multiple PCI devices.
+kfree_rcu(rdata, &rdata->rcu);
 
-* You use the minor number of the chardev as an index throughout
-  the code, but bail out if it does not match a constant.
+Thanks, //Rob
 
-* You walk a list of mei_cb_private entries when you should have
-  just a single one for this file. In other places, you walk a list
-  of mei_file_private entries.
-
-I think you should try to document your data structures and how
-they relate to each other, and remove all that turn out not to
-be needed in the process.
-
->From the brief look I had at this rather complex code, I would
-assume that it could look something like this:
-
-* In the PCI probe function, create a misc character device for
-  every instance you find behind each device. Remove the global
-  variables and constants.
-
-* Unify mei_file_private and mei_cb_private, allocate at open
-  time but fill when the ioctl gets called.
-
-Would that work, or am I missing something major?
-
-	Arnd
