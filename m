@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030Ab1CVTRW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 15:17:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61084 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752520Ab1CVTRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 15:17:20 -0400
-Date: Tue, 22 Mar 2011 20:08:12 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 3/8] job control: Fix ptracer wait(2) hang and explain
-	notask_error clearing
-Message-ID: <20110322190812.GB28038@redhat.com>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org> <1299614199-25142-4-git-send-email-tj@kernel.org> <20110321151941.GA20917@redhat.com> <20110321161236.GF12003@htj.dyndns.org>
+	id S1753477Ab1CVTSr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 15:18:47 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:52223 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab1CVTSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 15:18:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:message-id:mime-version:content-type; q=dns; s=
+	newdream.net; b=Pa0Zc6BPJ36BOmobBRCXmyuk7gaFTsnZsq5yu/R7jZU3j1Zm
+	8DlAd1ALtbh4zp7aG/DT7PlbydprrEnL1uKP3AH/gNih0esQD8HXu0pCLCb4hN3C
+	+ivcak9NzpXB38mzad+syKNstEzdrgD51cP30yhc3dTxlmZRAnraN8ovli8=
+Date: Tue, 22 Mar 2011 12:21:25 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph updates for 2.6.39-rc1
+Message-ID: <Pine.LNX.4.64.1103211602260.15400@cobra.newdream.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110321161236.GF12003@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21, Tejun Heo wrote:
->
-> On Mon, Mar 21, 2011 at 04:19:41PM +0100, Oleg Nesterov wrote:
-> > But the main problem is, I do not think do_wait() should block in this
-> > case, and thus I am starting to think this patch is not "complete".
+Hi Linus,
 
-Just in case... But of course I didn't mean this patch should be
-updated to handle the EXIT_ZOMBIE case.
+Please pull the following Ceph and RBD updates from
 
-> > Your test-case could use waitid(WEXITED) instead WSTOPPED with the same
-> > result, it should hang. Why it hangs? The tracee is dead, we can't do
-> > ptrace(PTRACE_DETACH), and we can do nothing until other threads exit.
-> > This looks equally strange.
-> >
-> > IOW. Assuming that ptrace == T and WEXITED is set, perhaps we should
-> > do something like this pseudo-code
-> >
-> > 	if (p->exit_state == EXIT_ZOMBIE) {
-> > 		if (!delay_group_leader(p))
-> > 			return wait_task_zombie(wo, p);
-> >
-> > 		ptrace_unlink();
-> > 		wait_task_zombie(WNOWAIT);
-> > 	}
-> >
-> > However. This is another user-visible change, we need another discussion
-> > even if I am right. In particular, it is not clear what should we do
-> > if parent == real_parent. And probably this can confuse gdb, but iirc
-> > gdb already have the problems with the dead leader anyway.
->
-> Interesting point.  Yeah, I agree.  wait(WEXITED) from the ptracer
-> should only wait for the tracee itself, not the group.  When they are
-> one and the same, I don't think we need to do anything differently
-> from now.
->
-> If we change the behavior that way, it would also fit better with the
-> rest of the new behavior where the real parent and ptracer have
-> separate roles when wait(2)ing for stopped states.
->
-> The question is how the change would affect the existing users.
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git master
 
-Yes, of course. Perhaps we can never do this.
+The biggest item is support for the object watch/notify framework that 
+allows an RBD block device to get/send notifications about snapshot 
+creation.  There is also some code refactoring in the osd_client that 
+cleans things up and improves failure handling.  A few bug fixes for 
+synchronous IO came in from Henry, there's an ino32 mount option to expose 
+32 bit inos to 32 bit userspace, and there's some miscellaneous code 
+cleanup.
 
-> When
-> the debugee is a direct child, nothing will change.
+The other piece of pending work is the dentry caching stuff, but that 
+needs an ack on the d_prune dentry_operation.
 
-Actually, I think this is the most problematic case... Perhaps
-it would be safer to add WEXITED_THREAD for ptrace. I dunno.
+Thanks!
+sage
 
-> When attaching to
-> a separate group, I don't think it even matters.  Does gdb handle
-> group leader any differently from the rest when attached to an
-> unrelated group?
 
-gdb certainly has some problems with the dead leaders. But I can't
-recall what exactly. Will try to check later...
+Henry C Chang (2):
+      ceph: remove request from unsafe list if it is canceled/timed out
+      ceph: add request to the tail of unsafe write list
 
-In any case, I only tried to discuss what else we can do with the
-current strange semantics. When it comes to ptrace, group_leader
-should not represent the whole process.
+Sage Weil (6):
+      ceph: preserve I_COMPLETE across rename
+      libceph: fix osd request queuing on osdmap updates
+      ceph: remove debugfs debug cruft
+      ceph: move readahead default to fs/ceph from libceph
+      ceph: rename dentry_release -> d_release, fix comment
+      rbd: update email address in Documentation
 
-Oleg.
+Tommi Virtanen (1):
+      libceph: Fix base64-decoding when input ends in newline.
 
+Yehuda Sadeh (4):
+      ceph: update common header files
+      ceph: add ino32 mount option
+      libceph: add lingering request and watch/notify event framework
+      rbd: use watch/notify for changes in rbd header
+
+ Documentation/ABI/testing/sysfs-bus-rbd |    2 +-
+ drivers/block/rbd.c                     |  361 +++++++++++++++++--
+ fs/ceph/debugfs.c                       |    6 -
+ fs/ceph/dir.c                           |   24 +-
+ fs/ceph/file.c                          |   10 +-
+ fs/ceph/inode.c                         |   25 +-
+ fs/ceph/super.c                         |    9 +-
+ fs/ceph/super.h                         |   66 +++-
+ include/linux/ceph/ceph_fs.h            |   19 +-
+ include/linux/ceph/libceph.h            |    1 -
+ include/linux/ceph/osd_client.h         |   57 +++-
+ include/linux/ceph/rados.h              |   39 ++-
+ net/ceph/armor.c                        |    4 +-
+ net/ceph/ceph_common.c                  |    1 +
+ net/ceph/osd_client.c                   |  624 ++++++++++++++++++++++++-------
+ 15 files changed, 1018 insertions(+), 230 deletions(-)
