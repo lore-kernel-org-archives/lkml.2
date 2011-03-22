@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab1CVNqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 09:46:39 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:59038 "EHLO mprc.pku.edu.cn"
+	id S932113Ab1CVODA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 10:03:00 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:41288 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751361Ab1CVNqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 09:46:37 -0400
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Arnd Bergmann'" <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'Stephen Boyd'" <sboyd@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>
-References: <1300751462-1494-1-git-send-email-sboyd@codeaurora.org> <201103220934.50435.arnd@arndb.de> <20110322092113.GB17264@n2100.arm.linux.org.uk> <201103221110.20861.arnd@arndb.de>
-In-Reply-To: <201103221110.20861.arnd@arndb.de>
-Subject: RE: [PATCH] ARM: Use asm-generic/sizes.h
-Date: Tue, 22 Mar 2011 21:43:46 +0800
-Message-ID: <00ec01cbe897$2eed7210$8cc85630$@mprc.pku.edu.cn>
+	id S1753666Ab1CVOCw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 10:02:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQE4tCitO1vWIib0wOPyTOUnpd6PFADDwX3XAptj/h4B/snX15U01h8A
-Content-Language: zh-cn
+In-Reply-To: <1300800904.3290.7.camel@mulgrave.site>
+References: <1300732426-18958-1-git-send-email-florian@mickler.org>
+	<a08d026a-d4c3-4ee5-b01a-d561f755b1ec@email.android.com>
+	<20110321220315.7545a61a@schatten.dmk.lab>
+	<1300800904.3290.7.camel@mulgrave.site>
+Date: Tue, 22 Mar 2011 15:02:48 +0100
+Message-ID: <AANLkTinWhwX1ZONGi-JwPr-oG565bKSsF0-UvJRh+4Cp@mail.gmail.com>
+Subject: Re: [PATCH 0/6] get rid of on-stack dma buffers
+From: Florian Mickler <florian@mickler.org>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Andy Walls <awalls@md.metrocast.net>, mchehab@infradead.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        js@linuxtv.org, tskd2@yahoo.co.jp, liplianin@me.by, g.marco@freenet.de,
+        aet@rasterburn.org, pb@linuxtv.org, mkrufky@linuxtv.org,
+        nick@nick-andrew.net, max@veneto.com, janne-dvb@grunau.be,
+        Oliver Neukum <oliver@neukum.org>, Greg Kroah-Hartman <greg@kroah.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Joerg Roedel <joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Firstly, the sizes.h is do derived from arm version.
-And I just complete the SZ_* definitions for 32-bit architecture,
-and remove SZ_48M for not being power-of-2 size.
-I am sorry for removing copyright information when cleaning-up the code.
-However, the content of this file is so common sense for handy sizes.
-So, I believe that GPLv2 license is enough.
+2011/3/22 James Bottomley <James.Bottomley@hansenpartnership.com>:
+> On Mon, 2011-03-21 at 22:03 +0100, Florian Mickler wrote:
+>> On Mon, 21 Mar 2011 15:26:43 -0400
+>> Andy Walls <awalls@md.metrocast.net> wrote:
+>>
+>> > Florian Mickler <florian@mickler.org> wrote:
+>>
+>> To be blunt, I'm not shure I fully understand the requirements myself.
+>> But as far as I grasped it, the main problem is that we need memory
+>> which the processor can see as soon as the device has scribbled upon
+>> it. (think caches and the like)
+>>
+>> Somewhere down the line, the buffer to usb_control_msg get's to be
+>> a parameter to dma_map_single which is described as part of
+>> the DMA API in Documentation/DMA-API.txt
+>>
+>> The main point I filter out from that is that the memory has to begin
+>> exactly at a cache line boundary...
+>
+> The API will round up so that the correct region covers the API.
+> However, if you have other structures packed into the space (as very
+> often happens on stack), you get cache line interference in the CPU if
+> they get accessed:  The act of accessing an adjacent object pulls in
+> cache above your object and destroys DMA coherence.  This is the
+> principle reason why DMA to stack is a bad idea.
 
-Regards.
+Thanks, this was the missing piece of information to make sense of
+ why it's bad for stack memory to be part of this.
 
-Guan Xuetao
+>
+>> I guess (not verified), that the dma api takes sufficient precautions
+>> to abort the dma transfer if a timeout happens.  So freeing _should_
+>> not be an issue. (At least, I would expect big fat warnings everywhere
+>> if that were the case)
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Tuesday, March 22, 2011 6:10 PM
-> To: linux-arm-kernel@lists.infradead.org; Guan Xuetao
-> Cc: Russell King - ARM Linux; Stephen Boyd; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] ARM: Use asm-generic/sizes.h
-> 
-> On Tuesday 22 March 2011, Russell King - ARM Linux wrote:
-> > On Tue, Mar 22, 2011 at 09:34:50AM +0100, Arnd Bergmann wrote:
-> > > On Tuesday 22 March 2011, Stephen Boyd wrote:
-> > > > Commit d232b12 (asm-generic headers: add sizes.h, 2011-01-15)
-> > > > introduced a generic sizes.h. Use that instead of the ARM specific
-> > > > version.
-> > > >
-> > > > Cc: Arnd Bergmann <arnd@arndb.de>
-> > > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > >
-> > > Acked-by: Arnd Bergmann <arnd@arndb.de
-> >
-> > I assume the generic version was derived from the ARM version.  Is there
-> > a reason why ARM Ltd's copyright was seemingly dropped?
-> 
-> I'll let Guan Xuetao answer that, he introduced the file along with the
-> unicore32 architecture.
-> 
-> I doubt that the contents of this file are copyrightable, but of course
-> that is normally no reason to remove the notice.
-> 
-> 	Arnd
+I did mean s/dma api/usb_control_msg/ in the above paragraph. As that is the
+ ''dma api'' these drivers are using... sorry for the confusion there...
 
+>
+> No, it doesn't take any precautions like this.  the DMA API is just
+> mapping (possibly via an IOMMU).  If the transfer times out, that's done
+> in the DMA engine of the card, and must be cleaned up by the driver and
+> unmapped.
+
+ok.
+
+> The general rule though is never DMA to stack.  On some processors, the
+> way stack is allocated can actually make this not work.
+>
+> James
+
+thanks,
+Flo
+
+p.s.: hope this message get's through to the list... I am on the road
+at the moment,
+ so I'm not shure that there won't be any html in it again :(
