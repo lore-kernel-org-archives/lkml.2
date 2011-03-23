@@ -1,103 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab1CWWZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 18:25:24 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:40921 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756802Ab1CWWZV (ORCPT
+	id S1756794Ab1CWWal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 18:30:41 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50997 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756707Ab1CWWak convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 18:25:21 -0400
+	Wed, 23 Mar 2011 18:30:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=vF2vVn0Kb+VRZRn46DLvI/dzRQBSsGpb69EBm7MEaSNT5Zn8yd5OJZ1OkAjvqvX9mA
-         bDAPtbFcCxy9bGu8lv0Q==
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JyIqi3G9nr5PR6EE7Eh4P+D6Fgt9OHMMBTKnx5gRZMPwVoXwqrt1s07SdW0BMvh0I2
+         ziSogJVNfmEO7+QHDpk0L/yXn1UOF51q/yDJhjmu1WeXku0lCuU74rgp9rva+eoDdPvu
+         4gSl1yKeZKfegRnfYbZkp268klwz7A4pElV5I=
 MIME-Version: 1.0
-Date: Wed, 23 Mar 2011 15:25:07 -0700
-Message-ID: <AANLkTiko8EkxhsdmJPNWfrecxRY4ibmbp_3UeHirTOs4@mail.gmail.com>
-Subject: ARM Tegra updates for 2.6.39
-From: Colin Cross <ccross@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Tegra Mailing List <linux-tegra@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>
+In-Reply-To: <201103232322.52485.rjw@sisk.pl>
+References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com>
+	<201103232311.38889.rjw@sisk.pl>
+	<AANLkTinkLj6SUMn-9Dkqn-Dx_7SN2dF70LYb2pFu19+3@mail.gmail.com>
+	<201103232322.52485.rjw@sisk.pl>
+Date: Wed, 23 Mar 2011 23:30:39 +0100
+Message-ID: <AANLkTi=UMDZ+78bS-U=Kvp_PYnc_BNHH5EgJnm1nssHP@mail.gmail.com>
+Subject: Re: Corrupted files after suspend to disk
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-Please pull updates for Tegra from:
+On Wed, Mar 23, 2011 at 11:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>> On Wed, Mar 23, 2011 at 11:11 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>> >> 2011/3/23 Rafael J. Wysocki <rjw@sisk.pl>:
+>> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>> >> >> Hi,
+>> >> >>
+>> >> >> I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
+>> >> >> running Linux 2.6.37.4.
+>> >> >> After resuming from s2disk some files are corrupted.
+>> >> >> But when I reboot my netbook everything seems good again.
+>> >> >>
+>> >> >> When I saw the problem the first time the ls command segfaulted always.
+>> >> >> I did a reboot and it worked again.
+>> >> >>
+>> >> >> A few days later zypper crashed. After a reboot it worked again.
+>> >> >> And today ssh crashed. I looked a bit closer and saw it crashed
+>> >> >> somewhere within libcrypto.
+>> >> >> So I made copy libcrypto and rebooted.
+>> >> >> After the reboot ssh worked again but libcrypto and the copy of it hat
+>> >> >> a different sha1 sum!
+>> >> >> WTF?!
+>> >> >>
+>> >> >> Is this a known issue?
+>> >> >
+>> >> > No.
+>> >> >
+>> >> >> dmesgs and config are attached.
+>> >> >>
+>> >> >> The used distribution is openSUSE 11.4 with suspend-0.80.20100129-7.1
+>> >> >> (default from suse).
+>> >> >> I'm using ext3 as root filesystem.
+>> >> >> What else do you need?
+>> >> >
+>> >> > Whatever you can do to narrow down the problem.  At the moment I only know
+>> >> > that it's there.
+>> >>
+>> >> I can reproduce the problem now.
+>> >> After ~20 suspend and resume iterations aide finds corrupted files in /lib/.
+>> >> It's always a very basic lib like libcrypto, libglib which is used all
+>> >> the time on my system.
+>> >
+>> > Those files are never intentionally modified, right?
+>> >
+>> >> Maybe it's an issue like this one?
+>> >> https://lkml.org/lkml/2010/12/2/339
+>> >
+>> > It might have if that patch hadn't been merged before 2.6.37.
+>> >
+>> > Is the system 32-bit or 64-bit?
+>>
+>> It's a 32-bit system.
+>> cmp shows that the corrupted files differ in many bytes (not scattered).
+>> The corrupted bytes are always 0 or 252.
+>
+> Do I understand correctly that the files apparently corrupted after resume
+> are not corrupted any more when you reboot?
 
- git://android.git.kernel.org/kernel/tegra.git for-linus
+Yes.
+Seems like a cache issue.
 
-These are changes that depended on the i2c and asoc trees that have
-already been merged.
 
+> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+-- 
 Thanks,
-Colin
-
-The following changes since commit c871fe663a6368fd0e98f5a3bfd81b0b9c591266:
-
-  Merge branch 'for-2639/i2c/i2c-tegra' of
-git://git.fluff.org/bjdooks/linux into for-next-i2c (2011-03-03
-14:17:49 -0800)
-
-are available in the git repository at:
-
-  git://android.git.kernel.org/kernel/tegra.git for-linus
-
-Colin Cross (1):
-      Merge branch 'boards-for-next' of
-git://git.kernel.org/.../olof/tegra-2.6 into for-next
-
-Marc Dietrich (1):
-      ARM: tegra: Add Toshiba AC100 support
-
-Mike Rapoport (4):
-      ARM: tegra: trimslice: enable MMC/SD slots
-      ARM: tegra: harmony: update PCI-e initialization sequence
-      ARM: tegra: update defconfig
-      ARM: tegra: harmony: initialize the TPS65862 PMIC
-
-Olof Johansson (4):
-      ARM: tegra: seaboard: register i2c devices
-      ARM: tegra: harmony: register i2c devices
-      ARM: tegra: enable new drivers in defconfig
-      Merge branch 'trimslice/upstream' of
-git://git.kernel.org/.../rppt/linux-tegra into boards-for-next
-
-Stephen Warren (5):
-      ARM: tegra: add devices.c entries for audio
-      ARM: tegra: create defines for SD-related GPIO names
-      ARM: tegra: harmony: Beginnings of audio support
-      ARM: tegra: harmony: I2C-related portions of audio support
-      ARM: tegra: harmony: Set WM8903 gpio_base
-
- arch/arm/configs/tegra_defconfig             |   29 +++++-
- arch/arm/mach-tegra/Kconfig                  |    5 +
- arch/arm/mach-tegra/Makefile                 |    4 +
- arch/arm/mach-tegra/board-harmony-pcie.c     |   24 ++++-
- arch/arm/mach-tegra/board-harmony-pinmux.c   |   28 +++--
- arch/arm/mach-tegra/board-harmony-power.c    |  117 +++++++++++++++++++
- arch/arm/mach-tegra/board-harmony.c          |   95 +++++++++++++++-
- arch/arm/mach-tegra/board-harmony.h          |   15 +++
- arch/arm/mach-tegra/board-paz00-pinmux.c     |  157 ++++++++++++++++++++++++++
- arch/arm/mach-tegra/board-paz00.c            |  128 +++++++++++++++++++++
- arch/arm/mach-tegra/board-paz00.h            |   29 +++++
- arch/arm/mach-tegra/board-seaboard-pinmux.c  |   11 +-
- arch/arm/mach-tegra/board-seaboard.c         |   68 ++++++++++-
- arch/arm/mach-tegra/board-seaboard.h         |    3 +
- arch/arm/mach-tegra/board-trimslice-pinmux.c |    9 ++
- arch/arm/mach-tegra/board-trimslice.c        |   19 +++
- arch/arm/mach-tegra/board-trimslice.h        |    3 +
- arch/arm/mach-tegra/devices.c                |   70 ++++++++++++
- arch/arm/mach-tegra/devices.h                |    4 +
- arch/arm/mach-tegra/include/mach/iomap.h     |    3 +
- 20 files changed, 787 insertions(+), 34 deletions(-)
- create mode 100644 arch/arm/mach-tegra/board-harmony-power.c
- create mode 100644 arch/arm/mach-tegra/board-paz00-pinmux.c
- create mode 100644 arch/arm/mach-tegra/board-paz00.c
- create mode 100644 arch/arm/mach-tegra/board-paz00.h
+//richard
