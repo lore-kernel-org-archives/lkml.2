@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932714Ab1CWNiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 09:38:09 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:57166 "EHLO
+	id S932640Ab1CWNiI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 09:38:08 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:57164 "EHLO
 	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755827Ab1CWNiE (ORCPT
+	with ESMTP id S1755837Ab1CWNiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Mar 2011 09:38:04 -0400
 X-Cam-AntiVirus: no malware found
@@ -14,9 +14,9 @@ From: Jonathan Cameron <jic23@cam.ac.uk>
 To: linux-kernel@vger.kernel.org
 Cc: greg@kroah.com, rusty@rustcorp.com.au, adobriyan@gmail.com,
         Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 2/3] debugfs: move to new kstrtobool function
-Date: Wed, 23 Mar 2011 13:39:13 +0000
-Message-Id: <1300887554-19031-3-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 3/3] params.c: Use new kstrtobool implementation to processing boolean inputs.
+Date: Wed, 23 Mar 2011 13:39:14 +0000
+Message-Id: <1300887554-19031-4-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1300887554-19031-1-git-send-email-jic23@cam.ac.uk>
 References: <1300887554-19031-1-git-send-email-jic23@cam.ac.uk>
@@ -24,51 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes requires that we eat errors from
-kstrtobool.  Note *val is still only updated if a valid
-input is found.
-
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- fs/debugfs/file.c |   19 ++++++-------------
- 1 files changed, 6 insertions(+), 13 deletions(-)
+ kernel/params.c |   15 ++++-----------
+ 1 files changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index 89d394d..fed4485 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -429,25 +429,18 @@ static ssize_t write_file_bool(struct file *file, const char __user *user_buf,
+diff --git a/kernel/params.c b/kernel/params.c
+index 0da1411..37b4d83 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -297,3 +297,4 @@ EXPORT_SYMBOL(param_ops_charp);
+ int param_set_bool(const char *val, const struct kernel_param *kp)
  {
- 	char buf[32];
- 	int buf_size;
+ 	bool v;
 +	int ret;
-+	bool bv;
- 	u32 *val = file->private_data;
+
+ 	/* No equals means "set"... */
+ 	if (!val) val = "1";
  
- 	buf_size = min(count, (sizeof(buf)-1));
- 	if (copy_from_user(buf, user_buf, buf_size))
- 		return -EFAULT;
- 
--	switch (buf[0]) {
--	case 'y':
--	case 'Y':
--	case '1':
--		*val = 1;
+ 	/* One of =[yYnN01] */
+-	switch (val[0]) {
+-	case 'y': case 'Y': case '1':
+-		v = true;
 -		break;
--	case 'n':
--	case 'N':
--	case '0':
--		*val = 0;
+-	case 'n': case 'N': case '0':
+-		v = false;
 -		break;
+-	default:
+-		return -EINVAL;
 -	}
--	
-+	ret = kstrtobool(buf, &bv);
-+	if (!ret)
-+		*val = bv;
-+
- 	return count;
- }
++	ret = kstrtobool(val, &v);
++	if (ret)
++		return ret;
  
+ 	if (kp->flags & KPARAM_ISBOOL)
+ 		*(bool *)kp->arg = v;
 -- 
 1.7.3.4
 
