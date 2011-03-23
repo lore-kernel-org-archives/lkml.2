@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab1CWTlI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 15:41:08 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:42472 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab1CWTlF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 15:41:05 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Corentin Chary <corentincj@iksaif.net>
-Cc: Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] eeepc-wmi: Add support for T101MT "Express Gate" key
-Date: Wed, 23 Mar 2011 14:39:49 -0500
-Message-Id: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756631Ab1CWTnE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 15:43:04 -0400
+Received: from mout1.freenet.de ([195.4.92.91]:34308 "EHLO mout1.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755563Ab1CWTnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 15:43:03 -0400
+Message-ID: <4D8A4D82.7020103@dualc.maya.org>
+Date: Wed, 23 Mar 2011 20:44:02 +0100
+From: Andreas Hartmann <andihartmann@freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b13pre) Gecko/20110316 Firefox/4.0b13pre SeaMonkey/2.1b2pre
+MIME-Version: 1.0
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: intel_ips produces constant load of 1
+References: <im2ik4$3dd$1@ID-44327.news.uni-berlin.de> <20110321110404.6a71a404@jbarnes-desktop> <20110322132555.715dc096@jbarnes-desktop> <4D8A38DD.80207@dualc.maya.org> <20110323112006.6a2d975b@jbarnes-desktop>
+In-Reply-To: <20110323112006.6a2d975b@jbarnes-desktop>
+X-Enigmail-Version: 1.2a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
+Jesse Barnes wrote:
+> On Wed, 23 Mar 2011 19:15:57 +0100
+> Andreas Hartmann <andihartmann@freenet.de> wrote:
+> 
+>> Jesse Barnes wrote:
+>>> On Mon, 21 Mar 2011 11:04:04 -0700
+>>> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+>>>
+>>>>> ps aux | grep ips
+>>>>> root       593  0.0  0.0      0     0 ?        S    17:20   0:00
+>>>>> [ips-adjust]
+>>>>> root       594  0.0  0.0      0     0 ?        D    17:20   0:00
+>>>>> [ips-monitor]
+>>>>>
+>>>>> If the module isn't loaded, the load of the machine in idle mode is 0 as
+>>>>> expected.  
+>>>>
+>>>> This is a reporting problem, and probably due to the schedule() call
+>>>> and associated task state in the ips-monitor thread.  I thought setting
+>>>> the task state to interruptible would prevent this, but it seems like
+>>>> it's not enough for the deferrable on-stack timers?
+>>>>
+>>>> At any rate, it's not actually causing increased CPU usage, so you can
+>>>> safely ignore it until we have a fix.
+>>>
+>>> Oops, one task uses interruptible correctly, but the monitor thread
+>>> doesn't.
+>>>
+>>> Does this patch fix your load average?
+>>
+>> Which patch? I can't see any patch :-).
+>>
+> 
+> Did I forget to paste it?  See below.
+> 
 
-This button is unusual. On press it emits scanocde 0xe4, on release
-0xe5, and when held for a few seconds it begins emitting 0xea about
-twice per second. I chose to handle only the press event in order to
-make it behave like the other hotkeys.
+Uuuups - it was below the sig, which I switch off :-). Found it. Will
+test it tomorrow.
 
-Probably the closest thing to the intended function of this button
-would be to alternate the display orientation between portrait and
-landscape, but since there doesn't appear to be a keycode defined for
-that function I went with KEY_PROG2. I'm open to other suggestions
-however.
 
- drivers/platform/x86/eeepc-wmi.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
-index 0ddc434..d761f60 100644
---- a/drivers/platform/x86/eeepc-wmi.c
-+++ b/drivers/platform/x86/eeepc-wmi.c
-@@ -70,6 +70,7 @@ static const struct key_entry eeepc_wmi_keymap[] = {
- 	{ KE_KEY, 0xcc, { KEY_SWITCHVIDEOMODE } },
- 	{ KE_KEY, 0xe0, { KEY_PROG1 } }, /* Task Manager */
- 	{ KE_KEY, 0xe1, { KEY_F14 } }, /* Change Resolution */
-+	{ KE_KEY, 0xe4, { KEY_PROG2 } }, /* Rotate Display */
- 	{ KE_KEY, 0xe9, { KEY_BRIGHTNESS_ZERO } },
- 	{ KE_KEY, 0xeb, { KEY_CAMERA_ZOOMOUT } },
- 	{ KE_KEY, 0xec, { KEY_CAMERA_UP } },
--- 
-1.7.4.1
-
+Andreas
