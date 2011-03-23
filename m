@@ -1,229 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933206Ab1CWPhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:37:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62658 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932712Ab1CWPhc (ORCPT
+	id S933213Ab1CWPiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:38:13 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64034 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932712Ab1CWPiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:37:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=cV78DVgtkn+sIrjLHgMgspzR++gNBh8XaJiauZWXrg2jnwJM/shPwu91JvW1TLGzlY
-         PDBBhCptUwI9P2jvf6+wSq5trlpbAJQZDZWh1v3x5RTz+vDGWWfLcQ0rtO1g/cow9Ln3
-         8PAw/+jKdbQhNtpuPZxlUvXaj5PgsFHPosC74=
-Date: Wed, 23 Mar 2011 16:37:27 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: [RFC PATCH] mutex: Apply adaptive spinning on mutex_trylock()
-Message-ID: <20110323153727.GB12003@htj.dyndns.org>
+	Wed, 23 Mar 2011 11:38:11 -0400
+Date: Wed, 23 Mar 2011 11:38:08 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Greg KH <greg@kroah.com>
+cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        andy.green@linaro.org, Jaswinder Singh <jaswinder.singh@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
+        roger.quadros@nokia.com, grant.likely@secretlab.ca
+Subject: Re: RFC: Platform data for onboard USB assets
+In-Reply-To: <20110323150413.GC6284@kroah.com>
+Message-ID: <alpine.LFD.2.00.1103231113200.11889@xanadu.home>
+References: <4D79F068.2080009@linaro.org> <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com> <1300828125.2402.300.camel@pasglop> <4D8924B6.8040403@linaro.org> <1300842219.2402.309.camel@pasglop> <alpine.LFD.2.00.1103222138320.11889@xanadu.home>
+ <1300850595.2402.320.camel@pasglop> <alpine.LFD.2.00.1103222336030.11889@xanadu.home> <20110323093847.55e9dbba@lxorguk.ukuu.org.uk> <20110323105335.GB778@opensource.wolfsonmicro.com> <20110323150413.GC6284@kroah.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+On Wed, 23 Mar 2011, Greg KH wrote:
 
-I've been playing with locking in btrfs which has developed custom
-locking to avoid excessive context switches in its btree
-implementation.
+> On Wed, Mar 23, 2011 at 10:53:35AM +0000, Mark Brown wrote:
+> > In the specific case of MACs and device names for network adaptors we
+> > have userspace solutions which are obscuring the discussion but there
+> > are other things which get configured this way which one would usually
+> > expect to be handled in kernel.
+> 
+> No, this isn't obsucuring the discussion, it's exactly the point here.
+> 
+> I asked for concrete examples of a need for this type of thing (i.e.
+> platform data on USB devices), and this was the only need cited.  I
+> then pointed out that this is correctly solved in userspace, as it has
+> for other devices like this, and that it's not a valid example of this
+> need.
 
-Generally, doing away with the custom implementation and just using
-the mutex adaptive owner spinning seems better; however, there's an
-interesting distinction in the custom implemention of trylock.  It
-distinguishes between simple trylock and tryspin, where the former
-just tries once and then fail while the latter does some spinning
-before giving up.
+It was also pointed out that, unlike those examples for which the user 
+space solution has been developed to deal with other devices not exactly 
+like this, that in this case determining the specific instance of the 
+device that require a quirk is extremely cumbersome, hackish, fragile, 
+and way more ugly and complex to maintain than some in-kernel solution 
+where the actual knowledge of the specific board and device instance is 
+obvious.  Again we're not after some particular customization for this 
+particular board, but rather after a way to make the kernel behavior 
+uniform across similar platforms.  From that point people are still free 
+to use udev to apply customizations over the kernel default as they see 
+fit.  It is that kernel default that we want to get.
 
-Currently, mutex_trylock() doesn't use adaptive spinning.  It tries
-just once.  I got curious whether using adaptive spinning on
-mutex_trylock() would be beneficial and it seems so, at least for
-btrfs anyway.
+> So again, this problem, for this device, has been solved in userspace
+> without any kernel changes needed.
 
-The following results are from "dbench 50" run on an opteron two
-socket eight core machine with 4GiB of memory and an OCZ vertex SSD.
-During the run, disk stays mostly idle and all CPUs are fully occupied
-and the difference in locking performance becomes quite visible.
+No it has not.  We are not going to convince every distributions to 
+start accumulating complex and fragile user space hacks into their udev 
+rules which would be justifiably seen as unneeded cruft for exceptional 
+cases when the kernel can make things look regular and uniform to user 
+space with much less code and infrastructure.  And so far it seems that 
+everyone else agrees with dealing with such issues in the kernel, while 
+the actual implementation is still debated.
 
-IMPLE is with the locking simplification patch[1] applied.  i.e. it
-basically just uses mutex.  SPIN is with the patch at the end of this
-message applied on top - mutex_trylock() uses adaptive spinning.
 
-        USER   SYSTEM   SIRQ    CXTSW  THROUGHPUT
- SIMPLE 61107  354977    217  8099529  845.100 MB/sec
- SPIN   63140  364888    214  6840527  879.077 MB/sec
-
-I've been running various different configs from yesterday and the
-adaptive spinning trylock consistently posts higher throughput.  The
-amount of difference varies but it outperforms consistently.
-
-In general, I think using adaptive spinning on trylock makes sense as
-trylock failure usually leads to costly unlock-relock sequence.
-
-Also, contrary to the comment, the adaptive spinning doesn't seem to
-check whether there are pending waiters or not.  Is this intended or
-the test got lost somehow?
-
-Thanks.
-
-NOT-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/mutex.c |   98 +++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 61 insertions(+), 37 deletions(-)
-
-Index: work/kernel/mutex.c
-===================================================================
---- work.orig/kernel/mutex.c
-+++ work/kernel/mutex.c
-@@ -126,39 +126,33 @@ void __sched mutex_unlock(struct mutex *
- 
- EXPORT_SYMBOL(mutex_unlock);
- 
--/*
-- * Lock a mutex (possibly interruptible), slowpath:
-+/**
-+ * mutex_spin - optimistic spinning on mutex
-+ * @lock: mutex to spin on
-+ *
-+ * This function implements optimistic spin for acquisition of @lock when
-+ * we find that there are no pending waiters and the lock owner is
-+ * currently running on a (different) CPU.
-+ *
-+ * The rationale is that if the lock owner is running, it is likely to
-+ * release the lock soon.
-+ *
-+ * Since this needs the lock owner, and this mutex implementation doesn't
-+ * track the owner atomically in the lock field, we need to track it
-+ * non-atomically.
-+ *
-+ * We can't do this for DEBUG_MUTEXES because that relies on wait_lock to
-+ * serialize everything.
-+ *
-+ * CONTEXT:
-+ * Preemption disabled.
-+ *
-+ * RETURNS:
-+ * %true if @lock is acquired, %false otherwise.
-  */
--static inline int __sched
--__mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
--	       	unsigned long ip)
-+static inline bool mutex_spin(struct mutex *lock)
- {
--	struct task_struct *task = current;
--	struct mutex_waiter waiter;
--	unsigned long flags;
--
--	preempt_disable();
--	mutex_acquire(&lock->dep_map, subclass, 0, ip);
--
- #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
--	/*
--	 * Optimistic spinning.
--	 *
--	 * We try to spin for acquisition when we find that there are no
--	 * pending waiters and the lock owner is currently running on a
--	 * (different) CPU.
--	 *
--	 * The rationale is that if the lock owner is running, it is likely to
--	 * release the lock soon.
--	 *
--	 * Since this needs the lock owner, and this mutex implementation
--	 * doesn't track the owner atomically in the lock field, we need to
--	 * track it non-atomically.
--	 *
--	 * We can't do this for DEBUG_MUTEXES because that relies on wait_lock
--	 * to serialize everything.
--	 */
--
- 	for (;;) {
- 		struct thread_info *owner;
- 
-@@ -177,12 +171,8 @@ __mutex_lock_common(struct mutex *lock,
- 		if (owner && !mutex_spin_on_owner(lock, owner))
- 			break;
- 
--		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
--			lock_acquired(&lock->dep_map, ip);
--			mutex_set_owner(lock);
--			preempt_enable();
--			return 0;
--		}
-+		if (atomic_cmpxchg(&lock->count, 1, 0) == 1)
-+			return true;
- 
- 		/*
- 		 * When there's no owner, we might have preempted between the
-@@ -190,7 +180,7 @@ __mutex_lock_common(struct mutex *lock,
- 		 * we're an RT task that will live-lock because we won't let
- 		 * the owner complete.
- 		 */
--		if (!owner && (need_resched() || rt_task(task)))
-+		if (!owner && (need_resched() || rt_task(current)))
- 			break;
- 
- 		/*
-@@ -202,6 +192,30 @@ __mutex_lock_common(struct mutex *lock,
- 		cpu_relax();
- 	}
- #endif
-+	return false;
-+}
-+
-+/*
-+ * Lock a mutex (possibly interruptible), slowpath:
-+ */
-+static inline int __sched
-+__mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-+	       	unsigned long ip)
-+{
-+	struct task_struct *task = current;
-+	struct mutex_waiter waiter;
-+	unsigned long flags;
-+
-+	preempt_disable();
-+	mutex_acquire(&lock->dep_map, subclass, 0, ip);
-+
-+	if (mutex_spin(lock)) {
-+		lock_acquired(&lock->dep_map, ip);
-+		mutex_set_owner(lock);
-+		preempt_enable();
-+		return 0;
-+	}
-+
- 	spin_lock_mutex(&lock->wait_lock, flags);
- 
- 	debug_mutex_lock_common(lock, &waiter);
-@@ -430,6 +444,15 @@ static inline int __mutex_trylock_slowpa
- 	unsigned long flags;
- 	int prev;
- 
-+	preempt_disable();
-+
-+	if (mutex_spin(lock)) {
-+		mutex_set_owner(lock);
-+		mutex_acquire(&lock->dep_map, 0, 1, _RET_IP_);
-+		preempt_enable();
-+		return 1;
-+	}
-+
- 	spin_lock_mutex(&lock->wait_lock, flags);
- 
- 	prev = atomic_xchg(&lock->count, -1);
-@@ -443,6 +466,7 @@ static inline int __mutex_trylock_slowpa
- 		atomic_set(&lock->count, 0);
- 
- 	spin_unlock_mutex(&lock->wait_lock, flags);
-+	preempt_enable();
- 
- 	return prev == 1;
- }
+Nicolas
