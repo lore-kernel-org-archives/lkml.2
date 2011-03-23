@@ -1,96 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932943Ab1CWNbX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 09:31:23 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:58588 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932922Ab1CWNbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 09:31:21 -0400
-Date: Wed, 23 Mar 2011 06:30:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Robert Love <robert.w.love@intel.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
-        Jarek Poplawski <jarkao2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@open-fcoe.org" <devel@open-fcoe.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
- kfree_rcu()
-Message-ID: <20110323133048.GX2322@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4D82D071.5020703@cn.fujitsu.com>
- <4D82D3FF.2080303@cn.fujitsu.com>
- <4D82D45A.30102@cn.fujitsu.com>
- <1300814913.19083.427.camel@fritz>
- <20110323065014.GU2322@linux.vnet.ibm.com>
- <20110323112257.GD13806@parisc-linux.org>
+	id S1755859Ab1CWNgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 09:36:14 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:47966 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751109Ab1CWNgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 09:36:13 -0400
+Date: Wed, 23 Mar 2011 08:36:04 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
+Message-ID: <20110323133604.GA21288@sgi.com>
+References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <20110321175110.GL1239@redhat.com> <20110321182235.GA14562@sgi.com> <20110321193740.GN1239@redhat.com> <20110322171118.GA6294@sgi.com> <20110322184450.GU1239@redhat.com> <20110322212519.GA12076@sgi.com> <4D891C93.8070502@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110323112257.GD13806@parisc-linux.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D891C93.8070502@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 05:22:57AM -0600, Matthew Wilcox wrote:
-> On Tue, Mar 22, 2011 at 11:50:14PM -0700, Paul E. McKenney wrote:
-> > On Tue, Mar 22, 2011 at 10:28:33AM -0700, Robert Love wrote:
-> > > On Thu, 2011-03-17 at 20:41 -0700, Lai Jiangshan wrote:
-> > > > -	call_rcu(&rdata->rcu, fc_rport_free_rcu);
-> > > > +	kfree_rcu(rdata, rcu);
-> > > 
-> > > I think this last line should be:
-> > > 
-> > > kfree_rcu(rdata, &rdata->rcu);
+On Wed, Mar 23, 2011 at 01:02:59AM +0300, Cyrill Gorcunov wrote:
+> On 03/23/2011 12:25 AM, Jack Steiner wrote:
+> > On Tue, Mar 22, 2011 at 02:44:50PM -0400, Don Zickus wrote:
+> >> On Tue, Mar 22, 2011 at 12:11:18PM -0500, Jack Steiner wrote:
+> >>> How certain are you that multiple NMIs triggered at about the same time will
+> >>> deliver discrete NMI events? I updated the patch so that I'm running with:
+> >>
+> >> I think as long as there isn't more than two (1 active, 1 latched), you
+> >> would be ok.  A third one looks like it would get dropped.
+> >>
+> >>>
+> >>> 	- no special code in traps.c (I removed the traps.c code that was
+> >>> 	  in the patch I posted)
+> >>> 	- used die_notifier for calling the UV nmi handler
+> >>> 	- UV priority is higher than the hw_perf priority
+> >>>
+> >>> Both hw_perf (perf top) & UV NMIs work correctly under light loads. However, if I
+> >>> run for 10 - 15 minutes injecting UV NMIs at a rate of about 30/min, "perf top"
+> >>> stops generating output. Strace shows that it continues to poll() but no data
+> >>> is received.
+> >>
+> >> That's a low frequency and it still gets stuck?
+> >>
+> >>>
+> >>> While "perf top" is hung, if I inject an NMI into the system in a way that will NOT
+> >>> be consumed by the UV nmi handler, "perf top" resumes output but will stop again after
+> >>> a few minutes.
+> >>
+> >> So that means the PMU set its interrupt bit but the cpu failed to get the
+> >> NMI.
+> >>
+> >>>
+> >>>
+> >>> AFAICT, the UV nmi handler is not consuming extra NMI interrupts. I can't
+> >>> rule out that I'm missing something but I don't see it.
+> >>
+> >> What happens if you put the UV nmi handler below the hw_perf handler in
+> >> priority?  I assume the DIE_NMIUNKNOWN snippet in the hw_perf handler will
+> >> swallow some of the UV NMIs, but more importantly does it still generate
+> >> the hang you see?
 > > 
-> > Hello, Robert,
+> > I verified that the failures ("perf top" stops) are the same on both RHEL6.1 & the
+> > latest x86 2.6.38+ tree.
 > > 
-> > I believe that it is correct as is.  The kfree_rcu() definition is as
-> > follows:
+> > I switched priorities & as expected, "perf top" no longer hangs. I see an occassional
+> > missed UV NMI - about 1 every minute. I also see a few "dazed" messages as
+> > well - 3 in a 5 minute period. This testing was done on a 2.6.38+ kernel.
 > > 
-> > #define kfree_rcu(ptr, rcu_head)					\
-> > 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
+> > I'm running on a 48p system.
 > > 
-> > Then __kfree_rcu() encodes the offset into the rcu_head so that it can
-> > be handled properly at the end of the grace period.
+> > Ideas?
+> > 
 > 
-> To be fair to Robert, I had the same thought, but decided to check the
-> definition of kfree_rcu before I made the same comment.  Unfortunately,
-> the definition of kfree_rcu is still not in Linus' tree (and there's no
-> indication in the patch series about where to find the definition).  It
-> would have been better if kfree_rcu were patch 1/n in the series, then
-> we'd've been able to review it more effectively.
+>   I fear there is always a probability for eaten nmi (due to inflight nmi logic
+> we have) or missed nmi (due to non-instant deliery of nmi).  Say the following
+> scenario may happen:
+> 
+> 1) perf-nmi-0 (from counter 0) issued
+> 2) uv-nmi issued
+> 3) perf-nmi-0 latched
+> 4) perf-nmi-1 (from counter 1) not yet issued but couter overflowed
+> 5) nmi-handler
+> 6) uv-nmi-latched
+> 7) nmi-handler eats both nmis from perf-nmi-0 and uv-nmi because of in-flight
+>    nmi logic we have
+> 8) finally perf-nmi-1 should appear on line but counter already pulled down so
+>    no nmi
+> 
+> and here you get missed nmi you expect from uv. I *guess*, not sure if it's possible.
 
-Good point!  That said, it is a bit ugly no matter how we handle it
-because any of the patches that have not received acked-bys will need
-to go up through their respective maintainer trees.  Last time I had a
-situation like this, it ended up stalling my commit stream for several
-months, so was trying to separate them in order to avoid the stall.
+Makes sense.
 
-But perhaps this is one of those situations where there is simply no
-good way to handle the full series.  :-(
 
-> Any idea when kfree_rcu will be submitted to Linus?
+> If you disable nmi-watchdog on boot line, does it help?
 
-I have it queued, and it passes mild testing.  I therefore expect to
-push it for the next merge window.
-
-So, do you guys want to carry the patches for your subsystems, or are
-you willing to ack this one so that I can push it via -tip?
-
-							Thanx, Paul
+Nmi_watchdog is disabled by default on our platforms.
