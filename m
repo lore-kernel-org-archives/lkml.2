@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613Ab1CWRrY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 13:47:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11322 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab1CWRrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 13:47:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,232,1299484800"; 
-   d="scan'208";a="616919052"
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Eric Paris <eparis@redhat.com>, Roman Zippel <zippel@linux-m68k.org>,
-        linux-kbuild@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: PATCH][RFC][resend] CC_OPTIMIZE_FOR_SIZE should default to N
-References: <alpine.LNX.2.00.1103212105490.15815@swampdragon.chaosbits.net>
-	<AANLkTinmAJsXy=iJ5Fq-+CLTAGXTtLGhULRUf=Q1rkY1@mail.gmail.com>
-	<20110322102741.GA4448@elte.hu>
-	<AANLkTikz+vJGFuysDXAdVb33q1q3L547dXNJa9NmeqeM@mail.gmail.com>
-Date: Wed, 23 Mar 2011 10:45:48 -0700
-In-Reply-To: <AANLkTikz+vJGFuysDXAdVb33q1q3L547dXNJa9NmeqeM@mail.gmail.com>
-	(Linus Torvalds's message of "Tue, 22 Mar 2011 09:59:59 -0700")
-Message-ID: <m21v1x91df.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756021Ab1CWRsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 13:48:12 -0400
+Received: from na3sys010aog104.obsmtp.com ([74.125.245.76]:47485 "HELO
+	na3sys010aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754400Ab1CWRsL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 13:48:11 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Wed, 23 Mar 2011 10:47:57 -0700
+Message-Id: <1300902477-6608-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+Linus, please pull from
 
-> On Tue, Mar 22, 2011 at 3:27 AM, Ingo Molnar <mingo@elte.hu> wrote:
->>
->> If that situation has changed - if GCC has regressed in this area then a commit
->> changing the default IMHO gains a lot of credibility if it is backed by careful
->> measurements using perf stat --repeat or similar tools.
->
-> Also, please don't back up any numbers for the "-O2 is faster than
-> -Os" case with some benchmark that is hot in the caches.
+    master.kernel.org:/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
-Haven't done it recently, but some time last year -O2 vs -Os
-made a measurable difference in large OLTP benchmarks.
+This tree is also available from kernel.org mirrors at:
 
-(-Os being worse of course -- friends don't let friends use -Os)
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+This will get the second batch of 2.6.39 changes:
+ - Dave Dillow's SRP initiator changes
+ - Fix to uninitialized return value introduced by net tree merge
+ - A couple of other minor cleanups
+
+David Dillow (7):
+      IB/srp: always avoid non-zero offsets into an FMR
+      IB/srp: move IB CM setup completion into its own function
+      IB/srp: allow sg_tablesize to be set for each target
+      IB/srp: rework mapping engine to use multiple FMR entries
+      IB/srp: add support for indirect tables that don't fit in SRP_CMD
+      IB/srp: try to use larger FMR sizes to cover our mappings
+      IB: Increase DMA max_segment_size on Mellanox hardware
+
+Michael Heinz (1):
+      IB/mad: Improve an error message so error code is included
+
+Roland Dreier (3):
+      RDMA/nes: Don't print success message at level KERN_ERR
+      Merge branch 'external-indirect' of git://git.kernel.org/.../dad/srp-initiator into srp
+      Merge branches 'misc', 'nes' and 'srp' into for-next
+
+Sean Hefty (1):
+      RDMA/addr: Fix return of uninitialized ret value
+
+ drivers/infiniband/core/addr.c           |    2 +-
+ drivers/infiniband/core/agent.c          |    3 +-
+ drivers/infiniband/hw/mthca/mthca_main.c |    3 +
+ drivers/infiniband/hw/nes/nes.c          |    2 +-
+ drivers/infiniband/ulp/srp/ib_srp.c      |  725 ++++++++++++++++++++----------
+ drivers/infiniband/ulp/srp/ib_srp.h      |   38 ++-
+ 6 files changed, 521 insertions(+), 252 deletions(-)
