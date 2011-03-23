@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab1CWP2L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:28:11 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:56705
-	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933116Ab1CWP2I (ORCPT
+	id S933141Ab1CWP2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:28:14 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:48220
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933075Ab1CWP2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:28:08 -0400
+	Wed, 23 Mar 2011 11:28:07 -0400
 X-SpamScore: 1
 X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LIIOAG-02-7EV-02
+X-WSS-ID: 0LIIOAJ-02-7F4-02
 X-M-MSG: 
 From: Hans Rosenfeld <hans.rosenfeld@amd.com>
 To: <hpa@zytor.com>, <tglx@linutronix.de>, <mingo@elte.hu>
@@ -19,9 +19,9 @@ CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <brgerst@gmail.com>,
         <suresh.b.siddha@intel.com>, <eranian@google.com>,
         <robert.richter@amd.com>, <Andreas.Herrmann3@amd.com>,
         Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [RFC v2 2/8] x86, xsave: rework fpu/xsave support
-Date: Wed, 23 Mar 2011 16:27:41 +0100
-Message-ID: <1300894067-604408-3-git-send-email-hans.rosenfeld@amd.com>
+Subject: [RFC v2 7/8] x86, xsave: add kernel support for AMDs Lightweight Profiling (LWP)
+Date: Wed, 23 Mar 2011 16:27:46 +0100
+Message-ID: <1300894067-604408-8-git-send-email-hans.rosenfeld@amd.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1299698102-972771-9-git-send-email-hans.rosenfeld@amd.com>
 References: <1299698102-972771-9-git-send-email-hans.rosenfeld@amd.com>
@@ -32,495 +32,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a complete rework of the code that handles FPU and related
-extended states. Since FPU, XMM and YMM states are just variants of what
-xsave handles, all of the old FPU-specific state handling code will be
-hidden behind a set of functions that resemble xsave and xrstor. For
-hardware that does not support xsave, the code falls back to
-fxsave/fxrstor or even fsave/frstor.
-
-A xstate_mask member will be added to the thread_info structure that
-will control which states are to be saved by xsave. It is set to include
-all "lazy" states (that is, all states currently supported: FPU, XMM and
-YMM) by the #NM handler when a lazy restore is triggered or by
-switch_to() when the tasks FPU context is preloaded. Xstate_mask is
-intended to completely replace TS_USEDFPU in a later cleanup patch.
+This patch extends the xsave structure to support the LWP state. The
+xstate feature bit for LWP is added to XCNTXT_NONLAZY, thereby enabling
+kernel support for saving/restoring LWP state. The LWP state is also
+saved/restored on signal entry/return, just like all other xstates. LWP
+state needs to be reset (disabled) when on entry in a signal handler.
 
 Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
 ---
- arch/x86/include/asm/i387.h        |   44 +++++++++++++++++++---
- arch/x86/include/asm/thread_info.h |    2 +
- arch/x86/include/asm/xsave.h       |   14 ++++++-
- arch/x86/kernel/i387.c             |   11 ++++--
- arch/x86/kernel/process_32.c       |   27 +++++---------
- arch/x86/kernel/process_64.c       |   26 ++++----------
- arch/x86/kernel/traps.c            |   11 +++---
- arch/x86/kernel/xsave.c            |   71 ++++++++++++++++++++++++++++++++++++
- arch/x86/kvm/x86.c                 |    7 ++--
- drivers/lguest/x86/core.c          |    2 +-
- 10 files changed, 158 insertions(+), 57 deletions(-)
+ arch/x86/include/asm/msr-index.h  |    1 +
+ arch/x86/include/asm/processor.h  |   12 ++++++++++++
+ arch/x86/include/asm/sigcontext.h |   12 ++++++++++++
+ arch/x86/include/asm/xsave.h      |    3 ++-
+ arch/x86/kernel/xsave.c           |    2 ++
+ 5 files changed, 29 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index d908383..939af08 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -224,12 +224,46 @@ static inline void fpu_fxsave(struct fpu *fpu)
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 823d482..0ba2150 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -130,6 +130,7 @@
+ #define MSR_AMD64_IBSDCPHYSAD		0xc0011039
+ #define MSR_AMD64_IBSCTL		0xc001103a
+ #define MSR_AMD64_IBSBRTARGET		0xc001103b
++#define MSR_AMD64_LWP_CBADDR		0xc0000106
+ 
+ /* Fam 15h MSRs */
+ #define MSR_F15H_PERF_CTL		0xc0010200
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 4c25ab4..df2cbd4 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -353,6 +353,17 @@ struct ymmh_struct {
+ 	u32 ymmh_space[64];
+ };
+ 
++struct lwp_struct {
++	u64 lwpcb_addr;
++	u32 flags;
++	u32 buf_head_offset;
++	u64 buf_base;
++	u32 buf_size;
++	u32 filters;
++	u64 saved_event_record[4];
++	u32 event_counter[16];
++};
++
+ struct xsave_hdr_struct {
+ 	u64 xstate_bv;
+ 	u64 reserved1[2];
+@@ -363,6 +374,7 @@ struct xsave_struct {
+ 	struct i387_fxsave_struct i387;
+ 	struct xsave_hdr_struct xsave_hdr;
+ 	struct ymmh_struct ymmh;
++	struct lwp_struct lwp;
+ 	/* new processor state extensions will go here */
+ } __attribute__ ((packed, aligned (64)));
+ 
+diff --git a/arch/x86/include/asm/sigcontext.h b/arch/x86/include/asm/sigcontext.h
+index 04459d2..0a58b82 100644
+--- a/arch/x86/include/asm/sigcontext.h
++++ b/arch/x86/include/asm/sigcontext.h
+@@ -274,6 +274,17 @@ struct _ymmh_state {
+ 	__u32 ymmh_space[64];
+ };
+ 
++struct _lwp_state {
++	__u64 lwpcb_addr;
++	__u32 flags;
++	__u32 buf_head_offset;
++	__u64 buf_base;
++	__u32 buf_size;
++	__u32 filters;
++	__u64 saved_event_record[4];
++	__u32 event_counter[16];
++};
++
  /*
-  * These must be called with preempt disabled
-  */
-+static inline void fpu_restore(struct fpu *fpu)
-+{
-+	fxrstor_checking(&fpu->state->fxsave);
-+}
-+
-+static inline void fpu_save(struct fpu *fpu)
-+{
-+	if (use_fxsr()) {
-+		fpu_fxsave(fpu);
-+	} else {
-+		asm volatile("fsave %[fx]; fwait"
-+			     : [fx] "=m" (fpu->state->fsave));
-+	}
-+}
-+
-+static inline void fpu_clean(struct fpu *fpu)
-+{
-+	u32 swd = (use_fxsr() || use_xsave()) ?
-+		fpu->state->fxsave.swd : fpu->state->fsave.swd;
-+
-+	if (unlikely(swd & X87_FSW_ES))
-+		asm volatile("fnclex");
-+
-+	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
-+	   is pending.  Clear the x87 state here by setting it to fixed
-+	   values. safe_address is a random variable that should be in L1 */
-+	alternative_input(
-+		ASM_NOP8 ASM_NOP2,
-+		"emms\n\t"	  	/* clear stack tags */
-+		"fildl %P[addr]",	/* set F?P to defined value */
-+		X86_FEATURE_FXSAVE_LEAK,
-+		[addr] "m" (safe_address));
-+}
-+
- static inline void fpu_save_init(struct fpu *fpu)
- {
- 	if (use_xsave()) {
- 		struct xsave_struct *xstate = &fpu->state->xsave;
+  * Extended state pointed by the fpstate pointer in the sigcontext.
+  * In addition to the fpstate, information encoded in the xstate_hdr
+@@ -284,6 +295,7 @@ struct _xstate {
+ 	struct _fpstate fpstate;
+ 	struct _xsave_hdr xstate_hdr;
+ 	struct _ymmh_state ymmh;
++	struct _lwp_state lwp;
+ 	/* new processor state extensions go here */
+ };
  
--		fpu_xsave(xstate);
-+		fpu_xsave(xstate, -1);
- 
- 		/*
- 		 * xsave header may indicate the init state of the FP.
-@@ -295,18 +329,16 @@ static inline void __clear_fpu(struct task_struct *tsk)
- 			     "2:\n"
- 			     _ASM_EXTABLE(1b, 2b));
- 		task_thread_info(tsk)->status &= ~TS_USEDFPU;
-+		task_thread_info(tsk)->xstate_mask &= ~XCNTXT_LAZY;
- 		stts();
- 	}
- }
- 
- static inline void kernel_fpu_begin(void)
- {
--	struct thread_info *me = current_thread_info();
- 	preempt_disable();
--	if (me->status & TS_USEDFPU)
--		__save_init_fpu(me->task);
--	else
--		clts();
-+	save_xstates(current_thread_info()->task);
-+	clts();
- }
- 
- static inline void kernel_fpu_end(void)
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index f0b6e5d..5c92d21 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -26,6 +26,7 @@ struct exec_domain;
- struct thread_info {
- 	struct task_struct	*task;		/* main task structure */
- 	struct exec_domain	*exec_domain;	/* execution domain */
-+	__u64			xstate_mask;	/* xstates in use */
- 	__u32			flags;		/* low level flags */
- 	__u32			status;		/* thread synchronous flags */
- 	__u32			cpu;		/* current CPU */
-@@ -47,6 +48,7 @@ struct thread_info {
- {						\
- 	.task		= &tsk,			\
- 	.exec_domain	= &default_exec_domain,	\
-+	.xstate_mask	= 0,			\
- 	.flags		= 0,			\
- 	.cpu		= 0,			\
- 	.preempt_count	= INIT_PREEMPT_COUNT,	\
 diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 8bcbbce..6052a84 100644
+index 4ccee3c..be89f0e 100644
 --- a/arch/x86/include/asm/xsave.h
 +++ b/arch/x86/include/asm/xsave.h
-@@ -25,6 +25,8 @@
+@@ -9,6 +9,7 @@
+ #define XSTATE_FP	0x1
+ #define XSTATE_SSE	0x2
+ #define XSTATE_YMM	0x4
++#define XSTATE_LWP	(1ULL << 62)
+ 
+ #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
+ 
+@@ -24,7 +25,7 @@
+  * These are the features that the OS can handle currently.
   */
- #define XCNTXT_MASK	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
+ #define XCNTXT_LAZY	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
+-#define XCNTXT_NONLAZY	0
++#define XCNTXT_NONLAZY	(XSTATE_LWP)
  
-+#define XCNTXT_LAZY	XCNTXT_MASK
-+
- #ifdef CONFIG_X86_64
- #define REX_PREFIX	"0x48, "
- #else
-@@ -35,6 +37,11 @@ extern unsigned int xstate_size;
- extern u64 pcntxt_mask;
- extern u64 xstate_fx_sw_bytes[USER_XSTATE_FX_SW_WORDS];
- 
-+extern void xsave(struct fpu *, u64);
-+extern void xrstor(struct fpu *, u64);
-+extern void save_xstates(struct task_struct *);
-+extern void restore_xstates(struct task_struct *, u64);
-+
- extern void xsave_init(void);
- extern void update_regset_xstate_info(unsigned int size, u64 xstate_mask);
- extern int init_fpu(struct task_struct *child);
-@@ -113,15 +120,18 @@ static inline void xsave_state(struct xsave_struct *fx, u64 mask)
- 		     :   "memory");
- }
- 
--static inline void fpu_xsave(struct xsave_struct *fx)
-+static inline void fpu_xsave(struct xsave_struct *fx, u64 mask)
- {
-+	u32 lmask = mask;
-+	u32 hmask = mask >> 32;
-+
- 	/* This, however, we can work around by forcing the compiler to select
- 	   an addressing mode that doesn't require extended registers. */
- 	alternative_input(
- 		".byte " REX_PREFIX "0x0f,0xae,0x27",
- 		".byte " REX_PREFIX "0x0f,0xae,0x37",
- 		X86_FEATURE_XSAVEOPT,
--		[fx] "D" (fx), "a" (-1), "d" (-1) :
-+		[fx] "D" (fx), "a" (lmask), "d" (hmask) :
- 		"memory");
- }
- #endif
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index e60c38c..5ab66ec 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -152,8 +152,11 @@ int init_fpu(struct task_struct *tsk)
- 	int ret;
- 
- 	if (tsk_used_math(tsk)) {
--		if (HAVE_HWFP && tsk == current)
--			unlazy_fpu(tsk);
-+		if (HAVE_HWFP && tsk == current) {
-+			preempt_disable();
-+			save_xstates(tsk);
-+			preempt_enable();
-+		}
- 		return 0;
- 	}
- 
-@@ -600,7 +603,9 @@ int save_i387_xstate_ia32(void __user *buf)
- 				       NULL, fp) ? -1 : 1;
- 	}
- 
--	unlazy_fpu(tsk);
-+	preempt_disable();
-+	save_xstates(tsk);
-+	preempt_enable();
- 
- 	if (cpu_has_xsave)
- 		return save_i387_xsave(fp);
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 8d12878..8df07c3 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -185,7 +185,9 @@ void release_thread(struct task_struct *dead_task)
-  */
- void prepare_to_copy(struct task_struct *tsk)
- {
--	unlazy_fpu(tsk);
-+	preempt_disable();
-+	save_xstates(tsk);
-+	preempt_enable();
- }
- 
- int copy_thread(unsigned long clone_flags, unsigned long sp,
-@@ -294,21 +296,13 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 				 *next = &next_p->thread;
- 	int cpu = smp_processor_id();
- 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
--	bool preload_fpu;
- 
- 	/* never put a printk in __switch_to... printk() calls wake_up*() indirectly */
- 
--	/*
--	 * If the task has used fpu the last 5 timeslices, just do a full
--	 * restore of the math state immediately to avoid the trap; the
--	 * chances of needing FPU soon are obviously high now
--	 */
--	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
--
--	__unlazy_fpu(prev_p);
-+	save_xstates(prev_p);
- 
- 	/* we're going to use this soon, after a few expensive things */
--	if (preload_fpu)
-+	if (task_thread_info(next_p)->xstate_mask)
- 		prefetch(next->fpu.state);
- 
- 	/*
-@@ -349,11 +343,6 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 		     task_thread_info(next_p)->flags & _TIF_WORK_CTXSW_NEXT))
- 		__switch_to_xtra(prev_p, next_p, tss);
- 
--	/* If we're going to preload the fpu context, make sure clts
--	   is run while we're batching the cpu state updates. */
--	if (preload_fpu)
--		clts();
--
- 	/*
- 	 * Leave lazy mode, flushing any hypercalls made here.
- 	 * This must be done before restoring TLS segments so
-@@ -363,8 +352,10 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	 */
- 	arch_end_context_switch(next_p);
- 
--	if (preload_fpu)
--		__math_state_restore();
-+	/*
-+	 * Restore enabled extended states for the task.
-+	 */
-+	restore_xstates(next_p, task_thread_info(next_p)->xstate_mask);
- 
- 	/*
- 	 * Restore %gs if needed (which is common)
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index bd387e8..67c5838 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -249,7 +249,9 @@ static inline u32 read_32bit_tls(struct task_struct *t, int tls)
-  */
- void prepare_to_copy(struct task_struct *tsk)
- {
--	unlazy_fpu(tsk);
-+	preempt_disable();
-+	save_xstates(tsk);
-+	preempt_enable();
- }
- 
- int copy_thread(unsigned long clone_flags, unsigned long sp,
-@@ -378,17 +380,9 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	int cpu = smp_processor_id();
- 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
- 	unsigned fsindex, gsindex;
--	bool preload_fpu;
--
--	/*
--	 * If the task has used fpu the last 5 timeslices, just do a full
--	 * restore of the math state immediately to avoid the trap; the
--	 * chances of needing FPU soon are obviously high now
--	 */
--	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
- 
- 	/* we're going to use this soon, after a few expensive things */
--	if (preload_fpu)
-+	if (task_thread_info(next_p)->xstate_mask)
- 		prefetch(next->fpu.state);
- 
- 	/*
-@@ -420,11 +414,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	load_TLS(next, cpu);
- 
- 	/* Must be after DS reload */
--	__unlazy_fpu(prev_p);
--
--	/* Make sure cpu is ready for new context */
--	if (preload_fpu)
--		clts();
-+	save_xstates(prev_p);
- 
- 	/*
- 	 * Leave lazy mode, flushing any hypercalls made here.
-@@ -485,11 +475,9 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 		__switch_to_xtra(prev_p, next_p, tss);
- 
- 	/*
--	 * Preload the FPU context, now that we've determined that the
--	 * task is likely to be using it. 
-+	 * Restore enabled extended states for the task.
- 	 */
--	if (preload_fpu)
--		__math_state_restore();
-+	restore_xstates(next_p, task_thread_info(next_p)->xstate_mask);
- 
- 	return prev_p;
- }
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 32f3043..072c30e 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -625,7 +625,10 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
- 	/*
- 	 * Save the info for the exception handler and clear the error.
- 	 */
--	save_init_fpu(task);
-+	preempt_disable();
-+	save_xstates(task);
-+	preempt_enable();
-+
- 	task->thread.trap_no = trapnr;
- 	task->thread.error_code = error_code;
- 	info.si_signo = SIGFPE;
-@@ -734,7 +737,7 @@ void __math_state_restore(void)
- 		return;
- 	}
- 
--	thread->status |= TS_USEDFPU;	/* So we fnsave on switch_to() */
-+	thread->status |= TS_USEDFPU;   /* So we fnsave on switch_to() */
- 	tsk->fpu_counter++;
- }
- 
-@@ -768,9 +771,7 @@ asmlinkage void math_state_restore(void)
- 		local_irq_disable();
- 	}
- 
--	clts();				/* Allow maths ops (or we recurse) */
--
--	__math_state_restore();
-+	restore_xstates(tsk, XCNTXT_LAZY);
- }
- EXPORT_SYMBOL_GPL(math_state_restore);
+ #define XCNTXT_MASK	(XCNTXT_LAZY | XCNTXT_NONLAZY)
  
 diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index e204b07..c422527 100644
+index 7b08d32..d3dc65e 100644
 --- a/arch/x86/kernel/xsave.c
 +++ b/arch/x86/kernel/xsave.c
-@@ -5,6 +5,7 @@
-  */
- #include <linux/bootmem.h>
- #include <linux/compat.h>
-+#include <linux/module.h>
- #include <asm/i387.h>
- #ifdef CONFIG_IA32_EMULATION
- #include <asm/sigcontext32.h>
-@@ -474,3 +475,73 @@ void __cpuinit xsave_init(void)
- 	next_func = xstate_enable;
- 	this_func();
- }
-+
-+void xsave(struct fpu *fpu, u64 mask)
-+{
-+	clts();
-+
-+	if (use_xsave())
-+		fpu_xsave(&fpu->state->xsave, mask);
-+	else if (mask & XCNTXT_LAZY)
-+		fpu_save(fpu);
-+
-+	if (mask & XCNTXT_LAZY)
-+		fpu_clean(fpu);
-+
-+	stts();
-+}
-+EXPORT_SYMBOL(xsave);
-+
-+void save_xstates(struct task_struct *tsk)
-+{
-+	struct thread_info *ti = task_thread_info(tsk);
-+
-+	if (!fpu_allocated(&tsk->thread.fpu))
-+		return;
-+
-+	xsave(&tsk->thread.fpu, ti->xstate_mask);
-+
-+	if (!(ti->xstate_mask & XCNTXT_LAZY))
-+		tsk->fpu_counter = 0;
-+
-+	/*
-+	 * If the task hasn't used the fpu the last 5 timeslices,
-+	 * force a lazy restore of the math states by clearing them
-+	 * from xstate_mask.
-+	 */
-+	if (tsk->fpu_counter < 5)
-+		ti->xstate_mask &= ~XCNTXT_LAZY;
-+
-+	ti->status &= ~TS_USEDFPU;
-+}
-+EXPORT_SYMBOL(save_xstates);
-+
-+void xrstor(struct fpu *fpu, u64 mask)
-+{
-+	clts();
-+
-+	if (use_xsave())
-+		xrstor_state(&fpu->state->xsave, mask);
-+	else if (mask & XCNTXT_LAZY)
-+		fpu_restore(fpu);
-+
-+	if (!(mask & XCNTXT_LAZY))
-+		stts();
-+}
-+EXPORT_SYMBOL(xrstor);
-+
-+void restore_xstates(struct task_struct *tsk, u64 mask)
-+{
-+	struct thread_info *ti = task_thread_info(tsk);
-+
-+	if (!fpu_allocated(&tsk->thread.fpu))
-+		return;
-+
-+	xrstor(&tsk->thread.fpu, mask);
-+
-+	ti->xstate_mask |= mask;
-+	ti->status |= TS_USEDFPU;
-+	if (mask & XCNTXT_LAZY)
-+		tsk->fpu_counter++;
-+}
-+EXPORT_SYMBOL(restore_xstates);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index bcc0efc..8fb21ea 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -58,6 +58,7 @@
- #include <asm/xcr.h>
- #include <asm/pvclock.h>
- #include <asm/div64.h>
-+#include <asm/xsave.h>
+@@ -177,6 +177,8 @@ int save_xstates_sigframe(void __user *buf, unsigned int size)
+ 			(struct _fpstate_ia32 __user *) buf) ? -1 : 1;
  
- #define MAX_IO_MSRS 256
- #define CR0_RESERVED_BITS						\
-@@ -5793,8 +5794,8 @@ void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
- 	 */
- 	kvm_put_guest_xcr0(vcpu);
- 	vcpu->guest_fpu_loaded = 1;
--	unlazy_fpu(current);
--	fpu_restore_checking(&vcpu->arch.guest_fpu);
-+	save_xstates(current);
-+	xrstor(&vcpu->arch.guest_fpu, -1);
- 	trace_kvm_fpu(1);
- }
+ 	save_xstates(tsk);
++	if (pcntxt_mask & XSTATE_LWP)
++		wrmsrl(MSR_AMD64_LWP_CBADDR, 0);
+ 	if (use_xsaveopt())
+ 		sanitize_i387_state(tsk);
  
-@@ -5806,7 +5807,7 @@ void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
- 		return;
- 
- 	vcpu->guest_fpu_loaded = 0;
--	fpu_save_init(&vcpu->arch.guest_fpu);
-+	xsave(&vcpu->arch.guest_fpu, -1);
- 	++vcpu->stat.fpu_reload;
- 	kvm_make_request(KVM_REQ_DEACTIVATE_FPU, vcpu);
- 	trace_kvm_fpu(0);
-diff --git a/drivers/lguest/x86/core.c b/drivers/lguest/x86/core.c
-index 9f1659c..ef62289 100644
---- a/drivers/lguest/x86/core.c
-+++ b/drivers/lguest/x86/core.c
-@@ -204,7 +204,7 @@ void lguest_arch_run_guest(struct lg_cpu *cpu)
- 	 * uses the FPU.
- 	 */
- 	if (cpu->ts)
--		unlazy_fpu(current);
-+		save_xstates(current);
- 
- 	/*
- 	 * SYSENTER is an optimized way of doing system calls.  We can't allow
 -- 
 1.5.6.5
 
