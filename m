@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab1CWHym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 03:54:42 -0400
-Received: from mailin.studentenwerk.mhn.de ([141.84.225.229]:56776 "EHLO
-	email.studentenwerk.mhn.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754754Ab1CWHyk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 03:54:40 -0400
-From: Wolfgang Walter <wolfgang.walter@stwm.de>
-Organization: Studentenwerk =?iso-8859-1?q?M=FCnchen?=
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: problem with nfs4: rpciod seems to loop in rpc_shutdown_client forever
-Date: Wed, 23 Mar 2011 08:54:37 +0100
-User-Agent: KMail/1.9.9
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-References: <201103182349.22331.wolfgang.walter@stwm.de> <201103221552.21826.wolfgang.walter@stwm.de> <20110322150147.GA14627@fieldses.org>
-In-Reply-To: <20110322150147.GA14627@fieldses.org>
+	id S1755473Ab1CWHzT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 03:55:19 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45769 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281Ab1CWHzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 03:55:16 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 1/5] vmscan: remove all_unreclaimable check from direct reclaim path completely
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <20110323164122.ea25bdf0.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110322200523.B061.A69D9226@jp.fujitsu.com> <20110323164122.ea25bdf0.kamezawa.hiroyu@jp.fujitsu.com>
+Message-Id: <20110323165552.1AD6.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201103230854.38151.wolfgang.walter@stwm.de>
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Wed, 23 Mar 2011 16:55:12 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 22. März 2011 schrieb J. Bruce Fields:
-> On Tue, Mar 22, 2011 at 03:52:21PM +0100, Wolfgang Walter wrote:
-> > Am Dienstag, 22. März 2011 schrieb J. Bruce Fields:
-> > > On Fri, Mar 18, 2011 at 11:49:21PM +0100, Wolfgang Walter wrote:
-> > > > Hello,
-> > > >
-> > > > I have a problem with our nfs-server (stable 2.6.32.33 but also with
-> > > > .31 or .32 and probably older ones): sometimes
-> > > > one or more rpciod get stuck. I used
-> > > >
-> > > > 	rpcdebug -m rpc -s all
-> > > >
-> > > > I get messages as the following one about every second:
-> > > >
-> > > > Mar 18 11:15:37 au kernel: [44640.906793] RPC:       killing all
-> > > > tasks for client ffff88041c51de00 Mar 18 11:15:38 au kernel:
-> > > > [44641.906793] RPC:       killing all tasks for client
-> > > > ffff88041c51de00 Mar 18 11:15:39 au kernel: [44642.906795] RPC:      
-> > > > killing all tasks for client ffff88041c51de00 Mar 18 11:15:40 au
-> > > > kernel: [44643.906793] RPC: killing all tasks for client
-> > > > ffff88041c51de00 Mar 18 11:15:41 au kernel: [44644.906795] RPC:      
-> > > > killing all tasks for client ffff88041c51de00 Mar 18 11:15:42 au
-> > > > kernel: [44645.906794] RPC:       killing all tasks for client
-> > > > ffff88041c51de00
-> > > >
-> > > > and I get this messages:
-> > > >
-> > > > Mar 18 22:45:57 au kernel: [86061.779008]   174 0381     -5
-> > > > ffff88041c51de00   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL
-> > > > a:rpc_exit_task q:none
-> > > >
-> > > > My theorie is this one:
-> > > >
-> > > > * this async task is runnable but does not progress (calling
-> > > > rpc_exit_task). * this is because the same rpciod which handles this
-> > > > task loops in rpc_shutdown_client waiting for this task to go away. *
-> > > > because rpc_shutdown_client is called from an async rpc, too
-> > >
-> > > Off hand I don't see any place where rpc_shutdown_client() is called
-> > > from rpciod; do you?
-> >
-> > I'm not familiar with the code.
-> >
-> > But could it be that this is in fs/nfsd/nfs4state.c ?
-> >
-> > Just a guess because 2.6.38 does not have this problem and in 2.6.38 it
-> > seems to have a workqueue of its own.
->
-> Well, spotted, yes it's true that 2.6.32 had called put_nfs4_client()
-> from an rpc_call_done callback, that put_nfs4_client() can end up
-> calling rpc_shutdown_client, and that that's since been fixed....
->
-> If someone wants to backport the fix to 2.6.32.y....
->
-> Actually I think it might be sufficient just to apply
-> 147efd0dd702ce2f1ab44449bd70369405ef68fd ?  But I haven't tried.
->
-> --b.
->
-> commit 147efd0dd702ce2f1ab44449bd70369405ef68fd
-> Author: J. Bruce Fields <bfields@citi.umich.edu>
-> Date:   Sun Feb 21 17:41:19 2010 -0800
->
->     nfsd4: shutdown callbacks on expiry
->
->     Once we've expired the client, there's no further purpose to the
->     callbacks; go ahead and shut down the callback client rather than
->     waiting for the last reference to go.
->
->     Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
->
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index efef7f2..9ce5831 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -697,9 +697,6 @@ shutdown_callback_client(struct nfs4_client *clp)
->  static inline void
->  free_client(struct nfs4_client *clp)
->  {
-> -	shutdown_callback_client(clp);
-> -	if (clp->cl_cb_xprt)
-> -		svc_xprt_put(clp->cl_cb_xprt);
->  	if (clp->cl_cred.cr_group_info)
->  		put_group_info(clp->cl_cred.cr_group_info);
->  	kfree(clp->cl_principal);
-> @@ -752,6 +749,9 @@ expire_client(struct nfs4_client *clp)
->  				 se_perclnt);
->  		release_session(ses);
->  	}
-> +	shutdown_callback_client(clp);
-> +	if (clp->cl_cb_xprt)
-> +		svc_xprt_put(clp->cl_cb_xprt);
->  	put_nfs4_client(clp);
->  }
+> > Reported-by: Andrey Vagin <avagin@openvz.org>
+> > Cc: Nick Piggin <npiggin@kernel.dk>
+> > Cc: Minchan Kim <minchan.kim@gmail.com>
+> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: Rik van Riel <riel@redhat.com>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> IIUC, I saw the pehnomenon which you pointed out, as
+>  - all zone->all_unreclaimable = yes
+>  - zone_reclaimable() returns true
+>  - no pgscan proceeds.
+> 
+> on a swapless system. So, I'd like to vote for this patch.
+> 
+> But hmm...what happens all of pages are isolated or locked and now under freeing ?
+> I think we should have alternative safe-guard logic for avoiding to call
+> oom-killer. Hmm.
 
-I'll test it this weekend.
+Yes, this patch has small risk. but 1) this logic didn't work about two
+years (see changelog) 2) memcg haven't use this logic and I haven't get
+any bug report from memcg developers. therefore I decided to take most
+simple way.
 
-I use 2.6.38 on this server for now and probably will stay with it. But having 
-a working longterm-kernel to fall back is important for me :-).  
+Of cource, I'll make another protection if I'll get any regression report.
 
-Regards,
--- 
-Wolfgang Walter
-Studentenwerk München
-Anstalt des öffentlichen Rechts
+
+
