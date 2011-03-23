@@ -1,176 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994Ab1CWOxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:53:52 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:51278 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932712Ab1CWOxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:53:50 -0400
-Subject: [PATCH v3] sound/oss: remove offset from load_patch callbacks
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: perex@perex.cz, tiwai@suse.de
-Cc: alsa-devel@alsa-project.org, security@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Mar 2011 10:53:41 -0400
-Message-ID: <1300892021.1968.15.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932978Ab1CWOyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:54:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54690 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932337Ab1CWOyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:54:20 -0400
+Date: Wed, 23 Mar 2011 10:54:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Juerg Haefliger <juergh@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Support for global block IO throttling?
+Message-ID: <20110323145418.GE13315@redhat.com>
+References: <AANLkTikEYDdL08=DdJ7fLR08r6sWDCHbNoOuGhxGhm7G@mail.gmail.com>
+ <20110323142505.GD13315@redhat.com>
+ <AANLkTi=EoPKcBE1miW_-RHgHTBCSDKJ1My=Z40rrhm1x@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=EoPKcBE1miW_-RHgHTBCSDKJ1My=Z40rrhm1x@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Was: [PATCH] sound/oss/midi_synth: prevent underflow, use of
-uninitialized value, and signedness issue
+On Wed, Mar 23, 2011 at 03:39:28PM +0100, Juerg Haefliger wrote:
+> Hi Vivek,
+> 
+> >> Are there any plans to support global (per cgroup) IO throttling in
+> >> the near future? I'm in need of this and would gladly work on it if
+> >> nobody else is and if people think this is a useful feature. What I
+> >> envision is that one can specify the limits of individual devices in a
+> >> group but also specify the overall aggregate limit of the whole group.
+> >> I just started looking at the throttling code and haven't quite
+> >> figured it out yet so it might take me a bit to get up to speed.
+> >
+> > Hi Juerg,
+> >
+> > What's the use case? Why do you need global block IO throttling?
+> 
+> Resource management for guest VMs. I want to make sure a VM cannot
+> exceed a certain IO limit. If the VM does IOs to only one device, it
+> gets the full specified bandwidth to that single device but if the VM
+> talks to multiple devices, it only gets a fraction of the global
+> bandwidth per device, not exceeded the global limit.
 
-The offset passed to midi_synth_load_patch() can be essentially
-arbitrary.  If it's greater than the header length, this will result in
-a copy_from_user(dst, src, negative_val).  While this will just return
--EFAULT on x86, on other architectures this may cause memory corruption.
-Additionally, the length field of the sysex_info structure may not be
-initialized prior to its use.  Finally, a signed comparison may result
-in an unintentionally large loop.
+Can't we specify per device limit for VM if VM is doing IO to multiple
+devices?
 
-On suggestion by Takashi Iwai, version two removes the offset argument
-from the load_patch callbacks entirely, which also resolves similar
-issues in opl3.  Compile tested only.
+I know it is not exact replacement of global limits as one has to know
+the topology and figure out to what all devices IO is happening. This
+might get even more difficult if VM's disk is a file on filesystem on
+host and not a device directly eported to guest.
 
-v3 adjusts comments and hopefully gets copy offsets right.
+Somebody also had mentioned that if we have mutiple layers of qemu
+snapshots and if snapshots are sitting on different logical devices
+then it becomes hard to figure out where all VM traffic is going
+and how to even divide global limits in per device limits 
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
----
- sound/oss/dev_table.h  |    2 +-
- sound/oss/midi_synth.c |   30 +++++++++++++-----------------
- sound/oss/midi_synth.h |    2 +-
- sound/oss/opl3.c       |    8 ++------
- sound/oss/sequencer.c  |    2 +-
- 5 files changed, 18 insertions(+), 26 deletions(-)
+Also current IO controller does not work for NFS. So if a global limit
+is imposed in higher layers it will solve that issue too.
 
-diff --git a/sound/oss/dev_table.h b/sound/oss/dev_table.h
-index b7617be..0199a31 100644
---- a/sound/oss/dev_table.h
-+++ b/sound/oss/dev_table.h
-@@ -271,7 +271,7 @@ struct synth_operations
- 	void (*reset) (int dev);
- 	void (*hw_control) (int dev, unsigned char *event);
- 	int (*load_patch) (int dev, int format, const char __user *addr,
--	     int offs, int count, int pmgr_flag);
-+	     int count, int pmgr_flag);
- 	void (*aftertouch) (int dev, int voice, int pressure);
- 	void (*controller) (int dev, int voice, int ctrl_num, int value);
- 	void (*panning) (int dev, int voice, int value);
-diff --git a/sound/oss/midi_synth.c b/sound/oss/midi_synth.c
-index 3c09374..2292c23 100644
---- a/sound/oss/midi_synth.c
-+++ b/sound/oss/midi_synth.c
-@@ -476,7 +476,7 @@ EXPORT_SYMBOL(midi_synth_hw_control);
- 
- int
- midi_synth_load_patch(int dev, int format, const char __user *addr,
--		      int offs, int count, int pmgr_flag)
-+		      int count, int pmgr_flag)
- {
- 	int             orig_dev = synth_devs[dev]->midi_dev;
- 
-@@ -491,33 +491,29 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
- 	if (!prefix_cmd(orig_dev, 0xf0))
- 		return 0;
- 
-+	/* Invalid patch format */
- 	if (format != SYSEX_PATCH)
--	{
--/*		  printk("MIDI Error: Invalid patch format (key) 0x%x\n", format);*/
- 		  return -EINVAL;
--	}
-+
-+	/* Patch header too short */
- 	if (count < hdr_size)
--	{
--/*		printk("MIDI Error: Patch header too short\n");*/
- 		return -EINVAL;
--	}
-+
- 	count -= hdr_size;
- 
- 	/*
--	 * Copy the header from user space but ignore the first bytes which have
--	 * been transferred already.
-+	 * Copy the header from user space
- 	 */
- 
--	if(copy_from_user(&((char *) &sysex)[offs], &(addr)[offs], hdr_size - offs))
-+	if (copy_from_user(&sysex, addr, hdr_size))
- 		return -EFAULT;
-- 
-- 	if (count < sysex.len)
--	{
--/*		printk(KERN_WARNING "MIDI Warning: Sysex record too short (%d<%d)\n", count, (int) sysex.len);*/
-+
-+	/* Sysex record too short */
-+	if ((unsigned)count < (unsigned)sysex.len)
- 		sysex.len = count;
--	}
--  	left = sysex.len;
--  	src_offs = 0;
-+
-+	left = sysex.len;
-+	src_offs = 0;
- 
- 	for (i = 0; i < left && !signal_pending(current); i++)
- 	{
-diff --git a/sound/oss/midi_synth.h b/sound/oss/midi_synth.h
-index 6bc9d00..b64ddd6 100644
---- a/sound/oss/midi_synth.h
-+++ b/sound/oss/midi_synth.h
-@@ -8,7 +8,7 @@ int midi_synth_open (int dev, int mode);
- void midi_synth_close (int dev);
- void midi_synth_hw_control (int dev, unsigned char *event);
- int midi_synth_load_patch (int dev, int format, const char __user * addr,
--		 int offs, int count, int pmgr_flag);
-+		 int count, int pmgr_flag);
- void midi_synth_panning (int dev, int channel, int pressure);
- void midi_synth_aftertouch (int dev, int channel, int pressure);
- void midi_synth_controller (int dev, int channel, int ctrl_num, int value);
-diff --git a/sound/oss/opl3.c b/sound/oss/opl3.c
-index 938c48c..cbf9574 100644
---- a/sound/oss/opl3.c
-+++ b/sound/oss/opl3.c
-@@ -820,7 +820,7 @@ static void opl3_hw_control(int dev, unsigned char *event)
- }
- 
- static int opl3_load_patch(int dev, int format, const char __user *addr,
--		int offs, int count, int pmgr_flag)
-+		int count, int pmgr_flag)
- {
- 	struct sbi_instrument ins;
- 
-@@ -830,11 +830,7 @@ static int opl3_load_patch(int dev, int format, const char __user *addr,
- 		return -EINVAL;
- 	}
- 
--	/*
--	 * What the fuck is going on here?  We leave junk in the beginning
--	 * of ins and then check the field pretty close to that beginning?
--	 */
--	if(copy_from_user(&((char *) &ins)[offs], addr + offs, sizeof(ins) - offs))
-+	if (copy_from_user(&ins, addr, sizeof(ins)))
- 		return -EFAULT;
- 
- 	if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR)
-diff --git a/sound/oss/sequencer.c b/sound/oss/sequencer.c
-index 5ea1098..30bcfe4 100644
---- a/sound/oss/sequencer.c
-+++ b/sound/oss/sequencer.c
-@@ -241,7 +241,7 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
- 				return -ENXIO;
- 
- 			fmt = (*(short *) &event_rec[0]) & 0xffff;
--			err = synth_devs[dev]->load_patch(dev, fmt, buf, p + 4, c, 0);
-+			err = synth_devs[dev]->load_patch(dev, fmt, buf + p, c, 0);
- 			if (err < 0)
- 				return err;
- 
+Also if you implement it above page cache then it should automatically
+handle the case of async writes too. The downside is that if limits
+are low, buffered writers will be throttled very frequently.
 
+So in general, I think global limits is a useful concept. Do you have
+a implementation ready?
 
+Thanks
+Vivek
