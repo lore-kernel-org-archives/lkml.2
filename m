@@ -1,83 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab1CWBFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 21:05:08 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59781 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202Ab1CWBET (ORCPT
+	id S1753472Ab1CWBHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 21:07:34 -0400
+Received: from 90-46-11-204.rar.beartech.net ([204.11.46.90]:44474 "EHLO
+	exchsrvr.taosinc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752127Ab1CWBHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 21:04:19 -0400
-From: Jeff Brown <jeffbrown@android.com>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jeff Brown <jeffbrown@google.com>,
-        jeffbrown@android.com
-Subject: [PATCH 3/4] input: evdev: Indicate buffer overrun with SYN_DROPPED.
-Date: Tue, 22 Mar 2011 18:04:03 -0700
-Message-Id: <1300842244-42723-4-git-send-email-jeffbrown@android.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1300842244-42723-1-git-send-email-jeffbrown@android.com>
-References: <1300842244-42723-1-git-send-email-jeffbrown@android.com>
+	Tue, 22 Mar 2011 21:07:32 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="UTF-8"
+Subject: RE: [PATCH 2.6.38-rc7]TAOS 258x: Device Driver
+Date: Tue, 22 Mar 2011 20:07:30 -0500
+Message-ID: <B4B07CCC7B7A084E989CF9386538EA1D63A83B@exchsrvr.taosinc.com>
+In-Reply-To: <4D87A1D6.2080306@cam.ac.uk>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 2.6.38-rc7]TAOS 258x: Device Driver
+Thread-Index: Acvn+v+7KMPzm+R0ROqNm7nnXv//ngA0w7gw
+References: <1300131941.17298.17.camel@jonz-ubuntu> <4D87A1D6.2080306@cam.ac.uk>
+From: "Jon Brenner" <jbrenner@TAOSinc.com>
+To: "Jonathan Cameron" <jic23@cam.ac.uk>
+Cc: "linux-iio" <linux-iio@vger.kernel.org>,
+        "Linux Kernel" <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2N17f4m009463
 
-From: Jeff Brown <jeffbrown@google.com>
+Jonathan, et al,
 
-Add a new EV_SYN code, SYN_DROPPED, to inform the client when input
-events have been dropped from the evdev input buffer due to a
-buffer overrun.  The client should use this event as a hint to
-reset its state or ignore all following events until the next
-packet begins.
+Again, thank you for taking the time to review the latest submission.
+I have implemented all recommendations made (with the exceptions noted below).
 
-Signed-off-by: jeffbrown@android.com
----
- drivers/input/evdev.c |   18 ++++++++++++------
- include/linux/input.h |    1 +
- 2 files changed, 13 insertions(+), 6 deletions(-)
+I have also added two new functions (not seen here):
+'taos_suspend', and 'taos_resume'
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index 7f42d3a..203ed70 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -57,14 +57,20 @@ static void evdev_pass_event(struct evdev_client *client,
- {
- 	/*
- 	 * Interrupts are disabled, just acquire the lock.
--	 * Make sure we don't leave with the client buffer
--	 * "empty" by having client->head == client->tail.
-+	 * When the client buffer is full, replace the tail with SYN_DROPPED
-+	 * to let the client know that events were dropped.  Ensure that the
-+	 * head and tail never coincide so the buffer does not appear "empty".
- 	 */
- 	spin_lock(&client->buffer_lock);
--	do {
--		client->buffer[client->head++] = *event;
--		client->head &= client->bufsize - 1;
--	} while (client->head == client->tail);
-+	client->buffer[client->head++] = *event;
-+	client->head &= client->bufsize - 1;
-+	if (client->head == client->tail) {
-+		client->tail = (client->tail + 1) & (client->bufsize - 1);
-+		client->buffer[client->tail].time = event->time;
-+		client->buffer[client->tail].type = EV_SYN;
-+		client->buffer[client->tail].code = SYN_DROPPED;
-+		client->buffer[client->tail].value = 0;
-+	}
- 	spin_unlock(&client->buffer_lock);
- 
- 	if (event->type == EV_SYN)
-diff --git a/include/linux/input.h b/include/linux/input.h
-index 056ae8a..65d253e 100644
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -167,6 +167,7 @@ struct input_keymap_entry {
- #define SYN_REPORT		0
- #define SYN_CONFIG		1
- #define SYN_MT_REPORT		2
-+#define SYN_DROPPED		3
- 
- /*
-  * Keys and buttons
--- 
-1.7.0.4
+These changes and comments will be submitted in the next patch [PATCH V3] submission which I will submit shortly (after testing/verification). 
 
+Respectfully,
+Jon 
+
+-----Original Message-----
+As I pm'd you the other day, please remember to make version of patch clear in title, and include details of what has changed since previous version.
+OK - NEXT PATCH WILL INDICATE VERSION 3
+
+WILL REMOVE SENSORS_ PREFIX FROM KCONFIG & MAKEFILE
+
+ADDED/MOVED/CREATED DOCUMENTATION AS RECOMMENDED
+
+----- snip ------------
+> +/*
+> + * Provides initial operational parameter defaults.
+> + * These defaults may be changed through the device's sysfs files.
+> + */
+How about pasing in taos_settings and making all of this func a bit more readable?
+PREFER TO USE DEFAULTS METHOD
+
+> +static void taos_defaults(struct tsl2583_chip *chip) {
+> +	/* Operational parameters */
+> +	chip->taos_settings.als_time = 450;
+> +	/* must be a multiple of 50mS */
+> +	chip->taos_settings.als_gain = 2;
+> +	/* this is actually an index into the gain table */
+> +	/* assume clear glass as default */
+> +	chip->taos_settings.als_gain_trim = 1000;
+> +	/* default gain trim to account for aperture effects */
+> +	chip->taos_settings.als_cal_target = 130;
+> +	/* Known external ALS reading used for calibration */ }
+> +
+
+----- snip ------------
+> +	if ((ch0 >= chip->als_saturation) || (ch1 >= chip->als_saturation))
+would be easier to read if you set ret to lux max here an avoid jumping into
+the if statement below.
+NO - TSL258X_LUX_CALC_OVER_FLOW NEEDS TO PASSED UP.  
+	MUTEX NEEDS TO BE UNLOCKED. 
+	THEN RETURN.
+> +		goto return_max;
+
+----- snip ------------
+&taos_device_lux[0] perhaps?
+NO - CAST MAKES IT MORE OBVIOUS - at least to me ;-)
+> +	for (p = (struct taos_lux *) taos_device_lux;
+
+----- snip ------------
+> +
+If not time critical lest make that a sleep.
+NO - TIME IS REQUIRED FOR DEVICE TO SETTLE BETWEEN POWERON AND ADC ENABLE - DON'T WANT TO MAKE IT ANY LONGER THAN NECESSARY.
+> +	mdelay(3);
+> +	/* NOW enable the ADC
+
+
+----- snip ------------
+I still wonder if there isn't a way of avoiding this index issue.
+It's horrible and really feels like something we ought to able
+to handle reasonably well...
+BECAUSE THE CH0 AND CH1 DIVERGE AT HIGH GAINS -- INDEX IS BETTER THAN USING CHO OR CH1 VALUE 
+( AS EITHER ONE OVER THE OTHER WOULD BE WRONG :-{ )
+> +	if (value > 3) {
+> +		dev_err(dev, "Invalid Gain Index: Enter 0-3\n");
+> +		return -1;
+> +	} else {
+> +		chip->taos_settings.als_gain = value;
+> +	}
+> +	return len;
+> +}
+
+----- snip ------------
+Just to confirm, is this a frequency in Hz? If it is
+can we renaming it to taos_als_frequency_show to
+avoid confusing me?
+
+THIS IS THE INTERNAL ALS INTEGRATION TIME FOR THE ADC CHANNELS
+I SHOE HORNED IT INTO SAMPLING FREQUENCY TO HELP ALEVIATE THE ABI ANGST
+
+> +static ssize_t taos_als_time_show(struct device *dev,
+> +    struct device_attribute *attr, char *buf)
+> +{
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct tsl2583_chip *chip = indio_dev->dev_data;
+> +
+> +	return sprintf(buf, "%d\n", chip->taos_settings.als_time);
+> +}
+
+----- snip ------------
+scale as a stand alone attribute isn't defined. Please document this.
+Looking at what you do with it, it's another factor effecting the overal
+gain on the reading that reaches userspace.  Ideally you'd roll this
+into your calibscale parameter, but I can see that would get complex
+to manage. Will have a think about this. In devices with a simple conversion
+function (adc's etc) we handle this by leaving this software value
+be applied by userspace (and output it as in_scale). The issue here that
+as far as userspace is concerned both of your scales have been applied before
+it sees the data and at different more or less random looking points in
+the calculation.
+
+Actually, looking at the calculation you could output illuminance0_raw
+and let userspace apply a multiplier based on your trim value and offset
++0.5?  If you want to hold trim in driver then just implement
+read and write to
+
+illuminance0_scale
+and have read only
+illuminance0_offset (rather tediously for this device, offset is applied
+before scale, so you'll need to divide 0.5 by whatever your trim is).
+
+We'll have to do pin down how to do this before moving out of staging
+so best to get it right now.
+
+CHANGED TO ILLUMINANCE0_SCALE
+
+LIFE WOULE BE NICE IF WE COULD JUST PASS THE RAW DATA UP TO USERSPACE
+BUT WE HAVE CUSTOMERS WHO REQUIRE IT TO COME UP CALCULATED WITH
+THE MULTIPLIER FACTORED IN
+
+----- snip ------------
+> +	for (i = 0; i < MAX_DEVICE_REGS; i++) {
+> +		ret = i2c_smbus_write_byte(clientp,
+> +				(TSL258X_CMD_REG | (TSL258X_CNTRL + i)));
+> +		if (ret < 0) {
+> +			dev_err(&clientp->dev, "i2c_smbus_write_byte() to cmd "
+> +				"reg failed in taos_probe(), err = %d\n", ret);
+> +			goto fail1;
+> +		}
+> +		buf[i] = i2c_smbus_read_byte(clientp);
+  error handling for this read?
+VALUE IS UNIMPORTANT - BUT MAKING SURE WE CAN JUST READ ALL 32 REGISTER LOCATIONS IS..
+
+----- snip ------------
+
+> +	}
+> +	if (!taos_skate_device(buf)) {
+> +		dev_info(&clientp->dev, "i2c device found but does not match "
+> +			"expected id in taos_probe()\n");
+> +		goto fail1;
+> +	} else {
+The sort of debug info you want to get rid of for production drivers.  Doesn't
+tell anyone anything helpful.
+NO - DO NOT AGREE - IF A CUSTOMER EXPECTS ONE DEVICE BUT HAS SOMEHOW INSTALLED A DIFFERENT ONE
+AT PRODUCTION TIME, THIS WILL HELP IDENTIFY THE ISSUE.  
+(IE. WANTED A TAOS ALS DEVICE BUT INSTALLED A TAOS PROX/ALS DEVICE)
+FIRST PART INDICATES THAT.  SECOND PART IS CONFIRMATION THAT DEVICE WAS IDENTIFIED TO SYSTEM.
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
