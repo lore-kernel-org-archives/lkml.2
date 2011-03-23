@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab1CWMVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 08:21:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23711 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755086Ab1CWMVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 08:21:52 -0400
-Date: Wed, 23 Mar 2011 14:21:03 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: stable@kernel.org
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Michal Schmidt <mschmidt@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH stable] PCI: return correct value when writing to the "reset"
- attribute
-Message-ID: <20110323122103.GA24976@redhat.com>
+	id S932753Ab1CWMWJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 08:22:09 -0400
+Received: from elasmtp-scoter.atl.sa.earthlink.net ([209.86.89.67]:42196 "EHLO
+	elasmtp-scoter.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755086Ab1CWMWH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 08:22:07 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=earthlink.net;
+  b=tp9Uyq1URyryO3otzZi6/355ForK+cczDFgsUcdAUpBNM+bCq39fGtCAMkG15juJ;
+  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <4D89E5E1.3070402@earthlink.net>
+Date: Wed, 23 Mar 2011 08:21:53 -0400
+From: Stephen Clark <sclark46@earthlink.net>
+Reply-To: sclark46@earthlink.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Keith Packard <keithp@keithp.com>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] drm next tree
+References: <alpine.DEB.2.00.1103170403160.3429@skynet.skynet.ie> <AANLkTinoTs89ThBnZ17+fPE+t1V=GycKq2EJG-LadFZQ@mail.gmail.com>
+In-Reply-To: <AANLkTinoTs89ThBnZ17+fPE+t1V=GycKq2EJG-LadFZQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79fcdfe6b3fd7a7b567b8b36a3e101c75b350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 69.22.83.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 447c5dd7338638f526e9bcf7dcf69b4da5835c7d
-Author: Michal Schmidt <mschmidt@redhat.com>
-Date:   Tue May 11 11:44:54 2010 +0200
+On 03/22/2011 10:19 PM, Linus Torvalds wrote:
+> So I had  hoped - yes, very naïve of me, I know - that this merge
+> window would be different.
+>
+> But it's not.
+>
+> On Wed, Mar 16, 2011 at 9:09 PM, Dave Airlie<airlied@linux.ie>  wrote:
+>    
+>> i915: big 855 fix, lots of output setup refactoring, lots of misc fixes.
+>>      
+> .. and apparently a lot of breakage too. My crappy laptop that I abuse
+> for travel is - once more - broken by the updates. I cannot suspend
+> and resume, because every resume seems to fail.
+>
+> One of the more useful failures was:
+>
+> [   61.656055] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
+> elapsed... GPU hung
+> [   61.656079] [drm] capturing error event; look for more information
+> in /debug/dri/0/i915_error_state
+> [   61.664387] [drm:i915_wait_request] *ERROR* i915_wait_request
+> returns -11 (awaiting 2 at 0, next 3)
+>
+> and I'm attaching the error_state file from that particular case here.
+> In other cases it seems to just hang entirely.
+>
+> Keith/Jesse/Chris - I don't know that it's i915, and it will take
+> forever to bisect (I'll try). But it does seem pretty likely.
+>
+>                               Linus
+>    
+Why can't the gpu be reset/restarted when this happens? When a nic card 
+gets hung it is reinitialized
+and restarted why not the gpu?
 
-A successful write() to the "reset" sysfs attribute should return the
-number of bytes written, not 0. Otherwise userspace (bash) retries the
-write over and over again.
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-
-Applies without changes to all of 2.6.32,2.6.33,2.6.34
-
-This bug is starting to bite userspace, it seems that the right thing to
-do is to fix the bug in stable kernels.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
----
- drivers/pci/pci-sysfs.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index 3a3b911..e44682c 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -939,7 +939,12 @@ static ssize_t reset_store(struct device *dev,
- 
- 	if (val != 1)
- 		return -EINVAL;
--	return pci_reset_function(pdev);
-+
-+	result = pci_reset_function(pdev);
-+	if (result < 0)
-+		return result;
-+
-+	return count;
- }
- 
- static struct device_attribute reset_attr = __ATTR(reset, 0200, NULL, reset_store);
 -- 
-1.7.3.2.91.g446ac
+
+"They that give up essential liberty to obtain temporary safety,
+deserve neither liberty nor safety."  (Ben Franklin)
+
+"The course of history shows that as a government grows, liberty
+decreases."  (Thomas Jefferson)
+
+
+
