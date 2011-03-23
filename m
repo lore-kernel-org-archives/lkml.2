@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab1CWE7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 00:59:16 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55865 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385Ab1CWE7P (ORCPT
+	id S1755502Ab1CWFJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 01:09:44 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:52384 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755064Ab1CWFJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 00:59:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 23 Mar 2011 13:52:41 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: vgoyal@redhat.com, jaxboe@fusionio.com, m-ikeda@ds.jp.nec.com,
-        ryov@valinux.co.jp, taka@valinux.co.jp, righi.andrea@gmail.com,
-        guijianfeng@cn.fujitsu.com, balbir@linux.vnet.ibm.com,
-        ctalbott@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/8] block,fs,mm: IO cgroup tracking for buffered
- write
-Message-Id: <20110323135241.4ada8334.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1300835335-2777-3-git-send-email-teravest@google.com>
-References: <1300835335-2777-1-git-send-email-teravest@google.com>
-	<1300835335-2777-3-git-send-email-teravest@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 23 Mar 2011 01:09:43 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/sCxlzg8DsO4JX1M1Cv8vApnT648dLUOkZSKlqTm
+	rO2QN3ZwDn3lnY
+Subject: Re: [patch 04/15] sched: throttle cfs_rq entities which exceed
+ their local quota
+From: Mike Galbraith <efault@gmx.de>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Nikhil Rao <ncrao@google.com>
+In-Reply-To: <20110323030449.047028257@google.com>
+References: <20110323030326.789836913@google.com>
+	 <20110323030449.047028257@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 06:09:36 +0100
+Message-ID: <1300856976.7492.44.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Mar 2011 16:08:49 -0700
-Justin TerAvest <teravest@google.com> wrote:
+On Tue, 2011-03-22 at 20:03 -0700, Paul Turner wrote:
 
-> +static inline void page_cgroup_set_blkio_id(struct page_cgroup *pc,
-> +				unsigned long id)
+> +static void check_cfs_rq_quota(struct cfs_rq *cfs_rq)
 > +{
-> +	unsigned long old, new, prev;
+> +	if (within_bandwidth(cfs_rq))
+> +		return;
 > +
-> +	/* pc->flags isn't lock protected, so we must cmpxchg. */
-> +	WARN_ON(id >= (1UL << PAGE_TRACKING_ID_BITS));
-> +	do {
-> +		new = old = pc->flags;
-> +		new &= (1UL << PAGE_TRACKING_ID_SHIFT) - 1;
-> +		new |= (unsigned long)(id << PAGE_TRACKING_ID_SHIFT);
-> +		prev = cmpxchg(&pc->flags, old, new);
-> +	} while (prev != old);
+> +
 
-How to support archs which doesn't have cmpxchg ?
-At least, you need take care of compile error.
+Nit:  It'd be nice if classes agreed on naming convention to ease
+rummaging.  In rt, it's bandwidth for bean counting parameters, but the
+beans are runtime.  within_bandwidth() vs sched_rt_runtime_exceeded()
+kinda pokes me in the eye when I look at the total.  Seems to me it
+should be uniformly either quota or bandwidth, and uniformly runtime.
 
-Thanks,
--Kame
+	-Mike
+
 
