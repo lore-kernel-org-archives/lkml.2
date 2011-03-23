@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286Ab1CWU15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 16:27:57 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:56049 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932901Ab1CWU14 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 16:27:56 -0400
-Subject: Re: [PATCH-v2] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
-	module
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Douglas Gilbert <dgilbert@interlog.com>
-In-Reply-To: <1300903542.15899.27.camel@mulgrave.site>
-References: <1300487957-28800-1-git-send-email-nab@linux-iscsi.org>
-	 <1300903542.15899.27.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Wed, 23 Mar 2011 13:20:29 -0700
-Message-Id: <1300911629.18039.11.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S933295Ab1CWU3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 16:29:04 -0400
+Received: from kroah.org ([198.145.64.141]:39906 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933268Ab1CWU3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 16:29:02 -0400
+Date: Wed, 23 Mar 2011 13:28:32 -0700
+From: Greg KH <greg@kroah.com>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Vipin Mehta <vmehta@atheros.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kalle Valo <kvalo@adurom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        devel@linuxdriverproject.org,
+        Jouni Malinen <Jouni.Malinen@atheros.com>
+Subject: Re: Update on Android PM enhancements - CONFIG_HAS_EARLYSUSPEND and
+ friends
+Message-ID: <20110323202832.GB7409@kroah.com>
+References: <AANLkTik69v+gdPzwdMSyVnvHMKbWquvfCFvHLmLu-bBB@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik69v+gdPzwdMSyVnvHMKbWquvfCFvHLmLu-bBB@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-23 at 13:05 -0500, James Bottomley wrote:
-> On Fri, 2011-03-18 at 15:39 -0700, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > This patch adds the TCM_Loop Linux/SCSI LLD fabric module for
-> > accessing TCM device
-> > backstores as locally accessable SCSI LUNs in virtual SAS, FC, and
-> > iSCSI Target ports
-> > using the generic fabric TransportID and Target Port WWN naming
-> > handlers from TCM's
-> > target_core_fabric_lib.c  The TCM_Loop module uses the generic fabric
-> > configfs infratructure
-> > provided by target_core_fabric_configfs.c and adds a module dependent
-> > attribute for the
-> > creation/release of the virtual I_T Nexus connected the TCM_Loop
-> > Target and Initiator Ports.
-> > 
-> > TCM_Loop can also be used with scsi-generic and BSG drivers so that
-> > STGT userspace
-> > fabric modules, QEMU-KVM and other hypervisor SCSI passthrough support
-> > can
-> > access TCM device backstore and control CDB emulation.
-> > 
-> > For more information please see:
-> > 
-> > http://linux-iscsi.org/wiki/Tcm_loop
-> > 
-> > This patch has been updated with changes from Christoph's feedback.
+On Wed, Mar 23, 2011 at 01:05:47PM -0700, Luis R. Rodriguez wrote:
+> Arve,
 > 
-> And checkpatch next time, too please:
-> 
-> total: 25 errors, 25 warnings, 1681 lines checked
-> 
+> What ever happened with your series on the Android PM extensions you
+> had submitted in 2009 [1] ? I'm working on ath6kl right now and I'm
+> going to remove all that early suspend crap as its not upstream and I
+> want to get ath6kl into upstream proper. Do you have plans for a
+> replacement? Since the thread covers wake locks, have you ironed out
+> what you are going to do with that as well?
 
-Thanks for fixing this up James.  I will get your checkpatch cleanups
-merged from scsi-misc-2.6.git -> lio-core-2.6.git shortly.
+Wake locks are all taken care of, see:
+	http://lwn.net/Articles/416690/
+for the details.
 
---nab
+thanks,
 
+greg k-h
