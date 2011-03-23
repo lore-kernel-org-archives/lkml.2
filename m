@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932825Ab1CWWWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 18:22:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34254 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932641Ab1CWWWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 18:22:47 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
-Subject: Re: Corrupted files after suspend to disk
-Date: Wed, 23 Mar 2011 23:22:52 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
-References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com> <201103232311.38889.rjw@sisk.pl> <AANLkTinkLj6SUMn-9Dkqn-Dx_7SN2dF70LYb2pFu19+3@mail.gmail.com>
-In-Reply-To: <AANLkTinkLj6SUMn-9Dkqn-Dx_7SN2dF70LYb2pFu19+3@mail.gmail.com>
+	id S1756796Ab1CWWZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 18:25:10 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:35322 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab1CWWZH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 18:25:07 -0400
+Date: Wed, 23 Mar 2011 15:24:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Robert Love <robert.w.love@intel.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>, Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
+        Jarek Poplawski <jarkao2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@open-fcoe.org" <devel@open-fcoe.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
+ kfree_rcu()
+Message-ID: <20110323222456.GC2322@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D82D071.5020703@cn.fujitsu.com>
+ <4D82D3FF.2080303@cn.fujitsu.com>
+ <4D82D45A.30102@cn.fujitsu.com>
+ <1300814913.19083.427.camel@fritz>
+ <20110323065014.GU2322@linux.vnet.ibm.com>
+ <1300889151.15899.4.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103232322.52485.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300889151.15899.4.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
-> On Wed, Mar 23, 2011 at 11:11 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
-> >> 2011/3/23 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
-> >> >> Hi,
-> >> >>
-> >> >> I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
-> >> >> running Linux 2.6.37.4.
-> >> >> After resuming from s2disk some files are corrupted.
-> >> >> But when I reboot my netbook everything seems good again.
-> >> >>
-> >> >> When I saw the problem the first time the ls command segfaulted always.
-> >> >> I did a reboot and it worked again.
-> >> >>
-> >> >> A few days later zypper crashed. After a reboot it worked again.
-> >> >> And today ssh crashed. I looked a bit closer and saw it crashed
-> >> >> somewhere within libcrypto.
-> >> >> So I made copy libcrypto and rebooted.
-> >> >> After the reboot ssh worked again but libcrypto and the copy of it hat
-> >> >> a different sha1 sum!
-> >> >> WTF?!
-> >> >>
-> >> >> Is this a known issue?
-> >> >
-> >> > No.
-> >> >
-> >> >> dmesgs and config are attached.
-> >> >>
-> >> >> The used distribution is openSUSE 11.4 with suspend-0.80.20100129-7.1
-> >> >> (default from suse).
-> >> >> I'm using ext3 as root filesystem.
-> >> >> What else do you need?
-> >> >
-> >> > Whatever you can do to narrow down the problem.  At the moment I only know
-> >> > that it's there.
-> >>
-> >> I can reproduce the problem now.
-> >> After ~20 suspend and resume iterations aide finds corrupted files in /lib/.
-> >> It's always a very basic lib like libcrypto, libglib which is used all
-> >> the time on my system.
-> >
-> > Those files are never intentionally modified, right?
-> >
-> >> Maybe it's an issue like this one?
-> >> https://lkml.org/lkml/2010/12/2/339
-> >
-> > It might have if that patch hadn't been merged before 2.6.37.
-> >
-> > Is the system 32-bit or 64-bit?
+On Wed, Mar 23, 2011 at 09:05:51AM -0500, James Bottomley wrote:
+> On Tue, 2011-03-22 at 23:50 -0700, Paul E. McKenney wrote:
+> > The kfree_rcu() definition is as
+> > follows:
+> > 
+> > #define kfree_rcu(ptr, rcu_head)					\
+> > 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
 > 
-> It's a 32-bit system.
-> cmp shows that the corrupted files differ in many bytes (not scattered).
-> The corrupted bytes are always 0 or 252.
+> Isn't this one of those cases where the obvious use of the interface is
+> definitely wrong?
+> 
+> It's also another nasty pseudo C prototype.  I know we do this sort of
+> thing for container_of et al, but I don't really think we want to extend
+> it.
+> 
+> Why not make the interface take a pointer to the embedding structure and
+> one to the rcu_head ... that way all pointer mathematics can be
+> contained inside the RCU routines.
 
-Do I understand correctly that the files apparently corrupted after resume
-are not corrupted any more when you reboot?
+Hello, James,
 
-Rafael
+If you pass in a pair of pointers, then it is difficult for RCU to detect
+bugs where the two pointers are unrelated.  Yes, you can do some sanity
+checks, but these get cumbersome and have corner cases where they can
+be fooled.  In contrast, Lai's interface allows the compiler to do the
+needed type checking -- unless the second argument is a field of type
+struct rcu_head in the structure pointed to by the first argument, the
+compiler will complain.
+
+Either way, the pointer mathematics are buried in the RCU API.
+
+Or am I missing something here?
+
+							Thanx, Paul
