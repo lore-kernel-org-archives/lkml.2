@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab1CWTrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 15:47:19 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63366 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932592Ab1CWTrR convert rfc822-to-8bit (ORCPT
+	id S932861Ab1CWTsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 15:48:51 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59674 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932576Ab1CWTsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 15:47:17 -0400
+	Wed, 23 Mar 2011 15:48:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hP+kEFKy2jYmJPVZ9Kacmg8wUEtD27giA+0bkqtgLFDNyo0U61bxlE3WUCwiayxiqd
-         nmF5XWiynoS7+YTRhVd/dbTMqRZmFJqoR08S7+phBoSjeVxdLukI1+SMNyEMV+IKMSjY
-         Lml+zTrrnmcxhv7lsItTNWj9oA2RUmVwZfBBU=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=nA8+XSH4aIPzIzU+f2Q4JjyLq7tntMQcbXDO3YH45RNyGD41vYCNY05IVPjdnsc0U1
+         LkAos7VLzRHIbbpSIa3j6yglCTjoJ4fo2XsMsp6l0i/yDLl0L8cxIrsjji6YWQq5q2+7
+         7l+R5oESh+2bLzOQZvc02be7XhP/WGsBnjOpI=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik4iG+Ssb+JU3YRB4C11CEZeVozqoiz4rvezFLL@mail.gmail.com>
-References: <20110323153727.GB12003@htj.dyndns.org> <AANLkTik4iG+Ssb+JU3YRB4C11CEZeVozqoiz4rvezFLL@mail.gmail.com>
-From: Andrey Kuzmin <andrey.v.kuzmin@gmail.com>
-Date: Wed, 23 Mar 2011 22:46:56 +0300
-Message-ID: <AANLkTiktmhP6-JGTKHf+wZhdJRd3Eb-PYzMRR=CyRsUP@mail.gmail.com>
-Subject: Re: [RFC PATCH] mutex: Apply adaptive spinning on mutex_trylock()
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
+In-Reply-To: <20110323192338.GE22652@aftab>
+References: <AANLkTim3gpBUtDQ=WnLRjzuwpNe=+m4wLK=maS1tLc8U@mail.gmail.com>
+	<20110322133101.GB24006@gere.osrc.amd.com>
+	<AANLkTimz0GR7HXgY5jxogfkNyJ2iVYWJGHRhsZtO4T+A@mail.gmail.com>
+	<AANLkTikDqUptK8XdPpAGYKFskSL7ugfoh-VjNzyXU_3q@mail.gmail.com>
+	<20110323192338.GE22652@aftab>
+Date: Wed, 23 Mar 2011 20:48:48 +0100
+Message-ID: <AANLkTiktv4+OeJW0yHBAeDtoHf4bvyx_W61AeZNozHzU@mail.gmail.com>
+Subject: Re: Machine Check Exception and cpufreq
+From: Giorgio <mywing81@gmail.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@brodo.de" <linux@brodo.de>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "mchehab@redhat.com" <mchehab@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 6:48 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Mar 23, 2011 at 8:37 AM, Tejun Heo <tj@kernel.org> wrote:
+2011/3/23 Borislav Petkov <bp@amd64.org>:
+> On Wed, Mar 23, 2011 at 03:02:01PM -0400, Giorgio wrote:
+>> 2011/3/22 Giorgio <mywing81@gmail.com>:
+>> > 2011/3/22 Borislav Petkov <bp@amd64.org>:
+>> >> this is very interesting. Question: is it possible to retest with
+>> >> a newer kernel from upstream (say 2.6.38) to see whether the issue
+>> >> persists? I'd like to rule out the possibility that powernow-k8 is
+>> >> not causing any trouble which has been fixed in newer kernels in the
+>> >> meantime.
+>> >>
+>> >> Thanks.
+>> >
+>> > Hello Borislav,
+>> >
+>> > thanks for your quick reply. Yes, I only tested it with the stock
+>> > 2.6.32 kernel shipped with Ubuntu 10.04, but I will download the
+>> > latest stable kernel from kernel.org (2.6.38) and test again. I'll
+>> > come back to you in the following days. Regards,
 >>
->> Currently, mutex_trylock() doesn't use adaptive spinning.  It tries
->> just once.  I got curious whether using adaptive spinning on
->> mutex_trylock() would be beneficial and it seems so, at least for
->> btrfs anyway.
+>> Borislav,
+>>
+>> I tested again with 2.6.38 kernel: the system was stressed for several
+>> hours with various activities (compiling, copying data back and forth
+>> from two hard drives, encoding/decoding video streams, etc) but I was
+>> not able to reproduce the problem, so I guess it has been fixed.
+>> If you're interested here's the info I collected with 2.6.38:
+>>
+>> http://mywing.altervista.org/tmp/info-2.6.38.log
 >
-> Hmm. Seems reasonable to me.
+> Great. It's either fixed or latest powernow-k8 changes timings so as not
+> to trigger it anymore, because your issue looks like the chipset could
+> by doing something fishy with CRC during Pstate transitions.
+>
+> If it happens again, try whether upgrading your BIOS solves it (although
+> I'm pretty sceptical about getting newer BIOS for such an old board :-) ).
 
-TAS/spin with exponential back-off has been preferred locking approach
-in Postgres (and I believe other DBMSes) for years, at least since '04
-when I had last touched Postgres code. Even with 'false negative' cost
-in user-space being much higher than in the kernel, it's still just a
-question of scale (no wonder measurable improvement here is reported
-from dbench on SSD capable of few dozen thousand IOPS).
+I am fairly sure I am using the latest BIOS available, and yes, I
+admit this is quite an old board! :) Thank you again for looking at my
+report.
 
-Regards,
-Andrey
-
-> The patch looks clean, although part of that is just the mutex_spin()
-> cleanup that is independent of actually using it in trylock.
->
-> So no objections from me.
->
->                    Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Giorgio Vazzana
