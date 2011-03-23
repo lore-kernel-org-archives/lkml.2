@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab1CWSO7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 14:14:59 -0400
-Received: from mout1.freenet.de ([195.4.92.91]:39999 "EHLO mout1.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754946Ab1CWSO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 14:14:58 -0400
-Message-ID: <4D8A38DD.80207@dualc.maya.org>
-Date: Wed, 23 Mar 2011 19:15:57 +0100
-From: Andreas Hartmann <andihartmann@freenet.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b13pre) Gecko/20110316 Firefox/4.0b13pre SeaMonkey/2.1b2pre
+	id S932510Ab1CWSPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 14:15:40 -0400
+Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:45667 "HELO
+	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932098Ab1CWSPj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 14:15:39 -0400
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: intel_ips produces constant load of 1
-References: <im2ik4$3dd$1@ID-44327.news.uni-berlin.de> <20110321110404.6a71a404@jbarnes-desktop> <20110322132555.715dc096@jbarnes-desktop>
-In-Reply-To: <20110322132555.715dc096@jbarnes-desktop>
-X-Enigmail-Version: 1.2a1pre
+In-Reply-To: <1300902477-6608-1-git-send-email-roland@kernel.org>
+References: <1300902477-6608-1-git-send-email-roland@kernel.org>
+From: Roland Dreier <roland@kernel.org>
+Date: Wed, 23 Mar 2011 11:15:17 -0700
+X-Google-Sender-Auth: NpPv-mI4I5XJcJCocPRmD-8ffdA
+Message-ID: <AANLkTimGvTrus1r38pPN4v0ZUgN-dqoUaR-JH93SSrCz@mail.gmail.com>
+Subject: Re: [GIT PULL] please pull infiniband.git
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jesse Barnes wrote:
-> On Mon, 21 Mar 2011 11:04:04 -0700
-> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> 
->>> ps aux | grep ips
->>> root       593  0.0  0.0      0     0 ?        S    17:20   0:00
->>> [ips-adjust]
->>> root       594  0.0  0.0      0     0 ?        D    17:20   0:00
->>> [ips-monitor]
->>>
->>> If the module isn't loaded, the load of the machine in idle mode is 0 as
->>> expected.  
->>
->> This is a reporting problem, and probably due to the schedule() call
->> and associated task state in the ips-monitor thread.  I thought setting
->> the task state to interruptible would prevent this, but it seems like
->> it's not enough for the deferrable on-stack timers?
->>
->> At any rate, it's not actually causing increased CPU usage, so you can
->> safely ignore it until we have a fix.
-> 
-> Oops, one task uses interruptible correctly, but the monitor thread
-> doesn't.
-> 
-> Does this patch fix your load average?
+On Wed, Mar 23, 2011 at 10:47 AM, Roland Dreier <roland@kernel.org> wrote:
+> drivers/infiniband/core/addr.c           |    2 +-
+>  drivers/infiniband/core/agent.c          |    3 +-
+>  drivers/infiniband/hw/mthca/mthca_main.c |    3 +
+>  drivers/infiniband/hw/nes/nes.c          |    2 +-
+>  drivers/infiniband/ulp/srp/ib_srp.c      |  725 ++++++++++++++++++++----------
+>  drivers/infiniband/ulp/srp/ib_srp.h      |   38 ++-
+>  6 files changed, 521 insertions(+), 252 deletions(-)
 
-Which patch? I can't see any patch :-).
+Somehow I missed a hunk of
 
+ IB: Increase DMA max_segment_size on Mellanox hardware
 
-Andreas
+diffstat now should look like
+
+ drivers/infiniband/core/addr.c           |    2 +-
+ drivers/infiniband/core/agent.c          |    3 +-
+ drivers/infiniband/hw/mthca/mthca_main.c |    3 +
+ drivers/infiniband/hw/nes/nes.c          |    2 +-
+ drivers/infiniband/ulp/srp/ib_srp.c      |  725 ++++++++++++++++++++----------
+ drivers/infiniband/ulp/srp/ib_srp.h      |   38 ++-
+ drivers/net/mlx4/main.c                  |    3 +
+ 7 files changed, 524 insertions(+), 252 deletions(-)
