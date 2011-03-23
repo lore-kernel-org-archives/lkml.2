@@ -1,187 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab1CWOmM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:42:12 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37115 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109Ab1CWOmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:42:11 -0400
-Date: Wed, 23 Mar 2011 07:42:30 -0700
-From: Greg KH <gregkh@suse.de>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/2] picoxcell-otp: add support for picoxcell OTP
- devices
-Message-ID: <20110323144230.GD17369@suse.de>
-References: <1300882619-19152-1-git-send-email-jamie@jamieiles.com>
- <1300882619-19152-2-git-send-email-jamie@jamieiles.com>
+	id S932542Ab1CWOmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:42:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57779 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756097Ab1CWOmi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:42:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Par-Gunnar Hjalmdahl" <par-gunnar.p.hjalmdahl@stericsson.com>
+Subject: Re: [PATCH 2/2] mach-ux500: Add CG2900 devices
+Date: Wed, 23 Mar 2011 15:42:28 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
+        Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>
+References: <1300888803-26474-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+In-Reply-To: <1300888803-26474-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300882619-19152-2-git-send-email-jamie@jamieiles.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103231542.28311.arnd@arndb.de>
+X-Provags-ID: V02:K0:g1DMIvKl9u8gBiYBavDkJ6N++eCLZ04RHow11tsDqv7
+ 2r2O4TozMoXu82GJYwzwHMM8zEORme/CDWkRxTwuC0GzsZxda9
+ KN3DjxJ3nBRCGb0MFkNKPpdU+y+pICJY2iHIlvWz4xc2pwOuJi
+ 1/9fR8Uk32Z3INV7y9pDtgqMg5A07tVfwK525rilWihRMoqQ7q
+ 6lhsvu3llQNMV8J4e/+rQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 12:16:58PM +0000, Jamie Iles wrote:
-> picoxcell devices contain a block of OTP memory that can be used for
-> storing first-stage bootloaders, cryptographic keys and other data to be
-> kept onchip.  Different devices support a number of redundancy formats
-> to cope with in-field programming errors and can be partitioned into
-> regions to allow different redundancy formats with different effective
-> sizes.
-> 
-> This patch implements an OTP device layer which different devices may
-> register their OTP regions with.
+On Wednesday 23 March 2011, Par-Gunnar Hjalmdahl wrote:
 
-Great, but why put it in drivers/char/?  Why not drivers/otp/?
+> This patch adds the board specific data for the CG2900
+> driver on a UX500 board.
 
-> This provides sysfs entries that may
-> be used to configure the number of regions, region format and access
-> control such as write enable.
-> 
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> ---
->  Documentation/ABI/testing/sysfs-bus-picoxcell-otp  |   37 +
->  .../ABI/testing/sysfs-platform-picoxcell-otp       |   39 +
->  drivers/char/Kconfig                               |    8 +
->  drivers/char/Makefile                              |    1 +
->  drivers/char/picoxcellotp.c                        |  929 ++++++++++++++++++++
->  drivers/char/picoxcellotp.h                        |  230 +++++
->  6 files changed, 1244 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-bus-picoxcell-otp
->  create mode 100644 Documentation/ABI/testing/sysfs-platform-picoxcell-otp
->  create mode 100644 drivers/char/picoxcellotp.c
->  create mode 100644 drivers/char/picoxcellotp.h
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-bus-picoxcell-otp b/Documentation/ABI/testing/sysfs-bus-picoxcell-otp
+Thanks for the follow-up in staging. I hope this will make the work
+of getting this driver into shape done more easily as we have a
+code base to discuss.
+
+> diff --git a/arch/arm/mach-ux500/Makefile b/arch/arm/mach-ux500/Makefile
+> index b549a8f..47c92fa 100644
+> --- a/arch/arm/mach-ux500/Makefile
+> +++ b/arch/arm/mach-ux500/Makefile
+> @@ -2,6 +2,9 @@
+>  # Makefile for the linux kernel, U8500 machine.
+>  #
+>  
+> +ccflags-y :=					\
+> +	-Idrivers/staging/cg2900/include
+> +
+>  obj-y				:= clock.o cpu.o devices.o devices-common.o \
+>  				   id.o usb.o
+
+Could we keep this more self-contained? Just register a
+single device with the necessary resources and let the
+staging driver figure out how to initialize it, rather
+than splitting it between mach-ux500 and drivers/staging.
+
+> +#ifdef CONFIG_CG2900
+> +#define CG2900_BT_ENABLE_GPIO		170
+> +#define CG2900_GBF_ENA_RESET_GPIO	171
+> +#define CG2900_BT_CTS_GPIO		0
+
+Don't make hardware definitions depending on Kconfig symbols.
+Just describe what the hardware looks like if present, and
+let the board code figure out if it's actually there.
+
+> +static struct platform_device ux500_cg2900_device = {
+> +	.name = "cg2900",
+> +};
+> +
+> +#ifdef CONFIG_CG2900_CHIP
+> +static struct platform_device ux500_cg2900_chip_device = {
+> +	.name = "cg2900-chip",
+> +	.dev = {
+> +		.parent = &ux500_cg2900_device.dev,
+> +	},
+> +};
+> +#endif /* CONFIG_CG2900_CHIP */
+> +
+> +#ifdef CONFIG_STLC2690_CHIP
+> +static struct platform_device ux500_stlc2690_chip_device = {
+> +	.name = "stlc2690-chip",
+> +	.dev = {
+> +		.parent = &ux500_cg2900_device.dev,
+> +	},
+> +};
+> +#endif /* CONFIG_STLC2690_CHIP */
+> +
+> +#ifdef CONFIG_CG2900_TEST
+> +static struct cg2900_platform_data cg2900_test_platform_data = {
+> +	.bus = HCI_VIRTUAL,
+> +	.gpio_sleep = cg2900_sleep_gpio,
+> +};
+
+Also, don't make the device registration dependent on the Kconfig.
+Make sure that the hardware is there by asking the hardware, then
+register it, even if we don't compile the driver using it.
+
+I assume that this would get much simpler if you register everything
+from the .probe function of the main "cg2900" device.
+
+> diff --git a/arch/arm/mach-ux500/devices-cg2900.c b/arch/arm/mach-ux500/devices-cg2900.c
 > new file mode 100644
-> index 0000000..096b892
+> index 0000000..525c871
 > --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-bus-picoxcell-otp
-> @@ -0,0 +1,37 @@
-> +What:           /sys/bus/picoxcell-otp/
+> +++ b/arch/arm/mach-ux500/devices-cg2900.c
 
-Shouldn't this just be sys/bus/otp/ ?
+As far as I can tell, everything in this file can simply become part of the
+staging driver. I'm fine with basically anything that compiles going into
+drivers/staging, but we should keep the platform code outside of staging
+clean of stuff that might have to change as part of the staging process.
 
-> +Date:           March 2011
-> +KernelVersion:  2.6.40+
-> +Contact:        Jamie Iles <jamie@jamieiles.com>
-> +Description:
-> +                The picoxcell-otp bus presents a number of devices where each
-> +		device represents a region in the OTP device in the SoC. Each
-> +		region will create a device node which allows the region to be
-> +		written with read()/write() calls and the device on the bus
-> +		has attributes for controlling the redundancy format and
-> +		getting the region size.
-> +
-> +What:           /sys/bus/picoxcell-otp/devices/.../format
-> +Date:           March 2011
-> +KernelVersion:  2.6.40+
-> +Contact:        Jamie Iles <jamie@jamieiles.com>
-> +Description:
-> +                The redundancy format of the region. Valid values are:
-> +			- single-ended (1 bit of storage per data bit).
-> +			- redundant (2 bits of storage, wire-OR'd per data
-> +			  bit).
-> +			- differential (2 bits of storage, differential
-> +			  voltage per data bit).
-> +			- differential-redundant (4 bits of storage, combining
-> +			  redundant and differential).
-> +		It is possible to increase redundancy of a region but care
-> +		will be needed if there is data already in the region.
-> +
-> +What:           /sys/bus/picoxcell-otp/devices/.../size
-> +Date:           March 2011
-> +KernelVersion:  2.6.40+
-> +Contact:        Jamie Iles <jamie@jamieiles.com>
-> +Description:
-> +                The effective storage size of the region. This is the amount
-> +		of data that a user can store in the region taking into
-> +		account the number of regions and the redundancy format of the
-> +		region itself.
-> diff --git a/Documentation/ABI/testing/sysfs-platform-picoxcell-otp b/Documentation/ABI/testing/sysfs-platform-picoxcell-otp
-> new file mode 100644
-> index 0000000..e5ee711
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-platform-picoxcell-otp
-> @@ -0,0 +1,39 @@
-> +What:		/sys/devices/platform/picoxcell-otp*/write_enable
-
-Why are these in a platform subdirectory?  Shouldn't they be the devices
-listed above in the previous file?
-
-> +Date:		March 2011
-> +KernelVersion:	2.6.40+
-> +Contact:	"Jamie Iles" <jamie@jamieiles.com>
-> +Description:
-> +		This file controls whether the OTP in a Picochip PC3X3
-> +		device can be written to. If set to "enabled" then the
-> +		regions may be written, the number of regions may be
-> +		changed and the format of any region may be changed.
-> +
-> +What:		/sys/devices/platform/picoxcell-otp*/num_regions
-> +Date:		March 2011
-> +KernelVersion:	2.6.40+
-> +Contact:	"Jamie Iles" <jamie@jamieiles.com>
-> +Description:
-> +		This file controls the number of regions in the OTP device.
-> +		Valid values are 1, 2, 4 and 8. The number of regions may be
-> +		increased but never decreased. Increasing the number of
-> +		regions will create new devices on the otp bus.
-> +
-> +What:		/sys/devices/platform/picoxcell-otp*/strict_programming
-> +Date:		March 2011
-> +KernelVersion:	2.6.40+
-> +Contact:	"Jamie Iles" <jamie@jamieiles.com>
-> +Description:
-> +		This file indicates whether all words in a redundant format
-> +		must be programmed correctly to indicate success.  Disabling
-> +		this will mean that programming will be considered a success
-> +		if the word can be read back correctly in it's redundant
-> +		format.
-> +
-> +What:		/sys/devices/platform/picoxcell-otp*/bad_words
-> +Date:		March 2011
-> +KernelVersion:	2.6.40+
-> +Contact:	"Jamie Iles" <jamie@jamieiles.com>
-> +Description:
-> +		Contains a space delimited list of raw addresses that have
-> +		failed to program correctly.  This is non-persistent and may
-> +		be used by userland to work around faulty words.
-
-This isn't a valid sysfs file in that it contains more than a single
-value.  Please fix it or remove it.
-
-> +/*
-> + * Add all of the device entries to sysfs. This also includes creating the
-> + * region device nodes and sysfs entries.
-> + */
-> +static int otp_sysfs_add(struct device *dev)
-> +{
-> +	int err;
-> +
-> +	err = device_create_file(dev, &dev_attr_write_enable);
-> +	if (err)
-> +		goto out;
-> +
-> +	err = device_create_file(dev, &dev_attr_num_regions);
-> +	if (err)
-> +		goto num_regions_fail;
-> +
-> +	err = device_create_file(dev, &dev_attr_bad_words);
-> +	if (err)
-> +		goto bad_words_fail;
-> +
-> +	err = device_create_file(dev, &dev_attr_strict_programming);
-> +	if (err)
-> +		goto strict_programming_fail;
-> +
-
-Shouldn't all of these be in an attribute group like the other sysfs
-files are in this driver?  That way you add/remove them all at once.
-
-thanks,
-
-greg k-h
+	Arnd
