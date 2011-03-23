@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab1CWGfh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 02:35:37 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50546 "EHLO
+	id S1752583Ab1CWGuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 02:50:35 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51810 "EHLO
 	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab1CWGff (ORCPT
+	with ESMTP id S1752285Ab1CWGud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 02:35:35 -0400
-Date: Tue, 22 Mar 2011 23:35:24 -0700
+	Wed, 23 Mar 2011 02:50:33 -0400
+Date: Tue, 22 Mar 2011 23:50:14 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Joe Korty <joe.korty@ccur.com>
-Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "loic.minier@linaro.org" <loic.minier@linaro.org>,
-        "dhaval.giani@gmail.com" <dhaval.giani@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        "houston.jim@comcast.net" <houston.jim@comcast.net>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/9] jrcu: fix broken rcu_barrier
-Message-ID: <20110323063524.GS2322@linux.vnet.ibm.com>
+To: Robert Love <robert.w.love@intel.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
+        Jarek Poplawski <jarkao2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@open-fcoe.org" <devel@open-fcoe.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
+ kfree_rcu()
+Message-ID: <20110323065014.GU2322@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110314035044.GA12990@tsunami.ccur.com>
- <20110314084718.GH2167@linux.vnet.ibm.com>
- <20110314220928.GA1348@tsunami.ccur.com>
+References: <4D82D071.5020703@cn.fujitsu.com>
+ <4D82D3FF.2080303@cn.fujitsu.com>
+ <4D82D45A.30102@cn.fujitsu.com>
+ <1300814913.19083.427.camel@fritz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110314220928.GA1348@tsunami.ccur.com>
+In-Reply-To: <1300814913.19083.427.camel@fritz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 06:09:28PM -0400, Joe Korty wrote:
-> On Mon, Mar 14, 2011 at 04:47:18AM -0400, Paul E. McKenney wrote:
-> > On Sun, Mar 13, 2011 at 11:50:44PM -0400, Joe Korty wrote:
-> > > +void rcu_barrier(void)
-> > > +{
-> > > +	synchronize_sched();
-> > > +	synchronize_sched();
-> > > +}
+On Tue, Mar 22, 2011 at 10:28:33AM -0700, Robert Love wrote:
+> On Thu, 2011-03-17 at 20:41 -0700, Lai Jiangshan wrote:
 > > 
-> > This is still broken.  You need to wait until all pre-existing RCU
-> > callbacks on all CPUs have been invoked.  Although this does guarantee
-> > that all callbacks on the current CPU have been invoked, if one of the
-> > other CPUs is busy, it might not yet have processed the callbacks from
-> > earlier grace periods.  The usual way to take care of this is to post
-> > a callback on each CPU, then wait for them all to be invoked.
+> > The rcu callback fc_rport_free_rcu() just calls a kfree(),
+> > so we use kfree_rcu() instead of the call_rcu(fc_rport_free_rcu).
+> > 
+> > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > ---
+> >  drivers/scsi/libfc/fc_rport.c |   14 +-------------
+> >  1 files changed, 1 insertions(+), 13 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/libfc/fc_rport.c b/drivers/scsi/libfc/fc_rport.c
+> > index a7175ad..29abab0 100644
+> > --- a/drivers/scsi/libfc/fc_rport.c
+> > +++ b/drivers/scsi/libfc/fc_rport.c
+> > @@ -151,18 +151,6 @@ static struct fc_rport_priv *fc_rport_create(struct fc_lport *lport,
+> >  }
+> >  
+> >  /**
+> > - * fc_rport_free_rcu() - Free a remote port
+> > - * @rcu: The rcu_head structure inside the remote port
+> > - */
+> > -static void fc_rport_free_rcu(struct rcu_head *rcu)
+> > -{
+> > -	struct fc_rport_priv *rdata;
+> > -
+> > -	rdata = container_of(rcu, struct fc_rport_priv, rcu);
+> > -	kfree(rdata);
+> > -}
+> > -
+> > -/**
+> >   * fc_rport_destroy() - Free a remote port after last reference is released
+> >   * @kref: The remote port's kref
+> >   */
+> > @@ -171,7 +159,7 @@ static void fc_rport_destroy(struct kref *kref)
+> >  	struct fc_rport_priv *rdata;
+> >  
+> >  	rdata = container_of(kref, struct fc_rport_priv, kref);
+> > -	call_rcu(&rdata->rcu, fc_rport_free_rcu);
+> > +	kfree_rcu(rdata, rcu);
 > 
-> Hi Paul,
-> JRCU (eventually) chains together all callbacks from all
-> cpus into a single queue and then it expires that single
-> queue.  So the double synchronize_sched() should work as
-> a rcu_barrier implementation.
+> I think this last line should be:
+> 
+> kfree_rcu(rdata, &rdata->rcu);
 
-Hello, Joe,
+Hello, Robert,
 
-So the following grace period is not permitted to start until all of
-the callbacks from the prior grace period have been invoked?
+I believe that it is correct as is.  The kfree_rcu() definition is as
+follows:
 
-Or am I missing something subtle here?
+#define kfree_rcu(ptr, rcu_head)					\
+	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
+
+Then __kfree_rcu() encodes the offset into the rcu_head so that it can
+be handled properly at the end of the grace period.
 
 							Thanx, Paul
