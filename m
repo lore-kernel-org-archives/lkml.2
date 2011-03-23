@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab1CWHXh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 03:23:37 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:58556 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752373Ab1CWHXf convert rfc822-to-8bit (ORCPT
+	id S1753759Ab1CWHZa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 03:25:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45321 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab1CWHZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 03:23:35 -0400
-X-Amavis-Alert: BAD HEADER SECTION, Improper folded header field made up
-	entirely of whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n
-	jycPrvgA\n\t\n R1goSzOnkp14Y[...]
-Subject: Re: [git pull] drm fixes
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Dave Airlie <airlied@linux.ie>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-In-Reply-To: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA	
- R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 23 Mar 2011 08:23:18 +0100
-Message-ID: <1300864998.3522.71.camel@thor.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Wed, 23 Mar 2011 03:25:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=UruZrVOD/LQCB0IFTFGclOdZeauIrWutslnwIXekyom7c4qveBhd193nMkdcZIYTGe
+         Rd2OV17cqLGD/IPni8CGWf8fvjSjEpKXzXP3GgvkqdOIrJ8MqDfgscFgr/VlvUfN3hVi
+         irBzuSxD73kPnuOrO4rwE84VTEwT624psGgzo=
+Date: Wed, 23 Mar 2011 08:25:24 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu: cast away printk format warning
+Message-ID: <20110323072524.GT12003@htj.dyndns.org>
+References: <1300826388-22881-1-git-send-email-vapier@gentoo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300826388-22881-1-git-send-email-vapier@gentoo.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2011-03-23 at 04:18 +0000, Dave Airlie wrote: 
+On Tue, Mar 22, 2011 at 04:39:48PM -0400, Mike Frysinger wrote:
+> On 32-bit systems which don't happen to implicitly define or cast
+> VMALLOC_START and/or VMALLOC_END to long in their arch headers, the
+> printk in the percpu code will cause a warning to be emitted:
 > 
-> One radeon, 2 core fixes, and an interface update to allow for > 2 crtcs 
-> in vblank.
+> mm/percpu.c: In function 'pcpu_embed_first_chunk':
+> mm/percpu.c:1648: warning: format '%lx' expects type 'long unsigned int',
+> 	but argument 3 has type 'unsigned int'
+> 
+> So add an explicit cast to unsigned long here.
+> 
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 
-[...]
+Applied to percpu:fixes-2.6.39 with slight reformatting to avoid going
+over 80 column.
 
-> Ilija Hadzic (1):
->       drm/kernel: vblank wait on crtc > 1
-
-This patch was still being debated yesterday, are you deliberately
-pushing it regardless? Once it hits mainline, it'll be pretty much set
-in stone.
-
+Thanks.
 
 -- 
-Earthling Michel Dänzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
+tejun
