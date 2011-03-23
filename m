@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab1CWOeV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:34:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46877 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754249Ab1CWOeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:34:19 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-aio@kvack.org
-Subject: Re: Any USB gadget AIO interface users?
-References: <20110322171251.GA4455@xanatos>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 23 Mar 2011 10:34:08 -0400
-In-Reply-To: <20110322171251.GA4455@xanatos> (Sarah Sharp's message of "Tue,
-	22 Mar 2011 10:12:51 -0700")
-Message-ID: <x49vcz9c3dr.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1755849Ab1CWOfe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:35:34 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58126 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751109Ab1CWOfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:35:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110323171051.1ADA.A69D9226@jp.fujitsu.com>
+References: <20110322200945.B06D.A69D9226@jp.fujitsu.com> <20110323164949.5be6aa48.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110323171051.1ADA.A69D9226@jp.fujitsu.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 23 Mar 2011 07:34:43 -0700
+Message-ID: <AANLkTimLbaMTHKiuWu5edS4Offf4KZv2TJ+g8BUgzLYt@mail.gmail.com>
+Subject: Re: [PATCH 5/5] x86,mm: make pagefault killable
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        Andrey Vagin <avagin@openvz.org>, Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sarah Sharp <sarah.a.sharp@linux.intel.com> writes:
-
-> Has anyone successfully used the asynchronous I/O gadgetfs interface
-> before?  Specifically, has anyone used it for high-bandwidth isochronous
-> traffic?
+On Wed, Mar 23, 2011 at 1:09 AM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
 >
-> I ask because I remember discovering about four years ago that there
-> were several brain-twisty bugs in the in-kernel asynchronous I/O layer
-> that gadgetfs uses.
+> When __lock_page_or_retry() return 0, It call up_read(mmap_sem) in this
+> function.
 
-Weren't they addressed?  And are you looking to use the gadgetfs aio
-interface now, or are you looking to get rid of it?  In other words,
-what's the real motivation behind the question?
+Indeed.
 
-> The AIO core also seemed to be largely unmaintained.  Is this still
-> true?
+> I agree this is strange (or ugly). but I don't want change this spec in
+> this time.
 
-Surely you should at least cc the aio list when asking such a question!
-Anyway, the aio core is maintained by several folks, but nobody is doing
-active development in that area, to my knowledge.
+I agree that it is strange, and I don't like functions that touch
+locks that they didn't take themselves, but since the original point
+of the whole thing was to wait for the page without holding the
+mmap_sem lock, that function has to do the up_read() early.
 
-Cheers,
-Jeff
+                   Linus
