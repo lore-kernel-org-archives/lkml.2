@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab1CWRV2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 13:21:28 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:51611 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320Ab1CWRV1 convert rfc822-to-8bit (ORCPT
+	id S1756004Ab1CWRXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 13:23:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53712 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab1CWRXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 13:21:27 -0400
+	Wed, 23 Mar 2011 13:23:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=HixpfuNjgDJwMyLqEMn5S40t8bDq+nH6WCiHCvp5yfcSUkqGErOkUwVbBKY0JYCgiQ
-         bI3elYcEmlvtdAAfXyeA==
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Cik8RxCs7B4v/DDbixHzz6jOogQx9Nn2R3+jazm8IwTiLrZ3ZQNpCeQnkxSd7VXfIR
+         2/eC5gDPspjcl2HZqmTusUzQgeZl16NiGm6mhPgddudyDXD8OqCTlLKbBdNhDgYtubze
+         MtZeNl8t7GY0QhUrtnMQlKJkZQ9s2hPtuY9VI=
+Date: Wed, 23 Mar 2011 18:22:32 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 1/8] job control: Don't set group_stop exit_code if
+ re-entering job control stop
+Message-ID: <20110323172232.GH12003@htj.dyndns.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+ <1299614199-25142-2-git-send-email-tj@kernel.org>
+ <20110321132024.GA18777@redhat.com>
+ <20110321155250.GE12003@htj.dyndns.org>
+ <20110322184415.GA28038@redhat.com>
+ <20110323084421.GW12003@htj.dyndns.org>
+ <20110323164014.GA22527@redhat.com>
+ <20110323170236.GF12003@htj.dyndns.org>
+ <20110323170920.GB24304@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110323135241.4ada8334.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1300835335-2777-1-git-send-email-teravest@google.com>
- <1300835335-2777-3-git-send-email-teravest@google.com> <20110323135241.4ada8334.kamezawa.hiroyu@jp.fujitsu.com>
-From: Justin TerAvest <teravest@google.com>
-Date: Wed, 23 Mar 2011 10:21:01 -0700
-Message-ID: <AANLkTinnDTa8_rVorBsacm-uHqJSA=JbYM9RKXswd8Sr@mail.gmail.com>
-Subject: Re: [PATCH v2 2/8] block,fs,mm: IO cgroup tracking for buffered write
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: vgoyal@redhat.com, jaxboe@fusionio.com, m-ikeda@ds.jp.nec.com,
-        ryov@valinux.co.jp, taka@valinux.co.jp, righi.andrea@gmail.com,
-        guijianfeng@cn.fujitsu.com, balbir@linux.vnet.ibm.com,
-        ctalbott@google.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110323170920.GB24304@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 9:52 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Tue, 22 Mar 2011 16:08:49 -0700
-> Justin TerAvest <teravest@google.com> wrote:
->
->> +static inline void page_cgroup_set_blkio_id(struct page_cgroup *pc,
->> +                             unsigned long id)
->> +{
->> +     unsigned long old, new, prev;
->> +
->> +     /* pc->flags isn't lock protected, so we must cmpxchg. */
->> +     WARN_ON(id >= (1UL << PAGE_TRACKING_ID_BITS));
->> +     do {
->> +             new = old = pc->flags;
->> +             new &= (1UL << PAGE_TRACKING_ID_SHIFT) - 1;
->> +             new |= (unsigned long)(id << PAGE_TRACKING_ID_SHIFT);
->> +             prev = cmpxchg(&pc->flags, old, new);
->> +     } while (prev != old);
->
-> How to support archs which doesn't have cmpxchg ?
-> At least, you need take care of compile error.
+Hello,
 
-Hi Kame,
+On Wed, Mar 23, 2011 at 06:09:20PM +0100, Oleg Nesterov wrote:
+> On 03/23, Tejun Heo wrote:
+> > > "someone else" can be PTRACE_CONT(SIGSTOP) from the debugger.
+> >
+> > The debugger should be doing PTRACE_CONT(notified_signo).
+> 
+> Why? it can change the signal.
 
-Is there really no generic cmpxchg()? I thought that was what
-include/asm-generic/cmpxchg-local.h was for.
+Yeah, sure, it can but then it gets to live with the consequences,
+which is the changed signal being reported.  In fact, in such case, I
+think reporting the changed signal is the right thing to do(tm).
 
-Thanks,
-Justin
+Thanks.
 
->
-> Thanks,
-> -Kame
->
->
+-- 
+tejun
