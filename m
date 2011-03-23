@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab1CWOuk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:50:40 -0400
-Received: from mout.perfora.net ([74.208.4.195]:60219 "EHLO mout.perfora.net"
+	id S932927Ab1CWOvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:51:13 -0400
+Received: from mout.perfora.net ([74.208.4.195]:58628 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932438Ab1CWOui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:50:38 -0400
+	id S932361Ab1CWOvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:51:11 -0400
 From: Stephen Wilson <wilsons@start.ca>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -19,46 +19,188 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
         Hugh Dickins <hughd@google.com>, x86@kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH v2 resend 09/12] proc: disable mem_write after exec
-Date: Wed, 23 Mar 2011 10:43:58 -0400
-Message-Id: <1300891441-16280-10-git-send-email-wilsons@start.ca>
+Subject: [PATCH v2 resend 11/12] proc: make check_mem_permission() return an mm_struct on success
+Date: Wed, 23 Mar 2011 10:44:00 -0400
+Message-Id: <1300891441-16280-12-git-send-email-wilsons@start.ca>
 X-Mailer: git-send-email 1.7.3.5
 In-Reply-To: <1300891441-16280-1-git-send-email-wilsons@start.ca>
 References: <1300891441-16280-1-git-send-email-wilsons@start.ca>
-X-Provags-ID: V02:K0:sYBGW34gTgzVBZLhbI0Ev9Lhbe8+CdEghamowS/hrk0
- laqrxXzrayFio5Y7U+e7T+LJqK4MD6frUAsSrlRqiuSk0XJC9X
- K1FXkfNNHxjfnVjfxB4c/hi4mzIbtcCC7AmQxiZZZWPaYnBwLQ
- iKinbZHtHmAT36NyZO2okcnfkaju20H/VzO4vv2C9fGwg0qQDy
- FCJ/1rUTGbwAoRmygvQdXWVuTQ3PQl7vA34c+epkrg=
+X-Provags-ID: V02:K0:Lr/7cybrWA3rDRyXw2Woo0zQ8DGOrKxU9+qJIiB6tdq
+ NslA8rLRwCDIfe2/rUgd13LrJEAPMUDAFkJO0kdwlyaKxuiQ9V
+ DdGyeVk/YNeDXgNm0+RGaK4867jSWBQ3lYLUoqi8d73rvZMC6h
+ vzVfHfnSm9VbH4XvY8WjmB6HsSsySbFhhZPCSf0XauW10xEsLo
+ AEeHHi8FLuGNJnyv4RxJEllUIxq6lvgBJOc9XLZnwQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes mem_write() observe the same constraints as mem_read().  This
-is particularly important for mem_write as an accidental leak of the fd across
-an exec could result in arbitrary modification of the target process' memory.
-IOW, /proc/pid/mem is implicitly close-on-exec.
+This change allows us to take advantage of access_remote_vm(), which in turn
+eliminates a security issue with the mem_write() implementation.
+
+The previous implementation of mem_write() was insecure since the target task
+could exec a setuid-root binary between the permission check and the actual
+write.  Holding a reference to the target mm_struct eliminates this
+vulnerability.
 
 Signed-off-by: Stephen Wilson <wilsons@start.ca>
 ---
- fs/proc/base.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ fs/proc/base.c |   58 ++++++++++++++++++++++++++++++++-----------------------
+ 1 files changed, 34 insertions(+), 24 deletions(-)
 
 diff --git a/fs/proc/base.c b/fs/proc/base.c
-index d49c4b5..13c5e8c 100644
+index 084d046..ebe3c47 100644
 --- a/fs/proc/base.c
 +++ b/fs/proc/base.c
-@@ -848,6 +848,10 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
- 	if (check_mem_permission(task))
+@@ -191,14 +191,20 @@ static int proc_root_link(struct inode *inode, struct path *path)
+ 	return result;
+ }
+ 
+-static int __check_mem_permission(struct task_struct *task)
++static struct mm_struct *__check_mem_permission(struct task_struct *task)
+ {
++	struct mm_struct *mm;
++
++	mm = get_task_mm(task);
++	if (!mm)
++		return ERR_PTR(-EINVAL);
++
+ 	/*
+ 	 * A task can always look at itself, in case it chooses
+ 	 * to use system calls instead of load instructions.
+ 	 */
+ 	if (task == current)
+-		return 0;
++		return mm;
+ 
+ 	/*
+ 	 * If current is actively ptrace'ing, and would also be
+@@ -210,20 +216,23 @@ static int __check_mem_permission(struct task_struct *task)
+ 		match = (tracehook_tracer_task(task) == current);
+ 		rcu_read_unlock();
+ 		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
+-			return 0;
++			return mm;
+ 	}
+ 
+ 	/*
+ 	 * Noone else is allowed.
+ 	 */
+-	return -EPERM;
++	mmput(mm);
++	return ERR_PTR(-EPERM);
+ }
+ 
+ /*
+- * Return zero if current may access user memory in @task, -error if not.
++ * If current may access user memory in @task return a reference to the
++ * corresponding mm, otherwise ERR_PTR.
+  */
+-static int check_mem_permission(struct task_struct *task)
++static struct mm_struct *check_mem_permission(struct task_struct *task)
+ {
++	struct mm_struct *mm;
+ 	int err;
+ 
+ 	/*
+@@ -232,12 +241,12 @@ static int check_mem_permission(struct task_struct *task)
+ 	 */
+ 	err = mutex_lock_killable(&task->signal->cred_guard_mutex);
+ 	if (err)
+-		return err;
++		return ERR_PTR(err);
+ 
+-	err = __check_mem_permission(task);
++	mm = __check_mem_permission(task);
+ 	mutex_unlock(&task->signal->cred_guard_mutex);
+ 
+-	return err;
++	return mm;
+ }
+ 
+ struct mm_struct *mm_for_maps(struct task_struct *task)
+@@ -793,18 +802,14 @@ static ssize_t mem_read(struct file * file, char __user * buf,
+ 	if (!task)
+ 		goto out_no_task;
+ 
+-	if (check_mem_permission(task))
+-		goto out;
+-
+ 	ret = -ENOMEM;
+ 	page = (char *)__get_free_page(GFP_TEMPORARY);
+ 	if (!page)
  		goto out;
  
-+	copied = -EIO;
-+	if (file->private_data != (void *)((long)current->self_exec_id))
-+		goto out;
-+
+-	ret = 0;
+- 
+-	mm = get_task_mm(task);
+-	if (!mm)
++	mm = check_mem_permission(task);
++	ret = PTR_ERR(mm);
++	if (IS_ERR(mm))
+ 		goto out_free;
+ 
+ 	ret = -EIO;
+@@ -818,8 +823,8 @@ static ssize_t mem_read(struct file * file, char __user * buf,
+ 		int this_len, retval;
+ 
+ 		this_len = (count > PAGE_SIZE) ? PAGE_SIZE : count;
+-		retval = access_process_vm(task, src, page, this_len, 0);
+-		if (!retval || check_mem_permission(task)) {
++		retval = access_remote_vm(mm, src, page, this_len, 0);
++		if (!retval) {
+ 			if (!ret)
+ 				ret = -EIO;
+ 			break;
+@@ -858,22 +863,25 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 	char *page;
+ 	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+ 	unsigned long dst = *ppos;
++	struct mm_struct *mm;
+ 
+ 	copied = -ESRCH;
+ 	if (!task)
+ 		goto out_no_task;
+ 
+-	if (check_mem_permission(task))
+-		goto out;
++	mm = check_mem_permission(task);
++	copied = PTR_ERR(mm);
++	if (IS_ERR(mm))
++		goto out_task;
+ 
+ 	copied = -EIO;
+ 	if (file->private_data != (void *)((long)current->self_exec_id))
+-		goto out;
++		goto out_mm;
+ 
  	copied = -ENOMEM;
  	page = (char *)__get_free_page(GFP_TEMPORARY);
  	if (!page)
+-		goto out;
++		goto out_mm;
+ 
+ 	copied = 0;
+ 	while (count > 0) {
+@@ -884,7 +892,7 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 			copied = -EFAULT;
+ 			break;
+ 		}
+-		retval = access_process_vm(task, dst, page, this_len, 1);
++		retval = access_remote_vm(mm, dst, page, this_len, 1);
+ 		if (!retval) {
+ 			if (!copied)
+ 				copied = -EIO;
+@@ -897,7 +905,9 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 	}
+ 	*ppos = dst;
+ 	free_page((unsigned long) page);
+-out:
++out_mm:
++	mmput(mm);
++out_task:
+ 	put_task_struct(task);
+ out_no_task:
+ 	return copied;
 -- 
 1.7.3.5
 
