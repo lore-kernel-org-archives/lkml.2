@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932972Ab1CWPQO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:16:14 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:36482 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755570Ab1CWPQN (ORCPT
+	id S933010Ab1CWPRe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:17:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45506 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932996Ab1CWPRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:16:13 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBABariU1Ld/sX/2dsb2JhbAAMhDjVSJBigSeBWIFzdwSZPw
-X-IronPort-AV: E=Sophos;i="4.63,231,1299474000"; 
-   d="scan'208";a="97702680"
-Message-ID: <4D8A0EBA.6060202@teksavvy.com>
-Date: Wed, 23 Mar 2011 11:16:10 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Wed, 23 Mar 2011 11:17:33 -0400
+Date: Wed, 23 Mar 2011 11:17:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Roger Quadros <roger.quadros@nokia.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+cc: gregkh@suse.de, <sshtylyov@mvista.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] usb: gadget: file_storage: Make CD-ROM emulation
+ work with Mac OS-X
+In-Reply-To: <4D89AD56.1080602@nokia.com>
+Message-ID: <Pine.LNX.4.44L0.1103231110400.2211-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Herbert Poetzl <herbert@13thfloor.at>, linux-kernel@vger.kernel.org,
-        Bernhard Kaindl <bk@suse.de>, Andi Kleen <andi@firstfloor.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: debugging a modern laptop ...
-References: <Pine.LNX.4.44L0.1103231102050.2211-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1103231102050.2211-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-03-23 11:04 AM, Alan Stern wrote:
-> On Wed, 23 Mar 2011, Herbert Poetzl wrote:
+On Wed, 23 Mar 2011, Roger Quadros wrote:
+
+> > On the other hand, I don't think any implementations would get upset if
+> > we simply ended the transfer with a short packet instead of adhering
+> > strictly to the spec.
+> >
+> > The patch below should do what you want.  I haven't tested it.
 > 
->>
->> Greetings!
->>
->> I'm trying to evaluate my options on debugging a recent
->> laptop/notebook/table (and the Linux kernel on it of course) 
->> from early bootup to diagnostics when the machine has locked up ...
-..
-> There _is_ support for a USB console (see CONFIG_USB_SERIAL_CONSOLE).  
-> However it may not be useful for diagnosing problems during boot,
-> because obviously the console won't operate until the USB stack is in
-> place and running.
-..
+> I tried your patch with the CD-ROM implementation and it works perfectly. I do 
+> not see the unnecessary zero padded transfers any more.
+> 
+> Do you think we should have this patch in? with the risk of not strictly 
+> adhering to spec for cases where controller cannot stall?
 
-If you are lucky enough to have an ExpressCard slot on the notebook,
-then lots of eBay sellers offer "Oxford chipset" serial/parallel ports
-in ExpressCard format.
+There already is another place where not stalling forces the driver to 
+violate the spec.  I don't think this makes things much worse... but it 
+is a significant change in behavior.
 
-These provide "true" bus serial ports, which can be used as Linux consoles
-for low level kernel debugging, logs, panics, etc..
+This affects Michal's driver too; we should ask his opinion.  Michal, 
+in case you didn't see it, the proposed patch is here:
 
-As a bonus, he parallel ports from the same chips can be used
-for homebrew JTAG adapters.
+	http://marc.info/?l=linux-usb&m=130080683528607&w=2
 
--ml
+> Maybe the term "controller cannot stall" itself does not adhere to bulk-only 
+> transport spec :).
+
+True enough.  However I believe USB flash drives behave this way: They 
+don't stall and they don't pad their data.
+
+> > @@ -1710,24 +1683,19 @@ static int finish_reply(struct fsg_commo
+> >   			common->next_buffhd_to_fill = bh->next;
+> >
+> >   		/*
+> > -		 * For Bulk-only, if we're allowed to stall then send the
+> > -		 * short packet and halt the bulk-in endpoint.  If we can't
+> > -		 * stall, pad out the remaining data with 0's.
+> > +		 * For Bulk-only, mark the end of the data with a short
+> > +		 * packet.  If we are allowed to stall, halt the bulk-in
+> > +		 * endpoint.  (Note: This violates the Bulk-Only Transport
+> > +		 * specification, which requires us to pad the data if we
+> 
+> violates the spec only if we are not allowed to stall (i.e. stall=n) right?
+
+Right.
+
+> > +		 * don't halt the endpoint.  Presumably nobody will mind.)
+> >   		 */
+
+Alan Stern
+
