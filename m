@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab1CWOyV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:54:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54690 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932337Ab1CWOyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:54:20 -0400
-Date: Wed, 23 Mar 2011 10:54:18 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Juerg Haefliger <juergh@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Support for global block IO throttling?
-Message-ID: <20110323145418.GE13315@redhat.com>
-References: <AANLkTikEYDdL08=DdJ7fLR08r6sWDCHbNoOuGhxGhm7G@mail.gmail.com>
- <20110323142505.GD13315@redhat.com>
- <AANLkTi=EoPKcBE1miW_-RHgHTBCSDKJ1My=Z40rrhm1x@mail.gmail.com>
-MIME-Version: 1.0
+	id S933002Ab1CWOyv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:54:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22657 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932337Ab1CWOyt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:54:49 -0400
+Subject: Re: [bisect] kernel 2.6.38 regression with root nfs mounting
+Mime-Version: 1.0 (Apple Message framework v1082)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=EoPKcBE1miW_-RHgHTBCSDKJ1My=Z40rrhm1x@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <AANLkTik0UgB+k2i=E5t9XcF50SoSr_iXaFYrhctDx0FJ@mail.gmail.com>
+Date: Wed, 23 Mar 2011 10:54:39 -0400
+Cc: Trond.Myklebust@netapp.com, broonie@opensource.wolfsonmicro.com,
+        bdowning@lavos.net, linux-nfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8F19F0FE-0800-4C45-B857-1C682CF6A30D@oracle.com>
+References: <AANLkTimjmdi8sFTTjSPerOVgHQ+pjjwwMvCUX3AJ16At@mail.gmail.com> <43F07477-9075-444D-9BBB-368650538EA8@oracle.com> <AANLkTinHUQkBvcvh9APVutOqcKOug6CA066kS_O4p4Tq@mail.gmail.com> <DC2B75F8-382A-4AFB-9286-4A55EAF7609A@oracle.com> <AANLkTikWyUbtHbbnSh8NBeP3mT4jDOu5Pbtfw=TwKrwE@mail.gmail.com> <977C528D-4540-4EB2-92F9-6DAF357D8C81@oracle.com> <AANLkTik0UgB+k2i=E5t9XcF50SoSr_iXaFYrhctDx0FJ@mail.gmail.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+X-Mailer: Apple Mail (2.1082)
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020207.4D8A09B4.0028,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 03:39:28PM +0100, Juerg Haefliger wrote:
-> Hi Vivek,
-> 
-> >> Are there any plans to support global (per cgroup) IO throttling in
-> >> the near future? I'm in need of this and would gladly work on it if
-> >> nobody else is and if people think this is a useful feature. What I
-> >> envision is that one can specify the limits of individual devices in a
-> >> group but also specify the overall aggregate limit of the whole group.
-> >> I just started looking at the throttling code and haven't quite
-> >> figured it out yet so it might take me a bit to get up to speed.
-> >
-> > Hi Juerg,
-> >
-> > What's the use case? Why do you need global block IO throttling?
-> 
-> Resource management for guest VMs. I want to make sure a VM cannot
-> exceed a certain IO limit. If the VM does IOs to only one device, it
-> gets the full specified bandwidth to that single device but if the VM
-> talks to multiple devices, it only gets a fraction of the global
-> bandwidth per device, not exceeded the global limit.
 
-Can't we specify per device limit for VM if VM is doing IO to multiple
-devices?
+On Mar 23, 2011, at 10:30 AM, Belisko Marek wrote:
 
-I know it is not exact replacement of global limits as one has to know
-the topology and figure out to what all devices IO is happening. This
-might get even more difficult if VM's disk is a file on filesystem on
-host and not a device directly eported to guest.
+> On Wed, Mar 23, 2011 at 3:06 PM, Chuck Lever <chuck.lever@oracle.com> wrote:
+>> 
+>> On Mar 23, 2011, at 9:46 AM, Belisko Marek wrote:
+>> 
+>>> On Wed, Mar 23, 2011 at 2:44 PM, Chuck Lever <chuck.lever@oracle.com> wrote:
+>>>> 
+>>>> What does "rpcinfo -p 10.146.1.21" output look like?  Is NFS over UDP enabled on your server?
+>>> program vers proto   port
+>>>    100000    2   tcp    111  portmapper
+>>>    100000    2   udp    111  portmapper
+>>>    100024    1   udp  40517  status
+>>>    100024    1   tcp  51397  status
+>>>    100021    1   udp  44516  nlockmgr
+>>>    100021    3   udp  44516  nlockmgr
+>>>    100021    4   udp  44516  nlockmgr
+>>>    100021    1   tcp  55152  nlockmgr
+>>>    100021    3   tcp  55152  nlockmgr
+>>>    100021    4   tcp  55152  nlockmgr
+>>>    100003    2   tcp   2049  nfs
+>>>    100003    3   tcp   2049  nfs
+>>>    100003    4   tcp   2049  nfs
+>>>    100227    2   tcp   2049
+>>>    100227    3   tcp   2049
+>>>    100003    2   udp   2049  nfs
+>>>    100003    3   udp   2049  nfs
+>>>    100003    4   udp   2049  nfs
 
-Somebody also had mentioned that if we have mutiple layers of qemu
-snapshots and if snapshots are sitting on different logical devices
-then it becomes hard to figure out where all VM traffic is going
-and how to even divide global limits in per device limits 
+The server is advertising NFS over UDP.  Why can't a client access your server via UDP?  What happens if you perform a normal post-boot mount of this file system via UDP?
 
-Also current IO controller does not work for NFS. So if a global limit
-is imposed in higher layers it will solve that issue too.
+>>>    100227    2   udp   2049
+>>>    100227    3   udp   2049
+>>>    100005    1   udp  58278  mountd
+>>>    100005    1   tcp  37178  mountd
+>>>    100005    2   udp  58278  mountd
+>>>    100005    2   tcp  37178  mountd
+>>>    100005    3   udp  58278  mountd
+>>>    100005    3   tcp  37178  mountd
+>> 
+>> Can you boot if you specify either the "tcp" or "proto=tcp" NFSROOT mount options?
+> When add proto=tcp to bootargs it boot fine
+> (....nfsroot=10.146.1.21:/home/open-nandra/rootfs,proto=tcp....).
+>> Perhaps a network trace would be probative.  Capture on the server with "tcpdump -s0 -w /tmp/foo ip 10.146.1.199" (untested, but I think you get the idea) while the client is attempting to boot, and post.
+> Log is attached in attachment (too big 4.8M). Correct form is: tcpdump
+> -s0 -w /tmp/foo host 10.146.1.199
 
-Also if you implement it above page cache then it should automatically
-handle the case of async writes too. The downside is that if limits
-are low, buffered writers will be throttled very frequently.
+Received.  I should have been clear: Please capture a non-working client boot attempt.  To reduce the size of the attachment, strip the TFTP packets before sending, and please gzip the file.
 
-So in general, I think global limits is a useful concept. Do you have
-a implementation ready?
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
 
-Thanks
-Vivek
+
+
+
