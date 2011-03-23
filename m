@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933509Ab1CWUuw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 16:50:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35428 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933323Ab1CWUuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 16:50:51 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-aio@kvack.org
-Subject: Re: Any USB gadget AIO interface users?
-References: <20110322171251.GA4455@xanatos>
-	<x49vcz9c3dr.fsf@segfault.boston.devel.redhat.com>
-	<20110323190205.GC5947@xanatos>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 23 Mar 2011 16:50:40 -0400
-In-Reply-To: <20110323190205.GC5947@xanatos> (Sarah Sharp's message of "Wed,
-	23 Mar 2011 12:02:05 -0700")
-Message-ID: <x49oc51o927.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S933525Ab1CWUvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 16:51:15 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48488 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933323Ab1CWUvO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 16:51:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=AGEPSX+kMMgWhSg7JptgKdADNSPQA3XpfpPSMekS3d53QTnL3Yp4zqj/oUcA+AgMLh
+         dqkTgD8zrJcG52qvyehRpY1tg69biSJAW+FwCK3u1LWaLDYvtLhrcm/TLIhAoNejKTFC
+         puJjim9Xo67opIGpShMfu9fmD61sGRRaNghGw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1297838092-22989-4-git-send-email-johnstul@us.ibm.com>
+References: <1297838092-22989-1-git-send-email-johnstul@us.ibm.com> <1297838092-22989-4-git-send-email-johnstul@us.ibm.com>
+From: Matt Turner <mattst88@gmail.com>
+Date: Wed, 23 Mar 2011 20:50:53 +0000
+Message-ID: <AANLkTi=4NGQpacDwzVrdyTs-KAZwMvmCqSqukc4aERMS@mail.gmail.com>
+Subject: Re: [PATCH 3/6] alpha: convert to clocksource_register_hz
+To: John Stultz <johnstul@us.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sarah Sharp <sarah.a.sharp@linux.intel.com> writes:
-
-> On Wed, Mar 23, 2011 at 10:34:08AM -0400, Jeff Moyer wrote:
->> Sarah Sharp <sarah.a.sharp@linux.intel.com> writes:
->> 
->> > Has anyone successfully used the asynchronous I/O gadgetfs interface
->> > before?  Specifically, has anyone used it for high-bandwidth isochronous
->> > traffic?
->> >
->> > I ask because I remember discovering about four years ago that there
->> > were several brain-twisty bugs in the in-kernel asynchronous I/O layer
->> > that gadgetfs uses.
->> 
->> Weren't they addressed?  And are you looking to use the gadgetfs aio
->> interface now, or are you looking to get rid of it?  In other words,
->> what's the real motivation behind the question?
+On Wed, Feb 16, 2011 at 6:34 AM, John Stultz <johnstul@us.ibm.com> wrote:
+> Converts alpha to use clocksource_register_hz.
 >
-> I was looking to use it.  The bug in question I remember was about
-> cancellation, but I would have to dig in my mailbox from 2007 to find
-> the exact issue.
-
-Reference counting in that path is usually the tricky part to get right.
-We had one person looking to make use of aio in his driver, iirc, and
-that was a major concern of his, as well.  If we can get both of your
-requirements together, maybe we can make progress.
-
-> The biggest problem I remember when I was looking at using the aio core
-> to replace the ioctls in the usbfs subsystem with true aio operations
-> was there was an issue with operation ordering.  In the kernel to
-> userspace interface for USB, we want asynchronous operations to a
-> particular file to be queued to the hardware in the order they are
-> submitted.  So if the userspace application submits asynchronous read A,
-> then asynchronous read B, then the buffer for read B doesn't get queued
-> to the USB host controller before the buffer for read A.  Otherwise you
-> get transmission reordering on the bus, and USB devices aren't very
-> happy.
-
-The AIO infrastructure doesn't guarantee that.  It does the setup
-required in the context of the calling process, and then queues the
-operation to the underlying "device" (where device, in most cases, is a
-file or a block device, which means submit_bio is called).  After that,
-the AIO code has no control over ordering.  If there are specific
-ordering requirements in the application, then maybe AIO isn't the right
-fit.  I don't know enough about your application to say.
-
->> > The AIO core also seemed to be largely unmaintained.  Is this still
->> > true?
->> 
->> Surely you should at least cc the aio list when asking such a question!
->> Anyway, the aio core is maintained by several folks, but nobody is doing
->> active development in that area, to my knowledge.
+> Patch is untested, so help from maintainers would be appreciated.
 >
-> Sorry, I forgot the aio mailing list existed. :)  In 2007, there was
-> lots of talk of using syslets or fibrils in the aio core, and Zack Brown
-> had some patches for that, but it seemed like nothing really came out of
-> that.  Has anything new been added to the AIO core since then?
+> Signed-off-by: John Stultz <johnstul@us.ibm.com>
+> CC: Richard Henderson <rth@twiddle.net>
+> CC: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+> CC: Matt Turner <mattst88@gmail.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  arch/alpha/kernel/time.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/alpha/kernel/time.c b/arch/alpha/kernel/time.c
+> index c1f3e7c..33b8110 100644
+> --- a/arch/alpha/kernel/time.c
+> +++ b/arch/alpha/kernel/time.c
+> @@ -378,8 +378,7 @@ static struct clocksource clocksource_rpcc = {
+>
+>  static inline void register_rpcc_clocksource(long cycle_freq)
+>  {
+> -       clocksource_calc_mult_shift(&clocksource_rpcc, cycle_freq, 4);
+> -       clocksource_register(&clocksource_rpcc);
+> +       clocksource_register_hz(&clocksource_rpcc, cycle_freq);
+>  }
+>  #else /* !CONFIG_SMP */
+>  static inline void register_rpcc_clocksource(long cycle_freq)
+> --
+> 1.7.3.2.146.gca209
 
-Nothing came of it, no.  There haven't been any attempts since, either.
+Thanks, I'll apply this. Please CC: linux-alpha@vger.kernel.org for
+alpha patches.
 
-Cheers,
-Jeff
+Matt
