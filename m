@@ -1,47 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932665Ab1CWLXS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 07:23:18 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34902 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932654Ab1CWLXP (ORCPT
+	id S932674Ab1CWLXg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 07:23:36 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:57967 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932627Ab1CWLXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 07:23:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=cSrG2ULSKBdtGf2cXMQQ7IAPXceJ6NGjpnBHbJ7dki3va25A6XyRWoIUTSsjjZ0Zo1
-         GePZCYNM4amFTVydkOGmE8zX6LFtviHZyGW2dZsO9enOOBpEneSitd7YAGkKsf/799dH
-         jtt0+7WOE8+7XRX/CPfz84Ry8URtvWA3I8rxI=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikuAr9o4fcZi15w1g0kyYehmJBi5ixJ1nmNfw_x@mail.gmail.com>
-References: <1300299394-20844-1-git-send-email-dbaluta@ixiacom.com>
-	<AANLkTikuAr9o4fcZi15w1g0kyYehmJBi5ixJ1nmNfw_x@mail.gmail.com>
-Date: Wed, 23 Mar 2011 13:23:14 +0200
-X-Google-Sender-Auth: oJ7OVx7uOWmAzLymwgGoSyMlUYo
-Message-ID: <AANLkTimDJ05ZTLz-mW6vRWpdJSgCzSRGP_DAaSuEqz_v@mail.gmail.com>
-Subject: Re: [PATCH] kmemleak: build kmemleak-test.c as a module-only
-From: Pekka Enberg <penberg@kernel.org>
-To: Daniel Baluta <daniel.baluta@gmail.com>
-Cc: paulmck@linux.vnet.ibm.com, Catalin Marinas <catalin.marinas@arm.com>,
-        akpm@linux-foundation.org, mingo@elte.hu, fweisbec@gmail.com,
-        rdunlap@xenotime.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Mar 2011 07:23:34 -0400
+Subject: Re: [PATCH] sound/oss/midi_synth: prevent underflow, use of
+ uninitialized value, and signedness issue
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: perex@perex.cz, alsa-devel@alsa-project.org, security@kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <s5h1v1yxp3p.wl%tiwai@suse.de>
+References: <1300818668.2130.27.camel@dan>  <s5h1v1yxp3p.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 07:23:25 -0400
+Message-ID: <1300879405.1935.2.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 1:18 PM, Daniel Baluta <daniel.baluta@gmail.com> wrote:
-> On Wed, Mar 16, 2011 at 8:16 PM, Daniel Baluta <dbaluta@ixiacom.com> wrote:
->> mm/kmemleak-test.c is used to provide an example of how kmemleak
->> tool works.
->>
->> Memory is leaked at module unload-time, so building the test
->> in kernel (Y) makes the leaks impossible and the test useless.
->
-> Any comments on this?
+On Wed, 2011-03-23 at 08:39 +0100, Takashi Iwai wrote:
+> At Tue, 22 Mar 2011 14:31:08 -0400,
+> Dan Rosenberg wrote:
+> > 
+> > The offset passed to midi_synth_load_patch() can be essentially
+> > arbitrary.  If it's greater than the header length, this will result in
+> > a copy_from_user(dst, src, negative_val).  While this will just return
+> > -EFAULT on x86, on other architectures this may cause memory corruption.
+> > Additionally, the length field of the sysex_info structure may not be
+> > initialized prior to its use.  Finally, a signed comparison may result
+> > in an unintentionally large loop.
+> > 
+> > This patch fixes all these issues, as well as some cleanup to prevent
+> > checkpatch.pl from complaining.
+> > 
+> > Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+> > Cc: stable@kernel.org
+> 
+> Well, the whole load_patch mechanism doesn't look working right with
+> ofs != 0.  The only caller of this callback is sound/oss/sequencer.c,
+> and it assumes that the whole chunk is passed once without splitting.
+> Thus the offset calculation in this code is obviously wrong, and
+> passing offset itself doesn't make any sense.
+> 
+> A similar problem (uninitialized struct fields) is found in another
+> load_patch callback in sound/oss/opl3.c.
+> 
+> That is, the best fix would be to rip off the offset argument from
+> this callback.
+> 
 
-Looks good to me.
+Thanks, I'll resend a new patch series that uses this approach as well
+as addresses a few more security issues.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+On a related note, is there any interest in removing OSS (actual, not
+emulation) entirely?  It's been marked as deprecated since before the
+git epoch (2005), and it's seen little development other than bug fixes
+and security issues.
+
+Regards,
+Dan
+
+> 
+> thanks,
+> 
+> Takashi
+> 
+> > ---
+> >  sound/oss/midi_synth.c |   27 ++++++++++++++-------------
+> >  1 files changed, 14 insertions(+), 13 deletions(-)
+> > 
+> > diff --git a/sound/oss/midi_synth.c b/sound/oss/midi_synth.c
+> > index 3c09374..3500f80 100644
+> > --- a/sound/oss/midi_synth.c
+> > +++ b/sound/oss/midi_synth.c
+> > @@ -491,16 +491,18 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
+> >  	if (!prefix_cmd(orig_dev, 0xf0))
+> >  		return 0;
+> >  
+> > +	/* Invalid patch format */
+> >  	if (format != SYSEX_PATCH)
+> > -	{
+> > -/*		  printk("MIDI Error: Invalid patch format (key) 0x%x\n", format);*/
+> >  		  return -EINVAL;
+> > -	}
+> > +
+> > +	/* Patch header too short */
+> >  	if (count < hdr_size)
+> > -	{
+> > -/*		printk("MIDI Error: Patch header too short\n");*/
+> >  		return -EINVAL;
+> > -	}
+> > +
+> > +	/* Offset too high */
+> > +	if (offs > offsetof(struct sysex_info, len) || offs < 0)
+> > +		return -EINVAL;
+> > +
+> >  	count -= hdr_size;
+> >  
+> >  	/*
+> > @@ -510,14 +512,13 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
+> >  
+> >  	if(copy_from_user(&((char *) &sysex)[offs], &(addr)[offs], hdr_size - offs))
+> >  		return -EFAULT;
+> > - 
+> > - 	if (count < sysex.len)
+> > -	{
+> > -/*		printk(KERN_WARNING "MIDI Warning: Sysex record too short (%d<%d)\n", count, (int) sysex.len);*/
+> > +
+> > +	/* Sysex record too short */
+> > +	if ((unsigned)count < (unsigned)sysex.len)
+> >  		sysex.len = count;
+> > -	}
+> > -  	left = sysex.len;
+> > -  	src_offs = 0;
+> > +
+> > +	left = sysex.len;
+> > +	src_offs = 0;
+> >  
+> >  	for (i = 0; i < left && !signal_pending(current); i++)
+> >  	{
+> > 
+> > 
+
+
