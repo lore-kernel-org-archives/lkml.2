@@ -1,80 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933237Ab1CWP5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:57:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43816 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933077Ab1CWP5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:57:36 -0400
-Subject: Re: [PATCH v2] net/unix: Add secdata to unix_stream msgs
-From: Eric Paris <eparis@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: pekane52@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cxzhang@watson.ibm.com, sds@tycho.nsa.gov, jmorris@namei.org,
-        eparis@parisplace.org, paul.moore@hp.com
-In-Reply-To: <20110322.193206.28821045.davem@davemloft.net>
-References: <1300840717-4413-1-git-send-email-pekane52@gmail.com>
-	 <20110322.193206.28821045.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Mar 2011 11:57:27 -0400
-Message-ID: <1300895847.28871.13.camel@unknown001a4b0c2895>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756493Ab1CWQDR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 12:03:17 -0400
+Received: from nm1-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.74]:40204 "HELO
+	nm1-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753118Ab1CWQDQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 12:03:16 -0400
+X-Yahoo-Newman-Id: 355939.9874.bm@omp1007.mail.ne1.yahoo.com
+X-Yahoo-SMTP: goi6jtCswBBo_FVivBkaoyo8KyPVVQ--
+X-YMail-OSG: caHuaHwVM1mxnshMmHjwGhWRqytU5Q77aZapR18g5oDCqkg
+ 5lAjyOj1uQujINyQr7EEIWo8Xff6mg2IAWpeYzjAFQfqcvYRI3Vf6a6WqIC1
+ Fx68s8LU_MnVdKoQZI8ERUU6jRWtPuGzXRtfXVg1qA0lqaP1wH.76tuISVv7
+ X8jgmfI5NaKNLFO66QWsX0h1bCW90nDlHZFfoYm.zCz8KUGKgNmUf0zw81qc
+ Lz4Nk3gUt2Z8flKVirHN2Mo5.hRanOi4mwTY5xf9PUZxxLuA7dVCS7QTGWLf
+ g9fboPgG2Jbi1nThglHYklXZhSMpNbI2zoiIdWRuLLrJhQO3eu6q8zng1XyS
+ aZmBI63J.Vr.852A.p1KXyyLMSuCq0QlJJB0iBio-
+X-Yahoo-Newman-Property: ymail-3
+From: Michael Reeves <reeves.87@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 23 Mar 2011 12:03:13 -0400
+Subject: journaled hfsplus write support
+To: Tejun Heo <tj@kernel.org>
+Message-Id: <2D7188A7-1F73-422D-AC34-99DB02631AA3@gmail.com>
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-22 at 19:32 -0700, David Miller wrote:
-> From: Pat Kane <pekane52@gmail.com>
-> Date: Tue, 22 Mar 2011 19:38:37 -0500
-> 
-> > The unix_dgram routines add secdata to socket messages,
-> > but the unix_stream routines do not. I have added the
-> > two missing lines of code.
-> > 
-> > Signed-off-by: Pat Kane <pekane52@gmail.com>
-> 
-> The security hooks appear to be only intended to operate on datagram
-> sockets, and as such I think the omission of UNIX stream sockets was
-> very much on purpose.
-> 
-> The SELINUX hook implementations even have "_dgram()" in their names.
-> 
-> Catherine Zhang added to CC: as she last made modifications to these
-> hooks.
-
-And I'll add Paul Moore as I think he understands the intersection
-of /net and /security better than anyone.
-
-> 
-> > diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-> > index 1663e1a..8753cdd 100644
-> > --- a/net/unix/af_unix.c
-> > +++ b/net/unix/af_unix.c
-> > @@ -1642,6 +1642,8 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
-> >  		max_level = err + 1;
-> >  		fds_sent = true;
-> >  
-> > +		unix_get_secdata(siocb->scm, skb);
-> > +
-> >  		err = memcpy_fromiovec(skb_put(skb, size), msg->msg_iov, size);
-> >  		if (err) {
-> >  			kfree_skb(skb);
-> > @@ -1930,6 +1932,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
-> >  		} else {
-> >  			/* Copy credentials */
-> >  			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
-> > +			unix_set_secdata(siocb->scm, skb);
-> >  			check_creds = 1;
-> >  		}
-> >  
-> > -- 
-> > 1.7.1
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-
-
+I am interested in trying to get journaling support into the HFS plus driver for linux. Was there any particular reason this has not been done yet?
