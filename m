@@ -1,64 +1,585 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607Ab1CWLOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 07:14:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33796 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932326Ab1CWLN5 (ORCPT
+	id S932592Ab1CWLRg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 07:17:36 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:44441 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932303Ab1CWLRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 07:13:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=TIv0i2XwPtT8+WM6dnJLbqU9WHfGO8ZMLKxILcsddFm1cScew9V2thqCC+EPbB6eJ1
-         Y8X9ISGhaGDtPbwtBkbMwF3hTJ7cxv+6dSZA80YskBRipjKJLg6XGmJHEWeDox8R5wpB
-         4KdbKrfGvvxLD60pAObmEcRYhxIPc+dHYKE54=
-Date: Wed, 23 Mar 2011 13:17:23 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] sched: remove unused rq variable and cpu_rq call from
- alloc_fair_sched_group
-Message-ID: <20110323111722.GA4244@swordfish.minsk.epam.com>
+	Wed, 23 Mar 2011 07:17:34 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D89D719.3090107@cam.ac.uk>
+Date: Wed, 23 Mar 2011 11:18:49 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: cliff.cai@analog.com
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        drivers@analog.com, device-drivers-devel@blackfin.uclinux.org
+Subject: Re: [PATCH 2/3 RESEND v3] IIO driver for Analog Devices Digital Output
+ Gyroscope ADXRS450
+References: <1300871727-32239-1-git-send-email-cliff.cai@analog.com> <1300871727-32239-2-git-send-email-cliff.cai@analog.com>
+In-Reply-To: <1300871727-32239-2-git-send-email-cliff.cai@analog.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sched: remove unused rq variable and cpu_rq call from alloc_fair_sched_group
+On 03/23/11 09:15, cliff.cai@analog.com wrote:
+> From: Cliff Cai <cliff.cai@analog.com>
+> 
+> Change v3:v2;
+> 	clean up code according to Jonathan' comments.
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Couple of really trivial nitpicks inline. Might as well fix them up before
+sending to Greg.
 
----
-
- kernel/sched.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index a172494..23c687e 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -8434,7 +8434,6 @@ int alloc_fair_sched_group(struct task_group *tg, struct task_group *parent)
- {
- 	struct cfs_rq *cfs_rq;
- 	struct sched_entity *se;
--	struct rq *rq;
- 	int i;
- 
- 	tg->cfs_rq = kzalloc(sizeof(cfs_rq) * nr_cpu_ids, GFP_KERNEL);
-@@ -8447,8 +8446,6 @@ int alloc_fair_sched_group(struct task_group *tg, struct task_group *parent)
- 	tg->shares = NICE_0_LOAD;
- 
- 	for_each_possible_cpu(i) {
--		rq = cpu_rq(i);
--
- 		cfs_rq = kzalloc_node(sizeof(struct cfs_rq),
- 				      GFP_KERNEL, cpu_to_node(i));
- 		if (!cfs_rq)
+Nice driver, thanks,
+> 
+> Signed-off-by: Cliff Cai <cliff.cai@analog.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  drivers/staging/iio/gyro/Kconfig         |   10 +
+>  drivers/staging/iio/gyro/Makefile        |    3 +
+>  drivers/staging/iio/gyro/adxrs450.h      |   58 ++++
+>  drivers/staging/iio/gyro/adxrs450_core.c |  450 ++++++++++++++++++++++++++++++
+>  4 files changed, 521 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/iio/gyro/adxrs450.h
+>  create mode 100644 drivers/staging/iio/gyro/adxrs450_core.c
+> 
+> diff --git a/drivers/staging/iio/gyro/Kconfig b/drivers/staging/iio/gyro/Kconfig
+> index 8b78fa0..ae2e7d3 100644
+> --- a/drivers/staging/iio/gyro/Kconfig
+> +++ b/drivers/staging/iio/gyro/Kconfig
+> @@ -35,3 +35,13 @@ config ADIS16260
+>  
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called adis16260.
+> +
+> +config ADXRS450
+> +	tristate "Analog Devices ADXRS450 Digital Output Gyroscope SPI driver"
+> +	depends on SPI
+> +	help
+> +	  Say yes here to build support for Analog Devices ADXRS450 programmable
+> +	  digital output gyroscope.
+> +
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called adxrs450.
+> diff --git a/drivers/staging/iio/gyro/Makefile b/drivers/staging/iio/gyro/Makefile
+> index 2764c15..2212240 100644
+> --- a/drivers/staging/iio/gyro/Makefile
+> +++ b/drivers/staging/iio/gyro/Makefile
+> @@ -17,3 +17,6 @@ obj-$(CONFIG_ADIS16260) += adis16260.o
+>  
+>  adis16251-y             := adis16251_core.o
+>  obj-$(CONFIG_ADIS16251) += adis16251.o
+> +
+> +adxrs450-y             := adxrs450_core.o
+> +obj-$(CONFIG_ADXRS450) += adxrs450.o
+> diff --git a/drivers/staging/iio/gyro/adxrs450.h b/drivers/staging/iio/gyro/adxrs450.h
+> new file mode 100644
+> index 0000000..c92f694
+> --- /dev/null
+> +++ b/drivers/staging/iio/gyro/adxrs450.h
+> @@ -0,0 +1,58 @@
+> +#ifndef SPI_ADXRS450_H_
+> +#define SPI_ADXRS450_H_
+> +
+> +#define ADXRS450_STARTUP_DELAY	50 /* ms */
+> +
+> +/* The MSB for the spi commands */
+> +#define ADXRS450_SENSOR_DATA    0x20
+> +#define ADXRS450_WRITE_DATA	0x40
+> +#define ADXRS450_READ_DATA	0x80
+> +
+> +#define ADXRS450_RATE1	0x00	/* Rate Registers */
+> +#define ADXRS450_TEMP1	0x02	/* Temperature Registers */
+> +#define ADXRS450_LOCST1	0x04	/* Low CST Memory Registers */
+> +#define ADXRS450_HICST1	0x06	/* High CST Memory Registers */
+> +#define ADXRS450_QUAD1	0x08	/* Quad Memory Registers */
+> +#define ADXRS450_FAULT1	0x0A	/* Fault Registers */
+> +#define ADXRS450_PID1	0x0C	/* Part ID Register 1 */
+> +#define ADXRS450_SNH	0x0E	/* Serial Number Registers, 4 bytes */
+> +#define ADXRS450_SNL	0x10
+> +#define ADXRS450_DNC1	0x12	/* Dynamic Null Correction Registers */
+> +/* Check bits */
+> +#define ADXRS450_P	0x01
+> +#define ADXRS450_CHK	0x02
+> +#define ADXRS450_CST	0x04
+> +#define ADXRS450_PWR	0x08
+> +#define ADXRS450_POR	0x10
+> +#define ADXRS450_NVM	0x20
+> +#define ADXRS450_Q	0x40
+> +#define ADXRS450_PLL	0x80
+> +#define ADXRS450_UV	0x100
+> +#define ADXRS450_OV	0x200
+> +#define ADXRS450_AMP	0x400
+> +#define ADXRS450_FAIL	0x800
+> +
+> +#define ADXRS450_WRERR_MASK	(0x7 << 29)
+> +
+> +#define ADXRS450_MAX_RX 4
+> +#define ADXRS450_MAX_TX 4
+> +
+> +#define ADXRS450_GET_ST(a)	((a >> 26) & 0x3)
+> +
+> +/**
+> + * struct adxrs450_state - device instance specific data
+> + * @us:			actual spi_device
+> + * @indio_dev:		industrial I/O device structure
+> + * @tx:			transmit buffer
+> + * @rx:			recieve buffer
+> + * @buf_lock:		mutex to protect tx and rx
+> + **/
+> +struct adxrs450_state {
+> +	struct spi_device		*us;
+> +	struct iio_dev			*indio_dev;
+> +	u8				*tx;
+> +	u8				*rx;
+> +	struct mutex			buf_lock;
+> +};
+> +
+> +#endif /* SPI_ADXRS450_H_ */
+> diff --git a/drivers/staging/iio/gyro/adxrs450_core.c b/drivers/staging/iio/gyro/adxrs450_core.c
+> new file mode 100644
+> index 0000000..263230d
+> --- /dev/null
+> +++ b/drivers/staging/iio/gyro/adxrs450_core.c
+> @@ -0,0 +1,450 @@
+> +/*
+> + * ADXRS450 Digital Output Gyroscope Driver
+> + *
+> + * Copyright 2011 Analog Devices Inc.
+> + *
+> + * Licensed under the GPL-2 or later.
+> + */
+> +
+> +#include <linux/interrupt.h>
+> +#include <linux/irq.h>
+> +#include <linux/gpio.h>
+> +#include <linux/delay.h>
+> +#include <linux/mutex.h>
+> +#include <linux/device.h>
+> +#include <linux/kernel.h>
+> +#include <linux/spi/spi.h>
+> +#include <linux/slab.h>
+> +#include <linux/sysfs.h>
+> +#include <linux/list.h>
+> +
+> +#include "../iio.h"
+> +#include "../sysfs.h"
+> +#include "gyro.h"
+> +#include "../adc/adc.h"
+> +
+> +#include "adxrs450.h"
+> +
+> +/**
+> + * adxrs450_spi_read_reg_16() - read 2 bytes from a register pair
+> + * @dev: device associated with child of actual iio_dev
+> + * @reg_address: the address of the lower of the two registers,which should be an even address,
+> + * Second register's address is reg_address + 1.
+> + * @val: somewhere to pass back the value read
+> + **/
+> +static int adxrs450_spi_read_reg_16(struct device *dev,
+> +		u8 reg_address,
+> +		u16 *val)
+> +{
+> +	struct spi_message msg;
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
+> +	int ret;
+> +	struct spi_transfer xfers = {
+> +		.tx_buf = st->tx,
+> +		.rx_buf = st->rx,
+> +		.bits_per_word = 8,
+> +		.len = 4,
+> +	};
+> +	/* Needs to send the command twice to get the wanted value */
+> +	mutex_lock(&st->buf_lock);
+> +	st->tx[0] = ADXRS450_READ_DATA | reg_address >> 7;
+> +	st->tx[1] = reg_address << 1;
+> +	st->tx[2] = 0;
+> +	st->tx[3] = 0;
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers, &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "problem while reading 16 bit register 0x%02x\n",
+> +				reg_address);
+> +		goto error_ret;
+> +	}
+> +
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers, &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "problem while reading 16 bit register 0x%02x\n",
+> +				reg_address);
+> +		goto error_ret;
+> +	}
+> +
+> +	*val = (st->rx[1] & 0x1f) << 11 | st->rx[2] << 3 | (st->rx[3] & 0xe0) >> 5;
+> +
+> +error_ret:
+> +	mutex_unlock(&st->buf_lock);
+> +	return ret;
+> +}
+> +
+> +/**
+> + * adxrs450_spi_write_reg_16() - write 2 bytes data to a register pair
+> + * @dev: device associated with child of actual actual iio_dev
+> + * @reg_address: the address of the lower of the two registers,which should be an even address,
+> + * Second register's address is reg_address + 1.
+> + * @val: value to be written.
+> + **/
+> +static int adxrs450_spi_write_reg_16(struct device *dev,
+> +		u8 reg_address,
+> +		u16 val)
+> +{
+> +	struct spi_message msg;
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
+> +	int ret;
+> +	struct spi_transfer xfers = {
+> +		.tx_buf = st->tx,
+> +		.rx_buf = st->rx,
+> +		.bits_per_word = 8,
+> +		.len = 4,
+> +	};
+> +
+> +	mutex_lock(&st->buf_lock);
+> +	st->tx[0] = ADXRS450_WRITE_DATA | reg_address >> 7;
+> +	st->tx[1] = reg_address << 1 | val >> 15;
+> +	st->tx[2] = val >> 7;
+> +	st->tx[3] = val << 1;
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers, &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret)
+> +		dev_err(&st->us->dev, "problem while writing 16 bit register 0x%02x\n",
+> +				reg_address);
+> +	mutex_unlock(&st->buf_lock);
+> +	return ret;
+> +}
+> +
+> +/**
+> + * adxrs450_spi_sensor_data() - read 2 bytes sensor data
+> + * @dev: device associated with child of actual iio_dev
+> + * @val: somewhere to pass back the value read
+> + **/
+> +static int adxrs450_spi_sensor_data(struct device *dev, u16 *val)
+> +{
+> +	struct spi_message msg;
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
+> +	int ret;
+> +	struct spi_transfer xfers = {
+> +		.tx_buf = st->tx,
+> +		.rx_buf = st->rx,
+> +		.bits_per_word = 8,
+> +		.len = 4,
+> +	};
+> +
+> +	mutex_lock(&st->buf_lock);
+> +	st->tx[0] = ADXRS450_SENSOR_DATA;
+> +	st->tx[1] = 0;
+> +	st->tx[2] = 0;
+> +	st->tx[3] = 0;
+> +
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers, &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "Problem while reading sensor data\n");
+> +		goto error_ret;
+> +	}
+> +
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers, &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "Problem while reading sensor data\n");
+> +		goto error_ret;
+> +	}
+> +
+> +	*val = (st->rx[0] & 0x03) << 14 | st->rx[1] << 6 | (st->rx[2] & 0xfc) >> 2;
+> +error_ret:
+> +	mutex_unlock(&st->buf_lock);
+> +	return ret;
+> +}
+> +
+> +/**
+> + * adxrs450_spi_initial() - use for initializing procedure.
+> + * @st: device instance specific data
+> + * @val: somewhere to pass back the value read
+> + **/
+> +static int adxrs450_spi_initial(struct adxrs450_state *st,
+> +		u32 *val, char chk)
+> +{
+> +	struct spi_message msg;
+> +	int ret;
+> +	struct spi_transfer xfers = {
+> +		.tx_buf = st->tx,
+> +		.rx_buf = st->rx,
+> +		.bits_per_word = 8,
+> +		.len = 4,
+> +	};
+> +
+> +	mutex_lock(&st->buf_lock);
+> +	st->tx[0] = ADXRS450_SENSOR_DATA;
+> +	st->tx[1] = 0;
+> +	st->tx[2] = 0;
+> +	st->tx[3] = 0;
+> +	if (chk)
+> +		st->tx[3] |= (ADXRS450_CHK | ADXRS450_P);
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers, &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "Problem while reading initializing data\n");
+> +		goto error_ret;
+> +	}
+> +
+> +	*val = be32_to_cpu(*(u32 *)st->rx);
+> +
+> +error_ret:
+> +	mutex_unlock(&st->buf_lock);
+> +	return ret;
+> +}
+> +
+> +static ssize_t adxrs450_read_temp(struct device *dev,
+> +		struct device_attribute *attr,
+> +		char *buf)
+> +{
+> +	int ret, len;
+> +	u16 t;
+> +	ret = adxrs450_spi_read_reg_16(dev,
+> +			ADXRS450_TEMP1,
+> +			&t);
+> +	if (ret)
+> +		return ret;
+> +	len = sprintf(buf, "%d\n", t);
+Combine lines.
+> +	return len;
+> +}
+> +
+> +static ssize_t adxrs450_read_quad(struct device *dev,
+> +		struct device_attribute *attr,
+> +		char *buf)
+> +{
+> +	int ret, len;
+> +	u16 t;
+> +	ret = adxrs450_spi_read_reg_16(dev,
+> +			ADXRS450_QUAD1,
+> +			&t);
+> +	if (ret)
+> +		return ret;
+> +	len = sprintf(buf, "%d\n", t);
+> +	return len;
+Combine previous two lines and get rid of len.
+> +}
+> +
+> +static ssize_t adxrs450_write_dnc(struct device *dev,
+> +		struct device_attribute *attr,
+> +		const char *buf,
+> +		size_t len)
+> +{
+> +	int ret;
+> +	long val;
+> +
+> +	ret = strict_strtol(buf, 10, &val);
+> +	if (ret)
+> +		goto error_ret;
+> +	ret = adxrs450_spi_write_reg_16(dev,
+> +			ADXRS450_DNC1,
+> +			val);
+> +error_ret:
+> +	return ret ? ret : len;
+> +}
+> +
+> +static ssize_t adxrs450_read_sensor_data(struct device *dev,
+> +		struct device_attribute *attr,
+> +		char *buf)
+> +{
+> +	int ret, len = 0;
+> +	u16 t;
+> +
+> +	ret = adxrs450_spi_sensor_data(dev, &t);
+> +	if (ret)
+> +		return ret;
+> +
+> +	len = sprintf(buf, "%d\n", t);
+> +	return len;
+Could combine previous two lines and get rid of assignment of len = 0
+(which wasn't needed anyway!)
+> +}
+> +
+> +/* Recommended Startup Sequence by spec */
+> +static int adxrs450_initial_setup(struct adxrs450_state *st)
+> +{
+> +	u32 t;
+> +	u16 data;
+> +	int ret;
+> +	struct device *dev = &st->indio_dev->dev;
+> +
+> +	msleep(ADXRS450_STARTUP_DELAY*2);
+> +	ret = adxrs450_spi_initial(st, &t, 1);
+> +	if (ret)
+> +		return ret;
+> +	if (t != 0x01) {
+> +		dev_err(&st->us->dev, "The initial response is not correct!\n");
+> +		return -ENODEV;
+> +
+> +	}
+> +
+> +	msleep(ADXRS450_STARTUP_DELAY);
+> +	ret = adxrs450_spi_initial(st, &t, 0);
+> +	if (ret)
+> +		return ret;
+> +
+> +	msleep(ADXRS450_STARTUP_DELAY);
+> +	ret = adxrs450_spi_initial(st, &t, 0);
+> +	if (ret)
+> +		return ret;
+> +	if (((t & 0xff) | 0x01) != 0xff || ADXRS450_GET_ST(t) != 2) {
+> +		dev_err(&st->us->dev, "The second response is not correct!\n");
+> +		return -EIO;
+> +
+> +	}
+> +	ret = adxrs450_spi_initial(st, &t, 0);
+> +	if (ret)
+> +		return ret;
+> +	if (((t & 0xff) | 0x01) != 0xff || ADXRS450_GET_ST(t) != 2) {
+> +		dev_err(&st->us->dev, "The third response is not correct!\n");
+> +		return -EIO;
+> +
+> +	}
+> +	ret = adxrs450_spi_read_reg_16(dev, ADXRS450_FAULT1, &data);
+> +	if (ret)
+> +		return ret;
+> +	if (data & 0x0fff) {
+> +		dev_err(&st->us->dev, "The device is not in normal status!\n");
+> +		return -EINVAL;
+> +	}
+> +	ret = adxrs450_spi_read_reg_16(dev, ADXRS450_PID1, &data);
+> +	if (ret)
+> +		return ret;
+> +	dev_info(&st->us->dev, "The Part ID is 0x%x\n", data);
+> +
+> +	ret = adxrs450_spi_read_reg_16(dev, ADXRS450_SNL, &data);
+> +	if (ret)
+> +		return ret;
+> +	t = data;
+> +	ret = adxrs450_spi_read_reg_16(dev, ADXRS450_SNH, &data);
+> +	if (ret)
+> +		return ret;
+> +	t |= data << 16;
+> +	dev_info(&st->us->dev, "The Serial Number is 0x%x\n", t);
+> +
+> +	return 0;
+> +}
+> +
+> +static IIO_DEV_ATTR_GYRO_Z(adxrs450_read_sensor_data, 0);
+> +static IIO_DEV_ATTR_TEMP_RAW(adxrs450_read_temp);
+> +static IIO_DEV_ATTR_GYRO_Z_QUADRATURE_CORRECTION(adxrs450_read_quad, 0);
+> +static IIO_DEV_ATTR_GYRO_Z_CALIBBIAS(S_IWUSR,
+> +		NULL, adxrs450_write_dnc, 0);
+> +static IIO_CONST_ATTR(name, "adxrs450");
+> +
+> +static struct attribute *adxrs450_attributes[] = {
+> +	&iio_dev_attr_gyro_z_raw.dev_attr.attr,
+> +	&iio_dev_attr_temp_raw.dev_attr.attr,
+> +	&iio_dev_attr_gyro_z_quadrature_correction_raw.dev_attr.attr,
+> +	&iio_dev_attr_gyro_z_calibbias.dev_attr.attr,
+> +	&iio_const_attr_name.dev_attr.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group adxrs450_attribute_group = {
+> +	.attrs = adxrs450_attributes,
+> +};
+> +
+> +static int __devinit adxrs450_probe(struct spi_device *spi)
+> +{
+> +	int ret, regdone = 0;
+> +	struct adxrs450_state *st = kzalloc(sizeof *st, GFP_KERNEL);
+> +	if (!st) {
+> +		ret =  -ENOMEM;
+> +		goto error_ret;
+> +	}
+> +	/* This is only used for removal purposes */
+> +	spi_set_drvdata(spi, st);
+> +
+> +	/* Allocate the comms buffers */
+> +	st->rx = kzalloc(sizeof(*st->rx)*ADXRS450_MAX_RX, GFP_KERNEL);
+> +	if (st->rx == NULL) {
+> +		ret = -ENOMEM;
+> +		goto error_free_st;
+> +	}
+> +	st->tx = kzalloc(sizeof(*st->tx)*ADXRS450_MAX_TX, GFP_KERNEL);
+> +	if (st->tx == NULL) {
+> +		ret = -ENOMEM;
+> +		goto error_free_rx;
+> +	}
+> +	st->us = spi;
+> +	mutex_init(&st->buf_lock);
+> +	/* setup the industrialio driver allocated elements */
+> +	st->indio_dev = iio_allocate_device();
+> +	if (st->indio_dev == NULL) {
+> +		ret = -ENOMEM;
+> +		goto error_free_tx;
+> +	}
+> +
+> +	st->indio_dev->dev.parent = &spi->dev;
+> +	st->indio_dev->attrs = &adxrs450_attribute_group;
+> +	st->indio_dev->dev_data = (void *)(st);
+> +	st->indio_dev->driver_module = THIS_MODULE;
+> +	st->indio_dev->modes = INDIO_DIRECT_MODE;
+> +
+> +	ret = iio_device_register(st->indio_dev);
+> +	if (ret)
+> +		goto error_free_dev;
+> +	regdone = 1;
+> +
+> +	/* Get the device into a sane initial state */
+> +	ret = adxrs450_initial_setup(st);
+> +	if (ret)
+> +		goto error_initial;
+> +	return 0;
+> +
+> +error_initial:
+> +error_free_dev:
+> +	if (regdone)
+> +		iio_device_unregister(st->indio_dev);
+> +	else
+> +		iio_free_device(st->indio_dev);
+> +error_free_tx:
+> +	kfree(st->tx);
+> +error_free_rx:
+> +	kfree(st->rx);
+> +error_free_st:
+> +	kfree(st);
+> +error_ret:
+> +	return ret;
+> +}
+> +
+> +/* fixme, confirm ordering in this function */
+Err? So is it.  (have a feeling this is a cut and
+pasted comment from somewhere else ;)
+> +static int adxrs450_remove(struct spi_device *spi)
+> +{
+> +	struct adxrs450_state *st = spi_get_drvdata(spi);
+> +
+> +	iio_device_unregister(st->indio_dev);
+> +	kfree(st->tx);
+> +	kfree(st->rx);
+> +	kfree(st);
+> +
+> +	return 0;
+> +}
+...
 
