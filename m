@@ -1,109 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab1CWIM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 04:12:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40219 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab1CWIM4 (ORCPT
+	id S1755205Ab1CWIN7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 04:13:59 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:53464 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751140Ab1CWIN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 04:12:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=mO1wGlb1/GzFiTtRVBLhC8mmqsnRTo6TxkJSF4JFPBkgrDjiEu0DaPwIwS39Ad/YX0
-         lvOSqFArRRcWofjsQ0+GiPirb7FcIjaHFXKEkOvV4MoMkDz3bVskzVa+faTWb4EMouB2
-         i5sPQgQ5H4mHwdkhr6PF/oeLhaAsJr9jGd594=
-Message-ID: <4D89AB83.3000103@suse.cz>
-Date: Wed, 23 Mar 2011 09:12:51 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Wed, 23 Mar 2011 04:13:57 -0400
+Message-ID: <4D89AB8F.6020500@shipmail.org>
+Date: Wed, 23 Mar 2011 09:13:03 +0100
+From: Thomas Hellstrom <thomas@shipmail.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Julian Anastasov <ja@ssi.bg>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH] tty: fix tty->ldisc leak on ENODEV from driver install
-References: <201103230045.p2N0jQjL011728@ja.ssi.bg>
-In-Reply-To: <201103230045.p2N0jQjL011728@ja.ssi.bg>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org, Alex Deucher <alexdeucher@gmail.com>,
+        Jerome Glisse <j.glisse@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [PATCH] cleanup: Add 'struct dev' in the TTM layer to be passed
+ in for DMA API calls.
+References: <1299598789-20402-1-git-send-email-konrad.wilk@oracle.com> <4D769726.2030307@shipmail.org> <20110322143137.GA25113@dumpdata.com>
+In-Reply-To: <20110322143137.GA25113@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ccing Alan.
+On 03/22/2011 03:31 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Mar 08, 2011 at 09:52:54PM +0100, Thomas Hellstrom wrote:
+>    
+>> Hi, Konrad,
+>>
+>> Is passing a struct device to the DMA api really *strictly* necessary?
+>>      
+> Soo.. it seems it is on PowerPC, which I sadly didn't check for, does require
+> this.
+>    
+>> I'd like to avoid that at all cost, since we don't want pages that
+>> are backing buffer objects
+>> (coherent pages) to be associated with a specific device.
+>>
+>> The reason for this is that we probably soon will want to move ttm
+>> buffer objects between devices, and that should ideally be a simple
+>> operation: If the memory type the buffer object currently resides in
+>> is not shared between two devices, then move it out to system memory
+>> and change its struct bo_device pointer.
+>>      
+> I was thinking about this a bit after I found that the PowerPC requires
+> the 'struct dev'. But I got a question first, what do you with pages
+> that were allocated to a device that can do 64-bit DMA and then
+> move it to a device than can 32-bit DMA? Obviously the 32-bit card would
+> set the TTM_PAGE_FLAG_DMA32 flag, but the 64-bit would not. What is the
+> process then? Allocate a new page from the 32-bit device and then copy over the
+> page from the 64-bit TTM and put the 64-bit TTM page?
+>    
 
-On 03/23/2011 01:45 AM, Julian Anastasov wrote:
-> 	When a USB serial device is not attached I see
-> open() to leak 8-byte structures:
-> 
-> modprobe usbserial
-> [ -e /dev/ttyUSB0 ] && cat /dev/ttyUSB0
-> cat: /dev/ttyUSB0: No such device
-> 
-> 	Note that error must be ENODEV with usbserial
-> loaded and when name exists, not ENXIO.
-> 
-> 	kmemleak shows such output:
-> 
-> unreferenced object 0xc0e19860 (size 8):
->   comm cat, pid 1226, jiffies 4294919464 (age 287.476s)
->   hex dump (first 8 bytes):
->     44 de 2d c1 01 00 00 00                          D.-.....
->   backtrace:
->     [<c1065a74>] create_object+0x109/0x1ad
->     [<c1063d2b>] kmem_cache_alloc+0x60/0x68
->     [<c113505c>] tty_ldisc_get+0x54/0x76
->     [<c11358c9>] tty_ldisc_init+0xa/0x20
->     [<c1130ab4>] initialize_tty_struct+0x2d/0x1ac
->     [<c1130c8c>] tty_init_dev+0x59/0x10d
->     [<c113136d>] tty_open+0x24a/0x3a2
->     [<c1069516>] chrdev_open+0xd1/0xef
->     [<c106d2d5>] nameidata_drop_rcu_last+0x3b/0x49
->     [<c1069445>] chrdev_open+0x0/0xef
->     [<c1065d42>] __dentry_open.clone.15+0xec/0x1c3
->     [<c10669a5>] nameidata_to_filp+0x2a/0x33
->     [<c106f7c7>] finish_open+0x6e/0xfc
->     [<c106fbda>] do_filp_open+0x144/0x4af
->     [<c1076f55>] alloc_fd+0x41/0xa5
->     [<c10669ef>] do_sys_open+0x41/0xc3
-> 
-> 	Looking at tty_init_dev() it seems initialize_tty_struct()
-> attaches tty->ldisc via tty_ldisc_init() but on
-> tty_driver_install_tty() failure (-ENODEV) we call free_tty_struct()
-> which does nothing with tty->ldisc.
-> 
-> 	The appended patch fixes the leak but I'm not
-> sure what tty->ldisc value we can see in release_one_tty(),
-> I assume if ldisc is freed tty->ldisc should be NULL, so
-> free_tty_struct() will not try to double-free the ldisc.
-> 
-> Signed-off-by: Julian Anastasov <ja@ssi.bg>
-> ---
->  drivers/tty/tty_io.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-2.6.38/drivers/tty/tty_io.c
-> +++ linux-2.6.38/drivers/tty/tty_io.c
-> @@ -188,6 +188,7 @@ void free_tty_struct(struct tty_struct *
->  		put_device(tty->dev);
->  	kfree(tty->write_buf);
->  	tty_buffer_free_all(tty);
-> +	kfree(tty->ldisc);
+Yes, in certain situations we need to copy, and if it's necessary in 
+some cases to use coherent memory with a struct device assoicated with 
+it, I agree it may be reasonable to do a copy in that case as well. I'm 
+against, however, to make that the default case when running on bare metal.
 
-We should not mess up with ldisc here. We should call something like
-tty_ldisc_deinit from tty_init_dev on fail path. The deinit should drop
-the reference (call put_ldisc). Or maybe even deinitialize_tty_struct ->
-tty_ldisc_deinit -> put_ldisc).
+However, I've looked a bit deeper into all this, and it looks like we 
+already have other problems that need to be addressed, and that exists 
+with the code already in git:
 
-Note that your way you do not drop the module refcount of ld ops.
+Consider a situation where you allocate a cached DMA32 page from the ttm 
+page allocator. You'll end up with a coherent page. Then you make it 
+uncached and finally you return it to the ttm page allocator. Since it's 
+uncached, it will not be freed by the dma api, but kept in the uncached 
+pool, and later the incorrect page free function will be called.
 
->  	kfree(tty);
->  }
+I think we might need to take a few steps back and rethink this whole idea:
 
-regards,
--- 
-js
-suse labs
+1) How does this work in the AGP case? Let's say you allocate 
+write-combined DMA32 pages from the ttm page pool (in this case you 
+won't get coherent memory) and then use them in an AGP gart? Why is it 
+that we don't need coherent pages then in the Xen case?
+
+2) http://www.mjmwired.net/kernel/Documentation/DMA-API.txt, line 33 
+makes me scared.
+We should identify what platforms may have problems with this.
+
+3) When hacking on the unichrome DMA engine it wasn't that hard to use 
+the synchronization functions of the DMA api correctly:
+
+  When binding a TTM, the backend calls dma_map_page() on pages, When 
+unbinding, the backend calls dma_unmap_page(), If we need cpu access 
+when bound, we need to call dma_sync_single_for_[cpu|device]. If this is 
+done, it will be harder to implement user-space sub-allocation, but 
+possible. There will be a performance loss on some platforms, though.
+
+/Thomas
+
+
+
+
+
