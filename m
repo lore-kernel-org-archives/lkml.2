@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab1CWVsA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 17:48:00 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:33414 "HELO
+	id S1756745Ab1CWVsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 17:48:22 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:33750 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755965Ab1CWVry (ORCPT
+	with SMTP id S1756713Ab1CWVsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 17:47:54 -0400
+	Wed, 23 Mar 2011 17:48:00 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18HkOQ8Up0HpEDWSZolyb0t2tTw7MeG9Gccaw85a/
-	NBsRZ5c3P1I0UY
+X-Provags-ID: V01U2FsdGVkX1/60kNnkAn6pjKWa2Cv6+3EXicpdyJmMBi2/DH16T
+	+eqlaJMcpOK/zL
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 1/4] viafb: move initialization code
-Date: Wed, 23 Mar 2011 22:03:09 +0000
-Message-Id: <1300917792-3880-2-git-send-email-FlorianSchandinat@gmx.de>
+Subject: [PATCH 4/4] viafb: remove unused max_hres/vres
+Date: Wed, 23 Mar 2011 22:03:12 +0000
+Message-Id: <1300917792-3880-5-git-send-email-FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
 In-Reply-To: <1300917792-3880-1-git-send-email-FlorianSchandinat@gmx.de>
 References: <1300917792-3880-1-git-send-email-FlorianSchandinat@gmx.de>
@@ -25,72 +25,222 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves some mode independend initialization code to the function
-where the other parts of the initialization are.
+This patch removes the max_hres and max_vres which are not used at
+the moment. In general they could be useful but it would be better
+to get them via any standard EDID implementation and not the buggy
+incomplete one currently used which is also removed as far as
+possible.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 ---
- drivers/video/via/hw.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/video/via/chip.h |    2 -
+ drivers/video/via/dvi.c  |  138 +---------------------------------------------
+ 2 files changed, 3 insertions(+), 137 deletions(-)
 
-diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index dc4c778..a982718 100644
---- a/drivers/video/via/hw.c
-+++ b/drivers/video/via/hw.c
-@@ -1162,6 +1162,8 @@ void via_odev_to_seq(struct seq_file *m, u32 odev)
+diff --git a/drivers/video/via/chip.h b/drivers/video/via/chip.h
+index 1aa0fb3..3ebf20c 100644
+--- a/drivers/video/via/chip.h
++++ b/drivers/video/via/chip.h
+@@ -142,8 +142,6 @@ struct tmds_setting_information {
+ 	int h_active;
+ 	int v_active;
+ 	int max_pixel_clock;
+-	int max_hres;
+-	int max_vres;
+ };
  
- static void load_fix_bit_crtc_reg(void)
+ struct lvds_setting_information {
+diff --git a/drivers/video/via/dvi.c b/drivers/video/via/dvi.c
+index 41ca198..3dbcd77 100644
+--- a/drivers/video/via/dvi.c
++++ b/drivers/video/via/dvi.c
+@@ -28,9 +28,6 @@ static int tmds_register_read_bytes(int index, u8 *buff, int buff_len);
+ static void __devinit dvi_get_panel_size_from_DDCv1(
+ 	struct tmds_chip_information *tmds_chip,
+ 	struct tmds_setting_information *tmds_setting);
+-static void __devinit dvi_get_panel_size_from_DDCv2(
+-	struct tmds_chip_information *tmds_chip,
+-	struct tmds_setting_information *tmds_setting);
+ static int viafb_dvi_query_EDID(void);
+ 
+ static int check_tmds_chip(int device_id_subaddr, int device_id)
+@@ -47,17 +44,8 @@ void __devinit viafb_init_dvi_size(struct tmds_chip_information *tmds_chip,
+ 	DEBUG_MSG(KERN_INFO "viafb_init_dvi_size()\n");
+ 
+ 	viafb_dvi_sense();
+-	switch (viafb_dvi_query_EDID()) {
+-	case 1:
++	if (viafb_dvi_query_EDID() == 1)
+ 		dvi_get_panel_size_from_DDCv1(tmds_chip, tmds_setting);
+-		break;
+-	case 2:
+-		dvi_get_panel_size_from_DDCv2(tmds_chip, tmds_setting);
+-		break;
+-	default:
+-		printk(KERN_WARNING "viafb_init_dvi_size: DVI panel size undetected!\n");
+-		break;
+-	}
+ 
+ 	return;
+ }
+@@ -306,12 +294,7 @@ static int viafb_dvi_query_EDID(void)
+ 		return EDID_VERSION_1;	/* Found EDID1 Table */
+ 	}
+ 
+-	data0 = (u8) tmds_register_read(0x00);
+-	viaparinfo->chip_info->tmds_chip_info.tmds_chip_slave_addr = restore;
+-	if (data0 == 0x20)
+-		return EDID_VERSION_2;	/* Found EDID2 Table */
+-	else
+-		return false;
++	return false;
+ }
+ 
+ /* Get Panel Size Using EDID1 Table */
+@@ -319,50 +302,15 @@ static void __devinit dvi_get_panel_size_from_DDCv1(
+ 	struct tmds_chip_information *tmds_chip,
+ 	struct tmds_setting_information *tmds_setting)
  {
-+	viafb_unlock_crt();
-+
- 	/* always set to 1 */
- 	viafb_write_reg_mask(CR03, VIACR, 0x80, BIT7);
- 	/* line compare should set all bits = 1 (extend modes) */
-@@ -1169,8 +1171,6 @@ static void load_fix_bit_crtc_reg(void)
- 	/* line compare should set all bits = 1 (extend modes) */
- 	viafb_write_reg_mask(CR07, VIACR, 0x10, BIT4);
- 	/* line compare should set all bits = 1 (extend modes) */
--	viafb_write_reg_mask(CR09, VIACR, 0x40, BIT6);
--	/* line compare should set all bits = 1 (extend modes) */
- 	viafb_write_reg_mask(CR35, VIACR, 0x10, BIT4);
- 	/* line compare should set all bits = 1 (extend modes) */
- 	viafb_write_reg_mask(CR33, VIACR, 0x06, BIT0 + BIT1 + BIT2);
-@@ -1181,6 +1181,10 @@ static void load_fix_bit_crtc_reg(void)
- 	viafb_write_reg(CR08, VIACR, 0x00);
- 	/* extend mode always set to 0h */
- 	viafb_write_reg(CR14, VIACR, 0x00);
-+	viafb_write_reg_mask(CR09, VIACR, 0x40, 0xDF);
-+	viafb_write_reg_mask(CR11, VIACR, 0x00, BIT4 + BIT5 + BIT6);
-+
-+	viafb_lock_crt();
+-	int i, max_h = 0, tmp, restore;
+-	unsigned char rData;
++	int i, restore;
+ 	unsigned char EDID_DATA[18];
  
- 	/* If K8M800, enable Prefetch Mode. */
- 	if ((viaparinfo->chip_info->gfx_chip_name == UNICHROME_K800)
-@@ -2033,8 +2037,6 @@ void viafb_fill_crtc_timing(struct crt_mode_table *crt_table,
- 	v_addr = crt_reg.ver_addr;
- 	if (set_iga == IGA1) {
- 		viafb_unlock_crt();
--		viafb_write_reg(CR09, VIACR, 0x00);	/*initial CR09=0 */
--		viafb_write_reg_mask(CR11, VIACR, 0x00, BIT4 + BIT5 + BIT6);
- 		viafb_write_reg_mask(CR17, VIACR, 0x00, BIT7);
- 	}
+ 	DEBUG_MSG(KERN_INFO "\n dvi_get_panel_size_from_DDCv1 \n");
  
-@@ -2047,7 +2049,6 @@ void viafb_fill_crtc_timing(struct crt_mode_table *crt_table,
- 		break;
- 	}
- 
--	load_fix_bit_crtc_reg();
- 	viafb_lock_crt();
- 	viafb_write_reg_mask(CR17, VIACR, 0x80, BIT7);
- 	viafb_load_fetch_count_reg(h_addr, bpp_byte, set_iga);
-@@ -2432,6 +2433,7 @@ int viafb_setmode(struct VideoModeTable *vmode_tbl, int video_bpp,
+ 	restore = tmds_chip->tmds_chip_slave_addr;
+ 	tmds_chip->tmds_chip_slave_addr = 0xA0;
+-
+-	rData = tmds_register_read(0x23);
+-	if (rData & 0x3C)
+-		max_h = 640;
+-	if (rData & 0xC0)
+-		max_h = 720;
+-	if (rData & 0x03)
+-		max_h = 800;
+-
+-	rData = tmds_register_read(0x24);
+-	if (rData & 0xC0)
+-		max_h = 800;
+-	if (rData & 0x1E)
+-		max_h = 1024;
+-	if (rData & 0x01)
+-		max_h = 1280;
+-
+ 	for (i = 0x25; i < 0x6D; i++) {
+ 		switch (i) {
+-		case 0x26:
+-		case 0x28:
+-		case 0x2A:
+-		case 0x2C:
+-		case 0x2E:
+-		case 0x30:
+-		case 0x32:
+-		case 0x34:
+-			rData = tmds_register_read(i);
+-			if (rData == 1)
+-				break;
+-			/* data = (data + 31) * 8 */
+-			tmp = (rData + 31) << 3;
+-			if (tmp > max_h)
+-				max_h = tmp;
+-			break;
+-
+ 		case 0x36:
+ 		case 0x48:
+ 		case 0x5A:
+@@ -383,91 +331,11 @@ static void __devinit dvi_get_panel_size_from_DDCv1(
  		}
  	}
  
-+	load_fix_bit_crtc_reg();
- 	via_set_primary_pitch(viafbinfo->fix.line_length);
- 	via_set_secondary_pitch(viafb_dual_fb ? viafbinfo1->fix.line_length
- 		: viafbinfo->fix.line_length);
+-	tmds_setting->max_hres = max_h;
+-	switch (max_h) {
+-	case 640:
+-		tmds_setting->max_vres = 480;
+-		break;
+-	case 800:
+-		tmds_setting->max_vres = 600;
+-		break;
+-	case 1024:
+-		tmds_setting->max_vres = 768;
+-		break;
+-	case 1280:
+-		tmds_setting->max_vres = 1024;
+-		break;
+-	case 1400:
+-		tmds_setting->max_vres = 1050;
+-		break;
+-	case 1440:
+-		tmds_setting->max_vres = 1050;
+-		break;
+-	case 1600:
+-		tmds_setting->max_vres = 1200;
+-		break;
+-	case 1920:
+-		tmds_setting->max_vres = 1080;
+-		break;
+-	default:
+-		DEBUG_MSG(KERN_INFO "Unknown panel size max resolution = %d ! "
+-					 "set default panel size.\n", max_h);
+-		break;
+-	}
+-
+ 	DEBUG_MSG(KERN_INFO "DVI max pixelclock = %d\n",
+ 		tmds_setting->max_pixel_clock);
+ 	tmds_chip->tmds_chip_slave_addr = restore;
+ }
+ 
+-/* Get Panel Size Using EDID2 Table */
+-static void __devinit dvi_get_panel_size_from_DDCv2(
+-	struct tmds_chip_information *tmds_chip,
+-	struct tmds_setting_information *tmds_setting)
+-{
+-	int restore;
+-	unsigned char R_Buffer[2];
+-
+-	DEBUG_MSG(KERN_INFO "\n dvi_get_panel_size_from_DDCv2 \n");
+-
+-	restore = tmds_chip->tmds_chip_slave_addr;
+-	tmds_chip->tmds_chip_slave_addr = 0xA2;
+-
+-	/* Horizontal: 0x76, 0x77 */
+-	tmds_register_read_bytes(0x76, R_Buffer, 2);
+-	tmds_setting->max_hres = R_Buffer[0] + (R_Buffer[1] << 8);
+-
+-	switch (tmds_setting->max_hres) {
+-	case 640:
+-		tmds_setting->max_vres = 480;
+-		break;
+-	case 800:
+-		tmds_setting->max_vres = 600;
+-		break;
+-	case 1024:
+-		tmds_setting->max_vres = 768;
+-		break;
+-	case 1280:
+-		tmds_setting->max_vres = 1024;
+-		break;
+-	case 1400:
+-		tmds_setting->max_vres = 1050;
+-		break;
+-	case 1440:
+-		tmds_setting->max_vres = 1050;
+-		break;
+-	case 1600:
+-		tmds_setting->max_vres = 1200;
+-		break;
+-	default:
+-		DEBUG_MSG(KERN_INFO "Unknown panel size max resolution = %d! "
+-			"set default panel size.\n", tmds_setting->max_hres);
+-		break;
+-	}
+-
+-	tmds_chip->tmds_chip_slave_addr = restore;
+-}
+-
+ /* If Disable DVI, turn off pad */
+ void viafb_dvi_disable(void)
+ {
 -- 
 1.6.3.2
 
