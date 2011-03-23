@@ -1,140 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab1CWOgk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:36:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60853 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755604Ab1CWOgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:36:38 -0400
-Date: Wed, 23 Mar 2011 15:36:27 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [tip:x86/cleanups] x86, dumpstack: Use frame pointer during
- stack trace
-Message-ID: <20110323143627.GA31377@elte.hu>
-References: <1299584662-24421-4-git-send-email-namhyung@gmail.com>
- <tip-2f8058ae197236f9d5641850ce27f67d8f3e0b39@git.kernel.org>
- <20110310230222.GB1837@nowhere>
- <1300885734.1479.6.camel@leonhard>
- <AANLkTikMaimbA=ia-Gr91JbdwFqeAcyTuQ9VzHhATent@mail.gmail.com>
+	id S1756287Ab1CWOjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:39:17 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:36804 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab1CWOjP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:39:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=iqYxJh70cUZdm4428eEHHWYY69D8OQ/YSFl4bI93RIzw8JYHM1e8V/kQEXf2vbwHXV
+         7ePl5Gt1clOiAZRP0VYqbZBYPvLTimjT3mbjHKB8sgqvD6hZuydf8rnUgeAaAluW8+WT
+         VNfBl+Z1xQWth9kj6guaYbzIEGZp3GJmP/Nag=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikMaimbA=ia-Gr91JbdwFqeAcyTuQ9VzHhATent@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <AANLkTinoTs89ThBnZ17+fPE+t1V=GycKq2EJG-LadFZQ@mail.gmail.com>
+References: <alpine.DEB.2.00.1103170403160.3429@skynet.skynet.ie>
+	<AANLkTinoTs89ThBnZ17+fPE+t1V=GycKq2EJG-LadFZQ@mail.gmail.com>
+Date: Wed, 23 Mar 2011 15:22:55 +0100
+Message-ID: <AANLkTim5qv63qiZ6uazvQUjtCtKrzYNGDVr1aESaAkCj@mail.gmail.com>
+Subject: Re: [git pull] drm next tree
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Keith Packard <keithp@keithp.com>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 23, 2011 at 3:19 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> So I had  hoped - yes, very naïve of me, I know - that this merge
+> window would be different.
+>
+> But it's not.
+>
+> On Wed, Mar 16, 2011 at 9:09 PM, Dave Airlie <airlied@linux.ie> wrote:
+>>
+>> i915: big 855 fix, lots of output setup refactoring, lots of misc fixes.
+>
+> .. and apparently a lot of breakage too. My crappy laptop that I abuse
+> for travel is - once more - broken by the updates. I cannot suspend
+> and resume, because every resume seems to fail.
+>
+> One of the more useful failures was:
+>
+> [   61.656055] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
+> elapsed... GPU hung
+> [   61.656079] [drm] capturing error event; look for more information
+> in /debug/dri/0/i915_error_state
+> [   61.664387] [drm:i915_wait_request] *ERROR* i915_wait_request
+> returns -11 (awaiting 2 at 0, next 3)
+>
+> and I'm attaching the error_state file from that particular case here.
+> In other cases it seems to just hang entirely.
+>
+> Keith/Jesse/Chris - I don't know that it's i915, and it will take
+> forever to bisect (I'll try). But it does seem pretty likely.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Just in case - is it possible to have that commit in diff format ?
 
-> 2011/3/23 Namhyung Kim <namhyung@gmail.com>:
-> > 2011-03-11 (ê¸ˆ), 00:02 +0100, Frederic Weisbecker:
-> >> On Thu, Mar 10, 2011 at 10:26:07PM +0000, tip-bot for Namhyung Kim wrote:
-> >> > Commit-ID: Â 2f8058ae197236f9d5641850ce27f67d8f3e0b39
-> >> > Gitweb: Â  Â  http://git.kernel.org/tip/2f8058ae197236f9d5641850ce27f67d8f3e0b39
-> >> > Author: Â  Â  Namhyung Kim <namhyung@gmail.com>
-> >> > AuthorDate: Tue, 8 Mar 2011 20:44:22 +0900
-> >> > Committer: Â Thomas Gleixner <tglx@linutronix.de>
-> >> > CommitDate: Thu, 10 Mar 2011 23:20:30 +0100
-> >> >
-> >> > x86, dumpstack: Use frame pointer during stack trace
-> >> >
-> >> > If CONFIG_FRAME_POINTER is set then use the frame pointer for the
-> >> > stack backtrace rather than scanning whole stack blindly.
-> >>
-> >> We don't do it blindly, we actually check the reliability with the
-> >> frame pointer.
-> >>
-> >> I'm not sure this patch is a good idea. stack dumps need to stay very
-> >> robust and not exclusively rely on the frame pointer to be correct.
-> >> At least walking blindly the stack provides a best effort dump as a last
-> >> resort.
-> >>
-> >
-> > Sounds reasonable. How about adding a boot param to control it then?
-> 
-> Hmm, but I'm not sure what it would be useful for. Even if one is sure that 
-> his crash will have the needed reliable addresses already, having unreliable 
-> ones too in the report are not a problem. Are they?
+Asking as 2.6.38-git2 is the latest kernel where my Latitude E6400
+ is displaying X at 1440x900, -git3 through -git6 do not compile and
+ -git7 and onwards (up at least to -git11) display 1024x768 instead.
 
-Agreed, there's no point in such a boot parameter really.
+If I run xrandr --fb 1440x900 --output LVDS1 --mode 1440x900
+ once in X, then I get 1440x900 display, but then:
 
-The principles for printing backtraces are the following:
+  - the wallpaper's original 1024x768 image stays (the rest of the
+     display area is filled with the part of image that should be there
+     correctly at 1440x900)
+  - if I run mplayer and ask it to go fullscreen, it does 1024x768
 
- - Robustness comes first. We do not ever want to crash or miss important
-   information because the frame pointer chain broke in some rarely used
-   assembler code.
+lspci (from 2.6.38-git2) says:
 
- - Information. Backtraces like:
+00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series
+Chipset Integrated Graphics Controller (rev 07) (prog-if 00 [VGA
+controller])
+	Subsystem: Dell Device 0233
+	Flags: bus master, fast devsel, latency 0, IRQ 46
+	Memory at f6c00000 (64-bit, non-prefetchable) [size=4M]
+	Memory at e0000000 (64-bit, prefetchable) [size=256M]
+	I/O ports at ef98 [size=8]
+	Expansion ROM at <unassigned> [disabled]
+	Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+	Capabilities: [d0] Power Management version 3
+	Kernel driver in use: i915
+	Kernel modules: i915
 
-     [    3.522991] Call Trace:
-     [    3.523351]  [<ffffffff814f35b9>] panic+0x91/0x199
-     [    3.523468]  [<ffffffff814f3729>] ? printk+0x68/0x6a
-     [    3.523576]  [<ffffffff81a981b2>] mount_block_root+0x257/0x26e
-     [    3.523681]  [<ffffffff81a9821f>] mount_root+0x56/0x5a
-     [    3.523780]  [<ffffffff81a98393>] prepare_namespace+0x170/0x1a9
-     [    3.523885]  [<ffffffff81a9772b>] kernel_init+0x1d2/0x1e2
-     [    3.523987]  [<ffffffff81003894>] kernel_thread_helper+0x4/0x10
-     [    3.524228]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
-     [    3.524345]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
-     [    3.524445]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
+00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset
+Integrated Graphics Controller (rev 07)
+	Subsystem: Dell Device 0233
+	Flags: bus master, fast devsel, latency 0
+	Memory at f6b00000 (64-bit, non-prefetchable) [size=1M]
+	Capabilities: [d0] Power Management version 3
 
-   are immensely useful, because firstly we see the 'real' backtrace:
 
-     [    3.523351]  [<ffffffff814f35b9>] panic+0x91/0x199
-     [    3.523576]  [<ffffffff81a981b2>] mount_block_root+0x257/0x26e
-     [    3.523681]  [<ffffffff81a9821f>] mount_root+0x56/0x5a
-     [    3.523780]  [<ffffffff81a98393>] prepare_namespace+0x170/0x1a9
-     [    3.523885]  [<ffffffff81a9772b>] kernel_init+0x1d2/0x1e2
-     [    3.523987]  [<ffffffff81003894>] kernel_thread_helper+0x4/0x10
+thanks,
 
-   Secondly, we also see the 'residual trace' of what is on the kernel stack:
+--alessandro
 
-     [    3.523468]  [<ffffffff814f3729>] ? printk+0x68/0x6a
-     [    3.524228]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
-     [    3.524345]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
-     [    3.524445]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
+ "There's always a siren singing you to shipwreck"
 
-   Which is a poor man's kernel trace really. Here it tells us that a printk
-   executed shortly before the backtrace was generated. Info like this can
-   be useful when rare crashes are analyzed.
-
-So hiding that information is not really productive. If then we could think about
-making the visual output more expressive. For example:
-
- Call Trace:
-  [<ffffffff814f35b9>] panic()                   # 0x091/0x199
-  [<ffffffff814f3729>]                           # ? printk+0x68/0x6a
-  [<ffffffff81a981b2>] mount_block_root()        # 0x257/0x26e
-  [<ffffffff81a9821f>] mount_root()              # 0x056/0x05a
-  [<ffffffff81a98393>] prepare_namespace()       # 0x170/0x1a9
-  [<ffffffff81a9772b>] kernel_init()             # 0x1d2/0x1e2
-  [<ffffffff81003894>] kernel_thread_helper()    # 0x004/0x010
-  [<ffffffff814f6880>]                           # ? restore_args+0x0/0x30
-  [<ffffffff81a97559>]                           # ? kernel_init+0x0/0x1e2
-  [<ffffffff81003890>]                           # ? kernel_thread_helper+0x0/0x10
-
-Would be a 'human readable' variant that tells us the real backtrace 'at a 
-glance' - perhaps in a bit clearer fashion - while still keeping the 'residual' 
-entries included as well.
-
-The downside is that tools that parse backtraces out of the syslog might get 
-confused, so that aspect has to be investigated as well.
-
-Thanks,
-
-	Ingo
+   (Radiohead, "There There")
