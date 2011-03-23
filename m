@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933147Ab1CWPcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:32:09 -0400
-Received: from kroah.org ([198.145.64.141]:33499 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932712Ab1CWPcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:32:05 -0400
-Date: Wed, 23 Mar 2011 08:08:52 -0700
-From: Greg KH <greg@kroah.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: andy.green@linaro.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        grant.likely@secretlab.ca
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110323150852.GE6284@kroah.com>
-References: <4D79F068.2080009@linaro.org>
- <20110323094720.63e7c6b2@lxorguk.ukuu.org.uk>
- <4D89C618.1020608@linaro.org>
- <201103231132.02690.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103231132.02690.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933167Ab1CWPdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:33:36 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:44957 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933050Ab1CWPde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 11:33:34 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=XWr2H0sc3IZ3s1Quq1mIOtPZdVYRhC9N3oNbYv3Nez2haJi3R0zXbmiQmcVGSBnUIiEVL6Hui/a6GK+jBdj3eF7VlccSt6qBJCJQEiMnUhZl2n5FG1rrRUBdhtM5wl6x;
+Date: Wed, 23 Mar 2011 08:33:29 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Keith Packard <keithp@keithp.com>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] drm next tree
+Message-ID: <20110323083329.64a738c6@jbarnes-desktop>
+In-Reply-To: <AANLkTi=zcXFOGj+pi1YSVY1kHoULEAQRNrnzmw2Pexns@mail.gmail.com>
+References: <alpine.DEB.2.00.1103170403160.3429@skynet.skynet.ie>
+	<AANLkTinoTs89ThBnZ17+fPE+t1V=GycKq2EJG-LadFZQ@mail.gmail.com>
+	<AANLkTi=zcXFOGj+pi1YSVY1kHoULEAQRNrnzmw2Pexns@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 11:32:02AM +0100, Arnd Bergmann wrote:
-> On Wednesday 23 March 2011, Andy Green wrote:
-> > It's the case for even usbnet, which is using a broken heuristic to 
-> > decide what to call the interface not even based on vid / pid.
+On Wed, 23 Mar 2011 08:29:35 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Tue, Mar 22, 2011 at 7:19 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Keith/Jesse/Chris - I don't know that it's i915, and it will take
+> > forever to bisect (I'll try). But it does seem pretty likely.
 > 
-> I agree that the heuristics in usbnet is less than helpful here,
-> which among other things leads people to mixing up the two problems
-> of fixing the device naming and fixing the MAC address assignment.
-> 
-> Even though I know Greg disagrees, I'd still prefer sanitising the
-> rules for the default device name that usbnet assigns.
+> Ok, so I'm still bisecting, but it's definitely the DRM pull. Current
+> bisection log attached (the result does contain the fbdev pull from
+> Paul Mundt, but that doesn't touch any files I compile afaik).
 
-I'm all for that, but recall, we can't because of previous
-implementations and past history.  I.e. you will break working systems
-if you do this.  So we are stuck with what we have at the moment, sorry.
+Chris mentioned a7a75c8f7 on irc, not sure if it was regarding this
+issue though, but it does seem a likely candidate.
 
-thanks,
-
-greg k-h
+-- 
+Jesse Barnes, Intel Open Source Technology Center
