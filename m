@@ -1,95 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab1CWOau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:30:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36037 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754249Ab1CWOas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:30:48 -0400
-Date: Wed, 23 Mar 2011 07:31:44 -0700
-From: Greg KH <gregkh@suse.de>
-To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-Cc: devel@driverdev.osuosl.org, Linus Walleij <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 1/2] staging: Add ST-Ericsson CG2900 driver
-Message-ID: <20110323143144.GB17369@suse.de>
-References: <1300888771-26437-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+	id S932652Ab1CWObi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:31:38 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:40081 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932185Ab1CWObh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:31:37 -0400
+Date: Wed, 23 Mar 2011 15:31:34 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: "'Stephen Boyd'" <sboyd@codeaurora.org>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Arnd Bergmann'" <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Use asm-generic/sizes.h
+Message-ID: <20110323143134.GA10136@merkur.ravnborg.org>
+References: <1300751462-1494-1-git-send-email-sboyd@codeaurora.org> <201103220934.50435.arnd@arndb.de> <20110322092113.GB17264@n2100.arm.linux.org.uk> <201103221110.20861.arnd@arndb.de> <00ec01cbe897$2eed7210$8cc85630$@mprc.pku.edu.cn> <4D88ECE3.1070209@codeaurora.org> <00fc01cbe8f9$cd807640$688162c0$@mprc.pku.edu.cn> <4D896616.7070307@codeaurora.org> <016301cbe934$957a69f0$c06f3dd0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300888771-26437-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <016301cbe934$957a69f0$c06f3dd0$@mprc.pku.edu.cn>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 02:59:31PM +0100, Par-Gunnar Hjalmdahl wrote:
-> +TODO
-> +----
-> +
-> + - Decide upon architecture. Some people consider architecture in the cg2900
-> +   driver to be too complex. We consider it to be not more complex than needed.
+> > I'm hoping that kbuild gets asm-generic support sometime soon so files
+> > with only a "#include <asm-generic/*>" are generated instead of living
+> > in the tree. In that case I'd rather have the non power of 2 constants
+> > added to the generic sizes.h and be done with it. There isn't any strong
+> > technical reason to deny power of 2 constants from the generic header,
+> > right?
+> No.
+> I just think that power-of-2 sizes are more generic, not compulsively of course.
+> 
+> Sam Ravnborg had introduced a patch set to provide generic support for
+> architectures that using one-line asm-generic headers.
 
-What do you mean by this?  It sounds as if you do not consider this a
-valid thing.  If so, why list it?
+It almost ready - but my spare time has been spent on sparc lately.
+Will try to take alook at it again soon.
 
-> + - Currently the cg2900_uart registers as protocol driver against hci_ldisc.c.
-> +   There is however some common functionality with hci_h4.c and the cg2900 could
-> +   therefore register it's vendor specific channels to hci_h4.c, but this would
-> +   require adding a registration functionality in the hci_h4 file.
-
-Putting a "but" makes it sound like this is something you will not do.
-If so, why list it?
-
-> + - Some people demand that the cg2900 driver re-use the Bluetooth driver to send
-> +   and receive BT commands and events. That is however not possible with current
-> +   BT API and might not be feasible, for example when using FM only in
-> +   the cg2900 chip.
-
-Again, a review comment that you are saying is not valid.  Why list it?
-
-> + - TI has already delivered a driver for a multi-function chip called ti-st.
-> +   This driver is currently located in drivers/misc/ti-st/. There has however
-> +   been criticism raised against design/architecture of the driver. There
-> +   currently also doesn't seem to be a way to add support for cg2900 in that
-> +   driver even though some people has raised this as an alternative.
-
-And again, the same thing.
-
-What criticism of that driver?  It's now accepted and is working and in
-the tree.
-
-My main point here is that this looks like a rant against people who
-have reviewed your code in the past and why you feel you can not address
-those complaints.  That's not a valid thing for a TODO file at all.
-Please list things that need to be fixed in the driver to get it merged
-into the main tree.  As it is, you have a list of things that you say
-you will not do, which is not encouraging at all.
-
-> diff --git a/drivers/staging/cg2900/bluetooth/Makefile b/drivers/staging/cg2900/bluetooth/Makefile
-> new file mode 100644
-> index 0000000..6f4255b
-> --- /dev/null
-> +++ b/drivers/staging/cg2900/bluetooth/Makefile
-> @@ -0,0 +1,9 @@
-> +#
-> +# Makefile for ST-Ericsson CG2900 connectivity combo controller
-> +#
-> +
-> +ccflags-y :=					\
-> +	-Idrivers/staging/cg2900/include
-> +	
-
-Trailing whitespace, did you run this through checkpatch.pl before
-sending it to me?
-
-thanks,
-
-greg k-h
+	Sam
