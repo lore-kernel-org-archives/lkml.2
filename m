@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339Ab1CWVKZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 17:10:25 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42585
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756202Ab1CWVKU (ORCPT
+	id S933367Ab1CWVLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 17:11:09 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33816 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932133Ab1CWVLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 17:10:20 -0400
-Date: Wed, 23 Mar 2011 14:10:59 -0700 (PDT)
-Message-Id: <20110323.141059.27811716.davem@davemloft.net>
-To: julia@diku.dk
-Cc: kernel-janitors@vger.kernel.org, eric.dumazet@gmail.com, tj@kernel.org,
-        jpirko@redhat.com, geert@linux-m68k.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] drivers/net/a2065.c: Convert release_resource to
- release_region/release_mem_region
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1300814123-25314-3-git-send-email-julia@diku.dk>
-References: <1300814123-25314-3-git-send-email-julia@diku.dk>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Mar 2011 17:11:07 -0400
+Date: Wed, 23 Mar 2011 21:11:06 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs and procfs fixes
+Message-ID: <20110323211106.GC22723@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
-Date: Tue, 22 Mar 2011 18:15:23 +0100
+	Fix for a couple of dumb leaks in path_lookupat() and a large pile of
+procfs fixes.  Please, pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
 
-> Request_mem_region should be used with release_mem_region, not
-> release_resource.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
- ...
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+Shortlog:
+Al Viro (7):
+      fix leaks in path_lookupat()
+      make sessionid permissions in /proc/*/task/* match those in /proc/*
+      pagemap: close races with suid execve
+      report errors in /proc/*/*map* sanely
+      close race in /proc/*/environ
+      auxv: require the target to be tracable (or yourself)
+      deal with races in /proc/*/{syscall,stack,personality}
 
-Applied.
+Stephen Wilson (12):
+      x86: add context tag to mark mm when running a task in 32-bit compatibility mode
+      x86: mark associated mm when running a task in 32 bit compatibility mode
+      mm: arch: make get_gate_vma take an mm_struct instead of a task_struct
+      mm: arch: make in_gate_area take an mm_struct instead of a task_struct
+      mm: arch: rename in_gate_area_no_task to in_gate_area_no_mm
+      mm: use mm_struct to resolve gate vma's in __get_user_pages
+      mm: factor out main logic of access_process_vm
+      mm: implement access_remote_vm
+      proc: disable mem_write after exec
+      proc: hold cred_guard_mutex in check_mem_permission()
+      proc: make check_mem_permission() return an mm_struct on success
+      proc: enable writing to /proc/pid/mem
+
+Diffstat:
+ arch/powerpc/kernel/vdso.c         |    6 +-
+ arch/s390/kernel/vdso.c            |    6 +-
+ arch/sh/kernel/vsyscall/vsyscall.c |    6 +-
+ arch/x86/ia32/ia32_aout.c          |    1 +
+ arch/x86/include/asm/mmu.h         |    6 +
+ arch/x86/kernel/process_64.c       |    8 ++
+ arch/x86/mm/init_64.c              |   16 ++--
+ arch/x86/vdso/vdso32-setup.c       |   15 ++--
+ fs/binfmt_elf.c                    |    2 +-
+ fs/namei.c                         |    7 +-
+ fs/proc/base.c                     |  178 ++++++++++++++++++++++++------------
+ fs/proc/task_mmu.c                 |   23 ++---
+ fs/proc/task_nommu.c               |    6 +-
+ include/linux/mm.h                 |   12 ++-
+ kernel/kallsyms.c                  |    4 +-
+ mm/memory.c                        |   73 +++++++++++----
+ mm/mlock.c                         |    4 +-
+ mm/nommu.c                         |    2 +-
+ 18 files changed, 244 insertions(+), 131 deletions(-)
