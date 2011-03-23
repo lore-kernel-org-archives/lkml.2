@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab1CWSnt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 14:43:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:51576 "EHLO mga14.intel.com"
+	id S932652Ab1CWSrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 14:47:08 -0400
+Received: from kroah.org ([198.145.64.141]:35353 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756278Ab1CWSns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 14:43:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,232,1299484800"; 
-   d="scan'208";a="407378570"
-Date: Wed, 23 Mar 2011 11:43:46 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [RFC] checkpatch: add option to change warning return value.
-Message-ID: <20110323184346.GA5947@xanatos>
-References: <20110322231310.GA7338@xanatos>
- <20110323100707.GC2297@cmpxchg.org>
+	id S932284Ab1CWSrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 14:47:05 -0400
+Date: Wed, 23 Mar 2011 11:46:50 -0700
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: andy.green@linaro.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
+        grant.likely@secretlab.ca, netdev@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: Re: [RFC] usbnet: use eth%d name for known ethernet devices
+Message-ID: <20110323184650.GB21728@kroah.com>
+References: <4D79F068.2080009@linaro.org>
+ <201103231712.06184.arnd@arndb.de>
+ <20110323162251.GA9367@kroah.com>
+ <201103231756.39849.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110323100707.GC2297@cmpxchg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201103231756.39849.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 11:07:07AM +0100, Johannes Weiner wrote:
-> On Tue, Mar 22, 2011 at 04:13:10PM -0700, Sarah Sharp wrote:
-> > There are a lot of warnings in checkpatch.pl that are rather subjective.
-> > For instance, when a line is 81 characters long, and the patch submitter
-> > is just cleaning up existing code, a maintainer may not care that
-> > checkpatch.pl warns about the over 80-character line.  It should be up to
-> > the maintainer what warnings they want to pay attention to.
-> > 
-> > Unfortunately, if you try to run checkpatch.pl as part of a git pre-commit
-> > hook and a patch in a series being applied by git-am fails checkpatch.pl,
-> > the whole process stops.  At that point I usually end up just disabling
-> > that git hook, which means I don't see real errors in the patches.
-> > 
-> > Add an option to checkpatch.pl to print the warnings, but not return an
-> > error code when the --lazy flag is present.  (Anyone with a better name
-> > can pipe up, lazy just seemed to be the opposite to strict.)  This allows
-> > the maintainer to view the warnings, but still allow the patch application
-> > process to continue.
+On Wed, Mar 23, 2011 at 05:56:39PM +0100, Arnd Bergmann wrote:
+> The documentation for the USB ethernet devices suggests that
+> only some devices are supposed to use usb0 as the network interface
+> name instead of eth0. The logic used there, and documented in
+> Kconfig for CDC is that eth0 will be used when the mac address
+> is a globally assigned one, but usb0 is used for the locally
+> managed range that is typically used on point-to-point links.
 > 
-> I first thought you would add code that allowed turning only select
-> errors into warnings.
+> Unfortunately, this has caused a lot of pain on the smsc95xx
+> device that is used on the popular pandaboard without an
+> EEPROM to store the MAC address, which causes the driver to
+> call random_ether_address().
 > 
-> If you just want to have git continue in any case, why not append
-> '|| true' to the line that invokes checkpatch in your hook script?
+> Obviously, there should be a proper MAC addressed assigned to
+> the device, and discussions are ongoing about how to solve
+> this, but this patch at least makes sure that the default
+> interface naming gets a little saner and matches what the
+> user can expect based on the documentation, including for
+> new devices.
+> 
+> The approach taken here is to flag whether a device might be a 
+> point-to-point link with the new FLAG_PTP setting in the usbnet
+> driver_info. A driver can set both FLAG_PTP and FLAG_ETHER if
+> it is not sure (e.g. cdc_ether), or just one of the two.
+> The usbnet framework only looks at the MAC address for device
+> naming if both flags are set, otherwise it trusts the flag.
+> 
+> Signed-off-by: Arnd Bergmann <arnd.bergmann@linaro.org>
+> Cc: Andy Green <andy.green@linaro.org>
 
-Because I still want to stop the patch application process if a true
-error was found.  I just don't want to stop the patch application
-process if just a warning was found.
+Looks good to me, but some questions:
 
-Sarah Sharp
+>  drivers/usb/serial/usb_wwan.c |    2 +-
+
+You don't modify this file in the diff, what caused this to show up in
+the diffstat?
+
+> --- a/include/linux/usb/usbnet.h
+> +++ b/include/linux/usb/usbnet.h
+> @@ -97,6 +97,8 @@ struct driver_info {
+>  
+>  #define FLAG_LINK_INTR	0x0800		/* updates link (carrier) status */
+>  
+> +#define FLAG_PTP	0x1000		/* maybe use "usb%d" names */
+
+"PTP"?  What does that stand for?
+
+curious,
+
+greg k-h
