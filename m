@@ -1,90 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab1CWOgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:36:10 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:41780 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756097Ab1CWOgH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:36:07 -0400
-From: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
-To: Greg KH <gregkh@suse.de>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>
-Date: Wed, 23 Mar 2011 15:35:27 +0100
-Subject: RE: [PATCH 2/2] mach-ux500: Add CG2900 devices
-Thread-Topic: [PATCH 2/2] mach-ux500: Add CG2900 devices
-Thread-Index: AcvpZuY4DTFVyG4ATP6mGlERu1TqJAAADWlA
-Message-ID: <AFCDDB4A3EA003429EEF1E7B211FDBBA334C4DE825@EXDCVYMBSTM005.EQ1STM.local>
-References: <1300888803-26474-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
- <20110323142719.GA17369@suse.de>
-In-Reply-To: <20110323142719.GA17369@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756377Ab1CWOgk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:36:40 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60853 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755604Ab1CWOgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:36:38 -0400
+Date: Wed, 23 Mar 2011 15:36:27 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@gmail.com>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [tip:x86/cleanups] x86, dumpstack: Use frame pointer during
+ stack trace
+Message-ID: <20110323143627.GA31377@elte.hu>
+References: <1299584662-24421-4-git-send-email-namhyung@gmail.com>
+ <tip-2f8058ae197236f9d5641850ce27f67d8f3e0b39@git.kernel.org>
+ <20110310230222.GB1837@nowhere>
+ <1300885734.1479.6.camel@leonhard>
+ <AANLkTikMaimbA=ia-Gr91JbdwFqeAcyTuQ9VzHhATent@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikMaimbA=ia-Gr91JbdwFqeAcyTuQ9VzHhATent@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: den 23 mars 2011 15:27
-> To: Par-Gunnar HJALMDAHL
-> Cc: devel@driverdev.osuosl.org; Linus Walleij; linux-
-> kernel@vger.kernel.org; linux-bluetooth@vger.kernel.org; Pavan Savoy;
-> Vitaly Wool; Alan Cox; Arnd Bergmann; Marcel Holtmann; Lukasz
-> Rymanowski; Linus WALLEIJ; Par-Gunnar Hjalmdahl; Lee Jones
-> Subject: Re: [PATCH 2/2] mach-ux500: Add CG2900 devices
-> 
-> On Wed, Mar 23, 2011 at 03:00:03PM +0100, Par-Gunnar Hjalmdahl wrote:
-> > This patch adds the board specific data for the CG2900
-> > driver on a UX500 board.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> 2011/3/23 Namhyung Kim <namhyung@gmail.com>:
+> > 2011-03-11 (금), 00:02 +0100, Frederic Weisbecker:
+> >> On Thu, Mar 10, 2011 at 10:26:07PM +0000, tip-bot for Namhyung Kim wrote:
+> >> > Commit-ID:  2f8058ae197236f9d5641850ce27f67d8f3e0b39
+> >> > Gitweb:     http://git.kernel.org/tip/2f8058ae197236f9d5641850ce27f67d8f3e0b39
+> >> > Author:     Namhyung Kim <namhyung@gmail.com>
+> >> > AuthorDate: Tue, 8 Mar 2011 20:44:22 +0900
+> >> > Committer:  Thomas Gleixner <tglx@linutronix.de>
+> >> > CommitDate: Thu, 10 Mar 2011 23:20:30 +0100
+> >> >
+> >> > x86, dumpstack: Use frame pointer during stack trace
+> >> >
+> >> > If CONFIG_FRAME_POINTER is set then use the frame pointer for the
+> >> > stack backtrace rather than scanning whole stack blindly.
+> >>
+> >> We don't do it blindly, we actually check the reliability with the
+> >> frame pointer.
+> >>
+> >> I'm not sure this patch is a good idea. stack dumps need to stay very
+> >> robust and not exclusively rely on the frame pointer to be correct.
+> >> At least walking blindly the stack provides a best effort dump as a last
+> >> resort.
+> >>
 > >
-> > Signed-off-by: Par-Gunnar Hjalmdahl <par-
-> gunnar.p.hjalmdahl@stericsson.com>
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> > ---
-> >  arch/arm/mach-ux500/Makefile         |    4 +
-> >  arch/arm/mach-ux500/board-mop500.c   |  160 ++++++++++++++++
-> >  arch/arm/mach-ux500/devices-cg2900.c |  349
-> ++++++++++++++++++++++++++++++++++
-> >  arch/arm/mach-ux500/devices-cg2900.h |   19 ++
-> >  4 files changed, 532 insertions(+), 0 deletions(-)
-> >  create mode 100644 arch/arm/mach-ux500/devices-cg2900.c
-> >  create mode 100644 arch/arm/mach-ux500/devices-cg2900.h
+> > Sounds reasonable. How about adding a boot param to control it then?
 > 
-> As this touches ARM specific code, I need an ack from the ARM
-> maintainer
-> before I can take this through the staging tree.  Is there any way to
-> make it part of your drivers/staging/ submission?  There are other
-> examples in the staging tree already that do this, why not do that here
-> as well?
-> 
-> thanks,
-> 
-> greg k-h
+> Hmm, but I'm not sure what it would be useful for. Even if one is sure that 
+> his crash will have the needed reliable addresses already, having unreliable 
+> ones too in the report are not a problem. Are they?
 
-I've been discussing this with Linus Walleij, who is the maintainer of
-arch/arm/mach-ux500.
-He suggested that I should let this be a separate patch and that I
-should include it in the same patch set where he would pick the patch
-from it.
-I guess he will respond soon since he's on cc.
+Agreed, there's no point in such a boot parameter really.
 
-/P-G
+The principles for printing backtraces are the following:
+
+ - Robustness comes first. We do not ever want to crash or miss important
+   information because the frame pointer chain broke in some rarely used
+   assembler code.
+
+ - Information. Backtraces like:
+
+     [    3.522991] Call Trace:
+     [    3.523351]  [<ffffffff814f35b9>] panic+0x91/0x199
+     [    3.523468]  [<ffffffff814f3729>] ? printk+0x68/0x6a
+     [    3.523576]  [<ffffffff81a981b2>] mount_block_root+0x257/0x26e
+     [    3.523681]  [<ffffffff81a9821f>] mount_root+0x56/0x5a
+     [    3.523780]  [<ffffffff81a98393>] prepare_namespace+0x170/0x1a9
+     [    3.523885]  [<ffffffff81a9772b>] kernel_init+0x1d2/0x1e2
+     [    3.523987]  [<ffffffff81003894>] kernel_thread_helper+0x4/0x10
+     [    3.524228]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
+     [    3.524345]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
+     [    3.524445]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
+
+   are immensely useful, because firstly we see the 'real' backtrace:
+
+     [    3.523351]  [<ffffffff814f35b9>] panic+0x91/0x199
+     [    3.523576]  [<ffffffff81a981b2>] mount_block_root+0x257/0x26e
+     [    3.523681]  [<ffffffff81a9821f>] mount_root+0x56/0x5a
+     [    3.523780]  [<ffffffff81a98393>] prepare_namespace+0x170/0x1a9
+     [    3.523885]  [<ffffffff81a9772b>] kernel_init+0x1d2/0x1e2
+     [    3.523987]  [<ffffffff81003894>] kernel_thread_helper+0x4/0x10
+
+   Secondly, we also see the 'residual trace' of what is on the kernel stack:
+
+     [    3.523468]  [<ffffffff814f3729>] ? printk+0x68/0x6a
+     [    3.524228]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
+     [    3.524345]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
+     [    3.524445]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
+
+   Which is a poor man's kernel trace really. Here it tells us that a printk
+   executed shortly before the backtrace was generated. Info like this can
+   be useful when rare crashes are analyzed.
+
+So hiding that information is not really productive. If then we could think about
+making the visual output more expressive. For example:
+
+ Call Trace:
+  [<ffffffff814f35b9>] panic()                   # 0x091/0x199
+  [<ffffffff814f3729>]                           # ? printk+0x68/0x6a
+  [<ffffffff81a981b2>] mount_block_root()        # 0x257/0x26e
+  [<ffffffff81a9821f>] mount_root()              # 0x056/0x05a
+  [<ffffffff81a98393>] prepare_namespace()       # 0x170/0x1a9
+  [<ffffffff81a9772b>] kernel_init()             # 0x1d2/0x1e2
+  [<ffffffff81003894>] kernel_thread_helper()    # 0x004/0x010
+  [<ffffffff814f6880>]                           # ? restore_args+0x0/0x30
+  [<ffffffff81a97559>]                           # ? kernel_init+0x0/0x1e2
+  [<ffffffff81003890>]                           # ? kernel_thread_helper+0x0/0x10
+
+Would be a 'human readable' variant that tells us the real backtrace 'at a 
+glance' - perhaps in a bit clearer fashion - while still keeping the 'residual' 
+entries included as well.
+
+The downside is that tools that parse backtraces out of the syslog might get 
+confused, so that aspect has to be investigated as well.
+
+Thanks,
+
+	Ingo
