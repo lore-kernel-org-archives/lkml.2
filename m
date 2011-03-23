@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab1CWWET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 18:04:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55279 "EHLO mx1.suse.de"
+	id S1756764Ab1CWWEb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 18:04:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54901 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756081Ab1CWWER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 18:04:17 -0400
-Date: Wed, 23 Mar 2011 23:04:12 +0100
-Message-ID: <s5h62r9wl2b.wl%tiwai@suse.de>
+	id S1756706Ab1CWWE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 18:04:29 -0400
+Date: Wed, 23 Mar 2011 23:04:28 +0100
+Message-ID: <s5h4o6twl1v.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Dan Rosenberg <drosenberg@vsecurity.com>
 Cc: perex@perex.cz, alsa-devel@alsa-project.org, security@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] sound/oss: remove offset from load_patch callbacks
-In-Reply-To: <1300892021.1968.15.camel@dan>
-References: <1300892021.1968.15.camel@dan>
+Subject: Re: [PATCH] sound/oss/opl3: validate voice and channel indexes
+In-Reply-To: <1300894977.1968.37.camel@dan>
+References: <1300894977.1968.37.camel@dan>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,164 +24,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed, 23 Mar 2011 10:53:41 -0400,
+At Wed, 23 Mar 2011 11:42:57 -0400,
 Dan Rosenberg wrote:
 > 
-> Was: [PATCH] sound/oss/midi_synth: prevent underflow, use of
-> uninitialized value, and signedness issue
-> 
-> The offset passed to midi_synth_load_patch() can be essentially
-> arbitrary.  If it's greater than the header length, this will result in
-> a copy_from_user(dst, src, negative_val).  While this will just return
-> -EFAULT on x86, on other architectures this may cause memory corruption.
-> Additionally, the length field of the sysex_info structure may not be
-> initialized prior to its use.  Finally, a signed comparison may result
-> in an unintentionally large loop.
-> 
-> On suggestion by Takashi Iwai, version two removes the offset argument
-> from the load_patch callbacks entirely, which also resolves similar
-> issues in opl3.  Compile tested only.
-> 
-> v3 adjusts comments and hopefully gets copy offsets right.
+> User-controllable indexes for voice and channel values may cause reading
+> and writing beyond the bounds of their respective arrays, leading to
+> potentially exploitable memory corruption.  Validate these indexes.
 > 
 > Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+> Cc: stable@kernel.org
 
 Applied now.  Thanks.
 
 
 Takashi
 
+
 > ---
->  sound/oss/dev_table.h  |    2 +-
->  sound/oss/midi_synth.c |   30 +++++++++++++-----------------
->  sound/oss/midi_synth.h |    2 +-
->  sound/oss/opl3.c       |    8 ++------
->  sound/oss/sequencer.c  |    2 +-
->  5 files changed, 18 insertions(+), 26 deletions(-)
+>  sound/oss/opl3.c |   15 +++++++++++++--
+>  1 files changed, 13 insertions(+), 2 deletions(-)
 > 
-> diff --git a/sound/oss/dev_table.h b/sound/oss/dev_table.h
-> index b7617be..0199a31 100644
-> --- a/sound/oss/dev_table.h
-> +++ b/sound/oss/dev_table.h
-> @@ -271,7 +271,7 @@ struct synth_operations
->  	void (*reset) (int dev);
->  	void (*hw_control) (int dev, unsigned char *event);
->  	int (*load_patch) (int dev, int format, const char __user *addr,
-> -	     int offs, int count, int pmgr_flag);
-> +	     int count, int pmgr_flag);
->  	void (*aftertouch) (int dev, int voice, int pressure);
->  	void (*controller) (int dev, int voice, int ctrl_num, int value);
->  	void (*panning) (int dev, int voice, int value);
-> diff --git a/sound/oss/midi_synth.c b/sound/oss/midi_synth.c
-> index 3c09374..2292c23 100644
-> --- a/sound/oss/midi_synth.c
-> +++ b/sound/oss/midi_synth.c
-> @@ -476,7 +476,7 @@ EXPORT_SYMBOL(midi_synth_hw_control);
->  
->  int
->  midi_synth_load_patch(int dev, int format, const char __user *addr,
-> -		      int offs, int count, int pmgr_flag)
-> +		      int count, int pmgr_flag)
->  {
->  	int             orig_dev = synth_devs[dev]->midi_dev;
->  
-> @@ -491,33 +491,29 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
->  	if (!prefix_cmd(orig_dev, 0xf0))
->  		return 0;
->  
-> +	/* Invalid patch format */
->  	if (format != SYSEX_PATCH)
-> -	{
-> -/*		  printk("MIDI Error: Invalid patch format (key) 0x%x\n", format);*/
->  		  return -EINVAL;
-> -	}
-> +
-> +	/* Patch header too short */
->  	if (count < hdr_size)
-> -	{
-> -/*		printk("MIDI Error: Patch header too short\n");*/
->  		return -EINVAL;
-> -	}
-> +
->  	count -= hdr_size;
->  
->  	/*
-> -	 * Copy the header from user space but ignore the first bytes which have
-> -	 * been transferred already.
-> +	 * Copy the header from user space
->  	 */
->  
-> -	if(copy_from_user(&((char *) &sysex)[offs], &(addr)[offs], hdr_size - offs))
-> +	if (copy_from_user(&sysex, addr, hdr_size))
->  		return -EFAULT;
-> - 
-> - 	if (count < sysex.len)
-> -	{
-> -/*		printk(KERN_WARNING "MIDI Warning: Sysex record too short (%d<%d)\n", count, (int) sysex.len);*/
-> +
-> +	/* Sysex record too short */
-> +	if ((unsigned)count < (unsigned)sysex.len)
->  		sysex.len = count;
-> -	}
-> -  	left = sysex.len;
-> -  	src_offs = 0;
-> +
-> +	left = sysex.len;
-> +	src_offs = 0;
->  
->  	for (i = 0; i < left && !signal_pending(current); i++)
->  	{
-> diff --git a/sound/oss/midi_synth.h b/sound/oss/midi_synth.h
-> index 6bc9d00..b64ddd6 100644
-> --- a/sound/oss/midi_synth.h
-> +++ b/sound/oss/midi_synth.h
-> @@ -8,7 +8,7 @@ int midi_synth_open (int dev, int mode);
->  void midi_synth_close (int dev);
->  void midi_synth_hw_control (int dev, unsigned char *event);
->  int midi_synth_load_patch (int dev, int format, const char __user * addr,
-> -		 int offs, int count, int pmgr_flag);
-> +		 int count, int pmgr_flag);
->  void midi_synth_panning (int dev, int channel, int pressure);
->  void midi_synth_aftertouch (int dev, int channel, int pressure);
->  void midi_synth_controller (int dev, int channel, int ctrl_num, int value);
 > diff --git a/sound/oss/opl3.c b/sound/oss/opl3.c
-> index 938c48c..cbf9574 100644
+> index 938c48c..e9d443e 100644
 > --- a/sound/oss/opl3.c
 > +++ b/sound/oss/opl3.c
-> @@ -820,7 +820,7 @@ static void opl3_hw_control(int dev, unsigned char *event)
+> @@ -849,6 +849,10 @@ static int opl3_load_patch(int dev, int format, const char __user *addr,
+>  
+>  static void opl3_panning(int dev, int voice, int value)
+>  {
+> +
+> +	if (voice < 0 || voice >= devc->nr_voice)
+> +		return;
+> +
+>  	devc->voc[voice].panning = value;
 >  }
 >  
->  static int opl3_load_patch(int dev, int format, const char __user *addr,
-> -		int offs, int count, int pmgr_flag)
-> +		int count, int pmgr_flag)
+> @@ -1066,8 +1070,15 @@ static int opl3_alloc_voice(int dev, int chn, int note, struct voice_alloc_info
+>  
+>  static void opl3_setup_voice(int dev, int voice, int chn)
 >  {
->  	struct sbi_instrument ins;
+> -	struct channel_info *info =
+> -	&synth_devs[dev]->chn_info[chn];
+> +	struct channel_info *info;
+> +
+> +	if (voice < 0 || voice >= devc->nr_voice)
+> +		return;
+> +
+> +	if (chn < 0 || chn > 15)
+> +		return;
+> +
+> +	info = &synth_devs[dev]->chn_info[chn];
 >  
-> @@ -830,11 +830,7 @@ static int opl3_load_patch(int dev, int format, const char __user *addr,
->  		return -EINVAL;
->  	}
+>  	opl3_set_instr(dev, voice, info->pgm_num);
 >  
-> -	/*
-> -	 * What the fuck is going on here?  We leave junk in the beginning
-> -	 * of ins and then check the field pretty close to that beginning?
-> -	 */
-> -	if(copy_from_user(&((char *) &ins)[offs], addr + offs, sizeof(ins) - offs))
-> +	if (copy_from_user(&ins, addr, sizeof(ins)))
->  		return -EFAULT;
->  
->  	if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR)
-> diff --git a/sound/oss/sequencer.c b/sound/oss/sequencer.c
-> index 5ea1098..30bcfe4 100644
-> --- a/sound/oss/sequencer.c
-> +++ b/sound/oss/sequencer.c
-> @@ -241,7 +241,7 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
->  				return -ENXIO;
->  
->  			fmt = (*(short *) &event_rec[0]) & 0xffff;
-> -			err = synth_devs[dev]->load_patch(dev, fmt, buf, p + 4, c, 0);
-> +			err = synth_devs[dev]->load_patch(dev, fmt, buf + p, c, 0);
->  			if (err < 0)
->  				return err;
->  
+> 
 > 
 > 
