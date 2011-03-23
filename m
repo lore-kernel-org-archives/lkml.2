@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933279Ab1CWQOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 12:14:38 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:57951 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab1CWQOh (ORCPT
+	id S1752063Ab1CWQPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 12:15:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57919 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab1CWQPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 12:14:37 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D8A1CB7.4090505@cam.ac.uk>
-Date: Wed, 23 Mar 2011 16:15:51 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	Wed, 23 Mar 2011 12:15:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:organization:message-id:in-reply-to
+         :user-agent;
+        b=pEea6qIKLRuLXji/6E9BI4Bm4MTl2ZTixMX8TPQRbPJE3oF3FxDFzogag4DV04tQ5H
+         VCCQjKehumc9W62J5lksZG+wKJAO7xmxiheWlFTU9T88o1v0J9EH9+5YEI9rbs3VL+eb
+         JzgmGAIMgh2hhTpV3A3dqmByHNhk0NA3D/v4g=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Roger Quadros" <roger.quadros@nokia.com>,
+        "Alan Stern" <stern@rowland.harvard.edu>
+Cc: gregkh@suse.de, sshtylyov@mvista.com,
+        "USB list" <linux-usb@vger.kernel.org>,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] usb: gadget: file_storage: Make CD-ROM emulation
+ work with Mac OS-X
+References: <Pine.LNX.4.44L0.1103231110400.2211-100000@iolanthe.rowland.org>
+Date: Wed, 23 Mar 2011 17:14:22 +0100
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au
-Subject: Re: [PATCH 1/3] Add a kstrtobool function matching semantics of existing
- in kernel equivalents.
-References: <1300887554-19031-1-git-send-email-jic23@cam.ac.uk> <1300887554-19031-2-git-send-email-jic23@cam.ac.uk> <AANLkTimeEKjVwwYi+twb0oeoFK-33LMx5aQBZEnPodne@mail.gmail.com> <20110323160120.GA8770@kroah.com>
-In-Reply-To: <20110323160120.GA8770@kroah.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Organization: Google
+Message-ID: <op.vss0p8h93l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <Pine.LNX.4.44L0.1103231110400.2211-100000@iolanthe.rowland.org>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/11 16:01, Greg KH wrote:
-> On Wed, Mar 23, 2011 at 05:30:11PM +0200, Alexey Dobriyan wrote:
->> On Wed, Mar 23, 2011 at 3:39 PM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
->>> +int kstrtobool(const char *s, bool *res)
->>> +{
->>> +       switch (s[0]) {
->>> +       case 'y':
->>> +       case 'Y':
->>> +       case '1':
->>> +               *res = true;
->>> +       case 'n':
->>> +       case 'N':
->>> +       case '0':
->>> +               *res = false;
->>> +       default:
->>> +               return -EINVAL;
->>> +       }
->>> +       return 0;
->>> +}
->>
->> sigh... such simple thing and so many bugs
-Yeah, not by best work.
->>
->> The only values such function should accept is 0 and 1.
-> 
-> Why?  That's not the way the existing kernel functions that use this
-> work.
-> 
->> Have you read the rest of kstrto*() code?
->> Where is newline check?
-There are plenty of nastier cases that get through than a newline
-in the middle of the string (ybobsyouruncle -> 1 nyes->0 :)
->>
->> Anyway, I think it's better do not exist.
-> 
-> I think it is, as it's already duplicated in at least 2 different places
-> in the kernel, and probably more.  Once we get this implementation
-> working correctly, we don't need to rewrite it again.
-Perhaps naming it like this is a bad idea.  It manages to imply that it
-has the same level of strict checking which is seen in the other kstrto*
-functions - which is self evidently not true!
+>>> On the other hand, I don't think any implementations would get upset  
+>>> if we simply ended the transfer with a short packet instead of
+>>> adhering strictly to the spec.
 
-The alternative is to try and pin down future interfaces to a narrower set
-of 'true' and 'false' values.  We can't realistically change this pair,
-(even to 'fix' them) but maybe we can ensure future versions only take 0 or 1?
-That sort of simple convention would make life simpler!
+> On Wed, 23 Mar 2011, Roger Quadros wrote:
+>> I tried your patch with the CD-ROM implementation and it works  
+>> perfectly. I do not see the unnecessary zero padded transfers
+>> any more.
+>>
+>> Do you think we should have this patch in? with the risk of not strictly
+>> adhering to spec for cases where controller cannot stall?
 
-Jonathan
+On Wed, 23 Mar 2011 16:17:32 +0100, Alan Stern wrote:
+> There already is another place where not stalling forces the driver to
+> violate the spec.  I don't think this makes things much worse... but it
+> is a significant change in behavior.
+>
+> This affects Michal's driver too; we should ask his opinion.  Michal,
+> in case you didn't see it, the proposed patch is here:
+>
+> 	http://marc.info/?l=linux-usb&m=130080683528607&w=2
 
+Thanks.  I don't have original message so I'll reply here:
+
+> +		/* Don't know what to do if common->fsg is NULL */
+> +		} else if (!common->fsg) {
+> +			rc = -EIO;
+> +
+
+I'd change that to "if (!fsg_is_set(common))".  fsg_is_set() prints out a  
+warning
+if common->fsg is not set and I think that's something we want.
+
+(Come to think of it, this check should be done at the beginning of the  
+function
+simplifying the rest of the function, but that's unrelated, I'll do it  
+myself I
+guess.)
+
+Other then that, looks good to me.
+
+As for violating the spec, I don't think I have anything clever to add...
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
