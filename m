@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab1CWPqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:46:11 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54778 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184Ab1CWPqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:46:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: andy.green@linaro.org
-Subject: Re: RFC: Platform data for onboard USB assets
-Date: Wed, 23 Mar 2011 16:45:48 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <greg@kroah.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, roger.quadros@nokia.com,
-        grant.likely@secretlab.ca
-References: <4D79F068.2080009@linaro.org> <20110323150413.GC6284@kroah.com> <4D8A10BF.8010406@linaro.org>
-In-Reply-To: <4D8A10BF.8010406@linaro.org>
+	id S933139Ab1CWPsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:48:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43192 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753184Ab1CWPsX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 11:48:23 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103231645.48390.arnd@arndb.de>
-X-Provags-ID: V02:K0:fbmbzCWcj+TojxGFrTn4jfqOTldhgfn22Q05KzNRlAb
- 3xBbzhjQULhOx9Mpxpfn/e2XzEIaR4/ugoP/MZ84hufX2+eBrv
- hBE+JrKys93AehWcdzYe0ESUAZcGUmklvbg6HYOrMdZswdyG37
- /hO+QFIsrgaqPDhJbBltSx5AmTcoaoE6GoXwthTyO6dIfl57kl
- 4Xe2l6ec1yhNBK/1DKY7w==
+In-Reply-To: <20110323153727.GB12003@htj.dyndns.org>
+References: <20110323153727.GB12003@htj.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 23 Mar 2011 08:48:01 -0700
+Message-ID: <AANLkTik4iG+Ssb+JU3YRB4C11CEZeVozqoiz4rvezFLL@mail.gmail.com>
+Subject: Re: [RFC PATCH] mutex: Apply adaptive spinning on mutex_trylock()
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 March 2011, Andy Green wrote:
-> > So again, this problem, for this device, has been solved in userspace
-> > without any kernel changes needed.  If there are other devices that you,
-> 
-> Not sure what you mean by 'again', 'solved in userspace' and so on. 
-> Your saying: "go away and do it in userspace" is different from it being 
-> "solved in userspace" in reality.  The mess it would create in userspace 
-> isn't acceptable.  The outcome of this is it's not fixed in the driver 
-> nor userspace.
+On Wed, Mar 23, 2011 at 8:37 AM, Tejun Heo <tj@kernel.org> wrote:
+>
+> Currently, mutex_trylock() doesn't use adaptive spinning.  It tries
+> just once.  I got curious whether using adaptive spinning on
+> mutex_trylock() would be beneficial and it seems so, at least for
+> btrfs anyway.
 
-I agree, doing the device naming in user space to solve this problem would
-require identifying the board with the particular bug in a table that
-is kept by the distro, and we currently don't even have a way to identify
-a specific board. I certainly wouldn't want to rely on things like the
-recently proposed /sys/devices/socinfo for identifying whether or not we
-want to rename a USB ethernet device.
+Hmm. Seems reasonable to me. The patch looks clean, although part of
+that is just the mutex_spin() cleanup that is independent of actually
+using it in trylock.
 
-	Arnd
+So no objections from me.
+
+                    Linus
