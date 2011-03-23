@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab1CWJRm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 05:17:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43963 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943Ab1CWJRl (ORCPT
+	id S1756072Ab1CWJWp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 05:22:45 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:34207 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755943Ab1CWJWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 05:17:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=axwOccCJ1I/l1QlNyugbYFHu4SeO2OYqz+akrPBg2crg4c0+DV9MIdO0SHyzvTGLgN
-         1h9JgfkgAhgeOlS4BXFoifbTbCVMYz+Idg85voFPowXM4N3yuW4Df5vC+Kd+BI/NvXf6
-         DbpEwlSfKFQJk1WVCN40GKHXK9HJoQswf9CHw=
-Date: Wed, 23 Mar 2011 10:17:36 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 7/8] job control: Notify the real parent of job control
- events regardless of ptrace
-Message-ID: <20110323091736.GY12003@htj.dyndns.org>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org>
- <1299614199-25142-8-git-send-email-tj@kernel.org>
- <20110321174306.GA29895@redhat.com>
- <20110322080444.GM12003@htj.dyndns.org>
- <20110322194416.GC28038@redhat.com>
+	Wed, 23 Mar 2011 05:22:44 -0400
+Message-ID: <4D89BBDD.5090505@linux.vnet.ibm.com>
+Date: Wed, 23 Mar 2011 14:52:37 +0530
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc11 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110322194416.GC28038@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Len Brown <lenb@kernel.org>
+CC: arjan@linux.intel.com, peterz@infradead.org, suresh.b.siddha@intel.com,
+        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
+        xen-devel@lists.xensource.com
+Subject: Re: [RFC PATCH V4 2/5] cpuidle: list based cpuidle driver registration
+ and selection
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com> <20110322123233.28725.92874.stgit@tringupt.in.ibm.com> <alpine.LFD.2.02.1103222254420.10549@x980>
+In-Reply-To: <alpine.LFD.2.02.1103222254420.10549@x980>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Oleg.
+Hi Len,
 
-On Tue, Mar 22, 2011 at 08:44:16PM +0100, Oleg Nesterov wrote:
-> On 03/22, Tejun Heo wrote:
-> >
-> > On Mon, Mar 21, 2011 at 06:43:06PM +0100, Oleg Nesterov wrote:
-> > > Hmm... in fact I can't convince myself we really need to look at
-> > > child->group_leader, will recheck... Anyway, this is minor too.
-> >
-> > Care to elaborate?
-> 
-> child->real_parent must be equal to child->group_leader->real_parent.
+The goal of the patch series is to remove exported pm_idle function
+pointer (see http://lkml.org/lkml/2009/8/28/43 and
+http://lkml.org/lkml/2009/8/28/50 for problems related to pm_idle).
+The first patch in the series removes pm_idle for x86 and we
+now directly call cpuidle_idle_call as suggested by Arjan
+(https://lkml.org/lkml/2010/10/19/453).
 
-Okay.
+But we also have to replace the functionality provided by pm_idle,
+i.e. call default_idle for platforms where no better idle routine
+exists, call mwait for pre-nehalem platforms, use intel_idle or
+acpi_idle for nehalem architectures etc. To manage all this
+we need a registration mechanism which is conveniently provided
+by cpuidle.
 
-> What we need is ptrace_reparented(). But as I said, it should be
-> fixed first (I think) and this needs a separate patch/discussion.
-> 
-> So yes, we need a new helper.
-> 
-> Well, and look at get_signal_to_deliver(),
-> 
-> 		leader = current->group_leader;
-> 		if (task_ptrace(leader) && !real_parent_is_ptracer(leader))
-> 			do_notify_parent_cldstop(leader, true, why);
-> 
-> Indeed. But in fact task_ptrace(leader) is not needed. If
-> real_parent_is_ptracer(tsk) returns false, then tsk must be ptraced.
-> 
-> So we could write
-> 
-> 		if (!real_parent_is_ptracer(leader))
-> 			do_notify_parent_cldstop(leader, true, why);
-> 
-> but now this looks confusing because of the naming. Compare with
-> 
-> 		if (ptrace_reparented(leader))
-> 			do_notify_parent_cldstop(leader);
+In theory I agree that we can maybe do without list based
+registration i.e probe and pick the best for the platform, but things
+may become less predictable and difficult to manage as
+we have more and more platforms and drivers.
+By directly calling into cpuidle, we already have arch default
+other than intel_idle and acpi_idle. Then APM and xen (though
+it uses default_idle) also have their own idle routines.
+List based management and selection based on priority would provide
+a cleaner solution.
 
-I see but I don't think ptrace_reparented() is a good name for
-!same_thread_group(child->parent, child->real_parent).  It gets too
-confusing with child->parent != child->real_parent test.
+Thanks,
+-Trinabh
 
-Anyways, I'll leave the renaming for later patch and just update the
-->group_leader part.
-
-Thanks.
-
--- 
-tejun
+On 03/23/2011 08:29 AM, Len Brown wrote:
+> the original cpuidle prototype supported multiple driver registration,
+> but no production use for it could be imagined, and so it was deleted.
+>
+> Subsequently on x86, we added intel_idle to replace acpi_idle
+> and a typical kernel will have them both built in.
+> We still don't allow mutliple registrations, we just arrange
+> affairs such that the preferred intel_idle probes before
+> the backup, acpi_idle.  If intel_idle recognizes the platform,
+> its probe succeeds, else acpi_idle gets a go.
+> If there is a problem with intel_idle, or a comparison needs to be made,
+> a bootparam is available to tell intel_idle not to probe.
+>
+> This mechanism takes approximately 10 lines of code -- the bootparam
+> to disable the preferred driver.
+>
+> What is the benefit of all the code to support the feature of run-time
+> multiple driver registration and switching?
+>
+> thanks,
+> Len Brown, Intel Open Source Technology Center
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
