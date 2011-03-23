@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab1CWV2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 17:28:05 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:38624 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab1CWV2D (ORCPT
+	id S932133Ab1CWV2H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 17:28:07 -0400
+Received: from mail-tx2.bigfish.com ([65.55.88.10]:51152 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755141Ab1CWV2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 17:28:03 -0400
+	Wed, 23 Mar 2011 17:28:04 -0400
 X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h62h)
-X-Spam-TCS-SCL: 1:0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h66h)
+X-Spam-TCS-SCL: 5:0
 X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 From: <Dinh.Nguyen@freescale.com>
 To: <linux-kernel@vger.kernel.org>
@@ -18,12 +18,14 @@ CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
         <arnaud.patard@rtp-net.org>, <ra5478@freescale.com>,
         <xiao-lizhang@freescale.com>, <festevam@gmail.com>,
         Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv6 2/4] ARM: mx51: Add entry for gpc_dvfs_clk
-Date: Wed, 23 Mar 2011 16:27:54 -0500
-Message-ID: <1300915676-10359-2-git-send-email-Dinh.Nguyen@freescale.com>
+Subject: [PATCHv6 4/4] ARM: mx51: Add support for low power suspend on MX51
+Date: Wed, 23 Mar 2011 16:27:56 -0500
+Message-ID: <1300915676-10359-4-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1300915676-10359-1-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1300915676-10359-3-git-send-email-Dinh.Nguyen@freescale.com>
 References: <1300915676-10359-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300915676-10359-2-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300915676-10359-3-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
@@ -33,40 +35,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-For MX51 SRPG, we need to turn on the GPC clock in order to set the
-SRPG registers.
+Adds initial low power suspend functionality to MX51.
+Supports "mem" and "standby" modes.
+
+Tested on mx51-babbage.
 
 Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/arm/mach-mx5/clock-mx51-mx53.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ arch/arm/mach-mx5/Makefile  |    1 +
+ arch/arm/mach-mx5/pm-imx5.c |   74 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 75 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-mx5/pm-imx5.c
 
-diff --git a/arch/arm/mach-mx5/clock-mx51-mx53.c b/arch/arm/mach-mx5/clock-mx51-mx53.c
-index 652ace4..3eb1c6e 100644
---- a/arch/arm/mach-mx5/clock-mx51-mx53.c
-+++ b/arch/arm/mach-mx5/clock-mx51-mx53.c
-@@ -865,6 +865,13 @@ static struct clk aips_tz2_clk = {
- 	.disable = _clk_ccgr_disable_inwait,
- };
+diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+index 0b9338c..d646feb 100644
+--- a/arch/arm/mach-mx5/Makefile
++++ b/arch/arm/mach-mx5/Makefile
+@@ -6,6 +6,7 @@
+ obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o system.o
+ obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
  
-+static struct clk gpc_dvfs_clk = {
-+	.enable_reg = MXC_CCM_CCGR5,
-+	.enable_shift = MXC_CCM_CCGRx_CG12_OFFSET,
-+	.enable = _clk_ccgr_enable,
-+	.disable = _clk_ccgr_disable,
++obj-$(CONFIG_PM) += pm-imx5.o
+ obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
+ obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+ obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
+diff --git a/arch/arm/mach-mx5/pm-imx5.c b/arch/arm/mach-mx5/pm-imx5.c
+new file mode 100644
+index 0000000..7dec09e
+--- /dev/null
++++ b/arch/arm/mach-mx5/pm-imx5.c
+@@ -0,0 +1,74 @@
++/*
++ *  Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++#include <linux/suspend.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
++#include <mach/system.h>
++#include "crm_regs.h"
++
++static struct clk *gpc_dvfs_clk;
++
++static int mx5_suspend_enter(suspend_state_t state)
++{
++	clk_enable(gpc_dvfs_clk);
++	switch (state) {
++	case PM_SUSPEND_MEM:
++		mx5_cpu_lp_set(STOP_POWER_OFF);
++		break;
++	case PM_SUSPEND_STANDBY:
++		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	if (state == PM_SUSPEND_MEM) {
++		local_flush_tlb_all();
++		flush_cache_all();
++
++		/*clear the EMPGC0/1 bits */
++		__raw_writel(0, MXC_SRPG_EMPGC0_SRPGCR);
++		__raw_writel(0, MXC_SRPG_EMPGC1_SRPGCR);
++	}
++	cpu_do_idle();
++	clk_disable(gpc_dvfs_clk);
++
++	return 0;
++}
++
++static int mx5_pm_valid(suspend_state_t state)
++{
++	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
++}
++
++static const struct platform_suspend_ops mx5_suspend_ops = {
++	.valid = mx5_pm_valid,
++	.enter = mx5_suspend_enter,
 +};
 +
- static struct clk gpt_32k_clk = {
- 	.id = 0,
- 	.parent = &ckil_clk,
-@@ -1448,6 +1455,7 @@ static struct clk_lookup mx51_lookups[] = {
- 	_REGISTER_CLOCK("imx-ipuv3", NULL, ipu_clk)
- 	_REGISTER_CLOCK("imx-ipuv3", "di0", ipu_di0_clk)
- 	_REGISTER_CLOCK("imx-ipuv3", "di1", ipu_di1_clk)
-+	_REGISTER_CLOCK(NULL, "gpc_dvfs", gpc_dvfs_clk)
- };
- 
- static struct clk_lookup mx53_lookups[] = {
++static int __init mx5_pm_init(void)
++{
++	if (gpc_dvfs_clk == NULL)
++		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
++
++	if (!IS_ERR(gpc_dvfs_clk)) {
++		if (cpu_is_mx51())
++			suspend_set_ops(&mx5_suspend_ops);
++	} else {
++		printk(KERN_ERR "Cannot enter SRPG suspend -no gpc_dvfs clock!\n");
++		return -EPERM;
++	}
++
++	return 0;
++}
++device_initcall(mx5_pm_init);
 -- 
 1.6.0.4
 
