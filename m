@@ -1,213 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab1CWIir (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 04:38:47 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:42684 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619Ab1CWIik convert rfc822-to-8bit (ORCPT
+	id S932135Ab1CWIo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 04:44:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50055 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755857Ab1CWIo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 04:38:40 -0400
+	Wed, 23 Mar 2011 04:44:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=H8XYBPzNsjKbbXLiqTI6KBzzBQalSDxz0MNjZtwOFJarQQw+clNKjuJ2KDPzClfA2f
-         ax6Vp2ay+gGGFcnyL4ZmQQZM7f5YsSgqQb+V4vfwulyBqVb4OiNsUynE+M7HIqdZw5NI
-         R476oxf6evJXgUZ5jxVG0P0ZgEkb7TQu/5F6M=
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TN2KefsYo9WbfsJUZYzT0YokzYvY9AqWplwMinnUkKag+0oJzfIXFz1MJS55KvVFnc
+         UJJa4R/u2EcXiVr4PaytmNjla4tSfGRaWwE/w8sMdBQEzjgIFBhUt1UBJKb3S2AQLVTB
+         SvYtVPjfNOPnOzNEYXaku5akFbZUSNKLb+XXs=
+Date: Wed, 23 Mar 2011 09:44:21 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 1/8] job control: Don't set group_stop exit_code if
+ re-entering job control stop
+Message-ID: <20110323084421.GW12003@htj.dyndns.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+ <1299614199-25142-2-git-send-email-tj@kernel.org>
+ <20110321132024.GA18777@redhat.com>
+ <20110321155250.GE12003@htj.dyndns.org>
+ <20110322184415.GA28038@redhat.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1300845590-14184-1-git-send-email-valerie.aurora@gmail.com>
-References: <1300845590-14184-1-git-send-email-valerie.aurora@gmail.com>
-Date: Wed, 23 Mar 2011 09:38:39 +0100
-Message-ID: <AANLkTinnRz2PPc3XqgCK72S9+fqTK0QCUOLkK98S5j_Q@mail.gmail.com>
-Subject: Re: [PATCH 00/74] Union mounts version something or other
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Valerie Aurora <valerie.aurora@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        LKML <linux-kernel@vger.kernel.org>, Felix Fietkau <nbd@openwrt.org>,
-        hch@lst.de, Miklos Szeredi <miklos@szeredi.hu>,
-        "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322184415.GA28038@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 2:58 AM, Valerie Aurora
-<valerie.aurora@gmail.com> wrote:
-> Hi union mounts fans(?),
->
-> Here's my current union mounts patch set, against 2.6.36-rc5.  I'm
-> busy with other things[1] and unlikely to put in significant work on
-> union mounts in the next year.  I'm happy to answer questions from
-> anyone else working on them.
->
-> As always, git trees for the kernel, util-linux, and e2fsprogs, lots
-> of documentation, and LWN articles describing the various problems
-> unioning file systems will encounter are here:
->
-> http://valerieaurora.org/union/
->
-> The devkit linked to from that page includes my Usermode Linux testing
-> environment, including root file system image.  The README tells you
-> how to run the test suite automatically (yes, an automated test suite
-> - with Makefile and version control and comments and stuff!).
->
-> I took a quick look at the current overlayfs patch set, and it's
-> small, clean, and easy to understand.  If it does what people need, I
-> say ship it.
->
-> Thanks to everyone who reviewed and submitted patches for union mounts!
->
-> -VAL
->
-> [1] http://adainitiative.org
->
-> ---
->
-> Felix Fietkau (2):
->  whiteout: jffs2 whiteout support
->  fallthru: jffs2 fallthru support
->
-> Jan Blunck (9):
->  VFS: Make lookup_hash() return a struct path
->  autofs4: Save autofs trigger's vfsmount in super block info
->  whiteout/NFSD: Don't return information about whiteouts to userspace
->  whiteout: Add vfs_whiteout() and whiteout inode operation
->  whiteout: Allow removal of a directory with whiteouts
->  whiteout: tmpfs whiteout support
->  union-mount: Introduce MNT_UNION and MS_UNION flags
->  union-mount: Free union stack on removal of topmost dentry from
->    dcache
->  union-mount: Create IS_MNT_UNION()
->
-> Valerie Aurora (63):
->  VFS: Comment follow_mount() and friends
->  Documentation: Fix trivial typo in filesystems/sharedsubtree.txt
->  whiteout: Define opaque inode flags and operations
->  ext2: Add ext2_dirent_in_use()
->  ext2: Split ext2_add_entry() from ext2_add_link()
->  whiteout: ext2 whiteout support
->  fallthru: Basic fallthru definitions
->  fallthru: ext2 fallthru support
->  fallthru: tmpfs fallthru support
->  VFS: Add hard read-only users count to superblock
->  VFS: Make clone_mnt()/copy_tree()/collect_mounts() return errors
->  VFS: Add CL_NO_SHARED flag to clone_mnt()/copy_tree()
->  VFS: Add CL_NO_SLAVE flag to clone_mnt()/copy_tree()
->  VFS: Add CL_MAKE_HARD_READONLY flag to clone_mnt()/copy_tree()
->  union-mount: Union mounts documentation
->  union-mount: Add CONFIG_UNION_MOUNT option
->  union-mount: Create union_stack structure
->  union-mount: Add two superblock fields for union mounts
->  union-mount: Add union_alloc()
->  union-mount: Add union_find_dir()
->  union-mount: Create d_free_unions()
->  union-mount: Create union_add_dir()
->  union-mount: Add union_create_topmost_dir()
->  union-mount: Create needs_lookup_union()
->  union-mount: Create check_topmost_union_mnt()
->  union-mount: Add clone_union_tree() and put_union_sb()
->  union-mount: Create build_root_union()
->  union-mount: Create prepare_mnt_union() and cleanup_mnt_union()
->  union-mount: Prevent improper union-related remounts
->  union-mount: Prevent topmost file system from being mounted elsewhere
->  union-mount: Prevent bind mounts of union mounts
->  union-mount: Implement union mount
->  union-mount: Temporarily disable some syscalls
->  union-mount: Basic infrastructure of __lookup_union()
->  union-mount: Process negative dentries in __lookup_union()
->  union-mount: Return files found in lower layers in __lookup_union()
->  union-mount: Build union stack in __lookup_union()
->  union-mount: Follow mount in __lookup_union()
->  union-mount: Add lookup_union()
->  union-mount: Add do_lookup_union() wrapper for __lookup_union()
->  union-mount: Call union lookup functions in lookup path
->  union-mount: Create whiteout on unlink()
->  union-mount: Create whiteout on rmdir()
->  union-mount: Set opaque flag on new directories in unioned file
->    systems
->  union-mount: Copy up directory entries on first readdir()
->  union-mount: Add generic_readdir_fallthru() helper
->  fallthru: ext2 support for lookup of d_type/d_ino in fallthrus
->  fallthru: tmpfs support for lookup of d_type/d_ino in fallthrus
->  fallthru: jffs2 support for lookup of d_type/d_ino in fallthrus
->  VFS: Split inode_permission() and create path_permission()
->  VFS: Create user_path_nd() to lookup both parent and target
->  union-mount: In-kernel file copyup routines
->  union-mount: Implement union-aware access()/faccessat()
->  union-mount: Implement union-aware link()
->  union-mount: Implement union-aware rename()
->  union-mount: Implement union-aware writable open()
->  union-mount: Implement union-aware chown()
->  union-mount: Implement union-aware truncate()
->  union-mount: Implement union-aware chmod()/fchmodat()
->  union-mount: Implement union-aware lchown()
->  union-mount: Implement union-aware utimensat()
->  union-mount: Implement union-aware setxattr()
->  union-mount: Implement union-aware lsetxattr()
->
+Hello,
 
-Shall I cry or laugh? I really don't know...
+On Tue, Mar 22, 2011 at 07:44:15PM +0100, Oleg Nesterov wrote:
+> Suppose that debugger PTRACE_CONTs the stopped thread and then it
+> gets SIGSTOP and calls do_signal_stop() again. In theory this all is
+> possible before SIGNAL_STOP_STOPPED. This can confuse real_parent.
+> Say, real_parent itself sends SIGTTIN to the child and naturally
+> expects WIFSTOPPED() == SIGTTIN.
 
-With your email I remembered my first steps with Linux Live-CD technologies.
-As a home-project I created an own sidux live-cd and enlightenment as
-window-manager to get a bit familiar with the technolgies/tools behind
-it.
-Still the mostly used and most effective "technology" in this area is
-AUFS in combination with SquashFS compression (see for example Debian
-/ GRML / ex-sidux Live-CD frameworks).
+Hmmm... There are two competing signals in that case - SIGTTIN sent by
+the parent and SIGSTOP sent by someone else.  The parent doesn't have
+any control over which signal wins the race nor is it visible in any
+way before the group stop is complete.  The two signals are
+equivalent.
 
-But I also remember these "famous words" [1]:
+I can't think of a scenario where the parent would be able to
+differentiate the two signals (in the sense that it can say the latter
+is the wrong signal).  If you can, please share.
 
-"Note: it becomes clear that "Aufs was rejected. Let's give it up."
-According to Christoph Hellwig, linux rejects all union-type filesystems
-but UnionMount."
+> But again, even if I am right this is minor and we can change this
+> later. And btw, I think we should not change/set ->group_stop_count
+> if SIGNAL_STOP_STOPPED || group_stop_count. We will see.
 
-Please hold the line... Please hold the line... Please hold the line???
+Yeah, maybe.  We would be suppressing group stop completion anyway so
+the count doesn't make whole lot of difference.  The only difference
+would be that group stop completion would be delayed if stop signals
+are continuously delievered by ptracee's in the thread group.  I don't
+think it matters one way or the other.
 
-Whuzzz up with AUFS?
-Even there where massive changes to VFS and FS in 2.6.38+, there is an
-adapted kernel patch around (for example see Debian's 2.6.38 linux-2.6
-packages in experimental branch).
+> For example. Ignoring task_participate_group_stop(), why
+> task_clear_group_stop_pending() preserves the GROUP_STOP_SIGMASK ?
+> This doesn't hurt, sure. But looks a bit inconsistent.
 
->From my POV OverlayFS is the new star at the skyline and should be
-promoted as 1st choice, now.
-I am definitely PRO for including it in 2.6.39!
-And when looking to the code-size, OverlayFS is small while you send
-70+ single patches.
+Yeah, it probably is better to clear the signo too.
 
-Union-mounts never got out of "technology preview" status and was
-stepmotherly promoted in the past.
-You are leaving an outdated (unfinished?) code (IIRC I read 2.6.36-rc5
-as code-base) and furthermore u-m needs hacked user-space, too.
-So, u-m is for me - seen from today and having OverlayFS as an
-alternative - a dead horse.
-But, BKL-removal showed us... a once started job can be finished :-).
+> > * A thread does group stop and the parent consumed exit code.
+> >
+> > * ptracer attaches and sees the group stop signal.
+> >
+> > * PTRACE_CONT and the thread leaves do_signal_stop().
+> >
+> > * PTRACE_DETACH.  The thread returns to do_signal_stop() and re-enters
+> >   TASK_STOPPED.
+> >
+> > * Another ptracer does PTRACE_ATTACH.
+> >
+> > The second ptracer wants to know the signo too but if it were stored
+> > in a local variable, it wouldn't be available anywhere.
+> 
+> Yes, sure. But this is basically the same case. My point was, this
+> signr must be correct inside the retry loop, otherwise we could just
+> report SIGSTOP because we can't guarantee the "correct" signr anyway.
+> 
+> Let's look at your example again. Suppose that the process was stopped
+> by SIGSTOP.
+> 
+> When the first ptracer attaches, each thread correctly reports SIGSTOP.
+> But if it plays with PTRACE_CONT and then detaches, the next ptracer can
+> see, say, SIGTTIN. And different threads can report different signals.
 
-( Sorry, for the rough words. )
+I think it depends on how you look at it.  Group stop behavior is
+different under ptrace anyway.  We allow PTRACE_CONT'd tracees to
+re-initiate and re-enter the existing group stop.  Which signo is the
+right one to report is debatable, but,
 
-I do not want to end this email with some lights at the end of the
-tunnel and want to quote Felix [2]:
+* For the tracee which delivers the signal which re-initiates the
+  existing group stop, it would be just weird to report different
+  signo from the one delivered.
 
-[...]
-> But I'd want Al's ack on the series. And also hear who uses it and how
-> it's been tested?
-We're using it in OpenWrt (an Embedded Linux distribution) for devices
-with tiny amounts of flash for the entire system (e.g. 4 MB).
-We're using it to provide a writable on-flash root filesystem with
-squashfs for the read-only part and jffs2 for the writable overlay. This
-saves some precious flash space compared to using only jffs2, and it
-makes it easy for users to reset their device to defaults without having
-to reflash.
-With a backport of v6 of this series + my fixes that went into v7 this
-is working quite well on 2.6.37 and 2.6.38 - I'm using it on a few
-wireless access points at home.
-[...]
+* It would also be weird to report different signo for other tracees
+  in the group depending on whether they were running at the time of
+  re-initiation or not.
 
-OverlayFS GO GO GO!
+So, I think just defining the stop signo to be reported while ptraced
+as "the latest group stop signal delivered" isn't too bad.  It's
+simple and more consistent with the existing behavior.
 
-- Sedat -
+> > > Or, if debugger PTRACE_CONT's T2, it will report another
+> > > ptrace_stop(CLD_STOPPED) immediately, this differs from the current
+> > > behaviour although probably we do not care.
+> >
+> > This was changed by "signal: Use GROUP_STOP_PENDING to stop once for a
+> > single group stop".
+> 
+> Not sure I understand... We are setting GROUP_STOP_PENDING | CONSUME
+> again. T2 has already reported ptrace_stop(CLD_STOPPED) to the tracer.
+> It is stopped. Now it will report another CLD_STOPPED after PTRACE_CONT.
 
-[1] http://aufs.sourceforge.net/
-[2] http://lkml.org/lkml/2011/3/22/294
+Okay, I see.  Maybe we should discern between traced for group stop
+from other traps but then again given the group stop re-entering while
+ptraced it can be considered a relatively consistent behavior.  Yeah,
+but probably better to remove the double reporting.
+
+Thanks.
+
+-- 
+tejun
