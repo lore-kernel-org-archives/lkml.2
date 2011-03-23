@@ -1,132 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932674Ab1CWLXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 07:23:36 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:57967 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932627Ab1CWLXe (ORCPT
+	id S932659Ab1CWLYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 07:24:42 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:52905 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932554Ab1CWLYl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 07:23:34 -0400
-Subject: Re: [PATCH] sound/oss/midi_synth: prevent underflow, use of
- uninitialized value, and signedness issue
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: perex@perex.cz, alsa-devel@alsa-project.org, security@kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <s5h1v1yxp3p.wl%tiwai@suse.de>
-References: <1300818668.2130.27.camel@dan>  <s5h1v1yxp3p.wl%tiwai@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Mar 2011 07:23:25 -0400
-Message-ID: <1300879405.1935.2.camel@dan>
+	Wed, 23 Mar 2011 07:24:41 -0400
+Subject: Re: [PATCH] kmemleak: build kmemleak-test.c as a module-only
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Daniel Baluta <dbaluta@ixiacom.com>
+Cc: paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org, mingo@elte.hu,
+        fweisbec@gmail.com, rdunlap@xenotime.net, linux-kernel@vger.kernel.org
+In-Reply-To: <1300299394-20844-1-git-send-email-dbaluta@ixiacom.com>
+References: <1300299394-20844-1-git-send-email-dbaluta@ixiacom.com>
+Organization: ARM Limited
+Date: Wed, 23 Mar 2011 11:24:29 +0000
+Message-ID: <1300879469.23962.40.camel@e102109-lin.cambridge.arm.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 23 Mar 2011 11:24:33.0470 (UTC) FILETIME=[E25CA5E0:01CBE94C]
+X-MC-Unique: 111032311243612301
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-23 at 08:39 +0100, Takashi Iwai wrote:
-> At Tue, 22 Mar 2011 14:31:08 -0400,
-> Dan Rosenberg wrote:
-> > 
-> > The offset passed to midi_synth_load_patch() can be essentially
-> > arbitrary.  If it's greater than the header length, this will result in
-> > a copy_from_user(dst, src, negative_val).  While this will just return
-> > -EFAULT on x86, on other architectures this may cause memory corruption.
-> > Additionally, the length field of the sysex_info structure may not be
-> > initialized prior to its use.  Finally, a signed comparison may result
-> > in an unintentionally large loop.
-> > 
-> > This patch fixes all these issues, as well as some cleanup to prevent
-> > checkpatch.pl from complaining.
-> > 
-> > Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-> > Cc: stable@kernel.org
+On Wed, 2011-03-16 at 18:16 +0000, Daniel Baluta wrote:
+> mm/kmemleak-test.c is used to provide an example of how kmemleak
+> tool works.
 > 
-> Well, the whole load_patch mechanism doesn't look working right with
-> ofs != 0.  The only caller of this callback is sound/oss/sequencer.c,
-> and it assumes that the whole chunk is passed once without splitting.
-> Thus the offset calculation in this code is obviously wrong, and
-> passing offset itself doesn't make any sense.
+> Memory is leaked at module unload-time, so building the test
+> in kernel (Y) makes the leaks impossible and the test useless.
 > 
-> A similar problem (uninitialized struct fields) is found in another
-> load_patch callback in sound/oss/opl3.c.
+> Qualify DEBUG_KMEMLEAK_TEST config symbol with "depends on m",
+> to restrict module-only building.
 > 
-> That is, the best fix would be to rip off the offset argument from
-> this callback.
-> 
+> Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
 
-Thanks, I'll resend a new patch series that uses this approach as well
-as addresses a few more security issues.
+Sorry for the delay.
 
-On a related note, is there any interest in removing OSS (actual, not
-emulation) entirely?  It's been marked as deprecated since before the
-git epoch (2005), and it's seen little development other than bug fixes
-and security issues.
-
-Regards,
-Dan
-
-> 
-> thanks,
-> 
-> Takashi
-> 
-> > ---
-> >  sound/oss/midi_synth.c |   27 ++++++++++++++-------------
-> >  1 files changed, 14 insertions(+), 13 deletions(-)
-> > 
-> > diff --git a/sound/oss/midi_synth.c b/sound/oss/midi_synth.c
-> > index 3c09374..3500f80 100644
-> > --- a/sound/oss/midi_synth.c
-> > +++ b/sound/oss/midi_synth.c
-> > @@ -491,16 +491,18 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
-> >  	if (!prefix_cmd(orig_dev, 0xf0))
-> >  		return 0;
-> >  
-> > +	/* Invalid patch format */
-> >  	if (format != SYSEX_PATCH)
-> > -	{
-> > -/*		  printk("MIDI Error: Invalid patch format (key) 0x%x\n", format);*/
-> >  		  return -EINVAL;
-> > -	}
-> > +
-> > +	/* Patch header too short */
-> >  	if (count < hdr_size)
-> > -	{
-> > -/*		printk("MIDI Error: Patch header too short\n");*/
-> >  		return -EINVAL;
-> > -	}
-> > +
-> > +	/* Offset too high */
-> > +	if (offs > offsetof(struct sysex_info, len) || offs < 0)
-> > +		return -EINVAL;
-> > +
-> >  	count -= hdr_size;
-> >  
-> >  	/*
-> > @@ -510,14 +512,13 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
-> >  
-> >  	if(copy_from_user(&((char *) &sysex)[offs], &(addr)[offs], hdr_size - offs))
-> >  		return -EFAULT;
-> > - 
-> > - 	if (count < sysex.len)
-> > -	{
-> > -/*		printk(KERN_WARNING "MIDI Warning: Sysex record too short (%d<%d)\n", count, (int) sysex.len);*/
-> > +
-> > +	/* Sysex record too short */
-> > +	if ((unsigned)count < (unsigned)sysex.len)
-> >  		sysex.len = count;
-> > -	}
-> > -  	left = sysex.len;
-> > -  	src_offs = 0;
-> > +
-> > +	left = sysex.len;
-> > +	src_offs = 0;
-> >  
-> >  	for (i = 0; i < left && !signal_pending(current); i++)
-> >  	{
-> > 
-> > 
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
 
