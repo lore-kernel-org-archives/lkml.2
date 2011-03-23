@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235Ab1CWDKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 23:10:46 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:56740 "EHLO
+	id S1755700Ab1CWDKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 23:10:43 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:7752 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994Ab1CWDKQ (ORCPT
+	with ESMTP id S1753836Ab1CWDKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 23:10:16 -0400
+	Tue, 22 Mar 2011 23:10:15 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=so6qnXuU3WQ2Sh16B/k8UqEKvSpYavtu25LVCgbFqpqGSVTbGo4qR7oLXNG8CYzsy
-	bOhEVZ7boY2yJNbyF845w==
-Message-Id: <20110323030449.047028257@google.com>
+	b=D+MAXFS82c8RKD32kYP8II1AodUP7MXPeR2gOnmEGQ/4vcfOn4CxlTWHoJVhfGm7A
+	kZ2kcpLtKRI77laQjcmrQ==
+Message-Id: <20110323030449.528412206@google.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 22 Mar 2011 20:03:30 -0700
+Date: Tue, 22 Mar 2011 20:03:35 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -25,261 +25,153 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
         Nikhil Rao <ncrao@google.com>
-Subject: [patch 04/15] sched: throttle cfs_rq entities which exceed their local quota
+Subject: [patch 09/15] sched: add exports tracking cfs bandwidth control statistics
 References: <20110323030326.789836913@google.com>
-Content-Disposition: inline; filename=sched-bwc-throttle_entities.patch
+Content-Disposition: inline; filename=sched-bwc-throttle_stats.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In account_cfs_rq_quota() (via update_curr()) we track consumption versus a
-cfs_rqs locally assigned quota and whether there is global quota available 
-to provide a refill when it runs out.
+From: Nikhil Rao <ncrao@google.com>
 
-In the case that there is no quota remaining it's necessary to throttle so
-that execution ceases until the susbequent period.  While it is at this
-boundary that we detect (and signal for, via reshed_task) that a throttle is
-required, the actual operation is deferred until put_prev_entity().
+This change introduces statistics exports for the cpu sub-system, these are
+added through the use of a stat file similar to that exported by other
+subsystems.
 
-At this point the cfs_rq is marked as throttled and not re-enqueued, this
-avoids potential interactions with throttled runqueues in the event that we
-are not immediately able to evict the running task.
+The following exports are included:
+
+nr_periods:	number of periods in which execution occurred
+nr_throttled:	the number of periods above in which execution was throttle
+throttled_time:	cumulative wall-time that any cpus have been throttled for
+this group
 
 Signed-off-by: Paul Turner <pjt@google.com>
 Signed-off-by: Nikhil Rao <ncrao@google.com>
 Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
 ---
- kernel/sched.c      |    2 
- kernel/sched_fair.c |  117 +++++++++++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 113 insertions(+), 6 deletions(-)
+ kernel/sched.c      |   27 +++++++++++++++++++++++++++
+ kernel/sched_fair.c |   14 +++++++++++++-
+ 2 files changed, 40 insertions(+), 1 deletion(-)
 
 Index: tip/kernel/sched.c
 ===================================================================
 --- tip.orig/kernel/sched.c
 +++ tip/kernel/sched.c
-@@ -386,7 +386,7 @@ struct cfs_rq {
- 	unsigned long load_contribution;
+@@ -255,6 +255,11 @@ struct cfs_bandwidth {
+ 	u64 runtime, runtime_assigned, quota;
+ 	s64 hierarchal_quota; /* used for validating consistency */
+ 	struct hrtimer period_timer;
++
++	/* throttle statistics */
++	u64			nr_periods;
++	u64			nr_throttled;
++	u64			throttled_time;
  #endif
+ };
+ 
+@@ -388,6 +393,7 @@ struct cfs_rq {
  #ifdef CONFIG_CFS_BANDWIDTH
--	int quota_enabled;
-+	int quota_enabled, throttled;
+ 	int quota_enabled, throttled, throttle_count;
  	s64 quota_remaining;
++	u64 throttled_timestamp;
  #endif
  #endif
+ };
+@@ -429,6 +435,10 @@ void init_cfs_bandwidth(struct cfs_bandw
+ 
+ 	hrtimer_init(&cfs_b->period_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	cfs_b->period_timer.function = sched_cfs_period_timer;
++
++	cfs_b->nr_periods = 0;
++	cfs_b->nr_throttled = 0;
++	cfs_b->throttled_time = 0;
+ }
+ 
+ static void init_cfs_rq_quota(struct cfs_rq *cfs_rq)
+@@ -9502,6 +9512,19 @@ int sched_cfs_consistent_handler(struct 
+ 	mutex_unlock(&cfs_constraints_mutex);
+ 	return ret;
+ }
++
++static int cpu_stats_show(struct cgroup *cgrp, struct cftype *cft,
++		struct cgroup_map_cb *cb)
++{
++	struct task_group *tg = cgroup_tg(cgrp);
++	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
++
++	cb->fill(cb, "nr_periods", cfs_b->nr_periods);
++	cb->fill(cb, "nr_throttled", cfs_b->nr_throttled);
++	cb->fill(cb, "throttled_time", cfs_b->throttled_time);
++
++	return 0;
++}
+ #endif /* CONFIG_CFS_BANDWIDTH */
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+@@ -9548,6 +9571,10 @@ static struct cftype cpu_files[] = {
+ 		.read_u64 = cpu_cfs_period_read_u64,
+ 		.write_u64 = cpu_cfs_period_write_u64,
+ 	},
++	{
++		.name = "stat",
++		.read_map = cpu_stats_show,
++	},
+ #endif
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	{
 Index: tip/kernel/sched_fair.c
 ===================================================================
 --- tip.orig/kernel/sched_fair.c
 +++ tip/kernel/sched_fair.c
-@@ -321,9 +321,6 @@ find_matching_se(struct sched_entity **s
+@@ -1424,6 +1424,7 @@ static void throttle_cfs_rq(struct cfs_r
+ 	}
  
- #endif	/* CONFIG_FAIR_GROUP_SCHED */
- 
--static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
--		                 unsigned long delta_exec);
--
- /**************************************************************
-  * Scheduling class tree data structure manipulation methods:
-  */
-@@ -588,6 +585,9 @@ __update_curr(struct cfs_rq *cfs_rq, str
- #endif
+ 	cfs_rq->throttled = 1;
++	cfs_rq->throttled_timestamp = rq_of(cfs_rq)->clock;
  }
  
-+static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
-+		unsigned long delta_exec);
-+
- static void update_curr(struct cfs_rq *cfs_rq)
- {
- 	struct sched_entity *curr = cfs_rq->curr;
-@@ -1221,6 +1221,9 @@ static struct sched_entity *pick_next_en
- 	return se;
- }
+ static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
+@@ -1431,10 +1432,15 @@ static void unthrottle_cfs_rq(struct cfs
+ 	struct rq *rq = rq_of(cfs_rq);
+ 	struct sched_entity *se;
+ 	struct tg_unthrottle_down_data udd;
++	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
  
-+static void throttle_cfs_rq(struct cfs_rq *cfs_rq);
-+static inline int within_bandwidth(struct cfs_rq *cfs_rq);
-+
- static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
- {
- 	/*
-@@ -1230,6 +1233,9 @@ static void put_prev_entity(struct cfs_r
- 	if (prev->on_rq)
- 		update_curr(cfs_rq);
+ 	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
  
-+	if (!within_bandwidth(cfs_rq))
-+		throttle_cfs_rq(cfs_rq);
-+
- 	check_spread(cfs_rq, prev);
- 	if (prev->on_rq) {
- 		update_stats_wait_start(cfs_rq, prev);
-@@ -1241,6 +1247,8 @@ static void put_prev_entity(struct cfs_r
- 	cfs_rq->curr = NULL;
- }
+ 	update_rq_clock(rq);
++	raw_spin_lock(&cfs_b->lock);
++	cfs_b->throttled_time += (rq->clock - cfs_rq->throttled_timestamp);
++	raw_spin_unlock(&cfs_b->lock);
++	cfs_rq->throttled_timestamp = 0;
  
-+static void check_cfs_rq_quota(struct cfs_rq *cfs_rq);
-+
- static void
- entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
- {
-@@ -1249,6 +1257,9 @@ entity_tick(struct cfs_rq *cfs_rq, struc
- 	 */
- 	update_curr(cfs_rq);
- 
-+	/* check that entity's usage is still within quota (if enabled) */
-+	check_cfs_rq_quota(cfs_rq);
-+
- 	/*
- 	 * Update share accounting for long-running entities.
- 	 */
-@@ -1294,6 +1305,46 @@ static inline u64 sched_cfs_bandwidth_sl
-        return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
- }
- 
-+static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
-+{
-+	return cfs_rq->throttled;
-+}
-+
-+static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
-+{
-+	struct task_group *tg;
-+	struct sched_entity *se;
-+
-+	if (cfs_rq_throttled(cfs_rq))
-+		return 1;
-+
-+	tg = cfs_rq->tg;
-+	se = tg->se[cpu_of(rq_of(cfs_rq))];
-+	if (!se)
-+		return 0;
-+
-+	for_each_sched_entity(se) {
-+		if (cfs_rq_throttled(cfs_rq_of(se)))
-+			return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+static inline int within_bandwidth(struct cfs_rq *cfs_rq)
-+{
-+	return !cfs_rq->quota_enabled || cfs_rq->quota_remaining > 0;
-+}
-+
-+static void check_cfs_rq_quota(struct cfs_rq *cfs_rq)
-+{
-+	if (within_bandwidth(cfs_rq))
-+		return;
-+
-+
-+	resched_task(rq_of(cfs_rq)->curr);
-+}
-+
- static void request_cfs_rq_quota(struct cfs_rq *cfs_rq)
- {
- 	struct task_group *tg = cfs_rq->tg;
-@@ -1330,6 +1381,29 @@ static void account_cfs_rq_quota(struct 
- 	request_cfs_rq_quota(cfs_rq);
- }
- 
-+static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
-+{
-+	struct sched_entity *se;
-+
-+	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
-+
-+	/* account load preceding throttle */
-+	update_cfs_load(cfs_rq, 0);
-+
-+	for_each_sched_entity(se) {
-+		struct cfs_rq *qcfs_rq = cfs_rq_of(se);
-+		/* throttled entity or throttle-on-deactivate */
-+		if (!se->on_rq)
-+			break;
-+
-+		dequeue_entity(qcfs_rq, se, DEQUEUE_SLEEP);
-+		if (qcfs_rq->load.weight)
-+			break;
-+	}
-+
-+	cfs_rq->throttled = 1;
-+}
-+
+ 	/* don't include throttled window for load statistics */
+ 	udd.cpu = rq->cpu;
+@@ -1505,11 +1511,12 @@ next:
  static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
  {
- 	return 1;
-@@ -1340,6 +1414,23 @@ static inline u64 default_cfs_period(voi
- 	return 0;
- }
+ 	u64 runtime, runtime_assigned;
+-	int idle;
++	int idle, throttled;
  
-+static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
-+{
-+	return 0;
-+}
+ 	raw_spin_lock(&cfs_b->lock);
+ 	runtime = cfs_b->quota;
+ 	idle = cfs_b->runtime == cfs_b->runtime_assigned;
++	throttled = cfs_b->runtime == 0;
+ 	raw_spin_unlock(&cfs_b->lock);
+ 
+ 	if (runtime == RUNTIME_INF)
+@@ -1523,6 +1530,11 @@ static int do_sched_cfs_period_timer(str
+ 	raw_spin_lock(&cfs_b->lock);
+ 	cfs_b->runtime = runtime;
+ 	cfs_b->runtime_assigned = runtime_assigned;
 +
-+static inline int within_bandwidth(struct cfs_rq *cfs_rq)
-+{
-+	return 1;
-+}
-+
-+static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
-+{
-+	return 0;
-+}
-+
-+static void check_cfs_rq_quota(struct cfs_rq *cfs_rq) {}
-+static void throttle_cfs_rq(struct cfs_rq *cfs_rq) {}
- static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
- 		unsigned long delta_exec) {}
- #endif
-@@ -1421,6 +1512,12 @@ enqueue_task_fair(struct rq *rq, struct 
- 			break;
- 		cfs_rq = cfs_rq_of(se);
- 		enqueue_entity(cfs_rq, se, flags);
-+		/* end evaluation on throttled cfs_rq */
-+		if (cfs_rq_throttled(cfs_rq)) {
-+			se = NULL;
-+			break;
-+		}
-+		check_cfs_rq_quota(cfs_rq);
- 		flags = ENQUEUE_WAKEUP;
- 	}
++	/* update throttled stats */
++	cfs_b->nr_periods++;
++	if (throttled)
++		cfs_b->nr_throttled++;
+ 	raw_spin_unlock(&cfs_b->lock);
  
-@@ -1447,10 +1544,15 @@ static void dequeue_task_fair(struct rq 
- 	for_each_sched_entity(se) {
- 		cfs_rq = cfs_rq_of(se);
- 		dequeue_entity(cfs_rq, se, flags);
--
-+		/* end evaluation on throttled cfs_rq */
-+		if (cfs_rq_throttled(cfs_rq)) {
-+			se = NULL;
-+			break;
-+		}
- 		/* Don't dequeue parent if it has other entities besides us */
- 		if (cfs_rq->load.weight)
- 			break;
-+		check_cfs_rq_quota(cfs_rq);
- 		flags |= DEQUEUE_SLEEP;
- 	}
- 
-@@ -1955,6 +2057,10 @@ static void check_preempt_wakeup(struct 
- 	if (unlikely(se == pse))
- 		return;
- 
-+	/* avoid preemption check/buddy nomination for throttled tasks */
-+	if (throttled_hierarchy(cfs_rq_of(pse)))
-+		return;
-+
- 	if (sched_feat(NEXT_BUDDY) && scale && !(wake_flags & WF_FORK))
- 		set_next_buddy(pse);
- 
-@@ -2076,7 +2182,8 @@ static bool yield_to_task_fair(struct rq
- {
- 	struct sched_entity *se = &p->se;
- 
--	if (!se->on_rq)
-+	/* ensure entire hierarchy is on rq (e.g. running & not throttled) */
-+	if (!se->on_rq || throttled_hierarchy(cfs_rq_of(se)))
- 		return false;
- 
- 	/* Tell the scheduler that we'd really like pse to run next. */
+ 	return idle;
 
 
