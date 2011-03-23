@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554Ab1CWKIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:08:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65002 "EHLO
+	id S932592Ab1CWKIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:08:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50823 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932522Ab1CWKGj (ORCPT
+	with ESMTP id S932488Ab1CWKGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:06:39 -0400
+	Wed, 23 Mar 2011 06:06:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=PE6Pe3AEOPi9yiLs7A4XUCDNNP7jIlBXbhoYwQyyodKFK2PdRZqOC56VjwnXfpkTPw
-         /C9B18o6QzS2nimqX5jFGhwla3vdfB74VgR2Pg/f9E8lr15KhCqq4mA4YQWJ4nqB6Fce
-         ubffOk6CSDRwr8Cryzw/vUH3NxDKNC1E4fu2M=
+        b=sbcVH4PYHxKw5w1ZwhZuVa9OTdgIQeVtSn63dsANSvzWTl50eI7yAlnTxYPTvMA0GB
+         AQgCjdrAIcVWpFy4ACA1nN9+yhRmezPvhAFUr5bzHTqrAwcN5rksmLWUGdg2aKUWFNrm
+         qBhGBr7hIroQjsy2joznutkpx12CmrsZhsYTs=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 17/20] job control: Add @for_ptrace to do_notify_parent_cldstop()
-Date: Wed, 23 Mar 2011 11:06:03 +0100
-Message-Id: <1300874766-12941-18-git-send-email-tj@kernel.org>
+Subject: [PATCH 16/20] job control: Allow access to job control events through ptracees
+Date: Wed, 23 Mar 2011 11:06:02 +0100
+Message-Id: <1300874766-12941-17-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1300874766-12941-1-git-send-email-tj@kernel.org>
 References: <1300874766-12941-1-git-send-email-tj@kernel.org>
@@ -29,105 +29,217 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, do_notify_parent_cldstop() determines whether the
-notification is for the real parent or ptracer.  Move the decision to
-the caller by adding @for_ptrace parameter to
-do_notify_parent_cldstop().  All the callers are updated to pass
-task_ptrace(target_task), so this patch doesn't cause any behavior
-difference.
+Currently a real parent can't access job control stopped/continued
+events through a ptraced child.  This utterly breaks job control when
+the children are ptraced.
 
-While at it, add function comment to do_notify_parent_cldstop().
+For example, if a program is run from an interactive shell and then
+strace(1) attaches to it, pressing ^Z would send SIGTSTP and strace(1)
+would notice it but the shell has no way to tell whether the child
+entered job control stop and thus can't tell when to take over the
+terminal - leading to awkward lone ^Z on the terminal.
+
+Because the job control and ptrace stopped states are independent,
+there is no reason to prevent real parents from accessing the stopped
+state regardless of ptrace.  The continued state isn't separate but
+ptracers don't have any use for them as ptracees can never resume
+without explicit command from their ptracers, so as long as ptracers
+don't consume it, it should be fine.
+
+Although this is a behavior change, because the previous behavior is
+utterly broken when viewed from real parents and the change is only
+visible to real parents, I don't think it's necessary to make this
+behavior optional.
+
+One situation to be careful about is when a task from the real
+parent's group is ptracing.  The parent group is the recipient of both
+ptrace and job control stop events and one stop can be reported as
+both job control and ptrace stops.  As this can break the current
+ptrace users, suppress job control stopped events for these cases.
+
+If a real parent ptracer wants to know about both job control and
+ptrace stops, it can create a separate process to serve the role of
+real parent.
+
+Note that this only updates wait(2) side of things.  The real parent
+can access the states via wait(2) but still is not properly notified
+(woken up and delivered signal).  Test case polls wait(2) with WNOHANG
+to work around.  Notification will be updated by future patches.
+
+Test case follows.
+
+  #include <stdio.h>
+  #include <unistd.h>
+  #include <time.h>
+  #include <errno.h>
+  #include <sys/types.h>
+  #include <sys/ptrace.h>
+  #include <sys/wait.h>
+
+  int main(void)
+  {
+	  const struct timespec ts100ms = { .tv_nsec = 100000000 };
+	  pid_t tracee, tracer;
+	  siginfo_t si;
+	  int i;
+
+	  tracee = fork();
+	  if (tracee == 0) {
+		  while (1) {
+			  printf("tracee: SIGSTOP\n");
+			  raise(SIGSTOP);
+			  nanosleep(&ts100ms, NULL);
+			  printf("tracee: SIGCONT\n");
+			  raise(SIGCONT);
+			  nanosleep(&ts100ms, NULL);
+		  }
+	  }
+
+	  waitid(P_PID, tracee, &si, WSTOPPED | WNOHANG | WNOWAIT);
+
+	  tracer = fork();
+	  if (tracer == 0) {
+		  nanosleep(&ts100ms, NULL);
+		  ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
+
+		  for (i = 0; i < 11; i++) {
+			  si.si_pid = 0;
+			  waitid(P_PID, tracee, &si, WSTOPPED);
+			  if (si.si_pid && si.si_code == CLD_TRAPPED)
+				  ptrace(PTRACE_CONT, tracee, NULL,
+					 (void *)(long)si.si_status);
+		  }
+		  printf("tracer: EXITING\n");
+		  return 0;
+	  }
+
+	  while (1) {
+		  si.si_pid = 0;
+		  waitid(P_PID, tracee, &si,
+			 WSTOPPED | WCONTINUED | WEXITED | WNOHANG);
+		  if (si.si_pid)
+			  printf("mommy : WAIT status=%02d code=%02d\n",
+				 si.si_status, si.si_code);
+		  nanosleep(&ts100ms, NULL);
+	  }
+	  return 0;
+  }
+
+Before the patch, while ptraced, the parent can't see any job control
+events.
+
+  tracee: SIGSTOP
+  mommy : WAIT status=19 code=05
+  tracee: SIGCONT
+  tracee: SIGSTOP
+  tracee: SIGCONT
+  tracee: SIGSTOP
+  tracee: SIGCONT
+  tracee: SIGSTOP
+  tracer: EXITING
+  mommy : WAIT status=19 code=05
+  ^C
+
+After the patch,
+
+  tracee: SIGSTOP
+  mommy : WAIT status=19 code=05
+  tracee: SIGCONT
+  mommy : WAIT status=18 code=06
+  tracee: SIGSTOP
+  mommy : WAIT status=19 code=05
+  tracee: SIGCONT
+  mommy : WAIT status=18 code=06
+  tracee: SIGSTOP
+  mommy : WAIT status=19 code=05
+  tracee: SIGCONT
+  mommy : WAIT status=18 code=06
+  tracee: SIGSTOP
+  tracer: EXITING
+  mommy : WAIT status=19 code=05
+  ^C
+
+-v2: Oleg pointed out that wait(2) should be suppressed for the real
+     parent's group instead of only the real parent task itself.
+     Updated accordingly.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Acked-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/signal.c |   31 ++++++++++++++++++++++++-------
- 1 files changed, 24 insertions(+), 7 deletions(-)
+ kernel/exit.c |   41 +++++++++++++++++++++++++++++++++--------
+ 1 files changed, 33 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 2f2c8f6..69d6054 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1595,16 +1595,30 @@ int do_notify_parent(struct task_struct *tsk, int sig)
- 	return ret;
- }
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 84d13d6..1a0f10f 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1541,17 +1541,19 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 	if (p->exit_state == EXIT_DEAD)
+ 		return 0;
  
--static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
-+/**
-+ * do_notify_parent_cldstop - notify parent of stopped/continued state change
-+ * @tsk: task reporting the state change
-+ * @for_ptracer: the notification is for ptracer
-+ * @why: CLD_{CONTINUED|STOPPED|TRAPPED} to report
-+ *
-+ * Notify @tsk's parent that the stopped/continued state has changed.  If
-+ * @for_ptracer is %false, @tsk's group leader notifies to its real parent.
-+ * If %true, @tsk reports to @tsk->parent which should be the ptracer.
-+ *
-+ * CONTEXT:
-+ * Must be called with tasklist_lock at least read locked.
-+ */
-+static void do_notify_parent_cldstop(struct task_struct *tsk,
-+				     bool for_ptracer, int why)
- {
- 	struct siginfo info;
- 	unsigned long flags;
- 	struct task_struct *parent;
- 	struct sighand_struct *sighand;
- 
--	if (task_ptrace(tsk))
-+	if (for_ptracer) {
- 		parent = tsk->parent;
--	else {
-+	} else {
- 		tsk = tsk->group_leader;
- 		parent = tsk->real_parent;
- 	}
-@@ -1743,7 +1757,7 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
- 	spin_unlock_irq(&current->sighand->siglock);
- 	read_lock(&tasklist_lock);
- 	if (may_ptrace_stop()) {
--		do_notify_parent_cldstop(current, why);
-+		do_notify_parent_cldstop(current, task_ptrace(current), why);
+-	if (likely(!ptrace) && unlikely(task_ptrace(p))) {
++	/* slay zombie? */
++	if (p->exit_state == EXIT_ZOMBIE) {
  		/*
- 		 * Don't want to allow preemption here, because
- 		 * sys_ptrace() needs this task to be inactive.
-@@ -1886,7 +1900,8 @@ retry:
+-		 * This child is hidden by ptrace.
+-		 * We aren't allowed to see it now, but eventually we will.
++		 * A zombie ptracee is only visible to its ptracer.
++		 * Notification and reaping will be cascaded to the real
++		 * parent when the ptracer detaches.
+ 		 */
+-		wo->notask_error = 0;
+-		return 0;
+-	}
++		if (likely(!ptrace) && unlikely(task_ptrace(p))) {
++			/* it will become visible, clear notask_error */
++			wo->notask_error = 0;
++			return 0;
++		}
  
- 		if (notify) {
- 			read_lock(&tasklist_lock);
--			do_notify_parent_cldstop(current, notify);
-+			do_notify_parent_cldstop(current, task_ptrace(current),
-+						 notify);
- 			read_unlock(&tasklist_lock);
- 		}
- 
-@@ -1982,6 +1997,7 @@ relock:
- 	 * the CLD_ si_code into SIGNAL_CLD_MASK bits.
- 	 */
- 	if (unlikely(signal->flags & SIGNAL_CLD_MASK)) {
-+		struct task_struct *leader;
- 		int why;
- 
- 		if (signal->flags & SIGNAL_CLD_CONTINUED)
-@@ -1994,7 +2010,8 @@ relock:
- 		spin_unlock_irq(&sighand->siglock);
- 
- 		read_lock(&tasklist_lock);
--		do_notify_parent_cldstop(current->group_leader, why);
-+		leader = current->group_leader;
-+		do_notify_parent_cldstop(leader, task_ptrace(leader), why);
- 		read_unlock(&tasklist_lock);
- 		goto relock;
+-	/* slay zombie? */
+-	if (p->exit_state == EXIT_ZOMBIE) {
+ 		/* we don't reap group leaders with subthreads */
+ 		if (!delay_group_leader(p))
+ 			return wait_task_zombie(wo, p);
+@@ -1580,15 +1582,38 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 			wo->notask_error = 0;
+ 	} else {
+ 		/*
++		 * If @p is ptraced by a task in its real parent's group,
++		 * hide group stop/continued state when looking at @p as
++		 * the real parent; otherwise, a single stop can be
++		 * reported twice as group and ptrace stops.
++		 *
++		 * If a ptracer wants to distinguish the two events for its
++		 * own children, it should create a separate process which
++		 * takes the role of real parent.
++		 */
++		if (likely(!ptrace) && task_ptrace(p) &&
++		    same_thread_group(p->parent, p->real_parent))
++			return 0;
++
++		/*
+ 		 * @p is alive and it's gonna stop, continue or exit, so
+ 		 * there always is something to wait for.
+ 		 */
+ 		wo->notask_error = 0;
  	}
-@@ -2167,7 +2184,7 @@ out:
  
- 	if (unlikely(group_stop)) {
- 		read_lock(&tasklist_lock);
--		do_notify_parent_cldstop(tsk, group_stop);
-+		do_notify_parent_cldstop(tsk, task_ptrace(tsk), group_stop);
- 		read_unlock(&tasklist_lock);
- 	}
++	/*
++	 * Wait for stopped.  Depending on @ptrace, different stopped state
++	 * is used and the two don't interact with each other.
++	 */
+ 	if (task_stopped_code(p, ptrace))
+ 		return wait_task_stopped(wo, ptrace, p);
+ 
++	/*
++	 * Wait for continued.  There's only one continued state and the
++	 * ptracer can consume it which can confuse the real parent.  Don't
++	 * use WCONTINUED from ptracer.  You don't need or want it.
++	 */
+ 	return wait_task_continued(wo, p);
  }
+ 
 -- 
 1.7.1
 
