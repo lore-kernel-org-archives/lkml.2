@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab1CWWpr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 18:45:47 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56723 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755197Ab1CWWpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 18:45:46 -0400
-Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
- kfree_rcu()
-From: James Bottomley <James.Bottomley@suse.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Robert Love <robert.w.love@intel.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
-        Jarek Poplawski <jarkao2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@open-fcoe.org" <devel@open-fcoe.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-In-Reply-To: <20110323222456.GC2322@linux.vnet.ibm.com>
-References: <4D82D071.5020703@cn.fujitsu.com>
-	 <4D82D3FF.2080303@cn.fujitsu.com> <4D82D45A.30102@cn.fujitsu.com>
-	 <1300814913.19083.427.camel@fritz>
-	 <20110323065014.GU2322@linux.vnet.ibm.com>
-	 <1300889151.15899.4.camel@mulgrave.site>
-	 <20110323222456.GC2322@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Mar 2011 17:45:32 -0500
-Message-ID: <1300920332.15899.45.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S932926Ab1CWWqh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 18:46:37 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:12387 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932785Ab1CWWqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 18:46:36 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6294"; a="81490359"
+From: David Brown <davidb@codeaurora.org>
+To: Carl Vanderlip <carlv@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>, Russell King <linux@arm.linux.org.uk>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Colin Cross <ccross@android.com>, linux-fbdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/20] video: msm: Split out MDP2.2 HW specific code.
+References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
+	<1300485423-27281-1-git-send-email-carlv@codeaurora.org>
+	<1300885912.6117.16.camel@m0nster> <4D8A5B44.9050306@codeaurora.org>
+Date: Wed, 23 Mar 2011 15:47:15 -0700
+In-Reply-To: <4D8A5B44.9050306@codeaurora.org> (Carl Vanderlip's message of
+	"Wed, 23 Mar 2011 13:42:44 -0700")
+Message-ID: <8yay6455ua4.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-23 at 15:24 -0700, Paul E. McKenney wrote:
-> On Wed, Mar 23, 2011 at 09:05:51AM -0500, James Bottomley wrote:
-> > On Tue, 2011-03-22 at 23:50 -0700, Paul E. McKenney wrote:
-> > > The kfree_rcu() definition is as
-> > > follows:
-> > > 
-> > > #define kfree_rcu(ptr, rcu_head)					\
-> > > 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
-> > 
-> > Isn't this one of those cases where the obvious use of the interface is
-> > definitely wrong?
-> > 
-> > It's also another nasty pseudo C prototype.  I know we do this sort of
-> > thing for container_of et al, but I don't really think we want to extend
-> > it.
-> > 
-> > Why not make the interface take a pointer to the embedding structure and
-> > one to the rcu_head ... that way all pointer mathematics can be
-> > contained inside the RCU routines.
-> 
-> Hello, James,
-> 
-> If you pass in a pair of pointers, then it is difficult for RCU to detect
-> bugs where the two pointers are unrelated.  Yes, you can do some sanity
-> checks, but these get cumbersome and have corner cases where they can
-> be fooled.  In contrast, Lai's interface allows the compiler to do the
-> needed type checking -- unless the second argument is a field of type
-> struct rcu_head in the structure pointed to by the first argument, the
-> compiler will complain.
-> 
-> Either way, the pointer mathematics are buried in the RCU API.
-> 
-> Or am I missing something here?
+On Wed, Mar 23 2011, Carl Vanderlip wrote:
 
-No ... I like the utility ... I just dislike the inelegance of having to
-name a structure element in what looks like a C prototype.
+> On 03/23/2011 06:11 AM, Daniel Walker wrote:
+>> On Fri, 2011-03-18 at 14:57 -0700, Carl Vanderlip wrote:
+>>> index df9d74e..d6e75c3 100644
+>>> --- a/arch/arm/mach-msm/Kconfig
+>>> +++ b/arch/arm/mach-msm/Kconfig
+>>> @@ -76,6 +76,11 @@ config HAS_MSM_DEBUG_UART_PHYS
+>>>  config  MSM_VIC
+>>>         bool
+>>>  
+>>> +config MSM_MDP22
+>>> +       bool
+>>> +       depends on ARCH_MSM7X00A
+>>> +       default y
+>>> + 
+>> You should remove the "default y" and this should be moved to a Kconfig
+>> under video (shouldn't be added into mach-msm).
+>>
+>> Daniel
+>>
+> What about removing the 'depends on' and 'default y' and making it be
+> selected by MSM7X00A?
 
-I can see this proliferating everywhere since most of our reference
-counting release callbacks basically free the enclosing object ...
+But why should the feature be in the Kconfig for arch/arm/mach-msm when
+the driver is under drivers/video/msm?  If it does indeed need
+configuration, why not put a Kconfig under drivers/video/msm?
 
-James
+The last patch does select this, so it shouldn't need to get a default.
 
+Does the code work if both MDP22 and MDP31 are defined?  Eventually, it
+will be possible to enable multiple SOCs, so this driver will need to be
+able to handle that determination at run-time.
 
+David 
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
