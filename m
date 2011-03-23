@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab1CWRN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 13:13:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54443 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab1CWRNz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 13:13:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [RFC] usbnet: use eth%d name for known ethernet devices
-Date: Wed, 23 Mar 2011 18:13:41 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: andy.green@linaro.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        grant.likely@secretlab.ca, netdev@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>
-References: <4D79F068.2080009@linaro.org> <20110323162251.GA9367@kroah.com> <201103231756.39849.arnd@arndb.de>
-In-Reply-To: <201103231756.39849.arnd@arndb.de>
+	id S1755353Ab1CWRQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 13:16:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36982 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752320Ab1CWRQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 13:16:49 -0400
+Date: Wed, 23 Mar 2011 18:07:08 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 7/8] job control: Notify the real parent of job control
+	events regardless of ptrace
+Message-ID: <20110323170708.GA24304@redhat.com>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org> <1299614199-25142-8-git-send-email-tj@kernel.org> <20110321174306.GA29895@redhat.com> <20110322080444.GM12003@htj.dyndns.org> <20110322194416.GC28038@redhat.com> <20110323091736.GY12003@htj.dyndns.org> <20110323092455.GZ12003@htj.dyndns.org> <20110323164657.GB22527@redhat.com> <20110323165907.GE12003@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103231813.41776.arnd@arndb.de>
-X-Provags-ID: V02:K0:gjE00mgd+0RHvtkKxact+T5YF6/HX2F7zRwI+mKKdXt
- bFM11sKMP8KbIE+N9ep/bbKGXJk6ELwSj28cpAD9CXAy7X7Ojn
- VxkojDgMYjVMeCCNgkpeaM8Vf0UOOWvf6SZ6+utkCS2oMO34VG
- DsQf2+EhoTuX5rh8mNQzliH+/EYr+3V2/emlRTA2ImVHLz+Qnm
- aBnLrQu8jm/r0XefPgJQw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110323165907.GE12003@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 March 2011, Arnd Bergmann wrote:
-> --- a/drivers/net/usb/smsc75xx.c
-> +++ b/drivers/net/usb/smsc75xx.c
-> @@ -1244,7 +1244,7 @@ static const struct driver_info smsc75xx_info = {
->         .rx_fixup       = smsc75xx_rx_fixup,
->         .tx_fixup       = smsc75xx_tx_fixup,
->         .status         = smsc75xx_status,
-> -       .flags          = FLAG_ETHER | FLAG_SEND_ZLP,
-> +       .flags          = FLAG_ETHER | FLAG_SEND_ZLP | FLAG_REALLY_ETHER,
->  };
->  
->  static const struct usb_device_id products[] = {
-> diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
-> index bc86f4b..c98d3a7 100644
-> --- a/drivers/net/usb/smsc95xx.c
-> +++ b/drivers/net/usb/smsc95xx.c
-> @@ -1231,7 +1231,7 @@ static const struct driver_info smsc95xx_info = {
->         .rx_fixup       = smsc95xx_rx_fixup,
->         .tx_fixup       = smsc95xx_tx_fixup,
->         .status         = smsc95xx_status,
-> -       .flags          = FLAG_ETHER | FLAG_SEND_ZLP,
-> +       .flags          = FLAG_ETHER | FLAG_SEND_ZLP | FLAG_REALLY_ETHER,
->  };
->  
+On 03/23, Tejun Heo wrote:
+>
+> Hello,
+>
+> On Wed, Mar 23, 2011 at 05:46:57PM +0100, Oleg Nesterov wrote:
+> > > Ooh, on a related note, we probably want to change
+> > > do_notify_parent_cldstop() too.  tsk->group_leader->real_parent is
+> > > used as the delivery target when !@for_ptracer.  This is the same with
+> > > tsk->real_parent and the code has been like this for a long time but
+> > > is a bit confusing.
+> >
+> > Yes, although in this case we do
+> >
+> > 		tsk = tsk->group_leader;
+> > 		parent = tsk->real_parent;
+> >
+> > We need to change tsk to report the correct si_pid. But we could do
+> >
+> > 		parent = tsk->real_parent;
+> > 		tsk = tsk->group_leader;
+> >
+> > not sure this looks less confusing.
+>
+> They themselves are about the same but the inconsistency with the
+> is_real_parent() test is a bit confusing, I think.  If we're testing
+> for duplicates by testing ->real_parent against ->parent then the
+> actual delivery should be also be using ->real_parent and ->parent,
+> so...
 
-These two hunks are from an earlier version of the patch and should not
-be there, they break compilation. I'll wait for more comments and
-then send a fixed version.
+Hmm. So I misunderstood you. And still can't understand...
 
-	Arnd
+Could you explain how should we change do_notify_parent_cldstop()?
+I am just curious.
+
+Oleg.
+
