@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab1CWKx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:53:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50455 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755882Ab1CWKxY (ORCPT
+	id S932434Ab1CWK4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:56:08 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43254 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932303Ab1CWK4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:53:24 -0400
-Date: Wed, 23 Mar 2011 10:53:35 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+	Wed, 23 Mar 2011 06:56:07 -0400
+Date: Wed, 23 Mar 2011 10:56:07 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: andy.green@linaro.org
+Cc: andy@warmcat.com, Arnd Bergmann <arnd@arndb.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        andy.green@linaro.org, Jaswinder Singh <jaswinder.singh@linaro.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
         Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        roger.quadros@nokia.com, greg@kroah.com, grant.likely@secretlab.ca
+        lkml <linux-kernel@vger.kernel.org>,
+        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
+        greg@kroah.com, grant.likely@secretlab.ca
 Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110323105335.GB778@opensource.wolfsonmicro.com>
+Message-ID: <20110323105607.50697c65@lxorguk.ukuu.org.uk>
+In-Reply-To: <4D89CDE4.3000504@linaro.org>
 References: <4D79F068.2080009@linaro.org>
- <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com>
- <1300828125.2402.300.camel@pasglop>
- <4D8924B6.8040403@linaro.org>
- <1300842219.2402.309.camel@pasglop>
- <alpine.LFD.2.00.1103222138320.11889@xanadu.home>
- <1300850595.2402.320.camel@pasglop>
- <alpine.LFD.2.00.1103222336030.11889@xanadu.home>
- <20110323093847.55e9dbba@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110323093847.55e9dbba@lxorguk.ukuu.org.uk>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	<20110323094720.63e7c6b2@lxorguk.ukuu.org.uk>
+	<4D89C618.1020608@linaro.org>
+	<201103231132.02690.arnd@arndb.de>
+	<4D89CDE4.3000504@linaro.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 09:38:47AM +0000, Alan Cox wrote:
+> > rules for the default device name that usbnet assigns. Simply letting
+> > a device driver flag "this is always an external ethernet, not
+> > a point-to-point connection" would be enough to solve this problem,
+> > and take some of the heat out of the discussion for how to solve
+> > the MAC address assignment.
+> 
+> Completely agree, I have a happy feeling being able to say that too. 
+> But I already see there's no path through Greg let alone Alan, so it'll 
+> have to be dealt with a less good way.
 
-> > Generally speaking, this wouldn't make sense.  but this is a case where 
-> > a generically probed device happens to be used in a very specific 
-> > hardware design with its own quirks.  in that very particular case then 
-> > it certainly makes some sense.
+Having a USB net driver flag the fact it knows from its vid/did that it
+is probably P2P rather than net (or vice versa) isn't something I see a
+problem with, it's probably quite helpful for various network
+autoconfigurator guesses. What we don't want however is the kernel
+deciding the naming scheme should change. Name tweaks are really policy,
+knowing if an interface vid/did say its P2P or net is merely information
+that can guide a policy in user space.
 
-> If it's a very specific hardware design it can do its own very specific
-> internal private kernel patch, or little config app in user space. There
-> isn't a valid reason to inflict that complexity on the other 99.999999%
-> of users.
+Now if your user space uses that flag to issue ifrenames fine, that's
+your choice. It's probably sufficient just to set IFF_POINTOPOINT
+appropriately on the net interface flags to make all that work ?
 
-Just to be clear this sort of stuff is not, in general, a particularly
-obscure problem for embedded systems.  General good practice in hardware
-design is to remove components to achieve cost savings and improvements
-in manufacturability and things like configuration SEPROMs tend to be
-among the first things to go.  Vendors producing reference boards for
-these markets will tend go for the cost downs on such devices even if
-the volumes are relatively low to ensure that their reference designs
-are directly usable in end projects, and reference designs tend to be
-disproportionately visible to people working with the kernel.
-
-In the specific case of MACs and device names for network adaptors we
-have userspace solutions which are obscuring the discussion but there
-are other things which get configured this way which one would usually
-expect to be handled in kernel.
+Alan
