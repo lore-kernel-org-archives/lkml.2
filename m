@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab1CWVsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 17:48:22 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:33750 "HELO
+	id S932596Ab1CWVsl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 17:48:41 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:33677 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756713Ab1CWVsA (ORCPT
+	with SMTP id S1756704Ab1CWVr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 17:48:00 -0400
+	Wed, 23 Mar 2011 17:47:59 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/60kNnkAn6pjKWa2Cv6+3EXicpdyJmMBi2/DH16T
-	+eqlaJMcpOK/zL
+X-Provags-ID: V01U2FsdGVkX198SulK20x8JrUn4d41hgelwyhMIqFNvQyWsOR1he
+	30Ny8bvDU/hbE1
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 4/4] viafb: remove unused max_hres/vres
-Date: Wed, 23 Mar 2011 22:03:12 +0000
-Message-Id: <1300917792-3880-5-git-send-email-FlorianSchandinat@gmx.de>
+Subject: [PATCH 3/4] viafb: kill crt_setting_information
+Date: Wed, 23 Mar 2011 22:03:11 +0000
+Message-Id: <1300917792-3880-4-git-send-email-FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
 In-Reply-To: <1300917792-3880-1-git-send-email-FlorianSchandinat@gmx.de>
 References: <1300917792-3880-1-git-send-email-FlorianSchandinat@gmx.de>
@@ -25,222 +25,169 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the max_hres and max_vres which are not used at
-the moment. In general they could be useful but it would be better
-to get them via any standard EDID implementation and not the buggy
-incomplete one currently used which is also removed as far as
-possible.
+As the iga path is the only remaining information which is also
+handled by the active devices there is no reason to keep it.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 ---
- drivers/video/via/chip.h |    2 -
- drivers/video/via/dvi.c  |  138 +---------------------------------------------
- 2 files changed, 3 insertions(+), 137 deletions(-)
+ drivers/video/via/chip.h     |    4 ----
+ drivers/video/via/hw.c       |   28 +++++++++++++---------------
+ drivers/video/via/viafbdev.c |    7 ++-----
+ drivers/video/via/viafbdev.h |    2 --
+ 4 files changed, 15 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/video/via/chip.h b/drivers/video/via/chip.h
-index 1aa0fb3..3ebf20c 100644
+index 29d7024..1aa0fb3 100644
 --- a/drivers/video/via/chip.h
 +++ b/drivers/video/via/chip.h
-@@ -142,8 +142,6 @@ struct tmds_setting_information {
- 	int h_active;
- 	int v_active;
- 	int max_pixel_clock;
--	int max_hres;
--	int max_vres;
+@@ -137,10 +137,6 @@ struct chip_information {
+ 	struct lvds_chip_information lvds_chip_info2;
  };
  
- struct lvds_setting_information {
-diff --git a/drivers/video/via/dvi.c b/drivers/video/via/dvi.c
-index 41ca198..3dbcd77 100644
---- a/drivers/video/via/dvi.c
-+++ b/drivers/video/via/dvi.c
-@@ -28,9 +28,6 @@ static int tmds_register_read_bytes(int index, u8 *buff, int buff_len);
- static void __devinit dvi_get_panel_size_from_DDCv1(
- 	struct tmds_chip_information *tmds_chip,
- 	struct tmds_setting_information *tmds_setting);
--static void __devinit dvi_get_panel_size_from_DDCv2(
--	struct tmds_chip_information *tmds_chip,
--	struct tmds_setting_information *tmds_setting);
- static int viafb_dvi_query_EDID(void);
- 
- static int check_tmds_chip(int device_id_subaddr, int device_id)
-@@ -47,17 +44,8 @@ void __devinit viafb_init_dvi_size(struct tmds_chip_information *tmds_chip,
- 	DEBUG_MSG(KERN_INFO "viafb_init_dvi_size()\n");
- 
- 	viafb_dvi_sense();
--	switch (viafb_dvi_query_EDID()) {
--	case 1:
-+	if (viafb_dvi_query_EDID() == 1)
- 		dvi_get_panel_size_from_DDCv1(tmds_chip, tmds_setting);
--		break;
--	case 2:
--		dvi_get_panel_size_from_DDCv2(tmds_chip, tmds_setting);
--		break;
--	default:
--		printk(KERN_WARNING "viafb_init_dvi_size: DVI panel size undetected!\n");
--		break;
--	}
- 
- 	return;
- }
-@@ -306,12 +294,7 @@ static int viafb_dvi_query_EDID(void)
- 		return EDID_VERSION_1;	/* Found EDID1 Table */
- 	}
- 
--	data0 = (u8) tmds_register_read(0x00);
--	viaparinfo->chip_info->tmds_chip_info.tmds_chip_slave_addr = restore;
--	if (data0 == 0x20)
--		return EDID_VERSION_2;	/* Found EDID2 Table */
--	else
--		return false;
-+	return false;
- }
- 
- /* Get Panel Size Using EDID1 Table */
-@@ -319,50 +302,15 @@ static void __devinit dvi_get_panel_size_from_DDCv1(
- 	struct tmds_chip_information *tmds_chip,
- 	struct tmds_setting_information *tmds_setting)
+-struct crt_setting_information {
+-	int iga_path;
+-};
+-
+ struct tmds_setting_information {
+ 	int iga_path;
+ 	int h_active;
+diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
+index c4d2136..0098270 100644
+--- a/drivers/video/via/hw.c
++++ b/drivers/video/via/hw.c
+@@ -770,13 +770,14 @@ static u32 get_lcd_devices(int output_interface)
+ /*Set IGA path for each device*/
+ void viafb_set_iga_path(void)
  {
--	int i, max_h = 0, tmp, restore;
--	unsigned char rData;
-+	int i, restore;
- 	unsigned char EDID_DATA[18];
++	int crt_iga_path = 0;
  
- 	DEBUG_MSG(KERN_INFO "\n dvi_get_panel_size_from_DDCv1 \n");
- 
- 	restore = tmds_chip->tmds_chip_slave_addr;
- 	tmds_chip->tmds_chip_slave_addr = 0xA0;
--
--	rData = tmds_register_read(0x23);
--	if (rData & 0x3C)
--		max_h = 640;
--	if (rData & 0xC0)
--		max_h = 720;
--	if (rData & 0x03)
--		max_h = 800;
--
--	rData = tmds_register_read(0x24);
--	if (rData & 0xC0)
--		max_h = 800;
--	if (rData & 0x1E)
--		max_h = 1024;
--	if (rData & 0x01)
--		max_h = 1280;
--
- 	for (i = 0x25; i < 0x6D; i++) {
- 		switch (i) {
--		case 0x26:
--		case 0x28:
--		case 0x2A:
--		case 0x2C:
--		case 0x2E:
--		case 0x30:
--		case 0x32:
--		case 0x34:
--			rData = tmds_register_read(i);
--			if (rData == 1)
--				break;
--			/* data = (data + 31) * 8 */
--			tmp = (rData + 31) << 3;
--			if (tmp > max_h)
--				max_h = tmp;
--			break;
--
- 		case 0x36:
- 		case 0x48:
- 		case 0x5A:
-@@ -383,91 +331,11 @@ static void __devinit dvi_get_panel_size_from_DDCv1(
+ 	if (viafb_SAMM_ON == 1) {
+ 		if (viafb_CRT_ON) {
+ 			if (viafb_primary_dev == CRT_Device)
+-				viaparinfo->crt_setting_info->iga_path = IGA1;
++				crt_iga_path = IGA1;
+ 			else
+-				viaparinfo->crt_setting_info->iga_path = IGA2;
++				crt_iga_path = IGA2;
  		}
- 	}
  
--	tmds_setting->max_hres = max_h;
--	switch (max_h) {
--	case 640:
--		tmds_setting->max_vres = 480;
--		break;
--	case 800:
--		tmds_setting->max_vres = 600;
--		break;
--	case 1024:
--		tmds_setting->max_vres = 768;
--		break;
--	case 1280:
--		tmds_setting->max_vres = 1024;
--		break;
--	case 1400:
--		tmds_setting->max_vres = 1050;
--		break;
--	case 1440:
--		tmds_setting->max_vres = 1050;
--		break;
--	case 1600:
--		tmds_setting->max_vres = 1200;
--		break;
--	case 1920:
--		tmds_setting->max_vres = 1080;
--		break;
--	default:
--		DEBUG_MSG(KERN_INFO "Unknown panel size max resolution = %d ! "
--					 "set default panel size.\n", max_h);
--		break;
--	}
--
- 	DEBUG_MSG(KERN_INFO "DVI max pixelclock = %d\n",
- 		tmds_setting->max_pixel_clock);
- 	tmds_chip->tmds_chip_slave_addr = restore;
- }
+ 		if (viafb_DVI_ON) {
+@@ -793,8 +794,7 @@ void viafb_set_iga_path(void)
+ 					UNICHROME_CLE266)) {
+ 					viaparinfo->
+ 					lvds_setting_info->iga_path = IGA2;
+-					viaparinfo->
+-					crt_setting_info->iga_path = IGA1;
++					crt_iga_path = IGA1;
+ 					viaparinfo->
+ 					tmds_setting_info->iga_path = IGA1;
+ 				} else
+@@ -814,10 +814,10 @@ void viafb_set_iga_path(void)
+ 		viafb_SAMM_ON = 0;
  
--/* Get Panel Size Using EDID2 Table */
--static void __devinit dvi_get_panel_size_from_DDCv2(
--	struct tmds_chip_information *tmds_chip,
--	struct tmds_setting_information *tmds_setting)
--{
--	int restore;
--	unsigned char R_Buffer[2];
+ 		if (viafb_CRT_ON && viafb_LCD_ON) {
+-			viaparinfo->crt_setting_info->iga_path = IGA1;
++			crt_iga_path = IGA1;
+ 			viaparinfo->lvds_setting_info->iga_path = IGA2;
+ 		} else if (viafb_CRT_ON && viafb_DVI_ON) {
+-			viaparinfo->crt_setting_info->iga_path = IGA1;
++			crt_iga_path = IGA1;
+ 			viaparinfo->tmds_setting_info->iga_path = IGA2;
+ 		} else if (viafb_LCD_ON && viafb_DVI_ON) {
+ 			viaparinfo->tmds_setting_info->iga_path = IGA1;
+@@ -826,7 +826,7 @@ void viafb_set_iga_path(void)
+ 			viaparinfo->lvds_setting_info->iga_path = IGA2;
+ 			viaparinfo->lvds_setting_info2->iga_path = IGA2;
+ 		} else if (viafb_CRT_ON) {
+-			viaparinfo->crt_setting_info->iga_path = IGA1;
++			crt_iga_path = IGA1;
+ 		} else if (viafb_LCD_ON) {
+ 			viaparinfo->lvds_setting_info->iga_path = IGA2;
+ 		} else if (viafb_DVI_ON) {
+@@ -837,7 +837,7 @@ void viafb_set_iga_path(void)
+ 	viaparinfo->shared->iga1_devices = 0;
+ 	viaparinfo->shared->iga2_devices = 0;
+ 	if (viafb_CRT_ON) {
+-		if (viaparinfo->crt_setting_info->iga_path == IGA1)
++		if (crt_iga_path == IGA1)
+ 			viaparinfo->shared->iga1_devices |= VIA_CRT;
+ 		else
+ 			viaparinfo->shared->iga2_devices |= VIA_CRT;
+@@ -2072,8 +2072,6 @@ void __devinit viafb_init_chip_info(int chip_type)
+ 	init_tmds_chip_info();
+ 	init_lvds_chip_info();
+ 
+-	viaparinfo->crt_setting_info->iga_path = IGA1;
 -
--	DEBUG_MSG(KERN_INFO "\n dvi_get_panel_size_from_DDCv2 \n");
--
--	restore = tmds_chip->tmds_chip_slave_addr;
--	tmds_chip->tmds_chip_slave_addr = 0xA2;
--
--	/* Horizontal: 0x76, 0x77 */
--	tmds_register_read_bytes(0x76, R_Buffer, 2);
--	tmds_setting->max_hres = R_Buffer[0] + (R_Buffer[1] << 8);
--
--	switch (tmds_setting->max_hres) {
--	case 640:
--		tmds_setting->max_vres = 480;
--		break;
--	case 800:
--		tmds_setting->max_vres = 600;
--		break;
--	case 1024:
--		tmds_setting->max_vres = 768;
--		break;
--	case 1280:
--		tmds_setting->max_vres = 1024;
--		break;
--	case 1400:
--		tmds_setting->max_vres = 1050;
--		break;
--	case 1440:
--		tmds_setting->max_vres = 1050;
--		break;
--	case 1600:
--		tmds_setting->max_vres = 1200;
--		break;
--	default:
--		DEBUG_MSG(KERN_INFO "Unknown panel size max resolution = %d! "
--			"set default panel size.\n", tmds_setting->max_hres);
--		break;
--	}
--
--	tmds_chip->tmds_chip_slave_addr = restore;
--}
--
- /* If Disable DVI, turn off pad */
- void viafb_dvi_disable(void)
- {
+ 	/*Set IGA path for each device */
+ 	viafb_set_iga_path();
+ 
+@@ -2450,15 +2448,15 @@ int viafb_setmode(struct VideoModeTable *vmode_tbl, int video_bpp,
+ 
+ 	/* CRT set mode */
+ 	if (viafb_CRT_ON) {
+-		if (viafb_SAMM_ON && (viaparinfo->crt_setting_info->iga_path ==
+-			IGA2)) {
++		if (viafb_SAMM_ON &&
++			viaparinfo->shared->iga2_devices & VIA_CRT) {
+ 			viafb_fill_crtc_timing(crt_timing1, vmode_tbl1,
+-				video_bpp1 / 8,
+-				viaparinfo->crt_setting_info->iga_path);
++				video_bpp1 / 8, IGA2);
+ 		} else {
+ 			viafb_fill_crtc_timing(crt_timing, vmode_tbl,
+ 				video_bpp / 8,
+-				viaparinfo->crt_setting_info->iga_path);
++				(viaparinfo->shared->iga1_devices & VIA_CRT)
++				? IGA1 : IGA2);
+ 		}
+ 
+ 		/* Patch if set_hres is not 8 alignment (1366) to viafb_setmode
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index 9d9bb9b..ed9bd79 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -930,10 +930,8 @@ static int get_primary_device(void)
+ 	/* Rule: device on iga1 path are the primary device. */
+ 	if (viafb_SAMM_ON) {
+ 		if (viafb_CRT_ON) {
+-			if (viaparinfo->crt_setting_info->iga_path == IGA1) {
+-				DEBUG_MSG(KERN_INFO "CRT IGA Path:%d\n",
+-					viaparinfo->
+-					crt_setting_info->iga_path);
++			if (viaparinfo->shared->iga1_devices & VIA_CRT) {
++				DEBUG_MSG(KERN_INFO "CRT IGA Path:%d\n", IGA1);
+ 				primary_device = CRT_Device;
+ 			}
+ 		}
+@@ -1746,7 +1744,6 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
+ 	viaparinfo->lvds_setting_info = &viaparinfo->shared->lvds_setting_info;
+ 	viaparinfo->lvds_setting_info2 =
+ 		&viaparinfo->shared->lvds_setting_info2;
+-	viaparinfo->crt_setting_info = &viaparinfo->shared->crt_setting_info;
+ 	viaparinfo->chip_info = &viaparinfo->shared->chip_info;
+ 
+ 	if (viafb_dual_fb)
+diff --git a/drivers/video/via/viafbdev.h b/drivers/video/via/viafbdev.h
+index d66f963..ff60e1d 100644
+--- a/drivers/video/via/viafbdev.h
++++ b/drivers/video/via/viafbdev.h
+@@ -50,7 +50,6 @@ struct viafb_shared {
+ 
+ 	/* All the information will be needed to set engine */
+ 	struct tmds_setting_information tmds_setting_info;
+-	struct crt_setting_information crt_setting_info;
+ 	struct lvds_setting_information lvds_setting_info;
+ 	struct lvds_setting_information lvds_setting_info2;
+ 	struct chip_information chip_info;
+@@ -79,7 +78,6 @@ struct viafb_par {
+ 	/* All the information will be needed to set engine */
+ 	/* depreciated, use the ones in shared directly */
+ 	struct tmds_setting_information *tmds_setting_info;
+-	struct crt_setting_information *crt_setting_info;
+ 	struct lvds_setting_information *lvds_setting_info;
+ 	struct lvds_setting_information *lvds_setting_info2;
+ 	struct chip_information *chip_info;
 -- 
 1.6.3.2
 
