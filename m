@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab1CWKmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:42:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48308 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756205Ab1CWKmT (ORCPT
+	id S932361Ab1CWKtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:49:40 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:46120 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755271Ab1CWKti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:42:19 -0400
-Date: Wed, 23 Mar 2011 10:42:30 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Collins <collinsd@codeaurora.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: Deadlock scenario in regulator core
-Message-ID: <20110323104230.GA778@opensource.wolfsonmicro.com>
-References: <4D891C59.1030009@codeaurora.org>
- <20110322223702.GO14675@home.goodmis.org>
- <4D892C0A.1090606@codeaurora.org>
- <1300835998.14261.13.camel@gandalf.stny.rr.com>
- <20110323000100.GB2529@opensource.wolfsonmicro.com>
- <1300840734.14261.72.camel@gandalf.stny.rr.com>
+	Wed, 23 Mar 2011 06:49:38 -0400
+Date: Wed, 23 Mar 2011 10:49:11 +0000
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+To: Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Amit Shah <amit.shah@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: sr driver fails to update inode size after media change
+Message-ID: <20110323104911.GA18422@stefanha-thinkpad.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300840734.14261.72.camel@gandalf.stny.rr.com>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 08:38:54PM -0400, Steven Rostedt wrote:
-> On Wed, 2011-03-23 at 00:01 +0000, Mark Brown wrote:
+Hi,
+Both 2.6.38 and older kernels do not update the CD-ROM block device
+inode's size after media change.  If one process holds a file descriptor
+to the device across media change, then all other processes on the
+system will read the outdated size when they use lseek(2) even if they
+opened the device after media change.
 
-> > What's a mutex type?  I have to say this is the first time I've heard of
-> > mutex types and the documentation in mutex.c and mutex-design.txt isn't
-> > precisely verbose on what mutex_lock_nested() is for or how one would
-> > pick subclass.
+The reason for this is that although the sysfs size attribute is
+up-to-date, the inode size is never updated by the sr driver or the
+universal cdrom driver.
 
-> Sorry, I said "mutex type" as a synonym to "lock class". A lock class is
-> pretty much how a lock is defined.
+Here is an example.  There is a medium inserted:
+$ cat /sys/block/sr0/size
+7656192
 
-OK, lock class can be grepped which was the main thing, thanks.
+Now let's start a process that keeps the file descriptor open:
+$ python
+1>>> import os
+1>>> fd = os.open('/dev/sr0', os.O_RDONLY | os.O_NONBLOCK)
+1>>> os.lseek(fd, 0, 2) / 512
+7656192
 
-> There's better documentation about this in the lockdep-design.txt.
+Now change the medium and check what sysfs says after hald/udisks has
+polled:
+$ cat /sys/block/sr0/size
+15120512
 
-That's helpful, though it doesn't really say anything about how one
-picks subclass?
+Okay, the size has been updated in sysfs.  The python process still has
+a file descriptor to the device open.  Let's start a new process and see
+what lseek(2) says:
+$ python
+2>>> import os
+2>>> fd = os.open('/dev/sr0', os.O_RDONLY | os.O_NONBLOCK)
+2>>> os.lseek(fd, 0, 2) / 512
+7656192
+2>>> os.close(fd)
+
+Still the old value because the inode size has not been updated.
+
+Close the file descriptor in the original process so there are no more
+references and then reopen it:
+1>>> os.close(fd)
+1>>> fd = os.open('/dev/sr0', os.O_RDONLY | os.O_NONBLOCK)
+1>>> os.lseek(fd, 0, 2) / 512
+15120512
+
+Now we get the new value.
+
+I would like to add a check_disk_size_change() call to sr.c.  Is there a
+reason to keep the existing behavior?
+
+Stefan
