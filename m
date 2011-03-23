@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab1CWNiH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 09:38:07 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:57165 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755760Ab1CWNiE (ORCPT
+	id S1756247Ab1CWNku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 09:40:50 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63316 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755154Ab1CWNks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 09:38:04 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-From: Jonathan Cameron <jic23@cam.ac.uk>
-To: linux-kernel@vger.kernel.org
-Cc: greg@kroah.com, rusty@rustcorp.com.au, adobriyan@gmail.com,
-        Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [RFC PATCH 0/3] Introduce kstrtobool function
-Date: Wed, 23 Mar 2011 13:39:11 +0000
-Message-Id: <1300887554-19031-1-git-send-email-jic23@cam.ac.uk>
-X-Mailer: git-send-email 1.7.3.4
+	Wed, 23 Mar 2011 09:40:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=V7ofFmjbsGadonI6ukvVgRCO3cd+LHJmX9WoO1/nb9x39Qps2mvJR8mfme+PPxcSbJ
+         BmQT9dB9j+6XmExHr9uZuozI619Bnof8i59zC/Jv7sM+XebJw81JTY7vM28w30HPvXin
+         IOs3orWYRGpa4x7kzLMNHHnB+LMdFoEpKu4IE=
+Date: Wed, 23 Mar 2011 10:40:37 -0300
+From: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 2/5] Revert "oom: give the dying task a higher priority"
+Message-ID: <20110323134037.GP5212@uudg.org>
+References: <20110315153801.3526.A69D9226@jp.fujitsu.com>
+ <20110322194721.B05E.A69D9226@jp.fujitsu.com>
+ <20110322200657.B064.A69D9226@jp.fujitsu.com>
+ <20110323164229.6b647004.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110323164229.6b647004.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+On Wed, Mar 23, 2011 at 04:42:29PM +0900, KAMEZAWA Hiroyuki wrote:
+| On Tue, 22 Mar 2011 20:06:48 +0900 (JST)
+| KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+| 
+| > This reverts commit 93b43fa55088fe977503a156d1097cc2055449a2.
+| > 
+| > The commit dramatically improve oom killer logic when fork-bomb
+| > occur. But, I've found it has nasty corner case. Now cpu cgroup
+| > has strange default RT runtime. It's 0! That said, if a process
+| > under cpu cgroup promote RT scheduling class, the process never
+| > run at all.
+| > 
+| > Eventually, kernel may hang up when oom kill occur.
+| > 
+| > The author need to resubmit it as adding knob and disabled
+| > by default if he really need this feature.
+| > 
+| > Cc: Luis Claudio R. Goncalves <lclaudio@uudg.org>
+| > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+| 
+| Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-This is an initial stab at a simple utility function intended to pin
-down what the kernel considers to be 'true' and 'false'.  My original
-query was centered around processing of sysfs inputs but as Greg
-pointed out there are a couple of other places in kernel where this
-functionality would be useful.
+The original patch was written to fix an issue observed in 2.6.24.7-rt.
+As the logic sounded useful, I ported it to upstream. Anyway,I am trying
+a few ideas to rework that patch. In the meantime, I'm pretty fine with
+reverting the commit.
 
-Given my main targets are in staging:iio I will provide patches for them
-if/when people are happy with what we have here.
-
-I obviously need to add some documentation, but want to get some
-quick opinions on whether this is a good idea.
-
-If the concept is fine the obvious questions are:
-
-1) Function naming - this is only tangentially similar to kstrto* so
-   is that a sensible location
-2) Other values people think should be true or false.
-
-Thanks,
-
-Jonathan
-
-Jonathan Cameron (3):
-  Add a kstrtobool function matching semantics of existing in kernel
-    equivalents.
-  debugfs: move to new kstrtobool function
-  params.c: Use new kstrtobool implementation to processing boolean
-    inputs.
-
- fs/debugfs/file.c      |   19 ++++++-------------
- include/linux/kernel.h |    1 +
- kernel/params.c        |   15 ++++-----------
- lib/kstrtox.c          |   18 ++++++++++++++++++
- 4 files changed, 29 insertions(+), 24 deletions(-)
+Acked-by: Luis Claudio R. Gonçalves <lgoncalv@uudg.org>
 
 -- 
-1.7.3.4
+[ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
+[ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
 
