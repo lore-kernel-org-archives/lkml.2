@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab1CWVnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 17:43:15 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:35297 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab1CWVnN (ORCPT
+	id S932724Ab1CWVnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 17:43:37 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:55769 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab1CWVnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 17:43:13 -0400
-Subject: Re: [PATCH V12 3/4] ptp: Added a clock driver for the IXP46x.
-From: John Stultz <john.stultz@linaro.org>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>
-In-Reply-To: <cd6ddff0dcca60ac88b35660505d7bf54ad32405.1298878618.git.richard.cochran@omicron.at>
-References: <cover.1298878618.git.richard.cochran@omicron.at>
-	 <cd6ddff0dcca60ac88b35660505d7bf54ad32405.1298878618.git.richard.cochran@omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Mar 2011 14:43:00 -0700
-Message-ID: <1300916580.848.51.camel@work-vm>
+	Wed, 23 Mar 2011 17:43:35 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Oren Weil <oren.jer.weil@intel.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, alan@linux.intel.com,
+        david@woodhou.se
+Subject: Re: [PATCH 7/7] char/mei: Updates to char/Kconfig ane char/Makefile
+In-Reply-To: Your message of "Tue, 22 Mar 2011 12:51:32 +0200."
+             <1300791092-14319-8-git-send-email-oren.jer.weil@intel.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com>
+            <1300791092-14319-8-git-send-email-oren.jer.weil@intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: multipart/signed; boundary="==_Exmh_1300916607_5029P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Wed, 23 Mar 2011 17:43:27 -0400
+Message-ID: <29997.1300916607@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4D8A6981.0088,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-28 at 08:58 +0100, Richard Cochran wrote:
-> This patch adds a driver for the hardware time stamping unit found on the
-> IXP465. The basic clock operations and an external trigger are implemented.
-> 
-> Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
-> Acked-by: John Stultz <johnstul@us.ibm.com>
+--==_Exmh_1300916607_5029P
+Content-Type: text/plain; charset=us-ascii
 
-My ack is still fine, but found a few more nits to consider on another
-pass... 
+On Tue, 22 Mar 2011 12:51:32 +0200, Oren Weil said:
+> Changes of Kconfig and Makefile in driver/char
+> for adding the Intel MEI Driver to the Linux kernel.
+> New Makefile building for MEI Driver.
+
+> +config INTEL_MEI
+> +	tristate "Intel Management Engine Interface (Intel MEI)"
+> +	depends on X86 && EXPERIMENTAL
+> +	help
+> +		The Intel Management Engine (Intel ME) provides Manageability,
+> +		Security and Media services for system containing Intel chipsets.
+> +		if selected /dev/mei misc device will be created.
+
+Can we have this re-worded so it doesn't have an implied "all Intel chipsets",
+perhaps adding "chipsets that support the Intel vPro technology", or similar?
+
+(And though I found that at least *some* vPro-capable chipsets do IME, I didn't
+find a statement that *all* vPro will do it, so I'm still confused, thus no
+patch from me...)
 
 
-> +static int match(struct sk_buff *skb, u16 uid_hi, u32 uid_lo, u16 seq)
-[snip]
-> +static void do_rx_timestamp(struct port *port, struct sk_buff *skb)
-[snip]
-> +static u64 sys_time_read(struct ixp46x_ts_regs *regs)
-[snip]
-> +static void sys_time_write(struct ixp46x_ts_regs *regs, u64 ns)
+--==_Exmh_1300916607_5029P
+Content-Type: application/pgp-signature
 
-I know these are static, but these function names are sort of generic
-names, and make grep/cscoping for similar sounding functions a little
-noisy. 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Maybe add a ipx_ prefix just to be more obvious?
+iD8DBQFNiml/cC3lWbTT17ARAnNVAKCB5EpAA122KPvudWA4//TcpV/R5wCeKvMf
+h+63T1Po5/Mhe3bstF8jZrM=
+=Nu2x
+-----END PGP SIGNATURE-----
 
-thanks
--john
-
+--==_Exmh_1300916607_5029P--
 
