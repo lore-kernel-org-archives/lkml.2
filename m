@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933155Ab1CWXQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 19:16:21 -0400
-Received: from kroah.org ([198.145.64.141]:60490 "EHLO coco.kroah.org"
+	id S933197Ab1CWXQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 19:16:27 -0400
+Received: from kroah.org ([198.145.64.141]:60501 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933037Ab1CWXQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 19:16:20 -0400
-Date: Wed, 23 Mar 2011 15:50:01 -0700
+	id S933166Ab1CWXQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 19:16:25 -0400
+Date: Wed, 23 Mar 2011 15:58:53 -0700
 From: Greg KH <greg@kroah.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: stable@kernel.org, Christoph Lameter <cl@linux-foundation.org>,
-        linux-pci@vger.kernel.org, Michal Schmidt <mschmidt@redhat.com>,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [stable] [PATCH stable] PCI: return correct value when writing
- to the "reset" attribute
-Message-ID: <20110323225001.GD27334@kroah.com>
-References: <20110323122103.GA24976@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@kernel.org
+Subject: Re: [stable] [PATCH] mm: PageBuddy and mapcount underflows robustness
+Message-ID: <20110323225853.GH27334@kroah.com>
+References: <alpine.LSU.2.00.1103140059510.1661@sister.anvils>
+ <20110314155232.GB10696@random.random>
+ <alpine.LSU.2.00.1103140910570.2601@sister.anvils>
+ <20110314165922.GE10696@random.random>
+ <AANLkTikWh5tFUZuALYRP3Dx2Zcs33u0UVdjf4d_7KhPJ@mail.gmail.com>
+ <20110317231635.GC10696@random.random>
+ <alpine.LSU.2.00.1103181428100.1996@sister.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110323122103.GA24976@redhat.com>
+In-Reply-To: <alpine.LSU.2.00.1103181428100.1996@sister.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 02:21:03PM +0200, Michael S. Tsirkin wrote:
-> commit 447c5dd7338638f526e9bcf7dcf69b4da5835c7d
-> Author: Michal Schmidt <mschmidt@redhat.com>
-> Date:   Tue May 11 11:44:54 2010 +0200
+On Fri, Mar 18, 2011 at 02:34:03PM -0700, Hugh Dickins wrote:
+> On Fri, 18 Mar 2011, Andrea Arcangeli wrote:
+> > On Mon, Mar 14, 2011 at 10:30:11AM -0700, Linus Torvalds wrote:
+> > Subject: mm: PageBuddy and mapcount robustness
+> > 
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > Change the _mapcount value indicating PageBuddy from -2 to -128 for
+> > more robusteness against page_mapcount() undeflows.
+> > 
+> > Use reset_page_mapcount instead of __ClearPageBuddy in bad_page to
+> > ignore the previous retval of PageBuddy().
+> > 
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> > Reported-by: Hugh Dickins <hughd@google.com>
 > 
-> A successful write() to the "reset" sysfs attribute should return the
-> number of bytes written, not 0. Otherwise userspace (bash) retries the
-> write over and over again.
+> Yes, this version satisfies my objections too.
+> I'd say Acked-by but I see that it's already in, great.
 > 
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-> Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-> 
-> Applies without changes to all of 2.6.32,2.6.33,2.6.34
+> I've Cc'ed stable@kernel.org: please can we have this in 2.6.38.1,
+> since 2.6.38 regressed the recovery from bad page states,
+> inadvertently changing them to a fatal error when CONFIG_DEBUG_VM.
 
-Applied to .32 and .33 now, thanks.
+Now queued up for 2.6.38.2, thanks.
 
 greg k-h
