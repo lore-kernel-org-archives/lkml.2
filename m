@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab1CWDKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 23:10:35 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:7700 "EHLO
+	id S932078Ab1CWDKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 23:10:34 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:7738 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab1CWDKG (ORCPT
+	with ESMTP id S1753541Ab1CWDKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 23:10:06 -0400
+	Tue, 22 Mar 2011 23:10:12 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=idIQ/gx9bEOBtErrJv2TzmU+W3dzIn7w60K8nG7QB7gAAgOdNc3IpjUCEvf6zUvgz
-	yFOPchBc7k5wddKBsiwyQ==
-Message-Id: <20110323030448.853861319@google.com>
+	b=AdW+7XTF0K9wd4Niz1PqB93KENZ8U7u9eFHB+btpL585NQJt5yxNws12Xz63IV5ay
+	5wLVfScwYb5v/pXz7sPJw==
+Message-Id: <20110323030449.941304760@google.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 22 Mar 2011 20:03:28 -0700
+Date: Tue, 22 Mar 2011 20:03:39 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -24,282 +24,174 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srivatsa Vaddagiri <vatsa@in.ibm.com>,
         Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: [patch 02/15] sched: validate CFS quota hierarchies
+Subject: [patch 13/15] sched: expire slack quota using generation counters
 References: <20110323030326.789836913@google.com>
-Content-Disposition: inline; filename=sched-bwc-consistent_quota.patch
+Content-Disposition: inline; filename=sched-bwc-add_quota_generations.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add constraints validation for CFS bandwidth hierachies.
-
-It is checked that:
-   sum(child bandwidth) <= parent_bandwidth
-
-In a quota limited hierarchy, an unconstrainted entity
-(e.g. bandwidth==RUNTIME_INF) inherits the bandwidth of its parent.
-
-Since bandwidth periods may be non-uniform we normalize to the maximum allowed
-period, 5 seconds.
-
-This behavior may be disabled (allowing child bandwidth to exceed parent) via
-kernel.sched_cfs_bandwidth_consistent=0
+Introduce a generational counter which is incremented each quota period.  This
+allows us to determine on a per-cpu basis whether the currently operating quota
+is "current" or not, without requiring us to visit every cpu and explicitly
+expire quota on every new period.
 
 Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
 
 ---
- include/linux/sched.h |    8 +++
- kernel/sched.c        |  127 +++++++++++++++++++++++++++++++++++++++++++++++---
- kernel/sched_fair.c   |    8 +++
- kernel/sysctl.c       |   11 ++++
- 4 files changed, 147 insertions(+), 7 deletions(-)
+ kernel/sched.c      |    6 ++++++
+ kernel/sched_fair.c |   42 +++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 43 insertions(+), 5 deletions(-)
 
 Index: tip/kernel/sched.c
 ===================================================================
 --- tip.orig/kernel/sched.c
 +++ tip/kernel/sched.c
-@@ -253,6 +253,7 @@ struct cfs_bandwidth {
- 	raw_spinlock_t lock;
- 	ktime_t period;
- 	u64 runtime, quota;
-+	s64 hierarchal_quota; /* used for validating consistency */
+@@ -256,6 +256,7 @@ struct cfs_bandwidth {
+ 	s64 hierarchal_quota; /* used for validating consistency */
  	struct hrtimer period_timer;
+ 
++	int quota_generation;
+ 	struct list_head throttled_cfs_rq;
+ 	/* throttle statistics */
+ 	u64			nr_periods;
+@@ -396,6 +397,7 @@ struct cfs_rq {
+ 	s64 quota_remaining;
+ 	u64 throttled_timestamp;
+ 
++	int quota_generation;
+ 	struct list_head throttled_list;
  #endif
- };
-@@ -8868,7 +8869,7 @@ struct rt_schedulable_data {
- 	u64 rt_runtime;
- };
+ #endif
+@@ -436,8 +438,10 @@ void init_cfs_bandwidth(struct cfs_bandw
+ 	raw_spin_lock_init(&cfs_b->lock);
+ 	cfs_b->quota = cfs_b->runtime = quota;
+ 	cfs_b->period = ns_to_ktime(period);
++	cfs_b->quota_generation = 0;
+ 	INIT_LIST_HEAD(&cfs_b->throttled_cfs_rq);
  
--static int tg_schedulable(struct task_group *tg, void *data)
-+static int tg_rt_schedulable(struct task_group *tg, void *data)
- {
- 	struct rt_schedulable_data *d = data;
- 	struct task_group *child;
-@@ -8932,7 +8933,7 @@ static int __rt_schedulable(struct task_
- 		.rt_runtime = runtime,
- 	};
- 
--	return walk_tg_tree(tg_schedulable, tg_nop, &data);
-+	return walk_tg_tree(tg_rt_schedulable, tg_nop, &data);
- }
- 
- static int tg_set_rt_bandwidth(struct task_group *tg,
-@@ -9223,14 +9224,17 @@ static u64 cpu_shares_read_u64(struct cg
- }
- 
- #ifdef CONFIG_CFS_BANDWIDTH
-+static DEFINE_MUTEX(cfs_constraints_mutex);
 +
- const u64 max_cfs_quota_period = 5 * NSEC_PER_SEC; /* 5s */
- const u64 min_cfs_quota_period = 1 * NSEC_PER_MSEC; /* 1ms */
+ 	hrtimer_init(&cfs_b->period_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	cfs_b->period_timer.function = sched_cfs_period_timer;
  
-+static int __cfs_schedulable(struct task_group *tg, u64 period, u64 runtime);
-+
- static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
- {
--	int i;
-+	int i, ret = 0;
- 	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
--	static DEFINE_MUTEX(mutex);
- 
- 	if (tg == &root_task_group)
- 		return -EINVAL;
-@@ -9251,7 +9255,13 @@ static int tg_set_cfs_bandwidth(struct t
- 	if (period > max_cfs_quota_period)
- 		return -EINVAL;
- 
--	mutex_lock(&mutex);
-+	mutex_lock(&cfs_constraints_mutex);
-+	if (sysctl_sched_cfs_bandwidth_consistent) {
-+		ret = __cfs_schedulable(tg, period, quota);
-+		if (ret)
-+			goto out_unlock;
-+	}
-+
+@@ -9333,6 +9337,8 @@ static int tg_set_cfs_bandwidth(struct t
  	raw_spin_lock_irq(&cfs_b->lock);
  	cfs_b->period = ns_to_ktime(period);
  	cfs_b->runtime = cfs_b->quota = quota;
-@@ -9265,9 +9275,10 @@ static int tg_set_cfs_bandwidth(struct t
- 		init_cfs_rq_quota(cfs_rq);
- 		raw_spin_unlock_irq(&rq->lock);
- 	}
--	mutex_unlock(&mutex);
-+out_unlock:
-+	mutex_unlock(&cfs_constraints_mutex);
++
++	cfs_bump_quota_generation(cfs_b);
+ 	raw_spin_unlock_irq(&cfs_b->lock);
  
--	return 0;
-+	return ret;
- }
- 
- int tg_set_cfs_quota(struct task_group *tg, long cfs_quota_us)
-@@ -9339,6 +9350,108 @@ static int cpu_cfs_period_write_u64(stru
- 	return tg_set_cfs_period(cgroup_tg(cgrp), cfs_period_us);
- }
- 
-+
-+struct cfs_schedulable_data {
-+	struct task_group *tg;
-+	u64 period, quota;
-+};
-+
-+/*
-+ * normalize group quota/period to be quota/max_period
-+ * note: units are usecs
-+ */
-+static u64 normalize_cfs_quota(struct task_group *tg,
-+		               struct cfs_schedulable_data *d)
-+{
-+	u64 quota, period;
-+	struct load_weight lw;
-+
-+	if (tg == d->tg) {
-+		period = d->period;
-+		quota = d->quota;
-+	} else {
-+		period = tg_get_cfs_period(tg);
-+		quota = tg_get_cfs_quota(tg);
-+	}
-+
-+	if (quota == RUNTIME_INF)
-+		return RUNTIME_INF;
-+
-+	lw.weight = period;
-+	lw.inv_weight = 0;
-+
-+	return calc_delta_mine(quota, max_cfs_quota_period, &lw) - 1;
-+}
-+
-+static int tg_cfs_schedulable_down(struct task_group *tg, void *data)
-+{
-+	struct cfs_schedulable_data *d = data;
-+	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
-+	s64 quota = 0, parent_quota = -1;
-+
-+	quota = normalize_cfs_quota(tg, d);
-+	if (!tg->parent) {
-+		quota = RUNTIME_INF;
-+	} else {
-+		struct cfs_bandwidth *parent_b = tg_cfs_bandwidth(tg->parent);
-+
-+		parent_quota = parent_b->hierarchal_quota;
-+		if (parent_quota != RUNTIME_INF) {
-+			parent_quota -= quota;
-+			/* invalid hierarchy, child bandwidth exceeds parent */
-+			if (parent_quota < 0)
-+				return -EINVAL;
-+		}
-+
-+		/* if no inherent limit then inherit parent quota */
-+		if (quota == RUNTIME_INF)
-+			quota = parent_quota;
-+		parent_b->hierarchal_quota = parent_quota;
-+	}
-+	cfs_b->hierarchal_quota = quota;
-+
-+	return 0;
-+}
-+
-+static int __cfs_schedulable(struct task_group *tg, u64 period, u64 quota)
-+{
-+	int ret;
-+	struct cfs_schedulable_data data = {
-+		.tg = tg,
-+		.period = period / NSEC_PER_USEC,
-+		.quota = quota / NSEC_PER_USEC,
-+	};
-+
-+	if (!sysctl_sched_cfs_bandwidth_consistent)
-+		return 0;
-+
-+	rcu_read_lock();
-+	ret = walk_tg_tree(tg_cfs_schedulable_down, tg_nop,
-+			    &data);
-+	rcu_read_unlock();
-+
-+	return ret;
-+}
-+
-+int sched_cfs_consistent_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp,
-+		loff_t *ppos)
-+{
-+	int ret;
-+
-+	mutex_lock(&cfs_constraints_mutex);
-+	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
-+
-+	if (!ret && write && sysctl_sched_cfs_bandwidth_consistent) {
-+		ret = __cfs_schedulable(NULL, 0, 0);
-+
-+		/* must be consistent to enable */
-+		if (ret)
-+			sysctl_sched_cfs_bandwidth_consistent = 0;
-+	}
-+	mutex_unlock(&cfs_constraints_mutex);
-+	return ret;
-+}
- #endif /* CONFIG_CFS_BANDWIDTH */
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- 
-Index: tip/kernel/sysctl.c
-===================================================================
---- tip.orig/kernel/sysctl.c
-+++ tip/kernel/sysctl.c
-@@ -361,6 +361,17 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= sched_rt_handler,
- 	},
-+#ifdef CONFIG_CFS_BANDWIDTH
-+	{
-+		.procname	= "sched_cfs_bandwidth_consistent",
-+		.data		= &sysctl_sched_cfs_bandwidth_consistent,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= sched_cfs_consistent_handler,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
-+#endif
- #ifdef CONFIG_SCHED_AUTOGROUP
- 	{
- 		.procname	= "sched_autogroup_enabled",
-Index: tip/include/linux/sched.h
-===================================================================
---- tip.orig/include/linux/sched.h
-+++ tip/include/linux/sched.h
-@@ -1943,6 +1943,14 @@ int sched_rt_handler(struct ctl_table *t
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos);
- 
-+#ifdef CONFIG_CFS_BANDWIDTH
-+extern unsigned int sysctl_sched_cfs_bandwidth_consistent;
-+
-+int sched_cfs_consistent_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp,
-+		loff_t *ppos);
-+#endif
-+
- #ifdef CONFIG_SCHED_AUTOGROUP
- extern unsigned int sysctl_sched_autogroup_enabled;
- 
+ 	for_each_possible_cpu(i) {
 Index: tip/kernel/sched_fair.c
 ===================================================================
 --- tip.orig/kernel/sched_fair.c
 +++ tip/kernel/sched_fair.c
-@@ -88,6 +88,14 @@ const_debug unsigned int sysctl_sched_mi
-  */
- unsigned int __read_mostly sysctl_sched_shares_window = 10000000UL;
+@@ -1331,11 +1331,25 @@ static void check_cfs_rq_quota(struct cf
+ 	resched_task(rq_of(cfs_rq)->curr);
+ }
  
-+#ifdef CONFIG_CFS_BANDWIDTH
-+/*
-+ * Whether a CFS bandwidth hierarchy is required to be consistent, that is:
-+ *   sum(child_bandwidth) <= parent_bandwidth
-+ */
-+unsigned int sysctl_sched_cfs_bandwidth_consistent = 1;
-+#endif
++static void cfs_bump_quota_generation(struct cfs_bandwidth *cfs_b)
++{
++	cfs_b->quota_generation++;
++	smp_mb();
++}
 +
- static const struct sched_class fair_sched_class;
++static inline int cfs_rq_quota_current(struct cfs_rq *cfs_rq)
++{
++	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
++
++	return cfs_rq->quota_generation == cfs_b->quota_generation;
++}
++
+ static void request_cfs_rq_quota(struct cfs_rq *cfs_rq)
+ {
+ 	struct task_group *tg = cfs_rq->tg;
+ 	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
+ 	u64 amount = 0, min_amount;
++	int generation;
  
- /**************************************************************
+ 	min_amount = sched_cfs_bandwidth_slice() + (-cfs_rq->quota_remaining);
+ 
+@@ -1347,10 +1361,18 @@ static void request_cfs_rq_quota(struct 
+ 		} else {
+ 			amount = min_amount;
+ 		}
++		generation = cfs_b->quota_generation;
+ 		raw_spin_unlock(&cfs_b->lock);
+ 	}
+ 
++	/* a deficit should be carried forwards, surplus should be dropped */
++
++	if (generation != cfs_rq->quota_generation &&
++	    cfs_rq->quota_remaining > 0)
++		cfs_rq->quota_remaining = 0;
++
+ 	cfs_rq->quota_remaining += amount;
++	cfs_rq->quota_generation = generation;
+ }
+ 
+ static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
+@@ -1361,8 +1383,13 @@ static void account_cfs_rq_quota(struct 
+ 
+ 	cfs_rq->quota_remaining -= delta_exec;
+ 
+-	if (cfs_rq->quota_remaining > 0)
+-		return;
++	/* we only want to charge deficits against the next generation */
++	if (likely(cfs_rq->quota_remaining > 0)) {
++		if (unlikely(!cfs_rq_quota_current(cfs_rq)))
++			cfs_rq->quota_remaining = 0;
++		else
++			return;
++	}
+ 
+ 	request_cfs_rq_quota(cfs_rq);
+ }
+@@ -1492,7 +1519,8 @@ static void unthrottle_cfs_rq(struct cfs
+ 		resched_task(rq->curr);
+ }
+ 
+-static u64 distribute_cfs_bandwidth(struct cfs_bandwidth *cfs_b, u64 runtime)
++static u64 distribute_cfs_bandwidth(struct cfs_bandwidth *cfs_b, u64 runtime,
++		int generation)
+ {
+ 	struct cfs_rq *cfs_rq;
+ 	u64 quota, remaining = runtime;
+@@ -1512,6 +1540,7 @@ static u64 distribute_cfs_bandwidth(stru
+ 		remaining -= quota;
+ 
+ 		cfs_rq->quota_remaining += quota;
++		cfs_rq->quota_generation = generation;
+ 		if (cfs_rq_throttled(cfs_rq) && cfs_rq->quota_remaining > 0)
+ 			unthrottle_cfs_rq(cfs_rq);
+ 
+@@ -1529,12 +1558,15 @@ next:
+ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+ {
+ 	u64 runtime, runtime_assigned;
+-	int idle, throttled;
++	int idle, throttled, generation;
+ 
+ 	raw_spin_lock(&cfs_b->lock);
+ 	runtime = cfs_b->quota;
+ 	idle = cfs_b->runtime == cfs_b->runtime_assigned;
+ 	throttled = cfs_b->runtime == 0;
++
++	cfs_bump_quota_generation(cfs_b);
++	generation = cfs_b->quota_generation;
+ 	raw_spin_unlock(&cfs_b->lock);
+ 
+ 	if (runtime == RUNTIME_INF)
+@@ -1543,7 +1575,7 @@ static int do_sched_cfs_period_timer(str
+ 	runtime *= overrun;
+ 	runtime_assigned = runtime;
+ 
+-	runtime = distribute_cfs_bandwidth(cfs_b, runtime);
++	runtime = distribute_cfs_bandwidth(cfs_b, runtime, generation);
+ 
+ 	raw_spin_lock(&cfs_b->lock);
+ 	cfs_b->runtime = runtime;
 
 
