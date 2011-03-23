@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab1CWFno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 01:43:44 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46161 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab1CWFnn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 01:43:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ZTCwOllpHDAlryG9kRdaSS1rU/TYEYwwFJ7IOwwobNioEDvNK4ows0nqnOSlDZBQwY
-         MWtCV0eEqtVRB5JduUd2cR6FN+GVIzc9/QPgTgckE/qfZb4POdfA532zdMeL4l3maiJG
-         6+FjceCz19AtbZtL0NDeTWEMDmOd2L80MTpqY=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikHqJR=JgZzKc1G-m8z82hBFmD-w1bLn5aENTcr@mail.gmail.com>
-References: <AANLkTinmjGaK9ZSbKYTm5g-wuQ-K1hQaJBA+gSN5ERJ=@mail.gmail.com>
-	<AANLkTikHqJR=JgZzKc1G-m8z82hBFmD-w1bLn5aENTcr@mail.gmail.com>
-Date: Wed, 23 Mar 2011 11:13:41 +0530
-Message-ID: <AANLkTi=ZnTv57N=GyvhOfU+Cam6S_RyuZVXzuxHVC6LF@mail.gmail.com>
-Subject: Re: Tests for cpusets and cgroup performance measurement
-From: Jaswinder Singh <jaswinderlinux@gmail.com>
-To: Paul Menage <menage@google.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755542Ab1CWFp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 01:45:28 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55148 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752543Ab1CWFp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 01:45:26 -0400
+Subject: Re: RFC: Platform data for onboard USB assets
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: andy.green@linaro.org, Jaswinder Singh <jaswinder.singh@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
+        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
+        greg@kroah.com, grant.likely@secretlab.ca
+In-Reply-To: <alpine.LFD.2.00.1103222336030.11889@xanadu.home>
+References: <4D79F068.2080009@linaro.org>
+	 <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com>
+	 <1300828125.2402.300.camel@pasglop>  <4D8924B6.8040403@linaro.org>
+	 <1300842219.2402.309.camel@pasglop>
+	 <alpine.LFD.2.00.1103222138320.11889@xanadu.home>
+	 <1300850595.2402.320.camel@pasglop>
+	 <alpine.LFD.2.00.1103222336030.11889@xanadu.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 16:44:55 +1100
+Message-ID: <1300859095.2402.339.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Paul,
+On Wed, 2011-03-23 at 00:21 -0400, Nicolas Pitre wrote:
+> 
+> I wholeheartedly agree with that idea.  One thing that bothers me about DT 
+> is its tendency to show up deep into the guts of kernel code all over 
+> the place.  If a generic abstraction can be put in place, such as this 
+> get_device_attribute() example, then it is far more convenient to use 
+> DT, or _eventually_ use DT, or even _not_ use it in some cases but 
+> something else, without battling over the actual interface 
 
-On Mon, Mar 21, 2011 at 11:03 PM, Paul Menage <menage@google.com> wrote:
-> On Mon, Mar 21, 2011 at 3:42 AM, Jaswinder Singh
-> <jaswinderlinux@gmail.com> wrote:
->>
->> Can you please suggest some simple tests to measure the performance
->> enhancement by using cpusets/cgroups.
->
-> The cgroups framework is simply a way of grouping processes together
-> and allowing subsystems (memory, CPU, disk I/O, etc) to associate
-> state objects with each group. Generally this is for improving
-> isolation rather than improving performance - sticking extra machinery
-> and scheduling in will typically reduce overall throughput, but make
-> it more practical to share resources safely between multiple groups of
-> processes.
->
-> Your question is pretty open-ended - what's your ultimate goal? You
-> should probably be focusing on some particular problem that you're
-> trying to measure/improve via resource isolation/scheduling.
->
+I've always tried to take the approach on powerpc when designing an
+important feature such as the virtual IRQ remapping, to make the
+device-tree use a "useful add-on" without making it entirely necessary.
 
-As per http://www.clusterresources.com/torquedocs21/3.5linuxcpusets.shtml :
+To continue on that example, the low level irq_domain (irq_host but
+being renamed) only carries the OF pointer as a "token" (I think at some
+point I even had it a void *), and the low level APIs for establishing
+the mapping between a domain/hw_irq and virq don't rely on any
+device-tree bits at all.
 
-Under section 3.5.4 Cpuset advantages / disadvantages
+However, helpers built on top of that (along with one "translation"
+callback in the irq domain itself) provide the device-tree integration
+which makes the whole thing a lot easier to use.
 
-"Jobs on larger NUMA systems may see a performance boost if jobs can be
-intelligently assigned to specific CPUs. Jobs may perform better if
-striped across physical processors, or contained within the fewest
-number of memory controllers."
+But we still use the low level bits in some areas, old machines with 
+broken DT, hard wired interrupt numbers coming from firmware, etc...
+
+Cheers,
+Ben.
 
 
-I am curious and want to try some simple tests so that I can see the
-performance improvement by using cpusets on my PCs.
-
-Can you suggest some tests so that I can study them.
-
-Thank you,
---
-Jaswinder Singh.
