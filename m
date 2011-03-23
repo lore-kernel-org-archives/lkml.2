@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab1CWRE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 13:04:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37791 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235Ab1CWREx (ORCPT
+	id S1755028Ab1CWRLn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 13:11:43 -0400
+Received: from mail-in-16.arcor-online.net ([151.189.21.56]:33349 "EHLO
+	mail-in-16.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754281Ab1CWRLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 13:04:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
-         :subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=MzMRT3CgXb696rZBO7vyPbHL1seZ8EBvX0+EXlbZUbVc8WJZdzeu5PnQkublur7EF6
-         GKZYCPxP6Jk0WTLlZ5/LWUgkEG6At3GXvjwd1fgWC/gPNNdO8Z+cQbHGFtuCRhbuMXqw
-         qZtMcJQJhwJsJNOP0qDnXRAWNA4zl/gLo31L8=
-Message-ID: <4D8A2830.6020706@linaro.org>
-Date: Wed, 23 Mar 2011 17:04:48 +0000
-From: Andy Green <andy@warmcat.com>
-Reply-To: andy.green@linaro.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        grant.likely@secretlab.ca, netdev@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: Re: [RFC] usbnet: use eth%d name for known ethernet devices
-References: <4D79F068.2080009@linaro.org> <201103231712.06184.arnd@arndb.de> <20110323162251.GA9367@kroah.com> <201103231756.39849.arnd@arndb.de>
-In-Reply-To: <201103231756.39849.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 23 Mar 2011 13:11:41 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-14.arcor-online.net 80B4E9C5E8
+Subject: [PATCH] HID: roccat: Add support for wireless variant of Pyra
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
+Reply-To: erazor_de@users.sourceforge.net
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 18:11:36 +0100
+Message-ID: <1300900296.2328.7.camel@neuromancer>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2011 04:56 PM, Somebody in the thread at some point said:
+Wireless variant of Roccat Pyra finally has been tested with
+existing driver.
 
-> The approach taken here is to flag whether a device might be a
-> point-to-point link with the new FLAG_PTP setting in the usbnet
-> driver_info. A driver can set both FLAG_PTP and FLAG_ETHER if
-> it is not sure (e.g. cdc_ether), or just one of the two.
-> The usbnet framework only looks at the MAC address for device
-> naming if both flags are set, otherwise it trusts the flag.
+Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+---
+ drivers/hid/hid-core.c        |    1 +
+ drivers/hid/hid-roccat-pyra.c |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-> diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
-> index bc86f4b..c98d3a7 100644
-> --- a/drivers/net/usb/smsc95xx.c
-> +++ b/drivers/net/usb/smsc95xx.c
-> @@ -1231,7 +1231,7 @@ static const struct driver_info smsc95xx_info = {
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index c3d6626..84a0ca2 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1446,6 +1446,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPLUS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KOVAPLUS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRED) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRELESS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
+diff --git a/drivers/hid/hid-roccat-pyra.c b/drivers/hid/hid-roccat-pyra.c
+index 160f481..38280c0 100644
+--- a/drivers/hid/hid-roccat-pyra.c
++++ b/drivers/hid/hid-roccat-pyra.c
+@@ -652,7 +652,8 @@ static int pyra_raw_event(struct hid_device *hdev, struct hid_report *report,
+ static const struct hid_device_id pyra_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT,
+ 			USB_DEVICE_ID_ROCCAT_PYRA_WIRED) },
+-	/* TODO add USB_DEVICE_ID_ROCCAT_PYRA_WIRELESS after testing */
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT,
++			USB_DEVICE_ID_ROCCAT_PYRA_WIRELESS) },
+ 	{ }
+ };
+ 
+-- 
+1.7.3.4
 
-> -	.flags		= FLAG_ETHER | FLAG_SEND_ZLP,
-> +	.flags		= FLAG_ETHER | FLAG_SEND_ZLP | FLAG_REALLY_ETHER,
 
->   		if ((dev->driver_info->flags&  FLAG_ETHER) != 0&&
-> +		    ((dev->driver_info->flags&  FLAG_PTP) == 0 ||
-> +		     (net->dev_addr [0]&  0x02) == 0))
->   			strcpy (net->name, "eth%d");
 
-So it just takes the approach that all smsc95xx are going to be eth%d? 
-Sounds good to me.
-
--Andy
