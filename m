@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257Ab1CWUXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 16:23:39 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:54660 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932698Ab1CWUXh (ORCPT
+	id S933286Ab1CWU15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 16:27:57 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:56049 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932901Ab1CWU14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 16:23:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=kgXbmDLlEgQhOq8PvKNbrDW5nV+4eB9Ytt33EGsAFwLCQ07xIuCs1julxjk8BPi+su
-         m2+kbQL0/faHAnQ6JJz8uPMe6CCI+9lKJTs8jAL4OJey8Aik3NLSla8ppW7GlM3Gqt/H
-         tVb6eE+BOFrp2lGeyJq3QwotHRq1BjJWw+E7o=
-MIME-Version: 1.0
-In-Reply-To: <4D8A1BB4.4030709@schaufler-ca.com>
-References: <1300840717-4413-1-git-send-email-pekane52@gmail.com>
-	<20110322.193206.28821045.davem@davemloft.net>
-	<1300895847.28871.13.camel@unknown001a4b0c2895>
-	<4D8A1BB4.4030709@schaufler-ca.com>
-Date: Wed, 23 Mar 2011 15:23:35 -0500
-Message-ID: <AANLkTik55CAKfU5v4PE87h26vwAMy8vV7rhMmu9EA19B@mail.gmail.com>
-Subject: Re: [PATCH v2] net/unix: Add secdata to unix_stream msgs
-From: Pat Kane <pekane52@gmail.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Eric Paris <eparis@redhat.com>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cxzhang@watson.ibm.com, sds@tycho.nsa.gov, jmorris@namei.org,
-        eparis@parisplace.org, paul.moore@hp.com,
-        LSM <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Mar 2011 16:27:56 -0400
+Subject: Re: [PATCH-v2] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
+	module
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Douglas Gilbert <dgilbert@interlog.com>
+In-Reply-To: <1300903542.15899.27.camel@mulgrave.site>
+References: <1300487957-28800-1-git-send-email-nab@linux-iscsi.org>
+	 <1300903542.15899.27.camel@mulgrave.site>
+Content-Type: text/plain
+Date: Wed, 23 Mar 2011 13:20:29 -0700
+Message-Id: <1300911629.18039.11.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  >> On Tue, 2011-03-22 at 19:32 -0700, David Miller wrote:
-  >>> The SELINUX hook implementations even have "_dgram()" in their names.
+On Wed, 2011-03-23 at 13:05 -0500, James Bottomley wrote:
+> On Fri, 2011-03-18 at 15:39 -0700, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > This patch adds the TCM_Loop Linux/SCSI LLD fabric module for
+> > accessing TCM device
+> > backstores as locally accessable SCSI LUNs in virtual SAS, FC, and
+> > iSCSI Target ports
+> > using the generic fabric TransportID and Target Port WWN naming
+> > handlers from TCM's
+> > target_core_fabric_lib.c  The TCM_Loop module uses the generic fabric
+> > configfs infratructure
+> > provided by target_core_fabric_configfs.c and adds a module dependent
+> > attribute for the
+> > creation/release of the virtual I_T Nexus connected the TCM_Loop
+> > Target and Initiator Ports.
+> > 
+> > TCM_Loop can also be used with scsi-generic and BSG drivers so that
+> > STGT userspace
+> > fabric modules, QEMU-KVM and other hypervisor SCSI passthrough support
+> > can
+> > access TCM device backstore and control CDB emulation.
+> > 
+> > For more information please see:
+> > 
+> > http://linux-iscsi.org/wiki/Tcm_loop
+> > 
+> > This patch has been updated with changes from Christoph's feedback.
+> 
+> And checkpatch next time, too please:
+> 
+> total: 25 errors, 25 warnings, 1681 lines checked
+> 
 
-The LSM hook that I am having problems with, and that the patch fixes
-is  "secid_to_secctx()"  not "socket_getpeersec_dgram()".
+Thanks for fixing this up James.  I will get your checkpatch cleanups
+merged from scsi-misc-2.6.git -> lio-core-2.6.git shortly.
 
+--nab
 
-Pat
----
