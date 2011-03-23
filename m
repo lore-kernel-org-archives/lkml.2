@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460Ab1CWNyO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 09:54:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35124 "EHLO mx1.suse.de"
+	id S932366Ab1CWNzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 09:55:13 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:51822 "EHLO twin.jikos.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754946Ab1CWNyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 09:54:13 -0400
-Date: Wed, 23 Mar 2011 06:50:51 -0700
-From: Greg KH <gregkh@suse.de>
-To: "Weil, Oren jer" <oren.jer.weil@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "david@woodhou.se" <david@woodhou.se>
-Subject: Re: [PATCH 0/7] char/mei: Intel MEI Driver
-Message-ID: <20110323135051.GA16769@suse.de>
-References: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com>
- <20110322162305.GA14737@suse.de>
- <F28B59AD52D84B479DCA469824475335065A96BD7F@hasmsx503.ger.corp.intel.com>
+	id S1754946Ab1CWNzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 09:55:09 -0400
+Date: Wed, 23 Mar 2011 14:54:35 +0100
+From: David Sterba <dave@jikos.cz>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com, rusty@rustcorp.com.au,
+        adobriyan@gmail.com
+Subject: Re: [PATCH 1/3] Add a kstrtobool function matching semantics of
+ existing in kernel equivalents.
+Message-ID: <20110323135435.GE17108@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Jonathan Cameron <jic23@cam.ac.uk>,
+	linux-kernel@vger.kernel.org, greg@kroah.com, rusty@rustcorp.com.au,
+	adobriyan@gmail.com
+References: <1300887554-19031-1-git-send-email-jic23@cam.ac.uk>
+ <1300887554-19031-2-git-send-email-jic23@cam.ac.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <F28B59AD52D84B479DCA469824475335065A96BD7F@hasmsx503.ger.corp.intel.com>
+In-Reply-To: <1300887554-19031-2-git-send-email-jic23@cam.ac.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 02:25:18PM +0200, Weil, Oren jer wrote:
+Hi,
+
+you've missed a few breaks :)
+
+On Wed, Mar 23, 2011 at 01:39:12PM +0000, Jonathan Cameron wrote:
+> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  include/linux/kernel.h |    1 +
+>  lib/kstrtox.c          |   18 ++++++++++++++++++
+>  2 files changed, 19 insertions(+), 0 deletions(-)
 > 
-> >Are you wanting this version reviewed for inclusion in .40?  If you don't 
-> >feel
-> >the code is ready for the main kernel tree, do you want it in staging for the 
-> >.40
-> >release?
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 00cec4d..0babad3 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -247,6 +247,7 @@ int __must_check kstrtou16(const char *s, unsigned int base, u16 *res);
+>  int __must_check kstrtos16(const char *s, unsigned int base, s16 *res);
+>  int __must_check kstrtou8(const char *s, unsigned int base, u8 *res);
+>  int __must_check kstrtos8(const char *s, unsigned int base, s8 *res);
+> +int __must_check kstrtobool(const char *s, bool *res);
+>  
+>  extern unsigned long simple_strtoul(const char *,char **,unsigned int);
+>  extern long simple_strtol(const char *,char **,unsigned int);
+> diff --git a/lib/kstrtox.c b/lib/kstrtox.c
+> index 05672e8..84cf08f 100644
+> --- a/lib/kstrtox.c
+> +++ b/lib/kstrtox.c
+> @@ -225,4 +225,21 @@ int kstrtos8(const char *s, unsigned int base, s8 *res)
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL(kstrtos8);
+> +
+> +int kstrtobool(const char *s, bool *res)
+> +{
+> +	switch (s[0]) {
+> +	case 'y':
+> +	case 'Y':
+> +	case '1':
+> +		*res = true;
+                break;
+
+> +	case 'n':
+> +	case 'N':
+> +	case '0':
+> +		*res = false;
+                break;
+
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(kstrtobool);
+> -- 
+> 1.7.3.4
 > 
-> Yes, we would like  this version to be reviewed for .40.
-> I feel that the driver is ready for main kernel tree, but we still working on 
-> it to make it better.
-> 
-> I don't think we want to put it in staging.
-
-Why not?  It needs lots of work, as you have noted, are you going to be
-able to get it all cleaned up in the next few weeks properly?
-
-If so, great, I'll wait for your next round of patches to take a look at
-them again.
-
-thanks,
-
-greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
