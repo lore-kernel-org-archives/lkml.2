@@ -1,30 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab1CWIto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 04:49:44 -0400
-Received: from mtaout23.012.net.il ([80.179.55.175]:54084 "EHLO
-	mtaout23.012.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab1CWItn (ORCPT
+	id S932346Ab1CWIuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 04:50:11 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:56907 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab1CWIuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 04:49:43 -0400
-Date: Wed, 23 Mar 2011 17:30:20 -0800
-From: Microsoft <m.loto.yahoo.co.uk@[67.174.61.69]>
-Subject: winner
-X-012-Sender: vadim_f@012.net.il
-To: Undisclosed recipients:;
-Reply-to: microsoft_draws0126@yahoo.com.hk
-Message-id: <0LII0082Z5S9QT40@a-mtaout23.012.net.il>
-MIME-version: 1.0
-X-MIMEOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-Content-type: text/plain; charset=Windows-1251
-Content-transfer-encoding: 7bit
-X-Priority: 3
-X-MSMail-priority: Normal
+	Wed, 23 Mar 2011 04:50:06 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: jirislaby@gmail.com
+Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 3/7] Char: cyclades, fix unused variable
+Date: Wed, 23 Mar 2011 09:49:56 +0100
+Message-Id: <1300870200-24405-3-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1300870200-24405-1-git-send-email-jslaby@suse.cz>
+References: <1300870200-24405-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have won 500.000 GBP
-send your phone number
-and address
+drivers/tty/cyclades.c:1454:2: warning: Value stored to 'channel' is never read
+	channel = info->line - card->first_line;
+	^         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Fix it by moving it to the appropriate debug section where it is used.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/tty/cyclades.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
+index c99728f..e6f20d2 100644
+--- a/drivers/tty/cyclades.c
++++ b/drivers/tty/cyclades.c
+@@ -1445,13 +1445,11 @@ static void cy_shutdown(struct cyclades_port *info, struct tty_struct *tty)
+ {
+ 	struct cyclades_card *card;
+ 	unsigned long flags;
+-	int channel;
+ 
+ 	if (!(info->port.flags & ASYNC_INITIALIZED))
+ 		return;
+ 
+ 	card = info->card;
+-	channel = info->line - card->first_line;
+ 	if (!cy_is_Z(card)) {
+ 		spin_lock_irqsave(&card->card_lock, flags);
+ 
+@@ -1476,6 +1474,7 @@ static void cy_shutdown(struct cyclades_port *info, struct tty_struct *tty)
+ 		spin_unlock_irqrestore(&card->card_lock, flags);
+ 	} else {
+ #ifdef CY_DEBUG_OPEN
++		int channel = info->line - card->first_line;
+ 		printk(KERN_DEBUG "cyc shutdown Z card %d, channel %d, "
+ 			"base_addr %p\n", card, channel, card->base_addr);
+ #endif
+-- 
+1.7.4.1
+
+
