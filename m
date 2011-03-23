@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab1CWALS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 20:11:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50773 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755145Ab1CWALR (ORCPT
+	id S1751700Ab1CWAcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 20:32:54 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:43085 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab1CWAcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 20:11:17 -0400
-Date: Wed, 23 Mar 2011 00:11:28 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Collins <collinsd@codeaurora.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: Deadlock scenario in regulator core
-Message-ID: <20110323001128.GC2529@opensource.wolfsonmicro.com>
-References: <4D891C59.1030009@codeaurora.org>
- <20110322223702.GO14675@home.goodmis.org>
- <4D892C0A.1090606@codeaurora.org>
- <1300835998.14261.13.camel@gandalf.stny.rr.com>
- <4D8933A8.8080607@codeaurora.org>
- <1300838856.14261.35.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300838856.14261.35.camel@gandalf.stny.rr.com>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 22 Mar 2011 20:32:52 -0400
+Date: Wed, 23 Mar 2011 09:27:08 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH] memcg: consider per-cpu stock reserves when returning
+ RES_USAGE for _MEM
+Message-Id: <20110323092708.021d555d.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20110322073150.GA12940@tiehlicka.suse.cz>
+References: <20110318152532.GB18450@tiehlicka.suse.cz>
+	<20110321093419.GA26047@tiehlicka.suse.cz>
+	<20110321102420.GB26047@tiehlicka.suse.cz>
+	<20110322091014.27677ab3.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110322104723.fd81dddc.nishimura@mxp.nes.nec.co.jp>
+	<20110322073150.GA12940@tiehlicka.suse.cz>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 08:07:36PM -0400, Steven Rostedt wrote:
+On Tue, 22 Mar 2011 08:31:50 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
-> Note, I do not know this code well enough to say. I'm assuming that an
-> rdevA on a rdevB->supply_list never has rdevB on its own
-> rdevA->supply_list.
+> On Tue 22-03-11 10:47:23, Daisuke Nishimura wrote:
+> > On Tue, 22 Mar 2011 09:10:14 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > 
+> > > On Mon, 21 Mar 2011 11:24:20 +0100
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > 
+> > > > [Sorry for reposting but I forgot to fully refresh the patch before
+> > > > posting...]
+> > > > 
+> > > > On Mon 21-03-11 10:34:19, Michal Hocko wrote:
+> > > > > On Fri 18-03-11 16:25:32, Michal Hocko wrote:
+> > > > > [...]
+> > > > > > According to our documention this is a reasonable test case:
+> > > > > > Documentation/cgroups/memory.txt:
+> > > > > > memory.usage_in_bytes           # show current memory(RSS+Cache) usage.
+> > > > > > 
+> > > > > > This however doesn't work after your commit:
+> > > > > > cdec2e4265d (memcg: coalesce charging via percpu storage)
+> > > > > > 
+> > > > > > because since then we are charging in bulks so we can end up with
+> > > > > > rss+cache <= usage_in_bytes.
+> > > > > [...]
+> > > > > > I think we have several options here
+> > > > > > 	1) document that the value is actually >= rss+cache and it shows
+> > > > > > 	   the guaranteed charges for the group
+> > > > > > 	2) use rss+cache rather then res->count
+> > > > > > 	3) remove the file
+> > > > > > 	4) call drain_all_stock_sync before asking for the value in
+> > > > > > 	   mem_cgroup_read
+> > > > > > 	5) collect the current amount of stock charges and subtract it
+> > > > > > 	   from the current res->count value
+> > > > > > 
+> > > > > > 1) and 2) would suggest that the file is actually not very much useful.
+> > > > > > 3) is basically the interface change as well
+> > > > > > 4) sounds little bit invasive as we basically lose the advantage of the
+> > > > > > pool whenever somebody reads the file. Btw. for who is this file
+> > > > > > intended?
+> > > > > > 5) sounds like a compromise
+> > > > > 
+> > > > > I guess that 4) is really too invasive - for no good reason so here we
+> > > > > go with the 5) solution.
+> > > 
+> > > I think the test in LTP is bad...(it should be fuzzy.) because we cannot
+> > > avoid races...
+> > I agree.
+> 
+> I think that as well. In fact, I quite do not understand what it is
+> testing actually (that we account charges correctly? If yes then what if
+> both values are wrong?). The other point is, though, we have exported this
+> interface and documented its semantic. This is the reason I have asked
+> for the initial purpose of the file in the first place. Is this
+> something for debugging only? Can we make use of the value somehow
+> (other than a shortcut for rss+cache)?
+> 
+> If there is realy no strong reason for the file existence I would rather
+> vote for its removing than having a unusable semantic.
+> 
+Considering more, without these files, we cannot know the actual usage of
+a res_counter, although we set a limit to a res_counter. So, I want to keep
+these files.
 
-Correct.
+If no-one have any objections, I'll prepare a patch to update the documentation.
 
-> If this is the case, and that you only ever have a lock nesting of one,
-> then sure, use the SINGLE_DEPTH_NESTING.
-
-It'd be good if someone could update the documentation in the mutex code
-so the usage were clear here - I don't want to see the locking become
-any more complicated, especially not for relatively infrequently used
-things like supplies.
-
-Though we may be able to deal with this by simplifying the
-implementation of supplies anyway.
+Thanks,
+Daisuke Nishimura.
