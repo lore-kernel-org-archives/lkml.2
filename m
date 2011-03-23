@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab1CWKGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:06:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65002 "EHLO
+	id S932396Ab1CWKGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:06:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50823 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865Ab1CWKGO (ORCPT
+	with ESMTP id S1756097Ab1CWKGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:06:14 -0400
+	Wed, 23 Mar 2011 06:06:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=fsttN+8DFmO+nutCanh+SsX2Y5jybiKi4Rl2pp/6wRIkReT7VVjJw4onv9wY3/5QnY
-         B7azLL3wawcmCoEz77x+Ia7Jf7ghjpDklkA6UmDLYABvDBS8Q5TUKaCq1junNTQ0YB9k
-         zYDRlzbziwLxJ3kWTx7Slo/GhhSN7mMeYvMwE=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=aBWdd/BK2dNzI9gZPiQiImnz/SkkF7siuHZAGNu+HV45xdCuFQTFXNxAwYI9vkDFrP
+         9bCe8ibQUIfH8FvugYTPRbswq3EgEP7GXWRPpr1cThTBDjNPfUjhdbn8mlR9uP+fiChD
+         InLrUj1GAr1M5jaO6EedMy65MqNLXHDB6asfI=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com
-Subject: [PATCHSET] ptrace,signal: Improve ptrace and job control interaction
-Date: Wed, 23 Mar 2011 11:05:46 +0100
-Message-Id: <1300874766-12941-1-git-send-email-tj@kernel.org>
+        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 01/20] signal: Fix SIGCONT notification code
+Date: Wed, 23 Mar 2011 11:05:47 +0100
+Message-Id: <1300874766-12941-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1300874766-12941-1-git-send-email-tj@kernel.org>
+References: <1300874766-12941-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+After a task receives SIGCONT, its parent is notified via SIGCHLD with
+its siginfo describing what the notified event is.  If SIGCONT is
+received while the child process is stopped, the code should be
+CLD_CONTINUED.  If SIGCONT is recieved while the child process is in
+the process of being stopped, it should be CLD_STOPPED.  Which code to
+use is determined in prepare_signal() and recorded in signal->flags
+using SIGNAL_CLD_CONTINUED|STOP flags.
 
-This is repost of the following two pending patchsets.
+get_signal_deliver() should test these flags and then notify
+accoringly; however, it incorrectly tested SIGNAL_STOP_CONTINUED
+instead of SIGNAL_CLD_CONTINUED, thus incorrectly notifying
+CLD_CONTINUED if the signal is delivered before the task is wait(2)ed
+and CLD_STOPPED if the state was fetched already.
 
- [1] group stop / ptrace updates, take#2
- [2] ptrace,signal: Fix notifications to the real parent while ptraced
+Fix it by testing SIGNAL_CLD_CONTINUED.  While at it, uncompress the
+?: test into if/else clause for better readability.
 
-Combined these patches implement "P1. Always TASK_TRACED while
-ptraced", "P2. Fix notifications to the real parent" and "P3. Keep
-ptrace resume separate from and beneath jctl stop" of the ptrace job
-control improvements proposal[3].
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Roland McGrath <roland@redhat.com>
+---
+ kernel/signal.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-All patches have been reviewed and acked by Oleg and this will be the
-last repost of these patches.  They're being committed to a stable git
-tree (will eventually be managed by Oleg) and will be pulled into
-linux-next once -rc1 is released.
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 3175186..e26274a 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1853,8 +1853,13 @@ relock:
+ 	 * the CLD_ si_code into SIGNAL_CLD_MASK bits.
+ 	 */
+ 	if (unlikely(signal->flags & SIGNAL_CLD_MASK)) {
+-		int why = (signal->flags & SIGNAL_STOP_CONTINUED)
+-				? CLD_CONTINUED : CLD_STOPPED;
++		int why;
++
++		if (signal->flags & SIGNAL_CLD_CONTINUED)
++			why = CLD_CONTINUED;
++		else
++			why = CLD_STOPPED;
++
+ 		signal->flags &= ~SIGNAL_CLD_MASK;
+ 
+ 		why = tracehook_notify_jctl(why, CLD_CONTINUED);
+-- 
+1.7.1
 
- 0001-signal-Fix-SIGCONT-notification-code.patch
- 0002-ptrace-Remove-the-extra-wake_up_state-from-ptrace_de.patch
- 0003-signal-Remove-superflous-try_to_freeze-loop-in-do_si.patch
- 0004-ptrace-Kill-tracehook_notify_jctl.patch
- 0005-ptrace-Add-why-to-ptrace_stop.patch
- 0006-signal-Fix-premature-completion-of-group-stop-when-i.patch
- 0007-signal-Use-GROUP_STOP_PENDING-to-stop-once-for-a-sin.patch
- 0008-ptrace-Participate-in-group-stop-from-ptrace_stop-if.patch
- 0009-ptrace-Make-do_signal_stop-use-ptrace_stop-if-the-ta.patch
- 0010-ptrace-Clean-transitions-between-TASK_STOPPED-and-TR.patch
- 0011-ptrace-Collapse-ptrace_untrace-into-__ptrace_unlink.patch
- 0012-ptrace-Always-put-ptracee-into-appropriate-execution.patch
- 0013-job-control-Don-t-set-group_stop-exit_code-if-re-ent.patch
- 0014-job-control-Small-reorganization-of-wait_consider_ta.patch
- 0015-job-control-Fix-ptracer-wait-2-hang-and-explain-nota.patch
- 0016-job-control-Allow-access-to-job-control-events-throu.patch
- 0017-job-control-Add-for_ptrace-to-do_notify_parent_cldst.patch
- 0018-job-control-Job-control-stop-notifications-should-al.patch
- 0019-job-control-Notify-the-real-parent-of-job-control-ev.patch
- 0020-job-control-Don-t-send-duplicate-job-control-stop-no.patch
-
-0001-0010 are from the first patchset and unchanged.  0010-0020 are
-from the second patchset.  0010 and 0011 are the additional ones
-posted as 0.1 and 0.2.  0015, 0016 and 0019 are the updated version
-per Oleg's reviews.  The rest remain unchanged.
-
-The patches are on top of the current mainline (6447f55da) and is
-available in the following git branch
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git ptrace
-
-and contains the following changes.
-
- fs/exec.c                 |    1 
- include/linux/sched.h     |   11 +
- include/linux/tracehook.h |   27 ---
- kernel/exit.c             |   84 +++++++++--
- kernel/ptrace.c           |  110 ++++++++++----
- kernel/signal.c           |  341 +++++++++++++++++++++++++++++++++++++---------
- 6 files changed, 434 insertions(+), 140 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1109224
-[2] http://thread.gmane.org/gmane.linux.kernel/1110403
-[3] http://thread.gmane.org/gmane.linux.kernel/1107045
