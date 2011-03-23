@@ -1,65 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933070Ab1CWPLe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:11:34 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:65138 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933023Ab1CWPLd (ORCPT
+	id S933067Ab1CWPMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:12:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56266 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932997Ab1CWPMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:11:33 -0400
-Date: Wed, 23 Mar 2011 11:11:26 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: andy.green@linaro.org, Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        greg@kroah.com, grant.likely@secretlab.ca
-Subject: Re: RFC: Platform data for onboard USB assets
-In-Reply-To: <1300875732.2402.359.camel@pasglop>
-Message-ID: <alpine.LFD.2.00.1103231056560.11889@xanadu.home>
-References: <4D79F068.2080009@linaro.org> <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com> <1300828125.2402.300.camel@pasglop>  <4D8924B6.8040403@linaro.org> <1300842219.2402.309.camel@pasglop> <alpine.LFD.2.00.1103222138320.11889@xanadu.home>
- <1300850595.2402.320.camel@pasglop>  <4D89BDE2.60907@linaro.org> <1300875732.2402.359.camel@pasglop>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 23 Mar 2011 11:12:48 -0400
+Date: Wed, 23 Mar 2011 15:12:42 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/2] picoxcell-otp: add support for picoxcell OTP
+ devices
+Message-ID: <20110323151242.GC2795@pulham.picochip.com>
+References: <1300882619-19152-1-git-send-email-jamie@jamieiles.com>
+ <1300882619-19152-2-git-send-email-jamie@jamieiles.com>
+ <20110323144230.GD17369@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110323144230.GD17369@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Mar 2011, Benjamin Herrenschmidt wrote:
+Hi Greg,
 
-> Among ideas that have been proposed have been the idea of having stubs
-> generating pseudo-device nodes from platform_data for devices in order
-> to enable the drivers to use a single interface for example. That didn't
-> really go through tho. However, whatever the final approach will be, the
-> point remains that for drivers that have not so far been "contaminated"
-> by the platform_data paradigm, we have the opportunity to try something
-> better, which can then, maybe, be retro-fitted on a case by case basis
-> to platform drivers, for example as such drivers get converted to also
-> be capable of using the device-tree.
+Thanks for the quick feedback!
+
+On Wed, Mar 23, 2011 at 07:42:30AM -0700, Greg KH wrote:
+> On Wed, Mar 23, 2011 at 12:16:58PM +0000, Jamie Iles wrote:
+> > picoxcell devices contain a block of OTP memory that can be used for
+> > storing first-stage bootloaders, cryptographic keys and other data to be
+> > kept onchip.  Different devices support a number of redundancy formats
+> > to cope with in-field programming errors and can be partitioned into
+> > regions to allow different redundancy formats with different effective
+> > sizes.
+> > 
+> > This patch implements an OTP device layer which different devices may
+> > register their OTP regions with.
 > 
-> This is where I'm trying to propose a middle ground with the idea of
-> named properties. It goes toward the direction that platform_device has
-> been trying to to with the struct resource, but there's only so much you
-> can do with these and they are showing their limits when it comes to
-> expose arbitrary informations. MAC addresses are an example but there
-> are many more, from clock bindings, power control, PHY data, connector
-> informations, yadadada... which all can potentially apply to on-board
-> USB or PCI based devices.
+> Great, but why put it in drivers/char/?  Why not drivers/otp/?
 
-I think your middle ground proposal is more than that.  Conceptually, it 
-positions DT as one of the possible device configuration backends 
-instead of making DT the sanctioned configuration frontend.  To me this 
-is very important as I don't want to be stuck with DT support where it 
-would simply be an unwanted burden and overhead.  By having this generic 
-abstraction in the middle, it is then possible to decouple DT from the 
-actual drivers, and then use DT because it makes sense and not just 
-because there is no way around it.  And who knows when some other non-DT 
-configuration scheme may appear in the industry where the simple 
-addition of another backend would make things more straight forward than 
-having to construct synthetic FTDs on the fly.
+OK, point taken, I'll create drivers/otp.
 
+> > This provides sysfs entries that may
+> > be used to configure the number of regions, region format and access
+> > control such as write enable.
+> > 
+> > Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> > ---
+> >  Documentation/ABI/testing/sysfs-bus-picoxcell-otp  |   37 +
+> >  .../ABI/testing/sysfs-platform-picoxcell-otp       |   39 +
+> >  drivers/char/Kconfig                               |    8 +
+> >  drivers/char/Makefile                              |    1 +
+> >  drivers/char/picoxcellotp.c                        |  929 ++++++++++++++++++++
+> >  drivers/char/picoxcellotp.h                        |  230 +++++
+> >  6 files changed, 1244 insertions(+), 0 deletions(-)
+> >  create mode 100644 Documentation/ABI/testing/sysfs-bus-picoxcell-otp
+> >  create mode 100644 Documentation/ABI/testing/sysfs-platform-picoxcell-otp
+> >  create mode 100644 drivers/char/picoxcellotp.c
+> >  create mode 100644 drivers/char/picoxcellotp.h
+> > 
+> > diff --git a/Documentation/ABI/testing/sysfs-bus-picoxcell-otp b/Documentation/ABI/testing/sysfs-bus-picoxcell-otp
+> > new file mode 100644
+> > index 0000000..096b892
+> > --- /dev/null
+> > +++ b/Documentation/ABI/testing/sysfs-bus-picoxcell-otp
+> > @@ -0,0 +1,37 @@
+> > +What:           /sys/bus/picoxcell-otp/
+> 
+> Shouldn't this just be sys/bus/otp/ ?
 
-Nicolas
+I guess so, and that's what I originally had, but I'm not sure if this 
+series is generic enough to be otp so I decided to give it this name.  
+I'm happy to rename though but I'm not sure how to make the current 
+driver more generic whilst supporting the redundancy/regions that this 
+OTP has.
+
+> > +Date:           March 2011
+> > +KernelVersion:  2.6.40+
+> > +Contact:        Jamie Iles <jamie@jamieiles.com>
+> > +Description:
+> > +                The picoxcell-otp bus presents a number of devices where each
+> > +		device represents a region in the OTP device in the SoC. Each
+> > +		region will create a device node which allows the region to be
+> > +		written with read()/write() calls and the device on the bus
+> > +		has attributes for controlling the redundancy format and
+> > +		getting the region size.
+> > +
+> > +What:           /sys/bus/picoxcell-otp/devices/.../format
+> > +Date:           March 2011
+> > +KernelVersion:  2.6.40+
+> > +Contact:        Jamie Iles <jamie@jamieiles.com>
+> > +Description:
+> > +                The redundancy format of the region. Valid values are:
+> > +			- single-ended (1 bit of storage per data bit).
+> > +			- redundant (2 bits of storage, wire-OR'd per data
+> > +			  bit).
+> > +			- differential (2 bits of storage, differential
+> > +			  voltage per data bit).
+> > +			- differential-redundant (4 bits of storage, combining
+> > +			  redundant and differential).
+> > +		It is possible to increase redundancy of a region but care
+> > +		will be needed if there is data already in the region.
+> > +
+> > +What:           /sys/bus/picoxcell-otp/devices/.../size
+> > +Date:           March 2011
+> > +KernelVersion:  2.6.40+
+> > +Contact:        Jamie Iles <jamie@jamieiles.com>
+> > +Description:
+> > +                The effective storage size of the region. This is the amount
+> > +		of data that a user can store in the region taking into
+> > +		account the number of regions and the redundancy format of the
+> > +		region itself.
+> > diff --git a/Documentation/ABI/testing/sysfs-platform-picoxcell-otp b/Documentation/ABI/testing/sysfs-platform-picoxcell-otp
+> > new file mode 100644
+> > index 0000000..e5ee711
+> > --- /dev/null
+> > +++ b/Documentation/ABI/testing/sysfs-platform-picoxcell-otp
+> > @@ -0,0 +1,39 @@
+> > +What:		/sys/devices/platform/picoxcell-otp*/write_enable
+> 
+> Why are these in a platform subdirectory?  Shouldn't they be the devices
+> listed above in the previous file?
+
+So the way I have it is that there is the real OTP device which can be 
+split into a number of regions.  These attributes affect the physical 
+device by programming the number of regions and write enable.
+
+Each region is a virtual device to provide the character device and the 
+redundancy/size attributes but you can't split these regions down again.
+
+> 
+> > +Date:		March 2011
+> > +KernelVersion:	2.6.40+
+> > +Contact:	"Jamie Iles" <jamie@jamieiles.com>
+> > +Description:
+> > +		This file controls whether the OTP in a Picochip PC3X3
+> > +		device can be written to. If set to "enabled" then the
+> > +		regions may be written, the number of regions may be
+> > +		changed and the format of any region may be changed.
+> > +
+> > +What:		/sys/devices/platform/picoxcell-otp*/num_regions
+> > +Date:		March 2011
+> > +KernelVersion:	2.6.40+
+> > +Contact:	"Jamie Iles" <jamie@jamieiles.com>
+> > +Description:
+> > +		This file controls the number of regions in the OTP device.
+> > +		Valid values are 1, 2, 4 and 8. The number of regions may be
+> > +		increased but never decreased. Increasing the number of
+> > +		regions will create new devices on the otp bus.
+> > +
+> > +What:		/sys/devices/platform/picoxcell-otp*/strict_programming
+> > +Date:		March 2011
+> > +KernelVersion:	2.6.40+
+> > +Contact:	"Jamie Iles" <jamie@jamieiles.com>
+> > +Description:
+> > +		This file indicates whether all words in a redundant format
+> > +		must be programmed correctly to indicate success.  Disabling
+> > +		this will mean that programming will be considered a success
+> > +		if the word can be read back correctly in it's redundant
+> > +		format.
+> > +
+> > +What:		/sys/devices/platform/picoxcell-otp*/bad_words
+> > +Date:		March 2011
+> > +KernelVersion:	2.6.40+
+> > +Contact:	"Jamie Iles" <jamie@jamieiles.com>
+> > +Description:
+> > +		Contains a space delimited list of raw addresses that have
+> > +		failed to program correctly.  This is non-persistent and may
+> > +		be used by userland to work around faulty words.
+> 
+> This isn't a valid sysfs file in that it contains more than a single
+> value.  Please fix it or remove it.
+
+Hmm, I read Documentation/filesystems/sysfs.txt where it says that it is 
+socially acceptable to express an array of values of the same type so 
+thought that this would be okay.  I can drop this one for now though.
+
+> > +/*
+> > + * Add all of the device entries to sysfs. This also includes creating the
+> > + * region device nodes and sysfs entries.
+> > + */
+> > +static int otp_sysfs_add(struct device *dev)
+> > +{
+> > +	int err;
+> > +
+> > +	err = device_create_file(dev, &dev_attr_write_enable);
+> > +	if (err)
+> > +		goto out;
+> > +
+> > +	err = device_create_file(dev, &dev_attr_num_regions);
+> > +	if (err)
+> > +		goto num_regions_fail;
+> > +
+> > +	err = device_create_file(dev, &dev_attr_bad_words);
+> > +	if (err)
+> > +		goto bad_words_fail;
+> > +
+> > +	err = device_create_file(dev, &dev_attr_strict_programming);
+> > +	if (err)
+> > +		goto strict_programming_fail;
+> > +
+> 
+> Shouldn't all of these be in an attribute group like the other sysfs
+> files are in this driver?  That way you add/remove them all at once.
+
+I did look at doing this but I couldn't see a way to add an attribute 
+group to an existing device in a single step, or is this just the wrong 
+approach all together?
+
+Thanks,
+
+Jamie
