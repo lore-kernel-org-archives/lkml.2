@@ -1,73 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab1CWPa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:30:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33157 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933135Ab1CWPaX (ORCPT
+	id S933166Ab1CWPas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:30:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61088 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932712Ab1CWPaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:30:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinoTs89ThBnZ17+fPE+t1V=GycKq2EJG-LadFZQ@mail.gmail.com>
-References: <alpine.DEB.2.00.1103170403160.3429@skynet.skynet.ie> <AANLkTinoTs89ThBnZ17+fPE+t1V=GycKq2EJG-LadFZQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 23 Mar 2011 08:29:35 -0700
-Message-ID: <AANLkTi=zcXFOGj+pi1YSVY1kHoULEAQRNrnzmw2Pexns@mail.gmail.com>
-Subject: Re: [git pull] drm next tree
-To: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=00151773e34074002b049f2808a7
+	Wed, 23 Mar 2011 11:30:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LQenxvtvQybK3DgZKI2LTBd/wA9uxcKtdARyB+uUeqExMS8JSwKtXFpBPfCQiCMoF1
+         Z7shK5qBFK1t24F0FYKP6GzMXUNSuz8t0841ogPd2yOnNr/A3p4AbHI64uKGPuHRVTgB
+         c9X7RSCJ/etXSsp6yppdXmLgRf/qziNulRXxM=
+Subject: Re: [PATH 0/4] Memstick patches for 2.6.39
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, oakad@yahoo.com
+In-Reply-To: <20110323034202.GC11329@kroah.com>
+References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
+	 <1299947013.17988.0.camel@maxim-laptop> <1300219210.13493.0.camel@MAIN>
+	 <20110315140402.334cc55c.akpm@linux-foundation.org>
+	 <1300590545.15453.3.camel@maxim-laptop>
+	 <20110319234701.0eab3744.akpm@linux-foundation.org>
+	 <1300621371.15768.11.camel@maxim-laptop>
+	 <20110322162108.a4b70291.akpm@linux-foundation.org>
+	 <1300841974.3588.4.camel@maxim-laptop>  <20110323034202.GC11329@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 17:30:39 +0200
+Message-ID: <1300894239.5791.15.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00151773e34074002b049f2808a7
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, 2011-03-22 at 20:42 -0700, Greg KH wrote:
+> On Wed, Mar 23, 2011 at 02:59:34AM +0200, Maxim Levitsky wrote:
+> > On Tue, 2011-03-22 at 16:21 -0700, Andrew Morton wrote:
+> > > On Sun, 20 Mar 2011 13:42:51 +0200
+> > > Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> > > 
+> > > > On Sat, 2011-03-19 at 23:47 -0700, Andrew Morton wrote:
+> > > > > On Sun, 20 Mar 2011 05:09:05 +0200 Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> > > > > 
+> > > > 
+> > > > ...
+> > > >
+> > > > Also, I don't have much time now to improve the ms_block driver till
+> > > > this summer (studying).
+> > > > The driver works. Yes it has a flaw in regard to scatterlist processing,
+> > > > because I didn't find a better way to deal with this monster, but I will
+> > > > fix that later. I am not the kind of guy that runs away after a merge.
+> > > > It would be nice to just see my code in kernel, code I wrote more that a
+> > > > year ago.
+> > > > 
+> > > > This flaw is purely theoretical. Driver does work.
+> > > 
+> > > Lots of code is "flawed but works".  The place for such code is
+> > > drivers/staging/ - it gets put in there so the code is available for
+> > > those who need the driver and the code is later moved over into
+> > > drivers/ once the flaws have been addressed.
+> > > 
+> > > So a path forward here would be for us to put the driver and the
+> > > sglist extensions into a directory under drivers/staging/.
+> > Ok, I won't be fighting with you over this one.
+> > 
+> > However, I ask for this:
+> > 
+> > 
+> > 1. Please merge r592.c, it doesn't depend on anything.
+> 
+> What type of driver is that?
+A driver for card reader that reads Memstick cards.
+Two such drivers from Alex Dubov were already merged.
 
-On Tue, Mar 22, 2011 at 7:19 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Keith/Jesse/Chris - I don't know that it's i915, and it will take
-> forever to bisect (I'll try). But it does seem pretty likely.
 
-Ok, so I'm still bisecting, but it's definitely the DRM pull. Current
-bisection log attached (the result does contain the fbdev pull from
-Paul Mundt, but that doesn't touch any files I compile afaik).
+> 
+> > 2. Please review ms_block.c for other problems that might prevent merge.
+> > For example when I published the sg list helpers, nobody told me that I
+> > am not allowed to add them. Actually the opposite, I was told to put
+> > them in scatterlist.c.
+> > When I did so, again I was told that I didn't do the kerneldoc comments
+> > right, and also was told to improve few of the functions.
+> > Now I did all that, and I am told that scatterlist usage in my driver is
+> > no-go. OK. But what else is there that you don't like?
+> 
+> Ick, that's not nice, but formatting issues are usually the easiest to
+> pick on, sorry for that happening.
 
-                       Linus
+Folk, could you actually review the driver once again, and really tell
+me what is wrong with it?
+I did another review of it now, and it looks nice and clean.
 
---00151773e34074002b049f2808a7
-Content-Type: application/octet-stream; name=BISECT_LOG
-Content-Disposition: attachment; filename=BISECT_LOG
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_glmeqgaw1
+Let me explain exactly the controversial point:
 
-Z2l0IGJpc2VjdCBzdGFydAojIGJhZDogWzY0NDdmNTVkYTkwYjc3ZmFlYzE2OTdkNDk5ZWQ3OTg2
-YmI0ZjZkZTZdIE1lcmdlIGJyYW5jaCAnbmV4dCcgb2YgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHVi
-L3NjbS9saW51eC9rZXJuZWwvZ2l0L2RqYncvYXN5bmNfdHgKZ2l0IGJpc2VjdCBiYWQgNjQ0N2Y1
-NWRhOTBiNzdmYWVjMTY5N2Q0OTllZDc5ODZiYjRmNmRlNgojIGdvb2Q6IFs1MjFjYjQwYjBjNDQ0
-MThhNGZkMzZkYzYzM2Y1NzU4MTNkNTlhNDNkXSBMaW51eCAyLjYuMzgKZ2l0IGJpc2VjdCBnb29k
-IDUyMWNiNDBiMGM0NDQxOGE0ZmQzNmRjNjMzZjU3NTgxM2Q1OWE0M2QKIyBnb29kOiBbN2E2MzYy
-ODAwY2I3ZDFkNjE4YTY5N2E2NTBjN2FhZWQzZWIzOTMyMF0gTWVyZ2UgZ2l0Oi8vZ2l0Lmtlcm5l
-bC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L2RhdmVtL25ldC1uZXh0LTIuNgpnaXQgYmlz
-ZWN0IGdvb2QgN2E2MzYyODAwY2I3ZDFkNjE4YTY5N2E2NTBjN2FhZWQzZWIzOTMyMAojIGJhZDog
-WzBkZjA5MTRkNDE0YTUwNGI5NzVmM2NjNjZhY2UwYzE2ZWY1NWI3ZjNdIE1lcmdlIGJyYW5jaCAn
-b21hcC1mb3ItbGludXMnIG9mIGdpdDovL2dpdC5rZXJuZWwub3JnL3B1Yi9zY20vbGludXgva2Vy
-bmVsL2dpdC90bWxpbmQvbGludXgtb21hcC0yLjYKZ2l0IGJpc2VjdCBiYWQgMGRmMDkxNGQ0MTRh
-NTA0Yjk3NWYzY2M2NmFjZTBjMTZlZjU1YjdmMwojIGJhZDogW2M1NWQyNjdkZTI3NGQzMDg5Mjdi
-NjBjM2U3NDBjMWE4MjY4MzIzMTddIE1lcmdlIGdpdDovL2dpdC5rZXJuZWwub3JnL3B1Yi9zY20v
-bGludXgva2VybmVsL2dpdC9qZWpiL3Njc2ktbWlzYy0yLjYKZ2l0IGJpc2VjdCBiYWQgYzU1ZDI2
-N2RlMjc0ZDMwODkyN2I2MGMzZTc0MGMxYTgyNjgzMjMxNwojIGJhZDogW2ZkMzRiMGRlZTRkMjM3
-Y2U5MzMyY2M2MmIwM2FkZWJmZTRmYTlmOWRdIE1lcmdlIGdpdDovL2dpdC5rZXJuZWwub3JnL3B1
-Yi9zY20vbGludXgva2VybmVsL2dpdC9sZXRoYWwvZmJkZXYtMi42CmdpdCBiaXNlY3QgYmFkIGZk
-MzRiMGRlZTRkMjM3Y2U5MzMyY2M2MmIwM2FkZWJmZTRmYTlmOWQKIyBnb29kOiBbYjA0ZDBhOTA5
-MDhjZGI3MzNlNDkwNDg2Mjg3ZTFiYThjNTY4ZmZiMF0gTWVyZ2UgZ2l0Oi8vZ2l0Lmtlcm5lbC5v
-cmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L2RhdmVtL3NwYXJjLW5leHQtMi42CmdpdCBiaXNl
-Y3QgZ29vZCBiMDRkMGE5MDkwOGNkYjczM2U0OTA0ODYyODdlMWJhOGM1NjhmZmIwCiMgZ29vZDog
-W2JiOWIxOGEzOTBkYjRhMTVjZDQ2YmJkNzQ3MjUxMGZlYjdkNGMxNjhdIGRybS9ub3V2ZWF1OiBh
-ZGQgbm91dmVhdV9lbnVtX2ZpbmQoKSB1dGlsIGZ1bmN0aW9uCmdpdCBiaXNlY3QgZ29vZCBiYjli
-MThhMzkwZGI0YTE1Y2Q0NmJiZDc0NzI1MTBmZWI3ZDRjMTY4Cg==
---00151773e34074002b049f2808a7--
+I get a request from block core to read or write a specific amount of
+512 blocks.
+I turn that request into scatterlist.
+
+For reads (look at msb_do_read_request), I read one page into first 512
+bytes of pages that are pointed by that scatterlist, and then modify it
+such as it now shorter and points to next 512 bytes.
+
+For writes, I choose for 2 cases.
+If I was told to write whole erase block or more, I create new scatter
+list that covers the 'erase block size' bytes of original one and just
+write it.
+
+For smaller writes, I have a eraseblock sized cache buffer that I write
+to until I ased to write to different erase block. Then I flush current
+eraseblock doing copyonwrite.
+
+Basicly the controversy is around my usage of scatterlist.
+I just added ability to create a copy of a scatterlistby which will
+cover n bytes, and ability to truncate a scatterlist  by removing n
+bytes from its head.
+
+
+
+> 
+> So the result is to use the block layer functions instead, right?  How
+> much work do you imagine that would take to do?
+I could just stop using scatterlists at all, and just do all
+writes/reads 512 bytes a time (using the copy on write cache for writes
+of course).
+I did that successfully in my sm_ftl.c
+
+
+
+> 
+> If it's a bunch, care to put the code in drivers/staging/ now?  I'll
+> gladly take the patches to queue them up for .40.
+> 
+> thanks,
+> 
+> greg k-h
+
+-- 
+Best regards,
+        Maxim Levitsky
+
+Visit my blog: http://maximlevitsky.wordpress.com
+Warning: Above blog contains rants.
+
