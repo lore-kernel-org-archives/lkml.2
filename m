@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab1CWVop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 17:44:45 -0400
-Received: from anchor-post-1.mail.demon.net ([195.173.77.132]:48099 "EHLO
-	anchor-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752063Ab1CWVoo (ORCPT
+	id S1756709Ab1CWVqk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 17:46:40 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:44027 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab1CWVqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 17:44:44 -0400
-Message-ID: <4D8A69BD.3010208@lougher.demon.co.uk>
-Date: Wed, 23 Mar 2011 21:44:29 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Squashfs updates for 2.6.39
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 23 Mar 2011 17:46:38 -0400
+Subject: Re: [PATCH V12 4/4] ptp: Added a clock driver for the National
+ Semiconductor PHYTER.
+From: John Stultz <john.stultz@linaro.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <f8af215ebe32a8c0f4b3a82b8ee7e8008b4feb1e.1298878618.git.richard.cochran@omicron.at>
+References: <cover.1298878618.git.richard.cochran@omicron.at>
+	 <f8af215ebe32a8c0f4b3a82b8ee7e8008b4feb1e.1298878618.git.richard.cochran@omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 14:46:25 -0700
+Message-ID: <1300916785.848.54.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 2011-02-28 at 08:58 +0100, Richard Cochran wrote:
+> This patch adds support for the PTP clock found on the DP83640.
+> The basic clock operations and one external time stamp have
+> been implemented.
 
-Please consider pulling the following Squashfs updates, these
-add support for reading compression options out of the filesystem,
-plus there are a couple of bug fixes and documentation updates.
+Just locking rule comment nits here.
 
-Thanks
+> +static int tdr_write(int bc, struct phy_device *dev,
+> +		     const struct timespec *ts, u16 cmd)
+> +{
+> +	ext_write(bc, dev, PAGE4, PTP_TDR, ts->tv_nsec & 0xffff);/* ns[15:0]  */
+> +	ext_write(bc, dev, PAGE4, PTP_TDR, ts->tv_nsec >> 16);   /* ns[31:16] */
+> +	ext_write(bc, dev, PAGE4, PTP_TDR, ts->tv_sec & 0xffff); /* sec[15:0] */
+> +	ext_write(bc, dev, PAGE4, PTP_TDR, ts->tv_sec >> 16);    /* sec[31:16]*/
+> +
+> +	ext_write(bc, dev, PAGE4, PTP_CTL, cmd);
+> +
+> +	return 0;
+> +}
 
-Phillip
+The above needs to hold the extreg_lock, and should be commented as
+such.
+
+And again, the function names are sort of generic, and could use a
+dp83640_ prefix or something.
+
+thanks
+-john
 
 
-The following changes since commit 100b33c8bd8a3235fd0b7948338d6cbb3db3c63d:
-
-   Linux 2.6.38-rc4 (2011-02-07 16:03:55 -0800)
-
-are available in the git repository at:
-   git://git.kernel.org/pub/scm/linux/kernel/git/pkl/squashfs-linus.git master
-
-Phillip Lougher (8):
-       Squashfs: extend decompressor framework to handle compression options
-       Squashfs: add compression options support to xz decompressor
-       Squashfs: Update Kconfig help text to include xz compression
-       Squashfs: Update documentation to include compression options
-       Squashfs: xz_wrapper doesn't need to include squashfs_fs_i.h anymore
-       Squashfs: wrap squashfs_mount() definition
-       Squashfs: handle corruption of directory structure
-       Squashfs: Use vmalloc rather than kmalloc for zlib workspace
-
-  Documentation/filesystems/squashfs.txt |   28 +++++++++++-----
-  fs/squashfs/Kconfig                    |   12 +++---
-  fs/squashfs/decompressor.c             |   34 ++++++++++++++++++++
-  fs/squashfs/decompressor.h             |    7 +---
-  fs/squashfs/dir.c                      |    9 +++++
-  fs/squashfs/lzo_wrapper.c              |    4 +-
-  fs/squashfs/namei.c                    |   12 +++++++
-  fs/squashfs/squashfs.h                 |    1 +
-  fs/squashfs/squashfs_fs.h              |    4 ++
-  fs/squashfs/super.c                    |   15 +++++---
-  fs/squashfs/xz_wrapper.c               |   53 ++++++++++++++++++++++++++------
-  fs/squashfs/zlib_wrapper.c             |   10 +++---
-  12 files changed, 145 insertions(+), 44 deletions(-)
