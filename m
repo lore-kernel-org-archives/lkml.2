@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab1CWKKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:10:55 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65002 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932415Ab1CWKGV (ORCPT
+	id S932600Ab1CWKKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:10:54 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:55541 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932453Ab1CWKKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:06:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=XgG7fxBTmlqNqUzNUgeYYvX80qCep0M8yRVrI89VNAANRPPYREs7rKHjklzV2yF4s4
-         2vNSQRf1dUGzXE/ZTYi4EAuQdIyZe4GNBTlu9HbLwS3gWB0RtfF/UMqxVfRhPCrfXZqy
-         hqUY6uMsVutF/+pXXKn7tUb2FY6fXRd+BjSl8=
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/20] ptrace: Add @why to ptrace_stop()
-Date: Wed, 23 Mar 2011 11:05:51 +0100
-Message-Id: <1300874766-12941-6-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1300874766-12941-1-git-send-email-tj@kernel.org>
-References: <1300874766-12941-1-git-send-email-tj@kernel.org>
+	Wed, 23 Mar 2011 06:10:52 -0400
+Message-ID: <4D89C728.2000508@linux.vnet.ibm.com>
+Date: Wed, 23 Mar 2011 15:40:48 +0530
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc11 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: arjan@linux.intel.com, peterz@infradead.org, lenb@kernel.org,
+        suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [RFC PATCH V4 1/5] cpuidle: Remove pm_idle pointer for x86
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com> <20110322123223.28725.21929.stgit@tringupt.in.ibm.com> <20110323120044.bb8c0ae1.sfr@canb.auug.org.au>
+In-Reply-To: <20110323120044.bb8c0ae1.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To prepare for cleanup of the interaction between group stop and
-ptrace, add @why to ptrace_stop().  Existing users are updated such
-that there is no behavior change.
+Hi Stephen,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Roland McGrath <roland@redhat.com>
----
- kernel/signal.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+On 03/23/2011 06:30 AM, Stephen Rothwell wrote:
+> Hi,
+>
+> Just some simple comments.
+>
+> Does having this patch first in the series break APM idle?
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 03d874e..95ac42d 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1617,7 +1617,7 @@ static int sigkill_pending(struct task_struct *tsk)
-  * If we actually decide not to stop at all because the tracer
-  * is gone, we keep current->exit_code unless clear_code.
-  */
--static void ptrace_stop(int exit_code, int clear_code, siginfo_t *info)
-+static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
- 	__releases(&current->sighand->siglock)
- 	__acquires(&current->sighand->siglock)
- {
-@@ -1655,7 +1655,7 @@ static void ptrace_stop(int exit_code, int clear_code, siginfo_t *info)
- 	spin_unlock_irq(&current->sighand->siglock);
- 	read_lock(&tasklist_lock);
- 	if (may_ptrace_stop()) {
--		do_notify_parent_cldstop(current, CLD_TRAPPED);
-+		do_notify_parent_cldstop(current, why);
- 		/*
- 		 * Don't want to allow preemption here, because
- 		 * sys_ptrace() needs this task to be inactive.
-@@ -1714,7 +1714,7 @@ void ptrace_notify(int exit_code)
- 
- 	/* Let the debugger run.  */
- 	spin_lock_irq(&current->sighand->siglock);
--	ptrace_stop(exit_code, 1, &info);
-+	ptrace_stop(exit_code, CLD_TRAPPED, 1, &info);
- 	spin_unlock_irq(&current->sighand->siglock);
- }
- 
-@@ -1795,7 +1795,7 @@ static int ptrace_signal(int signr, siginfo_t *info,
- 	ptrace_signal_deliver(regs, cookie);
- 
- 	/* Let the debugger run.  */
--	ptrace_stop(signr, 0, info);
-+	ptrace_stop(signr, CLD_TRAPPED, 0, info);
- 
- 	/* We're back.  Did the debugger cancel the sig?  */
- 	signr = current->exit_code;
--- 
-1.7.1
+Thanks for reviewing.
+Yes, I think removal of "pm_idle = default_idle" statement in
+APM may have to be moved here.
+>
+> On Tue, 22 Mar 2011 18:02:27 +0530 Trinabh Gupta<trinabh@linux.vnet.ibm.com>  wrote:
+>>
+>> diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+>> index 8d12878..17b7101 100644
+>> --- a/arch/x86/kernel/process_32.c
+>> +++ b/arch/x86/kernel/process_32.c
+>> @@ -74,6 +74,8 @@ static inline void play_dead(void)
+>>   }
+>>   #endif
+>>
+>> +extern void cpuidle_idle_call(void);
+>
+> Put this declaration in a header file and include that header file here
+> and in the file that defines that function.
+>
 
+Ok, thanks
+
+-Trinabh
