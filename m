@@ -1,144 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab1CWKkA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:40:00 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:50926 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753848Ab1CWKj7 (ORCPT
+	id S1756183Ab1CWKmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:42:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45781 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754249Ab1CWKmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:39:59 -0400
-X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX1+lz40QpCilq6eSsNCx+jWr6JDVi0YZdpkPTqfniu
-	giPfVTqBU0AV/1
-Date: Wed, 23 Mar 2011 11:39:06 +0100
-From: torbenh <torbenh@gmx.de>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [patch 02/15] sched: validate CFS quota hierarchies
-Message-ID: <20110323103906.GC5507@siel.b>
-Mail-Followup-To: Paul Turner <pjt@google.com>,
-	linux-kernel@vger.kernel.org,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Bharata B Rao <bharata@linux.vnet.ibm.com>,
-	Dhaval Giani <dhaval.giani@gmail.com>,
-	Balbir Singh <balbir@linux.vnet.ibm.com>,
-	Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-	Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-	Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-	Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-References: <20110323030326.789836913@google.com>
- <20110323030448.853861319@google.com>
+	Wed, 23 Mar 2011 06:42:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=K6B2UKD66QxbHvJUQSWj9wkyvbgDSU7UnjRBamyehQkeB2ADSWAA7DXZxcxG32ea3X
+         L4ygSWAFT+QSp+6WuxcNBeIDZ/BdzUxzf0btjpqadopf0KnZWekQKiR9xKMP1LRXKY4j
+         3+klxG2/WpYcnqJMrkmtSBSiGON5Qge8OB0mk=
+Message-ID: <4D89CDE4.3000504@linaro.org>
+Date: Wed, 23 Mar 2011 10:39:32 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110323030448.853861319@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Y-GMX-Trusted: 0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
+        greg@kroah.com, grant.likely@secretlab.ca
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <4D79F068.2080009@linaro.org> <20110323094720.63e7c6b2@lxorguk.ukuu.org.uk> <4D89C618.1020608@linaro.org> <201103231132.02690.arnd@arndb.de>
+In-Reply-To: <201103231132.02690.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 08:03:28PM -0700, Paul Turner wrote:
-> Add constraints validation for CFS bandwidth hierachies.
-> 
-> It is checked that:
->    sum(child bandwidth) <= parent_bandwidth
-> 
-> In a quota limited hierarchy, an unconstrainted entity
-> (e.g. bandwidth==RUNTIME_INF) inherits the bandwidth of its parent.
-> 
-> Since bandwidth periods may be non-uniform we normalize to the maximum allowed
-> period, 5 seconds.
-> 
-> This behavior may be disabled (allowing child bandwidth to exceed parent) via
-> kernel.sched_cfs_bandwidth_consistent=0
-> 
-> Signed-off-by: Paul Turner <pjt@google.com>
-> 
-> ---
->  include/linux/sched.h |    8 +++
->  kernel/sched.c        |  127 +++++++++++++++++++++++++++++++++++++++++++++++---
->  kernel/sched_fair.c   |    8 +++
->  kernel/sysctl.c       |   11 ++++
->  4 files changed, 147 insertions(+), 7 deletions(-)
-> 
-> Index: tip/kernel/sched.c
-> ===================================================================
-> --- tip.orig/kernel/sched.c
-> +++ tip/kernel/sched.c
-> +static int tg_cfs_schedulable_down(struct task_group *tg, void *data)
-> +{
-> +	struct cfs_schedulable_data *d = data;
-> +	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
-> +	s64 quota = 0, parent_quota = -1;
-> +
-> +	quota = normalize_cfs_quota(tg, d);
-> +	if (!tg->parent) {
-> +		quota = RUNTIME_INF;
-> +	} else {
-> +		struct cfs_bandwidth *parent_b = tg_cfs_bandwidth(tg->parent);
-> +
-> +		parent_quota = parent_b->hierarchal_quota;
-> +		if (parent_quota != RUNTIME_INF) {
-> +			parent_quota -= quota;
-> +			/* invalid hierarchy, child bandwidth exceeds parent */
-> +			if (parent_quota < 0)
-> +				return -EINVAL;
-> +		}
-> +
-> +		/* if no inherent limit then inherit parent quota */
-> +		if (quota == RUNTIME_INF)
-> +			quota = parent_quota;
-> +		parent_b->hierarchal_quota = parent_quota;
-> +	}
-> +	cfs_b->hierarchal_quota = quota;
-> +
-> +	return 0;
-> +}
+On 03/23/2011 10:32 AM, Somebody in the thread at some point said:
+> On Wednesday 23 March 2011, Andy Green wrote:
+>> It's the case for even usbnet, which is using a broken heuristic to
+>> decide what to call the interface not even based on vid / pid.
+>
+> I agree that the heuristics in usbnet is less than helpful here,
+> which among other things leads people to mixing up the two problems
+> of fixing the device naming and fixing the MAC address assignment.
+>
+> Even though I know Greg disagrees, I'd still prefer sanitising the
+> rules for the default device name that usbnet assigns. Simply letting
+> a device driver flag "this is always an external ethernet, not
+> a point-to-point connection" would be enough to solve this problem,
+> and take some of the heat out of the discussion for how to solve
+> the MAC address assignment.
 
-I find this logic pretty weird.
-As long as quota == INF i can overcommit, but as soon as there is some
-quota, i can not ?
+Completely agree, I have a happy feeling being able to say that too. 
+But I already see there's no path through Greg let alone Alan, so it'll 
+have to be dealt with a less good way.
 
-Its clear, that one needs to be able to overcommit runtime, or the
-default runtime for a new cgroup would need to be 0.
-The root problem imo is that runtime and shares should not be in the
-same cgroup subsystem. The semantics are too different.
+>> Before this RFC there's no generic support for the concept, although
+>> that hasn't stopped it being implemented in wl12xx already at individual
+>> mainline driver level.  And before this RFC, I don't believe there was
+>> any concept of async tagging through bus path for soldered-on assets in
+>> Device Tree either.
+>
+> For the device tree, the method has always been to assign the device_node
+> pointer to the device when the parent bus gets probed, that has not changed.
+> The new idea that came as a result of your RFC is to use the same mechanism
+> that we use elsewhere for USB as well, with the existing USB binding.
+
+Fair enough.
+
+-Andy
 
 
-> +
-> +static int __cfs_schedulable(struct task_group *tg, u64 period, u64 quota)
-> +{
-> +	int ret;
-> +	struct cfs_schedulable_data data = {
-> +		.tg = tg,
-> +		.period = period / NSEC_PER_USEC,
-> +		.quota = quota / NSEC_PER_USEC,
-> +	};
-> +
-> +	if (!sysctl_sched_cfs_bandwidth_consistent)
-> +		return 0;
-> +
-> +	rcu_read_lock();
-> +	ret = walk_tg_tree(tg_cfs_schedulable_down, tg_nop,
-> +			    &data);
-> +	rcu_read_unlock();
-
-walk_tg_tree does the rcu_read_lock itself.
-not necessary to do that here.
-look at __rt_schedulable there is no rcu.
-
-
-> +
-> +	return ret;
-> +}
-
--- 
-torben Hohn
