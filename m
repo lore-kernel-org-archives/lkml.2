@@ -1,169 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab1CWKWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:22:45 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39169 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751315Ab1CWKWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:22:44 -0400
-Subject: Re: RFC: Platform data for onboard USB assets
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: andy.green@linaro.org
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        greg@kroah.com, grant.likely@secretlab.ca
-In-Reply-To: <4D89BDE2.60907@linaro.org>
-References: <4D79F068.2080009@linaro.org>
-	 <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com>
-	 <1300828125.2402.300.camel@pasglop>  <4D8924B6.8040403@linaro.org>
-	 <1300842219.2402.309.camel@pasglop>
-	 <alpine.LFD.2.00.1103222138320.11889@xanadu.home>
-	 <1300850595.2402.320.camel@pasglop>  <4D89BDE2.60907@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Mar 2011 21:22:12 +1100
-Message-ID: <1300875732.2402.359.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755826Ab1CWKYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:24:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36457 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab1CWKYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 06:24:09 -0400
+Date: Wed, 23 Mar 2011 11:24:05 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
+        arnaud.patard@rtp-net.org, ra5478@freescale.com,
+        xiao-lizhang@freescale.com, festevam@gmail.com
+Subject: Re: [PATCHv5 4/4] ARM: mx51: Add support for low power suspend on
+ MX51
+Message-ID: <20110323102405.GG29521@pengutronix.de>
+References: <1300743038-3901-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300743038-3901-2-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300743038-3901-3-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300743038-3901-4-git-send-email-Dinh.Nguyen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300743038-3901-4-git-send-email-Dinh.Nguyen@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:19:59 up 34 days, 22:17, 70 users,  load average: 4.74, 5.40,
+ 5.09
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Well I am glad there is consensus on that, although this was the initial 
-> approach in the patches already.
+On Mon, Mar 21, 2011 at 04:30:38PM -0500, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 > 
-> For me the most important issues I wanted to understand from the RFC 
-> were: "do others see it as generally useful to target async probed 
-> devices with data from the board definition file", and was there 
-> appetite to use the apis elsewhere in the kernel to solve the problems 
-> in front of me in Panda.
-
-There is definitely some use into providing what I call "auxilliary"
-data to dynamically probed devices (I'm not a fan of the "async"
-terminology here), however I believe that doing so by perpetuating the
-platform_data mechanism isn't the right way to go.
-
-> I learned that among people that understood what the RFC was about there 
-> was also consensus it's useful, although some people demand Device Tree 
-> implementation, I think we got beyond arguing against the abstract idea 
-> overall: it is accepted it would be valuable.  So this is encouraging as 
-> far as it goes.
-
-Right.
-
-> For subsystems using it, in the initial USB case discussion got mired 
-> first in understanding the idea at all from USB perspective, and then 
-> lost down well-trodden positions on what the actual data is used for in 
-> the included use-cases.  The same is happening here -->
-
-Note that the discussion is valid for PCI as well. A typical example is
-old style PCI 2.x (still quite common) where interrupt lines for on
-board devices are wired to random GPIO :-)
-
-Here too we have an old ad-hoc solution which tends to be subtely
-different for all architectures, tho at least drivers generally don't
-care. The basic problem is the same tho.
-
-> > The device-tree and whatever other udev based solutions using physical
-> > path are both "transports" in a sense for that same information and so
-> > in the grand scheme of thing equivalent.
-> >
-> > The argument boils down to should we encourage adding an additional
-> > in-kernel platform_data based hooks for dynamically probed busses such
+> Adds initial low power suspend functionality to MX51.
+> Supports "mem" and "standby" modes.
 > 
-> Well, these are not hooks in the usual usage of the word.
+> Tested on mx51-babbage.
 > 
-> > as USB as well ? or go for a udev based solution for the time being
-> > which would probably work as well in practice and focus on getting the
-> > device-tree based solution for the long term instead.
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  arch/arm/mach-mx5/Makefile   |    1 +
+>  arch/arm/mach-mx5/pm-imx51.c |   74 ++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 75 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/mach-mx5/pm-imx51.c
 > 
-> There is no udev solution for what is being done currently by the async 
-> platform_data patchset with SDIO WLAN.  The patches are out there and in 
-> use already.  The only reason I don't post them here as round 2 of the 
-> RFC yet is because Grant wanted a couple of days and politically it's 
-> expedient for me to agree to that.
+> diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+> index 0b9338c..787cb80 100644
+> --- a/arch/arm/mach-mx5/Makefile
+> +++ b/arch/arm/mach-mx5/Makefile
+> @@ -6,6 +6,7 @@
+>  obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o system.o
+>  obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
+>  
+> +obj-$(CONFIG_PM) += pm-imx51.o
+>  obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
+>  obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+>  obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
+> diff --git a/arch/arm/mach-mx5/pm-imx51.c b/arch/arm/mach-mx5/pm-imx51.c
+> new file mode 100644
+> index 0000000..f5164b2
+> --- /dev/null
+> +++ b/arch/arm/mach-mx5/pm-imx51.c
+> @@ -0,0 +1,74 @@
+> +/*
+> + *  Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +#include <linux/suspend.h>
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <asm/cacheflush.h>
+> +#include <asm/tlbflush.h>
+> +#include <mach/system.h>
+> +#include "crm_regs.h"
+> +
+> +static struct clk *gpc_dvfs_clk;
+> +
+> +static int mx5_suspend_enter(suspend_state_t state)
 
-I haven't looked at your SDIO work nor have I time to get into details
-here. However I'm concerned about the "big picture" if you like and
-eager to move toward a generally more flexible model than platform_data
-style data structures.
+Either the name of the file or the name of this function is wrong. You
+should decide for imx5 or imx51.
 
-I don't believe that the legacy of platform_data for platform_devices is
-relevant here as we are -not- talking about platform_devices, but
-generally devices that have their own "struct device" subclass, and thus
-have the potential of using new tools to fix those drivers without
-necessarily engaging into an immediate conversion of all the existing
-platform_devices in the tree.
+> +{
+> +	if (gpc_dvfs_clk == NULL)
+> +		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
+> +
+> +	if (gpc_dvfs_clk) {
+> +		clk_enable(gpc_dvfs_clk);
+> +		switch (state) {
+> +		case PM_SUSPEND_MEM:
+> +			mx5_cpu_lp_set(STOP_POWER_OFF);
+> +			break;
+> +		case PM_SUSPEND_STANDBY:
+> +			mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
+> +			break;
+> +		default:
+> +			return -EINVAL;
+> +		}
+> +
+> +		if (state == PM_SUSPEND_MEM) {
+> +			local_flush_tlb_all();
+> +			flush_cache_all();
+> +
+> +			/*clear the EMPGC0/1 bits */
+> +			__raw_writel(0, MXC_SRPG_EMPGC0_SRPGCR);
+> +			__raw_writel(0, MXC_SRPG_EMPGC1_SRPGCR);
+> +		}
+> +		cpu_do_idle();
+> +		clk_disable(gpc_dvfs_clk);
+> +	}else {
+> +		printk(KERN_ERR "Cannot enter SRPG suspend -no gpc_dvfs clock!\n");
+> +		return -EPERM;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int mx5_pm_valid(suspend_state_t state)
+> +{
+> +	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
+> +}
+> +
+> +static const struct platform_suspend_ops mx5_suspend_ops = {
+> +	.valid = mx5_pm_valid,
+> +	.enter = mx5_suspend_enter,
+> +};
+> +
+> +static int __init mx5_pm_init(void)
+> +{
 
-> >> With regards to DT on ARM I'm rather "softly" convinced this is a good
-> >> thing.  However seeing a persisting lack of truly technical answers to
-> >> Andy's questions is rather disturbing, and makes me wish for much more
-> >> than the current hype around DT which appears to fall flat when
-> >> challenged.
-> >
-> > I don't think any technical answer is missing. Dynamic platform data is
-> > possible and in fact the platform could do it today using bus notifiers
-> > and "hooking up" the platform data on the fly if needed I suppose.
-> 
-> Ah now, steady on.  I was very surprised actually and I still am in this 
-> thread how incomplete the thinking and implementation is for Device Tree 
-> interoperation with platform_data.
+You should call clk_get here. Then you don't have to do the test for the
+clock over and over again and can print the warning only once. Also, NULL
+can be a valid clock. Please use IS_ERR().
 
-It's been generally an evolving process, with trial and error, as is
-common with the Linux kernel. Nobody wants a big flag day which requires
-a full conversion of the entire kernel.
+Sascha
 
-Among ideas that have been proposed have been the idea of having stubs
-generating pseudo-device nodes from platform_data for devices in order
-to enable the drivers to use a single interface for example. That didn't
-really go through tho. However, whatever the final approach will be, the
-point remains that for drivers that have not so far been "contaminated"
-by the platform_data paradigm, we have the opportunity to try something
-better, which can then, maybe, be retro-fitted on a case by case basis
-to platform drivers, for example as such drivers get converted to also
-be capable of using the device-tree.
-
-This is where I'm trying to propose a middle ground with the idea of
-named properties. It goes toward the direction that platform_device has
-been trying to to with the struct resource, but there's only so much you
-can do with these and they are showing their limits when it comes to
-expose arbitrary informations. MAC addresses are an example but there
-are many more, from clock bindings, power control, PHY data, connector
-informations, yadadada... which all can potentially apply to on-board
-USB or PCI based devices.
-
->   Surely interoperation with the 
-> established way of doing things should have been very high on the list 
-> of things to have an answer for before embarking on everything else.  In 
-> fact, how to do that in drivers seems to be being figured out by you 
-> guys as you go along in this thread as if my RFC is the first time that 
-> particular critical bit of Device Tree rubber is meeting the real road. 
->   I have no idea why the burden of that has appeared on my particular back.
-> 
-> When I described the issues I see with Arnd's approach fracturing 
-> support for new features and bugfixes in drivers, it was waved off 
-> because of patches that were "just posted" that apparently "solve" this. 
->   Where they were posted, what they do, how they solve it was not told 
-> and that strand of the discussion was killed.  However it seemed like 
-> the single most important issue to come out of the thread for Device 
-> Tree and we take it back up again in this post.
-
-Rant rant rant :-) The device-tree is a well proven mechanism on some
-platforms, the question is mostly whether we want it to become the
-standard way to go, and whether we can find out a reasonable approach to
-migration that doesn't involve requiring an immediate conversion of all
-drivers in the tree.
-
-To some extent I think that an approach that can isolate the drivers
-from the "transport" mechanism (device-tree or hard wired platform data
-style data structures) would be best and that's where I coming with my
-proposal of introducing a concept of named properties.
-
-Cheers,
-Ben.
-
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
