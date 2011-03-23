@@ -1,150 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab1CWEVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 00:21:46 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49928 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861Ab1CWEVp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 00:21:45 -0400
-Date: Wed, 23 Mar 2011 00:21:41 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: andy.green@linaro.org, Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        greg@kroah.com, grant.likely@secretlab.ca
-Subject: Re: RFC: Platform data for onboard USB assets
-In-Reply-To: <1300850595.2402.320.camel@pasglop>
-Message-ID: <alpine.LFD.2.00.1103222336030.11889@xanadu.home>
-References: <4D79F068.2080009@linaro.org> <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com> <1300828125.2402.300.camel@pasglop>  <4D8924B6.8040403@linaro.org> <1300842219.2402.309.camel@pasglop> <alpine.LFD.2.00.1103222138320.11889@xanadu.home>
- <1300850595.2402.320.camel@pasglop>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754301Ab1CWEV5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 00:21:57 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44756 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751849Ab1CWEVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 00:21:55 -0400
+Date: Wed, 23 Mar 2011 15:21:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for March 23
+Message-Id: <20110323152146.bfb9857c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__23_Mar_2011_15_21_46_+1100_=Na_Jh.KGT_Zt2nn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Mar 2011, Benjamin Herrenschmidt wrote:
+--Signature=_Wed__23_Mar_2011_15_21_46_+1100_=Na_Jh.KGT_Zt2nn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I think the technical aspects have been essentially answered. The
-> important part of the thread is what the "right" approach to identifying
-> the on-board device (vs. an equivalent device being hot-plugged), and I
-> think we all agreed this has to be the physical port "path" (in case
-> there's hubs or switches on the way).
+Hi all,
 
-Yes, no one appears to disagree there.
+Reminder: do not add any of your changes for v2.6.40 to your linux-next
+included branches until after v2.6.39-rc1 is released.
 
-> The argument boils down to should we encourage adding an additional
-> in-kernel platform_data based hooks for dynamically probed busses such
-> as USB as well ? or go for a udev based solution for the time being
-> which would probably work as well in practice and focus on getting the
-> device-tree based solution for the long term instead.
+Changes since 20110321:
 
-The udev solution has its set of drawbacks.  Using udev is perfect for 
-arbitrary user policies.  But here we're talking about a particular 
-device which happens to be soldered on a particular board, and adding 
-that knowledge to udev which is a separately maintained piece of 
-software from the kernel is rather redundant while the kernel already 
-knows perfectly well on which hardware it is running.  And as Andy 
-pointed out, the kernel's job is to abstract hardware peculiarities, not 
-to force them to user space.
+Dropped tree: xen
 
-> > With regards to DT on ARM I'm rather "softly" convinced this is a good 
-> > thing.  However seeing a persisting lack of truly technical answers to 
-> > Andy's questions is rather disturbing, and makes me wish for much more 
-> > than the current hype around DT which appears to fall flat when 
-> > challenged.
-> 
-> I don't think any technical answer is missing. Dynamic platform data is
-> possible and in fact the platform could do it today using bus notifiers
-> and "hooking up" the platform data on the fly if needed I suppose.
+The v4l-dvb tree lost its conflicts and build failure.
 
-... or even perform the needed intra-kernel API call to do the desired 
-change to the registered device if possible, such as overriding the 
-random MAC that the driver creates.
+The acpi tree lost its conflict.
 
-> Does it make sense however to add platform data for generic probed
-> devices ? I don't think so.
+The mtd tree still has its build failure for which I reverted 3 commits.
 
-Generally speaking, this wouldn't make sense.  but this is a case where 
-a generically probed device happens to be used in a very specific 
-hardware design with its own quirks.  in that very particular case then 
-it certainly makes some sense.
+The mfd tree lost its conflicts and build failure.
 
-But if a standard notifier callback can be invoked once the device has 
-been probed and before udev is invoked, and if that notifier callback 
-can modify the defaults that were set by the generic drivers, then I 
-don't think there would be a need for any additional infrastructure that 
-only a very few oddball devices would use anyway.
+The omap_dss2 tree lost its conflict.
 
-> For some reason Andy doesn't seem to consider the lack of type
-> information as a problem, Grant and I do, I don't know where we can go
-> from there, it's a very technical argument and I don't feel like I need
-> to teach people on this list what are the drawbacks on relying on void *
-> pointers to structures attached to devices like that that -will- go
-> wrong.
+The powerpc allyesconfig build is still broken by some obscure bloating
+of the low memory code.
 
-Still, as Andy said, the void pointer is quickly converted to a fully 
-typed structure, and then it is rather hard to have a driver working if 
-the platform data structure is mismatched between the driver and the 
-actual device registration.  So, while this is true that there is a 
-possibility for misuse, in practice this is rather unlikely to go very 
-far without being noticed, and therefore this argument alone is rather 
-weak in support of a significant world order change.
+----------------------------------------------------------------------------
 
-> I simply believe that this is the wrong solution for the problem. I
-> would very much prefer having a way for the driver to retrieve "platform
-> attributes".
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
 
-No dispute there.  But some of us also would prefer a more pragmatic 
-solution in the mean time, given DT is not there yet.
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
 
-> This is essentially what the name/value properties of the device-tree
-> provide, but it could be abstracted in a way that doesn't require the
-> device-tree and allows drivers to be unchanged whether the thing is
-> backed with a DT or by platform callbacks as long as there's a minimum
-> amount of thought given to naming the property reasonably.
-> 
-> For some reason I didn't find Andy answers conductive to a reasonable
-> discussion and indeed I admit I probably switched to dismiss/troll mode
-> a bit too quickly, so let's the heat go down a bit here and see if we
-> can find a common ground.
+Below is a summary of the state of the merge.
 
-I don't think Andy is rejecting any alternatives, given it is practical 
-in the short term.  That unfortunately pretty much rules out DT for the 
-time being.
+We are up to 183 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
 
-> If you guys can agree on my above proposal, we could maybe come up with
-> some "get_device_attribute(dev, name)" kind of interface, that would
-> then boild down to platform calls or device-tree transparently (or arch
-> calls optionally populated by generic device-tree based helpers
-> etc....).
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
 
-I wholeheartedly agree with that idea.  One thing that bothers me about DT 
-is its tendency to show up deep into the guts of kernel code all over 
-the place.  If a generic abstraction can be put in place, such as this 
-get_device_attribute() example, then it is far more convenient to use 
-DT, or _eventually_ use DT, or even _not_ use it in some cases but 
-something else, without battling over the actual interface.
+Thanks to Randy Dunlap for doing many randconfig builds.
 
-> This would be much better I believe that having those random structures
-> hooked up to void * pointers floating around and also generally more
-> flexible vs. platforms that provide or don't provide some of this
-> information (platforms might provide a subset etc...)
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
 
-Agreed.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> > There is one hard fact that no one can ignore: DT support on ARM still 
-> > has a long way to go before it is truly usable.  The world just can't 
-> > stop turning until this is ready.
-> 
-> Right but more efforts could be put into making that happen :-)
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-mxs/mach-mx28evk.c
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+CONFLICT (content): Merge conflict in arch/arm/configs/u8500_defconfig
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-pxa.c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+[master 387ae4f] Revert "mtd: fix printf format warnings, mostly lack of %z=
+d for size_t, in mtdswap"
+[master 483de8f] Revert "mtd: Add mtdswap block driver"
+[master dc80b37] Revert "mtd_blkdevs: Add background processing support"
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in fs/aio.c
+CONFLICT (content): Merge conflict in fs/super.c
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+CONFLICT (content): Merge conflict in include/linux/pci_ids.h
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Applying: OLPC: fix for removal of run_wake_count
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in fs/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
 
-Indeed.  But that would be a discussion for another thread.
+--Signature=_Wed__23_Mar_2011_15_21_46_+1100_=Na_Jh.KGT_Zt2nn
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Nicolas
+iQEcBAEBAgAGBQJNiXVaAAoJEDMEi1NhKgbsukgH/iHA2R3KlQt14CdL1z8Pfn5n
+jP2gBDNkcuSLeaqcE0lYWrY0RmGPR1BxD0MHWC3vZJRTV7oaLlLSylLSKe4sB3z1
+aNyj9glUC1RL3R3//xA9TIep1xyO/X4K9TWWstR4tue667yRejr/R9wn4aOupTTu
+2ULORJl9o7LitRmPGFYVeVHL4MrHa7NvX3xSoi5gMa+JxEyCQ3eISodHatS9Xm6e
+AKM62DklJPJi64SBXG0RWdgdJPtj1xtOsXMzz+qPaaGtfEV0Cr850vN0aUDZR2IE
+X49LRI5ZkHIfuzn6VNNSqYRTzHTU6LP8VktAkIOA7SBBOh8TWovW8L4vle+D1Mk=
+=bgSM
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__23_Mar_2011_15_21_46_+1100_=Na_Jh.KGT_Zt2nn--
