@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab1CWJPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 05:15:54 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59328 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943Ab1CWJPw convert rfc822-to-8bit (ORCPT
+	id S932242Ab1CWJRm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 05:17:42 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43963 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755943Ab1CWJRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 05:15:52 -0400
+	Wed, 23 Mar 2011 05:17:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=dhLI31r86yNDkC+9FznLzdrlubikOjTD5dw3XCDuzFhYP+OFMEiw5nRd/Dkz6m2JgS
-         osJCKgFetSmMiSlNXhjfzp8xLpB3ZhyhTlWWSnw1azukpM71WurQdfxIb28QFF4rhHDX
-         3/qPb0te3Wc0f0rLru9RGDATmb3wNlDsavvNs=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=axwOccCJ1I/l1QlNyugbYFHu4SeO2OYqz+akrPBg2crg4c0+DV9MIdO0SHyzvTGLgN
+         1h9JgfkgAhgeOlS4BXFoifbTbCVMYz+Idg85voFPowXM4N3yuW4Df5vC+Kd+BI/NvXf6
+         DbpEwlSfKFQJk1WVCN40GKHXK9HJoQswf9CHw=
+Date: Wed, 23 Mar 2011 10:17:36 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 7/8] job control: Notify the real parent of job control
+ events regardless of ptrace
+Message-ID: <20110323091736.GY12003@htj.dyndns.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+ <1299614199-25142-8-git-send-email-tj@kernel.org>
+ <20110321174306.GA29895@redhat.com>
+ <20110322080444.GM12003@htj.dyndns.org>
+ <20110322194416.GC28038@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1300870200-24405-2-git-send-email-jslaby@suse.cz>
-References: <1300870200-24405-1-git-send-email-jslaby@suse.cz> <1300870200-24405-2-git-send-email-jslaby@suse.cz>
-From: Govindraj <govindraj.ti@gmail.com>
-Date: Wed, 23 Mar 2011 14:45:31 +0530
-Message-ID: <AANLkTim3XGC5EuHEdNqchQmWmcerXpnKCKZ3SbaibmXQ@mail.gmail.com>
-Subject: Re: [PATCH 2/7] TTY: serial_core, remove unused variable
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322194416.GC28038@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 2:19 PM, Jiri Slaby <jslaby@suse.cz> wrote:
-> drivers/tty/serial/serial_core.c:1980:2: warning: Value stored to 'tty' is never read
->        tty = port->tty;
->        ^     ~~~~~~~~~
->
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Hey, Oleg.
 
+On Tue, Mar 22, 2011 at 08:44:16PM +0100, Oleg Nesterov wrote:
+> On 03/22, Tejun Heo wrote:
+> >
+> > On Mon, Mar 21, 2011 at 06:43:06PM +0100, Oleg Nesterov wrote:
+> > > Hmm... in fact I can't convince myself we really need to look at
+> > > child->group_leader, will recheck... Anyway, this is minor too.
+> >
+> > Care to elaborate?
+> 
+> child->real_parent must be equal to child->group_leader->real_parent.
 
-Acked-by: Govindraj.R <govindraj.raja@ti.com>
+Okay.
 
+> What we need is ptrace_reparented(). But as I said, it should be
+> fixed first (I think) and this needs a separate patch/discussion.
+> 
+> So yes, we need a new helper.
+> 
+> Well, and look at get_signal_to_deliver(),
+> 
+> 		leader = current->group_leader;
+> 		if (task_ptrace(leader) && !real_parent_is_ptracer(leader))
+> 			do_notify_parent_cldstop(leader, true, why);
+> 
+> Indeed. But in fact task_ptrace(leader) is not needed. If
+> real_parent_is_ptracer(tsk) returns false, then tsk must be ptraced.
+> 
+> So we could write
+> 
+> 		if (!real_parent_is_ptracer(leader))
+> 			do_notify_parent_cldstop(leader, true, why);
+> 
+> but now this looks confusing because of the naming. Compare with
+> 
+> 		if (ptrace_reparented(leader))
+> 			do_notify_parent_cldstop(leader);
 
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: linux-serial@vger.kernel.org
-> ---
->  drivers/tty/serial/serial_core.c |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-> index 733fe8e..d6e7240 100644
-> --- a/drivers/tty/serial/serial_core.c
-> +++ b/drivers/tty/serial/serial_core.c
-> @@ -1972,13 +1972,9 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
->        struct tty_port *port = &state->port;
->        struct device *tty_dev;
->        struct uart_match match = {uport, drv};
-> -       struct tty_struct *tty;
->
->        mutex_lock(&port->mutex);
->
-> -       /* Must be inside the mutex lock until we convert to tty_port */
-> -       tty = port->tty;
-> -
->        tty_dev = device_find_child(uport->dev, &match, serial_match_port);
->        if (device_may_wakeup(tty_dev)) {
->                if (!enable_irq_wake(uport->irq))
-> --
-> 1.7.4.1
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-serial" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+I see but I don't think ptrace_reparented() is a good name for
+!same_thread_group(child->parent, child->real_parent).  It gets too
+confusing with child->parent != child->real_parent test.
+
+Anyways, I'll leave the renaming for later patch and just update the
+->group_leader part.
+
+Thanks.
+
+-- 
+tejun
