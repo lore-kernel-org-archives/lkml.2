@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932652Ab1CWLXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 07:23:03 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:55542 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932554Ab1CWLXB (ORCPT
+	id S932665Ab1CWLXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 07:23:18 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34902 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932654Ab1CWLXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 07:23:01 -0400
-Date: Wed, 23 Mar 2011 05:22:57 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Robert Love <robert.w.love@intel.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
-        Jarek Poplawski <jarkao2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@open-fcoe.org" <devel@open-fcoe.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
-	kfree_rcu()
-Message-ID: <20110323112257.GD13806@parisc-linux.org>
-References: <4D82D071.5020703@cn.fujitsu.com> <4D82D3FF.2080303@cn.fujitsu.com> <4D82D45A.30102@cn.fujitsu.com> <1300814913.19083.427.camel@fritz> <20110323065014.GU2322@linux.vnet.ibm.com>
+	Wed, 23 Mar 2011 07:23:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=cSrG2ULSKBdtGf2cXMQQ7IAPXceJ6NGjpnBHbJ7dki3va25A6XyRWoIUTSsjjZ0Zo1
+         GePZCYNM4amFTVydkOGmE8zX6LFtviHZyGW2dZsO9enOOBpEneSitd7YAGkKsf/799dH
+         jtt0+7WOE8+7XRX/CPfz84Ry8URtvWA3I8rxI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110323065014.GU2322@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTikuAr9o4fcZi15w1g0kyYehmJBi5ixJ1nmNfw_x@mail.gmail.com>
+References: <1300299394-20844-1-git-send-email-dbaluta@ixiacom.com>
+	<AANLkTikuAr9o4fcZi15w1g0kyYehmJBi5ixJ1nmNfw_x@mail.gmail.com>
+Date: Wed, 23 Mar 2011 13:23:14 +0200
+X-Google-Sender-Auth: oJ7OVx7uOWmAzLymwgGoSyMlUYo
+Message-ID: <AANLkTimDJ05ZTLz-mW6vRWpdJSgCzSRGP_DAaSuEqz_v@mail.gmail.com>
+Subject: Re: [PATCH] kmemleak: build kmemleak-test.c as a module-only
+From: Pekka Enberg <penberg@kernel.org>
+To: Daniel Baluta <daniel.baluta@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Catalin Marinas <catalin.marinas@arm.com>,
+        akpm@linux-foundation.org, mingo@elte.hu, fweisbec@gmail.com,
+        rdunlap@xenotime.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 11:50:14PM -0700, Paul E. McKenney wrote:
-> On Tue, Mar 22, 2011 at 10:28:33AM -0700, Robert Love wrote:
-> > On Thu, 2011-03-17 at 20:41 -0700, Lai Jiangshan wrote:
-> > > -	call_rcu(&rdata->rcu, fc_rport_free_rcu);
-> > > +	kfree_rcu(rdata, rcu);
-> > 
-> > I think this last line should be:
-> > 
-> > kfree_rcu(rdata, &rdata->rcu);
-> 
-> Hello, Robert,
-> 
-> I believe that it is correct as is.  The kfree_rcu() definition is as
-> follows:
-> 
-> #define kfree_rcu(ptr, rcu_head)					\
-> 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
-> 
-> Then __kfree_rcu() encodes the offset into the rcu_head so that it can
-> be handled properly at the end of the grace period.
+On Wed, Mar 23, 2011 at 1:18 PM, Daniel Baluta <daniel.baluta@gmail.com> wrote:
+> On Wed, Mar 16, 2011 at 8:16 PM, Daniel Baluta <dbaluta@ixiacom.com> wrote:
+>> mm/kmemleak-test.c is used to provide an example of how kmemleak
+>> tool works.
+>>
+>> Memory is leaked at module unload-time, so building the test
+>> in kernel (Y) makes the leaks impossible and the test useless.
+>
+> Any comments on this?
 
-To be fair to Robert, I had the same thought, but decided to check the
-definition of kfree_rcu before I made the same comment.  Unfortunately,
-the definition of kfree_rcu is still not in Linus' tree (and there's no
-indication in the patch series about where to find the definition).  It
-would have been better if kfree_rcu were patch 1/n in the series, then
-we'd've been able to review it more effectively.
+Looks good to me.
 
-Any idea when kfree_rcu will be submitted to Linus?
-
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Acked-by: Pekka Enberg <penberg@kernel.org>
