@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab1CWJni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 05:43:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57232 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754209Ab1CWJnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 05:43:35 -0400
-Date: Wed, 23 Mar 2011 09:43:16 GMT
-From: tip-bot for Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@redhat.com, akihiro.nagai.hw@hitachi.com, peterz@infradead.org,
-        masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        akihiro.nagai.hw@hitachi.com, acme@infradead.org, peterz@infradead.org,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110323072939.11638.50173.stgit@localhost6.localdomain6>
-References: <20110323072939.11638.50173.stgit@localhost6.localdomain6>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf top: Fix uninitialized 'counter' variable
-Message-ID: <tip-ce2d17ca7f85dcade62cd608601a0d52ccdaf0e6@git.kernel.org>
-Git-Commit-ID: ce2d17ca7f85dcade62cd608601a0d52ccdaf0e6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754077Ab1CWJq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 05:46:28 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41651 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab1CWJq0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 05:46:26 -0400
+Date: Wed, 23 Mar 2011 09:45:58 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kay Sievers <kay.sievers@suse.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Paul Mundt <lethal@linux-sh.org>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 9/10] sh: Use struct syscore_ops instead of sysdev
+	class and sysdev
+Message-ID: <20110323094557.GA3040@n2100.arm.linux.org.uk>
+References: <201103100131.58206.rjw@sisk.pl> <20110322214922.GA7503@linux-sh.org> <1300831256.1815.22.camel@zag> <201103222323.42627.rjw@sisk.pl> <1300833843.1815.53.camel@zag>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 23 Mar 2011 09:43:17 +0000 (UTC)
+In-Reply-To: <1300833843.1815.53.camel@zag>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ce2d17ca7f85dcade62cd608601a0d52ccdaf0e6
-Gitweb:     http://git.kernel.org/tip/ce2d17ca7f85dcade62cd608601a0d52ccdaf0e6
-Author:     Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-AuthorDate: Wed, 23 Mar 2011 16:29:39 +0900
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 23 Mar 2011 10:38:32 +0100
+On Tue, Mar 22, 2011 at 11:44:03PM +0100, Kay Sievers wrote:
+> When we started to clean up /sys (again only talking about devices, not
+> other stuff) we had:
+>   /block/*
+>   /class/<subsys>/*
+>   /bus/<subsys>/devices/*
+>   /devices/system/<subsys>/*
+> which are 4 different exports of exactly the same thing, a "device".
+> "Block" we converted to "class" already, "class" will be converted to
+> "bus", and "bus" will be renamed to "subsystem". All the current names
+> will be kept as compat symlinks, just as we did for "block".
 
-perf top: Fix uninitialized 'counter' variable
+I bet userspace will end up failing with that and need updating yet
+again, inspite of the symlinks.
 
-builtin-top.c has an uninitialized variable.
-gcc(version 4.5.1) warns about it and it results in build failure:
-
- builtin-top.c: In function 'display_thread':
- builtin-top.c:518:9: error: 'counter' may be used uninitialized
-
-This situation can indeed trigger, if the getline() call in
-prompt_integer() fails.
-
-Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <20110323072939.11638.50173.stgit@localhost6.localdomain6>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- tools/perf/builtin-top.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 70f1075..676b4fb 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -515,7 +515,9 @@ static void handle_keypress(struct perf_session *session, int c)
- 			break;
- 		case 'E':
- 			if (top.evlist->nr_entries > 1) {
--				int counter;
-+				/* Select 0 as the default event: */
-+				int counter = 0;
-+
- 				fprintf(stderr, "\nAvailable events:");
- 
- 				list_for_each_entry(top.sym_evsel, &top.evlist->entries, node)
+While Linus complains about the churn in the ARM subtree, I'd like to
+officially complain about the pointless churn in sysfs which actively
+breaks (and sometimes prevents) userspace booting when you upgrade
+kernels.
