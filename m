@@ -1,71 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933420Ab1CWVCn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 17:02:43 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49522 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933310Ab1CWVCm (ORCPT
+	id S933450Ab1CWVC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 17:02:58 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:36589 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933404Ab1CWVCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 17:02:42 -0400
+	Wed, 23 Mar 2011 17:02:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=C8wbFwWrgjpIIEP8tT5G30oArUjWg5PBLdq9q/0mGT86KFtoE4RKG65Tb3Jn/MP1Cr
-         70EBG/IMdp3OZ3PeEUqWUNfMJ9DdoaIFq9oOxnhHS03Z/jWUNnWCZci7RwmSLssLo9cY
-         LjmKwRUalhzQQQhsmtMoM+819XIQNs3ebv0fg=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=Nuklgzp+6dhcO/NmyXBDefq37tYVOwCkmInBgNqdXLxSKNAVJ8xn7HFsNOxaWQHrqo
+         0boe4+tbiv+2tSzT6VkIVzM8fq6GwNSgvD8Mva1mBqqwyMSzn+D6IErjZElF+p5bG6Hq
+         PZNNvfF2PH/V/yASHBON4zpz6DpSF8wro0gYU=
 From: Alessio Igor Bogani <abogani@kernel.org>
 To: Rusty Russell <rusty@rustcorp.com.au>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ian Lance Taylor <ian@airs.com>,
         Tim Bird <tim.bird@am.sony.com>,
         Alessio Igor Bogani <abogani@kernel.org>
-Subject: [PATCH 0/2] Speed up the symbols' resolution process
-Date: Wed, 23 Mar 2011 22:00:41 +0100
-Message-Id: <1300914043-2297-1-git-send-email-abogani@kernel.org>
+Subject: [PATCH 2/2] Replace the linear search with a binary search for locate the symbols
+Date: Wed, 23 Mar 2011 22:00:43 +0100
+Message-Id: <1300914043-2297-3-git-send-email-abogani@kernel.org>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1300914043-2297-1-git-send-email-abogani@kernel.org>
+References: <1300914043-2297-1-git-send-email-abogani@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The intent of this patchset is to speed up the symbols' resolution process.
-
-This objective is achieved by sorting all symbols (those which reside both in
-the kernel and in the modules) and thus convert the slow linear search to the
-fast binary search.
-
-To avoid adding lots of code for symbols sorting I rely on the linker which can
-easily do the job thanks to a little trick. The trick isn't really beautiful to
-see but permits minimal changes to the code and build process. Indeed, the
-patchset is constituted by only two very short patches.
-
-In the first patch I changed the code for place every symbol in a different
-section (for example: "___ksymtab" sec "__" #sym) at compile time (this the
-above mentioned trick!). In the same patch I also request to the linker to
-sort and merge all these sections into the appropriate ones (for example:
-"__ksymtab") at link time using the linker scripts. Once all symbols are
-sorted we can use binary search instead of the linear one (this is done in
-the second patch).
-
-I'm fairly sure that this is a good speed improvement even though I haven't
-made any benchmarking (I would be very happy to receive suggestions about how
-made it). Collaterally, the boot time should be reduced also (proportionally
-to the number of modules involved at boot stage).
-
-I hope that you find that interesting!
-
-
 This work was supported by a hardware donation from the CE Linux Forum.
 
+Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
+---
+ kernel/module.c |   49 ++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 30 insertions(+), 19 deletions(-)
 
-Alessio Igor Bogani (2):
-  Let Linker sort the symbols
-  Replace the linear search with a binary search for locate the symbols
-
- include/asm-generic/vmlinux.lds.h |   20 +++++++-------
- include/linux/module.h            |    4 +-
- kernel/module.c                   |   49 ++++++++++++++++++++++--------------
- scripts/module-common.lds         |   19 ++++++++++++++
- 4 files changed, 61 insertions(+), 31 deletions(-)
-
+diff --git a/kernel/module.c b/kernel/module.c
+index 1f9f7bc..932726d 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -235,6 +235,18 @@ extern const unsigned long __start___kcrctab_unused_gpl[];
+ #define symversion(base, idx) ((base != NULL) ? ((base) + (idx)) : NULL)
+ #endif
+ 
++struct find_symbol_arg {
++	/* Input */
++	const char *name;
++	bool gplok;
++	bool warn;
++
++	/* Output */
++	struct module *owner;
++	const unsigned long *crc;
++	const struct kernel_symbol *sym;
++};
++
+ static bool each_symbol_in_section(const struct symsearch *arr,
+ 				   unsigned int arrsize,
+ 				   struct module *owner,
+@@ -243,12 +255,26 @@ static bool each_symbol_in_section(const struct symsearch *arr,
+ 					      unsigned int symnum, void *data),
+ 				   void *data)
+ {
+-	unsigned int i, j;
++	unsigned int j, i;
++	struct find_symbol_arg *fsa = data;
++	size_t num;
++	int start, end, mid, result;
+ 
+ 	for (j = 0; j < arrsize; j++) {
+-		for (i = 0; i < arr[j].stop - arr[j].start; i++)
+-			if (fn(&arr[j], owner, i, data))
+-				return true;
++		num = arr[j].stop - arr[j].start;
++		start = 0, end = num - 1, mid, result, i = 0;
++		while (start <= end) {
++			i++;
++			mid = (start + end) / 2;
++			result = strcmp(fsa->name, arr[j].start[mid].name);
++			if (result < 0)
++				end = mid - 1;
++			else if (result > 0)
++				start = mid + 1;
++			else
++				if (fn(&arr[j], owner, mid, data))
++					return true;
++		}
+ 	}
+ 
+ 	return false;
+@@ -311,27 +337,12 @@ bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
+ }
+ EXPORT_SYMBOL_GPL(each_symbol);
+ 
+-struct find_symbol_arg {
+-	/* Input */
+-	const char *name;
+-	bool gplok;
+-	bool warn;
+-
+-	/* Output */
+-	struct module *owner;
+-	const unsigned long *crc;
+-	const struct kernel_symbol *sym;
+-};
+-
+ static bool find_symbol_in_section(const struct symsearch *syms,
+ 				   struct module *owner,
+ 				   unsigned int symnum, void *data)
+ {
+ 	struct find_symbol_arg *fsa = data;
+ 
+-	if (strcmp(syms->start[symnum].name, fsa->name) != 0)
+-		return false;
+-
+ 	if (!fsa->gplok) {
+ 		if (syms->licence == GPL_ONLY)
+ 			return false;
 -- 
 1.7.4.1
 
