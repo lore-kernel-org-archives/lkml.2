@@ -1,132 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab1CWQdB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 12:33:01 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:52667 "HELO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751198Ab1CWQdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 12:33:00 -0400
-Date: Wed, 23 Mar 2011 11:32:55 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
-Message-ID: <20110323163255.GA17178@sgi.com>
-References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <20110321175110.GL1239@redhat.com> <20110321182235.GA14562@sgi.com> <20110321193740.GN1239@redhat.com> <20110322171118.GA6294@sgi.com> <20110322184450.GU1239@redhat.com> <20110322212519.GA12076@sgi.com> <20110322220505.GB13453@redhat.com>
+	id S1752967Ab1CWQeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 12:34:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54292 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab1CWQeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 12:34:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=aWKl6DNHVfF9h/VybbX/GYYa8VcUr2dFjQNutFWbpLm48J8goSrHY84/46lm/99GDl
+         duCY4krVReonjJkvNXB/xDI14Q6Bss2q3/mP3yTrmHpjWX79vOQ1dRmCkMO8eYNuLodU
+         6E/jCG9yW9PS/FfyKio0RvsZaHJaA06G9Ai4s=
+Message-ID: <4D8A20F8.2080409@linaro.org>
+Date: Wed, 23 Mar 2011 16:34:00 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110322220505.GB13453@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Greg KH <greg@kroah.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
+        grant.likely@secretlab.ca
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <4D79F068.2080009@linaro.org> <201103231132.02690.arnd@arndb.de> <20110323150852.GE6284@kroah.com> <201103231712.06184.arnd@arndb.de> <20110323162251.GA9367@kroah.com>
+In-Reply-To: <20110323162251.GA9367@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 06:05:05PM -0400, Don Zickus wrote:
-> On Tue, Mar 22, 2011 at 04:25:19PM -0500, Jack Steiner wrote:
-> > > > AFAICT, the UV nmi handler is not consuming extra NMI interrupts. I can't
-> > > > rule out that I'm missing something but I don't see it.
-> > > 
-> > > What happens if you put the UV nmi handler below the hw_perf handler in
-> > > priority?  I assume the DIE_NMIUNKNOWN snippet in the hw_perf handler will
-> > > swallow some of the UV NMIs, but more importantly does it still generate
-> > > the hang you see?
-> > 
-> > I verified that the failures ("perf top" stops) are the same on both RHEL6.1 & the
-> > latest x86 2.6.38+ tree.
-> 
-> Thanks for testing that.
-> 
-> > 
-> > I switched priorities & as expected, "perf top" no longer hangs. I see an occassional
-> > missed UV NMI - about 1 every minute. I also see a few "dazed" messages as
-> > well - 3 in a 5 minute period. This testing was done on a 2.6.38+ kernel.
-> > 
-> > I'm running on a 48p system.
-> > 
-> > Ideas?
-> 
-> Wow, interesting.
-> 
-> The first thing is in 'uv_handle_nmi' can you change that from
-> DIE_NMIUNKNOWN back to DIE_NMI.  Originally I set it to DIE_NMIUNKNOWN
-> because I didn't think you guys had the ability to determine if your BMC
-> generated the NMI or not.  Recently George B. said you guys add a register
-> bit to determine this, so I am wondering if by promoting this would fix
-> the missed UV NMI.  I am speculating this is being swallowed by the
-> hw_perf DIE_NMIUNKNOWN exception path.
+On 03/23/2011 04:22 PM, Somebody in the thread at some point said:
 
-Correct. I recently added a register that indicates the BMC sent an NMI.
+>>    In case of smsc95xx, we *know* that it's ethernet and not two-host,
+>>    there is no reasonable doubt about this. The code almost makes sense
+>>    on generic cdc devices, but not for anything else.
+>
+> Ok, let's fix it up and see who complains :)
 
-Hmmm. Looks like I have been running with DIE_NMI. I think that came
-from porting the patch from RHEL6 to upstream.
+OK... what approach are you alright with being used to signal the fix up 
+selection of interface name in usbnet?  Flag set in async platform_data 
+from board definition file as in the existing tested patches is OK?
 
-However, neither DIE_NMIUNKNOWN  or DIE_NMI gives the desired behavior (2.6.38+).
-
-	- Using DIE_NMIUNKNOWN, I see many more "dazed" messages but no
-	  perf top lockup. I see ~3 "dazed" messages per minute. UV NMIs are
-	  being sent at a rate of 30/min, ie. ~10% failure rate.
-
-	- Using DIE_NMI, no "dazed" messages but perf top hangs about once a
-	  minute (rough estimate).
-
-
-I wonder if we need a different approach to handling NMIs. Instead of using
-the die_notifier list, introduce a new notifier list reserved exclusively
-for NMIs. When an NMI occurs, all registered functions are unconditionally called.
-If any function accepts the NMI, the remaining functions are still called but
-the NMI is considered to have been valid (handled) & the "dazed" message
-is suppressed.
-
-This is more-or-less functionally equivalent to the last patch I posted but
-may be cleaner. At a minimum, it is easier to understand the interactions
-between the various handlers.
-
-
-
-> 
-> Second the "dazed" messages are being seen on other machines (currently
-> core2quads) when using perf with lots of NMI events.  So you might be
-> seeing a second more common issue there.  I still need to find time to
-> debug that.
-> 
-> Finally, I am trying to scratch my head about the 'perf top' no longer
-> hangs part.  The only thing I can think of is under high perf load (with
-> out extra NMIs by your BMC), we have seen extra NMIs get generated while
-> processing the current NMI (mainly because Nehalems have I think 4 or 8
-> PMUs that can be activate at once, so multiple NMIs can trigger here).
-> But we can recover from this because we check _all_ the PMIs during the
-> NMI (which currently always comes from the PMU).
-> 
-> Now this extra NMI from the PMU can also happen on a singlely activated
-> PMU because we reload the PMU, then check the events to see if we should
-> disable it.  By the time we finish checking (and determine we are not done
-> yet), the event could have rolled over and generated another NMI before we
-> have finished processing the current one.
-> 
-> So throw in an external NMI into the above situation (which gets dropped
-> as the third NMI I believe if I read the history of these NMI things
-> correctly), then it is possible that if uv_handle_nmi is called first it
-> could swallow the extra NMI as its own and leave the hw_perf hanging.
-> (that's a mouthful, huh?)
-> 
-> Then again with the priorities switched I guess the opposite is true too,
-> that your BMC is left missing an event.
-> 
-> This sort of supports the need for your patch earlier or something similar
-> which says ignore the handler's return code and process all the events on
-> the die_chain anyway.  And if noone has handled the NMI, then trigger an
-> unknown NMI.
-> 
-> Unless there is a way to determine if an NMI is latched or not before
-> issuing the iret and if so assumed we dropped an NMI and process everyone.
-> 
-> I'll need to think of a way to prove all this in the morning (or maybe
-> later).
-> 
-> I hope that makes some sense as it is late and my brain is shutting down.
-> 
-> Cheers,
-> Don
+-Andy
