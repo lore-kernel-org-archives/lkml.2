@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780Ab1CWMfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 08:35:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60246 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932760Ab1CWMfb (ORCPT
+	id S932791Ab1CWMfh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 08:35:37 -0400
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:46297 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932770Ab1CWMfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 08:35:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=u5St6+m7TzUhGPjP5FwS2bgANAcbkvvWwY2IPRzcIoCnEcubxKhg9+cz/NWMTKflWN
-         Fuqq5G3TkqQm4daqDTPQFCOiCW6O1EJimsKY7Wa9yAGg3h7axGuXFSFtbLYd6Jn7EpSD
-         7Vn8kwqcTLWHNGJEEJyjoxa+6jkX4oXZeLxzM=
-Date: Wed, 23 Mar 2011 14:38:28 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] lockdep: remove unused factor variable from
- lockdep_stats_show
-Message-ID: <20110323123828.GB4244@swordfish.minsk.epam.com>
+	Wed, 23 Mar 2011 08:35:33 -0400
+Date: Wed, 23 Mar 2011 13:35:31 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Ungerer <gerg@uclinux.org>
+cc: Linux/m68k <linux-m68k@vger.kernel.org>,
+        uClinux list <uclinux-dev@uclinux.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [PATCH] m68k,m68knommu: Wire up syncfs
+Message-ID: <alpine.DEB.2.00.1103231334450.21922@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lockdep: remove unused factor variable from lockdep_stats_show
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
+To be folded with the previous one.
 
- kernel/lockdep_proc.c |    9 +--------
- 1 files changed, 1 insertions(+), 8 deletions(-)
+ arch/m68k/include/asm/unistd.h       |    3 ++-
+ arch/m68k/kernel/entry.S             |    1 +
+ arch/m68knommu/kernel/syscalltable.S |    1 +
+ 3 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/lockdep_proc.c b/kernel/lockdep_proc.c
-index 1969d2f..71edd2f 100644
---- a/kernel/lockdep_proc.c
-+++ b/kernel/lockdep_proc.c
-@@ -225,7 +225,7 @@ static int lockdep_stats_show(struct seq_file *m, void *v)
- 		      nr_irq_read_safe = 0, nr_irq_read_unsafe = 0,
- 		      nr_softirq_read_safe = 0, nr_softirq_read_unsafe = 0,
- 		      nr_hardirq_read_safe = 0, nr_hardirq_read_unsafe = 0,
--		      sum_forward_deps = 0, factor = 0;
-+		      sum_forward_deps = 0;
+diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
+index f69f7ce..29e1790 100644
+--- a/arch/m68k/include/asm/unistd.h
++++ b/arch/m68k/include/asm/unistd.h
+@@ -346,10 +346,11 @@
+ #define __NR_name_to_handle_at	340
+ #define __NR_open_by_handle_at	341
+ #define __NR_clock_adjtime	342
++#define __NR_syncfs		343
  
- 	list_for_each_entry(class, &all_lock_classes, lock_entry) {
+ #ifdef __KERNEL__
  
-@@ -283,13 +283,6 @@ static int lockdep_stats_show(struct seq_file *m, void *v)
- 			nr_hardirq_unsafe * nr_hardirq_safe +
- 			nr_list_entries);
+-#define NR_syscalls		343
++#define NR_syscalls		344
  
--	/*
--	 * Estimated factor between direct and indirect
--	 * dependencies:
--	 */
--	if (nr_list_entries)
--		factor = sum_forward_deps / nr_list_entries;
--
- #ifdef CONFIG_PROVE_LOCKING
- 	seq_printf(m, " dependency chains:             %11lu [max: %lu]\n",
- 			nr_lock_chains, MAX_LOCKDEP_CHAINS);
+ #define __ARCH_WANT_IPC_PARSE_VERSION
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/m68k/kernel/entry.S b/arch/m68k/kernel/entry.S
+index 8f9524a..1359ee6 100644
+--- a/arch/m68k/kernel/entry.S
++++ b/arch/m68k/kernel/entry.S
+@@ -753,4 +753,5 @@ sys_call_table:
+ 	.long sys_name_to_handle_at	/* 340 */
+ 	.long sys_open_by_handle_at
+ 	.long sys_clock_adjtime
++	.long sys_syncfs
+ 
+diff --git a/arch/m68knommu/kernel/syscalltable.S b/arch/m68knommu/kernel/syscalltable.S
+index 605bbbe..9b8393d 100644
+--- a/arch/m68knommu/kernel/syscalltable.S
++++ b/arch/m68knommu/kernel/syscalltable.S
+@@ -361,6 +361,7 @@ ENTRY(sys_call_table)
+ 	.long sys_name_to_handle_at	/* 340 */
+ 	.long sys_open_by_handle_at
+ 	.long sys_clock_adjtime
++	.long sys_syncfs
+ 
+ 	.rept NR_syscalls-(.-sys_call_table)/4
+ 		.long sys_ni_syscall
+-- 
+1.7.0.4
 
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
