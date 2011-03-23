@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932837Ab1CWNBj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 09:01:39 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58075 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932811Ab1CWNBi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 09:01:38 -0400
-Date: Wed, 23 Mar 2011 09:01:37 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: merging discard request in the block layer
-Message-ID: <20110323130137.GA10455@infradead.org>
-References: <20110322194755.GA20122@infradead.org>
- <4D88FE5E.1010204@fusionio.com>
- <4D890EBD.1090103@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D890EBD.1090103@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S932842Ab1CWNFi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 09:05:38 -0400
+Received: from fifo99.com ([67.223.236.141]:42395 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932810Ab1CWNFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 09:05:37 -0400
+Subject: Re: [RFC] mmc: msm_sdcc: Use SPS BAM as DMA engine
+From: Daniel Walker <dwalker@fifo99.com>
+To: Subhash Jadavani <subhashj@codeaurora.org>
+Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        davidb@codeaurora.org, bryanh@codeaurora.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1300454644-11361-2-git-send-email-subhashj@codeaurora.org>
+References: <1300454644-11361-1-git-send-email-subhashj@codeaurora.org>
+	 <1300454644-11361-2-git-send-email-subhashj@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 06:05:35 -0700
+Message-ID: <1300885535.6117.15.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 10:03:57PM +0100, Jens Axboe wrote:
-> > That would seem to indicate a bug in the merging logic instead.
+On Fri, 2011-03-18 at 18:54 +0530, Subhash Jadavani wrote:
+> On recent MSMs, ADM (Data Mover) HW is not present
+> which means existing SDCC driver can perform data
+> transfer in PIO (peripheral IO) mode only.
+> But PIO mode requires lot of CPU attention which
+> would mean consuming extra CPU MIPS.
 > 
-> What kind of max discard size does you device have? If the max discard
-> size is smaller than the regular request size, this could help.
+> As a replacement on these recent MSMs, there is
+> a new DMA HW engine named SPS-BAM (as part of
+> Smart Peripheral System of MSM) is added for
+> data movement between SDCC core and system memory.
+> 
+> This patch has done changes in existing MSM SDCC
+> driver for using SPS-BAM as DMA engine.
 
-It's a SCSI device, so the max discard size is a lot larger:
+1300+ lines of code might warrant more of a description .. In the
+subject you say "DMA engine" but does this use drivers/dma/dmaengine.c ?
 
-# cat /sys/block/sda/queue/max_sectors_kb
-512
-# cat /sys/block/sda/queue/max_hw_sectors_kb 
-32767
-# cat /sys/block/sda/queue/discard_max_bytes 
-4294966784
+> Signed-off-by: Subhash Jadavani <subhashj@codeaurora.org>
+> ---
+>  drivers/mmc/host/Kconfig        |   10 +
+>  drivers/mmc/host/Makefile       |    1 +
+>  drivers/mmc/host/msm_sdcc.c     |  929 +++++++++++++++++++++++++++++++++++++--
+>  drivers/mmc/host/msm_sdcc.h     |   47 ++
+>  drivers/mmc/host/msm_sdcc_dml.c |  303 +++++++++++++
+>  drivers/mmc/host/msm_sdcc_dml.h |  120 +++++
+>  6 files changed, 1374 insertions(+), 36 deletions(-)
+>  create mode 100644 drivers/mmc/host/msm_sdcc_dml.c
+>  create mode 100644 drivers/mmc/host/msm_sdcc_dml.h
+
+I'd do at least two patches. One that adds msm_sdcc_dml.[ch] and one
+that modifies msm_sdcc.[ch] and the Kconfig and Makefile.
+
+Daniel
 
