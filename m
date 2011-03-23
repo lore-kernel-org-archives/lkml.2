@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab1CWJZB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 05:25:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36129 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755974Ab1CWJZA (ORCPT
+	id S1756076Ab1CWJbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 05:31:19 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:42511 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab1CWJbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 05:25:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ir3574JJyMHR0vwjLT//PX0aAtWOn81QcCTr2esWM4PAADqi5aDfmXdye7Cp0cAcvo
-         6a2/T6JAobkbbejgsfYx/LA4rBmXYIbYfcN6VbZkzfl0lBCnYb0tVZG1WLDUfbSPkQ7A
-         yyAlZZwC2zyHsgFs4X11uiWi30mN+IPZ4tMhc=
-Date: Wed, 23 Mar 2011 10:24:55 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 7/8] job control: Notify the real parent of job control
- events regardless of ptrace
-Message-ID: <20110323092455.GZ12003@htj.dyndns.org>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org>
- <1299614199-25142-8-git-send-email-tj@kernel.org>
- <20110321174306.GA29895@redhat.com>
- <20110322080444.GM12003@htj.dyndns.org>
- <20110322194416.GC28038@redhat.com>
- <20110323091736.GY12003@htj.dyndns.org>
+	Wed, 23 Mar 2011 05:31:18 -0400
+Message-ID: <4D89BDE2.9040606@linux.vnet.ibm.com>
+Date: Wed, 23 Mar 2011 15:01:14 +0530
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc11 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110323091736.GY12003@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Len Brown <lenb@kernel.org>
+CC: arjan@linux.intel.com, peterz@infradead.org, suresh.b.siddha@intel.com,
+        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
+        xen-devel@lists.xensource.com
+Subject: Re: [RFC PATCH V4 3/5] cpuidle: default idle driver for x86
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com> <20110322123244.28725.32435.stgit@tringupt.in.ibm.com> <alpine.LFD.2.02.1103222304300.10549@x980>
+In-Reply-To: <alpine.LFD.2.02.1103222304300.10549@x980>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 10:17:36AM +0100, Tejun Heo wrote:
-> Hey, Oleg.
-> 
-> On Tue, Mar 22, 2011 at 08:44:16PM +0100, Oleg Nesterov wrote:
-> > On 03/22, Tejun Heo wrote:
-> > >
-> > > On Mon, Mar 21, 2011 at 06:43:06PM +0100, Oleg Nesterov wrote:
-> > > > Hmm... in fact I can't convince myself we really need to look at
-> > > > child->group_leader, will recheck... Anyway, this is minor too.
-> > >
-> > > Care to elaborate?
-> > 
-> > child->real_parent must be equal to child->group_leader->real_parent.
-> 
-> Okay.
 
-Ooh, on a related note, we probably want to change
-do_notify_parent_cldstop() too.  tsk->group_leader->real_parent is
-used as the delivery target when !@for_ptracer.  This is the same with
-tsk->real_parent and the code has been like this for a long time but
-is a bit confusing.
+On 03/23/2011 08:43 AM, Len Brown wrote:
+> Why is this patch a step forward?
 
-Thanks.
+Hi Len,
 
--- 
-tejun
+I have basically moved the code for arch default and mwait
+idle from arch/x86/kernel/process.c to a driver. This was
+suggested by Venki (https://lkml.org/lkml/2010/10/19/460)
+as part of pm_idle cleanup and direct call of
+cpuidle_idle_call(). There is not much new code here.
+
+>
+>> +obj-$(CONFIG_X86)                              += default_driver.o
+>
+> BTW, that's a pretty generic name for an x86 specific idle driver...
+>
+> I think that on builds that support intel_idle and acpi_idle,
+> everything in this file will be unused, unless somebody uses some
+> debugging cmdline params that should have been deleted ages ago.
+
+Yes, I agree that the name has to be x86 specific. I think the
+routines would be used for pre-nehalem architectures that use
+arch default or mwait.
+
+Thanks,
+-Trinabh
+
+>
+> thanks,
+> Len Brown, Intel Open Source Technology Center
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
