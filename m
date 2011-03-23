@@ -1,94 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab1CWOj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:39:57 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60824 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab1CWOjz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:39:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qoDfF8gsUVs8HyxEEY2dk9Y0MQFX62YivIhR/5oLrUeqdUJQGbLYlluu8Y3pJqI7jv
-         6Wzm6aehFewXdK81Mbd3GIzoXCA7rplG7FTQ/ey2iz+uH0SYkPgo+wBeOyd0tlFbrRLM
-         H+WBD6IQCevKPOyV9Re+xEWladHi0EVDuKAc8=
+	id S1756360Ab1CWOmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:42:12 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37115 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109Ab1CWOmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:42:11 -0400
+Date: Wed, 23 Mar 2011 07:42:30 -0700
+From: Greg KH <gregkh@suse.de>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/2] picoxcell-otp: add support for picoxcell OTP
+ devices
+Message-ID: <20110323144230.GD17369@suse.de>
+References: <1300882619-19152-1-git-send-email-jamie@jamieiles.com>
+ <1300882619-19152-2-git-send-email-jamie@jamieiles.com>
 MIME-Version: 1.0
-In-Reply-To: <4D89E5E1.3070402@earthlink.net>
-References: <alpine.DEB.2.00.1103170403160.3429@skynet.skynet.ie>
-	<AANLkTinoTs89ThBnZ17+fPE+t1V=GycKq2EJG-LadFZQ@mail.gmail.com>
-	<4D89E5E1.3070402@earthlink.net>
-Date: Wed, 23 Mar 2011 10:39:54 -0400
-Message-ID: <AANLkTikK_88tBW+1RPLGTD51WwCOmr2j=8xBRPF=ZiPK@mail.gmail.com>
-Subject: Re: [git pull] drm next tree
-From: Jerome Glisse <j.glisse@gmail.com>
-To: sclark46@earthlink.net
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300882619-19152-2-git-send-email-jamie@jamieiles.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 8:21 AM, Stephen Clark <sclark46@earthlink.net> wrote:
-> On 03/22/2011 10:19 PM, Linus Torvalds wrote:
->>
->> So I had  hoped - yes, very naïve of me, I know - that this merge
->> window would be different.
->>
->> But it's not.
->>
->> On Wed, Mar 16, 2011 at 9:09 PM, Dave Airlie<airlied@linux.ie>  wrote:
->>
->>>
->>> i915: big 855 fix, lots of output setup refactoring, lots of misc fixes.
->>>
->>
->> .. and apparently a lot of breakage too. My crappy laptop that I abuse
->> for travel is - once more - broken by the updates. I cannot suspend
->> and resume, because every resume seems to fail.
->>
->> One of the more useful failures was:
->>
->> [   61.656055] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
->> elapsed... GPU hung
->> [   61.656079] [drm] capturing error event; look for more information
->> in /debug/dri/0/i915_error_state
->> [   61.664387] [drm:i915_wait_request] *ERROR* i915_wait_request
->> returns -11 (awaiting 2 at 0, next 3)
->>
->> and I'm attaching the error_state file from that particular case here.
->> In other cases it seems to just hang entirely.
->>
->> Keith/Jesse/Chris - I don't know that it's i915, and it will take
->> forever to bisect (I'll try). But it does seem pretty likely.
->>
->>                              Linus
->>
->
-> Why can't the gpu be reset/restarted when this happens? When a nic card gets
-> hung it is reinitialized
-> and restarted why not the gpu?
->
-> --
+On Wed, Mar 23, 2011 at 12:16:58PM +0000, Jamie Iles wrote:
+> picoxcell devices contain a block of OTP memory that can be used for
+> storing first-stage bootloaders, cryptographic keys and other data to be
+> kept onchip.  Different devices support a number of redundancy formats
+> to cope with in-field programming errors and can be partitioned into
+> regions to allow different redundancy formats with different effective
+> sizes.
+> 
+> This patch implements an OTP device layer which different devices may
+> register their OTP regions with.
 
-GPU are so complex, i know case where reseting a GPU would lead to
-bring down the PCI and the CPU with it (basicly the reset clear some
-of the GPU memory controller bit but not the GPU PCI request queue, so
-after/while reseting the GPU trigger a several request to bogus
-address on the bus, then trigger a double fault and eventually a CPU
-shutdown) . Of course here we can blame the hw designer for not having
-a proper reset.
+Great, but why put it in drivers/char/?  Why not drivers/otp/?
 
-All this vary from one GPU to another, it seems that reset have become
-more reliable on newer hw.
+> This provides sysfs entries that may
+> be used to configure the number of regions, region format and access
+> control such as write enable.
+> 
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> ---
+>  Documentation/ABI/testing/sysfs-bus-picoxcell-otp  |   37 +
+>  .../ABI/testing/sysfs-platform-picoxcell-otp       |   39 +
+>  drivers/char/Kconfig                               |    8 +
+>  drivers/char/Makefile                              |    1 +
+>  drivers/char/picoxcellotp.c                        |  929 ++++++++++++++++++++
+>  drivers/char/picoxcellotp.h                        |  230 +++++
+>  6 files changed, 1244 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-bus-picoxcell-otp
+>  create mode 100644 Documentation/ABI/testing/sysfs-platform-picoxcell-otp
+>  create mode 100644 drivers/char/picoxcellotp.c
+>  create mode 100644 drivers/char/picoxcellotp.h
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-bus-picoxcell-otp b/Documentation/ABI/testing/sysfs-bus-picoxcell-otp
+> new file mode 100644
+> index 0000000..096b892
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-bus-picoxcell-otp
+> @@ -0,0 +1,37 @@
+> +What:           /sys/bus/picoxcell-otp/
 
-Cheers,
-Jerome
+Shouldn't this just be sys/bus/otp/ ?
+
+> +Date:           March 2011
+> +KernelVersion:  2.6.40+
+> +Contact:        Jamie Iles <jamie@jamieiles.com>
+> +Description:
+> +                The picoxcell-otp bus presents a number of devices where each
+> +		device represents a region in the OTP device in the SoC. Each
+> +		region will create a device node which allows the region to be
+> +		written with read()/write() calls and the device on the bus
+> +		has attributes for controlling the redundancy format and
+> +		getting the region size.
+> +
+> +What:           /sys/bus/picoxcell-otp/devices/.../format
+> +Date:           March 2011
+> +KernelVersion:  2.6.40+
+> +Contact:        Jamie Iles <jamie@jamieiles.com>
+> +Description:
+> +                The redundancy format of the region. Valid values are:
+> +			- single-ended (1 bit of storage per data bit).
+> +			- redundant (2 bits of storage, wire-OR'd per data
+> +			  bit).
+> +			- differential (2 bits of storage, differential
+> +			  voltage per data bit).
+> +			- differential-redundant (4 bits of storage, combining
+> +			  redundant and differential).
+> +		It is possible to increase redundancy of a region but care
+> +		will be needed if there is data already in the region.
+> +
+> +What:           /sys/bus/picoxcell-otp/devices/.../size
+> +Date:           March 2011
+> +KernelVersion:  2.6.40+
+> +Contact:        Jamie Iles <jamie@jamieiles.com>
+> +Description:
+> +                The effective storage size of the region. This is the amount
+> +		of data that a user can store in the region taking into
+> +		account the number of regions and the redundancy format of the
+> +		region itself.
+> diff --git a/Documentation/ABI/testing/sysfs-platform-picoxcell-otp b/Documentation/ABI/testing/sysfs-platform-picoxcell-otp
+> new file mode 100644
+> index 0000000..e5ee711
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-platform-picoxcell-otp
+> @@ -0,0 +1,39 @@
+> +What:		/sys/devices/platform/picoxcell-otp*/write_enable
+
+Why are these in a platform subdirectory?  Shouldn't they be the devices
+listed above in the previous file?
+
+> +Date:		March 2011
+> +KernelVersion:	2.6.40+
+> +Contact:	"Jamie Iles" <jamie@jamieiles.com>
+> +Description:
+> +		This file controls whether the OTP in a Picochip PC3X3
+> +		device can be written to. If set to "enabled" then the
+> +		regions may be written, the number of regions may be
+> +		changed and the format of any region may be changed.
+> +
+> +What:		/sys/devices/platform/picoxcell-otp*/num_regions
+> +Date:		March 2011
+> +KernelVersion:	2.6.40+
+> +Contact:	"Jamie Iles" <jamie@jamieiles.com>
+> +Description:
+> +		This file controls the number of regions in the OTP device.
+> +		Valid values are 1, 2, 4 and 8. The number of regions may be
+> +		increased but never decreased. Increasing the number of
+> +		regions will create new devices on the otp bus.
+> +
+> +What:		/sys/devices/platform/picoxcell-otp*/strict_programming
+> +Date:		March 2011
+> +KernelVersion:	2.6.40+
+> +Contact:	"Jamie Iles" <jamie@jamieiles.com>
+> +Description:
+> +		This file indicates whether all words in a redundant format
+> +		must be programmed correctly to indicate success.  Disabling
+> +		this will mean that programming will be considered a success
+> +		if the word can be read back correctly in it's redundant
+> +		format.
+> +
+> +What:		/sys/devices/platform/picoxcell-otp*/bad_words
+> +Date:		March 2011
+> +KernelVersion:	2.6.40+
+> +Contact:	"Jamie Iles" <jamie@jamieiles.com>
+> +Description:
+> +		Contains a space delimited list of raw addresses that have
+> +		failed to program correctly.  This is non-persistent and may
+> +		be used by userland to work around faulty words.
+
+This isn't a valid sysfs file in that it contains more than a single
+value.  Please fix it or remove it.
+
+> +/*
+> + * Add all of the device entries to sysfs. This also includes creating the
+> + * region device nodes and sysfs entries.
+> + */
+> +static int otp_sysfs_add(struct device *dev)
+> +{
+> +	int err;
+> +
+> +	err = device_create_file(dev, &dev_attr_write_enable);
+> +	if (err)
+> +		goto out;
+> +
+> +	err = device_create_file(dev, &dev_attr_num_regions);
+> +	if (err)
+> +		goto num_regions_fail;
+> +
+> +	err = device_create_file(dev, &dev_attr_bad_words);
+> +	if (err)
+> +		goto bad_words_fail;
+> +
+> +	err = device_create_file(dev, &dev_attr_strict_programming);
+> +	if (err)
+> +		goto strict_programming_fail;
+> +
+
+Shouldn't all of these be in an attribute group like the other sysfs
+files are in this driver?  That way you add/remove them all at once.
+
+thanks,
+
+greg k-h
