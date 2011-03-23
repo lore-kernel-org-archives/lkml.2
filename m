@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933091Ab1CWWx2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 18:53:28 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58254 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932943Ab1CWWxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 18:53:10 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Arun Sharma <asharma@fb.com>, Avi Kivity <avi@redhat.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Pingtian <phan@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [GIT PULL 0/3] perf/core fixes and improvements
-Date: Wed, 23 Mar 2011 19:52:44 -0300
-Message-Id: <1300920767-936-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S933022Ab1CWXAW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 19:00:22 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34315 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932889Ab1CWXAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 19:00:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
+Subject: Re: Corrupted files after suspend to disk
+Date: Thu, 24 Mar 2011 00:00:26 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
+References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com> <201103232322.52485.rjw@sisk.pl> <AANLkTi=UMDZ+78bS-U=Kvp_PYnc_BNHH5EgJnm1nssHP@mail.gmail.com>
+In-Reply-To: <AANLkTi=UMDZ+78bS-U=Kvp_PYnc_BNHH5EgJnm1nssHP@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103240000.26788.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+> On Wed, Mar 23, 2011 at 11:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+> >> On Wed, Mar 23, 2011 at 11:11 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+> >> >> 2011/3/23 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+> >> >> >> Hi,
+> >> >> >>
+> >> >> >> I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
+> >> >> >> running Linux 2.6.37.4.
+> >> >> >> After resuming from s2disk some files are corrupted.
+> >> >> >> But when I reboot my netbook everything seems good again.
+> >> >> >>
+> >> >> >> When I saw the problem the first time the ls command segfaulted always.
+> >> >> >> I did a reboot and it worked again.
+> >> >> >>
+> >> >> >> A few days later zypper crashed. After a reboot it worked again.
+> >> >> >> And today ssh crashed. I looked a bit closer and saw it crashed
+> >> >> >> somewhere within libcrypto.
+> >> >> >> So I made copy libcrypto and rebooted.
+> >> >> >> After the reboot ssh worked again but libcrypto and the copy of it hat
+> >> >> >> a different sha1 sum!
+> >> >> >> WTF?!
+> >> >> >>
+> >> >> >> Is this a known issue?
+> >> >> >
+> >> >> > No.
+> >> >> >
+> >> >> >> dmesgs and config are attached.
+> >> >> >>
+> >> >> >> The used distribution is openSUSE 11.4 with suspend-0.80.20100129-7.1
+> >> >> >> (default from suse).
+> >> >> >> I'm using ext3 as root filesystem.
+> >> >> >> What else do you need?
+> >> >> >
+> >> >> > Whatever you can do to narrow down the problem.  At the moment I only know
+> >> >> > that it's there.
+> >> >>
+> >> >> I can reproduce the problem now.
+> >> >> After ~20 suspend and resume iterations aide finds corrupted files in /lib/.
+> >> >> It's always a very basic lib like libcrypto, libglib which is used all
+> >> >> the time on my system.
+> >> >
+> >> > Those files are never intentionally modified, right?
+> >> >
+> >> >> Maybe it's an issue like this one?
+> >> >> https://lkml.org/lkml/2010/12/2/339
+> >> >
+> >> > It might have if that patch hadn't been merged before 2.6.37.
+> >> >
+> >> > Is the system 32-bit or 64-bit?
+> >>
+> >> It's a 32-bit system.
+> >> cmp shows that the corrupted files differ in many bytes (not scattered).
+> >> The corrupted bytes are always 0 or 252.
+> >
+> > Do I understand correctly that the files apparently corrupted after resume
+> > are not corrupted any more when you reboot?
+> 
+> Yes.
+> Seems like a cache issue.
+ 
+There's a couple things you can check before we start asking other people for
+help.
 
-        Please consider pulling from:
+First, it would be good to know if things change when you save the image
+into a swap file instead of the swap partition you've been using so far
+(I believe it's documented quite well how to do that).
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+Second, please verify if using the built-in save/load hibernate code leads
+to the same issue (you can hibernate by doing "echo disk > /sys/power/state"
+to verify that).
 
-Regards,
+Of course, please test the above separately. :-)
 
-- Arnaldo
-
-Arnaldo Carvalho de Melo (3):
-  perf session: Pass evsel in event_ops->sample()
-  perf build-id: Add quirk to deal with perf.data file format breakage
-  perf symbols: Look at .dynsym again if .symtab not found
-
- tools/perf/builtin-annotate.c                      |   18 ++-----
- tools/perf/builtin-diff.c                          |    1 +
- tools/perf/builtin-inject.c                        |   11 ++++-
- tools/perf/builtin-kmem.c                          |    1 +
- tools/perf/builtin-lock.c                          |    4 +-
- tools/perf/builtin-report.c                        |   19 ++-----
- tools/perf/builtin-sched.c                         |    1 +
- tools/perf/builtin-script.c                        |   15 ++----
- tools/perf/builtin-timechart.c                     |   11 ++++
- tools/perf/util/build-id.c                         |    1 +
- tools/perf/util/header.c                           |   57 +++++++++++++++++++-
- tools/perf/util/hist.h                             |    1 +
- .../perf/util/scripting-engines/trace-event-perl.c |    1 +
- .../util/scripting-engines/trace-event-python.c    |    1 +
- tools/perf/util/session.c                          |   25 ++++++++-
- tools/perf/util/session.h                          |    7 ++-
- tools/perf/util/symbol.c                           |   25 +++++----
- tools/perf/util/trace-event-scripting.c            |    1 +
- tools/perf/util/trace-event.h                      |    1 +
- 19 files changed, 142 insertions(+), 59 deletions(-)
-
+Thanks,
+Rafael
