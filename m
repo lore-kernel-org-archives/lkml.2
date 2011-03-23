@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358Ab1CWJiq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 05:38:46 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40188 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932085Ab1CWJip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 05:38:45 -0400
-Date: Wed, 23 Mar 2011 09:38:47 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, andy.green@linaro.org,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        greg@kroah.com, grant.likely@secretlab.ca
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110323093847.55e9dbba@lxorguk.ukuu.org.uk>
-In-Reply-To: <alpine.LFD.2.00.1103222336030.11889@xanadu.home>
-References: <4D79F068.2080009@linaro.org>
-	<AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com>
-	<1300828125.2402.300.camel@pasglop>
-	<4D8924B6.8040403@linaro.org>
-	<1300842219.2402.309.camel@pasglop>
-	<alpine.LFD.2.00.1103222138320.11889@xanadu.home>
-	<1300850595.2402.320.camel@pasglop>
-	<alpine.LFD.2.00.1103222336030.11889@xanadu.home>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754410Ab1CWJnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 05:43:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57217 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753848Ab1CWJnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 05:43:06 -0400
+Date: Wed, 23 Mar 2011 09:42:53 GMT
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
+In-Reply-To: <1297874134-7008-1-git-send-email-jolsa@redhat.com>
+References: <1297874134-7008-1-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] tracing: Fix set_ftrace_filter probe function display
+Message-ID: <tip-1106b6997df7d0c0487e21fd9c9dd2ce3d4a52db@git.kernel.org>
+Git-Commit-ID: 1106b6997df7d0c0487e21fd9c9dd2ce3d4a52db
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 23 Mar 2011 09:42:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Does it make sense however to add platform data for generic probed
-> > devices ? I don't think so.
-> 
-> Generally speaking, this wouldn't make sense.  but this is a case where 
-> a generically probed device happens to be used in a very specific 
-> hardware design with its own quirks.  in that very particular case then 
-> it certainly makes some sense.
+Commit-ID:  1106b6997df7d0c0487e21fd9c9dd2ce3d4a52db
+Gitweb:     http://git.kernel.org/tip/1106b6997df7d0c0487e21fd9c9dd2ce3d4a52db
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Wed, 16 Feb 2011 17:35:34 +0100
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Tue, 22 Mar 2011 12:52:03 -0400
 
-If it's a very specific hardware design it can do its own very specific
-internal private kernel patch, or little config app in user space. There
-isn't a valid reason to inflict that complexity on the other 99.999999%
-of users.
+tracing: Fix set_ftrace_filter probe function display
 
-> actual device registration.  So, while this is true that there is a 
-> possibility for misuse, in practice this is rather unlikely to go very 
-> far without being noticed, and therefore this argument alone is rather 
-> weak in support of a significant world order change.
+If one or more function probes (like traceon) are enabled,
+and there's no other function filter, the first probe
+func is skipped (which one depends on the position in the hash).
 
-You mean it'll get missed and years later will get compiled into some
-other device and a joker with a custom USB widget will add the ids to his
-widget and declare it an exploit ?
+$ echo sys_open:traceon sys_close:traceon > ./set_ftrace_filter
+$ cat set_ftrace_filter
+#### all functions enabled ####
+sys_close:traceon:unlimited
+$
 
+The reason was, that in the case of no other function filter,
+the func_pos was not properly updated before calling t_hash_start.
 
-The other thing being overlooked is that for board specific horrors you
-can still put them in udev quite easily if your udev happens to know how
-to parse some kind of firmware provided table. That might even be bits of
-your device tree.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+LKML-Reference: <1297874134-7008-1-git-send-email-jolsa@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-The kernel simply shouldn't get involved in machine specific namespace
-fights.
-
-Alan
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 888b611..c075f4e 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1467,7 +1467,7 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
+ 		return t_hash_next(m, pos);
+ 
+ 	(*pos)++;
+-	iter->pos = *pos;
++	iter->pos = iter->func_pos = *pos;
+ 
+ 	if (iter->flags & FTRACE_ITER_PRINTALL)
+ 		return t_hash_start(m, pos);
+@@ -1502,7 +1502,6 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
+ 	if (!rec)
+ 		return t_hash_start(m, pos);
+ 
+-	iter->func_pos = *pos;
+ 	iter->func = rec;
+ 
+ 	return iter;
