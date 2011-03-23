@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab1CWJDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 05:03:00 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56265 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab1CWJC6 (ORCPT
+	id S1755994Ab1CWJGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 05:06:18 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37862 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab1CWJGR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 05:02:58 -0400
+	Wed, 23 Mar 2011 05:06:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=bVF830+ntD1gMJUdr6z6J63eFQf/I6VgA7nXtIdzl6vzSmTfJ2hWIV19d5U71Qiopx
-         EDeOiKl3AhRkYk23Jyyeq0XKPRKMbWiEZ9gfwu+zsxOBtz4dTKe6eCtt/VkGzZ4aahKr
-         vmmtDcpiy4GD2AJfQNU1K16yQfjFQSIWxePrw=
+         :cc:content-type:content-transfer-encoding;
+        b=gXurxC4DFudkXUdnuVncHvN0MwV2ex4HYPQEtYH6qL9k7ax8qFJPT5eyensEpi/LjM
+         sU/gov+vvbjvpQWdulyzksSSS+pl6+PBBdgK8g+eR54SeBwEPZ9ruxU3NCT0FtwAg5TW
+         S5ji9q/244PI/OVC/PbZ35hXU0/1Ki6MqGcDs=
 MIME-Version: 1.0
-In-Reply-To: <20110323174545.1AE2.A69D9226@jp.fujitsu.com>
-References: <20110323161354.1AD2.A69D9226@jp.fujitsu.com>
-	<20110323082423.GA1969@barrios-desktop>
-	<20110323174545.1AE2.A69D9226@jp.fujitsu.com>
-Date: Wed, 23 Mar 2011 18:02:58 +0900
-Message-ID: <AANLkTi=w62=WR5WACJGk6JNhyCYpgNhFQK3CyQ5Ag-Yj@mail.gmail.com>
-Subject: Re: [PATCH 1/5] vmscan: remove all_unreclaimable check from direct
- reclaim path completely
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nick Piggin <npiggin@kernel.dk>, Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1300868532.3522.81.camel@thor.local>
+References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
+	<1300864998.3522.71.camel@thor.local>
+	<AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
+	<1300868532.3522.81.camel@thor.local>
+Date: Wed, 23 Mar 2011 19:06:16 +1000
+Message-ID: <AANLkTi=mFKBqF48DwGsQL278grJChCVzw==D7vr49n09@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Dave Airlie <airlied@gmail.com>
+To: =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 5:44 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> > Boo.
->> > You seems forgot why you introduced current all_unreclaimable() function.
->> > While hibernation, we can't trust all_unreclaimable.
+2011/3/23 Michel Dänzer <michel@daenzer.net>:
+> On Mit, 2011-03-23 at 18:16 +1000, Dave Airlie wrote:
+>> 2011/3/23 Michel Dänzer <michel@daenzer.net>:
+>> > On Mit, 2011-03-23 at 04:18 +0000, Dave Airlie wrote:
+>> >>
+>> >> One radeon, 2 core fixes, and an interface update to allow for > 2 crtcs
+>> >> in vblank.
+>> >
+>> > [...]
+>> >
+>> >> Ilija Hadzic (1):
+>> >>       drm/kernel: vblank wait on crtc > 1
+>> >
+>> > This patch was still being debated yesterday, are you deliberately
+>> > pushing it regardless? Once it hits mainline, it'll be pretty much set
+>> > in stone.
 >>
->> Hmm. AFAIR, the why we add all_unreclaimable is when the hibernation is going on,
->> kswapd is freezed so it can't mark the zone->all_unreclaimable.
->> So I think hibernation can't be a problem.
->> Am I miss something?
+>> From what I can see it was the userspace patches being debated, this
+>> one seemed fine and the interface looked okay to me.
 >
-> Ahh, I missed. thans correct me. Okay, I recognized both mine and your works.
-> Can you please explain why do you like your one than mine?
+> The author ignored my suggestions to make the patch smaller and simpler,
+> more maintainable and more future-proof all at once.
 
-Just _simple_ :)
-I don't want to change many lines although we can do it simple and very clear.
+It was already small and I'm not sure merging the flags made it more
+maintainable. Its always
+being a slightly painful ioctl, and hopefully any future changes add a
+new ioctl esp if we want 64-bit values.
 
->
-> btw, Your one is very similar andrey's initial patch. If your one is
-> better, I'd like to ack with andrey instead.
+The only comment I really thought was necessary was changing the CAP
+name, but since that isn't
+part of the ABI (just the number) we can quickly fix it with a follow-up.
 
-When Andrey sent a patch, I though this as zone_reclaimable() is right
-place to check it than out of zone_reclaimable. Why I didn't ack is
-that Andrey can't explain root cause but you did so you persuade me.
-
-I don't mind if Andrey move the check in zone_reclaimable and resend
-or I resend with concrete description.
-
-Anyway, most important thing is good description to show the root cause.
-It is applied to your patch, too.
-You should have written down root cause in description.
-
--- 
-Kind regards,
-Minchan Kim
+Dave.
+Dave.
