@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab1CWWZK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 18:25:10 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:35322 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab1CWWZH (ORCPT
+	id S1756816Ab1CWWZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 18:25:24 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:40921 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756802Ab1CWWZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 18:25:07 -0400
-Date: Wed, 23 Mar 2011 15:24:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Robert Love <robert.w.love@intel.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
-        Jarek Poplawski <jarkao2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@open-fcoe.org" <devel@open-fcoe.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
- kfree_rcu()
-Message-ID: <20110323222456.GC2322@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4D82D071.5020703@cn.fujitsu.com>
- <4D82D3FF.2080303@cn.fujitsu.com>
- <4D82D45A.30102@cn.fujitsu.com>
- <1300814913.19083.427.camel@fritz>
- <20110323065014.GU2322@linux.vnet.ibm.com>
- <1300889151.15899.4.camel@mulgrave.site>
+	Wed, 23 Mar 2011 18:25:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=vF2vVn0Kb+VRZRn46DLvI/dzRQBSsGpb69EBm7MEaSNT5Zn8yd5OJZ1OkAjvqvX9mA
+         bDAPtbFcCxy9bGu8lv0Q==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300889151.15899.4.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 23 Mar 2011 15:25:07 -0700
+Message-ID: <AANLkTiko8EkxhsdmJPNWfrecxRY4ibmbp_3UeHirTOs4@mail.gmail.com>
+Subject: ARM Tegra updates for 2.6.39
+From: Colin Cross <ccross@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Tegra Mailing List <linux-tegra@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 09:05:51AM -0500, James Bottomley wrote:
-> On Tue, 2011-03-22 at 23:50 -0700, Paul E. McKenney wrote:
-> > The kfree_rcu() definition is as
-> > follows:
-> > 
-> > #define kfree_rcu(ptr, rcu_head)					\
-> > 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
-> 
-> Isn't this one of those cases where the obvious use of the interface is
-> definitely wrong?
-> 
-> It's also another nasty pseudo C prototype.  I know we do this sort of
-> thing for container_of et al, but I don't really think we want to extend
-> it.
-> 
-> Why not make the interface take a pointer to the embedding structure and
-> one to the rcu_head ... that way all pointer mathematics can be
-> contained inside the RCU routines.
+Hi Linus,
+Please pull updates for Tegra from:
 
-Hello, James,
+ git://android.git.kernel.org/kernel/tegra.git for-linus
 
-If you pass in a pair of pointers, then it is difficult for RCU to detect
-bugs where the two pointers are unrelated.  Yes, you can do some sanity
-checks, but these get cumbersome and have corner cases where they can
-be fooled.  In contrast, Lai's interface allows the compiler to do the
-needed type checking -- unless the second argument is a field of type
-struct rcu_head in the structure pointed to by the first argument, the
-compiler will complain.
+These are changes that depended on the i2c and asoc trees that have
+already been merged.
 
-Either way, the pointer mathematics are buried in the RCU API.
+Thanks,
+Colin
 
-Or am I missing something here?
+The following changes since commit c871fe663a6368fd0e98f5a3bfd81b0b9c591266:
 
-							Thanx, Paul
+  Merge branch 'for-2639/i2c/i2c-tegra' of
+git://git.fluff.org/bjdooks/linux into for-next-i2c (2011-03-03
+14:17:49 -0800)
+
+are available in the git repository at:
+
+  git://android.git.kernel.org/kernel/tegra.git for-linus
+
+Colin Cross (1):
+      Merge branch 'boards-for-next' of
+git://git.kernel.org/.../olof/tegra-2.6 into for-next
+
+Marc Dietrich (1):
+      ARM: tegra: Add Toshiba AC100 support
+
+Mike Rapoport (4):
+      ARM: tegra: trimslice: enable MMC/SD slots
+      ARM: tegra: harmony: update PCI-e initialization sequence
+      ARM: tegra: update defconfig
+      ARM: tegra: harmony: initialize the TPS65862 PMIC
+
+Olof Johansson (4):
+      ARM: tegra: seaboard: register i2c devices
+      ARM: tegra: harmony: register i2c devices
+      ARM: tegra: enable new drivers in defconfig
+      Merge branch 'trimslice/upstream' of
+git://git.kernel.org/.../rppt/linux-tegra into boards-for-next
+
+Stephen Warren (5):
+      ARM: tegra: add devices.c entries for audio
+      ARM: tegra: create defines for SD-related GPIO names
+      ARM: tegra: harmony: Beginnings of audio support
+      ARM: tegra: harmony: I2C-related portions of audio support
+      ARM: tegra: harmony: Set WM8903 gpio_base
+
+ arch/arm/configs/tegra_defconfig             |   29 +++++-
+ arch/arm/mach-tegra/Kconfig                  |    5 +
+ arch/arm/mach-tegra/Makefile                 |    4 +
+ arch/arm/mach-tegra/board-harmony-pcie.c     |   24 ++++-
+ arch/arm/mach-tegra/board-harmony-pinmux.c   |   28 +++--
+ arch/arm/mach-tegra/board-harmony-power.c    |  117 +++++++++++++++++++
+ arch/arm/mach-tegra/board-harmony.c          |   95 +++++++++++++++-
+ arch/arm/mach-tegra/board-harmony.h          |   15 +++
+ arch/arm/mach-tegra/board-paz00-pinmux.c     |  157 ++++++++++++++++++++++++++
+ arch/arm/mach-tegra/board-paz00.c            |  128 +++++++++++++++++++++
+ arch/arm/mach-tegra/board-paz00.h            |   29 +++++
+ arch/arm/mach-tegra/board-seaboard-pinmux.c  |   11 +-
+ arch/arm/mach-tegra/board-seaboard.c         |   68 ++++++++++-
+ arch/arm/mach-tegra/board-seaboard.h         |    3 +
+ arch/arm/mach-tegra/board-trimslice-pinmux.c |    9 ++
+ arch/arm/mach-tegra/board-trimslice.c        |   19 +++
+ arch/arm/mach-tegra/board-trimslice.h        |    3 +
+ arch/arm/mach-tegra/devices.c                |   70 ++++++++++++
+ arch/arm/mach-tegra/devices.h                |    4 +
+ arch/arm/mach-tegra/include/mach/iomap.h     |    3 +
+ 20 files changed, 787 insertions(+), 34 deletions(-)
+ create mode 100644 arch/arm/mach-tegra/board-harmony-power.c
+ create mode 100644 arch/arm/mach-tegra/board-paz00-pinmux.c
+ create mode 100644 arch/arm/mach-tegra/board-paz00.c
+ create mode 100644 arch/arm/mach-tegra/board-paz00.h
