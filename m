@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933349Ab1CWXTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 19:19:54 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:44826 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933247Ab1CWXTw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 19:19:52 -0400
-Date: Wed, 23 Mar 2011 17:19:49 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: paulmck@linux.vnet.ibm.com, Robert Love <robert.w.love@intel.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
-        Jarek Poplawski <jarkao2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@open-fcoe.org" <devel@open-fcoe.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
-	kfree_rcu()
-Message-ID: <20110323231948.GE13806@parisc-linux.org>
-References: <4D82D071.5020703@cn.fujitsu.com> <4D82D3FF.2080303@cn.fujitsu.com> <4D82D45A.30102@cn.fujitsu.com> <1300814913.19083.427.camel@fritz> <20110323065014.GU2322@linux.vnet.ibm.com> <1300889151.15899.4.camel@mulgrave.site>
+	id S933193Ab1CWXhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 19:37:08 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:58769 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933061Ab1CWXhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 19:37:05 -0400
+Date: Wed, 23 Mar 2011 16:37:01 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>, tytso@mit.edu,
+        shli@kernel.org, neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
+        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
+        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
+        hch@lst.de, josef@redhat.com
+Subject: Re: [PATCH 3/3] block: reimplement FLUSH/FUA to support merge
+Message-ID: <20110323233701.GA24354@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <1295625598-15203-1-git-send-email-tj@kernel.org> <1295625598-15203-4-git-send-email-tj@kernel.org> <20110121185617.GI12072@redhat.com> <20110123102526.GA23121@htj.dyndns.org> <20110124203155.GA32261@tux1.beaverton.ibm.com> <20110125102128.GO27510@htj.dyndns.org> <4D3EB66C.4090006@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300889151.15899.4.camel@mulgrave.site>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D3EB66C.4090006@kernel.dk>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 09:05:51AM -0500, James Bottomley wrote:
-> > #define kfree_rcu(ptr, rcu_head)					\
-> > 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
+On Tue, Jan 25, 2011 at 12:39:24PM +0100, Jens Axboe wrote:
+> On 2011-01-25 11:21, Tejun Heo wrote:
+> > Hello, Darrick.
+> > 
+> > On Mon, Jan 24, 2011 at 12:31:55PM -0800, Darrick J. Wong wrote:
+> >>> So, I think it's better to start with something simple and improve it
+> >>> with actual testing.  If the current simple implementation can match
+> >>> Darrick's previous numbers, let's first settle the mechanisms.  We can
+> >>
+> >> Yep, the fsync-happy numbers more or less match... at least for 2.6.37:
+> >> http://tinyurl.com/4q2xeao
+> > 
+> > Good to hear.  Thanks for the detailed testing.
+> > 
+> >> I'll give 2.6.38-rc2 a try later, though -rc1 didn't boot for me, so these
+> >> numbers are based on a backport to .37. :(
+> > 
+> > Well, there hasn' been any change in the area during the merge window
+> > anyway, so I think testing on 2.6.37 should be fine.
+> > 
+> >>> I don't really think we should design the whole thing around broken
+> >>> devices which incorrectly report writeback cache when it need not.
+> >>> The correct place to work around that is during device identification
+> >>> not in the flush logic.
+> >>
+> >> elm3a4_sas and elm3c71_extsas advertise writeback cache yet the
+> >> flush completion times are suspiciously low.  I suppose it could be
+> >> useful to disable flushes to squeeze out that last bit of
+> >> performance, though I don't know how one goes about querying the
+> >> disk array to learn if there's a battery behind the cache.  I guess
+> >> the current mechanism (admin knob that picks a safe default) is good
+> >> enough.
+> > 
+> > Yeap, that or a blacklist of devices which lie.
+> > 
+> > Jens, what do you think?  If you don't object, let's put this through
+> > linux-next.
 > 
-> Isn't this one of those cases where the obvious use of the interface is
-> definitely wrong?
+> I like the approach, I'll queue it up for 2.6.39.
 
-But it's a compile time breakage if you use it wrong, not runtime.
+Is this patch set still on the merge list for 2.6.39?
 
-> It's also another nasty pseudo C prototype.  I know we do this sort of
-> thing for container_of et al, but I don't really think we want to extend
-> it.
-
-We do it for list_entry, list_for_each_entry, etc.  And those are very
-widespread within the kernel.
-
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+--D
+> 
+> -- 
+> Jens Axboe
+> 
