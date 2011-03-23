@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab1CWPUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:20:08 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:57242 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932963Ab1CWPUG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:20:06 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=EpuXzZWxSTVoBGd1WalSTzKeab875FVd3qBQN9ehUXE/RjoZDyLLz7rsmczoFD+SUIB8Xqo0HB59BodbD+hXQ7t5T6BeWwj6xb6+13Sz6ZJMCzjXqTV98s5tIVBBZBRC;
-Date: Wed, 23 Mar 2011 08:20:02 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, <devel@driverdev.osuosl.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Arnd Bergmann <arnd@arndb.de>, Vitaly Wool <vitalywool@gmail.com>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
-        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-Subject: Re: [PATCH 1/2] staging: Add ST-Ericsson CG2900 driver
-Message-Id: <20110323082002.bd60cea1.rdunlap@xenotime.net>
-In-Reply-To: <1300888771-26437-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-References: <1300888771-26437-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
+	id S933083Ab1CWPU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:20:26 -0400
+Received: from mout.perfora.net ([74.208.4.194]:53205 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933031Ab1CWPUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 11:20:23 -0400
+From: Stephen Wilson <wilsons@start.ca>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Stephen Wilson <wilsons@start.ca>
+Subject: [PATCH v2 resend 08/12] mm: implement access_remote_vm
+Date: Wed, 23 Mar 2011 10:43:57 -0400
+Message-Id: <1300891441-16280-9-git-send-email-wilsons@start.ca>
+X-Mailer: git-send-email 1.7.3.5
+In-Reply-To: <1300891441-16280-1-git-send-email-wilsons@start.ca>
+References: <1300891441-16280-1-git-send-email-wilsons@start.ca>
+X-Provags-ID: V02:K0:GxY913RmnpaGabQgVrNcBo+6ZS+ITYtb0+Vx8/DttqQ
+ Nu3TpgStasCU2WtA52xQY0gK0Vj1HrdQsSSj2ZN94763A9OCH6
+ otwJeohNGysMr/rdFyVLiPXYTqt637IWcPw9ehOIfFoCmpvyTB
+ gqJlyETQy4gOfA2E5ImxLzpuXgQFsgIGxhuhEKnkQq276yX+cw
+ uxmvnJZf8IpIV/AEb/M7tjD5DWWuB91af/ENgCU9Bw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Mar 2011 14:59:31 +0100 Par-Gunnar Hjalmdahl wrote:
+Provide an alternative to access_process_vm that allows the caller to obtain a
+reference to the supplied mm_struct.
 
-> This patch adds support for the ST-Ericsson CG2900
-> Connectivity Combo controller (Bluetooth, FM, GPS).
-> 
-> diff --git a/drivers/staging/cg2900/Kconfig b/drivers/staging/cg2900/Kconfig
-> new file mode 100644
-> index 0000000..d0ba5c7
-> --- /dev/null
-> +++ b/drivers/staging/cg2900/Kconfig
-> @@ -0,0 +1,52 @@
-> +#
-> +# CG2900
-> +#
-> +
-> +config CG2900
-> +	tristate "Support ST-Ericsson CG2900 main structure"
-> +	depends on NET && MFD_SUPPORT
-> +	help
-> +	  Support for ST-Ericsson CG2900 Connectivity Combo controller main structure.
-> +	  Supports multiple functionalities muxed over a Bluetooth HCI H:4 interface.
-> +	  CG2900 support Bluetooth, FM radio, and GPS.
-> +
-> +config CG2900_CHIP
-> +	tristate "Support CG2900 Connectivity controller"
-> +	depends on CG2900
-> +	help
-> +	  Support for ST-Ericsson CG2900 Connectivity Controller
-> +
-> +config STLC2690_CHIP
-> +	tristate "Support STLC2690 Connectivity controller"
-> +	depends on CG2900
-> +	help
-> +	  Support for ST-Ericsson STLC2690 Connectivity Controller
-> +
-> +config CG2900_UART
-> +	tristate "Support CG2900 UART transport"
-> +	depends on CG2900
-> +	select BT
-> +	select BT_HCIUART
-> +	help
-> +	  Support for UART as transport for ST-Ericsson CG2900 Connectivity
-> +	  Controller
-> +
-> +config CG2900_AUDIO
-> +	tristate "Support CG2900 audio interface"
-> +	depends on CG2900
-> +	help
-> +	  Support for ST-Ericsson CG2900 Connectivity audio interface. Gives a
-> +	  module the ability to setup audio paths within the CG2900 controller.
-> +
-
-Just to be clear:  the cg2900_audio driver does not use any current kernel
-sound/audio interfaces, right?
-
-
-> +config CG2900_TEST
-> +	tristate "Support CG2900 Test Char Device"
-> +	depends on CG2900
-> +	help
-> +	  Support for ST-Ericsson CG2900 Test Character Device.
-> +
-> +config BT_CG2900
-> +	tristate "ST-Ericsson CG2900 Bluetooth driver"
-> +	depends on CG2900 && BT
-> +	help
-> +	  Select if ST-Ericsson CG2900 Connectivity controller shall be used as
-> +	  Bluetooth controller for BlueZ.
-
-
+Signed-off-by: Stephen Wilson <wilsons@start.ca>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ include/linux/mm.h |    2 ++
+ mm/memory.c        |   16 ++++++++++++++++
+ 2 files changed, 18 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 694512d..e5fde8a 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -964,6 +964,8 @@ static inline int handle_mm_fault(struct mm_struct *mm,
+ 
+ extern int make_pages_present(unsigned long addr, unsigned long end);
+ extern int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write);
++extern int access_remote_vm(struct mm_struct *mm, unsigned long addr,
++		void *buf, int len, int write);
+ 
+ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 			unsigned long start, int nr_pages, int write, int force,
+diff --git a/mm/memory.c b/mm/memory.c
+index 68eec4f..c26e4f9 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3654,6 +3654,22 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
+ 	return buf - old_buf;
+ }
+ 
++/**
++ * @access_remote_vm - access another process' address space
++ * @mm:		the mm_struct of the target address space
++ * @addr:	start address to access
++ * @buf:	source or destination buffer
++ * @len:	number of bytes to transfer
++ * @write:	whether the access is a write
++ *
++ * The caller must hold a reference on @mm.
++ */
++int access_remote_vm(struct mm_struct *mm, unsigned long addr,
++		void *buf, int len, int write)
++{
++	return __access_remote_vm(NULL, mm, addr, buf, len, write);
++}
++
+ /*
+  * Access another process' address space.
+  * Source/target buffer must be kernel space,
+-- 
+1.7.3.5
+
