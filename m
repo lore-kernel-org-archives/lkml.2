@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1CWC0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 22:26:46 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42688 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab1CWC0p (ORCPT
+	id S1754550Ab1CWCb3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 22:31:29 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50641
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751639Ab1CWCb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 22:26:45 -0400
-Date: Tue, 22 Mar 2011 22:26:39 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: andy.green@linaro.org, Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        greg@kroah.com, grant.likely@secretlab.ca
-Subject: Re: RFC: Platform data for onboard USB assets
-In-Reply-To: <1300842219.2402.309.camel@pasglop>
-Message-ID: <alpine.LFD.2.00.1103222138320.11889@xanadu.home>
-References: <4D79F068.2080009@linaro.org> <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com> <1300828125.2402.300.camel@pasglop>  <4D8924B6.8040403@linaro.org> <1300842219.2402.309.camel@pasglop>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 22 Mar 2011 22:31:28 -0400
+Date: Tue, 22 Mar 2011 19:32:06 -0700 (PDT)
+Message-Id: <20110322.193206.28821045.davem@davemloft.net>
+To: pekane52@gmail.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        cxzhang@watson.ibm.com, sds@tycho.nsa.gov, jmorris@namei.org,
+        eparis@parisplace.org
+Subject: Re: [PATCH v2] net/unix: Add secdata to unix_stream msgs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1300840717-4413-1-git-send-email-pekane52@gmail.com>
+References: <1300840717-4413-1-git-send-email-pekane52@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Mar 2011, Benjamin Herrenschmidt wrote:
+From: Pat Kane <pekane52@gmail.com>
+Date: Tue, 22 Mar 2011 19:38:37 -0500
 
-> On Tue, 2011-03-22 at 22:37 +0000, Andy Green wrote:
-> > > that a device-tree based approach is much better in the long run
-> > (and
-> > > more flexible) despite Andy odd quasi-religious aversion for it.
-> > 
-> > As Mark Brown wrote earlier about this, the Device Tree
-> > "implementation 
-> > just isn't there in mainline".
+> The unix_dgram routines add secdata to socket messages,
+> but the unix_stream routines do not. I have added the
+> two missing lines of code.
 > 
-> Right and will take even longer to get there as long as short sighted
-> people like yourself appear to run some kind of religious battle against
-> it for no good technical reason that I can fathom so far.
+> Signed-off-by: Pat Kane <pekane52@gmail.com>
 
-Sorry Ben, but you are the one who sounds like a priest here, having 
-invoked the "religious" qualifier twice in a row in this thread.
+The security hooks appear to be only intended to operate on datagram
+sockets, and as such I think the omission of UNIX stream sockets was
+very much on purpose.
 
-I think that Andy is asking absurdly good questions which are backed by 
-candid logic and reasoning.  If anything, his arguments are purely 
-technical and extremely practical. And so far all he's got for answers 
-was rather subjective, emotionally charged and even dogmatic.
+The SELINUX hook implementations even have "_dgram()" in their names.
 
-With regards to DT on ARM I'm rather "softly" convinced this is a good 
-thing.  However seeing a persisting lack of truly technical answers to 
-Andy's questions is rather disturbing, and makes me wish for much more 
-than the current hype around DT which appears to fall flat when 
-challenged.
+Catherine Zhang added to CC: as she last made modifications to these
+hooks.
 
-There is one hard fact that no one can ignore: DT support on ARM still 
-has a long way to go before it is truly usable.  The world just can't 
-stop turning until this is ready.
-
-
-Nicolas
+> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+> index 1663e1a..8753cdd 100644
+> --- a/net/unix/af_unix.c
+> +++ b/net/unix/af_unix.c
+> @@ -1642,6 +1642,8 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
+>  		max_level = err + 1;
+>  		fds_sent = true;
+>  
+> +		unix_get_secdata(siocb->scm, skb);
+> +
+>  		err = memcpy_fromiovec(skb_put(skb, size), msg->msg_iov, size);
+>  		if (err) {
+>  			kfree_skb(skb);
+> @@ -1930,6 +1932,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+>  		} else {
+>  			/* Copy credentials */
+>  			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
+> +			unix_set_secdata(siocb->scm, skb);
+>  			check_creds = 1;
+>  		}
+>  
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
