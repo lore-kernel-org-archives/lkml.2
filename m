@@ -1,112 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933059Ab1CWPSb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:18:31 -0400
-Received: from mout.perfora.net ([74.208.4.194]:49898 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932980Ab1CWPS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:18:27 -0400
-From: Stephen Wilson <wilsons@start.ca>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH v2 resend 07/12] mm: factor out main logic of access_process_vm
-Date: Wed, 23 Mar 2011 10:43:56 -0400
-Message-Id: <1300891441-16280-8-git-send-email-wilsons@start.ca>
-X-Mailer: git-send-email 1.7.3.5
-In-Reply-To: <1300891441-16280-1-git-send-email-wilsons@start.ca>
-References: <1300891441-16280-1-git-send-email-wilsons@start.ca>
-X-Provags-ID: V02:K0:/+Sg5yra0gyejMTcvEmnp3nFu4/HgHn38wOJWX95xcQ
- HZ8RCWpQEu98BrFpIRKrfOIfAZzmEgJYevBiy8UTk0r7ZyIJKf
- JWzle58COVc2KimkdgQGcolx4px4lShJ+i+aMWsrGNLTtqNC2f
- RCybcfHEg2TXK3uQVxnBybXkzILMn5InsP92MHpO9x68WSOIpA
- djxdVyQyS5aWDZiNKUZhzx+ZWWQyraCR+z4MvtD9ZQ=
+	id S933065Ab1CWPUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:20:08 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:57242 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932963Ab1CWPUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 11:20:06 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=EpuXzZWxSTVoBGd1WalSTzKeab875FVd3qBQN9ehUXE/RjoZDyLLz7rsmczoFD+SUIB8Xqo0HB59BodbD+hXQ7t5T6BeWwj6xb6+13Sz6ZJMCzjXqTV98s5tIVBBZBRC;
+Date: Wed, 23 Mar 2011 08:20:02 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, <devel@driverdev.osuosl.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>, Vitaly Wool <vitalywool@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
+        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+Subject: Re: [PATCH 1/2] staging: Add ST-Ericsson CG2900 driver
+Message-Id: <20110323082002.bd60cea1.rdunlap@xenotime.net>
+In-Reply-To: <1300888771-26437-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+References: <1300888771-26437-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce an internal helper __access_remote_vm and base access_process_vm on
-top of it.  This new method may be called with a NULL task_struct if page fault
-accounting is not desired.  This code will be shared with a new address space
-accessor that is independent of task_struct.
+On Wed, 23 Mar 2011 14:59:31 +0100 Par-Gunnar Hjalmdahl wrote:
 
-Signed-off-by: Stephen Wilson <wilsons@start.ca>
+> This patch adds support for the ST-Ericsson CG2900
+> Connectivity Combo controller (Bluetooth, FM, GPS).
+> 
+> diff --git a/drivers/staging/cg2900/Kconfig b/drivers/staging/cg2900/Kconfig
+> new file mode 100644
+> index 0000000..d0ba5c7
+> --- /dev/null
+> +++ b/drivers/staging/cg2900/Kconfig
+> @@ -0,0 +1,52 @@
+> +#
+> +# CG2900
+> +#
+> +
+> +config CG2900
+> +	tristate "Support ST-Ericsson CG2900 main structure"
+> +	depends on NET && MFD_SUPPORT
+> +	help
+> +	  Support for ST-Ericsson CG2900 Connectivity Combo controller main structure.
+> +	  Supports multiple functionalities muxed over a Bluetooth HCI H:4 interface.
+> +	  CG2900 support Bluetooth, FM radio, and GPS.
+> +
+> +config CG2900_CHIP
+> +	tristate "Support CG2900 Connectivity controller"
+> +	depends on CG2900
+> +	help
+> +	  Support for ST-Ericsson CG2900 Connectivity Controller
+> +
+> +config STLC2690_CHIP
+> +	tristate "Support STLC2690 Connectivity controller"
+> +	depends on CG2900
+> +	help
+> +	  Support for ST-Ericsson STLC2690 Connectivity Controller
+> +
+> +config CG2900_UART
+> +	tristate "Support CG2900 UART transport"
+> +	depends on CG2900
+> +	select BT
+> +	select BT_HCIUART
+> +	help
+> +	  Support for UART as transport for ST-Ericsson CG2900 Connectivity
+> +	  Controller
+> +
+> +config CG2900_AUDIO
+> +	tristate "Support CG2900 audio interface"
+> +	depends on CG2900
+> +	help
+> +	  Support for ST-Ericsson CG2900 Connectivity audio interface. Gives a
+> +	  module the ability to setup audio paths within the CG2900 controller.
+> +
+
+Just to be clear:  the cg2900_audio driver does not use any current kernel
+sound/audio interfaces, right?
+
+
+> +config CG2900_TEST
+> +	tristate "Support CG2900 Test Char Device"
+> +	depends on CG2900
+> +	help
+> +	  Support for ST-Ericsson CG2900 Test Character Device.
+> +
+> +config BT_CG2900
+> +	tristate "ST-Ericsson CG2900 Bluetooth driver"
+> +	depends on CG2900 && BT
+> +	help
+> +	  Select if ST-Ericsson CG2900 Connectivity controller shall be used as
+> +	  Bluetooth controller for BlueZ.
+
+
 ---
- mm/memory.c |   35 +++++++++++++++++++++++++----------
- 1 files changed, 25 insertions(+), 10 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 36445e3..68eec4f 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3593,20 +3593,15 @@ int generic_access_phys(struct vm_area_struct *vma, unsigned long addr,
- #endif
- 
- /*
-- * Access another process' address space.
-- * Source/target buffer must be kernel space,
-- * Do not walk the page table directly, use get_user_pages
-+ * Access another process' address space as given in mm.  If non-NULL, use the
-+ * given task for page fault accounting.
-  */
--int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write)
-+static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
-+		unsigned long addr, void *buf, int len, int write)
- {
--	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
- 	void *old_buf = buf;
- 
--	mm = get_task_mm(tsk);
--	if (!mm)
--		return 0;
--
- 	down_read(&mm->mmap_sem);
- 	/* ignore errors, just check how much was successfully transferred */
- 	while (len) {
-@@ -3655,12 +3650,32 @@ int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, in
- 		addr += bytes;
- 	}
- 	up_read(&mm->mmap_sem);
--	mmput(mm);
- 
- 	return buf - old_buf;
- }
- 
- /*
-+ * Access another process' address space.
-+ * Source/target buffer must be kernel space,
-+ * Do not walk the page table directly, use get_user_pages
-+ */
-+int access_process_vm(struct task_struct *tsk, unsigned long addr,
-+		void *buf, int len, int write)
-+{
-+	struct mm_struct *mm;
-+	int ret;
-+
-+	mm = get_task_mm(tsk);
-+	if (!mm)
-+		return 0;
-+
-+	ret = __access_remote_vm(tsk, mm, addr, buf, len, write);
-+	mmput(mm);
-+
-+	return ret;
-+}
-+
-+/*
-  * Print the name of a VMA.
-  */
- void print_vma_addr(char *prefix, unsigned long ip)
--- 
-1.7.3.5
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
