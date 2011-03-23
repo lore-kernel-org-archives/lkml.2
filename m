@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab1CWWqh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 18:46:37 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:12387 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932785Ab1CWWqg (ORCPT
+	id S932915Ab1CWWxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 18:53:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53626 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932656Ab1CWWw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 18:46:36 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6294"; a="81490359"
-From: David Brown <davidb@codeaurora.org>
-To: Carl Vanderlip <carlv@codeaurora.org>
-Cc: Daniel Walker <dwalker@fifo99.com>, Russell King <linux@arm.linux.org.uk>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Colin Cross <ccross@android.com>, linux-fbdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/20] video: msm: Split out MDP2.2 HW specific code.
-References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
-	<1300485423-27281-1-git-send-email-carlv@codeaurora.org>
-	<1300885912.6117.16.camel@m0nster> <4D8A5B44.9050306@codeaurora.org>
-Date: Wed, 23 Mar 2011 15:47:15 -0700
-In-Reply-To: <4D8A5B44.9050306@codeaurora.org> (Carl Vanderlip's message of
-	"Wed, 23 Mar 2011 13:42:44 -0700")
-Message-ID: <8yay6455ua4.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 23 Mar 2011 18:52:59 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 3/3] perf symbols: Look at .dynsym again if .symtab not found
+Date: Wed, 23 Mar 2011 19:52:47 -0300
+Message-Id: <1300920767-936-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1300920767-936-1-git-send-email-acme@infradead.org>
+References: <1300920767-936-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23 2011, Carl Vanderlip wrote:
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-> On 03/23/2011 06:11 AM, Daniel Walker wrote:
->> On Fri, 2011-03-18 at 14:57 -0700, Carl Vanderlip wrote:
->>> index df9d74e..d6e75c3 100644
->>> --- a/arch/arm/mach-msm/Kconfig
->>> +++ b/arch/arm/mach-msm/Kconfig
->>> @@ -76,6 +76,11 @@ config HAS_MSM_DEBUG_UART_PHYS
->>>  config  MSM_VIC
->>>         bool
->>>  
->>> +config MSM_MDP22
->>> +       bool
->>> +       depends on ARCH_MSM7X00A
->>> +       default y
->>> + 
->> You should remove the "default y" and this should be moved to a Kconfig
->> under video (shouldn't be added into mach-msm).
->>
->> Daniel
->>
-> What about removing the 'depends on' and 'default y' and making it be
-> selected by MSM7X00A?
+The original intent of the code was to repeat the search with
+want_symtab = 0. But as the code stands now, we never hit the "default"
+case of the switch statement. Which means we never repeat the search.
 
-But why should the feature be in the Kconfig for arch/arm/mach-msm when
-the driver is under drivers/video/msm?  If it does indeed need
-configuration, why not put a Kconfig under drivers/video/msm?
+Tested-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Reported-by: Arun Sharma <asharma@fb.com>
+Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Dave Martin <dave.martin@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol.c |   25 +++++++++++++------------
+ 1 files changed, 13 insertions(+), 12 deletions(-)
 
-The last patch does select this, so it shouldn't need to get a default.
-
-Does the code work if both MDP22 and MDP31 are defined?  Eventually, it
-will be possible to enable multiple SOCs, so this driver will need to be
-able to handle that determination at run-time.
-
-David 
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 651dbfe..17df793 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1486,7 +1486,9 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 	 * On the first pass, only load images if they have a full symtab.
+ 	 * Failing that, do a second pass where we accept .dynsym also
+ 	 */
+-	for (self->symtab_type = SYMTAB__BUILD_ID_CACHE, want_symtab = 1;
++	want_symtab = 1;
++restart:
++	for (self->symtab_type = SYMTAB__BUILD_ID_CACHE;
+ 	     self->symtab_type != SYMTAB__NOT_FOUND;
+ 	     self->symtab_type++) {
+ 		switch (self->symtab_type) {
+@@ -1536,17 +1538,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 			snprintf(name, size, "%s%s", symbol_conf.symfs,
+ 				 self->long_name);
+ 			break;
+-
+-		default:
+-			/*
+-			 * If we wanted a full symtab but no image had one,
+-			 * relax our requirements and repeat the search.
+-			 */
+-			if (want_symtab) {
+-				want_symtab = 0;
+-				self->symtab_type = SYMTAB__BUILD_ID_CACHE;
+-			} else
+-				continue;
++		default:;
+ 		}
+ 
+ 		/* Name is now the name of the next image to try */
+@@ -1573,6 +1565,15 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 		}
+ 	}
+ 
++	/*
++	 * If we wanted a full symtab but no image had one,
++	 * relax our requirements and repeat the search.
++	 */
++	if (ret <= 0 && want_symtab) {
++		want_symtab = 0;
++		goto restart;
++	}
++
+ 	free(name);
+ 	if (ret < 0 && strstr(self->name, " (deleted)") != NULL)
+ 		return 0;
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.6.2.5
+
