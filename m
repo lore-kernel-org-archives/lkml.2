@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab1CWSPk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 14:15:40 -0400
-Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:45667 "HELO
-	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932098Ab1CWSPj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 14:15:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <1300902477-6608-1-git-send-email-roland@kernel.org>
-References: <1300902477-6608-1-git-send-email-roland@kernel.org>
-From: Roland Dreier <roland@kernel.org>
-Date: Wed, 23 Mar 2011 11:15:17 -0700
-X-Google-Sender-Auth: NpPv-mI4I5XJcJCocPRmD-8ffdA
-Message-ID: <AANLkTimGvTrus1r38pPN4v0ZUgN-dqoUaR-JH93SSrCz@mail.gmail.com>
-Subject: Re: [GIT PULL] please pull infiniband.git
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756400Ab1CWSUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 14:20:13 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:57964 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754796Ab1CWSUM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 14:20:12 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=AL/2Hp4mpTISowlt1JxbgJ5TB8J8ZYyg/Zxfz90SElyQ1OPY8rnaZ1RCJabQHgvw9PEdUGTJ1kSe27KbciXMYG868qnvrGWFPGO20IjlEJOA5ftcyNrZdelUi83ks94y;
+Date: Wed, 23 Mar 2011 11:20:06 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Andreas Hartmann <andihartmann@freenet.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: intel_ips produces constant load of 1
+Message-ID: <20110323112006.6a2d975b@jbarnes-desktop>
+In-Reply-To: <4D8A38DD.80207@dualc.maya.org>
+References: <im2ik4$3dd$1@ID-44327.news.uni-berlin.de>
+	<20110321110404.6a71a404@jbarnes-desktop>
+	<20110322132555.715dc096@jbarnes-desktop>
+	<4D8A38DD.80207@dualc.maya.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 10:47 AM, Roland Dreier <roland@kernel.org> wrote:
-> drivers/infiniband/core/addr.c           |    2 +-
->  drivers/infiniband/core/agent.c          |    3 +-
->  drivers/infiniband/hw/mthca/mthca_main.c |    3 +
->  drivers/infiniband/hw/nes/nes.c          |    2 +-
->  drivers/infiniband/ulp/srp/ib_srp.c      |  725 ++++++++++++++++++++----------
->  drivers/infiniband/ulp/srp/ib_srp.h      |   38 ++-
->  6 files changed, 521 insertions(+), 252 deletions(-)
+On Wed, 23 Mar 2011 19:15:57 +0100
+Andreas Hartmann <andihartmann@freenet.de> wrote:
 
-Somehow I missed a hunk of
+> Jesse Barnes wrote:
+> > On Mon, 21 Mar 2011 11:04:04 -0700
+> > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> > 
+> >>> ps aux | grep ips
+> >>> root       593  0.0  0.0      0     0 ?        S    17:20   0:00
+> >>> [ips-adjust]
+> >>> root       594  0.0  0.0      0     0 ?        D    17:20   0:00
+> >>> [ips-monitor]
+> >>>
+> >>> If the module isn't loaded, the load of the machine in idle mode is 0 as
+> >>> expected.  
+> >>
+> >> This is a reporting problem, and probably due to the schedule() call
+> >> and associated task state in the ips-monitor thread.  I thought setting
+> >> the task state to interruptible would prevent this, but it seems like
+> >> it's not enough for the deferrable on-stack timers?
+> >>
+> >> At any rate, it's not actually causing increased CPU usage, so you can
+> >> safely ignore it until we have a fix.
+> > 
+> > Oops, one task uses interruptible correctly, but the monitor thread
+> > doesn't.
+> > 
+> > Does this patch fix your load average?
+> 
+> Which patch? I can't see any patch :-).
+> 
 
- IB: Increase DMA max_segment_size on Mellanox hardware
+Did I forget to paste it?  See below.
 
-diffstat now should look like
+-- 
+Jesse Barnes, Intel Open Source Technology Center
 
- drivers/infiniband/core/addr.c           |    2 +-
- drivers/infiniband/core/agent.c          |    3 +-
- drivers/infiniband/hw/mthca/mthca_main.c |    3 +
- drivers/infiniband/hw/nes/nes.c          |    2 +-
- drivers/infiniband/ulp/srp/ib_srp.c      |  725 ++++++++++++++++++++----------
- drivers/infiniband/ulp/srp/ib_srp.h      |   38 ++-
- drivers/net/mlx4/main.c                  |    3 +
- 7 files changed, 524 insertions(+), 252 deletions(-)
+diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
+index 1294a39..85c8ad4 100644
+--- a/drivers/platform/x86/intel_ips.c
++++ b/drivers/platform/x86/intel_ips.c
+@@ -1111,7 +1111,7 @@ static int ips_monitor(void *data)
+                last_msecs = jiffies_to_msecs(jiffies);
+                expire = jiffies + msecs_to_jiffies(IPS_SAMPLE_PERIOD);
+ 
+-               __set_current_state(TASK_UNINTERRUPTIBLE);
++               __set_current_state(TASK_INTERRUPTIBLE);
+                mod_timer(&timer, expire);
+                schedule();
+ 
