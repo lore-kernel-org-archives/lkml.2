@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1CWREr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 13:04:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54942 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab1CWREp (ORCPT
+	id S1755215Ab1CWRE4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 13:04:56 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37791 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754235Ab1CWREx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 13:04:45 -0400
+	Wed, 23 Mar 2011 13:04:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=O0XuqB+KDkessmZhgXwpcj/qaiKw/nDbxZcuxiEPx5NKmTKMtc3AFp83arqUUxmXSe
-         SlhJ70LQKvrbTS+KhzjJRLI/aJMZZoK/bvARq5Su5ptlnMdeTM6c5ElS3p05j3LLW1y6
-         phDuTVZfTK2cOQCvqHdsQvWpgWaue4TtB2vjM=
-Date: Wed, 23 Mar 2011 17:59:07 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 7/8] job control: Notify the real parent of job control
- events regardless of ptrace
-Message-ID: <20110323165907.GE12003@htj.dyndns.org>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org>
- <1299614199-25142-8-git-send-email-tj@kernel.org>
- <20110321174306.GA29895@redhat.com>
- <20110322080444.GM12003@htj.dyndns.org>
- <20110322194416.GC28038@redhat.com>
- <20110323091736.GY12003@htj.dyndns.org>
- <20110323092455.GZ12003@htj.dyndns.org>
- <20110323164657.GB22527@redhat.com>
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=MzMRT3CgXb696rZBO7vyPbHL1seZ8EBvX0+EXlbZUbVc8WJZdzeu5PnQkublur7EF6
+         GKZYCPxP6Jk0WTLlZ5/LWUgkEG6At3GXvjwd1fgWC/gPNNdO8Z+cQbHGFtuCRhbuMXqw
+         qZtMcJQJhwJsJNOP0qDnXRAWNA4zl/gLo31L8=
+Message-ID: <4D8A2830.6020706@linaro.org>
+Date: Wed, 23 Mar 2011 17:04:48 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110323164657.GB22527@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
+        grant.likely@secretlab.ca, netdev@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: Re: [RFC] usbnet: use eth%d name for known ethernet devices
+References: <4D79F068.2080009@linaro.org> <201103231712.06184.arnd@arndb.de> <20110323162251.GA9367@kroah.com> <201103231756.39849.arnd@arndb.de>
+In-Reply-To: <201103231756.39849.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 03/23/2011 04:56 PM, Somebody in the thread at some point said:
 
-On Wed, Mar 23, 2011 at 05:46:57PM +0100, Oleg Nesterov wrote:
-> > Ooh, on a related note, we probably want to change
-> > do_notify_parent_cldstop() too.  tsk->group_leader->real_parent is
-> > used as the delivery target when !@for_ptracer.  This is the same with
-> > tsk->real_parent and the code has been like this for a long time but
-> > is a bit confusing.
-> 
-> Yes, although in this case we do
-> 
-> 		tsk = tsk->group_leader;
-> 		parent = tsk->real_parent;
-> 
-> We need to change tsk to report the correct si_pid. But we could do
-> 
-> 		parent = tsk->real_parent;
-> 		tsk = tsk->group_leader;
-> 
-> not sure this looks less confusing.
+> The approach taken here is to flag whether a device might be a
+> point-to-point link with the new FLAG_PTP setting in the usbnet
+> driver_info. A driver can set both FLAG_PTP and FLAG_ETHER if
+> it is not sure (e.g. cdc_ether), or just one of the two.
+> The usbnet framework only looks at the MAC address for device
+> naming if both flags are set, otherwise it trusts the flag.
 
-They themselves are about the same but the inconsistency with the
-is_real_parent() test is a bit confusing, I think.  If we're testing
-for duplicates by testing ->real_parent against ->parent then the
-actual delivery should be also be using ->real_parent and ->parent,
-so...
+> diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
+> index bc86f4b..c98d3a7 100644
+> --- a/drivers/net/usb/smsc95xx.c
+> +++ b/drivers/net/usb/smsc95xx.c
+> @@ -1231,7 +1231,7 @@ static const struct driver_info smsc95xx_info = {
 
-Thanks.
+> -	.flags		= FLAG_ETHER | FLAG_SEND_ZLP,
+> +	.flags		= FLAG_ETHER | FLAG_SEND_ZLP | FLAG_REALLY_ETHER,
 
--- 
-tejun
+>   		if ((dev->driver_info->flags&  FLAG_ETHER) != 0&&
+> +		    ((dev->driver_info->flags&  FLAG_PTP) == 0 ||
+> +		     (net->dev_addr [0]&  0x02) == 0))
+>   			strcpy (net->name, "eth%d");
+
+So it just takes the approach that all smsc95xx are going to be eth%d? 
+Sounds good to me.
+
+-Andy
