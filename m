@@ -1,42 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720Ab1CWMuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 08:50:21 -0400
-Received: from mail4.iitk.ac.in ([202.3.77.189]:34249 "EHLO mail4.iitk.ac.in"
+	id S932778Ab1CWMuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 08:50:51 -0400
+Received: from fifo99.com ([67.223.236.141]:45235 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932539Ab1CWMuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 08:50:19 -0400
-X-Greylist: delayed 1199 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Mar 2011 08:50:19 EDT
-Message-ID: <8ca57d5566595fac563c8322aae032f6.squirrel@webmail.iitk.ac.in>
-Date: Wed, 23 Mar 2011 17:55:28 +0530
-Subject: RE
-From: "Lady Martha Stirling" <prajyoti@iitk.ac.in>
-Reply-To: ladymarthastirling3332@hotmail.com
-User-Agent: SquirrelMail/
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S932679Ab1CWMut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 08:50:49 -0400
+Subject: Re: [PATCH] msm: iommu: Use relaxed register access functions
+From: Daniel Walker <dwalker@fifo99.com>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: davidb@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1300392119-8062-1-git-send-email-stepanm@codeaurora.org>
+References: <1300392119-8062-1-git-send-email-stepanm@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 05:50:47 -0700
+Message-ID: <1300884647.6117.6.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-03-17 at 13:01 -0700, Stepan Moskovchenko wrote:
+> Use the relaxed versions of readl/writel for IOMMU register
+> access, inserting barriers where appropriate.
 
+Could you provide comments on why you need barriers in the various
+places you've placed them.
 
-From:Lady Martha Stirling,
-12889 Surrey Avenue, Chelsea, SW3, England.
+Daniel
 
-I am Lady Martha Stirling,Laird of Keir,recently my Doctor diagnosed that i
-have limited days to live due to cancerous illness which i am suffering right
-now,as my late husband was renowned for his philanthropic grant,Sir D.
-S,Chairman of Stirling & Wright General Partners,i hereby bequeath you with
-my £20 Million Pounds to build a Martha Stirlings Foundation,as my sole
-benefactor for charitable purposes
-and i will also issue a Letter of Authority that will empower you as my
-beneficiary of this fund through my Lawyer,please respond using my personal
-email address: ladymarthastirling3332@hotmail.com
-
-Lady Martha Stirling.
-E-mail Add: ladymarthastirling3332@hotmail.com
