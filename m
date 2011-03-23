@@ -1,187 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab1CWNa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 09:30:56 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35903 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932883Ab1CWNax (ORCPT
+	id S932943Ab1CWNbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 09:31:23 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58588 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932922Ab1CWNbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 09:30:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=f3oo/SFHwSkoVOyOZGp65WVETggObsnL6ZEw0+Zk0G/wrM2YuWJb3gL4UQcgcrswng
-         cBRNXO1fN7Xtmp0igNLdowfYVo9L60c0rkvq+qwjUYmn2iGTJMq9OCOw4qhdLITC1BpL
-         hS9eXvce4A6gUeqpRNRYqk4Ga/ZoRZ35nGpAo=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: [PATCH RESEND 1/2] vsprintf: introduce %pT format specifier
-Date: Wed, 23 Mar 2011 22:29:57 +0900
-Message-Id: <1300886997-30781-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <20110323131213.GA25467@elte.hu>
-References: <20110323131213.GA25467@elte.hu>
+	Wed, 23 Mar 2011 09:31:21 -0400
+Date: Wed, 23 Mar 2011 06:30:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Robert Love <robert.w.love@intel.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
+        Jarek Poplawski <jarkao2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@open-fcoe.org" <devel@open-fcoe.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
+ kfree_rcu()
+Message-ID: <20110323133048.GX2322@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D82D071.5020703@cn.fujitsu.com>
+ <4D82D3FF.2080303@cn.fujitsu.com>
+ <4D82D45A.30102@cn.fujitsu.com>
+ <1300814913.19083.427.camel@fritz>
+ <20110323065014.GU2322@linux.vnet.ibm.com>
+ <20110323112257.GD13806@parisc-linux.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110323112257.GD13806@parisc-linux.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The %pT format specifier is for stack backtrace. Its handler
-sprint_trace() does symbol lookup using (address-1) to ensure
-the address will not point outside of the function.
+On Wed, Mar 23, 2011 at 05:22:57AM -0600, Matthew Wilcox wrote:
+> On Tue, Mar 22, 2011 at 11:50:14PM -0700, Paul E. McKenney wrote:
+> > On Tue, Mar 22, 2011 at 10:28:33AM -0700, Robert Love wrote:
+> > > On Thu, 2011-03-17 at 20:41 -0700, Lai Jiangshan wrote:
+> > > > -	call_rcu(&rdata->rcu, fc_rport_free_rcu);
+> > > > +	kfree_rcu(rdata, rcu);
+> > > 
+> > > I think this last line should be:
+> > > 
+> > > kfree_rcu(rdata, &rdata->rcu);
+> > 
+> > Hello, Robert,
+> > 
+> > I believe that it is correct as is.  The kfree_rcu() definition is as
+> > follows:
+> > 
+> > #define kfree_rcu(ptr, rcu_head)					\
+> > 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
+> > 
+> > Then __kfree_rcu() encodes the offset into the rcu_head so that it can
+> > be handled properly at the end of the grace period.
+> 
+> To be fair to Robert, I had the same thought, but decided to check the
+> definition of kfree_rcu before I made the same comment.  Unfortunately,
+> the definition of kfree_rcu is still not in Linus' tree (and there's no
+> indication in the patch series about where to find the definition).  It
+> would have been better if kfree_rcu were patch 1/n in the series, then
+> we'd've been able to review it more effectively.
 
-If there is a tail-call to the function marked "noreturn",
-gcc optimized out the code after the call then causes saved
-return address points outside of the function (i.e. the start
-of the next function), so pollutes call trace somewhat.
-This patch will fix it.
+Good point!  That said, it is a bit ugly no matter how we handle it
+because any of the patches that have not received acked-bys will need
+to go up through their respective maintainer trees.  Last time I had a
+situation like this, it ended up stalling my commit stream for several
+months, so was trying to separate them in order to avoid the stall.
 
-before:
-[   18.345923] Call Trace:
-[   18.346001]  [<ffffffff812a8502>] panic+0x8c/0x18d
-[   18.346257]  [<ffffffffa000012a>] deep01+0x0/0x38 [test_panic]  <--- bad
-[   18.346347]  [<ffffffff81104666>] proc_file_write+0x73/0x8d
-[   18.346432]  [<ffffffff811000b3>] proc_reg_write+0x8d/0xac
-[   18.346516]  [<ffffffff810c7d32>] vfs_write+0xa1/0xc5
-[   18.346603]  [<ffffffff810c7e0f>] sys_write+0x45/0x6c
-[   18.346801]  [<ffffffff8f02943b>] system_call_fastpath+0x16/0x1b
+But perhaps this is one of those situations where there is simply no
+good way to handle the full series.  :-(
 
-after:
-[   22.224483] Call Trace:
-[   22.224569]  [<ffffffff812bce69>] panic+0x8c/0x18d
-[   22.224848]  [<ffffffffa000012a>] panic_write+0x20/0x20 [test_panic]  <--- ok
-[   22.224979]  [<ffffffff81115fab>] proc_file_write+0x73/0x8d
-[   22.225089]  [<ffffffff81111a5f>] proc_reg_write+0x8d/0xac
-[   22.225199]  [<ffffffff810d90ee>] vfs_write+0xa1/0xc5
-[   22.225304]  [<ffffffff810d91cb>] sys_write+0x45/0x6c
-[   22.225408]  [<ffffffff812c07fb>] system_call_fastpath+0x16/0x1b
+> Any idea when kfree_rcu will be submitted to Linus?
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-arch@vger.kernel.org
----
- include/linux/kallsyms.h |    7 +++++++
- kernel/kallsyms.c        |   40 ++++++++++++++++++++++++++++++++++++++++
- lib/vsprintf.c           |    7 ++++++-
- 3 files changed, 53 insertions(+), 1 deletions(-)
+I have it queued, and it passes mild testing.  I therefore expect to
+push it for the next merge window.
 
-diff --git a/include/linux/kallsyms.h b/include/linux/kallsyms.h
-index d8e9b3d1c23c..4964ed2021cc 100644
---- a/include/linux/kallsyms.h
-+++ b/include/linux/kallsyms.h
-@@ -36,6 +36,7 @@ const char *kallsyms_lookup(unsigned long addr,
- 
- /* Look up a kernel symbol and return it in a text buffer. */
- extern int sprint_symbol(char *buffer, unsigned long address);
-+extern int sprint_trace(char *buffer, unsigned long address);
- 
- /* Look up a kernel symbol and print it to the kernel messages. */
- extern void __print_symbol(const char *fmt, unsigned long address);
-@@ -79,6 +80,12 @@ static inline int sprint_symbol(char *buffer, unsigned long addr)
- 	return 0;
- }
- 
-+static inline int sprint_trace(char *buffer, unsigned long addr)
-+{
-+	*buffer = '\0';
-+	return 0;
-+}
-+
- static inline int lookup_symbol_name(unsigned long addr, char *symname)
- {
- 	return -ERANGE;
-diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
-index 6f6d091b5757..1e889477ff618 100644
---- a/kernel/kallsyms.c
-+++ b/kernel/kallsyms.c
-@@ -368,6 +368,46 @@ int sprint_symbol(char *buffer, unsigned long address)
- }
- EXPORT_SYMBOL_GPL(sprint_symbol);
- 
-+/**
-+ * sprint_trace - Look up a kernel trace symbol and return it in a text buffer
-+ * @buffer: buffer to be stored
-+ * @address: address to lookup
-+ *
-+ * This function is for stack trace and does the same thing as sprint_symbol()
-+ * but with modified/decreased @address. If there is a tail-call to the
-+ * function marked "noreturn", gcc optimized out code after the call so that
-+ * the stack-saved return address could point outside of the caller. This
-+ * function ensures that kallsyms will find the original caller by decreasing
-+ * @address and then adjusts the result by increasing offset.
-+ *
-+ * This function returns the number of bytes stored in @buffer.
-+ */
-+int sprint_trace(char *buffer, unsigned long address)
-+{
-+	char *modname;
-+	const char *name;
-+	unsigned long offset, size;
-+	int len;
-+
-+	name = kallsyms_lookup(address-1, &size, &offset, &modname, buffer);
-+	if (!name)
-+		return sprintf(buffer, "0x%lx", address);
-+
-+	if (name != buffer)
-+		strcpy(buffer, name);
-+	len = strlen(buffer);
-+	buffer += len;
-+	offset++;
-+
-+	if (modname)
-+		len += sprintf(buffer, "+%#lx/%#lx [%s]",
-+						offset, size, modname);
-+	else
-+		len += sprintf(buffer, "+%#lx/%#lx", offset, size);
-+
-+	return len;
-+}
-+
- /* Look up a kernel symbol and print it to the kernel messages. */
- void __print_symbol(const char *fmt, unsigned long address)
- {
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index d3023df8477f..c9c56a54cc42 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -574,7 +574,9 @@ char *symbol_string(char *buf, char *end, void *ptr,
- 	unsigned long value = (unsigned long) ptr;
- #ifdef CONFIG_KALLSYMS
- 	char sym[KSYM_SYMBOL_LEN];
--	if (ext != 'f' && ext != 's')
-+	if (ext == 'T')
-+		sprint_trace(sym, value);
-+	else if (ext != 'f' && ext != 's')
- 		sprint_symbol(sym, value);
- 	else
- 		kallsyms_lookup(value, NULL, NULL, NULL, sym);
-@@ -949,6 +951,7 @@ int kptr_restrict = 1;
-  * - 'f' For simple symbolic function names without offset
-  * - 'S' For symbolic direct pointers with offset
-  * - 's' For symbolic direct pointers without offset
-+ * - 'T' For backtraced symbolic direct pointers with offset
-  * - 'R' For decoded struct resource, e.g., [mem 0x0-0x1f 64bit pref]
-  * - 'r' For raw struct resource, e.g., [mem 0x0-0x1f flags 0x201]
-  * - 'M' For a 6-byte MAC address, it prints the address in the
-@@ -1008,6 +1011,7 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 		/* Fallthrough */
- 	case 'S':
- 	case 's':
-+	case 'T':
- 		return symbol_string(buf, end, ptr, spec, *fmt);
- 	case 'R':
- 	case 'r':
-@@ -1279,6 +1283,7 @@ qualifier:
-  * %ps output the name of a text symbol without offset
-  * %pF output the name of a function pointer with its offset
-  * %pf output the name of a function pointer without its offset
-+ * %pT output the name of a trace symbol with its offset
-  * %pR output the address range in a struct resource with decoded flags
-  * %pr output the address range in a struct resource with raw flags
-  * %pM output a 6-byte MAC address with colons
--- 
-1.7.4
+So, do you guys want to carry the patches for your subsystems, or are
+you willing to ack this one so that I can push it via -tip?
 
+							Thanx, Paul
