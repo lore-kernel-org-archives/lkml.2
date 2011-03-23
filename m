@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932975Ab1CWOvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:51:20 -0400
-Received: from mout.perfora.net ([74.208.4.195]:59063 "EHLO mout.perfora.net"
+	id S932982Ab1CWOvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:51:41 -0400
+Received: from mout.perfora.net ([74.208.4.195]:52666 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932625Ab1CWOvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:51:18 -0400
+	id S932361Ab1CWOvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:51:39 -0400
 From: Stephen Wilson <wilsons@start.ca>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -19,52 +19,77 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
         Hugh Dickins <hughd@google.com>, x86@kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH v2 resend 12/12] proc: enable writing to /proc/pid/mem
-Date: Wed, 23 Mar 2011 10:44:01 -0400
-Message-Id: <1300891441-16280-13-git-send-email-wilsons@start.ca>
+Subject: [PATCH v2 resend 10/12] proc: hold cred_guard_mutex in check_mem_permission()
+Date: Wed, 23 Mar 2011 10:43:59 -0400
+Message-Id: <1300891441-16280-11-git-send-email-wilsons@start.ca>
 X-Mailer: git-send-email 1.7.3.5
 In-Reply-To: <1300891441-16280-1-git-send-email-wilsons@start.ca>
 References: <1300891441-16280-1-git-send-email-wilsons@start.ca>
-X-Provags-ID: V02:K0:bgC+meV6kPmVmJfMMvRDrClAfmH0lkoPQkN2TDXADLJ
- +OU7xRJ453Po06zXbKWI2lVuHOTnoP8qnGxAZC3HjxQYquHvrv
- 4OiantagDPN9hgXX8+lHlhwDHL54I1k2k6HLgg4tKXWlU2i2+O
- IRIWGUXgCCwg6PpBmuidPps3qaOBS/R6yCwUHqdRRledbIpTKE
- 8oAiYWkgij3eE6ybPvVlNL5P1bdSpdwIOZ/T1MCvuQ=
+X-Provags-ID: V02:K0:0Pn2I+y017w+XHKFSf9o/F3NUfZxQgqPeFEN5sGNQpA
+ 8VCuhui3+rgxtY/iuN0boRe3N3xIg0VjzqMj0N79NIwxrvzHEY
+ UmkAgQN8PGE3KVdeYpafpbKjRfvCFjCBVwIWzXf+ioJnCd/0zn
+ tSL9gik0OiR35kD1jWPMsH/tlwZLdkbZbNwOcLn1qnbaZC+2YC
+ 9fnxSMtozl0/FmyFPhMtLx/xJY5Hv8PpTu532z2FE0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent changes there is no longer a security hazard with writing to
-/proc/pid/mem.  Remove the #ifdef.
+Avoid a potential race when task exec's and we get a new ->mm but check against
+the old credentials in ptrace_may_access().
+
+Holding of the mutex is implemented by factoring out the body of the code into a
+helper function __check_mem_permission().  Performing this factorization now
+simplifies upcoming changes and minimizes churn in the diff's.
 
 Signed-off-by: Stephen Wilson <wilsons@start.ca>
 ---
- fs/proc/base.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+ fs/proc/base.c |   26 ++++++++++++++++++++++----
+ 1 files changed, 22 insertions(+), 4 deletions(-)
 
 diff --git a/fs/proc/base.c b/fs/proc/base.c
-index ebe3c47..a0cfcd4 100644
+index 13c5e8c..084d046 100644
 --- a/fs/proc/base.c
 +++ b/fs/proc/base.c
-@@ -852,10 +852,6 @@ out_no_task:
- 	return ret;
+@@ -191,10 +191,7 @@ static int proc_root_link(struct inode *inode, struct path *path)
+ 	return result;
  }
  
--#define mem_write NULL
--
--#ifndef mem_write
--/* This is a security hazard */
- static ssize_t mem_write(struct file * file, const char __user *buf,
- 			 size_t count, loff_t *ppos)
+-/*
+- * Return zero if current may access user memory in @task, -error if not.
+- */
+-static int check_mem_permission(struct task_struct *task)
++static int __check_mem_permission(struct task_struct *task)
  {
-@@ -912,7 +908,6 @@ out_task:
- out_no_task:
- 	return copied;
+ 	/*
+ 	 * A task can always look at itself, in case it chooses
+@@ -222,6 +219,27 @@ static int check_mem_permission(struct task_struct *task)
+ 	return -EPERM;
  }
--#endif
  
- loff_t mem_lseek(struct file *file, loff_t offset, int orig)
++/*
++ * Return zero if current may access user memory in @task, -error if not.
++ */
++static int check_mem_permission(struct task_struct *task)
++{
++	int err;
++
++	/*
++	 * Avoid racing if task exec's as we might get a new mm but validate
++	 * against old credentials.
++	 */
++	err = mutex_lock_killable(&task->signal->cred_guard_mutex);
++	if (err)
++		return err;
++
++	err = __check_mem_permission(task);
++	mutex_unlock(&task->signal->cred_guard_mutex);
++
++	return err;
++}
++
+ struct mm_struct *mm_for_maps(struct task_struct *task)
  {
+ 	struct mm_struct *mm;
 -- 
 1.7.3.5
 
