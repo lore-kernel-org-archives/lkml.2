@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932850Ab1CWTCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 15:02:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57552 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932801Ab1CWTCK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932659Ab1CWTCK (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 23 Mar 2011 15:02:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QEA0U9Evms6LxNwyK/xFoWIht+xCrYvTXRQmtRHlpHMhUw1VeYtBYhROnIHw/2Zoiv
-         JMjqMrjnRseNEQEW2vBJ8h5ILQJGUersKIc+3T0A/IreCqacBvUtWLCICnCG5/bUWXCo
-         jQFhw0Acps2JKEsCwXOC9//cMzn5KicifyZ/M=
+Received: from mga03.intel.com ([143.182.124.21]:50714 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932706Ab1CWTCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 15:02:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,232,1299484800"; 
+   d="scan'208";a="407389700"
+Date: Wed, 23 Mar 2011 12:02:05 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-usb@vger.kernel.org, libusb-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org
+Subject: Re: Any USB gadget AIO interface users?
+Message-ID: <20110323190205.GC5947@xanatos>
+References: <20110322171251.GA4455@xanatos>
+ <x49vcz9c3dr.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimz0GR7HXgY5jxogfkNyJ2iVYWJGHRhsZtO4T+A@mail.gmail.com>
-References: <AANLkTim3gpBUtDQ=WnLRjzuwpNe=+m4wLK=maS1tLc8U@mail.gmail.com>
-	<20110322133101.GB24006@gere.osrc.amd.com>
-	<AANLkTimz0GR7HXgY5jxogfkNyJ2iVYWJGHRhsZtO4T+A@mail.gmail.com>
-Date: Wed, 23 Mar 2011 20:02:01 +0100
-Message-ID: <AANLkTikDqUptK8XdPpAGYKFskSL7ugfoh-VjNzyXU_3q@mail.gmail.com>
-Subject: Re: Machine Check Exception and cpufreq
-From: Giorgio <mywing81@gmail.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: linux-kernel@vger.kernel.org, linux@brodo.de, dougthompson@xmission.com,
-        mchehab@redhat.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49vcz9c3dr.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/22 Giorgio <mywing81@gmail.com>:
-> 2011/3/22 Borislav Petkov <bp@amd64.org>:
->> this is very interesting. Question: is it possible to retest with
->> a newer kernel from upstream (say 2.6.38) to see whether the issue
->> persists? I'd like to rule out the possibility that powernow-k8 is
->> not causing any trouble which has been fixed in newer kernels in the
->> meantime.
->>
->> Thanks.
->
-> Hello Borislav,
->
-> thanks for your quick reply. Yes, I only tested it with the stock
-> 2.6.32 kernel shipped with Ubuntu 10.04, but I will download the
-> latest stable kernel from kernel.org (2.6.38) and test again. I'll
-> come back to you in the following days. Regards,
+On Wed, Mar 23, 2011 at 10:34:08AM -0400, Jeff Moyer wrote:
+> Sarah Sharp <sarah.a.sharp@linux.intel.com> writes:
+> 
+> > Has anyone successfully used the asynchronous I/O gadgetfs interface
+> > before?  Specifically, has anyone used it for high-bandwidth isochronous
+> > traffic?
+> >
+> > I ask because I remember discovering about four years ago that there
+> > were several brain-twisty bugs in the in-kernel asynchronous I/O layer
+> > that gadgetfs uses.
+> 
+> Weren't they addressed?  And are you looking to use the gadgetfs aio
+> interface now, or are you looking to get rid of it?  In other words,
+> what's the real motivation behind the question?
 
-Borislav,
+I was looking to use it.  The bug in question I remember was about
+cancellation, but I would have to dig in my mailbox from 2007 to find
+the exact issue.
 
-I tested again with 2.6.38 kernel: the system was stressed for several
-hours with various activities (compiling, copying data back and forth
-from two hard drives, encoding/decoding video streams, etc) but I was
-not able to reproduce the problem, so I guess it has been fixed.
-If you're interested here's the info I collected with 2.6.38:
+The biggest problem I remember when I was looking at using the aio core
+to replace the ioctls in the usbfs subsystem with true aio operations
+was there was an issue with operation ordering.  In the kernel to
+userspace interface for USB, we want asynchronous operations to a
+particular file to be queued to the hardware in the order they are
+submitted.  So if the userspace application submits asynchronous read A,
+then asynchronous read B, then the buffer for read B doesn't get queued
+to the USB host controller before the buffer for read A.  Otherwise you
+get transmission reordering on the bus, and USB devices aren't very
+happy.
 
-http://mywing.altervista.org/tmp/info-2.6.38.log
+> > The AIO core also seemed to be largely unmaintained.  Is this still
+> > true?
+> 
+> Surely you should at least cc the aio list when asking such a question!
+> Anyway, the aio core is maintained by several folks, but nobody is doing
+> active development in that area, to my knowledge.
 
-I found a similar report on the web, I don't know if this could be related:
+Sorry, I forgot the aio mailing list existed. :)  In 2007, there was
+lots of talk of using syslets or fibrils in the aio core, and Zack Brown
+had some patches for that, but it seemed like nothing really came out of
+that.  Has anything new been added to the AIO core since then?
 
-http://www.spinics.net/lists/cpufreq/msg01922.html
-
-Let me know if you have other questions. Regards,
-
-Giorgio Vazzana
+Sarah Sharp
