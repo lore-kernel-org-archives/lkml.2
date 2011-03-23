@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197Ab1CWPwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:52:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48553 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755752Ab1CWPwK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:52:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=m3cbrAjnvQkDlKeHC/bkjsTHQWQ6RSzCtmXOkPCxHORrZBulQJjmriYz+P5K/RwogF
-         rh1x1OuAXBgS5jeu5z/G7/RujeNtXTL9ThfsFlxq64+yL6eY44g3UtHPfCMohyKrDD5A
-         C3SAX+7R/+s+0QHvgvDUT161WsPyPBN3viGh0=
-Date: Wed, 23 Mar 2011 16:52:06 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [RFC PATCH] mutex: Apply adaptive spinning on mutex_trylock()
-Message-ID: <20110323155206.GD12003@htj.dyndns.org>
-References: <20110323153727.GB12003@htj.dyndns.org>
- <AANLkTik4iG+Ssb+JU3YRB4C11CEZeVozqoiz4rvezFLL@mail.gmail.com>
+	id S933221Ab1CWPys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:54:48 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:39938 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933157Ab1CWPyq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 11:54:46 -0400
+From: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>, Vitaly Wool <vitalywool@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        Pavan Savoy <pavan_savoy@sify.com>, Lee Jones <lee.jones@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+Date: Wed, 23 Mar 2011 16:26:42 +0100
+Subject: RE: [PATCH 1/2] staging: Add ST-Ericsson CG2900 driver
+Thread-Topic: [PATCH 1/2] staging: Add ST-Ericsson CG2900 driver
+Thread-Index: Acvpbcuz1ANEow6wR+uIsqObJIoCjwAAJfCw
+Message-ID: <AFCDDB4A3EA003429EEF1E7B211FDBBA334C4DE8B7@EXDCVYMBSTM005.EQ1STM.local>
+References: <1300888771-26437-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+ <20110323082002.bd60cea1.rdunlap@xenotime.net>
+In-Reply-To: <20110323082002.bd60cea1.rdunlap@xenotime.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik4iG+Ssb+JU3YRB4C11CEZeVozqoiz4rvezFLL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 08:48:01AM -0700, Linus Torvalds wrote:
-> On Wed, Mar 23, 2011 at 8:37 AM, Tejun Heo <tj@kernel.org> wrote:
-> >
-> > Currently, mutex_trylock() doesn't use adaptive spinning.  It tries
-> > just once.  I got curious whether using adaptive spinning on
-> > mutex_trylock() would be beneficial and it seems so, at least for
-> > btrfs anyway.
+Hi Randy,
+
+> > +
+> > +config CG2900_AUDIO
+> > +	tristate "Support CG2900 audio interface"
+> > +	depends on CG2900
+> > +	help
+> > +	  Support for ST-Ericsson CG2900 Connectivity audio
+> interface. Gives a
+> > +	  module the ability to setup audio paths within the CG2900
+> controller.
+> > +
 > 
-> Hmm. Seems reasonable to me. The patch looks clean, although part of
-> that is just the mutex_spin() cleanup that is independent of actually
-> using it in trylock.
+> Just to be clear:  the cg2900_audio driver does not use any current
+> kernel
+> sound/audio interfaces, right?
+> 
 
-Oh, I have two split patches.  Posted the combined one for comments.
+No, it provides an interface to the audio features within the chip.
+So it is rather used by other sound/audio drivers, but it never
+use any sound/audio interfaces itself.
 
-> So no objections from me.
-
-Awesome.  Peter, what do you think?  Are there some other tests which
-can be useful?
-
-Thanks.
-
--- 
-tejun
+Thanks,
+/P-G
