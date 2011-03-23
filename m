@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab1CWNLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 09:11:52 -0400
-Received: from mail1.elettra.trieste.it ([140.105.4.201]:61605 "EHLO
-	elettra.trieste.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932671Ab1CWNLv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 09:11:51 -0400
-From: Alessio Igor Bogani <abogani@kernel.org>
-To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>
-Subject: [PATCH] staging: cx25821: Reuse the mutex lock for remove BKL
-Date: Wed, 23 Mar 2011 14:11:03 +0100
-Message-Id: <1300885863-16201-1-git-send-email-abogani@kernel.org>
-X-Mailer: git-send-email 1.7.0.4
+	id S932903Ab1CWNL5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 09:11:57 -0400
+Received: from fifo99.com ([67.223.236.141]:45725 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932891Ab1CWNLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 09:11:55 -0400
+Subject: Re: [PATCH 09/20] video: msm: Split out MDP2.2 HW specific code.
+From: Daniel Walker <dwalker@fifo99.com>
+To: Carl Vanderlip <carlv@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Colin Cross <ccross@android.com>, linux-fbdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1300485423-27281-1-git-send-email-carlv@codeaurora.org>
+References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
+	 <1300485423-27281-1-git-send-email-carlv@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 06:11:52 -0700
+Message-ID: <1300885912.6117.16.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BKL isn't exit anymore so this driver don't should use it.
+On Fri, 2011-03-18 at 14:57 -0700, Carl Vanderlip wrote:
+> index df9d74e..d6e75c3 100644
+> --- a/arch/arm/mach-msm/Kconfig
+> +++ b/arch/arm/mach-msm/Kconfig
+> @@ -76,6 +76,11 @@ config HAS_MSM_DEBUG_UART_PHYS
+>  config  MSM_VIC
+>         bool
+>  
+> +config MSM_MDP22
+> +       bool
+> +       depends on ARCH_MSM7X00A
+> +       default y
+> + 
 
-Build tested only.
+You should remove the "default y" and this should be moved to a Kconfig
+under video (shouldn't be added into mach-msm).
 
-Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
----
- drivers/staging/cx25821/Kconfig         |    1 -
- drivers/staging/cx25821/cx25821-video.c |    8 ++++----
- drivers/staging/cx25821/cx25821.h       |    1 -
- 3 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/staging/cx25821/Kconfig b/drivers/staging/cx25821/Kconfig
-index b265695..5f6b542 100644
---- a/drivers/staging/cx25821/Kconfig
-+++ b/drivers/staging/cx25821/Kconfig
-@@ -1,7 +1,6 @@
- config VIDEO_CX25821
- 	tristate "Conexant cx25821 support"
- 	depends on DVB_CORE && VIDEO_DEV && PCI && I2C
--	depends on BKL # please fix
- 	select I2C_ALGOBIT
- 	select VIDEO_BTCX
- 	select VIDEO_TVEEPROM
-diff --git a/drivers/staging/cx25821/cx25821-video.c b/drivers/staging/cx25821/cx25821-video.c
-index 0d8d756..9dbe551 100644
---- a/drivers/staging/cx25821/cx25821-video.c
-+++ b/drivers/staging/cx25821/cx25821-video.c
-@@ -27,7 +27,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include "cx25821-video.h"
--#include <linux/smp_lock.h>
-+#include <linux/mutex.h>
- 
- MODULE_DESCRIPTION("v4l2 driver module for cx25821 based TV cards");
- MODULE_AUTHOR("Hiep Huynh <hiep.huynh@conexant.com>");
-@@ -815,7 +815,7 @@ static int video_open(struct file *file)
-        if (NULL == fh)
- 	       return -ENOMEM;
- 
--       lock_kernel();
-+       mutex_lock(&h->lock);
- 
-        list_for_each(list, &cx25821_devlist)
-        {
-@@ -832,7 +832,7 @@ static int video_open(struct file *file)
-        }
- 
-        if (NULL == dev) {
--	       unlock_kernel();
-+	       mutex_unlock(&h->lock);
- 	       return -ENODEV;
-        }
- 
-@@ -862,7 +862,7 @@ static int video_open(struct file *file)
- 			      sizeof(struct cx25821_buffer), fh, NULL);
- 
-        dprintk(1, "post videobuf_queue_init()\n");
--       unlock_kernel();
-+       mutex_unlock(&h->lock);
- 
-        return 0;
- }
-diff --git a/drivers/staging/cx25821/cx25821.h b/drivers/staging/cx25821/cx25821.h
-index 5511523..8417a73 100644
---- a/drivers/staging/cx25821/cx25821.h
-+++ b/drivers/staging/cx25821/cx25821.h
-@@ -31,7 +31,6 @@
- #include <linux/delay.h>
- #include <linux/sched.h>
- #include <linux/kdev_t.h>
--#include <linux/smp_lock.h>
- 
- #include <media/v4l2-common.h>
- #include <media/v4l2-device.h>
--- 
-1.7.0.4
+Daniel
 
