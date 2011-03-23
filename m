@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933304Ab1CWUaD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 16:30:03 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37242 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933145Ab1CWUaA (ORCPT
+	id S933307Ab1CWUbe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 16:31:34 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36338 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933145Ab1CWUbc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 16:30:00 -0400
+	Wed, 23 Mar 2011 16:31:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:subject:date:user-agent:cc:references:in-reply-to
-         :organization:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=lNeyKpdqBl6u1b0M6zz4JTKWQHLoSJLkJRFJVYgDYYrP0CQRzYuVK2JzJWxPAmI0EK
-         7UeW2b5sVr0wPPi3UvomEjGQWiT+eDNVRX/slNxrNf6tPNRdh8PH3XMVoKzQtDqI+b7k
-         mDAkT70pktA/5XlkfxHJl/cZT5Wthj7+2puG4=
-From: Florian Fainelli <florian@openwrt.org>
-To: Joe Perches <joe@perches.com>
-Subject: Re: [trivial PATCH 1/2] treewide: Fix iomap resource size miscalculations
-Date: Wed, 23 Mar 2011 21:29:52 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-28-generic; KDE/4.5.1; x86_64; ; )
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-arm-msm@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-watchdog@vger.kernel.org
-References: <cover.1300909445.git.joe@perches.com> <c4422b4a8ee132d3adac95fd86237c61b2f8b364.1300909446.git.joe@perches.com>
-In-Reply-To: <c4422b4a8ee132d3adac95fd86237c61b2f8b364.1300909446.git.joe@perches.com>
-Organization: OpenWrt
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=SyJUm4suAQkfVsEB2aSprCz2GV2HMLWMIWWmt848RMms8hmHtNtfZxdD0SeVRDufqF
+         bmwx2E7EM6gInQ9IrHabGTBD5ARCCqebA4/GkWnYvDUaLa0OKbI5xGPuRQUafGAYpFwy
+         PfM0y3z2mA8QRFLrAR07Pf0k9GEFEiSmzIdk0=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103232129.53053.florian@openwrt.org>
+In-Reply-To: <201103230200.p2N20nBv011302@hera.kernel.org>
+References: <201103230200.p2N20nBv011302@hera.kernel.org>
+Date: Wed, 23 Mar 2011 21:31:28 +0100
+X-Google-Sender-Auth: bMQAoFOKDTdI-tfxYbUFZ_sBLv0
+Message-ID: <AANLkTi=JuHke7CMURU6fuBSVenD1prHfKRTqJucr0g9o@mail.gmail.com>
+Subject: Re: kstrto*: converting strings to integers done (hopefully) right
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 March 2011 20:55:36 Joe Perches wrote:
-> Convert off-by-1 r->end - r->start to resource_size(r)
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Wed, Mar 23, 2011 at 03:00, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> --- /dev/null
+> +++ b/lib/test-kstrtox.c
 
-Acked-by: Florian Fainelli <florian@openwrt.org>
-(for rb532 and bcm63xx_wdt)
+On 32-bit m68k:
 
-> ---
->  arch/arm/mach-ux500/mbox-db5500.c |    6 ++----
->  arch/mips/rb532/gpio.c            |    2 +-
->  drivers/video/msm/mddi.c          |    2 +-
->  drivers/watchdog/bcm63xx_wdt.c    |    2 +-
->  4 files changed, 5 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/arm/mach-ux500/mbox-db5500.c
-> b/arch/arm/mach-ux500/mbox-db5500.c index a4ffb9f..2b2d51c 100644
-> --- a/arch/arm/mach-ux500/mbox-db5500.c
-> +++ b/arch/arm/mach-ux500/mbox-db5500.c
-> @@ -416,8 +416,7 @@ struct mbox *mbox_setup(u8 mbox_id, mbox_recv_cb_t
-> *mbox_cb, void *priv) dev_dbg(&(mbox->pdev->dev),
->  		"Resource name: %s start: 0x%X, end: 0x%X\n",
->  		resource->name, resource->start, resource->end);
-> -	mbox->virtbase_peer =
-> -		ioremap(resource->start, resource->end - resource->start);
-> +	mbox->virtbase_peer = ioremap(resource->start, resource_size(resource));
->  	if (!mbox->virtbase_peer) {
->  		dev_err(&(mbox->pdev->dev), "Unable to ioremap peer mbox\n");
->  		mbox = NULL;
-> @@ -440,8 +439,7 @@ struct mbox *mbox_setup(u8 mbox_id, mbox_recv_cb_t
-> *mbox_cb, void *priv) dev_dbg(&(mbox->pdev->dev),
->  		"Resource name: %s start: 0x%X, end: 0x%X\n",
->  		resource->name, resource->start, resource->end);
-> -	mbox->virtbase_local =
-> -		ioremap(resource->start, resource->end - resource->start);
-> +	mbox->virtbase_local = ioremap(resource->start, resource_size(resource));
->  	if (!mbox->virtbase_local) {
->  		dev_err(&(mbox->pdev->dev), "Unable to ioremap local mbox\n");
->  		mbox = NULL;
-> diff --git a/arch/mips/rb532/gpio.c b/arch/mips/rb532/gpio.c
-> index 37de05d..6c47dfe 100644
-> --- a/arch/mips/rb532/gpio.c
-> +++ b/arch/mips/rb532/gpio.c
-> @@ -185,7 +185,7 @@ int __init rb532_gpio_init(void)
->  	struct resource *r;
-> 
->  	r = rb532_gpio_reg0_res;
-> -	rb532_gpio_chip->regbase = ioremap_nocache(r->start, r->end - r->start);
-> +	rb532_gpio_chip->regbase = ioremap_nocache(r->start, resource_size(r));
-> 
->  	if (!rb532_gpio_chip->regbase) {
->  		printk(KERN_ERR "rb532: cannot remap GPIO register 0\n");
-> diff --git a/drivers/video/msm/mddi.c b/drivers/video/msm/mddi.c
-> index b66d86a..178b072 100644
-> --- a/drivers/video/msm/mddi.c
-> +++ b/drivers/video/msm/mddi.c
-> @@ -679,7 +679,7 @@ static int __devinit mddi_probe(struct platform_device
-> *pdev) printk(KERN_ERR "mddi: no associated mem resource!\n");
->  		return -ENOMEM;
->  	}
-> -	mddi->base = ioremap(resource->start, resource->end - resource->start);
-> +	mddi->base = ioremap(resource->start, resource_size(resource));
->  	if (!mddi->base) {
->  		printk(KERN_ERR "mddi: failed to remap base!\n");
->  		ret = -EINVAL;
-> diff --git a/drivers/watchdog/bcm63xx_wdt.c
-> b/drivers/watchdog/bcm63xx_wdt.c index 3c5045a..5064e83 100644
-> --- a/drivers/watchdog/bcm63xx_wdt.c
-> +++ b/drivers/watchdog/bcm63xx_wdt.c
-> @@ -248,7 +248,7 @@ static int __devinit bcm63xx_wdt_probe(struct
-> platform_device *pdev) return -ENODEV;
->  	}
-> 
-> -	bcm63xx_wdt_device.regs = ioremap_nocache(r->start, r->end - r->start);
-> +	bcm63xx_wdt_device.regs = ioremap_nocache(r->start, resource_size(r));
->  	if (!bcm63xx_wdt_device.regs) {
->  		dev_err(&pdev->dev, "failed to remap I/O resources\n");
->  		return -ENXIO;
+lib/test-kstrtox.c: In function ‘test_kstrtou64_ok’:
+lib/test-kstrtox.c:318: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:319: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:320: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:321: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:322: warning: integer constant is too large for ‘long’ type
+lib/test-kstrtox.c:323: warning: integer constant is too large for ‘long’ type
+lib/test-kstrtox.c: In function ‘test_kstrtos64_ok’:
+lib/test-kstrtox.c:372: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:373: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:374: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:375: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:376: warning: integer constant is too large for ‘long’ type
+lib/test-kstrtox.c:377: warning: integer constant is too large for ‘long’ type
+lib/test-kstrtox.c: In function ‘test_kstrtou32_ok’:
+lib/test-kstrtox.c:421: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:422: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:423: warning: this decimal constant is unsigned
+only in ISO C90
+lib/test-kstrtox.c:424: warning: this decimal constant is unsigned
+only in ISO C90
+
+Probably you need a few more U/ULL suffixes.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
