@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab1CWEIv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 00:08:51 -0400
-Received: from vms173003pub.verizon.net ([206.46.173.3]:54043 "EHLO
-	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab1CWEIt (ORCPT
+	id S1752071Ab1CWENC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 00:13:02 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:36091 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab1CWENB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 00:08:49 -0400
-Date: Wed, 23 Mar 2011 00:08:44 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 1/4] X86: Revamp reboot behaviour to match Windows more
- closely
-In-reply-to: <1299877940-6870-1-git-send-email-mjg@redhat.com>
-Message-id: <alpine.LFD.2.02.1103230003310.10549@x980>
-References: <1299877940-6870-1-git-send-email-mjg@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 23 Mar 2011 00:13:01 -0400
+Date: Wed, 23 Mar 2011 05:12:56 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org, Bernhard Kaindl <bk@suse.de>,
+        Andi Kleen <andi@firstfloor.org>, linux-usb@vger.kernel.org
+Subject: Re: debugging a modern laptop ...
+Message-ID: <20110323041256.GD21838@one.firstfloor.org>
+References: <20110323034214.GC15541@MAIL.13thfloor.at>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110323034214.GC15541@MAIL.13thfloor.at>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Matthew Garrett wrote:
+> most modern devices have at least one usb port, but as far
+> as I could figure out via google, there is no support for
+> console or similar over usb (serial or not) atm
+> (please feel free to correct me here :)
 
-> Windows reboots by hitting the ACPI reboot vector (if available), trying
-> the keyboard controller, hitting the ACPI reboot vector again and then
-> giving the keyboard controller one last go. Rework our reboot process a
-> little to default to matching this behaviour, although we'll fall through
-> to attempting a triple fault if nothing else works.
+There is also USB debugport, but you need a quite expensive cable
+(~$100) for it. Usually it only works on one of the USB ports.
+
 > 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> after some research, I also found a quite antique project
+> exploiting the ieee1394 DMA feature, called firescope and
+> after some issues finding the latest version of the tool and
+> of course getting a firewire cable, there seems to be some
+> kind of interaction between the monitoring system and the
+> device in question, but it seems that a few problems exist
+> and I didn't manage to get any relevant information that
+> way yet (please let me know if that is still maintained)
 
-Acked-by: Len Brown <len.brown@intel.com>
+It works, but you need to enable it of course. The printk
+buffer hasn't changed for a long time.
 
-This looks like "tip" material.
+The only problem often is that it doesn't support memory >4GB,
+however it turns out that some LSI chips support >4GB DMA
+and with those it works too.
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
