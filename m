@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab1CWHOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 03:14:14 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:54084 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab1CWHOM (ORCPT
+	id S1753201Ab1CWHSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 03:18:46 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42881 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab1CWHSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 03:14:12 -0400
+	Wed, 23 Mar 2011 03:18:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:date:message-id:subject:from:to:content-type;
-        b=PSGmj5hEnYK+TbEjCu/GT7REr4ixxxknrZEhrn+yF8D+dqttvTyHOfydZFmUUlyaRc
-         Oqs6t2n9V7OAMs+pQ/813PHj4HussIGtl5uOOEQu4eve+OdjNHr7Qssu1fXiuAEPGdHI
-         VsJhAAPiThqixgg07A7fJ6z+9IsmJVwnRY9XQ=
+        b=CRZZeb4u56oECJe1Ez+nAurLsfo45GbxJWOzUfcTeKoa0qDovRiT06/aBXN3NjIRdX
+         kSctq0IZHnp/rq2nf+0+6bNjy7uJkF2Q4kQG9C2AUmV6cA0+PE482m6z7+lhAvnYqb9Z
+         J5S80U63q/7xVp0LyFdYqxoVg9s5sVNov2qCg=
 MIME-Version: 1.0
-Date: Wed, 23 Mar 2011 10:14:11 +0300
-Message-ID: <AANLkTinacRCOx+z02n1OwBjGfVL5itzZs7Jqv_4PRXZK@mail.gmail.com>
-Subject: 2.6.39-rc: WARNING: at __ip_select_ident+0xd3/0xf0()
+Date: Wed, 23 Mar 2011 10:18:44 +0300
+Message-ID: <AANLkTinkeB=TxCaM3UjLoyM5Qaf9zyvRJ+tX0inFnuZr@mail.gmail.com>
+Subject: 2.6.39-rc: panic at rcu_kthread()
 From: Alexander Beregalov <a.beregalov@gmail.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
+        linux-mm@kvack.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi
 
-I do not know how to reproduce it.
+I do not have a testcase to reproduce it.
+Kernel is 2.6.38-07035-g6447f55d
 
-WARNING: at include/net/inetpeer.h:102 __ip_select_ident+0xd3/0xf0()
-Hardware name:
-Modules linked in: hwmon_vid sata_sil i2c_nforce2
-Pid: 0, comm: swapper Not tainted 2.6.38-07035-g6447f55d #1
+BUG (null): Not a valid slab page
+-----------------------------------------------------------------------------
+INFO: Slab 0xf6c1dcc0 objects=65535 used=65535 fp=0x  (null) flags=0x40000401
+Pid: 6, comm: rcu_kthread Tainted: G        W   2.6.38-07035-g6447f55d #1
 Call Trace:
- [<c102ad5d>] warn_slowpath_common+0x6d/0xa0
- [<c13070c3>] ? __ip_select_ident+0xd3/0xf0
- [<c13070c3>] ? __ip_select_ident+0xd3/0xf0
- [<c102adad>] warn_slowpath_null+0x1d/0x20
- [<c13070c3>] __ip_select_ident+0xd3/0xf0
- [<c130df4c>] __ip_make_skb+0x25c/0x360
- [<c130d807>] ? ip_append_data+0x67/0xa0
- [<c132f980>] ? icmp_glue_bits+0x0/0x60
- [<c130e0b4>] ip_push_pending_frames+0x14/0x30
- [<c132f95c>] icmp_push_reply+0xdc/0x100
- [<c13306a8>] icmp_send+0x408/0x4a0
- [<c132ca61>] ? __udp4_lib_lookup.clone.49+0x171/0x2d0
- [<c132d877>] __udp4_lib_rcv+0x487/0x6a0
- [<c13058c0>] ? ip_route_input_common+0x0/0xa00
- [<c132daa2>] udp_rcv+0x12/0x20
- [<c13084bc>] ip_local_deliver+0x9c/0x140
- [<c130846d>] ? ip_local_deliver+0x4d/0x140
- [<c13087c6>] ip_rcv+0x266/0x560
- [<c12e92b3>] __netif_receive_skb+0x393/0x400
- [<c12e8fe4>] ? __netif_receive_skb+0xc4/0x400
- [<c12e9472>] netif_receive_skb+0x42/0x50
- [<c12e94b7>] napi_skb_finish+0x37/0x50
- [<c12eadf3>] napi_gro_receive+0xb3/0xc0
- [<c128d76f>] e1000_receive_skb.clone.34+0x3f/0x60
- [<c128dfcf>] e1000_clean_rx_irq+0x27f/0x4b0
- [<c1055be1>] ? __lock_acquire+0x441/0x19a0
- [<c128d249>] e1000_clean+0x1e9/0x570
- [<c13697fc>] ? _raw_spin_lock+0x5c/0x70
- [<c12e9778>] net_rx_action+0xe8/0x170
- [<c102ffe7>] __do_softirq+0x77/0x110
- [<c102ff70>] ? __do_softirq+0x0/0x110
- <IRQ>  [<c1030246>] ? irq_exit+0x76/0x90
- [<c1003823>] ? do_IRQ+0x43/0xb0
- [<c136f5ee>] ? common_interrupt+0x2e/0x34
- [<c100755f>] ? default_idle+0x2f/0x60
- [<c10015d6>] ? cpu_idle+0x36/0x60
- [<c135f2e5>] ? rest_init+0xa5/0xb0
- [<c135f240>] ? rest_init+0x0/0xb0
- [<c163c663>] ? start_kernel+0x277/0x27e
- [<c163c174>] ? unknown_bootoption+0x0/0x19f
- [<c163c071>] ? i386_start_kernel+0x71/0x77
+ [<c1366f9f>] ? printk+0x18/0x21
+ [<c109866c>] slab_err+0x6c/0x80
+ [<c1098a2f>] ? slab_pad_check+0x2f/0x150
+ [<c1098a2f>] ? slab_pad_check+0x2f/0x150
+ [<c1047b2d>] ? sched_clock_cpu+0x7d/0xf0
+ [<c1098c1c>] check_slab+0xcc/0x120
+ [<c1099408>] ? init_object+0x38/0x70
+ [<c1066125>] ? rcu_process_callbacks+0x55/0x90
+ [<c10999fa>] free_debug_processing+0x1a/0x220
+ [<c105197b>] ? trace_hardirqs_off+0xb/0x10
+ [<c10544d9>] ? debug_check_no_locks_freed+0x129/0x140
+ [<c1066125>] ? rcu_process_callbacks+0x55/0x90
+ [<c1099cac>] __slab_free+0xac/0x140
+ [<c13079f0>] ? inetpeer_free_rcu+0x10/0x20
+ [<c1066125>] ? rcu_process_callbacks+0x55/0x90
+ [<c1099f7b>] kmem_cache_free+0xeb/0x100
+ [<c13079f0>] ? inetpeer_free_rcu+0x10/0x20
+ [<c13079f0>] ? inetpeer_free_rcu+0x10/0x20
+ [<c109efd0>] ? file_free_rcu+0x0/0x30
+ [<c13079f0>] inetpeer_free_rcu+0x10/0x20
+ [<c106612a>] ? rcu_process_callbacks+0x5a/0x90
+ [<c1066245>] ? rcu_kthread+0xe5/0x100
+ [<c1042100>] ? autoremove_wake_function+0x0/0x50
+ [<c1066160>] ? rcu_kthread+0x0/0x100
+ [<c1041e14>] ? kthread+0x74/0x80
+ [<c1041da0>] ? kthread+0x0/0x80
+ [<c136f5fa>] ? kernel_thread_helper+0x6/0xd
+FIX (null): Object at 0xc1066125 not freed
+BUG: unable to handle kernel NULL pointer dereference at 00000002
+IP: [<f64665e0>] 0xf64665e0
+*pde = 00000000
+Oops: 0002 [#1]
+last sysfs file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
+Modules linked in: hwmon_vid sata_sil i2c_nforce2
+
+Pid: 6, comm: rcu_kthread Tainted: G        W   2.6.38-07035-g6447f55d
+#1    /NF7-S/NF7,NF7-V (nVidia-nForce2)
+EIP: 0060:[<f64665e0>] EFLAGS: 00010286 CPU: 0
+EIP is at 0xf64665e0
+EAX: 00000002 EBX: db384030 ECX: 00000000 EDX: 00000000
+ESI: d8805700 EDI: 00000283 EBP: c106612a ESP: f6479f58
+ DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+Process rcu_kthread (pid: 6, ti=f6478000 task=f64665e0 task.ti=f6478000)
+Stack:
+ f6479f74 f6479f80 f6479f94 c1066245 00000001 f64665e0 00000202 00000000
+ f64665e0 c1042100 f6479f80 f6479f80 f6469f30 00000000 c1066160 f6479fe4
+ c1041e14 00000000 00000000 00000000 00000001 dead4ead ffffffff ffffffff
+Call Trace:
+ [<c1066245>] ? rcu_kthread+0xe5/0x100
+ [<c1042100>] ? autoremove_wake_function+0x0/0x50
+ [<c1066160>] ? rcu_kthread+0x0/0x100
+ [<c1041e14>] ? kthread+0x74/0x80
+ [<c1041da0>] ? kthread+0x0/0x80
+ [<c136f5fa>] ? kernel_thread_helper+0x6/0xd
+Code: 94 02 c1 00 00 00 00 1b 08 00 00 bf c8 02 00 89 8c 02 c1 00 00
+00 00 06 00 00 00 8c c8 02 00 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a
+00 00 00 00 80 47 f6 02 00 00 00 40 a0 20 80 00 00 00 00 ff
+EIP: [<f64665e0>] 0xf64665e0 SS:ESP 0068:f6479f58
+CR2: 0000000000000002
+---[ end trace 8a45d2bc24cd677d ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+Pid: 6, comm: rcu_kthread Tainted: G      D W   2.6.38-07035-g6447f55d #1
+Call Trace:
+ [<c1366f9f>] ? printk+0x18/0x21
+ [<c1366e9e>] panic+0x57/0x140
+ [<c136afcf>] oops_end+0x8f/0x90
+ [<c101b284>] no_context+0xb4/0x150
+ [<c101b3ad>] __bad_area_nosemaphore+0x8d/0x130
+ [<c104fbea>] ? tick_dev_program_event+0x3a/0x130
+ [<c136cc7e>] ? do_page_fault+0x1ee/0x480
+ [<c136ca90>] ? do_page_fault+0x0/0x480
+ [<c136ca90>] ? do_page_fault+0x0/0x480
+ [<c101b462>] bad_area_nosemaphore+0x12/0x20
+ [<c136cd6c>] do_page_fault+0x2dc/0x480
+ [<c103020d>] ? irq_exit+0x3d/0x90
+ [<c136a24c>] ? restore_all_notrace+0x0/0x18
+ [<c11e0134>] ? trace_hardirqs_on_thunk+0xc/0x10
+ [<c136a24c>] ? restore_all_notrace+0x0/0x18
+ [<c1066125>] ? rcu_process_callbacks+0x55/0x90
+ [<c106612a>] ? rcu_process_callbacks+0x5a/0x90
+ [<c136ca90>] ? do_page_fault+0x0/0x480
+ [<c106612a>] ? rcu_process_callbacks+0x5a/0x90
+ [<c136a5d1>] error_code+0x5d/0x64
+ [<c106612a>] ? rcu_process_callbacks+0x5a/0x90
+ [<c136ca90>] ? do_page_fault+0x0/0x480
+ [<c1066245>] ? rcu_kthread+0xe5/0x100
+ [<c1042100>] ? autoremove_wake_function+0x0/0x50
+ [<c1066160>] ? rcu_kthread+0x0/0x100
+ [<c1041e14>] ? kthread+0x74/0x80
+ [<c1041da0>] ? kthread+0x0/0x80
+ [<c136f5fa>] ? kernel_thread_helper+0x6/0xd
