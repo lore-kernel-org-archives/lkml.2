@@ -1,102 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933265Ab1CWQMB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 12:12:01 -0400
-Received: from smtp104.prem.mail.sp1.yahoo.com ([98.136.44.59]:44787 "HELO
-	smtp104.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933172Ab1CWQL6 (ORCPT
+	id S933275Ab1CWQMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 12:12:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61595 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933245Ab1CWQMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 12:11:58 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: gzCLqN8VM1l.Vmt8BI2YMeZIu9tM06C4EtKG3E.zbr6.z4v
- 2v6ga_LBum3Yrh.AGRdaayLl1uw3ATOcRGZefM2obFb3mRZac0c92c0Vw6A_
- .SFC17sclcV74O1VtgkwBp8QXMaUQeSxGVW2TSE6sde1tTMFNpE_Eajk5ini
- S1y3SBTDJik8C2MflkUYvAqpAFwJB5hJsf0SiK5oVsogbQPODYq.Quks1LQX
- iyFky8MMsvb_GPMExJH26l5oBFwCAa_ixwHmTx0ynWWDIuBrNKfxTcG4HYDS
- 5rVzr1m92kH8NsOICPFI0rlGGqhoF65.ml4g-
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4D8A1BB4.4030709@schaufler-ca.com>
-Date: Wed, 23 Mar 2011 09:11:32 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Wed, 23 Mar 2011 12:12:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <greg@kroah.com>
+Subject: Re: RFC: Platform data for onboard USB assets
+Date: Wed, 23 Mar 2011 17:12:05 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: andy.green@linaro.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
+        grant.likely@secretlab.ca
+References: <4D79F068.2080009@linaro.org> <201103231132.02690.arnd@arndb.de> <20110323150852.GE6284@kroah.com>
+In-Reply-To: <20110323150852.GE6284@kroah.com>
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>
-CC: David Miller <davem@davemloft.net>, pekane52@gmail.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cxzhang@watson.ibm.com, sds@tycho.nsa.gov, jmorris@namei.org,
-        eparis@parisplace.org, paul.moore@hp.com,
-        LSM <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v2] net/unix: Add secdata to unix_stream msgs
-References: <1300840717-4413-1-git-send-email-pekane52@gmail.com>	 <20110322.193206.28821045.davem@davemloft.net> <1300895847.28871.13.camel@unknown001a4b0c2895>
-In-Reply-To: <1300895847.28871.13.camel@unknown001a4b0c2895>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103231712.06184.arnd@arndb.de>
+X-Provags-ID: V02:K0:UxXjnjWDS1IqhTziViQnR/fUznxoaCPDPMkt55yos7A
+ OCuwzwUITYmXNHOLd0u9H2f/wfc1kesq4+7ec+Zna5Tea1uBB7
+ /ex0lzCE1RIliEXtuRPkVC5VBOOLGS4jvWjF11nUPZ04T1WaBY
+ wwGAwWV8N9Cm4D0Fks7UsycMy68UtCZSSd7FI7obxc/MgGfUMF
+ REtRgBp23PLHp3ZTNUeyQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/23/2011 8:57 AM, Eric Paris wrote:
-> On Tue, 2011-03-22 at 19:32 -0700, David Miller wrote:
->> From: Pat Kane <pekane52@gmail.com>
->> Date: Tue, 22 Mar 2011 19:38:37 -0500
->>
->>> The unix_dgram routines add secdata to socket messages,
->>> but the unix_stream routines do not. I have added the
->>> two missing lines of code.
->>>
->>> Signed-off-by: Pat Kane <pekane52@gmail.com>
->> The security hooks appear to be only intended to operate on datagram
->> sockets, and as such I think the omission of UNIX stream sockets was
->> very much on purpose.
->>
->> The SELINUX hook implementations even have "_dgram()" in their names.
->>
->> Catherine Zhang added to CC: as she last made modifications to these
->> hooks.
-> And I'll add Paul Moore as I think he understands the intersection
-> of /net and /security better than anyone.
+On Wednesday 23 March 2011, Greg KH wrote:
+> On Wed, Mar 23, 2011 at 11:32:02AM +0100, Arnd Bergmann wrote:
+> > On Wednesday 23 March 2011, Andy Green wrote:
+> > > It's the case for even usbnet, which is using a broken heuristic to 
+> > > decide what to call the interface not even based on vid / pid.
+> > 
+> > I agree that the heuristics in usbnet is less than helpful here,
+> > which among other things leads people to mixing up the two problems
+> > of fixing the device naming and fixing the MAC address assignment.
+> > 
+> > Even though I know Greg disagrees, I'd still prefer sanitising the
+> > rules for the default device name that usbnet assigns.
+> 
+> I'm all for that, but recall, we can't because of previous
+> implementations and past history.  I.e. you will break working systems
+> if you do this.  So we are stuck with what we have at the moment, sorry.
 
-Paul is definitely the man on this. I've also added the LSM list,
-as while SELinux is the only current user of secdata that may not
-always be the case.
+I would still consider it a bug fix and argue that the number of actual
+people impacted by the current behaviour is much larger than the potential
+number people that might suffer from changing the behavior in an incompatible
+way, given that:
 
+* The common case for this hardware seems to be to ship with an eeprom
+  with a valid mac address, as identified by the fact that f4e8ab7c
+  "smsc95xx: generate random MAC address once, not every ifup" only recently
+  got into the kernel as a bug fix for the random case, though the driver
+  has been around since 2008.
 
->>> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
->>> index 1663e1a..8753cdd 100644
->>> --- a/net/unix/af_unix.c
->>> +++ b/net/unix/af_unix.c
->>> @@ -1642,6 +1642,8 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
->>>  		max_level = err + 1;
->>>  		fds_sent = true;
->>>  
->>> +		unix_get_secdata(siocb->scm, skb);
->>> +
->>>  		err = memcpy_fromiovec(skb_put(skb, size), msg->msg_iov, size);
->>>  		if (err) {
->>>  			kfree_skb(skb);
->>> @@ -1930,6 +1932,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
->>>  		} else {
->>>  			/* Copy credentials */
->>>  			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
->>> +			unix_set_secdata(siocb->scm, skb);
->>>  			check_creds = 1;
->>>  		}
->>>  
->>> -- 
->>> 1.7.1
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+* A google search on the term "smsc95xx" find almost exclusively discussions
+  about how to get the device to come up with a proper name on the panda
+  board, and various proposed workarounds.
 
+* The comment in usbnet.c about this suggests that the intent has always
+  been what is proposed now, it just doesn't match the code:
+
+           // heuristic:  "usb%d" for links we know are two-host,
+           // else "eth%d" when there's reasonable doubt.  userspace
+           // can rename the link if it knows better.
+                if ((dev->driver_info->flags & FLAG_ETHER) != 0 &&
+                    (net->dev_addr [0] & 0x02) == 0)
+                        strcpy (net->name, "eth%d");
+
+  In case of smsc95xx, we *know* that it's ethernet and not two-host,
+  there is no reasonable doubt about this. The code almost makes sense
+  on generic cdc devices, but not for anything else.
+
+	Arnd
