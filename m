@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400Ab1CWUiK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 16:38:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44076 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933340Ab1CWUh6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 16:37:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=psyiEbBNj6uACURWfu2gXC4vyL/aUDNbBB7YrQxHuiK7sLBgwDLnQ181Z0U3n0zRqq
-         2Oj6iQd6AqIFLQes7T0KYBrDkizOEx4xFIHGeizaMfUUn2JAwIZJ9aWazdJ7DEmSlu4A
-         F2tEc+yw3I/5VtRdF0Ix053zX6t17Y9x0QJP4=
+	id S933381Ab1CWUjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 16:39:24 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34016 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933331Ab1CWUjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 16:39:22 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 9/10] sh: Use struct syscore_ops instead of sysdev class and sysdev
+Date: Wed, 23 Mar 2011 21:39:39 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@suse.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
+References: <201103100131.58206.rjw@sisk.pl> <201103222119.28328.rjw@sisk.pl> <20110323095920.GA6008@linux-sh.org>
+In-Reply-To: <20110323095920.GA6008@linux-sh.org>
 MIME-Version: 1.0
-In-Reply-To: <20110119154915.a0bb2878.akpm@linux-foundation.org>
-References: <4D2DEDDB.1070605@gmail.com>
-	<20110119154915.a0bb2878.akpm@linux-foundation.org>
-Date: Wed, 23 Mar 2011 21:36:48 +0100
-X-Google-Sender-Auth: agQQAL1zDKDiVmuDgMgHl3uVy0k
-Message-ID: <AANLkTimpYyErnvEjSCevMCcKTW5ffyi9V5EB3U8RwuBG@mail.gmail.com>
-Subject: Re: [PATCH] adfs: add hexadecimal filetype suffix option
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stuart Swales <stuart.swales.croftnuisk@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103232139.40115.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 00:49, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 12 Jan 2011 18:07:23 +0000
-> Stuart Swales <stuart.swales.croftnuisk@gmail.com> wrote:
->> From: Stuart Swales<stuart.swales.croftnuisk@gmail.com>
+On Wednesday, March 23, 2011, Paul Mundt wrote:
+> On Tue, Mar 22, 2011 at 09:19:28PM +0100, Rafael J. Wysocki wrote:
+> > Convert the SuperH clocks framework and shared interrupt handling
+> > code to using struct syscore_ops instead of a sysdev classes and
+> > sysdevs for power managment.
+> > 
+> > This reduces the code size significantly and simplifies it.  The
+> > optimizations causing things not to be restored after creating a
+> > hibernation image are removed, but they might lead to undesirable
+> > effects during resume from hibernation (e.g. the clocks would be left
+> > as the boot kernel set them, which might be not the same way as the
+> > hibernated kernel had seen them before the hibernation).
+> > 
+> > This also is necessary for removing sysdevs from the kernel entirely
+> > in the future.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >  drivers/sh/clk/core.c       |   68 ++++++++-----------------------
+> >  drivers/sh/intc/core.c      |   95 +++++++++++++++++++++-----------------------
+> >  drivers/sh/intc/internals.h |    1 
+> >  3 files changed, 65 insertions(+), 99 deletions(-)
+> > 
+> This one looks good, and seems to work fine. Applied, thanks.
 
->> +static inline int append_filetype_suffix(char *buf, __u16 filetype)
->> +{
->> +     if ((__u16) -1 == filetype)
->
-> unneeded cast.
-
-My compiler tends to disagree. On current mainline, it says:
-
-fs/adfs/adfs.h: In function ‘append_filetype_suffix’:
-fs/adfs/adfs.h:115: warning: comparison is always false due to limited
-range of data type
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Cool, thanks!
