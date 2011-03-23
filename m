@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab1CWEQb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 00:16:31 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:57010 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab1CWEQa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 00:16:30 -0400
-Date: Wed, 23 Mar 2011 00:16:25 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Huang Ying <ying.huang@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 0/7] ACPI, APEI patches for 2.6.39
-In-reply-to: <1300762892.3616.12.camel@yhuang-mobile.sh.intel.com>
-Message-id: <alpine.LFD.2.02.1103230013260.10549@x980>
-References: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
- <alpine.LFD.2.02.1103021750250.12344@x980>
- <20110303000112.GG32215@one.firstfloor.org>
- <1300762892.3616.12.camel@yhuang-mobile.sh.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1753366Ab1CWETY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 00:19:24 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:33677 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753118Ab1CWETX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 00:19:23 -0400
+Date: Wed, 23 Mar 2011 04:18:52 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > [PATCH 1/7] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
-> > > > [PATCH 2/7] lib, Add lock-less NULL terminated single list
 
-> > > > [PATCH 3/7] ACPI, APEI, Add ERST record ID cache
-> > > > [PATCH 4/7] PCIe, AER, use pre-generated prefix in error information printing
-> > > > [PATCH 5/7] ACPI, APEI, Add PCIe AER error information printing support
+Hi Linus,
 
-I'll submit just 3,4,5/7 for upstream w/ the ACPI tree.
-I'd like to see andrew take 1,2,6 (which now need to be refreshed)
-in mm and when they ship, that will enable 7/7, which is the reason
-that they exist.
+One radeon, 2 core fixes, and an interface update to allow for > 2 crtcs 
+in vblank.
 
-thanks,
--Len
+hopefully the Intel guys can give me some updates on the s/r issue 
+tomorrow.
 
-> > > > [PATCH 6/7] lib, Make gen_pool memory allocator lockless
-> > > > [PATCH 7/7] ACPI, APEI, GHES, printk support for recoverable error via NMI
-> > > 
-> > > I've put this series into acpi-test, so it will be visible in linux-next;
-> > > but I'm not the right person to review the generic lockless stuff,
-> > > who is?
-> > 
-> > I reviewed it earlier and it seemed good to me (unless it has 
-> > changed), but Linus wanted non Intel reviewers too. Any takers?
-> 
-> As for
-> 
-> [PATCH 1/7] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
-> [PATCH 2/7] lib, Add lock-less NULL terminated single list
-> [PATCH 6/7] lib, Make gen_pool memory allocator lockless
-> 
-> they are general kernel patches.  I remember you have reviewed some
-> earlier version of these patches, and merged 1/2 into -mm tree.  Do you
-> have time to review these patches?  Although Andi has reviewed them, we
-> really need some non-Intel reviewers.
-> 
-> Thanks,
-> Huang Ying
-> b
-> 
+Dave.
+
+The following changes since commit c87a8d8dcd2587c203f3dd8a3c5c15d1e128ec0d:
+
+  drm/radeon: fixup refcounts in radeon dumb create ioctl. (2011-03-17 13:58:34 +1000)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Alex Deucher (1):
+      drm/radeon/kms: prefer legacy pll algo for tv-out
+
+Chris Wilson (1):
+      drm: Fix use-after-free in drm_gem_vm_close()
+
+Dave Airlie (1):
+      drm: check for modesetting on modeset ioctls
+
+Ilija Hadzic (1):
+      drm/kernel: vblank wait on crtc > 1
+
+ drivers/gpu/drm/drm_crtc.c             |   51 ++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/drm_gem.c              |    5 ++-
+ drivers/gpu/drm/drm_ioctl.c            |    3 ++
+ drivers/gpu/drm/drm_irq.c              |   15 ++++++---
+ drivers/gpu/drm/radeon/atombios_crtc.c |    6 +++-
+ include/drm/drm.h                      |    3 ++
+ 6 files changed, 75 insertions(+), 8 deletions(-)
