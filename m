@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015Ab1CWUAE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 16:00:04 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:56323 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932839Ab1CWUAB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 16:00:01 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=BRtdCf9YNG1SCUAG7QFhzciMJxM8WWXKsemMNjCFKPAWfboLdYn0yCuqa/wuPtUexxuMDo6xkLwAitSBiSDwDuRSq5hI/Rnfmg5VawJ+vkF9/PbHEpKV0oQhNwv5B6qE;
-Date: Wed, 23 Mar 2011 12:59:58 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: =?UTF-8?B?TWljaGHFgg==?= Nazarewicz <mnazarewicz@gmail.com>,
-        broonie@opensource.wolfsonmicro.com,
-        lkml <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Greg KH <greg@kroah.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, grant.likely@secretlab.ca,
-        Linux USB list <linux-usb@vger.kernel.org>, andy.green@linaro.org,
-        netdev@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        roger.quadros@nokia.com, Jaswinder Singh <jaswinder.singh@linaro.org>
-Subject: Re: [RFC] usbnet: use eth%d name for known ethernet devices
-Message-Id: <20110323125958.76285c0f.rdunlap@xenotime.net>
-In-Reply-To: <201103232057.18150.arnd@arndb.de>
-References: <4D79F068.2080009@linaro.org>
-	<201103232035.18232.arnd@arndb.de>
-	<AANLkTim7hPfTv3gDYnh+jGxHBg0OvX=r1FKYoHnH7H_o@mail.gmail.com>
-	<201103232057.18150.arnd@arndb.de>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
+	id S933179Ab1CWUAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 16:00:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51852 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932713Ab1CWUAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 16:00:41 -0400
+Date: Wed, 23 Mar 2011 16:00:08 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jack Steiner <steiner@sgi.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
+Message-ID: <20110323200008.GZ1239@redhat.com>
+References: <4D877C4B.9090602@gmail.com>
+ <20110321175110.GL1239@redhat.com>
+ <20110321182235.GA14562@sgi.com>
+ <20110321193740.GN1239@redhat.com>
+ <20110322171118.GA6294@sgi.com>
+ <20110322184450.GU1239@redhat.com>
+ <20110322212519.GA12076@sgi.com>
+ <20110322220505.GB13453@redhat.com>
+ <20110323163255.GA17178@sgi.com>
+ <20110323175320.GB9413@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110323175320.GB9413@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Mar 2011 20:57:18 +0100 Arnd Bergmann wrote:
+On Wed, Mar 23, 2011 at 01:53:20PM -0400, Don Zickus wrote:
+> Let me know if the patch fixes that problem.  Then it will be one less
+> thing to worry about. :-)
 
-> On Wednesday 23 March 2011 20:53:13 Michał Nazarewicz wrote:
-> > On Mar 23, 2011 8:36 PM, "Arnd Bergmann" <arnd@arndb.de> wrote:
-> >  >
-> >  > On Wednesday 23 March 2011 19:46:50 Greg KH wrote:
-> >  > > > @@ -97,6 +97,8 @@ struct driver_info {
-> >  > > >
-> >  > > >  #define FLAG_LINK_INTR       0x0800          /* updates link (carrier) status */
-> >  > > >
-> >  > > > +#define FLAG_PTP     0x1000          /* maybe use "usb%d" names */
-> >  > >
-> >  > > "PTP"?  What does that stand for?
-> >  >
-> >  > point-to-point, I'll improve the comment to spell it out when I send the
-> >  > fixed version.
-> >  
-> > I think P2P could be better.
-> 
-> Yes, good idea.
+Ok, I was an idiot and made the patch against RHEL-6.  Here is the one
+against 2.6.38.  Sorry about that.
 
-that's peer-to-peer.
+Cheers,
+Don
 
-OTOH, I knew that PTP was point-to-point.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 87eab4a..62ec8e9 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1375,7 +1375,7 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 	if ((handled > 1) ||
+ 		/* the next nmi could be a back-to-back nmi */
+ 	    ((__this_cpu_read(pmu_nmi.marked) == this_nmi) &&
+-	     (__this_cpu_read(pmu_nmi.handled) > 1))) {
++	     (__this_cpu_read(pmu_nmi.handled) > 0) && handled && this_nmi)) {
+ 		/*
+ 		 * We could have two subsequent back-to-back nmis: The
+ 		 * first handles more than one counter, the 2nd
+@@ -1386,6 +1386,8 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 		 * handling more than one counter. We will mark the
+ 		 * next (3rd) and then drop it if unhandled.
+ 		 */
++		//if ((__this_cpu_read(pmu_nmi.handled) == 1) && (handled == 1))
++		//	trace_printk("!! fixed?\n");
+ 		__this_cpu_write(pmu_nmi.marked, this_nmi + 1);
+ 		__this_cpu_write(pmu_nmi.handled, handled);
+ 	}
