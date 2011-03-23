@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089Ab1CWPWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 11:22:32 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:48381 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933030Ab1CWPWb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 11:22:31 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=J5KvVYhVxaw4EYpTMTQeQ+14fWxXadp875PY1XD4AyNV/imqLu5+5pYNCGJeVAUJ9fEf8RED8AXboFlVZ5ZbxHim0/bEGOrg0o+CgZ+DrcKzxlqYrwmr2qv6nQIt47DJ;
-Date: Wed, 23 Mar 2011 08:22:26 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: sclark46@earthlink.net
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Keith Packard <keithp@keithp.com>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm next tree
-Message-ID: <20110323082226.04510229@jbarnes-desktop>
-In-Reply-To: <4D89E5E1.3070402@earthlink.net>
-References: <alpine.DEB.2.00.1103170403160.3429@skynet.skynet.ie>
-	<AANLkTinoTs89ThBnZ17+fPE+t1V=GycKq2EJG-LadFZQ@mail.gmail.com>
-	<4D89E5E1.3070402@earthlink.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S933091Ab1CWPYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 11:24:54 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54146 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932773Ab1CWPYw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 11:24:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=M6Cq+c67pnojZwTmUoZRcXf7EcIS7Fqf5w6T6b2FQA+AGj+gQNYuYQFhSmgKeJwZk2
+         nSPssti5yPxodB5luETUwmLQeHigiuAODhGkY7y+s3ABwpN+2X+BhboHEtrVFuK2Hy9f
+         DV+lIhM3FSaIY9eQvpa5Inb1fWRowqOQhIOz8=
+Message-ID: <4D8A10BF.8010406@linaro.org>
+Date: Wed, 23 Mar 2011 15:24:47 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
+        roger.quadros@nokia.com, grant.likely@secretlab.ca
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <4D79F068.2080009@linaro.org> <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com> <1300828125.2402.300.camel@pasglop> <4D8924B6.8040403@linaro.org> <1300842219.2402.309.camel@pasglop> <alpine.LFD.2.00.1103222138320.11889@xanadu.home> <1300850595.2402.320.camel@pasglop> <alpine.LFD.2.00.1103222336030.11889@xanadu.home> <20110323093847.55e9dbba@lxorguk.ukuu.org.uk> <20110323105335.GB778@opensource.wolfsonmicro.com> <20110323150413.GC6284@kroah.com>
+In-Reply-To: <20110323150413.GC6284@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Mar 2011 08:21:53 -0400
-Stephen Clark <sclark46@earthlink.net> wrote:
+On 03/23/2011 03:04 PM, Somebody in the thread at some point said:
+> On Wed, Mar 23, 2011 at 10:53:35AM +0000, Mark Brown wrote:
+>> In the specific case of MACs and device names for network adaptors we
+>> have userspace solutions which are obscuring the discussion but there
+>> are other things which get configured this way which one would usually
+>> expect to be handled in kernel.
+>
+> No, this isn't obsucuring the discussion, it's exactly the point here.
+>
+> I asked for concrete examples of a need for this type of thing (i.e.
+> platform data on USB devices), and this was the only need cited.  I
+> then pointed out that this is correctly solved in userspace, as it has
+> for other devices like this, and that it's not a valid example of this
+> need.
+>
+> So again, this problem, for this device, has been solved in userspace
+> without any kernel changes needed.  If there are other devices that you,
 
-> On 03/22/2011 10:19 PM, Linus Torvalds wrote:
-> > So I had  hoped - yes, very naïve of me, I know - that this merge
-> > window would be different.
-> >
-> > But it's not.
-> >
-> > On Wed, Mar 16, 2011 at 9:09 PM, Dave Airlie<airlied@linux.ie>  wrote:
-> >    
-> >> i915: big 855 fix, lots of output setup refactoring, lots of misc fixes.
-> >>      
-> > .. and apparently a lot of breakage too. My crappy laptop that I abuse
-> > for travel is - once more - broken by the updates. I cannot suspend
-> > and resume, because every resume seems to fail.
-> >
-> > One of the more useful failures was:
-> >
-> > [   61.656055] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
-> > elapsed... GPU hung
-> > [   61.656079] [drm] capturing error event; look for more information
-> > in /debug/dri/0/i915_error_state
-> > [   61.664387] [drm:i915_wait_request] *ERROR* i915_wait_request
-> > returns -11 (awaiting 2 at 0, next 3)
-> >
-> > and I'm attaching the error_state file from that particular case here.
-> > In other cases it seems to just hang entirely.
-> >
-> > Keith/Jesse/Chris - I don't know that it's i915, and it will take
-> > forever to bisect (I'll try). But it does seem pretty likely.
-> >
-> >                               Linus
-> >    
-> Why can't the gpu be reset/restarted when this happens? When a nic card 
-> gets hung it is reinitialized
-> and restarted why not the gpu?
+Not sure what you mean by 'again', 'solved in userspace' and so on. 
+Your saying: "go away and do it in userspace" is different from it being 
+"solved in userspace" in reality.  The mess it would create in userspace 
+isn't acceptable.  The outcome of this is it's not fixed in the driver 
+nor userspace.
 
-Yeah, we try to restart in this case, but often just end up back in the
-same situation when the app runs again.  We could be meaner about
-things and SIGILL the app, but often it's an innocent bystander, and
-the real problem is kernel object synchronization and/or the DRI driver
-generating bad commands.
+I am currently trying working around it elsewhere in kernel along the 
+lines of Alan's idea, since I am not able to fix the actual driver.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+-Andy
