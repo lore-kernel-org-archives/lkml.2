@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab1CWHcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 03:32:31 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48658 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517Ab1CWHc3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 03:32:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=Avgs2rJ6OSUWzRWC9VH6BZ364fqWwUGBIWrTgdVhCoXR8ote0SS0/UIMi4Xo7l6Lb5
-         gFsJulWKcqU+vioCtKCVQqeSDXoAxe3LXi9ETed22H/NMoBYRZm+R+OUWhkkxxrsbgoF
-         O2s+oFGnW7s/QAOTse0bmdfKGFgtTcbvgs3Uo=
+	id S1754694Ab1CWHcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 03:32:42 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49088 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753884Ab1CWHcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 03:32:41 -0400
+Message-ID: <4D89A20E.3020604@suse.cz>
+Date: Wed, 23 Mar 2011 08:32:30 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110209183816.GD9533@thunk.org>
-References: <AANLkTinXsDN4Bhp9_kcbeu6BNMADTSBVN_6+nn63w+kW@mail.gmail.com>
-	<20110209183816.GD9533@thunk.org>
-Date: Wed, 23 Mar 2011 08:32:28 +0100
-Message-ID: <AANLkTi=4k7QrtPg1B7bbzNzVMjj_aKwq99+DByQo2BP6@mail.gmail.com>
-Subject: Re: [ext4] Multiple page-io submission (Option "mblk_io_submit")
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, sedat.dilek@gmail.com,
-        Curt Wohlgemuth <curtw@google.com>, linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: "s.dilek" <s.dilek@jpberlin.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, greg@kroah.com, joe@perches.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH]Clean up CodingStyle for scripts/kconfig/gconf.c
+References: <20110322143839.GA10291@gmail.com> <4D894CD0.9030509@cn.fujitsu.com>
+In-Reply-To: <4D894CD0.9030509@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 9, 2011 at 7:38 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Tue, Feb 08, 2011 at 06:30:29PM +0100, Sedat Dilek wrote:
->> Hi,
+On 23.3.2011 02:28, Li Zefan wrote:
+> Harry Wei wrote:
+>> Hi us,
+>>    	Clean up CodingStyle for scripts/kconfig/gconf.c.
 >>
->> while looking at pending patches in ext4.git#{master, for_linus}, I
->> saw "ext4: Fix data corruption with multi-block writepages support"
->> which should fix [2] according to text in the commit-body.
->>
->> Are you planning to turn on "multiple page-io submission" again by
->> default (as is was disabled in "ext4: Turn off multiple page-io
->> submission by default" [3])?
->
-> I'm planning on turning it on by default post 2.6.38, during the
-> 2.6.39-rc1 merge window.  That's me being paranoid, since this is so
-> late in the -rc cycle for 2.6.38.
->
->                                                - Ted
->
+> 
+> What makes you think this is a bad style? Does Documentation/CodingStyle say
+> so? Does checkpatch.pl make a complain? Do you really think this improves
+> readability? I don't think so, and actually it makes the code worse.
 
-Ping!
-(As the merge-window is still open.)
+This include can be removed completely, there is no config.h in kconfig.
 
-- Sedat -
+Michal
