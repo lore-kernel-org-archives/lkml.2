@@ -1,172 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275Ab1CWXhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 19:37:25 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:38182 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933061Ab1CWXhO (ORCPT
+	id S933306Ab1CWXic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 19:38:32 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:55522 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933061Ab1CWXia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 19:37:14 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkUEAHMhik15LK5JgWdsb2JhbACEQ6EBFQEBFiYliE2qGZB3DYEag0t3BA
-Date: Thu, 24 Mar 2011 10:36:48 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: sedat.dilek@gmail.com
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: vfs: inode lock breakup
-Message-ID: <20110323233647.GG26611@dastard>
-References: <1300793023-3775-1-git-send-email-david@fromorbit.com>
- <AANLkTimi97y2=t8srkgOpfjt7WF5ZroR_W=0mGpEgE96@mail.gmail.com>
- <20110323062939.GJ15270@dastard>
- <AANLkTikyFVRuXMvnvSqgcQacJVAZtSXq+CgXowDOw2pL@mail.gmail.com>
+	Wed, 23 Mar 2011 19:38:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=kT031AJy+tCP1xfOG/rxDihJaeY/fJtYBvUHV0ivY4JPtURQLyz1kNDuf1ZMvQLPy4
+         8+wNu1/lgYC3xlAplS+xT+LYOnAPsJjowN744tYGbKaVVERWxjYCyq6ZgtzsLPSDfuan
+         2vp1tDOnSq1NDfHNp5ZCkzKiPseET267Ov9BA=
+Message-ID: <4D8A8471.9060904@gmail.com>
+Date: Wed, 23 Mar 2011 16:38:25 -0700
+From: Steve Calfee <stevecalfee@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Michal Nazarewicz <mnazarewicz@gmail.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>, Arnd Bergmann <arnd@arndb.de>,
+        broonie@opensource.wolfsonmicro.com,
+        lkml <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, Greg KH <greg@kroah.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, grant.likely@secretlab.ca,
+        Linux USB list <linux-usb@vger.kernel.org>, andy.green@linaro.org,
+        netdev@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        roger.quadros@nokia.com, Jaswinder Singh <jaswinder.singh@linaro.org>
+Subject: Re: [RFC] usbnet: use eth%d name for known ethernet devices
+References: <4D79F068.2080009@linaro.org> <201103232035.18232.arnd@arndb.de>	<AANLkTim7hPfTv3gDYnh+jGxHBg0OvX=r1FKYoHnH7H_o@mail.gmail.com>	<201103232057.18150.arnd@arndb.de>	<20110323125958.76285c0f.rdunlap@xenotime.net> <8762r9l94h.fsf@erwin.mina86.com>
+In-Reply-To: <8762r9l94h.fsf@erwin.mina86.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikyFVRuXMvnvSqgcQacJVAZtSXq+CgXowDOw2pL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 08:53:19AM +0100, Sedat Dilek wrote:
-> On Wed, Mar 23, 2011 at 7:29 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Tue, Mar 22, 2011 at 07:17:04PM +0100, Sedat Dilek wrote:
-> >> On Tue, Mar 22, 2011 at 12:23 PM, Dave Chinner <david@fromorbit.com> wrote:
-> >> > Hi Al,
-> >> >
-> >> > The following patches are the inode_lock breakup series originally
-> >> > derived from Nick Piggin's vfs-scale tree. I've kind of been sitting
-> >> > on them until the dcache_lock breakup and rcu path-walk has had some
-> >> > time to be shaken out. The patch ѕet is pretty much unchanged from
-> >> > the last round of review last last year - all I've done to bring it
-> >> > up to date is forward port it and run it through some testing on XFS
-> >> > and ext4.
-> >> >
-> >> > I know it's late in the .39 merge window, but I hope you'll consider
-> >> > it if the patches are still acceptable(*). Otherwise I'm happy to take
-> >> > the time to get it right for .40.
-> >> >
-> >> > Cheers,
-> >> >
-> >> > Dave.
-> >> >
-> >> > (*) The series can also be found here:
-> >> >
-> >> >  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git inode-scale
-> >> >
-> >> > Dave Chinner (8):
-> >> >      fs: protect inode->i_state with inode->i_lock
-> >> >      fs: factor inode disposal
-> >> >      fs: Lock the inode LRU list separately
-> >> >      fs: remove inode_lock from iput_final and prune_icache
-> >> >      fs: move i_sb_list out from under inode_lock
-> >> >      fs: move i_wb_list out from under inode_lock
-> >> >      fs: rename inode_lock to inode_hash_lock
-> >> >      fs: pull inode->i_lock up out of writeback_single_inode
-> >> >
-> >> [...]
-> >>
-> >> Hi,
-> >>
-> >> I have tested this patch-series on top of linux-next (next-20110322)
-> >> by running xfstests-dev (built from git).
-> >>
-> >> My sdb2 partition (on an external 1GBytes USB-2.0 hdd) was formatted
-> >> and mounted as ext4-fs .
-> >
-> > If you really want to use xfstests to produce some system stress,
-> > you'd do better to use an XFS filesystem ;)
-> >
-> 
-> First, I was riddling why I could not install xfstests-dev to an
-> individual $PREFIX and waste(?) some time into looking into the
-> configure* files - dbtest.c failed building by not setting correct
-> $libgdbm (normal build via make is OK).
-> Then I saw the hardcoded /var/lib/ as INSTALL_PATH... and didn't
-> wanted dig deeper.
-> I overflew the README, but that file needs a bit of more hints.
+On 03/23/11 16:17, Michal Nazarewicz wrote:
+>>>>>>> @@ -97,6 +97,8 @@ struct driver_info {
+>>>>>>>
+>>>>>>>   #define FLAG_LINK_INTR       0x0800          /* updates link (carrier) status */
+>>>>>>>
+>>>>>>> +#define FLAG_PTP     0x1000          /* maybe use "usb%d" names */
+>
+>>>>> On Wednesday 23 March 2011 19:46:50 Greg KH wrote:
+>>>>>> "PTP"?  What does that stand for?
+>
+>>>> On Mar 23, 2011 8:36 PM, "Arnd Bergmann"<arnd@arndb.de>  wrote:
+>>>>> point-to-point, I'll improve the comment to spell it out when
+>>>>> I send the fixed version.
+>
+>>> On Wednesday 23 March 2011 20:53:13 Michał Nazarewicz wrote:
+>>>> I think P2P could be better.
+>
+>> On Wed, 23 Mar 2011 20:57:18 +0100 Arnd Bergmann wrote:
+>>> Yes, good idea.
+>
+> Randy Dunlap<rdunlap@xenotime.net>  writes:
+>> that's peer-to-peer.
+>>
+>> OTOH, I knew that PTP was point-to-point.
+>
+> It can be any of that, depending on context.  For me PTP is more like
+> Picture Transport Protocol, whereas "2" between two letters is usually
+> "to".
+>
+Well, my 2 cents, picture transport protocol is so obviously different 
+than flags for network interfaces it does not cause a mental collision. 
+However P2P is about to become a huge wifi issue, which definitely is in 
+the network space. So don't confuse things in the near future, don't use 
+P2P.
 
-xfstests has never really been packaged as a standaone package, so
-the build/configure system is a bit grotesque in places. It kind of
-assumes that you've already installed everything you need manually
-on your test box.
+Maybe a completely different, not so overused flag name would be better.
 
-If someone wants to fix that all up so it can be packaged as .rpm
-and .deb packages with aal the correct dependencies, then patches
-are welcome...
+Regards, Steve
 
-> I can do some XFS testing if you wish.
 
-No big deal, I was just pointing out that ext4 coverage of the test
-suite is limited compared to the XFS coverage...
-
-> The numbers in the result say nothing to me as I can't compare them
-> with other systems.
-> It's like putting the hand in a glass of water and wild speculating
-> the temperature.
-> You can say cold or warm if you have a 2nd glass with different temperature.
-> 
-> So, it might be worth to add a file (name: benchmark.txt?) with some results?
-
-I don't see any real point - the output is pass/fail for each test
-with and inidcation of the failure. If you want to dig deeperr into
-the failures, it points at where to look.
-
-> >> The check-log is attached (not sure how to interpret the errors and failures).
-> >
-> > Nothing indicates an unknown failure...
-> >
-> >> 001 5s ... 4s
-> >> 002 1s ... 1s
-> >> 003    [not run] not suitable for this filesystem type: ext4
-> >> 004    [not run] not suitable for this filesystem type: ext4
-> >> 005    - output mismatch (see 005.out.bad)
-> >> --- 005.out   2011-03-22 17:47:03.861226933 +0100
-> >> +++ 005.out.bad       2011-03-22 18:47:58.847277538 +0100
-> >> @@ -1,7 +1,7 @@
-> >>  QA output created by 005
-> >>  *** touch deep symlinks
-> >>
-> >> -ELOOP returned.  Good.
-> >> +No ELOOP?  Unexpected!
-> >>
-> >>  *** touch recusive symlinks
-> >
-> > This is a result of Al fixing the max nested loop depth very early
-> > on in .39, so the test needs to run to deeper nesting depths to
-> > produce ELOOP. So it's a test problem, not a bug.
-> >
-> >> 197    [not run] not suitable for this filesystem type: ext4
-> >> 198    [failed, exit status 127] - output mismatch (see 198.out.bad)
-> >> --- 198.out   2011-03-22 17:47:03.917226229 +0100
-> >> +++ 198.out.bad       2011-03-22 19:04:12.591035920 +0100
-> >> @@ -1,2 +1,3 @@
-> >>  QA output created by 198
-> >>  Silence is golden.
-> >> +./198: line 54: /home/sd/src/xfstests-dev/xfstests-dev/src/aio-dio-regress/aiodio_sparse2: No such file or directory
-> >
-> > You need to install libaio and friends so that the binary is
-> > built. We probably need to add a "requires_aio" test option to
-> > detect this situation and not_run the test gracefully.
-> >
-> 
-> Yupp, the build-/configure-system could be enhanced in that case.
-> (I add "Notes to myself" see my P.S. to remember what I did and what I missed.)
-
-Well, it's not a configure system issue - it's that the test itself
-doesn't correctly detect what was built.....
-
-> BTW, are changes/updates to xfstests-dev announced somewhere (like ML)?
-
-The XFS mailing list (xfs@oss.sgi.com) is used for development and
-release announcements. And there's usually information in
-Christoph's monthly XFS summary that he posts to -fsdevel and LKML.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
