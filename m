@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932988Ab1CWVdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 17:33:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35122 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756653Ab1CWVdL (ORCPT
+	id S1756689Ab1CWVnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 17:43:15 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:35297 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab1CWVnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 17:33:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=mER2zmiOBPHwLqfZCy+j/1nMOaXYz2cbumjXuSIcXMSG5hktFBDk8VZzwmP9pN4z9a
-         PkmSh52i+RT71IljgxZjXgID+Xgo3tG/Ww5UZjXTkY7BZB5PT6lecwLxXwZ7MsiHrpt4
-         8HXrw/mcSLfdHub+L/w0DB/VNvWpnJbP1WtOQ=
-Message-ID: <4D8A670E.6080706@openvz.org>
-Date: Thu, 24 Mar 2011 00:33:02 +0300
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] kgdb, x86: Pull up NMI notifier handler priority
-References: <4D8A58E1.5090509@openvz.org> <20110323211656.GA29184@redhat.com>
-In-Reply-To: <20110323211656.GA29184@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 Mar 2011 17:43:13 -0400
+Subject: Re: [PATCH V12 3/4] ptp: Added a clock driver for the IXP46x.
+From: John Stultz <john.stultz@linaro.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <cd6ddff0dcca60ac88b35660505d7bf54ad32405.1298878618.git.richard.cochran@omicron.at>
+References: <cover.1298878618.git.richard.cochran@omicron.at>
+	 <cd6ddff0dcca60ac88b35660505d7bf54ad32405.1298878618.git.richard.cochran@omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 14:43:00 -0700
+Message-ID: <1300916580.848.51.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2011 12:16 AM, Don Zickus wrote:
-> On Wed, Mar 23, 2011 at 11:32:33PM +0300, Cyrill Gorcunov wrote:
->> kgdb needs IPI to be sent and handled before perf
->> or anything else NMI, otherwise kgdb hangs with bootup
->> self-tests (found on P4 HT SMP machine). Raise its priority
->> so that we're called first in a notifier chain.
+On Mon, 2011-02-28 at 08:58 +0100, Richard Cochran wrote:
+> This patch adds a driver for the hardware time stamping unit found on the
+> IXP465. The basic clock operations and an external trigger are implemented.
 > 
-> This is only because P4 perf swallows all the nmis.  If that is the case
-> you are arguing to make the perf nmi at the bottom of the priority list,
-> which is probably not where it should be due to its volume.
+> Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+> Acked-by: John Stultz <johnstul@us.ibm.com>
 
-The problem is that there IPI wait cycle inside kgdb and we are to be sure
-to handle it early. And perf eventually can consume kgdb NMI which would
-lead to infinite wait loop so I don't see any easier way to deal with it.
+My ack is still fine, but found a few more nits to consider on another
+pass... 
 
-> 
-> I am stuck debugging P4 problems again for RHEL-6 and I noticed a small
-> change that is needed (didn't help my problem though) but it looked like
-> an oversight that might help your case.
-> 
-> Cheers,
-> Don
-> 
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-> index 3769ac8..d945314 100644
-> --- a/arch/x86/kernel/cpu/perf_event_p4.c
-> +++ b/arch/x86/kernel/cpu/perf_event_p4.c
-> @@ -777,6 +787,7 @@ static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
->  	 * the counter has reached zero value and continued counting before
->  	 * real NMI signal was received:
->  	 */
-> +	rdmsrl(hwc->event_base, v);
->  	if (!(v & ARCH_P4_UNFLAGGED_BIT))
->  		return 1;
->  
 
-Good catch! Ack! It seems to be escaped in first place (I fear I forgot to
-refresh patch before send it). Mind to send the full patch to Ingo?
+> +static int match(struct sk_buff *skb, u16 uid_hi, u32 uid_lo, u16 seq)
+[snip]
+> +static void do_rx_timestamp(struct port *port, struct sk_buff *skb)
+[snip]
+> +static u64 sys_time_read(struct ixp46x_ts_regs *regs)
+[snip]
+> +static void sys_time_write(struct ixp46x_ts_regs *regs, u64 ns)
 
--- 
-    Cyrill
+I know these are static, but these function names are sort of generic
+names, and make grep/cscoping for similar sounding functions a little
+noisy. 
+
+Maybe add a ipx_ prefix just to be more obvious?
+
+thanks
+-john
+
+
