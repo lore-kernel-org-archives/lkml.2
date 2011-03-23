@@ -1,35 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796Ab1CWMxf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 08:53:35 -0400
-Received: from fep32.mx.upcmail.net ([62.179.121.50]:47369 "EHLO
-	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932649Ab1CWMxe (ORCPT
+	id S932804Ab1CWMy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 08:54:26 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42356 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932649Ab1CWMyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 08:53:34 -0400
-X-SourceIP: 77.58.148.40
-Message-ID: <4D89E99F.30808@odi.ch>
-Date: Wed, 23 Mar 2011 13:37:51 +0100
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Thunderbird/3.1.9
-MIME-Version: 1.0
+	Wed, 23 Mar 2011 08:54:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=r3vOmd1Q5BfjtSrNrw8ZYpwmc+mFnWasxQ/FsebXkcNRju5e/tylMIGv57Vrgcxecq
+         5N8aKzRYw4qNHMWeuw8LgB/z8JRm8Jg+6Ejb4BadRuqxV7CsQahryXezjd8MdRrx9mgq
+         gHsi7lM9SS5Stbi/no08/EZG+ed8vGUgM+W5A=
+Subject: [PATCH] mfd: Constify i2c_device_id tables
+From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Subject: High latency in wine after suspend
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Harald Welte <laforge@openmoko.org>,
+        Matti Aaltonen <matti.j.aaltonen@nokia.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 20:54:17 +0800
+Message-ID: <1300884857.3015.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=tMVj8KYobzzX0EiRnC7vY2isLrCxFvdg4RrHWPZXwJ0= c=1 sm=0 a=I24HDECOQz4A:10 a=I-aKXA68520A:10 a=8nJEP1OIZ-IA:10 a=lprJiLIn0XdbWHZakhMA:9 a=GGMa-YBUMs8Y8ltQvWEK2DWNensA:4 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Harald Welte <laforge@openmoko.org>
+Cc: Matti Aaltonen <matti.j.aaltonen@nokia.com>
+---
+ drivers/mfd/pcf50633-core.c |    2 +-
+ drivers/mfd/wl1273-core.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-After a suspend/resume cycle I see intermittent high latency in
-poll_schedule_timeout (latencytop). This leads to the mouse cursor
-freezing for several seconds sometimes when switching to/from a window
-of a wine process. The problem never occurs before suspend, but always
-occurs after. Any ideas what could cause such behaviour? Kernel is
-vanilla 2.6.38 x86_64 running on a recent HP laptop with Intel chipset.
+diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
+index c1306ed..c7687f6 100644
+--- a/drivers/mfd/pcf50633-core.c
++++ b/drivers/mfd/pcf50633-core.c
+@@ -356,7 +356,7 @@ static int __devexit pcf50633_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
+-static struct i2c_device_id pcf50633_id_table[] = {
++static const struct i2c_device_id pcf50633_id_table[] = {
+ 	{"pcf50633", 0x73},
+ 	{/* end of list */}
+ };
+diff --git a/drivers/mfd/wl1273-core.c b/drivers/mfd/wl1273-core.c
+index f76f6c7..04914f2 100644
+--- a/drivers/mfd/wl1273-core.c
++++ b/drivers/mfd/wl1273-core.c
+@@ -25,7 +25,7 @@
+ 
+ #define DRIVER_DESC "WL1273 FM Radio Core"
+ 
+-static struct i2c_device_id wl1273_driver_id_table[] = {
++static const struct i2c_device_id wl1273_driver_id_table[] = {
+ 	{ WL1273_FM_DRIVER_NAME, 0 },
+ 	{ }
+ };
+-- 
+1.7.1
 
-Ortwin
+
 
