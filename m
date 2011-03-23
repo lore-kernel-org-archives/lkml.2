@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab1CWSFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 14:05:48 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57304 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755392Ab1CWSFq (ORCPT
+	id S932225Ab1CWSKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 14:10:07 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:23762 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392Ab1CWSKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 14:05:46 -0400
-Subject: Re: [PATCH-v2] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
- module
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Douglas Gilbert <dgilbert@interlog.com>
-In-Reply-To: <1300487957-28800-1-git-send-email-nab@linux-iscsi.org>
-References: <1300487957-28800-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Mar 2011 13:05:42 -0500
-Message-ID: <1300903542.15899.27.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Mar 2011 14:10:05 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6294"; a="81438360"
+From: David Brown <davidb@codeaurora.org>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Subject: Re: [Git pull] MSM for v2.6.39
+References: <8yazkotpwk6.fsf@huya.qualcomm.com>
+	<1300890191.6117.43.camel@m0nster>
+Date: Wed, 23 Mar 2011 11:10:42 -0700
+In-Reply-To: <1300890191.6117.43.camel@m0nster> (Daniel Walker's message of
+	"Wed, 23 Mar 2011 07:23:11 -0700")
+Message-ID: <8yapqphhfml.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-18 at 15:39 -0700, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> This patch adds the TCM_Loop Linux/SCSI LLD fabric module for
-> accessing TCM device
-> backstores as locally accessable SCSI LUNs in virtual SAS, FC, and
-> iSCSI Target ports
-> using the generic fabric TransportID and Target Port WWN naming
-> handlers from TCM's
-> target_core_fabric_lib.c  The TCM_Loop module uses the generic fabric
-> configfs infratructure
-> provided by target_core_fabric_configfs.c and adds a module dependent
-> attribute for the
-> creation/release of the virtual I_T Nexus connected the TCM_Loop
-> Target and Initiator Ports.
-> 
-> TCM_Loop can also be used with scsi-generic and BSG drivers so that
-> STGT userspace
-> fabric modules, QEMU-KVM and other hypervisor SCSI passthrough support
-> can
-> access TCM device backstore and control CDB emulation.
-> 
-> For more information please see:
-> 
-> http://linux-iscsi.org/wiki/Tcm_loop
-> 
-> This patch has been updated with changes from Christoph's feedback.
+On Wed, Mar 23 2011, Daniel Walker wrote:
 
-And checkpatch next time, too please:
+> On Thu, 2011-03-17 at 08:59 -0700, David Brown wrote:
+>> David Brown (16):
+>>       msm: Add CPU queries
+>>       msm: Generalize timer register mappings
+>>       msm: Generalize QGIC registers
+>>       msm: Add MSM 8960 cpu_is check
+>>       Merge branch 'msm-uart' into for-next
+>>       Merge branch 'msm-8960' into for-next
+>>       Merge branch 'msm-sdcc' into for-next
+>>       Merge branch 'msm-fb' into for-next
+>>       Merge branch 'msm-8960' into msm-core
+>>       msm: Remove broken register definition from trout
+>>       msm: Warning fix in trout gpio board file
+>>       Merge branch 'msm-core' into for-next
+>>       Merge branch 'msm-core' into for-next
+>>       Merge branch 'msm-core' into for-next
+>>       msm: Use explicit GPLv2 licenses
+>>       Merge remote branch 'rmk/for-linus' into for-linus 
+>
+> Could you change the "for-next" name to something more interesting like
+> msm-for-linus .. I think it would be acceptable to just create
+> msm-for-linus during the merge window and merge all the sub-tree's into
+> that.
 
-total: 25 errors, 25 warnings, 1681 lines checked
+I think the problem was that these trees came in, intended for
+linux-next, and were pulled into that branch.  Then, I published that as
+the tree for the pull-request 'for-linus', but nothing was actually
+merged into that tree.
 
-James
+I can do a separate merge into the 'for-linus' tree before the merge
+window, but then I won't be giving a pull request for the same commit as
+what has been being tested in linux-next.  I'm not sure what is
+preferred here.  Doing a separate merge at the end has the benefit of
+reducing the number of intermediate merges.  The tree sha will be the
+same in either case, so it's really a matter what the history should
+look like.
 
+Thanks,
+David
 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
