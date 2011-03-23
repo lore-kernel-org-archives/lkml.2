@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab1CWOfe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:35:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58126 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751109Ab1CWOfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:35:33 -0400
+	id S932470Ab1CWOgK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:36:10 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:41780 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756097Ab1CWOgH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:36:07 -0400
+From: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
+To: Greg KH <gregkh@suse.de>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>
+Date: Wed, 23 Mar 2011 15:35:27 +0100
+Subject: RE: [PATCH 2/2] mach-ux500: Add CG2900 devices
+Thread-Topic: [PATCH 2/2] mach-ux500: Add CG2900 devices
+Thread-Index: AcvpZuY4DTFVyG4ATP6mGlERu1TqJAAADWlA
+Message-ID: <AFCDDB4A3EA003429EEF1E7B211FDBBA334C4DE825@EXDCVYMBSTM005.EQ1STM.local>
+References: <1300888803-26474-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+ <20110323142719.GA17369@suse.de>
+In-Reply-To: <20110323142719.GA17369@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20110323171051.1ADA.A69D9226@jp.fujitsu.com>
-References: <20110322200945.B06D.A69D9226@jp.fujitsu.com> <20110323164949.5be6aa48.kamezawa.hiroyu@jp.fujitsu.com>
- <20110323171051.1ADA.A69D9226@jp.fujitsu.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 23 Mar 2011 07:34:43 -0700
-Message-ID: <AANLkTimLbaMTHKiuWu5edS4Offf4KZv2TJ+g8BUgzLYt@mail.gmail.com>
-Subject: Re: [PATCH 5/5] x86,mm: make pagefault killable
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        Andrey Vagin <avagin@openvz.org>, Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 1:09 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->
-> When __lock_page_or_retry() return 0, It call up_read(mmap_sem) in this
-> function.
+Hi Greg,
 
-Indeed.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: den 23 mars 2011 15:27
+> To: Par-Gunnar HJALMDAHL
+> Cc: devel@driverdev.osuosl.org; Linus Walleij; linux-
+> kernel@vger.kernel.org; linux-bluetooth@vger.kernel.org; Pavan Savoy;
+> Vitaly Wool; Alan Cox; Arnd Bergmann; Marcel Holtmann; Lukasz
+> Rymanowski; Linus WALLEIJ; Par-Gunnar Hjalmdahl; Lee Jones
+> Subject: Re: [PATCH 2/2] mach-ux500: Add CG2900 devices
+> 
+> On Wed, Mar 23, 2011 at 03:00:03PM +0100, Par-Gunnar Hjalmdahl wrote:
+> > This patch adds the board specific data for the CG2900
+> > driver on a UX500 board.
+> >
+> > Signed-off-by: Par-Gunnar Hjalmdahl <par-
+> gunnar.p.hjalmdahl@stericsson.com>
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > ---
+> >  arch/arm/mach-ux500/Makefile         |    4 +
+> >  arch/arm/mach-ux500/board-mop500.c   |  160 ++++++++++++++++
+> >  arch/arm/mach-ux500/devices-cg2900.c |  349
+> ++++++++++++++++++++++++++++++++++
+> >  arch/arm/mach-ux500/devices-cg2900.h |   19 ++
+> >  4 files changed, 532 insertions(+), 0 deletions(-)
+> >  create mode 100644 arch/arm/mach-ux500/devices-cg2900.c
+> >  create mode 100644 arch/arm/mach-ux500/devices-cg2900.h
+> 
+> As this touches ARM specific code, I need an ack from the ARM
+> maintainer
+> before I can take this through the staging tree.  Is there any way to
+> make it part of your drivers/staging/ submission?  There are other
+> examples in the staging tree already that do this, why not do that here
+> as well?
+> 
+> thanks,
+> 
+> greg k-h
 
-> I agree this is strange (or ugly). but I don't want change this spec in
-> this time.
+I've been discussing this with Linus Walleij, who is the maintainer of
+arch/arm/mach-ux500.
+He suggested that I should let this be a separate patch and that I
+should include it in the same patch set where he would pick the patch
+from it.
+I guess he will respond soon since he's on cc.
 
-I agree that it is strange, and I don't like functions that touch
-locks that they didn't take themselves, but since the original point
-of the whole thing was to wait for the page without holding the
-mmap_sem lock, that function has to do the up_read() early.
-
-                   Linus
+/P-G
