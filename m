@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab1CWKtk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:49:40 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:46120 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755271Ab1CWKti (ORCPT
+	id S1756223Ab1CWKug (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:50:36 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:20160 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755271Ab1CWKue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:49:38 -0400
-Date: Wed, 23 Mar 2011 10:49:11 +0000
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Amit Shah <amit.shah@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: sr driver fails to update inode size after media change
-Message-ID: <20110323104911.GA18422@stefanha-thinkpad.localdomain>
+	Wed, 23 Mar 2011 06:50:34 -0400
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Jiri Slaby'" <jslaby@suse.cz>, <jirislaby@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>, "'Jean Delvare'" <khali@linux-fr.org>,
+        <linux-i2c@vger.kernel.org>
+References: <1300870200-24405-1-git-send-email-jslaby@suse.cz> <1300870200-24405-5-git-send-email-jslaby@suse.cz>
+Subject: RE: [PATCH 5/7] I2C: eg20t, remove unused variable
+Date: Wed, 23 Mar 2011 19:50:31 +0900
+Message-ID: <3DCFFD98C696488F94CB1A74F2998DF9@hacdom.okisemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcvpN4jupOcNFvn8QA600wAgoKuWFAAD+Jhw
+In-Reply-To: <1300870200-24405-5-git-send-email-jslaby@suse.cz>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-Both 2.6.38 and older kernels do not update the CD-ROM block device
-inode's size after media change.  If one process holds a file descriptor
-to the device across media change, then all other processes on the
-system will read the outdated size when they use lseek(2) even if they
-opened the device after media change.
+Hi Jiri,
 
-The reason for this is that although the sysfs size attribute is
-up-to-date, the inode size is never updated by the sr driver or the
-universal cdrom driver.
+It looks OK.
 
-Here is an example.  There is a medium inserted:
-$ cat /sys/block/sr0/size
-7656192
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com> 
 
-Now let's start a process that keeps the file descriptor open:
-$ python
-1>>> import os
-1>>> fd = os.open('/dev/sr0', os.O_RDONLY | os.O_NONBLOCK)
-1>>> os.lseek(fd, 0, 2) / 512
-7656192
+Thanks,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
-Now change the medium and check what sysfs says after hald/udisks has
-polled:
-$ cat /sys/block/sr0/size
-15120512
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org 
+> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Jiri Slaby
+> Sent: Wednesday, March 23, 2011 5:50 PM
+> To: jirislaby@gmail.com
+> Cc: linux-kernel@vger.kernel.org; Jiri Slaby; Jean Delvare; 
+> linux-i2c@vger.kernel.org
+> Subject: [PATCH 5/7] I2C: eg20t, remove unused variable
+> 
+> drivers/i2c/busses/i2c-eg20t.c:684:2: warning: Value stored 
+> to 'msglen' is never read msglen = (pmsg->len) - (subaddrlen + 1);
+> ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: linux-i2c@vger.kernel.org
+> ---
+>  drivers/i2c/busses/i2c-eg20t.c |    8 --------
+>  1 files changed, 0 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-eg20t.c 
+> b/drivers/i2c/busses/i2c-eg20t.c index 878a120..ea73252 100644
+> --- a/drivers/i2c/busses/i2c-eg20t.c
+> +++ b/drivers/i2c/busses/i2c-eg20t.c
+> @@ -651,8 +651,6 @@ static s32 pch_i2c_xfer(struct 
+> i2c_adapter *i2c_adap,
+>  	struct i2c_msg *pmsg;
+>  	u32 i = 0;
+>  	u32 status;
+> -	u32 msglen;
+> -	u32 subaddrlen;
+>  	s32 ret;
+>  
+>  	struct i2c_algo_pch_data *adap = i2c_adap->algo_data; 
+> @@ -676,12 +674,6 @@ static s32 pch_i2c_xfer(struct 
+> i2c_adapter *i2c_adap,
+>  	status = pmsg->flags;
+>  	pch_dbg(adap,
+>  		"After invoking I2C_MODE_SEL :flag= 0x%x\n", status);
+> -	/* calculate sub address length and message length */
+> -	/* these are applicable only for buffer mode */
+> -	subaddrlen = pmsg->buf[0];
+> -	/* calculate actual message length excluding
+> -	 * the sub address fields */
+> -	msglen = (pmsg->len) - (subaddrlen + 1);
+>  	if (status & (I2C_M_RD)) {
+>  		pch_dbg(adap, "invoking pch_i2c_readbytes\n");
+>  		ret = pch_i2c_readbytes(i2c_adap, pmsg, (i + 1 == num),
+> --
+> 1.7.4.1
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Okay, the size has been updated in sysfs.  The python process still has
-a file descriptor to the device open.  Let's start a new process and see
-what lseek(2) says:
-$ python
-2>>> import os
-2>>> fd = os.open('/dev/sr0', os.O_RDONLY | os.O_NONBLOCK)
-2>>> os.lseek(fd, 0, 2) / 512
-7656192
-2>>> os.close(fd)
-
-Still the old value because the inode size has not been updated.
-
-Close the file descriptor in the original process so there are no more
-references and then reopen it:
-1>>> os.close(fd)
-1>>> fd = os.open('/dev/sr0', os.O_RDONLY | os.O_NONBLOCK)
-1>>> os.lseek(fd, 0, 2) / 512
-15120512
-
-Now we get the new value.
-
-I would like to add a check_disk_size_change() call to sr.c.  Is there a
-reason to keep the existing behavior?
-
-Stefan
