@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab1CWQUe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 12:20:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62744 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab1CWQUc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 12:20:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH 0/7] char/mei: Intel MEI Driver
-Date: Wed, 23 Mar 2011 17:20:26 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Weil, Oren jer" <oren.jer.weil@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "david@woodhou.se" <david@woodhou.se>
-References: <1300791092-14319-1-git-send-email-oren.jer.weil@intel.com> <F28B59AD52D84B479DCA469824475335065A96C0AD@hasmsx503.ger.corp.intel.com> <20110323160624.GA8972@suse.de>
-In-Reply-To: <20110323160624.GA8972@suse.de>
+	id S1752618Ab1CWQYE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 12:24:04 -0400
+Received: from kroah.org ([198.145.64.141]:33780 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751820Ab1CWQYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 12:24:02 -0400
+Date: Wed, 23 Mar 2011 09:23:51 -0700
+From: Greg KH <greg@kroah.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au
+Subject: Re: [PATCH 1/3] Add a kstrtobool function matching semantics of
+ existing in kernel equivalents.
+Message-ID: <20110323162351.GB9367@kroah.com>
+References: <1300887554-19031-1-git-send-email-jic23@cam.ac.uk>
+ <1300887554-19031-2-git-send-email-jic23@cam.ac.uk>
+ <AANLkTimeEKjVwwYi+twb0oeoFK-33LMx5aQBZEnPodne@mail.gmail.com>
+ <20110323160120.GA8770@kroah.com>
+ <4D8A1CB7.4090505@cam.ac.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103231720.27107.arnd@arndb.de>
-X-Provags-ID: V02:K0:/sYcm+mLM+UBr3Uryz0uCQwvv2Jp8wxnxAJi+dd6HIy
- yLxy2aiQy3vRvWxu/jczTsbAy8IyWuHjRqgVsElj7as9+/VsCu
- js0M0/0zsAR1Xqpm0xy7VDWUSvhIy0SP1vwfWTmw6aw9/NAGsI
- CUZ+99fzde/RIZNuG1RNAeGRPPeaQ35GmWQU428XiMozopNi9K
- jPQMBQrVh8kGbej447diw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D8A1CB7.4090505@cam.ac.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 March 2011, Greg KH wrote:
-> On Wed, Mar 23, 2011 at 05:55:47PM +0200, Weil, Oren jer wrote:
-> > >> >I suppose one of the important things to do here is integrate the
-> > >> >watchdog part into the common watchdog infrastructure in
-> > >> >drivers/watchdog. Maybe this driver can export a simple interface to
-> > >> >another module that implements the watchdog device?
-> > >>
-> > >> Yes, this is one the ideas the Alan suggested, we are thinking about
-> > >> this direction in the future.
-> > >
-> > >What's keeping you from doing this now?
+On Wed, Mar 23, 2011 at 04:15:51PM +0000, Jonathan Cameron wrote:
+> On 03/23/11 16:01, Greg KH wrote:
+> > On Wed, Mar 23, 2011 at 05:30:11PM +0200, Alexey Dobriyan wrote:
+> >> On Wed, Mar 23, 2011 at 3:39 PM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+> >>> +int kstrtobool(const char *s, bool *res)
+> >>> +{
+> >>> +       switch (s[0]) {
+> >>> +       case 'y':
+> >>> +       case 'Y':
+> >>> +       case '1':
+> >>> +               *res = true;
+> >>> +       case 'n':
+> >>> +       case 'N':
+> >>> +       case '0':
+> >>> +               *res = false;
+> >>> +       default:
+> >>> +               return -EINVAL;
+> >>> +       }
+> >>> +       return 0;
+> >>> +}
+> >>
+> >> sigh... such simple thing and so many bugs
+> Yeah, not by best work.
+> >>
+> >> The only values such function should accept is 0 and 1.
 > > 
-> > We need to change the driver to expose functions to communicate with the FW
-> > Client (feature) 
-> > From other kernel models, the design for now is only from user space.
+> > Why?  That's not the way the existing kernel functions that use this
+> > work.
+> > 
+> >> Have you read the rest of kstrto*() code?
+> >> Where is newline check?
+> There are plenty of nastier cases that get through than a newline
+> in the middle of the string (ybobsyouruncle -> 1 nyes->0 :)
+> >>
+> >> Anyway, I think it's better do not exist.
+> > 
+> > I think it is, as it's already duplicated in at least 2 different places
+> > in the kernel, and probably more.  Once we get this implementation
+> > working correctly, we don't need to rewrite it again.
+> Perhaps naming it like this is a bad idea.  It manages to imply that it
+> has the same level of strict checking which is seen in the other kstrto*
+> functions - which is self evidently not true!
 
-For a simple example, look at drivers/watchdog/riowd.c (most other
-files in that directory do as well), just replace the riowd_writereg()
-function in there with one that calls an exported function from your
-hardware. This should really be trivial to do.
- 
-> So you need to add support to the watchdog infrastructure for this?  For
-> some reason I thought you could kick the watchdog from within kernel
-> code, did I get this wrong?
+Ok, perhaps the name might need to be changed a bit, but the idea is
+still good to have.  Please try again.
 
-A watchdog must be triggered from user space, in Linux we do this by
-writing to /dev/watchdog. If you did it from kernel space, the watchdog
-would not detect the case where the system is half-broken and still
-able to trigger the watchdog, but not do much beyond that.
+thanks,
 
-	Arnd
+greg k-h
