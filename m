@@ -1,69 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab1CWJGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 05:06:18 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37862 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849Ab1CWJGR convert rfc822-to-8bit (ORCPT
+	id S1756030Ab1CWJNN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 05:13:13 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51057 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab1CWJNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 05:06:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=gXurxC4DFudkXUdnuVncHvN0MwV2ex4HYPQEtYH6qL9k7ax8qFJPT5eyensEpi/LjM
-         sU/gov+vvbjvpQWdulyzksSSS+pl6+PBBdgK8g+eR54SeBwEPZ9ruxU3NCT0FtwAg5TW
-         S5ji9q/244PI/OVC/PbZ35hXU0/1Ki6MqGcDs=
-MIME-Version: 1.0
-In-Reply-To: <1300868532.3522.81.camel@thor.local>
-References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
-	<1300864998.3522.71.camel@thor.local>
-	<AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
-	<1300868532.3522.81.camel@thor.local>
-Date: Wed, 23 Mar 2011 19:06:16 +1000
-Message-ID: <AANLkTi=mFKBqF48DwGsQL278grJChCVzw==D7vr49n09@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Dave Airlie <airlied@gmail.com>
-To: =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Mar 2011 05:13:11 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 23 Mar 2011 18:06:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>,
+        Curt Wohlgemuth <curtw@google.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+Message-Id: <20110323180628.09cd770e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTinPsfz1-2O9HNXE_ej-oUa+N5YOdN+cQQimOCBP@mail.gmail.com>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+	<20110311171006.ec0d9c37.akpm@linux-foundation.org>
+	<AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
+	<20110314202324.GG31120@redhat.com>
+	<AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
+	<20110315184839.GB5740@redhat.com>
+	<20110316131324.GM2140@cmpxchg.org>
+	<AANLkTim7q3cLGjxnyBS7SDdpJsGi-z34bpPT=MJSka+C@mail.gmail.com>
+	<20110316215214.GO2140@cmpxchg.org>
+	<AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
+	<20110317124350.GQ2140@cmpxchg.org>
+	<AANLkTinPsfz1-2O9HNXE_ej-oUa+N5YOdN+cQQimOCBP@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/23 Michel D�nzer <michel@daenzer.net>:
-> On Mit, 2011-03-23 at 18:16 +1000, Dave Airlie wrote:
->> 2011/3/23 Michel D�nzer <michel@daenzer.net>:
->> > On Mit, 2011-03-23 at 04:18 +0000, Dave Airlie wrote:
->> >>
->> >> One radeon, 2 core fixes, and an interface update to allow for > 2 crtcs
->> >> in vblank.
->> >
->> > [...]
->> >
->> >> Ilija Hadzic (1):
->> >> � � � drm/kernel: vblank wait on crtc > 1
->> >
->> > This patch was still being debated yesterday, are you deliberately
->> > pushing it regardless? Once it hits mainline, it'll be pretty much set
->> > in stone.
->>
->> From what I can see it was the userspace patches being debated, this
->> one seemed fine and the interface looked okay to me.
->
-> The author ignored my suggestions to make the patch smaller and simpler,
-> more maintainable and more future-proof all at once.
+On Fri, 18 Mar 2011 00:57:09 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-It was already small and I'm not sure merging the flags made it more
-maintainable. Its always
-being a slightly painful ioctl, and hopefully any future changes add a
-new ioctl esp if we want 64-bit values.
+> On Thu, Mar 17, 2011 at 5:43 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > On Wed, Mar 16, 2011 at 09:41:48PM -0700, Greg Thelen wrote:
+> >> In '[PATCH v6 8/9] memcg: check memcg dirty limits in page writeback' Jan and
+> >> Vivek have had some discussion around how memcg and writeback mesh.
+> >> In my mind, the
+> >> discussions in 8/9 are starting to blend with this thread.
+> >>
+> >> I have been thinking about Johannes' struct memcg_mapping.  I think the idea
+> >> may address several of the issues being discussed, especially
+> >> interaction between
+> >> IO-less balance_dirty_pages() and memcg writeback.
+> >>
+> >> Here is my thinking.  Feedback is most welcome!
+> >>
+> >> The data structures:
+> >> - struct memcg_mapping {
+> >>        struct address_space *mapping;
+> >>        struct mem_cgroup *memcg;
+> >>        int refcnt;
+> >>   };
+> >> - each memcg contains a (radix, hash_table, etc.) mapping from bdi to memcg_bdi.
+> >> - each memcg_bdi contains a mapping from inode to memcg_mapping.  This may be a
+> >>   very large set representing many cached inodes.
+> >> - each memcg_mapping represents all pages within an bdi,inode,memcg.  All
+> >>   corresponding cached inode pages point to the same memcg_mapping via
+> >>   pc->mapping.  I assume that all pages of inode belong to no more than one bdi.
+> >> - manage a global list of memcg that are over their respective background dirty
+> >>   limit.
+> >> - i_mapping continues to point to a traditional non-memcg mapping (no change
+> >>   here).
+> >> - none of these memcg_* structures affect root cgroup or kernels with memcg
+> >>   configured out.
+> >
+> > So structures roughly like this:
+> >
+> > struct mem_cgroup {
+> >        ...
+> >        /* key is struct backing_dev_info * */
+> >        struct rb_root memcg_bdis;
+> > };
+> >
+> > struct memcg_bdi {
+> >        /* key is struct address_space * */
+> >        struct rb_root memcg_mappings;
+> >        struct rb_node node;
+> > };
+> >
+> > struct memcg_mapping {
+> >        struct address_space *mapping;
+> >        struct mem_cgroup *memcg;
+> >        struct rb_node node;
+> >        atomic_t count;
+> > };
+> >
+> > struct page_cgroup {
+> >        ...
+> >        struct memcg_mapping *memcg_mapping;
+> > };
+> >
+> >> The routines under discussion:
+> >> - memcg charging a new inode page to a memcg: will use inode->mapping and inode
+> >>   to walk memcg -> memcg_bdi -> memcg_mapping and lazily allocating missing
+> >>   levels in data structure.
+> >>
+> >> - Uncharging a inode page from a memcg: will use pc->mapping->memcg to locate
+> >>   memcg.  If refcnt drops to zero, then remove memcg_mapping from the memcg_bdi.
+> >>   Also delete memcg_bdi if last memcg_mapping is removed.
+> >>
+> >> - account_page_dirtied(): nothing new here, continue to set the per-page flags
+> >>   and increment the memcg per-cpu dirty page counter.  Same goes for routines
+> >>   that mark pages in writeback and clean states.
+> >
+> > We may want to remember the dirty memcg_mappings so that on writeback
+> > we don't have to go through every single one that the memcg refers to?
+> 
+> I think this is a good idea to allow per memcg per bdi list of dirty mappings.
+> 
+> It feels like some of this is starting to gel.  I've been sketching
+> some of the code to see how the memcg locking will work out.  The
+> basic structures I see are:
+> 
+> struct mem_cgroup {
+>         ...
+>         /*
+>          * For all file pages cached by this memcg sort by bdi.
+>          * key is struct backing_dev_info *; value is struct memcg_bdi *
+>          * Protected by bdis_lock.
+>          */
+>         struct rb_root bdis;
+>         spinlock_t bdis_lock;  /* or use rcu structure, memcg:bdi set
+> could be fairly static */
+> };
+> 
+> struct memcg_bdi {
+>         struct backing_dev_info *bdi;
+>         /*
+>          * key is struct address_space *; value is struct
+> memcg_mapping *
+>          * memcg_mappings live within either mappings or
+> dirty_mappings set.
+>          */
+>         struct rb_root mappings;
+>         struct rb_root dirty_mappings;
+>         struct rb_node node;
+>         spinlock_t lock; /* protect [dirty_]mappings */
+> };
+> 
+> struct memcg_mapping {
+>         struct address_space *mapping;
+>         struct memcg_bdi *memcg_bdi;
+>         struct rb_node node;
+>         atomic_t nr_pages;
+>         atomic_t nr_dirty;
+> };
+> 
+> struct page_cgroup {
+>         ...
+>         struct memcg_mapping *memcg_mapping;
+> };
+> 
+> - each memcg contains a mapping from bdi to memcg_bdi.
+> - each memcg_bdi contains two mappings:
+>   mappings: from address_space to memcg_mapping for clean pages
+>   dirty_mappings: from address_space to memcg_mapping when there are
+> some dirty pages
+> - each memcg_mapping represents a set of cached pages within an
+> bdi,inode,memcg.  All
+>  corresponding cached inode pages point to the same memcg_mapping via
+>  pc->mapping.  I assume that all pages of inode belong to no more than one bdi.
+> - manage a global list of memcg that are over their respective background dirty
+>  limit.
+> - i_mapping continues to point to a traditional non-memcg mapping (no change
+>  here).
+> - none of these memcg_* structures affect root cgroup or kernels with memcg
+>  configured out.
+> 
+> The routines under discussion:
+> - memcg charging a new inode page to a memcg: will use inode->mapping and inode
+>  to walk memcg -> memcg_bdi -> mappings and lazily allocating missing
+>  levels in data structure.
+> 
+> - Uncharging a inode page from a memcg: will use pc->mapping->memcg to locate
+>  memcg.  If refcnt drops to zero, then remove memcg_mapping from the
+> memcg_bdi.[dirty_]mappings.
+>  Also delete memcg_bdi if last memcg_mapping is removed.
+> 
+> - account_page_dirtied(): increment nr_dirty.  If first dirty page,
+> then move memcg_mapping from memcg_bdi.mappings to
+> memcg_bdi.dirty_mappings page counter.  When marking page clean, do
+> the opposite.
+> 
+> - mem_cgroup_balance_dirty_pages(): if memcg dirty memory usage if above
+>  background limit, then add memcg to global memcg_over_bg_limit list and use
+>  memcg's set of memcg_bdi to wakeup each(?) corresponding bdi flusher.  If over
+>  fg limit, then use IO-less style foreground throttling with per-memcg per-bdi
+>  (aka memcg_bdi) accounting structure.
+> 
+> - bdi writeback: will revert some of the mmotm memcg dirty limit changes to
+>  fs-writeback.c so that wb_do_writeback() will return to checking
+>  wb_check_background_flush() to check background limits and being
+> interruptible if sync flush occurs.  wb_check_background_flush() will
+> check the global
+>  memcg_over_bg_limit list for memcg that are over their dirty limit.
+> Within each memcg write inodes from the dirty_mappings list until a
+> threshold page count has been reached (MAX_WRITEBACK_PAGES).  Then
+> move to next listed memcg.
+> 
+> - over_bground_thresh() will determine if memcg is still over bg limit.
+>  If over limit, then it per bdi per memcg background flushing will continue.
+>  If not over limit then memcg will be removed from memcg_over_bg_limit list.
+> 
+> I'll post my resulting patches in RFC form, or (at the least) my conclusions.
+> 
+please take care of force_empty and move_mapping at el. when you do this
+and please do rmdir() tests.
 
-The only comment I really thought was necessary was changing the CAP
-name, but since that isn't
-part of the ABI (just the number) we can quickly fix it with a follow-up.
 
-Dave.
-Dave.
+Thanks,
+-Kame
+
