@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab1CWODX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 10:03:23 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:52597 "EHLO twin.jikos.cz"
+	id S1755392Ab1CWOGH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 10:06:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35733 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932254Ab1CWODV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 10:03:21 -0400
-Date: Wed, 23 Mar 2011 15:02:35 +0100
-From: David Sterba <dave@jikos.cz>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: dave <dave@jikos.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, adilger <adilger@dilger.ca>
-Subject: Re: ext4 deep stack with mark_page_dirty reclaim
-Message-ID: <20110323140235.GF17108@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	dave <dave@jikos.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-mm <linux-mm@kvack.org>, adilger <adilger@dilger.ca>
-References: <alpine.LSU.2.00.1103141156190.3220@sister.anvils>
- <20110314204627.GB8120@thunk.org>
- <FE7209AC-C66C-4482-945E-58CF5AF8FEE7@dilger.ca>
- <20110315152222.GW17108@twin.jikos.cz>
- <1300206353-sup-9759@think>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300206353-sup-9759@think>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752882Ab1CWOGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 10:06:04 -0400
+Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
+ kfree_rcu()
+From: James Bottomley <James.Bottomley@suse.de>
+To: paulmck@linux.vnet.ibm.com
+Cc: Robert Love <robert.w.love@intel.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>, Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
+        Jarek Poplawski <jarkao2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@open-fcoe.org" <devel@open-fcoe.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+In-Reply-To: <20110323065014.GU2322@linux.vnet.ibm.com>
+References: <4D82D071.5020703@cn.fujitsu.com>
+	 <4D82D3FF.2080303@cn.fujitsu.com> <4D82D45A.30102@cn.fujitsu.com>
+	 <1300814913.19083.427.camel@fritz>
+	 <20110323065014.GU2322@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 09:05:51 -0500
+Message-ID: <1300889151.15899.4.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 12:26:43PM -0400, Chris Mason wrote:
-> Also, the ftrace stack usage tracer gives more verbose output that
-> includes the size of each function.
+On Tue, 2011-03-22 at 23:50 -0700, Paul E. McKenney wrote:
+> The kfree_rcu() definition is as
+> follows:
+> 
+> #define kfree_rcu(ptr, rcu_head)					\
+> 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
 
-Yet another one on the list is the -fstack-size option in new gcc 4.6 [*].
-It creates a file with .su extension containing lines in format
-file:line:char:function_name	stack_size	linkage_type
+Isn't this one of those cases where the obvious use of the interface is
+definitely wrong?
 
-eg.
+It's also another nasty pseudo C prototype.  I know we do this sort of
+thing for container_of et al, but I don't really think we want to extend
+it.
 
-a.c:168:5:main     224     static
+Why not make the interface take a pointer to the embedding structure and
+one to the rcu_head ... that way all pointer mathematics can be
+contained inside the RCU routines.
+
+James
 
 
-dave
-
-* http://gcc.gnu.org/gcc-4.6/changes.html
