@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab1CWKug (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:50:36 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:20160 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755271Ab1CWKue (ORCPT
+	id S1756243Ab1CWKwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:52:44 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:32896 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756103Ab1CWKwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:50:34 -0400
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Jiri Slaby'" <jslaby@suse.cz>, <jirislaby@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>, "'Jean Delvare'" <khali@linux-fr.org>,
-        <linux-i2c@vger.kernel.org>
-References: <1300870200-24405-1-git-send-email-jslaby@suse.cz> <1300870200-24405-5-git-send-email-jslaby@suse.cz>
-Subject: RE: [PATCH 5/7] I2C: eg20t, remove unused variable
-Date: Wed, 23 Mar 2011 19:50:31 +0900
-Message-ID: <3DCFFD98C696488F94CB1A74F2998DF9@hacdom.okisemi.com>
+	Wed, 23 Mar 2011 06:52:42 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D89D144.1040705@cam.ac.uk>
+Date: Wed, 23 Mar 2011 10:53:56 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: Greg KH <greg@kroah.com>
+CC: LKML <linux-kernel@vger.kernel.org>, David Brownell <david-b@pacbell.net>
+Subject: Re: Standard handling of boolean attributes in sysfs.
+References: <4D87AEE0.8000807@cam.ac.uk> <20110321201411.GA1704@kroah.com> <4D88811F.7060901@cam.ac.uk> <20110322223013.GB31312@kroah.com>
+In-Reply-To: <20110322223013.GB31312@kroah.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcvpN4jupOcNFvn8QA600wAgoKuWFAAD+Jhw
-In-Reply-To: <1300870200-24405-5-git-send-email-jslaby@suse.cz>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On 03/22/11 22:30, Greg KH wrote:
+> On Tue, Mar 22, 2011 at 10:59:43AM +0000, Jonathan Cameron wrote:
+>> On 03/21/11 20:14, Greg KH wrote:
+>>> On Mon, Mar 21, 2011 at 08:02:40PM +0000, Jonathan Cameron wrote:
+>>>> Hi All,
+>>>>
+>>>> Just wondering what the feeling would be about having
+>>>> a utility function similar to sysfs_streq to provide a
+>>>> consistent option for all those sysfs attributes out there
+>>>> where
+>>>>
+>>>> 1, on, true -> 1
+>>>> 0, off, false -> 0
+>>>>
+>>>> Or does such a beast already exist and I'm just being unobservant?
+>>>
+>>> We have the one in debugfs that I think people use for sysfs.  Have you
+>>> looked at that?
+>>>
+>> Thanks for the pointer...
+>>
+>> write_file_bool in fs/debugfs/file.c?  
+>>
+>> What is there is pretty much what is needed, but it's not a general
+>> use function like sysfs_streq. Clearly it would make sense to use
+>> what is there as a basis of such a function. 
+>>
+>> To save others looking it up, the relevant bit is:
+>>
+>> 	switch (buf[0]) {
+>> 	case 'y':
+>> 	case 'Y':
+>> 	case '1':
+>> 		*val = 1;
+>> 		break;
+>> 	case 'n':
+>> 	case 'N':
+>> 	case '0':
+>> 		*val = 0;
+>> 		break;
+>> 	}
+>>
+>> There are a few cut and paste copies of this about (mostly in IIO drivers actually
+>> hence why I asking if there is a better way :).
+>>
+>> Unless there is demand for it elsewhere I'll just add a utility function to the IIO
+>> core to do this and we can revisit the case for a general function when the need
+>> turns up elsewhere.
+> 
+> The other function that does this, and is what I was thinking of, is
+> param_set_bool().  Care to merge both of these functions together into
+> something "sane" and have everyone use it?
+Will put out an RFC labeled patch on this and see how it goes down.
 
-It looks OK.
-
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com> 
-
-Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org 
-> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Jiri Slaby
-> Sent: Wednesday, March 23, 2011 5:50 PM
-> To: jirislaby@gmail.com
-> Cc: linux-kernel@vger.kernel.org; Jiri Slaby; Jean Delvare; 
-> linux-i2c@vger.kernel.org
-> Subject: [PATCH 5/7] I2C: eg20t, remove unused variable
-> 
-> drivers/i2c/busses/i2c-eg20t.c:684:2: warning: Value stored 
-> to 'msglen' is never read msglen = (pmsg->len) - (subaddrlen + 1);
-> ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Cc: linux-i2c@vger.kernel.org
-> ---
->  drivers/i2c/busses/i2c-eg20t.c |    8 --------
->  1 files changed, 0 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-eg20t.c 
-> b/drivers/i2c/busses/i2c-eg20t.c index 878a120..ea73252 100644
-> --- a/drivers/i2c/busses/i2c-eg20t.c
-> +++ b/drivers/i2c/busses/i2c-eg20t.c
-> @@ -651,8 +651,6 @@ static s32 pch_i2c_xfer(struct 
-> i2c_adapter *i2c_adap,
->  	struct i2c_msg *pmsg;
->  	u32 i = 0;
->  	u32 status;
-> -	u32 msglen;
-> -	u32 subaddrlen;
->  	s32 ret;
->  
->  	struct i2c_algo_pch_data *adap = i2c_adap->algo_data; 
-> @@ -676,12 +674,6 @@ static s32 pch_i2c_xfer(struct 
-> i2c_adapter *i2c_adap,
->  	status = pmsg->flags;
->  	pch_dbg(adap,
->  		"After invoking I2C_MODE_SEL :flag= 0x%x\n", status);
-> -	/* calculate sub address length and message length */
-> -	/* these are applicable only for buffer mode */
-> -	subaddrlen = pmsg->buf[0];
-> -	/* calculate actual message length excluding
-> -	 * the sub address fields */
-> -	msglen = (pmsg->len) - (subaddrlen + 1);
->  	if (status & (I2C_M_RD)) {
->  		pch_dbg(adap, "invoking pch_i2c_readbytes\n");
->  		ret = pch_i2c_readbytes(i2c_adap, pmsg, (i + 1 == num),
-> --
-> 1.7.4.1
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Jonathan
 
