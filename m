@@ -1,162 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab1CWKLm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:11:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50823 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406Ab1CWKGT (ORCPT
+	id S932408Ab1CWKOP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:14:15 -0400
+Received: from nwd2mail10.analog.com ([137.71.25.55]:56403 "EHLO
+	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932210Ab1CWKON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:06:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=CkF2iwWP5pnyHNPKhvFgU28Y7HHG1SgqAszfzxLJm/DtQMgiwDM/4Ev7tWwcGKG+ck
-         AX5wNIF6PozWAKdNcHiUYim9o9eD0FUeRtto22l4JUldmdtekWjQaIcWAFp4pg3Nk3UI
-         tLsLF05n8L2uatzUjdsmqQQVBZdG83CraJUok=
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com,
-        Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>
-Subject: [PATCH 04/20] ptrace: Kill tracehook_notify_jctl()
-Date: Wed, 23 Mar 2011 11:05:50 +0100
-Message-Id: <1300874766-12941-5-git-send-email-tj@kernel.org>
+	Wed, 23 Mar 2011 06:14:13 -0400
+X-IronPort-AV: E=Sophos;i="4.63,230,1299474000"; 
+   d="scan'208";a="31143243"
+From: <cliff.cai@analog.com>
+To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: drivers@analog.com, jic23@cam.ac.uk,
+        device-drivers-devel@blackfin.uclinux.org,
+        Cliff Cai <cliff.cai@analog.com>
+Subject: [PATCH 1/3] Add MACRO for gyro quadrature correction
+Date: Wed, 23 Mar 2011 17:15:25 +0800
+Message-ID: <1300871727-32239-1-git-send-email-cliff.cai@analog.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1300874766-12941-1-git-send-email-tj@kernel.org>
-References: <1300874766-12941-1-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tracehook_notify_jctl() aids in determining whether and what to report
-to the parent when a task is stopped or continued.  The function also
-adds an extra requirement that siglock may be released across it,
-which is currently unused and quite difficult to satisfy in
-well-defined manner.
+From: Cliff Cai <cliff.cai@analog.com>
 
-As job control and the notifications are about to receive major
-overhaul, remove the tracehook and open code it.  If ever necessary,
-let's factor it out after the overhaul.
+Add gyro_z_quadrature_correction_raw define.
 
-* Oleg spotted incorrect CLD_CONTINUED/STOPPED selection when ptraced.
-  Fixed.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>
+Signed-off-by: Cliff Cai <cliff.cai@analog.com>
 ---
- include/linux/tracehook.h |   27 ---------------------------
- kernel/signal.c           |   34 ++++++++++++++--------------------
- 2 files changed, 14 insertions(+), 47 deletions(-)
+ drivers/staging/iio/gyro/gyro.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/tracehook.h b/include/linux/tracehook.h
-index 3a2e66d..b073f3c 100644
---- a/include/linux/tracehook.h
-+++ b/include/linux/tracehook.h
-@@ -469,33 +469,6 @@ static inline int tracehook_get_signal(struct task_struct *task,
- }
+diff --git a/drivers/staging/iio/gyro/gyro.h b/drivers/staging/iio/gyro/gyro.h
+index b4ea5bf..b549561 100644
+--- a/drivers/staging/iio/gyro/gyro.h
++++ b/drivers/staging/iio/gyro/gyro.h
+@@ -57,6 +57,9 @@
+ #define IIO_DEV_ATTR_GYRO_Z_CALIBSCALE(_mode, _show, _store, _addr)		\
+ 	IIO_DEVICE_ATTR(gyro_z_calibscale, _mode, _show, _store, _addr)
  
- /**
-- * tracehook_notify_jctl - report about job control stop/continue
-- * @notify:		zero, %CLD_STOPPED or %CLD_CONTINUED
-- * @why:		%CLD_STOPPED or %CLD_CONTINUED
-- *
-- * This is called when we might call do_notify_parent_cldstop().
-- *
-- * @notify is zero if we would not ordinarily send a %SIGCHLD,
-- * or is the %CLD_STOPPED or %CLD_CONTINUED .si_code for %SIGCHLD.
-- *
-- * @why is %CLD_STOPPED when about to stop for job control;
-- * we are already in %TASK_STOPPED state, about to call schedule().
-- * It might also be that we have just exited (check %PF_EXITING),
-- * but need to report that a group-wide stop is complete.
-- *
-- * @why is %CLD_CONTINUED when waking up after job control stop and
-- * ready to make a delayed @notify report.
-- *
-- * Return the %CLD_* value for %SIGCHLD, or zero to generate no signal.
-- *
-- * Called with the siglock held.
-- */
--static inline int tracehook_notify_jctl(int notify, int why)
--{
--	return notify ?: (current->ptrace & PT_PTRACED) ? why : 0;
--}
--
--/**
-  * tracehook_finish_jctl - report about return from job control stop
-  *
-  * This is called by do_signal_stop() after wakeup.
-diff --git a/kernel/signal.c b/kernel/signal.c
-index f4db769..03d874e 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1727,7 +1727,7 @@ void ptrace_notify(int exit_code)
- static int do_signal_stop(int signr)
- {
- 	struct signal_struct *sig = current->signal;
--	int notify;
-+	int notify = 0;
- 
- 	if (!sig->group_stop_count) {
- 		struct task_struct *t;
-@@ -1759,19 +1759,16 @@ static int do_signal_stop(int signr)
- 	 * a group stop in progress and we are the last to stop, report
- 	 * to the parent.  When ptraced, every thread reports itself.
- 	 */
--	notify = sig->group_stop_count == 1 ? CLD_STOPPED : 0;
--	notify = tracehook_notify_jctl(notify, CLD_STOPPED);
--	/*
--	 * tracehook_notify_jctl() can drop and reacquire siglock, so
--	 * we keep ->group_stop_count != 0 before the call. If SIGCONT
--	 * or SIGKILL comes in between ->group_stop_count == 0.
--	 */
--	if (sig->group_stop_count) {
--		if (!--sig->group_stop_count)
--			sig->flags = SIGNAL_STOP_STOPPED;
--		current->exit_code = sig->group_exit_code;
--		__set_current_state(TASK_STOPPED);
-+	if (!--sig->group_stop_count) {
-+		sig->flags = SIGNAL_STOP_STOPPED;
-+		notify = CLD_STOPPED;
- 	}
-+	if (task_ptrace(current))
-+		notify = CLD_STOPPED;
++#define IIO_DEV_ATTR_GYRO_Z_QUADRATURE_CORRECTION(_show, _addr)		\
++	IIO_DEVICE_ATTR(gyro_z_quadrature_correction_raw, S_IRUGO, _show, NULL, _addr)
 +
-+	current->exit_code = sig->group_exit_code;
-+	__set_current_state(TASK_STOPPED);
-+
- 	spin_unlock_irq(&current->sighand->siglock);
+ #define IIO_DEV_ATTR_GYRO(_show, _addr)			\
+ 	IIO_DEVICE_ATTR(gyro_raw, S_IRUGO, _show, NULL, _addr)
  
- 	if (notify) {
-@@ -1860,14 +1857,11 @@ relock:
- 
- 		signal->flags &= ~SIGNAL_CLD_MASK;
- 
--		why = tracehook_notify_jctl(why, CLD_CONTINUED);
- 		spin_unlock_irq(&sighand->siglock);
- 
--		if (why) {
--			read_lock(&tasklist_lock);
--			do_notify_parent_cldstop(current->group_leader, why);
--			read_unlock(&tasklist_lock);
--		}
-+		read_lock(&tasklist_lock);
-+		do_notify_parent_cldstop(current->group_leader, why);
-+		read_unlock(&tasklist_lock);
- 		goto relock;
- 	}
- 
-@@ -2034,7 +2028,7 @@ void exit_signals(struct task_struct *tsk)
- 	if (unlikely(tsk->signal->group_stop_count) &&
- 			!--tsk->signal->group_stop_count) {
- 		tsk->signal->flags = SIGNAL_STOP_STOPPED;
--		group_stop = tracehook_notify_jctl(CLD_STOPPED, CLD_STOPPED);
-+		group_stop = CLD_STOPPED;
- 	}
- out:
- 	spin_unlock_irq(&tsk->sighand->siglock);
 -- 
 1.7.1
 
