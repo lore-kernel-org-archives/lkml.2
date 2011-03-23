@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab1CWWL1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 18:11:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34210 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752063Ab1CWWL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 18:11:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
-Subject: Re: Corrupted files after suspend to disk
-Date: Wed, 23 Mar 2011 23:11:38 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
-References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com> <201103232136.19091.rjw@sisk.pl> <AANLkTimSyPiaq14yNP-KPxPcUaCqd4xr1xVNhefdK722@mail.gmail.com>
-In-Reply-To: <AANLkTimSyPiaq14yNP-KPxPcUaCqd4xr1xVNhefdK722@mail.gmail.com>
+	id S1756741Ab1CWWPR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 18:15:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59904 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945Ab1CWWPO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 18:15:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=AVfhheECEJIpmPtSSPYC9LUEudzftrQHnsGamEm8jzpfc+KDe3+NpLZ+Lh3ljt2kcI
+         Mm2Ujty0jEJugX+LUXt3K+FUIitNQDBX6HPc0ZwNPvXl6X1rWxLq8/vdOIQrXfvC2XGa
+         IrxurG5eC1sgjz8pYuD9mMhcrF78okfOlA4Ko=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103232311.38889.rjw@sisk.pl>
+In-Reply-To: <AANLkTimHzPn2Xe1RVRQKjwdynDvc3iL2=8kJ1p8kRZQ4@mail.gmail.com>
+References: <1300768985-902-1-git-send-email-gerg@snapgear.com>
+	<AANLkTimHzPn2Xe1RVRQKjwdynDvc3iL2=8kJ1p8kRZQ4@mail.gmail.com>
+Date: Wed, 23 Mar 2011 23:14:58 +0100
+X-Google-Sender-Auth: LOnnwV8qN5kDm4n0ofET07F9EyA
+Message-ID: <AANLkTi=ohXGdwfAtWmDJKCq+cJtFqJdTCmPCxFOg6dY6@mail.gmail.com>
+Subject: Re: [PATCH 0/1] m68k: merge m68k and m68knommu arch directories
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: gerg@snapgear.com
+Cc: linux-m68k@vger.kernel.org, uclinux-dev@uclinux.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
-> 2011/3/23 Rafael J. Wysocki <rjw@sisk.pl>:
-> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
-> >> Hi,
-> >>
-> >> I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
-> >> running Linux 2.6.37.4.
-> >> After resuming from s2disk some files are corrupted.
-> >> But when I reboot my netbook everything seems good again.
-> >>
-> >> When I saw the problem the first time the ls command segfaulted always.
-> >> I did a reboot and it worked again.
-> >>
-> >> A few days later zypper crashed. After a reboot it worked again.
-> >> And today ssh crashed. I looked a bit closer and saw it crashed
-> >> somewhere within libcrypto.
-> >> So I made copy libcrypto and rebooted.
-> >> After the reboot ssh worked again but libcrypto and the copy of it hat
-> >> a different sha1 sum!
-> >> WTF?!
-> >>
-> >> Is this a known issue?
-> >
-> > No.
-> >
-> >> dmesgs and config are attached.
-> >>
-> >> The used distribution is openSUSE 11.4 with suspend-0.80.20100129-7.1
-> >> (default from suse).
-> >> I'm using ext3 as root filesystem.
-> >> What else do you need?
-> >
-> > Whatever you can do to narrow down the problem.  At the moment I only know
-> > that it's there.
-> 
-> I can reproduce the problem now.
-> After ~20 suspend and resume iterations aide finds corrupted files in /lib/.
-> It's always a very basic lib like libcrypto, libglib which is used all
-> the time on my system.
+On Wed, Mar 23, 2011 at 23:07, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Tue, Mar 22, 2011 at 05:43,  <gerg@snapgear.com> wrote:
+>> The following patch merges the m68k and m68knommu arch directories.
+>> This patch has been trimmed for review purposes - the automated file
+>> moving and mergeing carried out by the script contained in this email
+>> has been removed. Only the manually required changes after running the
+>> script are shown as the patch. (So to end up with the final required
+>> change you need to run this script then apply the patch).
+>>
+>> This change is available as the only commit on the m68knommu git tree,
+>> for-linux branch:
+>>
+>> The following changes since commit a952baa034ae7c2e4a66932005cbc7ebbccfe28d:
+>>  Linus Torvalds (1):
+>>        Merge branch 'for-linus' of git://git.kernel.org/.../dtor/input
+>>
+>> are available in the git repository at:
+>>
+>>  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
+>>
+>> Greg Ungerer (1):
+>>      m68k: merge m68k and m68knommu arch directories
+>>
+>>
+>> It is also on the for-next branch in that tree, so will get some testing
+>> in the next tree for the next few days.
+>
+> defconfig is now a nommu-config, and it fails?
 
-Those files are never intentionally modified, right?
+BTW, haven't tried it myself yet. I'm busy bisecting an issue with
+initrds, which
+got introduced between 2.6.37 and 2.6.38.
 
-> Maybe it's an issue like this one?
-> https://lkml.org/lkml/2010/12/2/339
+Init fails with "init: cannot open inittab", followed by
+"Kernel panic - not syncing: Attempted to kill init!".
 
-It might have if that patch hadn't been merged before 2.6.37.
+As I can't get ramdisks to work on ARAnyM, I need to use real hardware, which
+suffers a lot from long reboot/copy kernel/test cycles...
 
-Is the system 32-bit or 64-bit?
+Gr{oetje,eeting}s,
 
-Rafael
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
