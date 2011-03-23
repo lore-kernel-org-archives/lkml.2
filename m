@@ -1,111 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933513Ab1CWUrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 16:47:43 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:46354 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933268Ab1CWUrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 16:47:42 -0400
-Date: Wed, 23 Mar 2011 22:53:00 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Jiri Slaby <jslaby@suse.cz>
-cc: gregkh@suse.de, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 1/6] TTY: unify tty_init_dev fail path handling
-In-Reply-To: <1300873717-27941-1-git-send-email-jslaby@suse.cz>
-Message-ID: <alpine.LFD.2.00.1103232250160.1634@ja.ssi.bg>
-References: <1300873717-27941-1-git-send-email-jslaby@suse.cz>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S933509Ab1CWUuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 16:50:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35428 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933323Ab1CWUuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 16:50:51 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: linux-usb@vger.kernel.org, libusb-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org
+Subject: Re: Any USB gadget AIO interface users?
+References: <20110322171251.GA4455@xanatos>
+	<x49vcz9c3dr.fsf@segfault.boston.devel.redhat.com>
+	<20110323190205.GC5947@xanatos>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 23 Mar 2011 16:50:40 -0400
+In-Reply-To: <20110323190205.GC5947@xanatos> (Sarah Sharp's message of "Wed,
+	23 Mar 2011 12:02:05 -0700")
+Message-ID: <x49oc51o927.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sarah Sharp <sarah.a.sharp@linux.intel.com> writes:
 
- 	Hello,
+> On Wed, Mar 23, 2011 at 10:34:08AM -0400, Jeff Moyer wrote:
+>> Sarah Sharp <sarah.a.sharp@linux.intel.com> writes:
+>> 
+>> > Has anyone successfully used the asynchronous I/O gadgetfs interface
+>> > before?  Specifically, has anyone used it for high-bandwidth isochronous
+>> > traffic?
+>> >
+>> > I ask because I remember discovering about four years ago that there
+>> > were several brain-twisty bugs in the in-kernel asynchronous I/O layer
+>> > that gadgetfs uses.
+>> 
+>> Weren't they addressed?  And are you looking to use the gadgetfs aio
+>> interface now, or are you looking to get rid of it?  In other words,
+>> what's the real motivation behind the question?
+>
+> I was looking to use it.  The bug in question I remember was about
+> cancellation, but I would have to dig in my mailbox from 2007 to find
+> the exact issue.
 
-On Wed, 23 Mar 2011, Jiri Slaby wrote:
+Reference counting in that path is usually the tricky part to get right.
+We had one person looking to make use of aio in his driver, iirc, and
+that was a major concern of his, as well.  If we can get both of your
+requirements together, maybe we can make progress.
 
-> Change it so that we call the deinit functions at one place at the end
-> of the function (by gotos). And while at it use some sane label names.
->
-> This is a preparation for the deinitialization of tty in the next
-> patch.
->
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> Cc: Julian Anastasov <ja@ssi.bg>
-> ---
->
-> This is not tested yet, I'm building a kernel to test it a bit, but it
-> will take some time. If you could too to check if your problem
-> dissapears, it would be great.
+> The biggest problem I remember when I was looking at using the aio core
+> to replace the ioctls in the usbfs subsystem with true aio operations
+> was there was an issue with operation ordering.  In the kernel to
+> userspace interface for USB, we want asynchronous operations to a
+> particular file to be queued to the hardware in the order they are
+> submitted.  So if the userspace application submits asynchronous read A,
+> then asynchronous read B, then the buffer for read B doesn't get queued
+> to the USB host controller before the buffer for read A.  Otherwise you
+> get transmission reordering on the bus, and USB devices aren't very
+> happy.
 
- 	Thanks! Patches 1-5 work for me, I backported them
-to 2.6.33.8 for the test.
+The AIO infrastructure doesn't guarantee that.  It does the setup
+required in the context of the calling process, and then queues the
+operation to the underlying "device" (where device, in most cases, is a
+file or a block device, which means submit_bio is called).  After that,
+the AIO code has no control over ordering.  If there are specific
+ordering requirements in the application, then maybe AIO isn't the right
+fit.  I don't know enough about your application to say.
 
+>> > The AIO core also seemed to be largely unmaintained.  Is this still
+>> > true?
+>> 
+>> Surely you should at least cc the aio list when asking such a question!
+>> Anyway, the aio core is maintained by several folks, but nobody is doing
+>> active development in that area, to my knowledge.
 >
-> P.S. the drivers/char/tty_<TAB><TAB> habit sucks :).
->                 ^^^^
->
-> drivers/tty/tty_io.c |   23 ++++++++++++-----------
-> 1 files changed, 12 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index 936a4ea..6312cc3 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -1391,16 +1391,15 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx,
-> 		return ERR_PTR(-ENODEV);
->
-> 	tty = alloc_tty_struct();
-> -	if (!tty)
-> -		goto fail_no_mem;
-> +	if (!tty) {
-> +		retval = -ENOMEM;
-> +		goto err_module_put;
-> +	}
-> 	initialize_tty_struct(tty, driver, idx);
->
-> 	retval = tty_driver_install_tty(driver, tty);
-> -	if (retval < 0) {
-> -		free_tty_struct(tty);
-> -		module_put(driver->owner);
-> -		return ERR_PTR(retval);
-> -	}
-> +	if (retval < 0)
-> +		goto err_free_tty;
->
-> 	/*
-> 	 * Structures all installed ... call the ldisc open routines.
-> @@ -1409,15 +1408,17 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx,
-> 	 */
-> 	retval = tty_ldisc_setup(tty, tty->link);
-> 	if (retval)
-> -		goto release_mem_out;
-> +		goto err_release_tty;
-> 	return tty;
->
-> -fail_no_mem:
-> +err_free_tty:
-> +	free_tty_struct(tty);
-> +err_module_put:
-> 	module_put(driver->owner);
-> -	return ERR_PTR(-ENOMEM);
-> +	return ERR_PTR(retval);
->
-> 	/* call the tty release_tty routine to clean out this slot */
-> -release_mem_out:
-> +err_release_tty:
-> 	if (printk_ratelimit())
-> 		printk(KERN_INFO "tty_init_dev: ldisc open failed, "
-> 				 "clearing slot %d\n", idx);
-> -- 
-> 1.7.4.1
+> Sorry, I forgot the aio mailing list existed. :)  In 2007, there was
+> lots of talk of using syslets or fibrils in the aio core, and Zack Brown
+> had some patches for that, but it seemed like nothing really came out of
+> that.  Has anything new been added to the AIO core since then?
 
-Regards
+Nothing came of it, no.  There haven't been any attempts since, either.
 
---
-Julian Anastasov <ja@ssi.bg>
+Cheers,
+Jeff
