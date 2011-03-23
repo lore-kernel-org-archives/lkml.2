@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700Ab1CWAcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 20:32:54 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:43085 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab1CWAcw (ORCPT
+	id S1752088Ab1CWAi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 20:38:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:57886 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab1CWAi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 20:32:52 -0400
-Date: Wed, 23 Mar 2011 09:27:08 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH] memcg: consider per-cpu stock reserves when returning
- RES_USAGE for _MEM
-Message-Id: <20110323092708.021d555d.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20110322073150.GA12940@tiehlicka.suse.cz>
-References: <20110318152532.GB18450@tiehlicka.suse.cz>
-	<20110321093419.GA26047@tiehlicka.suse.cz>
-	<20110321102420.GB26047@tiehlicka.suse.cz>
-	<20110322091014.27677ab3.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110322104723.fd81dddc.nishimura@mxp.nes.nec.co.jp>
-	<20110322073150.GA12940@tiehlicka.suse.cz>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 22 Mar 2011 20:38:56 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=5AMJFd0FRxYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=XLqB0lIPG9OXm2_-bjwA:9 a=HshHQRdaLdJBQ8DfJxoA:7 a=JZg1e7ccK2tC_2GXhGVTQuOc14IA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Deadlock scenario in regulator core
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: David Collins <collinsd@codeaurora.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20110323000100.GB2529@opensource.wolfsonmicro.com>
+References: <4D891C59.1030009@codeaurora.org>
+	 <20110322223702.GO14675@home.goodmis.org> <4D892C0A.1090606@codeaurora.org>
+	 <1300835998.14261.13.camel@gandalf.stny.rr.com>
+	 <20110323000100.GB2529@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 22 Mar 2011 20:38:54 -0400
+Message-ID: <1300840734.14261.72.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Mar 2011 08:31:50 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
-
-> On Tue 22-03-11 10:47:23, Daisuke Nishimura wrote:
-> > On Tue, 22 Mar 2011 09:10:14 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > 
-> > > On Mon, 21 Mar 2011 11:24:20 +0100
-> > > Michal Hocko <mhocko@suse.cz> wrote:
-> > > 
-> > > > [Sorry for reposting but I forgot to fully refresh the patch before
-> > > > posting...]
-> > > > 
-> > > > On Mon 21-03-11 10:34:19, Michal Hocko wrote:
-> > > > > On Fri 18-03-11 16:25:32, Michal Hocko wrote:
-> > > > > [...]
-> > > > > > According to our documention this is a reasonable test case:
-> > > > > > Documentation/cgroups/memory.txt:
-> > > > > > memory.usage_in_bytes           # show current memory(RSS+Cache) usage.
-> > > > > > 
-> > > > > > This however doesn't work after your commit:
-> > > > > > cdec2e4265d (memcg: coalesce charging via percpu storage)
-> > > > > > 
-> > > > > > because since then we are charging in bulks so we can end up with
-> > > > > > rss+cache <= usage_in_bytes.
-> > > > > [...]
-> > > > > > I think we have several options here
-> > > > > > 	1) document that the value is actually >= rss+cache and it shows
-> > > > > > 	   the guaranteed charges for the group
-> > > > > > 	2) use rss+cache rather then res->count
-> > > > > > 	3) remove the file
-> > > > > > 	4) call drain_all_stock_sync before asking for the value in
-> > > > > > 	   mem_cgroup_read
-> > > > > > 	5) collect the current amount of stock charges and subtract it
-> > > > > > 	   from the current res->count value
-> > > > > > 
-> > > > > > 1) and 2) would suggest that the file is actually not very much useful.
-> > > > > > 3) is basically the interface change as well
-> > > > > > 4) sounds little bit invasive as we basically lose the advantage of the
-> > > > > > pool whenever somebody reads the file. Btw. for who is this file
-> > > > > > intended?
-> > > > > > 5) sounds like a compromise
-> > > > > 
-> > > > > I guess that 4) is really too invasive - for no good reason so here we
-> > > > > go with the 5) solution.
-> > > 
-> > > I think the test in LTP is bad...(it should be fuzzy.) because we cannot
-> > > avoid races...
-> > I agree.
+On Wed, 2011-03-23 at 00:01 +0000, Mark Brown wrote:
+> On Tue, Mar 22, 2011 at 07:19:58PM -0400, Steven Rostedt wrote:
 > 
-> I think that as well. In fact, I quite do not understand what it is
-> testing actually (that we account charges correctly? If yes then what if
-> both values are wrong?). The other point is, though, we have exported this
-> interface and documented its semantic. This is the reason I have asked
-> for the initial purpose of the file in the first place. Is this
-> something for debugging only? Can we make use of the value somehow
-> (other than a shortcut for rss+cache)?
+> > Looks to me that the mutex_lock() in _notifier_call_chain needs to be a
+> > mutex_lock_nested().
 > 
-> If there is realy no strong reason for the file existence I would rather
-> vote for its removing than having a unusable semantic.
+> > The "_nested()" versions are when you have the same type of mutex taken
+> > but belonging to two different instances. Like you have here:
 > 
-Considering more, without these files, we cannot know the actual usage of
-a res_counter, although we set a limit to a res_counter. So, I want to keep
-these files.
+> What's a mutex type?  I have to say this is the first time I've heard of
+> mutex types and the documentation in mutex.c and mutex-design.txt isn't
+> precisely verbose on what mutex_lock_nested() is for or how one would
+> pick subclass.
 
-If no-one have any objections, I'll prepare a patch to update the documentation.
+Sorry, I said "mutex type" as a synonym to "lock class". A lock class is
+pretty much how a lock is defined.
 
-Thanks,
-Daisuke Nishimura.
+struct foo {
+	struct mutex	m;
+};
+
+
+struct foo *func(void)
+{
+	bar = kzalloc(sizeof(*bar));
+	mutex_init(&bar->m);
+}
+
+
+bar is an instance of lock class struct foo.m. If you have:
+
+	a = func();
+	b = func();
+
+Both a->m and b->m are an instance of struct foo.m lock class.
+
+There's better documentation about this in the lockdep-design.txt.
+
+-- Steve
+
+
