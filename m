@@ -1,95 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab1CWKIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 06:08:11 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49154 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932254Ab1CWKII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 06:08:08 -0400
-Date: Wed, 23 Mar 2011 11:07:57 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Maksym Planeta <mcsim.planeta@gmail.com>
-Cc: tglx@linutronix.de, kernel-janitors@vger.kernel.org, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: page: get_order() optimization
-Message-ID: <20110323100757.GA14245@elte.hu>
-References: <1300551947-22279-1-git-send-email-mcsim.planeta@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300551947-22279-1-git-send-email-mcsim.planeta@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S932554Ab1CWKIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 06:08:35 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65002 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932522Ab1CWKGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 06:06:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=PE6Pe3AEOPi9yiLs7A4XUCDNNP7jIlBXbhoYwQyyodKFK2PdRZqOC56VjwnXfpkTPw
+         /C9B18o6QzS2nimqX5jFGhwla3vdfB74VgR2Pg/f9E8lr15KhCqq4mA4YQWJ4nqB6Fce
+         ubffOk6CSDRwr8Cryzw/vUH3NxDKNC1E4fu2M=
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 17/20] job control: Add @for_ptrace to do_notify_parent_cldstop()
+Date: Wed, 23 Mar 2011 11:06:03 +0100
+Message-Id: <1300874766-12941-18-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1300874766-12941-1-git-send-email-tj@kernel.org>
+References: <1300874766-12941-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently, do_notify_parent_cldstop() determines whether the
+notification is for the real parent or ptracer.  Move the decision to
+the caller by adding @for_ptrace parameter to
+do_notify_parent_cldstop().  All the callers are updated to pass
+task_ptrace(target_task), so this patch doesn't cause any behavior
+difference.
 
-* Maksym Planeta <mcsim.planeta@gmail.com> wrote:
+While at it, add function comment to do_notify_parent_cldstop().
 
-> For x86 architecture get_order function can be optimized due to
-> assembler instruction bsr.
-> 
-> I'm sorry. I've forgot about Signed-off, so the same, but with the sign.
-> 
-> Signed-off-by: Maksym Planeta <mcsim.planeta@gmail.com>
-> ---
->  arch/x86/include/asm/page.h |   20 +++++++++++++++++++-
->  1 files changed, 19 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
-> index 8ca8283..339ae26 100644
-> --- a/arch/x86/include/asm/page.h
-> +++ b/arch/x86/include/asm/page.h
-> @@ -60,10 +60,28 @@ static inline void copy_user_page(void *to, void *from, unsigned long vaddr,
->  extern bool __virt_addr_valid(unsigned long kaddr);
->  #define virt_addr_valid(kaddr)	__virt_addr_valid((unsigned long) (kaddr))
->  
-> +/* Pure 2^n version of get_order */
-> +static inline __attribute_const__ int get_order(unsigned long size)
-> +{
-> +	int order;
-> +
-> +	size = (size - 1) >> (PAGE_SHIFT - 1);
-> +#ifdef CONFIG_X86_CMOV
-> +	asm("bsr %1,%0\n\t"
-> +	    "cmovzl %2,%0"
-> +	    : "=&r" (order) : "rm" (size), "rm" (0));
-> +#else
-> +	asm("bsr %1,%0\n\t"
-> +	    "jnz 1f\n\t"
-> +	    "movl $0,%0\n"
-> +	    "1:" : "=r" (order) : "rm" (size));
-> +#endif
-> +	return order;
-> +}
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/signal.c |   31 ++++++++++++++++++++++++-------
+ 1 files changed, 24 insertions(+), 7 deletions(-)
 
-Ok, that's certainly a nice optimization.
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 2f2c8f6..69d6054 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1595,16 +1595,30 @@ int do_notify_parent(struct task_struct *tsk, int sig)
+ 	return ret;
+ }
+ 
+-static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
++/**
++ * do_notify_parent_cldstop - notify parent of stopped/continued state change
++ * @tsk: task reporting the state change
++ * @for_ptracer: the notification is for ptracer
++ * @why: CLD_{CONTINUED|STOPPED|TRAPPED} to report
++ *
++ * Notify @tsk's parent that the stopped/continued state has changed.  If
++ * @for_ptracer is %false, @tsk's group leader notifies to its real parent.
++ * If %true, @tsk reports to @tsk->parent which should be the ptracer.
++ *
++ * CONTEXT:
++ * Must be called with tasklist_lock at least read locked.
++ */
++static void do_notify_parent_cldstop(struct task_struct *tsk,
++				     bool for_ptracer, int why)
+ {
+ 	struct siginfo info;
+ 	unsigned long flags;
+ 	struct task_struct *parent;
+ 	struct sighand_struct *sighand;
+ 
+-	if (task_ptrace(tsk))
++	if (for_ptracer) {
+ 		parent = tsk->parent;
+-	else {
++	} else {
+ 		tsk = tsk->group_leader;
+ 		parent = tsk->real_parent;
+ 	}
+@@ -1743,7 +1757,7 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
+ 	spin_unlock_irq(&current->sighand->siglock);
+ 	read_lock(&tasklist_lock);
+ 	if (may_ptrace_stop()) {
+-		do_notify_parent_cldstop(current, why);
++		do_notify_parent_cldstop(current, task_ptrace(current), why);
+ 		/*
+ 		 * Don't want to allow preemption here, because
+ 		 * sys_ptrace() needs this task to be inactive.
+@@ -1886,7 +1900,8 @@ retry:
+ 
+ 		if (notify) {
+ 			read_lock(&tasklist_lock);
+-			do_notify_parent_cldstop(current, notify);
++			do_notify_parent_cldstop(current, task_ptrace(current),
++						 notify);
+ 			read_unlock(&tasklist_lock);
+ 		}
+ 
+@@ -1982,6 +1997,7 @@ relock:
+ 	 * the CLD_ si_code into SIGNAL_CLD_MASK bits.
+ 	 */
+ 	if (unlikely(signal->flags & SIGNAL_CLD_MASK)) {
++		struct task_struct *leader;
+ 		int why;
+ 
+ 		if (signal->flags & SIGNAL_CLD_CONTINUED)
+@@ -1994,7 +2010,8 @@ relock:
+ 		spin_unlock_irq(&sighand->siglock);
+ 
+ 		read_lock(&tasklist_lock);
+-		do_notify_parent_cldstop(current->group_leader, why);
++		leader = current->group_leader;
++		do_notify_parent_cldstop(leader, task_ptrace(leader), why);
+ 		read_unlock(&tasklist_lock);
+ 		goto relock;
+ 	}
+@@ -2167,7 +2184,7 @@ out:
+ 
+ 	if (unlikely(group_stop)) {
+ 		read_lock(&tasklist_lock);
+-		do_notify_parent_cldstop(tsk, group_stop);
++		do_notify_parent_cldstop(tsk, task_ptrace(tsk), group_stop);
+ 		read_unlock(&tasklist_lock);
+ 	}
+ }
+-- 
+1.7.1
 
-One detail: in many cases 'size' is a constant. Have you checked recent GCC, 
-does it turn the generic version of get_order() into a loop even for constants, 
-or is it able does it perhaps recognize the pattern and precompute the result?
-
-If it recognizes the pattern then this optmization needs to be made dependent 
-on whether the expression is constant or not - see bitops.h of how to do that.
-
-Furthermore, a cleanliness observation it would be nicer to encapsulate the 
-CMOVZL/jump pattern into a macro, something like ASM_CMOVZL(2,0) to express 
-'cmovzl %2,%0'. In the !CONFIG_X86_CMOV case it gets turned into the jnz/movl 
-instructions. The assembly code here would be much cleaner that way:
-
-	asm("bsr %1,%0\n"
-	    ASM_CMOVZL(2,0)
-	    : "=&r" (order) : "rm" (size), "rm" (0));
-
-With no #ifdefs in get_order().
-
-Thanks,
-
-	Ingo
