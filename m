@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613Ab1CWTVn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 15:21:43 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61267 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756546Ab1CWTVm convert rfc822-to-8bit (ORCPT
+	id S1756623Ab1CWTXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 15:23:53 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53328 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756578Ab1CWTXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 15:21:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=h39f4SfeeP9tK5A4I1+FIoBw6xW87ZFxqk5COMWn/oGkocSTTOrFZVXOgQOq6RP57Q
-         sviqTvT34fAwr4vw4UgIfkCEB2AqTlHsV3d4nMl2JfqLwGrH8NsrYoW6OggF0ZpsH6Eo
-         f3t1PWq2eznXeBcU7t9gUu83ws44U0wKWEOsg=
+	Wed, 23 Mar 2011 15:23:52 -0400
+Date: Wed, 23 Mar 2011 20:23:38 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Giorgio <mywing81@gmail.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@brodo.de" <linux@brodo.de>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "mchehab@redhat.com" <mchehab@redhat.com>
+Subject: Re: Machine Check Exception and cpufreq
+Message-ID: <20110323192338.GE22652@aftab>
+References: <AANLkTim3gpBUtDQ=WnLRjzuwpNe=+m4wLK=maS1tLc8U@mail.gmail.com>
+ <20110322133101.GB24006@gere.osrc.amd.com>
+ <AANLkTimz0GR7HXgY5jxogfkNyJ2iVYWJGHRhsZtO4T+A@mail.gmail.com>
+ <AANLkTikDqUptK8XdPpAGYKFskSL7ugfoh-VjNzyXU_3q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1300907573.15255.224.camel@deneb.localdomain>
-References: <1300907573.15255.224.camel@deneb.localdomain>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 23 Mar 2011 15:19:52 -0400
-Message-ID: <AANLkTiks3dUzD5+Ud73CgguYsOUdyBeSNeGH9C0MueUT@mail.gmail.com>
-Subject: Re: generic page.h problem
-To: Mark Salter <msalter@redhat.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikDqUptK8XdPpAGYKFskSL7ugfoh-VjNzyXU_3q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 15:12, Mark Salter wrote:
-> I'm working with a new architecture port (nommu) and was wanting to use
-> the generic page.h but there is a problem. I'm using CONFIG_FLATMEM with
-> a non-zero CONFIG_KERNEL_RAM_BASE_ADDRESS. The hardware uses this same
-> address to access RAM from code and for DMA purposes. The generic page.h
-> has:
->
-> #ifdef CONFIG_KERNEL_RAM_BASE_ADDRESS
-> #define PAGE_OFFSET             (CONFIG_KERNEL_RAM_BASE_ADDRESS)
-> #else
-> #define PAGE_OFFSET             (0)
-> #endif
->
-> #ifndef __ASSEMBLY__
->
-> #define __va(x) ((void *)((unsigned long)(x) + PAGE_OFFSET))
-> #define __pa(x) ((unsigned long) (x) - PAGE_OFFSET)
->
-> The problem I have is that __va(x) and __pa(x) should do nothing on
-> this architecture. If I use the following, then everything seems to
-> work as it should.
->
->
-> diff --git a/include/asm-generic/page.h b/include/asm-generic/page.h
-> index 75fec18..4dc4a81 100644
-> --- a/include/asm-generic/page.h
-> +++ b/include/asm-generic/page.h
-> @@ -73,8 +73,8 @@ extern unsigned long memory_end;
->
->  #ifndef __ASSEMBLY__
->
-> -#define __va(x) ((void *)((unsigned long)(x) + PAGE_OFFSET))
-> -#define __pa(x) ((unsigned long) (x) - PAGE_OFFSET)
-> +#define __va(x) ((void *)((unsigned long) (x)))
-> +#define __pa(x) ((unsigned long) (x))
->
->  #define virt_to_pfn(kaddr)     (__pa(kaddr) >> PAGE_SHIFT)
->  #define pfn_to_virt(pfn)       __va((pfn) << PAGE_SHIFT)
->
->
-> Am I missing something here? The only other arch using the generic
-> page.h is blackfin, but it uses a zero PAGE_OFFSET, so my patch
-> would have no effect there.
+On Wed, Mar 23, 2011 at 03:02:01PM -0400, Giorgio wrote:
+> 2011/3/22 Giorgio <mywing81@gmail.com>:
+> > 2011/3/22 Borislav Petkov <bp@amd64.org>:
+> >> this is very interesting. Question: is it possible to retest with
+> >> a newer kernel from upstream (say 2.6.38) to see whether the issue
+> >> persists? I'd like to rule out the possibility that powernow-k8 is
+> >> not causing any trouble which has been fixed in newer kernels in the
+> >> meantime.
+> >>
+> >> Thanks.
+> >
+> > Hello Borislav,
+> >
+> > thanks for your quick reply. Yes, I only tested it with the stock
+> > 2.6.32 kernel shipped with Ubuntu 10.04, but I will download the
+> > latest stable kernel from kernel.org (2.6.38) and test again. I'll
+> > come back to you in the following days. Regards,
+> 
+> Borislav,
+> 
+> I tested again with 2.6.38 kernel: the system was stressed for several
+> hours with various activities (compiling, copying data back and forth
+> from two hard drives, encoding/decoding video streams, etc) but I was
+> not able to reproduce the problem, so I guess it has been fixed.
+> If you're interested here's the info I collected with 2.6.38:
+> 
+> http://mywing.altervista.org/tmp/info-2.6.38.log
 
-the only arch that defines CONFIG_KERNEL_RAM_BASE_ADDRESS is mn10300,
-and it seems that this generic page.h was designed with it in mind.
-fwiw, the va/pa defs for mn10300 also ignore PAGE_OFFSET.
--mike
+Great. It's either fixed or latest powernow-k8 changes timings so as not
+to trigger it anymore, because your issue looks like the chipset could
+by doing something fishy with CRC during Pstate transitions.
+
+If it happens again, try whether upgrading your BIOS solves it (although
+I'm pretty sceptical about getting newer BIOS for such an old board :-) ).
+
+> I found a similar report on the web, I don't know if this could be related:
+> 
+> http://www.spinics.net/lists/cpufreq/msg01922.html
+
+Nah, that's another issue.
+
+Thanks for testing!
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
