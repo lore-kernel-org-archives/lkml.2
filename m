@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab1CWIvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 04:51:19 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:56909 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755923Ab1CWIuG (ORCPT
+	id S1755970Ab1CWJCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 05:02:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63141 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754543Ab1CWJCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 04:50:06 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: jirislaby@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org
-Subject: [PATCH 5/7] I2C: eg20t, remove unused variable
-Date: Wed, 23 Mar 2011 09:49:58 +0100
-Message-Id: <1300870200-24405-5-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300870200-24405-1-git-send-email-jslaby@suse.cz>
-References: <1300870200-24405-1-git-send-email-jslaby@suse.cz>
+	Wed, 23 Mar 2011 05:02:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vSqut2KL5Jq4jjAo0bOpAc9KScWNvl9qYLru5P9Ftd2rvuGp7C4flz96XTv5Iezkdt
+         BhC5jktsbo0kdJD27xAvwUf+3cRVtqMNqs0kakJC4fdxrsV0jo6Pdzjef2sOdlbtC9aw
+         l8kG+L46Bwj9aUDj8y02E71c+tYh8Uwg0jmyg=
+Date: Wed, 23 Mar 2011 09:48:27 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [RFC PATCHSET] ptrace,signal: Fix notifications to the real
+ parent while ptraced
+Message-ID: <20110323084827.GX12003@htj.dyndns.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+ <20110322131131.GS12003@htj.dyndns.org>
+ <20110322205908.GA3585@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322205908.GA3585@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/i2c/busses/i2c-eg20t.c:684:2: warning: Value stored to 'msglen' is never read
-msglen = (pmsg->len) - (subaddrlen + 1);
-^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Hello,
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: linux-i2c@vger.kernel.org
----
- drivers/i2c/busses/i2c-eg20t.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+> I'd only ask you to remove ->group_leader from real_parent_is_ptracer()
+> (btw, note that wait_consider_task() can use this helper too) although
+> this is minor.
 
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index 878a120..ea73252 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -651,8 +651,6 @@ static s32 pch_i2c_xfer(struct i2c_adapter *i2c_adap,
- 	struct i2c_msg *pmsg;
- 	u32 i = 0;
- 	u32 status;
--	u32 msglen;
--	u32 subaddrlen;
- 	s32 ret;
- 
- 	struct i2c_algo_pch_data *adap = i2c_adap->algo_data;
-@@ -676,12 +674,6 @@ static s32 pch_i2c_xfer(struct i2c_adapter *i2c_adap,
- 	status = pmsg->flags;
- 	pch_dbg(adap,
- 		"After invoking I2C_MODE_SEL :flag= 0x%x\n", status);
--	/* calculate sub address length and message length */
--	/* these are applicable only for buffer mode */
--	subaddrlen = pmsg->buf[0];
--	/* calculate actual message length excluding
--	 * the sub address fields */
--	msglen = (pmsg->len) - (subaddrlen + 1);
- 	if (status & (I2C_M_RD)) {
- 		pch_dbg(adap, "invoking pch_i2c_readbytes\n");
- 		ret = pch_i2c_readbytes(i2c_adap, pmsg, (i + 1 == num),
+Yeah, will also rename the function as suggested.
+
+> > Please let me know when you want the whole series resent.
+> 
+> Cough. Resent? If you ask me, I think you should just send them to
+> Linus while the merge window is opened.
+
+Too late for that.  Let's target the next merge window.
+
+> I am trying to get the account on kernel.org, but until then I hope
+> you can flush the pending ptrace-review branches.
+
+I'll set up a branch until you can get your tree up and request
+inclusion to linux-next.
+
+> And yes, I bet we missed something and we will need the subsequent
+> fixes anyway ;)
+
+Oh yeah, I have no doubt about that.
+
+Thanks.
+
 -- 
-1.7.4.1
-
-
+tejun
