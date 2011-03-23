@@ -1,191 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab1CWBHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Mar 2011 21:07:34 -0400
-Received: from 90-46-11-204.rar.beartech.net ([204.11.46.90]:44474 "EHLO
-	exchsrvr.taosinc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752127Ab1CWBHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Mar 2011 21:07:32 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Subject: RE: [PATCH 2.6.38-rc7]TAOS 258x: Device Driver
-Date: Tue, 22 Mar 2011 20:07:30 -0500
-Message-ID: <B4B07CCC7B7A084E989CF9386538EA1D63A83B@exchsrvr.taosinc.com>
-In-Reply-To: <4D87A1D6.2080306@cam.ac.uk>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 2.6.38-rc7]TAOS 258x: Device Driver
-Thread-Index: Acvn+v+7KMPzm+R0ROqNm7nnXv//ngA0w7gw
-References: <1300131941.17298.17.camel@jonz-ubuntu> <4D87A1D6.2080306@cam.ac.uk>
-From: "Jon Brenner" <jbrenner@TAOSinc.com>
-To: "Jonathan Cameron" <jic23@cam.ac.uk>
-Cc: "linux-iio" <linux-iio@vger.kernel.org>,
-        "Linux Kernel" <linux-kernel@vger.kernel.org>
+	id S1753252Ab1CWBPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Mar 2011 21:15:09 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54494 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752660Ab1CWBPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Mar 2011 21:15:06 -0400
+Date: Wed, 23 Mar 2011 12:14:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Cc: arjan@linux.intel.com, peterz@infradead.org, lenb@kernel.org,
+        suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V4 5/5] cpuidle: cpuidle driver for apm
+Message-Id: <20110323121458.ec7cdaf9.sfr@canb.auug.org.au>
+In-Reply-To: <20110322123336.28725.29810.stgit@tringupt.in.ibm.com>
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
+	<20110322123336.28725.29810.stgit@tringupt.in.ibm.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__23_Mar_2011_12_14_58_+1100__+rdUlcY+DXTi+Op"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2N17f4m009463
 
-Jonathan, et al,
+--Signature=_Wed__23_Mar_2011_12_14_58_+1100__+rdUlcY+DXTi+Op
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Again, thank you for taking the time to review the latest submission.
-I have implemented all recommendations made (with the exceptions noted below).
+Hi,
 
-I have also added two new functions (not seen here):
-'taos_suspend', and 'taos_resume'
-
-These changes and comments will be submitted in the next patch [PATCH V3] submission which I will submit shortly (after testing/verification). 
-
-Respectfully,
-Jon 
-
------Original Message-----
-As I pm'd you the other day, please remember to make version of patch clear in title, and include details of what has changed since previous version.
-OK - NEXT PATCH WILL INDICATE VERSION 3
-
-WILL REMOVE SENSORS_ PREFIX FROM KCONFIG & MAKEFILE
-
-ADDED/MOVED/CREATED DOCUMENTATION AS RECOMMENDED
-
------ snip ------------
-> +/*
-> + * Provides initial operational parameter defaults.
-> + * These defaults may be changed through the device's sysfs files.
-> + */
-How about pasing in taos_settings and making all of this func a bit more readable?
-PREFER TO USE DEFAULTS METHOD
-
-> +static void taos_defaults(struct tsl2583_chip *chip) {
-> +	/* Operational parameters */
-> +	chip->taos_settings.als_time = 450;
-> +	/* must be a multiple of 50mS */
-> +	chip->taos_settings.als_gain = 2;
-> +	/* this is actually an index into the gain table */
-> +	/* assume clear glass as default */
-> +	chip->taos_settings.als_gain_trim = 1000;
-> +	/* default gain trim to account for aperture effects */
-> +	chip->taos_settings.als_cal_target = 130;
-> +	/* Known external ALS reading used for calibration */ }
-> +
-
------ snip ------------
-> +	if ((ch0 >= chip->als_saturation) || (ch1 >= chip->als_saturation))
-would be easier to read if you set ret to lux max here an avoid jumping into
-the if statement below.
-NO - TSL258X_LUX_CALC_OVER_FLOW NEEDS TO PASSED UP.  
-	MUTEX NEEDS TO BE UNLOCKED. 
-	THEN RETURN.
-> +		goto return_max;
-
------ snip ------------
-&taos_device_lux[0] perhaps?
-NO - CAST MAKES IT MORE OBVIOUS - at least to me ;-)
-> +	for (p = (struct taos_lux *) taos_device_lux;
-
------ snip ------------
-> +
-If not time critical lest make that a sleep.
-NO - TIME IS REQUIRED FOR DEVICE TO SETTLE BETWEEN POWERON AND ADC ENABLE - DON'T WANT TO MAKE IT ANY LONGER THAN NECESSARY.
-> +	mdelay(3);
-> +	/* NOW enable the ADC
-
-
------ snip ------------
-I still wonder if there isn't a way of avoiding this index issue.
-It's horrible and really feels like something we ought to able
-to handle reasonably well...
-BECAUSE THE CH0 AND CH1 DIVERGE AT HIGH GAINS -- INDEX IS BETTER THAN USING CHO OR CH1 VALUE 
-( AS EITHER ONE OVER THE OTHER WOULD BE WRONG :-{ )
-> +	if (value > 3) {
-> +		dev_err(dev, "Invalid Gain Index: Enter 0-3\n");
-> +		return -1;
-> +	} else {
-> +		chip->taos_settings.als_gain = value;
-> +	}
-> +	return len;
-> +}
-
------ snip ------------
-Just to confirm, is this a frequency in Hz? If it is
-can we renaming it to taos_als_frequency_show to
-avoid confusing me?
-
-THIS IS THE INTERNAL ALS INTEGRATION TIME FOR THE ADC CHANNELS
-I SHOE HORNED IT INTO SAMPLING FREQUENCY TO HELP ALEVIATE THE ABI ANGST
-
-> +static ssize_t taos_als_time_show(struct device *dev,
-> +    struct device_attribute *attr, char *buf)
+On Tue, 22 Mar 2011 18:03:40 +0530 Trinabh Gupta <trinabh@linux.vnet.ibm.co=
+m> wrote:
+>
+> +static int apm_setup_cpuidle(int cpu)
 > +{
-> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +	struct tsl2583_chip *chip = indio_dev->dev_data;
+> +	struct cpuidle_device *dev =3D kzalloc(sizeof(struct cpuidle_device),
+> +					GFP_KERNEL);
+
+Same as xen comments: no NULL check.
+
+> +	int count =3D CPUIDLE_DRIVER_STATE_START;
+> +	dev->cpu =3D cpu;
+> +	dev->drv =3D &apm_idle_driver;
+
+Also wondering why you would ever have a different idle routine on
+different cpus?
+
 > +
-> +	return sprintf(buf, "%d\n", chip->taos_settings.als_time);
-> +}
+> +	dev->states[count] =3D state_apm_idle;
+> +	count++;
+> +
+> +	dev->state_count =3D count;
+> +
+> +	if (cpuidle_register_device(dev))
+> +		return -EIO;
 
------ snip ------------
-scale as a stand alone attribute isn't defined. Please document this.
-Looking at what you do with it, it's another factor effecting the overal
-gain on the reading that reaches userspace.  Ideally you'd roll this
-into your calibscale parameter, but I can see that would get complex
-to manage. Will have a think about this. In devices with a simple conversion
-function (adc's etc) we handle this by leaving this software value
-be applied by userspace (and output it as in_scale). The issue here that
-as far as userspace is concerned both of your scales have been applied before
-it sees the data and at different more or less random looking points in
-the calculation.
+And we leak dev.
 
-Actually, looking at the calculation you could output illuminance0_raw
-and let userspace apply a multiplier based on your trim value and offset
-+0.5?  If you want to hold trim in driver then just implement
-read and write to
+> +static void apm_idle_exit(void)
+> +{
+> +	cpuidle_unregister_driver(&apm_idle_driver);
 
-illuminance0_scale
-and have read only
-illuminance0_offset (rather tediously for this device, offset is applied
-before scale, so you'll need to divide 0.5 by whatever your trim is).
+Do we leak the per cpu device structure here?
 
-We'll have to do pin down how to do this before moving out of staging
-so best to get it right now.
+> +	return;
 
-CHANGED TO ILLUMINANCE0_SCALE
+Unnecessary return statement.
 
-LIFE WOULE BE NICE IF WE COULD JUST PASS THE RAW DATA UP TO USERSPACE
-BUT WE HAVE CUSTOMERS WHO REQUIRE IT TO COME UP CALCULATED WITH
-THE MULTIPLIER FACTORED IN
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
------ snip ------------
-> +	for (i = 0; i < MAX_DEVICE_REGS; i++) {
-> +		ret = i2c_smbus_write_byte(clientp,
-> +				(TSL258X_CMD_REG | (TSL258X_CNTRL + i)));
-> +		if (ret < 0) {
-> +			dev_err(&clientp->dev, "i2c_smbus_write_byte() to cmd "
-> +				"reg failed in taos_probe(), err = %d\n", ret);
-> +			goto fail1;
-> +		}
-> +		buf[i] = i2c_smbus_read_byte(clientp);
-  error handling for this read?
-VALUE IS UNIMPORTANT - BUT MAKING SURE WE CAN JUST READ ALL 32 REGISTER LOCATIONS IS..
+--Signature=_Wed__23_Mar_2011_12_14_58_+1100__+rdUlcY+DXTi+Op
+Content-Type: application/pgp-signature
 
------ snip ------------
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> +	}
-> +	if (!taos_skate_device(buf)) {
-> +		dev_info(&clientp->dev, "i2c device found but does not match "
-> +			"expected id in taos_probe()\n");
-> +		goto fail1;
-> +	} else {
-The sort of debug info you want to get rid of for production drivers.  Doesn't
-tell anyone anything helpful.
-NO - DO NOT AGREE - IF A CUSTOMER EXPECTS ONE DEVICE BUT HAS SOMEHOW INSTALLED A DIFFERENT ONE
-AT PRODUCTION TIME, THIS WILL HELP IDENTIFY THE ISSUE.  
-(IE. WANTED A TAOS ALS DEVICE BUT INSTALLED A TAOS PROX/ALS DEVICE)
-FIRST PART INDICATES THAT.  SECOND PART IS CONFIRMATION THAT DEVICE WAS IDENTIFIED TO SYSTEM.
+iQEcBAEBAgAGBQJNiUmSAAoJEDMEi1NhKgbs9iQH/1zTzYvuM36C7wzTgUpGdqxo
+SdkdPUh7Q1w7l6qjz/LpXH7ndaw7i1VJGoPr1/sdFpw6do4MtnN1D2bEEaL1w73i
+tl16pEHq5ni0R9hFUXBvDQ3Dxa/U5/1wNLmiEsBgM3shTsGvjevdHbfhh0rOdAM9
+AH+P0CutCUjJTGyY83sCyxfyaxJt14U1vYYsJsS91JoCGk/1tFwCT5SLnRZ6NWQb
+UMBVpovPz+tXbaS7hYl/kNXG7zKcSki+wH66Ly1Q6SjQ618jINR79xU34HAfy1wG
+OnvFPozpEjmpR3VloRsFw3jJ3L9FkZqrMNnkWbtaZYLQX5aUpI07B8XNSL2oQaM=
+=8G0A
+-----END PGP SIGNATURE-----
 
-
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--Signature=_Wed__23_Mar_2011_12_14_58_+1100__+rdUlcY+DXTi+Op--
