@@ -1,92 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab1CWRmh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 13:42:37 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:58423
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756119Ab1CWRkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 13:40:39 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 13/16] Staging: hv: Move the definition of the function get_stor_device()
-Date: Wed, 23 Mar 2011 10:50:31 -0700
-Message-Id: <1300902635-1347-13-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300902635-1347-1-git-send-email-kys@microsoft.com>
-References: <1300902537-1290-1-git-send-email-kys@microsoft.com>
- <1300902635-1347-1-git-send-email-kys@microsoft.com>
+	id S1755865Ab1CWRke (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 13:40:34 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:38908 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755581Ab1CWRkb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 13:40:31 -0400
+Date: Wed, 23 Mar 2011 17:40:15 +0000
+From: Matthew Garrett <mjg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Len Brown <lenb@kernel.org>, Cong Wang <amwang@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        Takao Indoh <tindoh@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        linux-doc@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [Patch] acpi: introduce "acpi_addr=" parameter for kdump
+Message-ID: <20110323174015.GA6953@srcf.ucam.org>
+References: <1299766243-494-1-git-send-email-amwang@redhat.com> <20110310082600.b52de7fb.rdunlap@xenotime.net> <4D86F3A7.8060706@redhat.com> <alpine.LFD.2.02.1103230026170.10549@x980> <m1lj06zc4u.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1lj06zc4u.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for further cleaning up storvsc.c move the definition 
-of the inline function get_stor_device() from storvsc.c to 
-storvsc_api.h.
+On Tue, Mar 22, 2011 at 09:36:33PM -0700, Eric W. Biederman wrote:
+> Len Brown <lenb@kernel.org> writes:
+> > This should also be [KEXEC], and the code should be #ifdef CONFIG_KEXEC
+> > so that sane people can exclude it from their kernels.
+> 
+> So far sane people don't use EFI on x86 so that is easy enough.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/storvsc.c     |   14 --------------
- drivers/staging/hv/storvsc_api.h |   15 +++++++++++++++
- 2 files changed, 15 insertions(+), 14 deletions(-)
+This year's Lenovos and Dells (at least) boot EFI by default. While I'd 
+love to see everybody involved in EFI be relocated to a single small 
+island without any ability to communicate with the rest of the world, 
+it's unfortunately a reality and we have to deal with it.
 
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 83d012b..357f5dd 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -56,20 +56,6 @@ static inline void free_stor_device(struct storvsc_device *device)
- 	kfree(device);
- }
- 
--/* Get the stordevice object iff exists and its refcount > 1 */
--static inline struct storvsc_device *get_stor_device(struct hv_device *device)
--{
--	struct storvsc_device *stor_device;
--
--	stor_device = (struct storvsc_device *)device->ext;
--	if (stor_device && atomic_read(&stor_device->ref_count) > 1)
--		atomic_inc(&stor_device->ref_count);
--	else
--		stor_device = NULL;
--
--	return stor_device;
--}
--
- /* Get the stordevice object iff exists and its refcount > 0 */
- static inline struct storvsc_device *must_get_stor_device(
- 					struct hv_device *device)
-diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
-index d985bbf..4e66507 100644
---- a/drivers/staging/hv/storvsc_api.h
-+++ b/drivers/staging/hv/storvsc_api.h
-@@ -137,6 +137,21 @@ struct storvsc_device {
- 	struct storvsc_request_extension reset_request;
- };
- 
-+
-+/* Get the stordevice object iff exists and its refcount > 1 */
-+static inline struct storvsc_device *get_stor_device(struct hv_device *device)
-+{
-+	struct storvsc_device *stor_device;
-+
-+	stor_device = (struct storvsc_device *)device->ext;
-+	if (stor_device && atomic_read(&stor_device->ref_count) > 1)
-+		atomic_inc(&stor_device->ref_count);
-+	else
-+		stor_device = NULL;
-+
-+	return stor_device;
-+}
-+
- /* Interface */
- int stor_vsc_on_host_reset(struct hv_device *device);
- 
 -- 
-1.7.4.1
-
+Matthew Garrett | mjg59@srcf.ucam.org
