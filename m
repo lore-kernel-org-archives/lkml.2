@@ -1,70 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933410Ab1CWVBB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 17:01:01 -0400
-Received: from smtp205.alice.it ([82.57.200.101]:45202 "EHLO smtp205.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933325Ab1CWVBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 17:01:00 -0400
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Antonio Ospite <ospite@studenti.unina.it>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Daniel Ribeiro <drwyrm@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        openezx-devel@lists.openezx.org
-Subject: [PATCH] leds: leds-regulator.c, fix handling already enabled regulators
-Date: Wed, 23 Mar 2011 22:00:02 +0100
-Message-Id: <1300914002-17760-1-git-send-email-ospite@studenti.unina.it>
+	id S933436Ab1CWVCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 17:02:47 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40255 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933310Ab1CWVCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 17:02:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=KwyzjqahXB39W12K+dzYxoDEd5BB0zZdn519Xop9NQhH28JEk+GH7lsVtHC6MpgFN0
+         clKaQv48qawJy89aHIt9qQyPE6AUIbzpcAiyB8Ts3jT7B2EMMWs+wpbZKBi8FU5sifFL
+         K/4lMSHOZQG/4rZekmIrs/kDye+fgYMjsL0OU=
+From: Alessio Igor Bogani <abogani@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ian Lance Taylor <ian@airs.com>,
+        Tim Bird <tim.bird@am.sony.com>,
+        Alessio Igor Bogani <abogani@kernel.org>
+Subject: [PATCH 1/2] Let Linker sort the symbols
+Date: Wed, 23 Mar 2011 22:00:42 +0100
+Message-Id: <1300914043-2297-2-git-send-email-abogani@kernel.org>
 X-Mailer: git-send-email 1.7.4.1
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+In-Reply-To: <1300914043-2297-1-git-send-email-abogani@kernel.org>
+References: <1300914043-2297-1-git-send-email-abogani@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the driver aware of the initial status of the regulator.
+This work was supported by a hardware donation from the CE Linux Forum.
 
-The leds-regulator driver was ignoring the initial status of the
-regulator; this resulted in rdev->use_count incremented up to 2 after
-calling regulator_led_set_value() in the .probe method when a regulator
-was already enabled at insmod time, and this made impossible to ever
-disable the regulator.
-
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
 ---
+ include/asm-generic/vmlinux.lds.h |   20 ++++++++++----------
+ include/linux/module.h            |    4 ++--
+ scripts/module-common.lds         |   19 +++++++++++++++++++
+ 3 files changed, 31 insertions(+), 12 deletions(-)
 
-This problem was anticipated by Mark Brown on the very first submission 
-of the driver but my knowledge about regulators at the time made me 
-overlook what he was asking for, now that I have actually experienced 
-the problem I've finally figured out what Mark was really referring to.
-
-NOTE: initially I thought about CC-ing stable@kernel.org as well on 
-this, as it is an actual fix, but then I checked that there are 
-currently no users of the driver in mainline linux and I dropped it, is 
-that how it should be?
-
-Thanks,
-   Antonio Ospite
-   http://ao2.it
-
- drivers/leds/leds-regulator.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/leds/leds-regulator.c b/drivers/leds/leds-regulator.c
-index 3790816..8497f56 100644
---- a/drivers/leds/leds-regulator.c
-+++ b/drivers/leds/leds-regulator.c
-@@ -178,6 +178,10 @@ static int __devinit regulator_led_probe(struct platform_device *pdev)
- 	led->cdev.flags |= LED_CORE_SUSPENDRESUME;
- 	led->vcc = vcc;
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 32c45e5..83f6bc1 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -274,70 +274,70 @@
+ 	/* Kernel symbol table: Normal symbols */			\
+ 	__ksymtab         : AT(ADDR(__ksymtab) - LOAD_OFFSET) {		\
+ 		VMLINUX_SYMBOL(__start___ksymtab) = .;			\
+-		*(__ksymtab)						\
++		*(SORT(___ksymtab__*))					\
+ 		VMLINUX_SYMBOL(__stop___ksymtab) = .;			\
+ 	}								\
+ 									\
+ 	/* Kernel symbol table: GPL-only symbols */			\
+ 	__ksymtab_gpl     : AT(ADDR(__ksymtab_gpl) - LOAD_OFFSET) {	\
+ 		VMLINUX_SYMBOL(__start___ksymtab_gpl) = .;		\
+-		*(__ksymtab_gpl)					\
++		*(SORT(___ksymtab_gpl__*))				\
+ 		VMLINUX_SYMBOL(__stop___ksymtab_gpl) = .;		\
+ 	}								\
+ 									\
+ 	/* Kernel symbol table: Normal unused symbols */		\
+ 	__ksymtab_unused  : AT(ADDR(__ksymtab_unused) - LOAD_OFFSET) {	\
+ 		VMLINUX_SYMBOL(__start___ksymtab_unused) = .;		\
+-		*(__ksymtab_unused)					\
++		*(SORT(___ksymtab_unused__*))				\
+ 		VMLINUX_SYMBOL(__stop___ksymtab_unused) = .;		\
+ 	}								\
+ 									\
+ 	/* Kernel symbol table: GPL-only unused symbols */		\
+ 	__ksymtab_unused_gpl : AT(ADDR(__ksymtab_unused_gpl) - LOAD_OFFSET) { \
+ 		VMLINUX_SYMBOL(__start___ksymtab_unused_gpl) = .;	\
+-		*(__ksymtab_unused_gpl)					\
++		*(SORT(___ksymtab_unused_gpl__*))			\
+ 		VMLINUX_SYMBOL(__stop___ksymtab_unused_gpl) = .;	\
+ 	}								\
+ 									\
+ 	/* Kernel symbol table: GPL-future-only symbols */		\
+ 	__ksymtab_gpl_future : AT(ADDR(__ksymtab_gpl_future) - LOAD_OFFSET) { \
+ 		VMLINUX_SYMBOL(__start___ksymtab_gpl_future) = .;	\
+-		*(__ksymtab_gpl_future)					\
++		*(SORT(___ksymtab_gpl_future__*))			\
+ 		VMLINUX_SYMBOL(__stop___ksymtab_gpl_future) = .;	\
+ 	}								\
+ 									\
+ 	/* Kernel symbol table: Normal symbols */			\
+ 	__kcrctab         : AT(ADDR(__kcrctab) - LOAD_OFFSET) {		\
+ 		VMLINUX_SYMBOL(__start___kcrctab) = .;			\
+-		*(__kcrctab)						\
++		*(SORT(___kcrctab__*))					\
+ 		VMLINUX_SYMBOL(__stop___kcrctab) = .;			\
+ 	}								\
+ 									\
+ 	/* Kernel symbol table: GPL-only symbols */			\
+ 	__kcrctab_gpl     : AT(ADDR(__kcrctab_gpl) - LOAD_OFFSET) {	\
+ 		VMLINUX_SYMBOL(__start___kcrctab_gpl) = .;		\
+-		*(__kcrctab_gpl)					\
++		*(SORT(___kcrctab_gpl__*))				\
+ 		VMLINUX_SYMBOL(__stop___kcrctab_gpl) = .;		\
+ 	}								\
+ 									\
+ 	/* Kernel symbol table: Normal unused symbols */		\
+ 	__kcrctab_unused  : AT(ADDR(__kcrctab_unused) - LOAD_OFFSET) {	\
+ 		VMLINUX_SYMBOL(__start___kcrctab_unused) = .;		\
+-		*(__kcrctab_unused)					\
++		*(SORT(___kcrctab_unused__*))				\
+ 		VMLINUX_SYMBOL(__stop___kcrctab_unused) = .;		\
+ 	}								\
+ 									\
+ 	/* Kernel symbol table: GPL-only unused symbols */		\
+ 	__kcrctab_unused_gpl : AT(ADDR(__kcrctab_unused_gpl) - LOAD_OFFSET) { \
+ 		VMLINUX_SYMBOL(__start___kcrctab_unused_gpl) = .;	\
+-		*(__kcrctab_unused_gpl)					\
++		*(SORT(___kcrctab_unused_gpl__*))			\
+ 		VMLINUX_SYMBOL(__stop___kcrctab_unused_gpl) = .;	\
+ 	}								\
+ 									\
+ 	/* Kernel symbol table: GPL-future-only symbols */		\
+ 	__kcrctab_gpl_future : AT(ADDR(__kcrctab_gpl_future) - LOAD_OFFSET) { \
+ 		VMLINUX_SYMBOL(__start___kcrctab_gpl_future) = .;	\
+-		*(__kcrctab_gpl_future)					\
++		*(SORT(___kcrctab_gpl_future__*))			\
+ 		VMLINUX_SYMBOL(__stop___kcrctab_gpl_future) = .;	\
+ 	}								\
+ 									\
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 5de4204..a8116e1 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -223,7 +223,7 @@ struct module_use {
+ 	extern void *__crc_##sym __attribute__((weak));		\
+ 	static const unsigned long __kcrctab_##sym		\
+ 	__used							\
+-	__attribute__((section("__kcrctab" sec), unused))	\
++	__attribute__((section("___kcrctab" sec "__" #sym), unused)) \
+ 	= (unsigned long) &__crc_##sym;
+ #else
+ #define __CRC_SYMBOL(sym, sec)
+@@ -238,7 +238,7 @@ struct module_use {
+ 	= MODULE_SYMBOL_PREFIX #sym;                    	\
+ 	static const struct kernel_symbol __ksymtab_##sym	\
+ 	__used							\
+-	__attribute__((section("__ksymtab" sec), unused))	\
++	__attribute__((section("___ksymtab" sec "__" #sym), unused)) \
+ 	= { (unsigned long)&sym, __kstrtab_##sym }
  
-+	/* to handle correctly an already enabled regulator */
-+	if (regulator_is_enabled(led->vcc))
-+		led->enabled = 1;
+ #define EXPORT_SYMBOL(sym)					\
+diff --git a/scripts/module-common.lds b/scripts/module-common.lds
+index 47a1f9a..0057a21 100644
+--- a/scripts/module-common.lds
++++ b/scripts/module-common.lds
+@@ -5,4 +5,23 @@
+  */
+ SECTIONS {
+ 	/DISCARD/ : { *(.discard) }
 +
- 	mutex_init(&led->mutex);
- 	INIT_WORK(&led->work, led_work);
- 
++	.rodata					: { *(.rodata) }
++	.rodata.str1.1			: { *(.rodata.str1.1) }
++	.parainstructions		: { *(.parainstructions) }
++	.modinfo				: { *(.modinfo) }
++
++	__ksymtab				: { *(SORT(___ksymtab__*)) }
++	__ksymtab_gpl			: { *(SORT(___ksymtab_gpl__*)) }
++	__ksymtab_unused		: { *(SORT(___ksymtab_unused__*)) }
++	__ksymtab_unused_gpl	: { *(SORT(___ksymtab_unused_gpl__*)) }
++	__ksymtab_gpl_future	: { *(SORT(___ksymtab_gpl_future__*)) }
++	__kcrctab				: { *(SORT(___kcrctab__*)) }
++	__kcrctab_gpl			: { *(SORT(___kcrctab_gpl__*)) }
++	__kcrctab_unused		: { *(SORT(___kcrctab_unused__*)) }
++	__kcrctab_unused_gpl	: { *(SORT(___kcrctab_unused_gpl__*)) }
++	__kcrctab_gpl_future	: { *(SORT(___kcrctab_gpl_future__*)) }
++
++	__ksymtab_strings		: { *(__ksymtab_strings) }
++	__versions				: { *(__versions) }
+ }
 -- 
 1.7.4.1
 
