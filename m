@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737Ab1CWMRJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 08:17:09 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62367 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932704Ab1CWMRG (ORCPT
+	id S932751Ab1CWMRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 08:17:14 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:35567 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932727Ab1CWMRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 08:17:06 -0400
+	Wed, 23 Mar 2011 08:17:09 -0400
 From: Jamie Iles <jamie@jamieiles.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@suse.de, Jamie Iles <jamie@jamieiles.com>
-Subject: [RFC PATCH 1/2] picoxcell-otp: add support for picoxcell OTP devices
-Date: Wed, 23 Mar 2011 12:16:58 +0000
-Message-Id: <1300882619-19152-2-git-send-email-jamie@jamieiles.com>
+Subject: [RFC PATCH 2/2] picoxcellotp: add support for PC3X3 OTP devices
+Date: Wed, 23 Mar 2011 12:16:59 +0000
+Message-Id: <1300882619-19152-3-git-send-email-jamie@jamieiles.com>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1300882619-19152-1-git-send-email-jamie@jamieiles.com>
 References: <1300882619-19152-1-git-send-email-jamie@jamieiles.com>
@@ -20,154 +20,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-picoxcell devices contain a block of OTP memory that can be used for
-storing first-stage bootloaders, cryptographic keys and other data to be
-kept onchip.  Different devices support a number of redundancy formats
-to cope with in-field programming errors and can be partitioned into
-regions to allow different redundancy formats with different effective
-sizes.
-
-This patch implements an OTP device layer which different devices may
-register their OTP regions with.  This provides sysfs entries that may
-be used to configure the number of regions, region format and access
-control such as write enable.
+This adds support for the OTP in the PC3X3 family of devices.  These
+devices have 16KB of OTP memory and support a number of different
+redundancy formats each of which increases the level of redundancy at
+the cost of extra bit-storage.
 
 Signed-off-by: Jamie Iles <jamie@jamieiles.com>
 ---
- Documentation/ABI/testing/sysfs-bus-picoxcell-otp  |   37 +
- .../ABI/testing/sysfs-platform-picoxcell-otp       |   39 +
- drivers/char/Kconfig                               |    8 +
- drivers/char/Makefile                              |    1 +
- drivers/char/picoxcellotp.c                        |  929 ++++++++++++++++++++
- drivers/char/picoxcellotp.h                        |  230 +++++
- 6 files changed, 1244 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-picoxcell-otp
- create mode 100644 Documentation/ABI/testing/sysfs-platform-picoxcell-otp
- create mode 100644 drivers/char/picoxcellotp.c
- create mode 100644 drivers/char/picoxcellotp.h
+ drivers/char/Kconfig              |    7 +
+ drivers/char/Makefile             |    1 +
+ drivers/char/picoxcellotp_pc3x3.c | 1078 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 1086 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/picoxcellotp_pc3x3.c
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-picoxcell-otp b/Documentation/ABI/testing/sysfs-bus-picoxcell-otp
-new file mode 100644
-index 0000000..096b892
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-picoxcell-otp
-@@ -0,0 +1,37 @@
-+What:           /sys/bus/picoxcell-otp/
-+Date:           March 2011
-+KernelVersion:  2.6.40+
-+Contact:        Jamie Iles <jamie@jamieiles.com>
-+Description:
-+                The picoxcell-otp bus presents a number of devices where each
-+		device represents a region in the OTP device in the SoC. Each
-+		region will create a device node which allows the region to be
-+		written with read()/write() calls and the device on the bus
-+		has attributes for controlling the redundancy format and
-+		getting the region size.
-+
-+What:           /sys/bus/picoxcell-otp/devices/.../format
-+Date:           March 2011
-+KernelVersion:  2.6.40+
-+Contact:        Jamie Iles <jamie@jamieiles.com>
-+Description:
-+                The redundancy format of the region. Valid values are:
-+			- single-ended (1 bit of storage per data bit).
-+			- redundant (2 bits of storage, wire-OR'd per data
-+			  bit).
-+			- differential (2 bits of storage, differential
-+			  voltage per data bit).
-+			- differential-redundant (4 bits of storage, combining
-+			  redundant and differential).
-+		It is possible to increase redundancy of a region but care
-+		will be needed if there is data already in the region.
-+
-+What:           /sys/bus/picoxcell-otp/devices/.../size
-+Date:           March 2011
-+KernelVersion:  2.6.40+
-+Contact:        Jamie Iles <jamie@jamieiles.com>
-+Description:
-+                The effective storage size of the region. This is the amount
-+		of data that a user can store in the region taking into
-+		account the number of regions and the redundancy format of the
-+		region itself.
-diff --git a/Documentation/ABI/testing/sysfs-platform-picoxcell-otp b/Documentation/ABI/testing/sysfs-platform-picoxcell-otp
-new file mode 100644
-index 0000000..e5ee711
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-platform-picoxcell-otp
-@@ -0,0 +1,39 @@
-+What:		/sys/devices/platform/picoxcell-otp*/write_enable
-+Date:		March 2011
-+KernelVersion:	2.6.40+
-+Contact:	"Jamie Iles" <jamie@jamieiles.com>
-+Description:
-+		This file controls whether the OTP in a Picochip PC3X3
-+		device can be written to. If set to "enabled" then the
-+		regions may be written, the number of regions may be
-+		changed and the format of any region may be changed.
-+
-+What:		/sys/devices/platform/picoxcell-otp*/num_regions
-+Date:		March 2011
-+KernelVersion:	2.6.40+
-+Contact:	"Jamie Iles" <jamie@jamieiles.com>
-+Description:
-+		This file controls the number of regions in the OTP device.
-+		Valid values are 1, 2, 4 and 8. The number of regions may be
-+		increased but never decreased. Increasing the number of
-+		regions will create new devices on the otp bus.
-+
-+What:		/sys/devices/platform/picoxcell-otp*/strict_programming
-+Date:		March 2011
-+KernelVersion:	2.6.40+
-+Contact:	"Jamie Iles" <jamie@jamieiles.com>
-+Description:
-+		This file indicates whether all words in a redundant format
-+		must be programmed correctly to indicate success.  Disabling
-+		this will mean that programming will be considered a success
-+		if the word can be read back correctly in it's redundant
-+		format.
-+
-+What:		/sys/devices/platform/picoxcell-otp*/bad_words
-+Date:		March 2011
-+KernelVersion:	2.6.40+
-+Contact:	"Jamie Iles" <jamie@jamieiles.com>
-+Description:
-+		Contains a space delimited list of raw addresses that have
-+		failed to program correctly.  This is non-persistent and may
-+		be used by userland to work around faulty words.
 diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index 04f8b2d..1f74b7b 100644
+index 1f74b7b..13632fc 100644
 --- a/drivers/char/Kconfig
 +++ b/drivers/char/Kconfig
-@@ -109,6 +109,14 @@ config BFIN_OTP_WRITE_ENABLE
+@@ -117,6 +117,13 @@ config PICOXCELL_OTP
+ 	  picoXcell SoC devices.  The OTP memory can be used for key/code
+ 	  storage and offers different redundancy mechanisms.
  
- 	  If unsure, say N.
- 
-+config PICOXCELL_OTP
-+	bool "Enable support for Picochip picoXcell OTP"
-+	depends on ARCH_PICOXCELL
++config PICOXCELL_OTP_PC3X3
++	tristate "Enable support for Picochip PC3X3 OTP"
++	depends on PICOXCELL_PC3X3
 +	help
-+	  Saying y or m here will build support for the OTP memory in
-+	  picoXcell SoC devices.  The OTP memory can be used for key/code
-+	  storage and offers different redundancy mechanisms.
++	  Say y or m here to allow support for the OTP found in PC3X3 devices.
++	  If you say m then the module will be called picoxcellotp_pc3x3.
 +
  config PRINTER
  	tristate "Parallel printer support"
  	depends on PARPORT
 diff --git a/drivers/char/Makefile b/drivers/char/Makefile
-index 057f654..0c42906 100644
+index 0c42906..d2dd710 100644
 --- a/drivers/char/Makefile
 +++ b/drivers/char/Makefile
-@@ -62,3 +62,4 @@ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
- 
+@@ -63,3 +63,4 @@ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
  obj-$(CONFIG_JS_RTC)		+= js-rtc.o
  js-rtc-y = rtc.o
-+obj-$(CONFIG_PICOXCELL_OTP)	+= picoxcellotp.o
-diff --git a/drivers/char/picoxcellotp.c b/drivers/char/picoxcellotp.c
+ obj-$(CONFIG_PICOXCELL_OTP)	+= picoxcellotp.o
++obj-$(CONFIG_PICOXCELL_OTP_PC3X3)	+= picoxcellotp_pc3x3.o
+diff --git a/drivers/char/picoxcellotp_pc3x3.c b/drivers/char/picoxcellotp_pc3x3.c
 new file mode 100644
-index 0000000..8f83def
+index 0000000..da875a6
 --- /dev/null
-+++ b/drivers/char/picoxcellotp.c
-@@ -0,0 +1,929 @@
++++ b/drivers/char/picoxcellotp_pc3x3.c
+@@ -0,0 +1,1078 @@
 +/*
 + * Copyright 2010-2011 Picochip LTD, Jamie Iles
 + * http://www.picochip.com
@@ -177,1162 +75,1075 @@ index 0000000..8f83def
 + * as published by the Free Software Foundation; either version
 + * 2 of the License, or (at your option) any later version.
 + *
-+ * This driver implements a user interface for reading and writing the OTP
-+ * memory in Picochip picoxcell devices. This OTP can be used for executing
++ * This driver implements a picoxcellotp backend for reading and writing the
++ * OTP memory in Picochip PC3X3 devices. This OTP can be used for executing
 + * secure boot code or for the secure storage of keys and any other user data.
-+ *
-+ * The OTP is configured through sysfs and is read and written through device
-+ * nodes. The OTP device in the device model (the platform device) gains
-+ * write_enable, num_regions, bad_words and strict_programming attributes. We
-+ * also create a picoxcell-otp bus to which we add a device per region. The
-+ * OTP supports either 1, 2, 4 or 8 regions and when we divide the regions
-+ * down we create a new child device on the picoxcell-otp bus. This child
-+ * device has format and size attributes.
-+ *
-+ * To update the number of regions, the format of a region or to program a
-+ * region, the write_enable attribute of the OTP device must be set to
-+ * "enabled".
 + */
-+#define pr_fmt(fmt) "picoxcellotp: " fmt
++#define pr_fmt(fmt) "pc3x3otp: " fmt
 +
-+#undef DEBUG
-+#include <linux/cdev.h>
++#include <linux/bitops.h>
++#include <linux/clk.h>
 +#include <linux/delay.h>
 +#include <linux/err.h>
-+#include <linux/fs.h>
 +#include <linux/io.h>
-+#include <linux/list.h>
 +#include <linux/module.h>
-+#include <linux/semaphore.h>
-+#include <linux/slab.h>
-+#include <linux/sysfs.h>
-+#include <linux/uaccess.h>
++#include <linux/platform_device.h>
 +
 +#include "picoxcellotp.h"
 +
-+static int otp_open(struct inode *inode, struct file *filp);
-+static int otp_release(struct inode *inode, struct file *filp);
-+static ssize_t otp_write(struct file *filp, const char __user *buf,
-+			 size_t len, loff_t *offs);
-+static ssize_t otp_read(struct file *filp, char __user *buf, size_t len,
-+			loff_t *offs);
-+static loff_t otp_llseek(struct file *filp, loff_t offs, int origin);
++/*
++ * To test the user interface and most of the driver logic, we have a test
++ * mode whereby rather than writing to OTP we have a RAM buffer that simulates
++ * the OTP. This means that we can test everything apart from:
++ *
++ *	- The OTP state machines and commands.
++ *	- Failure to program bits.
++ */
++static int test_mode;
++module_param(test_mode, bool, S_IRUSR);
++MODULE_PARM_DESC(test_mode,
++		 "Run in test mode (use a memory buffer rather than OTP");
 +
-+static const struct file_operations otp_fops = {
-+	.owner	    = THIS_MODULE,
-+	.open	    = otp_open,
-+	.release    = otp_release,
-+	.write	    = otp_write,
-+	.read	    = otp_read,
-+	.llseek	    = otp_llseek,
++/*
++ * This is the maximum number of times to try and soak a failed bit. We get
++ * this from the Sidense documentation. After 16 attempts it is very unlikely
++ * that anything will change.
++ */
++#define MAX_PROGRAM_RETRIES		16
++
++#define OTP_MACRO_CMD_REG_OFFSET	0x00
++#define OTP_MACRO_STATUS_REG_OFFSET	0x04
++#define OTP_MACRO_CONFIG_REG_OFFSET	0x08
++#define OTP_MACRO_ADDR_REG_OFFSET	0x0C
++#define OTP_MACRO_D_LO_REG_OFFSET	0x10
++#define OTP_MACRO_D_HI_REG_OFFSET	0x14
++#define OTP_MACRO_Q_LO_REG_OFFSET	0x20
++#define OTP_MACRO_Q_HI_REG_OFFSET	0x24
++#define OTP_MACRO_Q_MR_REG_OFFSET	0x28
++#define OTP_MACRO_Q_MRAB_REG_OFFSET	0x2C
++#define OTP_MACRO_Q_SR_LO_REG_OFFSET	0x30
++#define OTP_MACRO_Q_SR_HI_REG_OFFSET	0x34
++#define OTP_MACRO_Q_RR_LO_REG_OFFSET	0x38
++#define OTP_MACRO_Q_RR_HI_REG_OFFSET	0x3C
++#define OTP_MACRO_TIME_RD_REG_OFFSET	0x40
++#define OTP_MACRO_TIME_WR_REG_OFFSET	0x44
++#define OTP_MACRO_TIME_PGM_REG_OFFSET	0x48
++#define OTP_MACRO_TIME_PCH_REG_OFFSET	0x4C
++#define OTP_MACRO_TIME_CMP_REG_OFFSET	0x50
++#define OTP_MACRO_TIME_RST_REG_OFFSET	0x54
++#define OTP_MACRO_TIME_PWR_REG_OFFSET	0x58
++#define OTP_MACRO_DIRECT_IO_REG_OFFSET	0x5C
++
++/*
++ * The OTP addresses of the special register. This is in the boot
++ * sector and we use words 0 and 2 of sector 0 in redundant format.
++ */
++#define SR_ADDRESS_0	    ((1 << 11) | 0x0)
++#define SR_ADDRESS_2	    ((1 << 11) | 0x2)
++
++enum otp_command {
++	OTP_COMMAND_IDLE,
++	OTP_COMMAND_WRITE,
++	OTP_COMMAND_PROGRAM,
++	OTP_COMMAND_READ,
++	OTP_COMMAND_WRITE_MR,
++	OTP_COMMAND_PRECHARGE,
++	OTP_COMMAND_COMPARE,
++	OTP_COMMAND_RESET,
++	OTP_COMMAND_RESET_M,
++	OTP_COMMAND_POWER_DOWN,
++	OTP_COMMAND_AUX_UPDATE_A,
++	OTP_COMMAND_AUX_UPDATE_B,
++	OTP_COMMAND_WRITE_PROGRAM,
++	OTP_COMMAND_WRITE_MRA,
++	OTP_COMMAND_WRITE_MRB,
++	OTP_COMMAND_RESET_MR,
 +};
 +
-+static DEFINE_SEMAPHORE(otp_sem);
-+static int otp_we, otp_strict_programming;
-+static struct otp_device *otp;
-+static dev_t otp_devno;
++/* The control and status registers follow the AXI OTP map. */
++#define OTP_CTRL_BASE			0x4000
 +
 +/*
-+ * Given a device for one of the otpN devices, get the corresponding
-+ * otp_region.
++ * The number of words in the OTP device. The device is 16K bytes and the word
++ * size is 64 bits.
 + */
-+static inline struct otp_region *to_otp_region(struct device *dev)
-+{
-+	return dev ? container_of(dev, struct otp_region, dev) : NULL;
-+}
++#define OTP_NUM_WORDS	    (SZ_16K / OTP_WORD_SIZE)
 +
-+bool otp_strict_programming_enabled(void)
-+{
-+	return otp_strict_programming;
-+}
-+EXPORT_SYMBOL_GPL(otp_strict_programming_enabled);
-+
-+static ssize_t otp_format_show(struct device *dev,
-+			       struct device_attribute *attr, char *buf)
-+{
-+	struct otp_region *region = to_otp_region(dev);
-+	enum otp_redundancy_fmt fmt;
-+	const char *fmt_string;
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	fmt = region->ops->get_fmt(region);
-+
-+	up(&otp_sem);
-+
-+	if (OTP_REDUNDANCY_FMT_SINGLE_ENDED == fmt)
-+		fmt_string = "single-ended";
-+	else if (OTP_REDUNDANCY_FMT_REDUNDANT == fmt)
-+		fmt_string = "redundant";
-+	else if (OTP_REDUNDANCY_FMT_DIFFERENTIAL == fmt)
-+		fmt_string = "differential";
-+	else if (OTP_REDUNDANCY_FMT_DIFFERENTIAL_REDUNDANT == fmt)
-+		fmt_string = "differential-redundant";
-+	else
-+		fmt_string = NULL;
-+
-+	return fmt_string ? sprintf(buf, "%s\n", fmt_string) : -EINVAL;
-+}
-+
-+static ssize_t otp_format_store(struct device *dev,
-+				struct device_attribute *attr, const char *buf,
-+				size_t len)
-+{
-+	int err = 0;
-+	struct otp_region *region = to_otp_region(dev);
-+	enum otp_redundancy_fmt new_fmt, fmt;
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	fmt = region->ops->get_fmt(region);
-+
-+	/* This is irreversible so don't make it too easy to break it! */
-+	if (!otp_we) {
-+		err = -EPERM;
-+		goto out;
-+	}
-+
-+	if (sysfs_streq(buf, "single-ended"))
-+		new_fmt = OTP_REDUNDANCY_FMT_SINGLE_ENDED;
-+	else if (sysfs_streq(buf, "redundant"))
-+		new_fmt = OTP_REDUNDANCY_FMT_REDUNDANT;
-+	else if (sysfs_streq(buf, "differential"))
-+		new_fmt = OTP_REDUNDANCY_FMT_DIFFERENTIAL;
-+	else if (sysfs_streq(buf, "differential-redundant"))
-+		new_fmt = OTP_REDUNDANCY_FMT_DIFFERENTIAL_REDUNDANT;
-+	else {
-+		err = -EINVAL;
-+		goto out;
-+	}
-+
-+	region->ops->set_fmt(region, new_fmt);
-+
-+out:
-+	up(&otp_sem);
-+
-+	return err ?: len;
-+}
-+
-+static ssize_t otp_size_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
-+{
-+	struct otp_region *region = to_otp_region(dev);
-+	size_t region_sz;
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	region_sz = region->ops->get_size(region);
-+
-+	up(&otp_sem);
-+
-+	return sprintf(buf, "%u\n", region_sz);
-+}
-+
-+static struct device_attribute otp_region_attrs[] = {
-+	__ATTR(format, S_IRUGO | S_IWUSR, otp_format_show, otp_format_store),
-+	__ATTR(size, S_IRUGO, otp_size_show, NULL),
-+	__ATTR_NULL
++/*
++ * The OTP device representation. We can have a static structure as there is
++ * only ever one OTP device in a system.
++ *
++ * @iomem: the io memory for the device that should be accessed with the I/O
++ *	accessors.
++ * @mem: the 16KB of OTP memory that can be accessed like normal memory. When
++ *	we probe, we force the __iomem away so we can read it directly.
++ * @test_mode_sr0, test_mode_sr2 the values of the special register when we're
++ *	in test mode.
++ */
++struct pc3x3_otp {
++	struct otp_device   *dev;
++	void __iomem	    *iomem;
++	void		    *mem;
++	struct clk	    *clk;
++	u64		    test_mode_sr0, test_mode_sr2;
++	unsigned long	    registered_regions;
 +};
 +
-+
-+static struct bus_type otp_bus_type = {
-+	.name		= "picoxcell-otp",
-+	.dev_attrs	= otp_region_attrs,
-+};
-+
-+/*
-+ * Show the current write enable state of the OTP. Users can only program the
-+ * OTP when this shows 'enabled'.
-+ */
-+static ssize_t otp_we_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
++static inline void otp_write_reg(struct pc3x3_otp *otp, unsigned reg_num,
++				 u32 value)
 +{
-+	int ret;
++	writel(value, otp->iomem + OTP_CTRL_BASE + reg_num);
++}
 +
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
++static inline u32 otp_read_reg(struct pc3x3_otp *otp, unsigned reg_num)
++{
++	return readl(otp->iomem + OTP_CTRL_BASE + reg_num);
++}
 +
-+	ret = sprintf(buf, "%s\n", otp_we ? "enabled" : "disabled");
++static inline u32 otp_read_sr(struct pc3x3_otp *otp)
++{
++	if (test_mode)
++		return otp->test_mode_sr0 | otp->test_mode_sr2;
 +
-+	up(&otp_sem);
-+
-+	return ret;
++	return otp_read_reg(otp, OTP_MACRO_Q_SR_LO_REG_OFFSET);
 +}
 +
 +/*
-+ * Set the write enable state of the OTP. 'enabled' will enable programming
-+ * and 'disabled' will prevent further programming from occuring. On loading
-+ * the module, this will default to 'disabled'.
++ * Get the region format. The region format encoding and number of regions are
++ * encoded in the bottom 32 bis of the special register:
++ *
++ *  20: enable redundancy replacement.
++ *  [2:0]: AXI address mask - determines the number of address bits to use for
++ *  selecting the region to read from.
++ *  [m:n]: the format for region X where n := (X * 2) + 4 and m := n + 1.
 + */
-+static ssize_t otp_we_store(struct device *dev, struct device_attribute *attr,
-+			    const char *buf, size_t len)
++static enum otp_redundancy_fmt
++__pc3x3_otp_region_get_fmt(struct pc3x3_otp *otp, const struct otp_region *region)
 +{
-+	int err = 0;
++	unsigned shift = (region->region_nr * 2) + 4;
 +
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	if (sysfs_streq(buf, "enabled"))
-+		otp_we = 1;
-+	else if (sysfs_streq(buf, "disabled"))
-+		otp_we = 0;
-+	else
-+		err = -EINVAL;
-+
-+	up(&otp_sem);
-+
-+	return err ?: len;
++	return (otp_read_sr(otp) >> shift) & 0x3;
 +}
-+static DEVICE_ATTR(write_enable, S_IRUSR | S_IWUSR, otp_we_show, otp_we_store);
 +
-+/*
-+ * Show the current strict programming state of the OTP. If set to "enabled",
-+ * then when programming, all raw words must program correctly to succeed. If
-+ * disabled, then as long as the word reads back correctly in the redundant
-+ * mode, then some bits may be allowed to be incorrect in the raw words.
-+ */
-+static ssize_t otp_strict_programming_show(struct device *dev,
-+					   struct device_attribute *attr,
-+					   char *buf)
++static enum otp_redundancy_fmt
++pc3x3_otp_region_get_fmt(struct otp_region *region)
 +{
-+	int ret;
++	struct pc3x3_otp *otp = region->parent->driver_data;
 +
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	ret = sprintf(buf, "%s\n", otp_strict_programming ? "enabled" :
-+			"disabled");
-+
-+	up(&otp_sem);
-+
-+	return ret;
++	return __pc3x3_otp_region_get_fmt(otp, region);
 +}
 +
 +/*
-+ * Set the current strict programming state of the OTP. If set to "enabled",
-+ * then when programming, all raw words must program correctly to succeed. If
-+ * disabled, then as long as the word reads back correctly in the redundant
-+ * mode, then some bits may be allowed to be incorrect in the raw words.
++ * Find out how many regions the OTP is partitioned into. This can be 1, 2, 4
++ * or 8.
 + */
-+static ssize_t otp_strict_programming_store(struct device *dev,
-+					    struct device_attribute *attr,
-+					    const char *buf, size_t len)
++static inline int otp_num_regions(struct pc3x3_otp *otp)
 +{
-+	int err = 0;
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	if (sysfs_streq(buf, "enabled"))
-+		otp_strict_programming = 1;
-+	else if (sysfs_streq(buf, "disabled"))
-+		otp_strict_programming = 0;
-+	else
-+		err = -EINVAL;
-+
-+	up(&otp_sem);
-+
-+	return err ?: len;
-+}
-+static DEVICE_ATTR(strict_programming, S_IRUSR | S_IWUSR,
-+		   otp_strict_programming_show, otp_strict_programming_store);
-+
-+static ssize_t otp_bad_words_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf)
-+{
-+	int i;
-+	char *p = buf;
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	for (i = 0; i < otp->size / OTP_WORD_SIZE; ++i)
-+		if (test_bit(i, otp->bad_word_map))
-+			p += sprintf(p, "%d ", i);
-+	p += sprintf(p, "\n");
-+
-+	up(&otp_sem);
-+
-+	return p - buf;
-+}
-+static DEVICE_ATTR(bad_words, S_IRUSR, otp_bad_words_show, NULL);
-+
-+static ssize_t otp_num_regions_show(struct device *dev,
-+				    struct device_attribute *attr, char *buf)
-+{
++#define SR_AXI_ADDRESS_MASK	0x7
++	u32 addr_mask;
 +	int nr_regions;
 +
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
++	addr_mask = otp_read_sr(otp) & SR_AXI_ADDRESS_MASK;
 +
-+	nr_regions = otp->ops->get_nr_regions(otp);
++	if (0 == addr_mask)
++		nr_regions = 1;
++	else if (4 == addr_mask)
++		nr_regions = 2;
++	else if (6 == addr_mask)
++		nr_regions = 4;
++	else if (7 == addr_mask)
++		nr_regions = 8;
++	else
++		nr_regions = 0;
 +
-+	up(&otp_sem);
-+
-+	if (nr_regions <= 0)
++	if (WARN_ON(0 == nr_regions))
 +		return -EINVAL;
 +
-+	return sprintf(buf, "%u\n", nr_regions);
++	return nr_regions;
 +}
-+
-+static ssize_t otp_num_regions_store(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t len)
-+{
-+	unsigned nr_regions = simple_strtoul(buf, NULL, 0);
-+	int err = 0;
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	if (!otp_we) {
-+		err = -EPERM;
-+		goto out;
-+	}
-+
-+	err = otp->ops->set_nr_regions(otp, nr_regions);
-+
-+out:
-+	up(&otp_sem);
-+
-+	return err ?: len;
-+}
-+static DEVICE_ATTR(num_regions, S_IRUSR | S_IWUSR, otp_num_regions_show,
-+		   otp_num_regions_store);
 +
 +/*
-+ * Add all of the device entries to sysfs. This also includes creating the
-+ * region device nodes and sysfs entries.
++ * Find the byte offset of the first word in the region from the base of the
++ * OTP.
 + */
-+static int otp_sysfs_add(struct device *dev)
++static unsigned otp_region_base(struct pc3x3_otp *otp,
++				const struct otp_region *region)
 +{
-+	int err;
++	int num_regions = otp_num_regions(otp);
++	unsigned real_region_sz = SZ_16K / num_regions;
 +
-+	err = device_create_file(dev, &dev_attr_write_enable);
-+	if (err)
-+		goto out;
++	return (region->region_nr * real_region_sz) / OTP_WORD_SIZE;
++}
 +
-+	err = device_create_file(dev, &dev_attr_num_regions);
-+	if (err)
-+		goto num_regions_fail;
++static void otp_do_command(struct pc3x3_otp *otp, enum otp_command cmd)
++{
++	otp_write_reg(otp, OTP_MACRO_CMD_REG_OFFSET, cmd);
++	wmb();
 +
-+	err = device_create_file(dev, &dev_attr_bad_words);
-+	if (err)
-+		goto bad_words_fail;
++	/*
++	 * If we're talking to OTP then we need to wait for the command to
++	 * finish.
++	 */
++	if (!test_mode)
++		while (otp_read_reg(otp, OTP_MACRO_CMD_REG_OFFSET) !=
++		       OTP_COMMAND_IDLE)
++			cpu_relax();
++}
 +
-+	err = device_create_file(dev, &dev_attr_strict_programming);
-+	if (err)
-+		goto strict_programming_fail;
++static void otp_write_MR(struct pc3x3_otp *otp, u32 value)
++{
++	/* Load the data register with the new contents. */
++	otp_write_reg(otp, OTP_MACRO_D_LO_REG_OFFSET, value);
++	otp_write_reg(otp, OTP_MACRO_D_HI_REG_OFFSET, 0);
++
++	/* Write the register and wait for the write to complete. */
++	otp_do_command(otp, OTP_COMMAND_WRITE_MR);
++}
++
++/*
++ * Create a write function for a given OTP auxillary mode register. This
++ * writes the auxillary mode register through the mode register then restores
++ * the contents of the mode register.
++ */
++#define OTP_REG_WRITE_FUNCTIONS(_name)					    \
++static void otp_write_##_name(struct pc3x3_otp *otp, u32 value)		    \
++{									    \
++	u32 mr = otp_read_reg(otp, OTP_MACRO_Q_MR_REG_OFFSET);		    \
++									    \
++	/* Load the data register with the new contents. */		    \
++	otp_write_reg(otp, OTP_MACRO_D_LO_REG_OFFSET, value);		    \
++	otp_write_reg(otp, OTP_MACRO_D_HI_REG_OFFSET, 0);		    \
++									    \
++	/* Write the register and wait for the write to complete. */	    \
++	otp_do_command(otp, OTP_COMMAND_WRITE_##_name);			    \
++									    \
++	/* Restore the original value of the MR. */			    \
++	otp_write_MR(otp, mr);						    \
++}
++
++OTP_REG_WRITE_FUNCTIONS(MRA);
++OTP_REG_WRITE_FUNCTIONS(MRB);
++
++/*
++ * Enable the charge pump. This monitors the VPP voltage and waits for it to
++ * reach the correct programming level.
++ *
++ * @enable set to non-zero to enable the charge pump, zero to disable it.
++ */
++static void otp_charge_pump_enable(struct pc3x3_otp *otp, int enable)
++{
++#define OTP_MRA_CHARGE_PUMP_ENABLE_MASK	    (1 << 12)
++#define OTP_MRA_CHARGE_PUMP_MONITOR_MASK    (1 << 15)
++#define OTP_MRA_READ_REFERENCE_LEVEL9_MASK  (1 << 9)
++#define OTP_MRA_READ_REFERENCE_LEVEL5_MASK  (1 << 5)
++#define OTP_STATUS_VPP_APPLIED		    (1 << 4)
++	u32 mra = enable ?
++		(OTP_MRA_CHARGE_PUMP_ENABLE_MASK |
++		 OTP_MRA_CHARGE_PUMP_MONITOR_MASK |
++		 OTP_MRA_READ_REFERENCE_LEVEL9_MASK |
++		 OTP_MRA_READ_REFERENCE_LEVEL5_MASK) : 0;
++
++	otp_write_MRA(otp, mra);
++
++	/* Now wait for VPP to reach the correct level. */
++	if (enable && !test_mode) {
++		while (!(otp_read_reg(otp, OTP_MACRO_STATUS_REG_OFFSET) &
++			 OTP_STATUS_VPP_APPLIED))
++			cpu_relax();
++	}
++
++	udelay(1);
++}
++
++/*
++ * Read a word from OTP.
++ *
++ * @addr the word address to read from.
++ * @val the destination to store the value in.
++ *
++ * Prerequisites: the OTP must be in single-ended read mode so that we can
++ * correctly read the raw word.
++ */
++static int otp_raw_read_word(struct pc3x3_otp *otp, unsigned addr, u64 *val)
++{
++	if (SR_ADDRESS_0 == addr && test_mode)
++		*val = otp->test_mode_sr0;
++	else if (SR_ADDRESS_2 == addr && test_mode)
++		*val = otp->test_mode_sr2;
++	else {
++		union {
++			u64 d64;
++			u32 d32[2];
++		} converter;
++
++		otp_write_reg(otp, OTP_MACRO_ADDR_REG_OFFSET, addr);
++		otp_do_command(otp, OTP_COMMAND_READ);
++
++		converter.d32[0] = otp_read_reg(otp, OTP_MACRO_Q_LO_REG_OFFSET);
++		converter.d32[1] = otp_read_reg(otp, OTP_MACRO_Q_HI_REG_OFFSET);
++
++		if (!test_mode)
++			*val = converter.d64;
++		else
++			memcpy(val, otp->mem + addr * sizeof(u64), sizeof(u64));
++	}
 +
 +	return 0;
++}
 +
-+strict_programming_fail:
-+	device_remove_file(dev, &dev_attr_bad_words);
-+bad_words_fail:
-+	device_remove_file(dev, &dev_attr_num_regions);
-+num_regions_fail:
-+	device_remove_file(dev, &dev_attr_write_enable);
-+out:
++/*
++ * Program a word of OTP to a raw address. This will program an absolute value
++ * into the OTP so if the current word needs to be modified then this needs to
++ * be done with a read-modify-write cycle with the read-modify handled above.
++ *
++ * The actual write operation can't fail here but we don't do any verification
++ * to make sure that the correct data got written. That must be handled by the
++ * layer above.
++ */
++static void otp_raw_program_word(struct pc3x3_otp *otp, unsigned addr, u64 v)
++{
++	unsigned bit_offs;
++	u64 tmp;
++	int set_to_program = addr & 1 ? 0 : 1;
++
++	if (test_mode) {
++		if (addr != SR_ADDRESS_0 && addr != SR_ADDRESS_2) {
++			u64 old;
++
++			if (otp_raw_read_word(otp, addr, &old))
++				return;
++
++			v = (addr & 1) ? old & ~v : old | v;
++
++			memcpy(otp->mem + (addr * OTP_WORD_SIZE), &v, sizeof(v));
++		} else {
++			/*
++			 * The special register OTP values are stored in the
++			 * boot rows that live outside of the 16KB of normal
++			 * OTP so we can't address them directly.
++			 */
++			if (SR_ADDRESS_0 == addr)
++				otp->test_mode_sr0 |= v;
++			else
++				otp->test_mode_sr2 |= v;
++		}
++	}
++
++	/* Set the address of the word that we're writing. */
++	otp_write_reg(otp, OTP_MACRO_ADDR_REG_OFFSET, addr);
++
++	for (bit_offs = 0; v && bit_offs < 64; ++bit_offs, v >>= 1) {
++		if (!(v & 0x1))
++			continue;
++
++		tmp = set_to_program ? ~(1LLU << bit_offs) :
++			(1LLU << bit_offs);
++		otp_write_reg(otp, OTP_MACRO_D_LO_REG_OFFSET,
++				(u32)tmp & 0xFFFFFFFF);
++		otp_write_reg(otp, OTP_MACRO_D_HI_REG_OFFSET,
++				(u32)(tmp >> 32) & 0xFFFFFFFF);
++
++		/* Start programming the bit and wait for it to complete. */
++		otp_do_command(otp, OTP_COMMAND_WRITE_PROGRAM);
++	}
++}
++
++static inline void otp_set_program_pulse_len(struct pc3x3_otp *otp,
++					     unsigned len)
++{
++#define OTP_TIME_PGM_PULSE_MASK     0x7FF
++	u32 v = otp_read_reg(otp, OTP_MACRO_TIME_PGM_REG_OFFSET);
++	v &= ~OTP_TIME_PGM_PULSE_MASK;
++	v |= len;
++	otp_write_reg(otp, OTP_MACRO_TIME_PGM_REG_OFFSET, v);
++}
++
++/*
++ * Write a raw word in OTP. This will program a word into OTP memory and do
++ * any read-modify-write that is neccessary. For example if address 0 contains
++ * 0x00ef, then writing 0xbe00 will result in address 0 containing 0xbeef.
++ * This does not handle redundancy - this should be done at a higher level.
++ *
++ * @addr the word address to write to.
++ * @val the value to program into the OTP.
++ *
++ * Prerequisites: the OTP must be in single-ended read mode so that we can
++ * correctly verify the word.
++ */
++static int otp_raw_write_word(struct pc3x3_otp *otp,
++			      unsigned addr, u64 val)
++{
++	/* The status of the last command. 1 == success. */
++#define OTP_STATUS_LCS			    (1 << 1)
++
++#define OTP_MR_SELF_TIMING		    (1 << 2)
++#define OTP_MR_PROGRAMMABLE_DELAY	    (1 << 5)
++#define OTP_MR_PROGRAMMABLE_DELAY_CONTROL   (1 << 8)
++
++#define OTP_MRB_VREF_ADJUST_0		    (1 << 0)
++#define OTP_MRB_VREF_ADJUST_1		    (1 << 1)
++#define OTP_MRB_VREF_ADJUST_3		    (1 << 3)
++#define OTP_MRB_READ_TIMER_DELAY_CONTROL    (1 << 12)
++
++	/*
++	 * Programming pulse times. For the normal pulse, we use a programming
++	 * time of 51.2uS. For a soak pulse where bits fail to program we use
++	 * a 1mS pulse.
++	 */
++#define OTP_NORMAL_PGM_PULSE_LENGTH	    0x50
++#define OTP_SOAK_PGM_PULSE_LENGTH	    0x61B
++
++	/*
++	 * We program even addresses by setting 0 bits to one and programm odd
++	 * addresses by clearing 1 bits to 0.
++	 */
++	int set_to_program = addr & 1 ? 0 : 1;
++	int retries = 0, err = 0;
++	u64 orig, v;
++
++	if (otp_raw_read_word(otp, addr, &orig))
++		return -EIO;
++
++	v = set_to_program ? val & ~orig : ~val & orig;
++
++	/* Enable the charge pump to begin programming. */
++	otp_charge_pump_enable(otp, 1);
++	otp_write_MRB(otp, OTP_MRB_VREF_ADJUST_3 |
++			OTP_MRB_READ_TIMER_DELAY_CONTROL);
++	otp_write_MR(otp, OTP_MR_SELF_TIMING | OTP_MR_PROGRAMMABLE_DELAY |
++			OTP_MR_PROGRAMMABLE_DELAY_CONTROL);
++	otp_raw_program_word(otp, addr, v);
++	udelay(1);
++
++	while (retries < MAX_PROGRAM_RETRIES) {
++		/* Update orig so we only reprogram the unprogrammed bits. */
++		if (otp_raw_read_word(otp, addr, &orig)) {
++			err = -EIO;
++			break;
++		}
++
++		/* If we've programmed correctly we have nothing else to do. */
++		if (val == orig) {
++			err = 0;
++			break;
++		}
++
++		/* Reset the mode register. */
++		otp_write_MRB(otp,
++			      OTP_MRB_VREF_ADJUST_0 | OTP_MRB_VREF_ADJUST_1 |
++			      OTP_MRB_VREF_ADJUST_3 |
++			      OTP_MRB_READ_TIMER_DELAY_CONTROL);
++		otp_do_command(otp, OTP_COMMAND_RESET_MR);
++
++		/* Increase the programming pulse length. */
++		otp_set_program_pulse_len(otp, OTP_SOAK_PGM_PULSE_LENGTH);
++
++		/* Work out the failed bits. */
++		v = set_to_program ? val & ~orig : ~val & orig;
++		otp_raw_program_word(otp, addr, v);
++
++		/* Restore the programming pulse length. */
++		otp_set_program_pulse_len(otp, OTP_NORMAL_PGM_PULSE_LENGTH);
++
++		/* Update orig so we only reprogram the unprogrammed bits. */
++		if (otp_raw_read_word(otp, addr, &orig)) {
++			err = -EIO;
++			break;
++		}
++
++		/* If we've programmed correctly we have nothing else to do. */
++		if (val == orig) {
++			err = 0;
++			break;
++		}
++
++		otp_write_MRB(otp, OTP_MRB_VREF_ADJUST_3 |
++			      OTP_MRB_READ_TIMER_DELAY_CONTROL);
++		otp_write_MR(otp,
++			     OTP_MR_SELF_TIMING | OTP_MR_PROGRAMMABLE_DELAY |
++			     OTP_MR_PROGRAMMABLE_DELAY_CONTROL);
++		udelay(1);
++		++retries;
++	}
++
++	/* Disable the charge pump. We're done now. */
++	otp_charge_pump_enable(otp, 0);
++	otp_write_MRB(otp, 0);
++	otp_write_MRA(otp, 0);
++	otp_do_command(otp, OTP_COMMAND_RESET_MR);
++
++	if (!err && retries >= MAX_PROGRAM_RETRIES) {
++		dev_warn(otp->dev->dev,
++			 "writing to raw address %x failed to program after %d attempts\n",
++			 addr, MAX_PROGRAM_RETRIES);
++		err = -EBADMSG;
++	}
++
 +	return err;
 +}
 +
-+static void otp_sysfs_remove(struct device *dev)
++/*
++ * Set the redundancy mode to a specific format. This only affects the
++ * readback through the AXI map and does not store the redundancy format in
++ * the special register.
++ */
++static void __pc3x3_otp_redundancy_mode_set(struct pc3x3_otp *otp,
++				      enum otp_redundancy_fmt fmt)
 +{
-+	device_remove_file(dev, &dev_attr_strict_programming);
-+	device_remove_file(dev, &dev_attr_bad_words);
-+	device_remove_file(dev, &dev_attr_num_regions);
-+	device_remove_file(dev, &dev_attr_write_enable);
++#define OTP_MR_REDUNDANT_READ_MASK	(1 << 4)
++#define OTP_MR_DIFFERENTIAL_READ_MASK	(1 << 0)
++	u32 mr_lo = 0;
++
++	if (OTP_REDUNDANCY_FMT_REDUNDANT == fmt)
++		mr_lo |= OTP_MR_REDUNDANT_READ_MASK;
++	else if (OTP_REDUNDANCY_FMT_DIFFERENTIAL == fmt)
++		mr_lo |= OTP_MR_DIFFERENTIAL_READ_MASK;
++	else if (OTP_REDUNDANCY_FMT_DIFFERENTIAL_REDUNDANT == fmt)
++		mr_lo |= OTP_MR_REDUNDANT_READ_MASK |
++			 OTP_MR_DIFFERENTIAL_READ_MASK;
++
++	/* Load the data register with the new MR contents. */
++	otp_write_reg(otp, OTP_MACRO_D_LO_REG_OFFSET, mr_lo);
++	otp_write_reg(otp, OTP_MACRO_D_HI_REG_OFFSET, 0);
++
++	/* Write the MR and wait for the write to complete. */
++	otp_do_command(otp, OTP_COMMAND_WRITE_MR);
 +}
 +
-+struct otp_device *otp_device_alloc(struct device *dev,
-+				    const struct otp_device_ops *ops,
-+				    size_t size)
++static int pc3x3_otp_redundancy_mode_set(struct otp_device *dev,
++					 enum otp_redundancy_fmt fmt)
 +{
-+	struct otp_device *otp_dev = NULL;
-+	int err = -EINVAL;
++	struct pc3x3_otp *otp = dev->driver_data;
 +
-+	down(&otp_sem);
-+
-+	if (!get_device(dev)) {
-+		err = -ENODEV;
-+		goto out;
-+	}
-+
-+	if (otp) {
-+		pr_warning("an otp device already registered\n");
-+		err = -EBUSY;
-+		goto out_put;
-+	}
-+
-+	otp_dev = kzalloc(sizeof(*otp_dev), GFP_KERNEL);
-+	if (!otp_dev) {
-+		err = -ENOMEM;
-+		goto out_put;
-+	}
-+
-+	INIT_LIST_HEAD(&otp_dev->regions);
-+	otp_dev->ops		= ops;
-+	otp_dev->dev 		= dev;
-+	otp_dev->size		= size;
-+	otp_dev->bad_word_map	= kzalloc(BITS_TO_LONGS(size / OTP_WORD_SIZE) *
-+					  sizeof (unsigned long), GFP_KERNEL);
-+	if (!otp_dev->bad_word_map) {
-+		kfree(otp_dev);
-+		err = -ENOMEM;
-+		goto out_put;
-+	}
-+
-+	err = otp_sysfs_add(dev);
-+	if (!err) {
-+		otp = otp_dev;
-+		otp->registered = true;
-+		pr_info("device %s of %u bytes registered\n", ops->name, size);
-+		goto out;
-+	}
-+
-+	kfree(otp_dev->bad_word_map);
-+out_put:
-+	put_device(dev);
-+out:
-+	up(&otp_sem);
-+
-+	return err ? ERR_PTR(err) : otp_dev;
-+}
-+EXPORT_SYMBOL_GPL(otp_device_alloc);
-+
-+void otp_device_unregister(struct otp_device *dev)
-+{
-+	struct otp_region *region, *tmp;
-+
-+	down(&otp_sem);
-+	list_for_each_entry_safe(region, tmp, &otp->regions, head)
-+		otp_region_unregister(region);
-+	otp_sysfs_remove(dev->dev);
-+	otp->registered = false;
-+
-+	/*
-+	 * If there are regions registered then we can't free the otp_device
-+	 * until the device layer has dropped all references and we'll do the
-+	 * otp_device cleanup in the region release function.
-+	 *
-+	 * If there aren't any regions then we can do our cleanup now.
-+	 */
-+	if (list_empty(&otp->regions)) {
-+		put_device(otp->dev);
-+		kfree(otp);
-+		otp = NULL;
-+	}
-+	up(&otp_sem);
-+}
-+EXPORT_SYMBOL_GPL(otp_device_unregister);
-+
-+static void otp_region_release(struct device *dev)
-+{
-+	struct otp_region *region = to_otp_region(dev);
-+
-+	cdev_del(&region->cdev);
-+	list_del(&region->head);
-+
-+	if (region->parent)
-+		put_device(region->parent->dev);
-+
-+	kfree(region);
-+
-+	/*
-+	 * If this is the last region registered and the otp_device itself has
-+	 * been unregistered then we can free the main OTP device as there are
-+	 * no more references to the struct otp_device.
-+	 */
-+	if (list_empty(&otp->regions) && !otp->registered) {
-+		put_device(otp->dev);
-+		kfree(otp);
-+		otp = NULL;
-+	}
-+}
-+
-+struct otp_region *otp_region_alloc_unlocked(struct otp_device *dev,
-+					     const struct otp_region_ops *ops,
-+					     int region_nr)
-+{
-+	struct otp_region *region;
-+	int err = 0;
-+	dev_t devno = MKDEV(MAJOR(otp_devno), region_nr + 1);
-+
-+	region = kzalloc(sizeof(*region), GFP_KERNEL);
-+	if (!region) {
-+		err = -ENOMEM;
-+		goto out;
-+	}
-+
-+	region->parent = dev;
-+	/*
-+	 * Make sure that the device doesn't go away until the region is
-+	 * unregistered.  Typically this will be a platform_device.
-+	 */
-+	if (!get_device(dev->dev)) {
-+		err = -ENODEV;
-+		goto out_free;
-+	}
-+
-+	region->ops		= ops;
-+	region->region_nr	= region_nr;
-+	region->dev.parent	= dev->dev;
-+	region->dev.release	= otp_region_release;
-+	region->dev.devt	= devno;
-+	region->dev.bus		= &otp_bus_type;
-+	dev_set_name(&region->dev, "otp%d", region_nr + 1);
-+
-+	cdev_init(&region->cdev, &otp_fops);
-+	err = cdev_add(&region->cdev, devno, 1);
-+	if (err) {
-+		dev_err(&region->dev, "couldn't create cdev\n");
-+		goto out_free;
-+	}
-+
-+	err = device_register(&region->dev);
-+	if (err) {
-+		dev_err(&region->dev, "couldn't add device\n");
-+		goto out_cdev_del;
-+	}
-+
-+	list_add_tail(&region->head, &dev->regions);
-+	goto out;
-+
-+out_cdev_del:
-+	cdev_del(&region->cdev);
-+out_free:
-+	kfree(region);
-+out:
-+	return err ? ERR_PTR(err) : region;
-+}
-+EXPORT_SYMBOL_GPL(otp_region_alloc_unlocked);
-+
-+struct otp_region *otp_region_alloc(struct otp_device *dev,
-+				    const struct otp_region_ops *ops,
-+				    int region_nr)
-+{
-+	struct otp_region *ret;
-+
-+	down(&otp_sem);
-+	ret = otp_region_alloc_unlocked(dev, ops, region_nr);
-+	up(&otp_sem);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(otp_region_alloc);
-+
-+void otp_region_unregister(struct otp_region *region)
-+{
-+	device_unregister(&region->dev);
-+}
-+EXPORT_SYMBOL_GPL(otp_region_unregister);
-+
-+static int otp_open(struct inode *inode, struct file *filp)
-+{
-+	struct otp_region *region;
-+	int ret = 0;
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	if (!try_module_get(otp->ops->owner)) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	region = container_of(inode->i_cdev, struct otp_region, cdev);
-+	if (!get_device(&region->dev)) {
-+		ret = -ENODEV;
-+		goto out_put_module;
-+	}
-+	filp->private_data = region;
-+
-+	goto out;
-+
-+out_put_module:
-+	module_put(otp->ops->owner);
-+out:
-+	up(&otp_sem);
-+
-+	return ret;
-+}
-+
-+static int otp_release(struct inode *inode, struct file *filp)
-+{
-+	struct otp_region *region;
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+	region = filp->private_data;
-+	put_device(&region->dev);
-+	module_put(otp->ops->owner);
-+	up(&otp_sem);
++	__pc3x3_otp_redundancy_mode_set(otp, fmt);
 +
 +	return 0;
 +}
 +
 +/*
-+ * Write to the OTP memory from a userspace buffer. This requires that the
-+ * write_enable attribute is set to "enabled" in
-+ * /sys/devices/platform/picoxcell-otp/write_enable
-+ *
-+ * If writing is not enabled, this should return -EPERM.
-+ *
-+ * The write method takes a buffer from userspace and writes it into the
-+ * corresponding bits of the OTP. The current file offset refers to the byte
-+ * address of the words in the OTP region that should be written to.
-+ * Therefore:
-+ *
-+ *	- we may have to do a read-modify-write to get up to an aligned
-+ *	boundary, then
-+ *	- do a series of word writes, followed by,
-+ *	- an optional final read-modify-write if there are less than
-+ *	OTP_WORD_SIZE bytes left to write.
-+ *
-+ * After writing, the file offset will be updated to the next byte address. If
-+ * one word fails to write then the writing is aborted at that point and no
-+ * further data is written. If the user can carry on then they may call
-+ * write(2) again with an updated offset.
++ * Read a word from a specificied OTP region. The address is the user address
++ * for the word to be read and should not take the redundancy into account.
 + */
-+static ssize_t otp_write(struct file *filp, const char __user *buf, size_t len,
-+			 loff_t *offs)
++static int pc3x3_otp_region_read_word(struct otp_region *region,
++				      unsigned long addr, u64 *word)
 +{
-+	ssize_t ret = 0;
-+	u64 word;
-+	ssize_t written = 0;
-+	struct otp_region *region = filp->private_data;
-+	unsigned pos = (unsigned)*offs;
-+	enum otp_redundancy_fmt fmt = region->ops->get_fmt(region);
++	struct pc3x3_otp *otp = region->parent->driver_data;
++	enum otp_redundancy_fmt fmt = __pc3x3_otp_region_get_fmt(otp, region);
++	unsigned num_words, raw_addresses[4];
++	u64 result = 0, raw_values[4];
++	int err = 0;
 +
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
++	/* Enter the single-ended read mode. */
++	__pc3x3_otp_redundancy_mode_set(otp, OTP_REDUNDANCY_FMT_SINGLE_ENDED);
 +
-+	if (*offs >= region->ops->get_size(region)) {
-+		ret = -ENOSPC;
-+		goto out;
-+	}
-+
-+	if (!otp_we) {
-+		ret = -EPERM;
-+		goto out;
-+	}
-+
-+	len = min(len, region->ops->get_size(region) - (unsigned)*offs);
-+	if (!len) {
-+		ret = 0;
-+		goto out;
-+	}
-+
-+	otp->ops->set_fmt(otp, fmt);
-+
-+	if (pos & (OTP_WORD_SIZE - 1)) {
-+		/*
-+		 * We're not currently on an 8 byte boundary so we need to do
-+		 * a read-modify-write.
-+		 */
-+		unsigned word_addr = pos / OTP_WORD_SIZE;
-+		unsigned offset = pos % OTP_WORD_SIZE;
-+		size_t bytes = min(OTP_WORD_SIZE - offset, len);
-+
-+		if (region->ops->read_word(region, word_addr, &word)) {
-+			ret = -EIO;
-+			goto out;
-+		}
-+
-+		if (copy_from_user((void *)(&word) + offset, buf, bytes)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+
-+		if (region->ops->write_word(region, word_addr, word)) {
-+			set_bit(word_addr, otp->bad_word_map);
-+			ret = -EIO;
-+			goto out;
-+		}
-+
-+		written += bytes;
-+		len -= bytes;
-+		buf += bytes;
-+		pos += bytes;
++	/*
++	 * If we're running with real OTP then the read is simple, just copy
++	 * it from the AXI map.
++	 */
++	if (!test_mode) {
++		memcpy(word, otp->mem + (otp_region_base(otp, region) + addr) *
++				OTP_WORD_SIZE, sizeof(*word));
++		return 0;
 +	}
 +
 +	/*
-+	 * We're now aligned to an 8 byte boundary so we can simply copy words
-+	 * from userspace and write them into the OTP.
++	 * If we're in test mode then this is slightly more complicated. We
++	 * need to decode the address into the raw address(s) that the block
++	 * uses and handle the redundancy format. This allows us to test that
++	 * we've programmed all of the redundant words in the correct format.
 +	 */
-+	while (len >= OTP_WORD_SIZE) {
-+		if (copy_from_user(&word, buf, OTP_WORD_SIZE)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+
-+		if (region->ops->write_word(region, pos / OTP_WORD_SIZE,
-+					    word)) {
-+			set_bit(pos / OTP_WORD_SIZE, otp->bad_word_map);
-+			ret = -EIO;
-+			goto out;
-+		}
-+
-+		written += OTP_WORD_SIZE;
-+		len -= OTP_WORD_SIZE;
-+		buf += OTP_WORD_SIZE;
-+		pos += OTP_WORD_SIZE;
-+	}
-+
-+	/*
-+	 * We might have less than 8 bytes left so we'll need to do another
-+	 * read-modify-write.
-+	 */
-+	if (len) {
-+		if (region->ops->read_word(region, pos / OTP_WORD_SIZE,
-+					   &word)) {
-+			ret = -EIO;
-+			goto out;
-+		}
-+
-+		if (copy_from_user(&word, buf, len)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+
-+		if (region->ops->write_word(region, pos / OTP_WORD_SIZE,
-+					    word)) {
-+			set_bit(pos / OTP_WORD_SIZE, otp->bad_word_map);
-+			ret = -EIO;
-+			goto out;
-+		}
-+
-+		written += len;
-+		buf += len;
-+		pos += len;
-+		len = 0;
-+	}
-+
-+	*offs += written;
-+
-+out:
-+	up(&otp_sem);
-+	return ret ?: written;
-+}
-+
-+/*
-+ * Read an OTP region. This switches the OTP into the appropriate redundancy
-+ * format so we can simply read from the beginning of the region and copy it
-+ * into the user buffer.
-+ */
-+static ssize_t otp_read(struct file *filp, char __user *buf, size_t len,
-+			loff_t *offs)
-+{
-+	ssize_t ret = 0;
-+	u64 word;
-+	ssize_t bytes_read = 0;
-+	struct otp_region *region = filp->private_data;
-+	unsigned pos = (unsigned)*offs;
-+	enum otp_redundancy_fmt fmt = region->ops->get_fmt(region);
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	if (*offs >= region->ops->get_size(region)) {
-+		ret = 0;
-+		goto out;
-+	}
-+
-+	len = min(len, region->ops->get_size(region) - (unsigned)*offs);
-+	if (!len) {
-+		ret = 0;
-+		goto out;
-+	}
-+
-+	otp->ops->set_fmt(otp, fmt);
-+
-+	if (pos & (OTP_WORD_SIZE - 1)) {
-+		/*
-+		 * We're not currently on an 8 byte boundary so we need to
-+		 * read to a bounce buffer then do the copy_to_user() with an
-+		 * offset.
-+		 */
-+		unsigned word_addr = pos / OTP_WORD_SIZE;
-+		unsigned offset = pos % OTP_WORD_SIZE;
-+		size_t bytes = min(OTP_WORD_SIZE - offset, len);
-+
-+		if (region->ops->read_word(region, word_addr, &word)) {
-+			ret = -EIO;
-+			goto out;
-+		}
-+
-+		if (copy_to_user(buf, (void *)(&word) + offset, bytes)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+
-+		bytes_read += bytes;
-+		len -= bytes;
-+		buf += bytes;
-+		pos += bytes;
-+	}
-+
-+	/*
-+	 * We're now aligned to an 8 byte boundary so we can simply copy words
-+	 * from the bounce buffer directly with a copy_to_user().
-+	 */
-+	while (len >= OTP_WORD_SIZE) {
-+		if (region->ops->read_word(region, pos / OTP_WORD_SIZE,
-+					   &word)) {
-+			ret = -EIO;
-+			goto out;
-+		}
-+
-+		if (copy_to_user(buf, &word, OTP_WORD_SIZE)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+
-+		bytes_read += OTP_WORD_SIZE;
-+		len -= OTP_WORD_SIZE;
-+		buf += OTP_WORD_SIZE;
-+		pos += OTP_WORD_SIZE;
-+	}
-+
-+	/*
-+	 * We might have less than 8 bytes left so we'll need to do another
-+	 * copy_to_user() but with a partial word length.
-+	 */
-+	if (len) {
-+		if (region->ops->read_word(region, pos / OTP_WORD_SIZE,
-+					   &word)) {
-+			ret = -EIO;
-+			goto out;
-+		}
-+
-+		if (copy_to_user(buf, &word, len)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+
-+		bytes_read += len;
-+		buf += len;
-+		pos += len;
-+		len = 0;
-+	}
-+
-+	*offs += bytes_read;
-+
-+out:
-+	up(&otp_sem);
-+	return ret ?: bytes_read;
-+}
-+
-+/*
-+ * Seek to a specified position in the OTP region. This can be used if
-+ * userspace doesn't have pread()/pwrite() and needs to write to a specified
-+ * offset in the OTP.
-+ */
-+static loff_t otp_llseek(struct file *filp, loff_t offs, int origin)
-+{
-+	struct otp_region *region = filp->private_data;
-+	int ret = 0;
-+	loff_t end;
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	switch (origin) {
-+	case SEEK_CUR:
-+		if (filp->f_pos + offs < 0 ||
-+		    filp->f_pos + offs >= region->ops->get_size(region))
-+			ret = -EINVAL;
-+		else
-+			filp->f_pos += offs;
++	switch (fmt) {
++	case OTP_REDUNDANCY_FMT_SINGLE_ENDED:
++		num_words	    = 1;
++		raw_addresses[0]    = otp_region_base(otp, region) + addr;
++		otp_raw_read_word(otp, raw_addresses[0], &raw_values[0]);
++		result = raw_values[0];
 +		break;
 +
-+	case SEEK_SET:
-+		if (offs < 0 || offs >= region->ops->get_size(region))
-+			ret = -EINVAL;
-+		else
-+			filp->f_pos = offs;
++	case OTP_REDUNDANCY_FMT_REDUNDANT:
++		num_words	    = 2;
++		raw_addresses[0]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFE) << 1) | (addr & 1));
++		raw_addresses[1]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFE) << 1) | (addr & 1) | 2);
++		otp_raw_read_word(otp, raw_addresses[0], &raw_values[0]);
++		otp_raw_read_word(otp, raw_addresses[1], &raw_values[1]);
++		result = raw_values[0] | raw_values[1];
 +		break;
 +
-+	case SEEK_END:
-+		end = region->ops->get_size(region) - 1;
-+		if (end + offs < 0 || end + offs >= end)
-+			ret = -EINVAL;
-+		else
-+			filp->f_pos = end + offs;
++	case OTP_REDUNDANCY_FMT_DIFFERENTIAL:
++		num_words	    = 2;
++		raw_addresses[0]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFF) << 1));
++		raw_addresses[1]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFF) << 1) | 1);
++		otp_raw_read_word(otp, raw_addresses[0], &raw_values[0]);
++		otp_raw_read_word(otp, raw_addresses[1], &raw_values[1]);
++		result = raw_values[0] | ~raw_values[1];
++		break;
++
++	case OTP_REDUNDANCY_FMT_DIFFERENTIAL_REDUNDANT:
++		num_words	    = 4;
++		raw_addresses[0]    = otp_region_base(otp, region) +
++				      ((addr & 0xFFFF) << 2);
++		raw_addresses[1]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFF) << 2) | 0x1);
++		raw_addresses[2]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFF) << 2) | 0x2);
++		raw_addresses[3]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFF) << 2) | 0x3);
++		otp_raw_read_word(otp, raw_addresses[0], &raw_values[0]);
++		otp_raw_read_word(otp, raw_addresses[1], &raw_values[1]);
++		otp_raw_read_word(otp, raw_addresses[2], &raw_values[2]);
++		otp_raw_read_word(otp, raw_addresses[3], &raw_values[3]);
++		result = (raw_values[0] | ~raw_values[1]) |
++			 (raw_values[2] | ~raw_values[3]);
 +		break;
 +
 +	default:
-+		ret = -EINVAL;
++		err = -EINVAL;
 +	}
 +
-+	up(&otp_sem);
-+
-+	return ret ?: filp->f_pos;
-+}
-+
-+static int __init otp_init(void)
-+{
-+	int err;
-+
-+	err = bus_register(&otp_bus_type);
-+	if (err)
-+		return err;
-+
-+	err = alloc_chrdev_region(&otp_devno, 0, 9, "otp");
-+	if (err)
-+		goto out_bus_unregister;
-+
-+	return 0;
-+
-+out_bus_unregister:
-+	bus_unregister(&otp_bus_type);
++	*word = result;
 +
 +	return err;
 +}
-+module_init(otp_init);
++
++/*
++ * Write a data word to an OTP region. The value will be used in a
++ * read-modify-write cycle to ensure that bits can't be flipped if they have
++ * already programmed (the hardware isn't capable of this). This also takes
++ * into account the redundancy addressing and formatting.
++ */
++static int pc3x3_otp_region_write_word(struct otp_region *region,
++				       unsigned long addr,
++				       u64 word)
++{
++	struct pc3x3_otp *otp = region->parent->driver_data;
++	enum otp_redundancy_fmt fmt = __pc3x3_otp_region_get_fmt(otp, region);
++	unsigned i, num_words, raw_addresses[4];
++	u64 result;
++	int err = 0;
++
++	/* Enter the single-ended read mode. */
++	__pc3x3_otp_redundancy_mode_set(otp, OTP_REDUNDANCY_FMT_SINGLE_ENDED);
++
++	/*
++	 * Work out what raw addresses and values we need to write into the
++	 * OTP to make sure that the value we want gets read back out
++	 * correctly.
++	 */
++	switch (fmt) {
++	case OTP_REDUNDANCY_FMT_SINGLE_ENDED:
++		num_words	    = 1;
++		raw_addresses[0]    = otp_region_base(otp, region) + addr;
++		break;
++
++	case OTP_REDUNDANCY_FMT_REDUNDANT:
++		num_words	    = 2;
++		raw_addresses[0]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFE) << 1) | (addr & 1));
++		raw_addresses[1]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFE) << 1) | (addr & 1) | 2);
++		break;
++
++	case OTP_REDUNDANCY_FMT_DIFFERENTIAL:
++		num_words	    = 2;
++		raw_addresses[0]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFF) << 1));
++		raw_addresses[1]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFF) << 1) | 1);
++		break;
++
++	case OTP_REDUNDANCY_FMT_DIFFERENTIAL_REDUNDANT:
++		num_words	    = 4;
++		raw_addresses[0]    = otp_region_base(otp, region) +
++				      ((addr & 0xFFFF) << 2);
++		raw_addresses[1]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFF) << 2) | 0x1);
++		raw_addresses[2]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFF) << 2) | 0x2);
++		raw_addresses[3]    = otp_region_base(otp, region) +
++				      (((addr & 0xFFFF) << 2) | 0x3);
++		break;
++
++	default:
++		err = -EINVAL;
++		goto out;
++	}
++
++	/*
++	 * Verify the raw words. If we are doing strict programming then they
++	 * must all program correctly. If we aren't doing strict programming
++	 * then allow failures to 'slip through' for now. If the word can be
++	 * read back correctly in the redundant mode then that's fine with the
++	 * user.
++	 */
++	for (i = 0; i < num_words; ++i)
++		err = otp_raw_write_word(otp, raw_addresses[i], word);
++		if (err && otp_strict_programming_enabled())
++			goto out;
++
++	/* Go back to the real redundancy mode and verify the whole word. */
++	__pc3x3_otp_redundancy_mode_set(otp, fmt);
++
++	if (region->ops->read_word(region, addr, &result)) {
++		err = -EIO;
++		goto out;
++	}
++
++	/*
++	 * Now check that the word has been correctly programmed with the
++	 * region formatting.
++	 */
++	if (result == word) {
++		err = 0;
++	} else {
++		dev_warn(&region->dev,
++			 "word at address %lx write failed %llx != %llx (result != expected)\n",
++			 addr, result, word);
++		err = -EBADMSG;
++	}
++
++out:
++	return err;
++}
++
++/*
++ * Write the special register. In PC3X3, we only use the lower 32 bits of the
++ * SR to indicate the partitioning and the region formats so we do a
++ * read-modify-write of the whole 64 bit value.
++ */
++static int otp_write_sr(struct pc3x3_otp *otp, u32 sr_lo)
++{
++	if (otp_raw_write_word(otp, SR_ADDRESS_0, sr_lo)) {
++		dev_warn(otp->dev->dev,
++			 "failed to write special register (word 0)\n");
++		return -EIO;
++	}
++
++	if (otp_raw_write_word(otp, SR_ADDRESS_2, sr_lo)) {
++		dev_warn(otp->dev->dev,
++			 "failed to write special register (word 0)\n");
++		return -EIO;
++	}
++
++	/*
++	 * Reset the OTP so that when we read the special register again we
++	 * get the value that we've just written.
++	 */
++	otp_do_command(otp, OTP_COMMAND_RESET);
++
++	return 0;
++}
++
++
++static int pc3x3_otp_region_set_fmt(struct otp_region *region,
++				    enum otp_redundancy_fmt new_fmt)
++{
++	int err;
++	struct pc3x3_otp *otp = region->parent->driver_data;
++	enum otp_redundancy_fmt fmt = __pc3x3_otp_region_get_fmt(otp, region);
++	unsigned shift = (region->region_nr * 2) + 4;
++	unsigned long sr;
++
++	/*
++	 * We can't clear format bits so we can only do certain transitions.
++	 * It is possible to go from redundant to differential-redundant or
++	 * differential to differential redundant but if the region is already
++	 * programmed this could give unexpected results. However, the user
++	 * _might_ know what they're doing.
++	 */
++	if (fmt & ~new_fmt) {
++		err = -EINVAL;
++		goto out;
++	}
++	if (fmt == new_fmt) {
++		err = 0;
++		goto out;
++	}
++
++	sr = otp_read_sr(otp);
++	sr |= new_fmt << shift;
++	err = otp_write_sr(otp, sr);
++
++out:
++	return err;
++}
++
++/*
++ * Find out how big the region is. We have a 16KB device which can be split
++ * equally into 1, 2, 4 or 8 regions. If a partition is redundant or
++ * differential redundancy then this is 2 bits of storage per data bit so half
++ * the size. For differential-redundant redundancy, 1 bit of data takes 4 bits
++ * of storage so divide by 4.
++ */
++static ssize_t pc3x3_otp_region_get_size(struct otp_region *region)
++{
++	struct pc3x3_otp *otp = region->parent->driver_data;
++	int num_regions = otp_num_regions(otp);
++	enum otp_redundancy_fmt fmt = __pc3x3_otp_region_get_fmt(otp, region);
++	size_t region_sz;
++
++	region_sz = (SZ_16K / num_regions);
++	if (OTP_REDUNDANCY_FMT_REDUNDANT == fmt ||
++	    OTP_REDUNDANCY_FMT_DIFFERENTIAL == fmt)
++		region_sz /= 2;
++	else if (OTP_REDUNDANCY_FMT_DIFFERENTIAL_REDUNDANT == fmt)
++		region_sz /= 4;
++
++	return region_sz;
++}
++
++static const struct otp_region_ops pc3x3_region_ops = {
++	.set_fmt	= pc3x3_otp_region_set_fmt,
++	.get_fmt	= pc3x3_otp_region_get_fmt,
++	.write_word	= pc3x3_otp_region_write_word,
++	.read_word	= pc3x3_otp_region_read_word,
++	.get_size	= pc3x3_otp_region_get_size,
++};
++
++static int pc3x3_otp_register_regions(struct pc3x3_otp *dev,
++				      bool need_unlocked)
++{
++	struct otp_device *otp = dev->dev;
++	int err = 0, i, nr_regions = otp->ops->get_nr_regions(otp);
++
++	for (i = 0; i < nr_regions; ++i) {
++		struct otp_region *region;
++
++		if (test_and_set_bit(i, &dev->registered_regions))
++			continue;
++
++		region = need_unlocked ?
++			otp_region_alloc_unlocked(otp, &pc3x3_region_ops, i) :
++			otp_region_alloc(otp, &pc3x3_region_ops, i);
++		if (IS_ERR(region)) {
++			err = PTR_ERR(region);
++			break;
++		}
++	}
++
++	return err;
++}
++
++static int pc3x3_otp_set_nr_regions(struct otp_device *dev, int nr_regions)
++{
++	struct pc3x3_otp *otp = dev->driver_data;
++	unsigned long sr = otp_read_sr(otp);
++	u32 new_mask, addr_mask = sr & SR_AXI_ADDRESS_MASK;
++	int err = 0;
++
++	if (1 == nr_regions)
++		new_mask = 0;
++	else if (2 == nr_regions)
++		new_mask = 4;
++	else if (4 == nr_regions)
++		new_mask = 6;
++	else if (8 == nr_regions)
++		new_mask = 7;
++	else
++		err = -EINVAL;
++
++	if (err)
++		goto out;
++
++	/*
++	 * Check that we aren't trying to clear any bits and reduce the number
++	 * of regions. This is OTP so we can only increase.
++	 */
++	if (addr_mask & ~new_mask) {
++		err = -EINVAL;
++		goto out;
++	}
++
++	if (addr_mask == new_mask) {
++		err = 0;
++		goto out;
++	}
++
++	err = otp_write_sr(otp, sr | new_mask);
++	if (err)
++		goto out;
++
++	err = pc3x3_otp_register_regions(otp, true);
++
++out:
++	return err;
++}
++
++static int pc3x3_otp_get_nr_regions(struct otp_device *dev)
++{
++	struct pc3x3_otp *otp = dev->driver_data;
++	unsigned long sr = otp_read_sr(otp);
++	u32 addr_mask = sr & SR_AXI_ADDRESS_MASK;
++
++	if (0 == addr_mask)
++		return 1;
++	else if (4 == addr_mask)
++		return 2;
++	else if (6 == addr_mask)
++		return 4;
++	else if (7 == addr_mask)
++		return 8;
++
++	return -EINVAL;
++}
++
++static const struct otp_device_ops pc3x3_otp_ops = {
++	.name		= "PC3X3",
++	.owner		= THIS_MODULE,
++	.get_nr_regions	= pc3x3_otp_get_nr_regions,
++	.set_nr_regions	= pc3x3_otp_set_nr_regions,
++	.set_fmt	= pc3x3_otp_redundancy_mode_set,
++};
++
++static int __devinit otp_probe(struct platform_device *pdev)
++{
++	int err;
++	struct resource *mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	struct otp_device *otp;
++	struct pc3x3_otp *pc3x3_dev;
++
++	if (!mem) {
++		dev_err(&pdev->dev, "no i/o memory\n");
++		return -ENXIO;
++	}
++
++	if (!devm_request_mem_region(&pdev->dev, mem->start,
++				     resource_size(mem), "otp")) {
++		dev_err(&pdev->dev, "unable to request i/o memory\n");
++		return -EBUSY;
++	}
++
++	pc3x3_dev = devm_kzalloc(&pdev->dev, sizeof(*pc3x3_dev), GFP_KERNEL);
++	if (!pc3x3_dev)
++		return -ENOMEM;
++
++	if (test_mode) {
++		u64 *p = devm_kzalloc(&pdev->dev, SZ_16K + SZ_1K, GFP_KERNEL);
++		int i;
++
++		if (!p) {
++			err = -ENOMEM;
++			goto out;
++		}
++
++		pc3x3_dev->mem = p;
++		pc3x3_dev->iomem = (void __force __iomem *)p;
++
++		for (i = 0; (u8 *)p < (u8 *)pc3x3_dev->mem + SZ_16K + SZ_1K;
++		     ++p, ++i)
++			*p = (i & 1) ? ~0LLU : 0LLU;
++	} else {
++		pc3x3_dev->iomem = devm_ioremap(&pdev->dev, mem->start,
++						resource_size(mem));
++		if (!pc3x3_dev->iomem) {
++			err = -ENOMEM;
++			goto out;
++		}
++		pc3x3_dev->mem = (void __force *)pc3x3_dev->iomem;
++	}
++
++	pc3x3_dev->clk = clk_get(&pdev->dev, NULL);
++	if (IS_ERR(pc3x3_dev->clk)) {
++		dev_err(&pdev->dev, "device has no clk\n");
++		err = PTR_ERR(pc3x3_dev->clk);
++		goto out;
++	}
++	clk_enable(pc3x3_dev->clk);
++
++	otp = otp_device_alloc(&pdev->dev, &pc3x3_otp_ops, SZ_16K);
++	if (IS_ERR(otp)) {
++		err = PTR_ERR(otp);
++		goto out_clk_disable;
++	}
++	otp->driver_data = pc3x3_dev;
++
++	pc3x3_dev->dev = otp;
++	platform_set_drvdata(pdev, pc3x3_dev);
++
++	err = pc3x3_otp_register_regions(pc3x3_dev, false);
++	if (err)
++		goto out_unregister;
++
++	goto out;
++
++out_unregister:
++	otp_device_unregister(otp);
++out_clk_disable:
++	clk_disable(pc3x3_dev->clk);
++	clk_put(pc3x3_dev->clk);
++out:
++	return err;
++}
++
++static int __devexit otp_remove(struct platform_device *pdev)
++{
++	struct pc3x3_otp *otp = platform_get_drvdata(pdev);
++
++	otp_device_unregister(otp->dev);
++	clk_disable(otp->clk);
++	clk_put(otp->clk);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int otp_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct pc3x3_otp *otp = platform_get_drvdata(pdev);
++
++	otp_write_reg(otp, OTP_MACRO_CMD_REG_OFFSET, OTP_COMMAND_POWER_DOWN);
++	clk_disable(otp->clk);
++
++	return 0;
++}
++
++static int otp_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct pc3x3_otp *otp = platform_get_drvdata(pdev);
++
++	clk_enable(otp->clk);
++	otp_write_reg(otp, OTP_MACRO_CMD_REG_OFFSET, OTP_COMMAND_IDLE);
++
++	return 0;
++}
++#else /* CONFIG_PM */
++#define otp_suspend	NULL
++#define otp_resume	NULL
++#endif /* CONFIG_PM */
++
++static const struct dev_pm_ops otp_pm_ops = {
++	.suspend	= otp_suspend,
++	.resume		= otp_resume,
++};
++
++static struct platform_driver otp_driver = {
++	.remove		= __devexit_p(otp_remove),
++	.driver		= {
++		.name	= "picoxcell-otp-pc3x3",
++		.pm	= &otp_pm_ops,
++	},
++};
++
++static int __init pc3x3_otp_init(void)
++{
++	return platform_driver_probe(&otp_driver, otp_probe);
++}
++module_init(pc3x3_otp_init);
++
++static void __exit pc3x3_otp_exit(void)
++{
++	platform_driver_unregister(&otp_driver);
++}
++module_exit(pc3x3_otp_exit);
 +
 +MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Jamie Iles");
-+MODULE_DESCRIPTION("OTP interface driver for Picochip picoXcell devices");
-diff --git a/drivers/char/picoxcellotp.h b/drivers/char/picoxcellotp.h
-new file mode 100644
-index 0000000..e5a4a04
---- /dev/null
-+++ b/drivers/char/picoxcellotp.h
-@@ -0,0 +1,230 @@
-+/*
-+ * Copyright 2010-2011 Picochip LTD, Jamie Iles
-+ * http://www.picochip.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ *
-+ * This driver implements a user interface for reading and writing the OTP
-+ * memory in Picochip picoXcell devices. This OTP can be used for executing
-+ * secure boot code or for the secure storage of keys and any other user data.
-+ * We support multiple backends for different OTP macros.
-+ *
-+ * The OTP is configured through sysfs and is read and written through device
-+ * nodes. The OTP device in the device model (the platform device) gains
-+ * write_enable, num_regions, bad_words and strict_programming attributes. We
-+ * also create a picoxcell-otp bus to which we add a device per region. The
-+ * OTP supports either 1, 2, 4 or 8 regions and when we divide the regions
-+ * down we create a new child device on the picoxcell-otp bus. This child
-+ * device has format and size attributes.
-+ *
-+ * To update the number of regions, the format of a region or to program a
-+ * region, the write_enable attribute of the OTP device must be set to
-+ * "enabled".
-+ */
-+#ifndef __PICOXCELLOTP_H__
-+#define __PICOXCELLOTP_H__
-+
-+#include <linux/cdev.h>
-+#include <linux/device.h>
-+#include <linux/list.h>
-+#include <linux/module.h>
-+
-+/*
-+ * The OTP works in 64 bit words. When we are programming or reading,
-+ * everything is done with 64 bit word addresses.
-+ */
-+#define OTP_WORD_SIZE			8
-+
-+enum otp_redundancy_fmt {
-+	OTP_REDUNDANCY_FMT_SINGLE_ENDED,
-+	OTP_REDUNDANCY_FMT_REDUNDANT,
-+	OTP_REDUNDANCY_FMT_DIFFERENTIAL,
-+	OTP_REDUNDANCY_FMT_DIFFERENTIAL_REDUNDANT,
-+};
-+
-+struct otp_device;
-+struct otp_region;
-+
-+/**
-+ * struct otp_device_ops - operations for the OTP device.
-+ *
-+ * @name:		The name of the driver backend.
-+ * @owner:		The owning module.
-+ * @get_nr_regions:	Get the number of regions that the OTP is partitioned
-+ *			into.  Note that this is the number of regions in the
-+ *			device, not the number of regions registered.
-+ * @set_nr_regions:	Increase the number of partitions in the device.
-+ *			Returns zero on success, negative errno on failure.
-+ * @set_fmt:		Set the read-mode redundancy for the region.  The OTP
-+ *			devices need to be put into the right redundancy mode
-+ *			before reading/writing.
-+ */
-+struct otp_device_ops {
-+	const char	*name;
-+	struct module	*owner;
-+	int		(*get_nr_regions)(struct otp_device *dev);
-+	int		(*set_nr_regions)(struct otp_device *dev,
-+					  int nr_regions);
-+	int		(*set_fmt)(struct otp_device *dev,
-+				   enum otp_redundancy_fmt fmt);
-+};
-+
-+/**
-+ * struct otp_device - a picoxcell OTP device.
-+ *
-+ * @ops:		The operations to use for manipulating the device.
-+ * @dev:		The parent device (typically a platform_device) that
-+ *			provides the OTP.
-+ * @regions:		The regions registered to the device.
-+ * @size:		The size of the OTP in bytes.
-+ * @driver_data:	Private driver data.
-+ * @bad_word_map:	Bitmap of words that have failed programming.  Can be
-+ *			used by users to work around faulty OTP.
-+ * @registered:		Private to the OTP layer, used for tracking whether
-+ *			the OTP device is active and registered.
-+ */
-+struct otp_device {
-+	const struct otp_device_ops	*ops;
-+	struct device			*dev;
-+	struct list_head		regions;
-+	size_t				size;
-+	void				*driver_data;
-+	unsigned long			*bad_word_map;
-+	bool				registered;
-+};
-+
-+/**
-+ * struct otp_region_ops - operations to manipulate OTP regions.
-+ *
-+ * @set_fmt:		Permanently set the format of the region.  Returns
-+ *			zero on success.
-+ * @get_fmt:		Get the redundancy format of the region.
-+ * @write_word:		Write a 64-bit word to the OTP.
-+ * @read_word:		Read a 64-bit word from the OTP.
-+ * @get_size:		Get the effective storage size of the region.
-+ *			Depending on the number of regions in the device and
-+ *			the redundancy format of the region, this may vary.
-+ */
-+struct otp_region_ops {
-+	int			(*set_fmt)(struct otp_region *region,
-+					   enum otp_redundancy_fmt fmt);
-+	enum otp_redundancy_fmt	(*get_fmt)(struct otp_region *region);
-+	int			(*write_word)(struct otp_region *region,
-+					      unsigned long word_addr,
-+					      u64 value);
-+	int			(*read_word)(struct otp_region *region,
-+					     unsigned long word_addr,
-+					     u64 *value);
-+	ssize_t			(*get_size)(struct otp_region *region);
-+};
-+
-+/**
-+ * struct otp_region: a single region of OTP.
-+ *
-+ * @parent:	The otp_device that the region belongs to.
-+ * @ops:	Operations for manipulating the region.
-+ * @dev:	The device to register with the driver model.
-+ * @cdev:	The character device used to provide userspace access to the
-+ *		region.
-+ * @head:	The position in the devices region list.
-+ * @region_nr:	The region number of the region.  Devices number their regions
-+ *		from 1 upwards.
-+ */
-+struct otp_region {
-+	struct otp_device		*parent;
-+	const struct otp_region_ops	*ops;
-+	struct device			dev;
-+	struct cdev			cdev;
-+	struct list_head		head;
-+	unsigned			region_nr;
-+};
-+
-+/**
-+ * otp_device_alloc - create a new picoxcell OTP device.
-+ *
-+ * Returns the newly created OTP device on success or a ERR_PTR() encoded
-+ * errno on failure.  The new device is automatically registered and can be
-+ * released with otp_device_unregister().  This will increase the reference
-+ * count on dev.
-+ *
-+ * @dev:	The parent device that provides the OTP implementation.
-+ * @ops:	The operations to manipulate the OTP device.
-+ * @size:	The size, in bytes of the OTP device.
-+ */
-+struct otp_device *otp_device_alloc(struct device *dev,
-+				    const struct otp_device_ops *ops,
-+				    size_t size);
-+
-+/**
-+ * otp_device_unregister - deregister an existing struct otp_device.
-+ *
-+ * This unregisters an otp_device and any regions that have been registered to
-+ * it.  Once all regions have been released, the parent reference count is
-+ * decremented and the otp_device will be freed.  Callers must assume that dev
-+ * is invalidated during this call.
-+ *
-+ * @dev:	The otp_device to unregister.
-+ */
-+void otp_device_unregister(struct otp_device *dev);
-+
-+/**
-+ * otp_region_alloc - create and register a new OTP region.
-+ *
-+ * Create and register a new region in an existing device with specified
-+ * region operations.  Returns a pointer to the region on success, or an
-+ * ERR_PTR() encoded errno on failure.
-+ *
-+ * Note: this takes the OTP semaphore so may not be called from one of the
-+ * otp_device_ops or otp_region_ops callbacks or this may lead to deadlock.
-+ *
-+ * @dev:	The device to add the region to.
-+ * @ops:	The operations for the region.
-+ * @region_nr:	The region ID.  Must be unique for the region.
-+ */
-+struct otp_region *otp_region_alloc(struct otp_device *dev,
-+				    const struct otp_region_ops *ops,
-+				    int region_nr);
-+
-+/**
-+ * otp_region_alloc_unlocked - create and register a new OTP region.
-+ *
-+ * This is the same as otp_region_alloc() but does not take the OTP semaphore
-+ * so may only be called from inside one of the otp_device_ops or
-+ * otp_region_ops callbacks.
-+ *
-+ * @dev:	The device to add the region to.
-+ * @ops:	The operations for the region.
-+ * @region_nr:	The region ID.  Must be unique for the region.
-+ */
-+struct otp_region *otp_region_alloc_unlocked(struct otp_device *dev,
-+					     const struct otp_region_ops *ops,
-+					     int region_nr);
-+
-+/**
-+ * otp_region_unregister - unregister a given OTP region.
-+ *
-+ * This unregisters a region from the device and forms part of
-+ * otp_device_unregister().
-+ *
-+ * @region:	The region to unregister.
-+ */
-+void otp_region_unregister(struct otp_region *region);
-+
-+/**
-+ * otp_strict_programming_enabled - check if we are in strict programming
-+ * mode.
-+ *
-+ * Some OTP devices support different redundancy modes.  These devices often
-+ * need multiple words programmed to represent a single word in that
-+ * redundancy format.  If strict programming is enabled then all of the
-+ * redundancy words must program correctly to indicate success.  If strict
-+ * programming is disabled then we will allow errors in the redundant word as
-+ * long as the contents of the whole word are read back correctly with the
-+ * required redundancy mode.
-+ */
-+bool otp_strict_programming_enabled(void);
-+
-+#endif /* __PICOXCELLOTP_H__ */
++MODULE_DESCRIPTION("OTP memory driver for Picochip PC3X3 devices");
 -- 
 1.7.4
 
