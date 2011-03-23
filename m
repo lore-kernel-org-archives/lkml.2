@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab1CWRsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 13:48:12 -0400
-Received: from na3sys010aog104.obsmtp.com ([74.125.245.76]:47485 "HELO
-	na3sys010aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754400Ab1CWRsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 13:48:11 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Wed, 23 Mar 2011 10:47:57 -0700
-Message-Id: <1300902477-6608-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S932184Ab1CWRtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 13:49:16 -0400
+Received: from mail.perches.com ([173.55.12.10]:4239 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754400Ab1CWRtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 13:49:14 -0400
+Subject: [PATCH] MAINTAINERS: Add "K:" pattern for TRIVIAL PATCHES
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "L. Alberto" =?ISO-8859-1?Q?Gim=E9nez?= <agimenez@sysvalve.es>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Mar 2011 10:49:13 -0700
+Message-ID: <1300902553.24885.110.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from
+Since scripts/get_maintainer.pl was updated to search
+content before the patch by commit 7764dcb
+("get_maintainer.pl: allow "K:" pattern tests to match non-patch text")
+perhaps this might direct a few more patches the right place.
 
-    master.kernel.org:/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+Original-patch-by: L. Alberto Giménez <agimenez@sysvalve.es>
+Signed-off-by: Joe Perches <joe@perches.com>
 
-This tree is also available from kernel.org mirrors at:
+---
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+ MAINTAINERS |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-This will get the second batch of 2.6.39 changes:
- - Dave Dillow's SRP initiator changes
- - Fix to uninitialized return value introduced by net tree merge
- - A couple of other minor cleanups
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e11953d..c0c4d23 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6209,6 +6209,7 @@ TRIVIAL PATCHES
+ M:	Jiri Kosina <trivial@kernel.org>
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git
+ S:	Maintained
++K:	^Subject:.*(?i)trivial
+ 
+ TTY LAYER
+ M:	Greg Kroah-Hartman <gregkh@suse.de>
 
-David Dillow (7):
-      IB/srp: always avoid non-zero offsets into an FMR
-      IB/srp: move IB CM setup completion into its own function
-      IB/srp: allow sg_tablesize to be set for each target
-      IB/srp: rework mapping engine to use multiple FMR entries
-      IB/srp: add support for indirect tables that don't fit in SRP_CMD
-      IB/srp: try to use larger FMR sizes to cover our mappings
-      IB: Increase DMA max_segment_size on Mellanox hardware
 
-Michael Heinz (1):
-      IB/mad: Improve an error message so error code is included
-
-Roland Dreier (3):
-      RDMA/nes: Don't print success message at level KERN_ERR
-      Merge branch 'external-indirect' of git://git.kernel.org/.../dad/srp-initiator into srp
-      Merge branches 'misc', 'nes' and 'srp' into for-next
-
-Sean Hefty (1):
-      RDMA/addr: Fix return of uninitialized ret value
-
- drivers/infiniband/core/addr.c           |    2 +-
- drivers/infiniband/core/agent.c          |    3 +-
- drivers/infiniband/hw/mthca/mthca_main.c |    3 +
- drivers/infiniband/hw/nes/nes.c          |    2 +-
- drivers/infiniband/ulp/srp/ib_srp.c      |  725 ++++++++++++++++++++----------
- drivers/infiniband/ulp/srp/ib_srp.h      |   38 ++-
- 6 files changed, 521 insertions(+), 252 deletions(-)
