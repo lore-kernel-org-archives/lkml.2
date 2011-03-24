@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932657Ab1CXJyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 05:54:14 -0400
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:38924 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763Ab1CXJyM (ORCPT
+	id S1756715Ab1CXJzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 05:55:52 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:56834 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754108Ab1CXJzv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 05:54:12 -0400
-Message-ID: <4D8B14BD.2060602@de.ibm.com>
-Date: Thu, 24 Mar 2011 10:54:05 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100918 Lightning/1.0b2 Icedove/3.1.4
-MIME-Version: 1.0
-To: Anthony Liguori <aliguori@us.ibm.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, Christoph Hellwig <hch@lst.de>,
-        qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
-        stefanha@gmail.com, kwolf@redhat.com, prerna@linux.vnet.ibm.com
-Subject: Re: [PATCH, RFC] virtio_blk: add cache control support
-References: <20110315141049.GA30627@lst.de> <20110315141644.GA30803@lst.de> <87y64fhfjw.fsf@rustcorp.com.au> <20110316140958.GB21877@lst.de> <877hbygwu7.fsf@rustcorp.com.au> <4D8AB514.5020306@us.ibm.com>
-In-Reply-To: <4D8AB514.5020306@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Mar 2011 05:55:51 -0400
+Subject: Re: kmemleak for MIPS
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Daniel Baluta <dbaluta@ixiacom.com>
+Cc: naveen yadav <yad.naveen@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
+References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
+	 <AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
+Organization: ARM Limited
+Date: Thu, 24 Mar 2011 09:55:40 +0000
+Message-ID: <1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 24 Mar 2011 09:55:43.0877 (UTC) FILETIME=[A4170B50:01CBEA09]
+X-MC-Unique: 111032409554800601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.03.2011 04:05, schrieb Anthony Liguori:
->> ie. lguest and S/390 don't trap writes to config space.
->>
->> Or perhaps they should?  But we should be explicit about needing it...
-> I don't think we ever operated on the assumption that config space writes would trap.
+On Thu, 2011-03-24 at 09:27 +0000, Daniel Baluta wrote:
+> > I want to check kmemleak for both ARM/MIPS. i am able to find kernel
+> > patch for ARM at
+> > http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-04/msg11830.html.
+> > But I could not able to trace patch for MIPS.
 > 
-> I don't think adding it is the right thing either because you can do byte access to the config space which makes atomicity difficult.
-
-There is the additional problem, that s390 has no MMIO and,therefore,
-there is no real HW support for trapping writes to an area. You can
-use page faults, or read-only faults on newer systems, but this is 
-expensive. In addition, page faults only deliver the page frame, but
-not the offset within a page.
+> It seems that kmemleak is not supported on MIPS.
 > 
-> Any reason not to use a control queue to negotiate dynamic features? 
+> According to 'depends on' config entry it is supported on:
+> x86, arm, ppc, s390, sparc64, superh, microblaze and tile.
+> 
+> Cătălin, can you confirm this? I will send a patch to update
+> Documentation/kmemleak.txt.
+> 
+> Also, looking forward to work on making kmemleak available on MIPS.
 
-Sounds reasonable.
+It's not supported probably because no-one tried it, kmemleak is pretty
+architecture-independent. You may need to add some standard symbols to
+the vmlinux.lds.S if the linker complains and possibly annotate some
+false positives if you get any.
+
+Just add "depends on MIPS" and give it a try.
+
+-- 
+Catalin
+
+
