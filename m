@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934128Ab1CXUFl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:05:41 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:34494 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933847Ab1CXUFj (ORCPT
+	id S1757144Ab1CXUGR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:06:17 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:41323 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab1CXUGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:05:39 -0400
-X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Mar 2011 16:05:39 EDT
-Date: Thu, 24 Mar 2011 21:56:15 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: torvalds@linux-foundation.org
-cc: cl@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, mingo@elte.hu
-Subject: [GIT PULL] SLAB fixes for v2.6.39-rc1
-Message-ID: <alpine.DEB.2.00.1103242154440.16149@tiger>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 24 Mar 2011 16:06:15 -0400
+Date: Thu, 24 Mar 2011 21:06:13 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+Message-ID: <20110324200613.GA1724@gentoo.trippels.de>
+References: <4D8B4A89.80608@fusionio.com>
+ <20110324183019.GA1676@gentoo.trippels.de>
+ <4D8B8F34.5000203@fusionio.com>
+ <4D8B92AE.8090308@fusionio.com>
+ <20110324185445.GB1696@gentoo.trippels.de>
+ <4D8B9457.2020608@fusionio.com>
+ <20110324193441.GA1723@gentoo.trippels.de>
+ <4D8B9D2F.4010504@fusionio.com>
+ <20110324194546.GA1741@gentoo.trippels.de>
+ <4D8BA235.7060904@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D8BA235.7060904@fusionio.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 2011.03.24 at 20:57 +0100, Jens Axboe wrote:
+> 
+> OK, still a data point. What was the last -git kernel you used?
 
-Here's two urgent fixes to SLUB reported by Ingo:
+This one was the last and gave me no problems:
 
-https://lkml.org/lkml/2011/3/24/245
+commit b81a618dcd3ea99de292dbe624f41ca68f464376
+Merge: 2f284c8 a9712bc
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Wed Mar 23 20:51:42 2011 -0700
 
-The first one is boot-time oops on x86 with PREEMPT_NONE and CPUs that 
-don't support cmpxch16b. The second one is debugobjects regression caused 
-by the lockless fastpaths.
+    Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
 
-                         Pekka
-
-The following changes since commit 6d1e9a42e7176bbce9348274784b2e5f69223936:
-   Linus Torvalds (1):
-         Merge branch 'release' of git://git.kernel.org/.../aegl/linux-2.6
-
-are available in the git repository at:
-
-   ssh://master.kernel.org/pub/scm/linux/kernel/git/penberg/slab-2.6.git slab/urgent
-
-Christoph Lameter (1):
-       SLUB: Write to per cpu data when allocating it
-
-Thomas Gleixner (1):
-       slub: Fix debugobjects with lockless fastpath
-
-  mm/slub.c |    6 +++---
-  1 files changed, 3 insertions(+), 3 deletions(-)
+-- 
+Markus
