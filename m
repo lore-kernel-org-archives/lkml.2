@@ -1,71 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934089Ab1CXUDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:03:12 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58327 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933847Ab1CXUDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:03:05 -0400
-Date: Thu, 24 Mar 2011 21:03:00 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] perf, x86: P4 PMU - Add missing read of a counter
- before test
-Message-ID: <20110324200300.GD7957@elte.hu>
-References: <AANLkTikwJFCrpTit8=-=agowkTwZtoyEtFaE7yp0O8MF@mail.gmail.com>
- <20110324084819.GH30812@elte.hu>
- <4D8B6569.2030001@gmail.com>
- <20110324163332.GA2414@elte.hu>
- <4D8B7570.40101@gmail.com>
- <20110324182221.GF1239@redhat.com>
- <4D8B8CC4.8000500@gmail.com>
+	id S934105Ab1CXUDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:03:38 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:32773 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933847Ab1CXUDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 16:03:36 -0400
+Date: Thu, 24 Mar 2011 17:04:05 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        npiggin@kernel.dk, rientjes@google.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Ville Tervo <ville.tervo@nokia.com>
+Subject: Re: Call Trace:Re: [boot crash #2] Re: [GIT PULL] SLAB changes for
+ v2.6.39-rc1
+Message-ID: <20110324200405.GF2236@joana>
+Mail-Followup-To: Ingo Molnar <mingo@elte.hu>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Tejun Heo <tj@kernel.org>, npiggin@kernel.dk, rientjes@google.com,
+	LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Ville Tervo <ville.tervo@nokia.com>
+References: <alpine.DEB.2.00.1103221635400.4521@tiger>
+ <20110324142146.GA11682@elte.hu>
+ <alpine.DEB.2.00.1103240940570.32226@router.home>
+ <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
+ <20110324172653.GA28507@elte.hu>
+ <20110324185258.GA28370@elte.hu>
+ <alpine.LFD.2.00.1103242011230.31464@localhost6.localdomain6>
+ <20110324192333.GA6397@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D8B8CC4.8000500@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110324192333.GA6397@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Ingo Molnar <mingo@elte.hu> [2011-03-24 20:23:33 +0100]:
 
-* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-
-> On 03/24/2011 09:22 PM, Don Zickus wrote:
-> > On Thu, Mar 24, 2011 at 07:46:40PM +0300, Cyrill Gorcunov wrote:
-> >>>> The read of a proper MSR register was missed so instead of a counter the 
-> >>>> configration register is tested (it has ARCH_P4_UNFLAGGED_BIT always cleared) 
-> >>>> and unflagged overflows never have been catched. Fix it by reading a proper 
-> >>>> MSR register.
-> >>>
-> >>> So what effect does this have on the regular perf user? Please try to describe 
-> >>> the real-life effect of the bug/problem fixed here.
-> >>>
-> >>> Thanks,
-> >>>
-> >>> 	Ingo
-> >>
-> >> Unflagged overflows never have been catched due to missed read of a register which
-> >> is to signalize about it, and as result unknown nmi may happen leading to
-> >> "Dazen and confused" message. That is what supposed to be in changelog?
-> > 
-> > I think Ingo is looking for something like this:
-> > 
 > 
-> Thanks Don, if Ingo agree I can update it.
+> * Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > After we made debugobjects working again, we got the following:
+> > 
+> > WARNING: at lib/debugobjects.c:262 debug_print_object+0x8e/0xb0()
+> > Hardware name: System Product Name
+> > ODEBUG: free active (active state 0) object type: timer_list hint: hci_cmd_timer+0x0/0x60
+> > Pid: 2125, comm: dmsetup Tainted: G        W   2.6.38-06707-gc62b389 #110375
+> > Call Trace:
+> >  [<ffffffff8104700a>] warn_slowpath_common+0x7a/0xb0
+> >  [<ffffffff810470b6>] warn_slowpath_fmt+0x46/0x50
+> >  [<ffffffff812d3a5e>] debug_print_object+0x8e/0xb0
+> >  [<ffffffff81bd8810>] ? hci_cmd_timer+0x0/0x60
+> >  [<ffffffff812d4685>] debug_check_no_obj_freed+0x125/0x230
+> >  [<ffffffff810f1063>] ? check_object+0xb3/0x2b0
+> >  [<ffffffff810f3630>] kfree+0x150/0x190
+> >  [<ffffffff81be4d06>] ? bt_host_release+0x16/0x20
+> >  [<ffffffff81be4d06>] bt_host_release+0x16/0x20
+> >  [<ffffffff813a1907>] device_release+0x27/0xa0
+> >  [<ffffffff812c519c>] kobject_release+0x4c/0xa0
+> >  [<ffffffff812c5150>] ? kobject_release+0x0/0xa0
+> >  [<ffffffff812c61f6>] kref_put+0x36/0x70
+> >  [<ffffffff812c4d37>] kobject_put+0x27/0x60
+> >  [<ffffffff813a21f7>] put_device+0x17/0x20
+> >  [<ffffffff81bda4f9>] hci_free_dev+0x29/0x30
+> >  [<ffffffff81928be6>] vhci_release+0x36/0x70
+> >  [<ffffffff810fb366>] fput+0xd6/0x1f0
+> >  [<ffffffff810f8fe6>] filp_close+0x66/0x90
+> >  [<ffffffff810f90a9>] sys_close+0x99/0xf0
+> >  [<ffffffff81d4c96b>] system_call_fastpath+0x16/0x1b
+> > 
+> > That timer was introduced with commit 6bd32326cda(Bluetooth: Use
+> > proper timer for hci command timout)
+> > 
+> > Timer seems to be running when the thing is closed. Removing the timer
+> > unconditionally fixes the problem. And yes, it needs to be fixed
+> > before the HCI_UP check.
+> > 
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> >  net/bluetooth/hci_core.c |    4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-2.6/net/bluetooth/hci_core.c
+> > ===================================================================
+> > --- linux-2.6.orig/net/bluetooth/hci_core.c
+> > +++ linux-2.6/net/bluetooth/hci_core.c
+> > @@ -584,6 +584,9 @@ static int hci_dev_do_close(struct hci_d
+> >  	hci_req_cancel(hdev, ENODEV);
+> >  	hci_req_lock(hdev);
+> >  
+> > +	/* Stop timer, it might be running */
+> > +	del_timer_sync(&hdev->cmd_timer);
+> > +
+> >  	if (!test_and_clear_bit(HCI_UP, &hdev->flags)) {
+> >  		hci_req_unlock(hdev);
+> >  		return 0;
+> > @@ -623,7 +626,6 @@ static int hci_dev_do_close(struct hci_d
+> >  
+> >  	/* Drop last sent command */
+> >  	if (hdev->sent_cmd) {
+> > -		del_timer_sync(&hdev->cmd_timer);
+> >  		kfree_skb(hdev->sent_cmd);
+> >  		hdev->sent_cmd = NULL;
+> >  	}
+> 
+> Yes, this fixes the warning.
+> 
+> Tested-by: Ingo Molnar <mingo@elte.hu>
 
-Sure - please resend the final patch in a clean thread, with a proper title, 
-etc.
+I applied this patch to the Bluetooth tree, it should reach mailine soon.
+But if you want to overstep me to have this fixed quickly, then:
 
-Thanks,
+Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
 
-	Ingo
+-- 
+Gustavo F. Padovan
+http://profusion.mobi
