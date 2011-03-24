@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933454Ab1CXDae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 23:30:34 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55816 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933324Ab1CXDab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 23:30:31 -0400
-Date: Thu, 24 Mar 2011 14:30:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        David Rientjes <rientjes@google.com>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20110324143019.cce06baa.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__24_Mar_2011_14_30_19_+1100_VsxSfFmQEEBdV2V1"
+	id S933467Ab1CXDjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 23:39:13 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41016 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933110Ab1CXDjL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 23:39:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Mct/Ja7Suh6+xVxx/DwsYKuHZTENJ5BB5GmjC5/pa+UAYzhgoNvD1vdcWtLdlmxERK
+         DebD1x4h5IY2yShjZ5gtrhBWQToaafEhwZJb5nBdo71ribZe2HyYFhQ+CnyR9avtqKfm
+         M5WWjoL0GGh1NwJq1fB5BFLX1dq5VP5ZsOOkU=
+MIME-Version: 1.0
+In-Reply-To: <4D8A8DC9.1060502@suse.cz>
+References: <20110323203426.GC7709@kroah.com>
+	<20110323203437.GD7709@kroah.com>
+	<4D8A8DC9.1060502@suse.cz>
+Date: Thu, 24 Mar 2011 11:39:09 +0800
+Message-ID: <AANLkTin_UXOjnFuQ5DQgkYH1ZciVBa=3iQmcdUej6r=B@mail.gmail.com>
+Subject: Re: Linux 2.6.32.34
+From: Teck Choon Giam <giamteckchoon@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Mar_2011_14_30_19_+1100_VsxSfFmQEEBdV2V1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 24, 2011 at 8:18 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 03/23/2011 09:34 PM, Greg KH wrote:
+>> --- a/kernel/perf_event.c
+>> +++ b/kernel/perf_event.c
+>> @@ -4167,6 +4167,8 @@ static void tp_perf_event_destroy(struct perf_event *event)
+>>
+>>  static const struct pmu *tp_perf_event_init(struct perf_event *event)
+>>  {
+>> +     if (event->hw.state & PERF_HES_STOPPED)
+>> +             return 0;
+>>       /*
+>>        * Raw tracepoint data is a severe data leak, only allow root to
+>>        * have these.
+>
+> This causes build to fail:
+> /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:
+> In function 'tp_perf_event_init':
+> /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
+> error: 'struct hw_perf_event' has no member named 'state'
+> /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
+> error: 'PERF_HES_STOPPED' undeclared (first use in this function)
+> /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
+> error: (Each undeclared identifier is reported only once
+> /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
+> error: for each function it appears in.)
+>
+>
+> The source:
+> commit 6f197b73304b3bd3d5a43b931383a5331d6b2987
+> Author: Frederic Weisbecker <fweisbec@gmail.com>
+> Date:   Mon Mar 7 21:27:09 2011 +0100
+>
+>    perf: Handle stopped state with tracepoints
+>
+>    commit a0f7d0f7fc02465bb9758501f611f63381792996 upstream.
+>
+>    We toggle the state from start and stop callbacks but actually
+>    don't check it when the event triggers. Do it so that
+>    these callbacks actually work.
 
-Hi all,
+It builds fine for me with gcc version 4.1.2 for both x86_32 and x86_64.
 
-After merging the final tree, today's linux-next build (sparc32 defconfig)
-failed like this:
+Thanks.
 
-lib/lib.a(show_mem.o): In function `show_mem':
-show_mem.c:(.text+0x1f4): multiple definition of `show_mem'
-arch/sparc/mm/built-in.o:(.text+0xd70): first defined here
-
-This has been reported elsewhere, caused by commit ddd588b5dd55 ("oom:
-suppress nodes that are not allowed from meminfo on oom kill").
-
-I presume that this will be fixed soon, and so have left it as is.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__24_Mar_2011_14_30_19_+1100_VsxSfFmQEEBdV2V1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNirrLAAoJEDMEi1NhKgbs4RMH/2/Z8Zi/2htq1LI+funfSy4y
-v1Tf4on0em8r22x+HJ+SSTkg2Lv4jKYYl9dt6m279JReHdOD3huUJnGlKWuoWZZO
-tCcLPrrzvxsemR/awwPOyjgVns/fsZ8VjkS2TRJXKWJFbU692Uk5FVHUlG3BnhlR
-8HTxMdba8RLhRnWTwquzljCcCgLNFnTJfC+5izYyVCPdY2i7N3E+B+YpLKJOgt1n
-7Wlo5T4XwCYuQCcH1rh+n+FwatdU+/hvnhTddtlCBLuITKqPmkw2dMj5HIdXtYW5
-jrLK1IRD4cj0hWN6YN36TzP3rv+QddcNkThwnZDptNK7cgUUJDLFxdImUzY/xI4=
-=kmww
------END PGP SIGNATURE-----
-
---Signature=_Thu__24_Mar_2011_14_30_19_+1100_VsxSfFmQEEBdV2V1--
+Kindest regards,
+Giam Teck Choon
