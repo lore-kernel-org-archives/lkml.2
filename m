@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934306Ab1CXWlE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 18:41:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52773 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757309Ab1CXWk6 (ORCPT
+	id S934316Ab1CXWnU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 18:43:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56923 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932915Ab1CXWnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 18:40:58 -0400
-Date: Thu, 24 Mar 2011 22:40:47 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: sedat.dilek@gmail.com
-Cc: Valerie Aurora <valerie.aurora@gmail.com>, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, LKML <linux-kernel@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>, hch@lst.de,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 00/74] Union mounts version something or other
-Message-ID: <20110324224047.GN2356@decadent.org.uk>
-References: <1300845590-14184-1-git-send-email-valerie.aurora@gmail.com>
- <AANLkTinnRz2PPc3XqgCK72S9+fqTK0QCUOLkK98S5j_Q@mail.gmail.com>
+	Thu, 24 Mar 2011 18:43:18 -0400
+Date: Thu, 24 Mar 2011 23:43:15 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ryan Mallon <ryan@bluewatersys.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [patch 1/3] arm/gpio: Remove three copies of broken and racy
+ debug code
+In-Reply-To: <4D8BBA8A.3080408@bluewatersys.com>
+Message-ID: <alpine.LFD.2.00.1103242342030.31464@localhost6.localdomain6>
+References: <20110324212330.292903803@linutronix.de> <20110324212508.931638262@linutronix.de> <4D8BBA8A.3080408@bluewatersys.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinnRz2PPc3XqgCK72S9+fqTK0QCUOLkK98S5j_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.i.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 09:38:39AM +0100, Sedat Dilek wrote:
-[...]
-> Whuzzz up with AUFS?
-> Even there where massive changes to VFS and FS in 2.6.38+, there is an
-> adapted kernel patch around (for example see Debian's 2.6.38 linux-2.6
-> packages in experimental branch).
 
-Do not cite the Debian kernel team as supporting aufs.  It is included
-only because Debian Live needs some kind of union filesystem, and only
-until that appears in-tree.
+On Fri, 25 Mar 2011, Ryan Mallon wrote:
 
-> From my POV OverlayFS is the new star at the skyline and should be
-> promoted as 1st choice, now.
-[...]
+> On 03/25/2011 10:27 AM, Thomas Gleixner wrote:
+> > gpiolib plus two gpio implementations in arm fiddle in the guts of
+> > irq_desc in a racy and buggy way. Remove the stuff. I already told the
+> > gpio folks that we can provide that information in a proper way if
+> > necessary.
+> >
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> >  arch/arm/mach-ep93xx/gpio.c  |   39 -------------------------------------
+> >  arch/arm/plat-nomadik/gpio.c |   45 -------------------------------------------
+> >  drivers/gpio/gpiolib.c       |   45 -------------------------------------------
+> >  3 files changed, 129 deletions(-)
+> >
+> > Index: linux-2.6-tip/arch/arm/mach-ep93xx/gpio.c
+> > ===================================================================
+> 
+> I suggested an alternative patch for the ep93xx last time round which
+> keeps the information that the pin is configured as an interrupt and
+> tidies the code a bit (moves the newline to the first seq_printf). My
+> patch is available here:
+> http://lists-archives.org/linux-kernel/27439434-arm-ep93xx-kill-another-instance-of-broken-irq_desc-fiddling.html
+> 
+> Could we merge that instead please.
 
-This thread is for technical review, not marketing.
+Sure. Will pick it up.
 
-Ben.
+Thanks,
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+	tglx
