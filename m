@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab1CXQaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 12:30:14 -0400
-Received: from kroah.org ([198.145.64.141]:51521 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871Ab1CXQaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 12:30:09 -0400
-Date: Thu, 24 Mar 2011 09:30:04 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for .39
-Message-ID: <20110324163004.GA22082@kroah.com>
+	id S1756158Ab1CXQcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 12:32:32 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:44716 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab1CXQca (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 12:32:30 -0400
+Date: Thu, 24 Mar 2011 22:02:20 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Cc: Len Brown <lenb@kernel.org>, arjan@linux.intel.com, peterz@infradead.org,
+        suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
+        xen-devel@lists.xensource.com
+Subject: Re: [RFC PATCH V4 3/5] cpuidle: default idle driver for x86
+Message-ID: <20110324163220.GB16408@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
+ <20110322123244.28725.32435.stgit@tringupt.in.ibm.com>
+ <alpine.LFD.2.02.1103222304300.10549@x980>
+ <4D89BDE2.9040606@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D89BDE2.9040606@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's some small fixes for the USB tree for things that people have
-reported during the .39-rc1 merge window.
+* Trinabh Gupta <trinabh@linux.vnet.ibm.com> [2011-03-23 15:01:14]:
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
+> 
+> On 03/23/2011 08:43 AM, Len Brown wrote:
+> >Why is this patch a step forward?
+> 
+> Hi Len,
+> 
+> I have basically moved the code for arch default and mwait
+> idle from arch/x86/kernel/process.c to a driver. This was
+> suggested by Venki (https://lkml.org/lkml/2010/10/19/460)
+> as part of pm_idle cleanup and direct call of
+> cpuidle_idle_call(). There is not much new code here.
+> 
+> >
+> >>+obj-$(CONFIG_X86)                              += default_driver.o
+> >
+> >BTW, that's a pretty generic name for an x86 specific idle driver...
+> >
+> >I think that on builds that support intel_idle and acpi_idle,
+> >everything in this file will be unused, unless somebody uses some
+> >debugging cmdline params that should have been deleted ages ago.
+> 
+> Yes, I agree that the name has to be x86 specific. I think the
+> routines would be used for pre-nehalem architectures that use
+> arch default or mwait.
 
-The full patches will be sent to the linux-usb mailing list, if anyone
-wants to see them.
+Mainly selection between default_idle (safe_halt), mwait_idle and
+c1e_idle needs to be placed in a default driver.  This is the code
+that was 'outside' of cpuidle framework and directly used pm_idle().
+This is mostly unused and overridden by intel_idle or acpi_idle, but
+still cannot be discarded.
 
-thanks,
+Maybe keep this as a module and probe/load only if both intel_idle and
+acpi_idle failed to load or excluded by command line or otherwise.
 
-greg k-h
-
-------------
-
- drivers/usb/class/cdc-acm.c    |    7 ++++++-
- drivers/usb/class/cdc-wdm.c    |    2 +-
- drivers/usb/core/devio.c       |    2 +-
- drivers/usb/host/ehci-q.c      |   12 ------------
- drivers/usb/misc/uss720.c      |    7 +++----
- drivers/usb/musb/blackfin.c    |    6 +++---
- drivers/usb/musb/musb_gadget.c |    8 ++++----
- drivers/usb/serial/usb_wwan.c  |    3 +--
- 8 files changed, 19 insertions(+), 28 deletions(-)
-
----------------
-
-Alan Stern (1):
-      ehci-hcd: Bug fix: don't set a QH's Halt bit
-
-Bob Liu (1):
-      usb: musb: blackfin: fix typo in new dev_pm_ops struct
-
-Hema HK (1):
-      usb: musb: Fix for merge issue
-
-Johan Hovold (3):
-      USB: cdc-acm: fix memory corruption / panic
-      USB: cdc-acm: fix potential null-pointer dereference
-      USB: cdc-acm: fix potential null-pointer dereference on disconnect
-
-Michal Sojka (1):
-      USB: Do not pass negative length to snoop_urb()
-
-Mike Frysinger (2):
-      usb: musb: blackfin: fix typo in platform driver name
-      usb: musb: blackfin: fix typo in new bfin_musb_vbus_status func
-
-Oliver Neukum (1):
-      usb: wwan: fix compilation without CONFIG_PM_RUNTIME
-
-Peter Holik (1):
-      USB: uss720 fixup refcount position
-
-Robert Lukassen (1):
-      USB: Fix 'bad dma' problem on WDM device disconnect
+--Vaidy
 
