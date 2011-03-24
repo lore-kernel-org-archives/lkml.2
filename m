@@ -1,60 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934221Ab1CXUip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:38:45 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61240 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932184Ab1CXUil (ORCPT
+	id S934178Ab1CXUj4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:39:56 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:57504 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932812Ab1CXUjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:38:41 -0400
-Date: Thu, 24 Mar 2011 20:38:22 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
-Subject: Re: [RFC PATCHv2 0/4] Support for OTP memory
-Message-ID: <20110324203821.GL3130@pulham.picochip.com>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
- <AANLkTim3kMCE=LhCRcUDif8ENSA-E-_Xga5cDSYs0x25@mail.gmail.com>
- <20110324174722.GH3130@pulham.picochip.com>
- <AANLkTinDWA1xU1G0kBk8XPr_ZaRgHtBQP60DX6-x3tsn@mail.gmail.com>
- <20110324183205.GI3130@pulham.picochip.com>
- <AANLkTimP7_ADTd+9Wyc4tLtsXVnS=1EwTac1Z8CtgHV2@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimP7_ADTd+9Wyc4tLtsXVnS=1EwTac1Z8CtgHV2@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Mar 2011 16:39:51 -0400
+Subject: Re: [Xen-devel] Re: 2.6.39 crashes BUG: unable to handle kernel
+ NULL pointer dereference at 000000000000042 .. cmos_checkintr+0x4d/0x55
+ under Xen as PV guest.
+From: John Stultz <john.stultz@linaro.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: tglx@linutronix.de, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1300993535.848.110.camel@work-vm>
+References: <20110318203830.GA9262@dumpdata.com>
+	 <1300485566.2731.46.camel@work-vm> <20110319025134.GA3298@dumpdata.com>
+	 <1300736400.2731.66.camel@work-vm> <20110322143841.GA26952@dumpdata.com>
+	 <20110324122755.GA31974@dumpdata.com>  <1300993535.848.110.camel@work-vm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Mar 2011 13:39:34 -0700
+Message-ID: <1300999174.848.122.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 02:36:42PM -0400, Mike Frysinger wrote:
-> On Thu, Mar 24, 2011 at 14:32, Jamie Iles wrote:
-> > On Thu, Mar 24, 2011 at 01:56:17PM -0400, Mike Frysinger wrote:
-> >> just an overview note here ... the Blackfin OTP is actually IP we
-> >> bought from someone (not sure if i can say more, although i dont know
-> >> the details myself ... i'd have to go ask around), so much of the
-> >> feedback i give about the structure of it most likely (hopefully) be
-> >> applicable to other people who have purchased this IP.  if/when anyone
-> >> who is also using this IP steps forward, we could even see about
-> >> generalizing the bfin-otp driver.
-> >
-> > Yes, we have a similar thing here - a block of OTP from an IP vendor and
-> > a wrapper to provide an AXI interface.  As far as I know there are only
-> > a few OTP vendors so there may well be plenty of common code in
-> > different OTP implementations.
+On Thu, 2011-03-24 at 12:05 -0700, John Stultz wrote:
+> Or... more likely, the added rtc_set_alarm is enabling interrupts,
+> allowing an irq to land before the rtc_device_register completes.
 > 
-> do you guys wrap the interface ?  the Blackfin processors have an
-> on-chip ROM which provides higher level functions like
-> read/write/lock/etc...  the Linux driver uses those rather than
-> programming the memory mapped OTP interface itself since this
-> interface is not publicly documented.
+> Oof.. ok. so that is a little gross.
+> 
+> 
+> Let me see if I can't work something out here.
 
-I'm not 100% on the exact details but I understand that the macro 
-provides some non-AXI registers and signals that we wrap up into some 
-AXI registers.  The wrapper doesn't handle all of the nasties of the 
-macro but it does handle some of the redundancy and region splitting.
+Konrad: Can you give this patch a shot to see if it changes the
+behavior?
 
-Jamie
+Basically we still initialize the alarm timer from whatever the hardware
+is set to at boot time, but don't use the standard rtc_set_alarm, and
+instead initialize the aie_timer and enqueue it by hand.
+
+That should avoid having rtc_set_alarm enabling irqs possibly too early.
+
+thanks
+-john
+
+
+
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index 09b4437..3901386 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -171,7 +171,7 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
+ 	err = __rtc_read_alarm(rtc, &alrm);
+ 
+ 	if (!err && !rtc_valid_tm(&alrm.time))
+-		rtc_set_alarm(rtc, &alrm);
++		rtc_initialize_alarm(rtc, &alrm);
+ 
+ 	strlcpy(rtc->name, name, RTC_DEVICE_NAME_SIZE);
+ 	dev_set_name(&rtc->dev, "rtc%d", id);
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 8ec6b06..b2fea80 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -375,6 +375,32 @@ int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ }
+ EXPORT_SYMBOL_GPL(rtc_set_alarm);
+ 
++/* Called once per device from rtc_device_register */
++int rtc_initialize_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
++{
++	int err;
++
++	err = rtc_valid_tm(&alarm->time);
++	if (err != 0)
++		return err;
++
++	err = mutex_lock_interruptible(&rtc->ops_lock);
++	if (err)
++		return err;
++
++	rtc->aie_timer.node.expires = rtc_tm_to_ktime(alarm->time);
++	rtc->aie_timer.period = ktime_set(0, 0);
++	if (alarm->enabled) {
++		rtc->aie_timer.enabled = 1;
++		timerqueue_add(&rtc->timerqueue, &rtc->aie_timer.node);
++	}
++	mutex_unlock(&rtc->ops_lock);
++	return err;
++}
++EXPORT_SYMBOL_GPL(rtc_initialize_alarm);
++
++
++
+ int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled)
+ {
+ 	int err = mutex_lock_interruptible(&rtc->ops_lock);
+diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+index 2ca7e8a..877ece4 100644
+--- a/include/linux/rtc.h
++++ b/include/linux/rtc.h
+@@ -228,6 +228,8 @@ extern int rtc_read_alarm(struct rtc_device *rtc,
+ 			struct rtc_wkalrm *alrm);
+ extern int rtc_set_alarm(struct rtc_device *rtc,
+ 				struct rtc_wkalrm *alrm);
++extern int rtc_initialize_alarm(struct rtc_device *rtc,
++				struct rtc_wkalrm *alrm);
+ extern void rtc_update_irq(struct rtc_device *rtc,
+ 			unsigned long num, unsigned long events);
+ 
+
+
