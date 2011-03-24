@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab1CXOzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 10:55:13 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45435 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751630Ab1CXOzL (ORCPT
+	id S1753221Ab1CXO6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 10:58:17 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:18555 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab1CXO6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 10:55:11 -0400
-Date: Thu, 24 Mar 2011 10:55:08 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-cc: Greg Kroah-Hartman <gregkh@suse.de>, Chris Wright <chrisw@sous-sol.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: check device_create_file() return code in usb_create_sysfs_intf_files()
-In-Reply-To: <20110324143116.GA8200@swordfish.minsk.epam.com>
-Message-ID: <Pine.LNX.4.44L0.1103241050520.2006-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 24 Mar 2011 10:58:16 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+Message-id: <hvc-kick-notask@mdm.bga.com>
+Subject: Re: hvc_console: Don't access hvc_task if not initialised
+To: Amit Shah <amit.shah@redhat.com>
+References: <df8ea6d65c1ceeb25b0a3fdfc66995b8a8273ea5.1300951793.git.amit.shah@redhat.com>
+In-Reply-To: <df8ea6d65c1ceeb25b0a3fdfc66995b8a8273ea5.1300951793.git.amit.shah@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, greg@kroah.com,
+        Amit Shah <amit.shah@redhat.com>, linuxppc-dev@ozlabs.org
+Date: Thu, 24 Mar 2011 08:58:04 -0600
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011, Sergey Senozhatsky wrote:
+[removed stable list from discussion]
 
-> Hello,
+On Thu, 24 Mar 2011 07:29:58 -0000, Amit Shah wrote:
+> hvc_open() can be called without having any backing device.  This
+> results in a call to hvc_kick() which calls wake_up_process on a NULL
+> pointer.  
+
+How is hvc_open called without a hvc_driver registered to the tty layer?
+
+> Ensure hvc is initialised by checking for a non-NULL hvc_task
+> before waking up the hvc thread.
+
+No if the task is missing the subsystem is really stuck.  Put a check
+in open and refuse to open.
+
 > 
-> I just noticed that usb_create_sysfs_intf_files() ignores device_create_file() 
-> return code and sets intf->sysfs_files_created to 1, even if sysfs_add_file_mode() 
-> returned -ENOMEM (or later sysfs_add_one() returned -EEXIST).
+> This was found by an autotest run for virtio_console without having a
+> console backend.
 > 
-> Shouldn't we check retval for 0 before setting intf->sysfs_files_created?
 
-No.  We want this routine to succeed even if the sysfs files can't be 
-created.  The interface string attribute is more or less optional.
+stack trace please
 
-It would be okay to add a comment explaining this, so that other people
-don't make the same mistake (which has already happened -- you're not
-the first).
-
-Alan Stern
-
+> CC: stable@kernel.org
+> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> 
+> ---
+> drivers/tty/hvc/hvc_console.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+> index e9cba13..b2cb5cc 100644
+> --- a/drivers/tty/hvc/hvc_console.c
+> +++ b/drivers/tty/hvc/hvc_console.c
+> @@ -286,6 +286,9 @@ EXPORT_SYMBOL_GPL(hvc_instantiate);
+>  /* Wake the sleeping khvcd */
+>  void hvc_kick(void)
+>  {
+> +	if (!hvc_task)
+> +		return;
+> +
+>  	hvc_kicked = 1;
+>  	wake_up_process(hvc_task);
+>  }
