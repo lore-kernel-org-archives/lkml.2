@@ -1,153 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933960Ab1CXRX2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 13:23:28 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62574 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933672Ab1CXRX0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 13:23:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CATkmbA3yLu1HUU6ZmeTBNeyii+MqBv9oSqIcP6xiVfuqYULNh6Vw6vLnYhEUx5rKw
-         WytSHpu3yamEJ5Z2317w03T2x/7ns68oQtR/XwsHy9BGoDqXMTn7+K9gQX97L3jhYn5I
-         A7zPRfcnFjvsHywgz3YbqXnQeQrRJ2F4+aqLk=
+	id S1757122Ab1CXR1I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 13:27:08 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35211 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913Ab1CXR1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 13:27:04 -0400
+Date: Thu, 24 Mar 2011 18:26:53 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, tj@kernel.org, npiggin@kernel.dk,
+        rientjes@google.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
+Message-ID: <20110324172653.GA28507@elte.hu>
+References: <alpine.DEB.2.00.1103221635400.4521@tiger>
+ <20110324142146.GA11682@elte.hu>
+ <alpine.DEB.2.00.1103240940570.32226@router.home>
+ <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <s5hoc50vqrh.wl%tiwai@suse.de>
-References: <AANLkTin1kqjSgh8R5zzt_tkJAsTV_LxDjpPf5ngUHEr1@mail.gmail.com>
-	<s5hzkoluifr.wl%tiwai@suse.de>
-	<AANLkTi=RtEZyiry1FWiaT5LQbm3r-_9X_f2jPOQ6YCex@mail.gmail.com>
-	<s5hoc50vqrh.wl%tiwai@suse.de>
-Date: Thu, 24 Mar 2011 10:23:25 -0700
-Message-ID: <AANLkTi=ivaNVF2Jsz2rmxT-Pe2hs0jMUv7XZQ6K=2-d6@mail.gmail.com>
-Subject: Re: snd_card_disconnect race (sound/core/init.c)
-From: Russ Dill <russ.dill@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 1:58 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Thu, 24 Mar 2011 01:19:43 -0700,
-> Russ Dill wrote:
->>
->> On Wed, Mar 23, 2011 at 11:43 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> > At Wed, 23 Mar 2011 18:40:58 -0700,
->> > Russ Dill wrote:
->> >>
->> >> With slub poisoning on, I'm seeing an oops in snd_disconnect_release
->> >> with slub poison (6b6b6b6b). Investigating, snd_card_disconnect looks
->> >> to be the possible culprit:
->> >>
->> >> 333         spin_lock(&card->files_lock);
->> >> 334         mfile = card->files;
->> >> 335         while (mfile) {
->> >> 336                 file = mfile->file;
->> >> 337
->> >> 338                 /* it's critical part, use endless loop */
->> >> 339                 /* we have no room to fail */
->> >> 340                 mfile->disconnected_f_op = mfile->file->f_op;
->> >> 341
->> >> 342                 spin_lock(&shutdown_lock);
->> >> 343                 list_add(&mfile->shutdown_list, &shutdown_files);
->> >> 344                 spin_unlock(&shutdown_lock);
->> >> 345
->> >> 346                 mfile->file->f_op = &snd_shutdown_f_ops;
->> >> 347                 fops_get(mfile->file->f_op);
->> >> 348
->> >> 349                 mfile = mfile->next;
->> >> 350         }
->> >> 351         spin_unlock(&card->files_lock);
->> >>
->> >> I'm not aware of any locking that would prevent the original release
->> >> function running concurrently if it were started before line 346 was
->> >> executed. The original release functions (such as snd_hwdep_release)
->> >> call snd_card_remove_file which frees the mfile object which would
->> >> have been just added to the shutdown_files list leading to a use of
->> >> freed (or in my case poisoned) memory later on down the line when the
->> >> shutdown_files gets walked again.
->> >>
->> >> It seems that 118dd6bf (ALSA: Clean up snd_monitor_file management,
->> >> v2.6.30) may have either introduced this problem or made it worse
->> >> since snd_card_file_remove previously removed items from the
->> >> shutdown_files list before freeing them.
->> >>
->> >> I'm currently experiencing these crashes on 2.6.32.26, but I can't
->> >> find any changes that would cause them not to occur on later kernel
->> >> versions.
->> >
->> > Which device are you using?  USB-audio had a known problem at
->> > disconnection, for example, and it was fixed recently.
->> >
->>
->> I'm using USB-audio. I tried back-porting a couple of patches, to no avail:
->>
->> ALSA: usb-audio: fix oops due to cleanup race when disconnecting
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=382225e6
->>
->> ALSA: usb - Release capture substream URBs properly
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=76195fb0
->>
->> Backing out 118dd6bf fixes the problem. The app that is running when
->> this crash occurs does full duplex streaming and segfaults while the
->> USB-audio device is going away. I'd have to check, but I think its
->> actually segfaulting it response to a disconnect of another piece of
->> the composite device the USB-audio device is part of, so the release
->> may actually be happening at the time the snd_card_disconnect is
->> occurring. I don't see any locking that would prevent bad things from
->> happening in this case, and the shutdown_files list is definitely
->> poisoned.
->
-> OK, what about the patch below?
->
->
-> Takashi
->
-> ---
-> From: Takashi Iwai <tiwai@suse.de>
-> Subject: [PATCH] ALSA: Fix yet another race in disconnection
->
-> This patch fixes a race between snd_card_file_remove() and
-> snd_card_disconnect().  When the card is added to shutdown_files list
-> in snd_card_disconnect(), but it's freed in snd_card_file_remove() at
-> the same time, the shutdown_files list gets corrupted.  The list member
-> must be freed in snd_card_file_remove() as well.
->
-> Reported-by: Russ Dill <russ.dill@gmail.com>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  sound/core/init.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->
-> diff --git a/sound/core/init.c b/sound/core/init.c
-> index 3e65da2..a0080aa 100644
-> --- a/sound/core/init.c
-> +++ b/sound/core/init.c
-> @@ -848,6 +848,7 @@ int snd_card_file_add(struct snd_card *card, struct file *file)
->                return -ENOMEM;
->        mfile->file = file;
->        mfile->disconnected_f_op = NULL;
-> +       INIT_LIST_HEAD(&mfile->shutdown_list);
->        spin_lock(&card->files_lock);
->        if (card->shutdown) {
->                spin_unlock(&card->files_lock);
-> @@ -883,6 +884,9 @@ int snd_card_file_remove(struct snd_card *card, struct file *file)
->        list_for_each_entry(mfile, &card->files_list, list) {
->                if (mfile->file == file) {
->                        list_del(&mfile->list);
-> +                       spin_lock(&shutdown_lock);
-> +                       list_del(&mfile->shutdown_list);
-> +                       spin_unlock(&shutdown_lock);
->                        if (mfile->disconnected_f_op)
->                                fops_put(mfile->disconnected_f_op);
->                        found = mfile;
-> --
-> 1.7.4.1
 
-It looks sane, I'll run it through my torture (about 24hr) testing and
-let you know.
+* Pekka Enberg <penberg@kernel.org> wrote:
+
+> On Thu, Mar 24, 2011 at 4:41 PM, Christoph Lameter <cl@linux.com> wrote:
+> > On Thu, 24 Mar 2011, Ingo Molnar wrote:
+> >
+> >> FYI, some sort of boot crash has snuck upstream in the last 24 hours:
+> >>
+> >> �BUG: unable to handle kernel paging request at ffff87ffc147e020
+> >> �IP: [<ffffffff811aa762>] this_cpu_cmpxchg16b_emu+0x2/0x1c
+> >
+> > Hmmm.. This is the fallback code for the case that the processor does not
+> > support cmpxchg16b.
+> 
+> How does alternative_io() work? Does it require
+> alternative_instructions() to be executed. If so, the fallback code
+> won't be active when we enter kmem_cache_init(). Is there any reason
+> check_bugs() is called so late during boot? Can we do something like
+> the totally untested attached patch?
+
+Does the config i sent you boot on your box? I think the bug is pretty generic 
+and should trigger on any box.
+
+Thanks,
+
+	Ingo
