@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934362Ab1CXXFh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 19:05:37 -0400
-Received: from lo.gmane.org ([80.91.229.12]:55159 "EHLO lo.gmane.org"
+	id S934370Ab1CXXRc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 19:17:32 -0400
+Received: from xes-mad.com ([216.165.139.218]:16849 "EHLO xes-mad.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933783Ab1CXXFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 19:05:34 -0400
-X-Injected-Via-Gmane: http://gmane.org/
+	id S934349Ab1CXXR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 19:17:29 -0400
+From: Peter Tyser <ptyser@xes-inc.com>
 To: linux-kernel@vger.kernel.org
-From: Lukasz Sokol <el.es.cr@gmail.com>
-Subject: =?utf-8?b?SW5fZnJpZGdlX21lbnQ/?=
-Date: Thu, 24 Mar 2011 23:05:15 +0000 (UTC)
-Message-ID: <loom.20110325T000152-297@post.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 81.31.113.250 (Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Ubuntu/10.04 (lucid) Firefox/3.6.15)
+Cc: Peter Tyser <ptyser@xes-inc.com>, tomoya-linux@dsn.okisemi.com,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH] gpio: ml_ioh_gpio: Fix output value of ioh_gpio_direction_output()
+Date: Thu, 24 Mar 2011 18:17:14 -0500
+Message-Id: <1301008634-25429-1-git-send-email-ptyser@xes-inc.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All,
-this may be amusing (or not if you're a lawyer):
-http://groceries.asda.com/asda-estore/catalog
-/sectionpagecontainer.jsp?skuId=910000402067&departmentid=1214921923780&
-aisleid=1214921925167&startValue=
+The ioh_gpio_direction_output() function was missing a write to set the
+desired output value.  The function would properly set the GPIO
+direction, but not the output value.  The value would have to manually
+be set with a follow up call to ioh_gpio_set().
 
-(gmane made me break up the link)
+Add the missing write so that ioh_gpio_direction_output() sets both the
+GPIO direction and value.
 
-Basically a UK's branch of Wal Mart has a product that looks pretty much like
-Tux. 
+Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+Cc: tomoya-linux@dsn.okisemi.com
+Cc: Grant Likely <grant.likely@secretlab.ca>
+---
+This is untested - just noticed it while working on an unrelated change.  An
+ack or tested-by from someone with real hardware would be appreciated.
 
-In_fridge_ment?
+ drivers/gpio/ml_ioh_gpio.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-L.
-(and, No I Am Not A Lawyer)
+diff --git a/drivers/gpio/ml_ioh_gpio.c b/drivers/gpio/ml_ioh_gpio.c
+index cead8e6..7a0423c 100644
+--- a/drivers/gpio/ml_ioh_gpio.c
++++ b/drivers/gpio/ml_ioh_gpio.c
+@@ -116,6 +116,7 @@ static int ioh_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
+ 		reg_val |= (1 << nr);
+ 	else
+ 		reg_val &= ~(1 << nr);
++	iowrite32(reg_val, &chip->reg->regs[chip->ch].po);
+ 
+ 	mutex_unlock(&chip->lock);
+ 
+-- 
+1.7.0.4
 
