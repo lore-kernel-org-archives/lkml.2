@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab1CXBbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 21:31:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2382 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab1CXBbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 21:31:10 -0400
-Message-ID: <4D8A9ED7.5040709@redhat.com>
-Date: Thu, 24 Mar 2011 09:31:03 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753848Ab1CXBlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 21:41:00 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50679 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab1CXBk7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 21:40:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=ZXy1lhbn+44/f6RxVdcFdg2N5jKep/QK4Eu40Mnqc4zUMEtSkeap27frHERfRNUQDu
+         zFGDX2bC5IGKA2OY8ZRV7TixiSm9h5MDGRYyGPNE7MSSKYpXqC9PWW8qpp6f6riOiTiA
+         c3aOqhPk5WTyahcOAo/ZYjUfYIxJM5fkoZNDY=
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: torvalds@osdl.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix linux/smp.h to include linux/init.h
-References: <20110323113502.30322.26599.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20110323113502.30322.26599.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Date: Wed, 23 Mar 2011 18:40:58 -0700
+Message-ID: <AANLkTin1kqjSgh8R5zzt_tkJAsTV_LxDjpPf5ngUHEr1@mail.gmail.com>
+Subject: snd_card_disconnect race (sound/core/init.c)
+From: Russ Dill <russ.dill@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Takashi Iwai <tiwai@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年03月23日 19:35, David Howells 写道:
-> linux/smp.h now needs to include linux/init.h lest it give the following error:
->
->    CC      arch/mn10300/kernel/asm-offsets.s
-> In file included from /data/mn10300/linux-2.6-mn10300/arch/mn10300/include/asm/irqflags.h:17,
->                   from include/linux/irqflags.h:15,
->                   from include/linux/spinlock.h:53,
->                   from include/linux/seqlock.h:29,
->                   from include/linux/time.h:8,
->                   from include/linux/timex.h:56,
->                   from include/linux/sched.h:57,
->                   from arch/mn10300/kernel/asm-offsets.c:7:
-> include/linux/smp.h:117: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'setup_nr_cpu_ids'
-> include/linux/smp.h:118: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'smp_init'
->
-> Signed-off-by: David Howells<dhowells@redhat.com>
+With slub poisoning on, I'm seeing an oops in snd_disconnect_release
+with slub poison (6b6b6b6b). Investigating, snd_card_disconnect looks
+to be the possible culprit:
 
-Hi, David,
+333         spin_lock(&card->files_lock);
+334         mfile = card->files;
+335         while (mfile) {
+336                 file = mfile->file;
+337
+338                 /* it's critical part, use endless loop */
+339                 /* we have no room to fail */
+340                 mfile->disconnected_f_op = mfile->file->f_op;
+341
+342                 spin_lock(&shutdown_lock);
+343                 list_add(&mfile->shutdown_list, &shutdown_files);
+344                 spin_unlock(&shutdown_lock);
+345
+346                 mfile->file->f_op = &snd_shutdown_f_ops;
+347                 fops_get(mfile->file->f_op);
+348
+349                 mfile = mfile->next;
+350         }
+351         spin_unlock(&card->files_lock);
 
-Heiko sent a same patch before you did. :)
+I'm not aware of any locking that would prevent the original release
+function running concurrently if it were started before line 346 was
+executed. The original release functions (such as snd_hwdep_release)
+call snd_card_remove_file which frees the mfile object which would
+have been just added to the shutdown_files list leading to a use of
+freed (or in my case poisoned) memory later on down the line when the
+shutdown_files gets walked again.
 
-Thanks.
+It seems that 118dd6bf (ALSA: Clean up snd_monitor_file management,
+v2.6.30) may have either introduced this problem or made it worse
+since snd_card_file_remove previously removed items from the
+shutdown_files list before freeing them.
+
+I'm currently experiencing these crashes on 2.6.32.26, but I can't
+find any changes that would cause them not to occur on later kernel
+versions.
