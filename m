@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab1CXCYb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 22:24:31 -0400
-Received: from fifo99.com ([67.223.236.141]:35253 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752743Ab1CXCYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 22:24:30 -0400
-Subject: Re: [PATCH] msm: Add gpio support for 8960
-From: Daniel Walker <dwalker@fifo99.com>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: davidb@codeaurora.org, bryanh@codeaurora.org, linux@arm.linux.org.uk,
-        dima@android.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-In-Reply-To: <4D8A88AE.2000701@codeaurora.org>
-References: <1300402640-23995-1-git-send-email-rvaswani@codeaurora.org>
-	 <1300885151.6117.11.camel@m0nster>  <4D8A88AE.2000701@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Mar 2011 19:24:27 -0700
-Message-ID: <1300933467.6117.49.camel@m0nster>
+	id S1756057Ab1CXCZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 22:25:50 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54148 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754915Ab1CXCZt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 22:25:49 -0400
+Date: Wed, 23 Mar 2011 19:21:50 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/5] vmscan: remove all_unreclaimable check from direct
+ reclaim path completely
+Message-Id: <20110323192150.9895afe3.akpm@linux-foundation.org>
+In-Reply-To: <20110324111200.1AF4.A69D9226@jp.fujitsu.com>
+References: <20110323174545.1AE2.A69D9226@jp.fujitsu.com>
+	<AANLkTi=w62=WR5WACJGk6JNhyCYpgNhFQK3CyQ5Ag-Yj@mail.gmail.com>
+	<20110324111200.1AF4.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-23 at 16:56 -0700, Rohit Vaswani wrote:
-> >>
-> >> -	set_irq_chained_handler(TLMM_SCSS_SUMMARY_IRQ,
-> >> +	set_irq_chained_handler(TLMM_MSM_SUMMARY_IRQ,
-> >>   				msm_summary_irq_handler);
-> > Ok, so looks like a rename. Can you add this to the commit text along
-> > with descriptions of everything else your doing?
-> Daniel,
-> Adding support for 8960 includes making sure that Gpio support remains 
-> meaningful and at the same time uniform across different boards. Should 
-> we enumerate the specific changes ?
+On Thu, 24 Mar 2011 11:11:46 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-Should let everyone know exactly what your doing, even breaking up the
-changes into specific patches.
+> Subject: [PATCH] vmscan: remove all_unreclaimable check from direct reclaim path completely
 
-Daniel
+zone.all_unreclaimable is there to prevent reclaim from wasting CPU
+cycles scanning a zone which has no reclaimable pages.  When originally
+implemented it did this very well.
+
+That you guys keep breaking it, or don't feel like improving it is not a
+reason to remove it!
+
+If the code is unneeded and the kernel now reliably solves this problem
+by other means then this should have been fully explained in the
+changelog, but it was not even mentioned.
 
