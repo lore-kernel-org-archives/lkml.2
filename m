@@ -1,116 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933915Ab1CXRTy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 13:19:54 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57749 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751632Ab1CXRTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 13:19:53 -0400
-Date: Thu, 24 Mar 2011 18:19:24 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@kernel.dk>, "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Jack Steiner <steiner@sgi.com>,
-        tee@sgi.com, Nikanth Karthikesan <knikanth@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH RFC] x86: avoid atomic operation in test_and_set_bit_lock
- if possible
-Message-ID: <20110324171924.GC2414@elte.hu>
-References: <201103241026.01624.knikanth@suse.de>
- <20110324085647.GI30812@elte.hu>
- <20110324145221.GC31194@aftab>
- <4D8B83DA02000078000381DE@vpn.id2.novell.com>
+	id S933924Ab1CXRUt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 13:20:49 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48931 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757110Ab1CXRUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 13:20:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=tlEvLIlw6B93AYOwpF09qrMzOaTutt4rgGC5QVVHjL9NR/F7g0mn73PPq91S3jCOG9
+         NCLRwo85uF+6HhNXVayCI2QHjJQ2vV7StuPko3F7cQilu5JVodIZ/FWJYv9AR+M0M9qN
+         g1wkOcQVP1fQm1zGEc5FRQusiHis2s0/3ekxc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D8B83DA02000078000381DE@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-0.5 required=5.9 tests=BAYES_00,URIBL_RHS_DOB autolearn=no SpamAssassin version=3.3.1
-	1.5 URIBL_RHS_DOB          Contains an URI of a new domain (Day Old Bread)
-	[URIs: novell.com]
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <201103241415.45115.arnd@arndb.de>
+References: <4D79F068.2080009@linaro.org>
+	<1300924878.2638.38.camel@bwh-desktop>
+	<201103241413.54599.arnd@arndb.de>
+	<201103241415.45115.arnd@arndb.de>
+Date: Thu, 24 Mar 2011 18:20:44 +0100
+Message-ID: <AANLkTikZ76VXdPf46FHxhCyf3n4rNZOQW4Rp2yUZWP2h@mail.gmail.com>
+Subject: Re: [RFC] usbnet: use eth%d name for known ethernet devices
+From: Alexey Orishko <alexey.orishko@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Steve Calfee <stevecalfee@gmail.com>,
+        Michal Nazarewicz <mnazarewicz@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        broonie@opensource.wolfsonmicro.com,
+        lkml <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, Greg KH <greg@kroah.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, grant.likely@secretlab.ca,
+        Linux USB list <linux-usb@vger.kernel.org>, andy.green@linaro.org,
+        netdev@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        roger.quadros@nokia.com, Jaswinder Singh <jaswinder.singh@linaro.org>,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 24, 2011 at 2:15 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-* Jan Beulich <JBeulich@novell.com> wrote:
+>
+> The approach taken here is to flag whether a device might be a
+> point-to-point link with the new FLAG_PTP setting in the usbnet
+> driver_info. A driver can set both FLAG_PTP and FLAG_ETHER if
+> it is not sure (e.g. cdc_ether), or just one of the two.
 
-> >>> On 24.03.11 at 15:52, Borislav Petkov <bp@amd64.org> wrote:
-> 
-> (haven't seen Ingo's original reply, so responding here)
-> 
-> > On Thu, Mar 24, 2011 at 04:56:47AM -0400, Ingo Molnar wrote:
-> >> 
-> >> * Nikanth Karthikesan <knikanth@suse.de> wrote:
-> >> 
-> >> > On x86_64 SMP with lots of CPU atomic instructions which assert the LOCK #
-> >> > signal can stall other CPUs. And as the number of cores increase this 
-> > penalty
-> >> > scales proportionately. So it is best to try and avoid atomic instructions
-> >> > wherever possible. test_and_set_bit_lock() can avoid using LOCK_PREFIX if 
-> > it
-> >> > finds the bit set already.
-> >> > 
-> >> > Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
-> > 
-> > [..]
-> > 
-> >> > + * test_and_set_bit_lock - Set a bit and return its old value for lock
-> >> > + * @nr: Bit to set
-> >> > + * @addr: Address to count from
-> >> > + *
-> >> > + * This is the same as test_and_set_bit on x86. But atomic operation is
-> >> > + * avoided, if the bit was already set.
-> >> > + */
-> >> > +static __always_inline int
-> >> > +test_and_set_bit_lock(int nr, volatile unsigned long *addr)
-> >> > +{
-> >> > +#ifdef CONFIG_SMP
-> >> > +	barrier();
-> >> > +	if (test_bit(nr, addr))
-> >> > +		return 1;
-> >> > +#endif
-> >> > +	return test_and_set_bit(nr, addr);
-> >> > +}
-> >>
-> >> On modern x86 CPUs there's no "#LOCK signal" anymore - it's replaced
-> >> by a M[O]ESI cache coherency bus. I'd expect modern x86 CPUs to be
-> >> pretty fast when the cacheline is local and the bit is set already.
-> 
-> Are you certain? Iirc the lock prefix implies minimally a read-for-
-> ownership (if CPUs are really smart enough to optimize away the
-> write - I wonder whether that would be correct at all when it
-> comes to locked operations), which means a cacheline can still be
-> bouncing heavily.
+> The usbnet framework only looks at the MAC address for device
+> naming if both flags are set, otherwise it trusts the flag.
 
-Yeah. On what workload was this?
+Should this paragraph above be a clue for the flag name?
+Sorry for late comment, but having flag called FLAG_POINTTOPOINT is really
+confusing. ptp, p2p terms are heavily used and will mislead folks.
 
-Generally you use test_and_set_bit() if you expect it to be 'owned' by whoever 
-calls it, and released by someone else.
+Would it be better to call it something like IGNORE_MAC_ADDRESS if this is the
+feature you are targeting?
 
-It would be really useful to run perf top on an affected box and see which 
-kernel function causes this. It might be better to add a test_bit() to the 
-affected codepath - instead of bloating all test_and_set_bit() users.
-
-Note that the patch can also cause overhead: the test_bit() can miss the cache, 
-it will bring in the cacheline shared, and the subsequent test_and_set() call 
-will then dirty the cacheline - so the CPU might miss again and has to wait for 
-other CPUs to first flush this cacheline.
-
-So we really need more details here.
-
-Thanks,
-
-	Ingo
+/Alexey
