@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab1CXOcG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 10:32:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55687 "EHLO mx2.suse.de"
+	id S932840Ab1CXOf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 10:35:56 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:24353 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634Ab1CXOcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 10:32:03 -0400
-Date: Thu, 24 Mar 2011 15:32:00 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Rafi Rubin <rafi@seas.upenn.edu>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, micki@n-trig.com, chatty@enac.fr,
-        dmitry.torokhov@gmail.com
-Subject: Re: [PATCH 2/2] hid-ntrig: calibration
-In-Reply-To: <20110321171550.GA4602@polaris.bitmath.org>
-Message-ID: <alpine.LNX.2.00.1103241531130.19969@pobox.suse.cz>
-References: <1299829072-19489-1-git-send-email-rafi@seas.upenn.edu> <1299829072-19489-2-git-send-email-rafi@seas.upenn.edu> <20110321171550.GA4602@polaris.bitmath.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751877Ab1CXOfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 10:35:55 -0400
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 24 Mar 2011 16:38:35 +0200
+Message-Id: <20110324143835.29758.362.sendpatchset@localhost.localdomain>
+Subject: [GIT PULL] More UBI/UBIFS changes for 2.6.39
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Mar 2011, Henrik Rydberg wrote:
+Hi Linus,
 
-> > Adding a function to tell the device to run its calibration routine.
-> > A number written to the sysfs specifies the duration of the calibration
-> > in milliseconds
-> > 
-> > Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
-> > ---
-> 
-> This is great functionality, and from what it seems, it works. However, 
-> the poking at the usb layer makes me wonder if there is another way... 
-> Jiri? Dmitry? Awaiting answers from someone more knowledgeable, please 
-> find some comments inline.
+I've found a couple of brown-paperbag bugs in my changes which
+you have merged this merge window. Also, we've fixed one UBIFS
+assertion warning and I forgot to kill one Kconfig option.
 
-Actually, let me put it another way -- is there any reason not to have 
-this as a functionality provided by HID core code (with driver registering 
-callbacks if they want to provide calibration functionality)?
+So I've composed another UBI/UBIFS pull request where I address
+the issues introduced in the previous pull request. I did not find
+better way than to base the pull request on top of a "random"
+current commit, hopefully this is acceptable. Yes, I tested the
+patches with 2.6.38 release, not this commit.
+
+Please, pull.
+
+The following changes since commit 4bbba111d94781d34081c37856bbc5eb33f6c72a:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6 (2011-03-23 07:58:09 -0700)
+
+are available in the git repository at:
+
+  git://git.infradead.org/ubi-2.6.git for-linus
+
+Artem Bityutskiy (4):
+      UBI: use GFP_NOFS properly
+      UBIFS: use GFP_NOFS properly
+      UBIFS: kill CONFIG_UBIFS_FS_DEBUG_CHKS
+      UBIFS: fix assertion warning and refine comments
+
+ drivers/mtd/ubi/io.c  |    4 ++--
+ fs/ubifs/Kconfig      |    9 ---------
+ fs/ubifs/debug.c      |    2 +-
+ fs/ubifs/file.c       |   11 +++++++----
+ fs/ubifs/lprops.c     |    2 +-
+ fs/ubifs/lpt_commit.c |    4 ++--
+ fs/ubifs/orphan.c     |    2 +-
+ 7 files changed, 14 insertions(+), 20 deletions(-)
+
 
 Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Artem.
