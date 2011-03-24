@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934159Ab1CXUhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:37:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38157 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932184Ab1CXUhk (ORCPT
+	id S934184Ab1CXUiB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:38:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59008 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932184Ab1CXUiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:37:40 -0400
-Date: Thu, 24 Mar 2011 21:37:31 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: ian.campbell@citrix.com, Jeremy Fitzhardinge <jeremy@goop.org>,
-        konrad.wilk@oracle.com
-Subject: [PATCH] xen: Use new irq_move functions
-Message-ID: <alpine.LFD.2.00.1103242135380.31464@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 24 Mar 2011 16:38:00 -0400
+Date: Thu, 24 Mar 2011 20:37:58 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Daniel Reichelt <debian@nachtgeist.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: procfs: boot- and runtime configurable access mode for
+ /proc/<pid> dirs
+Message-ID: <20110324203758.GF22723@ZenIV.linux.org.uk>
+References: <4D8AC408.9000503@nachtgeist.net>
+ <20110324073225.GA3806@p183.telecom.by>
+ <4D8B03D6.2090204@nachtgeist.net>
+ <20110324182230.GB5187@p183.telecom.by>
+ <4D8B991E.5070604@nachtgeist.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -0.7
-X-Linutronix-Spam-Level: /
-X-Linutronix-Spam-Status: No , -0.7 points, 5.0 required,  ALL_TRUSTED=-1,URIBL_RHS_DOB=0.276
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D8B991E.5070604@nachtgeist.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These functions take irq_data as an argument and avoid a redundant
-lookup in the sparse irq case.
+On Thu, Mar 24, 2011 at 08:18:54PM +0100, Daniel Reichelt wrote:
+> Well, my patch is about modes of the pid-dirs themselves, not their
+> contents. And it changes procfs' behaviour about modes both on initial
+> creation and during revalidation on access. However flattening all the
+> piddir's entries DOES pose a security risk. Have a look at the
+> "traditional behaviour": piddir world-readable, however e.g.
+> <pid>/environ isn't. Often it's a workaround for broken software to
+> specify a password within an environment variable instead of by cmdline.
+> Since up until now all processes including their full cmdlines are
+> visible to everyone, environ must be considered more sensitive than a
+> cmdline.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/events.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Bull.  /proc/<pid>/foo contents is sensitive, your patch doesn't do
+you any good.  fork(), open /proc/<child's PID>/foo in parent, then
+exec suid-root binary in child.  At that point mode_t of any files
+or directories does not matter anymore.
 
-Index: linux-2.6-tip/drivers/xen/events.c
-===================================================================
---- linux-2.6-tip.orig/drivers/xen/events.c
-+++ linux-2.6-tip/drivers/xen/events.c
-@@ -585,7 +585,7 @@ static void ack_pirq(struct irq_data *da
- {
- 	int evtchn = evtchn_from_irq(data->irq);
- 
--	move_native_irq(data->irq);
-+	irq_move_irq(data);
- 
- 	if (VALID_EVTCHN(evtchn)) {
- 		mask_evtchn(evtchn);
-@@ -1339,7 +1339,7 @@ static void ack_dynirq(struct irq_data *
- {
- 	int evtchn = evtchn_from_irq(data->irq);
- 
--	move_masked_irq(data->irq);
-+	irq_move_masked_irq(data);
- 
- 	if (VALID_EVTCHN(evtchn))
- 		unmask_evtchn(evtchn);
+You *must* do whatever access checks at read(2) time for these files.
+And if you do that, the checks at open(2) time do not matter.
+
+In particular, /proc/*/environ does ptrace_may_access() on read(2) (with
+a race fixed by today's merge, BTW).  It could very well be r--r--r--;
+having it r-------- does not increase security at all.
