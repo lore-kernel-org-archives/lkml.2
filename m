@@ -1,132 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934190Ab1CXWaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 18:30:21 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38666 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757281Ab1CXWaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 18:30:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
-Subject: Re: Corrupted files after suspend to disk
-Date: Thu, 24 Mar 2011 23:30:14 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
-References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com> <AANLkTinewk=mJZifVxEJkCtKfNauOjHnLAqwbGn139C=@mail.gmail.com> <AANLkTikui_HQ5JMcMJUqMr9WLyTRNzF-z4G7wAUNPOFy@mail.gmail.com>
-In-Reply-To: <AANLkTikui_HQ5JMcMJUqMr9WLyTRNzF-z4G7wAUNPOFy@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103242330.14416.rjw@sisk.pl>
+	id S934235Ab1CXWce (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 18:32:34 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61502 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757281Ab1CXWcc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 18:32:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LmjPv/DacCS1MyWxCZVqrgsINSTOWggj1v+oP8aLk0VzA9oPpXkK4+GZ5QgqkNWsx0
+         5jTuEz6SYsLjITMw8jg95fZi3vuRNoWTbSQqpG9RgPheODOCL5c/+4e1Lxfed4c01+DA
+         RlCIMk2mN8M+pnr1xToTi6iMQpmJ/xhqlK+vQ=
+Subject: Re: [PATCH] ipv4: fix fib metrics
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alessandro Suardi <alessandro.suardi@gmail.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTinv+XGBjbFoK6vpyiDW6gBEBKFjUef+mCAMJU9i@mail.gmail.com>
+References: <AANLkTik6+TrjiC6ZF+KHhZ1iPzEe2jDayr363C0HgQN4@mail.gmail.com>
+	 <1300980118.3747.42.camel@edumazet-laptop>
+	 <AANLkTikZhT5LaA-UEXniDvkneH8JScaVaCaCd4LT59cV@mail.gmail.com>
+	 <1300983340.3747.44.camel@edumazet-laptop>
+	 <1300986084.3747.101.camel@edumazet-laptop>
+	 <AANLkTik+Rf45wUxN86t+Zp7+AXjcJsy0vmZgvmLj-95x@mail.gmail.com>
+	 <1300992308.3747.205.camel@edumazet-laptop>
+	 <AANLkTin_gxMF1hyK_yhN+G9UGfcBKAhPE24r7tLe5j3D@mail.gmail.com>
+	 <1301005107.2714.113.camel@edumazet-laptop>
+	 <AANLkTinv+XGBjbFoK6vpyiDW6gBEBKFjUef+mCAMJU9i@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Mar 2011 23:32:26 +0100
+Message-ID: <1301005946.2714.130.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 24, 2011, richard -rw- weinberger wrote:
-> On Thu, Mar 24, 2011 at 11:16 AM, richard -rw- weinberger
-> <richard.weinberger@gmail.com> wrote:
-> > On Thu, Mar 24, 2011 at 12:00 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
-> >>> On Wed, Mar 23, 2011 at 11:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >>> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
-> >>> >> On Wed, Mar 23, 2011 at 11:11 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >>> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
-> >>> >> >> 2011/3/23 Rafael J. Wysocki <rjw@sisk.pl>:
-> >>> >> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
-> >>> >> >> >> Hi,
-> >>> >> >> >>
-> >>> >> >> >> I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
-> >>> >> >> >> running Linux 2.6.37.4.
-> >>> >> >> >> After resuming from s2disk some files are corrupted.
-> >>> >> >> >> But when I reboot my netbook everything seems good again.
-> >>> >> >> >>
-> >>> >> >> >> When I saw the problem the first time the ls command segfaulted always.
-> >>> >> >> >> I did a reboot and it worked again.
-> >>> >> >> >>
-> >>> >> >> >> A few days later zypper crashed. After a reboot it worked again.
-> >>> >> >> >> And today ssh crashed. I looked a bit closer and saw it crashed
-> >>> >> >> >> somewhere within libcrypto.
-> >>> >> >> >> So I made copy libcrypto and rebooted.
-> >>> >> >> >> After the reboot ssh worked again but libcrypto and the copy of it hat
-> >>> >> >> >> a different sha1 sum!
-> >>> >> >> >> WTF?!
-> >>> >> >> >>
-> >>> >> >> >> Is this a known issue?
-> >>> >> >> >
-> >>> >> >> > No.
-> >>> >> >> >
-> >>> >> >> >> dmesgs and config are attached.
-> >>> >> >> >>
-> >>> >> >> >> The used distribution is openSUSE 11.4 with suspend-0.80.20100129-7.1
-> >>> >> >> >> (default from suse).
-> >>> >> >> >> I'm using ext3 as root filesystem.
-> >>> >> >> >> What else do you need?
-> >>> >> >> >
-> >>> >> >> > Whatever you can do to narrow down the problem.  At the moment I only know
-> >>> >> >> > that it's there.
-> >>> >> >>
-> >>> >> >> I can reproduce the problem now.
-> >>> >> >> After ~20 suspend and resume iterations aide finds corrupted files in /lib/.
-> >>> >> >> It's always a very basic lib like libcrypto, libglib which is used all
-> >>> >> >> the time on my system.
-> >>> >> >
-> >>> >> > Those files are never intentionally modified, right?
-> >>> >> >
-> >>> >> >> Maybe it's an issue like this one?
-> >>> >> >> https://lkml.org/lkml/2010/12/2/339
-> >>> >> >
-> >>> >> > It might have if that patch hadn't been merged before 2.6.37.
-> >>> >> >
-> >>> >> > Is the system 32-bit or 64-bit?
-> >>> >>
-> >>> >> It's a 32-bit system.
-> >>> >> cmp shows that the corrupted files differ in many bytes (not scattered).
-> >>> >> The corrupted bytes are always 0 or 252.
-> >>> >
-> >>> > Do I understand correctly that the files apparently corrupted after resume
-> >>> > are not corrupted any more when you reboot?
-> >>>
-> >>> Yes.
-> >>> Seems like a cache issue.
-> >>
-> >> There's a couple things you can check before we start asking other people for
-> >> help.
-> >>
-> >> First, it would be good to know if things change when you save the image
-> >> into a swap file instead of the swap partition you've been using so far
-> >> (I believe it's documented quite well how to do that).
-> >>
-> >> Second, please verify if using the built-in save/load hibernate code leads
-> >> to the same issue (you can hibernate by doing "echo disk > /sys/power/state"
-> >> to verify that).
-> >>
-> >> Of course, please test the above separately. :-)
-> >
-> > Ok, I'll test this when I'm at home.
-> >
-> > BTW: dropping the caches helps, when some files seem corrupted.
-> > Today /usr/bin/okular was broken.
-> > After setting vm.drop_caches=1 it worked again.
-> >
-> >> Thanks,
-> >> Rafael
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
-> >>
-> >
-> > --
-> > Thanks,
-> > //richard
-> >
+Le jeudi 24 mars 2011 à 23:27 +0100, Alessandro Suardi a écrit :
+
+> Don't think so. This tool has been working since I built it (29 June 2010)
+>  and still works in -git2 :)
 > 
-> On Linux 2.6.38 I'm unable to reproduce the issue.
-> Only 2.6.37 seems to be affected.
-> So, I'm moving over to 2.6.38. :)
 
-OK, thanks for the report. :-)
+Then it doesnt work anymore because it parses an ipip field from
+ip route get ...
 
-Rafael
+$ ip ro get 192.168.1.1
+192.168.1.1 dev wlan0  src 192.168.1.21 
+    cache  ipid 0x784c mtu 1500 advmss 1460 hoplimit 64
+
+
+Maybe you upgraded iproute2
+
+
+
