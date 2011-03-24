@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933787Ab1CXL66 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 07:58:58 -0400
-Received: from ra.se.axis.com ([195.60.68.13]:37064 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932268Ab1CXL65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 07:58:57 -0400
-Date: Thu, 24 Mar 2011 12:58:54 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Cc: linux-cris-kernel <linux-cris-kernel@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] cris: Change function name from alloc_thread_info to
-	alloc_thread_info_node
-Message-ID: <20110324115854.GY3976@axis.com>
-References: <1300946448-8468-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+	id S1755479Ab1CXMDh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 08:03:37 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:44384 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757Ab1CXMDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 08:03:36 -0400
+Date: Thu, 24 Mar 2011 13:03:07 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Heiher <admin@heiher.info>
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        David Daney <ddaney@caviumnetworks.com>, akmp@linux-mips.org
+Subject: Re: [PATCH] Fixup personality in different ABI.
+Message-ID: <20110324120307.GA20408@linux-mips.org>
+References: <AANLkTikuBxnd0bFsO5NP2GQYDZmGFP9kLruWVpjZ7+UQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300946448-8468-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTikuBxnd0bFsO5NP2GQYDZmGFP9kLruWVpjZ7+UQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 07:00:48AM +0100, Nobuhiro Iwamatsu wrote:
-> By commit b6a84016bd2598e35ead635147fa53619982648d, alloc_thread_info was
-> replaced by alloc_thread_info_node.
-> However, the change of the function name was incomplete.
+On Fri, Mar 18, 2011 at 12:58:23PM +0800, Heiher wrote:
+> Date:   Fri, 18 Mar 2011 12:58:23 +0800
+> From: Heiher <admin@heiher.info>
+> To: linux-kernel@vger.kernel.org
+
+Please don't post a patch seperately to multiple lists.  Cc is prefered
+so everybody gets to see all replies.
+
+> >From bf3637153bc5e3d0e3f1c2982c323057a8e04801 Mon Sep 17 00:00:00 2001
+> From: Heiher <admin@heiher.info>
+> Date: Fri, 18 Mar 2011 12:51:08 +0800
+> Subject: [PATCH] Fixup personality in different ABI.
 > 
-> Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+> * 'arch' output:
+> 	o32 : mips
+> 	n32 : mips64
+> 	64  : mips64
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+That's the correct behaviour - the personality gets inherited by the parent.
+If you want to invoke a process with a different personality you can do this
+with a utility like arch32 or setarch.
 
-> CC: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
->  arch/cris/include/asm/thread_info.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/cris/include/asm/thread_info.h b/arch/cris/include/asm/thread_info.h
-> index 29b74a1..6f23eca 100644
-> --- a/arch/cris/include/asm/thread_info.h
-> +++ b/arch/cris/include/asm/thread_info.h
-> @@ -68,7 +68,7 @@ struct thread_info {
->  #define init_thread_info	(init_thread_union.thread_info)
->  
->  /* thread information allocation */
-> -#define alloc_thread_info(tsk, node) ((struct thread_info *) __get_free_pages(GFP_KERNEL,1))
-> +#define alloc_thread_info_node(tsk, node) ((struct thread_info *) __get_free_pages(GFP_KERNEL,1))
->  #define free_thread_info(ti) free_pages((unsigned long) (ti), 1)
->  
->  #endif /* !__ASSEMBLY__ */
-> -- 
-> 1.7.2.3
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+  Ralf
