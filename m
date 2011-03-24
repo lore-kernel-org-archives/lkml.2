@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933852Ab1CXTRQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:17:16 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52706 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933573Ab1CXTRN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:17:13 -0400
-Date: Thu, 24 Mar 2011 13:17:04 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: andy.green@linaro.org
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        greg@kroah.com
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110324191704.GB15807@ponder.secretlab.ca>
-References: <4D79F068.2080009@linaro.org>
- <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com>
- <1300828125.2402.300.camel@pasglop>
- <4D8924B6.8040403@linaro.org>
- <1300842219.2402.309.camel@pasglop>
- <alpine.LFD.2.00.1103222138320.11889@xanadu.home>
- <1300850595.2402.320.camel@pasglop>
- <4D89BDE2.60907@linaro.org>
- <20110323094720.63e7c6b2@lxorguk.ukuu.org.uk>
- <4D89C618.1020608@linaro.org>
+	id S933849Ab1CXTTB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:19:01 -0400
+Received: from srv04.jarevo.de ([88.198.54.146]:64172 "EHLO srv04.jarevo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933676Ab1CXTS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 15:18:59 -0400
+Message-ID: <4D8B991E.5070604@nachtgeist.net>
+Date: Thu, 24 Mar 2011 20:18:54 +0100
+From: Daniel Reichelt <debian@nachtgeist.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D89C618.1020608@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: Re: procfs: boot- and runtime configurable access mode for /proc/<pid>
+ dirs
+References: <4D8AC408.9000503@nachtgeist.net> <20110324073225.GA3806@p183.telecom.by> <4D8B03D6.2090204@nachtgeist.net> <20110324182230.GB5187@p183.telecom.by>
+In-Reply-To: <20110324182230.GB5187@p183.telecom.by>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 10:06:16AM +0000, Andy Green wrote:
-> On 03/23/2011 09:47 AM, Somebody in the thread at some point said:
-> >>There is no udev solution for what is being done currently by the async
-> >>platform_data patchset with SDIO WLAN.  The patches are out there and in
-> >>use already.  The only reason I don't post them here as round 2 of the
-> >>RFC yet is because Grant wanted a couple of days and politically it's
-> >>expedient for me to agree to that.
-> >
-> >Kernel policy has always been that just because some vendor has deployed
-> >an interface doesn't mean we care one iota about it or consider it an
-> >argument for the solution. In some cases in fact it bcomes the working
-> >demo of why it was a bad idea.
-> 
-> To be clear, this is not about any funny business at the interface
-> on the hardware.
-> 
-> The SDIO patches target wl12xx that is already in mainline and
-> already using literally platform_data.  Because there's no neater
-> way on offer, it currently -- in mainline -- does it by having a
-> built-in stub with its own Kconfig, that copies platform_data from
-> the board definition file into a private malloc'd buffer, then uses
-> it by getting a pointer to the copy from another private api in the
-> driver.  All this in a specific driver.
+> More to the point, permissions in /proc/<pid>/* don't do us much good.
+> As the matter of fact, we ought to make them all flat - i.e. same for
+> user/group/other, since we have to recheck access rights on every damn
+> IO operations.  Checks done at open() are useless here - have the
+> task exec suid-root binary and they are obsolete.
 
-I've spent some time looking at the wl12xx driver code, and while the
-data symbol it is using happens to be called 'platform_data', it isn't
-actually the same thing as we're debating in this thread.
+Well, my patch is about modes of the pid-dirs themselves, not their
+contents. And it changes procfs' behaviour about modes both on initial
+creation and during revalidation on access. However flattening all the
+piddir's entries DOES pose a security risk. Have a look at the
+"traditional behaviour": piddir world-readable, however e.g.
+<pid>/environ isn't. Often it's a workaround for broken software to
+specify a password within an environment variable instead of by cmdline.
+Since up until now all processes including their full cmdlines are
+visible to everyone, environ must be considered more sensitive than a
+cmdline.
 
-The platform_data in drivers/net/wireless/wl12xx_platform_data.c is a
-strongly typed pointer to a 'struct wl12xx_platform_data', which
-doesn't have the deficiencies associated with
-(struct device*)->platform_data.  It isn't a void* travelling through
-the device model without guarantees that the right thing will get
-dereferenced on the other end.
-
-The fact that it has /other/ deficiencies is I imagine exactly why
-you want to be rid of it, and rightly so.  Immediately obvious is that
-the way it currently is done means that there can never be more than
-one wl12xx in the system.
-
-I've got a proposal for a solution.  I'll get it written up as
-quickly as possible and send it out soon.
-
-g.
-
+The security implications are taken care of by my patch. The more
+restrictive the modes for the piddir, the less access to its contents.
+So from a security point of view, my patch takes care of that and IMHO
+there's no need to put hands on the procfs' management of modes for
+piddir-contents.
