@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab1CXCmu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 22:42:50 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58512 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756178Ab1CXCmm (ORCPT
+	id S1756371Ab1CXCsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 22:48:25 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51636 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755189Ab1CXCsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 22:42:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=EPNIpBaZm6jPS4FGkfNiqcfhn/C2EihEQBPThEcO2yflEUY5TOVVUdPVViIFwWPK/q
-         bWbh/gN0nkdaHyWpKv8a4HCypyBPUfS4T4NGtIefwFZG4fEBvrS0ngIlpKmVizUJnl2K
-         HFu2XOjCXfmZA4a7GvZ0Ua6+cKKyoRF2fof6M=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH v2 2/2] x86, dumpstack: use %pB format specifier for stack trace
-Date: Thu, 24 Mar 2011 11:42:30 +0900
-Message-Id: <1300934550-21394-2-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1300934550-21394-1-git-send-email-namhyung@gmail.com>
-References: <1300934550-21394-1-git-send-email-namhyung@gmail.com>
+	Wed, 23 Mar 2011 22:48:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/5] vmscan: remove all_unreclaimable check from direct reclaim path completely
+Cc: kosaki.motohiro@jp.fujitsu.com, Minchan Kim <minchan.kim@gmail.com>,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <20110323192150.9895afe3.akpm@linux-foundation.org>
+References: <20110324111200.1AF4.A69D9226@jp.fujitsu.com> <20110323192150.9895afe3.akpm@linux-foundation.org>
+Message-Id: <20110324114842.CC70.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Thu, 24 Mar 2011 11:48:19 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- arch/x86/kernel/dumpstack.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On Thu, 24 Mar 2011 11:11:46 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> 
+> > Subject: [PATCH] vmscan: remove all_unreclaimable check from direct reclaim path completely
+> 
+> zone.all_unreclaimable is there to prevent reclaim from wasting CPU
+> cycles scanning a zone which has no reclaimable pages.  When originally
+> implemented it did this very well.
+>
+> That you guys keep breaking it, or don't feel like improving it is not a
+> reason to remove it!
+> 
+> If the code is unneeded and the kernel now reliably solves this problem
+> by other means then this should have been fully explained in the
+> changelog, but it was not even mentioned.
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 914065620f2c..fac6d82b5afa 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -27,7 +27,7 @@ static int die_counter;
+The changelog says, the logic was removed at 2008. three years ago.
+even though it's unintentionally. and I and minchan tried to resurrect
+the broken logic and resurrected a bug in the logic too. then, we
+are discussed it should die or alive.
 
- void printk_address(unsigned long address, int reliable)
- {
--	printk(" [<%p>] %s%pS\n", (void *) address,
-+	printk(" [<%p>] %s%pB\n", (void *) address,
- 			reliable ? "" : "? ", (void *) address);
- }
+Which part is hard to understand for you?
 
---
-1.7.4
+
 
