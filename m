@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab1CXX3i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 19:29:38 -0400
-Received: from vms173009pub.verizon.net ([206.46.173.9]:59530 "EHLO
-	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926Ab1CXX3e (ORCPT
+	id S934368Ab1CXXca (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 19:32:30 -0400
+Received: from host171.canaca.com ([67.55.55.225]:45677 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab1CXXc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 19:29:34 -0400
-Date: Thu, 24 Mar 2011 19:29:25 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] APM: delete APM in Linux-2.6.40
-In-reply-to: <201103241315.34722.linux@rainbow-software.org>
-Message-id: <alpine.LFD.2.02.1103241905250.16085@x980>
-References: <alpine.LFD.2.02.1103232321070.3848@x980>
- <20110324154505.934a56a0.sfr@canb.auug.org.au>
- <alpine.LFD.2.02.1103240336590.4529@x980>
- <201103241315.34722.linux@rainbow-software.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 24 Mar 2011 19:32:29 -0400
+X-Greylist: delayed 29528 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Mar 2011 19:32:29 EDT
+Message-ID: <fe471c05897776b7c26b9fd2603e3b76.squirrel@host171.canaca.com>
+Date: Thu, 24 Mar 2011 11:20:19 -0400
+Subject: 2.6.38 Regression: Nvidia GeForce8400 + i915 = Crash on Boot
+From: simon@mungewell.org
+To: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.20
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please don't turn Linux into second Windows.
+Quick summary is that I have a GeForce8400 installed in a Thinkcenter with
+on-board i915 graphics. 2.6.38 fails to boot, 2.6.37rcX is OK.
 
-No worry there.
+There appears to be some interaction between the nouveau and i915 drivers,
+disabling the i915 enables system to boot. I am unable to disable on board
+graphics in the BIOS (IBM special).
 
-I mention Microsoft not to advocate that Linux be Windows,
-but to point out that this (hardware/firmware) ship sank 5 years
-ago and Linux is still on the boat.  MS was able to delete 
-APM support in 2006 from their source tree, yet we still carry it.
+Full details/logs here:
+https://bugs.launchpad.net/ubuntu/+bug/741434
 
-> If you don't want APM in the 
-> kernel, just don't compile it. There are many people using older systems with 
-> APM - and most of them wouldn't oppose to this removal as they don't even 
-> know about it.
+Let me know if there is any further testing I can do to help,
+Simon.
 
-They can still run old Linux on an old APM-only laptop --
-just like they can still run Windows 3.1 or Windows XP if they want to.
-
-What we'd be taking away is their ability to run the latest
-Linux kernel on that laptop.
-
-The issue at hand is people (like me) who have to maintain
-the latest Linux source code.  In sort, I don't want to
-write, debug, and test a cpuidle driver for an apm-only laptop
-when I could be spending effort on code that people will
-actually run.
-
-thanks,
--Len
 
 
