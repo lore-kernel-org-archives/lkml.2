@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933834Ab1CXTLJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:11:09 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33787 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933813Ab1CXTLF (ORCPT
+	id S933841Ab1CXTOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:14:40 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59798 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933573Ab1CXTOi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:11:05 -0400
+	Thu, 24 Mar 2011 15:14:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=pa3uzGiBiojOVDjDRq6EhTJsFbm5cItAftArSSZhAVpJmxoKjFBsrS2vHIYJe66DH6
-         TIgIioeQ+Ferk647JICD7ETULPziSVyCjgEaxIV2IbZeHde/d1YCCn6AiWLIHyvr56Lf
-         tr0ZkbONLCWaOdoIjLe9c256h7rD0/2ZoEJdk=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=mpVbEGSzc8FF2BEvMo7HBHBJwzUn9fKGjT8hDHI0N8qDuqYSVvz/9qZLegbDjon2dK
+         UOLvFHL0JpmPTQ5N5injJDp2QhZQ0D5mPmfm+SW1ECcYRnN6FuyGRLL+oRoHqISkPmWH
+         pOGcMrASiPK1/lt5IhGmcoCY26C6lljXjOMhM=
 MIME-Version: 1.0
-In-Reply-To: <Pine.GSO.4.62.1103241034180.2327@umail>
-References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
-	<1300864998.3522.71.camel@thor.local>
-	<AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
-	<1300868532.3522.81.camel@thor.local>
-	<AANLkTi=mFKBqF48DwGsQL278grJChCVzw==D7vr49n09@mail.gmail.com>
-	<Pine.GSO.4.62.1103230633160.12612@umail>
-	<1300880747.16522.13.camel@thor.local>
-	<AANLkTik=GH8tGMjeKVfsmvX5WeX+4avnYan_nkGcCx20@mail.gmail.com>
-	<Pine.GSO.4.62.1103240628490.1156@umail>
-	<AANLkTimZWtOLiDT3KoUKZtsKfj4Aeu+XMF+rLc0wCSYk@mail.gmail.com>
-	<Pine.GSO.4.62.1103241034180.2327@umail>
-Date: Thu, 24 Mar 2011 12:11:03 -0700
-Message-ID: <AANLkTinM3-wWiH++cr=8_45Czv23FB2SURrFv3F8-7of@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Corbin Simpson <mostawesomedude@gmail.com>
-To: Ilija Hadzic <ihadzic@research.bell-labs.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
+In-Reply-To: <alpine.DEB.2.00.1103241404490.5576@router.home>
+References: <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
+	<20110324172653.GA28507@elte.hu>
+	<alpine.DEB.2.00.1103241242450.32226@router.home>
+	<AANLkTimMcP-GikCCndQppNBsS7y=4beesZ4PaD6yh5y5@mail.gmail.com>
+	<alpine.DEB.2.00.1103241300420.32226@router.home>
+	<AANLkTi=KZQd-GrXaq4472V3XnEGYqnCheYcgrdPFE0LJ@mail.gmail.com>
+	<alpine.DEB.2.00.1103241312280.32226@router.home>
+	<1300990853.3747.189.camel@edumazet-laptop>
+	<alpine.DEB.2.00.1103241346060.32226@router.home>
+	<AANLkTik3rkNvLG-rgiWxKaPc-v9sZQq96ok0CXfAU+r_@mail.gmail.com>
+	<20110324185903.GA30510@elte.hu>
+	<AANLkTi=66Q-8=AV3Y0K28jZbT3ddCHy9azWedoCC4Nrn@mail.gmail.com>
+	<alpine.DEB.2.00.1103241404490.5576@router.home>
+Date: Thu, 24 Mar 2011 21:14:37 +0200
+X-Google-Sender-Auth: CvA9zERpflLo71q1PSnR4VIYIEA
+Message-ID: <AANLkTimWYCHEsZjswLpD-xDcu_cL=GqsMshKRtkHt5Vn@mail.gmail.com>
+Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 8:49 AM, Ilija Hadzic
-<ihadzic@research.bell-labs.com> wrote:
+On Thu, Mar 24, 2011 at 9:05 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Thu, 24 Mar 2011, Pekka Enberg wrote:
 >
->
-> On Thu, 24 Mar 2011, Linus Torvalds wrote:
->
+>> It hanged here which is pretty much expected on this box if
+>> kmem_cache_init() oopses. I'm now trying to see if I'm able to find
+>> the config option that breaks things. CONFIG_PREEMPT_NONE is a
+>> suspect:
 >>
->> In other words: Why should I pull this at all?
->>
+>> penberg@tiger:~/linux$ grep PREEMPT ../config-ingo
+>> # CONFIG_PREEMPT_RCU is not set
+>> CONFIG_PREEMPT_NONE=y
+>> # CONFIG_PREEMPT_VOLUNTARY is not set
+>> # CONFIG_PREEMPT is not set
 >
-> You should pull it (eventually) because it fixes a problem that is real and
-> visible and does it in a way that is conservative enough to not risk
-> introducing new breakage.
+> The following patch should ensure that all percpu data is touched
+> before any emulation functions are called:
 >
-> Whether you should pull it now or wait until you get convinced that we got
-> our act together is totally your call.
+> ---
+>  mm/slub.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> Speaking as the author of the patch, what Dave pushed this morning is good
-> enough for me. I spent quite a bit of time testing all the usage patterns
-> (including the latest version pushed to you) and I can assert that the
-> change is safe.
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c    2011-03-24 14:03:10.000000000 -0500
+> +++ linux-2.6/mm/slub.c 2011-03-24 14:04:08.000000000 -0500
+> @@ -1604,7 +1604,7 @@ static inline void note_cmpxchg_failure(
 >
-> I can't speak for others, but I have not seen any additional complaints.
+>  void init_kmem_cache_cpus(struct kmem_cache *s)
+>  {
+> -#if defined(CONFIG_CMPXCHG_LOCAL) && defined(CONFIG_PREEMPT)
+> +#ifdef CONFIG_CMPXCHG_LOCAL
+>        int cpu;
+>
+>        for_each_possible_cpu(cpu)
+>
 
-Alternatively, kick it out and wait for Ilija to see and address
-Michel's complaints. It's not too late to improve this.
-
-~ C.
-
--- 
-When the facts change, I change my mind. What do you do, sir? ~ Keynes
-
-Corbin Simpson
-<MostAwesomeDude@gmail.com>
+Ingo, can you try this patch out, please? I'm compiling here but
+unfortunately I'm stuck with a really slow laptop...
