@@ -1,85 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab1CXFXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 01:23:12 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:59494 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751489Ab1CXFXK (ORCPT
+	id S932361Ab1CXFYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 01:24:31 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33469 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab1CXFY3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 01:23:10 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18e8nhtDY8eijpBAbIVuxkYZUt6X8aHbPzvcUyn8/
-	d4a8itCmCZlhtQ
-Subject: Re: Linux 2.6.32.34
-From: Mike Galbraith <efault@gmx.de>
-To: Teck Choon Giam <giamteckchoon@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <AANLkTin_UXOjnFuQ5DQgkYH1ZciVBa=3iQmcdUej6r=B@mail.gmail.com>
-References: <20110323203426.GC7709@kroah.com>
-	 <20110323203437.GD7709@kroah.com> <4D8A8DC9.1060502@suse.cz>
-	 <AANLkTin_UXOjnFuQ5DQgkYH1ZciVBa=3iQmcdUej6r=B@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Mar 2011 06:22:58 +0100
-Message-ID: <1300944178.7409.5.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	Thu, 24 Mar 2011 01:24:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Sl8Gg6jerQ2u9EjBTWC8vxZVFocCTMIhnvIo6TmeC3WAcRopKbeaa5OGW2G5hnJFGb
+         y30XVZIx0nhD3ZqE9npFKrg2Jtxn4nKwGPfRUKDQKVDEFD8i0pwOL5YUpycbgHvMt+eM
+         gH0x6rkMl1frj3N4q9Yu5qMj83iEZKUgAN3m8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimU3Hw5ZSo86Fv4RUtNPtS3kZBoWm4kh4MQaymu@mail.gmail.com>
+References: <4D8A58E1.5090509@openvz.org>
+	<AANLkTimU3Hw5ZSo86Fv4RUtNPtS3kZBoWm4kh4MQaymu@mail.gmail.com>
+Date: Thu, 24 Mar 2011 08:24:28 +0300
+X-Google-Sender-Auth: WaNys_zsQALJT-1lAbhjGTKze1E
+Message-ID: <AANLkTim_EDeYGu6_rsSh_3zDTW7mN5+Gwsb0t4HjKx6o@mail.gmail.com>
+Subject: Re: [PATCH -tip] kgdb, x86: Pull up NMI notifier handler priority
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Dongdong Deng <libfetion@gmail.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Ingo Molnar <mingo@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
+        Don Zickus <dzickus@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        KGDB Mailing List <Kgdb-bugreport@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-24 at 11:39 +0800, Teck Choon Giam wrote:
-> On Thu, Mar 24, 2011 at 8:18 AM, Jiri Slaby <jslaby@suse.cz> wrote:
-> > On 03/23/2011 09:34 PM, Greg KH wrote:
-> >> --- a/kernel/perf_event.c
-> >> +++ b/kernel/perf_event.c
-> >> @@ -4167,6 +4167,8 @@ static void tp_perf_event_destroy(struct perf_event *event)
-> >>
-> >>  static const struct pmu *tp_perf_event_init(struct perf_event *event)
-> >>  {
-> >> +     if (event->hw.state & PERF_HES_STOPPED)
-> >> +             return 0;
-> >>       /*
-> >>        * Raw tracepoint data is a severe data leak, only allow root to
-> >>        * have these.
-> >
-> > This causes build to fail:
-> > /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:
-> > Inâ€‚functionâ€‚'tp_perf_event_init':
-> > /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
-> > error:â€‚'structâ€‚hw_perf_event'â€‚hasâ€‚noâ€‚memberâ€‚namedâ€‚'state'
-> > /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
-> > error:â€‚'PERF_HES_STOPPED'â€‚undeclaredâ€‚(firstâ€‚useâ€‚inâ€‚thisâ€‚function)
-> > /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
-> > error:â€‚(Eachâ€‚undeclaredâ€‚identifierâ€‚isâ€‚reportedâ€‚onlyâ€‚once
-> > /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
-> > error:â€‚forâ€‚eachâ€‚functionâ€‚itâ€‚appearsâ€‚in.)
-> >
-> >
-> > The source:
-> > commit 6f197b73304b3bd3d5a43b931383a5331d6b2987
-> > Author: Frederic Weisbecker <fweisbec@gmail.com>
-> > Date:   Mon Mar 7 21:27:09 2011 +0100
-> >
-> >    perf: Handle stopped state with tracepoints
-> >
-> >    commit a0f7d0f7fc02465bb9758501f611f63381792996 upstream.
-> >
-> >    We toggle the state from start and stop callbacks but actually
-> >    don't check it when the event triggers. Do it so that
-> >    these callbacks actually work.
-> 
-> It builds fine for me with gcc version 4.1.2 for both x86_32 and x86_64.
+If Jason is ok with such splitting -- I dont mind either ;)
 
-It won't if you turn tracing on.  hw_perf_event.state appeared in .37
-via a4eaf7f1.
+/sorry for toppost/
 
-	-Mike
-
+On Thursday, March 24, 2011, Dongdong Deng <libfetion@gmail.com> wrote:
+> On Thu, Mar 24, 2011 at 4:32 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+>> kgdb needs IPI to be sent and handled before perf
+>> or anything else NMI, otherwise kgdb hangs with bootup
+>> self-tests (found on P4 HT SMP machine). Raise its priority
+>> so that we're called first in a notifier chain.
+>>
+>> Reported-by: Don Zickus <dzickus@redhat.com>
+>> Tested-by: Lin Ming <ming.m.lin@intel.com>
+>> CC: Jason Wessel <jason.wessel@windriver.com>
+>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>> ---
+>>
+>> Don, Jason, take a look please.
+>>
+>>  arch/x86/kernel/kgdb.c |    7 +++++--
+>>  1 file changed, 5 insertions(+), 2 deletions(-)
+>>
+>> Index: linux-2.6.git/arch/x86/kernel/kgdb.c
+>> =====================================================================
+>> --- linux-2.6.git.orig/arch/x86/kernel/kgdb.c
+>> +++ linux-2.6.git/arch/x86/kernel/kgdb.c
+>> @@ -592,9 +592,12 @@ static struct notifier_block kgdb_notifi
+>>        .notifier_call  = kgdb_notify,
+>>
+>>        /*
+>> -        * Lowest-prio notifier priority, we want to be notified last:
+>> +        * We might need to send an IPI and
+>> +        * do cpu roundup before anything else
+>> +        * in notifier chain so high priority
+>> +        * is needed.
+>>         */
+>> -       .priority       = NMI_LOCAL_LOW_PRIOR,
+>> +       .priority       = NMI_LOCAL_HIGH_PRIOR,
+>>  };
+>
+> CC: kgdb maillist.
+>
+> I quote Jason's early email to explain why debugger tends to
+> set the low level of die_notifier.
+>
+> "The original thinking was that if you are using a low level debugger
+> that you would want to stop on such a event or breakpoint because there
+> is nothing else handling it and your system is about to print an oops
+> message."
+>
+> For keeping above purpose, I have a "ugly" proposal that splitting
+> kgdb die handling to two parts.
+>
+> 1: The first part with HIGH priority and just handle NMI event,
+>  if the NMI event is not belong kgdb, it return NOTIFY_DONE and pass to others.
+>
+> 2: The second part with low priority to handling others.
+>
+> Due to above handling logic could let kgdb source get complexly, I
+> couldn't make sure
+> it is a suitable method here, if it is OK, I can send a formal patch. :-)
+>
+>
+> $git diff
+> -----------
+> arch/x86/kernel/kgdb.c |   67 +++++++++++++++++++++++++++++++++++------------
+>  1 files changed, 50 insertions(+), 17 deletions(-)
+>
+> diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
+> index dba0b36..afd18db 100644
+> --- a/arch/x86/kernel/kgdb.c
+> +++ b/arch/x86/kernel/kgdb.c
+> @@ -516,23 +516,6 @@ static int __kgdb_notify(struct die_args *args,
+> unsigned long cmd)
+>         struct pt_regs *regs = args->regs;
+>
+>         switch (cmd) {
+> -       case DIE_NMI:
+> -               if (atomic_read(&kgdb_active) != -1) {
+> -                       /* KGDB CPU roundup */
+> -                       kgdb_nmicallback(raw_smp_processor_id(), regs);
+> -                       was_in_debug_nmi[raw_smp_processor_id()] = 1;
+> -                       touch_nmi_watchdog();
+> -                       return NOTIFY_STOP;
+> -               }
+> -               return NOTIFY_DONE;
+> -
+> -       case DIE_NMIUNKNOWN:
+> -               if (was_in_debug_nmi[raw_smp_processor_id()]) {
+> -                       was_in_debug_nmi[raw_smp_processor_id()] = 0;
+> -                       return NOTIFY_STOP;
+> -               }
+> -               return NOTIFY_DONE;
+> -
+>         case DIE_DEBUG:
+>                 if (atomic_read(&kgdb_cpu_doing_single_step) != -1) {
+>                         if (user_mode(regs))
+> @@ -588,6 +571,52 @@ kgdb_notify(struct notifier_block *self, unsigned
+> long cmd, void *ptr)
+>         return ret;
+>  }
+>
+> +static int
+> +kgdb_nmi_notify(struct notifier_block *self, unsigned long cmd, void *ptr)
+> +{
+> +       unsigned long flags;
+> +       struct pt_regs *regs = ((struct die_args*)ptr)->regs;
+> +       int ret = NOTIFY_DONE;
+> +
+> +       local_irq_save(flags);
+> +
+> +       switch (cmd) {
+> +       case DIE_NMI:
+> +               if (atomic_read(&kgdb_active) != -1) {
+> +                       /* KGDB CPU roundup */
+> +                       kgdb_nmicallback(raw_smp_processor_id(), regs);
+> +                       was_in_debug_nmi[raw_smp_processor_id()] = 1;
+> +                       touch_nmi_watchdog();
+> +                       ret = NOTIFY_STOP;
+> +               }
+> +               break;
+> +
+> +       case DIE_NMIUNKNOWN:
+> +               if (was_in_debug_nmi[raw_smp_processor_id()]) {
+> +                       was_in_debug_nmi[raw_smp_processor_id()] = 0;
+> +                       ret = NOTIFY_STOP;
+> +               }
+> +               break;
+> +       default:
+> +               break;
+> +       }
+> +
+> +       local_irq_restore(flags);
+> +       return ret;
+> +}
+> +
+> +static struct notifier_block kgdb_nmi_notifier = {
+> +       .notifier_call  = kgdb_nmi_notify,
+> +
+> +       /*
+> +        * We might need to send an IPI and
+> +        * do cpu roundup before anything else
+> +        * in notifier chain so high priority
+> +        * is needed.
+> +        */
+> +       .priority       = NMI_LOCAL_HIGH_PRIOR,
+> +};
+> +
+>  static struct notifier_block kgdb_notifier = {
+>         .notifier_call  = kgdb_notify,
+>
+> @@ -605,6 +634,9 @@ static struct notifier_block kgdb_notifier = {
+>   */
+>  int kgdb_arch_init(void)
+>  {
+> +       int err = register_die_notifier(&kgdb_nmi_notifier);
+> +       if (err)
+> +               return err;
+>         return register_die_notifier(&kgdb_notifier);
+>  }
+>
+> @@ -673,6 +705,7 @@ void kgdb_arch_exit(void)
+>                         breakinfo[i].pev = NULL;
+>                 }
+>         }
+> +       unregister_die_notifier(&kgdb_nmi_notifier);
+>         unregister_die_notifier(&kgdb_notifier);
+>  }
+>
+> --
+> 1.6.0.4
+>
