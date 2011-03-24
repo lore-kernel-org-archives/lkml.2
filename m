@@ -1,137 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab1CXLKH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 07:10:07 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38478 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab1CXLKE convert rfc822-to-8bit (ORCPT
+	id S1755070Ab1CXLO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 07:14:28 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:40779 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab1CXLO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 07:10:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=BaOUUj1xStutoXO9hxJIN7wtN2jyLvB/HGtHkrsLzJ01YNkfSySSlCpMfDe18NDavz
-         qBpPcw1HDXssMxeqHxalaXdGOoUbRCaKpQEHLPfsmEl2u/a652NwTKYTgnzuuT4j95Uc
-         6iLtBIoaSLSQ0GrUMJztOw2xLT25xIDeev0LE=
+	Thu, 24 Mar 2011 07:14:26 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D8B27DF.5060608@cam.ac.uk>
+Date: Thu, 24 Mar 2011 11:15:43 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin4xUzdp89sm5_x0eXpde1NzqCzcKMbxP7YJBN4@mail.gmail.com>
-References: <AANLkTin4xUzdp89sm5_x0eXpde1NzqCzcKMbxP7YJBN4@mail.gmail.com>
-Date: Thu, 24 Mar 2011 12:10:03 +0100
-Message-ID: <AANLkTi=wmHWiqyriV1fJZcUyJ+2uyhQuPf8q2zFu-hHh@mail.gmail.com>
-Subject: Fwd: sctp 2.6.37 kernel - general protection fault
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jon Brenner <jbrenner@TAOSinc.com>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.38-rc7]TAOS 258x: Device Driver
+References: <1300131941.17298.17.camel@jonz-ubuntu> <4D87A1D6.2080306@cam.ac.uk> <B4B07CCC7B7A084E989CF9386538EA1D63A83B@exchsrvr.taosinc.com> <4D89D441.9030600@cam.ac.uk> <B4B07CCC7B7A084E989CF9386538EA1D63A93D@exchsrvr.taosinc.com>
+In-Reply-To: <B4B07CCC7B7A084E989CF9386538EA1D63A93D@exchsrvr.taosinc.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi LKML,
+On 03/23/11 22:38, Jon Brenner wrote:
+> Hi Jonathan,
+> Below are a few comments/questions to your latest response.
+> Any direction is greatly appreciated.
+> 
+> Jon
+No chance you can persuade your email client to do conventional
+indenting?  Ah well, I guess this works more or less.
 
-let me forward this also to wider audience.
+>>
+>> ----- snip ------------
+>>> +	if ((ch0 >= chip->als_saturation) || (ch1 >= chip->als_saturation))
+>> would be easier to read if you set ret to lux max here an avoid 
+>> jumping into the if statement below.
+>> NO - TSL258X_LUX_CALC_OVER_FLOW NEEDS TO PASSED UP.  
+>> 	MUTEX NEEDS TO BE UNLOCKED. 
+>> 	THEN RETURN.
+> Sorry, should have said jump to out_unlock having set ret = LUX_CALC_OVER_FLOW;
+> 
+> Just makes for marginally cleaner program flow to my mind (though I don't really care about this one).
+> 
+> I UNDERSTAND BUT I FORGOT TO MENTION THAT IN ADDITION TO THE ABOVE, ALSO NEEDS TO UPDATE THE ALS_CUR_INFO STRUCT.
+> SO, ALL SAID - EASIER TO SIMPLY JUMP TO RETURN_MAX, AS THIS IS ALL DONE THERE.
+Fair enough.  Was just personal preference anyway!
+...
+> 
+>>> +	/* NOW enable the ADC
+>>
+>>
+>> ----- snip ------------
+>> I still wonder if there isn't a way of avoiding this index issue.
+>> It's horrible and really feels like something we ought to able to 
+>> handle reasonably well...
+>> BECAUSE THE CH0 AND CH1 DIVERGE AT HIGH GAINS -- INDEX IS BETTER THAN 
+>> USING CHO OR CH1 VALUE ( AS EITHER ONE OVER THE OTHER WOULD BE WRONG 
+>> :-{ )
+> I can see your point to a certain extent.  The counter argument is that doing it with an index precludes ever touching this with any remotely general purpose user space code.  Given it's an internal gain anyway is the precise value that critical?  Basically is user space ever going to care about the difference between those those values?
+> 
+> Another option would be to have a gain for each channel as separate attributes (clearly writing to one would change the other).
+> 
+> I SEE YOUR POINT TOO - BUT WHAT ELSE CAN I DO (ASIDE FROM A SEPARATE GAIN FOR EACH CHANNEL - WHICH WOULD BE CONFUSING TO MANAGE)?
+> I GUESS I COULD BUCKETIZE ANYTHING > GAIN 16 - BUT THAT SEEMS RATHER KLUDGED?
+> AGAIN SEEMS LIKE MOST REASONABLE (FOR NOW ANYWAY) IS AN INDEX.
+It may be reasonable, but it isn't generalizable which means it probably isn't viable
+long term.  The parameter simply won't be used by anything that isn't custom coded
+for this particular sensor.   Even Taos' next generation of sensors probably won't
+have an index which has the same effect.
 
-For me it dies somewhere in list_for_each_entry_rcu() which could
-apply borked data - just my assumption.
+If it can be coherently blugeoned into existing interfaces, then we should do so.
+There are quite a few other bits of IIO interface where changing one value will
+effect others.  This means (and we could emphasise it more) that there are sets
+of values user space MUST check after making a given change if it wants to know
+the full device state.  Believe me, things are much more complex with devices
+that do partial scans of channels only in some combinations!
 
--Jacek
+>> Just to confirm, is this a frequency in Hz? If it is can we renaming 
+>> it to taos_als_frequency_show to avoid confusing me?
+>>
+>> THIS IS THE INTERNAL ALS INTEGRATION TIME FOR THE ADC CHANNELS I SHOE 
+>> HORNED IT INTO SAMPLING FREQUENCY TO HELP ALEVIATE THE ABI ANGST
+> That's good but it does have to match the units specified in the ABI as well.
+> 
+> OK - MAYBE I'M MISSING SOME INFO.
+> ALL I HAVE FOR THE ABI IS THIS:
+> what:		/sys/bus/iio/devices/deviceX/sampling_frequency
+> KernelVersion:	2.6.35
+> Contact:	linux-iio@vger.kernel.org
+> Description:
+> 		Some devices have internal clocks.  This parameter sets the
+> 		resulting sampling frequency.  In many devices this
+> 		parameter has an effect on input filters etc rather than
+> 		simply controlling when the input is sampled.  As this
+> 		effects datardy triggers, hardware buffers and the sysfs
+> 		direct access interfaces, it may be found in any of the
+> 		relevant directories.  If it effects all of the above
+> 		then it is to be found in the base device directory as here.
+> 
+> SO I AM UNSURE OF WHAT UNITS NEED TO MATCH?
+Fair point. That documentation is clearly lacking. One for the TODO list.
+Anyhow, it does say sampling frequency so the units can't be a measure of
+time.  What it should say is 'in Hz' somewhere.
+> 
+>>
+>>> +static ssize_t taos_als_time_show(struct device *dev,
+>>> +    struct device_attribute *attr, char *buf) {
+>>> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+>>> +	struct tsl2583_chip *chip = indio_dev->dev_data;
+>>> +
+>>> +	return sprintf(buf, "%d\n", chip->taos_settings.als_time); }
+>>
+>> ----- snip ------------
+>> scale as a stand alone attribute isn't defined. Please document this.
+>> Looking at what you do with it, it's another factor effecting the 
+>> overal gain on the reading that reaches userspace.  Ideally you'd roll 
+>> this into your calibscale parameter, but I can see that would get 
+>> complex to manage. Will have a think about this. In devices with a 
+>> simple conversion function (adc's etc) we handle this by leaving this 
+>> software value be applied by userspace (and output it as in_scale). 
+>> The issue here that as far as userspace is concerned both of your 
+>> scales have been applied before it sees the data and at different more 
+>> or less random looking points in the calculation.
+>>
+>> Actually, looking at the calculation you could output illuminance0_raw 
+>> and let userspace apply a multiplier based on your trim value and 
+>> offset
+>> +0.5?  If you want to hold trim in driver then just implement
+>> read and write to
+>>
+>> illuminance0_scale
+>> and have read only
+>> illuminance0_offset (rather tediously for this device, offset is 
+>> applied before scale, so you'll need to divide 0.5 by whatever your trim is).
+>>
+>> We'll have to do pin down how to do this before moving out of staging 
+>> so best to get it right now.
+>>
+>> CHANGED TO ILLUMINANCE0_SCALE
+>>
+>> LIFE WOULE BE NICE IF WE COULD JUST PASS THE RAW DATA UP TO USERSPACE 
+>> BUT WE HAVE CUSTOMERS WHO REQUIRE IT TO COME UP CALCULATED WITH THE 
+>> MULTIPLIER FACTORED IN
+> Sure. It's a fiddly calculation so I can kind of see their point.
+> These light sensors are all a pain :)
+> SO - WE ARE OK?
+Err. I've kind of lost track, but I think so.  Will take one last look
+at your next revision!  Sounds like it may have some interesting new features
+anyway given the other thread!
+>>
+>> ----- snip ------------
+>>> +	for (i = 0; i < MAX_DEVICE_REGS; i++) {
+>>> +		ret = i2c_smbus_write_byte(clientp,
+>>> +				(TSL258X_CMD_REG | (TSL258X_CNTRL + i)));
+>>> +		if (ret < 0) {
+>>> +			dev_err(&clientp->dev, "i2c_smbus_write_byte() to cmd "
+>>> +				"reg failed in taos_probe(), err = %d\n", ret);
+>>> +			goto fail1;
+>>> +		}
+>>> +		buf[i] = i2c_smbus_read_byte(clientp);
+>>   error handling for this read?
+>> VALUE IS UNIMPORTANT - BUT MAKING SURE WE CAN JUST READ ALL 32 REGISTER LOCATIONS IS..
+That's fine, but you haven't verified that if you don't check for a negative return
+from that read.
+>>
+>> ----- snip ------------
+>>
+>>> +	}
+>>> +	if (!taos_skate_device(buf)) {
+>>> +		dev_info(&clientp->dev, "i2c device found but does not match "
+>>> +			"expected id in taos_probe()\n");
+>>> +		goto fail1;
+>>> +	} else {
+>> The sort of debug info you want to get rid of for production drivers.  
+>> Doesn't tell anyone anything helpful.
+>> NO - DO NOT AGREE - IF A CUSTOMER EXPECTS ONE DEVICE BUT HAS SOMEHOW 
+>> INSTALLED A DIFFERENT ONE AT PRODUCTION TIME, THIS WILL HELP IDENTIFY THE ISSUE.
+>> (IE. WANTED A TAOS ALS DEVICE BUT INSTALLED A TAOS PROX/ALS DEVICE) 
+>> FIRST PART INDICATES THAT.  SECOND PART IS CONFIRMATION THAT DEVICE WAS IDENTIFIED TO SYSTEM.
+> 
+> I'm happy with the error one. Just don't see the point in saying 'everything is as expected'.
+> The mere absence of the error indicates that just fine!
+> AGREED - REMOVED 2ND PART (THE OK MESSAGE)
+Cool
 
+Coming together nicely.
 
----------- Forwarded message ----------
-From: Jacek Luczak <difrost.kernel@gmail.com>
-Date: 2011/3/23
-Subject: sctp 2.6.37 kernel - general protection fault
-To: linux-sctp@vger.kernel.org
-DW: vladislav.yasevich@hp.com
-
-
-Hi,
-
-I receive the below attached general protection fault. Details:
-1) HW: HP BL460c G6
-2) Kernel: 2.6.37
-3) Arch: x86_64
-
-System is unusable and does not respond. Currently I'm trying to find
-the way to reproduce this issue.
-
--Jacek
-
-kernel: general protection fault: 0000 [#1] SMP
-kernel: last sysfs file:
-/sys/devices/system/cpu/cpu15/cache/index2/shared_cpu_map
-kernel: CPU 15
-kernel: Modules linked in: hmac sctp nfsd autofs4 ib_iser rdma_cm
-ib_cm iw_cm ib_sa ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxg
-b3i libcxgbi iw_cxgb3 ib_core cxgb3 libiscsi_tcp libiscsi
-scsi_transport_iscsi dm_mirror dm_region_hash dm_log dm_multipath
-battery acpi_pad ac parport usbhi
-d evdev power_meter radeon ttm drm_kms_helper drm hwmon ipmi_si
-i2c_algo_bit i2c_core ipmi_msghandler psmouse ehci_hcd uhci_hcd
-kernel:
-kernel: Pid: 19271, comm: k3r.exe Not tainted 2.6.37-2.NSN.kiuas #1
-/ProLiant BL460c G6
-kernel: RIP: 0010:[<ffffffffa02f3dde>]  [<ffffffffa02f3dde>]
-sctp_bind_addr_conflict+0x64/0x82 [sctp]
-kernel: RSP: 0018:ffff88030c303c38  EFLAGS: 00010246
-kernel: RAX: dead000000100100 RBX: dead000000100100 RCX: ffff880001902640
-kernel: RDX: 0000000000000000 RSI: ffff8806010bc150 RDI: ffff8805f85bf1a0
-kernel: RBP: ffff8800018c1dc0 R08: 0000000000000001 R09: ffff880604c48080
-kernel: R10: ffff8806065daf90 R11: ffff88030c303c98 R12: ffff880ae5292c68
-kernel: R13: ffff8806010bc150 R14: ffff880001902640 R15: 0000000000b436b4
-kernel: FS:  0000000000000000(0000) GS:ffff8800df2e0000(0063)
-knlGS:00000000f76fe6d0
-kernel: CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
-kernel: CR2: 000000000a43101c CR3: 0000000588ec0000 CR4: 00000000000006e0
-kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-kernel: Process k3r.exe (pid: 19271, threadinfo ffff88030c302000, task
-ffff88013ab5a160)
-kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-kernel: Process k3r.exe (pid: 19271, threadinfo ffff88030c302000, task
-ffff88013ab5a160)
-kernel: Stack:
-kernel:  00000000ffffff9d ffff8806010bc140 dead000000100100 ffff880a959aab20
-kernel:  ffff8800018c1de8 ffff880942c36b40 ffff8800018c1dc0 ffffffffa02f415f
-kernel:  0000000000000000 ffff8806010bc150 0000000000000000 ffffffffa02f3d45
-kernel: Call Trace:
-kernel:  [<ffffffffa02f415f>] ? sctp_get_port_local+0x17b/0x2a3 [sctp]
-kernel:  [<ffffffffa02f3d45>] ? sctp_bind_addr_match+0x33/0x68 [sctp]
-kernel:  [<ffffffffa02f4416>] ? sctp_do_bind+0xd3/0x141 [sctp]
-kernel:  [<ffffffffa02f5030>] ? sctp_bindx_add+0x4d/0x8e [sctp]
-kernel:  [<ffffffffa02f5183>] ? sctp_setsockopt_bindx+0x112/0x4a4 [sctp]
-kernel:  [<ffffffff81089e82>] ? generic_file_aio_write+0x7f/0x9b
-kernel:  [<ffffffffa02f763e>] ? sctp_setsockopt+0x14f/0xfee [sctp]
-kernel:  [<ffffffff810c11fb>] ? do_sync_write+0xab/0xeb
-kernel:  [<ffffffff810e82ab>] ? fsnotify+0x239/0x282
-kernel:  [<ffffffff810c2462>] ? alloc_file+0x18/0xb1
-kernel:  [<ffffffff8134a0b1>] ? compat_sys_setsockopt+0x1a5/0x1d9
-kernel:  [<ffffffff8134aaf1>] ? compat_sys_socketcall+0x143/0x1a4
-kernel:  [<ffffffff810467dc>] ? sysenter_dispatch+0x7/0x32
-b 5c 24 10 <48> 8b 03 0f 18 08 49 8d 44 24 08 48 39 c3 75 c3 48 83 c4 18 89
-kernel: RIP  [<ffffffffa02f3dde>] sctp_bind_addr_conflict+0x64/0x82 [sctp]
-kernel:  RSP <ffff88030c303c38>
-kernel: Kernel panic - not syncing: Fatal exception in interrupt
-kernel: Pid: 19271, comm: k3r.exe Tainted: G      D     2.6.37-2.NSN.kiuas #1
-kernel: Call Trace:
-kernel:  [<ffffffff81053add>] ? panic+0xdc/0x1d7
-kernel:  [<ffffffff8102588e>] ? apic_timer_interrupt+0xe/0x20
-kernel:  [<ffffffff81054f96>] ? kmsg_dump+0xa9/0x143
-kernel:  [<ffffffff810288f7>] ? oops_end+0x86/0x93
-kernel:  [<ffffffff813ccaf5>] ? general_protection+0x25/0x30
-kernel:  [<ffffffffa02f3dde>] ? sctp_bind_addr_conflict+0x64/0x82 [sctp]
-kernel:  [<ffffffffa02f3dcb>] ? sctp_bind_addr_conflict+0x51/0x82 [sctp]
-kernel:  [<ffffffffa02f415f>] ? sctp_get_port_local+0x17b/0x2a3 [sctp]
-kernel:  [<ffffffffa02f3d45>] ? sctp_bind_addr_match+0x33/0x68 [sctp]
-kernel:  [<ffffffffa02f4416>] ? sctp_do_bind+0xd3/0x141 [sctp]
-kernel:  [<ffffffffa02f5030>] ? sctp_bindx_add+0x4d/0x8e [sctp]
-kernel:  [<ffffffffa02f5183>] ? sctp_setsockopt_bindx+0x112/0x4a4 [sctp]
-kernel:  [<ffffffff81089e82>] ? generic_file_aio_write+0x7f/0x9b
-kernel:  [<ffffffffa02f763e>] ? sctp_setsockopt+0x14f/0xfee [sctp]
-kernel:  [<ffffffff810c11fb>] ? do_sync_write+0xab/0xeb
-kernel:  [<ffffffff810e82ab>] ? fsnotify+0x239/0x282
-kernel:  [<ffffffff810c2462>] ? alloc_file+0x18/0xb1
-kernel:  [<ffffffff8134a0b1>] ? compat_sys_setsockopt+0x1a5/0x1d9
-kernel:  [<ffffffff8134aaf1>] ? compat_sys_socketcall+0x143/0x1a4
-kernel:  [<ffffffff810467dc>] ? sysenter_dispatch+0x7/0x32
+Jonathan
