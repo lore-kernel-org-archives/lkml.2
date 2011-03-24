@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933637Ab1CXHyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 03:54:38 -0400
-Received: from smtpq3.tb.mail.iss.as9143.net ([212.54.42.166]:40664 "EHLO
-	smtpq3.tb.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933351Ab1CXHyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 03:54:36 -0400
-Message-ID: <4D8AF916.4020902@gmail.com>
-Date: Thu, 24 Mar 2011 08:56:06 +0100
-From: =?ISO-8859-15?Q?Ren=E9_Herman?= <rene.herman@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Lanikai/3.1.9
+	id S933617Ab1CXHye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 03:54:34 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:32860 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933351Ab1CXHyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 03:54:32 -0400
+Date: Thu, 24 Mar 2011 08:54:13 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Jan Harkes <jaharkes@cs.cmu.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, coda@cs.cmu.edu,
+        codalist@TELEMANN.coda.cs.cmu.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [origin tree build failure] Re: [PATCH] fs, coda: Fix compile
+ warning when CONFIG_SYSCTL=n.
+Message-ID: <20110324075413.GA25830@elte.hu>
+References: <AANLkTim-U1nyuQ3cVxLHv63LmQUvOJd5GmR5wF90xG==@mail.gmail.com>
 MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [BUG 2.6.38] drm/i915: rampant video-corruption on Intel 865G
-References: <4D8A668B.9070302@gmail.com> <849307$c4qsv5@azsmga001.ch.intel.com>
-In-Reply-To: <849307$c4qsv5@azsmga001.ch.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ZiggoSMTP-MailScanner-Information: Please contact the ISP for more information
-X-ZiggoSMTP-MailScanner-ID: 1Q2fNK-0007lp-VE
-X-ZiggoSMTP-MailScanner: Found to be clean
-X-ZiggoSMTP-MailScanner-SpamCheck: geen spam, SpamAssassin (niet cached,
-	score=-3.639, vereist 5, autolearn=not spam, ALL_TRUSTED -1.00,
-	BAYES_00 -1.90, FREEMAIL_FROM 0.50, PROLO_TRUST_RDNS -3.00,
-	RDNS_DYNAMIC 0.98, SPF_NEUTRAL 0.78)
-X-ZiggoSMTP-MailScanner-From: rene.herman@gmail.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTim-U1nyuQ3cVxLHv63LmQUvOJd5GmR5wF90xG==@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2011 08:21 AM, Chris Wilson wrote:
 
-Thanks for the reply. I see that:
+* Rakib Mullick <rakib.mullick@gmail.com> wrote:
 
-> commit 29c5a587284195278e233eec5c2234c24fb2c204
-> Author: Chris Wilson<chris@chris-wilson.co.uk>
-> Date:   Thu Mar 17 15:23:22 2011 +0000
->
->      drm/i915: Fix tiling corruption from pipelined fencing
+> When CONFIG_SYSCTL=n, we get the following warning:
+> 
+> fs/coda/sysctl.c:18: warning: ‘coda_table’ defined but not used
+> 
+> Following patches fixes the above warning by making sure coda_table
+> and it's callee
+> function are in the same context. It also cleans up the code by
+> removing extra #ifdef.
+> 
+> 
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> ---
+> 
+> diff --git a/fs/coda/sysctl.c b/fs/coda/sysctl.c
+> index c6405ce..d9cc2b3 100644
+> --- a/fs/coda/sysctl.c
+> +++ b/fs/coda/sysctl.c
 
-is not in Linus' tree, so I haven't been able to confirm yet. I do 
-suppose that one should fix things even without the X11 changes? If not, 
-I'd still have a problem until those have made their way through the 
-distributions...
+FYI, the v2 of this patch:
 
-Regards,
-Rene.
+  0bc825d240ab: codafs: fix compile warning when CONFIG_SYSCTL=n
+
+broke the upstream build:
+
+  fs/built-in.o: In function `init_coda':
+  psdev.c:(.init.text+0x2549): undefined reference to `coda_sysctl_clean'
+  fs/built-in.o: In function `exit_coda':
+  psdev.c:(.exit.text+0x1bf): undefined reference to `coda_sysctl_clean'
+  fs/built-in.o: In function `init_coda_psdev':
+ psdev.c:(.text.unlikely+0x21e1): undefined reference to `coda_sysctl_init'
+
+I don't think the -v2 commit was build-tested with !CONFIG_PROC_SYSCTL && 
+CONFIG_CODA_FS=y.
+
+	Ingo
