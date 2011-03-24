@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab1CXM14 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 08:27:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:36145 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751876Ab1CXM1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 08:27:55 -0400
-Message-Id: <b7da2f$qre4te@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,236,1299484800"; 
-   d="scan'208";a="901190574"
-Date: Thu, 24 Mar 2011 12:27:52 +0000
-To: Alessandro Suardi <alessandro.suardi@gmail.com>
-Subject: Re: regression: GM45 on Dell Latitude E6400 display from 1440x900 to 1024x768 somewhere between 2.6.38-git2 and -git7
-Cc: linux-kernel@vger.kernel.org
-References: <AANLkTimxnG56Q29CpKi7q0kiam2cDKHdB5OjV-vu4he9@mail.gmail.com> <1bdc18$jvuest@fmsmga002.fm.intel.com> <AANLkTinG5jvw7mYVxkhQ0RqpCyDmPTHHbiHxW8oHhwz0@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <AANLkTinG5jvw7mYVxkhQ0RqpCyDmPTHHbiHxW8oHhwz0@mail.gmail.com>
+	id S1756835Ab1CXM2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 08:28:11 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46006 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756681Ab1CXM2I (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 24 Mar 2011 08:28:08 -0400
+Date: Thu, 24 Mar 2011 08:27:55 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: tglx@linutronix.de, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Re: 2.6.39 crashes BUG: unable to handle kernel
+ NULL pointer dereference at 000000000000042 .. cmos_checkintr+0x4d/0x55
+ under Xen as PV guest.
+Message-ID: <20110324122755.GA31974@dumpdata.com>
+References: <20110318203830.GA9262@dumpdata.com>
+ <1300485566.2731.46.camel@work-vm>
+ <20110319025134.GA3298@dumpdata.com>
+ <1300736400.2731.66.camel@work-vm>
+ <20110322143841.GA26952@dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322143841.GA26952@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4D8B38CC.0158,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011 13:03:55 +0100, Alessandro Suardi <alessandro.suardi@gmail.com> wrote:
-> OK - attaching in .tgz as they'd probably cross lkml size limits:
+On Tue, Mar 22, 2011 at 10:38:41AM -0400, Konrad Rzeszutek Wilk wrote:
+> > > No. 2.6.38 vaniall works great.
+> > 
+> > Ok. Hrm. 
+> > 
+> > > > Any insight there?
+> > > 
+> > > I hoped you might have :-)
+> > 
+> > Could you help me understand where in the probe logic xen bombs out of
+> > the cmos code?
+> 
+> Sure. The issue is that rtc_update_irq calls schedule_work with rtc->irqwork
+> which has not been initialized. The reason for that is that rtc_device_register
+> has never been called.. uh wait, that does not make sense, it is called in
+> cmos_do_probe. Hmm, let get find out exactly on which variable queue_work_on
+> bombs out on.
 
-Ok, the clue to the bizarre sizing is:
+The problem is this:
 
-[   376.501] (WW) intel(0): No outputs definitely connected, trying again...
-[   376.501] (II) intel(0): Output LVDS1 connected
-[   376.501] (II) intel(0): Output VGA1 disconnected
-[   376.501] (II) intel(0): Output HDMI1 disconnected
-[   376.501] (II) intel(0): Output DP1 disconnected
-[   376.501] (II) intel(0): Output HDMI2 disconnected
-[   376.501] (II) intel(0): Output DP2 disconnected
-[   376.501] (II) intel(0): Output DP3 disconnected
-[   376.501] (II) intel(0): Output TV1 connected
-[   376.502] (II) intel(0): Using fuzzy aspect match for initial modes
-[   376.502] (II) intel(0): Output LVDS1 using initial mode 1024x768 +0+0
-[   376.502] (II) intel(0): Output TV1 using initial mode 1024x768 +0+0
+cmos_do_probe does:
 
-Transient false TV detection rears its ugly head again. (It's detected
-during the 'working' setup but then disappears upon reprobing.) So X
-choose the intersection of the available modes, 1024x768. But that
-doesn't explain why the LVDS exists (it prints the EDID for it) but it
-thinks it is disconnected.
+ 	cmos_rtc.dev = dev; 
+        dev_set_drvdata(dev, &cmos_rtc);
 
-The difference in the dmesg is:
+which means that dev->p->private_data contains cmos_rtc. And
+dev->p->private_data->rtc is a NULL pointer. The next function:
 
-------------[ cut here ]------------
-WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0x92/0xa6()
-Hardware name: Latitude E6400
-sysfs: cannot create duplicate filename
-'/devices/pci0000:00/0000:00:02.0/backlight/acpi_video0/device'
-Modules linked in: i915(+) drm_kms_helper drm i2c_algo_bit i2c_core video
-Pid: 906, comm: modprobe Not tainted 2.6.38-git14 #1
-Call Trace:
- [<ffffffff8103319b>] warn_slowpath_common+0x80/0x98
- [<ffffffff81033247>] warn_slowpath_fmt+0x41/0x43
- [<ffffffff811253d0>] sysfs_add_one+0x92/0xa6
- [<ffffffff81125ad6>] sysfs_do_create_link+0xf3/0x186
- [<ffffffffa000175f>] acpi_video_bus_add+0x982/0xc87 [video]
+        cmos_rtc.rtc = rtc_device_register(driver_name, dev, 
+                                &cmos_rtc_ops, THIS_MODULE);
 
-which can be temporary fixed by reverting 9661e92c10a97752. But I don't
-immediately see how that would cause the LVDS to be declared disconnected.
-Can you add drm.debug=0xe to your grub kernel parameters and attach a
-fresh dmesg?
--Chris
+'rtc_device_register' creates an 'rtc' structure and sets 
+its parent to be:
+	rtc->dev.parent = dev;
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+and later on it does:
+ if (!err && !rtc_valid_tm(&alrm.time))
+                rtc_set_alarmtrtc, &alrm);
+
+rtc_set_alarm calls rtc_timer_enqueue which calls __rtc_set_alarm.
+__rtc_set_alarms calls 'cmos_set_alarm' via:
+ err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
+
+which is basically passing in 'dev' to 'cmos_set_alarm', and
+'cmos_set_alarm' uses the dev to:
+        struct cmos_rtc *cmos = dev_get_drvdata(dev);
+
+(so get the from dev->p->private_data the cmos_rtc).
+get the 'cmos' (which is what 'cmos_rtc'). Great... except
+then it ends up trying to dereference cmos->rtc.irqwork (via
+cmos_irq_disable(cmos, .. and somehere in its chain calls
+schedule_work(cmos->rtc) whcih ends up blowing up b/c
+cmos_rtc.rtc has not been set yet.
+
+The cmos_rtc.rtc is set when the when 'rtc_device_register'
+finish, which it hadn't yet done.
+
+git gui blame tells me to look at 
+ f44f7f96a20af16f6f12e1c995576d6becf5f57b
