@@ -1,118 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277Ab1CXVl6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 17:41:58 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:52159 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756735Ab1CXVlx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 17:41:53 -0400
-Date: Thu, 24 Mar 2011 22:41:50 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-Message-ID: <20110324214150.GA1739@gentoo.trippels.de>
-References: <4D8B8F34.5000203@fusionio.com>
- <4D8B92AE.8090308@fusionio.com>
- <20110324185445.GB1696@gentoo.trippels.de>
- <4D8B9457.2020608@fusionio.com>
- <20110324193441.GA1723@gentoo.trippels.de>
- <4D8B9D2F.4010504@fusionio.com>
- <20110324194546.GA1741@gentoo.trippels.de>
- <4D8BA235.7060904@fusionio.com>
- <20110324200613.GA1724@gentoo.trippels.de>
- <4D8BB114.2070002@fusionio.com>
+	id S933454Ab1CXVne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 17:43:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9674 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757219Ab1CXVnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 17:43:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,239,1299484800"; 
+   d="scan'208";a="901481388"
+From: Andi Kleen <andi@firstfloor.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
+        Jan Beulich <JBeulich@novell.com>, Borislav Petkov <bp@amd64.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nick Piggin <npiggin@kernel.dk>, "x86\@kernel.org" <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, tee@sgi.com,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH RFC] x86: avoid atomic operation in test_and_set_bit_lock if possible
+References: <201103241026.01624.knikanth@suse.de>
+	<20110324085647.GI30812@elte.hu> <20110324145221.GC31194@aftab>
+	<4D8B83DA02000078000381DE@vpn.id2.novell.com>
+	<20110324173020.GA26761@sgi.com> <20110324200010.GB7957@elte.hu>
+	<1300999682.2714.23.camel@edumazet-laptop>
+	<20110324205422.GB2393@elte.hu>
+	<1301000557.2714.33.camel@edumazet-laptop>
+Date: Thu, 24 Mar 2011 14:42:07 -0700
+In-Reply-To: <1301000557.2714.33.camel@edumazet-laptop> (Eric Dumazet's
+	message of "Thu, 24 Mar 2011 22:02:37 +0100")
+Message-ID: <m2oc50kxg0.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D8BB114.2070002@fusionio.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.03.24 at 22:01 +0100, Jens Axboe wrote:
-> On 2011-03-24 21:06, Markus Trippelsdorf wrote:
-> > On 2011.03.24 at 20:57 +0100, Jens Axboe wrote:
-> >>
-> >> OK, still a data point. What was the last -git kernel you used?
-> > 
-> > This one was the last and gave me no problems:
-> > 
-> > commit b81a618dcd3ea99de292dbe624f41ca68f464376
-> > Merge: 2f284c8 a9712bc
-> > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > Date:   Wed Mar 23 20:51:42 2011 -0700
-> > 
-> >     Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
-> 
-> Puzzling... Poking at straws here so far. Does this make any difference
-> whatsoever?
+Eric Dumazet <eric.dumazet@gmail.com> writes:
+>
+> [    0.015998] Performance Events: PEBS fmt0+, Core2 events, Broken BIOS detected, using software events only.
+> [    0.015998] [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 186 is 43003c)
 
-I will test your patch later.
+There should be a BIOS setting to disable that (something with p-states
+likely).
 
-Git-bisect gave me this result thus far:
+> I am pretty sure I used "-e ..." some time ago with same BIOS.
 
-9026e521c0da0731eb31f9f9022dd00cc3cd8885 is bad
-82f04ab47e1d94d78503591a7460b2cad9601ede is good
+The "if anyone else uses the PMU throw in your toys and sulk" check was
+only recently added.
 
-When I continue the bisection with 4345caba340f051e10847924fc078ae18ed6695c
-the system will start normally, but it then silently corrupts my xfs
-partitions. And on next (re)boot I get this (only fixable with
-xfs_repair):
+Or fix perf just ignore counters that are already used. The others
+should work fine.
 
-BUG: unable to handle kernel NULL pointer dereference at 00000000000000f8
-IP: [<ffffffff8123cb97>] xfs_cmn_err+0x27/0xc0
-PGD 21c54c067 PUD 21c6bb067 PMD 0 
-Oops: 0000 [#1] PREEMPT SMP 
-last sysfs file: /sys/devices/pci0000:00/0000:00:11.0/host1/target1:0:0/1:0:0:0/block/sdb/sdb2/alignment_offset
-CPU 3 
-Pid: 1294, comm: rm Not tainted 2.6.38-rc6-00279-g4345cab #25 System manufacturer System Product Name/M4A78T-E
-RIP: 0010:[<ffffffff8123cb97>]  [<ffffffff8123cb97>] xfs_cmn_err+0x27/0xc0
-RSP: 0018:ffff88021c7b9ab8  EFLAGS: 00010246
-RAX: ffff88021c7b9b38 RBX: ffff88021dd14118 RCX: ffffffff8167a348
-RDX: 0000000000000000 RSI: ffffffff816501f0 RDI: 0000000000000008
-RBP: ffff88021c7b9b28 R08: ffffffff81650119 R09: 000000000000058e
-R10: 0000000000000001 R11: 0000000000012de8 R12: ffff88021dcc3340
-R13: 0000000000000075 R14: ffff88021e126c80 R15: 00000000000b0208
-FS:  00007fef28aec700(0000) GS:ffff8800dfd80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00000000000000f8 CR3: 000000021c5ae000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process rm (pid: 1294, threadinfo ffff88021c7b8000, task ffff88021c566710)
-Stack:
- ffffffff811f2362 ffff88021dcc3340 ffff88021c7b9b08 ffffffff811f7dab
- 000000000000ea60 ffff88021e173e00 ffff88021c7b9bb4 ffff88021c7b9bb0
- ffff88021c7b9bac ffff88021e126c80 ffff88021c7b9b48 ffffffff811dadfe
-Call Trace:
- [<ffffffff811f2362>] ? xfs_btree_rec_addr+0x12/0x20
- [<ffffffff811f7dab>] ? xfs_btree_get_rec+0x5b/0x90
- [<ffffffff811dadfe>] ? xfs_alloc_get_rec+0x2e/0x70
- [<ffffffff812072f0>] xfs_error_report+0x40/0x50
- [<ffffffff811de274>] ? xfs_free_extent+0x94/0xc0
- [<ffffffff811dc120>] xfs_free_ag_extent+0x4e0/0x7d0
- [<ffffffff811de274>] xfs_free_extent+0x94/0xc0
- [<ffffffff8122d4d5>] ? kmem_zone_alloc+0x85/0xd0
- [<ffffffff811ee3e4>] xfs_bmap_finish+0x164/0x1b0
- [<ffffffff8120e6b0>] xfs_itruncate_finish+0x150/0x3f0
- [<ffffffff8122d4d5>] ? kmem_zone_alloc+0x85/0xd0
- [<ffffffff8122ae46>] xfs_inactive+0x2d6/0x440
- [<ffffffff812391ba>] xfs_fs_evict_inode+0xaa/0x130
- [<ffffffff81133d14>] evict+0x24/0xc0
- [<ffffffff81134a1b>] iput+0x1ab/0x280
- [<ffffffff8112a0c6>] do_unlinkat+0x116/0x1c0
- [<ffffffff811208fa>] ? sys_newfstatat+0x2a/0x40
- [<ffffffff8112a192>] sys_unlinkat+0x22/0x40
- [<ffffffff8103ddeb>] system_call_fastpath+0x16/0x1b
-Code: 00 00 00 00 55 48 89 e5 48 83 ec 70 66 66 66 66 90 8b 05 59 d6 4b 00 4c 89 45 f0 4c 89 4d f8 85 c0 74 04 85 c7 75 3e 48 8d 45 10 <48> 8b b2 f8 
-00 00 00 48 8d 55 c0 48 c7 c7 ce 11 65 81 c7 45 a8 
-RIP  [<ffffffff8123cb97>] xfs_cmn_err+0x27/0xc0
- RSP <ffff88021c7b9ab8>
-CR2: 00000000000000f8
----[ end trace 43fa8028bd7b575e ]--
+-Andi
 
 -- 
-Markus
+ak@linux.intel.com -- Speaking for myself only
