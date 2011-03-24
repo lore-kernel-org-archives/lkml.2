@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933273Ab1CXPVy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 11:21:54 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47401 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933070Ab1CXPVe (ORCPT
+	id S933356Ab1CXPWu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 11:22:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57449 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395Ab1CXPWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 11:21:34 -0400
-From: Jamie Iles <jamie@jamieiles.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@suse.de, vapier@gentoo.org, Jamie Iles <jamie@jamieiles.com>
-Subject: [RFC PATCHv2 3/4] drivers/otp: allow an ioctl to be specified
-Date: Thu, 24 Mar 2011 15:21:10 +0000
-Message-Id: <1300980071-24645-4-git-send-email-jamie@jamieiles.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
+	Thu, 24 Mar 2011 11:22:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=rC1+fEN/hiNwwAsHRC56AxhezshZ95PjNMv/XiIbasy0gZF7dnXN6hTzcwCIcu3zKp
+         Hajxz+fgi+nMzRqXaOdeFkIdpIY3M4/u32UPseWX6b7ZpwCSaDUE1s2WHXgHl4E9rUWj
+         c97iU1jKhsbGSM2Rkb7RODQsB5nUuaMGf7vC4=
+Subject: Re: regression: ip r change mss doesn't work in 2.6.38-git14
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alessandro Suardi <alessandro.suardi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTik6+TrjiC6ZF+KHhZ1iPzEe2jDayr363C0HgQN4@mail.gmail.com>
+References: <AANLkTik6+TrjiC6ZF+KHhZ1iPzEe2jDayr363C0HgQN4@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Mar 2011 16:21:58 +0100
+Message-ID: <1300980118.3747.42.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers may need an ioctl method to provide device specific control
-such as blackfin for providing locking.  Regions can specify an ioctl to
-be used but this field method is optional.
+Le jeudi 24 mars 2011 à 16:08 +0100, Alessandro Suardi a écrit :
+> After fixing the display issue thanks to Chris Wilson, I now have
+> another problem
+>  (which didn't exist in 2.6.38-git2); most websites outside of my DSL link don't
+>  work properly (connection packet goes through, but the page load times out
+>  within Firefox) unless I do
+> 
+> ip r change default via 192.168.1.1 dev eth1 advmss 1400
+> 
+> This however doesn't change advmss anymore:
+> 
+> [root@duff ~]# ip r
+> default via 192.168.1.1 dev eth1
+> 169.254.0.0/16 dev eth1  scope link  metric 1004
+> 192.168.1.0/24 dev eth1  proto kernel  scope link  src 192.168.1.8
+> [root@duff ~]# ip r change default via 192.168.1.1 dev eth1 advmss 1400
+> [root@duff ~]# ip r
+> default via 192.168.1.1 dev eth1
+> 169.254.0.0/16 dev eth1  scope link  metric 1004
+> 192.168.1.0/24 dev eth1  proto kernel  scope link  src 192.168.1.8
 
-Signed-off-by: Jamie Iles <jamie@jamieiles.com>
----
- drivers/otp/otp.c   |   30 ++++++++++++++++++++++++------
- include/linux/otp.h |    3 +++
- 2 files changed, 27 insertions(+), 6 deletions(-)
+Indeed, we'll take a look, thanks for the report.
 
-diff --git a/drivers/otp/otp.c b/drivers/otp/otp.c
-index dd47cf1..d362d09 100644
---- a/drivers/otp/otp.c
-+++ b/drivers/otp/otp.c
-@@ -30,14 +30,16 @@ static ssize_t otp_write(struct file *filp, const char __user *buf,
- static ssize_t otp_read(struct file *filp, char __user *buf, size_t len,
- 			loff_t *offs);
- static loff_t otp_llseek(struct file *filp, loff_t offs, int origin);
-+static long otp_ioctl(struct file *filp, unsigned cmd, unsigned long arg);
- 
- static const struct file_operations otp_fops = {
--	.owner	    = THIS_MODULE,
--	.open	    = otp_open,
--	.release    = otp_release,
--	.write	    = otp_write,
--	.read	    = otp_read,
--	.llseek	    = otp_llseek,
-+	.owner		= THIS_MODULE,
-+	.open		= otp_open,
-+	.release	= otp_release,
-+	.write		= otp_write,
-+	.read		= otp_read,
-+	.llseek		= otp_llseek,
-+	.unlocked_ioctl	= otp_ioctl,
- };
- 
- static DEFINE_SEMAPHORE(otp_sem);
-@@ -691,6 +693,22 @@ out:
- 	return ret ?: written;
- }
- 
-+static long otp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
-+{
-+	struct otp_region *region = filp->private_data;
-+	long ret = -ENOTTY;
-+
-+	if (down_interruptible(&otp_sem))
-+		return -ERESTARTSYS;
-+
-+	if (region->ops->ioctl)
-+		ret = region->ops->ioctl(region, cmd, arg);
-+
-+	up(&otp_sem);
-+
-+	return ret;
-+}
-+
- /*
-  * Read an OTP region. This switches the OTP into the appropriate redundancy
-  * format so we can simply read from the beginning of the region and copy it
-diff --git a/include/linux/otp.h b/include/linux/otp.h
-index 93ccf8b..ce77f05 100644
---- a/include/linux/otp.h
-+++ b/include/linux/otp.h
-@@ -100,6 +100,7 @@ struct otp_device {
-  * @get_size:		Get the effective storage size of the region.
-  *			Depending on the number of regions in the device and
-  *			the redundancy format of the region, this may vary.
-+ * @ioctl:		Optional region ioctl.
-  */
- struct otp_region_ops {
- 	int			(*set_fmt)(struct otp_region *region,
-@@ -112,6 +113,8 @@ struct otp_region_ops {
- 					     unsigned long word_addr,
- 					     u64 *value);
- 	ssize_t			(*get_size)(struct otp_region *region);
-+	long			(*ioctl)(struct otp_region *dev,
-+					 unsigned cmd, unsigned long arg);
- };
- 
- /**
--- 
-1.7.4
+In the time being you can do :
+
+ip ro change default via 192.168.1.1 dev eth1 advmss 1400 mtu 1500
+
 
