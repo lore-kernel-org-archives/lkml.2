@@ -1,77 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934102Ab1CXWTI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 18:19:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56389 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932652Ab1CXWTG (ORCPT
+	id S933779Ab1CXWV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 18:21:26 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40392 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756767Ab1CXWVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 18:19:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=CKEe62eAzalNp7ZaNpTbt03Rh47aJa+OhPX4ybIV6iuyURbNEfwfiboAuGnc2Ro/kZ
-         q8Ufqheeq4UrV39ceyn/JQvR0cQa7LJW/ipgi0ajV/iIpRUlSVI6v/0KszKLRXUZ3SW4
-         vo0EMgmJxB/mzwCOc82Rqt3MxX2FIUJF9WLAE=
-Subject: Re: [PATCH] ipv4: fix fib metrics
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alessandro Suardi <alessandro.suardi@gmail.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <AANLkTin_gxMF1hyK_yhN+G9UGfcBKAhPE24r7tLe5j3D@mail.gmail.com>
-References: <AANLkTik6+TrjiC6ZF+KHhZ1iPzEe2jDayr363C0HgQN4@mail.gmail.com>
-	 <1300980118.3747.42.camel@edumazet-laptop>
-	 <AANLkTikZhT5LaA-UEXniDvkneH8JScaVaCaCd4LT59cV@mail.gmail.com>
-	 <1300983340.3747.44.camel@edumazet-laptop>
-	 <1300986084.3747.101.camel@edumazet-laptop>
-	 <AANLkTik+Rf45wUxN86t+Zp7+AXjcJsy0vmZgvmLj-95x@mail.gmail.com>
-	 <1300992308.3747.205.camel@edumazet-laptop>
-	 <AANLkTin_gxMF1hyK_yhN+G9UGfcBKAhPE24r7tLe5j3D@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Mar 2011 23:18:27 +0100
-Message-ID: <1301005107.2714.113.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 24 Mar 2011 18:21:24 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6295"; a="81716425"
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: davidb@codeaurora.org, dwalker@fifo99.com
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [PATCHv2] msm: iommu: Use relaxed register access functions
+Date: Thu, 24 Mar 2011 15:21:19 -0700
+Message-Id: <1301005279-24901-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <1300392119-8062-1-git-send-email-stepanm@codeaurora.org>
+References: <1300392119-8062-1-git-send-email-stepanm@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 24 mars 2011 à 23:11 +0100, Alessandro Suardi a écrit :
+Use the relaxed versions of readl/writel for IOMMU register
+access, inserting barriers where appropriate.
 
-> On a -git14 kernel + both the fib metrics and the above git diff, I
-> strace'd vpnc
->  and found out this (first triplet of public IP masked intentionally)
-> 
-> [root@duff tmp]# egrep 'execve|garbage' strace.log |egrep '/ip|garbage'
-> [pid  4228] execve("/sbin/ip", ["/sbin/ip", "route", "get",
-> "xxx.9.13.212"], [/* 32 vars */]) = 0
-> [pid  4231] execve("/sbin/ip", ["/sbin/ip", "route", "replace",
-> "10.175.0.0/19", "dev", "tun0"], [/* 32 vars */]) = 0
-> [pid  4232] execve("/sbin/ip", ["/sbin/ip", "route", "flush",
-> "cache"], [/* 32 vars */]) = 0
-> [pid  4234] execve("/sbin/ip", ["/sbin/ip", "route", "get",
-> "xxx.9.13.212"], [/* 32 vars */]) = 0
-> [pid  4237] execve("/sbin/ip", ["/sbin/ip", "route", "add",
-> "xxx.9.13.212", "via", "192.168.1.1", "dev", "eth1", "src",
-> "192.168.1.8", "ipid", "0x043f", "advmss", "1400"], [/* 32 vars */]) =
-> 0
-> [pid  4237] write(2, "Error: either \"to\" is duplicate,"..., 57Error:
-> either "to" is duplicate, or "ipid" is a garbage.
-> 
-> 192.168.1.1 is my DSL router and 192.168.1.8 is my computer's wireless IP.
-> 
-> Does this ring any bell ?
-> 
-> 
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+---
+v2:
+Add barrier comments
+Remove one unnecessary barrier in tlb flush
+Add a needed barrier in device probe
 
-Not a kernel error, but a tool error ?
+ arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h |   15 ++++++++-------
+ arch/arm/mach-msm/iommu.c                      |   16 ++++++++++++++++
+ arch/arm/mach-msm/iommu_dev.c                  |   17 +++++++++++++++++
+ 3 files changed, 41 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h b/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h
+index fc16010..6d097d5 100644
+--- a/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h
++++ b/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h
+@@ -20,14 +20,14 @@
+
+ #define CTX_SHIFT 12
+
+-#define GET_GLOBAL_REG(reg, base) (readl((base) + (reg)))
++#define GET_GLOBAL_REG(reg, base) (readl_relaxed((base) + (reg)))
+ #define GET_CTX_REG(reg, base, ctx) \
+-				(readl((base) + (reg) + ((ctx) << CTX_SHIFT)))
++			(readl_relaxed((base) + (reg) + ((ctx) << CTX_SHIFT)))
+
+-#define SET_GLOBAL_REG(reg, base, val)	writel((val), ((base) + (reg)))
++#define SET_GLOBAL_REG(reg, base, val)	writel_relaxed((val), ((base) + (reg)))
+
+ #define SET_CTX_REG(reg, base, ctx, val) \
+-			writel((val), ((base) + (reg) + ((ctx) << CTX_SHIFT)))
++		writel_relaxed((val), ((base) + (reg) + ((ctx) << CTX_SHIFT)))
+
+ /* Wrappers for numbered registers */
+ #define SET_GLOBAL_REG_N(b, n, r, v) SET_GLOBAL_REG(b, ((r) + (n << 2)), (v))
+@@ -43,12 +43,13 @@
+ #define SET_CONTEXT_FIELD(b, c, r, F, v)	\
+ 	SET_FIELD(((b) + (r) + ((c) << CTX_SHIFT)), F##_MASK, F##_SHIFT, (v))
+
+-#define GET_FIELD(addr, mask, shift)  ((readl(addr) >> (shift)) & (mask))
++#define GET_FIELD(addr, mask, shift) ((readl_relaxed(addr) >> (shift)) & (mask))
+
+ #define SET_FIELD(addr, mask, shift, v) \
+ do { \
+-	int t = readl(addr); \
+-	writel((t & ~((mask) << (shift))) + (((v) & (mask)) << (shift)), addr);\
++	int t = readl_relaxed(addr); \
++	writel_relaxed((t & ~((mask) << (shift))) + (((v) & \
++		       (mask)) << (shift)), addr);\
+ } while (0)
 
 
-(ipid is only displayed by "ip ro show")
+diff --git a/arch/arm/mach-msm/iommu.c b/arch/arm/mach-msm/iommu.c
+index 1a584e0..b72475b 100644
+--- a/arch/arm/mach-msm/iommu.c
++++ b/arch/arm/mach-msm/iommu.c
+@@ -137,6 +137,9 @@ static void __reset_context(void __iomem *base, int ctx)
+ 	SET_TLBLKCR(base, ctx, 0);
+ 	SET_PRRR(base, ctx, 0);
+ 	SET_NMRR(base, ctx, 0);
++
++	/* Make sure the reset completes before any further hardware access */
++	mb();
+ }
 
-grep ipid */*.c
-ip/iproute.c:				fprintf(fp, " ipid 0x%04x", ci->rta_id);
+ static void __program_context(void __iomem *base, int ctx, phys_addr_t pgtable)
+@@ -203,8 +206,14 @@ static void __program_context(void __iomem *base, int ctx, phys_addr_t pgtable)
+ 	SET_TTBR1_ORGN(base, ctx, 1); /* WB, WA */
+ #endif
 
++	/* Allow configuration to commit before enabling the MMU */
++	mb();
++
+ 	/* Enable the MMU */
+ 	SET_M(base, ctx, 1);
++
++	/* Make sure the MMU is enabled before returning */
++	mb();
+ }
+
+ static int msm_iommu_domain_init(struct iommu_domain *domain)
+@@ -579,8 +588,15 @@ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
+
+ 	/* Invalidate context TLB */
+ 	SET_CTX_TLBIALL(base, ctx, 0);
++
++	/* Make sure the TLB is invalidated before translating */
++	mb();
++
+ 	SET_V2PPR(base, ctx, va & V2Pxx_VA);
+
++	/* Make sure the translation request is written before reading result */
++	mb();
++
+ 	par = GET_PAR(base, ctx);
+
+ 	/* We are dealing with a supersection */
+diff --git a/arch/arm/mach-msm/iommu_dev.c b/arch/arm/mach-msm/iommu_dev.c
+index 8e8fb07..b3d06c9 100644
+--- a/arch/arm/mach-msm/iommu_dev.c
++++ b/arch/arm/mach-msm/iommu_dev.c
+@@ -124,6 +124,9 @@ static void msm_iommu_reset(void __iomem *base, int ncb)
+ 		SET_NMRR(base, ctx, 0);
+ 		SET_CONTEXTIDR(base, ctx, 0);
+ 	}
++
++	/* Make sure the reset completes before any further hardware access */
++	mb();
+ }
+
+ static int msm_iommu_probe(struct platform_device *pdev)
+@@ -212,14 +215,25 @@ static int msm_iommu_probe(struct platform_device *pdev)
+
+ 	msm_iommu_reset(regs_base, iommu_dev->ncb);
+
++	/*
++	 * Barriers make sure that the device is configured for V2P mode prior
++	 * to doing any V2P access, and that we read the result only after
++	 * the V2P request is written.
++	 */
+ 	SET_M(regs_base, 0, 1);
+ 	SET_PAR(regs_base, 0, 0);
+ 	SET_V2PCFG(regs_base, 0, 1);
++	mb();
+ 	SET_V2PPR(regs_base, 0, 0);
++	mb();
+ 	par = GET_PAR(regs_base, 0);
+ 	SET_V2PCFG(regs_base, 0, 0);
++
+ 	SET_M(regs_base, 0, 0);
+
++	/* Make sure device state is restored before any subsequent access */
++	mb();
++
+ 	if (!par) {
+ 		pr_err("%s: Invalid PAR value detected\n", iommu_dev->name);
+ 		ret = -ENODEV;
+@@ -351,6 +365,9 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
+ 		SET_NSCFG(drvdata->base, mid, 3);
+ 	}
+
++	/* Make sure the device is fully configured before completing probe */
++	mb();
++
+ 	if (drvdata->clk)
+ 		clk_disable(drvdata->clk);
+ 	clk_disable(drvdata->pclk);
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
