@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934237Ab1CXUUm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:20:42 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:64591 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934178Ab1CXUTU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934103Ab1CXUTU (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 24 Mar 2011 16:19:20 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51040 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934165Ab1CXUTP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 16:19:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=B5A53PKqR4ZTixQLbNOMItyoZt19Of4ew8JYn8xeoWX90qof6QB3L88TZLJU/Lq8lb
-         R+ek2BmNdLmekyimvkRLlMnychj58cWDcYGVQvI5d3IA9NWHFaJ2g/bSWmGB1Tm9LnnW
-         PbR9HegyIk+rP3RQcjfE6IhvY6B20KtoPUBmo=
+        b=om7jmFJvn5muZo+ZRKqb3sv/dFGvdDOf0YoKdF5q+f5+SzPR0gq5Vu7FNe9mhhUEv6
+         w58y/hJku+eBt1OF0SNBoBz9pGJBqqxexcoPCd6XxfHU9odDNbEr7xE3tmiI/2ExEi5w
+         TmGzXEWf305MbGBmNXuKrUIZk2Wox1vPyzIns=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC V2 16/21]fs:logfs Remove extra semi-colon.
-Date: Thu, 24 Mar 2011 13:18:35 -0700
-Message-Id: <1300997920-31573-16-git-send-email-justinmattock@gmail.com>
+Subject: [RFC V2 13/21]drivers:i2c:busses:i2c-designware.c Remove extra semi-colon.
+Date: Thu, 24 Mar 2011 13:18:32 -0700
+Message-Id: <1300997920-31573-13-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
 References: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
@@ -34,36 +34,22 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- fs/logfs/readwrite.c    |    2 +-
- fs/ocfs2/refcounttree.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/i2c/busses/i2c-designware.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/logfs/readwrite.c b/fs/logfs/readwrite.c
-index ee99a9f..3dcb3a6 100644
---- a/fs/logfs/readwrite.c
-+++ b/fs/logfs/readwrite.c
-@@ -481,7 +481,7 @@ static int inode_write_alias(struct super_block *sb,
- 			val = inode_val0(inode);
- 			break;
- 		case INODE_USED_OFS:
--			val = cpu_to_be64(li->li_used_bytes);;
-+			val = cpu_to_be64(li->li_used_bytes);
- 			break;
- 		case INODE_SIZE_OFS:
- 			val = cpu_to_be64(i_size_read(inode));
-diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
-index c384d63..c4feced 100644
---- a/fs/ocfs2/refcounttree.c
-+++ b/fs/ocfs2/refcounttree.c
-@@ -3707,7 +3707,7 @@ int ocfs2_refcount_cow_xattr(struct inode *inode,
- 	context->cow_start = cow_start;
- 	context->cow_len = cow_len;
- 	context->ref_tree = ref_tree;
--	context->ref_root_bh = ref_root_bh;;
-+	context->ref_root_bh = ref_root_bh;
- 	context->cow_object = xv;
+diff --git a/drivers/i2c/busses/i2c-designware.c b/drivers/i2c/busses/i2c-designware.c
+index b664ed8..a93922d 100644
+--- a/drivers/i2c/busses/i2c-designware.c
++++ b/drivers/i2c/busses/i2c-designware.c
+@@ -390,7 +390,7 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+ 	int tx_limit, rx_limit;
+ 	u32 addr = msgs[dev->msg_write_idx].addr;
+ 	u32 buf_len = dev->tx_buf_len;
+-	u8 *buf = dev->tx_buf;;
++	u8 *buf = dev->tx_buf;
  
- 	context->cow_duplicate_clusters = ocfs2_duplicate_clusters_by_jbd;
+ 	intr_mask = DW_IC_INTR_DEFAULT_MASK;
+ 
 -- 
 1.7.4.1
 
