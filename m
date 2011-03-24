@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397Ab1CXAHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 20:07:11 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36411 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932887Ab1CXAHJ convert rfc822-to-8bit (ORCPT
+	id S933430Ab1CXANv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 20:13:51 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63998 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933023Ab1CXANu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 20:07:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-Subject: Re: [PATCH 2/5] Revert "oom: give the dying task a higher priority"
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
-        Hugh Dickins <hughd@google.com>
-In-Reply-To: <20110323134037.GP5212@uudg.org>
-References: <20110323164229.6b647004.kamezawa.hiroyu@jp.fujitsu.com> <20110323134037.GP5212@uudg.org>
-Message-Id: <20110324090635.1AEC.A69D9226@jp.fujitsu.com>
+	Wed, 23 Mar 2011 20:13:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=Nhc7e+LlGhuzE5Wx4dVdb6FAUhr2ZBMH0dO12W85eYx+OYEbdmwWF5Xt0jFYXWJMOC
+         M3nNH1SrD7eyqdlKiOKbLny4uz0blMzD8y03Wk9bS/q3LGdNcPRp2vk3kMLiC8bYIm+1
+         iAqb6NIU1jfK8LbrUEFvm36QJRs9tz1i1HKMU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
+In-Reply-To: <10176.1300925166@redhat.com>
+References: <1300826506-23192-1-git-send-email-vapier@gentoo.org>
+ <20110323123745.GA30292@linux-sh.org> <AANLkTi=74mO5UW2MKxQ9RdvqhvCvLonnVKmm24jKYaL4@mail.gmail.com>
+ <10176.1300925166@redhat.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 23 Mar 2011 20:13:29 -0400
+X-Google-Sender-Auth: HshsMH_upgz0ovQD8V17yQ-wQHM
+Message-ID: <AANLkTin1Yi5H30+V2Hp6SPxxKw3uT16HPgiXe041jUf_@mail.gmail.com>
+Subject: Re: [uclinux-dist-devel] [PATCH] NOMMU: support SMP dynamic percpu_alloc
+To: David Howells <dhowells@redhat.com>
+Cc: Paul Mundt <lethal@linux-sh.org>, uclinux-dist-devel@blackfin.uclinux.org,
+        uclinux-dev@uclinux.org, linux-kernel@vger.kernel.org,
+        Greg Ungerer <gerg@uclinux.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Thu, 24 Mar 2011 09:06:44 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Mar 23, 2011 at 04:42:29PM +0900, KAMEZAWA Hiroyuki wrote:
-> | On Tue, 22 Mar 2011 20:06:48 +0900 (JST)
-> | KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> | 
-> | > This reverts commit 93b43fa55088fe977503a156d1097cc2055449a2.
-> | > 
-> | > The commit dramatically improve oom killer logic when fork-bomb
-> | > occur. But, I've found it has nasty corner case. Now cpu cgroup
-> | > has strange default RT runtime. It's 0! That said, if a process
-> | > under cpu cgroup promote RT scheduling class, the process never
-> | > run at all.
-> | > 
-> | > Eventually, kernel may hang up when oom kill occur.
-> | > 
-> | > The author need to resubmit it as adding knob and disabled
-> | > by default if he really need this feature.
-> | > 
-> | > Cc: Luis Claudio R. Goncalves <lclaudio@uudg.org>
-> | > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> | 
-> | Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> The original patch was written to fix an issue observed in 2.6.24.7-rt.
-> As the logic sounded useful, I ported it to upstream. Anyway,I am trying
-> a few ideas to rework that patch. In the meantime, I'm pretty fine with
-> reverting the commit.
-> 
-> Acked-by: Luis Claudio R. Gonçalves <lgoncalv@uudg.org>
+On Wed, Mar 23, 2011 at 8:06 PM, David Howells wrote:
+> Mike Frysinger <vapier@gentoo.org> wrote:
+>> but David seems to be afk for a while ?
+>
+> Yeah...  I moved house and then we had to redecorate and stuff, and whilst all
 
-Ok, and then, I'll drop [patch 3/5] too. I hope to focus to discuss your idea.
+ah, np
 
+> that was going on, my FRV board has been locked away in storage.
 
-
-
+i can send you a free Blackfin board :)
+-mike
