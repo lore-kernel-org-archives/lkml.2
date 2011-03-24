@@ -1,210 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab1CXFYb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 01:24:31 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33469 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab1CXFY3 convert rfc822-to-8bit (ORCPT
+	id S932570Ab1CXF2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 01:28:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58397 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab1CXF2W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 01:24:29 -0400
+	Thu, 24 Mar 2011 01:28:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=Sl8Gg6jerQ2u9EjBTWC8vxZVFocCTMIhnvIo6TmeC3WAcRopKbeaa5OGW2G5hnJFGb
-         y30XVZIx0nhD3ZqE9npFKrg2Jtxn4nKwGPfRUKDQKVDEFD8i0pwOL5YUpycbgHvMt+eM
-         gH0x6rkMl1frj3N4q9Yu5qMj83iEZKUgAN3m8=
+        b=pQ9U9OjbbJjCS1XUWJzN/cc1VMsPiGlaHc5MZwlVaiJlA/15cgpcMjfHZ39V+Fk47d
+         Pxz1KHbnRibLsbNP3gTh312y56/Nu120sKxeWCNPGh0g/X3/LsDT3Scsv4N2QOcXFkvo
+         VvONIUs1Bg0w4u/dfc12MIkeRCEic2UgRllSI=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimU3Hw5ZSo86Fv4RUtNPtS3kZBoWm4kh4MQaymu@mail.gmail.com>
-References: <4D8A58E1.5090509@openvz.org>
-	<AANLkTimU3Hw5ZSo86Fv4RUtNPtS3kZBoWm4kh4MQaymu@mail.gmail.com>
-Date: Thu, 24 Mar 2011 08:24:28 +0300
-X-Google-Sender-Auth: WaNys_zsQALJT-1lAbhjGTKze1E
-Message-ID: <AANLkTim_EDeYGu6_rsSh_3zDTW7mN5+Gwsb0t4HjKx6o@mail.gmail.com>
-Subject: Re: [PATCH -tip] kgdb, x86: Pull up NMI notifier handler priority
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Dongdong Deng <libfetion@gmail.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Ingo Molnar <mingo@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
-        Don Zickus <dzickus@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-        KGDB Mailing List <Kgdb-bugreport@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1300823076.2731.123.camel@work-vm>
+References: <1300781334-30308-1-git-send-email-myungjoo.ham@samsung.com>
+	<1300823076.2731.123.camel@work-vm>
+Date: Thu, 24 Mar 2011 14:28:20 +0900
+X-Google-Sender-Auth: t1zrhYfx5vYGP46j5DOcNomy-RQ
+Message-ID: <AANLkTinuwuosJ27BRjREEq8m2_Z+0=U0x6ujGMS-5rKm@mail.gmail.com>
+Subject: Re: [PATCH v2] RTC: Selectively enable PIE-Hrtimer emulation.
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, kyungmin.park@samsung.com,
+        MyungJoo Ham <myungjoo.ham@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If Jason is ok with such splitting -- I dont mind either ;)
+On Wed, Mar 23, 2011 at 4:44 AM, John Stultz <john.stultz@linaro.org> wrote:
+> On Tue, 2011-03-22 at 17:08 +0900, MyungJoo Ham wrote:
+>> The patch of John Stultz, "RTC: Rework RTC code to use timerqueue for
+>> events", has enabled PIE interrupt emulation with hrtimer unconditionally.
+>> However, we do have RTC devices that support PIE and such devices are
+>> not meant to be emulated by hrtimer.
+>
+> I guess the question I want to ask here, is what is the value of getting
+> PIE interrupts over the hrtimer? For most cases it is yet another
+> interrupt. Could you expand a bit more on why you need real PIE irqs?
 
-/sorry for toppost/
+I have been implementing charger driver (and then, moving on to
+charger "framework") that requires periodic monitoring on the
+thermistors and properties of battery chargers that do not have
+interrupts. Because the chargers keep charging during suspend, I need
+to keep monitoring them during suspend. I have been doing this by
+periodically waking up the system during suspend with usually 30 secs.
+Although the PIE frequency is over 1Hz, the RTC device in the CPUs we
+use (S3Cxxxx, S5Pxxxx) have TICCNT entry, which allows to have PIE
+interrupt every TICCNT-th PIE-Tick; e.g., with TICCNT=30 and
+PIE-frequency=1Hz, we have an interrupt every 30 seconds. (This TICCNT
+feature is not included in mainline rtc-s3c, yet.)
 
-On Thursday, March 24, 2011, Dongdong Deng <libfetion@gmail.com> wrote:
-> On Thu, Mar 24, 2011 at 4:32 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
->> kgdb needs IPI to be sent and handled before perf
->> or anything else NMI, otherwise kgdb hangs with bootup
->> self-tests (found on P4 HT SMP machine). Raise its priority
->> so that we're called first in a notifier chain.
->>
->> Reported-by: Don Zickus <dzickus@redhat.com>
->> Tested-by: Lin Ming <ming.m.lin@intel.com>
->> CC: Jason Wessel <jason.wessel@windriver.com>
->> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
->> ---
->>
->> Don, Jason, take a look please.
->>
->>  arch/x86/kernel/kgdb.c |    7 +++++--
->>  1 file changed, 5 insertions(+), 2 deletions(-)
->>
->> Index: linux-2.6.git/arch/x86/kernel/kgdb.c
->> =====================================================================
->> --- linux-2.6.git.orig/arch/x86/kernel/kgdb.c
->> +++ linux-2.6.git/arch/x86/kernel/kgdb.c
->> @@ -592,9 +592,12 @@ static struct notifier_block kgdb_notifi
->>        .notifier_call  = kgdb_notify,
->>
->>        /*
->> -        * Lowest-prio notifier priority, we want to be notified last:
->> +        * We might need to send an IPI and
->> +        * do cpu roundup before anything else
->> +        * in notifier chain so high priority
->> +        * is needed.
->>         */
->> -       .priority       = NMI_LOCAL_LOW_PRIOR,
->> +       .priority       = NMI_LOCAL_HIGH_PRIOR,
->>  };
+For now, I use an additional EXPORTed functions for setting TICCNT
+provided with rtc-s3c.c.
+
 >
-> CC: kgdb maillist.
+>> Besides, we sometimes need RTC-PIE
+>> to function while hrtimer does not; e.g., CPU's RTC PIE as a
+>> suspend-to-RAM wakeup source.
 >
-> I quote Jason's early email to explain why debugger tends to
-> set the low level of die_notifier.
+> So this indeed is a limitation. hrtimer emulated PIE's won't wake the
+> system up. Â So is this a "Besides...sometimes" sort of case, or is PIE
+> wakeups really the only issue here?
+
+So far, this is the only issue affecting us with the PIE emulation.
+
+Some potential issues that I'm not concerned for now are;
+a. we are blocking a hardware's function with an emulated feature.
+b. there could be multiple rtc devices in a system and we may need to
+setup them anyway without any s/w interrupt handlers. (RTC PIEs
+directly signalling some other H/W pieces?)
+
 >
-> "The original thinking was that if you are using a low level debugger
-> that you would want to stop on such a event or breakpoint because there
-> is nothing else handling it and your system is about to print an oops
-> message."
+> To better understand the scope of the issue, I'd like to know more about
+> your uage of PIE mode as a wakeup source. Given PIE mode is for sub 1HZ
+> irqs, do you really use suspend/resume at a periodic rate multiple times
+> a second? Is this done with the current mainline kernel? What would be
+> the penalty of moving to a 1HZ wakeup?
+
+No, I don't use it for periodic sub-1HZ wakeups. I use it for
+several-seconds periodic wakeups. I have not posted such features to
+mainline kernel, yet.
+
+
 >
-> For keeping above purpose, I have a "ugly" proposal that splitting
-> kgdb die handling to two parts.
+> If this indeed a critical limitation, then it needs to be solved.
+> However, instead of just re-enabling the pie mode access to userland
+> (which will likely need more then the patch here provides to avoid
+> breaking the RTC event multiplexing), I'd much prefer to see the the
+> solution as extending the in-kernel RTC API to allow for sub-second
+> resolution alarms, then using a periodic mode rtc alarm to emulate PIE
+> mode irqs out to userland.
+
+If we are to provide in-kernel RTC eumulation API to userland, why
+don't we separate it from H/W RTC API dev? (e.g., provide emulated rtc
+as /dev/rtc, and provide H/W rtc as /dev/rtcX). We already have
+multiple H/W RTC devs (e.g., /dev/rtc0, /dev/rtc1) in some systems. In
+the current scheme, we may have multiple H/W RTCs with each having S/W
+emulated PIEs (essentially same and redundant.)
+
 >
-> 1: The first part with HIGH priority and just handle NMI event,
->  if the NMI event is not belong kgdb, it return NOTIFY_DONE and pass to others.
+> Alessandro: Your thoughts here? As it seems most RTC hardware can handle
+> it, any objections to extending the in-kernel interface to provide
+> sub-second resolution (it doesn't mean they will provide it, but it
+> doesn't limit the hardware at the interface level).
 >
-> 2: The second part with low priority to handling others.
+>> This patch allows to selectively use the PIE emulation. If the rtc
+>> driver has implemented PIE related ops (irq_set_state and irq_set_freq),
 >
-> Due to above handling logic could let kgdb source get complexly, I
-> couldn't make sure
-> it is a suitable method here, if it is OK, I can send a formal patch. :-)
+> So, both irq_set_state and irq_set_freq were removed upstream in the
+> 2.6.39-rc1 merge window, so this patch def won't work upstream.
+>
+> Sorry for the trouble here! Hopefully we can get things resolved and
+> working shortly here.
+>
+> thanks
+> -john
 >
 >
-> $git diff
-> -----------
-> arch/x86/kernel/kgdb.c |   67 +++++++++++++++++++++++++++++++++++------------
->  1 files changed, 50 insertions(+), 17 deletions(-)
->
-> diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-> index dba0b36..afd18db 100644
-> --- a/arch/x86/kernel/kgdb.c
-> +++ b/arch/x86/kernel/kgdb.c
-> @@ -516,23 +516,6 @@ static int __kgdb_notify(struct die_args *args,
-> unsigned long cmd)
->         struct pt_regs *regs = args->regs;
->
->         switch (cmd) {
-> -       case DIE_NMI:
-> -               if (atomic_read(&kgdb_active) != -1) {
-> -                       /* KGDB CPU roundup */
-> -                       kgdb_nmicallback(raw_smp_processor_id(), regs);
-> -                       was_in_debug_nmi[raw_smp_processor_id()] = 1;
-> -                       touch_nmi_watchdog();
-> -                       return NOTIFY_STOP;
-> -               }
-> -               return NOTIFY_DONE;
-> -
-> -       case DIE_NMIUNKNOWN:
-> -               if (was_in_debug_nmi[raw_smp_processor_id()]) {
-> -                       was_in_debug_nmi[raw_smp_processor_id()] = 0;
-> -                       return NOTIFY_STOP;
-> -               }
-> -               return NOTIFY_DONE;
-> -
->         case DIE_DEBUG:
->                 if (atomic_read(&kgdb_cpu_doing_single_step) != -1) {
->                         if (user_mode(regs))
-> @@ -588,6 +571,52 @@ kgdb_notify(struct notifier_block *self, unsigned
-> long cmd, void *ptr)
->         return ret;
->  }
->
-> +static int
-> +kgdb_nmi_notify(struct notifier_block *self, unsigned long cmd, void *ptr)
-> +{
-> +       unsigned long flags;
-> +       struct pt_regs *regs = ((struct die_args*)ptr)->regs;
-> +       int ret = NOTIFY_DONE;
-> +
-> +       local_irq_save(flags);
-> +
-> +       switch (cmd) {
-> +       case DIE_NMI:
-> +               if (atomic_read(&kgdb_active) != -1) {
-> +                       /* KGDB CPU roundup */
-> +                       kgdb_nmicallback(raw_smp_processor_id(), regs);
-> +                       was_in_debug_nmi[raw_smp_processor_id()] = 1;
-> +                       touch_nmi_watchdog();
-> +                       ret = NOTIFY_STOP;
-> +               }
-> +               break;
-> +
-> +       case DIE_NMIUNKNOWN:
-> +               if (was_in_debug_nmi[raw_smp_processor_id()]) {
-> +                       was_in_debug_nmi[raw_smp_processor_id()] = 0;
-> +                       ret = NOTIFY_STOP;
-> +               }
-> +               break;
-> +       default:
-> +               break;
-> +       }
-> +
-> +       local_irq_restore(flags);
-> +       return ret;
-> +}
-> +
-> +static struct notifier_block kgdb_nmi_notifier = {
-> +       .notifier_call  = kgdb_nmi_notify,
-> +
-> +       /*
-> +        * We might need to send an IPI and
-> +        * do cpu roundup before anything else
-> +        * in notifier chain so high priority
-> +        * is needed.
-> +        */
-> +       .priority       = NMI_LOCAL_HIGH_PRIOR,
-> +};
-> +
->  static struct notifier_block kgdb_notifier = {
->         .notifier_call  = kgdb_notify,
->
-> @@ -605,6 +634,9 @@ static struct notifier_block kgdb_notifier = {
->   */
->  int kgdb_arch_init(void)
->  {
-> +       int err = register_die_notifier(&kgdb_nmi_notifier);
-> +       if (err)
-> +               return err;
->         return register_die_notifier(&kgdb_notifier);
->  }
->
-> @@ -673,6 +705,7 @@ void kgdb_arch_exit(void)
->                         breakinfo[i].pev = NULL;
->                 }
->         }
-> +       unregister_die_notifier(&kgdb_nmi_notifier);
->         unregister_die_notifier(&kgdb_notifier);
->  }
->
-> --
-> 1.6.0.4
->
+
+I think providing hrtimer-based emulation for RTC PIE interrupts is
+fine; however, for RTC devices that want to use their own PIE
+features, I think the framework needs not to block them.
+
+
+Cheers!
+
+- MyungJoo
+-- 
+MyungJoo Ham (í•¨ëª…ì£¼), Ph.D.
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: 82-10-6714-2858
