@@ -1,60 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934084Ab1CXT3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:29:11 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43675 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933988Ab1CXT3H (ORCPT
+	id S934095Ab1CXT3g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:29:36 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60296 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934017Ab1CXT1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:29:07 -0400
+	Thu, 24 Mar 2011 15:27:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Vr0/V2fLZwLt5YhgaA3pr2GUD8/bECjF9o9iwVNZ8ueI1q+Z8LbnUwkDHIaxAP1+lY
-         ewYoQ5jdTSd3Iu4Jki4iglSaWKC7JRLhXhsbKzp8FLQ7jy6H76Z22C4lqS/MMz/o8ebq
-         p7bHEdYKeO1e1Hrco9vqOAdQ3GzO9++PxEQVY=
-MIME-Version: 1.0
-In-Reply-To: <20110324192712.GA7156@elte.hu>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger>
-	<20110324142146.GA11682@elte.hu>
-	<alpine.DEB.2.00.1103240940570.32226@router.home>
-	<AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
-	<20110324172653.GA28507@elte.hu>
-	<alpine.DEB.2.00.1103242011540.4990@tiger>
-	<20110324192712.GA7156@elte.hu>
-Date: Thu, 24 Mar 2011 21:29:06 +0200
-X-Google-Sender-Auth: RRq8hmNhUT6HLjmG7ls37AsknvU
-Message-ID: <AANLkTi=YRYpBmni4CBmiOXML=w4CVH+AveAwLu=tt_rB@mail.gmail.com>
-Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
-From: Pekka Enberg <penberg@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Christoph Lameter <cl@linux.com>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, tj@kernel.org, npiggin@kernel.dk,
-        rientjes@google.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=QoBMh6UFtjuQ1SXZrRhPP80kWgsp3bsSn9/lrK3CKYgMdsprtJeTbhOsedt1t/0MRJ
+         QnoE8xGCDl/OAuPzPqDY/Ne3xOA4wqOwLTAE8xJDwfhNojTHwjMG4JUDzJqJWyK40q8Z
+         g9CSVyQOSjmANUWIS7XsEtQs0IyKflc3f6jUE=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [RFC 14/21]drivers:staging Remove extra comma.
+Date: Thu, 24 Mar 2011 12:26:52 -0700
+Message-Id: <1300994819-30930-14-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
+References: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 9:27 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Pekka Enberg <penberg@kernel.org> wrote:
->
->> >From dd1534455196d2a8f6c9c912db614e59986c9f0e Mon Sep 17 00:00:00 2001
->> From: Pekka Enberg <penberg@kernel.org>
->> Date: Thu, 24 Mar 2011 19:59:35 +0200
->> Subject: [PATCH] x86: Early boot alternative instructions
->
-> hm, patch is whitespace damaged.
->
-> Also, the fix looks rather intrusive.
->
-> Could we please disable the lockless slub code first and then do everything
-> with proper testing and re-enable the lockless code *after* we know that the
-> alternatives fixup change is robust, etc? That way there's no rush needed.
->
-> There's a lot of code that could break from tweaking the alternatives code.
+The patch below removes an extra comma from various parts 
+of the kernel. Please have a look when you have time, and let
+me know if its legit or not.
 
-Just ignore this patch. As explained by Christoph, if alternative_io()
-was the issue, we'd see the crash in kmem_cache_alloc().
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+---
+ drivers/staging/gma500/psb_buffer.c     |    4 ++--
+ drivers/staging/gma500/psb_fb.c         |    2 +-
+ drivers/staging/iio/addac/adt7316-i2c.c |    2 +-
+ drivers/staging/iio/dds/ad9832.c        |    2 +-
+ drivers/staging/iio/dds/ad9834.c        |    2 +-
+ drivers/staging/rt2860/rtmp.h           |    2 +-
+ 6 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/gma500/psb_buffer.c b/drivers/staging/gma500/psb_buffer.c
+index 3077f6a..4f60850 100644
+--- a/drivers/staging/gma500/psb_buffer.c
++++ b/drivers/staging/gma500/psb_buffer.c
+@@ -384,12 +384,12 @@ static int psb_ttm_io_mem_reserve(struct ttm_bo_device *bdev,
+ 		break;
+ 	case TTM_PL_CI:
+ 		mem->bus.offset = mm_node->start << PAGE_SHIFT;
+-		mem->bus.base = dev_priv->ci_region_start;;
++		mem->bus.base = dev_priv->ci_region_start;
+ 		mem->bus.is_iomem = true;
+ 		break;
+ 	case TTM_PL_RAR:
+ 		mem->bus.offset = mm_node->start << PAGE_SHIFT;
+-		mem->bus.base = dev_priv->rar_region_start;;
++		mem->bus.base = dev_priv->rar_region_start;
+ 		mem->bus.is_iomem = true;
+ 		break;
+ 	default:
+diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
+index f67f53b..6c2b06e 100644
+--- a/drivers/staging/gma500/psb_fb.c
++++ b/drivers/staging/gma500/psb_fb.c
+@@ -194,7 +194,7 @@ static int psbfb_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	struct drm_device *dev = psbfb->base.dev;
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	struct psb_gtt *pg = dev_priv->pg;
+-	unsigned long phys_addr = (unsigned long)pg->stolen_base;;
++	unsigned long phys_addr = (unsigned long)pg->stolen_base;
+ 
+ 	page_num = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ 
+diff --git a/drivers/staging/iio/addac/adt7316-i2c.c b/drivers/staging/iio/addac/adt7316-i2c.c
+index 52d1ea3..1c86cf1 100644
+--- a/drivers/staging/iio/addac/adt7316-i2c.c
++++ b/drivers/staging/iio/addac/adt7316-i2c.c
+@@ -109,7 +109,7 @@ static int __devinit adt7316_i2c_probe(struct i2c_client *client,
+ 
+ static int __devexit adt7316_i2c_remove(struct i2c_client *client)
+ {
+-	return adt7316_remove(&client->dev);;
++	return adt7316_remove(&client->dev);
+ }
+ 
+ static const struct i2c_device_id adt7316_i2c_id[] = {
+diff --git a/drivers/staging/iio/dds/ad9832.c b/drivers/staging/iio/dds/ad9832.c
+index 3e8491f..554441d 100644
+--- a/drivers/staging/iio/dds/ad9832.c
++++ b/drivers/staging/iio/dds/ad9832.c
+@@ -52,7 +52,7 @@ static int ad9832_write_frequency(struct ad9832_state *st,
+ 					((addr - 3) << ADD_SHIFT) |
+ 					((regval >> 0) & 0xFF));
+ 
+-	return spi_sync(st->spi, &st->freq_msg);;
++	return spi_sync(st->spi, &st->freq_msg);
+ }
+ 
+ static int ad9832_write_phase(struct ad9832_state *st,
+diff --git a/drivers/staging/iio/dds/ad9834.c b/drivers/staging/iio/dds/ad9834.c
+index eb1a681..5086f9d 100644
+--- a/drivers/staging/iio/dds/ad9834.c
++++ b/drivers/staging/iio/dds/ad9834.c
+@@ -47,7 +47,7 @@ static int ad9834_write_frequency(struct ad9834_state *st,
+ 				       (AD9834_FREQ_BITS / 2)) &
+ 				       RES_MASK(AD9834_FREQ_BITS / 2)));
+ 
+-	return spi_sync(st->spi, &st->freq_msg);;
++	return spi_sync(st->spi, &st->freq_msg);
+ }
+ 
+ static int ad9834_write_phase(struct ad9834_state *st,
+diff --git a/drivers/staging/rt2860/rtmp.h b/drivers/staging/rt2860/rtmp.h
+index d16b06a..afdf0bf 100644
+--- a/drivers/staging/rt2860/rtmp.h
++++ b/drivers/staging/rt2860/rtmp.h
+@@ -1683,7 +1683,7 @@ struct rt_rtmp_chip_op {
+ 	/* MCU related callback functions */
+ 	int (*loadFirmware) (struct rt_rtmp_adapter *pAd);	/* int (*loadFirmware)(struct rt_rtmp_adapter *pAd); */
+ 	int (*eraseFirmware) (struct rt_rtmp_adapter *pAd);	/* int (*eraseFirmware)(struct rt_rtmp_adapter *pAd); */
+-	int (*sendCommandToMcu) (struct rt_rtmp_adapter *pAd, u8 cmd, u8 token, u8 arg0, u8 arg1);;	/* int (*sendCommandToMcu)(struct rt_rtmp_adapter *pAd, u8 cmd, u8 token, u8 arg0, u8 arg1); */
++	int (*sendCommandToMcu) (struct rt_rtmp_adapter *pAd, u8 cmd, u8 token, u8 arg0, u8 arg1);	/* int (*sendCommandToMcu)(struct rt_rtmp_adapter *pAd, u8 cmd, u8 token, u8 arg0, u8 arg1); */
+ 
+ 	/* RF access related callback functions */
+ 	struct rt_reg_pair *pRFRegTable;
+-- 
+1.7.4.1
+
