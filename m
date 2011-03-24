@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933483Ab1CXA3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 20:29:47 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:4090 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933406Ab1CXA3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 20:29:46 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-Subject: Re: [PATCH] bnx2fc: setup em for npiv port
-From: "Bhanu Gollapudi" <bprakash@broadcom.com>
-To: James.Bottomley@suse.de
-cc: "devel@open-fcoe.org" <devel@open-fcoe.org>,
-        "Vasu Dev" <vasu.dev@intel.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110315231329.13280.54456.stgit@vifc.jf.intel.com>
-References: <20110315231329.13280.54456.stgit@vifc.jf.intel.com>
-Date: Wed, 23 Mar 2011 17:29:35 -0700
-Message-ID: <1300926575.6240.4.camel@LTSJC-BPRAKASH.corp.ad.broadcom.com>
+	id S933495Ab1CXAcF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 20:32:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36886 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933406Ab1CXAcD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 20:32:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=dWpcTPlspmOjfR5/NhScWJ/gNb5OAj4ywlNE3LEXdJZprlLoLM/obfw2sA/pqt5qAT
+         +tJ0lVHtPp76eSk0YpAc677/22KyC03bIkNerCfCAvVaEmHoM5XG6Bwiww6pH1o7yzGf
+         JH0pbqVcy2+szT+2NUWJ6Y5uQb7BXvRyIRfuY=
 MIME-Version: 1.0
-X-WSS-ID: 61944E873CK5272854-01-01
-Content-Type: text/plain;
- charset=cp1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <10444.1300926012@redhat.com>
+References: <1300826506-23192-1-git-send-email-vapier@gentoo.org> <10444.1300926012@redhat.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 23 Mar 2011 20:31:42 -0400
+X-Google-Sender-Auth: cALxY7jgZkCQbCUqoZdfp4lP7FQ
+Message-ID: <AANLkTikUYp6YxryaBcpCrs3XwxkvHZZSk5x3S4yNcD4c@mail.gmail.com>
+Subject: Re: [PATCH] NOMMU: support SMP dynamic percpu_alloc
+To: David Howells <dhowells@redhat.com>
+Cc: graf.yang@analog.com, uclinux-dev@uclinux.org,
+        Greg Ungerer <gerg@uclinux.org>, Paul Mundt <lethal@linux-sh.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 16:13 -0700, Vasu Dev wrote: 
-> Use fc_exch_mgr_list_clone to setup em for npiv port.
-> 
-> Also remove redundant vport and lport initializations.
-> 
-> Signed-off-by: Vasu Dev <vasu.dev@intel.com>
-> ---
+On Wed, Mar 23, 2011 at 8:20 PM, David Howells wrote:
+> Mike Frysinger wrote:
+>> The percpu code requires more functions to be implemented in the mm core
+>> which nommu currently does not provide.  So add inline implementations
+>> since these are largely meaningless on nommu systems.
+>
+> Under what conditions are these required?
+>
+> I've seen one percpu compilation bug that I've made a patch for (see
+> attached), but none of these.  Is SMP required to trigger them?
 
-James, 
+yes, it only occurs in SMP builds.
 
-We have tested this, and would like to ack it.
+i havent seen the build error you mention below, but i think that's
+because in a past discussion we determined that NOMMU ports should be
+setting VMALLOC_START to 0 and VMALLOC_END to -1.  is that no longer
+the case ?
 
-Thanks,
-Bhanu
-
-> 
->  drivers/scsi/bnx2fc/bnx2fc_fcoe.c |   29 +++++++++++++++--------------
->  1 files changed, 15 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-> index e476e87..71842a7 100644
-> --- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-> +++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-> @@ -1296,20 +1296,17 @@ setup_err:
->  static struct fc_lport *bnx2fc_if_create(struct bnx2fc_hba *hba,
->  				  struct device *parent, int npiv)
->  {
-> -	struct fc_lport		*lport = NULL;
-> +	struct fc_lport		*lport, *n_port;
->  	struct fcoe_port	*port;
->  	struct Scsi_Host	*shost;
->  	struct fc_vport		*vport = dev_to_vport(parent);
->  	int			rc = 0;
->  
->  	/* Allocate Scsi_Host structure */
-> -	if (!npiv) {
-> -		lport = libfc_host_alloc(&bnx2fc_shost_template,
-> -					  sizeof(struct fcoe_port));
-> -	} else {
-> -		lport = libfc_vport_create(vport,
-> -					   sizeof(struct fcoe_port));
-> -	}
-> +	if (!npiv)
-> +		lport = libfc_host_alloc(&bnx2fc_shost_template, sizeof(*port));
-> +	else
-> +		lport = libfc_vport_create(vport, sizeof(*port));
->  
->  	if (!lport) {
->  		printk(KERN_ERR PFX "could not allocate scsi host structure\n");
-> @@ -1327,7 +1324,6 @@ static struct fc_lport *bnx2fc_if_create(struct bnx2fc_hba *hba,
->  		goto lp_config_err;
->  
->  	if (npiv) {
-> -		vport = dev_to_vport(parent);
->  		printk(KERN_ERR PFX "Setting vport names, 0x%llX 0x%llX\n",
->  			vport->node_name, vport->port_name);
->  		fc_set_wwnn(lport, vport->node_name);
-> @@ -1356,12 +1352,17 @@ static struct fc_lport *bnx2fc_if_create(struct bnx2fc_hba *hba,
->  	fc_host_port_type(lport->host) = FC_PORTTYPE_UNKNOWN;
->  
->  	/* Allocate exchange manager */
-> -	if (!npiv) {
-> +	if (!npiv)
->  		rc = bnx2fc_em_config(lport);
-> -		if (rc) {
-> -			printk(KERN_ERR PFX "Error on bnx2fc_em_config\n");
-> -			goto shost_err;
-> -		}
-> +	else {
-> +		shost = vport_to_shost(vport);
-> +		n_port = shost_priv(shost);
-> +		rc = fc_exch_mgr_list_clone(n_port, lport);
-> +	}
-> +
-> +	if (rc) {
-> +		printk(KERN_ERR PFX "Error on bnx2fc_em_config\n");
-> +		goto shost_err;
->  	}
->  
->  	bnx2fc_interface_get(hba);
-> 
-> 
-
-
-
+there are bunch more places where things would fail if
+VMALLOC_{START,END} werent defined ...
+-mike
