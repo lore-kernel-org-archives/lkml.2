@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab1CXXs4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 19:48:56 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63351 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757309Ab1CXXsy (ORCPT
+	id S1757386Ab1CXXtT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 19:49:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49912 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757309Ab1CXXtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 19:48:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Ukl2fSa2wCJ0b8EMgiqEby67dFFwSBl8pAxKdpZqfgouItyvWW+HNFZOpOrLVFUDhB
-         brbySL7g3wqT3ugTWam5r21PTLIiUoXqGUrmZjcfWswbGIsLwQP9slXAfJtA92Kwg4Yt
-         tmw6qNFN8kNKooXQ0mfpPMoEvWGTFA5UmwyNs=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH V3 14/21]drivers:staging Remove extra semi-colon.
-Date: Thu, 24 Mar 2011 16:48:39 -0700
-Message-Id: <1301010519-3392-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 24 Mar 2011 19:49:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimrHa-Fb=3HN68OML7RddsX_8rrJV_YOK3H6xST@mail.gmail.com>
+References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
+ <1300864998.3522.71.camel@thor.local> <AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
+ <1300868532.3522.81.camel@thor.local> <AANLkTi=mFKBqF48DwGsQL278grJChCVzw==D7vr49n09@mail.gmail.com>
+ <Pine.GSO.4.62.1103230633160.12612@umail> <1300880747.16522.13.camel@thor.local>
+ <AANLkTik=GH8tGMjeKVfsmvX5WeX+4avnYan_nkGcCx20@mail.gmail.com>
+ <Pine.GSO.4.62.1103240628490.1156@umail> <AANLkTimZWtOLiDT3KoUKZtsKfj4Aeu+XMF+rLc0wCSYk@mail.gmail.com>
+ <AANLkTimrHa-Fb=3HN68OML7RddsX_8rrJV_YOK3H6xST@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 24 Mar 2011 16:48:21 -0700
+Message-ID: <AANLkTi=x0ZZNfzCpKURXMCaiEncsFNQ2tg1zbARnJjx1@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+To: Dave Airlie <airlied@gmail.com>
+Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below removes an extra semi-colon from various parts 
-of the kernel. Please have a look when you have time, and let
-me know if its legit or not.
+On Thu, Mar 24, 2011 at 1:05 PM, Dave Airlie <airlied@gmail.com> wrote:
+>
+> If you think this has anything to do with Intel's ability to break your hardware
+> on every merge then you've got your wires crossed.
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+No, it's about the fact that I expect to be pushed code that is
+WRITTEN AND TESTED BEFORE THE MERGE WINDOW.
 
----
- drivers/staging/iio/addac/adt7316-i2c.c |    2 +-
- drivers/staging/iio/dds/ad9832.c        |    2 +-
- drivers/staging/iio/dds/ad9834.c        |    2 +-
- drivers/staging/rt2860/rtmp.h           |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+The merge window is not for writing new code. The code that gets
+merged should have been written two weeks ago already. The only new
+code that I want to see are actual regressions.
 
-diff --git a/drivers/staging/iio/addac/adt7316-i2c.c b/drivers/staging/iio/addac/adt7316-i2c.c
-index 52d1ea3..1c86cf1 100644
---- a/drivers/staging/iio/addac/adt7316-i2c.c
-+++ b/drivers/staging/iio/addac/adt7316-i2c.c
-@@ -109,7 +109,7 @@ static int __devinit adt7316_i2c_probe(struct i2c_client *client,
- 
- static int __devexit adt7316_i2c_remove(struct i2c_client *client)
- {
--	return adt7316_remove(&client->dev);;
-+	return adt7316_remove(&client->dev);
- }
- 
- static const struct i2c_device_id adt7316_i2c_id[] = {
-diff --git a/drivers/staging/iio/dds/ad9832.c b/drivers/staging/iio/dds/ad9832.c
-index 3e8491f..554441d 100644
---- a/drivers/staging/iio/dds/ad9832.c
-+++ b/drivers/staging/iio/dds/ad9832.c
-@@ -52,7 +52,7 @@ static int ad9832_write_frequency(struct ad9832_state *st,
- 					((addr - 3) << ADD_SHIFT) |
- 					((regval >> 0) & 0xFF));
- 
--	return spi_sync(st->spi, &st->freq_msg);;
-+	return spi_sync(st->spi, &st->freq_msg);
- }
- 
- static int ad9832_write_phase(struct ad9832_state *st,
-diff --git a/drivers/staging/iio/dds/ad9834.c b/drivers/staging/iio/dds/ad9834.c
-index eb1a681..5086f9d 100644
---- a/drivers/staging/iio/dds/ad9834.c
-+++ b/drivers/staging/iio/dds/ad9834.c
-@@ -47,7 +47,7 @@ static int ad9834_write_frequency(struct ad9834_state *st,
- 				       (AD9834_FREQ_BITS / 2)) &
- 				       RES_MASK(AD9834_FREQ_BITS / 2)));
- 
--	return spi_sync(st->spi, &st->freq_msg);;
-+	return spi_sync(st->spi, &st->freq_msg);
- }
- 
- static int ad9834_write_phase(struct ad9834_state *st,
-diff --git a/drivers/staging/rt2860/rtmp.h b/drivers/staging/rt2860/rtmp.h
-index d16b06a..afdf0bf 100644
---- a/drivers/staging/rt2860/rtmp.h
-+++ b/drivers/staging/rt2860/rtmp.h
-@@ -1683,7 +1683,7 @@ struct rt_rtmp_chip_op {
- 	/* MCU related callback functions */
- 	int (*loadFirmware) (struct rt_rtmp_adapter *pAd);	/* int (*loadFirmware)(struct rt_rtmp_adapter *pAd); */
- 	int (*eraseFirmware) (struct rt_rtmp_adapter *pAd);	/* int (*eraseFirmware)(struct rt_rtmp_adapter *pAd); */
--	int (*sendCommandToMcu) (struct rt_rtmp_adapter *pAd, u8 cmd, u8 token, u8 arg0, u8 arg1);;	/* int (*sendCommandToMcu)(struct rt_rtmp_adapter *pAd, u8 cmd, u8 token, u8 arg0, u8 arg1); */
-+	int (*sendCommandToMcu) (struct rt_rtmp_adapter *pAd, u8 cmd, u8 token, u8 arg0, u8 arg1);	/* int (*sendCommandToMcu)(struct rt_rtmp_adapter *pAd, u8 cmd, u8 token, u8 arg0, u8 arg1); */
- 
- 	/* RF access related callback functions */
- 	struct rt_reg_pair *pRFRegTable;
--- 
-1.7.4.1
+I have been talking about this for YEARS now. It's not a new issue. I
+hate seeing patches sent to me while they are clearly still being
+discussed and developed. There's something seriously wrong there when
+that happens.
 
+                           Linus
