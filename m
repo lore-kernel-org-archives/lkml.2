@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986Ab1CXPt4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 11:49:56 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:53674 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754013Ab1CXPtz (ORCPT
+	id S933303Ab1CXPuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 11:50:15 -0400
+Received: from ihemail1.lucent.com ([135.245.0.33]:39113 "EHLO
+	ihemail1.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756508Ab1CXPuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 11:49:55 -0400
-From: Stefan Bader <stefan.bader@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: [2.6.32+drm33-longterm] Linux 2.6.32.35+drm33.15
-Date: Thu, 24 Mar 2011 15:49:53 +0000
-Message-Id: <1300981793-26673-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
-To: linux-kernel@vger.kernel.org
-To: stable@kernel.org
-To: kernel-team@lists.ubuntu.com
+	Thu, 24 Mar 2011 11:50:14 -0400
+Date: Thu, 24 Mar 2011 10:49:56 -0500 (CDT)
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
+X-X-Sender: ihadzic@umail
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Dave Airlie <airlied@gmail.com>,
+        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [git pull] drm fixes
+In-Reply-To: <AANLkTimZWtOLiDT3KoUKZtsKfj4Aeu+XMF+rLc0wCSYk@mail.gmail.com>
+Message-ID: <Pine.GSO.4.62.1103241034180.2327@umail>
+References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
+ <1300864998.3522.71.camel@thor.local> <AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
+ <1300868532.3522.81.camel@thor.local> <AANLkTi=mFKBqF48DwGsQL278grJChCVzw==D7vr49n09@mail.gmail.com>
+ <Pine.GSO.4.62.1103230633160.12612@umail> <1300880747.16522.13.camel@thor.local>
+ <AANLkTik=GH8tGMjeKVfsmvX5WeX+4avnYan_nkGcCx20@mail.gmail.com>
+ <Pine.GSO.4.62.1103240628490.1156@umail> <AANLkTimZWtOLiDT3KoUKZtsKfj4Aeu+XMF+rLc0wCSYk@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the 2.6.32.35+drm33.15 longterm tree.
 
-This tree is based on 2.6.32 and generally has all of the stable updates
-applied. Except those to the DRM subsystem, which was based on 2.6.33 and
-took updates from that upstream stable as long as that existed. It will
-continue to add patches to the DRM subsystem as long as they are valid
-according to the stable update rules (Documentation/stable_kernel_rules.txt).
-DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
 
-This release contains patches from upstream 2.6.32.35, but dropped any patches
-to the DRM subsystem.
+On Thu, 24 Mar 2011, Linus Torvalds wrote:
 
-The updated 2.6.32.y-drm33.z tree can be found at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
-and can be browsed through git web via:
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
+>
+> In other words: Why should I pull this at all?
+>
 
--Stefan
+You should pull it (eventually) because it fixes a problem that is real 
+and visible and does it in a way that is conservative enough to not risk 
+introducing new breakage.
 
-------
+Whether you should pull it now or wait until you get convinced that we 
+got our act together is totally your call.
 
-* Revert "perf: Handle stopped state with tracepoints"
-* Linux 2.6.32.35
+Speaking as the author of the patch, what Dave pushed this morning is good 
+enough for me. I spent quite a bit of time testing all the usage patterns 
+(including the latest version pushed to you) and I can assert that the 
+change is safe.
 
- Makefile            |    2 +-
- kernel/perf_event.c |    2 --
- 2 files changed, 1 insertions(+), 3 deletions(-)
+I can't speak for others, but I have not seen any additional complaints.
 
-diff --git a/Makefile b/Makefile
-index 63ad218..7f6e11d 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .34+drm33.15
-+EXTRAVERSION = .35+drm33.15
- NAME = Man-Eating Seals of Antiquity
+-- Ilija
 
- # *DOCUMENTATION*
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index f9af60f..183d437 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4167,8 +4167,6 @@ static void tp_perf_event_destroy(struct perf_event *event)
-
- static const struct pmu *tp_perf_event_init(struct perf_event *event)
- {
--	if (event->hw.state & PERF_HES_STOPPED)
--		return 0;
- 	/*
- 	 * Raw tracepoint data is a severe data leak, only allow root to
- 	 * have these.
