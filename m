@@ -1,64 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933944Ab1CXRWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 13:22:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19057 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933890Ab1CXRWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 13:22:23 -0400
-Date: Thu, 24 Mar 2011 18:13:19 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        Andrey Vagin <avagin@openvz.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 5/5] x86,mm: make pagefault killable
-Message-ID: <20110324171319.GA20182@redhat.com>
-References: <20110315153801.3526.A69D9226@jp.fujitsu.com> <20110322194721.B05E.A69D9226@jp.fujitsu.com> <20110322200945.B06D.A69D9226@jp.fujitsu.com>
+	id S933960Ab1CXRX2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 13:23:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62574 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933672Ab1CXRX0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 13:23:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CATkmbA3yLu1HUU6ZmeTBNeyii+MqBv9oSqIcP6xiVfuqYULNh6Vw6vLnYhEUx5rKw
+         WytSHpu3yamEJ5Z2317w03T2x/7ns68oQtR/XwsHy9BGoDqXMTn7+K9gQX97L3jhYn5I
+         A7zPRfcnFjvsHywgz3YbqXnQeQrRJ2F4+aqLk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110322200945.B06D.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <s5hoc50vqrh.wl%tiwai@suse.de>
+References: <AANLkTin1kqjSgh8R5zzt_tkJAsTV_LxDjpPf5ngUHEr1@mail.gmail.com>
+	<s5hzkoluifr.wl%tiwai@suse.de>
+	<AANLkTi=RtEZyiry1FWiaT5LQbm3r-_9X_f2jPOQ6YCex@mail.gmail.com>
+	<s5hoc50vqrh.wl%tiwai@suse.de>
+Date: Thu, 24 Mar 2011 10:23:25 -0700
+Message-ID: <AANLkTi=ivaNVF2Jsz2rmxT-Pe2hs0jMUv7XZQ6K=2-d6@mail.gmail.com>
+Subject: Re: snd_card_disconnect race (sound/core/init.c)
+From: Russ Dill <russ.dill@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22, KOSAKI Motohiro wrote:
+On Thu, Mar 24, 2011 at 1:58 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Thu, 24 Mar 2011 01:19:43 -0700,
+> Russ Dill wrote:
+>>
+>> On Wed, Mar 23, 2011 at 11:43 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > At Wed, 23 Mar 2011 18:40:58 -0700,
+>> > Russ Dill wrote:
+>> >>
+>> >> With slub poisoning on, I'm seeing an oops in snd_disconnect_release
+>> >> with slub poison (6b6b6b6b). Investigating, snd_card_disconnect looks
+>> >> to be the possible culprit:
+>> >>
+>> >> 333         spin_lock(&card->files_lock);
+>> >> 334         mfile = card->files;
+>> >> 335         while (mfile) {
+>> >> 336                 file = mfile->file;
+>> >> 337
+>> >> 338                 /* it's critical part, use endless loop */
+>> >> 339                 /* we have no room to fail */
+>> >> 340                 mfile->disconnected_f_op = mfile->file->f_op;
+>> >> 341
+>> >> 342                 spin_lock(&shutdown_lock);
+>> >> 343                 list_add(&mfile->shutdown_list, &shutdown_files);
+>> >> 344                 spin_unlock(&shutdown_lock);
+>> >> 345
+>> >> 346                 mfile->file->f_op = &snd_shutdown_f_ops;
+>> >> 347                 fops_get(mfile->file->f_op);
+>> >> 348
+>> >> 349                 mfile = mfile->next;
+>> >> 350         }
+>> >> 351         spin_unlock(&card->files_lock);
+>> >>
+>> >> I'm not aware of any locking that would prevent the original release
+>> >> function running concurrently if it were started before line 346 was
+>> >> executed. The original release functions (such as snd_hwdep_release)
+>> >> call snd_card_remove_file which frees the mfile object which would
+>> >> have been just added to the shutdown_files list leading to a use of
+>> >> freed (or in my case poisoned) memory later on down the line when the
+>> >> shutdown_files gets walked again.
+>> >>
+>> >> It seems that 118dd6bf (ALSA: Clean up snd_monitor_file management,
+>> >> v2.6.30) may have either introduced this problem or made it worse
+>> >> since snd_card_file_remove previously removed items from the
+>> >> shutdown_files list before freeing them.
+>> >>
+>> >> I'm currently experiencing these crashes on 2.6.32.26, but I can't
+>> >> find any changes that would cause them not to occur on later kernel
+>> >> versions.
+>> >
+>> > Which device are you using?  USB-audio had a known problem at
+>> > disconnection, for example, and it was fixed recently.
+>> >
+>>
+>> I'm using USB-audio. I tried back-porting a couple of patches, to no avail:
+>>
+>> ALSA: usb-audio: fix oops due to cleanup race when disconnecting
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=382225e6
+>>
+>> ALSA: usb - Release capture substream URBs properly
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=76195fb0
+>>
+>> Backing out 118dd6bf fixes the problem. The app that is running when
+>> this crash occurs does full duplex streaming and segfaults while the
+>> USB-audio device is going away. I'd have to check, but I think its
+>> actually segfaulting it response to a disconnect of another piece of
+>> the composite device the USB-audio device is part of, so the release
+>> may actually be happening at the time the snd_card_disconnect is
+>> occurring. I don't see any locking that would prevent bad things from
+>> happening in this case, and the shutdown_files list is definitely
+>> poisoned.
 >
-> This patch makes pagefault interruptible by SIGKILL.
+> OK, what about the patch below?
+>
+>
+> Takashi
+>
+> ---
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH] ALSA: Fix yet another race in disconnection
+>
+> This patch fixes a race between snd_card_file_remove() and
+> snd_card_disconnect().  When the card is added to shutdown_files list
+> in snd_card_disconnect(), but it's freed in snd_card_file_remove() at
+> the same time, the shutdown_files list gets corrupted.  The list member
+> must be freed in snd_card_file_remove() as well.
+>
+> Reported-by: Russ Dill <russ.dill@gmail.com>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  sound/core/init.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> diff --git a/sound/core/init.c b/sound/core/init.c
+> index 3e65da2..a0080aa 100644
+> --- a/sound/core/init.c
+> +++ b/sound/core/init.c
+> @@ -848,6 +848,7 @@ int snd_card_file_add(struct snd_card *card, struct file *file)
+>                return -ENOMEM;
+>        mfile->file = file;
+>        mfile->disconnected_f_op = NULL;
+> +       INIT_LIST_HEAD(&mfile->shutdown_list);
+>        spin_lock(&card->files_lock);
+>        if (card->shutdown) {
+>                spin_unlock(&card->files_lock);
+> @@ -883,6 +884,9 @@ int snd_card_file_remove(struct snd_card *card, struct file *file)
+>        list_for_each_entry(mfile, &card->files_list, list) {
+>                if (mfile->file == file) {
+>                        list_del(&mfile->list);
+> +                       spin_lock(&shutdown_lock);
+> +                       list_del(&mfile->shutdown_list);
+> +                       spin_unlock(&shutdown_lock);
+>                        if (mfile->disconnected_f_op)
+>                                fops_put(mfile->disconnected_f_op);
+>                        found = mfile;
+> --
+> 1.7.4.1
 
-Not a comment, but the question...
-
-> --- a/arch/x86/mm/fault.c
-> +++ b/arch/x86/mm/fault.c
-> @@ -1035,6 +1035,7 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
->  	if (user_mode_vm(regs)) {
->  		local_irq_enable();
->  		error_code |= PF_USER;
-> +		flags |= FAULT_FLAG_KILLABLE;
-
-OK, this is clear.
-
-I am wondering, can't we set FAULT_FLAG_KILLABLE unconditionally
-but check PF_USER when we get VM_FAULT_RETRY? I mean,
-
-	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current)) {
-		if (!(error_code & PF_USER))
-			no_context(...);
-		return;
-	}
-
-
-Probably not... but I can't find any example of in-kernel fault which
-can be broken by -EFAULT if current was killed.
-
-mm_release()->put_user(clear_child_tid) should be fine...
-
-Just curious, I feel I missed something obvious.
-
-Oleg.
-
+It looks sane, I'll run it through my torture (about 24hr) testing and
+let you know.
