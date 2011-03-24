@@ -1,50 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab1CXR6x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 13:58:53 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50342 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab1CXR6w convert rfc822-to-8bit (ORCPT
+	id S933608Ab1CXSAU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 14:00:20 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:52037 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109Ab1CXSAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 13:58:52 -0400
+	Thu, 24 Mar 2011 14:00:13 -0400
+Date: Thu, 24 Mar 2011 13:46:06 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2011-03-24
+Message-ID: <20110324174606.GB2503@tuxdriver.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=-mGD670m9G31mYQjoj7Rt4_OveXOi2dTPYkxY@mail.gmail.com>
-References: <AANLkTik20MfB5yta5mRoSny8NYOt3c0Rncg-rJY1SS9R@mail.gmail.com>
-	<AANLkTi=-mGD670m9G31mYQjoj7Rt4_OveXOi2dTPYkxY@mail.gmail.com>
-Date: Thu, 24 Mar 2011 14:58:49 -0300
-X-Google-Sender-Auth: jVx-sDfglL1g5iOFEf-BQ02mioI
-Message-ID: <AANLkTi=z0cAaCue=0F-ueiidwg_ctBPiYwyp35dQdjzo@mail.gmail.com>
-Subject: Re: [PATCH 2.6.38] bluetooth: add support for Apple MacBook Pro 8,2
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Marc-Antoine Perennou <Marc-Antoine@perennou.com>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, stable@kernel.org,
-        Travis Watkins <amaranth@ubuntu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Dave,
 
-On Thu, Mar 24, 2011 at 1:10 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Mon, Mar 21, 2011 at 10:28 AM, Marc-Antoine Perennou
-> <Marc-Antoine@perennou.com> wrote:
->> Just adding the vendor details makes it work fine.
->>
->> Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
->
-> Acked by: Grant Likely <grant.likely@secretlab.ca>
->
-> Marcel, this one is pretty trivial.  Can we get it picked up for
-> 2.6.39?  It would also be useful to backport it to stable once it hits
-> Linus' tree.
+A few more fixes intended for 2.6.39...
 
-I applied this patch to the bluetooth tree and will send it mainline.
-Thanks all.
+This includes an iwlagn fix where we were checking an address insted
+of the value stored there in a wait_event_timeout (oops!), an ath9k
+fix for an invalid memory access, another ath9k fix for a regression
+that could cause a stuck tx queue, and an orinoco fix to zero-out an
+invalid pointer to prevent a resulting invalid pointer dereference.
 
+Please let me know if there are problems!
+
+Thanks,
+
+John
+
+---
+
+The following changes since commit 8c64b4cc0201cf05b218ea3271a2abb4f86acb7b:
+
+  Merge branch 'sfc-2.6.39' of git://git.kernel.org/pub/scm/linux/kernel/git/bwh/sfc-2.6 (2011-03-23 15:56:02 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
+
+Johannes Berg (1):
+      iwlagn: fix error in command waiting
+
+Senthil Balasubramanian (2):
+      ath9k: Fix kernel panic caused by invalid rate index access.
+      ath9k: Fix TX queue stuck issue.
+
+armadefuego@gmail.com (1):
+      orinoco: Clear dangling pointer on hardware busy
+
+ drivers/net/wireless/ath/ath9k/main.c      |    2 ++
+ drivers/net/wireless/ath/ath9k/rc.c        |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-lib.c |    2 +-
+ drivers/net/wireless/orinoco/cfg.c         |    3 +++
+ 4 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index 115f162..5248257 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -2160,6 +2160,8 @@ static void ath9k_flush(struct ieee80211_hw *hw, bool drop)
+ 	if (!ath_drain_all_txq(sc, false))
+ 		ath_reset(sc, false);
+ 
++	ieee80211_wake_queues(hw);
++
+ out:
+ 	ieee80211_queue_delayed_work(hw, &sc->tx_complete_work, 0);
+ 	mutex_unlock(&sc->mutex);
+diff --git a/drivers/net/wireless/ath/ath9k/rc.c b/drivers/net/wireless/ath/ath9k/rc.c
+index 960d717..a3241cd 100644
+--- a/drivers/net/wireless/ath/ath9k/rc.c
++++ b/drivers/net/wireless/ath/ath9k/rc.c
+@@ -1328,7 +1328,7 @@ static void ath_tx_status(void *priv, struct ieee80211_supported_band *sband,
+ 
+ 	hdr = (struct ieee80211_hdr *)skb->data;
+ 	fc = hdr->frame_control;
+-	for (i = 0; i < IEEE80211_TX_MAX_RATES; i++) {
++	for (i = 0; i < sc->hw->max_rates; i++) {
+ 		struct ieee80211_tx_rate *rate = &tx_info->status.rates[i];
+ 		if (!rate->count)
+ 			break;
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+index 2003c1d..08ccb94 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+@@ -2265,7 +2265,7 @@ signed long iwlagn_wait_notification(struct iwl_priv *priv,
+ 	int ret;
+ 
+ 	ret = wait_event_timeout(priv->_agn.notif_waitq,
+-				 &wait_entry->triggered,
++				 wait_entry->triggered,
+ 				 timeout);
+ 
+ 	spin_lock_bh(&priv->_agn.notif_wait_lock);
+diff --git a/drivers/net/wireless/orinoco/cfg.c b/drivers/net/wireless/orinoco/cfg.c
+index 09fae2f..736bbb9 100644
+--- a/drivers/net/wireless/orinoco/cfg.c
++++ b/drivers/net/wireless/orinoco/cfg.c
+@@ -153,6 +153,9 @@ static int orinoco_scan(struct wiphy *wiphy, struct net_device *dev,
+ 	priv->scan_request = request;
+ 
+ 	err = orinoco_hw_trigger_scan(priv, request->ssids);
++	/* On error the we aren't processing the request */
++	if (err)
++		priv->scan_request = NULL;
+ 
+ 	return err;
+ }
 -- 
-Gustavo F. Padovan
-http://profusion.mobi
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
