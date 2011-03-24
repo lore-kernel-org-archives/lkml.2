@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab1CXOAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 10:00:18 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:50815 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab1CXOAP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 10:00:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=2OKxvHN75PO4RGb9rtpnA0iGHNb9JPZwb0z9J@mail.gmail.com>
-References: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
-	<AANLkTinZpt8qmHzhe4WyteMt-C-nkVNwEGQVvq3Nk9Lx@mail.gmail.com>
-	<20110324131414.GA20612@thinkpad-t410>
-	<AANLkTikrX_wypmrd-PbST603jsHqkuwtA6t5X65Lg1+O@mail.gmail.com>
-	<AANLkTi=2OKxvHN75PO4RGb9rtpnA0iGHNb9JPZwb0z9J@mail.gmail.com>
-Date: Thu, 24 Mar 2011 09:00:14 -0500
-Message-ID: <AANLkTik7D0j=JOhzPk6Y2NrTA89-vS28wPDSS=j0VW4_@mail.gmail.com>
-Subject: Re: [PATCH] eeepc-wmi: Add support for T101MT "Express Gate" key
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932577Ab1CXOBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 10:01:44 -0400
+Received: from ms01.sssup.it ([193.205.80.99]:43114 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753430Ab1CXOBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 10:01:43 -0400
+X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Mar 2011 10:01:43 EDT
+Subject: [PATCH] sched: leave sched_setscheduler earlier if possible.
+From: Dario Faggioli <raistlin@linux.it>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gregory Haskins <ghaskins@novell.com>, Mike Galbraith <efault@gmx.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@osdl.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-axY1EIqemCSNa54lUm4Q"
+Date: Thu, 24 Mar 2011 14:00:18 +0100
+Message-ID: <1300971618.3960.82.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 8:40 AM, Corentin Chary
-<corentin.chary@gmail.com> wrote:
->> I would suggest sending BTN_HOME upon button release 0xe5 (not press
->> 0xe4 and do the autorelease because of it) and BTN_PROG2 on
->> press-and-hold 0xea.
->>
->> If you press-and-hold, does it still send the 0xe5 upon release?  That
->> could complicate things so that both button events do not get sent.
->>
->> I'm not sure what BTN_HOME is commonly used for.  This button does
->> sound like a HOME button in iPad sense but not in web browser sense.
->
-> Except the fact that I don't find BTN_HOME in inpout.h, that's seems a
-> better idea, forget what I've said earlier.
 
-Ha... Sorry, I had buttons on my brain.  I meant KEY_HOME as you suggested.
+--=-axY1EIqemCSNa54lUm4Q
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->
-> 0xe4 -> KEY_IGNORE
-> 0xe5 -> KEY_HOME
-> 0xea -> KEY_PROG2, (or BTN_TASK to copy android/iOS ?)
+sched_setscheduler (in sched.c) is called in order of changing the
+scheduling policy and/or the real-time priority of a task. Thus,
+if we find out that neither of those are actually being modified, it
+is possible to return earlier and save the overhead of a full
+deactivate+activate cycle of the task in question.
 
->From a quick google, I couldn't finding any specific meaning of
-BTN_TASK but it looks like xf86-input-evdev turns it into a button
-press so we may not want that one.
+Beside that, if we have more than one SCHED_FIFO task with the same
+priority on the same rq (which means they share the same priority queue)
+having one of them changing its position in the priority queue because of
+a sched_setscheduler (as it happens by means of the deactivate+activate)
+that does not actually change the priority violates POSIX which states,
+for SCHED_FIFO:
 
-I've no idea of best values but those are pretty close.
+"If a thread whose policy or priority has been modified by
+pthread_setschedprio() is a running thread or is runnable, the effect on
+its position in the thread list depends on the direction of the
+modification, as follows: a. <...> b. If the priority is unchanged, the
+thread does not change position in the thread list. c. <...>"
 
-Chris
+(http://pubs.opengroup.org/onlinepubs/009695399/functions/xsh_chap02_08.htm=
+l)
+
+Signed-off-by: Dario Faggioli <raistlin@linux.it>
+---
+ kernel/sched.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index c5ae6bc..d73bbc5 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4998,6 +4998,16 @@ recheck:
+ 		return -EINVAL;
+ 	}
+=20
++	/*
++	 * If not changing anything there's no need to proceed further
++	 */
++	if (unlikely(policy =3D=3D p->policy && (!rt_policy(policy) ||
++	    param->sched_priority =3D=3D p->rt_priority))) {
++			__task_rq_unlock(rq);
++			raw_spin_unlock_irqrestore(&p->pi_lock, flags);
++			return 0;
++	}
++
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	if (user) {
+ 		/*
+--=20
+1.7.4.1
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
+
+
+--=-axY1EIqemCSNa54lUm4Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk2LQGIACgkQk4XaBE3IOsRQOgCgi/B/nB8jdXORA7tfIdeuI27t
+Tz0AnRdSNXRKbBjdDzbQzsPm/ssIWueo
+=DBWs
+-----END PGP SIGNATURE-----
+
+--=-axY1EIqemCSNa54lUm4Q--
+
