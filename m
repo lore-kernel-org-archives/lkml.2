@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab1CXTEN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:04:13 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59760 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757038Ab1CXTEM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:04:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=TdnHC8hJFGHc5eysK9nE6E12DKSQtvyTrdlXjBlZaR7csD59+nysmuMyFujpOfQWHy
-         jbab5Nx0bC16OgmyoYd+ZfY4rSdgeCYzFZWmF18+26EkVoIZ7cFmJ6b3hcWDC06MtkU8
-         AF+DRVJEr1LwN5p8PHuQDHrj/jQqQi0zcricM=
+	id S933793Ab1CXTEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:04:50 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:49162 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757112Ab1CXTEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 15:04:47 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH] mfd: Select MFD_CORE if TPS6105X driver is configured
+Date: Thu, 24 Mar 2011 12:12:47 -0700
+Message-ID: <1300993967-30987-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1103241401090.5576@router.home>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger>
-	<20110324142146.GA11682@elte.hu>
-	<alpine.DEB.2.00.1103240940570.32226@router.home>
-	<AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
-	<20110324172653.GA28507@elte.hu>
-	<alpine.DEB.2.00.1103241242450.32226@router.home>
-	<AANLkTimMcP-GikCCndQppNBsS7y=4beesZ4PaD6yh5y5@mail.gmail.com>
-	<alpine.DEB.2.00.1103241300420.32226@router.home>
-	<AANLkTi=KZQd-GrXaq4472V3XnEGYqnCheYcgrdPFE0LJ@mail.gmail.com>
-	<alpine.DEB.2.00.1103241312280.32226@router.home>
-	<1300990853.3747.189.camel@edumazet-laptop>
-	<alpine.DEB.2.00.1103241346060.32226@router.home>
-	<1300992708.3747.211.camel@edumazet-laptop>
-	<alpine.DEB.2.00.1103241401090.5576@router.home>
-Date: Thu, 24 Mar 2011 21:04:11 +0200
-X-Google-Sender-Auth: w_b_AmJNC0S7C4Tgde1dNr5clSk
-Message-ID: <AANLkTimU4ccaUUyKfgoUCkgxORkWDhqAQAkX-=SVwq8J@mail.gmail.com>
-Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 9:02 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Thu, 24 Mar 2011, Eric Dumazet wrote:
->
->> Le jeudi 24 mars 2011 à 13:47 -0500, Christoph Lameter a écrit :
->>
->> > Hmmm.. Could be. KVM would not really disable interrupts so this may
->> > explain that the test case works here.
->> >
->> > Simple fix would be to do a load before the cli I guess.
->> >
->>
->> Hmm...
->>
->> If we have a preemption and migration right after this load...
->
-> Cannot be the issue here since init_kmem_cache_cpus already
-> touches the per cpu data. At least if CONFIG_PREEMPT is on.
-> Is it on?
+The TPS61050/61052 driver uses MFD core code, yet does not specify the
+dependency in Kconfig. If it is the only MFD driver configured, compilation
+fails with
 
-It's not.
+ERROR: "mfd_add_devices" [drivers/mfd/tps6105x.ko] undefined!
+ERROR: "mfd_remove_devices" [drivers/mfd/tps6105x.ko] undefined!
+
+Fix the problem by adding "select MFD_CORE" to the respective Kconfig entry.
+
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+ drivers/mfd/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index a9a1af4..e986f91 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -133,6 +133,7 @@ config TPS6105X
+ 	tristate "TPS61050/61052 Boost Converters"
+ 	depends on I2C
+ 	select REGULATOR
++	select MFD_CORE
+ 	select REGULATOR_FIXED_VOLTAGE
+ 	help
+ 	  This option enables a driver for the TP61050/TPS61052
+-- 
+1.7.3.1
+
