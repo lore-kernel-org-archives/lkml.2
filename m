@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933634Ab1CXSAe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 14:00:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58107 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933565Ab1CXSAZ (ORCPT
+	id S1756980Ab1CXSB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 14:01:56 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:30948 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756177Ab1CXSBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 14:00:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Ax+OrIo/89Q1fUoXcXndA2c+F5XVyJjV4Kcr7fUjiP8HeTuVetcBQHB5LUwSLVg7q3
-         RxRo0nGixD5Zrq2WG9g2gU1UhfigSxqL1884gQP8mZtq5SAoJ9KxU5LufJ/wt9ivP6lE
-         7y988xObVt59EarcJRKD/WJf2d5wIumZXy5e8=
-Date: Thu, 24 Mar 2011 18:51:48 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: torvalds@osdl.org, Alexander van Heukelum <heukelum@fastmail.fm>,
-        linux-am33-list@redhat.com,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Jeff Dike <jdike@addtoit.com>, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        uclinux-dist-devel@blackfin.uclinux.org, akpm@linux-foundation.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-Subject: Re: [Uclinux-dist-devel] [RFC PATCH] percpu: always align percpu
- output section to PAGE_SIZE
-Message-ID: <20110324175148.GA1409@htj.dyndns.org>
-References: <20101025224111.7798.38960.stgit@warthog.procyon.org.uk>
- <12101.1288088542@redhat.com>
- <4CC6C62F.1000804@kernel.org>
- <4CC6C941.2080003@kernel.org>
- <4CC6CD4D.3010501@kernel.org>
- <4CC6E05A.8040508@kernel.org>
- <AANLkTi=WWCPJeQ8DVv1j7GF0J61DiUupiOEuxDCW8_Xd@mail.gmail.com>
- <20110324082523.GA12038@htj.dyndns.org>
- <20110324085112.GB12038@htj.dyndns.org>
- <AANLkTi=ZRowUtmSR+kLLphnRtyg1uqnFZ5s+_db6P54F@mail.gmail.com>
+	Thu, 24 Mar 2011 14:01:55 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: TxrMeLgVM1nRHyfDssGrGsny0Dc7S90BwYG1kfkgaP.zSUj
+ CXL0hcq6lrcBNLHkIi9q6l_vHHTiU6HvbjHS2WTALAaJ1pPba3d.f4QUiG0L
+ Sn2C3dwe2EAY_Og2wW4kXhsaZ5Zec9DuKvfCbhmeyPgzTa4k_52IctfordH5
+ iKUZLqo9O43.hp._h_TJolUj6joKzLW5BQFoZeMxGcN57RendzSnAmdzBjth
+ h5JxwO4_YTPTHeQJKxYiaNGcyaCyU.cJfayZ9nrRhEXFk0FgYJTVoo0tCETf
+ qMIdHpcmpkOuR9AXc0pm5DXbJbgtfrYP2ISuZUdI.GTcxq5ye
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 24 Mar 2011 13:01:50 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, tj@kernel.org, npiggin@kernel.dk,
+        rientjes@google.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
+In-Reply-To: <AANLkTimMcP-GikCCndQppNBsS7y=4beesZ4PaD6yh5y5@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1103241300420.32226@router.home>
+References: <alpine.DEB.2.00.1103221635400.4521@tiger> <20110324142146.GA11682@elte.hu> <alpine.DEB.2.00.1103240940570.32226@router.home> <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com> <20110324172653.GA28507@elte.hu>
+ <alpine.DEB.2.00.1103241242450.32226@router.home> <AANLkTimMcP-GikCCndQppNBsS7y=4beesZ4PaD6yh5y5@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=ZRowUtmSR+kLLphnRtyg1uqnFZ5s+_db6P54F@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 09:46:53AM -0400, Mike Frysinger wrote:
-> Linus has already pulled it
+On Thu, 24 Mar 2011, Pekka Enberg wrote:
 
-Thanks.  Patch queued for 2.6.40.
+> On Thu, Mar 24, 2011 at 7:43 PM, Christoph Lameter <cl@linux.com> wrote:
+> > The bug should only trigger on old AMD64 boxes that do not support
+> > cmpxchg16b.
+>
+> Yup. Ingo is it possible to see /proc/cpuinfo of one of the affected
+> boxes? I'll try your config but I'm pretty sure the problem doesn't
+> trigger here. Like I said, I think the problem is that alternative
+> instructions are not patched early enough for cmpxchg16b emulation to
+> work for kmem_cache_init(). I tried my check_bugs() patch but it hangs
+> during boot. I'll see if I can cook up a patch that does
+> alternative_instructions() before kmem_cache_init() because I think
+> those *should* be available during boot too.
 
--- 
-tejun
+I forced the fallback to the _emu function to occur but could not trigger
+the bug in kvm.
+
