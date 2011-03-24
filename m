@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab1CXOf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 10:35:56 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:24353 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab1CXOfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 10:35:55 -0400
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 24 Mar 2011 16:38:35 +0200
-Message-Id: <20110324143835.29758.362.sendpatchset@localhost.localdomain>
-Subject: [GIT PULL] More UBI/UBIFS changes for 2.6.39
-X-Nokia-AV: Clean
+	id S932937Ab1CXOiH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 10:38:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48409 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754227Ab1CXOiF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 10:38:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <Pine.GSO.4.62.1103240628490.1156@umail>
+References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
+ <1300864998.3522.71.camel@thor.local> <AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
+ <1300868532.3522.81.camel@thor.local> <AANLkTi=mFKBqF48DwGsQL278grJChCVzw==D7vr49n09@mail.gmail.com>
+ <Pine.GSO.4.62.1103230633160.12612@umail> <1300880747.16522.13.camel@thor.local>
+ <AANLkTik=GH8tGMjeKVfsmvX5WeX+4avnYan_nkGcCx20@mail.gmail.com> <Pine.GSO.4.62.1103240628490.1156@umail>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 24 Mar 2011 07:37:36 -0700
+Message-ID: <AANLkTimZWtOLiDT3KoUKZtsKfj4Aeu+XMF+rLc0wCSYk@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+To: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Cc: Dave Airlie <airlied@gmail.com>,
+        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Mar 24, 2011 at 4:31 AM, Ilija Hadzic
+<ihadzic@research.bell-labs.com> wrote:
+>
+> OK, I'll update libdrm side to match this change and send the patch later
+> today
 
-I've found a couple of brown-paperbag bugs in my changes which
-you have merged this merge window. Also, we've fixed one UBIFS
-assertion warning and I forgot to kill one Kconfig option.
+Quite frankly, this whole discussion is a clear example of why DRM has
+been problematic.
 
-So I've composed another UBI/UBIFS pull request where I address
-the issues introduced in the previous pull request. I did not find
-better way than to base the pull request on top of a "random"
-current commit, hopefully this is acceptable. Yes, I tested the
-patches with 2.6.38 release, not this commit.
+Why the hell am I getting pushed stuff that is clearly not baked? It's
+the second week of the merge window, the stuff I'm getting should have
+been finalized two weeks ago, not be something that is still being
+discussed and that has API issues.
 
-Please, pull.
+In other words: Why should I pull this at all?
 
-The following changes since commit 4bbba111d94781d34081c37856bbc5eb33f6c72a:
-
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6 (2011-03-23 07:58:09 -0700)
-
-are available in the git repository at:
-
-  git://git.infradead.org/ubi-2.6.git for-linus
-
-Artem Bityutskiy (4):
-      UBI: use GFP_NOFS properly
-      UBIFS: use GFP_NOFS properly
-      UBIFS: kill CONFIG_UBIFS_FS_DEBUG_CHKS
-      UBIFS: fix assertion warning and refine comments
-
- drivers/mtd/ubi/io.c  |    4 ++--
- fs/ubifs/Kconfig      |    9 ---------
- fs/ubifs/debug.c      |    2 +-
- fs/ubifs/file.c       |   11 +++++++----
- fs/ubifs/lprops.c     |    2 +-
- fs/ubifs/lpt_commit.c |    4 ++--
- fs/ubifs/orphan.c     |    2 +-
- 7 files changed, 14 insertions(+), 20 deletions(-)
-
-
-Thanks,
-Artem.
+                      Linus
