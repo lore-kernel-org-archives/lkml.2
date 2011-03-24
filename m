@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934148Ab1CXU1t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:27:49 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:37100 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934102Ab1CXU1o (ORCPT
+	id S1755830Ab1CXUbR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:31:17 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53932 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009Ab1CXUbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:27:44 -0400
-Date: Thu, 24 Mar 2011 15:26:34 -0500
-From: "Serge E. Hallyn" <serge.hallyn@ubuntu.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Eric Paris <eparis@parisplace.org>,
-        Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
-        mjt@tls.msk.ru, arnd@arndb.de, mirqus@gmail.com,
-        netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
-        therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
-        kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
-        akpm@linux-foundation.org, Greg KH <greg@kroah.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Daniel J Walsh <dwalsh@redhat.com>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
- kernel modules
-Message-ID: <20110324202634.GB9191@peq.hallyn.com>
-References: <4D6B6AE7.2050202@msgid.tls.msk.ru>
- <20110228095133.GA4351@albatros>
- <20110228.112349.104067277.davem@davemloft.net>
- <20110301194845.GA3533@albatros>
- <1299010390.2529.30.camel@bwh-desktop>
- <20110301213313.GA6507@albatros>
- <AANLkTikr=qfFeaXDkiBbK-4KvKS83LzURrUj4L2TP8_u@mail.gmail.com>
- <20110324153714.GB2648@peq.hallyn.com>
- <1300989839.2398.17.camel@localhost.localdomain>
- <1300991584.2689.35.camel@bwh-desktop>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5I6of5zJg18YgZEa"
-Content-Disposition: inline
-In-Reply-To: <1300991584.2689.35.camel@bwh-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 24 Mar 2011 16:31:15 -0400
+Date: Thu, 24 Mar 2011 13:30:59 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Cyril Chemparathy <cyril@ti.com>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH] regulator: fix tps6524x section mismatch
+Message-Id: <20110324133059.eb17c442.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D8BAA09.0099,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
---5I6of5zJg18YgZEa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Fix section mismatch that is caused by init code calling exit code:
+pmic_remove() cannot be marked as __devexit.
 
-Quoting Ben Hutchings (bhutchings@solarflare.com):
-> On Thu, 2011-03-24 at 14:03 -0400, Eric Paris wrote:
-> > Not quite.  SELinux logs every time an operation is denied.  This patch
-> > means that every time a module is requested which does not exist as
+WARNING: drivers/regulator/tps6524x-regulator.o(.devinit.text+0x205): Section mismatch in reference from the function pmic_probe() to the function .devexit.text:pmic_remove()
+The function __devinit pmic_probe() references
+a function __devexit pmic_remove().
+This is often seen when error handling in the init function
+uses functionality in the exit path.
+The fix is often to remove the __devexit annotation of
+pmic_remove() so it may be used outside an exit section.
 
-Ah.  I see.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:	Liam Girdwood <lrg@slimlogic.co.uk>
+Cc:	Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc:	Cyril Chemparathy <cyril@ti.com>
+---
+ drivers/regulator/tps6524x-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-=2E..
-
-> > I think there are 3 possibilities:
-
-=2E..(3)
-
-> > Figure out a way to stop the calls to "reg" "wifi0" and "virbr0" if they
-> > don't exist.
-> >
-> > I feel like the last one is the best way, but I don't know what a
-> > solution could look like....
->=20
-> This really has to be done in userland, where these names are being
-> invented.  Though I suspect the usual way to check whether an interface
-> exists would be SIOCGIFINDEX, which calls dev_load()!  An alternate
-> would be to check whether /sys/class/net/<name> exists, but I seem to
-> recall that /sys/class is somewhat deprecated.
-
-Of course this will mean pain for users until distributions have
-updated to userspace which is doing this, but yeah, this clearly seems
-like the best way.  (And the only sane one.)
-
-thanks,
--serge
-
---5I6of5zJg18YgZEa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNi6j6AAoJEHmllQITXQdFAHIH+wbc5gUFD+wD7JK2wHj1AUjB
-X/PSPbduiHKaT2njlTZfQDc2ubNQLVnYFRwcTegs6bfoISw+jWzLRSrvcq5FWuxv
-0nIGXFltT25/Kyfen67zs0o0T+tpXrYdjJc1rOCiEgRp4Vj8KQFzn3ikp6UtMEx1
-6OnUPhUqkE4LgwpDwpS8RfcFJ/qYSsElu1dg9EkUW4wqMkEOYoueCBToTimpmFpW
-IDh38vv+Ji1UmDO5hcN7BpQbEgViE8RDVSHM+6D0ta2P4NthHMZLocpPwYj4BBEB
-/mS0YgPANX8h2HYK+2yQ8lLhZ3wcfeic3gbzgF9zuolmOH3fHKcgjYQNliteq+U=
-=a+SM
------END PGP SIGNATURE-----
-
---5I6of5zJg18YgZEa--
+--- linux-2.6.38-git13.orig/drivers/regulator/tps6524x-regulator.c
++++ linux-2.6.38-git13/drivers/regulator/tps6524x-regulator.c
+@@ -596,7 +596,7 @@ static struct regulator_ops regulator_op
+ 	.get_current_limit	= get_current_limit,
+ };
+ 
+-static int __devexit pmic_remove(struct spi_device *spi)
++static int pmic_remove(struct spi_device *spi)
+ {
+ 	struct tps6524x *hw = spi_get_drvdata(spi);
+ 	int i;
