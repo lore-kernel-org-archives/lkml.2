@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab1CXFyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 01:54:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51192 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab1CXFyi (ORCPT
+	id S1756415Ab1CXFy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 01:54:58 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59985 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754314Ab1CXFy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 01:54:38 -0400
-From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-To: linux-sh@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Subject: [PATCH] sh: Fix build alloc_thread_info_node function
-Date: Thu, 24 Mar 2011 14:47:40 +0900
-Message-Id: <1300945660-8323-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-X-Mailer: git-send-email 1.7.2.3
+	Thu, 24 Mar 2011 01:54:57 -0400
+MIME-Version: 1.0
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 23 Mar 2011 23:54:36 -0600
+X-Google-Sender-Auth: eMzSeal3Tw0KtzbjOYvZPgW-R2I
+Message-ID: <AANLkTi=_o_WPfvH7jh9zr87+JXT4wRsVEzUzMvrgOrgf@mail.gmail.com>
+Subject: [git pull] last device tree and spi changes for 2.6.39 merge window
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Andres Salomon <dilinger@queued.net>,
+        spi-devel-general@lists.sourceforge.net,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By commit b6a84016bd2598e35ead635147fa53619982648d,
-alloc_thread_info was replaced by alloc_thread_info_node.
-However, the change of the function name and the addition of the argument
-were incomplete.
+Hi Linus,
 
-Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
----
- arch/sh/kernel/process.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+A few last patches for .39.  It's such a small set that I put them all
+into one branch.  Please pull!
 
-diff --git a/arch/sh/kernel/process.c b/arch/sh/kernel/process.c
-index f39ad57..325f98b 100644
---- a/arch/sh/kernel/process.c
-+++ b/arch/sh/kernel/process.c
-@@ -32,7 +32,7 @@ void free_thread_xstate(struct task_struct *tsk)
- #if THREAD_SHIFT < PAGE_SHIFT
- static struct kmem_cache *thread_info_cache;
- 
--struct thread_info *alloc_thread_info(struct task_struct *tsk, int node)
-+struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node)
- {
- 	struct thread_info *ti;
- #ifdef CONFIG_DEBUG_STACK_USAGE
-@@ -57,7 +57,7 @@ void thread_info_cache_init(void)
- 					      THREAD_SIZE, SLAB_PANIC, NULL);
- }
- #else
--struct thread_info *alloc_thread_info(struct task_struct *tsk)
-+struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node)
- {
- #ifdef CONFIG_DEBUG_STACK_USAGE
- 	gfp_t mask = GFP_KERNEL | __GFP_ZERO;
+Thanks,
+g.
+
+The following changes since commit 4bbba111d94781d34081c37856bbc5eb33f6c72a:
+
+  Merge branch 'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6
+(2011-03-23 07:58:09 -0700)
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 devicetree/merge
+
+Andres Salomon (1):
+      of/flattree: minor cleanups
+
+Grant Likely (3):
+      dt: Refactor of_platform_bus_probe()
+      dt: protect against NULL matches passed to of_match_node()
+      dt: eliminate OF_NO_DEEP_PROBE and test for NULL match table
+
+Jarkko Nikula (1):
+      spi/omap_mcspi: Fix broken last word xfer
+
+Philippe Langlais (1):
+      spi/pl022: Add loopback support for the SPI on 5500
+
+ drivers/of/base.c           |    3 ++
+ drivers/of/fdt.c            |    6 ++-
+ drivers/of/platform.c       |   72 ++++++++++++++-----------------------------
+ drivers/spi/amba-pl022.c    |   20 +++++++++++-
+ drivers/spi/omap2_mcspi.c   |    6 ++--
+ include/linux/of_platform.h |    3 --
+ 6 files changed, 52 insertions(+), 58 deletions(-)
+
+
 -- 
-1.7.2.3
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
