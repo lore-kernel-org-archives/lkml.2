@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934051Ab1CXT2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:28:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53790 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934028Ab1CXT2D (ORCPT
+	id S934076Ab1CXT2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:28:40 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60296 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934056Ab1CXT2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:28:03 -0400
+	Thu, 24 Mar 2011 15:28:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=N0Xvlr+m6/cZk1iG/ETpUTkjp098jtJPOYCs+diObEgllGIyFS4ElFwyJNDzoiPc82
-         R9Mif27oXYcGmz2LQMoPC2UAQsEXQqTxfGQ1axzh/6X4rOkRHMW9b6knRUWJWHU7kOM/
-         F/ZIx5KbUWZ5+yBy5U+7PAwlOd4syn2LsrfXM=
+        b=eYOXk8VCVm7LcDBgsN7m3E1bFx+ROc2U9vhEcNP6LzGnJXYmzLrDGUzdyQU0dSIxWz
+         pJKjjATz1RiQN9xiVYTpmZU3nbsfPWigduB3ZF3DYkiWo9frfvr1V5hiQNTpXA4hD4Xm
+         BBS1fCivB0+OgYqu1J6MF6ilJdpMbmamLIjoE=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC 17/21]kernel:pm_qos_params.c Remove extra comma.
-Date: Thu, 24 Mar 2011 12:26:55 -0700
-Message-Id: <1300994819-30930-17-git-send-email-justinmattock@gmail.com>
+Subject: [RFC 20/21]security:selinux:selinuxfs.c Remove extra comma.
+Date: Thu, 24 Mar 2011 12:26:58 -0700
+Message-Id: <1300994819-30930-20-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
 References: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
@@ -34,22 +34,46 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- kernel/pm_qos_params.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ security/selinux/selinuxfs.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-index 0da058b..beb1846 100644
---- a/kernel/pm_qos_params.c
-+++ b/kernel/pm_qos_params.c
-@@ -385,7 +385,7 @@ static ssize_t pm_qos_power_read(struct file *filp, char __user *buf,
- 	s32 value;
- 	unsigned long flags;
- 	struct pm_qos_object *o;
--	struct pm_qos_request_list *pm_qos_req = filp->private_data;;
-+	struct pm_qos_request_list *pm_qos_req = filp->private_data;
+diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
+index ea39cb7..47b7d62 100644
+--- a/security/selinux/selinuxfs.c
++++ b/security/selinux/selinuxfs.c
+@@ -280,7 +280,7 @@ static ssize_t sel_write_disable(struct file *file, const char __user *buf,
  
- 	if (!pm_qos_req)
- 		return -EINVAL;
+ 	length = -ENOMEM;
+ 	if (count >= PAGE_SIZE)
+-		goto out;;
++		goto out;
+ 
+ 	/* No partial writes. */
+ 	length = -EINVAL;
+@@ -876,12 +876,12 @@ static ssize_t sel_write_user(struct file *file, char *buf, size_t size)
+ 
+ 	length = task_has_security(current, SECURITY__COMPUTE_USER);
+ 	if (length)
+-		goto out;;
++		goto out;
+ 
+ 	length = -ENOMEM;
+ 	con = kzalloc(size + 1, GFP_KERNEL);
+ 	if (!con)
+-		goto out;;
++		goto out;
+ 
+ 	length = -ENOMEM;
+ 	user = kzalloc(size + 1, GFP_KERNEL);
+@@ -941,7 +941,7 @@ static ssize_t sel_write_member(struct file *file, char *buf, size_t size)
+ 	length = -ENOMEM;
+ 	scon = kzalloc(size + 1, GFP_KERNEL);
+ 	if (!scon)
+-		goto out;;
++		goto out;
+ 
+ 	length = -ENOMEM;
+ 	tcon = kzalloc(size + 1, GFP_KERNEL);
 -- 
 1.7.4.1
 
