@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933967Ab1CXUTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:19:00 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56204 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757155Ab1CXUS4 (ORCPT
+	id S934258Ab1CXUX0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:23:26 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:64591 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932595Ab1CXUTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:18:56 -0400
+	Thu, 24 Mar 2011 16:19:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Lj6PFxGMnL/7nhkSWLPtaArZWRnwvsb4LD891vL+d9wbcsgAgUVQx0ou+Sb4kTqldc
-         V1D6tnrVgcNcEBN6NyJ3w6NZYbFFl+FVO8ndSTYTtq8sT4ZKPdoTnEjiSjmNldHIxhdT
-         J2B4MtYYVt+CUbAmz6MaueqEVBrmlhqHoWldQ=
+        b=qUPolGoM9rlz9sQag9eto032bgrMjjHwfbMV6zxweYxHU7CxnQ/H5W7saf5sYeUa0E
+         x6PBsbh4X4jUKUH8H9qGg33jqgEXt7cAoijqmOXgGzesEf63dg9N0Tkht/qK/L8bpyKn
+         DmeWCxPXkUgFgcbuVzhddD3ZivT8m0TOND/2M=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC V2 02/21]arch:ia64 Remove extra semi-colon.
-Date: Thu, 24 Mar 2011 13:18:21 -0700
-Message-Id: <1300997920-31573-2-git-send-email-justinmattock@gmail.com>
+Subject: [RFC V2 05/21]drivers:scsi Remove extra semi-colon.
+Date: Thu, 24 Mar 2011 13:18:24 -0700
+Message-Id: <1300997920-31573-5-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
 References: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
@@ -34,56 +34,82 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- arch/ia64/include/asm/asmmacro.h |    4 ++--
- arch/ia64/include/asm/mca_asm.h  |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/scsi/be2iscsi/be_main.c   |    4 ++--
+ drivers/scsi/lpfc/lpfc_bsg.c      |    2 +-
+ drivers/scsi/pm8001/pm8001_init.c |    2 +-
+ drivers/scsi/qla2xxx/qla_isr.c    |    4 ++--
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/ia64/include/asm/asmmacro.h b/arch/ia64/include/asm/asmmacro.h
-index 3ab6d75..3c3904b 100644
---- a/arch/ia64/include/asm/asmmacro.h
-+++ b/arch/ia64/include/asm/asmmacro.h
-@@ -92,12 +92,12 @@ name:
- 1:{ .mib;						\
- 	nop.m 0;					\
- 	mov r16=ar.pfs;					\
--	br.call.sptk.many b7=2f;;			\
-+	br.call.sptk.many b7=2f;			\
-   };							\
- 2:{ .mib;						\
- 	nop.m 0;					\
- 	mov ar.pfs=r16;					\
--	br.ret.sptk.many b6;;				\
-+	br.ret.sptk.many b6;				\
-   }
- #else
- # define FSYS_RETURN	br.ret.sptk.many b6
-diff --git a/arch/ia64/include/asm/mca_asm.h b/arch/ia64/include/asm/mca_asm.h
-index dd2a5b1..d57d3c0 100644
---- a/arch/ia64/include/asm/mca_asm.h
-+++ b/arch/ia64/include/asm/mca_asm.h
-@@ -46,11 +46,11 @@
-  *	1. Put 0x7 in bits 61 thru 63.
-  */
- #define DATA_PA_TO_VA(addr,temp)							\
--	mov	temp	= 0x7	;;							\
-+	mov	temp	= 0x7;							\
- 	dep	addr	= temp, addr, 61, 3
+diff --git a/drivers/scsi/be2iscsi/be_main.c b/drivers/scsi/be2iscsi/be_main.c
+index 24e20ba..44ac4ae 100644
+--- a/drivers/scsi/be2iscsi/be_main.c
++++ b/drivers/scsi/be2iscsi/be_main.c
+@@ -618,7 +618,7 @@ static void beiscsi_get_params(struct beiscsi_hba *phba)
+ 				    + BE2_NOPOUT_REQ));
+ 	phba->params.cxns_per_ctrl = phba->fw_config.iscsi_cid_count;
+ 	phba->params.asyncpdus_per_ctrl = phba->fw_config.iscsi_cid_count * 2;
+-	phba->params.icds_per_ctrl = phba->fw_config.iscsi_icd_count;;
++	phba->params.icds_per_ctrl = phba->fw_config.iscsi_icd_count;
+ 	phba->params.num_sge_per_io = BE2_SGE;
+ 	phba->params.defpdu_hdr_sz = BE2_DEFPDU_HDR_SZ;
+ 	phba->params.defpdu_data_sz = BE2_DEFPDU_DATA_SZ;
+@@ -781,7 +781,7 @@ static irqreturn_t be_isr(int irq, void *dev_id)
+ 	int isr;
  
- #define GET_THIS_PADDR(reg, var)		\
--	mov	reg = IA64_KR(PER_CPU_DATA);;	\
-+	mov	reg = IA64_KR(PER_CPU_DATA);	\
-         addl	reg = THIS_CPU(var), reg
+ 	phba = dev_id;
+-	ctrl = &phba->ctrl;;
++	ctrl = &phba->ctrl;
+ 	isr = ioread32(ctrl->csr + CEV_ISR0_OFFSET +
+ 		       (PCI_FUNC(ctrl->pdev->devfn) * CEV_ISR_SIZE));
+ 	if (!isr)
+diff --git a/drivers/scsi/lpfc/lpfc_bsg.c b/drivers/scsi/lpfc/lpfc_bsg.c
+index 0dd43bb..04fef03 100644
+--- a/drivers/scsi/lpfc/lpfc_bsg.c
++++ b/drivers/scsi/lpfc/lpfc_bsg.c
+@@ -595,7 +595,7 @@ lpfc_bsg_rport_els(struct fc_bsg_job *job)
+ 	dd_data->context_un.iocb.cmdiocbq = cmdiocbq;
+ 	dd_data->context_un.iocb.rspiocbq = rspiocbq;
+ 	dd_data->context_un.iocb.set_job = job;
+-	dd_data->context_un.iocb.bmp = NULL;;
++	dd_data->context_un.iocb.bmp = NULL;
+ 	dd_data->context_un.iocb.ndlp = ndlp;
  
- /*
-@@ -82,7 +82,7 @@
- 	;;										\
- 	dep	old_psr = 0, old_psr, 32, 32;						\
- 											\
--	mov	ar.rsc = 0 ;								\
-+	mov	ar.rsc = 0;								\
- 	;;										\
- 	srlz.d;										\
- 	mov	temp2 = ar.bspstore;							\
+ 	if (phba->cfg_poll & DISABLE_FCP_RING_INT) {
+diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
+index 002360d..172cefb 100644
+--- a/drivers/scsi/pm8001/pm8001_init.c
++++ b/drivers/scsi/pm8001/pm8001_init.c
+@@ -160,7 +160,7 @@ static void pm8001_free(struct pm8001_hba_info *pm8001_ha)
+ static void pm8001_tasklet(unsigned long opaque)
+ {
+ 	struct pm8001_hba_info *pm8001_ha;
+-	pm8001_ha = (struct pm8001_hba_info *)opaque;;
++	pm8001_ha = (struct pm8001_hba_info *)opaque;
+ 	if (unlikely(!pm8001_ha))
+ 		BUG_ON(1);
+ 	PM8001_CHIP_DISP->isr(pm8001_ha);
+diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
+index d17ed9a..8b4d99a 100644
+--- a/drivers/scsi/qla2xxx/qla_isr.c
++++ b/drivers/scsi/qla2xxx/qla_isr.c
+@@ -1051,7 +1051,7 @@ qla2x00_ct_entry(scsi_qla_host_t *vha, struct req_que *req,
+ 		}
+ 		DEBUG2(qla2x00_dump_buffer((uint8_t *)pkt, sizeof(*pkt)));
+ 	} else {
+-		bsg_job->reply->result =  DID_OK << 16;;
++		bsg_job->reply->result =  DID_OK << 16;
+ 		bsg_job->reply->reply_payload_rcv_len =
+ 		    bsg_job->reply_payload.payload_len;
+ 		bsg_job->reply_len = 0;
+@@ -1146,7 +1146,7 @@ qla24xx_els_ct_entry(scsi_qla_host_t *vha, struct req_que *req,
+ 		DEBUG2(qla2x00_dump_buffer((uint8_t *)pkt, sizeof(*pkt)));
+ 	}
+ 	else {
+-		bsg_job->reply->result =  DID_OK << 16;;
++		bsg_job->reply->result =  DID_OK << 16;
+ 		bsg_job->reply->reply_payload_rcv_len = bsg_job->reply_payload.payload_len;
+ 		bsg_job->reply_len = 0;
+ 	}
 -- 
 1.7.4.1
 
