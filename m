@@ -1,666 +1,500 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab1CXQNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 12:13:00 -0400
-Received: from mout.perfora.net ([74.208.4.195]:65439 "EHLO mout.perfora.net"
+	id S1757052Ab1CXQPB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 12:15:01 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35286 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754822Ab1CXQM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 12:12:58 -0400
-Message-ID: <4D8B6D6E.70109@nctritech.com>
-Date: Thu, 24 Mar 2011 12:12:30 -0400
-From: Jody <jody@nctritech.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100111 Thunderbird/3.0.1
+	id S1754822Ab1CXQO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 12:14:59 -0400
+Date: Thu, 24 Mar 2011 17:14:46 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: torvalds@linux-foundation.org, cl@linux-foundation.org,
+        akpm@linux-foundation.org, tj@kernel.org, npiggin@kernel.dk,
+        rientjes@google.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
+Message-ID: <20110324161446.GA32068@elte.hu>
+References: <alpine.DEB.2.00.1103221635400.4521@tiger>
+ <20110324142146.GA11682@elte.hu>
+ <20110324160310.GA27127@elte.hu>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: perf-events: can an option be made to remove it from the build?
-Content-Type: multipart/mixed;
- boundary="------------050802000904020109040107"
-X-Provags-ID: V02:K0:dgnFcBNnm922Zdvr3DGs+VcCJpW/Z1DOV4sgeRPij3N
- 2wWsaaMCYvTIInAB6sW/4hkpDAL9b7sAZfTA4tVCOl4CLm1cuK
- RUgmGa8q56gz9TgaKpSG9ag66+NBI1ERq09nI/MjbuOBbCs48W
- MlgHWA3LTMzxcf2X6RGJ8oAEBFmYTWl31l86wd0vjPnn+EjSz6
- dkrwtnhGxeuZrsLgfUVJatvKGLCzN8BoX8ll2aMd6k=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110324160310.GA27127@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050802000904020109040107
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 
-On a whim, I decided to see how big the "absolute core" of the kernel 
-is, using the most minimalist i386 configuration I possibly could, 
-building it, and seeing how large the .o files ended up being (ignoring 
-obvious built-in.o et al).  A file stood out drastically above all of 
-the others: kernel/perf-event.o, at ~62K (~41K if I run strip on it).  I 
-wasn't paying much attention around the time that the "perf" things were 
-added to Linux, but I was wondering if this system is in any way 
-removable from the latest kernel entirely.
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-I've attached the .config I used to build, though it's unlikely to 
-matter in relation to my question.  There's not much documentation in 
-the kernel tree about the "perf" stuff, so if someone has a link to 
-something more comprehensive than the "it counts performance stuff" in 
-the menuconfig help, I'd appreciate that too.
+> Caused by:
+> 
+> | 8a5ec0ba42c4919e2d8f4c3138cc8b987fdb0b79 is the first bad commit
+> | commit 8a5ec0ba42c4919e2d8f4c3138cc8b987fdb0b79
+> | Author: Christoph Lameter <cl@linux.com>
+> | Date:   Fri Feb 25 11:38:54 2011 -0600
+> |
+> |    Lockless (and preemptless) fastpaths for slub
+> 
+> I'll try to revert these:
+> 
+>  2fd66c517d5e: slub: Add missing irq restore for the OOM path
+>  a24c5a0ea902: slub: Dont define useless label in the !CONFIG_CMPXCHG_LOCAL case
+>  8a5ec0ba42c4: Lockless (and preemptless) fastpaths for slub
 
-As always, thanks in advance.
+The combo revert below solves the boot crash.
 
-Jody Lee Bruchon
+Thanks,
 
-(Please CC replies to me directly.)
+	Ingo
 
---------------050802000904020109040107
-Content-Type: text/plain;
- name="config-kernel-core-only"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="config-kernel-core-only"
+------------------------------->
+>From 1b322eee05a96e8395b62e04a3d1f10fb483c259 Mon Sep 17 00:00:00 2001
+From: Ingo Molnar <mingo@elte.hu>
+Date: Thu, 24 Mar 2011 17:03:51 +0100
+Subject: [PATCH] Revert various slub patches
 
-#
-# Automatically generated make config: don't edit
-# Linux/i386 2.6.38 Kernel Configuration
-# Sun Mar 20 16:05:45 2011
-#
-# CONFIG_64BIT is not set
-CONFIG_X86_32=y
-# CONFIG_X86_64 is not set
-CONFIG_X86=y
-CONFIG_INSTRUCTION_DECODER=y
-CONFIG_OUTPUT_FORMAT="elf32-i386"
-CONFIG_ARCH_DEFCONFIG="arch/x86/configs/i386_defconfig"
-CONFIG_GENERIC_CMOS_UPDATE=y
-CONFIG_CLOCKSOURCE_WATCHDOG=y
-CONFIG_GENERIC_CLOCKEVENTS=y
-CONFIG_LOCKDEP_SUPPORT=y
-CONFIG_STACKTRACE_SUPPORT=y
-CONFIG_HAVE_LATENCYTOP_SUPPORT=y
-CONFIG_MMU=y
-CONFIG_ZONE_DMA=y
-# CONFIG_NEED_DMA_MAP_STATE is not set
-CONFIG_NEED_SG_DMA_LENGTH=y
-CONFIG_GENERIC_ISA_DMA=y
-CONFIG_GENERIC_IOMAP=y
-CONFIG_GENERIC_HWEIGHT=y
-CONFIG_ARCH_MAY_HAVE_PC_FDC=y
-# CONFIG_RWSEM_GENERIC_SPINLOCK is not set
-CONFIG_RWSEM_XCHGADD_ALGORITHM=y
-CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
-CONFIG_GENERIC_CALIBRATE_DELAY=y
-# CONFIG_GENERIC_TIME_VSYSCALL is not set
-CONFIG_ARCH_HAS_CPU_RELAX=y
-CONFIG_ARCH_HAS_DEFAULT_IDLE=y
-CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
-CONFIG_HAVE_SETUP_PER_CPU_AREA=y
-CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
-CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
-# CONFIG_HAVE_CPUMASK_OF_CPU_MAP is not set
-CONFIG_ARCH_HIBERNATION_POSSIBLE=y
-CONFIG_ARCH_SUSPEND_POSSIBLE=y
-# CONFIG_ZONE_DMA32 is not set
-CONFIG_ARCH_POPULATES_NODE_MAP=y
-# CONFIG_AUDIT_ARCH is not set
-CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
-CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
-CONFIG_X86_32_LAZY_GS=y
-CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-ecx -fcall-saved-edx"
-CONFIG_KTIME_SCALAR=y
-CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
-CONFIG_CONSTRUCTORS=y
-CONFIG_HAVE_IRQ_WORK=y
-CONFIG_IRQ_WORK=y
+Revert "slub: Add missing irq restore for the OOM path"
 
-#
-# General setup
-#
-CONFIG_EXPERIMENTAL=y
-CONFIG_BROKEN_ON_SMP=y
-CONFIG_INIT_ENV_ARG_LIMIT=32
-CONFIG_CROSS_COMPILE=""
-CONFIG_LOCALVERSION=""
-# CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_HAVE_KERNEL_GZIP=y
-CONFIG_HAVE_KERNEL_BZIP2=y
-CONFIG_HAVE_KERNEL_LZMA=y
-CONFIG_HAVE_KERNEL_XZ=y
-CONFIG_HAVE_KERNEL_LZO=y
-CONFIG_KERNEL_GZIP=y
-# CONFIG_KERNEL_BZIP2 is not set
-# CONFIG_KERNEL_LZMA is not set
-# CONFIG_KERNEL_XZ is not set
-# CONFIG_KERNEL_LZO is not set
-# CONFIG_SYSVIPC is not set
-# CONFIG_BSD_PROCESS_ACCT is not set
-# CONFIG_FHANDLE is not set
-CONFIG_HAVE_GENERIC_HARDIRQS=y
+This reverts commit 2fd66c517d5e98de2528d86e0e62f5069ff99f59.
 
-#
-# IRQ subsystem
-#
-CONFIG_GENERIC_HARDIRQS=y
-CONFIG_HAVE_SPARSE_IRQ=y
-CONFIG_GENERIC_IRQ_PROBE=y
-CONFIG_GENERIC_IRQ_SHOW=y
-CONFIG_IRQ_FORCED_THREADING=y
-# CONFIG_SPARSE_IRQ is not set
+Revert "slub: Dont define useless label in the !CONFIG_CMPXCHG_LOCAL case"
 
-#
-# RCU Subsystem
-#
-CONFIG_TINY_RCU=y
-# CONFIG_PREEMPT_RCU is not set
-# CONFIG_RCU_TRACE is not set
-# CONFIG_TREE_RCU_TRACE is not set
-# CONFIG_IKCONFIG is not set
-CONFIG_LOG_BUF_SHIFT=17
-CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
-# CONFIG_NAMESPACES is not set
-# CONFIG_SCHED_AUTOGROUP is not set
-# CONFIG_RELAY is not set
-# CONFIG_BLK_DEV_INITRD is not set
-# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
-CONFIG_ANON_INODES=y
-CONFIG_EXPERT=y
-# CONFIG_EMBEDDED is not set
-# CONFIG_UID16 is not set
-# CONFIG_KALLSYMS is not set
-# CONFIG_HOTPLUG is not set
-# CONFIG_PRINTK is not set
-# CONFIG_BUG is not set
-# CONFIG_ELF_CORE is not set
-# CONFIG_PCSPKR_PLATFORM is not set
-# CONFIG_BASE_FULL is not set
-# CONFIG_FUTEX is not set
-# CONFIG_EPOLL is not set
-# CONFIG_SIGNALFD is not set
-# CONFIG_TIMERFD is not set
-# CONFIG_EVENTFD is not set
-# CONFIG_SHMEM is not set
-# CONFIG_AIO is not set
-CONFIG_HAVE_PERF_EVENTS=y
+This reverts commit a24c5a0ea902bcda348f086bd909cc2d6e305bf8.
 
-#
-# Kernel Performance Events And Counters
-#
-CONFIG_PERF_EVENTS=y
-# CONFIG_PERF_COUNTERS is not set
-# CONFIG_VM_EVENT_COUNTERS is not set
-# CONFIG_COMPAT_BRK is not set
-# CONFIG_SLAB is not set
-# CONFIG_SLUB is not set
-CONFIG_SLOB=y
-# CONFIG_PROFILING is not set
-CONFIG_HAVE_OPROFILE=y
-# CONFIG_JUMP_LABEL is not set
-CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
-CONFIG_HAVE_IOREMAP_PROT=y
-CONFIG_HAVE_KPROBES=y
-CONFIG_HAVE_KRETPROBES=y
-CONFIG_HAVE_OPTPROBES=y
-CONFIG_HAVE_ARCH_TRACEHOOK=y
-CONFIG_HAVE_DMA_ATTRS=y
-CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
-CONFIG_HAVE_DMA_API_DEBUG=y
-CONFIG_HAVE_HW_BREAKPOINT=y
-CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
-CONFIG_HAVE_USER_RETURN_NOTIFIER=y
-CONFIG_HAVE_PERF_EVENTS_NMI=y
-CONFIG_HAVE_ARCH_JUMP_LABEL=y
+Revert "slub,rcu: don't assume the size of struct rcu_head"
 
-#
-# GCOV-based kernel profiling
-#
-CONFIG_HAVE_GENERIC_DMA_COHERENT=y
-CONFIG_BASE_SMALL=1
-# CONFIG_MODULES is not set
-# CONFIG_BLOCK is not set
-# CONFIG_DEFAULT_NOOP is not set
-# CONFIG_INLINE_SPIN_TRYLOCK is not set
-# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
-# CONFIG_INLINE_SPIN_LOCK is not set
-# CONFIG_INLINE_SPIN_LOCK_BH is not set
-# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
-# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
-CONFIG_INLINE_SPIN_UNLOCK=y
-# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
-CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
-# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
-# CONFIG_INLINE_READ_TRYLOCK is not set
-# CONFIG_INLINE_READ_LOCK is not set
-# CONFIG_INLINE_READ_LOCK_BH is not set
-# CONFIG_INLINE_READ_LOCK_IRQ is not set
-# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
-CONFIG_INLINE_READ_UNLOCK=y
-# CONFIG_INLINE_READ_UNLOCK_BH is not set
-CONFIG_INLINE_READ_UNLOCK_IRQ=y
-# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
-# CONFIG_INLINE_WRITE_TRYLOCK is not set
-# CONFIG_INLINE_WRITE_LOCK is not set
-# CONFIG_INLINE_WRITE_LOCK_BH is not set
-# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
-# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
-CONFIG_INLINE_WRITE_UNLOCK=y
-# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
-CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
-# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
-# CONFIG_MUTEX_SPIN_ON_OWNER is not set
-# CONFIG_FREEZER is not set
+This reverts commit da9a638c6f8fc0633fa94a334f1c053f5e307177.
 
-#
-# Processor type and features
-#
-# CONFIG_NO_HZ is not set
-# CONFIG_HIGH_RES_TIMERS is not set
-CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-# CONFIG_SMP is not set
-# CONFIG_X86_EXTENDED_PLATFORM is not set
-# CONFIG_X86_32_IRIS is not set
-CONFIG_SCHED_OMIT_FRAME_POINTER=y
-# CONFIG_PARAVIRT_GUEST is not set
-CONFIG_NO_BOOTMEM=y
-# CONFIG_MEMTEST is not set
-# CONFIG_M386 is not set
-CONFIG_M486=y
-# CONFIG_M586 is not set
-# CONFIG_M586TSC is not set
-# CONFIG_M586MMX is not set
-# CONFIG_M686 is not set
-# CONFIG_MPENTIUMII is not set
-# CONFIG_MPENTIUMIII is not set
-# CONFIG_MPENTIUMM is not set
-# CONFIG_MPENTIUM4 is not set
-# CONFIG_MK6 is not set
-# CONFIG_MK7 is not set
-# CONFIG_MK8 is not set
-# CONFIG_MCRUSOE is not set
-# CONFIG_MEFFICEON is not set
-# CONFIG_MWINCHIPC6 is not set
-# CONFIG_MWINCHIP3D is not set
-# CONFIG_MGEODEGX1 is not set
-# CONFIG_MGEODE_LX is not set
-# CONFIG_MCYRIXIII is not set
-# CONFIG_MVIAC3_2 is not set
-# CONFIG_MVIAC7 is not set
-# CONFIG_MCORE2 is not set
-# CONFIG_MATOM is not set
-CONFIG_X86_GENERIC=y
-CONFIG_X86_INTERNODE_CACHE_SHIFT=6
-CONFIG_X86_CMPXCHG=y
-CONFIG_CMPXCHG_LOCAL=y
-CONFIG_X86_L1_CACHE_SHIFT=6
-CONFIG_X86_XADD=y
-# CONFIG_X86_PPRO_FENCE is not set
-CONFIG_X86_F00F_BUG=y
-CONFIG_X86_INVD_BUG=y
-CONFIG_X86_WP_WORKS_OK=y
-CONFIG_X86_INVLPG=y
-CONFIG_X86_BSWAP=y
-CONFIG_X86_POPAD_OK=y
-CONFIG_X86_ALIGNMENT_16=y
-CONFIG_X86_INTEL_USERCOPY=y
-CONFIG_X86_MINIMUM_CPU_FAMILY=4
-# CONFIG_PROCESSOR_SELECT is not set
-CONFIG_CPU_SUP_INTEL=y
-CONFIG_CPU_SUP_CYRIX_32=y
-CONFIG_CPU_SUP_AMD=y
-CONFIG_CPU_SUP_CENTAUR=y
-CONFIG_CPU_SUP_TRANSMETA_32=y
-CONFIG_CPU_SUP_UMC_32=y
-# CONFIG_HPET_TIMER is not set
-# CONFIG_DMI is not set
-# CONFIG_IOMMU_HELPER is not set
-# CONFIG_IOMMU_API is not set
-CONFIG_NR_CPUS=1
-# CONFIG_IRQ_TIME_ACCOUNTING is not set
-CONFIG_PREEMPT_NONE=y
-# CONFIG_PREEMPT_VOLUNTARY is not set
-# CONFIG_PREEMPT is not set
-# CONFIG_X86_UP_APIC is not set
-# CONFIG_X86_MCE is not set
-# CONFIG_VM86 is not set
-# CONFIG_TOSHIBA is not set
-# CONFIG_I8K is not set
-# CONFIG_X86_REBOOTFIXUPS is not set
-# CONFIG_MICROCODE is not set
-# CONFIG_X86_MSR is not set
-# CONFIG_X86_CPUID is not set
-CONFIG_NOHIGHMEM=y
-# CONFIG_HIGHMEM4G is not set
-CONFIG_VMSPLIT_3G=y
-# CONFIG_VMSPLIT_3G_OPT is not set
-# CONFIG_VMSPLIT_2G is not set
-# CONFIG_VMSPLIT_2G_OPT is not set
-# CONFIG_VMSPLIT_1G is not set
-CONFIG_PAGE_OFFSET=0xC0000000
-# CONFIG_X86_PAE is not set
-# CONFIG_ARCH_PHYS_ADDR_T_64BIT is not set
-# CONFIG_ARCH_DMA_ADDR_T_64BIT is not set
-CONFIG_ARCH_FLATMEM_ENABLE=y
-CONFIG_ARCH_SPARSEMEM_ENABLE=y
-CONFIG_ARCH_SELECT_MEMORY_MODEL=y
-CONFIG_ILLEGAL_POINTER_VALUE=0
-CONFIG_SELECT_MEMORY_MODEL=y
-CONFIG_FLATMEM_MANUAL=y
-# CONFIG_SPARSEMEM_MANUAL is not set
-CONFIG_FLATMEM=y
-CONFIG_FLAT_NODE_MEM_MAP=y
-CONFIG_SPARSEMEM_STATIC=y
-CONFIG_HAVE_MEMBLOCK=y
-CONFIG_PAGEFLAGS_EXTENDED=y
-CONFIG_SPLIT_PTLOCK_CPUS=4
-# CONFIG_COMPACTION is not set
-# CONFIG_PHYS_ADDR_T_64BIT is not set
-CONFIG_ZONE_DMA_FLAG=1
-CONFIG_VIRT_TO_BUS=y
-# CONFIG_KSM is not set
-CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
-# CONFIG_TRANSPARENT_HUGEPAGE is not set
-CONFIG_NEED_PER_CPU_KM=y
-# CONFIG_X86_CHECK_BIOS_CORRUPTION is not set
-CONFIG_X86_RESERVE_LOW=64
-# CONFIG_MATH_EMULATION is not set
-# CONFIG_MTRR is not set
-# CONFIG_SECCOMP is not set
-# CONFIG_CC_STACKPROTECTOR is not set
-# CONFIG_HZ_100 is not set
-# CONFIG_HZ_250 is not set
-CONFIG_HZ_300=y
-# CONFIG_HZ_1000 is not set
-CONFIG_HZ=300
-# CONFIG_SCHED_HRTICK is not set
-# CONFIG_KEXEC is not set
-CONFIG_PHYSICAL_START=0x1000000
-# CONFIG_RELOCATABLE is not set
-CONFIG_PHYSICAL_ALIGN=0x1000000
-# CONFIG_COMPAT_VDSO is not set
-# CONFIG_CMDLINE_BOOL is not set
+Revert "slub: Add statistics for this_cmpxchg_double failures"
 
-#
-# Power management and ACPI options
-#
-# CONFIG_SUSPEND is not set
-# CONFIG_PM_RUNTIME is not set
-# CONFIG_SFI is not set
+This reverts commit 4fdccdfbb4652a7bbac8adbce7449eb093775118.
 
-#
-# CPU Frequency scaling
-#
-# CONFIG_CPU_FREQ is not set
-# CONFIG_CPU_IDLE is not set
+Revert "Lockless (and preemptless) fastpaths for slub"
 
-#
-# Bus options (PCI etc.)
-#
-# CONFIG_PCI is not set
-# CONFIG_ARCH_SUPPORTS_MSI is not set
-CONFIG_ISA_DMA_API=y
-# CONFIG_ISA is not set
-# CONFIG_MCA is not set
-# CONFIG_SCx200 is not set
-# CONFIG_OLPC is not set
+This reverts commit 8a5ec0ba42c4919e2d8f4c3138cc8b987fdb0b79.
+---
+ include/linux/slub_def.h |    6 +-
+ mm/slub.c                |  243 ++--------------------------------------------
+ 2 files changed, 9 insertions(+), 240 deletions(-)
 
-#
-# Executable file formats / Emulations
-#
-# CONFIG_BINFMT_ELF is not set
-CONFIG_HAVE_AOUT=y
-# CONFIG_BINFMT_AOUT is not set
-# CONFIG_BINFMT_MISC is not set
-CONFIG_HAVE_ATOMIC_IOMAP=y
-CONFIG_HAVE_TEXT_POKE_SMP=y
-# CONFIG_NET is not set
-
-#
-# Device Drivers
-#
-
-#
-# Generic Driver Options
-#
-CONFIG_STANDALONE=y
-CONFIG_PREVENT_FIRMWARE_BUILD=y
-CONFIG_FW_LOADER=y
-# CONFIG_FIRMWARE_IN_KERNEL is not set
-CONFIG_EXTRA_FIRMWARE=""
-# CONFIG_SYS_HYPERVISOR is not set
-# CONFIG_MTD is not set
-# CONFIG_PARPORT is not set
-# CONFIG_MISC_DEVICES is not set
-CONFIG_HAVE_IDE=y
-
-#
-# SCSI device support
-#
-CONFIG_SCSI_MOD=y
-# CONFIG_SCSI_DMA is not set
-# CONFIG_SCSI_NETLINK is not set
-# CONFIG_MACINTOSH_DRIVERS is not set
-# CONFIG_PHONE is not set
-
-#
-# Input device support
-#
-# CONFIG_INPUT is not set
-
-#
-# Hardware I/O ports
-#
-# CONFIG_SERIO is not set
-# CONFIG_GAMEPORT is not set
-
-#
-# Character devices
-#
-# CONFIG_VT is not set
-# CONFIG_UNIX98_PTYS is not set
-# CONFIG_LEGACY_PTYS is not set
-# CONFIG_SERIAL_NONSTANDARD is not set
-# CONFIG_DEVKMEM is not set
-
-#
-# Serial drivers
-#
-# CONFIG_SERIAL_8250 is not set
-CONFIG_FIX_EARLYCON_MEM=y
-
-#
-# Non-8250 serial port support
-#
-# CONFIG_SERIAL_TIMBERDALE is not set
-# CONFIG_SERIAL_ALTERA_JTAGUART is not set
-# CONFIG_SERIAL_ALTERA_UART is not set
-# CONFIG_TTY_PRINTK is not set
-# CONFIG_IPMI_HANDLER is not set
-# CONFIG_HW_RANDOM is not set
-# CONFIG_NVRAM is not set
-# CONFIG_RTC is not set
-# CONFIG_GEN_RTC is not set
-# CONFIG_R3964 is not set
-# CONFIG_MWAVE is not set
-# CONFIG_PC8736x_GPIO is not set
-# CONFIG_NSC_GPIO is not set
-# CONFIG_HANGCHECK_TIMER is not set
-# CONFIG_TCG_TPM is not set
-# CONFIG_TELCLOCK is not set
-# CONFIG_RAMOOPS is not set
-# CONFIG_I2C is not set
-# CONFIG_SPI is not set
-
-#
-# PPS support
-#
-# CONFIG_PPS is not set
-
-#
-# PPS generators support
-#
-CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
-# CONFIG_GPIOLIB is not set
-# CONFIG_W1 is not set
-# CONFIG_POWER_SUPPLY is not set
-# CONFIG_HWMON is not set
-# CONFIG_THERMAL is not set
-# CONFIG_WATCHDOG is not set
-CONFIG_SSB_POSSIBLE=y
-
-#
-# Sonics Silicon Backplane
-#
-# CONFIG_SSB is not set
-# CONFIG_MFD_SUPPORT is not set
-# CONFIG_REGULATOR is not set
-# CONFIG_MEDIA_SUPPORT is not set
-
-#
-# Graphics support
-#
-# CONFIG_DRM is not set
-# CONFIG_VGASTATE is not set
-# CONFIG_VIDEO_OUTPUT_CONTROL is not set
-# CONFIG_FB is not set
-# CONFIG_BACKLIGHT_LCD_SUPPORT is not set
-
-#
-# Display device support
-#
-# CONFIG_DISPLAY_SUPPORT is not set
-# CONFIG_SOUND is not set
-# CONFIG_USB_SUPPORT is not set
-# CONFIG_MMC is not set
-# CONFIG_MEMSTICK is not set
-# CONFIG_NEW_LEDS is not set
-# CONFIG_NFC_DEVICES is not set
-# CONFIG_ACCESSIBILITY is not set
-# CONFIG_EDAC is not set
-# CONFIG_RTC_CLASS is not set
-# CONFIG_DMADEVICES is not set
-# CONFIG_AUXDISPLAY is not set
-# CONFIG_UIO is not set
-# CONFIG_STAGING is not set
-# CONFIG_X86_PLATFORM_DEVICES is not set
-# CONFIG_HWSPINLOCK is not set
-
-#
-# Firmware Drivers
-#
-# CONFIG_EDD is not set
-# CONFIG_FIRMWARE_MEMMAP is not set
-# CONFIG_DELL_RBU is not set
-# CONFIG_DCDBAS is not set
-# CONFIG_ISCSI_IBFT_FIND is not set
-
-#
-# File systems
-#
-# CONFIG_FS_POSIX_ACL is not set
-# CONFIG_FILE_LOCKING is not set
-# CONFIG_FSNOTIFY is not set
-# CONFIG_DNOTIFY is not set
-# CONFIG_INOTIFY_USER is not set
-# CONFIG_FANOTIFY is not set
-# CONFIG_QUOTA is not set
-# CONFIG_QUOTACTL is not set
-# CONFIG_AUTOFS4_FS is not set
-# CONFIG_FUSE_FS is not set
-
-#
-# Caches
-#
-# CONFIG_FSCACHE is not set
-
-#
-# Pseudo filesystems
-#
-# CONFIG_PROC_FS is not set
-# CONFIG_SYSFS is not set
-# CONFIG_HUGETLBFS is not set
-# CONFIG_HUGETLB_PAGE is not set
-# CONFIG_CONFIGFS_FS is not set
-# CONFIG_MISC_FILESYSTEMS is not set
-# CONFIG_NLS is not set
-
-#
-# Kernel hacking
-#
-CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-# CONFIG_ENABLE_WARN_DEPRECATED is not set
-# CONFIG_ENABLE_MUST_CHECK is not set
-CONFIG_FRAME_WARN=2048
-# CONFIG_MAGIC_SYSRQ is not set
-CONFIG_STRIP_ASM_SYMS=y
-# CONFIG_UNUSED_SYMBOLS is not set
-# CONFIG_DEBUG_FS is not set
-# CONFIG_HEADERS_CHECK is not set
-# CONFIG_DEBUG_KERNEL is not set
-# CONFIG_HARDLOCKUP_DETECTOR is not set
-# CONFIG_SPARSE_RCU_POINTER is not set
-# CONFIG_DEBUG_MEMORY_INIT is not set
-CONFIG_ARCH_WANT_FRAME_POINTERS=y
-# CONFIG_FRAME_POINTER is not set
-CONFIG_USER_STACKTRACE_SUPPORT=y
-CONFIG_HAVE_FUNCTION_TRACER=y
-CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
-CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
-CONFIG_HAVE_DYNAMIC_FTRACE=y
-CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
-CONFIG_HAVE_C_RECORDMCOUNT=y
-CONFIG_TRACING_SUPPORT=y
-# CONFIG_FTRACE is not set
-# CONFIG_DMA_API_DEBUG is not set
-# CONFIG_ATOMIC64_SELFTEST is not set
-# CONFIG_SAMPLES is not set
-CONFIG_HAVE_ARCH_KGDB=y
-CONFIG_HAVE_ARCH_KMEMCHECK=y
-# CONFIG_STRICT_DEVMEM is not set
-# CONFIG_X86_VERBOSE_BOOTUP is not set
-# CONFIG_EARLY_PRINTK is not set
-# CONFIG_DOUBLEFAULT is not set
-# CONFIG_IOMMU_STRESS is not set
-CONFIG_HAVE_MMIOTRACE_SUPPORT=y
-CONFIG_IO_DELAY_TYPE_0X80=0
-CONFIG_IO_DELAY_TYPE_0XED=1
-CONFIG_IO_DELAY_TYPE_UDELAY=2
-CONFIG_IO_DELAY_TYPE_NONE=3
-CONFIG_IO_DELAY_0X80=y
-# CONFIG_IO_DELAY_0XED is not set
-# CONFIG_IO_DELAY_UDELAY is not set
-# CONFIG_IO_DELAY_NONE is not set
-CONFIG_DEFAULT_IO_DELAY_TYPE=0
-CONFIG_OPTIMIZE_INLINING=y
-
-#
-# Security options
-#
-# CONFIG_KEYS is not set
-# CONFIG_SECURITY_DMESG_RESTRICT is not set
-# CONFIG_SECURITYFS is not set
-CONFIG_DEFAULT_SECURITY_DAC=y
-CONFIG_DEFAULT_SECURITY=""
-# CONFIG_CRYPTO is not set
-CONFIG_HAVE_KVM=y
-# CONFIG_VIRTUALIZATION is not set
-# CONFIG_BINARY_PRINTF is not set
-
-#
-# Library routines
-#
-CONFIG_GENERIC_FIND_FIRST_BIT=y
-CONFIG_GENERIC_FIND_NEXT_BIT=y
-CONFIG_GENERIC_FIND_LAST_BIT=y
-# CONFIG_CRC_CCITT is not set
-# CONFIG_CRC16 is not set
-# CONFIG_CRC_T10DIF is not set
-# CONFIG_CRC_ITU_T is not set
-# CONFIG_CRC32 is not set
-# CONFIG_CRC7 is not set
-# CONFIG_LIBCRC32C is not set
-# CONFIG_XZ_DEC is not set
-# CONFIG_XZ_DEC_BCJ is not set
-CONFIG_HAS_IOMEM=y
-CONFIG_HAS_IOPORT=y
-CONFIG_HAS_DMA=y
-# CONFIG_AVERAGE is not set
-
---------------050802000904020109040107--
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index 45ca123..74af3d6 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -32,14 +32,10 @@ enum stat_item {
+ 	DEACTIVATE_TO_TAIL,	/* Cpu slab was moved to the tail of partials */
+ 	DEACTIVATE_REMOTE_FREES,/* Slab contained remotely freed objects */
+ 	ORDER_FALLBACK,		/* Number of times fallback was necessary */
+-	CMPXCHG_DOUBLE_CPU_FAIL,/* Failure of this_cpu_cmpxchg_double */
+ 	NR_SLUB_STAT_ITEMS };
+ 
+ struct kmem_cache_cpu {
+-	void **freelist;	/* Pointer to next available object */
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	unsigned long tid;	/* Globally unique transaction id */
+-#endif
++	void **freelist;	/* Pointer to first free per cpu object */
+ 	struct page *page;	/* The slab from which we are allocating */
+ 	int node;		/* The node of the page (or -1 for debug) */
+ #ifdef CONFIG_SLUB_STATS
+diff --git a/mm/slub.c b/mm/slub.c
+index 93de30d..bd84722 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -217,7 +217,7 @@ static inline void sysfs_slab_remove(struct kmem_cache *s)
+ 
+ #endif
+ 
+-static inline void stat(const struct kmem_cache *s, enum stat_item si)
++static inline void stat(struct kmem_cache *s, enum stat_item si)
+ {
+ #ifdef CONFIG_SLUB_STATS
+ 	__this_cpu_inc(s->cpu_slab->stat[si]);
+@@ -1285,38 +1285,21 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+ 	__free_pages(page, order);
+ }
+ 
+-#define need_reserve_slab_rcu						\
+-	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
+-
+ static void rcu_free_slab(struct rcu_head *h)
+ {
+ 	struct page *page;
+ 
+-	if (need_reserve_slab_rcu)
+-		page = virt_to_head_page(h);
+-	else
+-		page = container_of((struct list_head *)h, struct page, lru);
+-
++	page = container_of((struct list_head *)h, struct page, lru);
+ 	__free_slab(page->slab, page);
+ }
+ 
+ static void free_slab(struct kmem_cache *s, struct page *page)
+ {
+ 	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
+-		struct rcu_head *head;
+-
+-		if (need_reserve_slab_rcu) {
+-			int order = compound_order(page);
+-			int offset = (PAGE_SIZE << order) - s->reserved;
+-
+-			VM_BUG_ON(s->reserved != sizeof(*head));
+-			head = page_address(page) + offset;
+-		} else {
+-			/*
+-			 * RCU free overloads the RCU head over the LRU
+-			 */
+-			head = (void *)&page->lru;
+-		}
++		/*
++		 * RCU free overloads the RCU head over the LRU
++		 */
++		struct rcu_head *head = (void *)&page->lru;
+ 
+ 		call_rcu(head, rcu_free_slab);
+ 	} else
+@@ -1540,78 +1523,6 @@ static void unfreeze_slab(struct kmem_cache *s, struct page *page, int tail)
+ 	}
+ }
+ 
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-#ifdef CONFIG_PREEMPT
+-/*
+- * Calculate the next globally unique transaction for disambiguiation
+- * during cmpxchg. The transactions start with the cpu number and are then
+- * incremented by CONFIG_NR_CPUS.
+- */
+-#define TID_STEP  roundup_pow_of_two(CONFIG_NR_CPUS)
+-#else
+-/*
+- * No preemption supported therefore also no need to check for
+- * different cpus.
+- */
+-#define TID_STEP 1
+-#endif
+-
+-static inline unsigned long next_tid(unsigned long tid)
+-{
+-	return tid + TID_STEP;
+-}
+-
+-static inline unsigned int tid_to_cpu(unsigned long tid)
+-{
+-	return tid % TID_STEP;
+-}
+-
+-static inline unsigned long tid_to_event(unsigned long tid)
+-{
+-	return tid / TID_STEP;
+-}
+-
+-static inline unsigned int init_tid(int cpu)
+-{
+-	return cpu;
+-}
+-
+-static inline void note_cmpxchg_failure(const char *n,
+-		const struct kmem_cache *s, unsigned long tid)
+-{
+-#ifdef SLUB_DEBUG_CMPXCHG
+-	unsigned long actual_tid = __this_cpu_read(s->cpu_slab->tid);
+-
+-	printk(KERN_INFO "%s %s: cmpxchg redo ", n, s->name);
+-
+-#ifdef CONFIG_PREEMPT
+-	if (tid_to_cpu(tid) != tid_to_cpu(actual_tid))
+-		printk("due to cpu change %d -> %d\n",
+-			tid_to_cpu(tid), tid_to_cpu(actual_tid));
+-	else
+-#endif
+-	if (tid_to_event(tid) != tid_to_event(actual_tid))
+-		printk("due to cpu running other code. Event %ld->%ld\n",
+-			tid_to_event(tid), tid_to_event(actual_tid));
+-	else
+-		printk("for unknown reason: actual=%lx was=%lx target=%lx\n",
+-			actual_tid, tid, next_tid(tid));
+-#endif
+-	stat(s, CMPXCHG_DOUBLE_CPU_FAIL);
+-}
+-
+-#endif
+-
+-void init_kmem_cache_cpus(struct kmem_cache *s)
+-{
+-#if defined(CONFIG_CMPXCHG_LOCAL) && defined(CONFIG_PREEMPT)
+-	int cpu;
+-
+-	for_each_possible_cpu(cpu)
+-		per_cpu_ptr(s->cpu_slab, cpu)->tid = init_tid(cpu);
+-#endif
+-
+-}
+ /*
+  * Remove the cpu slab
+  */
+@@ -1643,9 +1554,6 @@ static void deactivate_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
+ 		page->inuse--;
+ 	}
+ 	c->page = NULL;
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	c->tid = next_tid(c->tid);
+-#endif
+ 	unfreeze_slab(s, page, tail);
+ }
+ 
+@@ -1780,19 +1688,6 @@ static void *__slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
+ {
+ 	void **object;
+ 	struct page *new;
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-#ifdef CONFIG_PREEMPT
+-	/*
+-	 * We may have been preempted and rescheduled on a different
+-	 * cpu before disabling interrupts. Need to reload cpu area
+-	 * pointer.
+-	 */
+-	c = this_cpu_ptr(s->cpu_slab);
+-#endif
+-#endif
+ 
+ 	/* We handle __GFP_ZERO in the caller */
+ 	gfpflags &= ~__GFP_ZERO;
+@@ -1819,10 +1714,6 @@ load_freelist:
+ 	c->node = page_to_nid(c->page);
+ unlock_out:
+ 	slab_unlock(c->page);
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	c->tid = next_tid(c->tid);
+-	local_irq_restore(flags);
+-#endif
+ 	stat(s, ALLOC_SLOWPATH);
+ 	return object;
+ 
+@@ -1858,9 +1749,6 @@ new_slab:
+ 	}
+ 	if (!(gfpflags & __GFP_NOWARN) && printk_ratelimit())
+ 		slab_out_of_memory(s, gfpflags, node);
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	local_irq_restore(flags);
+-#endif
+ 	return NULL;
+ debug:
+ 	if (!alloc_debug_processing(s, c->page, object, addr))
+@@ -1887,76 +1775,23 @@ static __always_inline void *slab_alloc(struct kmem_cache *s,
+ {
+ 	void **object;
+ 	struct kmem_cache_cpu *c;
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	unsigned long tid;
+-#else
+ 	unsigned long flags;
+-#endif
+ 
+ 	if (slab_pre_alloc_hook(s, gfpflags))
+ 		return NULL;
+ 
+-#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_save(flags);
+-#else
+-redo:
+-#endif
+-
+-	/*
+-	 * Must read kmem_cache cpu data via this cpu ptr. Preemption is
+-	 * enabled. We may switch back and forth between cpus while
+-	 * reading from one cpu area. That does not matter as long
+-	 * as we end up on the original cpu again when doing the cmpxchg.
+-	 */
+ 	c = __this_cpu_ptr(s->cpu_slab);
+-
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	/*
+-	 * The transaction ids are globally unique per cpu and per operation on
+-	 * a per cpu queue. Thus they can be guarantee that the cmpxchg_double
+-	 * occurs on the right processor and that there was no operation on the
+-	 * linked list in between.
+-	 */
+-	tid = c->tid;
+-	barrier();
+-#endif
+-
+ 	object = c->freelist;
+ 	if (unlikely(!object || !node_match(c, node)))
+ 
+ 		object = __slab_alloc(s, gfpflags, node, addr, c);
+ 
+ 	else {
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-		/*
+-		 * The cmpxchg will only match if there was no additonal
+-		 * operation and if we are on the right processor.
+-		 *
+-		 * The cmpxchg does the following atomically (without lock semantics!)
+-		 * 1. Relocate first pointer to the current per cpu area.
+-		 * 2. Verify that tid and freelist have not been changed
+-		 * 3. If they were not changed replace tid and freelist
+-		 *
+-		 * Since this is without lock semantics the protection is only against
+-		 * code executing on this cpu *not* from access by other cpus.
+-		 */
+-		if (unlikely(!this_cpu_cmpxchg_double(
+-				s->cpu_slab->freelist, s->cpu_slab->tid,
+-				object, tid,
+-				get_freepointer(s, object), next_tid(tid)))) {
+-
+-			note_cmpxchg_failure("slab_alloc", s, tid);
+-			goto redo;
+-		}
+-#else
+ 		c->freelist = get_freepointer(s, object);
+-#endif
+ 		stat(s, ALLOC_FASTPATH);
+ 	}
+-
+-#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_restore(flags);
+-#endif
+ 
+ 	if (unlikely(gfpflags & __GFP_ZERO) && object)
+ 		memset(object, 0, s->objsize);
+@@ -2034,13 +1869,9 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ {
+ 	void *prior;
+ 	void **object = (void *)x;
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	unsigned long flags;
+ 
+-	local_irq_save(flags);
+-#endif
+-	slab_lock(page);
+ 	stat(s, FREE_SLOWPATH);
++	slab_lock(page);
+ 
+ 	if (kmem_cache_debug(s))
+ 		goto debug;
+@@ -2070,9 +1901,6 @@ checks_ok:
+ 
+ out_unlock:
+ 	slab_unlock(page);
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	local_irq_restore(flags);
+-#endif
+ 	return;
+ 
+ slab_empty:
+@@ -2084,9 +1912,6 @@ slab_empty:
+ 		stat(s, FREE_REMOVE_PARTIAL);
+ 	}
+ 	slab_unlock(page);
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	local_irq_restore(flags);
+-#endif
+ 	stat(s, FREE_SLAB);
+ 	discard_slab(s, page);
+ 	return;
+@@ -2113,56 +1938,21 @@ static __always_inline void slab_free(struct kmem_cache *s,
+ {
+ 	void **object = (void *)x;
+ 	struct kmem_cache_cpu *c;
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	unsigned long tid;
+-#else
+ 	unsigned long flags;
+-#endif
+ 
+ 	slab_free_hook(s, x);
+ 
+-#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_save(flags);
+-
+-#else
+-redo:
+-#endif
+-
+-	/*
+-	 * Determine the currently cpus per cpu slab.
+-	 * The cpu may change afterward. However that does not matter since
+-	 * data is retrieved via this pointer. If we are on the same cpu
+-	 * during the cmpxchg then the free will succedd.
+-	 */
+ 	c = __this_cpu_ptr(s->cpu_slab);
+ 
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	tid = c->tid;
+-	barrier();
+-#endif
+-
+ 	if (likely(page == c->page && c->node != NUMA_NO_NODE)) {
+ 		set_freepointer(s, object, c->freelist);
+-
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-		if (unlikely(!this_cpu_cmpxchg_double(
+-				s->cpu_slab->freelist, s->cpu_slab->tid,
+-				c->freelist, tid,
+-				object, next_tid(tid)))) {
+-
+-			note_cmpxchg_failure("slab_free", s, tid);
+-			goto redo;
+-		}
+-#else
+ 		c->freelist = object;
+-#endif
+ 		stat(s, FREE_FASTPATH);
+ 	} else
+ 		__slab_free(s, page, x, addr);
+ 
+-#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_restore(flags);
+-#endif
+ }
+ 
+ void kmem_cache_free(struct kmem_cache *s, void *x)
+@@ -2354,23 +2144,9 @@ static inline int alloc_kmem_cache_cpus(struct kmem_cache *s)
+ 	BUILD_BUG_ON(PERCPU_DYNAMIC_EARLY_SIZE <
+ 			SLUB_PAGE_SHIFT * sizeof(struct kmem_cache_cpu));
+ 
+-#ifdef CONFIG_CMPXCHG_LOCAL
+-	/*
+-	 * Must align to double word boundary for the double cmpxchg instructions
+-	 * to work.
+-	 */
+-	s->cpu_slab = __alloc_percpu(sizeof(struct kmem_cache_cpu), 2 * sizeof(void *));
+-#else
+-	/* Regular alignment is sufficient */
+ 	s->cpu_slab = alloc_percpu(struct kmem_cache_cpu);
+-#endif
+-
+-	if (!s->cpu_slab)
+-		return 0;
+ 
+-	init_kmem_cache_cpus(s);
+-
+-	return 1;
++	return s->cpu_slab != NULL;
+ }
+ 
+ static struct kmem_cache *kmem_cache_node;
+@@ -2609,9 +2385,6 @@ static int kmem_cache_open(struct kmem_cache *s,
+ 	s->flags = kmem_cache_flags(size, flags, name, ctor);
+ 	s->reserved = 0;
+ 
+-	if (need_reserve_slab_rcu && (s->flags & SLAB_DESTROY_BY_RCU))
+-		s->reserved = sizeof(struct rcu_head);
+-
+ 	if (!calculate_sizes(s, -1))
+ 		goto error;
+ 	if (disable_higher_order_debug) {
