@@ -1,122 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933608Ab1CXSAU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 14:00:20 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:52037 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109Ab1CXSAN (ORCPT
+	id S933634Ab1CXSAe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 14:00:34 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58107 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933565Ab1CXSAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 14:00:13 -0400
-Date: Thu, 24 Mar 2011 13:46:06 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2011-03-24
-Message-ID: <20110324174606.GB2503@tuxdriver.com>
+	Thu, 24 Mar 2011 14:00:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Ax+OrIo/89Q1fUoXcXndA2c+F5XVyJjV4Kcr7fUjiP8HeTuVetcBQHB5LUwSLVg7q3
+         RxRo0nGixD5Zrq2WG9g2gU1UhfigSxqL1884gQP8mZtq5SAoJ9KxU5LufJ/wt9ivP6lE
+         7y988xObVt59EarcJRKD/WJf2d5wIumZXy5e8=
+Date: Thu, 24 Mar 2011 18:51:48 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: torvalds@osdl.org, Alexander van Heukelum <heukelum@fastmail.fm>,
+        linux-am33-list@redhat.com,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Jeff Dike <jdike@addtoit.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        uclinux-dist-devel@blackfin.uclinux.org, akpm@linux-foundation.org,
+        Ingo Molnar <mingo@elte.hu>,
+        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+Subject: Re: [Uclinux-dist-devel] [RFC PATCH] percpu: always align percpu
+ output section to PAGE_SIZE
+Message-ID: <20110324175148.GA1409@htj.dyndns.org>
+References: <20101025224111.7798.38960.stgit@warthog.procyon.org.uk>
+ <12101.1288088542@redhat.com>
+ <4CC6C62F.1000804@kernel.org>
+ <4CC6C941.2080003@kernel.org>
+ <4CC6CD4D.3010501@kernel.org>
+ <4CC6E05A.8040508@kernel.org>
+ <AANLkTi=WWCPJeQ8DVv1j7GF0J61DiUupiOEuxDCW8_Xd@mail.gmail.com>
+ <20110324082523.GA12038@htj.dyndns.org>
+ <20110324085112.GB12038@htj.dyndns.org>
+ <AANLkTi=ZRowUtmSR+kLLphnRtyg1uqnFZ5s+_db6P54F@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTi=ZRowUtmSR+kLLphnRtyg1uqnFZ5s+_db6P54F@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+On Thu, Mar 24, 2011 at 09:46:53AM -0400, Mike Frysinger wrote:
+> Linus has already pulled it
 
-A few more fixes intended for 2.6.39...
+Thanks.  Patch queued for 2.6.40.
 
-This includes an iwlagn fix where we were checking an address insted
-of the value stored there in a wait_event_timeout (oops!), an ath9k
-fix for an invalid memory access, another ath9k fix for a regression
-that could cause a stuck tx queue, and an orinoco fix to zero-out an
-invalid pointer to prevent a resulting invalid pointer dereference.
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
-
----
-
-The following changes since commit 8c64b4cc0201cf05b218ea3271a2abb4f86acb7b:
-
-  Merge branch 'sfc-2.6.39' of git://git.kernel.org/pub/scm/linux/kernel/git/bwh/sfc-2.6 (2011-03-23 15:56:02 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
-
-Johannes Berg (1):
-      iwlagn: fix error in command waiting
-
-Senthil Balasubramanian (2):
-      ath9k: Fix kernel panic caused by invalid rate index access.
-      ath9k: Fix TX queue stuck issue.
-
-armadefuego@gmail.com (1):
-      orinoco: Clear dangling pointer on hardware busy
-
- drivers/net/wireless/ath/ath9k/main.c      |    2 ++
- drivers/net/wireless/ath/ath9k/rc.c        |    2 +-
- drivers/net/wireless/iwlwifi/iwl-agn-lib.c |    2 +-
- drivers/net/wireless/orinoco/cfg.c         |    3 +++
- 4 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-index 115f162..5248257 100644
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -2160,6 +2160,8 @@ static void ath9k_flush(struct ieee80211_hw *hw, bool drop)
- 	if (!ath_drain_all_txq(sc, false))
- 		ath_reset(sc, false);
- 
-+	ieee80211_wake_queues(hw);
-+
- out:
- 	ieee80211_queue_delayed_work(hw, &sc->tx_complete_work, 0);
- 	mutex_unlock(&sc->mutex);
-diff --git a/drivers/net/wireless/ath/ath9k/rc.c b/drivers/net/wireless/ath/ath9k/rc.c
-index 960d717..a3241cd 100644
---- a/drivers/net/wireless/ath/ath9k/rc.c
-+++ b/drivers/net/wireless/ath/ath9k/rc.c
-@@ -1328,7 +1328,7 @@ static void ath_tx_status(void *priv, struct ieee80211_supported_band *sband,
- 
- 	hdr = (struct ieee80211_hdr *)skb->data;
- 	fc = hdr->frame_control;
--	for (i = 0; i < IEEE80211_TX_MAX_RATES; i++) {
-+	for (i = 0; i < sc->hw->max_rates; i++) {
- 		struct ieee80211_tx_rate *rate = &tx_info->status.rates[i];
- 		if (!rate->count)
- 			break;
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-index 2003c1d..08ccb94 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-@@ -2265,7 +2265,7 @@ signed long iwlagn_wait_notification(struct iwl_priv *priv,
- 	int ret;
- 
- 	ret = wait_event_timeout(priv->_agn.notif_waitq,
--				 &wait_entry->triggered,
-+				 wait_entry->triggered,
- 				 timeout);
- 
- 	spin_lock_bh(&priv->_agn.notif_wait_lock);
-diff --git a/drivers/net/wireless/orinoco/cfg.c b/drivers/net/wireless/orinoco/cfg.c
-index 09fae2f..736bbb9 100644
---- a/drivers/net/wireless/orinoco/cfg.c
-+++ b/drivers/net/wireless/orinoco/cfg.c
-@@ -153,6 +153,9 @@ static int orinoco_scan(struct wiphy *wiphy, struct net_device *dev,
- 	priv->scan_request = request;
- 
- 	err = orinoco_hw_trigger_scan(priv, request->ssids);
-+	/* On error the we aren't processing the request */
-+	if (err)
-+		priv->scan_request = NULL;
- 
- 	return err;
- }
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+tejun
