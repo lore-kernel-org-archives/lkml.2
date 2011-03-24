@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908Ab1CXOQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 10:16:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55065 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab1CXOQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 10:16:06 -0400
-Date: Thu, 24 Mar 2011 15:15:53 +0100
-From: Petr Pisar <ppisar@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Clean console safely
-Message-ID: <20110324141552.GA1291@dhcp-0-146.brq.redhat.com>
-Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	linux-kernel@vger.kernel.org
-References: <1300960611-4820-1-git-send-email-ppisar@redhat.com>
- <20110324102431.5e017efe@lxorguk.ukuu.org.uk>
+	id S932831Ab1CXOSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 10:18:36 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42584 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755503Ab1CXOSe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 10:18:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Aa3aQIdhdqKVQN5Wp9tRJsWaEM1K46gyXF5tLBUuOMp/Yu/3okvtVGpv3fetEzSB4l
+         5FKufKMXv0b5+moWctlPy2zra7DRTB7PPcaOwUoNBr3+LBHtTbRrThFA3FmBWM0NilQY
+         rSFBUxaw/0VlAcN+1QPO+UuPKcj+Eeh1Y/+kQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110324102431.5e017efe@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1300973444-6084-1-git-send-email-chris@chris-wilson.co.uk>
+References: <AANLkTikY23FxMVtqTNra05O3CxXZQ5=bvmppTiySHNq=@mail.gmail.com>
+	<1300973444-6084-1-git-send-email-chris@chris-wilson.co.uk>
+Date: Thu, 24 Mar 2011 15:18:33 +0100
+Message-ID: <AANLkTik4mvu130VOpdHj7noFQ3SLkGCSAVAQ+OK2=U4S@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915/lvds: Always return connected in the absence of
+ better information
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 10:24:31AM +0000, Alan Cox wrote:
-> On Thu, 24 Mar 2011 10:56:51 +0100
-> Petr P√≠sa≈ô <ppisar@redhat.com> wrote:
-> 
-> > Traditional \E[2J sequence erases console display but scroll-back
-> > buffer and underlying device (frame) buffer keep data that can be
-> > accessed by scrolling console back.
-> > 
-> > This patch introduce new \E[J parameter 3 that allows to scramble
-> > scroll-back buffer explicitly. Session locking programs (screen,
-> > vlock) can use it to prevent attacker to browse locked console
-> > history.
-> > ---
-> >  drivers/tty/vt/vt.c |    6 ++++++
-> >  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> Looks sensible enough
-> 
-> There are a set of official codes that are probably more relevant, and
-> also deal with the timing of events
-> 
-> See DECSR/DECSRC on a later VT terminal, also DECSTR which 
-> 
-> DECSR = secure reset, return to power up state, \E[n+p where n is an
-> optional value from 1-16383 which if provided is replied back from the tty
-> as a DECSRC response (hence 'secure'). It's defined to clear off
-> screen memory, and also other weirdness a user may have set up so could
-> reasonably also be extended a bit if there is other stuff founbd in
-> future that such a reset really ought to clean up - eg for mingetty.
-> 
-> http://www.vt100.net/docs/vt520-rm/ek-vt520-rm.pdf (page 299)
-> 
-> ED 3J looks fine but is a new "made up" extension.
-> 
-The problem with DECSRC as well as DECSTR or RIS is they reset terminal font,
-keyboard layout, unicode mode and other configuration. That's the reason why
-I rejected enhancing RIS implemented in Linux VT already. In other words,
-I'm searching for a clear display feature which preserves configuration.
-I read console_codes(4), console_ioctl(4), and now the VT520 documentation and
-I did not find any existing control code. The most close seems ED J for me.
+On Thu, Mar 24, 2011 at 2:30 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> The LVDS connector should default to connected. We tried our best to
+> verify the claims of the BIOS that the hardware exists during init(),
+> and then during detect() we then try to verify that the panel is open.
+> In the event of an unsucessful query, we should then always report
+> that the LVDS panel is connected. This was only the case for gen3/4,
+> later generations leaked the return value from the panel probe instead.
+>
+> Reported-by: Alessandro Suardi <alessandro.suardi@gmail.com>
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 
--- Petr
+With this patch on top of 2.6.38-git14, I am back to 1440x900 by default.
+Great work, thanks Chris ! FWIW, You can add my
+
+Tested-by: Alessandro Suardi <alessandro.suardi@gmail.com>
+
+> ---
+> †drivers/gpu/drm/i915/intel_lvds.c | † 10 ++--------
+> †1 files changed, 2 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+> index 1a311ad..86cd30b 100644
+> --- a/drivers/gpu/drm/i915/intel_lvds.c
+> +++ b/drivers/gpu/drm/i915/intel_lvds.c
+> @@ -473,19 +473,13 @@ static enum drm_connector_status
+> †intel_lvds_detect(struct drm_connector *connector, bool force)
+> †{
+> † † † †struct drm_device *dev = connector->dev;
+> - † † † enum drm_connector_status status = connector_status_connected;
+> + † † † enum drm_connector_status status;
+>
+> † † † †status = intel_panel_detect(dev);
+> † † † †if (status != connector_status_unknown)
+> † † † † † † † †return status;
+>
+> - † † † /* ACPI lid methods were generally unreliable in this generation, so
+> - † † † †* don't even bother.
+> - † † † †*/
+> - † † † if (IS_GEN2(dev) || IS_GEN3(dev))
+> - † † † † † † † return connector_status_connected;
+> -
+> - † † † return status;
+> + † † † return connector_status_connected;
+> †}
+>
+> †/**
+> --
+> 1.7.4.1
+>
+>
+
+--alessandro
+
+†"There's always a siren singing you to shipwreck"
+
+†† (Radiohead, "There There")
