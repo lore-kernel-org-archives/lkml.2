@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab1CXSB4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 14:01:56 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:30948 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756177Ab1CXSBz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 14:01:55 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: TxrMeLgVM1nRHyfDssGrGsny0Dc7S90BwYG1kfkgaP.zSUj
- CXL0hcq6lrcBNLHkIi9q6l_vHHTiU6HvbjHS2WTALAaJ1pPba3d.f4QUiG0L
- Sn2C3dwe2EAY_Og2wW4kXhsaZ5Zec9DuKvfCbhmeyPgzTa4k_52IctfordH5
- iKUZLqo9O43.hp._h_TJolUj6joKzLW5BQFoZeMxGcN57RendzSnAmdzBjth
- h5JxwO4_YTPTHeQJKxYiaNGcyaCyU.cJfayZ9nrRhEXFk0FgYJTVoo0tCETf
- qMIdHpcmpkOuR9AXc0pm5DXbJbgtfrYP2ISuZUdI.GTcxq5ye
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 24 Mar 2011 13:01:50 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: Ingo Molnar <mingo@elte.hu>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, tj@kernel.org, npiggin@kernel.dk,
-        rientjes@google.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
-In-Reply-To: <AANLkTimMcP-GikCCndQppNBsS7y=4beesZ4PaD6yh5y5@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1103241300420.32226@router.home>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger> <20110324142146.GA11682@elte.hu> <alpine.DEB.2.00.1103240940570.32226@router.home> <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com> <20110324172653.GA28507@elte.hu>
- <alpine.DEB.2.00.1103241242450.32226@router.home> <AANLkTimMcP-GikCCndQppNBsS7y=4beesZ4PaD6yh5y5@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756989Ab1CXSDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 14:03:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37635 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751448Ab1CXSDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 14:03:23 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@osdl.org
+cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-mm@vger.kernel.org, tglx@linutronix.de, amwang@redhat.com,
+        vapier@gentoo.org, lethal@linux-sh.org
+Subject: [GIT PULL] NOMMU and FRV patches
+Date: Thu, 24 Mar 2011 18:03:04 +0000
+Message-ID: <27521.1300989784@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011, Pekka Enberg wrote:
 
-> On Thu, Mar 24, 2011 at 7:43 PM, Christoph Lameter <cl@linux.com> wrote:
-> > The bug should only trigger on old AMD64 boxes that do not support
-> > cmpxchg16b.
->
-> Yup. Ingo is it possible to see /proc/cpuinfo of one of the affected
-> boxes? I'll try your config but I'm pretty sure the problem doesn't
-> trigger here. Like I said, I think the problem is that alternative
-> instructions are not patched early enough for cmpxchg16b emulation to
-> work for kmem_cache_init(). I tried my check_bugs() patch but it hangs
-> during boot. I'll see if I can cook up a patch that does
-> alternative_instructions() before kmem_cache_init() because I think
-> those *should* be available during boot too.
+Hi Linus,
 
-I forced the fallback to the _emu function to occur but could not trigger
-the bug in kvm.
+Can you pull these patches please?
 
+There are a number of fixes for NOMMU: fixes for percpu to deal with breakage
+due to MMU-mode changes and fixes for the firmware loader to make it work at
+all.
+
+There are a number of fixes for FRV: a missing argument and a set of IRQ
+patches from Thomas Gleixner.
+
+David
+---
+The following changes since commit 4bbba111d94781d34081c37856bbc5eb33f6c72a:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6 (2011-03-23 07:58:09 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-2.6-frv.git frv
+
+Amerigo Wang (1):
+      FRV: Do some cleanups
+
+David Howells (2):
+      NOMMU: percpu should use is_vmalloc_addr().
+      FRV: Missing node arg in alloc_thread_info_node() macro
+
+Graf Yang (1):
+      NOMMU: support SMP dynamic percpu_alloc
+
+Mike Frysinger (2):
+      NOMMU: new vcoalesce helper function
+      firmware loader: use vcoalesce for NOMMU
+
+Thomas Gleixner (7):
+      frv: Remove stale irq_chip.end
+      frv: Fix typo from __do_IRQ overhaul
+      frv: Convert mb93091 irq_chip to new functions
+      frv: Convert mb93093 irq_chip to new function
+      frv: Convert mb93493 irq_chip to new functions
+      frv: Convert cpu irq_chip to new functions
+      frv: Select GENERIC_HARDIRQS_NO_DEPRECATED
+
+ arch/frv/Kconfig                   |    2 +-
+ arch/frv/include/asm/system.h      |    9 ---------
+ arch/frv/include/asm/thread_info.h |    4 +++-
+ arch/frv/kernel/irq-mb93091.c      |   26 +++++++++++++-------------
+ arch/frv/kernel/irq-mb93093.c      |   29 ++++++++++++++---------------
+ arch/frv/kernel/irq-mb93493.c      |   22 +++++++++++-----------
+ arch/frv/kernel/irq.c              |   35 +++++++++++++++--------------------
+ drivers/base/firmware_class.c      |    2 +-
+ include/linux/vmalloc.h            |   35 +++++++++++++++++++++++++++++++++++
+ mm/nommu.c                         |   22 +++++++++++++++++++++-
+ mm/percpu.c                        |    3 +--
+ 11 files changed, 115 insertions(+), 74 deletions(-)
