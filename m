@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933224Ab1CXIrc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 04:47:32 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37507 "EHLO mx3.mail.elte.hu"
+	id S933772Ab1CXIsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 04:48:33 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33411 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932655Ab1CXIra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 04:47:30 -0400
-Date: Thu, 24 Mar 2011 09:47:17 +0100
+	id S932655Ab1CXIsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 04:48:31 -0400
+Date: Thu, 24 Mar 2011 09:48:19 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf probe: Add fastpath to do lookup by function name
-Message-ID: <20110324084717.GG30812@elte.hu>
-References: <1300981134-7333-1-git-send-email-ming.m.lin@intel.com>
- <20110324075830.GA28885@elte.hu>
- <1300955923.14111.29.camel@minggr.sh.intel.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip] perf, x86: P4 PMU - Add missing read of a counter
+ before test
+Message-ID: <20110324084819.GH30812@elte.hu>
+References: <AANLkTikwJFCrpTit8=-=agowkTwZtoyEtFaE7yp0O8MF@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300955923.14111.29.camel@minggr.sh.intel.com>
+In-Reply-To: <AANLkTikwJFCrpTit8=-=agowkTwZtoyEtFaE7yp0O8MF@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,25 +32,14 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Lin Ming <ming.m.lin@intel.com> wrote:
+* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-> ./perf stat -r 10 -- ./perf probe -k /home/mlin/vmlinux \
->         -s /home/mlin/linux-2.6 \
-> 	--line csum_partial_copy_to_user > tmp.log
-> 
-> before patch applied
-> =====================
->         364.535892 task-clock-msecs         #      0.997 CPUs  
->        865,862,109 cycles                   #   2375.245 M/sec 
->      1,255,259,630 instructions             #      1.450 IPC  
+> Don, I've added yours SOB, ok? (The patch is attached to avoid
+> space/tabs problem
+> due to web-mail client)
 
-> after patch applied
-> =====================
->          89.896405 task-clock-msecs         #      0.991 CPUs
->        214,553,875 cycles                   #   2386.679 M/sec
->        226,915,559 instructions             #      1.058 IPC
-
-That's a very nice speedup :-)
+The patch lacks a proper description about the motivation and effects of the 
+patch.
 
 Thanks,
 
