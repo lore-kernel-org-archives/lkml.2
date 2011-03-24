@@ -1,117 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab1CXFdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 01:33:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50575 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab1CXFdn (ORCPT
+	id S1754032Ab1CXFe6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 01:34:58 -0400
+Received: from home.kolivas.org ([59.167.196.135]:35785 "EHLO home.kolivas.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751263Ab1CXFe4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 01:33:43 -0400
-Message-ID: <4D8AD791.9010602@kernel.org>
-Date: Wed, 23 Mar 2011 22:33:05 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Thu, 24 Mar 2011 01:34:56 -0400
+X-Greylist: delayed 1772 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Mar 2011 01:34:55 EDT
+From: Con Kolivas <kernel@kolivas.org>
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.38-ck1
+Date: Thu, 24 Mar 2011 16:05:20 +1100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-ck1; KDE/4.6.1; x86_64; ; )
 MIME-Version: 1.0
-To: Wim Van Sebroeck <wim@iguana.be>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Mike Waychison <mikew@google.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        linux-watchdog@vger.kernel.org, Priyanka Gupta <priyankag@google.com>
-Subject: [PATCH -v3 -resend] watchdog, SP5100: Check if firmware has set correct
- value in tcobase.
-References: <alpine.DEB.2.00.1103111201470.2968@kaball-desktop> <20110311222129.GA3168@dumpdata.com> <alpine.DEB.2.00.1103161150010.3382@kaball-desktop> <alpine.DEB.2.00.1103161442210.3382@kaball-desktop> <4D80F992.10603@kernel.org> <alpine.DEB.2.00.1103161757040.3382@kaball-desktop> <4D812180.5030102@kernel.org> <AANLkTimNva3c_-kGA+JLCPZgrKAbwqLKaN559cwTh7cq@mail.gmail.com> <4D812919.30706@kernel.org> <20110317022331.GA3528@dumpdata.com>
-In-Reply-To: <20110317022331.GA3528@dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4D8AD7A8.0056,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103241605.20645.kernel@kolivas.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Stefano found SP5100 TCO watchdog driver using wrong address.
-
-[    9.148536] SP5100 TCO timer: SP5100 TCO WatchDog Timer Driver v0.01
-[    9.148628] DEBUG __ioremap_caller WARNING address=b8fe00 size=8 valid=1 reserved=1
-
-and e820 said that range is RAM.
-
-We should check if we can use that reading out. BIOS could just program wrong address there.
-
--v2: Mike pointed out one path need one release.
--v3: corrected logic checking with request_mem_region_exclusive()
-      Found by Konrad.
+These are patches designed to improve system responsiveness and interactivity 
+with specific emphasis on the desktop, but suitable to any workload.
 
 
-Reported-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by:Yinghai Lu <yinghai@kernel.org>
-Acked-by: Mike Waychison <mikew@google.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Apply to 2.6.38:
+http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.38/2.6.38-ck1/patch-2.6.38-ck1.bz2
 
----
-  drivers/watchdog/sp5100_tco.c |   14 ++++++++++++--
-  1 file changed, 12 insertions(+), 2 deletions(-)
+Broken out tarball:
+http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.38/2.6.38-ck1/2.6.38-ck1-broken-out.tar.bz2
 
-Index: linux-2.6/drivers/watchdog/sp5100_tco.c
-===================================================================
---- linux-2.6.orig/drivers/watchdog/sp5100_tco.c
-+++ linux-2.6/drivers/watchdog/sp5100_tco.c
-@@ -42,6 +42,7 @@
-  #define PFX TCO_MODULE_NAME ": "
-  
-  /* internal variables */
-+static u32 tcobase_phys;
-  static void __iomem *tcobase;
-  static unsigned int pm_iobase;
-  static DEFINE_SPINLOCK(tco_lock);	/* Guards the hardware */
-@@ -305,10 +306,16 @@ static unsigned char __devinit sp5100_tc
-  	/* Low three bits of BASE0 are reserved. */
-  	val = val << 8 | (inb(SP5100_IO_PM_DATA_REG) & 0xf8);
-  
-+	if (!request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE, "SP5100 TCO")) {
-+		printk(KERN_ERR PFX "mmio address 0x%04x already in use\n", val);
-+		goto unreg_region;
-+	}
-+	tcobase_phys = val;
-+
-  	tcobase = ioremap(val, SP5100_WDT_MEM_MAP_SIZE);
-  	if (tcobase == 0) {
-  		printk(KERN_ERR PFX "failed to get tcobase address\n");
--		goto unreg_region;
-+		goto unreg_mem_region;
-  	}
-  
-  	/* Enable watchdog decode bit */
-@@ -346,7 +353,8 @@ static unsigned char __devinit sp5100_tc
-  	/* Done */
-  	return 1;
-  
--	iounmap(tcobase);
-+unreg_mem_region:
-+	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
-  unreg_region:
-  	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
-  exit:
-@@ -401,6 +409,7 @@ static int __devinit sp5100_tco_init(str
-  
-  exit:
-  	iounmap(tcobase);
-+	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
-  	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
-  	return ret;
-  }
-@@ -414,6 +423,7 @@ static void __devexit sp5100_tco_cleanup
-  	/* Deregister */
-  	misc_deregister(&sp5100_tco_miscdev);
-  	iounmap(tcobase);
-+	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
-  	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
-  }
-  
+Discrete patches:
+http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.38/2.6.38-ck1/patches/
+
+All -ck patches:
+http://www.kernel.org/pub/linux/kernel/people/ck/patches/
+
+
+Web:
+http://kernel.kolivas.org
+
+Code blog when I feel like it:
+http://ck-hack.blogspot.com/
+
+Each discrete patch contains a brief description of what it does at the top of 
+the patch itself.
+
+This has just been a resync since the last -ck release.
+
+
+Full patchlist:
+
+2.6.38-sched-bfs-363.patch
+sched-add-above-background-load-function.patch
+mm-zero_swappiness.patch
+mm-enable_swaptoken_only_when_swap_full.patch
+mm-drop_swap_cache_aggressively.patch
+mm-kswapd_inherit_prio-1.patch
+mm-background_scan.patch
+mm-idleprio_prio-1.patch
+mm-lru_cache_add_lru_tail.patch
+mm-decrease_default_dirty_ratio.patch
+kconfig-expose_vmsplit_option.patch
+hz-default_1000.patch
+hz-no_default_250.patch
+hz-raise_max.patch
+preempt-desktop-tune.patch
+cpufreq-bfs_tweaks.patch
+ck1-version.patch
+
+
+I'd also like this opportunity to make a small plug for my compression
+application, lrzip, which now features full compression and decompression
+to/from STDIN/STDOUT and high grade password encryption, and is now
+heavily multithreaded on both compression and decompression cycles.
+ It can be downloaded here:
+http://lrzip.kolivas.org
+
+See this post for the evolution details:
+http://ck-hack.blogspot.com/2011/03/lrzip-0600-stdinstdout-and-encryption.html
+
+And see this post about using it for a kernel compression exercise:
+http://ck-hack.blogspot.com/2010/11/lrzip-0520-and-massive-kernel.html
+
+Please enjoy!
+お楽しみください
+
+-- 
+-ck
