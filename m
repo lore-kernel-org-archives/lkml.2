@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933980Ab1CXT1i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:27:38 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53790 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933957Ab1CXT1b (ORCPT
+	id S933996Ab1CXT1o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:27:44 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:62751 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933984Ab1CXT1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:27:31 -0400
+	Thu, 24 Mar 2011 15:27:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=IdecXbkN/AebjbEXMOFuWCYZg5+7LInbLl0zMibj8ivP+qT8CRndrQ5Str47QwW3lv
-         1WHmgnS7iZQox4J6FluRXLWAThXKUPu1Im1m+NOC0hRN1i8DlKK+N6uXg5As9WVT0PkJ
-         HIocYPyTXlZVKqLC5vsnPEAElHL1/wcb1Xe94=
+        b=oaP7tSQ3o+eZU7mieI44Q4eGpuB9UdpAbzkxNBDhfNGMATB4f/eK1b7l6ipUO15Ofp
+         as11yPIG31rgh33/uHpbi1Dj0oXT10bPVF8kaRmwcvms0tkSqlJOTxR7qONE5/LZJBLj
+         0USajeJDRs3as5ECSWvY/Jweyy5rtWxvEPRQI=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC 07/21]drivers:xen Remove extra comma.
-Date: Thu, 24 Mar 2011 12:26:45 -0700
-Message-Id: <1300994819-30930-7-git-send-email-justinmattock@gmail.com>
+Subject: [RFC 09/21]drivers:power:intel_mid_battery.c Remove extra comma.
+Date: Thu, 24 Mar 2011 12:26:47 -0700
+Message-Id: <1300994819-30930-9-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
 References: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
@@ -34,36 +34,22 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/xen/evtchn.c      |    2 +-
- drivers/xen/swiotlb-xen.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/power/intel_mid_battery.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
-index ef11daf..dbc13e9 100644
---- a/drivers/xen/evtchn.c
-+++ b/drivers/xen/evtchn.c
-@@ -470,7 +470,7 @@ static int evtchn_open(struct inode *inode, struct file *filp)
+diff --git a/drivers/power/intel_mid_battery.c b/drivers/power/intel_mid_battery.c
+index bce3a01..cffcb7c 100644
+--- a/drivers/power/intel_mid_battery.c
++++ b/drivers/power/intel_mid_battery.c
+@@ -522,7 +522,7 @@ static int pmic_battery_set_charger(struct pmic_power_module_info *pbi,
+ 	if (retval) {
+ 		dev_warn(pbi->dev, "%s(): ipc pmic read failed\n",
+ 								__func__);
+-		return retval;;
++		return retval;
+ 	}
  
- 	filp->private_data = u;
- 
--	return nonseekable_open(inode, filp);;
-+	return nonseekable_open(inode, filp);
- }
- 
- static int evtchn_release(struct inode *inode, struct file *filp)
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 54469c3..65ea21a 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -54,7 +54,7 @@ u64 start_dma_addr;
- 
- static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
- {
--	return phys_to_machine(XPADDR(paddr)).maddr;;
-+	return phys_to_machine(XPADDR(paddr)).maddr;
- }
- 
- static phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
+ 	return 0;
 -- 
 1.7.4.1
 
