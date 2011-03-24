@@ -1,120 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034Ab1CXQVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 12:21:49 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:36813 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698Ab1CXQVs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 12:21:48 -0400
-Date: Thu, 24 Mar 2011 21:51:31 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-Cc: Len Brown <lenb@kernel.org>, arjan@linux.intel.com,
-        Stephen Rothwell <sfr@canb.auug.org.au>, peterz@infradead.org,
-        suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [RFC PATCH V4 5/5] cpuidle: cpuidle driver for apm
-Message-ID: <20110324162131.GA16408@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
- <20110322123336.28725.29810.stgit@tringupt.in.ibm.com>
- <20110323121458.ec7cdaf9.sfr@canb.auug.org.au>
- <4D89CA7D.8080108@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1103231623450.12911@x980>
- <4D8B550D.5000409@linux.vnet.ibm.com>
+	id S933555Ab1CXQWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 12:22:22 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23654 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932660Ab1CXQWU convert rfc822-to-8bit (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 24 Mar 2011 12:22:20 -0400
+Date: Thu, 24 Mar 2011 12:21:35 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Thomas Hellstrom <thomas@shipmail.org>, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [PATCH] cleanup: Add 'struct dev' in the TTM layer to be
+ passed in for DMA API calls.
+Message-ID: <20110324162135.GA835@dumpdata.com>
+References: <1299598789-20402-1-git-send-email-konrad.wilk@oracle.com>
+ <4D769726.2030307@shipmail.org>
+ <20110322143137.GA25113@dumpdata.com>
+ <4D89AB8F.6020500@shipmail.org>
+ <20110323125105.GA6599@dumpdata.com>
+ <4D89F2DE.7020209@shipmail.org>
+ <20110323145246.GA7546@dumpdata.com>
+ <4D8AF834.8040700@shipmail.org>
+ <20110324142509.GA32416@dumpdata.com>
+ <AANLkTinUGjwTzMFbHHckkiuCQ8sF+i5iMQsXesG34f6U@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D8B550D.5000409@linux.vnet.ibm.com>
+In-Reply-To: <AANLkTinUGjwTzMFbHHckkiuCQ8sF+i5iMQsXesG34f6U@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D8B6F90.0145,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Trinabh Gupta <trinabh@linux.vnet.ibm.com> [2011-03-24 19:58:29]:
+> > When a page in the TTM pool is being moved back and forth and also changes
+> > the caching model, what happens on the free part? Is the original caching
+> > state put back on it? Say I allocated a DMA32 page (GFP_DMA32), and move it
+> > to another pool for another radeon device. I also do some cache changes:
+> > make it write-back, then  un-cached, then writeback, and when I am done, I
+> > return it back to the pool (DMA32). Once that is done I want to unload
+> > the DRM/TTM driver. Does that page get its caching state reverted
+> > back to what it originally had (probably un-cached)? And where is this done?
+> 
+> When ultimately being free all the page are set to write back again as
+> it's default of all allocated page (see ttm_pages_put). ttm_put_pages
+> will add page to the correct pool (uc or wc).
+
+OK.
+
+.. snip ..
+> > How about a backend TTM alloc API? So the calls to 'ttm_get_page'
+> > and 'ttm_put_page' call to a TTM-alloc API to do allocation.
+> >
+> > The default one is the native, and it would have those 'dma_alloc_coherent'
+> > removed.  When booting under virtualized
+> > environment a virtualisation "friendly" backend TTM alloc would
+> > register and all calls to 'put/get/probe' would be diverted to it.
+> > 'probe' would obviously check whether it should use this backend or not.
+> >
+> > It would mean two new files: drivers/gpu/drm/ttm/ttm-memory-xen.c and
+> > a ttm-memory-generic.c and some header work.
+> >
+> > It would still need to keep the 'dma_address[i]' around so that
+> > those can be passed to the radeon/nouveau GTT, but for native it
+> > could just contain BAD_DMA_ADDRESS - and the code in the radeon/nouveau
+> > GTT binding is smart to figure out to do 'pci_map_single' if the
+> > dma_addr_t has BAD_DMA_ADDRESS.
+> >
+> > The issuer here is with the caching I had a question about. We
+> > would need to reset the caching state back to the original one
+> > before free-ing it. So does the TTM pool de-alloc code deal with this?
+> >
+> 
+> Sounds doable. Thought i don't understand why you want virtualized
+
+Thomas, Jerome, Dave,
+
+I can start this next week if you guys are comfortable with this idea.
+
+> guest to be able to use hw directly. From my point of view all device
+> in a virtualized guest should be virtualized device that talks to the
+> host system driver.
+
+That "virtualized guest" in this case is the first Linux kernel that
+is booted under a hypervisor. It serves as the "driver domain"
+so that it can drive the network, storage, and graphics. To get the
+graphics working right the patchset that introduced using the PCI DMA
+in the TTM layer allows us to program the GTT with the bus address 
+instead of programming the bus address of a bounce buffer. The first
+set of patches have a great lengthy explanation of this :-)
+
+https://lkml.org/lkml/2010/12/6/516
 
 > 
-> 
-> On 03/24/2011 02:02 AM, Len Brown wrote:
-> >>>Also wondering why you would ever have a different idle routine on
-> >>>different cpus?
-> >>
-> >>Yes, this is an ongoing debate. Apparently it is a possibility
-> >>because of ACPI bugs. CPU's can have asymmetric C-states
-> >>and overall different idle routines on different cpus. Please
-> >>refer to http://lkml.org/lkml/2009/9/24/132 and
-> >>https://lkml.org/lkml/2011/2/10/37 for a discussion around this.
-> >
-> >Althought the ACPI specification allows the BIOS to tell the OS
-> >about different C-states per-processor, I know of zero system
-> >in the field and zero systems in development that require that
-> >capability.  That isn't a guarantee that capability will never
-> >be used, but I'm not holding my breath.
-> >
-> >If there are systems with broken tables that make them
-> >appear asymetric, then we should have a workaround that handles
-> >that case, rather than complicating the normal code for
-> >the broken case.
-> >
-> >So I recommend deleting the extra per-cpu registration stuff
-> >unless there is some other architecture that requires it
-> >and can't hadle the asymmetry in another way.
-
-Hi Len,
-
-The fear of breaking legacy hardware is what is holding us.  Arjan
-also pointed that there are systems that has asymmetric C-States
-either intentionally or due to a bug.  I agree with you that we should
-remove per-cpu registration at this point and move forward with
-a single registration.  We can workaround the corner cases.
-
-> Yes, lets go forward with removal of per-cpu registration
-> and handle rare case of asymmetry in some other may.
-
-Yes.  Lets discuss the design/problems on the other patch series.
-(http://lkml.org/lkml/2011/3/22/161)
-
-> Using intersection or union of C-states for each cpu may
-> be a solution. Using intersection or lowest common C-state
-> has the corner case that we could have packages/cores
-> supporting a new lower C-state in case of thermal limit and
-> they would want OS to go to this state. Using intersection
-> or lowest common C-state may prevent this.
-> 
-> Another option is to use union of C-states;
-> but I am not sure what happens if a CPU uses a state that
-> is not reported for it???
-> 
-> Maybe there is some other way to handle asymmetry ??
-
-The simplest method will be a union of all C-States.  Basically let
-the CPU that reports the maximum C-States to register or override the
-current setup.  During boot-up allow the first CPU to do the
-registration, but later override if another CPU comes up with more
-C-States.
-
-This will work assuming that calling a new (deeper) C-State on CPUs
-that did not report them will cause no harm.  It should degenerate to
-closest supported C-State.
-
-> >
-> >>I have posted a patch series that does global registration
-> >>i.e same idle routines for each cpu. Please check
-> >>http://lkml.org/lkml/2011/3/22/161 . That series applies on
-> >>top of this series. Global registration significantly
-> >>simplifies the design, but still we are not sure about the
-> >>direction to take.
-> >
-> >I'll review that.
-> Thanks; please review especially the data structure changes
-> https://lkml.org/lkml/2011/3/22/162
-
-Single registration will allow us to combine struct cpuidle_device and
-struct cpuidle_driver, and simplify the framework for large systems.
-AFAIK other archs like powerpc or ARM would not need per-cpu
-definitions.
-
---Vaidy
-
+> Cheers,
+> Jerome
