@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934256Ab1CXUXJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:23:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36255 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934100Ab1CXUTD (ORCPT
+	id S933967Ab1CXUTA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:19:00 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56204 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757155Ab1CXUS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:19:03 -0400
+	Thu, 24 Mar 2011 16:18:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=YkyQg/ORlxuUvK7Qe6ERo97auD8Lf07zRPDeoYLTpaFdCicJuj7K32wvBk8Ru808TU
-         tfG16XXuBJxCnSoiDa5iG8Lws1kq/bV+e4oYMGkcDXx51g0p6SyIo789B25K90c3UOHN
-         MPyfmm8IQzVueQcB4NSazRlc0TydLn5AaHMFU=
+        b=Lj6PFxGMnL/7nhkSWLPtaArZWRnwvsb4LD891vL+d9wbcsgAgUVQx0ou+Sb4kTqldc
+         V1D6tnrVgcNcEBN6NyJ3w6NZYbFFl+FVO8ndSTYTtq8sT4ZKPdoTnEjiSjmNldHIxhdT
+         J2B4MtYYVt+CUbAmz6MaueqEVBrmlhqHoWldQ=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC V2 06/21]drivers:leds:leds-mc13783.c Remove extra semi-colon.
-Date: Thu, 24 Mar 2011 13:18:25 -0700
-Message-Id: <1300997920-31573-6-git-send-email-justinmattock@gmail.com>
+Subject: [RFC V2 02/21]arch:ia64 Remove extra semi-colon.
+Date: Thu, 24 Mar 2011 13:18:21 -0700
+Message-Id: <1300997920-31573-2-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
 References: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
@@ -34,22 +34,56 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/leds/leds-mc13783.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/ia64/include/asm/asmmacro.h |    4 ++--
+ arch/ia64/include/asm/mca_asm.h  |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
-index 06a5bb4..126ca79 100644
---- a/drivers/leds/leds-mc13783.c
-+++ b/drivers/leds/leds-mc13783.c
-@@ -235,7 +235,7 @@ static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
- 							MC13783_LED_Cx_PERIOD;
+diff --git a/arch/ia64/include/asm/asmmacro.h b/arch/ia64/include/asm/asmmacro.h
+index 3ab6d75..3c3904b 100644
+--- a/arch/ia64/include/asm/asmmacro.h
++++ b/arch/ia64/include/asm/asmmacro.h
+@@ -92,12 +92,12 @@ name:
+ 1:{ .mib;						\
+ 	nop.m 0;					\
+ 	mov r16=ar.pfs;					\
+-	br.call.sptk.many b7=2f;;			\
++	br.call.sptk.many b7=2f;			\
+   };							\
+ 2:{ .mib;						\
+ 	nop.m 0;					\
+ 	mov ar.pfs=r16;					\
+-	br.ret.sptk.many b6;;				\
++	br.ret.sptk.many b6;				\
+   }
+ #else
+ # define FSYS_RETURN	br.ret.sptk.many b6
+diff --git a/arch/ia64/include/asm/mca_asm.h b/arch/ia64/include/asm/mca_asm.h
+index dd2a5b1..d57d3c0 100644
+--- a/arch/ia64/include/asm/mca_asm.h
++++ b/arch/ia64/include/asm/mca_asm.h
+@@ -46,11 +46,11 @@
+  *	1. Put 0x7 in bits 61 thru 63.
+  */
+ #define DATA_PA_TO_VA(addr,temp)							\
+-	mov	temp	= 0x7	;;							\
++	mov	temp	= 0x7;							\
+ 	dep	addr	= temp, addr, 61, 3
  
- 	if (pdata->flags & MC13783_LED_TRIODE_TC3)
--		reg |= MC13783_LED_Cx_TRIODE_TC_BIT;;
-+		reg |= MC13783_LED_Cx_TRIODE_TC_BIT;
+ #define GET_THIS_PADDR(reg, var)		\
+-	mov	reg = IA64_KR(PER_CPU_DATA);;	\
++	mov	reg = IA64_KR(PER_CPU_DATA);	\
+         addl	reg = THIS_CPU(var), reg
  
- 	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_5, reg);
- 	if (ret)
+ /*
+@@ -82,7 +82,7 @@
+ 	;;										\
+ 	dep	old_psr = 0, old_psr, 32, 32;						\
+ 											\
+-	mov	ar.rsc = 0 ;								\
++	mov	ar.rsc = 0;								\
+ 	;;										\
+ 	srlz.d;										\
+ 	mov	temp2 = ar.bspstore;							\
 -- 
 1.7.4.1
 
