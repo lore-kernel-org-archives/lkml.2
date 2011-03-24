@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab1CXNOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 09:14:05 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44102 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756681Ab1CXNOC (ORCPT
+	id S1756872Ab1CXNOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 09:14:04 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58175 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756296Ab1CXNOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 09:14:02 -0400
-Message-ID: <384BC720F8C741B886DC000F067EBA20@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Marc Kleine-Budde" <mkl@pengutronix.de>
-Cc: <davinci-linux-open-source@linux.davincidsp.com>,
-        <sachi@mistralsolutions.com>, "Samuel Ortiz" <sameo@linux.intel.com>,
-        <nsekhar@ti.com>, "open list" <linux-kernel@vger.kernel.org>,
-        <m-watkins@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        "Stalin Srinivasan" <stalin.s@mistralsolutions.com>
-References: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com> <1299592667-21367-2-git-send-email-subhasish@mistralsolutions.com> <4D776B05.4010506@pengutronix.de>
-In-Reply-To: <4D776B05.4010506@pengutronix.de>
-Subject: Re: [PATCH v3 1/7] mfd: add pruss mfd driver.
-Date: Thu, 24 Mar 2011 18:46:22 +0530
-Organization: Mistral Solutions
+	Thu, 24 Mar 2011 09:14:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [RFC] usbnet: use eth%d name for known ethernet devices
+Date: Thu, 24 Mar 2011 14:13:54 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Steve Calfee <stevecalfee@gmail.com>,
+        Michal Nazarewicz <mnazarewicz@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        broonie@opensource.wolfsonmicro.com,
+        lkml <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, Greg KH <greg@kroah.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, grant.likely@secretlab.ca,
+        Linux USB list <linux-usb@vger.kernel.org>, andy.green@linaro.org,
+        netdev@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        roger.quadros@nokia.com, Jaswinder Singh <jaswinder.singh@linaro.org>
+References: <4D79F068.2080009@linaro.org> <4D8A8471.9060904@gmail.com> <1300924878.2638.38.camel@bwh-desktop>
+In-Reply-To: <1300924878.2638.38.camel@bwh-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201103241413.54599.arnd@arndb.de>
+X-Provags-ID: V02:K0:ccbE1Sf3mJdL1nbnVzsHuiPIQuL0L0Bc+RtD4Nis6U8
+ LIKyITSJXVv1oJYFndM2Uhu1lInooHC9h2mnFIX7vpf02zsOMV
+ +V6b8yGoAmfuJToI7wpIYNfOGpWTV0/XPpNsqakcpcoN5hH9he
+ psanp7yAtuVNaffoT0VqF/uHjb912AeXG6M4k7t3nYqJBM7BNF
+ Ux1mAQqmEzcgnPrULweWQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thursday 24 March 2011, Ben Hutchings wrote:
+> On Wed, 2011-03-23 at 16:38 -0700, Steve Calfee wrote:
+> > On 03/23/11 16:17, Michal Nazarewicz wrote:
+> > >>> On Wednesday 23 March 2011 20:53:13 Michał Nazarewicz wrote:
+> > >>>> I think P2P could be better.
+> > >>
+> > >> OTOH, I knew that PTP was point-to-point.
+> > >
+> > > It can be any of that, depending on context.  For me PTP is more like
+> > > Picture Transport Protocol, whereas "2" between two letters is usually
+> > > "to".
+> > >
+> > Well, my 2 cents, picture transport protocol is so obviously different 
+> > than flags for network interfaces it does not cause a mental collision. 
+> 
+> PTP is also Precision Time Protocol, which *is* used on network
+> interfaces (maybe not USB-connected interfaces though).
+> 
+> How about FLAG_NON_IEEE, meaning that the physical layer is not based on
+> an IEEE 802.3, 802.11 or other standard physical layer.
 
-> A device may be de-initialized and another loaded or two different devices
-> can be run simultaneously on the two cores.
-> It's also possible, as in our case, to implement a single device on both
-> the PRU's resulting in improved load sharing.
+I think that doesn't really express the meaning, since FLAG_WWAN is
+presumably also not IEEE, right?
 
->Make you driver compile with sparse "make C=1", you cast way too much
->when accessing io mem. Use void __iomem * instead of u32 *.
+Thanks for the bike shedding everyone, I'll just use my own color then
+and call it FLAG_POINTTOPOINT.
 
-
-With make C=1 I am receiving some warnings such as:
-
-warning: cast removes address space of expression
-drivers/mfd/da8xx_pru.c:61:17: warning: incorrect type in argument 1 
-(different base types)
-drivers/mfd/da8xx_pru.c:61:17:    expected void const volatile [noderef] 
-<asn:2>*<noident>
-drivers/mfd/da8xx_pru.c:61:17:    got int
-drivers/mfd/da8xx_pru.c:66:28: warning: incorrect type in argument 1 
-(different address spaces)
-
-I can remove all of these by casting to (__force void  __iomem *) but is 
-this correct.
-
--SG 
-
+	Arnd
