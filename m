@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab1CXWW5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 18:22:57 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:51010 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756767Ab1CXWW4 (ORCPT
+	id S1757322Ab1CXW1G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 18:27:06 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58484 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756567Ab1CXW1C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 18:22:56 -0400
+	Thu, 24 Mar 2011 18:27:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=V3nt/C3MZxVzn7v7yBvDHsjlfRGPH3Eiy7+cEPoZxRb+aOECH0t0eb2rLfXZWY61/E
-         TJml73srCe1XvMK/w1Yw==
-Date: Thu, 24 Mar 2011 15:22:50 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: multiple definition of `show_mem'
-In-Reply-To: <4D8B6140.4020300@pengutronix.de>
-Message-ID: <alpine.DEB.2.00.1103241522230.26730@chino.kir.corp.google.com>
-References: <4D8B6140.4020300@pengutronix.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IgAGtRrstTBEIm6bBw7Ng2nGAfnWici/xX7S7wyNtPSrT7ja5PW6aIArhysilV7Sap
+         TLhM4gVyoHkblqj3Y5Bs3gqxIQ+Nta7WsNsSLFAL0ZKihNSOT9cZ0B/NSXjbPx2pxDlL
+         USM0I90aZF0NmNCU7SGDsQ6SNzJqcN4UzxwLo=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <1301005107.2714.113.camel@edumazet-laptop>
+References: <AANLkTik6+TrjiC6ZF+KHhZ1iPzEe2jDayr363C0HgQN4@mail.gmail.com>
+	<1300980118.3747.42.camel@edumazet-laptop>
+	<AANLkTikZhT5LaA-UEXniDvkneH8JScaVaCaCd4LT59cV@mail.gmail.com>
+	<1300983340.3747.44.camel@edumazet-laptop>
+	<1300986084.3747.101.camel@edumazet-laptop>
+	<AANLkTik+Rf45wUxN86t+Zp7+AXjcJsy0vmZgvmLj-95x@mail.gmail.com>
+	<1300992308.3747.205.camel@edumazet-laptop>
+	<AANLkTin_gxMF1hyK_yhN+G9UGfcBKAhPE24r7tLe5j3D@mail.gmail.com>
+	<1301005107.2714.113.camel@edumazet-laptop>
+Date: Thu, 24 Mar 2011 23:27:01 +0100
+Message-ID: <AANLkTinv+XGBjbFoK6vpyiDW6gBEBKFjUef+mCAMJU9i@mail.gmail.com>
+Subject: Re: [PATCH] ipv4: fix fib metrics
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011, Marc Kleine-Budde wrote:
+On Thu, Mar 24, 2011 at 11:18 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le jeudi 24 mars 2011 à 23:11 +0100, Alessandro Suardi a écrit :
+>
+>> On a -git14 kernel + both the fib metrics and the above git diff, I
+>> strace'd vpnc
+>>  and found out this (first triplet of public IP masked intentionally)
+>>
+>> [root@duff tmp]# egrep 'execve|garbage' strace.log |egrep '/ip|garbage'
+>> [pid  4228] execve("/sbin/ip", ["/sbin/ip", "route", "get",
+>> "xxx.9.13.212"], [/* 32 vars */]) = 0
+>> [pid  4231] execve("/sbin/ip", ["/sbin/ip", "route", "replace",
+>> "10.175.0.0/19", "dev", "tun0"], [/* 32 vars */]) = 0
+>> [pid  4232] execve("/sbin/ip", ["/sbin/ip", "route", "flush",
+>> "cache"], [/* 32 vars */]) = 0
+>> [pid  4234] execve("/sbin/ip", ["/sbin/ip", "route", "get",
+>> "xxx.9.13.212"], [/* 32 vars */]) = 0
+>> [pid  4237] execve("/sbin/ip", ["/sbin/ip", "route", "add",
+>> "xxx.9.13.212", "via", "192.168.1.1", "dev", "eth1", "src",
+>> "192.168.1.8", "ipid", "0x043f", "advmss", "1400"], [/* 32 vars */]) =
+>> 0
+>> [pid  4237] write(2, "Error: either \"to\" is duplicate,"..., 57Error:
+>> either "to" is duplicate, or "ipid" is a garbage.
+>>
+>> 192.168.1.1 is my DSL router and 192.168.1.8 is my computer's wireless IP.
+>>
+>> Does this ring any bell ?
+>>
+>>
+>
+> Not a kernel error, but a tool error ?
+>
+>
+> (ipid is only displayed by "ip ro show")
+>
+> grep ipid */*.c
+> ip/iproute.c:                           fprintf(fp, " ipid 0x%04x", ci->rta_id);
 
-> Hello,
-> 
-> current mainline (v2.6.38-7210-gb81a618) on ARM/mxs has the following build failure:
-> 
-> > lib/lib.a(show_mem.o): In function `show_mem':
-> > .../linux-2.6/lib/show_mem.c:67: multiple definition of `show_mem'
-> > arch/arm/mm/built-in.o:.../linux-2.6/arch/arm/mm/init.c:82: first defined here
-> > make: *** [vmlinux.o] Error 1
-> 
-> After reverting these patches the kernel compiles...
-> 
-> cbf978bfb12d7deca97d7333f65eda0381a072de oom: suppress nodes that are not allowed from meminfo on page alloc failure
-> 29423e77c06cee7d4e335ef4a7cbd949da978c91 oom: suppress show_mem() for many nodes in irq context on page alloc failure
-> ddd588b5dd55f14320379961e47683db4e4c1d90 oom: suppress nodes that are not allowed from meminfo on oom kill
-> 
-> No time to boot the kernel, though.
-> 
+Don't think so. This tool has been working since I built it (29 June 2010)
+ and still works in -git2 :)
 
-Sorry about that, Marc.  I have a patch at
+--alessandro
 
-	http://marc.info/?l=linux-kernel&m=130100511521954
+ "There's always a siren singing you to shipwreck"
 
-which should fix the issue for you (and I tested it with my arm cross 
-compiler).
+   (Radiohead, "There There")
