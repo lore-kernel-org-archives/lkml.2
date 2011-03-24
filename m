@@ -1,121 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933463Ab1CXQUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 12:20:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45203 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab1CXQUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 12:20:07 -0400
-Date: Thu, 24 Mar 2011 16:19:20 GMT
-From: tip-bot for Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        chris.mason@oracle.com, tj@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        chris.mason@oracle.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, tj@kernel.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110323153727.GB12003@htj.dyndns.org>
-References: <20110323153727.GB12003@htj.dyndns.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] mutex: Do adaptive spinning in mutex_trylock()
-Message-ID: <tip-bcedb5fa5e7cfeea30b6effe0c47d8f09ffc82df@git.kernel.org>
-Git-Commit-ID: bcedb5fa5e7cfeea30b6effe0c47d8f09ffc82df
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1757034Ab1CXQVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 12:21:49 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:36813 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698Ab1CXQVs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 12:21:48 -0400
+Date: Thu, 24 Mar 2011 21:51:31 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Cc: Len Brown <lenb@kernel.org>, arjan@linux.intel.com,
+        Stephen Rothwell <sfr@canb.auug.org.au>, peterz@infradead.org,
+        suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [RFC PATCH V4 5/5] cpuidle: cpuidle driver for apm
+Message-ID: <20110324162131.GA16408@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
+ <20110322123336.28725.29810.stgit@tringupt.in.ibm.com>
+ <20110323121458.ec7cdaf9.sfr@canb.auug.org.au>
+ <4D89CA7D.8080108@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1103231623450.12911@x980>
+ <4D8B550D.5000409@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 24 Mar 2011 16:19:21 +0000 (UTC)
+In-Reply-To: <4D8B550D.5000409@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bcedb5fa5e7cfeea30b6effe0c47d8f09ffc82df
-Gitweb:     http://git.kernel.org/tip/bcedb5fa5e7cfeea30b6effe0c47d8f09ffc82df
-Author:     Tejun Heo <tj@kernel.org>
-AuthorDate: Thu, 24 Mar 2011 10:41:51 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 24 Mar 2011 11:16:49 +0100
+* Trinabh Gupta <trinabh@linux.vnet.ibm.com> [2011-03-24 19:58:29]:
 
-mutex: Do adaptive spinning in mutex_trylock()
+> 
+> 
+> On 03/24/2011 02:02 AM, Len Brown wrote:
+> >>>Also wondering why you would ever have a different idle routine on
+> >>>different cpus?
+> >>
+> >>Yes, this is an ongoing debate. Apparently it is a possibility
+> >>because of ACPI bugs. CPU's can have asymmetric C-states
+> >>and overall different idle routines on different cpus. Please
+> >>refer to http://lkml.org/lkml/2009/9/24/132 and
+> >>https://lkml.org/lkml/2011/2/10/37 for a discussion around this.
+> >
+> >Althought the ACPI specification allows the BIOS to tell the OS
+> >about different C-states per-processor, I know of zero system
+> >in the field and zero systems in development that require that
+> >capability.  That isn't a guarantee that capability will never
+> >be used, but I'm not holding my breath.
+> >
+> >If there are systems with broken tables that make them
+> >appear asymetric, then we should have a workaround that handles
+> >that case, rather than complicating the normal code for
+> >the broken case.
+> >
+> >So I recommend deleting the extra per-cpu registration stuff
+> >unless there is some other architecture that requires it
+> >and can't hadle the asymmetry in another way.
 
-Adaptive owner spinning is used in mutex_lock().
-This patch also applies it to mutex_trylock().
+Hi Len,
 
-btrfs has developed custom locking to avoid excessive context
-switches in its btree implementation.  Generally, doing away
-with the custom implementation and just using the mutex shows
-better behavior; however, there's an interesting distinction in
-the custom implemention of trylock.  It distinguishes between
-simple trylock and tryspin, where the former just tries once and
-then fail while the latter does some spinning before giving up.
+The fear of breaking legacy hardware is what is holding us.  Arjan
+also pointed that there are systems that has asymmetric C-States
+either intentionally or due to a bug.  I agree with you that we should
+remove per-cpu registration at this point and move forward with
+a single registration.  We can workaround the corner cases.
 
-Currently, mutex_trylock() doesn't use adaptive spinning.  It
-tries just once.  I got curious whether using adaptive spinning
-on mutex_trylock() would be beneficial and it seems so, for
-btrfs anyway.
+> Yes, lets go forward with removal of per-cpu registration
+> and handle rare case of asymmetry in some other may.
 
-The following results are from "dbench 50" run on an opteron two
-socket eight core machine with 4GiB of memory and an OCZ vertex
-SSD. During the run, disk stays mostly idle and all CPUs are
-fully occupied and the difference in locking performance becomes
-quite visible.
+Yes.  Lets discuss the design/problems on the other patch series.
+(http://lkml.org/lkml/2011/3/22/161)
 
-SIMPLE is with the locking simplification patch[1] applied.
-i.e. it basically just uses mutex.  SPIN is with this patch
-applied on top - mutex_trylock() uses adaptive spinning.
+> Using intersection or union of C-states for each cpu may
+> be a solution. Using intersection or lowest common C-state
+> has the corner case that we could have packages/cores
+> supporting a new lower C-state in case of thermal limit and
+> they would want OS to go to this state. Using intersection
+> or lowest common C-state may prevent this.
+> 
+> Another option is to use union of C-states;
+> but I am not sure what happens if a CPU uses a state that
+> is not reported for it???
+> 
+> Maybe there is some other way to handle asymmetry ??
 
-        USER   SYSTEM   SIRQ    CXTSW  THROUGHPUT
- SIMPLE 61107  354977    217  8099529  845.100 MB/sec
- SPIN   63140  364888    214  6840527  879.077 MB/sec
+The simplest method will be a union of all C-States.  Basically let
+the CPU that reports the maximum C-States to register or override the
+current setup.  During boot-up allow the first CPU to do the
+registration, but later override if another CPU comes up with more
+C-States.
 
-On various runs, the adaptive spinning trylock consistently
-posts higher throughput.  The amount of difference varies but it
-outperforms consistently.
+This will work assuming that calling a new (deeper) C-State on CPUs
+that did not report them will cause no harm.  It should degenerate to
+closest supported C-State.
 
-In general, using adaptive spinning on trylock makes sense as
-trylock failure usually leads to costly unlock-relock sequence.
+> >
+> >>I have posted a patch series that does global registration
+> >>i.e same idle routines for each cpu. Please check
+> >>http://lkml.org/lkml/2011/3/22/161 . That series applies on
+> >>top of this series. Global registration significantly
+> >>simplifies the design, but still we are not sure about the
+> >>direction to take.
+> >
+> >I'll review that.
+> Thanks; please review especially the data structure changes
+> https://lkml.org/lkml/2011/3/22/162
 
-[1] http://article.gmane.org/gmane.comp.file-systems.btrfs/9658
+Single registration will allow us to combine struct cpuidle_device and
+struct cpuidle_driver, and simplify the framework for large systems.
+AFAIK other archs like powerpc or ARM would not need per-cpu
+definitions.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Chris Mason <chris.mason@oracle.com>
-LKML-Reference: <20110323153727.GB12003@htj.dyndns.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/mutex.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+--Vaidy
 
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 03465e8..2510cd1 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -442,6 +442,15 @@ static inline int __mutex_trylock_slowpath(atomic_t *lock_count)
- 	unsigned long flags;
- 	int prev;
- 
-+	preempt_disable();
-+
-+	if (mutex_spin(lock)) {
-+		mutex_set_owner(lock);
-+		mutex_acquire(&lock->dep_map, 0, 1, _RET_IP_);
-+		preempt_enable();
-+		return 1;
-+	}
-+
- 	spin_lock_mutex(&lock->wait_lock, flags);
- 
- 	prev = atomic_xchg(&lock->count, -1);
-@@ -455,6 +464,7 @@ static inline int __mutex_trylock_slowpath(atomic_t *lock_count)
- 		atomic_set(&lock->count, 0);
- 
- 	spin_unlock_mutex(&lock->wait_lock, flags);
-+	preempt_enable();
- 
- 	return prev == 1;
- }
