@@ -1,144 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533Ab1CXP2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 11:28:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35516 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395Ab1CXP2M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 11:28:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=yDk5/gXMZqY5Tkq6iqCtRQSKP65e+Q06Y+osAHU3QDG5RBqY9O/vfmq4FvUda5FGUk
-         SfkTm8RQm9ULa/TkpfNN3KBBZKsO5QwsbMyqY6ZoLublBbYdFQdgNHHpj9sWDcmLoH0Y
-         XbhY+kCCaM69Txv//AO6Z324IaaZ3VsdZ0L84=
-Date: Fri, 25 Mar 2011 00:27:57 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/5] Revert "oom: give the dying task a higher priority"
-Message-ID: <20110324152757.GC1938@barrios-desktop>
-References: <20110315153801.3526.A69D9226@jp.fujitsu.com>
- <20110322194721.B05E.A69D9226@jp.fujitsu.com>
- <20110322200657.B064.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110322200657.B064.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754781Ab1CXPbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 11:31:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26665 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752395Ab1CXPbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 11:31:49 -0400
+Subject: Re: [Patch 1/1] fsnotify,fanotify: adding flag for execution
+From: Eric Paris <eparis@redhat.com>
+To: "jozef.kralik@eset.sk" <jozef.kralik@eset.sk>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        viro@zeniv.linux.org.uk
+Date: Thu, 24 Mar 2011 11:30:53 -0400
+In-Reply-To: <417044.386125298-sendEmail@jojo-hp-compaq-8100-elite-cmt-pc>
+References: <417044.386125298-sendEmail@jojo-hp-compaq-8100-elite-cmt-pc>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1300980654.2398.3.camel@localhost.localdomain>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 08:06:48PM +0900, KOSAKI Motohiro wrote:
-> This reverts commit 93b43fa55088fe977503a156d1097cc2055449a2.
+On Thu, 2011-03-24 at 12:49 +0000, jozef.kralik@eset.sk wrote:
+> From: Jozef Kralik <jozef.kralik@eset.sk>
 > 
-> The commit dramatically improve oom killer logic when fork-bomb
-> occur. But, I've found it has nasty corner case. Now cpu cgroup
-> has strange default RT runtime. It's 0! That said, if a process
-> under cpu cgroup promote RT scheduling class, the process never
-> run at all.
+> This patch add flag FS_OPENEXEC[FAN_OPENEXEC] to event
+> FS_OPEN_PERM[FAN_OPEN_PERM], when file is opened with flag FMODE_EXEC. 
 > 
-> Eventually, kernel may hang up when oom kill occur.
-> 
-> The author need to resubmit it as adding knob and disabled
-> by default if he really need this feature.
-> 
-> Cc: Luis Claudio R. Goncalves <lclaudio@uudg.org>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: Jozef Kralik <jozef.kralik@eset.sk>
 
-Just a comment below.
+I keep waffling back and forth on this patch (for months now) mostly
+because of the fact that I'm scared it will give people a false sense
+that they will get notification of all files that might be executed.  I
+don't understand the use case at all so I don't know if it good idea to
+expose such notifications....
+
+I'm just having a hard time deciding if I'm comfortable solving half of
+a problem...  What exactly is your goal here and how do you see others
+using it, usefully.
+
+-Eric
 
 > ---
->  mm/oom_kill.c |   27 ---------------------------
->  1 files changed, 0 insertions(+), 27 deletions(-)
+> Example:
+> if (metadata->mask & FAN_OPEN_PERM)
+> 	if (metadata->mask & FAN_OPENEXEC)
+> 		printf("file was executed");
+> 	else
+> 	printf("file was opened");
 > 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 3100bc5..739dee4 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -84,24 +84,6 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
->  #endif /* CONFIG_NUMA */
+> Patch for kernel: 2.6.38
+> Developed kernel: 2.6.37-rc4 with patch-v2.6.37-rc4-next-20101201 
+> Tested kernel: 2.6.38
+> 
+> diffstat -p1 ./patch_exec_2.6.38.diff 
+> fs/notify/fanotify/fanotify.c    |    1 +
+> fs/notify/fsnotify.c             |    2 +-
+> include/linux/fanotify.h         |    4 +++-
+> include/linux/fsnotify.h         |    9 ++++++---
+> include/linux/fsnotify_backend.h |    4 +++-
+> 5 files changed, 14 insertions(+), 6 deletions(-)
+> 
+> diff -uprN -X linux-2.6.38/Documentation/dontdiff linux-2.6.38/fs/notify/fanotify/fanotify.c linux-2.6.38-dev/fs/notify/fanotify/fanotify.c
+> --- linux-2.6.38/fs/notify/fanotify/fanotify.c	2011-03-15 02:20:32.000000000 +0100
+> +++ linux-2.6.38-dev/fs/notify/fanotify/fanotify.c	2011-03-24 12:34:40.182283000 +0100
+> @@ -131,6 +131,7 @@ static int fanotify_handle_event(struct
+>  	BUILD_BUG_ON(FAN_CLOSE_NOWRITE != FS_CLOSE_NOWRITE);
+>  	BUILD_BUG_ON(FAN_CLOSE_WRITE != FS_CLOSE_WRITE);
+>  	BUILD_BUG_ON(FAN_OPEN != FS_OPEN);
+> +	BUILD_BUG_ON(FAN_OPENEXEC != FS_OPENEXEC);
+>  	BUILD_BUG_ON(FAN_EVENT_ON_CHILD != FS_EVENT_ON_CHILD);
+>  	BUILD_BUG_ON(FAN_Q_OVERFLOW != FS_Q_OVERFLOW);
+>  	BUILD_BUG_ON(FAN_OPEN_PERM != FS_OPEN_PERM);
+> diff -uprN -X linux-2.6.38/Documentation/dontdiff linux-2.6.38/fs/notify/fsnotify.c linux-2.6.38-dev/fs/notify/fsnotify.c
+> --- linux-2.6.38/fs/notify/fsnotify.c	2011-03-15 02:20:32.000000000 +0100
+> +++ linux-2.6.38-dev/fs/notify/fsnotify.c	2011-03-24 12:34:40.186283000 +0100
+> @@ -299,7 +299,7 @@ static __init int fsnotify_init(void)
+>  {
+>  	int ret;
 >  
->  /*
-> - * If this is a system OOM (not a memcg OOM) and the task selected to be
-> - * killed is not already running at high (RT) priorities, speed up the
-> - * recovery by boosting the dying task to the lowest FIFO priority.
-> - * That helps with the recovery and avoids interfering with RT tasks.
-> - */
-> -static void boost_dying_task_prio(struct task_struct *p,
-> -				  struct mem_cgroup *mem)
-> -{
-> -	struct sched_param param = { .sched_priority = 1 };
-> -
-> -	if (mem)
-> -		return;
-> -
-> -	if (!rt_task(p))
-> -		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
-> -}
-> -
-> -/*
->   * The process p may have detached its own ->mm while exiting or through
->   * use_mm(), but one or more of its subthreads may still have a valid
->   * pointer.  Return p, or any of its subthreads with a valid ->mm, with
-> @@ -452,13 +434,6 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
->  	set_tsk_thread_flag(p, TIF_MEMDIE);
->  	force_sig(SIGKILL, p);
+> -	BUG_ON(hweight32(ALL_FSNOTIFY_EVENTS) != 23);
+> +	BUG_ON(hweight32(ALL_FSNOTIFY_EVENTS) != 24);
 >  
-> -	/*
-> -	 * We give our sacrificial lamb high priority and access to
-> -	 * all the memory it needs. That way it should be able to
-> -	 * exit() and clear out its resources quickly...
-> -	 */
-> -	boost_dying_task_prio(p, mem);
-> -
+>  	ret = init_srcu_struct(&fsnotify_mark_srcu);
+>  	if (ret)
+> diff -uprN -X linux-2.6.38/Documentation/dontdiff linux-2.6.38/include/linux/fanotify.h linux-2.6.38-dev/include/linux/fanotify.h
+> --- linux-2.6.38/include/linux/fanotify.h	2011-03-15 02:20:32.000000000 +0100
+> +++ linux-2.6.38-dev/include/linux/fanotify.h	2011-03-24 12:34:40.190283001 +0100
+> @@ -9,6 +9,7 @@
+>  #define FAN_CLOSE_WRITE		0x00000008	/* Writtable file closed */
+>  #define FAN_CLOSE_NOWRITE	0x00000010	/* Unwrittable file closed */
+>  #define FAN_OPEN		0x00000020	/* File was opened */
+> +#define FAN_OPENEXEC	0x00001000	/* File had exec flag */
+>  
+>  #define FAN_Q_OVERFLOW		0x00004000	/* Event queued overflowed */
+>  
+> @@ -81,7 +82,8 @@
+>  
+>  #define FAN_ALL_OUTGOING_EVENTS	(FAN_ALL_EVENTS |\
+>  				 FAN_ALL_PERM_EVENTS |\
+> -				 FAN_Q_OVERFLOW)
+> +				FAN_Q_OVERFLOW |\
+> +				FAN_OPENEXEC)
+>  
+>  #define FANOTIFY_METADATA_VERSION	3
+>  
+> diff -uprN -X linux-2.6.38/Documentation/dontdiff linux-2.6.38/include/linux/fsnotify_backend.h linux-2.6.38-dev/include/linux/fsnotify_backend.h
+> --- linux-2.6.38/include/linux/fsnotify_backend.h	2011-03-15 02:20:32.000000000 +0100
+> +++ linux-2.6.38-dev/include/linux/fsnotify_backend.h	2011-03-24 12:34:40.262283001 +0100
+> @@ -36,6 +36,7 @@
+>  #define FS_DELETE		0x00000200	/* Subfile was deleted */
+>  #define FS_DELETE_SELF		0x00000400	/* Self was deleted */
+>  #define FS_MOVE_SELF		0x00000800	/* Self was moved */
+> +#define FS_OPENEXEC		0x00001000	/* File had exec flag */
+>  
+>  #define FS_UNMOUNT		0x00002000	/* inode on umount fs */
+>  #define FS_Q_OVERFLOW		0x00004000	/* Event queued overflowed */
+> @@ -73,7 +74,8 @@
+>  			     FS_UNMOUNT | FS_Q_OVERFLOW | FS_IN_IGNORED | \
+>  			     FS_OPEN_PERM | FS_ACCESS_PERM | FS_EXCL_UNLINK | \
+>  			     FS_ISDIR | FS_IN_ONESHOT | FS_DN_RENAME | \
+> -			     FS_DN_MULTISHOT | FS_EVENT_ON_CHILD)
+> +				FS_DN_MULTISHOT | FS_EVENT_ON_CHILD | \
+> +				FS_OPENEXEC)
+>  
+>  struct fsnotify_group;
+>  struct fsnotify_event;
+> diff -uprN -X linux-2.6.38/Documentation/dontdiff linux-2.6.38/include/linux/fsnotify.h linux-2.6.38-dev/include/linux/fsnotify.h
+> --- linux-2.6.38/include/linux/fsnotify.h	2011-03-15 02:20:32.000000000 +0100
+> +++ linux-2.6.38-dev/include/linux/fsnotify.h	2011-03-24 12:34:40.274283001 +0100
+> @@ -45,12 +45,15 @@ static inline int fsnotify_perm(struct f
+>  		return 0;
+>  	if (!(mask & (MAY_READ | MAY_OPEN)))
+>  		return 0;
+> -	if (mask & MAY_OPEN)
+> +	if (mask & MAY_OPEN) {
+>  		fsnotify_mask = FS_OPEN_PERM;
+> -	else if (mask & MAY_READ)
+> +		if (file->f_flags & FMODE_EXEC)
+> +			fsnotify_mask |= FS_OPENEXEC;
+> +	} else if (mask & MAY_READ) {
+>  		fsnotify_mask = FS_ACCESS_PERM;
+> -	else
+> +	} else {
+>  		BUG();
+> +	}
+>  
+>  	ret = fsnotify_parent(path, NULL, fsnotify_mask);
+>  	if (ret)
+> 
 
-Before merging 93b43fa5508, we had a following routine.
 
-+static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
- {
-        p = find_lock_task_mm(p);
-        if (!p) {
-@@ -434,9 +452,17 @@ static int oom_kill_task(struct task_struct *p)
-                K(get_mm_counter(p->mm, MM_FILEPAGES)));
-        task_unlock(p);
- 
--       p->rt.time_slice = HZ; <<---- THIS
-+
-        set_tsk_thread_flag(p, TIF_MEMDIE);
-        force_sig(SIGKILL, p);
-+
-+       /*
-+        * We give our sacrificial lamb high priority and access to
-+        * all the memory it needs. That way it should be able to
-+        * exit() and clear out its resources quickly...
-+        */
-+       boost_dying_task_prio(p, mem);
-+
-        return 0;
- }
-
-At that time, I thought that routine is meaningless in non-RT scheduler.
-So I Cced Peter but don't get the answer.
-I just want to confirm it.
-
-Do you still think it's meaningless? 
-so you remove it when you revert 93b43fa5508?
-Then, this isn't just revert patch but revert + killing meaningless code patch.
-
-
-- 
-Kind regards,
-Minchan Kim
