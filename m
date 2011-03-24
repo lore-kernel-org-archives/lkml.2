@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933693Ab1CXVqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 17:46:05 -0400
-Received: from chipmunk.wormnet.eu ([195.195.131.226]:42113 "EHLO
-	chipmunk.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933587Ab1CXVp7 (ORCPT
+	id S1757207Ab1CXVrY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 17:47:24 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:28665 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215Ab1CXVrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 17:45:59 -0400
-Date: Thu, 24 Mar 2011 21:45:55 +0000
-From: Alexander Clouter <alex@digriz.org.uk>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH repost] MAINTAINERS: add self for ARM/ts78xx-setup platform
-Message-ID: <20110324214555.GE25446@chipmunk>
+	Thu, 24 Mar 2011 17:47:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=ShPwQeO/JUsDtBeKEuMKpCITsD94q5CRpQ73VwfppVNVFv0hi4d3FEGboIVG+/1EJN
+         ZuC32bSWRR1Y5AwjdmsQ==
+Date: Thu, 24 Mar 2011 14:47:11 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: [PATCH] Accelerate OOM killing
+In-Reply-To: <1300960353-2596-1-git-send-email-minchan.kim@gmail.com>
+Message-ID: <alpine.DEB.2.00.1103241446520.20718@chino.kir.corp.google.com>
+References: <1300960353-2596-1-git-send-email-minchan.kim@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: diGriz
-X-URL: http://www.digriz.org.uk/
-X-JabberID: alex@digriz.org.uk
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Clouter <alex@digriz.org.uk>
+On Thu, 24 Mar 2011, Minchan Kim wrote:
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6f99e12..4e81034 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -856,6 +856,13 @@ F:	arch/arm/mach-mv78xx0/
- F:	arch/arm/mach-orion5x/
- F:	arch/arm/plat-orion/
- 
-+ARM/Orion SoC/Technologic Systems TS-78xx platform support
-+M:	Alexander Clouter <alex@digriz.org.uk>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+W:	http://www.digriz.org.uk/ts78xx/kernel
-+S:	Maintained
-+F:	arch/arm/mach-orion5x/ts78xx-*
-+
- ARM/MIOA701 MACHINE SUPPORT
- M:	Robert Jarzmik <robert.jarzmik@free.fr>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
--- 
-1.7.4.1
+> When I test Andrey's problem, I saw the livelock and sysrq-t says
+> there are many tasks in cond_resched after try_to_free_pages.
+> 
+> If did_some_progress is false, cond_resched could delay oom killing so
+> It might be killing another task.
+> 
+> This patch accelerates oom killing without unnecessary giving CPU
+> to another task. It could help avoding unnecessary another task killing
+> and livelock situation a litte bit.
+> 
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Andrey Vagin <avagin@openvz.org>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+
+Acked-by: David Rientjes <rientjes@google.com>
