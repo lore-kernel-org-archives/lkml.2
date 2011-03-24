@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab1CXO7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 10:59:17 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48856 "EHLO
+	id S933322Ab1CXPBa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 11:01:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40863 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab1CXO7L (ORCPT
+	with ESMTP id S1754409Ab1CXPB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 10:59:11 -0400
+	Thu, 24 Mar 2011 11:01:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:organization:message-id:in-reply-to
-         :user-agent;
-        b=d+d0dwDXQyu3IMuXAuPgfm0JL05phQchpRtqv4tVBVFkErBofeSrpe5lUKASeh9vUz
-         LPnlneiaXjQVKrOFQjh6bfZ7BJq5lh5SPnh0Mq9SNbjZxtx5QD5hNdAaw90oVS5rs4ft
-         fPSE+rSxjYe+dYP9a0M6UXJv//88ZVsX4vZ5Q=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Sergey Senozhatsky" <sergey.senozhatsky@gmail.com>
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "Alan Stern" <stern@rowland.harvard.edu>,
-        "Chris Wright" <chrisw@sous-sol.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Ho0nFCoKiOxYf4mQjiGo2q918T6y5QoQKwPO5JaPEvHmnn999s+ayZeXpqzncbDm3b
+         gayCuW5rVfCpWvEtTl5Y4yATa7xc5TPRe3kapPkkO1U1w2Be5+pAQtBbX+Kep8ZoZzam
+         QRpl5+hYKj0usLFFkD2VN0e759WIH2q2NCZbQ=
+Date: Thu, 24 Mar 2011 17:05:29 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Chris Wright <chrisw@sous-sol.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: check device_create_file() return code in
  usb_create_sysfs_intf_files()
+Message-ID: <20110324150529.GC8200@swordfish.minsk.epam.com>
 References: <20110324143116.GA8200@swordfish.minsk.epam.com>
- <op.vsuq5nez3l0zgt@mnazarewicz-glaptop>
- <20110324145606.GB8200@swordfish.minsk.epam.com>
-Date: Thu, 24 Mar 2011 15:58:54 +0100
+ <Pine.LNX.4.44L0.1103241050520.2006-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Organization: Google
-Message-ID: <op.vsurwgro3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <20110324145606.GB8200@swordfish.minsk.epam.com>
-User-Agent: Opera Mail/11.01 (Linux)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1103241050520.2006-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011 15:56:06 +0100, Sergey Senozhatsky wrote:
-> diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
-> index 6781c36..d03c630 100644
-> --- a/drivers/usb/core/sysfs.c
-> +++ b/drivers/usb/core/sysfs.c
-> @@ -846,7 +846,7 @@ int usb_create_sysfs_intf_files(struct usb_interface  
-> *intf)
->  {
->  	struct usb_device *udev = interface_to_usbdev(intf);
->  	struct usb_host_interface *alt = intf->cur_altsetting;
-> -	int retval;
-> +	int retval = -1;
 
-That should be 0 or some other meaningful value. A literal -1 is definitely
-not a good choice.  This is just for future since Alan has explained this
-patch is not needed.
+--HlL+5n6rz5pIUxbD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 	if (intf->sysfs_files_created || intf->unregistering)
->  		return 0;
+On (03/24/11 10:55), Alan Stern wrote:
+> > I just noticed that usb_create_sysfs_intf_files() ignores device_create=
+_file()=20
+> > return code and sets intf->sysfs_files_created to 1, even if sysfs_add_=
+file_mode()=20
+> > returned -ENOMEM (or later sysfs_add_one() returned -EEXIST).
+> >=20
+> > Shouldn't we check retval for 0 before setting intf->sysfs_files_create=
+d?
+>=20
+> No.  We want this routine to succeed even if the sysfs files can't be=20
+> created.  The interface string attribute is more or less optional.
+>=20
+> It would be okay to add a comment explaining this, so that other people
+> don't make the same mistake (which has already happened -- you're not
+> the first).
+>=20
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+Thanks. Sorry for the noise then.
+Well, in that case, I guess, `int retval;' can be removed, since it's=20
+unused.
+
+
+Best,
+	Sergey
+
+--HlL+5n6rz5pIUxbD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAk2LXbkACgkQfKHnntdSXjQ4/gQAh0ceVuLm40eM0nXgxx8N4Ngh
+6QnGHs5SWjRRi/86N79/NOHnxf/bl8db2Q9/P5rv3UJratkd1OSQNjIxlE6TaXfa
+1X0S9OtzWIx3HIoW9kXLBOaWfmF7kKNT6kA3iUfSbB9RO3YeCIHoNrRqtaPJAalX
+TyJtE7scyS1qINanp9Q=
+=l7X5
+-----END PGP SIGNATURE-----
+
+--HlL+5n6rz5pIUxbD--
