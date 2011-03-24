@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab1CXQdm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 12:33:42 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58085 "EHLO mx2.mail.elte.hu"
+	id S1754064Ab1CXQfp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 12:35:45 -0400
+Received: from linux-sh.org ([111.68.239.195]:51584 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752786Ab1CXQdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 12:33:40 -0400
-Date: Thu, 24 Mar 2011 17:33:32 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, Don Zickus <dzickus@redhat.com>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] perf, x86: P4 PMU - Add missing read of a counter
- before test
-Message-ID: <20110324163332.GA2414@elte.hu>
-References: <AANLkTikwJFCrpTit8=-=agowkTwZtoyEtFaE7yp0O8MF@mail.gmail.com>
- <20110324084819.GH30812@elte.hu>
- <4D8B6569.2030001@gmail.com>
-MIME-Version: 1.0
+	id S1750871Ab1CXQfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 12:35:44 -0400
+Date: Fri, 25 Mar 2011 01:35:37 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 2.6.39-rc1, part 2.
+Message-ID: <20110324163537.GA3320@linux-sh.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D8B6569.2030001@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please pull from:
 
-* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh-latest
 
-> On 03/24/2011 11:48 AM, Ingo Molnar wrote:
-> > 
-> > * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> > 
-> >> Don, I've added yours SOB, ok? (The patch is attached to avoid
-> >> space/tabs problem
-> >> due to web-mail client)
-> > 
-> > The patch lacks a proper description about the motivation and effects of the 
-> > patch.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> 
-> Ingo, does this one looks better?
-> 
-> ---
-> From: Don Zickus <dzickus@redhat.com>
-> Subject: [PATCH -tip] perf, x86: P4 PMU - Add missing read of MSR register to catch unflagged overflows
-> 
-> The read of a proper MSR register was missed so instead of a counter the 
-> configration register is tested (it has ARCH_P4_UNFLAGGED_BIT always cleared) 
-> and unflagged overflows never have been catched. Fix it by reading a proper 
-> MSR register.
+Which contains:
 
-So what effect does this have on the regular perf user? Please try to describe 
-the real-life effect of the bug/problem fixed here.
+David Engraf (1):
+      sh: Fix ptrace hw_breakpoint handling
 
-Thanks,
+Nobuhiro Iwamatsu (1):
+      sh: Fix build alloc_thread_info_node function
 
-	Ingo
+Paul Mundt (4):
+      sh: wire up sys_syncfs.
+      sh: Conver to asm-generic/sizes.h.
+      sh: pmb: Use struct syscore_ops instead of sysdevs
+      sh: Re-enable GENERIC_HARDIRQS_NO_DEPRECATED.
+
+Phil Edworthy (1):
+      sh: Fix ptrace fpu state initialisation
+
+Rafael J. Wysocki (1):
+      sh: Use struct syscore_ops instead of sysdevs
+
+ arch/sh/Kconfig                  |    3 +-
+ arch/sh/boards/board-edosk7760.c |    2 +-
+ arch/sh/include/asm/sizes.h      |   63 +-------------------------
+ arch/sh/include/asm/unistd_32.h  |    3 +-
+ arch/sh/include/asm/unistd_64.h  |    3 +-
+ arch/sh/kernel/process.c         |    4 +-
+ arch/sh/kernel/ptrace_32.c       |    8 +++
+ arch/sh/kernel/ptrace_64.c       |    6 ++
+ arch/sh/kernel/syscalls_32.S     |    1 +
+ arch/sh/kernel/syscalls_64.S     |    1 +
+ arch/sh/mm/pmb.c                 |   43 ++++++------------
+ drivers/sh/clk/core.c            |   68 +++++++--------------------
+ drivers/sh/intc/core.c           |   95 +++++++++++++++++++-------------------
+ drivers/sh/intc/internals.h      |    1 -
+ 14 files changed, 104 insertions(+), 197 deletions(-)
