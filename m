@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933584Ab1CXEdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 00:33:50 -0400
-Received: from gate.crashing.org ([63.228.1.57]:48745 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932845Ab1CXEdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 00:33:49 -0400
-Subject: Re: [PATCH 1/2] kdump: Allow shrinking of kdump region to be
- overridden
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        linuxppc-dev@ozlabs.org, WANG Cong <xiyou.wangcong@gmail.com>,
-        Anton Blanchard <anton@au1.ibm.com>
-In-Reply-To: <im6fj2$576$1@dough.gmane.org>
-References: <20100825002258.GD28360@kryten>
-	 <m139u37cii.fsf@fess.ebiederm.org> <4D771EE6.5050404@linux.vnet.ibm.com>
-	 <20110309122046.GC16951@cr0.redhat.com> <20110309234657.264d3080@kryten>
-	 <20110309142108.GD16951@cr0.redhat.com> <20110314181315.GA16075@in.ibm.com>
-	 <AANLkTi=aDzCaa7_=5XTrnJCzmZPrDy3omXwDarEF8XmH@mail.gmail.com>
-	 <20110315165219.GA22509@in.ibm.com>  <im6fj2$576$1@dough.gmane.org>
+	id S933587Ab1CXEkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 00:40:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53449 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932845Ab1CXEkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 00:40:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=L0uqXMxtTMJdUtSa+MKeum+BXIFDhD0MBYA6erfeL9sDHt/xYSJRPBMJzQ8aa3USvH
+         WopV1hopTpAdxe0ZgTMs3N8xZ/2y4QAoA/k/Idw3z8qQ1UP5cvUMUfe6YgZcpS5pT7te
+         bbftMIiMOpZxdT8QY4GEKGfxAHhR8e0hJWOw0=
+Subject: [PATCH] gpu: poulsbo: Use PCI_VDEVICE macro
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Lee, Chun-Yi" <jlee@novell.com>, Dave Airlie <airlied@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Mar 2011 15:33:30 +1100
-Message-ID: <1300941210.2402.414.camel@pasglop>
+Date: Thu, 24 Mar 2011 12:40:22 +0800
+Message-ID: <1300941622.16642.2.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -30,35 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-21 at 03:10 +0000, WANG Cong wrote:
-> On Tue, 15 Mar 2011 22:22:19 +0530, Mahesh J Salgaonkar wrote:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/gpu/stub/poulsbo.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> >> Okay, but with this patch applied, we will just ignore rtas region,
-> >> right?
-> > Correct.
-> >> Thus, when I echo 0 to free all the 128M crashkernel memory, the final
-> >> result will be 32M left, which means crash_size will still show 32M.
-> >> This looks odd.
-> >> 
-> >> How about skipping the 32M as a whole? I mean once the region being
-> >> freed has overlap with this rtas region, skip the whole rtas region,
-> >> and let crash_size
-> >> show 0?
-> > The existing code from crash_shrink_memory() function reduces the crash
-> > size to 0 when echo'ed 0. I did test this patchset and verified that
-> > /sys/kernel/kexec_crash_size show 0 value.
-> 
-> Oh, ok.
-> 
-> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+diff --git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c
+index 7edfd27..c7dfba9 100644
+--- a/drivers/gpu/stub/poulsbo.c
++++ b/drivers/gpu/stub/poulsbo.c
+@@ -22,8 +22,8 @@ enum {
+ };
+ 
+ static DEFINE_PCI_DEVICE_TABLE(pciidlist) = {
+-	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
+-	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
++	{PCI_VDEVICE(INTEL, 0x8108), CHIP_PSB_8108}, \
++	{PCI_VDEVICE(INTEL, 0x8109), CHIP_PSB_8109}, \
+ 	{0, 0, 0}
+ };
+ 
+-- 
+1.7.1
 
-So Eric, what's the right approach to get that merged ? This is a bug
-gating an important delivery for us, and the patch doesn't appear
-terribly invasive ? :-)
-
-I can send it to Linus myself if you prefer and give me your Ack.
-
-Cheers,
-Ben.
 
 
