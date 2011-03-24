@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934215Ab1CXUUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:20:36 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56204 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934180Ab1CXUTW (ORCPT
+	id S934237Ab1CXUUm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:20:42 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:64591 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934178Ab1CXUTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:19:22 -0400
+	Thu, 24 Mar 2011 16:19:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Rd3MzsCmq0q4Pp4KzaPgqvIFuMvIT+G0kcbLbBDP+vXGNItNGJo/4SrYm/yKp/7wJ9
-         KLF4y9Wv4oKqqYT2Djoex870T17fpcri2SMvSU0HTo7fb2A6z+qpOEYdaIPF0t0MFnMz
-         EbHAPo1Ngux7NQdJO/cj71YFVvNRDlPQ9eBLA=
+        b=B5A53PKqR4ZTixQLbNOMItyoZt19Of4ew8JYn8xeoWX90qof6QB3L88TZLJU/Lq8lb
+         R+ek2BmNdLmekyimvkRLlMnychj58cWDcYGVQvI5d3IA9NWHFaJ2g/bSWmGB1Tm9LnnW
+         PbR9HegyIk+rP3RQcjfE6IhvY6B20KtoPUBmo=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC V2 17/21]kernel:pm_qos_params.c Remove extra semi-colon.
-Date: Thu, 24 Mar 2011 13:18:36 -0700
-Message-Id: <1300997920-31573-17-git-send-email-justinmattock@gmail.com>
+Subject: [RFC V2 16/21]fs:logfs Remove extra semi-colon.
+Date: Thu, 24 Mar 2011 13:18:35 -0700
+Message-Id: <1300997920-31573-16-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
 References: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
@@ -34,22 +34,36 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- kernel/pm_qos_params.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/logfs/readwrite.c    |    2 +-
+ fs/ocfs2/refcounttree.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-index 0da058b..beb1846 100644
---- a/kernel/pm_qos_params.c
-+++ b/kernel/pm_qos_params.c
-@@ -385,7 +385,7 @@ static ssize_t pm_qos_power_read(struct file *filp, char __user *buf,
- 	s32 value;
- 	unsigned long flags;
- 	struct pm_qos_object *o;
--	struct pm_qos_request_list *pm_qos_req = filp->private_data;;
-+	struct pm_qos_request_list *pm_qos_req = filp->private_data;
+diff --git a/fs/logfs/readwrite.c b/fs/logfs/readwrite.c
+index ee99a9f..3dcb3a6 100644
+--- a/fs/logfs/readwrite.c
++++ b/fs/logfs/readwrite.c
+@@ -481,7 +481,7 @@ static int inode_write_alias(struct super_block *sb,
+ 			val = inode_val0(inode);
+ 			break;
+ 		case INODE_USED_OFS:
+-			val = cpu_to_be64(li->li_used_bytes);;
++			val = cpu_to_be64(li->li_used_bytes);
+ 			break;
+ 		case INODE_SIZE_OFS:
+ 			val = cpu_to_be64(i_size_read(inode));
+diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
+index c384d63..c4feced 100644
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -3707,7 +3707,7 @@ int ocfs2_refcount_cow_xattr(struct inode *inode,
+ 	context->cow_start = cow_start;
+ 	context->cow_len = cow_len;
+ 	context->ref_tree = ref_tree;
+-	context->ref_root_bh = ref_root_bh;;
++	context->ref_root_bh = ref_root_bh;
+ 	context->cow_object = xv;
  
- 	if (!pm_qos_req)
- 		return -EINVAL;
+ 	context->cow_duplicate_clusters = ocfs2_duplicate_clusters_by_jbd;
 -- 
 1.7.4.1
 
