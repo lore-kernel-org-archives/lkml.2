@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab1CXNky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 09:40:54 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46938 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab1CXNkx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 09:40:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=i+OcjfO4JXIzK5gIC/YnRDIxyN+0N+yMvkUVU+XDF+MGIicbTneBZmnnzRcCEM9Mlp
-         cloxGc45bak88eq6H39zoqbybz/JJ3NE168YDG+gzJID8jbP8e7+8DP89F3AVR4Yry5/
-         wn/5tcaJ0DZ+R82+BNEl5SpZRXcGqgJOJ7w0U=
+	id S1754804Ab1CXNnV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 09:43:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23422 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751876Ab1CXNnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 09:43:20 -0400
+Message-ID: <4D8B4A6F.9040303@redhat.com>
+Date: Thu, 24 Mar 2011 09:43:11 -0400
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikrX_wypmrd-PbST603jsHqkuwtA6t5X65Lg1+O@mail.gmail.com>
-References: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
-	<AANLkTinZpt8qmHzhe4WyteMt-C-nkVNwEGQVvq3Nk9Lx@mail.gmail.com>
-	<20110324131414.GA20612@thinkpad-t410>
-	<AANLkTikrX_wypmrd-PbST603jsHqkuwtA6t5X65Lg1+O@mail.gmail.com>
-Date: Thu, 24 Mar 2011 13:40:51 +0000
-Message-ID: <AANLkTi=2OKxvHN75PO4RGb9rtpnA0iGHNb9JPZwb0z9J@mail.gmail.com>
-Subject: Re: [PATCH] eeepc-wmi: Add support for T101MT "Express Gate" key
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Chris Bagwell <chris@cnpbagwell.com>
-Cc: Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Valerie Aurora <valerie.aurora@gmail.com>, miklos@szeredi.hu
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, Christoph Hellwig <hch@infradead.org>
+Subject: Union mounts comparison with overlay file system prototype?
+References: <1300845590-14184-1-git-send-email-valerie.aurora@gmail.com> <AANLkTim7q5L9v5uFx9NB2Eai48WCTi5sSSx9yFbQgszi@mail.gmail.com>
+In-Reply-To: <AANLkTim7q5L9v5uFx9NB2Eai48WCTi5sSSx9yFbQgszi@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I would suggest sending BTN_HOME upon button release 0xe5 (not press
-> 0xe4 and do the autorelease because of it) and BTN_PROG2 on
-> press-and-hold 0xea.
+On 03/22/2011 10:12 PM, Valerie Aurora wrote:
+> And I cc'd linux@vger.kernel.org on all the patches instead of
+> linux-kernel@vger.kernel.org - guess I'm really out of the kernel
+> business now!  Anyway, if you want your replies to go to lkml, you'll
+> have to hand edit the cc list.
 >
-> If you press-and-hold, does it still send the 0xe5 upon release?  That
-> could complicate things so that both button events do not get sent.
+> -VAL
 >
-> I'm not sure what BTN_HOME is commonly used for.  This button does
-> sound like a HOME button in iPad sense but not in web browser sense.
+  Val, Miklos,
 
-Except the fact that I don't find BTN_HOME in inpout.h, that's seems a
-better idea, forget what I've said earlier.
+Can one or both of you summarize what we union mounts and overlay do better or 
+worse? Do we need both or just one?
 
-0xe4 -> KEY_IGNORE
-0xe5 -> KEY_HOME
-0xea -> KEY_PROG2, (or BTN_TASK to copy android/iOS ?)
+Thanks!
 
--- 
-Corentin Chary
-http://xf.iksaif.net
+Ric
+
