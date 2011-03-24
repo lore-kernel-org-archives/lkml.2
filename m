@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934020Ab1CXTvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:51:45 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:24699 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933934Ab1CXTvn (ORCPT
+	id S934024Ab1CXTzh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:55:37 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38631 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933832Ab1CXTze convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:51:43 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: xUGcm6wVM1m8Yuhc.VBOBDtRiNcEmOy8cS6MY.wCGgE06Wz
- QzoEzYXDe2Dt3bAY5bot2sXy_TxYSUqFV2IQrqz12RrSWH_n1YApkNZEnvFo
- mGomrroFSXtX2w6At_j2Kxo9fTDsNISjK2CULcVv3tOjqRexa83WoppP_Pj.
- XRjLg4XeQz8.UoyPIl1SZVOWhiuCLtU.l7ylPMmwHsrzhZZNEh.hlo0y.D4l
- _kQvyG8.DZpIfQsPNbecbcUmua_D0gwdwEKcIvsFjVT4EOYWfgdeOsxq8lEc
- 9fGKqQXdyLdYHiWzpleIK7x.MBLtJEwYtAV0xbb56p_zJBQ--
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 24 Mar 2011 14:51:38 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
-In-Reply-To: <AANLkTinBwKT3s=1En5Urs56gmt_zCNgPXnQzzy52Tgdo@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1103241451060.5576@router.home>
-References: <alpine.DEB.2.00.1103241300420.32226@router.home> <AANLkTi=KZQd-GrXaq4472V3XnEGYqnCheYcgrdPFE0LJ@mail.gmail.com> <alpine.DEB.2.00.1103241312280.32226@router.home> <1300990853.3747.189.camel@edumazet-laptop> <alpine.DEB.2.00.1103241346060.32226@router.home>
- <AANLkTik3rkNvLG-rgiWxKaPc-v9sZQq96ok0CXfAU+r_@mail.gmail.com> <20110324185903.GA30510@elte.hu> <AANLkTi=66Q-8=AV3Y0K28jZbT3ddCHy9azWedoCC4Nrn@mail.gmail.com> <alpine.DEB.2.00.1103241404490.5576@router.home> <AANLkTimWYCHEsZjswLpD-xDcu_cL=GqsMshKRtkHt5Vn@mail.gmail.com>
- <20110324193647.GA7957@elte.hu> <AANLkTinBwKT3s=1En5Urs56gmt_zCNgPXnQzzy52Tgdo@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 24 Mar 2011 15:55:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=vENgnzJzWUNIDXvdzhUWgp+mvjVBWmN6RpsTeX6HZJ3lbebriXCP5BSUuDAImnQDb5
+         pmwfRAvoyFPZ1ii9eYvizIbu4FZ2/3wJ3zJ7MFw4qnZVXHtTTKrP7Uw2rs2HIwEbsAvM
+         LhyrKkmcUakTXifyx9ZssLzOshKgJDX9M7zA0=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110323211346.9ae51356.akpm@linux-foundation.org>
+References: <20110324143019.cce06baa.sfr@canb.auug.org.au>
+	<20110323211346.9ae51356.akpm@linux-foundation.org>
+Date: Thu, 24 Mar 2011 12:55:33 -0700
+X-Google-Sender-Auth: 4OgGJc84ynXi9Jjmknmrbb-loTM
+Message-ID: <AANLkTimx77O+cc_kVkTQOYxrCHetUcmiu6NE1Oz5_83o@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+From: Tony Luck <tony.luck@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011, Pekka Enberg wrote:
+On Wed, Mar 23, 2011 at 9:13 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> Meanwhile, ddd588b5dd55f143203799 reverts cleanly and I'd suggest we do
+> that.
 
-> Thanks, Ingo! Christoph, may I have your sign-off for the patch and
-> I'll send it to Linus?
+I tried that revert (from Linus' tree this morning HEAD
+=6c5103890057b1bb781b26b7aae38d33e4c517d8)
+and got:
 
 
-Subject: SLUB: Write to per cpu data when allocating it
+  CC      mm/page_alloc.o
+mm/page_alloc.c: In function ‘__alloc_pages_slowpath’:
+mm/page_alloc.c:2180: error: ‘SHOW_MEM_FILTER_NODES’ undeclared (first
+use in this function)
+mm/page_alloc.c:2180: error: (Each undeclared identifier is reported only once
+mm/page_alloc.c:2180: error: for each function it appears in.)
+mm/page_alloc.c:2198: error: implicit declaration of function ‘__show_mem’
+make[1]: *** [mm/page_alloc.o] Error 1
+make: *** [mm] Error 2
 
-It turns out that the cmpxchg16b emulation has to access vmalloced
-percpu memory with interrupts disabled. If the memory has never
-been touched before then the fault necessary to establish the
-mapping will not to occur and the kernel will fail on boot.
-
-Fix that by reusing the CONFIG_PREEMPT code that writes the
-cpu number into a field on every cpu. Writing to the per cpu
-area before causes the mapping to be established before we get
-to a cmpxchg16b emulation.
-
-Tested-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
----
- mm/slub.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2011-03-24 14:03:10.000000000 -0500
-+++ linux-2.6/mm/slub.c	2011-03-24 14:04:08.000000000 -0500
-@@ -1604,7 +1604,7 @@ static inline void note_cmpxchg_failure(
-
- void init_kmem_cache_cpus(struct kmem_cache *s)
- {
--#if defined(CONFIG_CMPXCHG_LOCAL) && defined(CONFIG_PREEMPT)
-+#ifdef CONFIG_CMPXCHG_LOCAL
- 	int cpu;
-
- 	for_each_possible_cpu(cpu)
+-Tony
