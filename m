@@ -1,99 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933759Ab1CXWRr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 18:17:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932652Ab1CXWRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 18:17:43 -0400
-Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
- kernel modules
-From: Eric Paris <eparis@redhat.com>
-To: "Serge E. Hallyn" <serge.hallyn@ubuntu.com>
-Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        bhutchings@solarflare.com, eparis@parisplace.org, segoon@openwall.com,
-        linux-kernel@vger.kernel.org, mjt@tls.msk.ru, arnd@arndb.de,
-        mirqus@gmail.com, netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
-        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
-        eugene@redhat.com, dan.j.rosenberg@gmail.com,
-        akpm@linux-foundation.org, greg@kroah.com, sds@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org, dwalsh@redhat.com,
-        dhowells@redhat.com
-Date: Thu, 24 Mar 2011 18:15:18 -0400
-In-Reply-To: <20110324215747.GA12585@peq.hallyn.com>
-References: <1300991584.2689.35.camel@bwh-desktop>
-	 <20110324202634.GB9191@peq.hallyn.com> <20110324143944.29f4c362@nehalam>
-	 <20110324.144628.58411809.davem@davemloft.net>
-	 <20110324215747.GA12585@peq.hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1301004924.14296.12.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S933811Ab1CXWSZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 18:18:25 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49476 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932652Ab1CXWSX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 18:18:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=LIFBbPHZoPKGdMaSsl7LIbWfxV1cm3NRCUu7ILgokmQiWTeWaD+G1UtGJnU4ftUbuU
+         tNarnsYy9CkZfw3aKHhg==
+Date: Thu, 24 Mar 2011 15:18:15 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: [patch] lib, arch: add filter argument to show_mem and fix private
+ implementations
+In-Reply-To: <20110323211346.9ae51356.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1103241457030.20718@chino.kir.corp.google.com>
+References: <20110324143019.cce06baa.sfr@canb.auug.org.au> <20110323211346.9ae51356.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-24 at 16:57 -0500, Serge E. Hallyn wrote:
-> Quoting David Miller (davem@davemloft.net):
-> > From: Stephen Hemminger <shemminger@vyatta.com>
-> > Date: Thu, 24 Mar 2011 14:39:44 -0700
-> > 
-> > > This breaks for many of the tunneling protocols, that rely on
-> > > autoload for names like "sit0"
-> > 
-> > Frankly I'm very disappointed in the fallout this has been causing.
-> > 
-> > Everyone supporting this change, get real, and admit it doing in fact
-> > cause a serious regression.
+On Wed, 23 Mar 2011, Andrew Morton wrote:
+
+> So...  a suitable fix would be to remove __show_mem and to add the
+> extra arg to show_mem() itself then fix up all callers and to fix up
+> all implementations to honour "filter".
 > 
-> Sorry, I thought this was causing some extra audit messages but no
-> actual breakage?
 
-I've got one report of someone claiming their system broke, but I'm not
-convinced I believe it since his dmesg didn't show the magic pr_err()
-when it should have.  It's certainly possible this can break someone in
-a system which uses fine grained capabilities controls, but I agree it's
-pretty unlikely.  My biggest personal concern is that I have a whole
-darn bunch of new scary messages which are popping out of people's
-computers since they don't have CAP_SYS_MODULE.  While I can silence
-them, it's going to hide use of init_module() directly as well, which I
-really don't want to hide from the scary logs....
+I've done that below, I hope it's not too late to prevent the revert.  
+Compile tested on arm, ia64, powerpc, and sparc32 defconfig.
 
-> > If you can't get past that simple fact, you cannot discuss this issue
-> > intelligently.
-> > 
-> > You can't say "userland will fix things up"
-> > 
-> > Because we're never supposed to break userland in the first place.
-> > 
-> > There is simply no excuse for this and I want this change reverted
-> > both in Linus's tree and in -stable.
-> 
-> Eric, in this particular case, since we've already done a
-> 'capable(CAP_NET_ADMIN)', I woudl argue that doing the check
-> for CAP_SYS_ADMIN without auditing failure (even if it requires
-> a new helper in capability.c) isn't horrible.  Thoughts?
 
-s/CAP_SYS_ADMIN/CAP_SYS_MODULE/
+lib, arch: add filter argument to show_mem and fix private implementations
 
-I can do that.  It was actually my #2 suggestion.  But, I'm certainly
-willing to put some of the burden on userspace.  SELinux policy is a
-userspace construct and we often force other userspace applications to
-fix things they do poorly (even if it gets us a rep for being
-'difficult')  Non-SELinux systems aren't going to see this problem,
-because basically noone else I know of tries to enforce any kind of
-capabilities sets other than all or none, so you'll never see
-CAP_NET_ADMIN without CAP_SYS_MODULE.
+ddd588b5dd55 (oom: suppress nodes that are not allowed from meminfo on oom 
+kill) moved lib/show_mem.o out of lib/lib.a, which resulted in build 
+warnings on all architectures that implement their own versions of 
+show_mem():
 
-I guess what it comes down to is that I'm happy to break Fedora user's
-with SELinux if in the end it gets us a better system.  I'd be happy to
-just rip the whole CAP_SYS_MODULE portion out and blame it on SELinux,
-but I know that's not what upstream does.  So given what we have today I
-personally would push for a no_audit() interface rather than a complete
-revert.   (or maybe a compile option so I can turn off the fallback
-altogether and force people to come into compliance)
+	lib/lib.a(show_mem.o): In function `show_mem':
+	show_mem.c:(.text+0x1f4): multiple definition of `show_mem'
+	arch/sparc/mm/built-in.o:(.text+0xd70): first defined here
 
--Eric
+The fix is to remove __show_mem() and add its argument to show_mem() in 
+all implementations to prevent this breakage.
 
+Architectures that implement their own show_mem() actually don't do 
+anything with the argument yet, but they could be made to filter nodes 
+that aren't allowed in the current context in the future just like the 
+generic implementation.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Reported-by: James Bottomley <James.Bottomley@hansenpartnership.com>
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ arch/arm/mm/init.c        |    2 +-
+ arch/ia64/mm/contig.c     |    2 +-
+ arch/ia64/mm/discontig.c  |    2 +-
+ arch/parisc/mm/init.c     |    2 +-
+ arch/powerpc/xmon/xmon.c  |    2 +-
+ arch/sparc/mm/init_32.c   |    2 +-
+ arch/tile/mm/pgtable.c    |    2 +-
+ arch/unicore32/mm/init.c  |    2 +-
+ drivers/tty/sysrq.c       |    2 +-
+ drivers/tty/vt/keyboard.c |    2 +-
+ include/linux/mm.h        |    5 ++---
+ lib/show_mem.c            |    7 +------
+ mm/oom_kill.c             |    2 +-
+ mm/page_alloc.c           |    2 +-
+ 14 files changed, 15 insertions(+), 21 deletions(-)
+
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -78,7 +78,7 @@ __tagtable(ATAG_INITRD2, parse_tag_initrd2);
+  */
+ struct meminfo meminfo;
+ 
+-void show_mem(void)
++void show_mem(unsigned int filter)
+ {
+ 	int free = 0, total = 0, reserved = 0;
+ 	int shared = 0, cached = 0, slab = 0, i;
+diff --git a/arch/ia64/mm/contig.c b/arch/ia64/mm/contig.c
+--- a/arch/ia64/mm/contig.c
++++ b/arch/ia64/mm/contig.c
+@@ -36,7 +36,7 @@ static unsigned long max_gap;
+  * Shows a simple page count of reserved and used pages in the system.
+  * For discontig machines, it does this on a per-pgdat basis.
+  */
+-void show_mem(void)
++void show_mem(unsigned int filter)
+ {
+ 	int i, total_reserved = 0;
+ 	int total_shared = 0, total_cached = 0;
+diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
+--- a/arch/ia64/mm/discontig.c
++++ b/arch/ia64/mm/discontig.c
+@@ -614,7 +614,7 @@ void __cpuinit *per_cpu_init(void)
+  * Shows a simple page count of reserved and used pages in the system.
+  * For discontig machines, it does this on a per-pgdat basis.
+  */
+-void show_mem(void)
++void show_mem(unsigned int filter)
+ {
+ 	int i, total_reserved = 0;
+ 	int total_shared = 0, total_cached = 0;
+diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
+--- a/arch/parisc/mm/init.c
++++ b/arch/parisc/mm/init.c
+@@ -544,7 +544,7 @@ void __init mem_init(void)
+ unsigned long *empty_zero_page __read_mostly;
+ EXPORT_SYMBOL(empty_zero_page);
+ 
+-void show_mem(void)
++void show_mem(unsigned int filter)
+ {
+ 	int i,free = 0,total = 0,reserved = 0;
+ 	int shared = 0, cached = 0;
+diff --git a/arch/powerpc/xmon/xmon.c b/arch/powerpc/xmon/xmon.c
+--- a/arch/powerpc/xmon/xmon.c
++++ b/arch/powerpc/xmon/xmon.c
+@@ -821,7 +821,7 @@ cmds(struct pt_regs *excp)
+ 				memzcan();
+ 				break;
+ 			case 'i':
+-				show_mem();
++				show_mem(0);
+ 				break;
+ 			default:
+ 				termch = cmd;
+diff --git a/arch/sparc/mm/init_32.c b/arch/sparc/mm/init_32.c
+--- a/arch/sparc/mm/init_32.c
++++ b/arch/sparc/mm/init_32.c
+@@ -75,7 +75,7 @@ void __init kmap_init(void)
+ 	kmap_prot = __pgprot(SRMMU_ET_PTE | SRMMU_PRIV | SRMMU_CACHE);
+ }
+ 
+-void show_mem(void)
++void show_mem(unsigned int filter)
+ {
+ 	printk("Mem-info:\n");
+ 	show_free_areas();
+diff --git a/arch/tile/mm/pgtable.c b/arch/tile/mm/pgtable.c
+--- a/arch/tile/mm/pgtable.c
++++ b/arch/tile/mm/pgtable.c
+@@ -41,7 +41,7 @@
+  * The normal show_free_areas() is too verbose on Tile, with dozens
+  * of processors and often four NUMA zones each with high and lowmem.
+  */
+-void show_mem(void)
++void show_mem(unsigned int filter)
+ {
+ 	struct zone *zone;
+ 
+diff --git a/arch/unicore32/mm/init.c b/arch/unicore32/mm/init.c
+--- a/arch/unicore32/mm/init.c
++++ b/arch/unicore32/mm/init.c
+@@ -55,7 +55,7 @@ early_param("initrd", early_initrd);
+  */
+ struct meminfo meminfo;
+ 
+-void show_mem(void)
++void show_mem(unsigned int filter)
+ {
+ 	int free = 0, total = 0, reserved = 0;
+ 	int shared = 0, cached = 0, slab = 0, i;
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -306,7 +306,7 @@ static struct sysrq_key_op sysrq_ftrace_dump_op = {
+ 
+ static void sysrq_handle_showmem(int key)
+ {
+-	show_mem();
++	show_mem(0);
+ }
+ static struct sysrq_key_op sysrq_showmem_op = {
+ 	.handler	= sysrq_handle_showmem,
+diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+--- a/drivers/tty/vt/keyboard.c
++++ b/drivers/tty/vt/keyboard.c
+@@ -600,7 +600,7 @@ static void fn_scroll_back(struct vc_data *vc)
+ 
+ static void fn_show_mem(struct vc_data *vc)
+ {
+-	show_mem();
++	show_mem(0);
+ }
+ 
+ static void fn_show_state(struct vc_data *vc)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -861,7 +861,7 @@ extern void pagefault_out_of_memory(void);
+ #define offset_in_page(p)	((unsigned long)(p) & ~PAGE_MASK)
+ 
+ /*
+- * Flags passed to __show_mem() and __show_free_areas() to suppress output in
++ * Flags passed to show_mem() and __show_free_areas() to suppress output in
+  * various contexts.
+  */
+ #define SHOW_MEM_FILTER_NODES	(0x0001u)	/* filter disallowed nodes */
+@@ -1360,8 +1360,7 @@ extern void setup_per_zone_wmarks(void);
+ extern void calculate_zone_inactive_ratio(struct zone *zone);
+ extern void mem_init(void);
+ extern void __init mmap_init(void);
+-extern void show_mem(void);
+-extern void __show_mem(unsigned int flags);
++extern void show_mem(unsigned int flags);
+ extern void si_meminfo(struct sysinfo * val);
+ extern void si_meminfo_node(struct sysinfo *val, int nid);
+ extern int after_bootmem;
+diff --git a/lib/show_mem.c b/lib/show_mem.c
+--- a/lib/show_mem.c
++++ b/lib/show_mem.c
+@@ -9,7 +9,7 @@
+ #include <linux/nmi.h>
+ #include <linux/quicklist.h>
+ 
+-void __show_mem(unsigned int filter)
++void show_mem(unsigned int filter)
+ {
+ 	pg_data_t *pgdat;
+ 	unsigned long total = 0, reserved = 0, shared = 0,
+@@ -61,8 +61,3 @@ void __show_mem(unsigned int filter)
+ 		quicklist_total_size());
+ #endif
+ }
+-
+-void show_mem(void)
+-{
+-	__show_mem(0);
+-}
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -406,7 +406,7 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	task_unlock(current);
+ 	dump_stack();
+ 	mem_cgroup_print_oom_info(mem, p);
+-	__show_mem(SHOW_MEM_FILTER_NODES);
++	show_mem(SHOW_MEM_FILTER_NODES);
+ 	if (sysctl_oom_dump_tasks)
+ 		dump_tasks(mem, nodemask);
+ }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2195,7 +2195,7 @@ nopage:
+ 			current->comm, order, gfp_mask);
+ 		dump_stack();
+ 		if (!should_suppress_show_mem())
+-			__show_mem(filter);
++			show_mem(filter);
+ 	}
+ 	return page;
+ got_pg:
