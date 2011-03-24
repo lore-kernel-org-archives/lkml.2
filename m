@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934181Ab1CXUTX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:19:23 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:60409 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934158Ab1CXUTO (ORCPT
+	id S934204Ab1CXUT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:19:29 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:64591 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934189Ab1CXUTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:19:14 -0400
+	Thu, 24 Mar 2011 16:19:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Ly3vdTYwKZ7L8GVuL/FQ+DdXLy+0v7LG2y/7oY/Zel0OQFDvbPJZF6bfzQgLkCBViJ
-         LRd6FKB7YetuD/i2+vuAdqhkUPcrI+3VGXFKNJGCDkDm3qdKglm1N5e5Vyx3acvn3m8K
-         wCAk9Vux4ZWWFv+oM1vBFfnz6PLvQNH2liopY=
+        b=r85+lB5VDGuW/PstLk5CwrY4PFr7+7ctXSsIvZmRiRJOM3XrR77APK6kfUoEAGZ+H1
+         SLNoqVTjF90FlE6XDkr4jJwhJ27mnWbyW4WBtOU61uCf0OuzIZ+lJnrFaj1jWx2O6bHw
+         dxgw6tcJDKq/SXWBiN766e4/1j2VUg4vfusUs=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC V2 12/21]drivers:video:mxsfb.c Remove extra semi-colon.
-Date: Thu, 24 Mar 2011 13:18:31 -0700
-Message-Id: <1300997920-31573-12-git-send-email-justinmattock@gmail.com>
+Subject: [RFC V2 18/21]mm:hugetlb.c Remove extra semi-colon.
+Date: Thu, 24 Mar 2011 13:18:37 -0700
+Message-Id: <1300997920-31573-18-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
 References: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
@@ -34,22 +34,22 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/video/mxsfb.c |    2 +-
+ mm/hugetlb.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
-index 7d02848..0b2f2dd 100644
---- a/drivers/video/mxsfb.c
-+++ b/drivers/video/mxsfb.c
-@@ -401,7 +401,7 @@ static int mxsfb_set_par(struct fb_info *fb_info)
- 	writel(CTRL1_FIFO_CLEAR, host->base + LCDC_CTRL1 + REG_SET);
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 06de5aa..51e49fe 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -475,7 +475,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
  
- 	ctrl = CTRL_BYPASS_COUNT | CTRL_MASTER |
--		CTRL_SET_BUS_WIDTH(host->ld_intf_width);;
-+		CTRL_SET_BUS_WIDTH(host->ld_intf_width);
+ 	/* If reserves cannot be used, ensure enough pages are in the pool */
+ 	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
+-		goto err;;
++		goto err;
  
- 	switch (fb_info->var.bits_per_pixel) {
- 	case 16:
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 						MAX_NR_ZONES - 1, nodemask) {
 -- 
 1.7.4.1
 
