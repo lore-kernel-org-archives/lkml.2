@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab1CXSz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 14:55:56 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46660 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab1CXSzz convert rfc822-to-8bit (ORCPT
+	id S933695Ab1CXS41 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 14:56:27 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64942 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933328Ab1CXS4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 14:55:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=MlJpZ5stdVFIgwkZbnss4UbnKuAetDge1+XgAz4riYHrA5zZv9N/Ogim9rj8HYm+IV
-         CP5ggivOOvyVtChHeeUjVL0nSUMgnc0QCSx8Nt7nVkPpw8n4cmMKVTDIW78PRCFXGr9W
-         Rp/81rMkC8YoOQnXpnaqozwRWwBEx01Nokteo=
+	Thu, 24 Mar 2011 14:56:25 -0400
+Date: Thu, 24 Mar 2011 12:56:20 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jaswinder Singh <jaswinder.singh@linaro.org>, andy.green@linaro.org,
+        Andy Green <andy@warmcat.com>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de,
+        roger.quadros@nokia.com, greg@kroah.com, benh@kernel.crashing.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+Message-ID: <20110324185620.GA15807@ponder.secretlab.ca>
+References: <4D79F068.2080009@linaro.org>
+ <AANLkTim=ezye=1fQP_1a2SWbPnbENP9B+k27Z3AkS=zf@mail.gmail.com>
+ <20110322151248.GC22583@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1103241346060.32226@router.home>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger>
-	<20110324142146.GA11682@elte.hu>
-	<alpine.DEB.2.00.1103240940570.32226@router.home>
-	<AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
-	<20110324172653.GA28507@elte.hu>
-	<alpine.DEB.2.00.1103241242450.32226@router.home>
-	<AANLkTimMcP-GikCCndQppNBsS7y=4beesZ4PaD6yh5y5@mail.gmail.com>
-	<alpine.DEB.2.00.1103241300420.32226@router.home>
-	<AANLkTi=KZQd-GrXaq4472V3XnEGYqnCheYcgrdPFE0LJ@mail.gmail.com>
-	<alpine.DEB.2.00.1103241312280.32226@router.home>
-	<1300990853.3747.189.camel@edumazet-laptop>
-	<alpine.DEB.2.00.1103241346060.32226@router.home>
-Date: Thu, 24 Mar 2011 20:55:54 +0200
-X-Google-Sender-Auth: j9eNbbZqK9cJM-wXCXSMB01ByPY
-Message-ID: <AANLkTik3rkNvLG-rgiWxKaPc-v9sZQq96ok0CXfAU+r_@mail.gmail.com>
-Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322151248.GC22583@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 8:47 PM, Christoph Lameter <cl@linux.com> wrote:
->
-> On Thu, 24 Mar 2011, Eric Dumazet wrote:
->
->> > this_cpu_cmpxchg16b_emu:
->> >         pushf
->> >         cli
->> >
->> >         cmpq %gs:(%rsi), %rax
->
->> Random guess
->>
->> Masking interrupts, and accessing vmalloc() based memory for the first
->> time ?
->
-> Hmmm.. Could be. KVM would not really disable interrupts so this may
-> explain that the test case works here.
->
-> Simple fix would be to do a load before the cli I guess.
+On Tue, Mar 22, 2011 at 03:12:48PM +0000, Mark Brown wrote:
+> On Tue, Mar 22, 2011 at 08:32:28PM +0530, Jaswinder Singh wrote:
+> 
+> > It's a different matter that DT has many hearts to win(at least in ARM
+> > Linux)
+> > So, perhaps the answer to Q(a) is - Yes.
+> 
+> It's not really a question of hearts to win.  Even for people who are
+> fully won over the implementation just isn't there in mainline and it's
+> not clear when it'll be delivered.  Right now device tree can only be
+> used on SPARC, PowerPC and (I beleive) some x86 platforms.
 
-Btw, I tried Ingo's .config and it doesn't boot here so it's somehow
-.config related.
+MIPS and Microblaze too plus out-of-tree NIOS.
+
+Regardless, I agree 100%.  This isn't (er, shouldn't be) a device tree
+debate.  The problem does need to be solved for existing platforms.
+
+g.
