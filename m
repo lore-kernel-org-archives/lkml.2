@@ -1,170 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933865Ab1CXTW0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:22:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40921 "EHLO mx2.suse.de"
+	id S933869Ab1CXTXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:23:10 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59863 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933843Ab1CXTWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:22:23 -0400
-Date: Thu, 24 Mar 2011 12:20:05 -0700
-From: Greg KH <gregkh@suse.de>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, vapier@gentoo.org
-Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
-Message-ID: <20110324192005.GA9296@suse.de>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
- <1300980071-24645-2-git-send-email-jamie@jamieiles.com>
+	id S933727Ab1CXTXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 15:23:05 -0400
+Date: Thu, 24 Mar 2011 20:22:47 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [boot crash #2] Re: [GIT PULL] SLAB changes for v2.6.39-rc1
+Message-ID: <20110324192247.GA5477@elte.hu>
+References: <alpine.DEB.2.00.1103221635400.4521@tiger>
+ <20110324142146.GA11682@elte.hu>
+ <alpine.DEB.2.00.1103240940570.32226@router.home>
+ <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
+ <20110324172653.GA28507@elte.hu>
+ <20110324185258.GA28370@elte.hu>
+ <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300980071-24645-2-git-send-email-jamie@jamieiles.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 03:21:08PM +0000, Jamie Iles wrote:
-> +/*
-> + * Copyright 2010-2011 Picochip LTD, Jamie Iles
-> + * http://www.picochip.com
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
 
-Do you _really_ mean "any later version"?  Be sure about that please.
-You have that wording in all of your files you add, please be careful
-about it as you might have copied from code that did not have that
-wording (I'm not saying you did, just be sure about this.)
+* Thomas Gleixner <tglx@linutronix.de> wrote:
 
-> + */
-> +#define pr_fmt(fmt) "otp: " fmt
-> +
-> +#undef DEBUG
+> On Thu, 24 Mar 2011, Ingo Molnar wrote:
+> > RIP: 0010:[<ffffffff810570a9>]  [<ffffffff810570a9>] get_next_timer_interrupt+0x119/0x260
+> 
+> That's a typical timer crash, but you were unable to debug it with
+> debugobjects because commit d3f661d6 broke those.
+> 
+> Christoph, debugobjects do not need to run with interupts
+> disabled. And just because they were in that section to keep all the
+> debug stuff together does not make an excuse for not looking at the
+> code and just slopping it into some totally unrelated ifdef along with
+> a completely bogus comment.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  mm/slub.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c
+> +++ linux-2.6/mm/slub.c
+> @@ -849,11 +849,11 @@ static inline void slab_free_hook(struct
+>  		local_irq_save(flags);
+>  		kmemcheck_slab_free(s, x, s->objsize);
+>  		debug_check_no_locks_freed(x, s->objsize);
+> -		if (!(s->flags & SLAB_DEBUG_OBJECTS))
+> -			debug_check_no_obj_freed(x, s->objsize);
+>  		local_irq_restore(flags);
+>  	}
+>  #endif
+> +	if (!(s->flags & SLAB_DEBUG_OBJECTS))
+> +		debug_check_no_obj_freed(x, s->objsize);
 
-What is this for?
+Thanks, this did the trick!
 
-> +#include <linux/cdev.h>
-> +#include <linux/delay.h>
-> +#include <linux/err.h>
-> +#include <linux/fs.h>
-> +#include <linux/io.h>
-> +#include <linux/list.h>
-> +#include <linux/module.h>
-> +#include <linux/otp.h>
-> +#include <linux/semaphore.h>
-> +#include <linux/slab.h>
-> +#include <linux/sysfs.h>
-> +#include <linux/uaccess.h>
-> +
-> +static int otp_open(struct inode *inode, struct file *filp);
-> +static int otp_release(struct inode *inode, struct file *filp);
-> +static ssize_t otp_write(struct file *filp, const char __user *buf,
-> +			 size_t len, loff_t *offs);
-> +static ssize_t otp_read(struct file *filp, char __user *buf, size_t len,
-> +			loff_t *offs);
-> +static loff_t otp_llseek(struct file *filp, loff_t offs, int origin);
-> +
-> +static const struct file_operations otp_fops = {
-> +	.owner	    = THIS_MODULE,
-> +	.open	    = otp_open,
-> +	.release    = otp_release,
-> +	.write	    = otp_write,
-> +	.read	    = otp_read,
-> +	.llseek	    = otp_llseek,
-> +};
-> +
-> +static DEFINE_SEMAPHORE(otp_sem);
-> +static int otp_we, otp_strict_programming;
-> +static struct otp_device *otp;
-> +static dev_t otp_devno;
-> +
-> +/*
-> + * Given a device for one of the otpN devices, get the corresponding
-> + * otp_region.
-> + */
-> +static inline struct otp_region *to_otp_region(struct device *dev)
-> +{
-> +	return dev ? container_of(dev, struct otp_region, dev) : NULL;
-> +}
-> +
-> +static inline struct otp_device *to_otp_device(struct device *dev)
-> +{
-> +	return dev ? container_of(dev, struct otp_device, dev) : NULL;
-> +}
-> +
-> +bool otp_strict_programming_enabled(void)
-> +{
-> +	return otp_strict_programming;
-> +}
-> +EXPORT_SYMBOL_GPL(otp_strict_programming_enabled);
-> +
-> +static ssize_t otp_format_show(struct device *dev,
-> +			       struct device_attribute *attr, char *buf)
-> +{
-> +	struct otp_region *region = to_otp_region(dev);
-> +	enum otp_redundancy_fmt fmt;
-> +	const char *fmt_string;
-> +
-> +	if (down_interruptible(&otp_sem))
-> +		return -ERESTARTSYS;
-> +
-> +	if (region->ops->get_fmt(region))
-> +		fmt = region->ops->get_fmt(region);
-> +	else
-> +		fmt = OTP_REDUNDANCY_FMT_SINGLE_ENDED;
-> +
-> +	up(&otp_sem);
-> +
-> +	if (OTP_REDUNDANCY_FMT_SINGLE_ENDED == fmt)
+Tested-by: Ingo Molnar <mingo@elte.hu>
 
-While some people feel this somehow makes it harder to write bad C code,
-it's not the kernel style.  Please reverse this comparison.  If you
-accidentally put a '=' in there instead of '==', gcc would warn you
-about it.
+With this fix i got the warning below - pinpointing a net/bluetooth/hci_core.c 
+timer bug.
 
-> +		fmt_string = "single-ended";
-> +	else if (OTP_REDUNDANCY_FMT_REDUNDANT == fmt)
-> +		fmt_string = "redundant";
-> +	else if (OTP_REDUNDANCY_FMT_DIFFERENTIAL == fmt)
-> +		fmt_string = "differential";
-> +	else if (OTP_REDUNDANCY_FMT_DIFFERENTIAL_REDUNDANT == fmt)
-> +		fmt_string = "differential-redundant";
-> +	else
-> +		fmt_string = NULL;
+Thanks,
 
-Just return -EINVAL here.
+	Ingo
 
-> +
-> +	return fmt_string ? sprintf(buf, "%s\n", fmt_string) : -EINVAL;
-
-Then you don't have to do the embedded if in this statement.
-
-Same thing goes for your other show/store functions.
-
-> +/**
-> + * struct otp_device - a picoxcell OTP device.
-> + *
-> + * @ops:		The operations to use for manipulating the device.
-> + * @dev:		The parent device (typically a platform_device) that
-> + *			provides the OTP.
-> + * @regions:		The regions registered to the device.
-> + * @size:		The size of the OTP in bytes.
-> + * @driver_data:	Private driver data.
-> + */
-> +struct otp_device {
-> +	const struct otp_device_ops	*ops;
-> +	struct device			dev;
-> +	struct list_head		regions;
-> +	size_t				size;
-> +	void				*driver_data;
-
-Why do you need this pointer, can't you use the one in struct device
-that is there for this purpose?  Then provide a get/set function to
-access this field so that a driver doesn't go and poke in it directly.
-
-
-thanks,
-
-greg k-h
+------------[ cut here ]------------
+ WARNING: at lib/debugobjects.c:262 debug_print_object+0x8e/0xb0()
+ Hardware name: System Product Name
+ ODEBUG: free active (active state 0) object type: timer_list hint: hci_cmd_timer+0x0/0x60
+ Pid: 2076, comm: dmsetup Not tainted 2.6.38-tip-09251-ged68fd8-dirty #110378
+ Call Trace:
+  [<ffffffff8104703a>] warn_slowpath_common+0x7a/0xb0
+  [<ffffffff810470e6>] warn_slowpath_fmt+0x46/0x50
+  [<ffffffff812d3eee>] debug_print_object+0x8e/0xb0
+  [<ffffffff81bee870>] ? bt_sock_wait_state+0x150/0x150
+  [<ffffffff812d4b15>] debug_check_no_obj_freed+0x125/0x230
+  [<ffffffff810f1173>] ? check_object+0xb3/0x2b0
+  [<ffffffff81bfad56>] ? bt_host_release+0x16/0x20
+  [<ffffffff81bfad56>] ? bt_host_release+0x16/0x20
+  [<ffffffff810f373c>] kfree+0x14c/0x190
+  [<ffffffff81bfad56>] bt_host_release+0x16/0x20
+  [<ffffffff813a1b87>] device_release+0x27/0xa0
+  [<ffffffff812c53bc>] kobject_release+0x4c/0xa0
+  [<ffffffff812c5370>] ? kobject_del+0x40/0x40
+  [<ffffffff812c6416>] kref_put+0x36/0x70
+  [<ffffffff812c4f57>] kobject_put+0x27/0x60
+  [<ffffffff813a2477>] put_device+0x17/0x20
+  [<ffffffff81bf0549>] hci_free_dev+0x29/0x30
+  [<ffffffff8193ed16>] vhci_release+0x36/0x70
+  [<ffffffff810fb4f6>] fput+0xd6/0x1f0
+  [<ffffffff810f9176>] filp_close+0x66/0x90
+  [<ffffffff810f9239>] sys_close+0x99/0xf0
+  [<ffffffff81d63dab>] system_call_fastpath+0x16/0x1b
+ ---[ end trace ea6ca6434ee730b9 ]---
