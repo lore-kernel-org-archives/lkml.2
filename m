@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933495Ab1CXAcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 20:32:05 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36886 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933406Ab1CXAcD convert rfc822-to-8bit (ORCPT
+	id S933531Ab1CXAcc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 20:32:32 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51141 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933406Ab1CXAca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 20:32:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=dWpcTPlspmOjfR5/NhScWJ/gNb5OAj4ywlNE3LEXdJZprlLoLM/obfw2sA/pqt5qAT
-         +tJ0lVHtPp76eSk0YpAc677/22KyC03bIkNerCfCAvVaEmHoM5XG6Bwiww6pH1o7yzGf
-         JH0pbqVcy2+szT+2NUWJ6Y5uQb7BXvRyIRfuY=
+	Wed, 23 Mar 2011 20:32:30 -0400
+Date: Wed, 23 Mar 2011 17:32:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Robert Love <robert.w.love@intel.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>, Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
+        Jarek Poplawski <jarkao2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@open-fcoe.org" <devel@open-fcoe.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
+ kfree_rcu()
+Message-ID: <20110324003223.GF2322@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D82D071.5020703@cn.fujitsu.com>
+ <4D82D3FF.2080303@cn.fujitsu.com>
+ <4D82D45A.30102@cn.fujitsu.com>
+ <1300814913.19083.427.camel@fritz>
+ <20110323065014.GU2322@linux.vnet.ibm.com>
+ <1300889151.15899.4.camel@mulgrave.site>
+ <20110323222456.GC2322@linux.vnet.ibm.com>
+ <1300920332.15899.45.camel@mulgrave.site>
 MIME-Version: 1.0
-In-Reply-To: <10444.1300926012@redhat.com>
-References: <1300826506-23192-1-git-send-email-vapier@gentoo.org> <10444.1300926012@redhat.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 23 Mar 2011 20:31:42 -0400
-X-Google-Sender-Auth: cALxY7jgZkCQbCUqoZdfp4lP7FQ
-Message-ID: <AANLkTikUYp6YxryaBcpCrs3XwxkvHZZSk5x3S4yNcD4c@mail.gmail.com>
-Subject: Re: [PATCH] NOMMU: support SMP dynamic percpu_alloc
-To: David Howells <dhowells@redhat.com>
-Cc: graf.yang@analog.com, uclinux-dev@uclinux.org,
-        Greg Ungerer <gerg@uclinux.org>, Paul Mundt <lethal@linux-sh.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300920332.15899.45.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 8:20 PM, David Howells wrote:
-> Mike Frysinger wrote:
->> The percpu code requires more functions to be implemented in the mm core
->> which nommu currently does not provide.  So add inline implementations
->> since these are largely meaningless on nommu systems.
->
-> Under what conditions are these required?
->
-> I've seen one percpu compilation bug that I've made a patch for (see
-> attached), but none of these.  Is SMP required to trigger them?
+On Wed, Mar 23, 2011 at 05:45:32PM -0500, James Bottomley wrote:
+> On Wed, 2011-03-23 at 15:24 -0700, Paul E. McKenney wrote:
+> > On Wed, Mar 23, 2011 at 09:05:51AM -0500, James Bottomley wrote:
+> > > On Tue, 2011-03-22 at 23:50 -0700, Paul E. McKenney wrote:
+> > > > The kfree_rcu() definition is as
+> > > > follows:
+> > > > 
+> > > > #define kfree_rcu(ptr, rcu_head)					\
+> > > > 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
+> > > 
+> > > Isn't this one of those cases where the obvious use of the interface is
+> > > definitely wrong?
+> > > 
+> > > It's also another nasty pseudo C prototype.  I know we do this sort of
+> > > thing for container_of et al, but I don't really think we want to extend
+> > > it.
+> > > 
+> > > Why not make the interface take a pointer to the embedding structure and
+> > > one to the rcu_head ... that way all pointer mathematics can be
+> > > contained inside the RCU routines.
+> > 
+> > Hello, James,
+> > 
+> > If you pass in a pair of pointers, then it is difficult for RCU to detect
+> > bugs where the two pointers are unrelated.  Yes, you can do some sanity
+> > checks, but these get cumbersome and have corner cases where they can
+> > be fooled.  In contrast, Lai's interface allows the compiler to do the
+> > needed type checking -- unless the second argument is a field of type
+> > struct rcu_head in the structure pointed to by the first argument, the
+> > compiler will complain.
+> > 
+> > Either way, the pointer mathematics are buried in the RCU API.
+> > 
+> > Or am I missing something here?
+> 
+> No ... I like the utility ... I just dislike the inelegance of having to
+> name a structure element in what looks like a C prototype.
+> 
+> I can see this proliferating everywhere since most of our reference
+> counting release callbacks basically free the enclosing object ...
 
-yes, it only occurs in SMP builds.
+Indeed!  Improvements are welcome -- it is just that I am not convinced
+that the dual-pointer approach is really an improvement.
 
-i havent seen the build error you mention below, but i think that's
-because in a past discussion we determined that NOMMU ports should be
-setting VMALLOC_START to 0 and VMALLOC_END to -1.  is that no longer
-the case ?
+The C preprocessor...  It is ugly, inelegant, painful, annoying, and
+should have been strangled at birth -- but it is always there when you
+need it!
 
-there are bunch more places where things would fail if
-VMALLOC_{START,END} werent defined ...
--mike
+							Thanx, Paul
