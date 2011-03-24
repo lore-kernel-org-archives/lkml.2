@@ -1,80 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab1CXLaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 07:30:52 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53790 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab1CXLau convert rfc822-to-8bit (ORCPT
+	id S1756750Ab1CXLbW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 07:31:22 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:38546 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932103Ab1CXLbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 07:30:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=X/simaX5XN4YgSBKg477F4YprshFXphfl0E7FX76sfrvwFswP9VdVjSCaYYAlo930z
-         1ATdNBK/zAwHKOHdHDP9k7LjT2s15H8DEc9Af9cuwaLKFaRDjUCMXaKsH8TUZbAemBEF
-         Fb2ZMofdpGG5jIwhbW/7VefhK+2NPx7b3jeP0=
+	Thu, 24 Mar 2011 07:31:21 -0400
+X-Greylist: delayed 100923 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Mar 2011 07:31:20 EDT
+X-AuditID: b753bd60-a594fba0000001d0-e7-4d8b2b866be7
+X-AuditID: b753bd60-a594fba0000001d0-e7-4d8b2b866be7
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Subject: [PATCH -tip v3 0/6] perf: Introduce branch sub commands
+To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Date: Thu, 24 Mar 2011 20:31:37 +0900
+Message-ID: <20110324113137.20235.42265.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Date: Thu, 24 Mar 2011 12:30:49 +0100
-Message-ID: <AANLkTimxnG56Q29CpKi7q0kiam2cDKHdB5OjV-vu4he9@mail.gmail.com>
-Subject: regression: GM45 on Dell Latitude E6400 display from 1440x900 to
- 1024x768 somewhere between 2.6.38-git2 and -git7
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fedora 14 x86_64
+Hi,
 
-[   375.231] (II) intel(0): Integrated Graphics Chipset: Intel(R) GM45
-[   375.231] (--) intel(0): Chipset: "GM45"
+This patch series provides the commands 'perf branch record' and 'perf branch trace'
+version 3. These commands record and analyze a BTS (Branch Trace Store) log.
+And, they provide the interface to use BTS log for application developers.
 
-startx yields:
+BTS is a facility of Intel x86 processors, which records the address of
+'branch to/from' on every branch/jump instruction and interrupt.
+This facility is very useful for developers to test their software,
+for example, coverage test, execution path analysis, dynamic step count ...etc.
+These test tools have a big advantage, which user doesn't have to modify target
+executable binaries, because the BTS is a hardware feauture.
 
- 2.6.38-git2 and earlier: correct 1440x900 display
- 2.6.38-git3 through -git6: not tested due to kernel build errors
- 2.6.38-git7 through -git14: wrong 1024x768 display with black bands at sides
+But, there are few applications using BTS. Reasons I guess are ...
+ - Few people know what BTS is.
+ - Few people know how to use BTS on Linux box.
+ - It's hard to analyze the BTS log because it includes just a series of addresses.
 
-Once in wrong mode, xrandr --fb 1440x900 --output LVDS1 --mode 1440x900
- helps return the screen to correct display, but:
-
- - background image is drawn incorrectly (like a 1440x900 correct one with a
-    superimposed 1024x768 starting from upper left corner)
- - mplayer in full screen mode does not actually go full screen, but 1024x768
-
-comparative Xorg logs and dmesg output for 2.6.38-git2 and -git14 available
- upon request; lspci -v says:
-
-00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series
-Chipset Integrated Graphics Controller (rev 07) (prog-if 00 [VGA
-controller])
-	Subsystem: Dell Device 0233
-	Flags: bus master, fast devsel, latency 0, IRQ 46
-	Memory at f6c00000 (64-bit, non-prefetchable) [size=4M]
-	Memory at e0000000 (64-bit, prefetchable) [size=256M]
-	I/O ports at ef98 [size=8]
-	Expansion ROM at <unassigned> [disabled]
-	Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-	Capabilities: [d0] Power Management version 3
-	Kernel driver in use: i915
-	Kernel modules: i915
-
-00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset
-Integrated Graphics Controller (rev 07)
-	Subsystem: Dell Device 0233
-	Flags: bus master, fast devsel, latency 0
-	Memory at f6b00000 (64-bit, non-prefetchable) [size=1M]
-	Capabilities: [d0] Power Management version 3
+So, I want to provide a user-friendly interface to BTS for application developers.
 
 
+ About new sub commands
+========================
+'perf branch record' provides an easy way to record BTS log.
+Usage is 'perf branch record <command>'.  This command is just an alias to
+'perf record -e branches:u -c 1 <command>'. But, new one is more simple and
+more intuitive.
 
-thanks,
+'perf branch trace' can parse and analyze recorded BTS log and print various
+information of execution path. This command can show address, pid, command name,
+function+offset, file path of elf.
+You can choose the printed information with option.
 
---alessandro
+Example: 'perf branch trace'
+function+offset
+irq_return+0x0  => _start+0x0
+irq_return+0x0  => _start+0x0
+_start+0x3      => _dl_start+0x0
+irq_return+0x0  => _dl_start+0x0
+irq_return+0x0  => _dl_start+0x26
+irq_return+0x0  => _dl_start+0x2d
+_dl_start+0x71  => _dl_start+0x93
+_dl_start+0x97  => _dl_start+0x78
+...
 
- "There's always a siren singing you to shipwreck"
+This is the default behavior of 'perf branch trace'. It prints function+offset.
 
-   (Radiohead, "There There")
+
+Example2: 'perf branch -cas trace'
+command address            function+offset                  
+ls      0xffffffff8146fe0e irq_return+0x0  => ls   0x0000003806200b20 _start+0x0
+ls      0xffffffff8146fe0e irq_return+0x0  => ls   0x0000003806200b20 _start+0x0
+ls      0x0000003806200b23 _start+0x3      => ls   0x0000003806204910 _dl_start+0x0
+ls      0xffffffff8146fe0e irq_return+0x0  => ls   0x0000003806204910 _dl_start+0x0
+ls      0xffffffff8146fe0e irq_return+0x0  => ls   0x0000003806204936 _dl_start+0x26
+ls      0xffffffff8146fe0e irq_return+0x0  => ls   0x000000380620493d _dl_start+0x2d
+ls      0x0000003806204981 _dl_start+0x71  => ls   0x00000038062049a3 _dl_start+0x93
+ls      0x00000038062049a7 _dl_start+0x97  => ls   0x0000003806204988 _dl_start+0x78
+...
+
+In the future, I'd like to make this more informative. For example
+ - Show source file path
+ - Show line number
+ - Show inlined function name
+ - Draw call graph
+ - Browse source code and coloring
+ - Make BTS record fast
+and more!
+
+Changes in V3:
+ - Update to the latest -tip tree
+ - Rename to 'perf branch'
+ - Process only BTS records
+ - Fix bug of getting elf_filepath
+ - Fix return value of __cmd_trace
+
+Changes in V2:
+ - Update to the latest -tip tree
+ - Add bts explanation to the subcommand list
+ - Remove the patch already merged (add OPT_CALLBACK_DEFAULT_NOOPT)
+ - Add comments
+ - Add new function to the todo list
+
+Thanks,
+
+---
+
+Akihiro Nagai (6):
+      perf branch trace: add print all option
+      perf branch trace: print function+offset
+      perf branch trace: print file path of the executed elf
+      perf branch trace: print pid and command
+      perf branch: Introduce new sub command 'perf branch trace'
+      perf: new subcommand perf branch record
+
+
+ tools/perf/Documentation/perf-branch.txt |   54 +++++
+ tools/perf/Makefile                      |    1 
+ tools/perf/builtin-branch.c              |  329 ++++++++++++++++++++++++++++++
+ tools/perf/builtin.h                     |    1 
+ tools/perf/command-list.txt              |    1 
+ tools/perf/perf.c                        |    1 
+ 6 files changed, 387 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/Documentation/perf-branch.txt
+ create mode 100644 tools/perf/builtin-branch.c
+
+-- 
+Akihiro Nagai (akihiro.nagai.hw@hitachi.com)
