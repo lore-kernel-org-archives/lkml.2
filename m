@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab1CXNXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 09:23:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37012 "EHLO mx1.redhat.com"
+	id S1756946Ab1CXNY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 09:24:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53372 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932481Ab1CXNXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 09:23:45 -0400
-Message-ID: <4D8B45D9.10400@redhat.com>
-Date: Thu, 24 Mar 2011 15:23:37 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1752700Ab1CXNY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 09:24:28 -0400
+Date: Thu, 24 Mar 2011 14:24:27 +0100
+From: Libor Pechacek <lpechacek@suse.cz>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] USB: remove dead code from usb_deregister_dev()
+Message-ID: <20110324132426.GA27561@fm.suse.cz>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mtosatti@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] KVM: Enable async page fault processing.
-References: <1296559307-14637-1-git-send-email-gleb@redhat.com> <1296559307-14637-3-git-send-email-gleb@redhat.com> <20110324122206.GE32408@redhat.com>
-In-Reply-To: <20110324122206.GE32408@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18-muttng (2008-05-17-r1399)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2011 02:22 PM, Gleb Natapov wrote:
-> On Tue, Feb 01, 2011 at 01:21:47PM +0200, Gleb Natapov wrote:
-> >  If asynchronous hva_to_pfn() is requested call GUP with FOLL_NOWAIT to
-> >  avoid sleeping on IO. Check for hwpoison is done at the same time,
-> >  otherwise check_user_page_hwpoison() will call GUP again and will put
-> >  vcpu to sleep.
-> >
-> FOLL_NOWAIT is now in Linus tree, so this patch can be applied now. I
-> verified that it still applies and works.
+The `name' variable is unused in usb_deregister_dev() since commit d6e5bcf.
 
-Thanks, applied and queued for 2.6.39.
+Signed-off-by: Libor Pechacek <lpechacek@suse.cz>
+---
+ drivers/usb/core/file.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/usb/core/file.c b/drivers/usb/core/file.c
+index cf6a542..99458c8 100644
+--- a/drivers/usb/core/file.c
++++ b/drivers/usb/core/file.c
+@@ -236,13 +236,6 @@ EXPORT_SYMBOL_GPL(usb_register_dev);
+ void usb_deregister_dev(struct usb_interface *intf,
+ 			struct usb_class_driver *class_driver)
+ {
+-	int minor_base = class_driver->minor_base;
+-	char name[20];
+-
+-#ifdef CONFIG_USB_DYNAMIC_MINORS
+-	minor_base = 0;
+-#endif
+-
+ 	if (intf->minor == -1)
+ 		return;
+ 
+@@ -252,7 +245,6 @@ void usb_deregister_dev(struct usb_interface *intf,
+ 	usb_minors[intf->minor] = NULL;
+ 	up_write(&minor_rwsem);
+ 
+-	snprintf(name, sizeof(name), class_driver->name, intf->minor - minor_base);
+ 	device_destroy(usb_class->class, MKDEV(USB_MAJOR, intf->minor));
+ 	intf->usb_dev = NULL;
+ 	intf->minor = -1;
 -- 
-error compiling committee.c: too many arguments to function
+1.6.0.2
 
