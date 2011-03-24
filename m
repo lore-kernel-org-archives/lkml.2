@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933978Ab1CXTsA (ORCPT <rfc822;w@1wt.eu>);
+	id S934017Ab1CXTsE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:48:04 -0400
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:52358 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933905Ab1CXTsA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Mar 2011 15:48:00 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:48232
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933847Ab1CXTr5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:47:57 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(z2005kz542N1432N4015L9371Pzz1202hzz8275dhz2dh95h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+Message-ID: <4D8B9FBE.6030207@bachelot.org>
+Date: Thu, 24 Mar 2011 20:47:10 +0100
+From: Xavier Bachelot <xavier@bachelot.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: multiple definition of `show_mem'
-Date: Thu, 24 Mar 2011 13:47:39 -0600
-In-Reply-To: <4D8B6140.4020300@pengutronix.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: multiple definition of `show_mem'
-Thread-Index: AcvqN1d3c94LGL1eREu3kqsUNCS+kQAJDpYw
-References: <4D8B6140.4020300@pengutronix.de>
-From: John Linn <John.Linn@xilinx.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        <kernel@pengutronix.de>, David Rientjes <rientjes@google.com>
-X-OriginalArrivalTime: 24 Mar 2011 19:47:42.0028 (UTC) FILETIME=[568EC8C0:01CBEA5C]
-X-RCIS-Action: ALLOW
-Message-ID: <b22a2fa5-f819-4576-8898-8532874e2594@VA3EHSMHS036.ehs.local>
-X-OriginatorOrg: xilinx.com
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] viafb: add VIA slapping capability
+References: <1300983180-7343-1-git-send-email-FlorianSchandinat@gmx.de> <1300983180-7343-4-git-send-email-FlorianSchandinat@gmx.de>
+In-Reply-To: <1300983180-7343-4-git-send-email-FlorianSchandinat@gmx.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (smeagol.schlobinux.org [192.168.1.1]); Thu, 24 Mar 2011 20:47:10 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-arm-kernel-bounces@lists.infradead.org
-[mailto:linux-arm-kernel-
-> bounces@lists.infradead.org] On Behalf Of Marc Kleine-Budde
-> Sent: Thursday, March 24, 2011 9:21 AM
-> To: LKML
-> Cc: linux-arm-kernel; kernel@pengutronix.de; David Rientjes
-> Subject: multiple definition of `show_mem'
+On 03/24/2011 05:13 PM, Florian Tobias Schandinat wrote:
+> This patch introduces dummy functions to execute when we don't know
+> what we should do (due to missing documentation). They do nothing
+> but print a nice message in the log explaining the situation.
+> To trigger this message initial power management support is
+> activated which might save a bit energy by disabling PLL and clock
+> if no device is configured to use them.
 > 
-> Hello,
+> Note: The message is only shown for the oldest IGPs CLE266 and K400
+>       as for the other platforms there are reasonable assumptions
+>       how it does (hopefully) work.
 > 
-> current mainline (v2.6.38-7210-gb81a618) on ARM/mxs has the following
-build failure:
-> 
-> > lib/lib.a(show_mem.o): In function `show_mem':
-> > .../linux-2.6/lib/show_mem.c:67: multiple definition of `show_mem'
-> > arch/arm/mm/built-in.o:.../linux-2.6/arch/arm/mm/init.c:82: first
-> > defined here
-> > make: *** [vmlinux.o] Error 1
+> Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> ---
 
-I'm seeing the same error for my patches for the new Xilinx ARM
-platform.
+> +static void dummy_set_clock_source(enum via_clksrc source, bool use_pll)
+> +{
+> +	printk(KERN_INFO "Using undocumented set slock soure.\n%s", via_slap);
 
-> 
-> After reverting these patches the kernel compiles...
-> 
-> cbf978bfb12d7deca97d7333f65eda0381a072de oom: suppress nodes that are
-not allowed from meminfo on page
-> alloc failure
-> 29423e77c06cee7d4e335ef4a7cbd949da978c91 oom: suppress show_mem() for
-many nodes in irq context on
-> page alloc failure ddd588b5dd55f14320379961e47683db4e4c1d90 oom:
-suppress nodes that are not allowed
-> from meminfo on oom kill
-> 
-> No time to boot the kernel, though.
+2 typos above.
 
-I did the same reverts and the kernel built and booted fine.
-
-Thanks,
-John
-
-> 
-> cheers, MArc
-> 
-> --
-> Pengutronix e.K.                  | Marc Kleine-Budde           |
-> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+Regards,
+Xavier
