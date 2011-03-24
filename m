@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933472Ab1CXAUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 20:20:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1032 "EHLO mx1.redhat.com"
+	id S933476Ab1CXAXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 20:23:32 -0400
+Received: from ozlabs.org ([203.10.76.45]:32959 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933023Ab1CXAUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 20:20:37 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1300826506-23192-1-git-send-email-vapier@gentoo.org>
-References: <1300826506-23192-1-git-send-email-vapier@gentoo.org>
-To: Mike Frysinger <vapier@gentoo.org>, graf.yang@analog.com
-Cc: dhowells@redhat.com, uclinux-dev@uclinux.org,
-        Greg Ungerer <gerg@uclinux.org>, Paul Mundt <lethal@linux-sh.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NOMMU: support SMP dynamic percpu_alloc
-Date: Thu, 24 Mar 2011 00:20:12 +0000
-Message-ID: <10444.1300926012@redhat.com>
+	id S933406Ab1CXAXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 20:23:30 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Christoph Hellwig <hch@lst.de>, kwolf@redhat.com, aliguori@us.ibm.com,
+        stefanha@gmail.com, linux-kernel@vger.kernel.org,
+        qemu-devel@nongnu.org, Christian Borntraeger <borntraeger@de.ibm.com>,
+        prerna@linux.vnet.ibm.com, Alex Williamson <alex.williamson@hp.com>
+Subject: Re: [Qemu-devel] Re: [PATCH, RFC] virtio_blk: add cache control support
+In-Reply-To: <20110317142122.GA27717@lst.de>
+References: <20110315141049.GA30627@lst.de> <20110315141644.GA30803@lst.de> <87y64fhfjw.fsf@rustcorp.com.au> <20110316140958.GB21877@lst.de> <877hbygwu7.fsf@rustcorp.com.au> <20110317142122.GA27717@lst.de>
+User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
+Date: Thu, 24 Mar 2011 10:41:51 +1030
+Message-ID: <87wrjpbcmw.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Frysinger <vapier@gentoo.org> wrote:
+On Thu, 17 Mar 2011 15:21:22 +0100, Christoph Hellwig <hch@lst.de> wrote:
+> On Thu, Mar 17, 2011 at 03:36:08PM +1030, Rusty Russell wrote:
+> > OK, under what circumstances could it fail?
+> > 
+> > If you're using this mechanism to indicate that the host doesn't support
+> > the feature, that's making an assumption about the nature of config
+> > space writes which isn't true for non-PCI virtio.
+> > 
+> > ie. lguest and S/390 don't trap writes to config space.
+> > 
+> > Or perhaps they should?  But we should be explicit about needing it...
+> 
+> We have the features flag to indicate if updating the caching mode is
+> supported, but we we could still fail it for other reasons - e.g. we could fail
+> to reopen the file with/without O_SYNC.
 
-> The percpu code requires more functions to be implemented in the mm core
-> which nommu currently does not provide.  So add inline implementations
-> since these are largely meaningless on nommu systems.
+OK, then I think you need to make it a real command and feed it into the
+request queue.
 
-Under what conditions are these required?
+The theory behind config space is that it's for advertising, not for
+interaction.  And it's not ever very good at that...
 
-I've seen one percpu compilation bug that I've made a patch for (see
-attached), but none of these.  Is SMP required to trigger them?
+>  But if lguest or S/390 don't support
+> trapping config space write this feature won't work for them at all.  As do
+> other features that make use of config space write, e.g. updating the MAC
+> address for virtio-net.
 
-David
----
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] NOMMU: percpu should use is_vmalloc_addr().
+Yes, and that was a mistake.  What does qemu do with a partially-written
+MAC address?  Lguest ignores it, what does S/390 do?
 
-per_cpu_ptr_to_phys() uses VMALLOC_START and VMALLOC_END to determine if an
-address is in the vmalloc() region or not.  This is incorrect on NOMMU as
-there is no real vmalloc() capability (vmalloc() is emulated by kmalloc()).
+Alex?
 
-The correct way to do this is to use is_vmalloc_addr().  This encapsulates the
-vmalloc() region test in MMU mode and just returns 0 in NOMMU mode.
-
-On FRV in NOMMU mode, the percpu compilation fails without this patch:
-
-mm/percpu.c: In function 'per_cpu_ptr_to_phys':
-mm/percpu.c:1011: error: 'VMALLOC_START' undeclared (first use in this function)
-mm/percpu.c:1011: error: (Each undeclared identifier is reported only once
-mm/percpu.c:1011: error: for each function it appears in.)
-mm/percpu.c:1012: error: 'VMALLOC_END' undeclared (first use in this function)
-mm/percpu.c:1018: warning: control reaches end of non-void function
-
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- mm/percpu.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 3f93001..55d4d11 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1008,8 +1008,7 @@ phys_addr_t per_cpu_ptr_to_phys(void *addr)
- 	}
- 
- 	if (in_first_chunk) {
--		if ((unsigned long)addr < VMALLOC_START ||
--		    (unsigned long)addr >= VMALLOC_END)
-+		if (!is_vmalloc_addr(addr))
- 			return __pa(addr);
- 		else
- 			return page_to_phys(vmalloc_to_page(addr));
+Cheers,
+Rusty.
