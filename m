@@ -1,213 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665Ab1CXSMj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 14:12:39 -0400
-Received: from katalix.com ([82.103.140.233]:53639 "EHLO mail.katalix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932684Ab1CXSMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 14:12:36 -0400
-X-Greylist: delayed 545 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Mar 2011 14:12:36 EDT
-Message-ID: <4D8B876F.8040802@katalix.com>
-Date: Thu, 24 Mar 2011 18:03:27 +0000
-From: James Chapman <jchapman@katalix.com>
-Organization: Katalix Systems Ltd
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+	id S1757066Ab1CXSNY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 14:13:24 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:44076 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab1CXSNV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 14:13:21 -0400
+Date: Thu, 24 Mar 2011 20:13:18 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tiger
+To: Ingo Molnar <mingo@elte.hu>
+cc: Christoph Lameter <cl@linux.com>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, tj@kernel.org, npiggin@kernel.dk,
+        rientjes@google.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
+In-Reply-To: <20110324172653.GA28507@elte.hu>
+Message-ID: <alpine.DEB.2.00.1103242011540.4990@tiger>
+References: <alpine.DEB.2.00.1103221635400.4521@tiger> <20110324142146.GA11682@elte.hu> <alpine.DEB.2.00.1103240940570.32226@router.home> <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com> <20110324172653.GA28507@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Tony Ibbs <tibs@tonyibbs.co.uk>, Jonathan Corbet <corbet@lwn.net>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux-embedded <linux-embedded@vger.kernel.org>,
-        Tibs at Kynesim <tibs@kynesim.co.uk>,
-        Richard Watts <rrw@kynesim.co.uk>
-Subject: Re: [PATCH 00/11] RFC: KBUS messaging subsystem
-References: <cover.1300450604.git.tibs@tonyibbs.co.uk> <20110322133640.5d5c88e4@bike.lwn.net> <DBA665CD-BE12-4DC8-9B3F-4170BED789BD@tonyibbs.co.uk>
-In-Reply-To: <DBA665CD-BE12-4DC8-9B3F-4170BED789BD@tonyibbs.co.uk>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1280347503-1300990398=:4990"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/03/2011 23:13, Tony Ibbs wrote:
-> 
-> On 22 Mar 2011, at 19:36, Jonathan Corbet wrote:
-> 
->> On Fri, 18 Mar 2011 17:21:09 +0000
->> Tony Ibbs <tibs@tonyibbs.co.uk> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323329-1280347503-1300990398=:4990
+Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
+
+Hi Ingo,
+
+On Thu, 24 Mar 2011, Ingo Molnar wrote:
+> * Pekka Enberg <penberg@kernel.org> wrote:
+>
+>> On Thu, Mar 24, 2011 at 4:41 PM, Christoph Lameter <cl@linux.com> wrote:
+>>> On Thu, 24 Mar 2011, Ingo Molnar wrote:
+>>>
+>>>> FYI, some sort of boot crash has snuck upstream in the last 24 hours:
+>>>>
+>>>>  BUG: unable to handle kernel paging request at ffff87ffc147e020
+>>>>  IP: [<ffffffff811aa762>] this_cpu_cmpxchg16b_emu+0x2/0x1c
+>>>
+>>> Hmmm.. This is the fallback code for the case that the processor does not
+>>> support cmpxchg16b.
 >>
->>> KBUS is a lightweight, Linux kernel mediated messaging system,
->>> particularly intended for use in embedded environments.
-> 
->> - Why kbus over, say, a user-space daemon and unix-domain sockets?  I'm
->>  not sure I see the advantage that comes with putting this into kernel
->>  space.
-> 
-> Mostly, a kernel module gives us reliability.
-> 
-> In particular, a kernel module allows us to guarantee that a replier
-> that "goes away" (including crashing) will be detected by KBUS, and
-> cause a synthetic reply to be sent, so that the sender can know that it
-> will not get a real reply.
+>> How does alternative_io() work? Does it require
+>> alternative_instructions() to be executed. If so, the fallback code
+>> won't be active when we enter kmem_cache_init(). Is there any reason
+>> check_bugs() is called so late during boot? Can we do something like
+>> the totally untested attached patch?
 >
-> This same guarantee means that the sender end of a stateful dialogue can
-> be reliably told if the replier end disconnects and (some new version of
-> it) reconnects - in which case state presumably needs to be
-> reestablished.
-> 
-> Doing this in userspace would be difficult and unreliable.
-> 
-> There are other problems with userspace daemons, including setting up
-> many-to-many messaging, message atomicity, and so on. Our past
-> experience of other people's solutions (previous customers in
-> particular) is that it is perilously easy to get it wrong in userspace,
-> and especially to end up with race conditions.
+> Does the config i sent you boot on your box? I think the bug is pretty generic
+> and should trigger on any box.
 
-I don't understand what Kbus really brings either.
+Here's a patch that reorganizes the alternatives fixup to happen earlier 
+so that the fallback should work. It boots on my machine so please give it 
+a spin if possible.
 
-With good sockets programming, it is possible to avoid most of the
-issues mentioned above. Frameworks like Glib and DBus can also help.
+I'll try out your .config next.
 
-Have you considered other kernel messaging subsystems such as netlink
-sockets, connectors, POSIX message queues etc etc if you don't want DBus?
+ 			Pekka
 
-> 
->> - The interface is ... creative.
-> 
-> That's very tactfully put.
-> 
->>  If you have to do this in kernel space,
->>  it would be nice to do away with the split write()/ioctl() API for
->>  reading or writing messages.  It seems like either a write(), OR an
->>  ioctl() with a message data pointer would suffice; that would cut the
->>  number of syscalls the applications need to make too.
-> 
-> When the reader is reading a message, using 'read' seems very natural,
-> and is simple to explain. Because we always return an "entire" message
-> (i.e., one in which all the message data is in one chunk, rather than
-> a header pointing to message name and/or data), it also means that
-> memory handling on return to user space is much simplified. Doing an
-> ioctl first to find out the length of the message to come is also
-> simple to explain.
+>From dd1534455196d2a8f6c9c912db614e59986c9f0e Mon Sep 17 00:00:00 2001
+From: Pekka Enberg <penberg@kernel.org>
+Date: Thu, 24 Mar 2011 19:59:35 +0200
+Subject: [PATCH] x86: Early boot alternative instructions
 
-Eh? Network protocols routinely do this sort of thing with regular
-sockets. Read the message header then read the rest when you know how
-big the rest is. Of where you know the max size of all possible
-messages, do one read into a fixed size buffer.
+Commit 8a5ec0ba42c4919e2d8f4c3138cc8b987fdb0b79 ("Lockless (and preemptless)
+fastpaths for slub") added use of cmpxchg16b in kmem_cache_init() which happens
+early on during the boot. As cmpxchg16b is not supported on some older AMD
+CPUs, there's a alternative_io() fallback for cmpxchg16b emulation.
 
-> Also, in the case of reading a message, I can see clear advantage
-> in being able to "stream" the reading of the message data (for a
-> long and appropriately structured message).
-> 
-> Writing a message *could* be done with 'write' alone. I must admit that
-> having 'write' detect the end of the message by looking at it feels
-> wrong, somehow, but that's not a very compelling answer. It is,
-> however, definitely easier for the user to understand the error if
-> they try to <send> and get told they haven't written enough data
-> yet, rather than just waiting for the 'write' to magically complete.
+Unfortunately alternative_instructions() happens late in the boot sequence so
+the fallback code is not patched into kernel text which causes the following oops:
 
-A write to a socket would do the same. I don't get the bit about
-detecting the end of the message. I think this complexity is coming from
-using char devices for message passing.
+  BUG: unable to handle kernel paging request at ffff87ffc147e020
+  IP: [<ffffffff811aa762>] this_cpu_cmpxchg16b_emu+0x2/0x1c
 
-> There is also a certain symmetry to using <nextmsg>/'read' and
-> 'write'/<send>, but as you said at the start, it's a bit unusual.
-> 
-> Using an ioctl instead of 'write' would involve a more complex ioctl
-> than we're otherwise commonly using, would lose the symmetry, and just
-> didn't feel right. It also means pointer handling for even the simplest
-> message.
-> 
->>  Even better might be to just use the socket API.
+     [<ffffffff810d9cbc>] ? kmem_cache_alloc+0x4c/0x110
+     [<ffffffff8151cf06>] kmem_cache_init+0xeb/0x2b0
+     [<ffffffff81504a06>] start_kernel+0x1de/0x49b
+     [<ffffffff8150432b>] x86_64_start_reservations+0x132/0x136
+     [<ffffffff81504140>] ? early_idt_handlers+0x140/0x140
 
-Agreed.
+This patch reorganizes the code so that alternative_io() tagged fallbacks are
+patched to the kernel before kmem_cache_init() is called.
 
-> Whilst the current API is a bit odd, trying to use the socket API looked
-> to us as if it would be a worse fit.
-> 
-> The socket API doesn't seem to match what we wanted KBUS to do
-> particularly well. It's not, for instance, obvious how to do a 'recv' of
-> a variable length message that might be quite short or several hundred
-> KB long - does one 'recv' the header first, and then the body (which
-> isn't very nice)? Doing a 'next message' ioctl as current KBUS does
-> would feel really alien in a socket environment.
-> 
-> Of course, we'd still have to invent our own addressing scheme, and our
-> own ``struct *addr``, and appropriate socket options, and also decide
-> how the common options should apply or not (for instance, SO_ACCEPTCONN,
-> SO_BROADCAST). And how to work with accept/listen/bind and all the other
-> common calls.
->
-> Also, lazily on my part, it's fairly obvious how to write a file
-> interface for the kernel, but the socket API (from the inside) appears
-> to be more complex, and to have fewer examples with training wheels.
-> 
-> We *could* reimplement in terms of sockets, but I think the code would
-> get a lot bigger, and I think using the system would be a lot harder to
-> explain (I don't think the current message name binding mechanisms would
-> get any clearer, for instance).
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+  arch/x86/include/asm/alternative.h |    1 +
+  arch/x86/kernel/alternative.c      |   12 +++++++++++-
+  arch/x86/kernel/cpu/bugs.c         |    2 --
+  arch/x86/kernel/cpu/bugs_64.c      |    2 --
+  include/asm-generic/alternative.h  |   19 +++++++++++++++++++
+  init/main.c                        |    3 +++
+  6 files changed, 34 insertions(+), 5 deletions(-)
+  create mode 100644 include/asm-generic/alternative.h
 
-Why would you need a new socket family?
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index 13009d1..ca819c6 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -54,6 +54,7 @@ struct alt_instr {
+  #endif
+  };
 
-> And some of the semantics of KBUS (the sending of a message to say that
-> the expected replier has been replaced by a new one, for instance) seem
-> to fit oddly with how people expect sockets to work. Or being told that
-> the far end has gone away, or is not who one expected it to be.
++extern void alternative_instructions_early(void);
+  extern void alternative_instructions(void);
+  extern void apply_alternatives(struct alt_instr *start, struct alt_instr *end);
 
-Not really. It is what DBus is all about.
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index 4a23467..32e96dd 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -453,7 +453,7 @@ extern struct paravirt_patch_site __start_parainstructions[],
+  	__stop_parainstructions[];
+  #endif	/* CONFIG_PARAVIRT */
 
-Perhaps KBUS is intended for uses where DBus is too big? Or is it to
-help port legacy RTOS apps to Linux? Shudder. :-)
+-void __init alternative_instructions(void)
++void __init alternative_instructions_early(void)
+  {
+  	/* The patching is not fully atomic, so try to avoid local interruptions
+  	   that might execute the to be patched code.
+@@ -473,6 +473,16 @@ void __init alternative_instructions(void)
 
-Perhaps I misunderstand what KBUS might do for me. It might be useful to
-present two simple apps implementing the same thing with, say, a unix
-socket and KBUS, e.g. sending a message reliably to another process and
-handling possible errors.
+  	apply_alternatives(__alt_instructions, __alt_instructions_end);
 
-> Also, I'm afraid my experience is that people find sockets hard to
-> understand (not necessarily justifiably), whereas explaining KBUS to its
-> intended users is fairly simple - one can assume they know about file
-> interfaces, and people fairly easily accept a few "odd" extra calls. But
-> that may not be a very compelling reason from the inside of the
-> kernel...
-> 
->> - Does anything bound the size of a message fed into the kernel with
->>  write()?  I couldn't find it.  It seems like an application could
->>  consume arbitrary amounts of kernel memory.
-> 
-> That is indeed a misfeature. There should be a default limit, and some
-> way of changing it.
-> 
->> - It would be good to use the kernel's dynamic debugging and tracing
->>  facilities rather than rolling your own.
-> 
-> Mea culpa. KBUS's debug support grew rather erratically, and only
-> recently got converted to at least using dev_debug and friends.
-> Also, I'm not at all sure what the current kernel mechanisms are
-> (pointers are welcomed, since this is a clear case where normal
-> kernel conventions should be followed, and I don't know what they are).
-> 
->> - There's lots of kmalloc()/memset() pairs that could be kzalloc().
-> 
-> And I just missed that.
-> 
->> That's as far as I could get for now.
-> 
-> Thanks, it's all appreciated, and all makes sense.
-> 
-> (and I should say thank you since I started out writing KBUS with a copy
-> of Linux Device Drivers beside me, and bookmarks for various LWN
-> articles. It would all be a lot worse without those).
-> 
-> Hope this all makes sense - it's late here but I shan't have a chance to
-> reply tomorrow.
-> 
-> Tibs
++	restart_nmi();
++}
++
++void __init alternative_instructions(void)
++{
++	/* The patching is not fully atomic, so try to avoid local interruptions
++	   that might execute the to be patched code.
++	   Other CPUs are not running. */
++	stop_nmi();
++
+  	/* switch to patch-once-at-boottime-only mode and free the
+  	 * tables in case we know the number of CPUs will never ever
+  	 * change */
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index c39576c..3854e58 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -15,7 +15,6 @@
+  #include <asm/i387.h>
+  #include <asm/msr.h>
+  #include <asm/paravirt.h>
+-#include <asm/alternative.h>
 
+  static int __init no_halt(char *s)
+  {
+@@ -165,5 +164,4 @@ void __init check_bugs(void)
+  	check_popad();
+  	init_utsname()->machine[1] =
+  		'0' + (boot_cpu_data.x86 > 6 ? 6 : boot_cpu_data.x86);
+-	alternative_instructions();
+  }
+diff --git a/arch/x86/kernel/cpu/bugs_64.c b/arch/x86/kernel/cpu/bugs_64.c
+index 04f0fe5..1064db5 100644
+--- a/arch/x86/kernel/cpu/bugs_64.c
++++ b/arch/x86/kernel/cpu/bugs_64.c
+@@ -5,7 +5,6 @@
 
+  #include <linux/kernel.h>
+  #include <linux/init.h>
+-#include <asm/alternative.h>
+  #include <asm/bugs.h>
+  #include <asm/processor.h>
+  #include <asm/mtrr.h>
+@@ -18,7 +17,6 @@ void __init check_bugs(void)
+  	printk(KERN_INFO "CPU: ");
+  	print_cpu_info(&boot_cpu_data);
+  #endif
+-	alternative_instructions();
+
+  	/*
+  	 * Make sure the first 2MB area is not mapped by huge pages
+diff --git a/include/asm-generic/alternative.h b/include/asm-generic/alternative.h
+new file mode 100644
+index 0000000..893a070
+--- /dev/null
++++ b/include/asm-generic/alternative.h
+@@ -0,0 +1,19 @@
++/*
++ * linux/include/asm-generic/alternative.h
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __ASM_GENERIC_ALTERNATIVE_H__
++#define __ASM_GENERIC_ALTERNATIVE_H__
++
++static inline void alternative_instructions_early(void)
++{
++}
++
++static inline void alternative_instructions(void)
++{
++}
++
++#endif /* __ASM_GENERIC_ALTERNATIVE_H__ */
+diff --git a/init/main.c b/init/main.c
+index 4a9479e..0bb3c52 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -74,6 +74,7 @@
+  #include <asm/setup.h>
+  #include <asm/sections.h>
+  #include <asm/cacheflush.h>
++#include <asm/alternative.h>
+
+  #ifdef CONFIG_X86_LOCAL_APIC
+  #include <asm/smp.h>
+@@ -508,6 +509,7 @@ asmlinkage void __init start_kernel(void)
+  	vfs_caches_init_early();
+  	sort_main_extable();
+  	trap_init();
++	alternative_instructions_early();
+  	mm_init();
+  	/*
+  	 * Set up the scheduler prior starting any interrupts (such as the
+@@ -614,6 +616,7 @@ asmlinkage void __init start_kernel(void)
+  	taskstats_init_early();
+  	delayacct_init();
+
++	alternative_instructions();
+  	check_bugs();
+
+  	acpi_early_init(); /* before LAPIC and SMP init */
 -- 
-James Chapman
-Katalix Systems Ltd
-http://www.katalix.com
-Catalysts for your Embedded Linux software development
+1.7.0.4
 
+--8323329-1280347503-1300990398=:4990--
