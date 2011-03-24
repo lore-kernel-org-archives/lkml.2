@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab1CXAXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 20:23:32 -0400
-Received: from ozlabs.org ([203.10.76.45]:32959 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933406Ab1CXAXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 20:23:30 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Christoph Hellwig <hch@lst.de>, kwolf@redhat.com, aliguori@us.ibm.com,
-        stefanha@gmail.com, linux-kernel@vger.kernel.org,
-        qemu-devel@nongnu.org, Christian Borntraeger <borntraeger@de.ibm.com>,
-        prerna@linux.vnet.ibm.com, Alex Williamson <alex.williamson@hp.com>
-Subject: Re: [Qemu-devel] Re: [PATCH, RFC] virtio_blk: add cache control support
-In-Reply-To: <20110317142122.GA27717@lst.de>
-References: <20110315141049.GA30627@lst.de> <20110315141644.GA30803@lst.de> <87y64fhfjw.fsf@rustcorp.com.au> <20110316140958.GB21877@lst.de> <877hbygwu7.fsf@rustcorp.com.au> <20110317142122.GA27717@lst.de>
-User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Thu, 24 Mar 2011 10:41:51 +1030
-Message-ID: <87wrjpbcmw.fsf@rustcorp.com.au>
+	id S933491Ab1CXAXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 20:23:48 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33413 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933406Ab1CXAXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 20:23:46 -0400
+Date: Wed, 23 Mar 2011 17:23:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Joe Korty <joe.korty@ccur.com>
+Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "loic.minier@linaro.org" <loic.minier@linaro.org>,
+        "dhaval.giani@gmail.com" <dhaval.giani@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        "houston.jim@comcast.net" <houston.jim@comcast.net>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/9] jrcu: fix broken rcu_barrier
+Message-ID: <20110324002340.GE2322@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110314035044.GA12990@tsunami.ccur.com>
+ <20110314084718.GH2167@linux.vnet.ibm.com>
+ <20110314220928.GA1348@tsunami.ccur.com>
+ <20110323063524.GS2322@linux.vnet.ibm.com>
+ <20110323134628.GA4352@tsunami.ccur.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110323134628.GA4352@tsunami.ccur.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011 15:21:22 +0100, Christoph Hellwig <hch@lst.de> wrote:
-> On Thu, Mar 17, 2011 at 03:36:08PM +1030, Rusty Russell wrote:
-> > OK, under what circumstances could it fail?
+On Wed, Mar 23, 2011 at 09:46:28AM -0400, Joe Korty wrote:
+> On Wed, Mar 23, 2011 at 02:35:24AM -0400, Paul E. McKenney wrote:
+> > On Mon, Mar 14, 2011 at 06:09:28PM -0400, Joe Korty wrote:
+> > > On Mon, Mar 14, 2011 at 04:47:18AM -0400, Paul E. McKenney wrote:
+> > > > On Sun, Mar 13, 2011 at 11:50:44PM -0400, Joe Korty wrote:
+> > > > > +void rcu_barrier(void)
+> > > > > +{
+> > > > > +	synchronize_sched();
+> > > > > +	synchronize_sched();
+> > > > > +}
+> > > > 
+> > > > This is still broken.  You need to wait until all pre-existing RCU
+> > > > callbacks on all CPUs have been invoked.  Although this does guarantee
+> > > > that all callbacks on the current CPU have been invoked, if one of the
+> > > > other CPUs is busy, it might not yet have processed the callbacks from
+> > > > earlier grace periods.  The usual way to take care of this is to post
+> > > > a callback on each CPU, then wait for them all to be invoked.
+> > > 
+> > > Hi Paul,
+> > > JRCU (eventually) chains together all callbacks from all
+> > > cpus into a single queue and then it expires that single
+> > > queue.  So the double synchronize_sched() should work as
+> > > a rcu_barrier implementation.
 > > 
-> > If you're using this mechanism to indicate that the host doesn't support
-> > the feature, that's making an assumption about the nature of config
-> > space writes which isn't true for non-PCI virtio.
+> > Hello, Joe,
 > > 
-> > ie. lguest and S/390 don't trap writes to config space.
-> > 
-> > Or perhaps they should?  But we should be explicit about needing it...
+> > So the following grace period is not permitted to start until all of
+> > the callbacks from the prior grace period have been invoked?
 > 
-> We have the features flag to indicate if updating the caching mode is
-> supported, but we we could still fail it for other reasons - e.g. we could fail
-> to reopen the file with/without O_SYNC.
+> Yes, it is all synchronized.  Every cpu's current batch is
+> closed off at the same time.  We tolerate some fuzz in the
+> timing, but that is not the same as being unsynchronized.
+> 
+> This happens as an automatic side effect of doing
+> everything (except for call_rcu) from a single CPU.
 
-OK, then I think you need to make it a real command and feed it into the
-request queue.
+Got it -- the rcu_delimit_batches() doesn't return until all callbacks
+have been invoked, and a new grace period cannot start until this function
+returns.  I am not yet sure whether this is a good thing or a bad thing.
+Given your 50-millisecond grace periods, it is less of a bad thing than
+it would be for shorter grace periods, I suppose.  ;-)
 
-The theory behind config space is that it's for advertising, not for
-interaction.  And it's not ever very good at that...
-
->  But if lguest or S/390 don't support
-> trapping config space write this feature won't work for them at all.  As do
-> other features that make use of config space write, e.g. updating the MAC
-> address for virtio-net.
-
-Yes, and that was a mistake.  What does qemu do with a partially-written
-MAC address?  Lguest ignores it, what does S/390 do?
-
-Alex?
-
-Cheers,
-Rusty.
+							Thanx, Paul
