@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934063Ab1CXT5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:57:30 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:50222 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933832Ab1CXT50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:57:26 -0400
-Date: Thu, 24 Mar 2011 14:57:20 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Chris Bagwell <chris@cnpbagwell.com>,
-        Corentin Chary <corentin.chary@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] eeepc-wmi: Add support for T101MT "Express Gate" key
-Message-ID: <20110324195720.GB31713@thinkpad-t410>
-Mail-Followup-To: Chris Bagwell <chris@cnpbagwell.com>,
-	Corentin Chary <corentin.chary@gmail.com>,
-	Matthew Garrett <mjg@redhat.com>,
-	acpi4asus-user@lists.sourceforge.net,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
- <AANLkTinZpt8qmHzhe4WyteMt-C-nkVNwEGQVvq3Nk9Lx@mail.gmail.com>
- <20110324131414.GA20612@thinkpad-t410>
- <AANLkTikrX_wypmrd-PbST603jsHqkuwtA6t5X65Lg1+O@mail.gmail.com>
- <AANLkTi=2OKxvHN75PO4RGb9rtpnA0iGHNb9JPZwb0z9J@mail.gmail.com>
- <AANLkTik7D0j=JOhzPk6Y2NrTA89-vS28wPDSS=j0VW4_@mail.gmail.com>
+	id S934080Ab1CXT5t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:57:49 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:36357 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933832Ab1CXT5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 15:57:46 -0400
+X-ASG-Debug-ID: 1300996665-03d6a54f61d3640001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D8BA235.7060904@fusionio.com>
+Date: Thu, 24 Mar 2011 20:57:41 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik7D0j=JOhzPk6Y2NrTA89-vS28wPDSS=j0VW4_@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+References: <4D8B4A89.80608@fusionio.com> <20110324183019.GA1676@gentoo.trippels.de> <4D8B8F34.5000203@fusionio.com> <4D8B92AE.8090308@fusionio.com> <20110324185445.GB1696@gentoo.trippels.de> <4D8B9457.2020608@fusionio.com> <20110324193441.GA1723@gentoo.trippels.de> <4D8B9D2F.4010504@fusionio.com> <20110324194546.GA1741@gentoo.trippels.de>
+X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+In-Reply-To: <20110324194546.GA1741@gentoo.trippels.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1300996665
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58859
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 09:00:14AM -0500, Chris Bagwell wrote:
-> On Thu, Mar 24, 2011 at 8:40 AM, Corentin Chary
-> <corentin.chary@gmail.com> wrote:
-> >> I would suggest sending BTN_HOME upon button release 0xe5 (not press
-> >> 0xe4 and do the autorelease because of it) and BTN_PROG2 on
-> >> press-and-hold 0xea.
-> >>
-> >> If you press-and-hold, does it still send the 0xe5 upon release?  That
-> >> could complicate things so that both button events do not get sent.
-> >>
-> >> I'm not sure what BTN_HOME is commonly used for.  This button does
-> >> sound like a HOME button in iPad sense but not in web browser sense.
-> >
-> > Except the fact that I don't find BTN_HOME in inpout.h, that's seems a
-> > better idea, forget what I've said earlier.
-> 
-> Ha... Sorry, I had buttons on my brain.  I meant KEY_HOME as you suggested.
+On 2011-03-24 20:45, Markus Trippelsdorf wrote:
+> On 2011.03.24 at 20:36 +0100, Jens Axboe wrote:
+>> On 2011-03-24 20:34, Markus Trippelsdorf wrote:
+>>> On 2011.03.24 at 19:58 +0100, Jens Axboe wrote:
+>>>> On 2011-03-24 19:54, Markus Trippelsdorf wrote:
+>>>>> On 2011.03.24 at 19:51 +0100, Jens Axboe wrote:
+>>>>>> On 2011-03-24 19:36, Jens Axboe wrote:
+>>>>>>> On 2011-03-24 19:30, Markus Trippelsdorf wrote:
+>>>>>>>> On 2011.03.24 at 14:43 +0100, Jens Axboe wrote:
+>>>>>>>>>
+>>>>>>>>> This is the main pull request for the block IO layer and friends for
+>>>>>>>>> 2.6.39.
+>>>>>>>>
+>>>>>>>> This merge results in an early oops on my system (amd64, xfs).
+>>>>>>>> See the attached photo.
+>>>>>>>>
+>>>>>>>
+>>>>>>> Auch. Can you ensure that you have CONFIG_DEBUGINFO=y in your .config
+>>>>>>> and then do:
+>>>>>>>
+>>>>>>> $ gdb vmlinux
+>>>>>>> ...
+>>>>>>> l *cfq_insert_request+0x32
+>>>>>>>
+>>>>>>> and send that output?
+>>>>>>
+>>>>>> I took a closer look at the oops, and it most likely looks like q ==
+>>>>>> NULL (offset 0x18 == q->elevator). You left out the Code part, so I
+>>>>>> can't verify that for certain. Which makes very little sense. I take it
+>>>>>> this is 100% reproducible? When you send the gdb output, please also
+>>>>>> attach your .config.
+>>>>>
+>>>>> Yes, it's 100% reproducible here. My .config follows:
+>>>>
+>>>> Can you try this patch and see if it makes a difference?
+>>>
+>>> There's no patch ;-)
+>>
+>> Oh, here it is.
+>>
+> It doesn't help, unfortunately. I still get the same BUG at
+> cfq_insert_request+0x32/0x4d0.
 
-Really? Isn't KEY_HOME the home key on a standard keyboard?
+OK, still a data point. What was the last -git kernel you used?
 
-> > 0xe4 -> KEY_IGNORE
-> > 0xe5 -> KEY_HOME
-> > 0xea -> KEY_PROG2, (or BTN_TASK to copy android/iOS ?)
-> 
-> From a quick google, I couldn't finding any specific meaning of
-> BTN_TASK but it looks like xf86-input-evdev turns it into a button
-> press so we may not want that one.
-> 
-> I've no idea of best values but those are pretty close.
-
-I'm still not sure what key codes are best either. I've implemented this
-approach, and I went with BTN_TASK and KEY_PROG2, but I'm getting the
-idea that BTN_TASK was intended for a mouse button so I'm not really
-sure if it's a good choice or not. I'll follow up with the patches.
-
-Thanks for the feedback so far.
-
-Seth
+-- 
+Jens Axboe
 
