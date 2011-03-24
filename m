@@ -1,130 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab1CXR2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 13:28:47 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:53294 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754902Ab1CXR2o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 13:28:44 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jonathan Corbet <corbet@lwn.net>,
-        LKML <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@shadowen.org>,
-        Dave Jones <davej@redhat.com>,
+	id S1755289Ab1CXRb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 13:31:26 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:35931 "HELO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754572Ab1CXRbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 13:31:23 -0400
+Date: Thu, 24 Mar 2011 12:30:20 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nick Piggin <npiggin@kernel.dk>, "x86@kernel.org" <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Nicolas Palix <npalix@diku.dk>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] checkpatch: Test for kmalloc/memset(0) pairs
-In-Reply-To: <Pine.LNX.4.64.1103241705510.8624@pc-004.diku.dk>
-References: <1300416744.16880.904.camel@gandalf.stny.rr.com> <20110317211548.646b04d2@tpl.lwn.net> <1300419170.16880.956.camel@gandalf.stny.rr.com> <AANLkTikZK278BR5o1fP_w2u5PUPbgub9QT4XxzSmEhL5@mail.gmail.com> <AANLkTi=2d8S_Pi8kuZMXAmNvHa_2KrOs6K+_FF6P7-pU@mail.gmail.com> <Pine.LNX.4.64.1103200852080.28495@ask.diku.dk> <AANLkTi=MMKvA-9pFiM1K_JSXjS71JLRCem8THnhu-0=N@mail.gmail.com> <Pine.LNX.4.64.1103201007430.28495@ask.diku.dk> <8762r8mt0h.fsf@linux.vnet.ibm.com> <Pine.LNX.4.64.1103241705510.8624@pc-004.diku.dk>
-User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Thu, 24 Mar 2011 22:58:31 +0530
-Message-ID: <871v1wmnr4.fsf@linux.vnet.ibm.com>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, tee@sgi.com,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH RFC] x86: avoid atomic operation in
+	test_and_set_bit_lock if possible
+Message-ID: <20110324173020.GA26761@sgi.com>
+References: <201103241026.01624.knikanth@suse.de> <20110324085647.GI30812@elte.hu> <20110324145221.GC31194@aftab> <4D8B83DA02000078000381DE@vpn.id2.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D8B83DA02000078000381DE@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011 17:08:01 +0100 (CET), Julia Lawall <julia@diku.dk> wrote:
-> On Thu, 24 Mar 2011, Aneesh Kumar K. V wrote:
 > 
-> > On Sun, 20 Mar 2011 10:17:07 +0100 (CET), Julia Lawall <julia@diku.dk> wrote:
-> > > On Sun, 20 Mar 2011, Pekka Enberg wrote:
-> > > 
-> > > > Hi Julia,
-> > > > 
-> > > > On Sun, Mar 20, 2011 at 10:01 AM, Julia Lawall <julia@diku.dk> wrote:
-> > > > > Suggestions for how to make it easier to use or the documentation more
-> > > > > understandable are welcome.
-> > > > 
-> > > > The benefit of scripts/checkpatch.pl is that it doesn't require any
-> > > > setting up to do. I'm personally less likely to use Coccinelle (and
-> > > > Sparse for that matter) on boxes where the software is not installed.
-> > > > I'm not sure how other people feel about it, but I'd personally love
-> > > > to see tools/coccinelle and tools/sparse.
-> > > 
-> > > This was discussed before, and it was felt that perhaps 75000 lines of 
-> > > ocaml code was not really appropriate for the Linux source tree, and also 
-> > > that it would too much complicate our development process.
-> > > 
-> > > One reason for using multiple machines would be to work on multiple 
-> > > architectures.  But Coccinelle is not sensitive to the architecture on 
-> > > which it is run, so perhaps you do't need to have it installed everywhere.
-> > > 
-> > > > As for something more concrete, I guess this is what I'm mostly interested in:
-> > > > 
-> > > > penberg@jaguar:~/src/linux$ make C=1 CHECK="scripts/coccicheck" mm/slub.o
-> > > > 
-> > > > I guess it'd be good to document that for 'make help' because now you
-> > > > need to dig through Documentation/coccinelle.txt to find it.
-> > > 
-> > > OK, thanks.  We will look into that.
-> > > 
-> > > > P.S. It seems there's a bug somewhere because the above command fails
-> > > > miserably for me:
-> > > > 
-> > > >   CHK     include/linux/version.h
-> > > >   CHK     include/generated/utsrelease.h
-> > > >   CALL    scripts/checksyscalls.sh
-> > > >   CHECK   mm/slub.c
-> > > > File "/home/penberg/src/linux/scripts/coccinelle/api/memdup_user.cocci",
-> > > > line 32, column 5,  charpos = 747
-> > > >     around = '<+...', whole content = -    <+... when != goto l2;
-> > > > Fatal error: exception Lexer_cocci.Lexical("invalid in a nonempty
-> > > > context: <+...")
-> > > > File "/home/penberg/src/linux/scripts/coccinelle/api/memdup_user.cocci",
-> > > > line 32, column 5,  charpos = 747
-> > > >     around = '<+...', whole content = -    <+... when != goto l2;
-> > > > Fatal error: exception Lexer_cocci.Lexical("invalid in a nonempty
-> > > > context: <+...")
-> > > > File "/home/penberg/src/linux/scripts/coccinelle/api/memdup_user.cocci",
-> > > > line 32, column 5,  charpos = 747
-> > > >     around = '<+...', whole content = -    <+... when != goto l2;
-> > > > Fatal error: exception Lexer_cocci.Lexical("invalid in a nonempty
-> > > > context: <+...")
-> > > > File "/home/penberg/src/linux/scripts/coccinelle/api/memdup_user.cocci",
-> > > > line 32, column 5,  charpos = 747
-> > > >     around = '<+...', whole content = -    <+... when != goto l2;
-> > > > Fatal error: exception Lexer_cocci.Lexical("invalid in a nonempty
-> > > > context: <+...")
-> > > > make[1]: *** [mm/slub.o] Error 1
-> > > > make: *** [mm/slub.o] Error 2
-> > > > 
-> > > > penberg@jaguar:~/src/linux$ dpkg -l|grep coccinelle
-> > > > ii  coccinelle                                      0.2.2.deb-2
-> > > >                                         semantic patching tool for C
-> > > > 
-> > > > [ I'm on Ubuntu 10.10. ]
-> > > 
-> > > Indeed that one seems to be quite out of date.  You can get the most 
-> > > recent version here: https://launchpad.net/~npalix/+archive/coccinelle
-> > 
-> > I never got a working version of coccinelle with scripts in the kernel.
-> > Even the ppa version doesn't work for me. 
-> > 
-> > make  C=2  CHECK=scripts/coccicheck fs/namei.o
-> > ...
-> > ....
-> >   CHECK   scripts/mod/empty.c
-> > File "/home/opensource/sources/kernels/linux-2.6/scripts/coccinelle/api/memdup_user.cocci", line 32, column 5,  charpos = 747
-> >     around = '<+...', whole content = -    <+... when != goto l2;
-> > Fatal error: exception Lexer_cocci.Lexical("invalid in a nonempty context: <+...")
-> > File "/home/opensource/sources/kernels/linux-2.6/scripts/coccinelle/api/memdup_user.cocci", line 32, column 5,  charpos = 747
-> >     around = '<+...', whole content = -    <+... when != goto l2;
-> > Fatal error: exception Lexer_cocci.Lexical("invalid in a nonempty context: <+...")
-> > File "/home/opensource/sources/kernels/linux-2.6/scripts/coccinelle/api/memdup_user.cocci", line 32, column 5,  charpos = 747
-> >     around = '<+...', whole content = -    <+... when != goto l2;
-> > Fatal error: exception Lexer_cocci.Lexical("invalid in a nonempty context: <+...")
-> > File "/home/opensource/sources/kernels/linux-2.6/scripts/coccinelle/api/memdup_user.cocci", line 32, column 5,  charpos = 747
-> >     around = '<+...', whole content = -    <+... when != goto l2;
-> > Fatal error: exception Lexer_cocci.Lexical("invalid in a nonempty context: <+...")
-> 
-> That's quite strange.  Could you check that you are using the ppa version 
-> and not the old version?  spatch -version should give you 0.2.5-rc8
+> This cacheline bouncing was actually observed and measured
+> on SGI UV systems, but I'm not certain we're permitted to publish
+> that data. I'm copying the two SGI guys who had reported that
+> issue (and the special case fix, which Nikanth simply generalized)
+> to us, for them to decide.
 
-missed an apt-get update between add-apt-repository and apt-get install 
+We frequently run into the cacheline bouncing issues. I don't have
+the data handy that you refer to, but feel free to publish it.
 
--aneesh
+--- jack
+
+
