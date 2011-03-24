@@ -1,111 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab1CXO6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 10:58:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57453 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752178Ab1CXO62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 10:58:28 -0400
-Date: Thu, 24 Mar 2011 07:57:52 -0700
-From: Greg KH <gregkh@suse.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: Linux 2.6.32.34
-Message-ID: <20110324145752.GA6036@suse.de>
-References: <20110323203426.GC7709@kroah.com>
- <20110323203437.GD7709@kroah.com>
- <4D8A8DC9.1060502@suse.cz>
- <20110324025133.GA23564@suse.de>
- <20110324073009.GB3783@elte.hu>
- <AANLkTimUaJ7i4D6bsgq6UTqW79nkybtLdd7pbVM_TrQi@mail.gmail.com>
+	id S1754759Ab1CXO7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 10:59:11 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:49457 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753856Ab1CXO7I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 10:59:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :user-agent;
+        b=LV0FIuZnluwBG4x9ynzqjNQqQxn9nx5yefG0i4lZkPxzmHLyE848ziG9LPHMRwzIbN
+         Tal81uL8fRNdFeNUgnZGRVIy+2oWim4EFnXazq8MNXUlRHcQ6cqlPzf8gkExRHpi0W9R
+         leN4cgMx+xok26xH/oiB4QoI88yHzW9HiFDRU=
+Date: Thu, 24 Mar 2011 17:58:53 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20110324145853.GA8288@oksana.dev.rtsoft.ru>
+Reply-To: cbouatmailru@gmail.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimUaJ7i4D6bsgq6UTqW79nkybtLdd7pbVM_TrQi@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 12:49:56PM +0100, Frederic Weisbecker wrote:
-> 2011/3/24 Ingo Molnar <mingo@elte.hu>:
-> >
-> > * Greg KH <gregkh@suse.de> wrote:
-> >
-> >> On Thu, Mar 24, 2011 at 01:18:17AM +0100, Jiri Slaby wrote:
-> >> > On 03/23/2011 09:34 PM, Greg KH wrote:
-> >> > > --- a/kernel/perf_event.c
-> >> > > +++ b/kernel/perf_event.c
-> >> > > @@ -4167,6 +4167,8 @@ static void tp_perf_event_destroy(struct perf_event *event)
-> >> > >
-> >> > >  static const struct pmu *tp_perf_event_init(struct perf_event *event)
-> >> > >  {
-> >> > > + if (event->hw.state & PERF_HES_STOPPED)
-> >> > > +         return 0;
-> >> > >   /*
-> >> > >    * Raw tracepoint data is a severe data leak, only allow root to
-> >> > >    * have these.
-> >> >
-> >> > This causes build to fail:
-> >> > /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:
-> >> > In function 'tp_perf_event_init':
-> >> > /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
-> >> > error: 'struct hw_perf_event' has no member named 'state'
-> >> > /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
-> >> > error: 'PERF_HES_STOPPED' undeclared (first use in this function)
-> >> > /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
-> >> > error: (Each undeclared identifier is reported only once
-> >> > /usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
-> >> > error: for each function it appears in.)
-> >> >
-> >> >
-> >> > The source:
-> >> > commit 6f197b73304b3bd3d5a43b931383a5331d6b2987
-> >> > Author: Frederic Weisbecker <fweisbec@gmail.com>
-> >> > Date:   Mon Mar 7 21:27:09 2011 +0100
-> >> >
-> >> >     perf: Handle stopped state with tracepoints
-> >> >
-> >> >     commit a0f7d0f7fc02465bb9758501f611f63381792996 upstream.
-> >> >
-> >> >     We toggle the state from start and stop callbacks but actually
-> >> >     don't check it when the event triggers. Do it so that
-> >> >     these callbacks actually work.
-> >>
-> >> Ick, I don't know why it builds fine here.  Federic, should I just drop
-> >> this patch for the .32 tree?
-> >
-> > Yes, please drop it.
-> >
-> > Thanks,
-> >
-> >        Ingo
-> >
-> 
-> Yeah sorry for this. The patch actually only applies starting from 2.6.37
-> Naked stable@kernel.org tags (which I confess I use too) without version slice
-> are sometimes creepy because they can cause such patches that may physically
-> apply but not logically. And that's not the first time. Sometimes it's
-> even worse when
-> it applies and builds but fails on runtime because the old code flow
-> was different. I
-> remember a similar case with an old breakpoint patch that needed a
-> different backport
-> version in .33, I was lucky enough to anticipate but a naked stable
-> tag would have broken.
+Hello Linus,
 
-No problem, this was my fault in that my build tests didn't catch it.
-Which is odd, I should be using the same .config that Jiri was, I need
-to see what I did wrong here...
+Please pull battery-2.6.git tree to receive changes prepared for
+2.6.39. In general, there are just various fixes for the drivers,
+most notably bq27x00 and bq20z75.
 
-I'll go revert it and put out a new version now.
+You may notice a commit that touches drivers/leds/. As Richard
+Purdie (LEDs subsystem maintainer) seems no longer actively doing
+kernel work, I took the patch via my tree as it is needed for some
+battery stuff (additional LEDs notifications).
 
-thanks,
+Thanks!
 
-greg k-h
+
+The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
+
+  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
+
+are available in the git repository at:
+  git://git.infradead.org/battery-2.6.git master
+
+Anton Vorontsov (1):
+      Merge branch 'bq27x00-for-upstream' of git://git.metafoo.de/linux-2.6
+
+Axel Lin (3):
+      bq20z75: Add MODULE_DEVICE_TABLE
+      ds2782_battery: Add MODULE_DEVICE_TABLE
+      z2_battery: Add MODULE_DEVICE_TABLE
+
+Benson Leung (1):
+      bq20z75: Fix time and temp units
+
+Grazvydas Ignotas (1):
+      bq27x00: Use single i2c_transfer call for property read
+
+Heikki Krogerus (1):
+      twl4030_charger: Make the driver atomic notifier safe
+
+Heiko Stuebner (1):
+      s3c_adc_battery: Fix method names when PM not set
+
+Lars-Peter Clausen (11):
+      power_supply: Ignore -ENODATA errors when generating uevents
+      power_supply: Initialize changed_work before calling device_add
+      bq27x00: Add type property
+      bq27x00: Improve temperature property precession
+      bq27x00: Return -ENODEV for properties if the battery is not present
+      bq27x00: Prepare code for addition of bq27000 platform driver
+      bq27x00: Add bq27000 support
+      bq27x00: Cache battery registers
+      bq27x00: Poll battery state
+      bq27x00: Give more specific reports on battery status
+      bq27x00: Cleanup bq27x00_i2c_read
+
+Pali Rohár (4):
+      bq27x00: Fix CURRENT_NOW property
+      bq27x00: Add new properties
+      bq27x00: Add MODULE_DEVICE_TABLE
+      bq27x00: Minor cleanups
+
+Rhyland Klein (5):
+      bq20z75: Add support for charge properties
+      bq20z75: Add optional battery detect gpio
+      bq20z75: Add i2c retry mechanism
+      power_supply: Update power_supply_is_watt_property
+      bq20z75: Fix issues with present and suspend
+
+Vasily Khoruzhick (3):
+      leds: Add ability to blink via simple trigger
+      power_supply: Add new LED trigger charging-blink-solid-full
+      z2_battery: Fix count of properties
+
+ drivers/leds/led-triggers.c           |   20 +
+ drivers/power/Kconfig                 |   14 +
+ drivers/power/bq20z75.c               |  310 ++++++++++++---
+ drivers/power/bq27x00_battery.c       |  725 +++++++++++++++++++++++++--------
+ drivers/power/ds2782_battery.c        |    1 +
+ drivers/power/power_supply_core.c     |    4 +-
+ drivers/power/power_supply_leds.c     |   19 +
+ drivers/power/power_supply_sysfs.c    |    2 +-
+ drivers/power/s3c_adc_battery.c       |    4 +-
+ drivers/power/twl4030_charger.c       |   25 +-
+ drivers/power/z2_battery.c            |    3 +
+ include/linux/leds.h                  |    3 +
+ include/linux/power/bq20z75.h         |   39 ++
+ include/linux/power/bq27x00_battery.h |   19 +
+ include/linux/power_supply.h          |   47 +++
+ 15 files changed, 1009 insertions(+), 226 deletions(-)
+ create mode 100644 include/linux/power/bq20z75.h
+ create mode 100644 include/linux/power/bq27x00_battery.h
