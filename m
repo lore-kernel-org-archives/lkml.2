@@ -1,131 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035Ab1CXKPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 06:15:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46333 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754483Ab1CXKPR (ORCPT
+	id S933109Ab1CXKQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 06:16:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33650 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932341Ab1CXKQz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 06:15:17 -0400
-Date: Thu, 24 Mar 2011 10:15:15 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Jarkko Nikula <jhnikula@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: Add max98095 CODEC driver
-Message-ID: <20110324101514.GA28306@opensource.wolfsonmicro.com>
-References: <B2150E1E4418E1438554A300EA5040E40DAC511079@ITSVLEX06.it.maxim-ic.internal>
+	Thu, 24 Mar 2011 06:16:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=M1+c7N1wj8sD1x9wMlyKAeqdPIjbTDK5mCYimAHPwaZ0uixb7xpQ2V/EM7MEv4w0Me
+         5T0fPUZAyupMzIgJRYKH5oEHVMHa9hRSctx+pgGWzhEBzoTWsnBmFvAtSi2JvuikvWWq
+         G3EX988pp3PgeNC023oc74v75U7XwC4du3GnE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B2150E1E4418E1438554A300EA5040E40DAC511079@ITSVLEX06.it.maxim-ic.internal>
-X-Cookie: Never give an inch!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201103240000.26788.rjw@sisk.pl>
+References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com>
+	<201103232322.52485.rjw@sisk.pl>
+	<AANLkTi=UMDZ+78bS-U=Kvp_PYnc_BNHH5EgJnm1nssHP@mail.gmail.com>
+	<201103240000.26788.rjw@sisk.pl>
+Date: Thu, 24 Mar 2011 11:16:54 +0100
+Message-ID: <AANLkTinewk=mJZifVxEJkCtKfNauOjHnLAqwbGn139C=@mail.gmail.com>
+Subject: Re: Corrupted files after suspend to disk
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 08:57:41PM -0700, Peter Hsiang wrote:
-> This patch adds the MAX98095 CODEC driver.
-> 
-> Signed-off-by: Peter Hsiang <peter.hsiang@maxim-ic.com>
-> 
-> Please see the attached patch file 0001-ASoC-Add-max98095-CODEC-driver.patch
+On Thu, Mar 24, 2011 at 12:00 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>> On Wed, Mar 23, 2011 at 11:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>> >> On Wed, Mar 23, 2011 at 11:11 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>> >> >> 2011/3/23 Rafael J. Wysocki <rjw@sisk.pl>:
+>> >> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>> >> >> >> Hi,
+>> >> >> >>
+>> >> >> >> I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
+>> >> >> >> running Linux 2.6.37.4.
+>> >> >> >> After resuming from s2disk some files are corrupted.
+>> >> >> >> But when I reboot my netbook everything seems good again.
+>> >> >> >>
+>> >> >> >> When I saw the problem the first time the ls command segfaulted always.
+>> >> >> >> I did a reboot and it worked again.
+>> >> >> >>
+>> >> >> >> A few days later zypper crashed. After a reboot it worked again.
+>> >> >> >> And today ssh crashed. I looked a bit closer and saw it crashed
+>> >> >> >> somewhere within libcrypto.
+>> >> >> >> So I made copy libcrypto and rebooted.
+>> >> >> >> After the reboot ssh worked again but libcrypto and the copy of it hat
+>> >> >> >> a different sha1 sum!
+>> >> >> >> WTF?!
+>> >> >> >>
+>> >> >> >> Is this a known issue?
+>> >> >> >
+>> >> >> > No.
+>> >> >> >
+>> >> >> >> dmesgs and config are attached.
+>> >> >> >>
+>> >> >> >> The used distribution is openSUSE 11.4 with suspend-0.80.20100129-7.1
+>> >> >> >> (default from suse).
+>> >> >> >> I'm using ext3 as root filesystem.
+>> >> >> >> What else do you need?
+>> >> >> >
+>> >> >> > Whatever you can do to narrow down the problem.  At the moment I only know
+>> >> >> > that it's there.
+>> >> >>
+>> >> >> I can reproduce the problem now.
+>> >> >> After ~20 suspend and resume iterations aide finds corrupted files in /lib/.
+>> >> >> It's always a very basic lib like libcrypto, libglib which is used all
+>> >> >> the time on my system.
+>> >> >
+>> >> > Those files are never intentionally modified, right?
+>> >> >
+>> >> >> Maybe it's an issue like this one?
+>> >> >> https://lkml.org/lkml/2010/12/2/339
+>> >> >
+>> >> > It might have if that patch hadn't been merged before 2.6.37.
+>> >> >
+>> >> > Is the system 32-bit or 64-bit?
+>> >>
+>> >> It's a 32-bit system.
+>> >> cmp shows that the corrupted files differ in many bytes (not scattered).
+>> >> The corrupted bytes are always 0 or 252.
+>> >
+>> > Do I understand correctly that the files apparently corrupted after resume
+>> > are not corrupted any more when you reboot?
+>>
+>> Yes.
+>> Seems like a cache issue.
+>
+> There's a couple things you can check before we start asking other people for
+> help.
+>
+> First, it would be good to know if things change when you save the image
+> into a swap file instead of the swap partition you've been using so far
+> (I believe it's documented quite well how to do that).
+>
+> Second, please verify if using the built-in save/load hibernate code leads
+> to the same issue (you can hibernate by doing "echo disk > /sys/power/state"
+> to verify that).
+>
+> Of course, please test the above separately. :-)
 
-Please submit patches in-line rather than as attachments as covered in
-SubmittingPatches.
+Ok, I'll test this when I'm at home.
 
-> +	SOC_DOUBLE_R("Headphone Volume", M98095_064_LVL_HP_L,
-> +		M98095_065_LVL_HP_R, 0, 31, 0),
-> +	SOC_DOUBLE_R("Speaker Volume", M98095_067_LVL_SPK_L,
-> +		M98095_068_LVL_SPK_R, 0, 39, 0),
-> +	SOC_SINGLE("Receiver Volume", M98095_066_LVL_RCV,
-> +		0, 31, 0),
-> +	SOC_DOUBLE_R("Lineout Volume", M98095_062_LVL_LINEOUT1,
-> +		M98095_063_LVL_LINEOUT2, 0, 31, 0),
+BTW: dropping the caches helps, when some files seem corrupted.
+Today /usr/bin/okular was broken.
+After setting vm.drop_caches=1 it worked again.
 
-> +	SOC_SINGLE("MIC1 Volume", M98095_05F_LVL_MIC1, 0, 31, 1),
-> +	SOC_SINGLE("MIC2 Volume", M98095_060_LVL_MIC2, 0, 31, 1),
+> Thanks,
+> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-> +	SOC_SINGLE("Linein Volume", M98095_061_LVL_LINEIN, 0, 7, 1),
-> +
-> +	SOC_SINGLE("ADCL Volume", M98095_05D_LVL_ADC_L, 0, 15, 0),
-> +	SOC_SINGLE("ADCR Volume", M98095_05E_LVL_ADC_R, 0, 15, 0),
-> +
-> +	SOC_SINGLE("ADCL Boost Volume", M98095_05D_LVL_ADC_L, 4, 3, 0),
-> +	SOC_SINGLE("ADCR Boost Volume", M98095_05E_LVL_ADC_R, 4, 3, 0),
-
-No TLV information for these?
-
-> +static int max98095_add_widgets(struct snd_soc_codec *codec)
-> +{
-> +	struct snd_soc_dapm_context *dapm = &codec->dapm;
-> +
-> +	snd_soc_dapm_new_controls(dapm, max98095_dapm_widgets,
-> +				  ARRAY_SIZE(max98095_dapm_widgets));
-> +
-> +	snd_soc_dapm_add_routes(dapm, audio_map, ARRAY_SIZE(audio_map));
-> +
-
-It'd be better to switch these over to using the the driver structure to
-set them up - dapm_widgets in the driver.
-
-> +	/* Configure NI when operating as master */
-> +	if (snd_soc_read(codec, M98095_02A_DAI1_FORMAT)
-> +		& M98095_DAI_MAS) {
-
-That'd all fit on one line?
-
-> +static void max98095_sync_cache(struct snd_soc_codec *codec)
-> +{
-> +	struct max98095_priv *max98095 = snd_soc_codec_get_drvdata(codec);
-> +	int i;
-> +
-> +	if (!codec->cache_sync)
-> +		return;
-> +
-> +	codec->cache_only = 0;
-> +
-> +	/* write back cached values if they're writeable and
-> +	 * different from the hardware default.
-> +	 */
-> +	for (i = 1; i < ARRAY_SIZE(max98095->reg_cache); i++) {
-> +		if (!max98095_access[i].writable)
-> +			continue;
-> +
-> +		if (max98095->reg_cache[i] == max98095_reg[i])
-> +			continue;
-> +
-> +		snd_soc_write(codec, i, max98095->reg_cache[i]);
-> +	}
-
-The generic snd_soc_cache_sync() should be able to do this for you.
-
-> +	snd_soc_write(codec, M98095_010_HOST_INT_CFG, 0x00);
-> +	snd_soc_write(codec, M98095_011_HOST_INT_EN, 0x00);
-> +	snd_soc_write(codec, M98095_012_CODEC_INT_EN, 0x00);
-> +	snd_soc_write(codec, M98095_013_JACK_INT_EN, 0x00);
-> +	snd_soc_write(codec, M98095_014_JACK_INT_EN, 0x00);
-
-Some documentation as to what these are doing would be useful.  Looks
-like most of these just disable all interrupts which is fine.
-
-> +	snd_soc_write(codec, M98095_093_BIAS_CTRL, 0xF0);
-> +	snd_soc_write(codec, M98095_096_PWR_DAC_CK, 0x3F);
-> +
-> +	snd_soc_write(codec, M98095_04E_MIX_HP_CFG, 0x30);
-> +	snd_soc_write(codec, M98095_092_PWR_EN_OUT, 0x10);
-> +	snd_soc_write(codec, M98095_045_DSP_CFG, 0x50);
-
-Similarly for all of these, what are the writes doing?  Some of them
-look like they belong in the bais configuration or similar.
-
-> +	snd_soc_update_bits(codec, M98095_097_PWR_SYS, M98095_SHDNRUN,
-> +		M98095_SHDNRUN);
-
-This too.
+-- 
+Thanks,
+//richard
