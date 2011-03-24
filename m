@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933706Ab1CXIRy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 04:17:54 -0400
-Received: from smtpq4.tb.mail.iss.as9143.net ([212.54.42.167]:60517 "EHLO
-	smtpq4.tb.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933686Ab1CXIRu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 04:17:50 -0400
-Message-ID: <4D8AFE86.7050803@gmail.com>
-Date: Thu, 24 Mar 2011 09:19:18 +0100
-From: =?ISO-8859-15?Q?Ren=E9_Herman?= <rene.herman@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Lanikai/3.1.9
+	id S933697Ab1CXIRg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 04:17:36 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59207 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933687Ab1CXIR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 04:17:28 -0400
+Date: Thu, 24 Mar 2011 09:17:01 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>,
+        Avi Kivity <avi@redhat.com>, Dave Martin <dave.martin@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Pingtian <phan@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Zhang Yanmin <yanmin_zhang@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/3] perf/core fixes and improvements
+Message-ID: <20110324081701.GC30812@elte.hu>
+References: <1300920767-936-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [BUG 2.6.38] drm/i915: rampant video-corruption on Intel 865G
-References: <4D8A668B.9070302@gmail.com> <849307$c4qsv5@azsmga001.ch.intel.com> <4D8AF916.4020902@gmail.com> <849307$c4rj51@azsmga001.ch.intel.com>
-In-Reply-To: <849307$c4rj51@azsmga001.ch.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ZiggoSMTP-MailScanner-Information: Please contact the ISP for more information
-X-ZiggoSMTP-MailScanner-ID: 1Q2fjm-00076V-NK
-X-ZiggoSMTP-MailScanner: Found to be clean
-X-ZiggoSMTP-MailScanner-SpamCheck: geen spam, SpamAssassin (niet cached,
-	score=-3.639, vereist 5, autolearn=not spam, ALL_TRUSTED -1.00,
-	BAYES_00 -1.90, FREEMAIL_FROM 0.50, PROLO_TRUST_RDNS -3.00,
-	RDNS_DYNAMIC 0.98, SPF_NEUTRAL 0.78)
-X-ZiggoSMTP-MailScanner-From: rene.herman@gmail.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300920767-936-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2011 09:00 AM, Chris Wilson wrote:
 
->> I do suppose that one [ the kernel one] should fix things even
->> without the X11 changes? If not, I'd still have a problem until
->> those have made their way through the distributions...
->
-> No, the bugs are distinct, but very similar in appearance, and both
-> updates are required.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-That won't do then, will it? Kernel 2.6.38 then requires a new and not 
-even released user space whereas 2.6.37 works fine. I suppose the fix 
-will from the kernel side then need to be reverting to .37 behaviour, at 
-least on the affected hardware? (855 and 865 at least).
+> Hi Ingo,
+> 
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (3):
+>   perf session: Pass evsel in event_ops->sample()
+>   perf build-id: Add quirk to deal with perf.data file format breakage
+>   perf symbols: Look at .dynsym again if .symtab not found
+> 
+>  tools/perf/builtin-annotate.c                      |   18 ++-----
+>  tools/perf/builtin-diff.c                          |    1 +
+>  tools/perf/builtin-inject.c                        |   11 ++++-
+>  tools/perf/builtin-kmem.c                          |    1 +
+>  tools/perf/builtin-lock.c                          |    4 +-
+>  tools/perf/builtin-report.c                        |   19 ++-----
+>  tools/perf/builtin-sched.c                         |    1 +
+>  tools/perf/builtin-script.c                        |   15 ++----
+>  tools/perf/builtin-timechart.c                     |   11 ++++
+>  tools/perf/util/build-id.c                         |    1 +
+>  tools/perf/util/header.c                           |   57 +++++++++++++++++++-
+>  tools/perf/util/hist.h                             |    1 +
+>  .../perf/util/scripting-engines/trace-event-perl.c |    1 +
+>  .../util/scripting-engines/trace-event-python.c    |    1 +
+>  tools/perf/util/session.c                          |   25 ++++++++-
+>  tools/perf/util/session.h                          |    7 ++-
+>  tools/perf/util/symbol.c                           |   25 +++++----
+>  tools/perf/util/trace-event-scripting.c            |    1 +
+>  tools/perf/util/trace-event.h                      |    1 +
+>  19 files changed, 142 insertions(+), 59 deletions(-)
 
-Regards,
-Rene
+Pulled, thanks a lot Arnaldo!
+
+	Ingo
