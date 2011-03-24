@@ -1,252 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933822Ab1CXTE6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:04:58 -0400
-Received: from 90-46-11-204.rar.beartech.net ([204.11.46.90]:22779 "EHLO
-	exchsrvr.taosinc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933797Ab1CXTEz convert rfc822-to-8bit (ORCPT
+	id S933818Ab1CXTFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:05:47 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:42297 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932334Ab1CXTFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:04:55 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 2.6.38-rc7]TAOS 258x: Device Driver
-Date: Thu, 24 Mar 2011 14:04:52 -0500
-Message-ID: <B4B07CCC7B7A084E989CF9386538EA1D63A9D6@exchsrvr.taosinc.com>
-In-Reply-To: <4D8B27DF.5060608@cam.ac.uk>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 2.6.38-rc7]TAOS 258x: Device Driver
-Thread-Index: AcvqFKOCBToM+SJ/RDugZYnAtNlRJwAIB/wQ
-References: <1300131941.17298.17.camel@jonz-ubuntu> <4D87A1D6.2080306@cam.ac.uk> <B4B07CCC7B7A084E989CF9386538EA1D63A83B@exchsrvr.taosinc.com> <4D89D441.9030600@cam.ac.uk> <B4B07CCC7B7A084E989CF9386538EA1D63A93D@exchsrvr.taosinc.com> <4D8B27DF.5060608@cam.ac.uk>
-From: "Jon Brenner" <jbrenner@TAOSinc.com>
-To: "Jonathan Cameron" <jic23@cam.ac.uk>
-Cc: <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+	Thu, 24 Mar 2011 15:05:45 -0400
+Subject: Re: [Xen-devel] Re: 2.6.39 crashes BUG: unable to handle kernel
+ NULL pointer dereference at 000000000000042 .. cmos_checkintr+0x4d/0x55
+ under Xen as PV guest.
+From: John Stultz <john.stultz@linaro.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: tglx@linutronix.de, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110324122755.GA31974@dumpdata.com>
+References: <20110318203830.GA9262@dumpdata.com>
+	 <1300485566.2731.46.camel@work-vm> <20110319025134.GA3298@dumpdata.com>
+	 <1300736400.2731.66.camel@work-vm> <20110322143841.GA26952@dumpdata.com>
+	 <20110324122755.GA31974@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Mar 2011 12:05:35 -0700
+Message-ID: <1300993535.848.110.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonathan,
-The remaining issue that I am still trying to resolve is dealing with a
-proper ABI for the device integration time.
-If 'illuminance0_sampling_frequency' is not the proper ABI, should I
-create a new ABI 
-called illuminance0_integration_time and add it to the
-sys-bus-iio-lisgt-tsl2583 document as you had me do with
-/sys/bus/iio/devices/device[n]/lux_table?
-
-Jon
------Original Message-----
-From: Jonathan Cameron [mailto:jic23@cam.ac.uk] 
-Sent: Thursday, March 24, 2011 6:16 AM
-To: Jon Brenner
-Cc: linux-iio@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.38-rc7]TAOS 258x: Device Driver
-
-On 03/23/11 22:38, Jon Brenner wrote:
-> Hi Jonathan,
-> Below are a few comments/questions to your latest response.
-> Any direction is greatly appreciated.
+On Thu, 2011-03-24 at 08:27 -0400, Konrad Rzeszutek Wilk wrote:
+> The problem is this:
 > 
-> Jon
-No chance you can persuade your email client to do conventional
-indenting?  Ah well, I guess this works more or less.
-
->>
->> ----- snip ------------
->>> +	if ((ch0 >= chip->als_saturation) || (ch1 >= 
->>> +chip->als_saturation))
->> would be easier to read if you set ret to lux max here an avoid 
->> jumping into the if statement below.
->> NO - TSL258X_LUX_CALC_OVER_FLOW NEEDS TO PASSED UP.  
->> 	MUTEX NEEDS TO BE UNLOCKED. 
->> 	THEN RETURN.
-> Sorry, should have said jump to out_unlock having set ret = 
-> LUX_CALC_OVER_FLOW;
+> cmos_do_probe does:
 > 
-> Just makes for marginally cleaner program flow to my mind (though I
-don't really care about this one).
+>  	cmos_rtc.dev = dev; 
+>         dev_set_drvdata(dev, &cmos_rtc);
 > 
-> I UNDERSTAND BUT I FORGOT TO MENTION THAT IN ADDITION TO THE ABOVE,
-ALSO NEEDS TO UPDATE THE ALS_CUR_INFO STRUCT.
-> SO, ALL SAID - EASIER TO SIMPLY JUMP TO RETURN_MAX, AS THIS IS ALL
-DONE THERE.
-Fair enough.  Was just personal preference anyway!
-...
+> which means that dev->p->private_data contains cmos_rtc. And
+> dev->p->private_data->rtc is a NULL pointer. The next function:
 > 
->>> +	/* NOW enable the ADC
->>
->>
->> ----- snip ------------
->> I still wonder if there isn't a way of avoiding this index issue.
->> It's horrible and really feels like something we ought to able to 
->> handle reasonably well...
->> BECAUSE THE CH0 AND CH1 DIVERGE AT HIGH GAINS -- INDEX IS BETTER THAN
-
->> USING CHO OR CH1 VALUE ( AS EITHER ONE OVER THE OTHER WOULD BE WRONG 
->> :-{ )
-> I can see your point to a certain extent.  The counter argument is
-that doing it with an index precludes ever touching this with any
-remotely general purpose user space code.  Given it's an internal gain
-anyway is the precise value that critical?  Basically is user space ever
-going to care about the difference between those those values?
+>         cmos_rtc.rtc = rtc_device_register(driver_name, dev, 
+>                                 &cmos_rtc_ops, THIS_MODULE);
 > 
-> Another option would be to have a gain for each channel as separate
-attributes (clearly writing to one would change the other).
+> 'rtc_device_register' creates an 'rtc' structure and sets 
+> its parent to be:
+> 	rtc->dev.parent = dev;
+
+And rtc_device_register() also calls:
+	INIT_WORK(&rtc->irqwork, rtc_timer_do_work);
+
+
+> and later on it does:
+>  if (!err && !rtc_valid_tm(&alrm.time))
+>                 rtc_set_alarmtrtc, &alrm);
 > 
-> I SEE YOUR POINT TOO - BUT WHAT ELSE CAN I DO (ASIDE FROM A SEPARATE
-GAIN FOR EACH CHANNEL - WHICH WOULD BE CONFUSING TO MANAGE)?
-> I GUESS I COULD BUCKETIZE ANYTHING > GAIN 16 - BUT THAT SEEMS RATHER
-KLUDGED?
-> AGAIN SEEMS LIKE MOST REASONABLE (FOR NOW ANYWAY) IS AN INDEX.
-It may be reasonable, but it isn't generalizable which means it probably
-isn't viable long term.  The parameter simply won't be used by anything
-that isn't custom coded
-for this particular sensor.   Even Taos' next generation of sensors
-probably won't
-have an index which has the same effect.
-
-If it can be coherently blugeoned into existing interfaces, then we
-should do so.
-There are quite a few other bits of IIO interface where changing one
-value will effect others.  This means (and we could emphasise it more)
-that there are sets of values user space MUST check after making a given
-change if it wants to know the full device state.  Believe me, things
-are much more complex with devices that do partial scans of channels
-only in some combinations!
-
->> Just to confirm, is this a frequency in Hz? If it is can we renaming 
->> it to taos_als_frequency_show to avoid confusing me?
->>
->> THIS IS THE INTERNAL ALS INTEGRATION TIME FOR THE ADC CHANNELS I SHOE
-
->> HORNED IT INTO SAMPLING FREQUENCY TO HELP ALEVIATE THE ABI ANGST
-> That's good but it does have to match the units specified in the ABI
-as well.
+> rtc_set_alarm calls rtc_timer_enqueue which calls __rtc_set_alarm.
+> __rtc_set_alarms calls 'cmos_set_alarm' via:
+>  err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
 > 
-> OK - MAYBE I'M MISSING SOME INFO.
-> ALL I HAVE FOR THE ABI IS THIS:
-> what:		/sys/bus/iio/devices/deviceX/sampling_frequency
-> KernelVersion:	2.6.35
-> Contact:	linux-iio@vger.kernel.org
-> Description:
-> 		Some devices have internal clocks.  This parameter sets
-the
-> 		resulting sampling frequency.  In many devices this
-> 		parameter has an effect on input filters etc rather than
-> 		simply controlling when the input is sampled.  As this
-> 		effects datardy triggers, hardware buffers and the sysfs
-> 		direct access interfaces, it may be found in any of the
-> 		relevant directories.  If it effects all of the above
-> 		then it is to be found in the base device directory as
-here.
+> which is basically passing in 'dev' to 'cmos_set_alarm', and
+> 'cmos_set_alarm' uses the dev to:
+>         struct cmos_rtc *cmos = dev_get_drvdata(dev);
 > 
-> SO I AM UNSURE OF WHAT UNITS NEED TO MATCH?
-Fair point. That documentation is clearly lacking. One for the TODO
-list.
-Anyhow, it does say sampling frequency so the units can't be a measure
-of time.  What it should say is 'in Hz' somewhere.
+> (so get the from dev->p->private_data the cmos_rtc).
+> get the 'cmos' (which is what 'cmos_rtc').
+
+
+Ok. So this all seems like it is working as it should, although you
+stated something to the effect that Xen doesn't support the cmos? And
+here it seems like it is being probed and registered without issue.
+
+
+>  Great... except
+> then it ends up trying to dereference cmos->rtc.irqwork (via
+> cmos_irq_disable(cmos, .. and somehere in its chain calls
+> schedule_work(cmos->rtc) whcih ends up blowing up b/c
+> cmos_rtc.rtc has not been set yet.
 > 
->>
->>> +static ssize_t taos_als_time_show(struct device *dev,
->>> +    struct device_attribute *attr, char *buf) {
->>> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
->>> +	struct tsl2583_chip *chip = indio_dev->dev_data;
->>> +
->>> +	return sprintf(buf, "%d\n", chip->taos_settings.als_time); }
->>
->> ----- snip ------------
->> scale as a stand alone attribute isn't defined. Please document this.
->> Looking at what you do with it, it's another factor effecting the 
->> overal gain on the reading that reaches userspace.  Ideally you'd 
->> roll this into your calibscale parameter, but I can see that would 
->> get complex to manage. Will have a think about this. In devices with 
->> a simple conversion function (adc's etc) we handle this by leaving 
->> this software value be applied by userspace (and output it as
-in_scale).
->> The issue here that as far as userspace is concerned both of your 
->> scales have been applied before it sees the data and at different 
->> more or less random looking points in the calculation.
->>
->> Actually, looking at the calculation you could output 
->> illuminance0_raw and let userspace apply a multiplier based on your 
->> trim value and offset
->> +0.5?  If you want to hold trim in driver then just implement
->> read and write to
->>
->> illuminance0_scale
->> and have read only
->> illuminance0_offset (rather tediously for this device, offset is 
->> applied before scale, so you'll need to divide 0.5 by whatever your
-trim is).
->>
->> We'll have to do pin down how to do this before moving out of staging
+> The cmos_rtc.rtc is set when the when 'rtc_device_register'
+> finish, which it hadn't yet done.
 
->> so best to get it right now.
->>
->> CHANGED TO ILLUMINANCE0_SCALE
->>
->> LIFE WOULE BE NICE IF WE COULD JUST PASS THE RAW DATA UP TO USERSPACE
+Ok, so you're saying we've not completed rtc_device_register, when
+something calls rtc_update_irq(), which then tries to schedule the work,
+which hasn't been initialized.
 
->> BUT WE HAVE CUSTOMERS WHO REQUIRE IT TO COME UP CALCULATED WITH THE 
->> MULTIPLIER FACTORED IN
-> Sure. It's a fiddly calculation so I can kind of see their point.
-> These light sensors are all a pain :)
-> SO - WE ARE OK?
-Err. I've kind of lost track, but I think so.  Will take one last look
-at your next revision!  Sounds like it may have some interesting new
-features anyway given the other thread!
->>
->> ----- snip ------------
->>> +	for (i = 0; i < MAX_DEVICE_REGS; i++) {
->>> +		ret = i2c_smbus_write_byte(clientp,
->>> +				(TSL258X_CMD_REG | (TSL258X_CNTRL +
-i)));
->>> +		if (ret < 0) {
->>> +			dev_err(&clientp->dev, "i2c_smbus_write_byte()
-to cmd "
->>> +				"reg failed in taos_probe(), err =
-%d\n", ret);
->>> +			goto fail1;
->>> +		}
->>> +		buf[i] = i2c_smbus_read_byte(clientp);
->>   error handling for this read?
->> VALUE IS UNIMPORTANT - BUT MAKING SURE WE CAN JUST READ ALL 32
-REGISTER LOCATIONS IS..
-That's fine, but you haven't verified that if you don't check for a
-negative return from that read.
+> git gui blame tells me to look at 
+>  f44f7f96a20af16f6f12e1c995576d6becf5f57b
 
-AGREED  - ADDED CHECK FOR NEGATIVE RETURN
+Hmm. So this seems even more odd at first glance, as we're really just
+adding an extra call in rtc_device_register(), which supposedly isn't
+being run yet.
 
->>
->> ----- snip ------------
->>
->>> +	}
->>> +	if (!taos_skate_device(buf)) {
->>> +		dev_info(&clientp->dev, "i2c device found but does not
-match "
->>> +			"expected id in taos_probe()\n");
->>> +		goto fail1;
->>> +	} else {
->> The sort of debug info you want to get rid of for production drivers.
+But... maybe the extra call in rtc_device_register is actually slowing
+it down enough, and if an irq lands in the cmos code before the
+device_register code is complete, that might cause trouble.
 
->> Doesn't tell anyone anything helpful.
->> NO - DO NOT AGREE - IF A CUSTOMER EXPECTS ONE DEVICE BUT HAS SOMEHOW 
->> INSTALLED A DIFFERENT ONE AT PRODUCTION TIME, THIS WILL HELP IDENTIFY
-THE ISSUE.
->> (IE. WANTED A TAOS ALS DEVICE BUT INSTALLED A TAOS PROX/ALS DEVICE) 
->> FIRST PART INDICATES THAT.  SECOND PART IS CONFIRMATION THAT DEVICE
-WAS IDENTIFIED TO SYSTEM.
-> 
-> I'm happy with the error one. Just don't see the point in saying
-'everything is as expected'.
-> The mere absence of the error indicates that just fine!
-> AGREED - REMOVED 2ND PART (THE OK MESSAGE)
-Cool
+Or... more likely, the added rtc_set_alarm is enabling interrupts,
+allowing an irq to land before the rtc_device_register completes.
 
-Coming together nicely.
+Oof.. ok. so that is a little gross.
 
-Jonathan
+
+Let me see if I can't work something out here.
+
+Thanks for the helpful clues here!
+-john
+
+
+
+
