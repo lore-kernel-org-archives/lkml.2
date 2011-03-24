@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab1CXN5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 09:57:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22197 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753848Ab1CXN5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 09:57:13 -0400
-Date: Thu, 24 Mar 2011 09:56:57 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: jaxboe@fusionio.com, m-ikeda@ds.jp.nec.com, ryov@valinux.co.jp,
-        taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
-        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
-        balbir@linux.vnet.ibm.com, ctalbott@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH v2 0/8] Provide cgroup isolation for buffered
- writes.
-Message-ID: <20110324135657.GC20434@redhat.com>
-References: <1300835335-2777-1-git-send-email-teravest@google.com>
- <20110323012755.GA10325@redhat.com>
- <AANLkTi=YyY0dCVP+JAJsyiYYqWMwf1XBROf_h_eG0yEL@mail.gmail.com>
- <20110323200621.GJ13315@redhat.com>
- <AANLkTi=mCAdX1KJrQRoi=mwtW=ZAANWo_Tzc+JNR34rr@mail.gmail.com>
+	id S1756649Ab1CXOAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 10:00:18 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50815 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab1CXOAP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 10:00:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=mCAdX1KJrQRoi=mwtW=ZAANWo_Tzc+JNR34rr@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTi=2OKxvHN75PO4RGb9rtpnA0iGHNb9JPZwb0z9J@mail.gmail.com>
+References: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
+	<AANLkTinZpt8qmHzhe4WyteMt-C-nkVNwEGQVvq3Nk9Lx@mail.gmail.com>
+	<20110324131414.GA20612@thinkpad-t410>
+	<AANLkTikrX_wypmrd-PbST603jsHqkuwtA6t5X65Lg1+O@mail.gmail.com>
+	<AANLkTi=2OKxvHN75PO4RGb9rtpnA0iGHNb9JPZwb0z9J@mail.gmail.com>
+Date: Thu, 24 Mar 2011 09:00:14 -0500
+Message-ID: <AANLkTik7D0j=JOhzPk6Y2NrTA89-vS28wPDSS=j0VW4_@mail.gmail.com>
+Subject: Re: [PATCH] eeepc-wmi: Add support for T101MT "Express Gate" key
+From: Chris Bagwell <chris@cnpbagwell.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 03:32:51PM -0700, Justin TerAvest wrote:
+On Thu, Mar 24, 2011 at 8:40 AM, Corentin Chary
+<corentin.chary@gmail.com> wrote:
+>> I would suggest sending BTN_HOME upon button release 0xe5 (not press
+>> 0xe4 and do the autorelease because of it) and BTN_PROG2 on
+>> press-and-hold 0xea.
+>>
+>> If you press-and-hold, does it still send the 0xe5 upon release?  That
+>> could complicate things so that both button events do not get sent.
+>>
+>> I'm not sure what BTN_HOME is commonly used for.  This button does
+>> sound like a HOME button in iPad sense but not in web browser sense.
+>
+> Except the fact that I don't find BTN_HOME in inpout.h, that's seems a
+> better idea, forget what I've said earlier.
 
-[..]
-> > Ok, In the past I had tried it with 2 cgroups (running dd inside these
-> > cgroups) and I had no success. I am wondering what has changed.
-> 
-> It could just be a difference in workload, or dd size, or filesystem?
+Ha... Sorry, I had buttons on my brain.  I meant KEY_HOME as you suggested.
 
-Once you have sorted out the bug and I can boot my system, I will test
-it to see what's happening.
+>
+> 0xe4 -> KEY_IGNORE
+> 0xe5 -> KEY_HOME
+> 0xea -> KEY_PROG2, (or BTN_TASK to copy android/iOS ?)
 
-> 
-> >
-> > In the past a high priority throttled process can very well try to
-> > pick up a inode from low prio cgroup and start writting it and get
-> > blocked. I believe similar thing should happen now.
-> 
-> You're right that it's very dependent on what inodes get picked up
-> when from writeback.
+>From a quick google, I couldn't finding any specific meaning of
+BTN_TASK but it looks like xf86-input-evdev turns it into a button
+press so we may not want that one.
 
-So then above results should not be reproducible consistently? Are you
-using additional patches internally to make this work reliably. My
-concenrn is that it will not make sense to have half baked pieces 
-in upstream kernel. That's why I was hoping that this piece can go in
-once we have sorted out following.
+I've no idea of best values but those are pretty close.
 
-- IO less throttling
-- Per cgroup dirty ratio
-- Some work w.r.t cgroup aware writeback.
-
-In fact cgroup aware writeback can be part of this patch series once
-first two pieces are in the kernel.
-
-Thanks
-Vivek
+Chris
