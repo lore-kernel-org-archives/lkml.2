@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933955Ab1CXT1a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:27:30 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60296 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933687Ab1CXT10 (ORCPT
+	id S934008Ab1CXT1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:27:50 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:63376 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933858Ab1CXT1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:27:26 -0400
+	Thu, 24 Mar 2011 15:27:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ty/sx+I3FuBjtFdAv5nAQZCSwvj8OFrFYQ5QGdKi1sjdT8C2wW2iJQGyIGKgnUlV1v
-         mVSIhTOP8vyB0v49Q7V0M57BS7s+/OpQhNDccvrjDPWturZh4feD/bYPDpmeVd9HJp40
-         rJPqJTh57uhXGuvAMDp8fVVyeOeuGJGIbFwxM=
+        b=Gj/ZgIy5XH7HLNNyGDyrA6peLc/8F60nwujgY5RBIf4Pmv1BXBfV0ZQDYXd/SHhWDm
+         VzeH9cZ6/xl7bsYhGibpUxGU3eySq8PtkVstvzubgHwsNs5sm1RdA1VvcVKaYRGCW+zB
+         VA847HZIpaUS9jLfbb2IiqXTFtKeEY9NaQmUE=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC 05/21]drivers:scsi Remove extra comma.
-Date: Thu, 24 Mar 2011 12:26:43 -0700
-Message-Id: <1300994819-30930-5-git-send-email-justinmattock@gmail.com>
+Subject: [RFC 11/21]drivers:net Remove extra comma.
+Date: Thu, 24 Mar 2011 12:26:49 -0700
+Message-Id: <1300994819-30930-11-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
 References: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
@@ -34,82 +34,101 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/scsi/be2iscsi/be_main.c   |    4 ++--
- drivers/scsi/lpfc/lpfc_bsg.c      |    2 +-
- drivers/scsi/pm8001/pm8001_init.c |    2 +-
- drivers/scsi/qla2xxx/qla_isr.c    |    4 ++--
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/can/softing/softing_main.c      |    2 +-
+ drivers/net/wireless/ath/ath9k/phy.h        |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |    2 +-
+ drivers/net/wireless/rtlwifi/core.c         |    2 +-
+ drivers/net/wireless/rtlwifi/pci.c          |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c |    4 ++--
+ 6 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/scsi/be2iscsi/be_main.c b/drivers/scsi/be2iscsi/be_main.c
-index 24e20ba..44ac4ae 100644
---- a/drivers/scsi/be2iscsi/be_main.c
-+++ b/drivers/scsi/be2iscsi/be_main.c
-@@ -618,7 +618,7 @@ static void beiscsi_get_params(struct beiscsi_hba *phba)
- 				    + BE2_NOPOUT_REQ));
- 	phba->params.cxns_per_ctrl = phba->fw_config.iscsi_cid_count;
- 	phba->params.asyncpdus_per_ctrl = phba->fw_config.iscsi_cid_count * 2;
--	phba->params.icds_per_ctrl = phba->fw_config.iscsi_icd_count;;
-+	phba->params.icds_per_ctrl = phba->fw_config.iscsi_icd_count;
- 	phba->params.num_sge_per_io = BE2_SGE;
- 	phba->params.defpdu_hdr_sz = BE2_DEFPDU_HDR_SZ;
- 	phba->params.defpdu_data_sz = BE2_DEFPDU_DATA_SZ;
-@@ -781,7 +781,7 @@ static irqreturn_t be_isr(int irq, void *dev_id)
- 	int isr;
+diff --git a/drivers/net/can/softing/softing_main.c b/drivers/net/can/softing/softing_main.c
+index aeea9f9..8d75953 100644
+--- a/drivers/net/can/softing/softing_main.c
++++ b/drivers/net/can/softing/softing_main.c
+@@ -797,7 +797,7 @@ static __devinit int softing_pdev_probe(struct platform_device *pdev)
+ 	ret = -EINVAL;
+ 	pres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!pres)
+-		goto platform_resource_failed;;
++		goto platform_resource_failed;
+ 	card->dpram_phys = pres->start;
+ 	card->dpram_size = pres->end - pres->start + 1;
+ 	card->dpram = ioremap_nocache(card->dpram_phys, card->dpram_size);
+diff --git a/drivers/net/wireless/ath/ath9k/phy.h b/drivers/net/wireless/ath/ath9k/phy.h
+index 5e3d749..3a7cd75 100644
+--- a/drivers/net/wireless/ath/ath9k/phy.h
++++ b/drivers/net/wireless/ath/ath9k/phy.h
+@@ -54,7 +54,7 @@
+ #define RF_BANK_SETUP(_bank, _iniarray, _col) do {			\
+ 		int i;							\
+ 		for (i = 0; i < (_iniarray)->ia_rows; i++)		\
+-			(_bank)[i] = INI_RA((_iniarray), i, _col);;	\
++			(_bank)[i] = INI_RA((_iniarray), i, _col);	\
+ 	} while (0)
  
- 	phba = dev_id;
--	ctrl = &phba->ctrl;;
-+	ctrl = &phba->ctrl;
- 	isr = ioread32(ctrl->csr + CEV_ISR0_OFFSET +
- 		       (PCI_FUNC(ctrl->pdev->devfn) * CEV_ISR_SIZE));
- 	if (!isr)
-diff --git a/drivers/scsi/lpfc/lpfc_bsg.c b/drivers/scsi/lpfc/lpfc_bsg.c
-index 0dd43bb..04fef03 100644
---- a/drivers/scsi/lpfc/lpfc_bsg.c
-+++ b/drivers/scsi/lpfc/lpfc_bsg.c
-@@ -595,7 +595,7 @@ lpfc_bsg_rport_els(struct fc_bsg_job *job)
- 	dd_data->context_un.iocb.cmdiocbq = cmdiocbq;
- 	dd_data->context_un.iocb.rspiocbq = rspiocbq;
- 	dd_data->context_un.iocb.set_job = job;
--	dd_data->context_un.iocb.bmp = NULL;;
-+	dd_data->context_un.iocb.bmp = NULL;
- 	dd_data->context_un.iocb.ndlp = ndlp;
- 
- 	if (phba->cfg_poll & DISABLE_FCP_RING_INT) {
-diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-index 002360d..172cefb 100644
---- a/drivers/scsi/pm8001/pm8001_init.c
-+++ b/drivers/scsi/pm8001/pm8001_init.c
-@@ -160,7 +160,7 @@ static void pm8001_free(struct pm8001_hba_info *pm8001_ha)
- static void pm8001_tasklet(unsigned long opaque)
+ #define	AR_PHY_TIMING11_SPUR_FREQ_SD		0x3FF00000
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.c b/drivers/net/wireless/iwlwifi/iwl-agn.c
+index 581dc9f..31233a3 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -2062,7 +2062,7 @@ static const char *desc_lookup(u32 num)
+ 	max = ARRAY_SIZE(advanced_lookup) - 1;
+ 	for (i = 0; i < max; i++) {
+ 		if (advanced_lookup[i].num == num)
+-			break;;
++			break;
+ 	}
+ 	return advanced_lookup[i].name;
+ }
+diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
+index e4f4aee..d52fa27 100644
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -719,7 +719,7 @@ static void rtl_op_set_tsf(struct ieee80211_hw *hw, u64 tsf)
  {
- 	struct pm8001_hba_info *pm8001_ha;
--	pm8001_ha = (struct pm8001_hba_info *)opaque;;
-+	pm8001_ha = (struct pm8001_hba_info *)opaque;
- 	if (unlikely(!pm8001_ha))
- 		BUG_ON(1);
- 	PM8001_CHIP_DISP->isr(pm8001_ha);
-diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
-index d17ed9a..8b4d99a 100644
---- a/drivers/scsi/qla2xxx/qla_isr.c
-+++ b/drivers/scsi/qla2xxx/qla_isr.c
-@@ -1051,7 +1051,7 @@ qla2x00_ct_entry(scsi_qla_host_t *vha, struct req_que *req,
- 		}
- 		DEBUG2(qla2x00_dump_buffer((uint8_t *)pkt, sizeof(*pkt)));
- 	} else {
--		bsg_job->reply->result =  DID_OK << 16;;
-+		bsg_job->reply->result =  DID_OK << 16;
- 		bsg_job->reply->reply_payload_rcv_len =
- 		    bsg_job->reply_payload.payload_len;
- 		bsg_job->reply_len = 0;
-@@ -1146,7 +1146,7 @@ qla24xx_els_ct_entry(scsi_qla_host_t *vha, struct req_que *req,
- 		DEBUG2(qla2x00_dump_buffer((uint8_t *)pkt, sizeof(*pkt)));
- 	}
- 	else {
--		bsg_job->reply->result =  DID_OK << 16;;
-+		bsg_job->reply->result =  DID_OK << 16;
- 		bsg_job->reply->reply_payload_rcv_len = bsg_job->reply_payload.payload_len;
- 		bsg_job->reply_len = 0;
- 	}
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
+-	u8 bibss = (mac->opmode == NL80211_IFTYPE_ADHOC) ? 1 : 0;;
++	u8 bibss = (mac->opmode == NL80211_IFTYPE_ADHOC) ? 1 : 0;
+ 
+ 	mac->tsf = tsf;
+ 	rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_CORRECT_TSF, (u8 *) (&bibss));
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index 9cd7703..baa2efe 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1226,7 +1226,7 @@ static unsigned int _rtl_mac_to_hwqueue(__le16 fc,
+ 		hw_queue_index = VI_QUEUE;
+ 		break;
+ 	case 2:
+-		hw_queue_index = BE_QUEUE;;
++		hw_queue_index = BE_QUEUE;
+ 		break;
+ 	case 3:
+ 		hw_queue_index = BK_QUEUE;
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+index 05477f4..7432c85 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+@@ -729,7 +729,7 @@ static bool _rtl92ce_init_mac(struct ieee80211_hw *hw)
+ 	rtl_write_word(rtlpriv, REG_CR, 0x2ff);
+ 
+ 	if (_rtl92ce_llt_table_init(hw) == false)
+-		return false;;
++		return false;
+ 
+ 	rtl_write_dword(rtlpriv, REG_HISR, 0xffffffff);
+ 	rtl_write_byte(rtlpriv, REG_HISRE, 0xff);
+@@ -786,7 +786,7 @@ static bool _rtl92ce_init_mac(struct ieee80211_hw *hw)
+ 
+ 	rtl_write_dword(rtlpriv, REG_MCUTST_1, 0x0);
+ 
+-	return true;;
++	return true;
+ }
+ 
+ static void _rtl92ce_hw_configure(struct ieee80211_hw *hw)
 -- 
 1.7.4.1
 
