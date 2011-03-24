@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442Ab1CXAO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 20:14:56 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:56186 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933023Ab1CXAOz (ORCPT
+	id S933445Ab1CXASX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 20:18:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56932 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933023Ab1CXASW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 20:14:55 -0400
-X-Sasl-enc: u68rLTgT0rF4pj9ljQ5BufM+R95zk8MafFLeF1RIVrWt 1300925694
-Date: Wed, 23 Mar 2011 21:14:51 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Burt Triplett <burt@pbjtriplett.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: BITS handling of CPU microcode updates
-Message-ID: <20110324001451.GA7950@khazad-dum.debian.net>
-References: <4D65EE74.1050709@pbjtriplett.org>
- <20110312023001.GB27550@khazad-dum.debian.net>
- <4D87E2CD.6020306@pbjtriplett.org>
+	Wed, 23 Mar 2011 20:18:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=cmapiinvBWoDeTRfF2Pm7zDSznEPp4But7jq8cZgK0i2/zoSy0G7bIYDGN9TqRH01I
+         1O3/rBUHGzvgkD1SYVVUjDhybvnzwDo3xGpBtW3eHbgdT+dwfk0Tq221xLH1RFpA7uMe
+         9ECIrgRfP6X8J4jXANKqS4s3BKEdakYM7Icsw=
+Message-ID: <4D8A8DC9.1060502@suse.cz>
+Date: Thu, 24 Mar 2011 01:18:17 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D87E2CD.6020306@pbjtriplett.org>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: Linux 2.6.32.34
+References: <20110323203426.GC7709@kroah.com> <20110323203437.GD7709@kroah.com>
+In-Reply-To: <20110323203437.GD7709@kroah.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Mar 2011, Burt Triplett wrote:
-> Sorry for the delayed response; I wanted to make sure I could give
-> you an answer that would agree with the Intel Software Developer's
-> Manual, and that ended up meaning I needed to start the process of
-> updating the relevant part of the SDM. :)
+On 03/23/2011 09:34 PM, Greg KH wrote:
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -4167,6 +4167,8 @@ static void tp_perf_event_destroy(struct perf_event *event)
+>  
+>  static const struct pmu *tp_perf_event_init(struct perf_event *event)
+>  {
+> +	if (event->hw.state & PERF_HES_STOPPED)
+> +		return 0;
+>  	/*
+>  	 * Raw tracepoint data is a severe data leak, only allow root to
+>  	 * have these.
 
-Heh :-)
+This causes build to fail:
+/usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:
+ In function 'tp_perf_event_init':
+/usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
+ error: 'struct hw_perf_event' has no member named 'state'
+/usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
+ error: 'PERF_HES_STOPPED' undeclared (first use in this function)
+/usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
+ error: (Each undeclared identifier is reported only once
+/usr/src/packages/BUILD/kernel-vanilla-2.6.32.34/linux-2.6.32/kernel/perf_event.c:4170:
+ error: for each function it appears in.)
 
-> The Intel SDM correctly identifies microcode revision numbers as
-> signed.  However, a simple signed comparison doesn't actually
-> capture the correct logic, nor does an unsigned comparison, though
-> in both cases the problem doesn't tend to come up in common cases.
 
-...
+The source:
+commit 6f197b73304b3bd3d5a43b931383a5331d6b2987
+Author: Frederic Weisbecker <fweisbec@gmail.com>
+Date:   Mon Mar 7 21:27:09 2011 +0100
 
-> Tools which run automatically, without explicit user action, should
-> not attempt to load a microcode if (X < 0) and (Z > 0).  Doing so
-> makes life very difficult for people in those test lab environments:
-> they put a microcode they want to test in the BIOS or load it via
-> BITS, but then the OS driver automatically overrides it with the
-> latest production microcode.  So, tools which run automatically
-> without explicit user action should follow this rule:
-> if ((Z < 0) || (Z > 0 && X > 0 && Z > X)) load_microcode();
+    perf: Handle stopped state with tracepoints
 
-Very well, I will send patches to fix that behaviour, as well as some
-other stuff I noticed that was not updated to match the recommended
-actions documented by the SDM and some Intel application notes.
+    commit a0f7d0f7fc02465bb9758501f611f63381792996 upstream.
 
-> If microcode_ctl added an option to distinguish these two cases, it
-> could apply the alternative logic when explicitly requested.
+    We toggle the state from start and stop callbacks but actually
+    don't check it when the event triggers. Do it so that
+    these callbacks actually work.
 
-Indeed, the userspace and internal kernel API don't support that at this
-time.
-
-Now, we could change them I suppose, but it doesn't look like a worthwhile
-effort to change the microcode core and APIs for something that would be
-of limited use even inside an Intel lab.
-
-Unless there is a reason to support online microcode downgrading, that is.
-Does it?  Currently, the rare case of a microcode downgrade will only
-happen at the next boot.
-
-> I've started the process of getting the SDM changed to document the
-> logic described above, and distinguish the two different types of
-> microcode-loading tools.
-
-Thank you.
-
+thanks,
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+js
+suse labs
