@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933662Ab1CXH6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 03:58:46 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33134 "EHLO mx3.mail.elte.hu"
+	id S933648Ab1CXIDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 04:03:36 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58396 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933596Ab1CXH6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 03:58:45 -0400
-Date: Thu, 24 Mar 2011 08:58:30 +0100
+	id S933179Ab1CXIDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 04:03:32 -0400
+Date: Thu, 24 Mar 2011 09:03:26 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf probe: Add fastpath to do lookup by function name
-Message-ID: <20110324075830.GA28885@elte.hu>
-References: <1300981134-7333-1-git-send-email-ming.m.lin@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: Remove dma32_reserve_bootmem
+Message-ID: <20110324080326.GA30812@elte.hu>
+References: <4D8AD6E0.10307@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300981134-7333-1-git-send-email-ming.m.lin@intel.com>
+In-Reply-To: <4D8AD6E0.10307@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -33,14 +31,25 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Lin Ming <ming.m.lin@intel.com> wrote:
+* Yinghai Lu <yinghai@kernel.org> wrote:
 
-> The vmlinux file may have thousands of CUs.
-> We can lookup function name from .debug_pubnames section
-> to avoid the slow loop on CUs.
+> 
+> That is workaround for holding dma32 buf when early bootmem could use up
+> those range on system that have lots of RAM.
+> 
+> Now x86 is using memblock, and even nobootmem wrapper do top-down allocation.
+> 
+> So We could remove those not needed code now.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  arch/x86/include/asm/pci.h |    2 -
+>  arch/x86/kernel/pci-dma.c  |   64 ---------------------------------------------
+>  arch/x86/kernel/setup.c    |    1
+>  3 files changed, 67 deletions(-)
 
-Mind including before/after perf stat --repeat 10 results in the changelog, of 
-an affected command which got faster?
+Cc:-ing Jesse - i suspect this should be handled by the PCI tree.
 
 Thanks,
 
