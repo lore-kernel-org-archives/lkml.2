@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933398Ab1CXSf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 14:35:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58817 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756967Ab1CXSfZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 14:35:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=PbvNWxtyefC1BVtNlGTKKKAedrfQUFr0Ba/nZVI1el25ZvRwQ2rurIJwNlE3D+LHVY
-         vKqbnXNUuYGZ+76xle1lAB4lNBytVfP+HPyes7+inST44g/5pxP3TQho0+Q20SjEqj8d
-         hevWUrBeytiTd1d+f4bTuhQMHgHlDE7IECft4=
+	id S933480Ab1CXSgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 14:36:42 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:57174 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933328Ab1CXSgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 14:36:41 -0400
+X-ASG-Debug-ID: 1300991799-01de284cf8b61a0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D8B8F34.5000203@fusionio.com>
+Date: Thu, 24 Mar 2011 19:36:36 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <1300980071-24645-4-git-send-email-jamie@jamieiles.com>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com> <1300980071-24645-4-git-send-email-jamie@jamieiles.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 24 Mar 2011 14:35:00 -0400
-X-Google-Sender-Auth: QldbWPFlzOsHRV7Vnn85fmZafX4
-Message-ID: <AANLkTi=c+664qQqiKOLmvdFScizUC7+88SrCx7WJnp0b@mail.gmail.com>
-Subject: Re: [RFC PATCHv2 3/4] drivers/otp: allow an ioctl to be specified
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+References: <4D8B4A89.80608@fusionio.com> <20110324183019.GA1676@gentoo.trippels.de>
+X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+In-Reply-To: <20110324183019.GA1676@gentoo.trippels.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1300991799
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58854
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 11:21, Jamie Iles wrote:
-> Some drivers may need an ioctl method to provide device specific control
-> such as blackfin for providing locking.  Regions can specify an ioctl to
-> be used but this field method is optional.
+On 2011-03-24 19:30, Markus Trippelsdorf wrote:
+> On 2011.03.24 at 14:43 +0100, Jens Axboe wrote:
+>>
+>> This is the main pull request for the block IO layer and friends for
+>> 2.6.39.
+> 
+> This merge results in an early oops on my system (amd64, xfs).
+> See the attached photo.
+> 
 
-shouldnt this just be squashed into patch 1 since you havent merged
-any of this yet ?
+Auch. Can you ensure that you have CONFIG_DEBUGINFO=y in your .config
+and then do:
 
-> +static long otp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
-> +{
-> +       struct otp_region *region = filp->private_data;
-> +       long ret = -ENOTTY;
-> +
-> +       if (down_interruptible(&otp_sem))
-> +               return -ERESTARTSYS;
-> +
-> +       if (region->ops->ioctl)
-> +               ret = region->ops->ioctl(region, cmd, arg);
-> +
-> +       up(&otp_sem);
-> +
-> +       return ret;
-> +}
+$ gdb vmlinux
+...
+l *cfq_insert_request+0x32
 
-the existence check can be pulled out of the locking
+and send that output?
 
-long ret;
+-- 
+Jens Axboe
 
-if (!region->ops->ioctl)
-    return -ENOTTY;
-
-if (down_interruptible(&otp_sem))
-
-    return -ERESTARTSYS;
-
-ret = region->ops->ioctl(region, cmd, arg);
-
-up(&otp_sem);
-
-return ret;
--mike
