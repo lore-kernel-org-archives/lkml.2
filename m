@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934331Ab1CXWpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 18:45:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:30462 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933724Ab1CXWpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 18:45:06 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6295"; a="81927017"
-From: David Brown <davidb@codeaurora.org>
-To: "Subhash Jadavani" <subhashj@codeaurora.org>
-Cc: "'Daniel Walker'" <dwalker@fifo99.com>, <cjb@laptop.org>,
-        <linux-mmc@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <bryanh@codeaurora.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] mmc: msm_sdcc: Use SPS BAM as DMA engine
-References: <1300454644-11361-1-git-send-email-subhashj@codeaurora.org>
-	<1300454644-11361-2-git-send-email-subhashj@codeaurora.org>
-	<1300885535.6117.15.camel@m0nster>
-	<005601cbe9f5$a5088750$ef1995f0$@org>
-Date: Thu, 24 Mar 2011 15:45:46 -0700
-In-Reply-To: <005601cbe9f5$a5088750$ef1995f0$@org> (Subhash Jadavani's message
-	of "Thu, 24 Mar 2011 13:02:31 +0530")
-Message-ID: <8yak4fo16jp.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S934325Ab1CXWtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 18:49:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:4267 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756567Ab1CXWtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 18:49:07 -0400
+Subject: Re: [PATCH 0/2] Fix resource size miscalculations
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-fbdev@vger.kernel.org
+In-Reply-To: <cover.1300909445.git.joe@perches.com>
+References: <cover.1300909445.git.joe@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Mar 2011 15:49:05 -0700
+Message-ID: <1301006945.29444.15.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24 2011, Subhash Jadavani wrote:
+On Wed, 2011-03-23 at 12:55 -0700, Joe Perches wrote:
+> Use resource_size a few places
 
-> Here "DMA engine" means we are using SPS BAM as DMA HW.
+Perhaps this relatively common error is too common.
+It seems to be poor style.  A possible better style for
+struct resource uses could be inline function(s) like:
 
-> No, we are not using the "drivers/dma/dmaengine.c" because MSM SPS
-> driver is not exporting the dma compliant APIs to client. We are using
-> the MSM SPS driver's exported APIs directly from our driver. Not sure
-> what extra description we can put it in commit text. Any suggestion?
+static inline void __iomem *resource_ioremap(struct resource *r)
+{
+	return ioremap(r->start, resource_size(r));
+}
 
-I think the commit text should explain why this driver doesn't just use
-the DMA engine API.  People are going to want to know that later on as
-well.  I know you did an analysis for this driver, and it would be good
-to include that information in the commit text.  Email me privately if
-you want some help with that.
+and maybe
 
-Currently none of the MSM DMA hardware uses the DMA engine API, and I
-think we need to figure out if we want to move to that at some point.  I
-realize that the hardware (especially SPS BAM) does a lot more than
-regular DMA, this may involve extending DMA engine, which may or may not
-be appropriate.
+static inline struct resource *
+resource_request_region(struct resource *r, const char *name)
+{
+	return __request_region(&ioport_resource, r->start, resource_size(r), name, 0);
+}
 
-Thanks,
-David
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
