@@ -1,172 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934125Ab1CXUET (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:04:19 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:34598 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934113Ab1CXUEL (ORCPT
+	id S934112Ab1CXUFI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:05:08 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:35564 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933847Ab1CXUFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:04:11 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Chris Bagwell <chris@cnpbagwell.com>, Matthew Garrett <mjg@redhat.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate key
-Date: Thu, 24 Mar 2011 15:03:55 -0500
-Message-Id: <1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <20110324195720.GB31713@thinkpad-t410>
-References: <20110324195720.GB31713@thinkpad-t410>
+	Thu, 24 Mar 2011 16:05:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=j5FO/MakLwfaXME7cTKGl9zmwC+Wn8fL8ia5GkmQ0L8v5s5WgR8/x45aZQh8BNA5vu
+         2Dnyqhwqn1EUrZerBckpK7UY6wfLbYxr/HTYe8aAQNLrXoibhtW02uvggRSPdyA1Q6DC
+         ramt+/YqoinoYif8UKvCy7CyzQppVQJ8m+T+A=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimZWtOLiDT3KoUKZtsKfj4Aeu+XMF+rLc0wCSYk@mail.gmail.com>
+References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
+	<1300864998.3522.71.camel@thor.local>
+	<AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
+	<1300868532.3522.81.camel@thor.local>
+	<AANLkTi=mFKBqF48DwGsQL278grJChCVzw==D7vr49n09@mail.gmail.com>
+	<Pine.GSO.4.62.1103230633160.12612@umail>
+	<1300880747.16522.13.camel@thor.local>
+	<AANLkTik=GH8tGMjeKVfsmvX5WeX+4avnYan_nkGcCx20@mail.gmail.com>
+	<Pine.GSO.4.62.1103240628490.1156@umail>
+	<AANLkTimZWtOLiDT3KoUKZtsKfj4Aeu+XMF+rLc0wCSYk@mail.gmail.com>
+Date: Fri, 25 Mar 2011 06:05:04 +1000
+Message-ID: <AANLkTimrHa-Fb=3HN68OML7RddsX_8rrJV_YOK3H6xST@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This key is different than other hotkeys, having seperate scan
-codes for press, release, and hold, so it requires some special
-handling.
+On Fri, Mar 25, 2011 at 12:37 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Mar 24, 2011 at 4:31 AM, Ilija Hadzic
+> <ihadzic@research.bell-labs.com> wrote:
+>>
+>> OK, I'll update libdrm side to match this change and send the patch later
+>> today
+>
+> Quite frankly, this whole discussion is a clear example of why DRM has
+> been problematic.
+>
+> Why the hell am I getting pushed stuff that is clearly not baked? It's
+> the second week of the merge window, the stuff I'm getting should have
+> been finalized two weeks ago, not be something that is still being
+> discussed and that has API issues.
+>
+> In other words: Why should I pull this at all?
 
-Note that "Home" in the context of this button doesn't mean the
-same thing as the usual Home key, and it really isn't clear at
-all what is meant by "Home". The manufacurer's description of the
-button indicates that it should launch some sort of touch screen
-settings interface on short press and apply a desktop rotation on
-long press.
+Linus,
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- drivers/platform/x86/eeepc-wmi.c |   87 +++++++++++++++++++++++++++++++++-----
- 1 files changed, 76 insertions(+), 11 deletions(-)
+Take a step back, it was an enhancement to a current API, had gotten
+reviewed by two people when I merged it and made sense. Michel raised
+his concern after that point, so no matter what it was already in a tree
+I'd pushed out to public so the only answer when he raised his concern
+was to revert or fix it. Its a minor problem. Like I'd have pushed this patch
+post merge window, it solves a real problem that Ilija was seeing and
+he stepped up
+and fixed it, post-merge review is what happened here, and really this
+is nothing
+compared to say the fallout in the VFS after 2.6.38-rc1.
 
-diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
-index 0ddc434..f9b0ee4 100644
---- a/drivers/platform/x86/eeepc-wmi.c
-+++ b/drivers/platform/x86/eeepc-wmi.c
-@@ -56,6 +56,19 @@ MODULE_PARM_DESC(hotplug_wireless,
- 		 "If your laptop needs that, please report to "
- 		 "acpi4asus-user@lists.sourceforge.net.");
- 
-+struct eeepc_wmi_driver {
-+	struct asus_wmi_driver	asus_wmi_driver;
-+	int			home_key_state;
-+};
-+
-+#define to_eeepc_wmi_driver(asus_drv) \
-+	container_of((asus_drv), struct eeepc_wmi_driver, asus_wmi_driver)
-+
-+/* Values for T101MT "Home" key */
-+#define HOME_PRESS	0xe4
-+#define HOME_HOLD	0xea
-+#define HOME_RELEASE	0xe5
-+
- static const struct key_entry eeepc_wmi_keymap[] = {
- 	/* Sleep already handled via generic ACPI code */
- 	{ KE_KEY, 0x30, { KEY_VOLUMEUP } },
-@@ -70,7 +83,9 @@ static const struct key_entry eeepc_wmi_keymap[] = {
- 	{ KE_KEY, 0xcc, { KEY_SWITCHVIDEOMODE } },
- 	{ KE_KEY, 0xe0, { KEY_PROG1 } }, /* Task Manager */
- 	{ KE_KEY, 0xe1, { KEY_F14 } }, /* Change Resolution */
-+	{ KE_KEY, HOME_PRESS, { BTN_TASK } },
- 	{ KE_KEY, 0xe9, { KEY_BRIGHTNESS_ZERO } },
-+	{ KE_KEY, HOME_HOLD, { KEY_PROG2 } },
- 	{ KE_KEY, 0xeb, { KEY_CAMERA_ZOOMOUT } },
- 	{ KE_KEY, 0xec, { KEY_CAMERA_UP } },
- 	{ KE_KEY, 0xed, { KEY_CAMERA_DOWN } },
-@@ -79,6 +94,52 @@ static const struct key_entry eeepc_wmi_keymap[] = {
- 	{ KE_END, 0},
- };
- 
-+static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int *code,
-+				 int *value, int *autorelease)
-+{
-+	struct eeepc_wmi_driver *eeepc = to_eeepc_wmi_driver(asus_wmi);
-+	int is_press;
-+
-+	/*
-+	 * The following behavior is used for T101MT "Home" key:
-+	 * 
-+	 *   On press:   No event set
-+	 *   On hold:    KEY_PROG2 press sent once w/o autorelease
-+	 *   On release: If key was held, KEY_PROG2 release sent.
-+	 *               Otherwise KEY_HOME press sent w/ autorelease.
-+	 *
-+	 * The simple state machine below implements this behavior.
-+	 */
-+	switch (*code) {
-+	case HOME_PRESS:
-+		eeepc->home_key_state = HOME_PRESS;
-+		*code = ASUS_WMI_KEY_IGNORE;
-+		break;
-+	case HOME_HOLD:
-+		if (eeepc->home_key_state == HOME_HOLD) {
-+			*code = ASUS_WMI_KEY_IGNORE;
-+		} else {
-+			eeepc->home_key_state = HOME_HOLD;
-+			*value = 1;
-+			*autorelease = 0;
-+		}
-+		break;
-+	case HOME_RELEASE:
-+		if (eeepc->home_key_state == HOME_RELEASE) {
-+			dev_warn(&asus_wmi->platform_device->dev,
-+				 "Unexpected home key release event\n");
-+			*code = ASUS_WMI_KEY_IGNORE;
-+		} else {
-+			*code = eeepc->home_key_state;
-+			eeepc->home_key_state = HOME_RELEASE;
-+			is_press = (*code == HOME_PRESS);
-+			*value = is_press;
-+			*autorelease = is_press;
-+		}
-+		break;
-+	}
-+}
-+
- static acpi_status eeepc_wmi_parse_device(acpi_handle handle, u32 level,
- 						 void *context, void **retval)
- {
-@@ -142,26 +203,30 @@ static void eeepc_wmi_quirks(struct asus_wmi_driver *driver)
- 	eeepc_dmi_check(driver);
- }
- 
--static struct asus_wmi_driver asus_wmi_driver = {
--	.name = EEEPC_WMI_FILE,
--	.owner = THIS_MODULE,
--	.event_guid = EEEPC_WMI_EVENT_GUID,
--	.keymap = eeepc_wmi_keymap,
--	.input_name = "Eee PC WMI hotkeys",
--	.input_phys = EEEPC_WMI_FILE "/input0",
--	.probe = eeepc_wmi_probe,
--	.quirks = eeepc_wmi_quirks,
-+static struct eeepc_wmi_driver eeepc_wmi_driver = {
-+	.asus_wmi_driver = {
-+		.name = EEEPC_WMI_FILE,
-+		.owner = THIS_MODULE,
-+		.event_guid = EEEPC_WMI_EVENT_GUID,
-+		.keymap = eeepc_wmi_keymap,
-+		.input_name = "Eee PC WMI hotkeys",
-+		.input_phys = EEEPC_WMI_FILE "/input0",
-+		.key_filter = eeepc_wmi_key_filter,
-+		.probe = eeepc_wmi_probe,
-+		.quirks = eeepc_wmi_quirks,
-+	},
-+	.home_key_state = HOME_RELEASE,
- };
- 
- 
- static int __init eeepc_wmi_init(void)
- {
--	return asus_wmi_register_driver(&asus_wmi_driver);
-+	return asus_wmi_register_driver(&eeepc_wmi_driver.asus_wmi_driver);
- }
- 
- static void __exit eeepc_wmi_exit(void)
- {
--	asus_wmi_unregister_driver(&asus_wmi_driver);
-+	asus_wmi_unregister_driver(&eeepc_wmi_driver.asus_wmi_driver);
- }
- 
- module_init(eeepc_wmi_init);
--- 
-1.7.4.1
+If you think this has anything to do with Intel's ability to break your hardware
+on every merge then you've got your wires crossed.
 
+Dave.
