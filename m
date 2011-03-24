@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934032Ab1CXT2E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:28:04 -0400
+	id S934051Ab1CXT2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:28:09 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:53790 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934020Ab1CXT15 (ORCPT
+	with ESMTP id S934028Ab1CXT2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:27:57 -0400
+	Thu, 24 Mar 2011 15:28:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=r6DDpCBenwIl5belSPuQKbMR/3DXo/UnJTdIm7CL4zzB62vgFpQ/VG2KXr6V5jBUuB
-         F2ADPXwNyMLdaASiCKwBrzRfObVIe5+oC38U+ZDTAUZtLbRLnqSM93cZmwsxUGM2E3u4
-         xjKZHFCw5m9rrEsKID4pfIZulX6AYAZ9F9geg=
+        b=N0Xvlr+m6/cZk1iG/ETpUTkjp098jtJPOYCs+diObEgllGIyFS4ElFwyJNDzoiPc82
+         R9Mif27oXYcGmz2LQMoPC2UAQsEXQqTxfGQ1axzh/6X4rOkRHMW9b6knRUWJWHU7kOM/
+         F/ZIx5KbUWZ5+yBy5U+7PAwlOd4syn2LsrfXM=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC 15/21]drivers:target Remove extra comma.
-Date: Thu, 24 Mar 2011 12:26:53 -0700
-Message-Id: <1300994819-30930-15-git-send-email-justinmattock@gmail.com>
+Subject: [RFC 17/21]kernel:pm_qos_params.c Remove extra comma.
+Date: Thu, 24 Mar 2011 12:26:55 -0700
+Message-Id: <1300994819-30930-17-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
 References: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
@@ -34,45 +34,22 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/target/target_core_alua.c      |    4 ++--
- drivers/target/target_core_transport.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/pm_qos_params.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
-index 2c5fcfe..e7dddaf 100644
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -1036,7 +1036,7 @@ core_alua_allocate_lu_gp(const char *name, int def_group)
- 	lu_gp = kmem_cache_zalloc(t10_alua_lu_gp_cache, GFP_KERNEL);
- 	if (!(lu_gp)) {
- 		printk(KERN_ERR "Unable to allocate struct t10_alua_lu_gp\n");
--		return ERR_PTR(-ENOMEM);;
-+		return ERR_PTR(-ENOMEM);
- 	}
- 	INIT_LIST_HEAD(&lu_gp->lu_gp_list);
- 	INIT_LIST_HEAD(&lu_gp->lu_gp_mem_list);
-@@ -1044,7 +1044,7 @@ core_alua_allocate_lu_gp(const char *name, int def_group)
- 	atomic_set(&lu_gp->lu_gp_ref_cnt, 0);
- 
- 	if (def_group) {
--		lu_gp->lu_gp_id = se_global->alua_lu_gps_counter++;;
-+		lu_gp->lu_gp_id = se_global->alua_lu_gps_counter++;
- 		lu_gp->lu_gp_valid_id = 1;
- 		se_global->alua_lu_gps_count++;
- 	}
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index ff9ace0..39ac190 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2131,7 +2131,7 @@ static void transport_failure_reset_queue_depth(struct se_device *dev)
- {
+diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+index 0da058b..beb1846 100644
+--- a/kernel/pm_qos_params.c
++++ b/kernel/pm_qos_params.c
+@@ -385,7 +385,7 @@ static ssize_t pm_qos_power_read(struct file *filp, char __user *buf,
+ 	s32 value;
  	unsigned long flags;
+ 	struct pm_qos_object *o;
+-	struct pm_qos_request_list *pm_qos_req = filp->private_data;;
++	struct pm_qos_request_list *pm_qos_req = filp->private_data;
  
--	spin_lock_irqsave(&SE_HBA(dev)->hba_queue_lock, flags);;
-+	spin_lock_irqsave(&SE_HBA(dev)->hba_queue_lock, flags);
- 	atomic_inc(&dev->depth_left);
- 	atomic_inc(&SE_HBA(dev)->left_queue_depth);
- 	spin_unlock_irqrestore(&SE_HBA(dev)->hba_queue_lock, flags);
+ 	if (!pm_qos_req)
+ 		return -EINVAL;
 -- 
 1.7.4.1
 
