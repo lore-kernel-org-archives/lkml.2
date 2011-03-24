@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934076Ab1CXT2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:28:40 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60296 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934056Ab1CXT2L (ORCPT
+	id S934082Ab1CXT2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:28:53 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:63376 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934049Ab1CXT2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:28:11 -0400
+	Thu, 24 Mar 2011 15:28:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=eYOXk8VCVm7LcDBgsN7m3E1bFx+ROc2U9vhEcNP6LzGnJXYmzLrDGUzdyQU0dSIxWz
-         pJKjjATz1RiQN9xiVYTpmZU3nbsfPWigduB3ZF3DYkiWo9frfvr1V5hiQNTpXA4hD4Xm
-         BBS1fCivB0+OgYqu1J6MF6ilJdpMbmamLIjoE=
+        b=v7n8uTufFZrg/kKtdjCU4DRW4orq/hpbvJh+7C8rUZlsumK0nZxX/4Hs+XVpKMYbRr
+         5tyrIzzKZLmwtQ3NZKgd8uPly7A4WFuJVUJdlExb9rZpJpKaiz8wM+/2aErIikN+9yeR
+         QqILrGS9jAL0lWeFbS9TrfKrPkaYLxr3KRwMQ=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC 20/21]security:selinux:selinuxfs.c Remove extra comma.
-Date: Thu, 24 Mar 2011 12:26:58 -0700
-Message-Id: <1300994819-30930-20-git-send-email-justinmattock@gmail.com>
+Subject: [RFC 19/21]net remove extra comma.
+Date: Thu, 24 Mar 2011 12:26:57 -0700
+Message-Id: <1300994819-30930-19-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
 References: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
@@ -34,46 +34,36 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- security/selinux/selinuxfs.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ net/netfilter/ipset/ip_set_bitmap_ip.c |    2 +-
+ net/sunrpc/addr.c                      |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
-index ea39cb7..47b7d62 100644
---- a/security/selinux/selinuxfs.c
-+++ b/security/selinux/selinuxfs.c
-@@ -280,7 +280,7 @@ static ssize_t sel_write_disable(struct file *file, const char __user *buf,
+diff --git a/net/netfilter/ipset/ip_set_bitmap_ip.c b/net/netfilter/ipset/ip_set_bitmap_ip.c
+index bca9699..cc29922 100644
+--- a/net/netfilter/ipset/ip_set_bitmap_ip.c
++++ b/net/netfilter/ipset/ip_set_bitmap_ip.c
+@@ -293,7 +293,7 @@ bitmap_ip_uadt(struct ip_set *set, struct nlattr *tb[],
  
- 	length = -ENOMEM;
- 	if (count >= PAGE_SIZE)
--		goto out;;
-+		goto out;
+ 	for (; !before(ip_to, ip); ip += map->hosts) {
+ 		id = ip_to_id(map, ip);
+-		ret = adtfn(set, &id, timeout);;
++		ret = adtfn(set, &id, timeout);
  
- 	/* No partial writes. */
- 	length = -EINVAL;
-@@ -876,12 +876,12 @@ static ssize_t sel_write_user(struct file *file, char *buf, size_t size)
+ 		if (ret && !ip_set_eexist(ret, flags))
+ 			return ret;
+diff --git a/net/sunrpc/addr.c b/net/sunrpc/addr.c
+index 1419d0c..4195233 100644
+--- a/net/sunrpc/addr.c
++++ b/net/sunrpc/addr.c
+@@ -151,7 +151,7 @@ static size_t rpc_pton4(const char *buf, const size_t buflen,
+ 		return 0;
  
- 	length = task_has_security(current, SECURITY__COMPUTE_USER);
- 	if (length)
--		goto out;;
-+		goto out;
+ 	sin->sin_family = AF_INET;
+-	return sizeof(struct sockaddr_in);;
++	return sizeof(struct sockaddr_in);
+ }
  
- 	length = -ENOMEM;
- 	con = kzalloc(size + 1, GFP_KERNEL);
- 	if (!con)
--		goto out;;
-+		goto out;
- 
- 	length = -ENOMEM;
- 	user = kzalloc(size + 1, GFP_KERNEL);
-@@ -941,7 +941,7 @@ static ssize_t sel_write_member(struct file *file, char *buf, size_t size)
- 	length = -ENOMEM;
- 	scon = kzalloc(size + 1, GFP_KERNEL);
- 	if (!scon)
--		goto out;;
-+		goto out;
- 
- 	length = -ENOMEM;
- 	tcon = kzalloc(size + 1, GFP_KERNEL);
+ #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
 -- 
 1.7.4.1
 
