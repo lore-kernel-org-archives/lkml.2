@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933682Ab1CXS6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 14:58:46 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:38071 "EHLO mx1.fusionio.com"
+	id S933773Ab1CXS7Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 14:59:25 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36400 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757088Ab1CXS6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 14:58:36 -0400
-X-ASG-Debug-ID: 1300993115-03d6a54f62d27c0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D8B9457.2020608@fusionio.com>
-Date: Thu, 24 Mar 2011 19:58:31 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S933584Ab1CXS7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 14:59:24 -0400
+Date: Thu, 24 Mar 2011 19:59:03 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
+Message-ID: <20110324185903.GA30510@elte.hu>
+References: <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
+ <20110324172653.GA28507@elte.hu>
+ <alpine.DEB.2.00.1103241242450.32226@router.home>
+ <AANLkTimMcP-GikCCndQppNBsS7y=4beesZ4PaD6yh5y5@mail.gmail.com>
+ <alpine.DEB.2.00.1103241300420.32226@router.home>
+ <AANLkTi=KZQd-GrXaq4472V3XnEGYqnCheYcgrdPFE0LJ@mail.gmail.com>
+ <alpine.DEB.2.00.1103241312280.32226@router.home>
+ <1300990853.3747.189.camel@edumazet-laptop>
+ <alpine.DEB.2.00.1103241346060.32226@router.home>
+ <AANLkTik3rkNvLG-rgiWxKaPc-v9sZQq96ok0CXfAU+r_@mail.gmail.com>
 MIME-Version: 1.0
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-References: <4D8B4A89.80608@fusionio.com> <20110324183019.GA1676@gentoo.trippels.de> <4D8B8F34.5000203@fusionio.com> <4D8B92AE.8090308@fusionio.com> <20110324185445.GB1696@gentoo.trippels.de>
-X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-In-Reply-To: <20110324185445.GB1696@gentoo.trippels.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1300993115
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58855
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik3rkNvLG-rgiWxKaPc-v9sZQq96ok0CXfAU+r_@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -0.5
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-0.5 required=5.9 tests=BAYES_00,URIBL_RHS_DOB autolearn=no SpamAssassin version=3.3.1
+	1.5 URIBL_RHS_DOB          Contains an URI of a new domain (Day Old Bread)
+	[URIs: linux.com]
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-24 19:54, Markus Trippelsdorf wrote:
-> On 2011.03.24 at 19:51 +0100, Jens Axboe wrote:
->> On 2011-03-24 19:36, Jens Axboe wrote:
->>> On 2011-03-24 19:30, Markus Trippelsdorf wrote:
->>>> On 2011.03.24 at 14:43 +0100, Jens Axboe wrote:
->>>>>
->>>>> This is the main pull request for the block IO layer and friends for
->>>>> 2.6.39.
->>>>
->>>> This merge results in an early oops on my system (amd64, xfs).
->>>> See the attached photo.
->>>>
->>>
->>> Auch. Can you ensure that you have CONFIG_DEBUGINFO=y in your .config
->>> and then do:
->>>
->>> $ gdb vmlinux
->>> ...
->>> l *cfq_insert_request+0x32
->>>
->>> and send that output?
->>
->> I took a closer look at the oops, and it most likely looks like q ==
->> NULL (offset 0x18 == q->elevator). You left out the Code part, so I
->> can't verify that for certain. Which makes very little sense. I take it
->> this is 100% reproducible? When you send the gdb output, please also
->> attach your .config.
+
+* Pekka Enberg <penberg@kernel.org> wrote:
+
+> On Thu, Mar 24, 2011 at 8:47 PM, Christoph Lameter <cl@linux.com> wrote:
+> >
+> > On Thu, 24 Mar 2011, Eric Dumazet wrote:
+> >
+> >> > this_cpu_cmpxchg16b_emu:
+> >> >         pushf
+> >> >         cli
+> >> >
+> >> >         cmpq %gs:(%rsi), %rax
+> >
+> >> Random guess
+> >>
+> >> Masking interrupts, and accessing vmalloc() based memory for the first
+> >> time ?
+> >
+> > Hmmm.. Could be. KVM would not really disable interrupts so this may
+> > explain that the test case works here.
+> >
+> > Simple fix would be to do a load before the cli I guess.
 > 
-> Yes, it's 100% reproducible here. My .config follows:
+> Btw, I tried Ingo's .config and it doesn't boot here so it's somehow
+> .config related.
 
-Can you try this patch and see if it makes a difference?
+did you get a similar early crash as i? I'd not expect my .config to have all 
+the drivers that are needed on your box.
 
-If you boot without the patch and add elevator=noop, does it then work?
+Thanks,
 
-
--- 
-Jens Axboe
-
+	Ingo
