@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756992Ab1CXP4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 11:56:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50568 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754032Ab1CXP4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 11:56:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,237,1299484800"; 
-   d="scan'208";a="671159501"
-From: Andi Kleen <andi@firstfloor.org>
-To: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-        Ian Lance Taylor <ian@airs.com>, Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH 2/2] Replace the linear search with a binary search for locate the symbols
-References: <1300914043-2297-1-git-send-email-abogani@kernel.org>
-	<1300914043-2297-3-git-send-email-abogani@kernel.org>
-Date: Thu, 24 Mar 2011 08:54:57 -0700
-In-Reply-To: <1300914043-2297-3-git-send-email-abogani@kernel.org> (Alessio
-	Igor Bogani's message of "Wed, 23 Mar 2011 22:00:43 +0100")
-Message-ID: <m27hbov7hq.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757008Ab1CXP5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 11:57:30 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:55362 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754435Ab1CXP52 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 11:57:28 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+oKU1Ife+oker+z153huTBCPwOVAPLsdSJuB/suL
+	ESreRBAIFqhhX+
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: viafb clock patches - second round
+Date: Thu, 24 Mar 2011 16:12:57 +0000
+Message-Id: <1300983180-7343-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alessio Igor Bogani <abogani@kernel.org> writes:
+Here are the remaining clock patches which finally put it in a good 
+shape. Most of the clock and PLL went into an extra file making the 
+codebase more structured. Only the PLL table and related code was 
+left out as it is not yet in a desirable state as this table is only 
+usable for the X1 source as the limits are frequency dependend.
 
-> This work was supported by a hardware donation from the CE Linux Forum.
+All patches (including first round) are also available at
+	git://github.com/schandinat/linux-2.6.git viafb-pll
 
-Patch looks good to me. SORT is a nice trick, too bad it won't 
-work for the main kernel.
+and will also show up in linux-nexxt after the early rc's are done.
 
--Andi
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks,
+
+Florian Tobias Schandinat
+
