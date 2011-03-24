@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab1CXVrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 17:47:24 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:28665 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab1CXVrU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 17:47:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=ShPwQeO/JUsDtBeKEuMKpCITsD94q5CRpQ73VwfppVNVFv0hi4d3FEGboIVG+/1EJN
-         ZuC32bSWRR1Y5AwjdmsQ==
-Date: Thu, 24 Mar 2011 14:47:11 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [PATCH] Accelerate OOM killing
-In-Reply-To: <1300960353-2596-1-git-send-email-minchan.kim@gmail.com>
-Message-ID: <alpine.DEB.2.00.1103241446520.20718@chino.kir.corp.google.com>
-References: <1300960353-2596-1-git-send-email-minchan.kim@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S933576Ab1CXVrt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 17:47:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15888 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755215Ab1CXVrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 17:47:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,239,1299484800"; 
+   d="scan'208";a="901484352"
+From: Andi Kleen <andi@firstfloor.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Burt Triplett <burt@pbjtriplett.org>, linux-kernel@vger.kernel.org
+Subject: Re: BITS handling of CPU microcode updates
+References: <4D65EE74.1050709@pbjtriplett.org>
+	<20110312023001.GB27550@khazad-dum.debian.net>
+	<4D87E2CD.6020306@pbjtriplett.org>
+	<20110324001451.GA7950@khazad-dum.debian.net>
+Date: Thu, 24 Mar 2011 14:46:21 -0700
+In-Reply-To: <20110324001451.GA7950@khazad-dum.debian.net> (Henrique de Moraes
+	Holschuh's message of "Wed, 23 Mar 2011 21:14:51 -0300")
+Message-ID: <m2ipv8kx8y.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011, Minchan Kim wrote:
+Henrique de Moraes Holschuh <hmh@hmh.eng.br> writes:
+>
+> Very well, I will send patches to fix that behaviour, as well as some
+> other stuff I noticed that was not updated to match the recommended
+> actions documented by the SDM and some Intel application notes.
 
-> When I test Andrey's problem, I saw the livelock and sysrq-t says
-> there are many tasks in cond_resched after try_to_free_pages.
-> 
-> If did_some_progress is false, cond_resched could delay oom killing so
-> It might be killing another task.
-> 
-> This patch accelerates oom killing without unnecessary giving CPU
-> to another task. It could help avoding unnecessary another task killing
-> and livelock situation a litte bit.
-> 
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Andrey Vagin <avagin@openvz.org>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+I don't think you can easily -- there's no kernel interface
+to distingush the "explicit user action" case from automatic loading.
 
-Acked-by: David Rientjes <rientjes@google.com>
+This all would need a new kernel interface.
+
+I suppose all the test labs have learned by now how to disable
+automatic updates ...
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
