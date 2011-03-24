@@ -1,115 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933596Ab1CXKqR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 06:46:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38266 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932103Ab1CXKqQ convert rfc822-to-8bit (ORCPT
+	id S1756780Ab1CXKw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 06:52:29 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:46589 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465Ab1CXKw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 06:46:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xwOlUyITOtvlqpvBC0ZPJBFbHDEKRS8u01tCfGuEIbEn5l3N4PJEzAbpeKl8z8mv8n
-         8etflUMCbcChtwytUVCzQBuLxhqt/IqGvPWTcSpA382ybesRJJu7tBiu5YpKUzqd3bPF
-         bssoSk/0CVCbYY8O/GR5BblToslLnfIjLoIWY=
+	Thu, 24 Mar 2011 06:52:28 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D8B22B8.1070903@cam.ac.uk>
+Date: Thu, 24 Mar 2011 10:53:44 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110324075413.GA25830@elte.hu>
-References: <AANLkTim-U1nyuQ3cVxLHv63LmQUvOJd5GmR5wF90xG==@mail.gmail.com>
-	<20110324075413.GA25830@elte.hu>
-Date: Thu, 24 Mar 2011 16:46:15 +0600
-Message-ID: <AANLkTinMbYte_Atmgqn2bfowWOMWNV3TiAFgoOMTPg2G@mail.gmail.com>
-Subject: Re: [origin tree build failure] Re: [PATCH] fs, coda: Fix compile
- warning when CONFIG_SYSCTL=n.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Jan Harkes <jaharkes@cs.cmu.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, coda@cs.cmu.edu,
-        codalist@TELEMANN.coda.cs.cmu.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Ryan Mallon <ryan@bluewatersys.com>
+CC: linux-kernel@vger.kernel.org, greg@kroah.com, rusty@rustcorp.com.au,
+        adobriyan@gmail.com
+Subject: Re: [PATCH 2/3] debugfs: move to new kstrtobool function
+References: <1300887554-19031-1-git-send-email-jic23@cam.ac.uk> <1300887554-19031-3-git-send-email-jic23@cam.ac.uk> <4D8A55F7.1070802@bluewatersys.com>
+In-Reply-To: <4D8A55F7.1070802@bluewatersys.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 1:54 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Rakib Mullick <rakib.mullick@gmail.com> wrote:
->
->> When CONFIG_SYSCTL=n, we get the following warning:
+On 03/23/11 20:20, Ryan Mallon wrote:
+> On 03/24/2011 02:39 AM, Jonathan Cameron wrote:
+>> No functional changes requires that we eat errors from
+>> kstrtobool.  Note *val is still only updated if a valid
+>> input is found.
 >>
->> fs/coda/sysctl.c:18: warning: ‘coda_table’ defined but not used
->>
->> Following patches fixes the above warning by making sure coda_table
->> and it's callee
->> function are in the same context. It also cleans up the code by
->> removing extra #ifdef.
->>
->>
->> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+>> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 >> ---
+>>  fs/debugfs/file.c |   19 ++++++-------------
+>>  1 files changed, 6 insertions(+), 13 deletions(-)
 >>
->> diff --git a/fs/coda/sysctl.c b/fs/coda/sysctl.c
->> index c6405ce..d9cc2b3 100644
->> --- a/fs/coda/sysctl.c
->> +++ b/fs/coda/sysctl.c
->
-> FYI, the v2 of this patch:
->
->  0bc825d240ab: codafs: fix compile warning when CONFIG_SYSCTL=n
->
-> broke the upstream build:
->
->  fs/built-in.o: In function `init_coda':
->  psdev.c:(.init.text+0x2549): undefined reference to `coda_sysctl_clean'
->  fs/built-in.o: In function `exit_coda':
->  psdev.c:(.exit.text+0x1bf): undefined reference to `coda_sysctl_clean'
->  fs/built-in.o: In function `init_coda_psdev':
->  psdev.c:(.text.unlikely+0x21e1): undefined reference to `coda_sysctl_init'
->
-> I don't think the -v2 commit was build-tested with !CONFIG_PROC_SYSCTL &&
-> CONFIG_CODA_FS=y.
->
-Andrew cleans up the unnecessary stubs. But, clearly removed
-definition is necessary. And Yes, you are right, I didn't build test
-it. Sorry for that. Please consider the following patch.
+>> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+>> index 89d394d..fed4485 100644
+>> --- a/fs/debugfs/file.c
+>> +++ b/fs/debugfs/file.c
+>> @@ -429,25 +429,18 @@ static ssize_t write_file_bool(struct file *file, const char __user *user_buf,
+>>  {
+>>  	char buf[32];
+>>  	int buf_size;
+>> +	int ret;
+>> +	bool bv;
+>>  	u32 *val = file->private_data;
+>>  
+>>  	buf_size = min(count, (sizeof(buf)-1));
+>>  	if (copy_from_user(buf, user_buf, buf_size))
+>>  		return -EFAULT;
+>>  
+>> -	switch (buf[0]) {
+>> -	case 'y':
+>> -	case 'Y':
+>> -	case '1':
+>> -		*val = 1;
+>> -		break;
+>> -	case 'n':
+>> -	case 'N':
+>> -	case '0':
+>> -		*val = 0;
+>> -		break;
+>> -	}
+>> -	
+>> +	ret = kstrtobool(buf, &bv);
+>> +	if (!ret)
+>> +		*val = bv;
+>> +
+>>  	return count;
+> 
+> Shouldn't this be:
+> 
+> 	ret = kstrtobool(buf, &bv);
+> 	if (ret)
+> 		return ret;
+> 
+> 	*val = bv;
+> 	return count;
+> 
+That is indeed what one would normally expect to see.
+However, I think we want to maintain what is already happening in
+the function and previously it never returned an error for
+an invalid value.
 
----
-codafs: Fix build break when CONFIG_PROC_SYSCTL=n
+Now that's not to say I'd be against a 'fix' for that issue, but
+it should be in a separate patch series as it has nothing to do
+with the use of this new function.
 
-Commit 0bc825d240ab (codafs: fix compile warning when
-CONFIG_SYSCTL=n), introduces build breakage, when CONFIG_PROC_SYSCTL=n
-and CONFIG_CODA_FS=y. This patch fixes it.
+Jonathan
 
-fs/built-in.o: In function `init_coda':
-psdev.c:(.init.text+0xc02): undefined reference to `coda_sysctl_init'
-psdev.c:(.init.text+0xc7c): undefined reference to `coda_sysctl_clean'
-fs/built-in.o: In function `exit_coda':
-psdev.c:(.exit.text+0xa9): undefined reference to `coda_sysctl_clean'
-make: *** [.tmp_vmlinux1] Error 1
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-Reported-by: Ingo Molnar <mingo@elte.hu>
----
-
-diff --git a/fs/coda/sysctl.c b/fs/coda/sysctl.c
-index 06d27a4..af56ad5 100644
---- a/fs/coda/sysctl.c
-+++ b/fs/coda/sysctl.c
-@@ -61,4 +61,13 @@ void coda_sysctl_clean(void)
- 		fs_table_header = NULL;
- 	}
- }
-+
-+#else
-+void coda_sysctl_init(void)
-+{
-+}
-+
-+void coda_sysctl_clean(void)
-+{
-+}
- #endif
