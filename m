@@ -1,228 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933610Ab1CXHkn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 03:40:43 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:45688 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933338Ab1CXHkk convert rfc822-to-8bit (ORCPT
+	id S933620Ab1CXHl1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 03:41:27 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36479 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933550Ab1CXHl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 03:40:40 -0400
+	Thu, 24 Mar 2011 03:41:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=gSFTzYVauNGdSTWkkmb6KaXCgAgagk7rmH8+0bYEHjskNXfM7Cf6OhlYdy5iOzX02t
-         KPzYwQMpXpcgG8yvgX7w==
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=F047B3ej55K5SORSfhIL0A8rpA1FbBwjdFw0+anFQ4THDU8fdMyb/hDfD8/XFPP7q9
+         azxQ8GWGM3siOnOKrBPUFiSnAOQfXrz5t0yqCTR3zJOhsEUyi2kGybC9YT6MNwvIb4Rx
+         rvhcX6uaKtaITHjArIclFjpyf55W83s8UFLoA=
 MIME-Version: 1.0
-In-Reply-To: <20110324063642.GB2721@in.ibm.com>
-References: <20110323030326.789836913@google.com> <20110323030449.047028257@google.com>
- <20110324063642.GB2721@in.ibm.com>
-From: Paul Turner <pjt@google.com>
-Date: Thu, 24 Mar 2011 00:40:06 -0700
-Message-ID: <AANLkTi=QpUDvAO+MZcSU=gsAOXpi_rkQeBOnj=0p5OzV@mail.gmail.com>
-Subject: Re: [patch 04/15] sched: throttle cfs_rq entities which exceed their
- local quota
-To: bharata@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Nikhil Rao <ncrao@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+In-Reply-To: <AANLkTimafdn8wPD7Zu3tK4PLgik=-0MeE62nGxq7ks4N@mail.gmail.com>
+References: <20110324160349.CC83.A69D9226@jp.fujitsu.com>
+	<AANLkTi=rOCdojotYG3wyX2Bt+aDrgxTO9DQWe7h1BQrC@mail.gmail.com>
+	<20110324162936.CC87.A69D9226@jp.fujitsu.com>
+	<AANLkTimafdn8wPD7Zu3tK4PLgik=-0MeE62nGxq7ks4N@mail.gmail.com>
+Date: Thu, 24 Mar 2011 16:41:25 +0900
+Message-ID: <AANLkTimPKEODvp3MmYmFrmEYSbAPr1b4dTq6fDHWAEsD@mail.gmail.com>
+Subject: Re: [PATCH 1/5] vmscan: remove all_unreclaimable check from direct
+ reclaim path completely
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, Johannes Weiner <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 11:36 PM, Bharata B Rao
-<bharata@linux.vnet.ibm.com> wrote:
-> On Tue, Mar 22, 2011 at 08:03:30PM -0700, Paul Turner wrote:
->> In account_cfs_rq_quota() (via update_curr()) we track consumption versus a
->> cfs_rqs locally assigned quota and whether there is global quota available
->> to provide a refill when it runs out.
+On Thu, Mar 24, 2011 at 4:34 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Thu, Mar 24, 2011 at 4:28 PM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>>> For example, In 4G desktop system.
+>>> 32M full scanning and fail to reclaim a page.
+>>> It's under 1% coverage.
 >>
->> In the case that there is no quota remaining it's necessary to throttle so
->> that execution ceases until the susbequent period.  While it is at this
->> boundary that we detect (and signal for, via reshed_task) that a throttle is
->> required, the actual operation is deferred until put_prev_entity().
->>
->> At this point the cfs_rq is marked as throttled and not re-enqueued, this
->> avoids potential interactions with throttled runqueues in the event that we
->> are not immediately able to evict the running task.
->>
->> Signed-off-by: Paul Turner <pjt@google.com>
->> Signed-off-by: Nikhil Rao <ncrao@google.com>
->> Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
->> ---
->>  kernel/sched.c      |    2
->>  kernel/sched_fair.c |  117 +++++++++++++++++++++++++++++++++++++++++++++++++---
->>  2 files changed, 113 insertions(+), 6 deletions(-)
->>
->> Index: tip/kernel/sched.c
->> ===================================================================
->> --- tip.orig/kernel/sched.c
->> +++ tip/kernel/sched.c
->> @@ -386,7 +386,7 @@ struct cfs_rq {
->>       unsigned long load_contribution;
->>  #endif
->>  #ifdef CONFIG_CFS_BANDWIDTH
->> -     int quota_enabled;
->> +     int quota_enabled, throttled;
->>       s64 quota_remaining;
->>  #endif
->>  #endif
->> Index: tip/kernel/sched_fair.c
->> ===================================================================
->> --- tip.orig/kernel/sched_fair.c
->> +++ tip/kernel/sched_fair.c
->> @@ -321,9 +321,6 @@ find_matching_se(struct sched_entity **s
->>
->>  #endif       /* CONFIG_FAIR_GROUP_SCHED */
->>
->> -static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
->> -                              unsigned long delta_exec);
->> -
->>  /**************************************************************
->>   * Scheduling class tree data structure manipulation methods:
->>   */
->> @@ -588,6 +585,9 @@ __update_curr(struct cfs_rq *cfs_rq, str
->>  #endif
->>  }
->>
->> +static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
->> +             unsigned long delta_exec);
->> +
->>  static void update_curr(struct cfs_rq *cfs_rq)
->>  {
->>       struct sched_entity *curr = cfs_rq->curr;
->> @@ -1221,6 +1221,9 @@ static struct sched_entity *pick_next_en
->>       return se;
->>  }
->>
->> +static void throttle_cfs_rq(struct cfs_rq *cfs_rq);
->> +static inline int within_bandwidth(struct cfs_rq *cfs_rq);
->> +
->>  static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
->>  {
->>       /*
->> @@ -1230,6 +1233,9 @@ static void put_prev_entity(struct cfs_r
->>       if (prev->on_rq)
->>               update_curr(cfs_rq);
->>
->> +     if (!within_bandwidth(cfs_rq))
->> +             throttle_cfs_rq(cfs_rq);
->> +
->>       check_spread(cfs_rq, prev);
->>       if (prev->on_rq) {
->>               update_stats_wait_start(cfs_rq, prev);
->> @@ -1241,6 +1247,8 @@ static void put_prev_entity(struct cfs_r
->>       cfs_rq->curr = NULL;
->>  }
->>
->> +static void check_cfs_rq_quota(struct cfs_rq *cfs_rq);
->> +
->>  static void
->>  entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
->>  {
->> @@ -1249,6 +1257,9 @@ entity_tick(struct cfs_rq *cfs_rq, struc
->>        */
->>       update_curr(cfs_rq);
->>
->> +     /* check that entity's usage is still within quota (if enabled) */
->> +     check_cfs_rq_quota(cfs_rq);
->> +
->>       /*
->>        * Update share accounting for long-running entities.
->>        */
->> @@ -1294,6 +1305,46 @@ static inline u64 sched_cfs_bandwidth_sl
->>         return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
->>  }
->>
->> +static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
->> +{
->> +     return cfs_rq->throttled;
->> +}
->> +
->> +static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
->> +{
->> +     struct task_group *tg;
->> +     struct sched_entity *se;
->> +
->> +     if (cfs_rq_throttled(cfs_rq))
->> +             return 1;
->> +
->> +     tg = cfs_rq->tg;
->> +     se = tg->se[cpu_of(rq_of(cfs_rq))];
->> +     if (!se)
->> +             return 0;
->> +
->> +     for_each_sched_entity(se) {
->> +             if (cfs_rq_throttled(cfs_rq_of(se)))
->> +                     return 1;
->> +     }
->> +
->> +     return 0;
->> +}
->> +
->> +static inline int within_bandwidth(struct cfs_rq *cfs_rq)
->> +{
->> +     return !cfs_rq->quota_enabled || cfs_rq->quota_remaining > 0;
->> +}
->> +
->> +static void check_cfs_rq_quota(struct cfs_rq *cfs_rq)
->> +{
->> +     if (within_bandwidth(cfs_rq))
->> +             return;
->> +
->> +
->> +     resched_task(rq_of(cfs_rq)->curr);
->> +}
->> +
->>  static void request_cfs_rq_quota(struct cfs_rq *cfs_rq)
->>  {
->>       struct task_group *tg = cfs_rq->tg;
->> @@ -1330,6 +1381,29 @@ static void account_cfs_rq_quota(struct
->>       request_cfs_rq_quota(cfs_rq);
->>  }
->>
->> +static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
->> +{
->> +     struct sched_entity *se;
->> +
->> +     se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
->> +
->> +     /* account load preceding throttle */
->> +     update_cfs_load(cfs_rq, 0);
->> +
->> +     for_each_sched_entity(se) {
->> +             struct cfs_rq *qcfs_rq = cfs_rq_of(se);
->> +             /* throttled entity or throttle-on-deactivate */
->> +             if (!se->on_rq)
->> +                     break;
->> +
->> +             dequeue_entity(qcfs_rq, se, DEQUEUE_SLEEP);
->> +             if (qcfs_rq->load.weight)
->> +                     break;
->> +     }
->> +
->> +     cfs_rq->throttled = 1;
->> +}
+>> ?? I'm sorry. I haven't catch it.
+>> Where 32M come from?
 >
-> Since throttling is done from put_prev_entity(), iiuc, you will be
-> doing 'put' for current entities which are not on the tree. Can you
-> avoid the dequeue_entity() call here which I think will anyway bail out
-> from actual dequeueing (se != cfs_rq->curr check in dequeue_entity).
->
+> (1<<12) * 4K + (1<<11) + 4K + .. (1 << 0) + 4K in shrink_zones.
 
-No -- cfs_rq->curr is still wholly enqueued less residency in the
-rb-tree; this includes factors such as the number of runnable entities
-and contribution to load.  The dequeue is necessary; a throttle is
-analogous to the current task blocking, only on a group entity level.
+Stupid me.
+Sorry. my calculation is totally wrong.
 
-> Regards,
-> Bharata.
->
+Your explanation was perfect
+Okay. I don't have any objection to your solution.
+
+
+
+-- 
+Kind regards,
+Minchan Kim
