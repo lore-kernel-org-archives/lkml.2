@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934334Ab1CXVLa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 17:11:30 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:51721 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934293Ab1CXVL2 (ORCPT
+	id S1755539Ab1CXVQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 17:16:54 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:28074 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397Ab1CXVQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 17:11:28 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+i7pxNQNuiNmd7/2SDQrUu1bVkPdnT0AzOKudYGI
-	gnpHfeFWXc5z6F
-Message-ID: <4D8BB37B.9040204@gmx.de>
-Date: Thu, 24 Mar 2011 22:11:23 +0100
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	Thu, 24 Mar 2011 17:16:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=DwoHvJbRserdmVN2DVK4uzU8eWtjsE4TdZz1Z4XcYksGjvh0VrxHN4JD8HPauHfH/l
+         vYyGC/bVA9FpCHXf/New==
 MIME-Version: 1.0
-To: Xavier Bachelot <xavier@bachelot.org>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] viafb: add VIA slapping capability
-References: <1300983180-7343-1-git-send-email-FlorianSchandinat@gmx.de> <1300983180-7343-4-git-send-email-FlorianSchandinat@gmx.de> <4D8B9FBE.6030207@bachelot.org>
-In-Reply-To: <4D8B9FBE.6030207@bachelot.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+In-Reply-To: <AANLkTimPWxVeax3RcVBefPeV5+P8G6cHhdU-g82_s5s3@mail.gmail.com>
+References: <AANLkTinmjGaK9ZSbKYTm5g-wuQ-K1hQaJBA+gSN5ERJ=@mail.gmail.com>
+ <AANLkTikHqJR=JgZzKc1G-m8z82hBFmD-w1bLn5aENTcr@mail.gmail.com> <AANLkTimPWxVeax3RcVBefPeV5+P8G6cHhdU-g82_s5s3@mail.gmail.com>
+From: Paul Menage <menage@google.com>
+Date: Thu, 24 Mar 2011 14:16:27 -0700
+Message-ID: <AANLkTimRqvy4JseWka9HfwvmirbUxcTEBy5OTg4UiQiZ@mail.gmail.com>
+Subject: Re: Tests for cpusets and cgroup performance measurement
+To: Jaswinder Singh <jaswinderlinux@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xavier Bachelot schrieb:
-> On 03/24/2011 05:13 PM, Florian Tobias Schandinat wrote:
->> This patch introduces dummy functions to execute when we don't know
->> what we should do (due to missing documentation). They do nothing
->> but print a nice message in the log explaining the situation.
->> To trigger this message initial power management support is
->> activated which might save a bit energy by disabling PLL and clock
->> if no device is configured to use them.
->>
->> Note: The message is only shown for the oldest IGPs CLE266 and K400
->>       as for the other platforms there are reasonable assumptions
->>       how it does (hopefully) work.
->>
->> Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
->> ---
-> 
->> +static void dummy_set_clock_source(enum via_clksrc source, bool use_pll)
->> +{
->> +	printk(KERN_INFO "Using undocumented set slock soure.\n%s", via_slap);
-> 
-> 2 typos above.
+On Tue, Mar 22, 2011 at 10:42 PM, Jaswinder Singh
+<jaswinderlinux@gmail.com> wrote:
+> "Jobs on larger NUMA systems may see a performance boost if jobs can be
+> intelligently assigned to specific CPUs. Jobs may perform better if
+> striped across physical processors, or contained within the fewest
+> number of memory controllers."
+>
+> I am curious and want to try some simple tests so that I can see the
+> performance improvement by using cpusets on my PCs.
+>
+> Can you suggest some tests so that I can study them.
 
-Indeed. Thanks for pointing it out, fixed.
+Not particularly - I've never been involved in optimizing apps on
+large NUMA systems. Our uses of NUMA at Google have all involved
+faked-NUMA nodes, assigning nodes to jobs to provide crude memory
+limits.
 
-> Regards,
-> Xavier
+I suspect that there aren't very many "simple" tests out there. Google
+search for [hpc numa tuning] turns up a few likely pages that might
+have pointers to suitable applications.
 
-Regards,
-
-Florian Tobias Schandinat
+Paul
