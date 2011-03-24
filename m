@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934370Ab1CXXRc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 19:17:32 -0400
-Received: from xes-mad.com ([216.165.139.218]:16849 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934349Ab1CXXR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 19:17:29 -0400
-From: Peter Tyser <ptyser@xes-inc.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Tyser <ptyser@xes-inc.com>, tomoya-linux@dsn.okisemi.com,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH] gpio: ml_ioh_gpio: Fix output value of ioh_gpio_direction_output()
-Date: Thu, 24 Mar 2011 18:17:14 -0500
-Message-Id: <1301008634-25429-1-git-send-email-ptyser@xes-inc.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S934355Ab1CXXS1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 19:18:27 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53281 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934349Ab1CXXSZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 19:18:25 -0400
+Date: Thu, 24 Mar 2011 23:18:50 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Lukasz Sokol <el.es.cr@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: In_fridge_ment?
+Message-ID: <20110324231850.13c604e1@lxorguk.ukuu.org.uk>
+In-Reply-To: <loom.20110325T000152-297@post.gmane.org>
+References: <loom.20110325T000152-297@post.gmane.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ioh_gpio_direction_output() function was missing a write to set the
-desired output value.  The function would properly set the GPIO
-direction, but not the output value.  The value would have to manually
-be set with a follow up call to ioh_gpio_set().
+On Thu, 24 Mar 2011 23:05:15 +0000 (UTC)
+Lukasz Sokol <el.es.cr@gmail.com> wrote:
 
-Add the missing write so that ioh_gpio_direction_output() sets both the
-GPIO direction and value.
+> Hello All,
+> this may be amusing (or not if you're a lawyer):
+> http://groceries.asda.com/asda-estore/catalog
+> /sectionpagecontainer.jsp?skuId=910000402067&departmentid=1214921923780&
+> aisleid=1214921925167&startValue=
+> 
+> (gmane made me break up the link)
+> 
+> Basically a UK's branch of Wal Mart has a product that looks pretty much like
+> Tux. 
+> 
+> In_fridge_ment?
 
-Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
-Cc: tomoya-linux@dsn.okisemi.com
-Cc: Grant Likely <grant.likely@secretlab.ca>
----
-This is untested - just noticed it while working on an unrelated change.  An
-ack or tested-by from someone with real hardware would be appreciated.
+Chuckle.. the left hand one does indeed look a little tuxlike but more
+worrying is the unfortunate placing of the stick which means it looks like
+its taking a crap.
 
- drivers/gpio/ml_ioh_gpio.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+The other one indeed also looks like the crystal tux
 
-diff --git a/drivers/gpio/ml_ioh_gpio.c b/drivers/gpio/ml_ioh_gpio.c
-index cead8e6..7a0423c 100644
---- a/drivers/gpio/ml_ioh_gpio.c
-+++ b/drivers/gpio/ml_ioh_gpio.c
-@@ -116,6 +116,7 @@ static int ioh_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
- 		reg_val |= (1 << nr);
- 	else
- 		reg_val &= ~(1 << nr);
-+	iowrite32(reg_val, &chip->reg->regs[chip->ch].po);
- 
- 	mutex_unlock(&chip->lock);
- 
--- 
-1.7.0.4
+Tux however isn't just a Linux penguin. If you read the blurb Larry said
+"Permission to use and/or modify this image is granted provided you
+acknowledge me lewing@isc.tamu.edu and The GIMP if someone asks. "
+
+So he's sort of CC-BY, only he's older ;)
+
+He's been legitimately used in all sorts of things including an ice rink
+advert!
+
+Alan
 
