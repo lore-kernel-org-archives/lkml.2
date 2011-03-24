@@ -1,66 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab1CXLKJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 07:10:09 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62340 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab1CXLKE (ORCPT
+	id S1753876Ab1CXLKH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 07:10:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38478 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab1CXLKE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Mar 2011 07:10:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=AlawyT1oACANe78PKZHWhVXeE1mJlIqgZg7iXyyM3fGQwgiYc7Q7Tw9s+JP29HiA/t
-         pEi8WpIuy5bSOXJTd8GMBfHYFnWTVjaYaqfWOnYaOJ3jRxjq91u2OGKkZ/Z7IkiAPShY
-         L/GJpiuc/462dtRYq9InG0F3RK1S5Wg1cVTv0=
-Subject: Re: Hit BUG_ON in dma-mapping.c:425 (RFC)
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Patrice VILCHEZ <patrice.vilchez@atmel.com>,
-        Hong XU <hong.xu@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-mtd <linux-mtd@lists.infradead.org>
-In-Reply-To: <20110324092732.GA19935@n2100.arm.linux.org.uk>
-References: <4D24A108.2080609@atmel.com> <4D8AFE45.8050609@atmel.com>
-	 <20110324082521.GB9844@n2100.arm.linux.org.uk>
-	 <1300955778.2735.68.camel@localhost>
-	 <20110324092732.GA19935@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Mar 2011 13:08:07 +0200
-Message-ID: <1300964887.2735.84.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=BaOUUj1xStutoXO9hxJIN7wtN2jyLvB/HGtHkrsLzJ01YNkfSySSlCpMfDe18NDavz
+         qBpPcw1HDXssMxeqHxalaXdGOoUbRCaKpQEHLPfsmEl2u/a652NwTKYTgnzuuT4j95Uc
+         6iLtBIoaSLSQ0GrUMJztOw2xLT25xIDeev0LE=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTin4xUzdp89sm5_x0eXpde1NzqCzcKMbxP7YJBN4@mail.gmail.com>
+References: <AANLkTin4xUzdp89sm5_x0eXpde1NzqCzcKMbxP7YJBN4@mail.gmail.com>
+Date: Thu, 24 Mar 2011 12:10:03 +0100
+Message-ID: <AANLkTi=wmHWiqyriV1fJZcUyJ+2uyhQuPf8q2zFu-hHh@mail.gmail.com>
+Subject: Fwd: sctp 2.6.37 kernel - general protection fault
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-24 at 09:27 +0000, Russell King - ARM Linux wrote:
-> The only real answer I can give is: if you want to deal with DMA, you
-> absolutely must conform to the restrictions on DMA which means that you
-> can't pass vmalloc addresses to the DMA API.
+Hi LKML,
 
-I see, thanks. Well, I do not see any issues with changing MTD-related
-SW (JFFS2, UBI, UBIFS, etc) to use kmalloc. But this would require som
-non-trivial efforts, although I believe this is doable.
+let me forward this also to wider audience.
 
-Basically, we have to work with entire eraseblocks often, which may be
-128KiB or 256KiB or even 512KiB nowadays. And we vmalloc the
-eraseblock-sized buffers in these cases.
+For me it dies somewhere in list_for_each_entry_rcu() which could
+apply borked data - just my assumption.
 
-We could instead work with arrays of pages (or multiple pages), and then
-do things like readv/writev. But this requires a brave knight who'd come
-and just implemented this, or a company who'd fund someone to work on
-this.
+-Jacek
 
--- 
-Best Regards,
-Artem Bityutskiy (–ê—Ä—Ç—ë–º –ë–∏—Ç—é—Ü–∫–∏–π)
 
+---------- Forwarded message ----------
+From: Jacek Luczak <difrost.kernel@gmail.com>
+Date: 2011/3/23
+Subject: sctp 2.6.37 kernel - general protection fault
+To: linux-sctp@vger.kernel.org
+DW: vladislav.yasevich@hp.com
+
+
+Hi,
+
+I receive the below attached general protection fault. Details:
+1) HW: HP BL460c G6
+2) Kernel: 2.6.37
+3) Arch: x86_64
+
+System is unusable and does not respond. Currently I'm trying to find
+the way to reproduce this issue.
+
+-Jacek
+
+kernel: general protection fault: 0000 [#1] SMP
+kernel: last sysfs file:
+/sys/devices/system/cpu/cpu15/cache/index2/shared_cpu_map
+kernel: CPU 15
+kernel: Modules linked in: hmac sctp nfsd autofs4 ib_iser rdma_cm
+ib_cm iw_cm ib_sa ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxg
+b3i libcxgbi iw_cxgb3 ib_core cxgb3 libiscsi_tcp libiscsi
+scsi_transport_iscsi dm_mirror dm_region_hash dm_log dm_multipath
+battery acpi_pad ac parport usbhi
+d evdev power_meter radeon ttm drm_kms_helper drm hwmon ipmi_si
+i2c_algo_bit i2c_core ipmi_msghandler psmouse ehci_hcd uhci_hcd
+kernel:
+kernel: Pid: 19271, comm: k3r.exe Not tainted 2.6.37-2.NSN.kiuas #1
+/ProLiant BL460c G6
+kernel: RIP: 0010:[<ffffffffa02f3dde>] †[<ffffffffa02f3dde>]
+sctp_bind_addr_conflict+0x64/0x82 [sctp]
+kernel: RSP: 0018:ffff88030c303c38 †EFLAGS: 00010246
+kernel: RAX: dead000000100100 RBX: dead000000100100 RCX: ffff880001902640
+kernel: RDX: 0000000000000000 RSI: ffff8806010bc150 RDI: ffff8805f85bf1a0
+kernel: RBP: ffff8800018c1dc0 R08: 0000000000000001 R09: ffff880604c48080
+kernel: R10: ffff8806065daf90 R11: ffff88030c303c98 R12: ffff880ae5292c68
+kernel: R13: ffff8806010bc150 R14: ffff880001902640 R15: 0000000000b436b4
+kernel: FS: †0000000000000000(0000) GS:ffff8800df2e0000(0063)
+knlGS:00000000f76fe6d0
+kernel: CS: †0010 DS: 002b ES: 002b CR0: 000000008005003b
+kernel: CR2: 000000000a43101c CR3: 0000000588ec0000 CR4: 00000000000006e0
+kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+kernel: Process k3r.exe (pid: 19271, threadinfo ffff88030c302000, task
+ffff88013ab5a160)
+kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+kernel: Process k3r.exe (pid: 19271, threadinfo ffff88030c302000, task
+ffff88013ab5a160)
+kernel: Stack:
+kernel: †00000000ffffff9d ffff8806010bc140 dead000000100100 ffff880a959aab20
+kernel: †ffff8800018c1de8 ffff880942c36b40 ffff8800018c1dc0 ffffffffa02f415f
+kernel: †0000000000000000 ffff8806010bc150 0000000000000000 ffffffffa02f3d45
+kernel: Call Trace:
+kernel: †[<ffffffffa02f415f>] ? sctp_get_port_local+0x17b/0x2a3 [sctp]
+kernel: †[<ffffffffa02f3d45>] ? sctp_bind_addr_match+0x33/0x68 [sctp]
+kernel: †[<ffffffffa02f4416>] ? sctp_do_bind+0xd3/0x141 [sctp]
+kernel: †[<ffffffffa02f5030>] ? sctp_bindx_add+0x4d/0x8e [sctp]
+kernel: †[<ffffffffa02f5183>] ? sctp_setsockopt_bindx+0x112/0x4a4 [sctp]
+kernel: †[<ffffffff81089e82>] ? generic_file_aio_write+0x7f/0x9b
+kernel: †[<ffffffffa02f763e>] ? sctp_setsockopt+0x14f/0xfee [sctp]
+kernel: †[<ffffffff810c11fb>] ? do_sync_write+0xab/0xeb
+kernel: †[<ffffffff810e82ab>] ? fsnotify+0x239/0x282
+kernel: †[<ffffffff810c2462>] ? alloc_file+0x18/0xb1
+kernel: †[<ffffffff8134a0b1>] ? compat_sys_setsockopt+0x1a5/0x1d9
+kernel: †[<ffffffff8134aaf1>] ? compat_sys_socketcall+0x143/0x1a4
+kernel: †[<ffffffff810467dc>] ? sysenter_dispatch+0x7/0x32
+b 5c 24 10 <48> 8b 03 0f 18 08 49 8d 44 24 08 48 39 c3 75 c3 48 83 c4 18 89
+kernel: RIP †[<ffffffffa02f3dde>] sctp_bind_addr_conflict+0x64/0x82 [sctp]
+kernel: †RSP <ffff88030c303c38>
+kernel: Kernel panic - not syncing: Fatal exception in interrupt
+kernel: Pid: 19271, comm: k3r.exe Tainted: G † † †D † † 2.6.37-2.NSN.kiuas #1
+kernel: Call Trace:
+kernel: †[<ffffffff81053add>] ? panic+0xdc/0x1d7
+kernel: †[<ffffffff8102588e>] ? apic_timer_interrupt+0xe/0x20
+kernel: †[<ffffffff81054f96>] ? kmsg_dump+0xa9/0x143
+kernel: †[<ffffffff810288f7>] ? oops_end+0x86/0x93
+kernel: †[<ffffffff813ccaf5>] ? general_protection+0x25/0x30
+kernel: †[<ffffffffa02f3dde>] ? sctp_bind_addr_conflict+0x64/0x82 [sctp]
+kernel: †[<ffffffffa02f3dcb>] ? sctp_bind_addr_conflict+0x51/0x82 [sctp]
+kernel: †[<ffffffffa02f415f>] ? sctp_get_port_local+0x17b/0x2a3 [sctp]
+kernel: †[<ffffffffa02f3d45>] ? sctp_bind_addr_match+0x33/0x68 [sctp]
+kernel: †[<ffffffffa02f4416>] ? sctp_do_bind+0xd3/0x141 [sctp]
+kernel: †[<ffffffffa02f5030>] ? sctp_bindx_add+0x4d/0x8e [sctp]
+kernel: †[<ffffffffa02f5183>] ? sctp_setsockopt_bindx+0x112/0x4a4 [sctp]
+kernel: †[<ffffffff81089e82>] ? generic_file_aio_write+0x7f/0x9b
+kernel: †[<ffffffffa02f763e>] ? sctp_setsockopt+0x14f/0xfee [sctp]
+kernel: †[<ffffffff810c11fb>] ? do_sync_write+0xab/0xeb
+kernel: †[<ffffffff810e82ab>] ? fsnotify+0x239/0x282
+kernel: †[<ffffffff810c2462>] ? alloc_file+0x18/0xb1
+kernel: †[<ffffffff8134a0b1>] ? compat_sys_setsockopt+0x1a5/0x1d9
+kernel: †[<ffffffff8134aaf1>] ? compat_sys_socketcall+0x143/0x1a4
+kernel: †[<ffffffff810467dc>] ? sysenter_dispatch+0x7/0x32
