@@ -1,153 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab1CXRnP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 13:43:15 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51959 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab1CXRnM (ORCPT
+	id S932596Ab1CXRnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 13:43:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57530 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756392Ab1CXRnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 13:43:12 -0400
-Date: Thu, 24 Mar 2011 13:43:11 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Sean Noonan <Sean.Noonan@twosigma.com>
-Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Martin Bligh <Martin.Bligh@twosigma.com>,
-        Trammell Hudson <Trammell.Hudson@twosigma.com>,
-        Christos Zoulas <Christos.Zoulas@twosigma.com>,
-        "'linux-xfs@oss.sgi.com'" <linux-xfs@oss.sgi.com>,
-        Stephen Degler <Stephen.Degler@twosigma.com>, walken@google.com,
-        linux-mm@kvack.org
-Subject: Re: XFS memory allocation deadlock in 2.6.38
-Message-ID: <20110324174311.GA31576@infradead.org>
-References: <081DDE43F61F3D43929A181B477DCA95639B52FD@MSXAOA6.twosigma.com>
- <081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 24 Mar 2011 13:43:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=KfEHEALcvWlwn23bwH1dfST486TSlA6z6ZAbcS73K/zqPP4UcUW2SB/bMPnz42xUha
+         6oAQPEzLb3PdZKJ7zBsPAtOz9c0jusBBx5m9gm0OTkd4HS6rZt4s56SJhgf/lQIrhOAJ
+         o1aT7bW4erSvkyW8rpHjwbMjpOXOSRDy7bJAY=
+From: Tejun Heo <tj@kernel.org>
+To: chris.mason@oracle.com, peterz@infradead.org, mingo@redhat.com,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/3] btrfs: Use separate lockdep class keys for different roots
+Date: Thu, 24 Mar 2011 18:43:07 +0100
+Message-Id: <1300988588-13986-3-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1300988588-13986-1-git-send-email-tj@kernel.org>
+References: <1300988588-13986-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michel,
+Due to the custom extent_buffer locking implementation, currently
+lockdep doesn't have visibility into btrfs locking when the locks are
+switched to blocking, hiding most of lock ordering issues from
+lockdep.
 
-can you take a look at this bug report?  It looks like a regression
-in your mlock handling changes.
+With planned switch to mutex, all extent_buffer locking operations
+will be visible to lockdep.  As btrfs_root's used for different
+purposes can be lock-nested, sharing the same set of lockdep class
+keys leads to spurious locking dependency warnings.
 
+This patch makes btrfs_set_buffer_lockdep_class() take @root parameter
+which indicates the btrfs_root the @eb belongs to and use different
+sets of keys according to the type of @root.
 
-On Wed, Mar 23, 2011 at 03:39:05PM -0400, Sean Noonan wrote:
-> I believe this patch fixes the behavior:
-> diff --git a/mm/memory.c b/mm/memory.c
-> index e48945a..740d5ab 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3461,7 +3461,9 @@ int make_pages_present(unsigned long addr, unsigned long end)
->          * to break COW, except for shared mappings because these don't COW
->          * and we would not want to dirty them for nothing.
->          */
-> -       write = (vma->vm_flags & (VM_WRITE | VM_SHARED)) == VM_WRITE;
-> +       write = (vma->vm_flags & VM_WRITE) != 0;
-> +       if (write && ((vma->vm_flags & VM_SHARED) !=0) && (vma->vm_file == NULL))
-> +               write = 0;
->         BUG_ON(addr >= end);
->         BUG_ON(end > vma->vm_end);
->         len = DIV_ROUND_UP(end, PAGE_SIZE) - addr/PAGE_SIZE;
-> 
-> 
-> This was traced to the following commit:
-> 5ecfda041e4b4bd858d25bbf5a16c2a6c06d7272 is the first bad commit
-> commit 5ecfda041e4b4bd858d25bbf5a16c2a6c06d7272
-> Author: Michel Lespinasse <walken@google.com>
-> Date:   Thu Jan 13 15:46:09 2011 -0800
-> 
->     mlock: avoid dirtying pages and triggering writeback
->     
->     When faulting in pages for mlock(), we want to break COW for anonymous or
->     file pages within VM_WRITABLE, non-VM_SHARED vmas.  However, there is no
->     need to write-fault into VM_SHARED vmas since shared file pages can be
->     mlocked first and dirtied later, when/if they actually get written to.
->     Skipping the write fault is desirable, as we don't want to unnecessarily
->     cause these pages to be dirtied and queued for writeback.
->     
->     Signed-off-by: Michel Lespinasse <walken@google.com>
->     Cc: Hugh Dickins <hughd@google.com>
->     Cc: Rik van Riel <riel@redhat.com>
->     Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
->     Cc: Peter Zijlstra <peterz@infradead.org>
->     Cc: Nick Piggin <npiggin@kernel.dk>
->     Cc: Theodore Tso <tytso@google.com>
->     Cc: Michael Rubin <mrubin@google.com>
->     Cc: Suleiman Souhlal <suleiman@google.com>
->     Cc: Dave Chinner <david@fromorbit.com>
->     Cc: Christoph Hellwig <hch@infradead.org>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> 
-> :040000 040000 604eede2f45b7e5276ce9725b715ed15a868861d 3c175eadf4cf33d4f78d4d455c9a04f3df2c199e M	mm
-> 
-> 
-> -----Original Message-----
-> From: Sean Noonan 
-> Sent: Monday, March 21, 2011 12:20
-> To: 'linux-kernel@vger.kernel.org'
-> Cc: Trammell Hudson; Martin Bligh; Stephen Degler; Christos Zoulas
-> Subject: XFS memory allocation deadlock in 2.6.38
-> 
-> This message was originally posted to the XFS mailing list, but received no responses.  Thus, I am sending it to LKML on the advice of Martin.
-> 
-> Using the attached program, we are able to reproduce this bug reliably.
-> $ make vmtest
-> $ ./vmtest /xfs/hugefile.dat $(( 16 * 1024 * 1024 * 1024 )) # vmtest <path_to_file> <size_in_bytes>
-> /xfs/hugefile.dat: mapped 17179869184 bytes in 33822066943 ticks
-> 749660: avg 13339 max 234667 ticks
-> 371945: avg 26885 max 281616 ticks
-> ---
-> At this point, we see the following on the console:
-> [593492.694806] XFS: possible memory allocation deadlock in kmem_alloc (mode:0x250)
-> [593506.724367] XFS: possible memory allocation deadlock in kmem_alloc (mode:0x250)
-> [593524.837717] XFS: possible memory allocation deadlock in kmem_alloc (mode:0x250)
-> [593556.742386] XFS: possible memory allocation deadlock in kmem_alloc (mode:0x250)
-> 
-> This is the same message presented in
-> http://oss.sgi.com/bugzilla/show_bug.cgi?id=410
-> 
-> We started testing with 2.6.38-rc7 and have seen this bug through to the .0 release.  This does not appear to be present in 2.6.33, but we have not done testing in between.  We have tested with ext4 and do not encounter this bug.
-> CONFIG_XFS_FS=y
-> CONFIG_XFS_QUOTA=y
-> CONFIG_XFS_POSIX_ACL=y
-> CONFIG_XFS_RT=y
-> # CONFIG_XFS_DEBUG is not set
-> # CONFIG_VXFS_FS is not set
-> 
-> Here is the stack from the process:
-> [<ffffffff81357553>] call_rwsem_down_write_failed+0x13/0x20
-> [<ffffffff812ddf1e>] xfs_ilock+0x7e/0x110
-> [<ffffffff8130132f>] __xfs_get_blocks+0x8f/0x4e0
-> [<ffffffff813017b1>] xfs_get_blocks+0x11/0x20
-> [<ffffffff8114ba3e>] __block_write_begin+0x1ee/0x5b0
-> [<ffffffff8114be9d>] block_page_mkwrite+0x9d/0xf0
-> [<ffffffff81307e05>] xfs_vm_page_mkwrite+0x15/0x20
-> [<ffffffff810f2ddb>] do_wp_page+0x54b/0x820
-> [<ffffffff810f347c>] handle_pte_fault+0x3cc/0x820
-> [<ffffffff810f5145>] handle_mm_fault+0x175/0x2f0
-> [<ffffffff8102e399>] do_page_fault+0x159/0x470
-> [<ffffffff816cf6cf>] page_fault+0x1f/0x30
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> # uname -a
-> Linux testhost 2.6.38 #2 SMP PREEMPT Fri Mar 18 15:00:59 GMT 2011 x86_64 GNU/Linux
-> 
-> Please let me know if additional information is required.
-> 
-> Thanks!
-> 
-> Sean
-> 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
----end quoted text---
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/btrfs/disk-io.c     |   91 +++++++++++++++++++++++++++++++++--------------
+ fs/btrfs/disk-io.h     |   10 ++++--
+ fs/btrfs/extent-tree.c |    2 +-
+ fs/btrfs/volumes.c     |    2 +-
+ 4 files changed, 73 insertions(+), 32 deletions(-)
+
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index e973e0b..710efbd 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -99,42 +99,79 @@ struct async_submit_bio {
+ 
+ #ifdef CONFIG_LOCKDEP
+ /*
+- * These are used to set the lockdep class on the extent buffer locks.
+- * The class is set by the readpage_end_io_hook after the buffer has
+- * passed csum validation but before the pages are unlocked.
++ * Lockdep class keys for extent_buffer->lock's in this root.  For a given
++ * eb, the lockdep key is determined by the btrfs_root it belongs to and
++ * the level the eb occupies in the tree.
+  *
+- * The lockdep class is also set by btrfs_init_new_buffer on freshly
+- * allocated blocks.
++ * Different roots are used for different purposes and may nest inside each
++ * other and they require separate keysets.  As lockdep keys should be
++ * static, assign keysets according to the purpose of the root as indicated
++ * by btrfs_root->objectid.  This ensures that all special purpose roots
++ * have separate keysets.
+  *
+- * The class is based on the level in the tree block, which allows lockdep
+- * to know that lower nodes nest inside the locks of higher nodes.
++ * Lock-nesting across peer nodes is always done with the immediate parent
++ * node locked thus preventing deadlock.  As lockdep doesn't know this, use
++ * subclass to avoid triggering lockdep warning in such cases.
+  *
+- * We also add a check to make sure the highest level of the tree is
+- * the same as our lockdep setup here.  If BTRFS_MAX_LEVEL changes, this
+- * code needs update as well.
++ * The key is set by the readpage_end_io_hook after the buffer has passed
++ * csum validation but before the pages are unlocked.  It is also set by
++ * btrfs_init_new_buffer on freshly allocated blocks.
++ *
++ * We also add a check to make sure the highest level of the tree is the
++ * same as our lockdep setup here.  If BTRFS_MAX_LEVEL changes, this code
++ * needs update as well.
+  */
+ # if BTRFS_MAX_LEVEL != 8
+ #  error
+ # endif
+-static struct lock_class_key btrfs_eb_class[BTRFS_MAX_LEVEL + 1];
+-static const char *btrfs_eb_name[BTRFS_MAX_LEVEL + 1] = {
+-	/* leaf */
+-	"btrfs-extent-00",
+-	"btrfs-extent-01",
+-	"btrfs-extent-02",
+-	"btrfs-extent-03",
+-	"btrfs-extent-04",
+-	"btrfs-extent-05",
+-	"btrfs-extent-06",
+-	"btrfs-extent-07",
+-	/* highest possible level */
+-	"btrfs-extent-08",
++
++static struct btrfs_lockdep_keyset {
++	u64			id;		/* root objectid */
++	const char		*name_stem;	/* lock name stem */
++	char			names[BTRFS_MAX_LEVEL + 1][20];
++	struct lock_class_key	keys[BTRFS_MAX_LEVEL + 1];
++} btrfs_lockdep_keysets[] = {
++	{ .id = BTRFS_ROOT_TREE_OBJECTID,	.name_stem = "root"	},
++	{ .id = BTRFS_EXTENT_TREE_OBJECTID,	.name_stem = "extent"	},
++	{ .id = BTRFS_CHUNK_TREE_OBJECTID,	.name_stem = "chunk"	},
++	{ .id = BTRFS_DEV_TREE_OBJECTID,	.name_stem = "dev"	},
++	{ .id = BTRFS_FS_TREE_OBJECTID,		.name_stem = "fs"	},
++	{ .id = BTRFS_CSUM_TREE_OBJECTID,	.name_stem = "csum"	},
++	{ .id = BTRFS_ORPHAN_OBJECTID,		.name_stem = "orphan"	},
++	{ .id = BTRFS_TREE_LOG_OBJECTID,	.name_stem = "log"	},
++	{ .id = BTRFS_TREE_RELOC_OBJECTID,	.name_stem = "treloc"	},
++	{ .id = BTRFS_DATA_RELOC_TREE_OBJECTID,	.name_stem = "dreloc"	},
++	{ .id = 0,				.name_stem = "tree"	},
+ };
+ 
+-void btrfs_set_buffer_lockdep_class(struct extent_buffer *eb, int level)
++void __init btrfs_init_lockdep(void)
++{
++	int i, j;
++
++	/* initialize lockdep class names */
++	for (i = 0; i < ARRAY_SIZE(btrfs_lockdep_keysets); i++) {
++		struct btrfs_lockdep_keyset *ks = &btrfs_lockdep_keysets[i];
++
++		for (j = 0; j < ARRAY_SIZE(ks->names); j++)
++			snprintf(ks->names[j], sizeof(ks->names[j]),
++				 "btrfs-%s-%02d", ks->name_stem, j);
++	}
++}
++
++void btrfs_set_buffer_lockdep_class(struct btrfs_root *root,
++				    struct extent_buffer *eb, int level)
+ {
+-	lockdep_set_class_and_name(&eb->lock, &btrfs_eb_class[level],
+-				   btrfs_eb_name[level]);
++	struct btrfs_lockdep_keyset *ks;
++
++	BUG_ON(level >= ARRAY_SIZE(ks->keys));
++
++	/* find the matching keyset, id 0 is the default entry */
++	for (ks = btrfs_lockdep_keysets; ks->id; ks++)
++		if (ks->id == root->objectid)
++			break;
++
++	lockdep_set_class_and_name(&eb->lock,
++				   &ks->keys[level], ks->names[level]);
+ }
+ #endif	/* CONFIG_LOCKDEP */
+ 
+@@ -480,7 +517,7 @@ static int btree_readpage_end_io_hook(struct page *page, u64 start, u64 end,
+ 	}
+ 	found_level = btrfs_header_level(eb);
+ 
+-	btrfs_set_buffer_lockdep_class(eb, found_level);
++	btrfs_set_buffer_lockdep_class(root, eb, found_level);
+ 
+ 	ret = csum_tree_block(root, eb, 1);
+ 	if (ret)
+diff --git a/fs/btrfs/disk-io.h b/fs/btrfs/disk-io.h
+index 4ab3fa8..4e511e6 100644
+--- a/fs/btrfs/disk-io.h
++++ b/fs/btrfs/disk-io.h
+@@ -103,10 +103,14 @@ int btrfs_add_log_tree(struct btrfs_trans_handle *trans,
+ int btree_lock_page_hook(struct page *page);
+ 
+ #ifdef CONFIG_LOCKDEP
+-void btrfs_set_buffer_lockdep_class(struct extent_buffer *eb, int level);
++void btrfs_init_lockdep(void);
++void btrfs_set_buffer_lockdep_class(struct btrfs_root *root,
++				    struct extent_buffer *eb, int level);
+ #else
+-static inline void btrfs_set_buffer_lockdep_class(struct extent_buffer *eb,
+-						 int level)
++static inline void btrfs_init_lockdep(void)
++{ }
++static inline void btrfs_set_buffer_lockdep_class(struct btrfs_root *root,
++					struct extent_buffer *eb, int level)
+ { }
+ #endif	/* CONFIG_LOCKDEP */
+ 
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+index f1db57d..5e5fbf6 100644
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -5634,7 +5634,7 @@ struct extent_buffer *btrfs_init_new_buffer(struct btrfs_trans_handle *trans,
+ 	if (!buf)
+ 		return ERR_PTR(-ENOMEM);
+ 	btrfs_set_header_generation(buf, trans->transid);
+-	btrfs_set_buffer_lockdep_class(buf, level);
++	btrfs_set_buffer_lockdep_class(root, buf, level);
+ 	btrfs_tree_lock(buf);
+ 	clean_tree_block(trans, root, buf);
+ 
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index 94334d9..1e38522 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -3664,7 +3664,7 @@ int btrfs_read_sys_array(struct btrfs_root *root)
+ 	if (!sb)
+ 		return -ENOMEM;
+ 	btrfs_set_buffer_uptodate(sb);
+-	btrfs_set_buffer_lockdep_class(sb, 0);
++	btrfs_set_buffer_lockdep_class(root, sb, 0);
+ 
+ 	write_extent_buffer(sb, super_copy, 0, BTRFS_SUPER_INFO_SIZE);
+ 	array_size = btrfs_super_sys_array_size(super_copy);
+-- 
+1.7.1
+
