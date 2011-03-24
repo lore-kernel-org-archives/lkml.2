@@ -1,88 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab1CXT1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:27:15 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:32797 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933687Ab1CXT1K convert rfc822-to-8bit (ORCPT
+	id S933890Ab1CXT1U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:27:20 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:62751 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933687Ab1CXT1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:27:10 -0400
+	Thu, 24 Mar 2011 15:27:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=TslVoINfUzWjNHMkoFTWqEr6gFWBHsClxltuJx2d9hPQxoZoeuX3/zCBzdnxKceBPg
-         2LnElYPwTZHe5LfEfXQ9UNs1Ey2OLDkClEqL225I3PwR5L8jvKn49YtYeo0udyD86JmI
-         RR2SrRoTP3boO9TkYW/IbgJprWhTHGBhUgv+k=
-MIME-Version: 1.0
-In-Reply-To: <20110324192247.GA5477@elte.hu>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger>
-	<20110324142146.GA11682@elte.hu>
-	<alpine.DEB.2.00.1103240940570.32226@router.home>
-	<AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
-	<20110324172653.GA28507@elte.hu>
-	<20110324185258.GA28370@elte.hu>
-	<alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6>
-	<20110324192247.GA5477@elte.hu>
-Date: Thu, 24 Mar 2011 21:27:09 +0200
-X-Google-Sender-Auth: _iAPM6QIYoP1czodZWIA8Jq3l9c
-Message-ID: <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com>
-Subject: Re: [boot crash #2] Re: [GIT PULL] SLAB changes for v2.6.39-rc1
-From: Pekka Enberg <penberg@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Christoph Lameter <cl@linux.com>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=aeNFxU0QWnHpdY7kzImaj73Gas8M5GCtbH9ONtNjuD2u15LHFykUr9O7ikoR+8Peoq
+         XCldpQ6LHfSBqfUgchv38tPiRr71q3HAClXGwG4sJCSMqIPNTyFd4HJvOdjQzlzKA1D5
+         xfqEs2qwZNV757m6FpCQb+bBVF7NDvMNTMNzM=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [RFC 01/21]arch:arm:mach Remove extra comma.
+Date: Thu, 24 Mar 2011 12:26:39 -0700
+Message-Id: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 9:22 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Thomas Gleixner <tglx@linutronix.de> wrote:
->
->> On Thu, 24 Mar 2011, Ingo Molnar wrote:
->> > RIP: 0010:[<ffffffff810570a9>]  [<ffffffff810570a9>] get_next_timer_interrupt+0x119/0x260
->>
->> That's a typical timer crash, but you were unable to debug it with
->> debugobjects because commit d3f661d6 broke those.
->>
->> Christoph, debugobjects do not need to run with interupts
->> disabled. And just because they were in that section to keep all the
->> debug stuff together does not make an excuse for not looking at the
->> code and just slopping it into some totally unrelated ifdef along with
->> a completely bogus comment.
->>
->> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->> ---
->>  mm/slub.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> Index: linux-2.6/mm/slub.c
->> ===================================================================
->> --- linux-2.6.orig/mm/slub.c
->> +++ linux-2.6/mm/slub.c
->> @@ -849,11 +849,11 @@ static inline void slab_free_hook(struct
->>               local_irq_save(flags);
->>               kmemcheck_slab_free(s, x, s->objsize);
->>               debug_check_no_locks_freed(x, s->objsize);
->> -             if (!(s->flags & SLAB_DEBUG_OBJECTS))
->> -                     debug_check_no_obj_freed(x, s->objsize);
->>               local_irq_restore(flags);
->>       }
->>  #endif
->> +     if (!(s->flags & SLAB_DEBUG_OBJECTS))
->> +             debug_check_no_obj_freed(x, s->objsize);
->
-> Thanks, this did the trick!
->
-> Tested-by: Ingo Molnar <mingo@elte.hu>
->
-> With this fix i got the warning below - pinpointing a net/bluetooth/hci_core.c
-> timer bug.
+The patch below removes an extra comma from various parts 
+of the kernel. Please have a look when you have time, and let
+me know if its legit or not. 
 
-Applied, thanks!
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+---
+ arch/arm/mach-at91/at91cap9_devices.c    |    2 +-
+ arch/arm/mach-at91/at91sam9g45_devices.c |    2 +-
+ arch/arm/mach-at91/at91sam9rl_devices.c  |    2 +-
+ arch/arm/mach-tegra/tegra2_clocks.c      |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-at91/at91cap9_devices.c b/arch/arm/mach-at91/at91cap9_devices.c
+index d1f775e..308ce7a 100644
+--- a/arch/arm/mach-at91/at91cap9_devices.c
++++ b/arch/arm/mach-at91/at91cap9_devices.c
+@@ -171,7 +171,7 @@ void __init at91_add_device_usba(struct usba_platform_data *data)
+ 	 */
+ 	usba_udc_data.pdata.vbus_pin = -EINVAL;
+ 	usba_udc_data.pdata.num_ep = ARRAY_SIZE(usba_udc_ep);
+-	memcpy(usba_udc_data.ep, usba_udc_ep, sizeof(usba_udc_ep));;
++	memcpy(usba_udc_data.ep, usba_udc_ep, sizeof(usba_udc_ep));
+ 
+ 	if (data && data->vbus_pin > 0) {
+ 		at91_set_gpio_input(data->vbus_pin, 0);
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 1e8f275..5e9f8a4 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -256,7 +256,7 @@ void __init at91_add_device_usba(struct usba_platform_data *data)
+ {
+ 	usba_udc_data.pdata.vbus_pin = -EINVAL;
+ 	usba_udc_data.pdata.num_ep = ARRAY_SIZE(usba_udc_ep);
+-	memcpy(usba_udc_data.ep, usba_udc_ep, sizeof(usba_udc_ep));;
++	memcpy(usba_udc_data.ep, usba_udc_ep, sizeof(usba_udc_ep));
+ 
+ 	if (data && data->vbus_pin > 0) {
+ 		at91_set_gpio_input(data->vbus_pin, 0);
+diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
+index 53aaa94..c49262b 100644
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+@@ -145,7 +145,7 @@ void __init at91_add_device_usba(struct usba_platform_data *data)
+ 	 */
+ 	usba_udc_data.pdata.vbus_pin = -EINVAL;
+ 	usba_udc_data.pdata.num_ep = ARRAY_SIZE(usba_udc_ep);
+-	memcpy(usba_udc_data.ep, usba_udc_ep, sizeof(usba_udc_ep));;
++	memcpy(usba_udc_data.ep, usba_udc_ep, sizeof(usba_udc_ep));
+ 
+ 	if (data && data->vbus_pin > 0) {
+ 		at91_set_gpio_input(data->vbus_pin, 0);
+diff --git a/arch/arm/mach-tegra/tegra2_clocks.c b/arch/arm/mach-tegra/tegra2_clocks.c
+index 6d7c4ee..3b6f290 100644
+--- a/arch/arm/mach-tegra/tegra2_clocks.c
++++ b/arch/arm/mach-tegra/tegra2_clocks.c
+@@ -337,7 +337,7 @@ static int tegra2_super_clk_set_parent(struct clk *c, struct clk *p)
+ 	const struct clk_mux_sel *sel;
+ 	int shift;
+ 
+-	val = clk_readl(c->reg + SUPER_CLK_MUX);;
++	val = clk_readl(c->reg + SUPER_CLK_MUX);
+ 	BUG_ON(((val & SUPER_STATE_MASK) != SUPER_STATE_RUN) &&
+ 		((val & SUPER_STATE_MASK) != SUPER_STATE_IDLE));
+ 	shift = ((val & SUPER_STATE_MASK) == SUPER_STATE_IDLE) ?
+-- 
+1.7.4.1
+
