@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab1CXLqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 07:46:55 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:43990 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751917Ab1CXLqx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 07:46:53 -0400
-X-Greylist: delayed 73150 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Mar 2011 07:46:52 EDT
-From: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
-To: Linus Walleij <linus.walleij@linaro.org>, Greg KH <gregkh@suse.de>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>
-Date: Thu, 24 Mar 2011 12:45:54 +0100
-Subject: RE: [PATCH 2/2] mach-ux500: Add CG2900 devices
-Thread-Topic: [PATCH 2/2] mach-ux500: Add CG2900 devices
-Thread-Index: Acvpg4NTx/P3PPlsTe+VYaoVS3uQKwAlPduw
-Message-ID: <AFCDDB4A3EA003429EEF1E7B211FDBBA334C52AB89@EXDCVYMBSTM005.EQ1STM.local>
-References: <1300888803-26474-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-	<20110323142719.GA17369@suse.de>
- <AANLkTikZD5qie4y=tRpZXuea9D+_vDSGLMr+20p_PVkC@mail.gmail.com>
-In-Reply-To: <AANLkTikZD5qie4y=tRpZXuea9D+_vDSGLMr+20p_PVkC@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1756841Ab1CXLsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 07:48:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51002 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753508Ab1CXLsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 07:48:30 -0400
+Date: Thu, 24 Mar 2011 12:48:29 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: roccat: Add support for wireless variant of Pyra
+In-Reply-To: <1300900296.2328.7.camel@neuromancer>
+Message-ID: <alpine.LNX.2.00.1103241248200.19969@pobox.suse.cz>
+References: <1300900296.2328.7.camel@neuromancer>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 23 Mar 2011, Stefan Achatz wrote:
 
-> > As this touches ARM specific code, I need an ack from the ARM
-> maintainer
-> > before I can take this through the staging tree.  Is there any way to
-> > make it part of your drivers/staging/ submission?  There are other
-> > examples in the staging tree already that do this, why not do that
-> here
-> > as well?
+> Wireless variant of Roccat Pyra finally has been tested with
+> existing driver.
 > 
-> Hm yeah maybe it's possible if you move devices-cg2900.*
-> to staging/cg2900, then split off the stuff in board-mop500.c into
-> some drivers/staging/cg2900/board-mop500-cg2900.c which
-> adds the device in some proper initcall.
+> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+> ---
+>  drivers/hid/hid-core.c        |    1 +
+>  drivers/hid/hid-roccat-pyra.c |    3 ++-
+>  2 files changed, 3 insertions(+), 1 deletions(-)
 > 
-> Do you think it can be done P-G? I might have overestimated
-> the work involved in moving that stuff to /staging.
-> 
-> Yours,
-> Linus Walleij
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index c3d6626..84a0ca2 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1446,6 +1446,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPLUS) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KOVAPLUS) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRED) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRELESS) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
+> diff --git a/drivers/hid/hid-roccat-pyra.c b/drivers/hid/hid-roccat-pyra.c
+> index 160f481..38280c0 100644
+> --- a/drivers/hid/hid-roccat-pyra.c
+> +++ b/drivers/hid/hid-roccat-pyra.c
+> @@ -652,7 +652,8 @@ static int pyra_raw_event(struct hid_device *hdev, struct hid_report *report,
+>  static const struct hid_device_id pyra_devices[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT,
+>  			USB_DEVICE_ID_ROCCAT_PYRA_WIRED) },
+> -	/* TODO add USB_DEVICE_ID_ROCCAT_PYRA_WIRELESS after testing */
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT,
+> +			USB_DEVICE_ID_ROCCAT_PYRA_WIRELESS) },
+>  	{ }
+>  };
 
-As Arnd requested yesterday, I can move most of devices-cg2900, maybe all,
-to the staging folder (probably to cg2900_lib.c). I will then minimize
-whatever is needed in board-mop500.c. I will see what I can do.
+Applied, thanks Stefan.
 
-Thanks,
-/P-G
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
