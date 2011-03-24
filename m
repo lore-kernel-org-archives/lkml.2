@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957Ab1CXUg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:36:29 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58155 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417Ab1CXUg2 (ORCPT
+	id S934122Ab1CXUgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:36:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58871 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756417Ab1CXUgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:36:28 -0400
-Date: Thu, 24 Mar 2011 20:36:20 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
-Subject: Re: [RFC PATCHv2 3/4] drivers/otp: allow an ioctl to be specified
-Message-ID: <20110324203620.GK3130@pulham.picochip.com>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
- <1300980071-24645-4-git-send-email-jamie@jamieiles.com>
- <AANLkTi=c+664qQqiKOLmvdFScizUC7+88SrCx7WJnp0b@mail.gmail.com>
+	Thu, 24 Mar 2011 16:36:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=kUBhR2ArWenJuV9mXDGh9myASCvzrT7Z65Ai9sgV3IHxTQ/gvVGS2ZG9LWA2hyW2WD
+         2C81DfQBmgPVk5PaVeO5FvzOqmy2QcJonroBnR5rrvtmCcjMou9x6yF8T4Lh+/EEFX+f
+         wlQyjZ7blxmzE5wAgMsugOK6faaC5beqJOrys=
+Message-ID: <4D8BAB49.3080701@openvz.org>
+Date: Thu, 24 Mar 2011 23:36:25 +0300
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=c+664qQqiKOLmvdFScizUC7+88SrCx7WJnp0b@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@elte.hu>
+CC: Don Zickus <dzickus@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf, x86: P4 PMU - Read proper MSR register to catch unflagged
+ overflows
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+From: Don Zickus <dzickus@redhat.com>
+Subject: [PATCH -tip] perf, x86: P4 PMU - Read proper MSR register to catch unflagged overflows
 
-On Thu, Mar 24, 2011 at 02:35:00PM -0400, Mike Frysinger wrote:
-> On Thu, Mar 24, 2011 at 11:21, Jamie Iles wrote:
-> > Some drivers may need an ioctl method to provide device specific control
-> > such as blackfin for providing locking.  Regions can specify an ioctl to
-> > be used but this field method is optional.
-> 
-> shouldnt this just be squashed into patch 1 since you havent merged
-> any of this yet ?
+The read of a proper MSR register was missed and instead of counter the
+configration register was tested (it has ARCH_P4_UNFLAGGED_BIT always
+cleared) leading to unknown NMI hitting the system. As result the user may
+obtain "Dazed and confused, but trying to continue" message. Fix it by reading
+a proper MSR register.
 
-Probably yes, I was just trying to keep the patches smaller to review, 
-but in this case it probably isn't a sensible split.
+When an NMI happens on a P4, the perf nmi handler checks the configuration
+register to see if the overflow bit is set or not before taking
+appropriate action.  Unfortunately, various P4 machines had a broken
+overflow bit, so a backup mechanism was implemented.  This mechanism
+checked to see if the counter rolled over or not.
 
-> 
-> > +static long otp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
-> > +{
-> > +       struct otp_region *region = filp->private_data;
-> > +       long ret = -ENOTTY;
-> > +
-> > +       if (down_interruptible(&otp_sem))
-> > +               return -ERESTARTSYS;
-> > +
-> > +       if (region->ops->ioctl)
-> > +               ret = region->ops->ioctl(region, cmd, arg);
-> > +
-> > +       up(&otp_sem);
-> > +
-> > +       return ret;
-> > +}
-> 
-> the existence check can be pulled out of the locking
-> 
-> long ret;
-> 
-> if (!region->ops->ioctl)
->     return -ENOTTY;
-> 
-> if (down_interruptible(&otp_sem))
-> 
->     return -ERESTARTSYS;
-> 
-> ret = region->ops->ioctl(region, cmd, arg);
-> 
-> up(&otp_sem);
-> 
-> return ret;
->
-Ok, will do.
+A previous commit that implemented this backup mechanism was broken.
+Instead of reading the counter register, it used the configuration
+register to determine if the counter rolled over or not. Reading that bit
+would give incorrect results.
 
-Jamie
+This would lead to 'Dazed and confused' messages for the end user when
+using the perf tool (or if the nmi watchdog is running).
+
+The fix is to read the counter register before determining if the counter
+rolled over or not.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Lin Ming <ming.m.lin@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_p4.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6.tip/arch/x86/kernel/cpu/perf_event_p4.c
+===================================================================
+--- linux-2.6.tip.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.tip/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -777,6 +777,7 @@ static inline int p4_pmu_clear_cccr_ovf(
+ 	 * the counter has reached zero value and continued counting before
+ 	 * real NMI signal was received:
+ 	 */
++	rdmsrl(hwc->event_base, v);
+ 	if (!(v & ARCH_P4_UNFLAGGED_BIT))
+ 		return 1;
+
+
+-- 
+    Cyrill
