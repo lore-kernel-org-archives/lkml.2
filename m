@@ -1,55 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933206Ab1CXPYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 11:24:14 -0400
-Received: from mtoichi14.ns.itscom.net ([219.110.2.184]:58141 "EHLO
-	mtoichi14.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab1CXPYN (ORCPT
+	id S1756533Ab1CXP2N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 11:28:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35516 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395Ab1CXP2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 11:24:13 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 0/6 v7] overlay filesystem - request for inclusion
-To: "Hans-Peter Jansen" <hpj@urpla.net>
-Cc: Xianghua Xiao <xiaoxianghua@gmail.com>, Felix Fietkau <nbd@openwrt.org>,
-        linux-kernel@vger.kernel.org, neilb@suse.de
-In-Reply-To: <201103230013.41936.hpj@urpla.net>
-References: <20110322152602.053930811@szeredi.hu> <4D88E8EF.8000001@openwrt.org> <AANLkTim-_h9_mp3hPQXndTc3gR+AJKj+keoN2yDZV2Sr@mail.gmail.com> <201103230013.41936.hpj@urpla.net>
-Date: Fri, 25 Mar 2011 00:24:26 +0900
-Message-ID: <12510.1300980266@jrobl>
+	Thu, 24 Mar 2011 11:28:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=yDk5/gXMZqY5Tkq6iqCtRQSKP65e+Q06Y+osAHU3QDG5RBqY9O/vfmq4FvUda5FGUk
+         SfkTm8RQm9ULa/TkpfNN3KBBZKsO5QwsbMyqY6ZoLublBbYdFQdgNHHpj9sWDcmLoH0Y
+         XbhY+kCCaM69Txv//AO6Z324IaaZ3VsdZ0L84=
+Date: Fri, 25 Mar 2011 00:27:57 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/5] Revert "oom: give the dying task a higher priority"
+Message-ID: <20110324152757.GC1938@barrios-desktop>
+References: <20110315153801.3526.A69D9226@jp.fujitsu.com>
+ <20110322194721.B05E.A69D9226@jp.fujitsu.com>
+ <20110322200657.B064.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110322200657.B064.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 22, 2011 at 08:06:48PM +0900, KOSAKI Motohiro wrote:
+> This reverts commit 93b43fa55088fe977503a156d1097cc2055449a2.
+> 
+> The commit dramatically improve oom killer logic when fork-bomb
+> occur. But, I've found it has nasty corner case. Now cpu cgroup
+> has strange default RT runtime. It's 0! That said, if a process
+> under cpu cgroup promote RT scheduling class, the process never
+> run at all.
+> 
+> Eventually, kernel may hang up when oom kill occur.
+> 
+> The author need to resubmit it as adding knob and disabled
+> by default if he really need this feature.
+> 
+> Cc: Luis Claudio R. Goncalves <lclaudio@uudg.org>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-(removed aufs-users ML since it is restricted to its members only)
+Just a comment below.
 
-"Hans-Peter Jansen":
-> and aufs2: it's a minimalistic version of a layered filesystem, being=20
-	:::
+> ---
+>  mm/oom_kill.c |   27 ---------------------------
+>  1 files changed, 0 insertions(+), 27 deletions(-)
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 3100bc5..739dee4 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -84,24 +84,6 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
+>  #endif /* CONFIG_NUMA */
+>  
+>  /*
+> - * If this is a system OOM (not a memcg OOM) and the task selected to be
+> - * killed is not already running at high (RT) priorities, speed up the
+> - * recovery by boosting the dying task to the lowest FIFO priority.
+> - * That helps with the recovery and avoids interfering with RT tasks.
+> - */
+> -static void boost_dying_task_prio(struct task_struct *p,
+> -				  struct mem_cgroup *mem)
+> -{
+> -	struct sched_param param = { .sched_priority = 1 };
+> -
+> -	if (mem)
+> -		return;
+> -
+> -	if (!rt_task(p))
+> -		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
+> -}
+> -
+> -/*
+>   * The process p may have detached its own ->mm while exiting or through
+>   * use_mm(), but one or more of its subthreads may still have a valid
+>   * pointer.  Return p, or any of its subthreads with a valid ->mm, with
+> @@ -452,13 +434,6 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
+>  	set_tsk_thread_flag(p, TIF_MEMDIE);
+>  	force_sig(SIGKILL, p);
+>  
+> -	/*
+> -	 * We give our sacrificial lamb high priority and access to
+> -	 * all the memory it needs. That way it should be able to
+> -	 * exit() and clear out its resources quickly...
+> -	 */
+> -	boost_dying_task_prio(p, mem);
+> -
 
-Thanks reminding us about aufs. :-)
+Before merging 93b43fa5508, we had a following routine.
 
-As far as I know, overlayfs has some problems (minors?) similar to
-UnionMount.
-- for users, the inode number may change silently. eg. copy-up.
-- hardlinks may break by copy-up.
-- read(2) may get an obsoleted filedata (fstat(2) for metadata too).
-- fcntl(F_SETLK) may be broken by copy-up.
-- unnecessary copy-up may happen, for example mmap(MAP_PRIVATE) after
-  open(O_RDWR).
++static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
+ {
+        p = find_lock_task_mm(p);
+        if (!p) {
+@@ -434,9 +452,17 @@ static int oom_kill_task(struct task_struct *p)
+                K(get_mm_counter(p->mm, MM_FILEPAGES)));
+        task_unlock(p);
+ 
+-       p->rt.time_slice = HZ; <<---- THIS
++
+        set_tsk_thread_flag(p, TIF_MEMDIE);
+        force_sig(SIGKILL, p);
++
++       /*
++        * We give our sacrificial lamb high priority and access to
++        * all the memory it needs. That way it should be able to
++        * exit() and clear out its resources quickly...
++        */
++       boost_dying_task_prio(p, mem);
++
+        return 0;
+ }
 
-And I noticed overlayfs adopts overriding credentials for copy-up.
-Although I didn't read about credintials in detail yet, is it safe?
-For example, during copy-up other thread in the same process may gain
-the higher capabilities unexpectedly? Signal hander in the process too?
+At that time, I thought that routine is meaningless in non-RT scheduler.
+So I Cced Peter but don't get the answer.
+I just want to confirm it.
 
-I just have read overlayfs once a long time ago, so I may be
-misunderstanding.
-But I have no objection to merge overlayfs into mainline.
-
-
-Also I'd like to thank you Pete about mentioning the recent disaster in
-Japan.
+Do you still think it's meaningless? 
+so you remove it when you revert 93b43fa5508?
+Then, this isn't just revert patch but revert + killing meaningless code patch.
 
 
-J. R. Okajima
+- 
+Kind regards,
+Minchan Kim
