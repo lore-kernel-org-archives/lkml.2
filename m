@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab1CXNWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 09:22:34 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:33509 "EHLO
+	id S1756916Ab1CXNWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 09:22:32 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:33511 "EHLO
 	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756898Ab1CXNWb (ORCPT
+	with ESMTP id S1754503Ab1CXNWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Mar 2011 09:22:31 -0400
 X-Cam-AntiVirus: no malware found
@@ -14,54 +14,61 @@ From: Jonathan Cameron <jic23@cam.ac.uk>
 To: linux-kernel@vger.kernel.org
 Cc: greg@kroah.com, rusty@rustcorp.com.au, adobriyan@gmail.com,
         Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [RFC PATCH 0/3 V2] Introduce usr_strtobool (previously kstrtobool)
-Date: Thu, 24 Mar 2011 13:23:42 +0000
-Message-Id: <1300973025-32497-1-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 2/3] debugfs: move to new usr_strtobool
+Date: Thu, 24 Mar 2011 13:23:44 +0000
+Message-Id: <1300973025-32497-3-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1300973025-32497-1-git-send-email-jic23@cam.ac.uk>
+References: <1300973025-32497-1-git-send-email-jic23@cam.ac.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+No functional chagnes requires that we eat errors from usr_strtobool.
+If people want to not do this, then it should be at a later date.
 
-Here is a second pass at introducing a new function to unify
-code that is attempting to get a boolean value from user input strings.
+Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+ fs/debugfs/file.c |   20 ++++++--------------
+ 1 files changed, 6 insertions(+), 14 deletions(-)
 
-The first attempt (other than having some stupid bugs) was opposed by
-Alexy Dobriyan on the basis that it did completely insufficient checking
-on the string.  Given that under the original proposed name it was
-associated with the other kstrto* functions it was reasonable to assume
-if would be as strict as they are.  Hence the name change to remove
-an implication of this.
-
-The use cases are both the pair below and the numerous boolean
-attributes in sysfs.  It's for these that I'm personally interested
-in having such a function, but as Greg pointed out a good starting
-point is to unify the places where this is already occuring.
-
-The big questions to my mind are:
-
-1) Is the usr_strtobool name a good choice?
-2) Should we introduce other acceptable boolean inputs?
-   Clearly there are issues in changing the list as it will at least
-   in theory change the two api's effected by this series.
-
-Thanks,
-
-Jonathan
-
-Jonathan Cameron (3):
-  Add a usr_strtobool function matching semantics of existing in kernel
-    equivalents
-  debugfs: move to new usr_strtobool
-  params.c: Use new usr_strtobool function to process boolean inputs
-
- fs/debugfs/file.c      |   20 ++++++--------------
- include/linux/string.h |    1 +
- kernel/params.c        |   14 ++++----------
- lib/string.c           |   29 +++++++++++++++++++++++++++++
- 4 files changed, 40 insertions(+), 24 deletions(-)
-
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index 89d394d..1f0e3ef 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -428,26 +428,18 @@ static ssize_t write_file_bool(struct file *file, const char __user *user_buf,
+ 			       size_t count, loff_t *ppos)
+ {
+ 	char buf[32];
+-	int buf_size;
++	int buf_size, ret;
++	bool bv;
+ 	u32 *val = file->private_data;
+ 
+ 	buf_size = min(count, (sizeof(buf)-1));
+ 	if (copy_from_user(buf, user_buf, buf_size))
+ 		return -EFAULT;
+ 
+-	switch (buf[0]) {
+-	case 'y':
+-	case 'Y':
+-	case '1':
+-		*val = 1;
+-		break;
+-	case 'n':
+-	case 'N':
+-	case '0':
+-		*val = 0;
+-		break;
+-	}
+-	
++	ret = usr_strtobool(buf, &bv);
++	if (!ret)
++		*val = bv;
++
+ 	return count;
+ }
+ 
 -- 
 1.7.3.4
 
