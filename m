@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab1CXLmP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 07:42:15 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39452 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751726Ab1CXLmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 07:42:14 -0400
-Date: Thu, 24 Mar 2011 11:42:11 +0000
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jarkko Nikula <jhnikula@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: Add max98095 CODEC driver
-Message-ID: <20110324114211.GA26636@opensource.wolfsonmicro.com>
-References: <B2150E1E4418E1438554A300EA5040E40DAC511079@ITSVLEX06.it.maxim-ic.internal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B2150E1E4418E1438554A300EA5040E40DAC511079@ITSVLEX06.it.maxim-ic.internal>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1756093Ab1CXLqC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 07:46:02 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42018 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751474Ab1CXLqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 07:46:00 -0400
+Message-Id: <1bdc18$jvuest@fmsmga002.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,236,1299484800"; 
+   d="scan'208";a="671038365"
+Date: Thu, 24 Mar 2011 11:45:57 +0000
+To: Alessandro Suardi <alessandro.suardi@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: regression: GM45 on Dell Latitude E6400 display from 1440x900 to 1024x768 somewhere between 2.6.38-git2 and -git7
+References: <AANLkTimxnG56Q29CpKi7q0kiam2cDKHdB5OjV-vu4he9@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <AANLkTimxnG56Q29CpKi7q0kiam2cDKHdB5OjV-vu4he9@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 08:57:41PM -0700, Peter Hsiang wrote:
-> +static inline int rate_value(int rate, u8 *value)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(rate_table); i++) {
-> +		if (rate_table[i].rate >= rate) {
-> +			*value = rate_table[i].sr;
-> +			return 0;
-> +		}
-> +	}
-> +	*value = rate_table[0].sr;
-> +	return -EINVAL;
-> +}
+On Thu, 24 Mar 2011 12:30:49 +0100, Alessandro Suardi <alessandro.suardi@gmail.com> wrote:
+> Fedora 14 x86_64
+> 
+> [   375.231] (II) intel(0): Integrated Graphics Chipset: Intel(R) GM45
+> [   375.231] (--) intel(0): Chipset: "GM45"
+> 
+> startx yields:
+> 
+>  2.6.38-git2 and earlier: correct 1440x900 display
+>  2.6.38-git3 through -git6: not tested due to kernel build errors
+>  2.6.38-git7 through -git14: wrong 1024x768 display with black bands at sides
+> 
+> Once in wrong mode, xrandr --fb 1440x900 --output LVDS1 --mode 1440x900
+>  helps return the screen to correct display, but:
+> 
+>  - background image is drawn incorrectly (like a 1440x900 correct one with a
+>     superimposed 1024x768 starting from upper left corner)
+>  - mplayer in full screen mode does not actually go full screen, but 1024x768
+> 
+> comparative Xorg logs and dmesg output for 2.6.38-git2 and -git14 available
+>  upon request; lspci -v says:
 
-Not too clear as to why this is an inline function?
+There's not much we can say until we see those...
+-Chris
 
-> +static int max98095_probe(struct snd_soc_codec *codec)
-> +{
-> +	struct max98095_priv *max98095 = snd_soc_codec_get_drvdata(codec);
-> +	struct max98095_cdata *cdata;
-> +	int ret = 0;
-> +
-> +	codec->cache_sync = 1;
-> +	memcpy(codec->reg_cache, max98095_reg, sizeof(max98095_reg));
-
-Keeping your own copy of the cache is rather deprecated.  As Mark
-mentioned, you can let the ASoC cache manage your register cache as well
-as use snd_soc_cache_sync() for syncing.
-
-Thanks,
-Dimitris
+-- 
+Chris Wilson, Intel Open Source Technology Centre
