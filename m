@@ -1,32 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933697Ab1CXIRg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 04:17:36 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59207 "EHLO mx2.mail.elte.hu"
+	id S933719Ab1CXISl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 04:18:41 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57222 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933687Ab1CXIR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 04:17:28 -0400
-Date: Thu, 24 Mar 2011 09:17:01 +0100
+	id S933681Ab1CXISg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 04:18:36 -0400
+Date: Thu, 24 Mar 2011 09:18:16 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>,
-        Avi Kivity <avi@redhat.com>, Dave Martin <dave.martin@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Pingtian <phan@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [GIT PULL 0/3] perf/core fixes and improvements
-Message-ID: <20110324081701.GC30812@elte.hu>
-References: <1300920767-936-1-git-send-email-acme@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [RFC PATCH] mutex: Apply adaptive spinning on mutex_trylock()
+Message-ID: <20110324081816.GD30812@elte.hu>
+References: <20110323153727.GB12003@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300920767-936-1-git-send-email-acme@infradead.org>
+In-Reply-To: <20110323153727.GB12003@htj.dyndns.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -40,44 +34,10 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+* Tejun Heo <tj@kernel.org> wrote:
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (3):
->   perf session: Pass evsel in event_ops->sample()
->   perf build-id: Add quirk to deal with perf.data file format breakage
->   perf symbols: Look at .dynsym again if .symtab not found
-> 
->  tools/perf/builtin-annotate.c                      |   18 ++-----
->  tools/perf/builtin-diff.c                          |    1 +
->  tools/perf/builtin-inject.c                        |   11 ++++-
->  tools/perf/builtin-kmem.c                          |    1 +
->  tools/perf/builtin-lock.c                          |    4 +-
->  tools/perf/builtin-report.c                        |   19 ++-----
->  tools/perf/builtin-sched.c                         |    1 +
->  tools/perf/builtin-script.c                        |   15 ++----
->  tools/perf/builtin-timechart.c                     |   11 ++++
->  tools/perf/util/build-id.c                         |    1 +
->  tools/perf/util/header.c                           |   57 +++++++++++++++++++-
->  tools/perf/util/hist.h                             |    1 +
->  .../perf/util/scripting-engines/trace-event-perl.c |    1 +
->  .../util/scripting-engines/trace-event-python.c    |    1 +
->  tools/perf/util/session.c                          |   25 ++++++++-
->  tools/perf/util/session.h                          |    7 ++-
->  tools/perf/util/symbol.c                           |   25 +++++----
->  tools/perf/util/trace-event-scripting.c            |    1 +
->  tools/perf/util/trace-event.h                      |    1 +
->  19 files changed, 142 insertions(+), 59 deletions(-)
+> NOT-Signed-off-by: Tejun Heo <tj@kernel.org>
 
-Pulled, thanks a lot Arnaldo!
+s/NOT-// ?
 
 	Ingo
