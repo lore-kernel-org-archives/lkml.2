@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934352Ab1CXXFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 19:05:18 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:34439 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933783Ab1CXXFP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 19:05:15 -0400
-Date: Thu, 24 Mar 2011 19:05:02 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] APM: delete APM in Linux-2.6.40
-In-reply-to: <20110324102116.GA17446@khazad-dum.debian.net>
-Message-id: <alpine.LFD.2.02.1103241903030.16085@x980>
-References: <alpine.LFD.2.02.1103232321070.3848@x980>
- <20110324154505.934a56a0.sfr@canb.auug.org.au>
- <alpine.LFD.2.02.1103240336590.4529@x980>
- <20110324102116.GA17446@khazad-dum.debian.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S934362Ab1CXXFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 19:05:37 -0400
+Received: from lo.gmane.org ([80.91.229.12]:55159 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933783Ab1CXXFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 19:05:34 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Lukasz Sokol <el.es.cr@gmail.com>
+Subject: =?utf-8?b?SW5fZnJpZGdlX21lbnQ/?=
+Date: Thu, 24 Mar 2011 23:05:15 +0000 (UTC)
+Message-ID: <loom.20110325T000152-297@post.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 81.31.113.250 (Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Ubuntu/10.04 (lucid) Firefox/3.6.15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> People with a ThinkPad T23, T30 will really not appreciate this, and it
-> should not be too difficult to recruit some as testers.
+Hello All,
+this may be amusing (or not if you're a lawyer):
+http://groceries.asda.com/asda-estore/catalog
+/sectionpagecontainer.jsp?skuId=910000402067&departmentid=1214921923780&
+aisleid=1214921925167&startValue=
 
-I have both, and they both support ACPI.
+(gmane made me break up the link)
 
-Re: lasting for years.
-Actually, I used to have several of both, but they're dying off,
-and they are excruciatingly slow...
+Basically a UK's branch of Wal Mart has a product that looks pretty much like
+Tux. 
 
--Len
+In_fridge_ment?
 
-
+L.
+(and, No I Am Not A Lawyer)
 
