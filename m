@@ -1,256 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab1CXJli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 05:41:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55538 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756694Ab1CXJle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 05:41:34 -0400
-Content-Type: multipart/mixed; boundary="===============1375807506=="
+	id S1756727Ab1CXJl7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 05:41:59 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56629 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755743Ab1CXJl4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 05:41:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SXefWbrMuULKAa6WfQQTDcJc4LDmaX4eSuQpO6ytXg+F7WnRjbpkWvRZEzHERmC8aY
+         nku5kfsJjbkn5P0M446JueGVpoECz2cbTr51mSZ/jvg5i6buyLtdv0oD/6Y1WhGH4TQV
+         zDjNqk7TInygR7mVA2Z5xu0vt5cIgqqQXlKbs=
+Date: Thu, 24 Mar 2011 10:41:51 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
+Message-ID: <20110324094151.GE12038@htj.dyndns.org>
+References: <20110323153727.GB12003@htj.dyndns.org>
+ <20110324094119.GD12038@htj.dyndns.org>
 MIME-Version: 1.0
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,236,1299484800"; 
-   d="p7s'?scan'208";a="407800499"
-From: "Struk, Tadeusz" <tadeusz.struk@intel.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "O Mahony, Aidan" <aidan.o.mahony@intel.com>,
-        "Paoloni, Gabriele" <gabriele.paoloni@intel.com>,
-        "Hoban, Adrian" <adrian.hoban@intel.com>,
-        "Struk, Tadeusz" <tadeusz.struk@intel.com>
-Date: Thu, 24 Mar 2011 09:40:28 +0000
-Subject: RE: [PATCH] RFC4106 AES-GCM Driver - fixed problem with packets
-	that are not multiple of 64bytes
-Thread-Topic: [PATCH] RFC4106 AES-GCM Driver - fixed problem with packets
-	that are not multiple of 64bytes
-Thread-Index: AcvhXJXeLClpiOu9QHeiQrnsSTjURgIqUILg
-Message-ID: <24483BA4C9F69C43A7379639D35543D7CEB6A9CE@irsmsx502.ger.corp.intel.com>
-References: <4d77a344.ufBJ2BimO/o2UpKI%tadeusz.struk@intel.com>
- <20110313085636.GB12392@gondor.apana.org.au>
-In-Reply-To: <20110313085636.GB12392@gondor.apana.org.au>
-Accept-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110324094119.GD12038@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---===============1375807506==
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
-	micalg=SHA1; boundary="----=_NextPart_000_000B_01CBEA07.82AEB730"
+Adaptive owner spinning used to be applied only to mutex_lock().  This
+patch applies it also to mutex_trylock().
 
-------=_NextPart_000_000B_01CBEA07.82AEB730
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+btrfs has developed custom locking to avoid excessive context switches
+in its btree implementation.  Generally, doing away with the custom
+implementation and just using the mutex shows better behavior;
+however, there's an interesting distinction in the custom implemention
+of trylock.  It distinguishes between simple trylock and tryspin,
+where the former just tries once and then fail while the latter does
+some spinning before giving up.
 
-Hi Herbert,
-This is rather critical as packets of size different than multiple of 64bytes are dropped.
-Do you mind if we push it against stable 2.6.38?
-Thanks,
-Tadeusz
+Currently, mutex_trylock() doesn't use adaptive spinning.  It tries
+just once.  I got curious whether using adaptive spinning on
+mutex_trylock() would be beneficial and it seems so, for btrfs anyway.
 
------Original Message-----
-From: Herbert Xu [mailto:herbert@gondor.apana.org.au] 
-Sent: Sunday, March 13, 2011 8:57 AM
-To: Struk, Tadeusz
-Cc: linux-kernel@vger.kernel.org; linux-crypto@vger.kernel.org; O Mahony, Aidan; Paoloni, Gabriele; Hoban, Adrian
-Subject: Re: [PATCH] RFC4106 AES-GCM Driver - fixed problem with packets that are not multiple of 64bytes
+The following results are from "dbench 50" run on an opteron two
+socket eight core machine with 4GiB of memory and an OCZ vertex SSD.
+During the run, disk stays mostly idle and all CPUs are fully occupied
+and the difference in locking performance becomes quite visible.
 
-On Wed, Mar 09, 2011 at 03:56:52PM +0000, tadeusz.struk@intel.com wrote:
-> From: Tadeusz Struk <tadeusz.struk@intel.com>
-> Date: Wed, 9 Mar 2011 15:01:06 +0000
-> Subject: [PATCH] RFC4106 AES-GCM Driver - fixed problem with packets that are not multiple of 64bytes
-> 
-> Hi Herbert,
-> This patch fixes problem with packets that are not multiple of 64bytes.
+SIMPLE is with the locking simplification patch[1] applied.  i.e. it
+basically just uses mutex.  SPIN is with this patch applied on top -
+mutex_trylock() uses adaptive spinning.
 
-Patch applied.  Thanks!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+        USER   SYSTEM   SIRQ    CXTSW  THROUGHPUT
+ SIMPLE 61107  354977    217  8099529  845.100 MB/sec
+ SPIN   63140  364888    214  6840527  879.077 MB/sec
 
-------=_NextPart_000_000B_01CBEA07.82AEB730
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
+On various runs, the adaptive spinning trylock consistently posts
+higher throughput.  The amount of difference varies but it outperforms
+consistently.
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIId7jCCAyAw
-ggKJoAMCAQICBDXe9M8wDQYJKoZIhvcNAQEFBQAwTjELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0Vx
-dWlmYXgxLTArBgNVBAsTJEVxdWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTAeFw05
-ODA4MjIxNjQxNTFaFw0xODA4MjIxNjQxNTFaME4xCzAJBgNVBAYTAlVTMRAwDgYDVQQKEwdFcXVp
-ZmF4MS0wKwYDVQQLEyRFcXVpZmF4IFNlY3VyZSBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkwgZ8wDQYJ
-KoZIhvcNAQEBBQADgY0AMIGJAoGBAMFdsVhnCGLuoJotHwhtkRRomAoe/toEbxOEYiHD0XzOnwXg
-uAHwTjTs4oqVBGSs8WtTXwWzy2eAv0ICjv7dAQns4QAUT/z78AzdQ7pbK+EfgHCZFVeTFvEPl2q3
-wmgjHMxNWTCsUR47ryvW7mNFe8XZX1DS41APOojnvxT94Me5AgMBAAGjggEJMIIBBTBwBgNVHR8E
-aTBnMGWgY6BhpF8wXTELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0VxdWlmYXgxLTArBgNVBAsTJEVx
-dWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTENMAsGA1UEAxMEQ1JMMTAaBgNVHRAE
-EzARgQ8yMDE4MDgyMjE2NDE1MVowCwYDVR0PBAQDAgEGMB8GA1UdIwQYMBaAFEjmaPkr0rKV10fY
-IyAQTzOYkJ/UMB0GA1UdDgQWBBRI5mj5K9KylddH2CMgEE8zmJCf1DAMBgNVHRMEBTADAQH/MBoG
-CSqGSIb2fQdBAAQNMAsbBVYzLjBjAwIGwDANBgkqhkiG9w0BAQUFAAOBgQBYzinq/Pfetc4CuRe1
-hdG54+CVzCUxDQCmkm5/tpJjnlCV0Zpv5BHeY4VumO6o/1rI01WyZnFX3sAh6z0qpyNJAQSGQnv8
-7n+iFlK1Z2fTQNs7JliyKHc9rhR3Ydb6KmYnoA36p3Nc6nDxlCFlRF/6/O8paKmih3nvee9PrAd3
-ODCCAz0wggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UE
-ChMHRXF1aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5
-MB4XDTA2MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoT
-EUludGVsIENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kg
-Q0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATD
-IsV2xDyt30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUj
-ZzTZFq2N4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZv
-uSQ0E11yYL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4
-lz36wOdNZn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+
-iC1HawJdAgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0
-Vgaj7TdUDDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3Nl
-Y3VyZWNhLmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTAD
-AQH/MA0GCSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69
-tOkIP4SgDJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3j
-Mfr900fXZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYR6AtwAA
-AAAABzANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9y
-YXRpb24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUx
-OTI1MTNaFw0xNTA1MTUxOTM1MTNaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jw
-b3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTCCASIw
-DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMGPgGLnOO5IOzlHRfr1XfCVb97V4BR2QVpPZ7Cr
-cIQ+FGa2KHD/6dPjwxOIrtFTdfW4BYikdFmxUZVBWRWZ5Vye2cCdGzFWqIEOE1e17nNx1jM8Z6GZ
-EqbDUS+vBuPlBFHKQoVm5BaNIHpyn2XZxqwjV9j5/crIfPrCGstk+2ztUhVS8OHEgzO784PgD9pO
-gBnnAbZHmEM1FYYmQ6ibS+gVCHzobDYG+YReRiHpFKWBxpUuP+X0WYFw/Ja1JW7N8pELAFDw0UFB
-WFgiv1QIusdLvSy8mcsLJ5wy050OVcxShqoUxhw/wvyuuoQxvmEPjhRa1C2oSCmGN0003GMhQWMC
-AwEAAaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFKoWZq+3PVZTYK4Nwu3z7gfL
-UWB+MAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBTCKwhT
-x+hdMsKCgOmWwLgjQsAV+TAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQa
-xgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3Lmlu
-dGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3kl
-MjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0lu
-dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYw
-gdMwYwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNh
-dGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcw
-AoZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMv
-SW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUA
-A4IBAQCUY/1d0MS6VPTlIcOho1XWh193PD5kJDJSPdphLHQdM1oKA+whMdIBoY1VzTDDK+C+Ey4J
-cyna7fpC8uVmn/Rz/i9MZtyc7qezPtZTn9UyORvJmddH+Ox/RycGwe3ags8jUdspECorYOkJyZks
-nDIlTVUvbR7wyY+gGJYqxWXqrcVFEiMsWu8/OIlf7F2gAYMBw1kZ55dn4lWBIM0WqvReWpPvhYeN
-7Y+3MKEdSMkQ7TZiNbfdZ5D/8KfWNMTJ4VHltOgCL1lA5tx/F4R1920skpL5eu3Sj650RUe3rOXs
-aV5NyJzBwB31+1zsmleVdFD0k/Fw9HxXbAQE35ucN/7CMIIFijCCBHKgAwIBAgIKYSCKYgAAAAAA
-CDANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRp
-b24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI3
-MjZaFw0xNTA1MTUxOTM3MjZaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3Jh
-dGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQjCCASIwDQYJ
-KoZIhvcNAQEBBQADggEPADCCAQoCggEBAKQEM1Wn9TU9vc9C+/Tc7KB+eiYElmrcEWE32WUdHvWG
-+IcQHVQsikTmMyKKojNLw2B5s6Iekc8ivDo/wCfjZzX9JyftMnc+AArc0la87Olybzm8K9jXEfTB
-vTnUSFSiI9ZYefITdiUgqlAFuljFZEHYKYtLuhrRacpmQfP4mV63NKdc2bT804HRf6YptZFa4k6Y
-N94zlrGNrBuQQ74WFzz/jLBusbUpEkro6Mu/ZYFOFWQrV9lBhF9Ruk8yN+3N6n9fUo/qBigiF2kE
-n9xVh1ykl7SCGL2jBUkXx4qgV27a6Si8lRRdgrHGtN/HWnSWlLXTH5l575H4Lq++77OFv38CAwEA
-AaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFA7GKvdZsggQkCVvw939imYxMCvF
-MAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBQ5oFY2ekKQ
-/5Ktim+VdMeSWb4QWTAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxK
-xEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVs
-LmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBD
-QS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVs
-JTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMw
-YwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVz
-L0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZg
-aHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50
-ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IB
-AQCxtQEHchVQhXyjEqtMVUMe6gkmPsIczHxSeqNbo9dsD+6xbT65JT+oYgpIAtfEsYXeUJu1cChq
-pb22U5bMAz7eaQcW5bzefufWvA6lg2048B8oczBj/q+5P5NpYrUO8jOmN4jTjfJq3ElZ7yFWpy7r
-B3Vm/aN6ATYqWfMbS/xfh+JCxmH3droUmMJI0/aZJHsLtjbjFnNsHDNrJZX1vxlM78Lb1hjskTEN
-PmhbVbfTj5i/ZGnhv4tmI8QZPCNtcegXJrfhRl2D9bWpdTOPrWiLDUqzy1Z6KL7TcOS/PCl8RHCJ
-XkPau/thTQCpIoDa2+c+3XA++gRTfAQ4svTO260NMIIGDzCCBPegAwIBAgIKUnNA2QABAABWQzAN
-BgkqhkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24x
-KzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0EwHhcNMTEwMTEwMDkz
-MjExWhcNMTMxMjI1MDkzMjExWjBBMRcwFQYDVQQDEw5TdHJ1aywgVGFkZXVzejEmMCQGCSqGSIb3
-DQEJARYXdGFkZXVzei5zdHJ1a0BpbnRlbC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
-AoIBAQDOkcIQ3fGinLEfugUTvdd8vJA2hfghoTtkTarTmd8OQeeYocL3l9u6DBUP073041UUHnhA
-SeLImDuQHvBgAxEc8AMAyOXydkbRtSnA2W7lx4hYff6GILcuFqJEeFEzXmGldv6tXgv7rXE/1U4/
-UthDA2d3n5j1460jFogRcBnGWalcsKYASiEA2h5ppuziau4tZYSrrmOadutNr+xGZr+C7sZdk3bC
-67uuWiFH2LEIg4NPn04FwhNnBZGfsyCSB5LEg7HLHsCiaPV76GO84Dqr7TczFyDvDGo9gvuoX5IU
-CtK5DglcdnYhP1W6YinjHLQCZecsEWKHrreLst/PO7zVAgMBAAGjggLyMIIC7jALBgNVHQ8EBAMC
-B4AwHQYDVR0OBBYEFFgsT71qXYLawUPKQ9I01GBcwjyRMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQB
-gjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4HevTmV8EMCAWQCAQgwHwYDVR0jBBgwFoAUqhZmr7c9
-VlNgrg3C7fPuB8tRYH4wgc8GA1UdHwSBxzCBxDCBwaCBvqCBu4ZXaHR0cDovL3d3dy5pbnRlbC5j
-b20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENB
-JTIwM0EoMSkuY3JshmBodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L0NS
-TC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjAzQSgxKS5jcmwwgfUG
-CCsGAQUFBwEBBIHoMIHlMGwGCCsGAQUFBzAChmBodHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0
-b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0El
-MjAzQSgxKS5jcnQwdQYIKwYBBQUHMAKGaWh0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3Jl
-cG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3Vpbmcl
-MjBDQSUyMDNBKDEpLmNydDAfBgNVHSUEGDAWBggrBgEFBQcDBAYKKwYBBAGCNwoDDDApBgkrBgEE
-AYI3FQoEHDAaMAoGCCsGAQUFBwMEMAwGCisGAQQBgjcKAwwwSwYDVR0RBEQwQqAnBgorBgEEAYI3
-FAIDoBkMF3RhZGV1c3ouc3RydWtAaW50ZWwuY29tgRd0YWRldXN6LnN0cnVrQGludGVsLmNvbTAN
-BgkqhkiG9w0BAQUFAAOCAQEAPUhKMJR+nHX/mfAfGrzuTNh4DgXo5XRAhy9ZgPWzLYuR5NJjSBOS
-CMwJIa3+aDlW23TxeSzFuvN6eMCpwgpRz+lrkpkpsZYjzCEwsCqa4Q6Eh/88LxSqyjg0ZR/kdVAf
-Hiw2YsiRs8C/e5WIgfXQQ3S9nw2o5XD04O0klhwvL3/ralRHOdIa8O38OJ1NY2Btl/wWqCInYleO
-1MbMIvbOakdhzPY4NjgXpRVZLR8h95Qi5kfByeh6UERanPZkfg3YwCX+/lV2pG+tRSjkFH8OP7Rl
-/P1ql99DdbIJdLmyrmodLE5eFBoISmj/uwyBWQV5L7jz8nRsnJY+2cFlr5k5vTCCBlYwggU+oAMC
-AQICClyFGrgAAQAAXQQwDQYJKoZIhvcNAQEFBQAwVjELMAkGA1UEBhMCVVMxGjAYBgNVBAoTEUlu
-dGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5hbCBCYXNpYyBJc3N1aW5nIENB
-IDNCMB4XDTEwMTAxMzA4MzM1OFoXDTEzMDkyNzA4MzM1OFowQTEXMBUGA1UEAxMOU3RydWssIFRh
-ZGV1c3oxJjAkBgkqhkiG9w0BCQEWF3RhZGV1c3ouc3RydWtAaW50ZWwuY29tMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtXe1hUXv884PJxBpMk75Bj7hXF8cpyHAcvupqg3nxsVH2Zzg
-gopxNQPmjxd15ECFWSzgmNnxPxkRvlvhaXLAK1YTTutJouu82IMHH0moxdKAATI7CmI6CltKl4FK
-b6xClQdYmf65dkhD4K84dvuPmrgqOeqEjXgvw0LZv1F4tNcK6PitoYAuULY093gx+aTjQAMxO7Ka
-ca9J6LiCCaqQd9DJO5kXh7qZj6VUrfVMww38lPA5P4d7pssj95v+zaySk4tsaih4DzGa01l4Q8a5
-00PUSZVOvgYNqWUxztuBblLYZOVAdfZdN0tXvKCn75PmGOKIlTC3sdwQBoc/ZaFdjwIDAQABo4ID
-OTCCAzUwCwYDVR0PBAQDAgQwMEQGCSqGSIb3DQEJDwQ3MDUwDgYIKoZIhvcNAwICAgCAMA4GCCqG
-SIb3DQMEAgIAgDAHBgUrDgMCBzAKBggqhkiG9w0DBzAdBgNVHQ4EFgQUoyGOuYM9LfSJmWO+Bdrh
-wfBBW1IwPQYJKwYBBAGCNxUHBDAwLgYmKwYBBAGCNxUIhsOMdYSZ5VGD/YEohY6fU4KRwAlnhLnZ
-QYeE/04CAWQCAQwwHwYDVR0jBBgwFoAUDsYq91myCBCQJW/D3f2KZjEwK8Uwgc8GA1UdHwSBxzCB
-xDCBwaCBvqCBu4ZXaHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBF
-eHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwM0IoMSkuY3JshmBodHRwOi8vY2VydGlm
-aWNhdGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMl
-MjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5jcmwwgfUGCCsGAQUFBwEBBIHoMIHlMGwGCCsGAQUFBzAC
-hmBodHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4
-dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5jcnQwdQYIKwYBBQUHMAKGaWh0
-dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVs
-JTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDNCKDEpLmNydDAfBgNVHSUEGDAW
-BggrBgEFBQcDBAYKKwYBBAGCNwoDBDApBgkrBgEEAYI3FQoEHDAaMAoGCCsGAQUFBwMEMAwGCisG
-AQQBgjcKAwQwSwYDVR0RBEQwQqAnBgorBgEEAYI3FAIDoBkMF3RhZGV1c3ouc3RydWtAaW50ZWwu
-Y29tgRd0YWRldXN6LnN0cnVrQGludGVsLmNvbTANBgkqhkiG9w0BAQUFAAOCAQEAZQKWbx00FBUu
-3xRCKw1hFLVoZWd9Z9WC4KJnw4VgpLeEZGwiACO+9uUTTJzXo3zekqtifrDj4wnGfadsMcsZ70Bx
-GIpe2yVsLtZiW+iWA/6mzY7QH/LmuqzoFMEa5Loy6Y3QC7viDTu55FurUpGwgAWc5WOZ9K4AFakq
-5vsm0oClHMACjntKeORyIYWskJ9Rs/z2l+0vE/gUDsn96hx1+GgoVegtyEEyfxrhz1ZovnjMTxlu
-jXHoi0/qVkuTO4zgNMBMM18MvJ/Y7r+Uws5vOpFJHZ3BokIlgc58cG6meD4j3mSL6hbVFOTJSmrv
-XzVjpMpThGp5MKA+0t9fdZ6qYDGCA0EwggM9AgEBMGQwVjELMAkGA1UEBhMCVVMxGjAYBgNVBAoT
-EUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5hbCBCYXNpYyBJc3N1aW5n
-IENBIDNBAgpSc0DZAAEAAFZDMAkGBSsOAwIaBQCgggGyMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0B
-BwEwHAYJKoZIhvcNAQkFMQ8XDTExMDMyNDA5NDAyOFowIwYJKoZIhvcNAQkEMRYEFHZEUO9vTSNA
-kv/R3kH1a5tLUjf2MGcGCSqGSIb3DQEJDzFaMFgwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCA
-MA0GCCqGSIb3DQMCAgFAMAcGBSsOAwIHMA0GCCqGSIb3DQMCAgEoMAcGBSsOAwIaMAoGCCqGSIb3
-DQIFMHMGCSsGAQQBgjcQBDFmMGQwVjELMAkGA1UEBhMCVVMxGjAYBgNVBAoTEUludGVsIENvcnBv
-cmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5hbCBCYXNpYyBJc3N1aW5nIENBIDNCAgpchRq4
-AAEAAF0EMHUGCyqGSIb3DQEJEAILMWagZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwg
-Q29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0IC
-ClyFGrgAAQAAXQQwDQYJKoZIhvcNAQEBBQAEggEAfrG9dIr4yIVR8ToaRZwr7Di3EXJpwF47qc4Q
-TKoSCks7ph5kH1J5hBzWmmmB5xrz9MdZDCamisLx3NMQPoqoHHXtNrCbVVGs+MtZ5WGA36pZcFN2
-J4hG0GdjrpMarB6TzAdyzC4MRO4vbcsdYhGfHo+47p19RwYkm15mlHpJmpH4xhvTwxaPlnpsFbT1
-KVVBn9kHchXzje2iMn7nFrqvl8brmi7Uv/PaQVfrrweTRxvnv8kBmUU9/pNGbisd6v9FZojuhsl5
-xV85u9z/qZMFDKgT6nxMgglJUBIQPqmuNBPZUn2ihP4JUAzN8nlCObbXwNqzXewvJGEmtBxPi9EZ
-YQAAAAAAAA==
+In general, using adaptive spinning on trylock makes sense as trylock
+failure usually leads to costly unlock-relock sequence.
 
-------=_NextPart_000_000B_01CBEA07.82AEB730--
---===============1375807506==
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
+[1] http://article.gmane.org/gmane.comp.file-systems.btrfs/9658
 
---------------------------------------------------------------
-Intel Shannon Limited
-Registered in Ireland
-Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
-Registered Number: 308263
-Business address: Dromore House, East Park, Shannon, Co. Clare
+Signed-off-by: Tejun Heo <tj@kernel.org>
+LKML-Reference: <20110323153727.GB12003@htj.dyndns.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Chris Mason <chris.mason@oracle.com>
+---
+ kernel/mutex.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-This e-mail and any attachments may contain confidential material for the s=
-ole use of the intended recipient(s). Any review or distribution by others =
-is strictly prohibited. If you are not the intended recipient, please conta=
-ct the sender and delete all copies.
-
-
---===============1375807506==--
+Index: work/kernel/mutex.c
+===================================================================
+--- work.orig/kernel/mutex.c
++++ work/kernel/mutex.c
+@@ -443,6 +443,15 @@ static inline int __mutex_trylock_slowpa
+ 	unsigned long flags;
+ 	int prev;
+ 
++	preempt_disable();
++
++	if (mutex_spin(lock)) {
++		mutex_set_owner(lock);
++		mutex_acquire(&lock->dep_map, 0, 1, _RET_IP_);
++		preempt_enable();
++		return 1;
++	}
++
+ 	spin_lock_mutex(&lock->wait_lock, flags);
+ 
+ 	prev = atomic_xchg(&lock->count, -1);
+@@ -456,6 +465,7 @@ static inline int __mutex_trylock_slowpa
+ 		atomic_set(&lock->count, 0);
+ 
+ 	spin_unlock_mutex(&lock->wait_lock, flags);
++	preempt_enable();
+ 
+ 	return prev == 1;
+ }
