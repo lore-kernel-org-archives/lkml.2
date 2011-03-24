@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934229Ab1CXUVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:21:18 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51040 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934167Ab1CXUTS (ORCPT
+	id S934243Ab1CXUVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:21:42 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56204 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934153Ab1CXUTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:19:18 -0400
+	Thu, 24 Mar 2011 16:19:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BUoWqluEP0rOZbSm8RLarQ4hrAiQYV/VxRiey3ADV7ay7Wrv80EGHC8S5k1v4DhxfV
-         a7DfA5vVW6WXa3pxDV1HJBH3qpMltk/ymKQOP6ECOCJW1KNiSjM39CFNqJMQqHlLUBib
-         ndcVx1NUfT8L0X1SK257qNa5StvhXUj6diN8U=
+        b=n3PLOloYeJDtA6WlNLpoKMvEX2kRXzMdJn+4DXfy7FIC/flRArAZk6qPmnF7CQpF0y
+         HBRf0Bw27bEX4NeWvq35nByBjLMvWQD02OEOqGNvYbLn5HXckXOg19qoEq5YXFqKrJlx
+         wJ2fW4ohY7c3R4Np9etCjYK0A1gFzhpckwALs=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC V2 15/21]drivers:target Remove extra semi-colon.
-Date: Thu, 24 Mar 2011 13:18:34 -0700
-Message-Id: <1300997920-31573-15-git-send-email-justinmattock@gmail.com>
+Subject: [RFC V2 11/21]drivers:net Remove extra semi-colon.
+Date: Thu, 24 Mar 2011 13:18:30 -0700
+Message-Id: <1300997920-31573-11-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
 References: <1300997920-31573-1-git-send-email-justinmattock@gmail.com>
@@ -34,45 +34,101 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/target/target_core_alua.c      |    4 ++--
- drivers/target/target_core_transport.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/can/softing/softing_main.c      |    2 +-
+ drivers/net/wireless/ath/ath9k/phy.h        |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |    2 +-
+ drivers/net/wireless/rtlwifi/core.c         |    2 +-
+ drivers/net/wireless/rtlwifi/pci.c          |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c |    4 ++--
+ 6 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
-index 2c5fcfe..e7dddaf 100644
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -1036,7 +1036,7 @@ core_alua_allocate_lu_gp(const char *name, int def_group)
- 	lu_gp = kmem_cache_zalloc(t10_alua_lu_gp_cache, GFP_KERNEL);
- 	if (!(lu_gp)) {
- 		printk(KERN_ERR "Unable to allocate struct t10_alua_lu_gp\n");
--		return ERR_PTR(-ENOMEM);;
-+		return ERR_PTR(-ENOMEM);
- 	}
- 	INIT_LIST_HEAD(&lu_gp->lu_gp_list);
- 	INIT_LIST_HEAD(&lu_gp->lu_gp_mem_list);
-@@ -1044,7 +1044,7 @@ core_alua_allocate_lu_gp(const char *name, int def_group)
- 	atomic_set(&lu_gp->lu_gp_ref_cnt, 0);
+diff --git a/drivers/net/can/softing/softing_main.c b/drivers/net/can/softing/softing_main.c
+index aeea9f9..8d75953 100644
+--- a/drivers/net/can/softing/softing_main.c
++++ b/drivers/net/can/softing/softing_main.c
+@@ -797,7 +797,7 @@ static __devinit int softing_pdev_probe(struct platform_device *pdev)
+ 	ret = -EINVAL;
+ 	pres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!pres)
+-		goto platform_resource_failed;;
++		goto platform_resource_failed;
+ 	card->dpram_phys = pres->start;
+ 	card->dpram_size = pres->end - pres->start + 1;
+ 	card->dpram = ioremap_nocache(card->dpram_phys, card->dpram_size);
+diff --git a/drivers/net/wireless/ath/ath9k/phy.h b/drivers/net/wireless/ath/ath9k/phy.h
+index 5e3d749..3a7cd75 100644
+--- a/drivers/net/wireless/ath/ath9k/phy.h
++++ b/drivers/net/wireless/ath/ath9k/phy.h
+@@ -54,7 +54,7 @@
+ #define RF_BANK_SETUP(_bank, _iniarray, _col) do {			\
+ 		int i;							\
+ 		for (i = 0; i < (_iniarray)->ia_rows; i++)		\
+-			(_bank)[i] = INI_RA((_iniarray), i, _col);;	\
++			(_bank)[i] = INI_RA((_iniarray), i, _col);	\
+ 	} while (0)
  
- 	if (def_group) {
--		lu_gp->lu_gp_id = se_global->alua_lu_gps_counter++;;
-+		lu_gp->lu_gp_id = se_global->alua_lu_gps_counter++;
- 		lu_gp->lu_gp_valid_id = 1;
- 		se_global->alua_lu_gps_count++;
+ #define	AR_PHY_TIMING11_SPUR_FREQ_SD		0x3FF00000
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.c b/drivers/net/wireless/iwlwifi/iwl-agn.c
+index 581dc9f..31233a3 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -2062,7 +2062,7 @@ static const char *desc_lookup(u32 num)
+ 	max = ARRAY_SIZE(advanced_lookup) - 1;
+ 	for (i = 0; i < max; i++) {
+ 		if (advanced_lookup[i].num == num)
+-			break;;
++			break;
  	}
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index ff9ace0..39ac190 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2131,7 +2131,7 @@ static void transport_failure_reset_queue_depth(struct se_device *dev)
+ 	return advanced_lookup[i].name;
+ }
+diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
+index e4f4aee..d52fa27 100644
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -719,7 +719,7 @@ static void rtl_op_set_tsf(struct ieee80211_hw *hw, u64 tsf)
  {
- 	unsigned long flags;
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
+-	u8 bibss = (mac->opmode == NL80211_IFTYPE_ADHOC) ? 1 : 0;;
++	u8 bibss = (mac->opmode == NL80211_IFTYPE_ADHOC) ? 1 : 0;
  
--	spin_lock_irqsave(&SE_HBA(dev)->hba_queue_lock, flags);;
-+	spin_lock_irqsave(&SE_HBA(dev)->hba_queue_lock, flags);
- 	atomic_inc(&dev->depth_left);
- 	atomic_inc(&SE_HBA(dev)->left_queue_depth);
- 	spin_unlock_irqrestore(&SE_HBA(dev)->hba_queue_lock, flags);
+ 	mac->tsf = tsf;
+ 	rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_CORRECT_TSF, (u8 *) (&bibss));
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index 9cd7703..baa2efe 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1226,7 +1226,7 @@ static unsigned int _rtl_mac_to_hwqueue(__le16 fc,
+ 		hw_queue_index = VI_QUEUE;
+ 		break;
+ 	case 2:
+-		hw_queue_index = BE_QUEUE;;
++		hw_queue_index = BE_QUEUE;
+ 		break;
+ 	case 3:
+ 		hw_queue_index = BK_QUEUE;
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+index 05477f4..7432c85 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+@@ -729,7 +729,7 @@ static bool _rtl92ce_init_mac(struct ieee80211_hw *hw)
+ 	rtl_write_word(rtlpriv, REG_CR, 0x2ff);
+ 
+ 	if (_rtl92ce_llt_table_init(hw) == false)
+-		return false;;
++		return false;
+ 
+ 	rtl_write_dword(rtlpriv, REG_HISR, 0xffffffff);
+ 	rtl_write_byte(rtlpriv, REG_HISRE, 0xff);
+@@ -786,7 +786,7 @@ static bool _rtl92ce_init_mac(struct ieee80211_hw *hw)
+ 
+ 	rtl_write_dword(rtlpriv, REG_MCUTST_1, 0x0);
+ 
+-	return true;;
++	return true;
+ }
+ 
+ static void _rtl92ce_hw_configure(struct ieee80211_hw *hw)
 -- 
 1.7.4.1
 
