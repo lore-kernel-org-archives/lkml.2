@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933489Ab1CXHcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 03:32:39 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:12528 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933390Ab1CXHcg convert rfc822-to-8bit (ORCPT
+	id S933440Ab1CXHdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 03:33:37 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:65071 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933363Ab1CXHdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 03:32:36 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6294"; a="81757591"
-From: "Subhash Jadavani" <subhashj@codeaurora.org>
-To: "'Daniel Walker'" <dwalker@fifo99.com>
-Cc: <cjb@laptop.org>, <linux-mmc@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <davidb@codeaurora.org>,
-        <bryanh@codeaurora.org>, <linux-kernel@vger.kernel.org>
-References: <1300454644-11361-1-git-send-email-subhashj@codeaurora.org>	 <1300454644-11361-2-git-send-email-subhashj@codeaurora.org> <1300885535.6117.15.camel@m0nster>
-In-Reply-To: <1300885535.6117.15.camel@m0nster>
-Subject: RE: [RFC] mmc: msm_sdcc: Use SPS BAM as DMA engine
-Date: Thu, 24 Mar 2011 13:02:31 +0530
-Message-ID: <005601cbe9f5$a5088750$ef1995f0$@org>
+	Thu, 24 Mar 2011 03:33:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=F5Bq1X/lMpR5mSQ0HS66ZkhvDHxja+lyWUPFQlc2556wP4mXXQmDdXHwK0e2fgj2e0
+         LH2HZ/enEr06j3l+PNTgCtACzfSwTb3WEAzVpKOSB9NSvV/JX1k6tcHAlgzimYOFXj5I
+         jUUeKriPYwyK5lfKwFTVt27/GFRFZ0h2NKL5w=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcvpXF5iHmezbYM1RYyx1Ax3MOvz6QAmIbWA
-Content-Language: en-us
-x-cr-hashedpuzzle: FdcU GAOt HY7J I4IO aBgP jFeD j1vw m20F sMnj udzJ v7Gi wh2l 0N/D 06Ke 29XL 3+HR;7;YgByAHkAYQBuAGgAQABjAG8AZABlAGEAdQByAG8AcgBhAC4AbwByAGcAOwBjAGoAYgBAAGwAYQBwAHQAbwBwAC4AbwByAGcAOwBkAGEAdgBpAGQAYgBAAGMAbwBkAGUAYQB1AHIAbwByAGEALgBvAHIAZwA7AGQAdwBhAGwAawBlAHIAQABmAGkAZgBvADkAOQAuAGMAbwBtADsAbABpAG4AdQB4AC0AYQByAG0ALQBtAHMAbQBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAG0AbQBjAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{8F8FB730-9C8C-4B5F-A557-F5BE3D19A3C4};cwB1AGIAaABhAHMAaABqAEAAYwBvAGQAZQBhAHUAcgBvAHIAYQAuAG8AcgBnAA==;Thu, 24 Mar 2011 07:32:22 GMT;UgBFADoAIABbAFIARgBDAF0AIABtAG0AYwA6ACAAbQBzAG0AXwBzAGQAYwBjADoAIABVAHMAZQAgAFMAUABTACAAQgBBAE0AIABhAHMAIABEAE0AQQAgAGUAbgBnAGkAbgBlAA==
-x-cr-puzzleid: {8F8FB730-9C8C-4B5F-A557-F5BE3D19A3C4}
+In-Reply-To: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
+References: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
+Date: Thu, 24 Mar 2011 08:33:33 +0100
+Message-ID: <AANLkTinZpt8qmHzhe4WyteMt-C-nkVNwEGQVvq3Nk9Lx@mail.gmail.com>
+Subject: Re: [PATCH] eeepc-wmi: Add support for T101MT "Express Gate" key
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 23, 2011 at 8:39 PM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>
+> This button is unusual. On press it emits scanocde 0xe4, on release
+> 0xe5, and when held for a few seconds it begins emitting 0xea about
+> twice per second. I chose to handle only the press event in order to
+> make it behave like the other hotkeys.
+>
+> Probably the closest thing to the intended function of this button
+> would be to alternate the display orientation between portrait and
+> landscape, but since there doesn't appear to be a keycode defined for
+> that function I went with KEY_PROG2. I'm open to other suggestions
+> however.
 
+Hi,
+The manual says that under Windows, this is the "Home Key", so
+KEY_HOME would be more appropriate.
+Also, it would be great to preserve key up and key down informations
+(sparse keymap have an "autorelease" parameter to control that).
+Thanks,
 
-> -----Original Message-----
-> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
-> owner@vger.kernel.org] On Behalf Of Daniel Walker
-> Sent: Wednesday, March 23, 2011 6:36 PM
-> To: Subhash Jadavani
-> Cc: cjb@laptop.org; linux-mmc@vger.kernel.org; linux-arm-
-> msm@vger.kernel.org; davidb@codeaurora.org; bryanh@codeaurora.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [RFC] mmc: msm_sdcc: Use SPS BAM as DMA engine
-> 
-> On Fri, 2011-03-18 at 18:54 +0530, Subhash Jadavani wrote:
-> > On recent MSMs, ADM (Data Mover) HW is not present
-> > which means existing SDCC driver can perform data
-> > transfer in PIO (peripheral IO) mode only.
-> > But PIO mode requires lot of CPU attention which
-> > would mean consuming extra CPU MIPS.
-> >
-> > As a replacement on these recent MSMs, there is
-> > a new DMA HW engine named SPS-BAM (as part of
-> > Smart Peripheral System of MSM) is added for
-> > data movement between SDCC core and system memory.
-> >
-> > This patch has done changes in existing MSM SDCC
-> > driver for using SPS-BAM as DMA engine.
-> 
-> 1300+ lines of code might warrant more of a description .. In the
-> subject you say "DMA engine" but does this use drivers/dma/dmaengine.c
-> ?
-
-Here "DMA engine" means we are using SPS BAM as DMA HW.
-No, we are not using the "drivers/dma/dmaengine.c" because MSM SPS driver is not exporting the dma compliant APIs to client. We are using the MSM SPS driver's exported APIs directly from our driver. Not sure what extra description we can put it in commit text. Any suggestion?
-
-This is where MSM SPS driver patch is available: https://patchwork.kernel.org/patch/586271/
-
-
-> 
-> > Signed-off-by: Subhash Jadavani <subhashj@codeaurora.org>
-> > ---
-> >  drivers/mmc/host/Kconfig        |   10 +
-> >  drivers/mmc/host/Makefile       |    1 +
-> >  drivers/mmc/host/msm_sdcc.c     |  929
-> +++++++++++++++++++++++++++++++++++++--
-> >  drivers/mmc/host/msm_sdcc.h     |   47 ++
-> >  drivers/mmc/host/msm_sdcc_dml.c |  303 +++++++++++++
-> >  drivers/mmc/host/msm_sdcc_dml.h |  120 +++++
-> >  6 files changed, 1374 insertions(+), 36 deletions(-)
-> >  create mode 100644 drivers/mmc/host/msm_sdcc_dml.c
-> >  create mode 100644 drivers/mmc/host/msm_sdcc_dml.h
-> 
-> I'd do at least two patches. One that adds msm_sdcc_dml.[ch] and one
-> that modifies msm_sdcc.[ch] and the Kconfig and Makefile.
-> 
-> Daniel
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+-- 
+Corentin Chary
+http://xf.iksaif.net
