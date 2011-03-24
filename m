@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933440Ab1CXHdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 03:33:37 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:65071 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933363Ab1CXHdf (ORCPT
+	id S933472Ab1CXHeH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 03:34:07 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54456 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933363Ab1CXHeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 03:33:35 -0400
+	Thu, 24 Mar 2011 03:34:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=F5Bq1X/lMpR5mSQ0HS66ZkhvDHxja+lyWUPFQlc2556wP4mXXQmDdXHwK0e2fgj2e0
-         LH2HZ/enEr06j3l+PNTgCtACzfSwTb3WEAzVpKOSB9NSvV/JX1k6tcHAlgzimYOFXj5I
-         jUUeKriPYwyK5lfKwFTVt27/GFRFZ0h2NKL5w=
+        b=sAGphopDAucQPGtNpREnjjaSevfeJrjYffddrAeAOq5Zyhu41esW1G+dT8qJV/liZ4
+         c0D0vxpoUi1+wziiiSylvRqDkadLmTLjXfHAmw74gXMo/RDemzybKf3MG7T9d3EA2+Fi
+         eRFbCqr0aWW1TmyyMd1LgzXEry4SfrUlYOlws=
 MIME-Version: 1.0
-In-Reply-To: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
-References: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
-Date: Thu, 24 Mar 2011 08:33:33 +0100
-Message-ID: <AANLkTinZpt8qmHzhe4WyteMt-C-nkVNwEGQVvq3Nk9Lx@mail.gmail.com>
-Subject: Re: [PATCH] eeepc-wmi: Add support for T101MT "Express Gate" key
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110324162936.CC87.A69D9226@jp.fujitsu.com>
+References: <20110324160349.CC83.A69D9226@jp.fujitsu.com>
+	<AANLkTi=rOCdojotYG3wyX2Bt+aDrgxTO9DQWe7h1BQrC@mail.gmail.com>
+	<20110324162936.CC87.A69D9226@jp.fujitsu.com>
+Date: Thu, 24 Mar 2011 16:34:03 +0900
+Message-ID: <AANLkTimafdn8wPD7Zu3tK4PLgik=-0MeE62nGxq7ks4N@mail.gmail.com>
+Subject: Re: [PATCH 1/5] vmscan: remove all_unreclaimable check from direct
+ reclaim path completely
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, Johannes Weiner <hannes@cmpxchg.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 8:39 PM, Seth Forshee
-<seth.forshee@canonical.com> wrote:
-> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> ---
+On Thu, Mar 24, 2011 at 4:28 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> For example, In 4G desktop system.
+>> 32M full scanning and fail to reclaim a page.
+>> It's under 1% coverage.
 >
-> This button is unusual. On press it emits scanocde 0xe4, on release
-> 0xe5, and when held for a few seconds it begins emitting 0xea about
-> twice per second. I chose to handle only the press event in order to
-> make it behave like the other hotkeys.
->
-> Probably the closest thing to the intended function of this button
-> would be to alternate the display orientation between portrait and
-> landscape, but since there doesn't appear to be a keycode defined for
-> that function I went with KEY_PROG2. I'm open to other suggestions
-> however.
+> ?? I'm sorry. I haven't catch it.
+> Where 32M come from?
 
-Hi,
-The manual says that under Windows, this is the "Home Key", so
-KEY_HOME would be more appropriate.
-Also, it would be great to preserve key up and key down informations
-(sparse keymap have an "autorelease" parameter to control that).
-Thanks,
+(1<<12) * 4K + (1<<11) + 4K + .. (1 << 0) + 4K in shrink_zones.
+
 
 -- 
-Corentin Chary
-http://xf.iksaif.net
+Kind regards,
+Minchan Kim
