@@ -1,64 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933880Ab1CXThD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:37:03 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:48791 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab1CXThA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:37:00 -0400
-Date: Thu, 24 Mar 2011 20:36:47 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
-Message-ID: <20110324193647.GA7957@elte.hu>
-References: <alpine.DEB.2.00.1103241300420.32226@router.home>
- <AANLkTi=KZQd-GrXaq4472V3XnEGYqnCheYcgrdPFE0LJ@mail.gmail.com>
- <alpine.DEB.2.00.1103241312280.32226@router.home>
- <1300990853.3747.189.camel@edumazet-laptop>
- <alpine.DEB.2.00.1103241346060.32226@router.home>
- <AANLkTik3rkNvLG-rgiWxKaPc-v9sZQq96ok0CXfAU+r_@mail.gmail.com>
- <20110324185903.GA30510@elte.hu>
- <AANLkTi=66Q-8=AV3Y0K28jZbT3ddCHy9azWedoCC4Nrn@mail.gmail.com>
- <alpine.DEB.2.00.1103241404490.5576@router.home>
- <AANLkTimWYCHEsZjswLpD-xDcu_cL=GqsMshKRtkHt5Vn@mail.gmail.com>
+	id S933911Ab1CXTh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:37:58 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38904 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab1CXThy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 15:37:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZHy3/Bow79gKxQP/eztFqB3NmehG1DcBbK+ozpWjdCNaNVPCpotRWZYNwMO5fjsOjT
+         1oiOwB0TF+TiJCAFm4Pp92gJ2eUTtLvJyAlRc+sPLm3ksGS2IT1XkTiWMSDAlDGXzjSP
+         75BBRd0mc1kX+hmF/WLbM4v8cp4wBthMHtpdM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimWYCHEsZjswLpD-xDcu_cL=GqsMshKRtkHt5Vn@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <AANLkTinewk=mJZifVxEJkCtKfNauOjHnLAqwbGn139C=@mail.gmail.com>
+References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com>
+	<201103232322.52485.rjw@sisk.pl>
+	<AANLkTi=UMDZ+78bS-U=Kvp_PYnc_BNHH5EgJnm1nssHP@mail.gmail.com>
+	<201103240000.26788.rjw@sisk.pl>
+	<AANLkTinewk=mJZifVxEJkCtKfNauOjHnLAqwbGn139C=@mail.gmail.com>
+Date: Thu, 24 Mar 2011 20:37:53 +0100
+Message-ID: <AANLkTikui_HQ5JMcMJUqMr9WLyTRNzF-z4G7wAUNPOFy@mail.gmail.com>
+Subject: Re: Corrupted files after suspend to disk
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 24, 2011 at 11:16 AM, richard -rw- weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Thu, Mar 24, 2011 at 12:00 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>>> On Wed, Mar 23, 2011 at 11:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>>> >> On Wed, Mar 23, 2011 at 11:11 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>>> >> >> 2011/3/23 Rafael J. Wysocki <rjw@sisk.pl>:
+>>> >> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+>>> >> >> >> Hi,
+>>> >> >> >>
+>>> >> >> >> I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
+>>> >> >> >> running Linux 2.6.37.4.
+>>> >> >> >> After resuming from s2disk some files are corrupted.
+>>> >> >> >> But when I reboot my netbook everything seems good again.
+>>> >> >> >>
+>>> >> >> >> When I saw the problem the first time the ls command segfaulted always.
+>>> >> >> >> I did a reboot and it worked again.
+>>> >> >> >>
+>>> >> >> >> A few days later zypper crashed. After a reboot it worked again.
+>>> >> >> >> And today ssh crashed. I looked a bit closer and saw it crashed
+>>> >> >> >> somewhere within libcrypto.
+>>> >> >> >> So I made copy libcrypto and rebooted.
+>>> >> >> >> After the reboot ssh worked again but libcrypto and the copy of it hat
+>>> >> >> >> a different sha1 sum!
+>>> >> >> >> WTF?!
+>>> >> >> >>
+>>> >> >> >> Is this a known issue?
+>>> >> >> >
+>>> >> >> > No.
+>>> >> >> >
+>>> >> >> >> dmesgs and config are attached.
+>>> >> >> >>
+>>> >> >> >> The used distribution is openSUSE 11.4 with suspend-0.80.20100129-7.1
+>>> >> >> >> (default from suse).
+>>> >> >> >> I'm using ext3 as root filesystem.
+>>> >> >> >> What else do you need?
+>>> >> >> >
+>>> >> >> > Whatever you can do to narrow down the problem.  At the moment I only know
+>>> >> >> > that it's there.
+>>> >> >>
+>>> >> >> I can reproduce the problem now.
+>>> >> >> After ~20 suspend and resume iterations aide finds corrupted files in /lib/.
+>>> >> >> It's always a very basic lib like libcrypto, libglib which is used all
+>>> >> >> the time on my system.
+>>> >> >
+>>> >> > Those files are never intentionally modified, right?
+>>> >> >
+>>> >> >> Maybe it's an issue like this one?
+>>> >> >> https://lkml.org/lkml/2010/12/2/339
+>>> >> >
+>>> >> > It might have if that patch hadn't been merged before 2.6.37.
+>>> >> >
+>>> >> > Is the system 32-bit or 64-bit?
+>>> >>
+>>> >> It's a 32-bit system.
+>>> >> cmp shows that the corrupted files differ in many bytes (not scattered).
+>>> >> The corrupted bytes are always 0 or 252.
+>>> >
+>>> > Do I understand correctly that the files apparently corrupted after resume
+>>> > are not corrupted any more when you reboot?
+>>>
+>>> Yes.
+>>> Seems like a cache issue.
+>>
+>> There's a couple things you can check before we start asking other people for
+>> help.
+>>
+>> First, it would be good to know if things change when you save the image
+>> into a swap file instead of the swap partition you've been using so far
+>> (I believe it's documented quite well how to do that).
+>>
+>> Second, please verify if using the built-in save/load hibernate code leads
+>> to the same issue (you can hibernate by doing "echo disk > /sys/power/state"
+>> to verify that).
+>>
+>> Of course, please test the above separately. :-)
+>
+> Ok, I'll test this when I'm at home.
+>
+> BTW: dropping the caches helps, when some files seem corrupted.
+> Today /usr/bin/okular was broken.
+> After setting vm.drop_caches=1 it worked again.
+>
+>> Thanks,
+>> Rafael
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+> --
+> Thanks,
+> //richard
+>
 
-* Pekka Enberg <penberg@kernel.org> wrote:
+On Linux 2.6.38 I'm unable to reproduce the issue.
+Only 2.6.37 seems to be affected.
+So, I'm moving over to 2.6.38. :)
 
-> > -#if defined(CONFIG_CMPXCHG_LOCAL) && defined(CONFIG_PREEMPT)
-> > +#ifdef CONFIG_CMPXCHG_LOCAL
-> >        int cpu;
-> >
-> >        for_each_possible_cpu(cpu)
-> >
-> 
-> Ingo, can you try this patch out, please? I'm compiling here but
-> unfortunately I'm stuck with a really slow laptop...
-
-Yes, it does the trick with the config i sent.
-
-Tested-by: Ingo Molnar <mingo@elte.hu>
-
+-- 
 Thanks,
-
-	Ingo
+//richard
