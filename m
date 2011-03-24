@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab1CXFe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 01:34:58 -0400
-Received: from home.kolivas.org ([59.167.196.135]:35785 "EHLO home.kolivas.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751263Ab1CXFe4 convert rfc822-to-8bit (ORCPT
+	id S932861Ab1CXFfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 01:35:18 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36551 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932150Ab1CXFfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 01:34:56 -0400
-X-Greylist: delayed 1772 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Mar 2011 01:34:55 EDT
-From: Con Kolivas <kernel@kolivas.org>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.38-ck1
-Date: Thu, 24 Mar 2011 16:05:20 +1100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-ck1; KDE/4.6.1; x86_64; ; )
+	Thu, 24 Mar 2011 01:35:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/5] vmscan: remove all_unreclaimable check from direct reclaim path completely
+Cc: kosaki.motohiro@jp.fujitsu.com, Minchan Kim <minchan.kim@gmail.com>,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <20110323200458.724f2af8.akpm@linux-foundation.org>
+References: <20110324114842.CC70.A69D9226@jp.fujitsu.com> <20110323200458.724f2af8.akpm@linux-foundation.org>
+Message-Id: <20110324143541.CC77.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103241605.20645.kernel@kolivas.org>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Thu, 24 Mar 2011 14:35:07 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are patches designed to improve system responsiveness and interactivity 
-with specific emphasis on the desktop, but suitable to any workload.
+> On Thu, 24 Mar 2011 11:48:19 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> 
+> > > On Thu, 24 Mar 2011 11:11:46 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > > 
+> > > > Subject: [PATCH] vmscan: remove all_unreclaimable check from direct reclaim path completely
+> > > 
+> > > zone.all_unreclaimable is there to prevent reclaim from wasting CPU
+> > > cycles scanning a zone which has no reclaimable pages.  When originally
+> > > implemented it did this very well.
+> > >
+> > > That you guys keep breaking it, or don't feel like improving it is not a
+> > > reason to remove it!
+> > > 
+> > > If the code is unneeded and the kernel now reliably solves this problem
+> > > by other means then this should have been fully explained in the
+> > > changelog, but it was not even mentioned.
+> > 
+> > The changelog says, the logic was removed at 2008. three years ago.
+> > even though it's unintentionally. and I and minchan tried to resurrect
+> > the broken logic and resurrected a bug in the logic too. then, we
+> > are discussed it should die or alive.
+> > 
+> > Which part is hard to understand for you?
+> 
+> The part which isn't there: how does the kernel now address the problem
+> which that code fixed?
+
+Ah, got it.
+The history says the problem haven't occur for three years. thus I
+meant
+
+past: code exist, but broken and don't work for three years.
+new:  code removed.
+
+What's different? But last minchan's mail pointed out recent
+drain_all_pages() stuff depend on a return value of try_to_free_pages.
+
+thus, I've made new patch and sent it. please see it?
 
 
-Apply to 2.6.38:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.38/2.6.38-ck1/patch-2.6.38-ck1.bz2
-
-Broken out tarball:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.38/2.6.38-ck1/2.6.38-ck1-broken-out.tar.bz2
-
-Discrete patches:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.38/2.6.38-ck1/patches/
-
-All -ck patches:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/
 
 
-Web:
-http://kernel.kolivas.org
-
-Code blog when I feel like it:
-http://ck-hack.blogspot.com/
-
-Each discrete patch contains a brief description of what it does at the top of 
-the patch itself.
-
-This has just been a resync since the last -ck release.
-
-
-Full patchlist:
-
-2.6.38-sched-bfs-363.patch
-sched-add-above-background-load-function.patch
-mm-zero_swappiness.patch
-mm-enable_swaptoken_only_when_swap_full.patch
-mm-drop_swap_cache_aggressively.patch
-mm-kswapd_inherit_prio-1.patch
-mm-background_scan.patch
-mm-idleprio_prio-1.patch
-mm-lru_cache_add_lru_tail.patch
-mm-decrease_default_dirty_ratio.patch
-kconfig-expose_vmsplit_option.patch
-hz-default_1000.patch
-hz-no_default_250.patch
-hz-raise_max.patch
-preempt-desktop-tune.patch
-cpufreq-bfs_tweaks.patch
-ck1-version.patch
-
-
-I'd also like this opportunity to make a small plug for my compression
-application, lrzip, which now features full compression and decompression
-to/from STDIN/STDOUT and high grade password encryption, and is now
-heavily multithreaded on both compression and decompression cycles.
- It can be downloaded here:
-http://lrzip.kolivas.org
-
-See this post for the evolution details:
-http://ck-hack.blogspot.com/2011/03/lrzip-0600-stdinstdout-and-encryption.html
-
-And see this post about using it for a kernel compression exercise:
-http://ck-hack.blogspot.com/2010/11/lrzip-0520-and-massive-kernel.html
-
-Please enjoy!
-お楽しみください
-
--- 
--ck
