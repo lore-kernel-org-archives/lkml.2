@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933520Ab1CXAYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 20:24:08 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43838 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933494Ab1CXAYE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 20:24:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=e0jv6F1nPqQHWbmq52zAnX6WW6GK4mQ8MzQKHORZz8z7IgxIj7s8cDLUzamoQQUy7i
-         SBcH1E+qFACp7bASeUgygHnGZgl/F/YwV5v+8V+vMet9qYx+PDnwHj9ZAhqQcAfo27cW
-         dxA6v/8+u+0mvyfx/YM/BQrVB14NvVTIkBXlo=
+	id S933483Ab1CXA3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 20:29:47 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:4090 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933406Ab1CXA3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Mar 2011 20:29:46 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Subject: Re: [PATCH] bnx2fc: setup em for npiv port
+From: "Bhanu Gollapudi" <bprakash@broadcom.com>
+To: James.Bottomley@suse.de
+cc: "devel@open-fcoe.org" <devel@open-fcoe.org>,
+        "Vasu Dev" <vasu.dev@intel.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110315231329.13280.54456.stgit@vifc.jf.intel.com>
+References: <20110315231329.13280.54456.stgit@vifc.jf.intel.com>
+Date: Wed, 23 Mar 2011 17:29:35 -0700
+Message-ID: <1300926575.6240.4.camel@LTSJC-BPRAKASH.corp.ad.broadcom.com>
 MIME-Version: 1.0
-In-Reply-To: <1300919616-6780-1-git-send-email-Kyle.D.Moffett@boeing.com>
-References: <091F7EC1-5D33-4C90-AFC1-D6E24EF3EEC6@boeing.com>
-	<1300919616-6780-1-git-send-email-Kyle.D.Moffett@boeing.com>
-Date: Wed, 23 Mar 2011 19:24:04 -0500
-Message-ID: <AANLkTin14WSZsc7+B-rK1dSn=XShNrF63k_47RXu-3G6@mail.gmail.com>
-Subject: Re: [RFC PATCH] et1011c: Replaced PHY driver by a small dm646x board fixup
-From: Andy Fleming <afleming@gmail.com>
-To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-Cc: netdev@vger.kernel.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "David J. Choi" <david.choi@micrel.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-WSS-ID: 61944E873CK5272854-01-01
+Content-Type: text/plain;
+ charset=cp1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 5:33 PM, Kyle Moffett <Kyle.D.Moffett@boeing.com> wrote:
+On Tue, 2011-03-15 at 16:13 -0700, Vasu Dev wrote: 
+> Use fc_exch_mgr_list_clone to setup em for npiv port.
+> 
+> Also remove redundant vport and lport initializations.
+> 
+> Signed-off-by: Vasu Dev <vasu.dev@intel.com>
+> ---
 
-> -
-> -static struct phy_driver et1011c_driver = {
-> -       .phy_id         = 0x0282f014,
-> -       .name           = "ET1011C",
-> -       .phy_id_mask    = 0xfffffff0,
-> -       .features       = (PHY_BASIC_FEATURES | SUPPORTED_1000baseT_Full),
-> -       .flags          = PHY_POLL,
-> -       .config_aneg    = et1011c_config_aneg,
-> -       .read_status    = et1011c_read_status,
-> -       .driver         = { .owner = THIS_MODULE,},
-> -};
+James, 
+
+We have tested this, and would like to ack it.
+
+Thanks,
+Bhanu
+
+> 
+>  drivers/scsi/bnx2fc/bnx2fc_fcoe.c |   29 +++++++++++++++--------------
+>  1 files changed, 15 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+> index e476e87..71842a7 100644
+> --- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+> +++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+> @@ -1296,20 +1296,17 @@ setup_err:
+>  static struct fc_lport *bnx2fc_if_create(struct bnx2fc_hba *hba,
+>  				  struct device *parent, int npiv)
+>  {
+> -	struct fc_lport		*lport = NULL;
+> +	struct fc_lport		*lport, *n_port;
+>  	struct fcoe_port	*port;
+>  	struct Scsi_Host	*shost;
+>  	struct fc_vport		*vport = dev_to_vport(parent);
+>  	int			rc = 0;
+>  
+>  	/* Allocate Scsi_Host structure */
+> -	if (!npiv) {
+> -		lport = libfc_host_alloc(&bnx2fc_shost_template,
+> -					  sizeof(struct fcoe_port));
+> -	} else {
+> -		lport = libfc_vport_create(vport,
+> -					   sizeof(struct fcoe_port));
+> -	}
+> +	if (!npiv)
+> +		lport = libfc_host_alloc(&bnx2fc_shost_template, sizeof(*port));
+> +	else
+> +		lport = libfc_vport_create(vport, sizeof(*port));
+>  
+>  	if (!lport) {
+>  		printk(KERN_ERR PFX "could not allocate scsi host structure\n");
+> @@ -1327,7 +1324,6 @@ static struct fc_lport *bnx2fc_if_create(struct bnx2fc_hba *hba,
+>  		goto lp_config_err;
+>  
+>  	if (npiv) {
+> -		vport = dev_to_vport(parent);
+>  		printk(KERN_ERR PFX "Setting vport names, 0x%llX 0x%llX\n",
+>  			vport->node_name, vport->port_name);
+>  		fc_set_wwnn(lport, vport->node_name);
+> @@ -1356,12 +1352,17 @@ static struct fc_lport *bnx2fc_if_create(struct bnx2fc_hba *hba,
+>  	fc_host_port_type(lport->host) = FC_PORTTYPE_UNKNOWN;
+>  
+>  	/* Allocate exchange manager */
+> -	if (!npiv) {
+> +	if (!npiv)
+>  		rc = bnx2fc_em_config(lport);
+> -		if (rc) {
+> -			printk(KERN_ERR PFX "Error on bnx2fc_em_config\n");
+> -			goto shost_err;
+> -		}
+> +	else {
+> +		shost = vport_to_shost(vport);
+> +		n_port = shost_priv(shost);
+> +		rc = fc_exch_mgr_list_clone(n_port, lport);
+> +	}
+> +
+> +	if (rc) {
+> +		printk(KERN_ERR PFX "Error on bnx2fc_em_config\n");
+> +		goto shost_err;
+>  	}
+>  
+>  	bnx2fc_interface_get(hba);
+> 
+> 
 
 
-Might I suggest that you not eliminate the whole driver?  If you leave
-just this part (and the init stuff below it), and convert the
-config_aneg and read_status pointers to use the genphy versions, the
-kernel will, at least, be able to report what type of PHY it is.  And
-maybe one day, someone who is familiar with the inner workings of this
-PHY will fill in a more correct driver.
 
-Andy
