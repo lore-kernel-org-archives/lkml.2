@@ -1,98 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933531Ab1CXAcc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 20:32:32 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51141 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933406Ab1CXAca (ORCPT
+	id S933527Ab1CXAq6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 20:46:58 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:51459 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933426Ab1CXAq5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 20:32:30 -0400
-Date: Wed, 23 Mar 2011 17:32:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Robert Love <robert.w.love@intel.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
-        Jarek Poplawski <jarkao2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@open-fcoe.org" <devel@open-fcoe.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 02/36] scsi,rcu: convert call_rcu(fc_rport_free_rcu) to
- kfree_rcu()
-Message-ID: <20110324003223.GF2322@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4D82D071.5020703@cn.fujitsu.com>
- <4D82D3FF.2080303@cn.fujitsu.com>
- <4D82D45A.30102@cn.fujitsu.com>
- <1300814913.19083.427.camel@fritz>
- <20110323065014.GU2322@linux.vnet.ibm.com>
- <1300889151.15899.4.camel@mulgrave.site>
- <20110323222456.GC2322@linux.vnet.ibm.com>
- <1300920332.15899.45.camel@mulgrave.site>
+	Wed, 23 Mar 2011 20:46:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300920332.15899.45.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 23 Mar 2011 17:46:56 -0700
+Message-ID: <AANLkTikipA3__OX3sZd-VBS2Hvg5BSE=B9s+0RTyiVVQ@mail.gmail.com>
+Subject: is this a bug?
+From: Jay <jinshan.xiong@whamcloud.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 05:45:32PM -0500, James Bottomley wrote:
-> On Wed, 2011-03-23 at 15:24 -0700, Paul E. McKenney wrote:
-> > On Wed, Mar 23, 2011 at 09:05:51AM -0500, James Bottomley wrote:
-> > > On Tue, 2011-03-22 at 23:50 -0700, Paul E. McKenney wrote:
-> > > > The kfree_rcu() definition is as
-> > > > follows:
-> > > > 
-> > > > #define kfree_rcu(ptr, rcu_head)					\
-> > > > 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
-> > > 
-> > > Isn't this one of those cases where the obvious use of the interface is
-> > > definitely wrong?
-> > > 
-> > > It's also another nasty pseudo C prototype.  I know we do this sort of
-> > > thing for container_of et al, but I don't really think we want to extend
-> > > it.
-> > > 
-> > > Why not make the interface take a pointer to the embedding structure and
-> > > one to the rcu_head ... that way all pointer mathematics can be
-> > > contained inside the RCU routines.
-> > 
-> > Hello, James,
-> > 
-> > If you pass in a pair of pointers, then it is difficult for RCU to detect
-> > bugs where the two pointers are unrelated.  Yes, you can do some sanity
-> > checks, but these get cumbersome and have corner cases where they can
-> > be fooled.  In contrast, Lai's interface allows the compiler to do the
-> > needed type checking -- unless the second argument is a field of type
-> > struct rcu_head in the structure pointed to by the first argument, the
-> > compiler will complain.
-> > 
-> > Either way, the pointer mathematics are buried in the RCU API.
-> > 
-> > Or am I missing something here?
-> 
-> No ... I like the utility ... I just dislike the inelegance of having to
-> name a structure element in what looks like a C prototype.
-> 
-> I can see this proliferating everywhere since most of our reference
-> counting release callbacks basically free the enclosing object ...
+Hi,
 
-Indeed!  Improvements are welcome -- it is just that I am not convinced
-that the dual-pointer approach is really an improvement.
+Assuming vmscan is doing its job to steal the last page from an
+inode's namespace, so:
 
-The C preprocessor...  It is ugly, inelegant, painful, annoying, and
-should have been strangled at birth -- but it is always there when you
-need it!
+shrink_page_list -> remove_mapping -> __remove_from_page_cache:
 
-							Thanx, Paul
+void __remove_from_page_cache(struct page *page)
+
+{
+
+        ...
+
+        radix_tree_delete(&mapping->page_tree, page->index);
+
+        page->mapping = NULL;
+
+>>> after removing the page from radix tree, it stuck at here.
+
+        mapping->nrpages--;
+
+        ...
+
+}
+
+then another process just calls iput_final to release the inode, so
+iput_final -> evict:
+
+static void evict(struct inode *inode)
+
+{
+
+       ...
+
+        } else {
+
+                if (inode->i_data.nrpages)
+
+>>> here it finds that nrpage is 1, so go into truncate_inode_pages() but it won't find any page in the page tree.
+
+                        truncate_inode_pages(&inode->i_data, 0);
+
+>>> here nrpages remains 1.
+
+                end_writeback(inode);
+
+>>> hit  BUG_ON(inode->i_data.nrpages) in end_writeback().
+
+        }
+
+        ...
+
+}
+
+The root cause of this problem is that nrpages is accessed w/o holding
+mapping->page_tree. The fix is also easy, just grab ->tree_lock inside
+truncate_inode_pages_range:
+
++       spin_lock_irq(&mapping->tree_lock);
+
+-         if (mapping->nrpages == 0)
+
++        if (mapping->nrpages == 0) {
+
++               spin_unlock_irq(&mapping->tree_lock);
+
+                return;
+
++        }
+
++        spin_unlock_irq(&mapping->tree_lock);
+
+Am I missed anything?
+
+Thanks
