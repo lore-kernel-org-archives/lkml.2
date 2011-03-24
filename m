@@ -1,64 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab1CXVlS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 17:41:18 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:57538 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756735Ab1CXVlQ (ORCPT
+	id S1757277Ab1CXVl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 17:41:58 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:52159 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756735Ab1CXVlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 17:41:16 -0400
-Message-ID: <4D8BBA8A.3080408@bluewatersys.com>
-Date: Fri, 25 Mar 2011 10:41:30 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	Thu, 24 Mar 2011 17:41:53 -0400
+Date: Thu, 24 Mar 2011 22:41:50 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+Message-ID: <20110324214150.GA1739@gentoo.trippels.de>
+References: <4D8B8F34.5000203@fusionio.com>
+ <4D8B92AE.8090308@fusionio.com>
+ <20110324185445.GB1696@gentoo.trippels.de>
+ <4D8B9457.2020608@fusionio.com>
+ <20110324193441.GA1723@gentoo.trippels.de>
+ <4D8B9D2F.4010504@fusionio.com>
+ <20110324194546.GA1741@gentoo.trippels.de>
+ <4D8BA235.7060904@fusionio.com>
+ <20110324200613.GA1724@gentoo.trippels.de>
+ <4D8BB114.2070002@fusionio.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [patch 1/3] arm/gpio: Remove three copies of broken and racy
- debug	code
-References: <20110324212330.292903803@linutronix.de> <20110324212508.931638262@linutronix.de>
-In-Reply-To: <20110324212508.931638262@linutronix.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D8BB114.2070002@fusionio.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2011 10:27 AM, Thomas Gleixner wrote:
-> gpiolib plus two gpio implementations in arm fiddle in the guts of
-> irq_desc in a racy and buggy way. Remove the stuff. I already told the
-> gpio folks that we can provide that information in a proper way if
-> necessary.
->
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/arm/mach-ep93xx/gpio.c  |   39 -------------------------------------
->  arch/arm/plat-nomadik/gpio.c |   45 -------------------------------------------
->  drivers/gpio/gpiolib.c       |   45 -------------------------------------------
->  3 files changed, 129 deletions(-)
->
-> Index: linux-2.6-tip/arch/arm/mach-ep93xx/gpio.c
-> ===================================================================
+On 2011.03.24 at 22:01 +0100, Jens Axboe wrote:
+> On 2011-03-24 21:06, Markus Trippelsdorf wrote:
+> > On 2011.03.24 at 20:57 +0100, Jens Axboe wrote:
+> >>
+> >> OK, still a data point. What was the last -git kernel you used?
+> > 
+> > This one was the last and gave me no problems:
+> > 
+> > commit b81a618dcd3ea99de292dbe624f41ca68f464376
+> > Merge: 2f284c8 a9712bc
+> > Author: Linus Torvalds <torvalds@linux-foundation.org>
+> > Date:   Wed Mar 23 20:51:42 2011 -0700
+> > 
+> >     Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
+> 
+> Puzzling... Poking at straws here so far. Does this make any difference
+> whatsoever?
 
-I suggested an alternative patch for the ep93xx last time round which
-keeps the information that the pin is configured as an interrupt and
-tidies the code a bit (moves the newline to the first seq_printf). My
-patch is available here:
-http://lists-archives.org/linux-kernel/27439434-arm-ep93xx-kill-another-instance-of-broken-irq_desc-fiddling.html
+I will test your patch later.
 
-Could we merge that instead please.
+Git-bisect gave me this result thus far:
 
-Thanks,
-~Ryan
+9026e521c0da0731eb31f9f9022dd00cc3cd8885 is bad
+82f04ab47e1d94d78503591a7460b2cad9601ede is good
+
+When I continue the bisection with 4345caba340f051e10847924fc078ae18ed6695c
+the system will start normally, but it then silently corrupts my xfs
+partitions. And on next (re)boot I get this (only fixable with
+xfs_repair):
+
+BUG: unable to handle kernel NULL pointer dereference at 00000000000000f8
+IP: [<ffffffff8123cb97>] xfs_cmn_err+0x27/0xc0
+PGD 21c54c067 PUD 21c6bb067 PMD 0 
+Oops: 0000 [#1] PREEMPT SMP 
+last sysfs file: /sys/devices/pci0000:00/0000:00:11.0/host1/target1:0:0/1:0:0:0/block/sdb/sdb2/alignment_offset
+CPU 3 
+Pid: 1294, comm: rm Not tainted 2.6.38-rc6-00279-g4345cab #25 System manufacturer System Product Name/M4A78T-E
+RIP: 0010:[<ffffffff8123cb97>]  [<ffffffff8123cb97>] xfs_cmn_err+0x27/0xc0
+RSP: 0018:ffff88021c7b9ab8  EFLAGS: 00010246
+RAX: ffff88021c7b9b38 RBX: ffff88021dd14118 RCX: ffffffff8167a348
+RDX: 0000000000000000 RSI: ffffffff816501f0 RDI: 0000000000000008
+RBP: ffff88021c7b9b28 R08: ffffffff81650119 R09: 000000000000058e
+R10: 0000000000000001 R11: 0000000000012de8 R12: ffff88021dcc3340
+R13: 0000000000000075 R14: ffff88021e126c80 R15: 00000000000b0208
+FS:  00007fef28aec700(0000) GS:ffff8800dfd80000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00000000000000f8 CR3: 000000021c5ae000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process rm (pid: 1294, threadinfo ffff88021c7b8000, task ffff88021c566710)
+Stack:
+ ffffffff811f2362 ffff88021dcc3340 ffff88021c7b9b08 ffffffff811f7dab
+ 000000000000ea60 ffff88021e173e00 ffff88021c7b9bb4 ffff88021c7b9bb0
+ ffff88021c7b9bac ffff88021e126c80 ffff88021c7b9b48 ffffffff811dadfe
+Call Trace:
+ [<ffffffff811f2362>] ? xfs_btree_rec_addr+0x12/0x20
+ [<ffffffff811f7dab>] ? xfs_btree_get_rec+0x5b/0x90
+ [<ffffffff811dadfe>] ? xfs_alloc_get_rec+0x2e/0x70
+ [<ffffffff812072f0>] xfs_error_report+0x40/0x50
+ [<ffffffff811de274>] ? xfs_free_extent+0x94/0xc0
+ [<ffffffff811dc120>] xfs_free_ag_extent+0x4e0/0x7d0
+ [<ffffffff811de274>] xfs_free_extent+0x94/0xc0
+ [<ffffffff8122d4d5>] ? kmem_zone_alloc+0x85/0xd0
+ [<ffffffff811ee3e4>] xfs_bmap_finish+0x164/0x1b0
+ [<ffffffff8120e6b0>] xfs_itruncate_finish+0x150/0x3f0
+ [<ffffffff8122d4d5>] ? kmem_zone_alloc+0x85/0xd0
+ [<ffffffff8122ae46>] xfs_inactive+0x2d6/0x440
+ [<ffffffff812391ba>] xfs_fs_evict_inode+0xaa/0x130
+ [<ffffffff81133d14>] evict+0x24/0xc0
+ [<ffffffff81134a1b>] iput+0x1ab/0x280
+ [<ffffffff8112a0c6>] do_unlinkat+0x116/0x1c0
+ [<ffffffff811208fa>] ? sys_newfstatat+0x2a/0x40
+ [<ffffffff8112a192>] sys_unlinkat+0x22/0x40
+ [<ffffffff8103ddeb>] system_call_fastpath+0x16/0x1b
+Code: 00 00 00 00 55 48 89 e5 48 83 ec 70 66 66 66 66 90 8b 05 59 d6 4b 00 4c 89 45 f0 4c 89 4d f8 85 c0 74 04 85 c7 75 3e 48 8d 45 10 <48> 8b b2 f8 
+00 00 00 48 8d 55 c0 48 c7 c7 ce 11 65 81 c7 45 a8 
+RIP  [<ffffffff8123cb97>] xfs_cmn_err+0x27/0xc0
+ RSP <ffff88021c7b9ab8>
+CR2: 00000000000000f8
+---[ end trace 43fa8028bd7b575e ]--
 
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
-
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751 
-Fax:   +64 3 3779135			  USA 1800 261 2934
-
+Markus
