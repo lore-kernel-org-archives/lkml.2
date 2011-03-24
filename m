@@ -1,71 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab1CXPFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 11:05:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41981 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab1CXPFb (ORCPT
+	id S1755111Ab1CXPIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 11:08:39 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52604 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545Ab1CXPIh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 11:05:31 -0400
+	Thu, 24 Mar 2011 11:08:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=KcS63WLaseAMm+/CK6+t1KrTVj5+6NIOLsn8LnMKRF59GiGKKrjl/SJaKDh9h560IW
-         vZKaH3XqQo9PSNwwaJCP45Hg2WfI+vJFqjhAKbmYgpLQ9p+eezmqVQzSxCByNqpWIHhO
-         EszSwWP2D1VJsr6w2fmJN+EPj8pVtkilGu+2k=
-Date: Thu, 24 Mar 2011 16:05:17 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-api@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH] powerpc: add clock_adjtime for powerpc
-Message-ID: <20110324150517.GA6710@riccoc20.at.omicron.at>
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=Uz+HR8cpEjb9sr6X1lPg84DndgXzBofZTO3oa6jSE38FhEvpaHBfeJS2vBjYoTOz81
+         VaSd0ob9DG+Q19DAmCSd5blo6ZHl0gbREd/U48kUsdrnWfPN81+sj2QNURVo4LOadHGL
+         E2LCCjoRX5EywXavmsNLEuh8S1YUBR1HwFypI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Thu, 24 Mar 2011 16:08:36 +0100
+Message-ID: <AANLkTik6+TrjiC6ZF+KHhZ1iPzEe2jDayr363C0HgQN4@mail.gmail.com>
+Subject: regression: ip r change mss doesn't work in 2.6.38-git14
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the clock_adjtime system call to the powerpc architecture.
+After fixing the display issue thanks to Chris Wilson, I now have
+another problem
+ (which didn't exist in 2.6.38-git2); most websites outside of my DSL link don't
+ work properly (connection packet goes through, but the page load times out
+ within Firefox) unless I do
 
-The call was introduced in f1f1d5ebd10ffa4242bce7a90a56a222d6b7bc77
+ip r change default via 192.168.1.1 dev eth1 advmss 1400
 
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
----
- arch/powerpc/include/asm/systbl.h |    1 +
- arch/powerpc/include/asm/unistd.h |    3 ++-
- 2 files changed, 3 insertions(+), 1 deletions(-)
+This however doesn't change advmss anymore:
 
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index aa0f1eb..6a1152c 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -348,3 +348,4 @@ COMPAT_SYS_SPU(sendmsg)
- COMPAT_SYS_SPU(recvmsg)
- COMPAT_SYS_SPU(recvmmsg)
- SYSCALL_SPU(accept4)
-+COMPAT_SYS_SPU(clock_adjtime)
-diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
-index 6151937..386de07 100644
---- a/arch/powerpc/include/asm/unistd.h
-+++ b/arch/powerpc/include/asm/unistd.h
-@@ -367,10 +367,11 @@
- #define __NR_recvmsg		342
- #define __NR_recvmmsg		343
- #define __NR_accept4		344
-+#define __NR_clock_adjtime	345
- 
- #ifdef __KERNEL__
- 
--#define __NR_syscalls		345
-+#define __NR_syscalls		346
- 
- #define __NR__exit __NR_exit
- #define NR_syscalls	__NR_syscalls
--- 
-1.7.0.4
+[root@duff ~]# ip r
+default via 192.168.1.1 dev eth1
+169.254.0.0/16 dev eth1  scope link  metric 1004
+192.168.1.0/24 dev eth1  proto kernel  scope link  src 192.168.1.8
+[root@duff ~]# ip r change default via 192.168.1.1 dev eth1 advmss 1400
+[root@duff ~]# ip r
+default via 192.168.1.1 dev eth1
+169.254.0.0/16 dev eth1  scope link  metric 1004
+192.168.1.0/24 dev eth1  proto kernel  scope link  src 192.168.1.8
 
+
+strace of this operation doesn't appear to show errors in userspace,
+ which is btw:
+
+[root@duff ~]# ip -V
+ip utility, iproute2-ss100804
+[root@duff ~]# rpm -qf /sbin/ip
+iproute-2.6.35-6.fc14.x86_64
+
+
+execve("/sbin/ip", ["ip", "r", "change", "default", "via",
+"192.168.1.1", "dev", "eth1", "advmss", "1400"], [/* 23 vars */]) = 0
+brk(0)                                  = 0x2461000
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1,
+0) = 0x7f79c8d1c000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+open("/etc/ld.so.cache", O_RDONLY)      = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=101259, ...}) = 0
+mmap(NULL, 101259, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f79c8d03000
+close(3)                                = 0
+open("/lib64/libresolv.so.2", O_RDONLY) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0p8`12\0\0\0"...,
+832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=113832, ...}) = 0
+mmap(0x3231600000, 2202280, PROT_READ|PROT_EXEC,
+MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x3231600000
+mprotect(0x3231617000, 2093056, PROT_NONE) = 0
+mmap(0x3231816000, 8192, PROT_READ|PROT_WRITE,
+MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x16000) = 0x3231816000
+mmap(0x3231818000, 6824, PROT_READ|PROT_WRITE,
+MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x3231818000
+close(3)                                = 0
+open("/lib64/libdl.so.2", O_RDONLY)     = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\340\r
+/2\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=22536, ...}) = 0
+mmap(0x322f200000, 2109720, PROT_READ|PROT_EXEC,
+MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x322f200000
+mprotect(0x322f202000, 2097152, PROT_NONE) = 0
+mmap(0x322f402000, 8192, PROT_READ|PROT_WRITE,
+MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x322f402000
+close(3)                                = 0
+open("/lib64/libgcc_s.so.1", O_RDONLY)  = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\360(
+02\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=89760, ...}) = 0
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1,
+0) = 0x7f79c8d02000
+mmap(0x3230200000, 2183032, PROT_READ|PROT_EXEC,
+MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x3230200000
+mprotect(0x3230215000, 2093056, PROT_NONE) = 0
+mmap(0x3230414000, 4096, PROT_READ|PROT_WRITE,
+MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x14000) = 0x3230414000
+close(3)                                = 0
+open("/lib64/libc.so.6", O_RDONLY)      = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0p\357\241.2\0\0\0"...,
+832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=1956608, ...}) = 0
+mmap(0x322ea00000, 3781816, PROT_READ|PROT_EXEC,
+MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x322ea00000
+mprotect(0x322eb91000, 2097152, PROT_NONE) = 0
+mmap(0x322ed91000, 20480, PROT_READ|PROT_WRITE,
+MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x191000) = 0x322ed91000
+mmap(0x322ed96000, 21688, PROT_READ|PROT_WRITE,
+MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x322ed96000
+close(3)                                = 0
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1,
+0) = 0x7f79c8d01000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1,
+0) = 0x7f79c8cff000
+arch_prctl(ARCH_SET_FS, 0x7f79c8cff720) = 0
+mprotect(0x3231816000, 4096, PROT_READ) = 0
+mprotect(0x322f402000, 4096, PROT_READ) = 0
+mprotect(0x322ed91000, 16384, PROT_READ) = 0
+mprotect(0x322e81e000, 4096, PROT_READ) = 0
+munmap(0x7f79c8d03000, 101259)          = 0
+socket(PF_NETLINK, SOCK_RAW, 0)         = 3
+setsockopt(3, SOL_SOCKET, SO_SNDBUF, [32768], 4) = 0
+setsockopt(3, SOL_SOCKET, SO_RCVBUF, [1048576], 4) = 0
+bind(3, {sa_family=AF_NETLINK, pid=0, groups=00000000}, 12) = 0
+getsockname(3, {sa_family=AF_NETLINK, pid=4336, groups=00000000}, [12]) = 0
+sendto(3, "\24\0\0\0\22\0\1\3\330]\213M\0\0\0\0\0\0\0\0", 20, 0, NULL, 0) = 20
+recvmsg(3, {msg_name(12)={sa_family=AF_NETLINK, pid=0,
+groups=00000000},
+msg_iov(1)=[{"\344\3\0\0\20\0\2\0\330]\213M\360\20\0\0\0\0\4\3\1\0\0\0I\0\1\0\0\0\0\0"...,
+16384}], msg_controllen=0, msg_flags=0}, 0) = 3020
+brk(0)                                  = 0x2461000
+brk(0x2482000)                          = 0x2482000
+brk(0)                                  = 0x2482000
+recvmsg(3, {msg_name(12)={sa_family=AF_NETLINK, pid=0,
+groups=00000000},
+msg_iov(1)=[{"\24\0\0\0\3\0\2\0\330]\213M\360\20\0\0\0\0\0\0\1\0\0\0I\0\1\0\0\0\0\0"...,
+16384}], msg_controllen=0, msg_flags=0}, 0) = 20
+sendmsg(3, {msg_name(12)={sa_family=AF_NETLINK, pid=0,
+groups=00000000},
+msg_iov(1)=[{"8\0\0\0\30\0\5\1\331]\213M\0\0\0\0\2\0\0\0\376\3\0\1\0\0\0\0\10\0\5\0"...,
+56}], msg_controllen=0, msg_flags=0}, 0) = 56
+recvmsg(3, {msg_name(12)={sa_family=AF_NETLINK, pid=0,
+groups=00000000},
+msg_iov(1)=[{"$\0\0\0\2\0\0\0\331]\213M\360\20\0\0\0\0\0\0008\0\0\0\30\0\5\1\331]\213M"...,
+16384}], msg_controllen=0, msg_flags=0}, 0) = 36
+exit_group(0)                           = ?
+
+
+Thanks in advance,
+
+--alessandro
+
+ "There's always a siren singing you to shipwreck"
+
+   (Radiohead, "There There")
