@@ -1,49 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934037Ab1CXQCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 12:02:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:8098 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933729Ab1CXQCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 12:02:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,237,1299484800"; 
-   d="scan'208";a="901319206"
-From: Andi Kleen <andi@firstfloor.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86 APM: delete Linux kernel APM support (v2)
-References: <alpine.LFD.2.02.1103232321070.3848@x980>
-	<20110324154505.934a56a0.sfr@canb.auug.org.au>
-	<alpine.LFD.2.02.1103240336590.4529@x980>
-	<alpine.LFD.2.02.1103240414450.4529@x980>
-	<alpine.LFD.2.02.1103240430110.16085@x980>
-Date: Thu, 24 Mar 2011 09:01:17 -0700
-In-Reply-To: <alpine.LFD.2.02.1103240430110.16085@x980> (Len Brown's message
-	of "Thu, 24 Mar 2011 04:31:48 -0400 (EDT)")
-Message-ID: <m2y644tsmq.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S934047Ab1CXQDB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 12:03:01 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26282 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934039Ab1CXQCz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 12:02:55 -0400
+Date: Thu, 24 Mar 2011 09:02:04 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Jan Harkes <jaharkes@cs.cmu.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, coda@cs.cmu.edu,
+        codalist@TELEMANN.coda.cs.cmu.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [origin tree build failure] Re: [PATCH] fs, coda: Fix compile
+ warning when CONFIG_SYSCTL=n.
+Message-Id: <20110324090204.470d1f96.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTinMbYte_Atmgqn2bfowWOMWNV3TiAFgoOMTPg2G@mail.gmail.com>
+References: <AANLkTim-U1nyuQ3cVxLHv63LmQUvOJd5GmR5wF90xG==@mail.gmail.com>
+	<20110324075413.GA25830@elte.hu>
+	<AANLkTinMbYte_Atmgqn2bfowWOMWNV3TiAFgoOMTPg2G@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4D8B6B02.010F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Len Brown <lenb@kernel.org> writes:
+On Thu, 24 Mar 2011 16:46:15 +0600 Rakib Mullick wrote:
 
-> Microsoft was able to delete APM from Windows in 2006
-> with the release of Windows Vista.  5 years later it seems
-> quite safe that the latest Linux kernel can also.
->
-> The vintage APM laptops have become difficult to find,
-> making changes in this area difficult to test.
+> On Thu, Mar 24, 2011 at 1:54 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Rakib Mullick <rakib.mullick@gmail.com> wrote:
+> >
+> >> When CONFIG_SYSCTL=n, we get the following warning:
+> >>
+> >> fs/coda/sysctl.c:18: warning: ‘coda_table’ defined but not used
+> >>
+> >> Following patches fixes the above warning by making sure coda_table
+> >> and it's callee
+> >> function are in the same context. It also cleans up the code by
+> >> removing extra #ifdef.
+> >>
+> >>
+> >> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> >> ---
+> >>
+> >> diff --git a/fs/coda/sysctl.c b/fs/coda/sysctl.c
+> >> index c6405ce..d9cc2b3 100644
+> >> --- a/fs/coda/sysctl.c
+> >> +++ b/fs/coda/sysctl.c
+> >
+> > FYI, the v2 of this patch:
+> >
+> >  0bc825d240ab: codafs: fix compile warning when CONFIG_SYSCTL=n
+> >
+> > broke the upstream build:
+> >
+> >  fs/built-in.o: In function `init_coda':
+> >  psdev.c:(.init.text+0x2549): undefined reference to `coda_sysctl_clean'
+> >  fs/built-in.o: In function `exit_coda':
+> >  psdev.c:(.exit.text+0x1bf): undefined reference to `coda_sysctl_clean'
+> >  fs/built-in.o: In function `init_coda_psdev':
+> >  psdev.c:(.text.unlikely+0x21e1): undefined reference to `coda_sysctl_init'
+> >
+> > I don't think the -v2 commit was build-tested with !CONFIG_PROC_SYSCTL &&
+> > CONFIG_CODA_FS=y.
+> >
+> Andrew cleans up the unnecessary stubs. But, clearly removed
+> definition is necessary. And Yes, you are right, I didn't build test
+> it. Sorry for that. Please consider the following patch.
+> 
+> ---
+> codafs: Fix build break when CONFIG_PROC_SYSCTL=n
+> 
+> Commit 0bc825d240ab (codafs: fix compile warning when
+> CONFIG_SYSCTL=n), introduces build breakage, when CONFIG_PROC_SYSCTL=n
+> and CONFIG_CODA_FS=y. This patch fixes it.
+> 
+> fs/built-in.o: In function `init_coda':
+> psdev.c:(.init.text+0xc02): undefined reference to `coda_sysctl_init'
+> psdev.c:(.init.text+0xc7c): undefined reference to `coda_sysctl_clean'
+> fs/built-in.o: In function `exit_coda':
+> psdev.c:(.exit.text+0xa9): undefined reference to `coda_sysctl_clean'
+> make: *** [.tmp_vmlinux1] Error 1
+> 
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> Reported-by: Ingo Molnar <mingo@elte.hu>
 
-One other use-case even on non laptops was powering off the system.
-I know my desktops used to need that.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Would it make sense to retain that path? 
+Thanks.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+> ---
+> 
+> diff --git a/fs/coda/sysctl.c b/fs/coda/sysctl.c
+> index 06d27a4..af56ad5 100644
+> --- a/fs/coda/sysctl.c
+> +++ b/fs/coda/sysctl.c
+> @@ -61,4 +61,13 @@ void coda_sysctl_clean(void)
+>  		fs_table_header = NULL;
+>  	}
+>  }
+> +
+> +#else
+> +void coda_sysctl_init(void)
+> +{
+> +}
+> +
+> +void coda_sysctl_clean(void)
+> +{
+> +}
+>  #endif
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
