@@ -1,14 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934291Ab1CXUvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:51:06 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37249 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934262Ab1CXUvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:51:01 -0400
-Date: Thu, 24 Mar 2011 21:50:38 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
+	id S934299Ab1CXUvl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:51:41 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61539 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934262Ab1CXUvj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 16:51:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=vyarI+EJn5wNCVQqgNcGVHh5UKA1MA3IT+XPAr7Z2OkcU3NCoxra+4X3bYvem5zmSP
+         dVgwYOA5B4lNfrRygJr9L8OhbkmPhsOr4iHFhCkJrkquKVwm4w7s3J7b2Ex76xA1NLcj
+         xhXmk5kfwZG3dCIUwY3TAUPJY6RAKqN1Yh1sE=
+Subject: Re: [PATCH RFC] x86: avoid atomic operation in
+ test_and_set_bit_lock if possible
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
 Cc: Jack Steiner <steiner@sgi.com>, Jan Beulich <JBeulich@novell.com>,
         Borislav Petkov <bp@amd64.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -20,57 +29,49 @@ Cc: Jack Steiner <steiner@sgi.com>, Jan Beulich <JBeulich@novell.com>,
         Nikanth Karthikesan <knikanth@suse.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH RFC] x86: avoid atomic operation in test_and_set_bit_lock
- if possible
-Message-ID: <20110324205038.GA2393@elte.hu>
+In-Reply-To: <20110324200010.GB7957@elte.hu>
 References: <201103241026.01624.knikanth@suse.de>
- <20110324085647.GI30812@elte.hu>
- <20110324145221.GC31194@aftab>
- <4D8B83DA02000078000381DE@vpn.id2.novell.com>
- <20110324173020.GA26761@sgi.com>
- <20110324200010.GB7957@elte.hu>
- <m2sjucl0a6.fsf@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2sjucl0a6.fsf@firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	 <20110324085647.GI30812@elte.hu> <20110324145221.GC31194@aftab>
+	 <4D8B83DA02000078000381DE@vpn.id2.novell.com>
+	 <20110324173020.GA26761@sgi.com>  <20110324200010.GB7957@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Mar 2011 21:48:02 +0100
+Message-ID: <1300999682.2714.23.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le jeudi 24 mars 2011 à 21:00 +0100, Ingo Molnar a écrit :
 
-* Andi Kleen <andi@firstfloor.org> wrote:
-
-> Ingo Molnar <mingo@elte.hu> writes:
-> >
-> > One good way to see cache bounces is to run a misses/accesses ratio profile:
-> >
-> >    perf top -e cache-misses -e cache-references --count-filter 10
-> >
-> > Note the two events: this runs a 'weighted' profile, you'll see (LLC) 
-> > cache-misses of a function relative to cache-references it does, a 
-> > misses/references ratio in essence.
+> One good way to see cache bounces is to run a misses/accesses ratio profile:
 > 
-> If anyone does this on a Nehalem please only use 2.6.39-rc*+ which
-> includes the offcore patches. Anything before that will get you complete
-> bogus numbers.
+>    perf top -e cache-misses -e cache-references --count-filter 10
+> 
 
-In that case the second example i quoted can be used:
+Oh well , something must be broken...
 
-  perf top -e L1-dcache-store-misses -e L1-dcache-stores --count-filter 10
+"perf top" is working here, but if I use any "-e ...." argument, it
+fails :
 
-Or:
+# perf top -e cache-misses
 
-  perf top -e L1-dcache-load-misses -e L1-dcache-loads --count-filter 10
+  Error: sys_perf_event_open() syscall returned with 2 (No such file or directory).
+  /bin/dmesg may provide additional information.
 
-Thanks,
+  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
 
-	Ingo
+# grep PERF_EVENTS .config
+CONFIG_HAVE_PERF_EVENTS=y
+CONFIG_PERF_EVENTS=y
+CONFIG_HAVE_PERF_EVENTS_NMI=y
+
+Nothing in dmesg...
+
+uname -a
+Linux ed001 2.6.38-08165-g2712750-dirty #517 SMP Thu Mar 24 21:31:00 CET 2011 i686 i686 i386 GNU/Linux
+
+
+
