@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab1CXRtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 13:49:00 -0400
-Received: from flusers.ccur.com ([173.221.59.2]:29460 "EHLO gamx.iccur.com"
+	id S932998Ab1CXRtG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 13:49:06 -0400
+Received: from flusers.ccur.com ([173.221.59.2]:58124 "EHLO gamx.iccur.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756542Ab1CXRs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756575Ab1CXRs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Mar 2011 13:48:57 -0400
-Date: Thu, 24 Mar 2011 13:48:03 -0400
+Date: Thu, 24 Mar 2011 13:48:04 -0400
 From: Joe Korty <joe.korty@ccur.com>
 To: paulmck@linux.vnet.ibm.com
 Cc: fweisbec@gmail.com, peterz@infradead.org, laijs@cn.fujitsu.com,
@@ -14,8 +14,8 @@ Cc: fweisbec@gmail.com, peterz@infradead.org, laijs@cn.fujitsu.com,
         loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
         josh@joshtriplett.org, houston.jim@comcast.net, andi@firstfloor.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 19/24] jrcu: bugfix: init cpu wait state on every scan
-Message-ID: <20110324174803.GA18936@tsunami.ccur.com>
+Subject: [PATCH 22/24] jrcu: precise vs sloppy sample timing
+Message-ID: <20110324174804.GA18958@tsunami.ccur.com>
 Reply-To: Joe Korty <joe.korty@ccur.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,33 +25,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jrcu: re-init cpu wait state on every scan, not just at
-scans that mark beginning of batch.
+jrcu: test harness: increase sampling period precision.
 
-This fixes a hard to hit bug.  To have a chance of hitting
-it, these conditions must be true: we have a cpu running a
-user application 100% of the time, not making any system
-calls, and no interrupts of any type being delivered to
-that cpu.
+Normally, jrcu tries to 'catch a ride' with any other
+local timer interrupt happening on the monitoring cpu.
+It does this through the hrtimer 'slop' mechanism.
+Such sloppiness, though, defeats attempts to stress-test
+jrcu via shortened sampling periods.
 
-jrcu is designed to allow transitioning values of every
-description to be fuzzy for a while before settling down.
-Therefore, if a batch ends (and a new one starts) at about
-the time a cpu is transitioning from a normal state to the
-above mentioned user-dedicated state, the value the cpu
-->wait state is set to will be somewhat random.  That is,
-most of the time it will be correct but on occasion it
-will take the opposite value.  This is OK, it is expected,
-but for things to work we must periodically re-sample and
-re-init the ->wait state so that later on, we will catch
-the sampled value again, after it has become stable.
+The precise/sloppy state is changeable at runtime:
 
-Without periodic re-sampling we could set ->wait =1 when it
-should be =0, and once it is =1 it will stay =1 (because a
-user-dedicated cpu crosses no quiescent point taps which
-by definition would set ->wait =0).  JRCU thus stops
-advancing batches until the watchdog fires and tickles
-the offending cpu.
+    echo precise=1 >/sys/kernel/debug/rcu/rcudata
+    echo precise=0 >/sys/kernel/debug/rcu/rcudata
 
 Signed-off-by: Joe Korty <joe.korty@ccur.com>
 
@@ -59,17 +44,57 @@ Index: b/kernel/jrcu.c
 ===================================================================
 --- a/kernel/jrcu.c
 +++ b/kernel/jrcu.c
-@@ -319,8 +319,11 @@ static void __rcu_delimit_batches(struct
- 	for_each_online_cpu(cpu) {
- 		rd = &rcu_data[cpu];
- 		if (rd->wait) {
--			eob = 0;
--			break;
-+			rd->wait = preempt_count_cpu(cpu) > idle_cpu(cpu);
-+			if (rd->wait) {
-+				eob = 0;
-+				break;
-+			}
- 		}
+@@ -137,6 +137,8 @@ static int rcu_hz = RCU_HZ;
+ static int rcu_hz_period_us = RCU_HZ_PERIOD_US;
+ static int rcu_hz_delta_us = RCU_HZ_DELTA_US;
+ 
++static int rcu_hz_precise;
++
+ int rcu_scheduler_active __read_mostly;
+ int rcu_nmi_seen __read_mostly;
+ 
+@@ -436,7 +438,8 @@ static enum hrtimer_restart rcu_timer_fu
+ 	raise_softirq(RCU_SOFTIRQ);
+ 
+ 	next = ktime_add_ns(ktime_get(), rcu_hz_period_ns);
+-	hrtimer_set_expires_range_ns(&rcu_timer, next, rcu_hz_delta_ns);
++	hrtimer_set_expires_range_ns(&rcu_timer, next,
++		rcu_hz_precise ? 0 : rcu_hz_delta_ns);
+ 	return HRTIMER_RESTART;
+ }
+ 
+@@ -539,7 +542,13 @@ static int jrcud_func(void *arg)
+ 	pr_info("JRCU: daemon started. Will operate at ~%d Hz.\n", rcu_hz);
+ 
+ 	while (!kthread_should_stop()) {
+-		usleep_range(rcu_hz_period_us, rcu_hz_period_us + rcu_hz_delta_us);
++		if (rcu_hz_precise) {
++			usleep_range(rcu_hz_period_us,
++				rcu_hz_period_us);
++		} else {
++			usleep_range(rcu_hz_period_us,
++				rcu_hz_period_us + rcu_hz_delta_us);
++		}
+ 		rcu_delimit_batches();
  	}
  
+@@ -576,7 +585,9 @@ static int rcu_debugfs_show(struct seq_f
+ {
+ 	int cpu, q;
+ 
+-	seq_printf(m, "%14u: hz\n", rcu_hz);
++	seq_printf(m, "%14u: hz, %s\n",
++		rcu_hz,
++		rcu_hz_precise ? "precise" : "sloppy");
+ 
+ 	seq_printf(m, "%14u: watchdog (secs)\n", rcu_wdog_lim / (int)USEC_PER_SEC);
+ 	seq_printf(m, "%14d: #secs left on watchdog\n",
+@@ -686,6 +697,8 @@ next:
+ 			return -EINVAL;
+ 		rcu_hz = rcu_hz_wanted;
+ 		rcu_hz_period_us = USEC_PER_SEC / rcu_hz;
++	} else if (!strncmp(token, "precise=", 8)) {
++		sscanf(&token[8], "%d", &rcu_hz_precise);
+ 	} else if (!strncmp(token, "wdog=", 5)) {
+ 		int wdog = -1;
+ 		sscanf(&token[5], "%d", &wdog);
