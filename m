@@ -1,71 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933569Ab1CXKpl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 06:45:41 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56748 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab1CXKpi (ORCPT
+	id S933596Ab1CXKqR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 06:46:17 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38266 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932103Ab1CXKqQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 06:45:38 -0400
+	Thu, 24 Mar 2011 06:46:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
-         :subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=cbrGjU+YUZBTUdba5ZUMfKnzKysFJS793n5/setJOkvA/sFwQoZ58Fxs3sWhRSeP+Z
-         +tDVxSX1IJV+BxMxmyc4P6THV7lkYJm0z3Vt+FzrboQ5M9x38xwmBCPYihHhjZuIgom3
-         +SQXTKqM7Sa0OdTQxRmMEfzfx5LlhIIiKtlIA=
-Message-ID: <4D8B20CE.5030101@linaro.org>
-Date: Thu, 24 Mar 2011 10:45:34 +0000
-From: Andy Green <andy@warmcat.com>
-Reply-To: andy.green@linaro.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xwOlUyITOtvlqpvBC0ZPJBFbHDEKRS8u01tCfGuEIbEn5l3N4PJEzAbpeKl8z8mv8n
+         8etflUMCbcChtwytUVCzQBuLxhqt/IqGvPWTcSpA382ybesRJJu7tBiu5YpKUzqd3bPF
+         bssoSk/0CVCbYY8O/GR5BblToslLnfIjLoIWY=
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        broonie@opensource.wolfsonmicro.com, roger.quadros@nokia.com,
-        grant.likely@secretlab.ca, netdev@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: Re: [RFC] usbnet: use eth%d name for known ethernet devices
-References: <4D79F068.2080009@linaro.org> <201103231756.39849.arnd@arndb.de> <4D8A2830.6020706@linaro.org> <201103231811.54290.arnd@arndb.de>
-In-Reply-To: <201103231811.54290.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110324075413.GA25830@elte.hu>
+References: <AANLkTim-U1nyuQ3cVxLHv63LmQUvOJd5GmR5wF90xG==@mail.gmail.com>
+	<20110324075413.GA25830@elte.hu>
+Date: Thu, 24 Mar 2011 16:46:15 +0600
+Message-ID: <AANLkTinMbYte_Atmgqn2bfowWOMWNV3TiAFgoOMTPg2G@mail.gmail.com>
+Subject: Re: [origin tree build failure] Re: [PATCH] fs, coda: Fix compile
+ warning when CONFIG_SYSCTL=n.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jan Harkes <jaharkes@cs.cmu.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, coda@cs.cmu.edu,
+        codalist@TELEMANN.coda.cs.cmu.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2011 05:11 PM, Somebody in the thread at some point said:
-> On Wednesday 23 March 2011, Andy Green wrote:
->>> diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
->>> index bc86f4b..c98d3a7 100644
->>> --- a/drivers/net/usb/smsc95xx.c
->>> +++ b/drivers/net/usb/smsc95xx.c
->>> @@ -1231,7 +1231,7 @@ static const struct driver_info smsc95xx_info = {
->>
->>> -     .flags          = FLAG_ETHER | FLAG_SEND_ZLP,
->>> +     .flags          = FLAG_ETHER | FLAG_SEND_ZLP | FLAG_REALLY_ETHER,
->>
->>>                if ((dev->driver_info->flags&   FLAG_ETHER) != 0&&
->>> +                 ((dev->driver_info->flags&   FLAG_PTP) == 0 ||
->>> +                  (net->dev_addr [0]&   0x02) == 0))
->>>                        strcpy (net->name, "eth%d");
->>
->> So it just takes the approach that all smsc95xx are going to be eth%d?
+On Thu, Mar 24, 2011 at 1:54 PM, Ingo Molnar <mingo@elte.hu> wrote:
 >
-> Right, and all other drivers that are obviously ethernet-only, including
-> future drivers.
+> * Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>
+>> When CONFIG_SYSCTL=n, we get the following warning:
+>>
+>> fs/coda/sysctl.c:18: warning: ‘coda_table’ defined but not used
+>>
+>> Following patches fixes the above warning by making sure coda_table
+>> and it's callee
+>> function are in the same context. It also cleans up the code by
+>> removing extra #ifdef.
+>>
+>>
+>> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+>> ---
+>>
+>> diff --git a/fs/coda/sysctl.c b/fs/coda/sysctl.c
+>> index c6405ce..d9cc2b3 100644
+>> --- a/fs/coda/sysctl.c
+>> +++ b/fs/coda/sysctl.c
+>
+> FYI, the v2 of this patch:
+>
+>  0bc825d240ab: codafs: fix compile warning when CONFIG_SYSCTL=n
+>
+> broke the upstream build:
+>
+>  fs/built-in.o: In function `init_coda':
+>  psdev.c:(.init.text+0x2549): undefined reference to `coda_sysctl_clean'
+>  fs/built-in.o: In function `exit_coda':
+>  psdev.c:(.exit.text+0x1bf): undefined reference to `coda_sysctl_clean'
+>  fs/built-in.o: In function `init_coda_psdev':
+>  psdev.c:(.text.unlikely+0x21e1): undefined reference to `coda_sysctl_init'
+>
+> I don't think the -v2 commit was build-tested with !CONFIG_PROC_SYSCTL &&
+> CONFIG_CODA_FS=y.
+>
+Andrew cleans up the unnecessary stubs. But, clearly removed
+definition is necessary. And Yes, you are right, I didn't build test
+it. Sorry for that. Please consider the following patch.
 
-I moved my tree over to using this patch now, it's working fine on Panda 
-/ smsc95xx as one would expect.  Guys with pluggable smsc95xx are going 
-to find their device comes as eth%d not usb%d but that seems perfectly 
-defensible as how it always should have been.
+---
+codafs: Fix build break when CONFIG_PROC_SYSCTL=n
 
-So, nice job.
+Commit 0bc825d240ab (codafs: fix compile warning when
+CONFIG_SYSCTL=n), introduces build breakage, when CONFIG_PROC_SYSCTL=n
+and CONFIG_CODA_FS=y. This patch fixes it.
 
--Andy
+fs/built-in.o: In function `init_coda':
+psdev.c:(.init.text+0xc02): undefined reference to `coda_sysctl_init'
+psdev.c:(.init.text+0xc7c): undefined reference to `coda_sysctl_clean'
+fs/built-in.o: In function `exit_coda':
+psdev.c:(.exit.text+0xa9): undefined reference to `coda_sysctl_clean'
+make: *** [.tmp_vmlinux1] Error 1
+
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+Reported-by: Ingo Molnar <mingo@elte.hu>
+---
+
+diff --git a/fs/coda/sysctl.c b/fs/coda/sysctl.c
+index 06d27a4..af56ad5 100644
+--- a/fs/coda/sysctl.c
++++ b/fs/coda/sysctl.c
+@@ -61,4 +61,13 @@ void coda_sysctl_clean(void)
+ 		fs_table_header = NULL;
+ 	}
+ }
++
++#else
++void coda_sysctl_init(void)
++{
++}
++
++void coda_sysctl_clean(void)
++{
++}
+ #endif
