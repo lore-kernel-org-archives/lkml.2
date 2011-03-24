@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933486Ab1CXDlo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 23:41:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59423 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932926Ab1CXDln convert rfc822-to-8bit (ORCPT
+	id S933558Ab1CXDl7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 23:41:59 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34359 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932926Ab1CXDl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 23:41:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=oW9qgC8gz+0eSmRLR7VzopiFlEb52mhy+bBN1TNhmgt6I9Xn23syjLlDE0W/UUaNIZ
-         RGgZnT65x4zvYrhAya6j6sKNiaHK6skleUCsZfpUdHPAIlEwb86V3//aoi8RUPOUSDUk
-         Dl4vmP0/GjQzYAO9kQ8w/MhyKEq+KAwMxb2VY=
+	Wed, 23 Mar 2011 23:41:57 -0400
+Date: Wed, 23 Mar 2011 21:41:51 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: David Miller <davem@davemloft.net>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of_mmc_spi: Need to include irq.h and of_irq.h
+Message-ID: <20110324034151.GA27881@ponder.secretlab.ca>
+References: <20110318.150023.27819221.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <20100408135107.19547.5352.stgit@warthog.procyon.org.uk>
-References: <20100408135107.19547.5352.stgit@warthog.procyon.org.uk>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 23 Mar 2011 23:41:22 -0400
-X-Google-Sender-Auth: MTu6ERe4oZDl3wUWZ-PgwxvCRPc
-Message-ID: <AANLkTinScWjcNAFVbBd6VuOta+LymaamxpHX3nh6OL9M@mail.gmail.com>
-Subject: Re: [PATCH] NOMMU: Work around the lack of vmap()/vunmap() in
- firmware_loading_store() [ver #2]
-To: David Howells <dhowells@redhat.com>
-Cc: uclinux-dev@uclinux.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110318.150023.27819221.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 09:51, David Howells wrote:
-> Work around the lack of vmap()/vunmap() in firmware_loading_store() when
-> operating in NOMMU mode.  vmap() cannot be implemented as there's no virtual
-> mapping available.
->
-> Instead, in NOMMU mode, make available a function (vcoalesce()) that can
-> coalesce the supplied data into one big buffer and store as the address vmap()
-> would've returned.
->
-> This can be #defined to vmap() in NOMMU mode by interested parties.
+On Fri, Mar 18, 2011 at 03:00:23PM -0700, David Miller wrote:
+> 
+> Since these are the headers that provide irq_of_parse_and_map()
+> and NO_IRQ.
+> 
+> Signed-off-by: David S. Miller <davem@davemloft.net>
 
-seems this patch missed updating vunmap():
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-void vunmap(const void *addr)
-{
-   BUG();
-}
+Chris, let me know if you need me to take this via my tree.
 
-that BUG() just needs to be changed to a kfree(addr) ...
--mike
+g.
+
+> 
+> diff --git a/drivers/mmc/host/of_mmc_spi.c b/drivers/mmc/host/of_mmc_spi.c
+> index 5530def..e2aecb7 100644
+> --- a/drivers/mmc/host/of_mmc_spi.c
+> +++ b/drivers/mmc/host/of_mmc_spi.c
+> @@ -15,9 +15,11 @@
+>  #include <linux/module.h>
+>  #include <linux/device.h>
+>  #include <linux/slab.h>
+> +#include <linux/irq.h>
+>  #include <linux/gpio.h>
+>  #include <linux/of.h>
+>  #include <linux/of_gpio.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/spi/spi.h>
+>  #include <linux/spi/mmc_spi.h>
+>  #include <linux/mmc/core.h>
