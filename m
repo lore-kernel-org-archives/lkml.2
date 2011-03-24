@@ -1,54 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab1CXVQy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 17:16:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:28074 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397Ab1CXVQx (ORCPT
+	id S1756677Ab1CXVRK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 17:17:10 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:52178 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756400Ab1CXVRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 17:16:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=DwoHvJbRserdmVN2DVK4uzU8eWtjsE4TdZz1Z4XcYksGjvh0VrxHN4JD8HPauHfH/l
-         vYyGC/bVA9FpCHXf/New==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimPWxVeax3RcVBefPeV5+P8G6cHhdU-g82_s5s3@mail.gmail.com>
-References: <AANLkTinmjGaK9ZSbKYTm5g-wuQ-K1hQaJBA+gSN5ERJ=@mail.gmail.com>
- <AANLkTikHqJR=JgZzKc1G-m8z82hBFmD-w1bLn5aENTcr@mail.gmail.com> <AANLkTimPWxVeax3RcVBefPeV5+P8G6cHhdU-g82_s5s3@mail.gmail.com>
-From: Paul Menage <menage@google.com>
-Date: Thu, 24 Mar 2011 14:16:27 -0700
-Message-ID: <AANLkTimRqvy4JseWka9HfwvmirbUxcTEBy5OTg4UiQiZ@mail.gmail.com>
-Subject: Re: Tests for cpusets and cgroup performance measurement
-To: Jaswinder Singh <jaswinderlinux@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Thu, 24 Mar 2011 17:17:06 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+mrNdKOgKm3B/Mu6EGhYr6GmmRUvtgiPbkJzUgLz
+	Jyslkn4eUr/4sE
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH v2] viafb: add VIA slapping capability
+Date: Thu, 24 Mar 2011 21:32:18 +0000
+Message-Id: <1301002338-3446-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <4D8B9FBE.6030207@bachelot.org>
+References: <4D8B9FBE.6030207@bachelot.org>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 10:42 PM, Jaswinder Singh
-<jaswinderlinux@gmail.com> wrote:
-> "Jobs on larger NUMA systems may see a performance boost if jobs can be
-> intelligently assigned to specific CPUs. Jobs may perform better if
-> striped across physical processors, or contained within the fewest
-> number of memory controllers."
->
-> I am curious and want to try some simple tests so that I can see the
-> performance improvement by using cpusets on my PCs.
->
-> Can you suggest some tests so that I can study them.
+This patch introduces dummy functions to execute when we don't know
+what we should do (due to missing documentation). They do nothing
+but print a nice message in the log explaining the situation.
+To trigger this message initial power management support is
+activated which might save a bit energy by disabling PLL and clock
+if no device is configured to use them.
 
-Not particularly - I've never been involved in optimizing apps on
-large NUMA systems. Our uses of NUMA at Google have all involved
-faked-NUMA nodes, assigning nodes to jobs to provide crude memory
-limits.
+Note: The message is only shown for the oldest IGPs CLE266 and K400
+      as for the other platforms there are reasonable assumptions
+      how it does (hopefully) work.
 
-I suspect that there aren't very many "simple" tests out there. Google
-search for [hpc numa tuning] turns up a few likely pages that might
-have pointers to suitable applications.
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+---
+v2: fixed 2 annoying typos
+---
+ drivers/video/via/hw.c        |   19 +++++++++++++++++++
+ drivers/video/via/via_clock.c |   30 ++++++++++++++++++++++++------
+ 2 files changed, 43 insertions(+), 6 deletions(-)
 
-Paul
+diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
+index f1eff0b..df84251 100644
+--- a/drivers/video/via/hw.c
++++ b/drivers/video/via/hw.c
+@@ -2289,6 +2289,25 @@ int viafb_setmode(struct VideoModeTable *vmode_tbl, int video_bpp,
+ 			get_sync(viafbinfo1));
+ 	}
+ 
++	clock.set_primary_clock_source(VIA_CLKSRC_X1, true);
++	clock.set_secondary_clock_source(VIA_CLKSRC_X1, true);
++
++	if (viaparinfo->shared->iga1_devices) {
++		clock.set_primary_pll_state(VIA_STATE_ON);
++		clock.set_primary_clock_state(VIA_STATE_ON);
++	} else {
++		clock.set_primary_pll_state(VIA_STATE_OFF);
++		clock.set_primary_clock_state(VIA_STATE_OFF);
++	}
++
++	if (viaparinfo->shared->iga2_devices) {
++		clock.set_secondary_pll_state(VIA_STATE_ON);
++		clock.set_secondary_clock_state(VIA_STATE_ON);
++	} else {
++		clock.set_secondary_pll_state(VIA_STATE_OFF);
++		clock.set_secondary_clock_state(VIA_STATE_OFF);
++	}
++
+ 	via_set_state(devices, VIA_STATE_ON);
+ 	device_screen_on();
+ 	return 1;
+diff --git a/drivers/video/via/via_clock.c b/drivers/video/via/via_clock.c
+index 29afe4c..a829a24 100644
+--- a/drivers/video/via/via_clock.c
++++ b/drivers/video/via/via_clock.c
+@@ -29,6 +29,9 @@
+ #include "global.h"
+ #include "debug.h"
+ 
++const char *via_slap = "Please slap VIA Technologies to motivate them "
++	"releasing full documentation for your platform!\n";
++
+ static inline u32 cle266_encode_pll(struct via_pll_config pll)
+ {
+ 	return (pll.multiplier << 8)
+@@ -229,19 +232,34 @@ static void set_secondary_clock_source(enum via_clksrc source, bool use_pll)
+ 	via_write_reg_mask(VIACR, 0x6C, data, 0x0F);
+ }
+ 
++static void dummy_set_clock_state(u8 state)
++{
++	printk(KERN_INFO "Using undocumented set clock state.\n%s", via_slap);
++}
++
++static void dummy_set_clock_source(enum via_clksrc source, bool use_pll)
++{
++	printk(KERN_INFO "Using undocumented set clock source.\n%s", via_slap);
++}
++
++static void dummy_set_pll_state(u8 state)
++{
++	printk(KERN_INFO "Using undocumented set PLL state.\n%s", via_slap);
++}
++
+ void via_clock_init(struct via_clock *clock, int gfx_chip)
+ {
+ 	switch (gfx_chip) {
+ 	case UNICHROME_CLE266:
+ 	case UNICHROME_K400:
+-		clock->set_primary_clock_state = NULL;
+-		clock->set_primary_clock_source = NULL;
+-		clock->set_primary_pll_state = NULL;
++		clock->set_primary_clock_state = dummy_set_clock_state;
++		clock->set_primary_clock_source = dummy_set_clock_source;
++		clock->set_primary_pll_state = dummy_set_pll_state;
+ 		clock->set_primary_pll = cle266_set_primary_pll;
+ 
+-		clock->set_secondary_clock_state = NULL;
+-		clock->set_secondary_clock_source = NULL;
+-		clock->set_secondary_pll_state = NULL;
++		clock->set_secondary_clock_state = dummy_set_clock_state;
++		clock->set_secondary_clock_source = dummy_set_clock_source;
++		clock->set_secondary_pll_state = dummy_set_pll_state;
+ 		clock->set_secondary_pll = cle266_set_secondary_pll;
+ 		break;
+ 	case UNICHROME_K800:
+-- 
+1.6.3.2
+
