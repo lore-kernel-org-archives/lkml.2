@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934062Ab1CXUCB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:02:01 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44568 "EHLO mx2.mail.elte.hu"
+	id S934089Ab1CXUDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:03:12 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58327 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933847Ab1CXUB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:01:58 -0400
-Date: Thu, 24 Mar 2011 21:01:39 +0100
+	id S933847Ab1CXUDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 16:03:05 -0400
+Date: Thu, 24 Mar 2011 21:03:00 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
-Message-ID: <20110324200139.GC7957@elte.hu>
-References: <1300990853.3747.189.camel@edumazet-laptop>
- <alpine.DEB.2.00.1103241346060.32226@router.home>
- <AANLkTik3rkNvLG-rgiWxKaPc-v9sZQq96ok0CXfAU+r_@mail.gmail.com>
- <20110324185903.GA30510@elte.hu>
- <AANLkTi=66Q-8=AV3Y0K28jZbT3ddCHy9azWedoCC4Nrn@mail.gmail.com>
- <alpine.DEB.2.00.1103241404490.5576@router.home>
- <AANLkTimWYCHEsZjswLpD-xDcu_cL=GqsMshKRtkHt5Vn@mail.gmail.com>
- <20110324193647.GA7957@elte.hu>
- <AANLkTinBwKT3s=1En5Urs56gmt_zCNgPXnQzzy52Tgdo@mail.gmail.com>
- <alpine.DEB.2.00.1103241451060.5576@router.home>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip] perf, x86: P4 PMU - Add missing read of a counter
+ before test
+Message-ID: <20110324200300.GD7957@elte.hu>
+References: <AANLkTikwJFCrpTit8=-=agowkTwZtoyEtFaE7yp0O8MF@mail.gmail.com>
+ <20110324084819.GH30812@elte.hu>
+ <4D8B6569.2030001@gmail.com>
+ <20110324163332.GA2414@elte.hu>
+ <4D8B7570.40101@gmail.com>
+ <20110324182221.GF1239@redhat.com>
+ <4D8B8CC4.8000500@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103241451060.5576@router.home>
+In-Reply-To: <4D8B8CC4.8000500@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -0.5
+X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
 X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-0.5 required=5.9 tests=BAYES_00,URIBL_RHS_DOB autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
 	[score: 0.0000]
-	1.5 URIBL_RHS_DOB          Contains an URI of a new domain (Day Old Bread)
-	[URIs: linux.com]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Christoph Lameter <cl@linux.com> wrote:
+* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-> On Thu, 24 Mar 2011, Pekka Enberg wrote:
+> On 03/24/2011 09:22 PM, Don Zickus wrote:
+> > On Thu, Mar 24, 2011 at 07:46:40PM +0300, Cyrill Gorcunov wrote:
+> >>>> The read of a proper MSR register was missed so instead of a counter the 
+> >>>> configration register is tested (it has ARCH_P4_UNFLAGGED_BIT always cleared) 
+> >>>> and unflagged overflows never have been catched. Fix it by reading a proper 
+> >>>> MSR register.
+> >>>
+> >>> So what effect does this have on the regular perf user? Please try to describe 
+> >>> the real-life effect of the bug/problem fixed here.
+> >>>
+> >>> Thanks,
+> >>>
+> >>> 	Ingo
+> >>
+> >> Unflagged overflows never have been catched due to missed read of a register which
+> >> is to signalize about it, and as result unknown nmi may happen leading to
+> >> "Dazen and confused" message. That is what supposed to be in changelog?
+> > 
+> > I think Ingo is looking for something like this:
+> > 
 > 
-> > Thanks, Ingo! Christoph, may I have your sign-off for the patch and
-> > I'll send it to Linus?
-> 
-> 
-> Subject: SLUB: Write to per cpu data when allocating it
+> Thanks Don, if Ingo agree I can update it.
 
-The commit title should obviously start with "SLUB: Fix boot crash ..."
+Sure - please resend the final patch in a clean thread, with a proper title, 
+etc.
 
 Thanks,
 
