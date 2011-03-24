@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab1CXBlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 21:41:00 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50679 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab1CXBk7 (ORCPT
+	id S1754647Ab1CXBxC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Mar 2011 21:53:02 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50760 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab1CXBxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 21:40:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=ZXy1lhbn+44/f6RxVdcFdg2N5jKep/QK4Eu40Mnqc4zUMEtSkeap27frHERfRNUQDu
-         zFGDX2bC5IGKA2OY8ZRV7TixiSm9h5MDGRYyGPNE7MSSKYpXqC9PWW8qpp6f6riOiTiA
-         c3aOqhPk5WTyahcOAo/ZYjUfYIxJM5fkoZNDY=
+	Wed, 23 Mar 2011 21:53:00 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [Q] PGPGIN underflow?
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20110324105307.1AF3.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Date: Wed, 23 Mar 2011 18:40:58 -0700
-Message-ID: <AANLkTin1kqjSgh8R5zzt_tkJAsTV_LxDjpPf5ngUHEr1@mail.gmail.com>
-Subject: snd_card_disconnect race (sound/core/init.c)
-From: Russ Dill <russ.dill@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Takashi Iwai <tiwai@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Thu, 24 Mar 2011 10:52:54 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With slub poisoning on, I'm seeing an oops in snd_disconnect_release
-with slub poison (6b6b6b6b). Investigating, snd_card_disconnect looks
-to be the possible culprit:
+Hi all,
 
-333         spin_lock(&card->files_lock);
-334         mfile = card->files;
-335         while (mfile) {
-336                 file = mfile->file;
-337
-338                 /* it's critical part, use endless loop */
-339                 /* we have no room to fail */
-340                 mfile->disconnected_f_op = mfile->file->f_op;
-341
-342                 spin_lock(&shutdown_lock);
-343                 list_add(&mfile->shutdown_list, &shutdown_files);
-344                 spin_unlock(&shutdown_lock);
-345
-346                 mfile->file->f_op = &snd_shutdown_f_ops;
-347                 fops_get(mfile->file->f_op);
-348
-349                 mfile = mfile->next;
-350         }
-351         spin_unlock(&card->files_lock);
+Recently, vmstast show crazy big "bi" value even though the system has
+no stress. Is this known issue?
 
-I'm not aware of any locking that would prevent the original release
-function running concurrently if it were started before line 346 was
-executed. The original release functions (such as snd_hwdep_release)
-call snd_card_remove_file which frees the mfile object which would
-have been just added to the shutdown_files list leading to a use of
-freed (or in my case poisoned) memory later on down the line when the
-shutdown_files gets walked again.
+Thanks.
 
-It seems that 118dd6bf (ALSA: Clean up snd_monitor_file management,
-v2.6.30) may have either introduced this problem or made it worse
-since snd_card_file_remove previously removed items from the
-shutdown_files list before freeing them.
 
-I'm currently experiencing these crashes on 2.6.32.26, but I can't
-find any changes that would cause them not to occur on later kernel
-versions.
+% vmstat 1
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 1  0      0 1133060 151336 479708    0    0     0     0   50   50  0  0 100  0  0
+ 1  0      0 1133060 151336 479708    0    0     0     0   35   30  0  0 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   27   24  0  0 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   29   26  0  0 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   26   22  0  0 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   27   24  0  0 100  0  0
+ 1  0      0 1133060 151336 479708    0    0     0     0   45   49  0  0 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   62   54  1  0 99  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   54   56  0  0 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   28   24  0  1 99  0  0
+ 1  0      0 1133060 151336 479708    0    0     0     0   54   54  0  0 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   42   38  0  1 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   31   24  0  0 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   33   24  0  0 100  0  0
+ 1  0      0 1133060 151336 479708    0    0     0     0   56   58  1  0 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0  157  225  1  0 98  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   40   37  0  0 100  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0   51   47  0  0 100  0  0
+ 1  0      0 1133060 151336 479708    0    0     0     0   51   46  1  0 99  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0  296  418  2  0 97  0  0
+ 0  0      0 1133060 151336 479708    0    0     0     0  295  419  3  2 95  0  0
+ 0  0      0 1133060 151336 479708   16    0     0     0  313  449  3  1 96  0  0
+ 0  0      0 1132936 151336 479708    0    0 4294967293     0  331  448  5  1 95  0  0
+ 1  0      0 1132936 151336 479708    0    0     0     0  303  445  3  1 96  0  0
+ 0  0      0 1132936 151336 479708   16    0     0     0  308  433  3  1 96  0  0
+ 0  0      0 1132936 151336 479708    0    0     0     0  307  450  4  0 96  0  0
+ 1  0      0 1132936 151344 479704   96    0     0     0  255  222  6  1 93  0  0
+ 1  0      0 1132812 151344 479708    0    0 4294967293     0  397  310 11  1 88  0  0
+ 0  0      0 1132688 151344 479708    0    0 4294967293     0  410  365  9  1 90  0  0
+ 1  0      0 1132812 151344 479708    0    0     3     0   33   32  0  0 100  0  0
+ 0  0      0 1132812 151344 479708    0    0     0     0   31   23  0  0 100  0  0
+ 0  0      0 1132812 151344 479708    0    0     0     0   35   34  0  0 100  0  0
+
