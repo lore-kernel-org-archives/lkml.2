@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab1CXJ16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 05:27:58 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46232 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab1CXJ14 (ORCPT
+	id S1756446Ab1CXJ2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 05:28:14 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47449 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755597Ab1CXJ2B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 05:27:56 -0400
-Date: Thu, 24 Mar 2011 09:27:32 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Patrice VILCHEZ <patrice.vilchez@atmel.com>,
-        Hong XU <hong.xu@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-mtd <linux-mtd@lists.infradead.org>
-Subject: Re: Hit BUG_ON in dma-mapping.c:425 (RFC)
-Message-ID: <20110324092732.GA19935@n2100.arm.linux.org.uk>
-References: <4D24A108.2080609@atmel.com> <4D8AFE45.8050609@atmel.com> <20110324082521.GB9844@n2100.arm.linux.org.uk> <1300955778.2735.68.camel@localhost>
+	Thu, 24 Mar 2011 05:28:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=AwzWzevY7RKaCsOFcZaM+myobOMW1Ovfcz3EtCg4cWCb1kQE+ll6WBgweszejyYz72
+         n6y99LKeVaLI/7UoSEZjHi+VxshFuvNDbgexpU/g+hRtbzB8oaVRc1JBV/DdqvOXk0dn
+         7gGrFsFvA1jj8j4Fc9p515CEmqTWWWDLW+rVU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300955778.2735.68.camel@localhost>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
+References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
+Date: Thu, 24 Mar 2011 11:27:59 +0200
+X-Google-Sender-Auth: BOc2EWpaREj4kO9KqMW76MTZL7E
+Message-ID: <AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
+Subject: Re: kmemleak for MIPS
+From: Daniel Baluta <dbaluta@ixiacom.com>
+To: naveen yadav <yad.naveen@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 10:36:18AM +0200, Artem Bityutskiy wrote:
-> On Thu, 2011-03-24 at 08:25 +0000, Russell King - ARM Linux wrote:
-> > On Thu, Mar 24, 2011 at 04:18:13PM +0800, Nicolas Ferre wrote:
-> > > diff --git a/drivers/spi/atmel_spi.c b/drivers/spi/atmel_spi.c
-> > > --- a/drivers/spi/atmel_spi.c
-> > > +++ b/drivers/spi/atmel_spi.c
-> > > @@ -647,6 +647,22 @@ static void atmel_spi_next_message(struct spi_master *master)
-> > >  	atmel_spi_next_xfer(master, msg);
-> > >  }
-> > >  
-> > > +static void *adjust_buffer_location(struct device *dev, void *buf)
-> > > +{
-> > > +	if (likely(buf < high_memory)) {
-> > > +		return buf;
-> > > +	} else {
-> > > +		struct page *pg;
-> > > +
-> > > +		pg = vmalloc_to_page(buf);
-> > > +		if (pg == 0) {
-> > > +			dev_err(dev, "failed to vmalloc_to_page\n");
-> > > +			return NULL;
-> > > +		}
-> > > +		return page_address(pg) + ((size_t)buf & ~PAGE_MASK);
-> > > +	}
-> > > +}
-> > > +
-> > 
-> > This really doesn't fix the problem.  If the page is read or written via
-> > the vmalloc mapping, you'll have stale data.
-> > 
-> > DMA to vmalloc areas is dodgy at best.
-> 
-> This topics pops up often. So what is the right fix? And sorry for my
-> ignorance.
+> I want to check kmemleak for both ARM/MIPS. i am able to find kernel
+> patch for ARM at
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-04/msg11830.html.
+> But I could not able to trace patch for MIPS.
 
-I have no idea.  The problem comes down to MTDs interfaces being designed
-only for PIO - it's expected that the CPU places data into the virtual
-address being passed.  This virtual address can be a vmalloc address,
-a kmalloc'd address or a page address.
+It seems that kmemleak is not supported on MIPS.
 
-As long as that happens, everything all works because there's no cache
-aliasing problems to consider as the buffers are always accessed through
-the same mappings.
+According to 'depends on' config entry it is supported on:
+x86, arm, ppc, s390, sparc64, superh, microblaze and tile.
 
-As soon as there's any attempt to move away from PIO, things get really
-sticky because, with *any* DMA noncoherent architecture (it's not limited
-to ARM) you run into issues with cache coherency causing data corruption.
+Cătălin, can you confirm this? I will send a patch to update
+Documentation/kmemleak.txt.
 
-When cache maintainence ends up having to deal with virtual addresses for
-one level of cache and physical addresses for subseqent levels, the
-problems are compounded even more.
+Also, looking forward to work on making kmemleak available on MIPS.
 
-The only real answer I can give is: if you want to deal with DMA, you
-absolutely must conform to the restrictions on DMA which means that you
-can't pass vmalloc addresses to the DMA API.
-
-You can't work around that by converting a vmalloc address to a physical
-address and then its coresponding virtual page address as that means the
-DMA API will flush the wrong virtual address range and you'll again have
-cache incoherency.  That goes for *all* of the DMA API interfaces.
-
+thanks,
+Daniel.
