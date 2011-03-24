@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933805Ab1CXSvz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 14:51:55 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33175 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933432Ab1CXSvx (ORCPT
+	id S933807Ab1CXSwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 14:52:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45587 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933125Ab1CXSwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 14:51:53 -0400
+	Thu, 24 Mar 2011 14:52:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=qJcm5FLviliuCQOIcTLHPa1t+MhpqcgnP2U3JxH7NMqakhrp2Q+4ogYPIyxThsHWKy
-         z2DYhvgAtdecBOd/S1X2vIK/PvT6DjKoyEWTkXfzTz9mEIQqEMv7sg9NBNWoaa4tsGDH
-         +9E01375Xj2hSTSDqN7N/XWl9/oHzP+ZpVqHk=
-Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <alpine.DEB.2.00.1103241346060.32226@router.home>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger>
-	 <20110324142146.GA11682@elte.hu>
-	 <alpine.DEB.2.00.1103240940570.32226@router.home>
-	 <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
-	 <20110324172653.GA28507@elte.hu>
-	 <alpine.DEB.2.00.1103241242450.32226@router.home>
-	 <AANLkTimMcP-GikCCndQppNBsS7y=4beesZ4PaD6yh5y5@mail.gmail.com>
-	 <alpine.DEB.2.00.1103241300420.32226@router.home>
-	 <AANLkTi=KZQd-GrXaq4472V3XnEGYqnCheYcgrdPFE0LJ@mail.gmail.com>
-	 <alpine.DEB.2.00.1103241312280.32226@router.home>
-	 <1300990853.3747.189.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1103241346060.32226@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Mar 2011 19:51:48 +0100
-Message-ID: <1300992708.3747.211.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=GwG3KumoHv/IjV9kv71EuGMv1KMSLLpPGq2jasHpH9TddRt/rYyuptGQxwJr78GsiB
+         +YSKvHuCgO8+mvvV3hxcxgzarMFxFtF0OHWDytBWkg5tECmuDQuZOdkVyRejNCkJAZ9L
+         aFHOH60HKcKILpaarr2VeWSvhQGqKW8JRcVtA=
+Date: Thu, 24 Mar 2011 20:52:09 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] kstrtox: simpler code in _kstrtoull()
+Message-ID: <20110324185209.GB12383@p183.telecom.by>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 24 mars 2011 à 13:47 -0500, Christoph Lameter a écrit :
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
 
-> Hmmm.. Could be. KVM would not really disable interrupts so this may
-> explain that the test case works here.
-> 
-> Simple fix would be to do a load before the cli I guess.
-> 
+ lib/kstrtox.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-Hmm... 
-
-If we have a preemption and migration right after this load...
-
-
-
+--- a/lib/kstrtox.c
++++ b/lib/kstrtox.c
+@@ -49,12 +49,9 @@ static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
+ 			val = *s - '0';
+ 		else if ('a' <= _tolower(*s) && _tolower(*s) <= 'f')
+ 			val = _tolower(*s) - 'a' + 10;
+-		else if (*s == '\n') {
+-			if (*(s + 1) == '\0')
+-				break;
+-			else
+-				return -EINVAL;
+-		} else
++		else if (*s == '\n' && *(s + 1) == '\0')
++			break;
++		else
+ 			return -EINVAL;
+ 
+ 		if (val >= base)
