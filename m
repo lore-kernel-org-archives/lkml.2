@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab1CXD77 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Mar 2011 23:59:59 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34898 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756651Ab1CXD75 (ORCPT
+	id S1751029Ab1CXEAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 00:00:31 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:34089 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab1CXEA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Mar 2011 23:59:57 -0400
-Date: Wed, 23 Mar 2011 20:56:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan.kim@gmail.com>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the cleancache tree with Linus'
- tree
-Message-Id: <20110323205615.6984f974.akpm@linux-foundation.org>
-In-Reply-To: <20110324135524.261bb5a9.sfr@canb.auug.org.au>
-References: <20110324135524.261bb5a9.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Mar 2011 00:00:29 -0400
+Date: Wed, 23 Mar 2011 22:00:26 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Bibek BASU <bibek.basu@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] AB8500 GPIO : Driver for 42 AB8500 GPIO pins
+Message-ID: <20110324040026.GC27881@ponder.secretlab.ca>
+References: <1297827283-22860-2-git-send-email-bibek.basu@stericsson.com>
+ <AANLkTi=Yv1fHVTC-BVBJ3WRPGOmOC3fCJ13G-dCegLYo@mail.gmail.com>
+ <AANLkTi=qN=i3VW=VXPQ1PAFTXFgo3O_jqykTkc7A7JLF@mail.gmail.com>
+ <AANLkTi=o8CbHjJHZETokQP8bz5SyLnyLLadM4UMyZc=6@mail.gmail.com>
+ <AANLkTinU7g4qLVwLwFXyt_j6tmGq-5MC9a-wy_cGvC9Y@mail.gmail.com>
+ <AANLkTikwjRgCB8nnkTeZq+AbjQ+ugQz_WMshEFMSFo=_@mail.gmail.com>
+ <AANLkTikw87uS4w15ZWZOp8bUU1jYwn1xK4tp5cSrpeYH@mail.gmail.com>
+ <20110317191132.GA12824@angua.secretlab.ca>
+ <4E253D605AF50140A55CF6396EC99A241C1F71BA68@EXDCVYMBSTM005.EQ1STM.local>
+ <AANLkTikFfDDyQ+23iw_5Hrawe9METoU90Primnsp=hJ+@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikFfDDyQ+23iw_5Hrawe9METoU90Primnsp=hJ+@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011 13:55:24 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Fri, Mar 18, 2011 at 09:29:40AM +0100, Linus Walleij wrote:
+> On Fri, Mar 18, 2011 at 4:38 AM, Bibek BASU <bibek.basu@stericsson.com> wrote:
+> 
+> > I don't know how the latest patch has not reached you. I am reposting the patch and attaching with this mail also.
+> > Your concern regarding getting gpio irq base address from platform data is addressed in that patch.
+> > Sorry for the confusion.
+> 
+> Maybe I was following up on the wrong mail thread, I take the blame in
+> that case :-/
+> 
+> And please save the board support patch for later.
 
-> Hi Dan,
-> 
-> Today's linux-next merge of the cleancache tree got a conflict in
-> mm/truncate.c between commit 5adc7b518b54 ("mm: truncate: change
-> remove_from_page_cache") from Linus' tree and commit 03e838947c8a
-> ("mm/fs: add hooks to support cleancache") from the cleancache tree.
-> 
-> I fixed it up (see below) but am really not sure of the fix.  I can carry
-> this fix as necessary.
-> 
-> Is this stuff going to be merged into Linus' tree this time round?
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc mm/truncate.c
-> index a956675,cd94607..0000000
-> --- a/mm/truncate.c
-> +++ b/mm/truncate.c
-> @@@ -106,8 -108,13 +108,12 @@@ truncate_complete_page(struct address_s
->   	cancel_dirty_page(page, PAGE_CACHE_SIZE);
->   
->   	clear_page_mlock(page);
->  -	remove_from_page_cache(page);
->   	ClearPageMappedToDisk(page);
->  +	delete_from_page_cache(page);
-> + 	/* this must be after the remove_from_page_cache which
-> + 	 * calls cleancache_put_page (and note page->mapping is now NULL)
-> + 	 */
-> + 	cleancache_flush_page(mapping, page);
->  -	page_cache_release(page);	/* pagecache ref */
->   	return 0;
->   }
+I'm ignoring this one for now anyway since I'm not going to pick it up
+during the merge window.  Remind me to take another look at it when
+the merge window closes.
 
-I did the cleancache_flush_page() before the delete_from_page_cache(),
-in case the delete_from_page_cache() freed the page.  I didn't actually
-check whether that makes sense though.
-
+g.
