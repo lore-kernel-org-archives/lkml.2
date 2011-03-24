@@ -1,151 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283Ab1CXVuV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 17:50:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58219 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756946Ab1CXVuR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 17:50:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=GUbidAtNUX+9Y23KK01JlDwZ9AJFuiKiv47C6WQN9p7GlwNEBKxM2dYdz3ojQ3ZPwu
-         c4C3q9c6hIUTHCOJsnzCZKcAYw22otP9nmLc5lzTI3OQTXFAs8zgi+PosxJjlZATzl1b
-         bQJCkcWuzU8nMJ64PJd0YY5je9BRqwyhcPWuc=
+	id S1757269Ab1CXV6Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 17:58:16 -0400
+Received: from kroah.org ([198.145.64.141]:45065 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755846Ab1CXV6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 17:58:13 -0400
+Date: Thu, 24 Mar 2011 14:57:54 -0700
+From: Greg KH <greg@kroah.com>
+To: David Miller <davem@davemloft.net>
+Cc: shemminger@vyatta.com, serge.hallyn@ubuntu.com, bhutchings@solarflare.com,
+        eparis@redhat.com, eparis@parisplace.org, segoon@openwall.com,
+        linux-kernel@vger.kernel.org, mjt@tls.msk.ru, arnd@arndb.de,
+        mirqus@gmail.com, netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
+        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
+        eugene@redhat.com, dan.j.rosenberg@gmail.com,
+        akpm@linux-foundation.org, sds@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org, dwalsh@redhat.com,
+        dhowells@redhat.com
+Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
+ kernel modules
+Message-ID: <20110324215754.GA12023@kroah.com>
+References: <1300991584.2689.35.camel@bwh-desktop>
+ <20110324202634.GB9191@peq.hallyn.com>
+ <20110324143944.29f4c362@nehalam>
+ <20110324.144628.58411809.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1101031421470.26685@pobox.suse.cz>
-References: <alpine.LNX.2.00.1101030002390.26685@pobox.suse.cz>
-	<alpine.LNX.2.00.1101031237210.26685@pobox.suse.cz>
-	<alpine.LNX.2.00.1101031421470.26685@pobox.suse.cz>
-Date: Thu, 24 Mar 2011 22:49:45 +0100
-X-Google-Sender-Auth: uxUpAwtz9D4vlUWM3KyY2EJaUkU
-Message-ID: <AANLkTinK-TYnY70Wst_FTbEtn7Dwm8wEQoWMewsYM8dh@mail.gmail.com>
-Subject: [regression v2.6.38] Re: [PATCH v2] brk: fix min_brk lower bound
- computation for COMPAT_BRK
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110324.144628.58411809.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 3, 2011 at 14:24, Jiri Kosina <jkosina@suse.cz> wrote:
->> > diff --git a/mm/mmap.c b/mm/mmap.c
->> > index 50a4aa0..35d9f9c 100644
->> > --- a/mm/mmap.c
->> > +++ b/mm/mmap.c
->> > @@ -253,7 +253,15 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
->> >     down_write(&mm->mmap_sem);
->> >
->> >  #ifdef CONFIG_COMPAT_BRK
->> > -   min_brk = mm->end_code;
->> > +   /*
->> > +    * CONFIG_COMPAT_BRK can still be overridden by setting
->> > +    * randomize_va_space to 2, which will still make mm->start_brk
->> > +    * to be arbitrarily shifted
->> > +    */
->> > +   if (mm->start_brk > mm->end_code)
->> > +           min_brk = mm->start_brk;
->> > +   else
->> > +           min_brk = mm->end_code;
->> >  #else
->> >     min_brk = mm->start_brk;
->> >  #endif
->>
->> Hmm, actually no, that will bring us back into pre-a5b4592c era, please
->> disregard that.
->>
->> I will have to come up with something more clever (we can't just check
->> 'randomize_va_space == 2', as that would be racy for already running
->> programs).
->
-> The patch below handles all the cases properly. Ingo, Andrew, please
-> consider applying. Thanks.
->
->
->
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] brk: fix min_brk lower bound computation for COMPAT_BRK
->
-> Even if CONFIG_COMPAT_BRK is set in the kernel configuration, it can still
-> be overriden by randomize_va_space sysctl.
->
-> If this is the case, the min_brk computation in sys_brk() implementation
-> is wrong, as it solely takes into account COMPAT_BRK setting, assuming
-> that brk start is not randomized. But that might not be the case if
-> randomize_va_space sysctl has been set to '2' at the time the binary has
-> been loaded from disk.
->
-> In such case, the check has to be done in a same way as in
-> !CONFIG_COMPAT_BRK case.
->
-> In addition to that, the check for the COMPAT_BRK case introduced back in
-> a5b4592c ("brk: make sys_brk() honor COMPAT_BRK when computing lower
-> bound") is slightly wrong -- the lower bound shouldn't be mm->end_code,
-> but mm->end_data instead, as that's where the legacy applications expect
-> brk section to start (i.e. immediately after last global variable).
->
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  mm/mmap.c |   10 +++++++++-
->  1 files changed, 9 insertions(+), 1 deletions(-)
->
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 50a4aa0..ca2f164 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -253,7 +253,15 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
->        down_write(&mm->mmap_sem);
->
->  #ifdef CONFIG_COMPAT_BRK
-> -       min_brk = mm->end_code;
-> +       /*
-> +        * CONFIG_COMPAT_BRK can still be overridden by setting
-> +        * randomize_va_space to 2, which will still make mm->start_brk
-> +        * to be arbitrarily shifted
-> +        */
-> +       if (mm->start_brk > PAGE_ALIGN(mm->end_data))
-> +               min_brk = mm->start_brk;
-> +       else
-> +               min_brk = mm->end_data;
->  #else
->        min_brk = mm->start_brk;
->  #endif
-> --
-> 1.7.3.1
+On Thu, Mar 24, 2011 at 02:46:28PM -0700, David Miller wrote:
+> From: Stephen Hemminger <shemminger@vyatta.com>
+> Date: Thu, 24 Mar 2011 14:39:44 -0700
+> 
+> > This breaks for many of the tunneling protocols, that rely on
+> > autoload for names like "sit0"
+> 
+> Frankly I'm very disappointed in the fallout this has been causing.
+> 
+> Everyone supporting this change, get real, and admit it doing in fact
+> cause a serious regression.
+> 
+> If you can't get past that simple fact, you cannot discuss this issue
+> intelligently.
+> 
+> You can't say "userland will fix things up"
+> 
+> Because we're never supposed to break userland in the first place.
+> 
+> There is simply no excuse for this and I want this change reverted
+> both in Linus's tree and in -stable.
 
-Sorry for chiming in this late, but I've just bisected a problem in
-2.6.38 to commit
-5520e89485252c759ee60d313e9422447659947b ("brk: fix min_brk lower bound
-computation for COMPAT_BRK").
+Ok, as I totally got lost in the thread here, what is the git commit id
+of the patch to revert?
 
-When booting my very old test ramdisk on Amiga/m68k, it fails like this:
+thanks,
 
-| RAMDISK: gzip image found at block 0
-| VFS: Mounted root (ext2 filesystem) readonly on device 1:0.
-| warning: process `update' used the obsolete bdflush system call
-| Fix your initscripts?
-| init: cannot open inittab
-| Kernel panic - not syncing: Attempted to kill init!
-
-Sorry for not noticing earlier, I usually boot full Debians under ARAnyM,
-instead of booting old ramdisks with libc5-based binaries that once were
-considered new.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+greg k-h
