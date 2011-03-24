@@ -1,85 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934080Ab1CXT5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:57:49 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:36357 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933832Ab1CXT5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:57:46 -0400
-X-ASG-Debug-ID: 1300996665-03d6a54f61d3640001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D8BA235.7060904@fusionio.com>
-Date: Thu, 24 Mar 2011 20:57:41 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S934058Ab1CXT6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:58:31 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:55052
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933797Ab1CXT63 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 15:58:29 -0400
+X-SpamScore: -21
+X-BigFish: VPS-21(zzbb2cK936eK1432N98dN4015Lzz1202hzz8275bh8275dhz32i637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LIKVGG-02-C74-02
+X-M-MSG: 
+Date: Thu, 24 Mar 2011 20:57:49 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [GIT PULL] oprofile updates for v2.6.39
+Message-ID: <20110324195749.GS31407@erda.amd.com>
+References: <20110317120136.GB31407@erda.amd.com>
 MIME-Version: 1.0
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-References: <4D8B4A89.80608@fusionio.com> <20110324183019.GA1676@gentoo.trippels.de> <4D8B8F34.5000203@fusionio.com> <4D8B92AE.8090308@fusionio.com> <20110324185445.GB1696@gentoo.trippels.de> <4D8B9457.2020608@fusionio.com> <20110324193441.GA1723@gentoo.trippels.de> <4D8B9D2F.4010504@fusionio.com> <20110324194546.GA1741@gentoo.trippels.de>
-X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-In-Reply-To: <20110324194546.GA1741@gentoo.trippels.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1300996665
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58859
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110317120136.GB31407@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-24 20:45, Markus Trippelsdorf wrote:
-> On 2011.03.24 at 20:36 +0100, Jens Axboe wrote:
->> On 2011-03-24 20:34, Markus Trippelsdorf wrote:
->>> On 2011.03.24 at 19:58 +0100, Jens Axboe wrote:
->>>> On 2011-03-24 19:54, Markus Trippelsdorf wrote:
->>>>> On 2011.03.24 at 19:51 +0100, Jens Axboe wrote:
->>>>>> On 2011-03-24 19:36, Jens Axboe wrote:
->>>>>>> On 2011-03-24 19:30, Markus Trippelsdorf wrote:
->>>>>>>> On 2011.03.24 at 14:43 +0100, Jens Axboe wrote:
->>>>>>>>>
->>>>>>>>> This is the main pull request for the block IO layer and friends for
->>>>>>>>> 2.6.39.
->>>>>>>>
->>>>>>>> This merge results in an early oops on my system (amd64, xfs).
->>>>>>>> See the attached photo.
->>>>>>>>
->>>>>>>
->>>>>>> Auch. Can you ensure that you have CONFIG_DEBUGINFO=y in your .config
->>>>>>> and then do:
->>>>>>>
->>>>>>> $ gdb vmlinux
->>>>>>> ...
->>>>>>> l *cfq_insert_request+0x32
->>>>>>>
->>>>>>> and send that output?
->>>>>>
->>>>>> I took a closer look at the oops, and it most likely looks like q ==
->>>>>> NULL (offset 0x18 == q->elevator). You left out the Code part, so I
->>>>>> can't verify that for certain. Which makes very little sense. I take it
->>>>>> this is 100% reproducible? When you send the gdb output, please also
->>>>>> attach your .config.
->>>>>
->>>>> Yes, it's 100% reproducible here. My .config follows:
->>>>
->>>> Can you try this patch and see if it makes a difference?
->>>
->>> There's no patch ;-)
->>
->> Oh, here it is.
->>
-> It doesn't help, unfortunately. I still get the same BUG at
-> cfq_insert_request+0x32/0x4d0.
+Ingo,
 
-OK, still a data point. What was the last -git kernel you used?
+On 17.03.11 13:01:36, Robert Richter wrote:
+> please pull oprofile updates for v2.6.39 (tip/perf/core):
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+
+please consider to pull one more late patch from oprofile/core. We
+would like to see it in v2.6.39. It's a small change unlikely to break
+anything and it completes the Sandy Bridge support in oprofile.
+
+Thanks,
+
+-Robert
+
+
+
+The following changes since commit ec6b426c4dbb9eef40375c389746cab7e931a584:
+
+  oprofile, s390: Cleanups (2011-03-16 14:30:40 +0100)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+
+Andi Kleen (1):
+      oprofile, x86: Allow setting EDGE/INV/CMASK for counter events
+
+ arch/x86/oprofile/nmi_int.c    |    5 +++++
+ arch/x86/oprofile/op_counter.h |    1 +
+ 2 files changed, 6 insertions(+), 0 deletions(-)
+
+
+
+
+>From 914a76ca5eedc9f286a36f61c4eaa95b451ba3e6 Mon Sep 17 00:00:00 2001
+From: Andi Kleen <ak@linux.intel.com>
+Date: Wed, 16 Mar 2011 15:44:33 -0400
+Subject: [PATCH] oprofile, x86: Allow setting EDGE/INV/CMASK for counter events
+
+For some performance events it's useful to set the EDGE and INV
+bits and the CMASK mask in the counter control register. The list
+of predefined events Intel releases for each CPU has some events which
+require these settings to get more "natural" to use higher level events.
+
+oprofile currently doesn't allow this.
+
+This patch adds new extra configuration fields for them, so that
+they can be specified in oprofilefs.
+
+An updated oprofile daemon can then make use of this to set them.
+
+v2: Write back masked extra value to variable.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/oprofile/nmi_int.c    |    5 +++++
+ arch/x86/oprofile/op_counter.h |    1 +
+ 2 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index e2b7b0c..ee165f1 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -49,6 +49,10 @@ u64 op_x86_get_ctrl(struct op_x86_model_spec const *model,
+ 	val |= counter_config->user ? ARCH_PERFMON_EVENTSEL_USR : 0;
+ 	val |= counter_config->kernel ? ARCH_PERFMON_EVENTSEL_OS : 0;
+ 	val |= (counter_config->unit_mask & 0xFF) << 8;
++	counter_config->extra &= (ARCH_PERFMON_EVENTSEL_INV |
++				  ARCH_PERFMON_EVENTSEL_EDGE |
++				  ARCH_PERFMON_EVENTSEL_CMASK);
++	val |= counter_config->extra;
+ 	event &= model->event_mask ? model->event_mask : 0xFF;
+ 	val |= event & 0xFF;
+ 	val |= (event & 0x0F00) << 24;
+@@ -440,6 +444,7 @@ static int nmi_create_files(struct super_block *sb, struct dentry *root)
+ 		oprofilefs_create_ulong(sb, dir, "unit_mask", &counter_config[i].unit_mask);
+ 		oprofilefs_create_ulong(sb, dir, "kernel", &counter_config[i].kernel);
+ 		oprofilefs_create_ulong(sb, dir, "user", &counter_config[i].user);
++		oprofilefs_create_ulong(sb, dir, "extra", &counter_config[i].extra);
+ 	}
+ 
+ 	return 0;
+diff --git a/arch/x86/oprofile/op_counter.h b/arch/x86/oprofile/op_counter.h
+index e28398d..0b7b7b1 100644
+--- a/arch/x86/oprofile/op_counter.h
++++ b/arch/x86/oprofile/op_counter.h
+@@ -22,6 +22,7 @@ struct op_counter_config {
+ 	unsigned long kernel;
+ 	unsigned long user;
+ 	unsigned long unit_mask;
++	unsigned long extra;
+ };
+ 
+ extern struct op_counter_config counter_config[];
+-- 
+1.7.3.4
+
+
+
 
 -- 
-Jens Axboe
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
