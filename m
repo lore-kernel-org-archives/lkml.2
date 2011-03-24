@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934184Ab1CXUiB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 16:38:01 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59008 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932184Ab1CXUiA (ORCPT
+	id S934221Ab1CXUip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 16:38:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61240 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932184Ab1CXUil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 16:38:00 -0400
-Date: Thu, 24 Mar 2011 20:37:58 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Daniel Reichelt <debian@nachtgeist.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: procfs: boot- and runtime configurable access mode for
- /proc/<pid> dirs
-Message-ID: <20110324203758.GF22723@ZenIV.linux.org.uk>
-References: <4D8AC408.9000503@nachtgeist.net>
- <20110324073225.GA3806@p183.telecom.by>
- <4D8B03D6.2090204@nachtgeist.net>
- <20110324182230.GB5187@p183.telecom.by>
- <4D8B991E.5070604@nachtgeist.net>
+	Thu, 24 Mar 2011 16:38:41 -0400
+Date: Thu, 24 Mar 2011 20:38:22 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        gregkh@suse.de
+Subject: Re: [RFC PATCHv2 0/4] Support for OTP memory
+Message-ID: <20110324203821.GL3130@pulham.picochip.com>
+References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
+ <AANLkTim3kMCE=LhCRcUDif8ENSA-E-_Xga5cDSYs0x25@mail.gmail.com>
+ <20110324174722.GH3130@pulham.picochip.com>
+ <AANLkTinDWA1xU1G0kBk8XPr_ZaRgHtBQP60DX6-x3tsn@mail.gmail.com>
+ <20110324183205.GI3130@pulham.picochip.com>
+ <AANLkTimP7_ADTd+9Wyc4tLtsXVnS=1EwTac1Z8CtgHV2@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D8B991E.5070604@nachtgeist.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimP7_ADTd+9Wyc4tLtsXVnS=1EwTac1Z8CtgHV2@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 08:18:54PM +0100, Daniel Reichelt wrote:
-> Well, my patch is about modes of the pid-dirs themselves, not their
-> contents. And it changes procfs' behaviour about modes both on initial
-> creation and during revalidation on access. However flattening all the
-> piddir's entries DOES pose a security risk. Have a look at the
-> "traditional behaviour": piddir world-readable, however e.g.
-> <pid>/environ isn't. Often it's a workaround for broken software to
-> specify a password within an environment variable instead of by cmdline.
-> Since up until now all processes including their full cmdlines are
-> visible to everyone, environ must be considered more sensitive than a
-> cmdline.
+On Thu, Mar 24, 2011 at 02:36:42PM -0400, Mike Frysinger wrote:
+> On Thu, Mar 24, 2011 at 14:32, Jamie Iles wrote:
+> > On Thu, Mar 24, 2011 at 01:56:17PM -0400, Mike Frysinger wrote:
+> >> just an overview note here ... the Blackfin OTP is actually IP we
+> >> bought from someone (not sure if i can say more, although i dont know
+> >> the details myself ... i'd have to go ask around), so much of the
+> >> feedback i give about the structure of it most likely (hopefully) be
+> >> applicable to other people who have purchased this IP.  if/when anyone
+> >> who is also using this IP steps forward, we could even see about
+> >> generalizing the bfin-otp driver.
+> >
+> > Yes, we have a similar thing here - a block of OTP from an IP vendor and
+> > a wrapper to provide an AXI interface.  As far as I know there are only
+> > a few OTP vendors so there may well be plenty of common code in
+> > different OTP implementations.
+> 
+> do you guys wrap the interface ?  the Blackfin processors have an
+> on-chip ROM which provides higher level functions like
+> read/write/lock/etc...  the Linux driver uses those rather than
+> programming the memory mapped OTP interface itself since this
+> interface is not publicly documented.
 
-Bull.  /proc/<pid>/foo contents is sensitive, your patch doesn't do
-you any good.  fork(), open /proc/<child's PID>/foo in parent, then
-exec suid-root binary in child.  At that point mode_t of any files
-or directories does not matter anymore.
+I'm not 100% on the exact details but I understand that the macro 
+provides some non-AXI registers and signals that we wrap up into some 
+AXI registers.  The wrapper doesn't handle all of the nasties of the 
+macro but it does handle some of the redundancy and region splitting.
 
-You *must* do whatever access checks at read(2) time for these files.
-And if you do that, the checks at open(2) time do not matter.
-
-In particular, /proc/*/environ does ptrace_may_access() on read(2) (with
-a race fixed by today's merge, BTW).  It could very well be r--r--r--;
-having it r-------- does not increase security at all.
+Jamie
