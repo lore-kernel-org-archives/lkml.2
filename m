@@ -1,42 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934136Ab1CXW1o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 18:27:44 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:55427 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756567Ab1CXW1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 18:27:40 -0400
-Date: Thu, 24 Mar 2011 23:27:05 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-arm-msm@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-watchdog@vger.kernel.org
-Subject: Re: [trivial PATCH 1/2] treewide: Fix iomap resource size
- miscalculations
-Message-ID: <20110324222705.GA19339@linux-mips.org>
-References: <cover.1300909445.git.joe@perches.com>
- <c4422b4a8ee132d3adac95fd86237c61b2f8b364.1300909446.git.joe@perches.com>
+	id S934190Ab1CXWaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 18:30:21 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38666 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757281Ab1CXWaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 18:30:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "richard -rw- weinberger" <richard.weinberger@gmail.com>
+Subject: Re: Corrupted files after suspend to disk
+Date: Thu, 24 Mar 2011 23:30:14 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
+References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com> <AANLkTinewk=mJZifVxEJkCtKfNauOjHnLAqwbGn139C=@mail.gmail.com> <AANLkTikui_HQ5JMcMJUqMr9WLyTRNzF-z4G7wAUNPOFy@mail.gmail.com>
+In-Reply-To: <AANLkTikui_HQ5JMcMJUqMr9WLyTRNzF-z4G7wAUNPOFy@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c4422b4a8ee132d3adac95fd86237c61b2f8b364.1300909446.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103242330.14416.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 12:55:36PM -0700, Joe Perches wrote:
+On Thursday, March 24, 2011, richard -rw- weinberger wrote:
+> On Thu, Mar 24, 2011 at 11:16 AM, richard -rw- weinberger
+> <richard.weinberger@gmail.com> wrote:
+> > On Thu, Mar 24, 2011 at 12:00 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+> >>> On Wed, Mar 23, 2011 at 11:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+> >>> >> On Wed, Mar 23, 2011 at 11:11 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+> >>> >> >> 2011/3/23 Rafael J. Wysocki <rjw@sisk.pl>:
+> >>> >> >> > On Wednesday, March 23, 2011, richard -rw- weinberger wrote:
+> >>> >> >> >> Hi,
+> >>> >> >> >>
+> >>> >> >> >> I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
+> >>> >> >> >> running Linux 2.6.37.4.
+> >>> >> >> >> After resuming from s2disk some files are corrupted.
+> >>> >> >> >> But when I reboot my netbook everything seems good again.
+> >>> >> >> >>
+> >>> >> >> >> When I saw the problem the first time the ls command segfaulted always.
+> >>> >> >> >> I did a reboot and it worked again.
+> >>> >> >> >>
+> >>> >> >> >> A few days later zypper crashed. After a reboot it worked again.
+> >>> >> >> >> And today ssh crashed. I looked a bit closer and saw it crashed
+> >>> >> >> >> somewhere within libcrypto.
+> >>> >> >> >> So I made copy libcrypto and rebooted.
+> >>> >> >> >> After the reboot ssh worked again but libcrypto and the copy of it hat
+> >>> >> >> >> a different sha1 sum!
+> >>> >> >> >> WTF?!
+> >>> >> >> >>
+> >>> >> >> >> Is this a known issue?
+> >>> >> >> >
+> >>> >> >> > No.
+> >>> >> >> >
+> >>> >> >> >> dmesgs and config are attached.
+> >>> >> >> >>
+> >>> >> >> >> The used distribution is openSUSE 11.4 with suspend-0.80.20100129-7.1
+> >>> >> >> >> (default from suse).
+> >>> >> >> >> I'm using ext3 as root filesystem.
+> >>> >> >> >> What else do you need?
+> >>> >> >> >
+> >>> >> >> > Whatever you can do to narrow down the problem.  At the moment I only know
+> >>> >> >> > that it's there.
+> >>> >> >>
+> >>> >> >> I can reproduce the problem now.
+> >>> >> >> After ~20 suspend and resume iterations aide finds corrupted files in /lib/.
+> >>> >> >> It's always a very basic lib like libcrypto, libglib which is used all
+> >>> >> >> the time on my system.
+> >>> >> >
+> >>> >> > Those files are never intentionally modified, right?
+> >>> >> >
+> >>> >> >> Maybe it's an issue like this one?
+> >>> >> >> https://lkml.org/lkml/2010/12/2/339
+> >>> >> >
+> >>> >> > It might have if that patch hadn't been merged before 2.6.37.
+> >>> >> >
+> >>> >> > Is the system 32-bit or 64-bit?
+> >>> >>
+> >>> >> It's a 32-bit system.
+> >>> >> cmp shows that the corrupted files differ in many bytes (not scattered).
+> >>> >> The corrupted bytes are always 0 or 252.
+> >>> >
+> >>> > Do I understand correctly that the files apparently corrupted after resume
+> >>> > are not corrupted any more when you reboot?
+> >>>
+> >>> Yes.
+> >>> Seems like a cache issue.
+> >>
+> >> There's a couple things you can check before we start asking other people for
+> >> help.
+> >>
+> >> First, it would be good to know if things change when you save the image
+> >> into a swap file instead of the swap partition you've been using so far
+> >> (I believe it's documented quite well how to do that).
+> >>
+> >> Second, please verify if using the built-in save/load hibernate code leads
+> >> to the same issue (you can hibernate by doing "echo disk > /sys/power/state"
+> >> to verify that).
+> >>
+> >> Of course, please test the above separately. :-)
+> >
+> > Ok, I'll test this when I'm at home.
+> >
+> > BTW: dropping the caches helps, when some files seem corrupted.
+> > Today /usr/bin/okular was broken.
+> > After setting vm.drop_caches=1 it worked again.
+> >
+> >> Thanks,
+> >> Rafael
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> >>
+> >
+> > --
+> > Thanks,
+> > //richard
+> >
+> 
+> On Linux 2.6.38 I'm unable to reproduce the issue.
+> Only 2.6.37 seems to be affected.
+> So, I'm moving over to 2.6.38. :)
 
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
+OK, thanks for the report. :-)
 
-  Ralf
+Rafael
