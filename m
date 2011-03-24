@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab1CXPOd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 11:14:33 -0400
-Received: from kroah.org ([198.145.64.141]:38812 "EHLO coco.kroah.org"
+	id S1756402Ab1CXPRO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 11:17:14 -0400
+Received: from kroah.org ([198.145.64.141]:51214 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755766Ab1CXPOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 11:14:31 -0400
-Date: Thu, 24 Mar 2011 08:13:23 -0700
-From: Greg KH <greg@kroah.com>
-To: linux-kernel@vger.kernel.org, joe@perches.com, akpm@linux-foundation.org,
-        rdunlap@xenotime.net
-Subject: Re: [BUG]Some warnings happened when compile UML kernel.
-Message-ID: <20110324151323.GB501@kroah.com>
-References: <20110324045610.GA8186@gmail.com>
+	id S1752675Ab1CXPRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 11:17:13 -0400
+Date: Thu, 24 Mar 2011 08:16:49 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 2.6.32.35
+Message-ID: <20110324151649.GA635@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110324045610.GA8186@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 12:56:12PM +0800, Harry Wei wrote:
-> Hi us,
-> 	Recently, i wanna establish a UML for something else. But
-> When i compile the UML kernel with linux-2.6.38, it shows some 
-> OOPS like following. Maybe they are well. I just worry they will lead
-> to some other matters.
-> 
-> root@jiawei-laptop:/usr/src/linux-2.6.38# make gconfig ARCH=um
-> sed < scripts/kconfig/lkc_proto.h > scripts/kconfig/lkc_defs.h 's/P(\([^,]*\),.*/#define \1 (\*\1_p)/'
->   HOSTCC  scripts/kconfig/gconf.o
-> In file included from /usr/include/gtk-2.0/gtk/gtk.h:233,
->                  from /usr/include/libglade-2.0/glade/glade-xml.h:26,
->                  from /usr/include/libglade-2.0/glade/glade.h:28,
->                  from scripts/kconfig/gconf.c:16:
-> /usr/include/gtk-2.0/gtk/gtkitemfactory.h:47: warning: function declaration isn’t a prototype
-> scripts/kconfig/gconf.c:82: warning: no previous prototype for ‘dbg_sym_flags’
+I'm announcing the release of the 2.6.32.35 kernel.
 
-You don't have the proper development libraries on your machine in which
-to build 'gconfig'.  Try loading the needed gtk+ devel packages.
+It fixes a build error in the 2.6.32.34 kernel.  If you were not hitting
+this error, then there is no need to upgrade.
+
+Many thanks to Jiri Slaby for pointing this issue out to me.
+
+The updated 2.6.32.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.32.y.git
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=summary
 
 thanks,
 
 greg k-h
+
+------------
+
+ Makefile            |    2 +-
+ kernel/perf_event.c |    2 --
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+Greg Kroah-Hartman (2):
+      Revert "perf: Handle stopped state with tracepoints"
+      Linux 2.6.32.35
+
