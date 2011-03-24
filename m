@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934086Ab1CXT37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 15:29:59 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62751 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933858Ab1CXT1v (ORCPT
+	id S934039Ab1CXTaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 15:30:22 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:63376 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933998Ab1CXT1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 15:27:51 -0400
+	Thu, 24 Mar 2011 15:27:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=V3GOT662GgInekXjaqc2NZLELcI7YrdzTfFK0P9+dyGXkAs3cLJFpu5q5Lx8r5vLsr
-         p5FVKjw8mIC0htdeNhGPJxA7Hh/b0q3Rb2lydXxgEKYERBQhK+LyZyuAtgSlPGH9J1GS
-         TEvsPn/ehMQxXz6Mx7CcC02YrT4Ks1w0U/t1I=
+        b=sI9rulnbs55rwdNHuiMKuFtOGbg9ULfcx6gUYxzYhhCsOaUnFwlN3OZmwibQ+q6o4O
+         hSeZjMIXp97U9yNhbhqobJdHquvdukEvuj1CAJKq+KzKwd94lPf9u0PCeWKGGvhmacGl
+         aJESggqY1ZyO/e9oaJTrXlZzlUK2zO8t7JWZM=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC 13/21]drivers:i2c:busses:i2c-designware.c Remove extra comma.
-Date: Thu, 24 Mar 2011 12:26:51 -0700
-Message-Id: <1300994819-30930-13-git-send-email-justinmattock@gmail.com>
+Subject: [RFC 12/21]drivers:video:mxsfb.c Remove extra comma.
+Date: Thu, 24 Mar 2011 12:26:50 -0700
+Message-Id: <1300994819-30930-12-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
 References: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
@@ -34,22 +34,22 @@ me know if its legit or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/i2c/busses/i2c-designware.c |    2 +-
+ drivers/video/mxsfb.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-designware.c b/drivers/i2c/busses/i2c-designware.c
-index b664ed8..a93922d 100644
---- a/drivers/i2c/busses/i2c-designware.c
-+++ b/drivers/i2c/busses/i2c-designware.c
-@@ -390,7 +390,7 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
- 	int tx_limit, rx_limit;
- 	u32 addr = msgs[dev->msg_write_idx].addr;
- 	u32 buf_len = dev->tx_buf_len;
--	u8 *buf = dev->tx_buf;;
-+	u8 *buf = dev->tx_buf;
+diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
+index 7d02848..0b2f2dd 100644
+--- a/drivers/video/mxsfb.c
++++ b/drivers/video/mxsfb.c
+@@ -401,7 +401,7 @@ static int mxsfb_set_par(struct fb_info *fb_info)
+ 	writel(CTRL1_FIFO_CLEAR, host->base + LCDC_CTRL1 + REG_SET);
  
- 	intr_mask = DW_IC_INTR_DEFAULT_MASK;
+ 	ctrl = CTRL_BYPASS_COUNT | CTRL_MASTER |
+-		CTRL_SET_BUS_WIDTH(host->ld_intf_width);;
++		CTRL_SET_BUS_WIDTH(host->ld_intf_width);
  
+ 	switch (fb_info->var.bits_per_pixel) {
+ 	case 16:
 -- 
 1.7.4.1
 
