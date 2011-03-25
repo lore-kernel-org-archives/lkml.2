@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab1CYN2e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:28:34 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34262 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab1CYN2b (ORCPT
+	id S1752851Ab1CYN3e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:29:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:59129 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab1CYN3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:28:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mLYVpcuxpOYOzaWGxjWf3Nc1VbY4Ctk2rSmaMxfIo+hYMO+WuDmYwPyFOrTn88T0xU
-         zjuBDLBPrxvf4p6lK/laqGoKDZHw4WG9YfC/552+xsRECFbaEFygLNnPUYrSe4RwUDaw
-         +tgQE/IxAK/Mg5Y3rHGLJSEl0Da2/S3AoGtp0=
-MIME-Version: 1.0
-In-Reply-To: <1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
-References: <20110324195720.GB31713@thinkpad-t410>
-	<1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
-Date: Fri, 25 Mar 2011 13:28:30 +0000
-Message-ID: <AANLkTimF2UR8BVQW-3YJaGFEz39q8ydESAiMOjmdM1X7@mail.gmail.com>
-Subject: Re: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate key
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Chris Bagwell <chris@cnpbagwell.com>, Matthew Garrett <mjg@redhat.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 Mar 2011 09:29:33 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=a_0UJ9UWJWAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=CMqjonBC08r0Pud6nqIA:9 a=V6sBVP5UtSuDi_cNGRc4nbnl5_UA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+In-Reply-To: <1301058600.14261.172.camel@gandalf.stny.rr.com>
+References: <20110323153727.GB12003@htj.dyndns.org>
+	 <20110324094119.GD12038@htj.dyndns.org>
+	 <20110324094151.GE12038@htj.dyndns.org>
+	 <20110325033956.GB9313@home.goodmis.org>
+	 <AANLkTikayCJyYVo1MNpg1EN+88bSQNOu=NPW5s_j4shD@mail.gmail.com>
+	 <20110325065300.GB1409@htj.dyndns.org>
+	 <1301058600.14261.172.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 25 Mar 2011 09:29:30 -0400
+Message-ID: <1301059770.14261.187.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2PDSpJJ025925
 
-> +static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int *code,
-> +                                int *value, int *autorelease)
-> +{
-> +       struct eeepc_wmi_driver *eeepc = to_eeepc_wmi_driver(asus_wmi);
-> +       int is_press;
-> +
-> +       /*
-> +        * The following behavior is used for T101MT "Home" key:
-> +        *
-> +        *   On press:   No event set
-> +        *   On hold:    KEY_PROG2 press sent once w/o autorelease
-> +        *   On release: If key was held, KEY_PROG2 release sent.
-> +        *               Otherwise KEY_HOME press sent w/ autorelease.
-> +        *
-> +        * The simple state machine below implements this behavior.
-> +        */
-> +       switch (*code) {
-> +       case HOME_PRESS:
-> +               eeepc->home_key_state = HOME_PRESS;
-> +               *code = ASUS_WMI_KEY_IGNORE;
-> +               break;
-> +       case HOME_HOLD:
-> +               if (eeepc->home_key_state == HOME_HOLD) {
-> +                       *code = ASUS_WMI_KEY_IGNORE;
-> +               } else {
-> +                       eeepc->home_key_state = HOME_HOLD;
-> +                       *value = 1;
-> +                       *autorelease = 0;
-> +               }
-> +               break;
-> +       case HOME_RELEASE:
-> +               if (eeepc->home_key_state == HOME_RELEASE) {
-> +                       dev_warn(&asus_wmi->platform_device->dev,
-> +                                "Unexpected home key release event\n");
-> +                       *code = ASUS_WMI_KEY_IGNORE;
-> +               } else {
-> +                       *code = eeepc->home_key_state;
-> +                       eeepc->home_key_state = HOME_RELEASE;
-> +                       is_press = (*code == HOME_PRESS);
-> +                       *value = is_press;
-> +                       *autorelease = is_press;
-> +               }
-> +               break;
-> +       }
-> +}
-> +
+On Fri, 2011-03-25 at 09:10 -0400, Steven Rostedt wrote:
 
-Why not something simpler like this ?
+> One solution is to have this be only done on explicit trylocks. Perhaps
+> introduce a mutex_trylock_spin()? Then when the developer knows that
+> this scenario does not exist, they can convert mutex_trylocks() into
+> this spinning version.
+> 
 
-static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int code,
-                                                 int *value, int *autorelease)
-{
-        if (code == 0xe4) {
-                *value = 1;
-                *autorelease = 0;
-        } else if (code == 0xe5) {
-                *value = 0;
-                *autorelease = 0;
-       }
-}
+I'm not sure this is even worth it, as I'm looking at the
+btfs/extend-tree.c code, this is the main reason to use mutex_trylock().
 
-with this keymap :
+I guess what you see in your benchmarks is that trylock contention
+happens mostly in the non-deadlock scenario. But I bet you have
+latencies when it does happen, but the benefit seems to out weigh it in
+the results.
 
-       { KE_KEY, 0xe4, { KEY_HOME } }, /* Home Key Down */
-       { KE_KEY, 0xe5, { KEY_HOME } }, /* Home Key Up */
-       { KE_KEY, 0xea, { KEY_PROG2 } }, /* Home Key hold more than one second */
+I wonder what happens if you run dbench as an RT task.
+
+-- Steve
 
 
-This sounds simpler and we don't loose information (key down and key
-up both event reported at the right time).
-0xe5 is *always* sent after 0xe4 right ?
-
-Also, for the callback, "value" should be an unsigned int, and
-"autorelease" a bool.
-
-Thanks,
--- 
-Corentin Chary
-http://xf.iksaif.net
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
