@@ -1,116 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933462Ab1CYIRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 04:17:32 -0400
-Received: from ch-smtp04.sth.basefarm.net ([80.76.153.5]:56900 "EHLO
-	ch-smtp04.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932788Ab1CYIR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 04:17:29 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 25 Mar 2011 09:20:30 +0100
-To: Jeff Brown <jeffbrown@android.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Brown <jeffbrown@google.com>
-Subject: Re: [PATCH 1/4] input: Set default events per packet.
-Message-ID: <20110325082030.GB5664@polaris.bitmath.org>
-References: <1300842244-42723-1-git-send-email-jeffbrown@android.com>
- <1300842244-42723-2-git-send-email-jeffbrown@android.com>
+	id S1756093Ab1CYIUa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 04:20:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41310 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754197Ab1CYIU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 04:20:28 -0400
+Message-ID: <4D8C503D.6000607@redhat.com>
+Date: Fri, 25 Mar 2011 04:20:13 -0400
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300842244-42723-2-git-send-email-jeffbrown@android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1Q32C1-0003lX-EB.
-X-Scan-Signature: ch-smtp04.sth.basefarm.net 1Q32C1-0003lX-EB 0a8073f1aaa87ec1ca1e2f1ffd82506e
+To: Nikola Ciprich <extmaillist@linuxbox.cz>
+CC: KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>,
+        nikola.ciprich@linuxbox.cz, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>
+Subject: Re: [PATCHv2] fix regression caused by	e48672fa25e879f7ae21785c7efd187738139593
+References: <20110307101827.GA1762@pcnci.linuxbox.cz> <4D768A62.3050903@redhat.com> <20110309193003.GB1762@pcnci.linuxbox.cz> <4D77F149.8020906@redhat.com> <20110309223651.GC1762@pcnci.linuxbox.cz>
+In-Reply-To: <20110309223651.GC1762@pcnci.linuxbox.cz>
+Content-Type: multipart/mixed;
+ boundary="------------090006070200090102020603"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
+This is a multi-part message in MIME format.
+--------------090006070200090102020603
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-> Calculate a default based on the number of ABS axes, REL axes,
-> and MT slots for the device during input device registration.
-> 
-> Signed-off-by: jeffbrown@android.com
+On 03/09/2011 05:36 PM, Nikola Ciprich wrote:
+> commit 387b9f97750444728962b236987fbe8ee8cc4f8c moved kvm_request_guest_time_update(vcpu),
+> breaking 32bit SMP guests using kvm-clock. Fix this by moving (new) clock update function
+> to proper place.
+>
+> Signed-off-by: Nikola Ciprich<nikola.ciprich@linuxbox.cz>
 > ---
->  drivers/input/input.c |   46 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 46 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/input.c b/drivers/input/input.c
-> index d6e8bd8..c27292b 100644
-> --- a/drivers/input/input.c
-> +++ b/drivers/input/input.c
-> @@ -1746,6 +1746,49 @@ void input_set_capability(struct input_dev *dev, unsigned int type, unsigned int
->  }
->  EXPORT_SYMBOL(input_set_capability);
->  
-> +static inline bool is_mt_axis(int axis)
-> +{
-> +	return axis == ABS_MT_SLOT ||
-> +		(axis >= ABS_MT_FIRST && axis <= ABS_MT_LAST);
-> +}
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 4c27144..ba3f76f 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2101,8 +2101,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>   		if (check_tsc_unstable()) {
+>   			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+>   			vcpu->arch.tsc_catchup = 1;
+> -			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>   		}
+> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>   		if (vcpu->cpu != cpu)
+>   			kvm_migrate_timers(vcpu);
+>   		vcpu->cpu = cpu;
+>
+>    
 
-It would be great to get this inline into input/mt.h instead.
 
-> +static void input_set_default_events_per_packet(struct input_dev *dev)
-> +{
-> +	int mt_slots;
-> +	int i;
-> +	int events;
-> +
-> +	if (dev->hint_events_per_packet)
-> +		return;
-> +
-> +	if (dev->mtsize)
-> +		mt_slots = dev->mtsize;
-> +	else if (test_bit(ABS_MT_TRACKING_ID, dev->absbit))
-> +		mt_slots = dev->absinfo[ABS_MT_TRACKING_ID].maximum -
-> +			dev->absinfo[ABS_MT_TRACKING_ID].minimum + 1;
+So something bothers me still about this bug.  What you did correctly 
+restores the old behavior - but it shouldn't be fixing a bug.
 
-This one is a bit iffy - the tracking id is not limited like this in
-mainline, looks like android usage. A test againts some arbitrary max
-should do it.
+The only reason you need to schedule an update for the KVM clock area is 
+if a new VCPU has been created, you have an unstable TSC.. or something 
+changes the VM's kvmclock offset.
 
-> +	else if (test_bit(ABS_MT_POSITION_X, dev->absbit))
-> +		mt_slots = 2;
-> +	else
-> +		mt_slots = 0;
-> +
-> +	events = mt_slots + 1; /* count SYN_MT_REPORT and SYN_REPORT */
-> +
-> +	for (i = 0; i < ABS_CNT; i++) {
-> +		if (test_bit(i, dev->absbit)) {
-> +			if (is_mt_axis(i))
-> +				events += mt_slots;
-> +			else
-> +				events++;
-> +		}
-> +	}
-> +
-> +	for (i = 0; i < REL_CNT; i++)
-> +		if (test_bit(i, dev->relbit))
-> +			events++;
-> +
-> +	input_set_events_per_packet(dev, events);
-> +}
-> +
->  #define INPUT_CLEANSE_BITMASK(dev, type, bits)				\
->  	do {								\
->  		if (!test_bit(EV_##type, dev->evbit))			\
-> @@ -1784,6 +1827,9 @@ int input_register_device(struct input_dev *dev)
->  	const char *path;
->  	int error;
->  
-> +	/* Use a larger default input buffer for MT devices */
-> +	input_set_default_events_per_packet(dev);
-> +
->  	/* Every input device generates EV_SYN/SYN_REPORT events. */
->  	__set_bit(EV_SYN, dev->evbit);
->  
-> -- 
-> 1.7.0.4
+So this change could in fact be hiding an underlying bug - either an 
+unstable TSC is not being properly reported, the KVM clock offset is 
+being changed, we are missing a KVM clock update for secondary VCPUs - 
+or something else we don't yet understand is going on.
+
+Nikola, can you try the patch below, which reverts your change and 
+attempts to fix other possible sources of the problem, and see if it 
+still reproduces?
 
 Thanks,
-Henrik
+
+Zach
+
+--------------090006070200090102020603
+Content-Type: text/plain;
+ name="kvm-regres-test.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="kvm-regres-test.patch"
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 58f517b..42618fb 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2127,8 +2127,10 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ 		if (check_tsc_unstable()) {
+ 			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+ 			vcpu->arch.tsc_catchup = 1;
++			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+ 		}
+-		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
++		if (vcpu->cpu == -1)
++			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+ 		if (vcpu->cpu != cpu)
+ 			kvm_migrate_timers(vcpu);
+ 		vcpu->cpu = cpu;
+@@ -3534,6 +3536,8 @@ long kvm_arch_vm_ioctl(struct file *filp,
+ 		struct kvm_clock_data user_ns;
+ 		u64 now_ns;
+ 		s64 delta;
++		struct kvm_vcpu *vcpu;
++		int i;
+ 
+ 		r = -EFAULT;
+ 		if (copy_from_user(&user_ns, argp, sizeof(user_ns)))
+@@ -3549,6 +3553,8 @@ long kvm_arch_vm_ioctl(struct file *filp,
+ 		delta = user_ns.clock - now_ns;
+ 		local_irq_enable();
+ 		kvm->arch.kvmclock_offset = delta;
++		kvm_for_each_vcpu(i, vcpu, kvm)
++			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+ 		break;
+ 	}
+ 	case KVM_GET_CLOCK: {
+
+--------------090006070200090102020603--
