@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab1CYViO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 17:38:14 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:65501 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131Ab1CYViM (ORCPT
+	id S1755357Ab1CYVjR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 17:39:17 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:49292 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131Ab1CYVjQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 17:38:12 -0400
+	Fri, 25 Mar 2011 17:39:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=DmMCKKUBnJMTwBHcTUQbZU4xAHZuPuG4+LuNIFb61ssYPIXefwYg9uDuejjiC2apnz
-         p/otV2rr2PlCwMhMfZjIc5Q75u/OPRaFWHxs3IYXmHDdbrTSR+ZzbqzL2nKoJY5/WNZ2
-         bxvPLPybH1JgNASR3nFG6cPwdpK5h3xYTmUU8=
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=T3mVLVKjWFtoBPRLb0gy0O9rNUTX7uR92gPucUdXzA0IDcAM8enbcGr6XQyeiX5i7P
+         1Z4vIXGu93LB5vxz+PRMn5k2I15UlNSvWjE3gmTYOcZayDTjSeC0BTfDP6f28ZbzyL0S
+         ivXwhfBaMxCBPaEb/YPiA3zOvmiHlgygxNGCQ=
 MIME-Version: 1.0
-In-Reply-To: <1301073283-30821-5-git-send-email-jamie@jamieiles.com>
-References: <1301073283-30821-1-git-send-email-jamie@jamieiles.com> <1301073283-30821-5-git-send-email-jamie@jamieiles.com>
+In-Reply-To: <AANLkTinmwi8qa2_OFWz7o2sJoa04cK8Kod0QvpwvcBgm@mail.gmail.com>
+References: <20110325133039.521553268@linutronix.de> <20110325133203.039794496@linutronix.de>
+ <AANLkTinmwi8qa2_OFWz7o2sJoa04cK8Kod0QvpwvcBgm@mail.gmail.com>
 From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 25 Mar 2011 17:37:52 -0400
-X-Google-Sender-Auth: be2OD5JdLEiQHH2jsoGAAuxYmMM
-Message-ID: <AANLkTimS9E35mHaXb0h=v7EMoPDxsfm78fq3XN+S8m9G@mail.gmail.com>
-Subject: Re: [RFC PATCHv3 4/4] Blackfin: add the OTP device as a platform device
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
+Date: Fri, 25 Mar 2011 17:38:55 -0400
+X-Google-Sender-Auth: LFtPsXq1X0wP8VIxtBmpSril8pQ
+Message-ID: <AANLkTinsfJVF0wFiyZ=D=nM6gGVnpA8h9SyeoSRcnyqm@mail.gmail.com>
+Subject: Re: [patch 2/2] bfin: Convert irq namespace
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        uclinux-dist-devel@blackfin.uclinux.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 13:14, Jamie Iles wrote:
-> Register the OTP as a platform device so that we can use the generic
-> OTP subsystem.
+On Fri, Mar 25, 2011 at 17:34, Mike Frysinger wrote:
+> On Fri, Mar 25, 2011 at 09:32, Thomas Gleixner wrote:
+>> -       __set_irq_handler_unlocked(irq, handle);
+>> +       __irq_set_handler_locked(irq, handle);
+>
+> looks like a typo in your patch ?  should still be unlocked right ?
 
-i would move this to patch 3/4 so that the boards are updated before
-the driver is converted to a platform_driver
+although that still doesnt fix the build failure for me ...
 
-otherwise, this patch looks good to me (i'll hold off on actually
-testing things until common code has settled a bit)
+arch/blackfin/mach-common/ints-priority.c: In function ‘bfin_set_irq_handler’:
+arch/blackfin/mach-common/ints-priority.c:562: error: implicit
+declaration of function ‘__irq_set_handler_unlocked’
+make[1]: *** [arch/blackfin/mach-common/ints-priority.o] Error 1
 -mike
