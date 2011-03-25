@@ -1,103 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab1CYNd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:33:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33066 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752062Ab1CYNc5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:32:57 -0400
-Message-Id: <20110325133202.943843371@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Fri, 25 Mar 2011 13:32:55 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: [patch 1/2] bfin: Final irq cleanup
-References: <20110325133039.521553268@linutronix.de>
-Content-Disposition: inline; filename=bfin-cleanup.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
+	id S1752892Ab1CYNfW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:35:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63282 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751173Ab1CYNfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 09:35:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,242,1299484800"; 
+   d="scan'208";a="725078465"
+Subject: Re: [RFC] perf: EBNF for event syntax
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Matt Fleming <matt@console-pimps.org>
+In-Reply-To: <1301051277.2250.195.camel@laptop>
+References: <1300851416.31224.58.camel@minggr.sh.intel.com>
+	 <1301051277.2250.195.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Mar 2011 21:35:21 +0800
+Message-Id: <1301060121.2269.1.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the trigger type in irq_data and check level type instead of
-looking at desc->handle_irq.
+On Fri, 2011-03-25 at 19:07 +0800, Peter Zijlstra wrote:
+> On Wed, 2011-03-23 at 11:36 +0800, Lin Ming wrote:
+> > Hi, all
+> > 
+> > On Thu, Mar 17, 2011 at 2:02 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > > How about we start writing proper EBNF syntax rules for this stuff, its
+> > > getting seriously out of hand.
+> > http://marc.info/?l=linux-kernel&m=130029871318866&w=2
+> > 
+> > As Peter suggested, I wrote a simple EBNF for event syntax, as below.
+> > My first plan is to pass in extra config value for some events,
+> > for example, offcore response and load latency.
+> > 
+> > perf record -e r100b(0004):p
+> > 
+> > As above, the extra config value 0004 is passed in the parentheses.
+> > 
+> > The EBNF
+> > ========
+> > 
+> > EventList		:=	Event [',' EventList]
+> 
+> There was a suggestion a while back to make:
+> 
+>  -e ev1,ev2,ev3
+> 
+> create an event group with ev2 and ev3 siblings of ev1, and have
+> multiple -e instances create separate counters.
+> 
+> The problem is that its not backwards compatible, but something like
+> that would still be very nice to have.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org
----
- arch/blackfin/mach-bf561/smp.c            |    6 +++---
- arch/blackfin/mach-common/ints-priority.c |    9 +++------
- 2 files changed, 6 insertions(+), 9 deletions(-)
-Index: linux-2.6-tip/arch/blackfin/mach-bf561/smp.c
-===================================================================
---- linux-2.6-tip.orig/arch/blackfin/mach-bf561/smp.c
-+++ linux-2.6-tip/arch/blackfin/mach-bf561/smp.c
-@@ -154,13 +154,13 @@ void platform_clear_ipi(unsigned int cpu
- void __cpuinit bfin_local_timer_setup(void)
- {
- #if defined(CONFIG_TICKSOURCE_CORETMR)
--	struct irq_chip *chip = get_irq_chip(IRQ_CORETMR);
--	struct irq_desc *desc = irq_to_desc(IRQ_CORETMR);
-+	struct irq_data *data = irq_get_irq_data(IRQ_CORETMR);
-+	struct irq_chip *chip = irq_data_get_chip(data);
- 
- 	bfin_coretmr_init();
- 	bfin_coretmr_clockevent_init();
- 
--	chip->irq_unmask(&desc->irq_data);
-+	chip->irq_unmask(data);
- #else
- 	/* Power down the core timer, just to play safe. */
- 	bfin_write_TCNTL(0);
-Index: linux-2.6-tip/arch/blackfin/mach-common/ints-priority.c
-===================================================================
---- linux-2.6-tip.orig/arch/blackfin/mach-common/ints-priority.c
-+++ linux-2.6-tip/arch/blackfin/mach-common/ints-priority.c
-@@ -578,10 +578,9 @@ static void bfin_gpio_ack_irq(struct irq
- static void bfin_gpio_mask_ack_irq(struct irq_data *d)
- {
- 	unsigned int irq = d->irq;
--	struct irq_desc *desc = irq_to_desc(irq);
- 	u32 gpionr = irq_to_gpio(irq);
- 
--	if (desc->handle_irq == handle_edge_irq)
-+	if (!irqd_is_level_type(d))
- 		set_gpio_data(gpionr, 0);
- 
- 	set_gpio_maska(gpionr, 0);
-@@ -837,12 +836,11 @@ void init_pint_lut(void)
- 
- static void bfin_gpio_ack_irq(struct irq_data *d)
- {
--	struct irq_desc *desc = irq_to_desc(d->irq);
- 	u32 pint_val = irq2pint_lut[d->irq - SYS_IRQS];
- 	u32 pintbit = PINT_BIT(pint_val);
- 	u32 bank = PINT_2_BANK(pint_val);
- 
--	if ((desc->status & IRQ_TYPE_SENSE_MASK) == IRQ_TYPE_EDGE_BOTH) {
-+	if (irqd_get_trigger_type(d) == IRQ_TYPE_EDGE_BOTH) {
- 		if (pint[bank]->invert_set & pintbit)
- 			pint[bank]->invert_clear = pintbit;
- 		else
-@@ -854,12 +852,11 @@ static void bfin_gpio_ack_irq(struct irq
- 
- static void bfin_gpio_mask_ack_irq(struct irq_data *d)
- {
--	struct irq_desc *desc = irq_to_desc(d->irq);
- 	u32 pint_val = irq2pint_lut[d->irq - SYS_IRQS];
- 	u32 pintbit = PINT_BIT(pint_val);
- 	u32 bank = PINT_2_BANK(pint_val);
- 
--	if ((desc->status & IRQ_TYPE_SENSE_MASK) == IRQ_TYPE_EDGE_BOTH) {
-+	if (irqd_get_trigger_type(d) == IRQ_TYPE_EDGE_BOTH) {
- 		if (pint[bank]->invert_set & pintbit)
- 			pint[bank]->invert_clear = pintbit;
- 		else
+Currently, it means a list of independent events, right?
+
+> 
+> > Event			:= 	HardwareEvent 		|
+> > 				RawEvent		|
+> > 				SoftwareEvent		|
+> > 				TracepointEvent		|
+> > 				HardwareBreakpointEvent
+> > 
+> > HardwareEvent		:=	HardwareEventName [ExtraConfig] [Modifer]
+> > HardwareEventName	:=	'cpu-cycles' | 'cycles' | 'instructions' /* and so on ...*/
+> > ExtraConfig		:=	'(' ConfigValue [',' ConfigValue] ')'
+> > ConfigValue		:=	HexNumber
+> > 
+> > RawEvent		:=	RawSeperator RawCode [ExtraConfig] [Modifer]
+> > RawSeperator		:=	'r'
+> > RawCode			:=	HexNumber
+> > 
+> > SoftwareEvent		:=	SoftwareEventName
+> > SoftwareEventName	:=	'cpu-clock' | 'task-clock' | 'faults' /* and so on ...*/
+> > 
+> > TracepointEvent		:=	SubsystemName ':' TracepointName
+> > SubsystemName		:=	/* All AsciiString except the pre-defined hardware/software/cache events name and BreakpointSeparator */
+> > TracepointName		:=	'*' | AsciiString
+> > 
+> > HardwareBreakpointEvent	:=	BreakpointSeparator BreakpointAddress [':' AccessType]
+> > BreakpointSeparator	:=	'mem:'
+> > BreakpointAddress	:=	HexNumber
+> > AccessType		:=	'r' | 'w' | 'x'
+> > 
+> > Modifier		:= 	ModifierSperator ModifierList
+> > ModifierSperator	:= 	':'
+> > ModifierList		:= 	ModifierItem ModifierList
+> > ModifierItem		:= 	{PreciseModifer} | kernelModifer | UserModifer | HypervisorModifer
+> > PreciseModifer		:= 	'p' /* Can be multiple PreciseModifers */
+> > kernelModifer		:= 	'k'
+> > UserModifer		:= 	'u'
+> > HypervisorModifer	:= 	'h'
+> 
+> Otherwise, very nice. Eventually we'll be able to use a parser generator
+> for this.
+
+Yes, bison/yacc is good for this.
 
 
