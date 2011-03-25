@@ -1,93 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1CYORr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 10:17:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37004 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753008Ab1CYOQ5 (ORCPT
+	id S1753229Ab1CYOTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 10:19:24 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29125 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844Ab1CYOTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 10:16:57 -0400
-Message-Id: <20110325141647.354463173@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Fri, 25 Mar 2011 14:16:56 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Subject: [patch 4/4] score: Use generic show_interrupts()
-References: <20110325141528.825456671@linutronix.de>
-Content-Disposition: inline; filename=score-use-show.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
+	Fri, 25 Mar 2011 10:19:23 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+In-reply-to: <20110325141413.GA1725@gentoo.trippels.de>
+References: <20110324200613.GA1724@gentoo.trippels.de> <4D8BB114.2070002@fusionio.com> <20110324214150.GA1739@gentoo.trippels.de> <4D8C4304.3050101@fusionio.com> <20110325083757.GA1754@gentoo.trippels.de> <4D8C55D9.1060903@fusionio.com> <20110325095704.GA1694@gentoo.trippels.de> <4D8C8E1C.1020304@fusionio.com> <20110325130959.GA1698@gentoo.trippels.de> <4D8CA263.9090006@fusionio.com> <20110325141413.GA1725@gentoo.trippels.de>
+Date: Fri, 25 Mar 2011 10:18:19 -0400
+Message-Id: <1301062675-sup-2548@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D8CA463.0126,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
----
- arch/score/Kconfig      |    1 +
- arch/score/kernel/irq.c |   39 ---------------------------------------
- 2 files changed, 1 insertion(+), 39 deletions(-)
+Excerpts from Markus Trippelsdorf's message of 2011-03-25 10:14:13 -0400:
+> On 2011.03.25 at 15:10 +0100, Jens Axboe wrote:
+> > On 2011-03-25 14:09, Markus Trippelsdorf wrote:
+> > > On 2011.03.25 at 13:44 +0100, Jens Axboe wrote:
+> > >> On 2011-03-25 10:57, Markus Trippelsdorf wrote:
+> > >>>
+> > >>> Reverting it solves all problems here.
+> > >>
+> > >> Can you try this one?
+> > > 
+> > > This one doesn't help; I still get the same BUG.
+> > > 
+> > > BTW if you're having trouble reproducing this, here is the only non
+> > > stock xfs option that I use on the affected partitions:
+> > > 
+> > > noatime,logbsize=262144
+> > 
+> > This?
+> 
+> No.
+> 
 
-Index: linux-2.6-tip/arch/score/Kconfig
-===================================================================
---- linux-2.6-tip.orig/arch/score/Kconfig
-+++ linux-2.6-tip/arch/score/Kconfig
-@@ -4,6 +4,7 @@ config SCORE
-        def_bool y
-        select HAVE_GENERIC_HARDIRQS
-        select GENERIC_HARDIRQS_NO_DEPRECATED
-+       select GENERIC_IRQ_SHOW
- 
- choice
- 	prompt "System type"
-Index: linux-2.6-tip/arch/score/kernel/irq.c
-===================================================================
---- linux-2.6-tip.orig/arch/score/kernel/irq.c
-+++ linux-2.6-tip/arch/score/kernel/irq.c
-@@ -109,42 +109,3 @@ void __init init_IRQ(void)
- 		: : "r" (EXCEPTION_VECTOR_BASE_ADDR | \
- 			VECTOR_ADDRESS_OFFSET_MODE16));
+I was able to reproduce it here.  This is working for me:
+
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 59b5c00..88f5f6a 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -271,7 +271,7 @@ EXPORT_SYMBOL(blk_start_queue);
+  **/
+ void blk_stop_queue(struct request_queue *q)
+ {
+-	cancel_delayed_work(&q->delay_work);
++	__cancel_delayed_work(&q->delay_work);
+ 	queue_flag_set(QUEUE_FLAG_STOPPED, q);
  }
--
--/*
-- * Generic, controller-independent functions:
-- */
--int show_interrupts(struct seq_file *p, void *v)
--{
--	int i = *(loff_t *)v, cpu;
--	struct irqaction *action;
--	unsigned long flags;
--
--	if (i == 0) {
--		seq_puts(p, "           ");
--		for_each_online_cpu(cpu)
--			seq_printf(p, "CPU%d       ", cpu);
--		seq_putc(p, '\n');
--	}
--
--	if (i < NR_IRQS) {
--		struct irq_desc *desc = irq_to_desc(i);
--
--		raw_spin_lock_irqsave(&desc->lock, flags);
--		action = desc->action;
--		if (!action)
--			goto unlock;
--
--		seq_printf(p, "%3d: ", i);
--		seq_printf(p, "%10u ", kstat_irqs(i));
--		seq_printf(p, " %8s", irq_desc_get_chip(desc)->name ? : "-");
--		seq_printf(p, "  %s", action->name);
--		for (action = action->next; action; action = action->next)
--			seq_printf(p, ", %s", action->name);
--
--		seq_putc(p, '\n');
--unlock:
--		raw_spin_unlock_irqrestore(&desc->lock, flags);
--	}
--
--	return 0;
--}
-
-
+ EXPORT_SYMBOL(blk_stop_queue);
+@@ -1193,6 +1193,7 @@ static bool attempt_plug_merge(struct task_struct *tsk, struct request_queue *q,
+ 	struct request *rq;
+ 	bool ret = false;
+ 
++	preempt_disable();
+ 	plug = tsk->plug;
+ 	if (!plug)
+ 		goto out;
+@@ -1215,6 +1216,7 @@ static bool attempt_plug_merge(struct task_struct *tsk, struct request_queue *q,
+ 		}
+ 	}
+ out:
++	preempt_enable();
+ 	return ret;
+ }
+ 
+@@ -1309,6 +1311,7 @@ get_rq:
+ 		put_cpu();
+ 	}
+ 
++	preempt_disable();
+ 	plug = current->plug;
+ 	if (plug) {
+ 		if (!plug->should_sort && !list_empty(&plug->list)) {
+@@ -1324,7 +1327,9 @@ get_rq:
+ 		req->cmd_flags |= REQ_ON_PLUG;
+ 		list_add_tail(&req->queuelist, &plug->list);
+ 		drive_stat_acct(req, 1);
++		preempt_enable();
+ 	} else {
++		preempt_enable();
+ 		spin_lock_irq(q->queue_lock);
+ 		add_acct_request(q, req, where);
+ 		__blk_run_queue(q, false);
