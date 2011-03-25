@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab1CYWiW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 18:38:22 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63106 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754853Ab1CYWiU (ORCPT
+	id S1755498Ab1CYWlm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 18:41:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55156 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754853Ab1CYWll convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 18:38:20 -0400
+	Fri, 25 Mar 2011 18:41:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=ekzLdCjKx4X5ZbuoCQFXX/SMBxfrc8H+xbzFOAUIypjPzkVyD3XPwCoFbH+3Prk/EL
-         T+HDO3iVeXbC9NwiFPX5B3VriqkTLIu74yZZtczBuIM42L4pcf2Kk1eAVB62PP4r6HeE
-         /quNiyejPiXLtjxyqbvUj+uhvRC0lpb71Me5M=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZlVVP9ar4GL1JavxLPCwdKK9rY/JcxAmnwPM9bq8PgnWsG32BEIyQtDMIVeCJRqmV4
+         vNdOCE2Ckin3tl3GKkq6EqGaoCFTs5/aztRGTHgiHMQ4KNuc9DnZmcBZTqpB5FzNX4QW
+         pDaGFgsd4Ua0qumNj/qFgzKq/rgSGORT6rUZM=
 MIME-Version: 1.0
-In-Reply-To: <201103252335.14676.arnd@arndb.de>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
- <201103252112.22520.arnd@arndb.de> <20110325222346.GS3130@pulham.picochip.com>
- <201103252335.14676.arnd@arndb.de>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 25 Mar 2011 18:38:00 -0400
-X-Google-Sender-Auth: DZSL75zj2J_puKu50PSGDItugmE
-Message-ID: <AANLkTinQ_M92zDZx_Jfe=rvPO0Gr4kHhXZUATvgVBywh@mail.gmail.com>
-Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTi=de3yDfXxCDp082+e3T+g_1wRWKWjqS0n1vy0+@mail.gmail.com>
+References: <AANLkTi=de3yDfXxCDp082+e3T+g_1wRWKWjqS0n1vy0+@mail.gmail.com>
+Date: Fri, 25 Mar 2011 22:41:40 +0000
+Message-ID: <AANLkTi=W0mW2o2muNgMnb1OQ6WaBeOmu1VBHr8Zf63r9@mail.gmail.com>
+Subject: Re: advice sought: practicality of SMP cache coherency implemented in
+ assembler (and a hardware detect line)
+From: Will Newton <will.newton@gmail.com>
+To: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 18:35, Arnd Bergmann wrote:
-> One more thing that I just realized:
-> I think it would be better not to allow arbitrary ioctl commands to
-> be interpreted by the individual drivers. Instead, interpret them
-> in the common code and pass the data to the drivers through separate
-> otp_device_ops function pointers, one per ioctl command.
+On Fri, Mar 25, 2011 at 9:52 PM, Luke Kenneth Casson Leighton
+<luke.leighton@gmail.com> wrote:
+> so, bearing in mind that sensible answers will likely result in offers
+> of a consulting contract to actually *implement* the software /
+> assembly code for the linux kernel modifications required (yes, linux
+> is already available for this RISC processor type - but only in
+> single-core), i would greatly appreciate some help in getting answers
+> to these questions:
 >
-> This will reduce the amount of code needed in each driver when you
-> have multiple ones implementing the same ioctls, and help to
-> ensure that they all treat the arguments in the same way.
+> * is this even a good idea? does it "fly"?
 
-i think we should do what the rtc framework did ... there are common
-ioctls which call specific function pointers in the driver, and any
-unhandled ioctls get passed to the driver-specific ioctl function.
-this should cover everyone's needs.
--mike
+Probably not. Is it a virtual or physical indexed cache? Do you have a
+precise workload in mind? If you have a very precise workload and you
+don't expect to get many write conflicts then it could be made to
+work.
+
+> * if it does work, at what point do the number of cores involved just
+> make it... completely impractical?  over 2?  over 4?  8? 16?
+
+You would have to simulate it with your workload to know the answer to
+that, but if you're pushing to higher number of cores I think it would
+pay to do this properly.
+
+> occurred back in 2005 or so - this multi-core processor is going to be
+> based around an existing proven 20-year-old well-established RISC core
+> that has been running linux for over a decade, it just has never been
+> put into an SMP arrangement before and we're on rather short
+> timescales to get it done.
+
+There are a number of mature cores out there that can do this already
+and can be bought off the shelf, I wouldn't underestimate the
+difficulty of getting your cache coherency protocol right particularly
+on a limited time/resource budget.
