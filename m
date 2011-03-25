@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab1CYLnn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 07:43:43 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:43997 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959Ab1CYLnm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 07:43:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=PD+oSS0dkJuBVE8UnOtDcA89KiiKEwFcnroHmJ4WVeBRZGyKU13YhISJ6CcW9Nqspf
-         C9ufFtYB6k3iDt8XwL2w==
-From: Michal Nazarewicz <mnazarewicz@google.com>
-To: "Greg Kroah-Hartman" <gregkh@suse.de>
-Cc: "Alan Stern" <stern@rowland.harvard.edu>,
-        "Sergey Senozhatsky" <sergey.senozhatsky@gmail.com>,
-        "Chris Wright" <chrisw@sous-sol.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCHv2] usb: core: Change usb_create_sysfs_intf_files()' return type to void
-Date: Fri, 25 Mar 2011 12:22:26 +0100
-Message-Id: <531a6364dd1220278e76479423ce697e32bf4082.1301003830.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <Pine.LNX.4.44L0.1103241150210.2006-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1103241150210.2006-100000@iolanthe.rowland.org>
-X-System-Of-Record: true
+	id S1757095Ab1CYLwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 07:52:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38339 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751588Ab1CYLwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 07:52:08 -0400
+Date: Fri, 25 Mar 2011 11:51:47 GMT
+From: tip-bot for Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        gorcunov@openvz.org, ming.m.lin@intel.com, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        gorcunov@openvz.org, ming.m.lin@intel.com, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu
+In-Reply-To: <4D8BAB49.3080701@openvz.org>
+References: <4D8BAB49.3080701@openvz.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf, x86: P4 PMU - Read proper MSR register to catch unflagged overflows
+Message-ID: <tip-242214f9c1eeaae40eca11e3b4d37bfce960a7cd@git.kernel.org>
+Git-Commit-ID: 242214f9c1eeaae40eca11e3b4d37bfce960a7cd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 25 Mar 2011 11:51:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+Commit-ID:  242214f9c1eeaae40eca11e3b4d37bfce960a7cd
+Gitweb:     http://git.kernel.org/tip/242214f9c1eeaae40eca11e3b4d37bfce960a7cd
+Author:     Don Zickus <dzickus@redhat.com>
+AuthorDate: Thu, 24 Mar 2011 23:36:25 +0300
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 24 Mar 2011 21:40:01 +0100
 
-The usb_create_sysfs_intf_files() function always returned zero even
-if it failed to create sysfs fails.  Since this is a desired behaviour
-there is no need to return return code at all.  This commit changes
-function's return type (form int) to void.
+perf, x86: P4 PMU - Read proper MSR register to catch unflagged overflows
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+The read of a proper MSR register was missed and instead of
+counter the configration register was tested (it has
+ARCH_P4_UNFLAGGED_BIT always cleared) leading to unknown NMI
+hitting the system. As result the user may obtain "Dazed and
+confused, but trying to continue" message. Fix it by reading a
+proper MSR register.
+
+When an NMI happens on a P4, the perf nmi handler checks the
+configuration register to see if the overflow bit is set or not
+before taking appropriate action.  Unfortunately, various P4
+machines had a broken overflow bit, so a backup mechanism was
+implemented.  This mechanism checked to see if the counter
+rolled over or not.
+
+A previous commit that implemented this backup mechanism was
+broken. Instead of reading the counter register, it used the
+configuration register to determine if the counter rolled over
+or not. Reading that bit would give incorrect results.
+
+This would lead to 'Dazed and confused' messages for the end
+user when using the perf tool (or if the nmi watchdog is
+running).
+
+The fix is to read the counter register before determining if
+the counter rolled over or not.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Lin Ming <ming.m.lin@intel.com>
+LKML-Reference: <4D8BAB49.3080701@openvz.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- drivers/usb/core/sysfs.c |   13 +++++--------
- drivers/usb/core/usb.c   |    3 +--
- drivers/usb/core/usb.h   |    2 +-
- 3 files changed, 7 insertions(+), 11 deletions(-)
+ arch/x86/kernel/cpu/perf_event_p4.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
-index 6781c36..f5b7b1c 100644
---- a/drivers/usb/core/sysfs.c
-+++ b/drivers/usb/core/sysfs.c
-@@ -842,22 +842,19 @@ const struct attribute_group *usb_interface_groups[] = {
- 	NULL
- };
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index 3769ac8..d3d7b59 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -777,6 +777,7 @@ static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
+ 	 * the counter has reached zero value and continued counting before
+ 	 * real NMI signal was received:
+ 	 */
++	rdmsrl(hwc->event_base, v);
+ 	if (!(v & ARCH_P4_UNFLAGGED_BIT))
+ 		return 1;
  
--int usb_create_sysfs_intf_files(struct usb_interface *intf)
-+void usb_create_sysfs_intf_files(struct usb_interface *intf)
- {
- 	struct usb_device *udev = interface_to_usbdev(intf);
- 	struct usb_host_interface *alt = intf->cur_altsetting;
--	int retval;
- 
- 	if (intf->sysfs_files_created || intf->unregistering)
--		return 0;
-+		return;
- 
--	if (alt->string == NULL &&
--			!(udev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
-+	if (!alt->string && !(udev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
- 		alt->string = usb_cache_string(udev, alt->desc.iInterface);
--	if (alt->string)
--		retval = device_create_file(&intf->dev, &dev_attr_interface);
-+	if (alt->string && device_create_file(&intf->dev, &dev_attr_interface))
-+		/* We don't actually care if the function fails. */;
- 	intf->sysfs_files_created = 1;
--	return 0;
- }
- 
- void usb_remove_sysfs_intf_files(struct usb_interface *intf)
-diff --git a/drivers/usb/core/usb.c b/drivers/usb/core/usb.c
-index 079cb57..08b74f8 100644
---- a/drivers/usb/core/usb.c
-+++ b/drivers/usb/core/usb.c
-@@ -948,8 +948,7 @@ static int usb_bus_notify(struct notifier_block *nb, unsigned long action,
- 		if (dev->type == &usb_device_type)
- 			(void) usb_create_sysfs_dev_files(to_usb_device(dev));
- 		else if (dev->type == &usb_if_device_type)
--			(void) usb_create_sysfs_intf_files(
--					to_usb_interface(dev));
-+			usb_create_sysfs_intf_files(to_usb_interface(dev));
- 		break;
- 
- 	case BUS_NOTIFY_DEL_DEVICE:
-diff --git a/drivers/usb/core/usb.h b/drivers/usb/core/usb.h
-index a9cf484..d51ab6a 100644
---- a/drivers/usb/core/usb.h
-+++ b/drivers/usb/core/usb.h
-@@ -4,7 +4,7 @@
- 
- extern int usb_create_sysfs_dev_files(struct usb_device *dev);
- extern void usb_remove_sysfs_dev_files(struct usb_device *dev);
--extern int usb_create_sysfs_intf_files(struct usb_interface *intf);
-+extern void usb_create_sysfs_intf_files(struct usb_interface *intf);
- extern void usb_remove_sysfs_intf_files(struct usb_interface *intf);
- extern int usb_create_ep_devs(struct device *parent,
- 				struct usb_host_endpoint *endpoint,
--- 
-1.7.3.1
-
