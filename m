@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab1CYN0R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:26:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34622 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752500Ab1CYNV7 (ORCPT
+	id S1753085Ab1CYN0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:26:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58744 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821Ab1CYN01 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:21:59 -0400
-Message-Id: <20110325132048.035414815@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Fri, 25 Mar 2011 13:21:57 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: LAK <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: [patch 07/23] arm: plat-samsung: Use proper irq accessor functions
-References: <20110325131617.258789658@linutronix.de>
-Content-Disposition: inline; filename=arm-samsung.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
+	Fri, 25 Mar 2011 09:26:27 -0400
+Subject: Re: [bisect] kernel 2.6.38 regression with root nfs mounting
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <AANLkTin4-+Mc7d0a-XnZvPKL-C_Cf+Kmnm1Bmh1XZZu4@mail.gmail.com>
+Date: Fri, 25 Mar 2011 09:26:17 -0400
+Cc: Trond.Myklebust@netapp.com, broonie@opensource.wolfsonmicro.com,
+        bdowning@lavos.net, linux-nfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4AD2FFC1-E777-4C29-8718-4E1717EFCD86@oracle.com>
+References: <AANLkTimjmdi8sFTTjSPerOVgHQ+pjjwwMvCUX3AJ16At@mail.gmail.com> <43F07477-9075-444D-9BBB-368650538EA8@oracle.com> <AANLkTinHUQkBvcvh9APVutOqcKOug6CA066kS_O4p4Tq@mail.gmail.com> <DC2B75F8-382A-4AFB-9286-4A55EAF7609A@oracle.com> <AANLkTikWyUbtHbbnSh8NBeP3mT4jDOu5Pbtfw=TwKrwE@mail.gmail.com> <977C528D-4540-4EB2-92F9-6DAF357D8C81@oracle.com> <AANLkTik0UgB+k2i=E5t9XcF50SoSr_iXaFYrhctDx0FJ@mail.gmail.com> <8F19F0FE-0800-4C45-B857-1C682CF6A30D@oracle.com> <AANLkTin4-+Mc7d0a-XnZvPKL-C_Cf+Kmnm1Bmh1XZZu4@mail.gmail.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+X-Mailer: Apple Mail (2.1082)
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4D8C97FC.0194,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/arm/plat-samsung/irq-uart.c      |    5 ++---
- arch/arm/plat-samsung/irq-vic-timer.c |   13 +++++--------
- arch/arm/plat-samsung/wakeup-mask.c   |    8 ++++----
- 3 files changed, 11 insertions(+), 15 deletions(-)
 
-Index: linux-2.6-tip/arch/arm/plat-samsung/irq-uart.c
-===================================================================
---- linux-2.6-tip.orig/arch/arm/plat-samsung/irq-uart.c
-+++ linux-2.6-tip/arch/arm/plat-samsung/irq-uart.c
-@@ -107,7 +107,6 @@ static struct irq_chip s3c_irq_uart = {
- 
- static void __init s3c_init_uart_irq(struct s3c_uart_irq *uirq)
- {
--	struct irq_desc *desc = irq_to_desc(uirq->parent_irq);
- 	void __iomem *reg_base = uirq->regs;
- 	unsigned int irq;
- 	int offs;
-@@ -124,8 +123,8 @@ static void __init s3c_init_uart_irq(str
- 		set_irq_flags(irq, IRQF_VALID);
- 	}
- 
--	desc->irq_data.handler_data = uirq;
--	set_irq_chained_handler(uirq->parent_irq, s3c_irq_demux_uart);
-+	irq_set_handler_data(uirq->parent_irq, uirq);
-+	irq_set_chained_handler(uirq->parent_irq, s3c_irq_demux_uart);
- }
- 
- /**
-Index: linux-2.6-tip/arch/arm/plat-samsung/irq-vic-timer.c
-===================================================================
---- linux-2.6-tip.orig/arch/arm/plat-samsung/irq-vic-timer.c
-+++ linux-2.6-tip/arch/arm/plat-samsung/irq-vic-timer.c
-@@ -77,14 +77,11 @@ static struct irq_chip s3c_irq_timer = {
- void __init s3c_init_vic_timer_irq(unsigned int parent_irq,
- 				   unsigned int timer_irq)
- {
--	struct irq_desc *desc = irq_to_desc(parent_irq);
- 
--	set_irq_chained_handler(parent_irq, s3c_irq_demux_vic_timer);
-+	irq_set_chained_handler(parent_irq, s3c_irq_demux_vic_timer);
-+	irq_set_irq_handler_data(parent_irq, (void *)timer_irq);
- 
--	set_irq_chip(timer_irq, &s3c_irq_timer);
--	set_irq_chip_data(timer_irq, (void *)(1 << (timer_irq - IRQ_TIMER0)));
--	set_irq_handler(timer_irq, handle_level_irq);
--	set_irq_flags(timer_irq, IRQF_VALID);
--
--	desc->irq_data.handler_data = (void *)timer_irq;
-+	irq_set_chip_and_handler(timer_irq, &s3c_irq_timer, handle_level_irq);
-+	irq_set_chip_data(timer_irq, (void *)(1 << (timer_irq - IRQ_TIMER0)));
-+	irq_set_flags(timer_irq, IRQF_VALID);
- }
-Index: linux-2.6-tip/arch/arm/plat-samsung/wakeup-mask.c
-===================================================================
---- linux-2.6-tip.orig/arch/arm/plat-samsung/wakeup-mask.c
-+++ linux-2.6-tip/arch/arm/plat-samsung/wakeup-mask.c
-@@ -22,7 +22,7 @@
- void samsung_sync_wakemask(void __iomem *reg,
- 			   struct samsung_wakeup_mask *mask, int nr_mask)
- {
--	struct irq_desc *desc;
-+	struct irq_data *data;
- 	u32 val;
- 
- 	val = __raw_readl(reg);
-@@ -33,10 +33,10 @@ void samsung_sync_wakemask(void __iomem 
- 			continue;
- 		}
- 
--		desc = irq_to_desc(mask->irq);
-+		data = irq_get_irq_data(mask->irq);
- 
--		/* bit of a liberty to read this directly from irq_desc. */
--		if (desc->wake_depth > 0)
-+		/* bit of a liberty to read this directly from irq_data. */
-+		if (irqd_is_wakeup_set(d))
- 			val &= ~mask->bit;
- 		else
- 			val |= mask->bit;
+On Mar 25, 2011, at 3:24 AM, Belisko Marek wrote:
+
+> On Wed, Mar 23, 2011 at 3:54 PM, Chuck Lever <chuck.lever@oracle.com> wrote:
+>> 
+>> On Mar 23, 2011, at 10:30 AM, Belisko Marek wrote:
+>> 
+>> The server is advertising NFS over UDP.  Why can't a client access your server via UDP?  What happens if you perform a normal post-boot mount of this file system via UDP?
+> Strange (rootfs mounted from SD card and try to mount nfs always fail)
+> 
+> mount -t nfs -o udp 10.146.1.21:/home/open-nandra/rootfs /mnt
+> svc: failed to register lockdv1 RPC service (errno 111).
+> lockd_up: makesock failed, error=-111
+> mount: mounting 10.146.1.21:/home/open-nandra/rootfs on /mnt failed:
+> Connection refused
+> # mount -t nfs -o tcp 10.146.1.21:/home/open-nandra/rootfs /mnt
+> svc: failed to register lockdv1 RPC service (errno 111).
+> mount: mounting 10.146.1.21:/home/open-nandra/rootfs on /mnt failed:
+> Connection refused
+
+The client system isn't running a portmapper that its NFS client (specifically lockd) can talk to.  That "connection refused" is due to an incorrect client configuration.  A simple workaround might be to specify the "nolock" mount option for this test.
+
+> 
+>> 
+>>>>>    100227    2   udp   2049
+>>>>>    100227    3   udp   2049
+>>>>>    100005    1   udp  58278  mountd
+>>>>>    100005    1   tcp  37178  mountd
+>>>>>    100005    2   udp  58278  mountd
+>>>>>    100005    2   tcp  37178  mountd
+>>>>>    100005    3   udp  58278  mountd
+>>>>>    100005    3   tcp  37178  mountd
+>>>> 
+>>>> Can you boot if you specify either the "tcp" or "proto=tcp" NFSROOT mount options?
+>>> When add proto=tcp to bootargs it boot fine
+>>> (....nfsroot=10.146.1.21:/home/open-nandra/rootfs,proto=tcp....).
+>>>> Perhaps a network trace would be probative.  Capture on the server with "tcpdump -s0 -w /tmp/foo ip 10.146.1.199" (untested, but I think you get the idea) while the client is attempting to boot, and post.
+>>> Log is attached in attachment (too big 4.8M). Correct form is: tcpdump
+>>> -s0 -w /tmp/foo host 10.146.1.199
+>> 
+>> Received.  I should have been clear: Please capture a non-working client boot attempt.  To reduce the size of the attachment, strip the TFTP packets before sending, and please gzip the file.
+> tcpdump log from wrong attemp in attachment.
+
+According to the trace, the mount succeeds, and NFS requests are working.  However, the server's replies to READ requests are not being seen by the client.  Something on the client host or in the network is dropping them.  I see successful 16KB reads, but 32KB reads do not work.  Check your client for packet filtering (either intentional filtering, or accidental filtering due to configuration issues).
+
+I'll revisit the mount option defaults for NFSROOT again.
+
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
 
 
