@@ -1,182 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab1CYRsp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 13:48:45 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:34612 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab1CYRso (ORCPT
+	id S1754576Ab1CYRtF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 13:49:05 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:45740 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753443Ab1CYRtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 13:48:44 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-From: Milton Miller <miltonm@bga.com>
-To: Takao Indoh <indou.takao@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Vivek Goyal <vgoyal@redhat.com>,
-        Milton Miller <miltonm@bga.com>, WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH] generic-ipi: Initialize call_single_queue before enabling interrupt
-Message-Id: <generic-ipi-init-v2-reply@mdm.bga.com>
-References: <C7CBEB049FD464indou.takao@jp.fujitsu.com>
-In-Reply-To: <C7CBEB049FD464indou.takao@jp.fujitsu.com>
-Date: Fri, 25 Mar 2011 11:48:21 -0600
-X-Originating-IP: 71.22.127.106
+	Fri, 25 Mar 2011 13:49:02 -0400
+Date: Fri, 25 Mar 2011 23:18:31 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Trinabh Gupta <trinabh@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, peterz@infradead.org,
+        suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V1 1/2] cpuidle: Data structure changes for global
+ cpuidle device
+Message-ID: <20110325174831.GB19214@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <20110322124724.29408.12885.stgit@tringupt.in.ibm.com>
+ <20110322124750.29408.17788.stgit@tringupt.in.ibm.com>
+ <alpine.LFD.2.02.1103250330470.32565@x980>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1103250330470.32565@x980>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Mar 2011 about 11:52:20 -0400, Takao Indoh wrote:
+* Len Brown <lenb@kernel.org> [2011-03-25 04:12:03]:
+
+> I agree it is silly to allocate a cpuidle_device
+> for every cpu in the system as we do today.
 > 
-> Hi all,
+> Yes, splitting the counters out of cpuidle_device
+> is a necessary part of fixing that.
 > 
-> Actually this is a v2 patch but I post with new subject.
-> The first post is here.
+> However, cpuidle_device.cpuidle_state[] is currently not per-driver,
+> it is per-cpu, and it is writable.
 > 
-> [PATCH][KDUMP] Ignore spurious IPI
-> http://www.gossamer-threads.com/lists/linux/kernel/1356389
+> In particular, the cpuidle_device->prepare() mechanism
+> causes updates to the cpuidle_state[].flags,
+> setting and clearing CPUIDLE_FLAG_IGNORE to
+> tell the governor not to chose a state
+> on a per-cpu basis at run-time.
 > 
-> The problem I found is that kdump(2nd kernel) sometimes hangs up due to
-> pending IPI from 1st kernel. Kernel panic occurs because IPI comes
-> before call_single_queue is initialized, so this patch moves
-> init_call_single_data() so that it can be called before
-> local_irq_enable().
+> I don't like that mechanism.
+> I'd like to see it replaced, and when replaced,
+> cpuidle_state[] can be per system-wide driver.
+
+Thanks for the detailed review.  I agree that we should rework
+handling of the cpuidle_state[].flags.  However, is the prepare()
+mechanism used at all?  Can we remove the option completely?
+
+> I think the real problem that prepare() was trying to solve
+> is that the driver today does not have the ability to over-rule
+> the choice made by the governor.  The driver may discover
+> in the course of trying to satisfy the request of the governor
+> that it needs to demote to a shallower state; or it may
+> do its best to satisfy the governor's request, and the hardware
+> may demote its request to a shallower state.
 > 
+> Unfortunately, when this happens, the driver dutifully
+> returns the time spent in the state to cpuidle_idle_call(),
+> who then updates the wrong last_residency, time, and usage counters.
 
-This is good background, but I generally prefer changelogs to start
-by describing what is being changed and then proceed on to why, and
-then the history of the patch and discussion.
+I did not get this scenario.  Are you saying 
 
-> The details of the problem is below.
+target_state->enter(dev, target_state) can enter a different state
+than the one suggested by target_state?  
+
+I understand the hardware demotion part, but can we really detect the
+target 'demoted' state in that case?  I guess not.
+
+> Sure is ironic for the driver to allocate the data structures and
+> then hand the timer to the uppper layer, just to have the upper layer
+> update the wrong data structures...
 > 
-> (1)
-> 2nd kernel boot up
-> 
-> (2)
-> A pending IPI from 1st kernel comes after unmasking interrupts at the
-> following point.
-> 
-> asmlinkage void __init start_kernel(void)
-> {
-> (snip)
->     time_init();
->     profile_init();
->     if (!irqs_disabled())
->             printk(KERN_CRIT "start_kernel(): bug: interrupts were "
->                              "enabled early\n");
->     early_boot_irqs_disabled = false;
->     local_irq_enable(); <=======================================HERE
-> 
+> Surely the driver enter routine should update the counters
+> that the driver was obligated to allocate, and it should return
+> the state actually entered (for tracing), rather than the time spent
+> there.
 
-This could be described more concisely as "when irqs are first enabled
-in start_kernel()".
+Can we do something like this:
 
-> (3)
-> Kernel tries to handle the interrupt, but call_single_queue is not
-> initialized yet at this point. As a result, in the
-> generic_smp_call_function_single_interrupt(), NULL pointer dereference
-> occurs when list_replace_init() tries to access &q->list.next.
-> 
-> Any comments would be appreciated.
-> 
-> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-> ---
->  include/linux/smp.h |    1 +
->  init/main.c         |    1 +
->  kernel/smp.c        |   18 +++++++++++-------
->  3 files changed, 13 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/smp.h b/include/linux/smp.h
-> index 6dc95ca..0b81bba 100644
-> --- a/include/linux/smp.h
-> +++ b/include/linux/smp.h
-> @@ -114,6 +114,7 @@ int on_each_cpu(smp_call_func_t func, void *info, int wait);
->  void smp_prepare_boot_cpu(void);
->  
->  extern unsigned int setup_max_cpus;
-> +void init_call_single_data(void);
->  
+last_state = target_state->enter(dev, target_state)
 
-This no longer applys (although it did to 2.6.38).
+dev->last_state and dev->last_residency are updated inside
+target_state->enter() 
 
->  #else /* !SMP */
->  
+The returned last_state is just for tracing, actual data is already
+updated in the cpuidle_dev structure and used for sysfs display.
 
-I was going to point out that this will fail on up, but it looks
-like ba8dd03ac09f51a69c154b8cb508b701d713a2cd (Full conversion to
-early_initcall() interface, remove old interface) only found 2 of the
-previous 3 occurrances.
+> The generic cpuidle code should simply handle where the counters live
+> in the sysfs namespace, not updating the counters.
+> This needs to be addressed before cpuidle_device.cpuidle_state[]
+> can be made one/system.
 
-However, this does point out that not all CONFIG_SMP compiles are
-CONFIG_USE_GENERIC_SMP_HELPERS, and you need to adjust accordingly.
+Agreed.
 
-[ for other reviewers no this is not a simple revert of a hunk of that
-2.6.27 change, this is moving the code yet earlier ].
+Thanks again for the recommendations.
 
-> diff --git a/init/main.c b/init/main.c
-> index 33c37c3..02a7617 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -631,6 +631,7 @@ asmlinkage void __init start_kernel(void)
->  		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
->  				 "enabled early\n");
->  	early_boot_irqs_disabled = false;
-> +	init_call_single_data();
->  	local_irq_enable();
->  
+--Vaidy
 
-1) this is too late, the point of the printk and the state variable is
-to make sure interrupts are enabled exactly when we expect for the
-first time.
-
-2) please follow the naming conventions and name this xxx_init.  Actually
-I prefer xxx be the name of the subsystem (call_function) instead of
-the name of the data structure (call_single_data).
-
->  	/* Interrupts are enabled now so all GFP allocations are safe. */
-> diff --git a/kernel/smp.c b/kernel/smp.c
-> index 7cbd0f2..f119610 100644
-> --- a/kernel/smp.c
-> +++ b/kernel/smp.c
-> @@ -74,9 +74,19 @@ static struct notifier_block __cpuinitdata hotplug_cfd_notifier = {
->  	.notifier_call		= hotplug_cfd,
->  };
->  
-> -static int __cpuinit init_call_single_data(void)
-> +static int __cpuinit init_hotplug_cfd(void)
->  {
->  	void *cpu = (void *)(long)smp_processor_id();
-> +
-> +	hotplug_cfd(&hotplug_cfd_notifier, CPU_UP_PREPARE, cpu);
-> +	register_cpu_notifier(&hotplug_cfd_notifier);
-> +
-> +	return 0;
-> +}
-> +early_initcall(init_hotplug_cfd);
-> +
-
-Why did you seperate this from the rest of the function?  I haven't
-tested the patch but don't why this needs to be delayed.  If there
-is some reason I don't see, please describe it in the change log.
-
-> +void __init init_call_single_data(void)
-> +{
->  	int i;
->  
->  	for_each_possible_cpu(i) {
-> @@ -85,13 +95,7 @@ static int __cpuinit init_call_single_data(void)
->  		raw_spin_lock_init(&q->lock);
->  		INIT_LIST_HEAD(&q->list);
->  	}
-> -
-> -	hotplug_cfd(&hotplug_cfd_notifier, CPU_UP_PREPARE, cpu);
-> -	register_cpu_notifier(&hotplug_cfd_notifier);
-> -
-> -	return 0;
->  }
-> -early_initcall(init_call_single_data);
->  
->  /*
->   * csd_lock/csd_unlock used to serialize access to per-cpu csd resources
-> 
-
-milton
