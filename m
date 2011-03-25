@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab1CYIHb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 04:07:31 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:55673 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753876Ab1CYIH0 (ORCPT
+	id S933174Ab1CYILG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 04:11:06 -0400
+Received: from ch-smtp05.sth.basefarm.net ([80.76.153.6]:32981 "EHLO
+	ch-smtp05.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752180Ab1CYILA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 04:07:26 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] APM: delete APM in Linux-2.6.40
-Date: Fri, 25 Mar 2011 09:07:16 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-References: <alpine.LFD.2.02.1103232321070.3848@x980> <201103241315.34722.linux@rainbow-software.org> <alpine.LFD.2.02.1103241905250.16085@x980>
-In-Reply-To: <alpine.LFD.2.02.1103241905250.16085@x980>
-X-KMail-QuotePrefix: > 
+	Fri, 25 Mar 2011 04:11:00 -0400
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 25 Mar 2011 09:14:42 +0100
+To: Jeff Brown <jeffbrown@android.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Brown <jeffbrown@google.com>
+Subject: Re: [PATCH 3/4] input: evdev: Indicate buffer overrun with
+ SYN_DROPPED.
+Message-ID: <20110325081442.GA5664@polaris.bitmath.org>
+References: <1300842244-42723-1-git-send-email-jeffbrown@android.com>
+ <1300842244-42723-4-git-send-email-jeffbrown@android.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201103250907.16337.linux@rainbow-software.org>
+In-Reply-To: <1300842244-42723-4-git-send-email-jeffbrown@android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.254.52.20
+X-Scan-Result: No virus found in message 1Q326P-0002Sj-JG.
+X-Scan-Signature: ch-smtp05.sth.basefarm.net 1Q326P-0002Sj-JG e90e49b14ab182da6a9866030bd1fe3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 25 March 2011, Len Brown wrote:
-> > Please don't turn Linux into second Windows.
->
-> No worry there.
->
-> I mention Microsoft not to advocate that Linux be Windows,
-> but to point out that this (hardware/firmware) ship sank 5 years
-> ago and Linux is still on the boat.  MS was able to delete
-> APM support in 2006 from their source tree, yet we still carry it.
+Hi Jeff,
 
-And we also support ISA cards (network/sound/whatever). That's why many people 
-(including me) like and use Linux. Take any old machine that has enough power 
-to do the job you want and install Linux - e.g. get a Pentium box, install 
-Debian and you have a mail server (and if you need to power it down, you need 
-APM too). It's not possible with any other OS (well, maybe *BSD but Linux has 
-more drivers).
+> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> index 7f42d3a..203ed70 100644
+> --- a/drivers/input/evdev.c
+> +++ b/drivers/input/evdev.c
+> @@ -57,14 +57,20 @@ static void evdev_pass_event(struct evdev_client *client,
+>  {
+>  	/*
+>  	 * Interrupts are disabled, just acquire the lock.
+> -	 * Make sure we don't leave with the client buffer
+> -	 * "empty" by having client->head == client->tail.
+> +	 * When the client buffer is full, replace the tail with SYN_DROPPED
+> +	 * to let the client know that events were dropped.  Ensure that the
+> +	 * head and tail never coincide so the buffer does not appear "empty".
+>  	 */
+>  	spin_lock(&client->buffer_lock);
+> -	do {
+> -		client->buffer[client->head++] = *event;
+> -		client->head &= client->bufsize - 1;
+> -	} while (client->head == client->tail);
+> +	client->buffer[client->head++] = *event;
+> +	client->head &= client->bufsize - 1;
+> +	if (client->head == client->tail) {
+> +		client->tail = (client->tail + 1) & (client->bufsize - 1);
+> +		client->buffer[client->tail].time = event->time;
+> +		client->buffer[client->tail].type = EV_SYN;
+> +		client->buffer[client->tail].code = SYN_DROPPED;
+> +		client->buffer[client->tail].value = 0;
+> +	}
 
-If we remove support for older HW, Linux will never get a decent desktop 
-market share. The common use case is "new Windows will not run (or run slow) 
-on that (old) box, let's try Linux".
+It looks like this will eventually fill the entire buffer with
+SYN_DROPPED events if the client does not catch up.
 
-> > If you don't want APM in the
-> > kernel, just don't compile it. There are many people using older systems
-> > with APM - and most of them wouldn't oppose to this removal as they don't
-> > even know about it.
->
-> They can still run old Linux on an old APM-only laptop --
-> just like they can still run Windows 3.1 or Windows XP if they want to.
->
-> What we'd be taking away is their ability to run the latest
-> Linux kernel on that laptop.
-
-And that's bad. With Linux philosophy, you need new kernel to get new HW 
-support. So if you have an APM-only laptop and would want to use a new USB 
-device, you're out of luck. What to do then? Delete Linux and install Windows 
-XP?
-
-> The issue at hand is people (like me) who have to maintain
-> the latest Linux source code.  In sort, I don't want to
-> write, debug, and test a cpuidle driver for an apm-only laptop
-> when I could be spending effort on code that people will
-> actually run.
-
-So don't do it then. If APM works now, keep it as is. Just like hgafb (HGA 
-hardware is from 1984).
-
--- 
-Ondrej Zary
+Thanks,
+Henrik
