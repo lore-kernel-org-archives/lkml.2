@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab1CYX4k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:56:40 -0400
-Received: from kroah.org ([198.145.64.141]:41984 "EHLO coco.kroah.org"
+	id S1755671Ab1CYXxG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:53:06 -0400
+Received: from kroah.org ([198.145.64.141]:41844 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932616Ab1CYXxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:11 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:14 2011
-Message-Id: <20110325234513.932715868@clark.kroah.org>
+	id S932523Ab1CYXw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:56 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:12 2011
+Message-Id: <20110325234512.449801478@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:34 -0700
+Date: Fri, 25 Mar 2011 16:44:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [58/63] perf: Fix tear-down of inherited group events
+        Peter Holik <peter@holik.at>, Thomas Sailer <t.sailer@alumni.ethz.ch>
+Subject: [44/63] USB: uss720 fixup refcount position
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Peter Holik <peter@holik.at>
 
-commit 38b435b16c36b0d863efcf3f07b34a6fac9873fd upstream.
+commit adaa3c6342b249548ea830fe8e02aa5b45be8688 upstream.
 
-When destroying inherited events, we need to destroy groups too,
-otherwise the event iteration in perf_event_exit_task_context() will
-miss group siblings and we leak events with all the consequences.
+My testprog do a lot of bitbang - after hours i got following warning and my machine lockups:
+WARNING: at /build/buildd/linux-2.6.38/lib/kref.c:34
+After debugging uss720 driver i discovered that the completion callback was called before
+usb_submit_urb returns. The callback frees the request structure that is krefed on return by
+usb_submit_urb.
 
-Reported-and-tested-by: Vince Weaver <vweaver1@eecs.utk.edu>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1300196470.2203.61.camel@twins>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Peter Holik <peter@holik.at>
+Acked-by: Thomas Sailer <t.sailer@alumni.ethz.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/perf_event.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/usb/misc/uss720.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -6115,17 +6115,20 @@ __perf_event_exit_task(struct perf_event
- 			 struct perf_event_context *child_ctx,
- 			 struct task_struct *child)
- {
--	struct perf_event *parent_event;
-+	if (child_event->parent) {
-+		raw_spin_lock_irq(&child_ctx->lock);
-+		perf_group_detach(child_event);
-+		raw_spin_unlock_irq(&child_ctx->lock);
-+	}
- 
- 	perf_event_remove_from_context(child_event);
- 
--	parent_event = child_event->parent;
- 	/*
--	 * It can happen that parent exits first, and has events
-+	 * It can happen that the parent exits first, and has events
- 	 * that are still around due to the child reference. These
--	 * events need to be zapped - but otherwise linger.
-+	 * events need to be zapped.
- 	 */
--	if (parent_event) {
-+	if (child_event->parent) {
- 		sync_child_event(child_event, child);
- 		free_event(child_event);
- 	}
+--- a/drivers/usb/misc/uss720.c
++++ b/drivers/usb/misc/uss720.c
+@@ -177,12 +177,11 @@ static struct uss720_async_request *subm
+ 	spin_lock_irqsave(&priv->asynclock, flags);
+ 	list_add_tail(&rq->asynclist, &priv->asynclist);
+ 	spin_unlock_irqrestore(&priv->asynclock, flags);
++	kref_get(&rq->ref_count);
+ 	ret = usb_submit_urb(rq->urb, mem_flags);
+-	if (!ret) {
+-		kref_get(&rq->ref_count);
++	if (!ret)
+ 		return rq;
+-	}
+-	kref_put(&rq->ref_count, destroy_async);
++	destroy_async(&rq->ref_count);
+ 	err("submit_async_request submit_urb failed with %d", ret);
+ 	return NULL;
+ }
 
 
