@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932997Ab1CZAXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:23:34 -0400
-Received: from kroah.org ([198.145.64.141]:41582 "EHLO coco.kroah.org"
+	id S933953Ab1CZAXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:23:47 -0400
+Received: from kroah.org ([198.145.64.141]:41596 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932350Ab1CYXwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932343Ab1CYXwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 19:52:36 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:10 2011
-Message-Id: <20110325234510.539745531@clark.kroah.org>
+Message-Id: <20110325234510.435991699@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:02 -0700
+Date: Fri, 25 Mar 2011 16:44:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        "H.J. Lu" <hjl.tools@gmail.com>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [26/63] x86: Fix binutils-2.21 symbol related build failures
+        Amir Goldstein <amir73il@users.sf.net>, Jan Kara <jack@suse.cz>
+Subject: [25/63] ext3: skip orphan cleanup on rocompat fs
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,53 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sedat Dilek <sedat.dilek@googlemail.com>
+From: Amir Goldstein <amir73il@gmail.com>
 
-commit 2ae9d293b14d17f35eff624272cfecac7979a2ee upstream.
-[only 1/2 of the upstream commit was needed for stable - gkh]
+commit ce654b37f87980d95f339080e4c3bdb2370bdf22 upstream.
 
-New binutils version 2.21.0.20110302-1 started checking that the symbol
-parameter to the .size directive matches the entry name's
-symbol parameter, unearthing two mismatches:
+Orphan cleanup is currently executed even if the file system has some
+number of unknown ROCOMPAT features, which deletes inodes and frees
+blocks, which could be very bad for some RO_COMPAT features.
 
-  AS      arch/x86/kernel/acpi/wakeup_rm.o
-  arch/x86/kernel/acpi/wakeup_rm.S: Assembler messages:
-  arch/x86/kernel/acpi/wakeup_rm.S:12: Error: .size expression with symbol `wakeup_code_start' does not evaluate to a constant
+This patch skips the orphan cleanup if it contains readonly compatible
+features not known by this ext3 implementation, which would prevent
+the fs from being mounted (or remounted) readwrite.
 
-  arch/x86/kernel/entry_32.S: Assembler messages:
-  arch/x86/kernel/entry_32.S:1421: Error: .size expression with
-  symbol `apf_page_fault' does not evaluate to a constant
-
-The problem was discovered while using Debian's binutils
-(2.21.0.20110302-1) and experimenting with binutils from
-upstream.
-
-Thanks Alexander and H.J. for the vital help.
-
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-LKML-Reference: <1299620364-21644-1-git-send-email-sedat.dilek@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Amir Goldstein <amir73il@users.sf.net>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/entry_32.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext3/super.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1413,7 +1413,7 @@ ENTRY(async_page_fault)
- 	CFI_ADJUST_CFA_OFFSET 4
- 	jmp error_code
- 	CFI_ENDPROC
--END(apf_page_fault)
-+END(async_page_fault)
- #endif
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -1464,6 +1464,13 @@ static void ext3_orphan_cleanup (struct
+ 		return;
+ 	}
  
- /*
++	/* Check if feature set allows readwrite operations */
++	if (EXT3_HAS_RO_COMPAT_FEATURE(sb, ~EXT3_FEATURE_RO_COMPAT_SUPP)) {
++		ext3_msg(sb, KERN_INFO, "Skipping orphan cleanup due to "
++			 "unknown ROCOMPAT features");
++		return;
++	}
++
+ 	if (EXT3_SB(sb)->s_mount_state & EXT3_ERROR_FS) {
+ 		if (es->s_last_orphan)
+ 			jbd_debug(1, "Errors on filesystem, "
 
 
