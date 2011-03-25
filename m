@@ -1,193 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932714Ab1CYX5M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:57:12 -0400
-Received: from kroah.org ([198.145.64.141]:41972 "EHLO coco.kroah.org"
+	id S932807Ab1CYX5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:57:44 -0400
+Received: from kroah.org ([198.145.64.141]:41910 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932596Ab1CYXxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:10 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:13 2011
-Message-Id: <20110325234513.822555593@clark.kroah.org>
+	id S1755656Ab1CYXxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:05 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:43 2011
+Message-Id: <20110325234843.819686600@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:33 -0700
+Date: Fri, 25 Mar 2011 16:47:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [57/63] drm/radeon/kms: fix hardcoded EDID handling
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [46/55] drm/i915: Prevent racy removal of request from client list
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-commit fafcf94e2b5732d1e13b440291c53115d2b172e9 upstream.
+commit 09bfa51773c1e90f13000dc2fc0c4b84047009bc upstream.
 
-On some servers there is a hardcoded EDID provided
-in the vbios so that the driver will always see a
-display connected even if something like a KVM
-prevents traditional means like DDC or load
-detection from working properly.  Also most
-server boards with DVI are not actually DVI, but
-DVO connected to a virtual KVM service processor.
-If we fail to detect a monitor via DDC or load
-detection and a hardcoded EDID is available, use
-it.
+When i915_gem_retire_requests_ring calls i915_gem_request_remove_from_client,
+the client_list for that request may already be removed in i915_gem_release.
+So we may call twice list_del(&request->client_list), resulting in an
+oops like this report:
 
-Additionally, when using the hardcoded EDID, use
-a copy of it rather than the actual one stored
-in the driver as the detect() and get_modes()
-functions may free it if DDC is successful.
+[126167.230394] BUG: unable to handle kernel paging request at 00100104
+[126167.230699] IP: [<f8c2ce44>] i915_gem_retire_requests_ring+0xd4/0x240 [i915]
+[126167.231042] *pdpt = 00000000314c1001 *pde = 0000000000000000
+[126167.231314] Oops: 0002 [#1] SMP
+[126167.231471] last sysfs file: /sys/devices/LNXSYSTM:00/device:00/PNP0C0A:00/power_supply/BAT1/current_now
+[126167.231901] Modules linked in: snd_seq_dummy nls_utf8 isofs btrfs zlib_deflate libcrc32c ufs qnx4 hfsplus hfs minix ntfs vfat msdos fat jfs xfs exportfs reiserfs cryptd aes_i586 aes_generic binfmt_misc vboxnetadp vboxnetflt vboxdrv parport_pc ppdev snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep arc4 snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq uvcvideo videodev snd_timer snd_seq_device joydev iwlagn iwlcore mac80211 snd cfg80211 soundcore i915 drm_kms_helper snd_page_alloc psmouse drm serio_raw i2c_algo_bit video lp parport usbhid hid sky2 sdhci_pci ahci sdhci libahci
+[126167.232018]
+[126167.232018] Pid: 1101, comm: Xorg Not tainted 2.6.38-6-generic-pae #34-Ubuntu Gateway                          MC7833U /
+[126167.232018] EIP: 0060:[<f8c2ce44>] EFLAGS: 00213246 CPU: 0
+[126167.232018] EIP is at i915_gem_retire_requests_ring+0xd4/0x240 [i915]
+[126167.232018] EAX: 00200200 EBX: f1ac25b0 ECX: 00000040 EDX: 00100100
+[126167.232018] ESI: f1a2801c EDI: e87fc060 EBP: ef4d7dd8 ESP: ef4d7db0
+[126167.232018]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[126167.232018] Process Xorg (pid: 1101, ti=ef4d6000 task=f1ba6500 task.ti=ef4d6000)
+[126167.232018] Stack:
+[126167.232018]  f1a28000 f1a2809c f1a28094 0058bd97 f1aa2400 f1a2801c 0058bd7b 0058bd85
+[126167.232018]  f1a2801c f1a28000 ef4d7e38 f8c2e995 ef4d7e30 ef4d7e60 c14d1ebc f6b3a040
+[126167.232018]  f1522cc0 000000db 00000000 f1ba6500 ffffffa1 00000000 00000001 f1a29214
+[126167.232018] Call Trace:
 
-This fixes the virtual KVM on several internal
-servers.
+Unfortunately the call trace reported was cut, but looking at debug
+symbols the crash is at __list_del, when probably list_del is called
+twice on the same request->client_list, as the dereferenced value is
+LIST_POISON1 + 4, and by looking more at the debug symbols before
+list_del call it should have being called by
+i915_gem_request_remove_from_client
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+And as I can see in the code, it seems we indeed have the possibility
+to remove a request->client_list twice, which would cause the above,
+because we do list_del(&request->client_list) on both
+i915_gem_request_remove_from_client and i915_gem_release
+
+As Chris Wilson pointed out, it's indeed the case:
+"(...) I had thought that the actual insertion/deletion was serialised
+under the struct mutex and the intention of the spinlock was to protect
+the unlocked list traversal during throttling. However, I missed that
+i915_gem_release() is also called without struct mutex and so we do need
+the double check for i915_gem_request_remove_from_client()."
+
+This change does the required check to avoid the duplicate remove of
+request->client_list.
+
+Bugzilla: http://bugs.launchpad.net/bugs/733780
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_combios.c    |   21 +++++++++++++++-----
- drivers/gpu/drm/radeon/radeon_connectors.c |   30 +++++++++++++++++++++++++++--
- drivers/gpu/drm/radeon/radeon_mode.h       |    1 
- 3 files changed, 45 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -448,7 +448,7 @@ static uint16_t combios_get_table_offset
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1748,8 +1748,10 @@ i915_gem_request_remove_from_client(stru
+ 		return;
  
- bool radeon_combios_check_hardcoded_edid(struct radeon_device *rdev)
- {
--	int edid_info;
-+	int edid_info, size;
- 	struct edid *edid;
- 	unsigned char *raw;
- 	edid_info = combios_get_table_offset(rdev->ddev, COMBIOS_HARDCODED_EDID_TABLE);
-@@ -456,11 +456,12 @@ bool radeon_combios_check_hardcoded_edid
- 		return false;
- 
- 	raw = rdev->bios + edid_info;
--	edid = kmalloc(EDID_LENGTH * (raw[0x7e] + 1), GFP_KERNEL);
-+	size = EDID_LENGTH * (raw[0x7e] + 1);
-+	edid = kmalloc(size, GFP_KERNEL);
- 	if (edid == NULL)
- 		return false;
- 
--	memcpy((unsigned char *)edid, raw, EDID_LENGTH * (raw[0x7e] + 1));
-+	memcpy((unsigned char *)edid, raw, size);
- 
- 	if (!drm_edid_is_valid(edid)) {
- 		kfree(edid);
-@@ -468,6 +469,7 @@ bool radeon_combios_check_hardcoded_edid
- 	}
- 
- 	rdev->mode_info.bios_hardcoded_edid = edid;
-+	rdev->mode_info.bios_hardcoded_edid_size = size;
- 	return true;
+ 	spin_lock(&file_priv->mm.lock);
+-	list_del(&request->client_list);
+-	request->file_priv = NULL;
++	if (request->file_priv) {
++		list_del(&request->client_list);
++		request->file_priv = NULL;
++	}
+ 	spin_unlock(&file_priv->mm.lock);
  }
  
-@@ -475,8 +477,17 @@ bool radeon_combios_check_hardcoded_edid
- struct edid *
- radeon_bios_get_hardcoded_edid(struct radeon_device *rdev)
- {
--	if (rdev->mode_info.bios_hardcoded_edid)
--		return rdev->mode_info.bios_hardcoded_edid;
-+	struct edid *edid;
-+
-+	if (rdev->mode_info.bios_hardcoded_edid) {
-+		edid = kmalloc(rdev->mode_info.bios_hardcoded_edid_size, GFP_KERNEL);
-+		if (edid) {
-+			memcpy((unsigned char *)edid,
-+			       (unsigned char *)rdev->mode_info.bios_hardcoded_edid,
-+			       rdev->mode_info.bios_hardcoded_edid_size);
-+			return edid;
-+		}
-+	}
- 	return NULL;
- }
- 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -629,6 +629,8 @@ static int radeon_vga_mode_valid(struct
- static enum drm_connector_status
- radeon_vga_detect(struct drm_connector *connector, bool force)
- {
-+	struct drm_device *dev = connector->dev;
-+	struct radeon_device *rdev = dev->dev_private;
- 	struct radeon_connector *radeon_connector = to_radeon_connector(connector);
- 	struct drm_encoder *encoder;
- 	struct drm_encoder_helper_funcs *encoder_funcs;
-@@ -679,6 +681,17 @@ radeon_vga_detect(struct drm_connector *
- 
- 	if (ret == connector_status_connected)
- 		ret = radeon_connector_analog_encoder_conflict_solve(connector, encoder, ret, true);
-+
-+	/* RN50 and some RV100 asics in servers often have a hardcoded EDID in the
-+	 * vbios to deal with KVMs. If we have one and are not able to detect a monitor
-+	 * by other means, assume the CRT is connected and use that EDID.
-+	 */
-+	if ((!rdev->is_atom_bios) &&
-+	    (ret == connector_status_disconnected) &&
-+	    rdev->mode_info.bios_hardcoded_edid_size) {
-+		ret = connector_status_connected;
-+	}
-+
- 	radeon_connector_update_scratch_regs(connector, ret);
- 	return ret;
- }
-@@ -790,6 +803,8 @@ static int radeon_dvi_get_modes(struct d
- static enum drm_connector_status
- radeon_dvi_detect(struct drm_connector *connector, bool force)
- {
-+	struct drm_device *dev = connector->dev;
-+	struct radeon_device *rdev = dev->dev_private;
- 	struct radeon_connector *radeon_connector = to_radeon_connector(connector);
- 	struct drm_encoder *encoder = NULL;
- 	struct drm_encoder_helper_funcs *encoder_funcs;
-@@ -829,8 +844,6 @@ radeon_dvi_detect(struct drm_connector *
- 			 * you don't really know what's connected to which port as both are digital.
- 			 */
- 			if (radeon_connector->shared_ddc && (ret == connector_status_connected)) {
--				struct drm_device *dev = connector->dev;
--				struct radeon_device *rdev = dev->dev_private;
- 				struct drm_connector *list_connector;
- 				struct radeon_connector *list_radeon_connector;
- 				list_for_each_entry(list_connector, &dev->mode_config.connector_list, head) {
-@@ -895,6 +908,19 @@ radeon_dvi_detect(struct drm_connector *
- 		ret = radeon_connector_analog_encoder_conflict_solve(connector, encoder, ret, true);
- 	}
- 
-+	/* RN50 and some RV100 asics in servers often have a hardcoded EDID in the
-+	 * vbios to deal with KVMs. If we have one and are not able to detect a monitor
-+	 * by other means, assume the DFP is connected and use that EDID.  In most
-+	 * cases the DVI port is actually a virtual KVM port connected to the service
-+	 * processor.
-+	 */
-+	if ((!rdev->is_atom_bios) &&
-+	    (ret == connector_status_disconnected) &&
-+	    rdev->mode_info.bios_hardcoded_edid_size) {
-+		radeon_connector->use_digital = true;
-+		ret = connector_status_connected;
-+	}
-+
- out:
- 	/* updated in get modes as well since we need to know if it's analog or digital */
- 	radeon_connector_update_scratch_regs(connector, ret);
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -239,6 +239,7 @@ struct radeon_mode_info {
- 	struct drm_property *underscan_vborder_property;
- 	/* hardcoded DFP edid from BIOS */
- 	struct edid *bios_hardcoded_edid;
-+	int bios_hardcoded_edid_size;
- 
- 	/* pointer to fbdev info structure */
- 	struct radeon_fbdev *rfbdev;
 
 
