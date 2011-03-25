@@ -1,122 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934262Ab1CYKU3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 06:20:29 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39039 "EHLO mx1.suse.de"
+	id S934265Ab1CYKVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 06:21:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18308 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934032Ab1CYKUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 06:20:25 -0400
-Date: Fri, 25 Mar 2011 11:20:23 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: [regression v2.6.38] Re: [PATCH v2] brk: fix min_brk lower bound
- computation for COMPAT_BRK
-In-Reply-To: <AANLkTinK-TYnY70Wst_FTbEtn7Dwm8wEQoWMewsYM8dh@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1103251119120.26754@pobox.suse.cz>
-References: <alpine.LNX.2.00.1101030002390.26685@pobox.suse.cz> <alpine.LNX.2.00.1101031237210.26685@pobox.suse.cz> <alpine.LNX.2.00.1101031421470.26685@pobox.suse.cz> <AANLkTinK-TYnY70Wst_FTbEtn7Dwm8wEQoWMewsYM8dh@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933837Ab1CYKVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 06:21:06 -0400
+Message-ID: <4D8C6C80.8010600@redhat.com>
+Date: Fri, 25 Mar 2011 07:20:48 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Borislav Petkov <bp@alien8.de>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly Report
+ Mechanism (HARM)
+References: <cover.1300996141.git.mchehab@redhat.com> <20110324173257.36680b90@pedra> <20110324223907.GA10498@liondog.tnic>
+In-Reply-To: <20110324223907.GA10498@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011, Geert Uytterhoeven wrote:
-
-> > From: Jiri Kosina <jkosina@suse.cz>
-> > Subject: [PATCH] brk: fix min_brk lower bound computation for COMPAT_BRK
-> >
-> > Even if CONFIG_COMPAT_BRK is set in the kernel configuration, it can still
-> > be overriden by randomize_va_space sysctl.
-> >
-> > If this is the case, the min_brk computation in sys_brk() implementation
-> > is wrong, as it solely takes into account COMPAT_BRK setting, assuming
-> > that brk start is not randomized. But that might not be the case if
-> > randomize_va_space sysctl has been set to '2' at the time the binary has
-> > been loaded from disk.
-> >
-> > In such case, the check has to be done in a same way as in
-> > !CONFIG_COMPAT_BRK case.
-> >
-> > In addition to that, the check for the COMPAT_BRK case introduced back in
-> > a5b4592c ("brk: make sys_brk() honor COMPAT_BRK when computing lower
-> > bound") is slightly wrong -- the lower bound shouldn't be mm->end_code,
-> > but mm->end_data instead, as that's where the legacy applications expect
-> > brk section to start (i.e. immediately after last global variable).
-> >
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> > ---
-> >  mm/mmap.c |   10 +++++++++-
-> >  1 files changed, 9 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/mm/mmap.c b/mm/mmap.c
-> > index 50a4aa0..ca2f164 100644
-> > --- a/mm/mmap.c
-> > +++ b/mm/mmap.c
-> > @@ -253,7 +253,15 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
-> >        down_write(&mm->mmap_sem);
-> >
-> >  #ifdef CONFIG_COMPAT_BRK
-> > -       min_brk = mm->end_code;
-> > +       /*
-> > +        * CONFIG_COMPAT_BRK can still be overridden by setting
-> > +        * randomize_va_space to 2, which will still make mm->start_brk
-> > +        * to be arbitrarily shifted
-> > +        */
-> > +       if (mm->start_brk > PAGE_ALIGN(mm->end_data))
-> > +               min_brk = mm->start_brk;
-> > +       else
-> > +               min_brk = mm->end_data;
-> >  #else
-> >        min_brk = mm->start_brk;
-> >  #endif
-> > --
-> > 1.7.3.1
+Em 24-03-2011 19:39, Borislav Petkov escreveu:
+> On Thu, Mar 24, 2011 at 05:32:57PM -0300, Mauro Carvalho Chehab wrote:
+>> Adds a trace class for handle hardware events
+>>
+>> Part of the description bellow is shamelessly copied from Tony
+>> Luck's notes about the Hardware Error BoF during LPC 2010 [1].
+>> Tony, thanks for your notes and discussions to generate the
+>> h/w error reporting requirements.
+>>
+>> [1] http://lwn.net/Articles/416669/
+>>
+>>     We have several subsystems & methods for reporting hardware errors:
+>>
+>>     1) EDAC ("Error Detection and Correction").  In its original form
+>>     this consisted of a platform specific driver that read topology
+>>     information and error counts from chipset registers and reported
+>>     the results via a sysfs interface.
+>>
+>>     2) mcelog - x86 specific decoding of machine check bank registers
+>>     reporting in binary form via /dev/mcelog. Recent additions make use
+>>     of the APEI extensions that were documented in version 4.0a of the
+>>     ACPI specification to acquire more information about errors without
+>>     having to rely reading chipset registers directly. A user level
+>>     programs decodes into somewhat human readable format.
+>>
+>>     3) drivers/edac/mce_amd.c  A recent addition - this driver hooks into
+>>     the mcelog path and decodes errors reported via machine check bank
+>>     registers in AMD processors to the console log using printk() [despite
+>>     being in the drivers/edac directory, this seems completely different
+>>     from classic EDAC to me].
 > 
-> Sorry for chiming in this late, but I've just bisected a problem in
-> 2.6.38 to commit
-> 5520e89485252c759ee60d313e9422447659947b ("brk: fix min_brk lower bound
-> computation for COMPAT_BRK").
+> Well, maybe it is time to rename drivers/edac/ to drivers/ras/ where all
+> RAS stuff should go.
+
+Maybe, but I think that there are still some steps to go before that.
 > 
-> When booting my very old test ramdisk on Amiga/m68k, it fails like this:
+> [.. ]
 > 
-> | RAMDISK: gzip image found at block 0
-> | VFS: Mounted root (ext2 filesystem) readonly on device 1:0.
-> | warning: process `update' used the obsolete bdflush system call
-> | Fix your initscripts?
-> | init: cannot open inittab
-> | Kernel panic - not syncing: Attempted to kill init!
+>> diff --git a/include/trace/events/hw_event.h b/include/trace/events/hw_event.h
+>> new file mode 100644
+>> index 0000000..a46ac61
+>> --- /dev/null
+>> +++ b/include/trace/events/hw_event.h
+>> @@ -0,0 +1,322 @@
+>> +#undef TRACE_SYSTEM
+>> +#define TRACE_SYSTEM hw_event
+>> +
+>> +#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
+>> +#define _TRACE_HW_EVENT_MC_H
+>> +
+>> +#include <linux/tracepoint.h>
+>> +#include <linux/edac.h>
+>> +
+>> +/*
+>> + * Hardware Anomaly Report Mechanism (HARM) events
+>> + *
+>> + * Those events are generated when hardware detected a corrected or
+>> + * uncorrected event, and are meant to replace the current API to report
+>> + * errors defined on both EDAC and MCE subsystems.
+>> + */
+>> +
+>> +DECLARE_EVENT_CLASS(hw_event_class,
+>> +	TP_PROTO(const char *type, unsigned int instance),
+>> +	TP_ARGS(type, instance),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(	const char *,	type			)
+>> +		__field(	unsigned int,	instance		)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->type	= type;
+>> +		__entry->instance = instance;
+>> +	),
+>> +
+>> +	TP_printk("Initialized %s#%d\n",
+>> +		__entry->type,
+>> +		__entry->instance)
+>> +);
+>> +
+>> +/*
+>> + * This event indicates that a hardware collection mechanism is started
+>> + */
+>> +DEFINE_EVENT(hw_event_class, hw_event_init,
+>> +
+>> +	TP_PROTO(const char *type, unsigned int instance),
+>> +
+>> +	TP_ARGS(type, instance)
+>> +);
+>> +
+>> +
+>> +/*
+>> + * Memory Controller specific events
+>> + */
 > 
-> Sorry for not noticing earlier, I usually boot full Debians under ARAnyM,
-> instead of booting old ramdisks with libc5-based binaries that once were
-> considered new.
+> I think this is too fine-grained. You see, all those error records are
+> of type MCE so there's no need to have a trace event for corrected,
+> uncorrected, out of range etc. error types. You basically add a
+> flags argument to the trace_mce_record() tracepoint so that you can
+> differentiate between the different error records in the tracebuffer.
+> Then, you add additional fields like above for the MCEs which report a
+> DRAM ECC error.
+> 
+> IOW, what we need are two basic error records (tracepoints, etc.): MCEs
+> and PCI(e) errors which are derived from the hw_event_class.
+>
+> Btw, I've played with the MCE tracepoint extension a bit and it looks
+> doable: http://lkml.org/lkml/2010/5/15/40.
+> 
 
-Oh well, one has to love the libc5-based binaries indeed.
+As discussed on LPC, those are some requirements for the subsystem:
 
-Is the patch below fixing the issue you are seeing on your Amiga/m68k? 
-Thanks.
+*) Architecture independent (both power and arm are potentially interested)
 
+*) Report errors against human readable labels (e.g. using motherboard
+   labels to identify DIMM or PCI slots).  This is hard (will often need
+   some platform-specific mapping table to provide, or override, detailed
+   information).
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 2ec8eb5..0a02531 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -262,7 +262,7 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
- 	if (mm->start_brk > PAGE_ALIGN(mm->end_data))
- 		min_brk = mm->start_brk;
- 	else
--		min_brk = mm->end_data;
-+		min_brk = mm->end_code;
- #else
- 	min_brk = mm->start_brk;
- #endif
+*) General interface available for any kind of h/w error report (e.g.
+   device driver might use it for board level problems, or IPMI might
+   report fan speed problems or over-temperature events).
 
+*) Useful to make it easy to adapt existing EDAC drivers, machine-check
+   bank decoders and other existing error reporters to use this new
+   mechanism.
 
+*) Robust - should not lose error information.  If the platform provides
+   some sort of persistent storage, should make use of it to preserve
+   details for fatal errors across reboot.  But may need some threshold
+   mechanism that copes with floods of errors from a failed object.
 
+*) Flexible: Errors may be discovered by polling, or reported by some
+   interrupt/exception
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+People at the audience also commented that there are some other parts of the
+Kernel that produce hardware errors and may also be interesting to map them
+via perf, so grouping them together into just two types may not fit.
+
+Also, as we want to have errors generated even for uncorrected errors that
+can be fatal, and the report system should provide user-friendly error
+reports, just printing a MCE code (and the MCE-specific data) is not enough:
+the error should be parsed on kernel to avoid loosing fatal errors.
+
+Maybe the way I mapped is too fine-grained, and we may want to group some
+events together, but, on the other hand, having more events allow users
+to filter some events that may not be relevant to them. For example, some
+systems with i7300 memory controller, under certain circumstances (it seems
+to be related to a bug at BIOS quick boot implementation), don't properly 
+initialize the memory controller registers. The net result is that, on every 
+one second (the poll interval of the edac driver), a false error report is 
+produced. Having events fine-grained, users can just change the perf filter 
+to discard the false alarms, but keeping the other hardware errors enabled.
+ 
+In the specific case of MCE errors, I think we should create a new
+hw_event pair that will provide the decoded info and the raw MCE info, on
+a format like:
+
+	Corrected Error %s at label "%s" (CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, PROCESSOR: %u:%x, TIME: %llu, SOCKET: %u, APIC: % x)
+	Uncorrected Error %s at label "%s" (CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, PROCESSOR: %u:%x, TIME: %llu, SOCKET: %u, APIC: % x)
+
+This way, the info that it is relevant to the system admin is clearly pointed
+(error type and label), while hardware vendors may use the MCE data to better
+analyse the issue.
+
+Cheers,
+Mauro.
