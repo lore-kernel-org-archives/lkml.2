@@ -1,106 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933247Ab1CZAOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:14:43 -0400
-Received: from kroah.org ([198.145.64.141]:35783 "EHLO coco.kroah.org"
+	id S933185Ab1CZAPi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:15:38 -0400
+Received: from kroah.org ([198.145.64.141]:41851 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932523Ab1CZAGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:06:12 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:56 2011
-Message-Id: <20110326000455.925561655@clark.kroah.org>
+	id S932534Ab1CYXw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:57 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:12 2011
+Message-Id: <20110325234512.550289296@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 17:03:33 -0700
+Date: Fri, 25 Mar 2011 16:44:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Beulich <jbeulich@novell.com>, Milton Miller <miltonm@bga.com>
-Subject: [01/35] smp_call_function_many: handle concurrent clearing of mask
-In-Reply-To: <20110326000509.GA29736@kroah.com>
+        Robert Lukassen <robert.lukassen@tomtom.com>
+Subject: [45/63] USB: Fix bad dma problem on WDM device disconnect
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Milton Miller <miltonm@bga.com>
+From: Robert Lukassen <Robert.Lukassen@tomtom.com>
 
-commit 723aae25d5cdb09962901d36d526b44d4be1051c upstream.
+commit 878b753e32ca765cd346a5d3038d630178ec78ff upstream.
 
-Mike Galbraith reported finding a lockup ("perma-spin bug") where the
-cpumask passed to smp_call_function_many was cleared by other cpu(s)
-while a cpu was preparing its call_data block, resulting in no cpu to
-clear the last ref and unlock the block.
+In the WDM class driver a disconnect event leads to calls to
+usb_free_coherent to put back two USB DMA buffers allocated earlier.
+The call to usb_free_coherent uses a different size parameter
+(desc->wMaxCommand) than the corresponding call to usb_alloc_coherent
+(desc->bMaxPacketSize0).
 
-Having cpus clear their bit asynchronously could be useful on a mask of
-cpus that might have a translation context, or cpus that need a push to
-complete an rcu window.
+When a disconnect event occurs, this leads to 'bad dma' complaints
+from usb core because the USB DMA buffer is being pushed back to the
+'buffer-2048' pool from which it has not been allocated.
 
-Instead of adding a BUG_ON and requiring yet another cpumask copy, just
-detect the race and handle it.
+This patch against the most recent linux-2.6 kernel ensures that the
+parameters used by usb_alloc_coherent & usb_free_coherent calls in
+cdc-wdm.c match.
 
-Note: arch_send_call_function_ipi_mask must still handle an empty
-cpumask because the data block is globally visible before the that arch
-callback is made.  And (obviously) there are no guarantees to which cpus
-are notified if the mask is changed during the call; only cpus that were
-online and had their mask bit set during the whole call are guaranteed
-to be called.
-
-Reported-by: Mike Galbraith <efault@gmx.de>
-Reported-by: Jan Beulich <JBeulich@novell.com>
-Acked-by: Jan Beulich <jbeulich@novell.com>
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Robert Lukassen <robert.lukassen@tomtom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/smp.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/usb/class/cdc-wdm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -428,7 +428,7 @@ void smp_call_function_many(const struct
- {
- 	struct call_function_data *data;
- 	unsigned long flags;
--	int cpu, next_cpu, this_cpu = smp_processor_id();
-+	int refs, cpu, next_cpu, this_cpu = smp_processor_id();
- 
- 	/*
- 	 * Can deadlock when called with interrupts disabled.
-@@ -439,7 +439,7 @@ void smp_call_function_many(const struct
- 	WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
- 		     && !oops_in_progress);
- 
--	/* So, what's a CPU they want? Ignoring this one. */
-+	/* Try to fastpath.  So, what's a CPU they want? Ignoring this one. */
- 	cpu = cpumask_first_and(mask, cpu_online_mask);
- 	if (cpu == this_cpu)
- 		cpu = cpumask_next_and(cpu, mask, cpu_online_mask);
-@@ -497,6 +497,13 @@ void smp_call_function_many(const struct
- 	/* We rely on the "and" being processed before the store */
- 	cpumask_and(data->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
-+	refs = cpumask_weight(data->cpumask);
-+
-+	/* Some callers race with other cpus changing the passed mask */
-+	if (unlikely(!refs)) {
-+		csd_unlock(&data->csd);
-+		return;
-+	}
- 
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
- 	/*
-@@ -510,7 +517,7 @@ void smp_call_function_many(const struct
- 	 * to the cpumask before this write to refs, which indicates
- 	 * data is on the list and is ready to be processed.
- 	 */
--	atomic_set(&data->refs, cpumask_weight(data->cpumask));
-+	atomic_set(&data->refs, refs);
- 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
- 
- 	/*
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -281,7 +281,7 @@ static void cleanup(struct wdm_device *d
+ 			  desc->sbuf,
+ 			  desc->validity->transfer_dma);
+ 	usb_free_coherent(interface_to_usbdev(desc->intf),
+-			  desc->wMaxCommand,
++			  desc->bMaxPacketSize0,
+ 			  desc->inbuf,
+ 			  desc->response->transfer_dma);
+ 	kfree(desc->orq);
 
 
