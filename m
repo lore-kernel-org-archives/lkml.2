@@ -1,75 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab1CYPOV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 11:14:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51515 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab1CYPOT (ORCPT
+	id S1751907Ab1CYPSP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 11:18:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:57586 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160Ab1CYPSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 11:14:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bu6zWiqWr3k9ceJbEM0NIAcaNrN0H/j5G2gQ0f8owyarcvvdhxBhjs99mTCVAmsP72
-         VQOaK20O0h3FDZdscHceGBiIxm7Fbs8sbHrX4g+HoBx1hs+ik+MSSPFEDbr/yV71HrEc
-         VberfOykLa2RveLm7qfOsqNq4PNOGKOIpzYcA=
-Date: Fri, 25 Mar 2011 16:13:53 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, npiggin@kernel.dk,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [GIT PULL] SLAB changes for v2.6.39-rc1
-Message-ID: <20110325151353.GG1409@htj.dyndns.org>
-References: <AANLkTik3rkNvLG-rgiWxKaPc-v9sZQq96ok0CXfAU+r_@mail.gmail.com>
- <20110324185903.GA30510@elte.hu>
- <AANLkTi=66Q-8=AV3Y0K28jZbT3ddCHy9azWedoCC4Nrn@mail.gmail.com>
- <alpine.DEB.2.00.1103241404490.5576@router.home>
- <AANLkTimWYCHEsZjswLpD-xDcu_cL=GqsMshKRtkHt5Vn@mail.gmail.com>
- <20110324193647.GA7957@elte.hu>
- <AANLkTinBwKT3s=1En5Urs56gmt_zCNgPXnQzzy52Tgdo@mail.gmail.com>
- <alpine.DEB.2.00.1103241451060.5576@router.home>
- <1300997290.2714.2.camel@edumazet-laptop>
- <alpine.DEB.2.00.1103241541560.8108@router.home>
+	Fri, 25 Mar 2011 11:18:13 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=XYJHFtupD_QA:10 a=8nJEP1OIZ-IA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=84Nmi-sFSNYap_sNikQA:9 a=vj250IXp1--HQX59vVMA:7 a=hpU2Us0BfAmSbSD2IbucPYFDYMkA:4 a=wPNLvfGTeEIA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Fri, 25 Mar 2011 11:18:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jay <jinshan.xiong@whamcloud.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: is this a bug?
+Message-ID: <20110325151810.GC9313@home.goodmis.org>
+References: <AANLkTikipA3__OX3sZd-VBS2Hvg5BSE=B9s+0RTyiVVQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103241541560.8108@router.home>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikipA3__OX3sZd-VBS2Hvg5BSE=B9s+0RTyiVVQ@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Strange mail client you have.
 
-On Thu, Mar 24, 2011 at 03:43:25PM -0500, Christoph Lameter wrote:
-> > Thats strange, alloc_percpu() is supposed to zero the memory already ...
+On Wed, Mar 23, 2011 at 05:46:56PM -0700, Jay wrote:
+> Hi,
 > 
-> True.
+> Assuming vmscan is doing its job to steal the last page from an
+> inode's namespace, so:
 > 
-> > Are you sure its really this problem of interrupts being disabled ?
+> shrink_page_list -> remove_mapping -> __remove_from_page_cache:
 > 
-> Guess so since Ingo and Pekka reported that it fixed the problem.
+> void __remove_from_page_cache(struct page *page)
 > 
-> Tejun: Can you help us with this mystery?
+> {
+> 
+>         ...
+> 
+>         radix_tree_delete(&mapping->page_tree, page->index);
+> 
+>         page->mapping = NULL;
+> 
+> >>> after removing the page from radix tree, it stuck at here.
+> 
+>         mapping->nrpages--;
+> 
+>         ...
+> 
+> }
+> 
+> then another process just calls iput_final to release the inode, so
+> iput_final -> evict:
+> 
+> static void evict(struct inode *inode)
+> 
+> {
+> 
+>        ...
+> 
+>         } else {
+> 
+>                 if (inode->i_data.nrpages)
+> 
+> >>> here it finds that nrpage is 1, so go into truncate_inode_pages() but it won't find any page in the page tree.
+> 
+>                         truncate_inode_pages(&inode->i_data, 0);
+> 
+> >>> here nrpages remains 1.
+> 
+>                 end_writeback(inode);
+> 
+> >>> hit  BUG_ON(inode->i_data.nrpages) in end_writeback().
 
-I've looked through the code but can't figure out what the difference
-is.  The memset code is in mm/percpu-vm.c::pcpu_populate_chunk().
 
-	for_each_possible_cpu(cpu)
-		memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
+Did you actually hit this bug?
 
-(pcpu_chunk_addr(chunk, cpu, 0) + off) is the same vaddr as will be
-obtained by per_cpu_ptr(ptr, cpu), so all allocated memory regions are
-accessed before being returned.  Dazed and confused (seems like the
-theme of today for me).
+> 
+>         }
+> 
+>         ...
+> 
+> }
+> 
+> The root cause of this problem is that nrpages is accessed w/o holding
+> mapping->page_tree. The fix is also easy, just grab ->tree_lock inside
+> truncate_inode_pages_range:
+> 
+> +       spin_lock_irq(&mapping->tree_lock);
+> 
+> -         if (mapping->nrpages == 0)
+> 
+> +        if (mapping->nrpages == 0) {
+> 
+> +               spin_unlock_irq(&mapping->tree_lock);
+> 
+>                 return;
+> 
+> +        }
+> 
+> +        spin_unlock_irq(&mapping->tree_lock);
+> 
+> Am I missed anything?
 
-Could it be that the vmalloc page is taking more than one faults?
+Perhaps the comment before the __remove_from_page_cache()
 
-Thanks.
+/*
+ * Remove a page from the page cache and free it. Caller has to make
+ * sure the page is locked and that nobody else uses it - or that usage
+ * is safe.  The caller must hold the mapping's tree_lock.
+ */
 
--- 
-tejun
+-- Steve
+
