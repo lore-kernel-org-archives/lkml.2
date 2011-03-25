@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab1CYNui (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:50:38 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43091 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab1CYNug (ORCPT
+	id S1753392Ab1CYNuo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:50:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50880 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753316Ab1CYNul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:50:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=A5hyhPs8VS3Y/uD5jDhbAKr7x/TJgjbAQxDy8nQ2/nri0TGfnC4FvLLIfrbEmlltPC
-         1HAQw8cSCoHFtbqxGwFrYvugmaj+/Kw6yok7HB3rvBOLmeY1/+7S9TmTCJ9CWSoo5TNq
-         awQEjevdLaUy9Q2wNXSwU+Yp/uOX3DUYiJBA0=
-MIME-Version: 1.0
-In-Reply-To: <1301058727.14261.174.camel@gandalf.stny.rr.com>
-References: <20110323153727.GB12003@htj.dyndns.org> <20110324094119.GD12038@htj.dyndns.org>
- <20110324094151.GE12038@htj.dyndns.org> <20110325033956.GB9313@home.goodmis.org>
- <AANLkTimO3b3D+SofYFLyh8Txk+e4Ke4ToKrBiatdFghr@mail.gmail.com> <1301058727.14261.174.camel@gandalf.stny.rr.com>
-From: Andrey Kuzmin <andrey.v.kuzmin@gmail.com>
-Date: Fri, 25 Mar 2011 16:50:10 +0300
-Message-ID: <AANLkTi=BaRFeAL1mS1Rjq_QGgcMb1rOKkvf=ig+23jvP@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 Mar 2011 09:50:41 -0400
+Message-Id: <20110325135032.971429913@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Fri, 25 Mar 2011 13:50:39 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Michal Simek <monstr@monstr.eu>
+Subject: [patch 1/2] microblaze: Convert to new irq function names
+References: <20110325134935.999574075@linutronix.de>
+Content-Disposition: inline; filename=microblaz.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 4:12 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 2011-03-25 at 14:13 +0300, Andrey Kuzmin wrote:
->> Turning try_lock into indefinitely spinning one breaks its semantics,
->> so deadlock is to be expected. But what's wrong in this scenario if
->> try_lock spins a bit before giving up?
->
-> Because that will cause this scenario to spin that "little longer"
-> always, and introduce latencies that did not exist before. Either the
-> solution does not break this scenario, or it should not go in.
+Namespace conversion scripted with coccinelle.
 
-Broken semantics and extra latency are two separate issues. If the
-former is fixed, the latter is easily handled by introducing new
-mutex_trylock_spin call that lets one either stick to existing
-behavior (try/fail) or choose a new one where latency penalty is
-justified by locking patterns.
+Also retrieve the irq type from irq_data in intc_enable_or_unmask()
 
-Regards,
-Andrey
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/microblaze/kernel/intc.c    |    6 +++---
+ arch/microblaze/pci/pci-common.c |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
->
-> -- Steve
->
->
->
+Index: linux-2.6-tip/arch/microblaze/kernel/intc.c
+===================================================================
+--- linux-2.6-tip.orig/arch/microblaze/kernel/intc.c
++++ linux-2.6-tip/arch/microblaze/kernel/intc.c
+@@ -50,7 +50,7 @@ static void intc_enable_or_unmask(struct
+ 	 * ack function since the handle_level_irq function
+ 	 * acks the irq before calling the interrupt handler
+ 	 */
+-	if (irq_to_desc(d->irq)->status & IRQ_LEVEL)
++	if (irqd_is_level_type(d))
+ 		out_be32(INTC_BASE + IAR, mask);
+ }
+ 
+@@ -157,11 +157,11 @@ void __init init_IRQ(void)
+ 
+ 	for (i = 0; i < nr_irq; ++i) {
+ 		if (intr_type & (0x00000001 << i)) {
+-			set_irq_chip_and_handler_name(i, &intc_dev,
++			irq_set_chip_and_handler_name(i, &intc_dev,
+ 				handle_edge_irq, intc_dev.name);
+ 			irq_clear_status_flags(i, IRQ_LEVEL);
+ 		} else {
+-			set_irq_chip_and_handler_name(i, &intc_dev,
++			irq_set_chip_and_handler_name(i, &intc_dev,
+ 				handle_level_irq, intc_dev.name);
+ 			irq_set_status_flags(i, IRQ_LEVEL);
+ 		}
+Index: linux-2.6-tip/arch/microblaze/pci/pci-common.c
+===================================================================
+--- linux-2.6-tip.orig/arch/microblaze/pci/pci-common.c
++++ linux-2.6-tip/arch/microblaze/pci/pci-common.c
+@@ -237,7 +237,7 @@ int pci_read_irq_line(struct pci_dev *pc
+ 
+ 		virq = irq_create_mapping(NULL, line);
+ 		if (virq != NO_IRQ)
+-			set_irq_type(virq, IRQ_TYPE_LEVEL_LOW);
++			irq_set_irq_type(virq, IRQ_TYPE_LEVEL_LOW);
+ 	} else {
+ 		pr_debug(" Got one, spec %d cells (0x%08x 0x%08x...) on %s\n",
+ 			 oirq.size, oirq.specifier[0], oirq.specifier[1],
+
+
