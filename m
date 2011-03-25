@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1CYOpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 10:45:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45184 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab1CYOpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 10:45:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QbNTSPECLpxhx7wcwr66IhH00j2Ha2BrSS57sW03O1kPIzvTP59rqI/C3i34ZA7IDe
-         8GH96oudO3Ku/Wpxfq6S9sm9s93o5TMh/Mzd+RBUxQpbOhifB2Hu0+Dk/j37Mc7bVBon
-         /+7IUHaO0HW2uQ9EB3O0wWuWqy6yUv4e/eFZ8=
-Date: Fri, 25 Mar 2011 15:45:44 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Theodore Tso <tytso@MIT.EDU>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mingming Cao <cmm@us.ibm.com>
-Subject: Re: linux-next: manual merge of the ext4 tree with Linus' tree
-Message-ID: <20110325144544.GF1409@htj.dyndns.org>
-References: <20110325125643.91510e0e.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110325125643.91510e0e.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753823Ab1CYOrL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 10:47:11 -0400
+Received: from xes-mad.com ([216.165.139.218]:19682 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059Ab1CYOrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 10:47:10 -0400
+Subject: RE: [PATCH] gpio: ml_ioh_gpio: Fix output value of
+ ioh_gpio_direction_output()
+From: Peter Tyser <ptyser@xes-inc.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: linux-kernel@vger.kernel.org, "'Grant Likely'" <grant.likely@secretlab.ca>,
+        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+In-Reply-To: <C734E3BF5C7F418896D57EBBD1C709C4@hacdom.okisemi.com>
+References: <1301008634-25429-1-git-send-email-ptyser@xes-inc.com>
+	 <C734E3BF5C7F418896D57EBBD1C709C4@hacdom.okisemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Mar 2011 09:47:01 -0500
+Message-ID: <1301064421.24947.231.camel@petert>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Stephen, Ted.
+Hi Tomoya,
 
-On Fri, Mar 25, 2011 at 12:56:43PM +1100, Stephen Rothwell wrote:
-> Today's linux-next merge of the ext4 tree got a conflict in
-> fs/ext4/super.c between commit fd89d5f2030a ("ext4: convert to
-> alloc_workqueue()") from Linus' tree and commit 198868f35de9 ("ext4: Use
-> single thread to perform DIO unwritten convertion") from the ext4 tree.
+On Fri, 2011-03-25 at 09:31 +0900, Tomoya MORINAGA wrote:
+> Hi Peter,
 > 
-> I just used the ext4 tree version.
+> On Friday, March 25, 2011 8:17 AM, Peter Tyser wrote:
+> 
+> > The ioh_gpio_direction_output() function was missing a write 
+> > to set the desired output value.  The function would properly 
+> > set the GPIO direction, but not the output value.  The value 
+> > would have to manually be set with a follow up call to ioh_gpio_set().
+> 
+> > This is untested - just noticed it while working on an 
+> > unrelated change.  An ack or tested-by from someone with real 
+> > hardware would be appreciated.
+> 
+> Thank you for your indication.
+> Your saying is right.
+> However since your patch looks incorrect,
+> after testing, I will post new patch by next week.
 
-Both are about the same conversion but the one using alloc_workqueue()
-is better because 1. create_singlethread_workqueue() is going away and
-2. it doesn't require strict ordering among queued works.
+Out of curiosity, what looks incorrect about the patch?  The code to set
+the GPIO value is identical to the code in ioh_gpio_set(), which was the
+old code path.
 
-Ted, what do you think?
+Best,
+Peter
 
-Thanks.
-
--- 
-tejun
