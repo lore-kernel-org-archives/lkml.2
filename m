@@ -1,120 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab1CYIUa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 04:20:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41310 "EHLO mx1.redhat.com"
+	id S933632Ab1CYI21 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 04:28:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10793 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754197Ab1CYIU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 04:20:28 -0400
-Message-ID: <4D8C503D.6000607@redhat.com>
-Date: Fri, 25 Mar 2011 04:20:13 -0400
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-CC: KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        nikola.ciprich@linuxbox.cz, Avi Kivity <avi@redhat.com>,
-        Glauber Costa <glommer@redhat.com>
-Subject: Re: [PATCHv2] fix regression caused by	e48672fa25e879f7ae21785c7efd187738139593
-References: <20110307101827.GA1762@pcnci.linuxbox.cz> <4D768A62.3050903@redhat.com> <20110309193003.GB1762@pcnci.linuxbox.cz> <4D77F149.8020906@redhat.com> <20110309223651.GC1762@pcnci.linuxbox.cz>
-In-Reply-To: <20110309223651.GC1762@pcnci.linuxbox.cz>
-Content-Type: multipart/mixed;
- boundary="------------090006070200090102020603"
+	id S933430Ab1CYI2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 04:28:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,242,1299484800"; 
+   d="scan'208";a="724989904"
+Subject: [PATCH -tip v3] perf probe: Add fastpath to do lookup by function
+ name
+From: Lin Ming <ming.m.lin@intel.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Mar 2011 16:27:48 +0800
+Message-ID: <1301041668.14111.52.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090006070200090102020603
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+v3 -> v2:
+- Make pubname_search_cb more generic
+- Add fastpath to find_probes also
 
-On 03/09/2011 05:36 PM, Nikola Ciprich wrote:
-> commit 387b9f97750444728962b236987fbe8ee8cc4f8c moved kvm_request_guest_time_update(vcpu),
-> breaking 32bit SMP guests using kvm-clock. Fix this by moving (new) clock update function
-> to proper place.
->
-> Signed-off-by: Nikola Ciprich<nikola.ciprich@linuxbox.cz>
-> ---
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 4c27144..ba3f76f 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2101,8 +2101,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
->   		if (check_tsc_unstable()) {
->   			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
->   			vcpu->arch.tsc_catchup = 1;
-> -			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
->   		}
-> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
->   		if (vcpu->cpu != cpu)
->   			kvm_migrate_timers(vcpu);
->   		vcpu->cpu = cpu;
->
->    
+v2 -> v1:
+- Don't compare file names with cu_find_realpath(...), instead, compare
+  them with the name returned by dwarf_decl_file(sp_die)
 
+The vmlinux file may have thousands of CUs.
+We can lookup function name from .debug_pubnames section
+to avoid the slow loop on CUs.
 
-So something bothers me still about this bug.  What you did correctly 
-restores the old behavior - but it shouldn't be fixing a bug.
+1. Improvement data for find_line_range
 
-The only reason you need to schedule an update for the KVM clock area is 
-if a new VCPU has been created, you have an unstable TSC.. or something 
-changes the VM's kvmclock offset.
+./perf stat -e cycles -r 10 -- ./perf probe -k /home/mlin/vmlinux \
+        -s /home/mlin/linux-2.6 \
+        --line csum_partial_copy_to_user > tmp.log
 
-So this change could in fact be hiding an underlying bug - either an 
-unstable TSC is not being properly reported, the KVM clock offset is 
-being changed, we are missing a KVM clock update for secondary VCPUs - 
-or something else we don't yet understand is going on.
+before patch applied
+=====================
+       847,988,276 cycles
 
-Nikola, can you try the patch below, which reverts your change and 
-attempts to fix other possible sources of the problem, and see if it 
-still reproduces?
+        0.355075856  seconds time elapsed
 
-Thanks,
+after patch applied
+=====================
+       206,102,622 cycles
 
-Zach
+        0.086883555  seconds time elapsed
 
---------------090006070200090102020603
-Content-Type: text/plain;
- name="kvm-regres-test.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="kvm-regres-test.patch"
+2. Improvement data for find_probes
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 58f517b..42618fb 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2127,8 +2127,10 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- 		if (check_tsc_unstable()) {
- 			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
- 			vcpu->arch.tsc_catchup = 1;
-+			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
- 		}
--		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-+		if (vcpu->cpu == -1)
-+			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
- 		if (vcpu->cpu != cpu)
- 			kvm_migrate_timers(vcpu);
- 		vcpu->cpu = cpu;
-@@ -3534,6 +3536,8 @@ long kvm_arch_vm_ioctl(struct file *filp,
- 		struct kvm_clock_data user_ns;
- 		u64 now_ns;
- 		s64 delta;
-+		struct kvm_vcpu *vcpu;
-+		int i;
+./perf stat -e cycles -r 10 -- ./perf probe -k /home/mlin/vmlinux \
+        -s /home/mlin/linux-2.6 \
+        --vars csum_partial_copy_to_user > tmp.log
+
+before patch applied
+=====================
+       848,490,844 cycles
+
+        0.355307901  seconds time elapsed
+
+after patch applied
+=====================
+       205,684,469 cycles
+
+        0.086694010  seconds time elapsed
+
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ tools/perf/util/probe-finder.c |   68 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/probe-finder.h |    2 +
+ 2 files changed, 70 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 194f9e2..23fc9eb 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1435,6 +1435,38 @@ static int find_probe_point_by_func(struct probe_finder *pf)
+ 	return _param.retval;
+ }
  
- 		r = -EFAULT;
- 		if (copy_from_user(&user_ns, argp, sizeof(user_ns)))
-@@ -3549,6 +3553,8 @@ long kvm_arch_vm_ioctl(struct file *filp,
- 		delta = user_ns.clock - now_ns;
- 		local_irq_enable();
- 		kvm->arch.kvmclock_offset = delta;
-+		kvm_for_each_vcpu(i, vcpu, kvm)
-+			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
- 		break;
++struct pubname_callback_param {
++	char *function;
++	char *file;
++	Dwarf_Die *cu_die;
++	Dwarf_Die *sp_die;
++	int found;
++};
++
++static int pubname_search_cb(Dwarf *dbg, Dwarf_Global *gl, void *data)
++{
++	struct pubname_callback_param *param = data;
++
++	if (dwarf_offdie(dbg, gl->die_offset, param->sp_die)) {
++		if (dwarf_tag(param->sp_die) != DW_TAG_subprogram)
++			return DWARF_CB_OK;
++
++		if (die_compare_name(param->sp_die, param->function)) {
++			if (!dwarf_offdie(dbg, gl->cu_offset, param->cu_die))
++				return DWARF_CB_OK;
++
++			if (param->file &&
++			    strtailcmp(param->file, dwarf_decl_file(param->sp_die)))
++				return DWARF_CB_OK;
++
++			param->found = 1;
++			return DWARF_CB_ABORT;
++		}
++	}
++
++	return DWARF_CB_OK;
++}
++
+ /* Find probe points from debuginfo */
+ static int find_probes(int fd, struct probe_finder *pf)
+ {
+@@ -1461,6 +1493,23 @@ static int find_probes(int fd, struct probe_finder *pf)
+ 
+ 	off = 0;
+ 	line_list__init(&pf->lcache);
++
++	/* Fastpath: lookup by function name from .debug_pubnames section */
++	if (pp->function) {
++		struct pubname_callback_param pubname_param = {
++			.function = pp->function, .file = pp->file,
++			.cu_die = &pf->cu_die, .sp_die = &pf->sp_die, .found = 0};
++		struct dwarf_callback_param probe_param = {
++			.data = (void *)pf, .retval = 0};
++
++		dwarf_getpubnames(dbg, pubname_search_cb, &pubname_param, 0);
++		if (pubname_param.found) {
++			ret = probe_point_search_cb(&pf->sp_die, &probe_param);
++			if (ret)
++				goto found;
++		}
++	}
++
+ 	/* Loop on CUs (Compilation Unit) */
+ 	while (!dwarf_nextcu(dbg, off, &noff, &cuhl, NULL, NULL, NULL)) {
+ 		/* Get the DIE(Debugging Information Entry) of this CU */
+@@ -1488,6 +1537,8 @@ static int find_probes(int fd, struct probe_finder *pf)
+ 		}
+ 		off = noff;
  	}
- 	case KVM_GET_CLOCK: {
++
++found:
+ 	line_list__free(&pf->lcache);
+ 	if (dwfl)
+ 		dwfl_end(dwfl);
+@@ -1895,6 +1946,22 @@ int find_line_range(int fd, struct line_range *lr)
+ 		return -EBADF;
+ 	}
+ 
++	/* Fastpath: lookup by function name from .debug_pubnames section */
++	if (lr->function) {
++		struct pubname_callback_param pubname_param = {
++			.function = lr->function, .file = lr->file,
++			.cu_die = &lf.cu_die, .sp_die = &lf.sp_die, .found = 0};
++		struct dwarf_callback_param line_range_param = {
++			.data = (void *)&lf, .retval = 0};
++
++		dwarf_getpubnames(dbg, pubname_search_cb, &pubname_param, 0);
++		if (pubname_param.found) {
++			line_range_search_cb(&lf.sp_die, &line_range_param);
++			if (lf.found)
++				goto found;
++		}
++	}
++
+ 	/* Loop on CUs (Compilation Unit) */
+ 	while (!lf.found && ret >= 0) {
+ 		if (dwarf_nextcu(dbg, off, &noff, &cuhl, NULL, NULL, NULL) != 0)
+@@ -1923,6 +1990,7 @@ int find_line_range(int fd, struct line_range *lr)
+ 		off = noff;
+ 	}
+ 
++found:
+ 	/* Store comp_dir */
+ 	if (lf.found) {
+ 		comp_dir = cu_get_comp_dir(&lf.cu_die);
+diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+index beaefc3..605730a 100644
+--- a/tools/perf/util/probe-finder.h
++++ b/tools/perf/util/probe-finder.h
+@@ -49,6 +49,7 @@ struct probe_finder {
+ 	Dwarf_Addr		addr;		/* Address */
+ 	const char		*fname;		/* Real file name */
+ 	Dwarf_Die		cu_die;		/* Current CU */
++	Dwarf_Die		sp_die;
+ 	struct list_head	lcache;		/* Line cache for lazy match */
+ 
+ 	/* For variable searching */
+@@ -83,6 +84,7 @@ struct line_finder {
+ 	int			lno_s;		/* Start line number */
+ 	int			lno_e;		/* End line number */
+ 	Dwarf_Die		cu_die;		/* Current CU */
++	Dwarf_Die		sp_die;
+ 	int			found;
+ };
+ 
+-- 
+1.7.2.3
 
---------------090006070200090102020603--
+
+
