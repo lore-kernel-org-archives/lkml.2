@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932787Ab1CYX5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:57:14 -0400
-Received: from kroah.org ([198.145.64.141]:41968 "EHLO coco.kroah.org"
+	id S932633Ab1CYX4k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:56:40 -0400
+Received: from kroah.org ([198.145.64.141]:41984 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932593Ab1CYXxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:10 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:44 2011
-Message-Id: <20110325234844.258247976@clark.kroah.org>
+	id S932616Ab1CYXxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:11 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:14 2011
+Message-Id: <20110325234513.932715868@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:43 -0700
+Date: Fri, 25 Mar 2011 16:44:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [50/55] perf: Fix tear-down of inherited group events
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+Subject: [58/63] perf: Fix tear-down of inherited group events
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
@@ -45,7 +45,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -5863,17 +5863,20 @@ __perf_event_exit_task(struct perf_event
+@@ -6115,17 +6115,20 @@ __perf_event_exit_task(struct perf_event
  			 struct perf_event_context *child_ctx,
  			 struct task_struct *child)
  {
