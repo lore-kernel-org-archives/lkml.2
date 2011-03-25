@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab1CYXxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:53:16 -0400
-Received: from kroah.org ([198.145.64.141]:41896 "EHLO coco.kroah.org"
+	id S932777Ab1CYXyj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:54:39 -0400
+Received: from kroah.org ([198.145.64.141]:42028 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755672Ab1CYXxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:06 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:13 2011
-Message-Id: <20110325234513.520839490@clark.kroah.org>
+	id S932677Ab1CYXxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:16 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:14 2011
+Message-Id: <20110325234514.342046298@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:30 -0700
+Date: Fri, 25 Mar 2011 16:44:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [54/63] drm/i915: Prevent racy removal of request from client list
+        Stuart Hayes <stuart_hayes@yahoo.com>,
+        Doug Warzecha <douglas_warzecha@dell.com>,
+        Chuck Ebbert <cebbert@redhat.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [62/63] dcdbas: force SMI to happen when expected
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,80 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Stuart Hayes <stuart_hayes@yahoo.com>
 
-commit 09bfa51773c1e90f13000dc2fc0c4b84047009bc upstream.
+commit dd65c736d1b5312c80c88a64bf521db4959eded5 upstream.
 
-When i915_gem_retire_requests_ring calls i915_gem_request_remove_from_client,
-the client_list for that request may already be removed in i915_gem_release.
-So we may call twice list_del(&request->client_list), resulting in an
-oops like this report:
+The dcdbas driver can do an I/O write to cause a SMI to occur.  The SMI handler
+looks at certain registers and memory locations, so the SMI needs to happen
+immediately.  On some systems I/O writes are posted, though, causing the SMI to
+happen well after the "outb" occurred, which causes random failures.  Following
+the "outb" with an "inb" forces the write to go through even if it is posted.
 
-[126167.230394] BUG: unable to handle kernel paging request at 00100104
-[126167.230699] IP: [<f8c2ce44>] i915_gem_retire_requests_ring+0xd4/0x240 [i915]
-[126167.231042] *pdpt = 00000000314c1001 *pde = 0000000000000000
-[126167.231314] Oops: 0002 [#1] SMP
-[126167.231471] last sysfs file: /sys/devices/LNXSYSTM:00/device:00/PNP0C0A:00/power_supply/BAT1/current_now
-[126167.231901] Modules linked in: snd_seq_dummy nls_utf8 isofs btrfs zlib_deflate libcrc32c ufs qnx4 hfsplus hfs minix ntfs vfat msdos fat jfs xfs exportfs reiserfs cryptd aes_i586 aes_generic binfmt_misc vboxnetadp vboxnetflt vboxdrv parport_pc ppdev snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep arc4 snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq uvcvideo videodev snd_timer snd_seq_device joydev iwlagn iwlcore mac80211 snd cfg80211 soundcore i915 drm_kms_helper snd_page_alloc psmouse drm serio_raw i2c_algo_bit video lp parport usbhid hid sky2 sdhci_pci ahci sdhci libahci
-[126167.232018]
-[126167.232018] Pid: 1101, comm: Xorg Not tainted 2.6.38-6-generic-pae #34-Ubuntu Gateway                          MC7833U /
-[126167.232018] EIP: 0060:[<f8c2ce44>] EFLAGS: 00213246 CPU: 0
-[126167.232018] EIP is at i915_gem_retire_requests_ring+0xd4/0x240 [i915]
-[126167.232018] EAX: 00200200 EBX: f1ac25b0 ECX: 00000040 EDX: 00100100
-[126167.232018] ESI: f1a2801c EDI: e87fc060 EBP: ef4d7dd8 ESP: ef4d7db0
-[126167.232018]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[126167.232018] Process Xorg (pid: 1101, ti=ef4d6000 task=f1ba6500 task.ti=ef4d6000)
-[126167.232018] Stack:
-[126167.232018]  f1a28000 f1a2809c f1a28094 0058bd97 f1aa2400 f1a2801c 0058bd7b 0058bd85
-[126167.232018]  f1a2801c f1a28000 ef4d7e38 f8c2e995 ef4d7e30 ef4d7e60 c14d1ebc f6b3a040
-[126167.232018]  f1522cc0 000000db 00000000 f1ba6500 ffffffa1 00000000 00000001 f1a29214
-[126167.232018] Call Trace:
-
-Unfortunately the call trace reported was cut, but looking at debug
-symbols the crash is at __list_del, when probably list_del is called
-twice on the same request->client_list, as the dereferenced value is
-LIST_POISON1 + 4, and by looking more at the debug symbols before
-list_del call it should have being called by
-i915_gem_request_remove_from_client
-
-And as I can see in the code, it seems we indeed have the possibility
-to remove a request->client_list twice, which would cause the above,
-because we do list_del(&request->client_list) on both
-i915_gem_request_remove_from_client and i915_gem_release
-
-As Chris Wilson pointed out, it's indeed the case:
-"(...) I had thought that the actual insertion/deletion was serialised
-under the struct mutex and the intention of the spinlock was to protect
-the unlocked list traversal during throttling. However, I missed that
-i915_gem_release() is also called without struct mutex and so we do need
-the double check for i915_gem_request_remove_from_client()."
-
-This change does the required check to avoid the duplicate remove of
-request->client_list.
-
-Bugzilla: http://bugs.launchpad.net/bugs/733780
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Stuart Hayes <stuart_hayes@yahoo.com>
+Acked-by: Doug Warzecha <douglas_warzecha@dell.com>
+Cc: Chuck Ebbert <cebbert@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/firmware/dcdbas.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1749,8 +1749,10 @@ i915_gem_request_remove_from_client(stru
- 		return;
+--- a/drivers/firmware/dcdbas.c
++++ b/drivers/firmware/dcdbas.c
+@@ -268,8 +268,10 @@ int dcdbas_smi_request(struct smi_cmd *s
+ 	}
  
- 	spin_lock(&file_priv->mm.lock);
--	list_del(&request->client_list);
--	request->file_priv = NULL;
-+	if (request->file_priv) {
-+		list_del(&request->client_list);
-+		request->file_priv = NULL;
-+	}
- 	spin_unlock(&file_priv->mm.lock);
- }
- 
+ 	/* generate SMI */
++	/* inb to force posted write through and make SMI happen now */
+ 	asm volatile (
+-		"outb %b0,%w1"
++		"outb %b0,%w1\n"
++		"inb %w1"
+ 		: /* no output args */
+ 		: "a" (smi_cmd->command_code),
+ 		  "d" (smi_cmd->command_address),
 
 
