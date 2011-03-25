@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934411Ab1CYBlC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 21:41:02 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:63503 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932206Ab1CYBk6 convert rfc822-to-8bit (ORCPT
+	id S934405Ab1CYBwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 21:52:06 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:36963 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab1CYBwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 21:40:58 -0400
+	Thu, 24 Mar 2011 21:52:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=Tw4OyJRnQHP6Jf6wD07vraIF00g+uO/u6KLxXN0xnxZMDonzkP9j37MdH8GNVy9Akt
-         U9GEFByM7aA8VovGfrAC2dI1fx8Tg6pGpgwPexGSLVGVxoPazgldm3TdR78/vxput8c6
-         RXEGaNeaLnGseW74HVbQ7TykrWpD2u5j6diFw=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=HKB7J8U0jDjou4ZHtea6us86CbNaOdRf5Fs1jKZ8ipgPZ40+VTEASV3qF0q2dul1Mw
+         0EsHko/JdXHQETP+PQzQ==
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <641556B1566641C0A286D4F2F1383DAD@hacdom.okisemi.com>
-References: <AANLkTik0tLsZCmcf8JNBtyePnKZzfoyA9SWH9k51+cc8@mail.gmail.com>
-	<AANLkTi=gUTJs58mBkyLrvbtob=x=k6gD8-QR1HA61g+Q@mail.gmail.com>
-	<641556B1566641C0A286D4F2F1383DAD@hacdom.okisemi.com>
-Date: Fri, 25 Mar 2011 02:40:57 +0100
-Message-ID: <AANLkTimhvxO=5GOenagc=F2hyzt-7yLSgDhQbWVuffsD@mail.gmail.com>
-Subject: Re: linux-next: Tree for March 24 (BUG: soft lockup - CPU#0 stuck for
- 63s! [kworker/0:1:7764])
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110324135657.GC20434@redhat.com>
+References: <1300835335-2777-1-git-send-email-teravest@google.com>
+ <20110323012755.GA10325@redhat.com> <AANLkTi=YyY0dCVP+JAJsyiYYqWMwf1XBROf_h_eG0yEL@mail.gmail.com>
+ <20110323200621.GJ13315@redhat.com> <AANLkTi=mCAdX1KJrQRoi=mwtW=ZAANWo_Tzc+JNR34rr@mail.gmail.com>
+ <20110324135657.GC20434@redhat.com>
+From: Justin TerAvest <teravest@google.com>
+Date: Thu, 24 Mar 2011 18:51:24 -0700
+Message-ID: <BANLkTimQsZYTb=n4B-U2BZJcjBbL+DwR8Q@mail.gmail.com>
+Subject: Re: [RFC] [PATCH v2 0/8] Provide cgroup isolation for buffered writes.
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: jaxboe@fusionio.com, m-ikeda@ds.jp.nec.com, ryov@valinux.co.jp,
+        taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
+        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
+        balbir@linux.vnet.ibm.com, ctalbott@google.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 1:08 AM, Tomoya MORINAGA
-<tomoya-linux@dsn.okisemi.com> wrote:
-> Hi  Sedat,
+On Thu, Mar 24, 2011 at 6:56 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Wed, Mar 23, 2011 at 03:32:51PM -0700, Justin TerAvest wrote:
 >
-> We have used this DMA driver(include this patch) on linux-2.6.35/37.
-> However I haven't seen the issue yet.
+> [..]
+>> > Ok, In the past I had tried it with 2 cgroups (running dd inside these
+>> > cgroups) and I had no success. I am wondering what has changed.
+>>
+>> It could just be a difference in workload, or dd size, or filesystem?
 >
-> I want to know more information.
-> Do you mean that it takes 63 more seconds for boot-completing
-> when using this patch and pch_dma is integrated as built-in ?
->
-> Thanks,
-> -----------------------------------------
-> Tomoya MORINAGA
-> OKI SEMICONDUCTOR CO., LTD.
->
+> Once you have sorted out the bug and I can boot my system, I will test
+> it to see what's happening.
 
-I jumped back to the kernel from which I thought it was making
-problems and run it several hours.
-Unfortunately, I haven't seen any call-traces in the syslogs like before.
-So, I could reproduce the errors.
-I am sorry for the noise abd will have an eye on the issue.
-( So, reverting the patch did not really helped. )
+Thanks. I'll send out a version 3 of the patch (and organize my
+current results better in the cover letter), as soon as I have the
+problem resolved. I see a very similar panic during fsck that I'm
+trying to track down.
 
-- Sedat -
-
->> -----Original Message-----
->> From: Sedat Dilek [mailto:sedat.dilek@googlemail.com]
->> Sent: Friday, March 25, 2011 12:10 AM
->> To: linux-next; LKML
->> Cc: Stephen Rothwell; Randy Dunlap; Vinod Koul; Tomoya MORINAGA
->> Subject: Re: linux-next: Tree for March 24 (BUG: soft lockup
->> - CPU#0 stuck for 63s! [kworker/0:1:7764])
 >
+>>
+>> >
+>> > In the past a high priority throttled process can very well try to
+>> > pick up a inode from low prio cgroup and start writting it and get
+>> > blocked. I believe similar thing should happen now.
+>>
+>> You're right that it's very dependent on what inodes get picked up
+>> when from writeback.
+>
+> So then above results should not be reproducible consistently? Are you
+> using additional patches internally to make this work reliably. My
+> concenrn is that it will not make sense to have half baked pieces
+> in upstream kernel. That's why I was hoping that this piece can go in
+> once we have sorted out following.
+
+I am not using additional patches to make this work reliably. However,
+I've noticed the behavior is better with some filesystems than others.
+
+>
+> - IO less throttling
+> - Per cgroup dirty ratio
+> - Some work w.r.t cgroup aware writeback.
+>
+> In fact cgroup aware writeback can be part of this patch series once
+> first two pieces are in the kernel.
+
+I understand your preference for a complete, reliable solution for all
+of this. Right now, I'm concerned that it's hard to tie all these
+systems together, and I haven't seen an overall plan for how all of
+these things work together. If this patchset works reliably for enough
+workloads, we'll just see isolation improve as writeback is more
+cgroup aware.
+
+>
+> Thanks
+> Vivek
 >
