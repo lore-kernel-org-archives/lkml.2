@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab1CYN1W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:27:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34608 "EHLO
+	id S1753129Ab1CYN1i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:27:38 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34584 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752340Ab1CYNV4 (ORCPT
+	with ESMTP id S1751981Ab1CYNVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:21:56 -0400
-Message-Id: <20110325132047.552074703@linutronix.de>
+	Fri, 25 Mar 2011 09:21:52 -0400
+Message-Id: <20110325132047.456346554@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Fri, 25 Mar 2011 13:21:52 -0000
+Date: Fri, 25 Mar 2011 13:21:50 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LAK <linux-arm-kernel@lists.infradead.org>,
         Russell King <linux@arm.linux.org.uk>,
         Lennert Buytenhek <buytenh@wantstofly.org>,
-        Colin Cross <ccross@android.com>, linux-tegra@vger.kernel.org
-Subject: [patch 02/23] arm: tegra: Remove unused function which fiddles with
-	irq_desc
+        Peter Zijlstra <peterz@infradead.org>,
+        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+Subject: [patch 01/23] arm: Ns9xxx: Remove private irq flow handler
 References: <20110325131617.258789658@linutronix.de>
-Content-Disposition: inline; filename=arm-tegra.patch
+Content-Disposition: inline;
+	filename=arm-ns9xxx-remove-private-irq-flow-handler.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
@@ -27,111 +28,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These functions are unused and in the way of cleanups in the core
-code. If you have special requirements vs. irqs and PM then please
-talk to me. Access to the generic core internals is going away.
+handle_prio_irq is almost identical with handle_fasteoi_irq. The
+subtle differences are
+
+1) The handler checks for IRQ_DISABLED after the device handler has
+   been called. In case it's set it masks the interrupt.
+
+2) When the handler sees IRQ_DISABLED on entry it masks the interupt
+   in the same way as handle_fastoei_irq, but does not set the
+   IRQ_PENDING flag.
+
+3) Instead of gracefully handling a recursive interrupt it crashes the
+   kernel.
+
+#1 is just relevant when a device handler calls disable_irq_nosync()
+   and it does not matter whether we mask the interrupt right away or
+   not. We handle lazy masking for disable_irq anyway, so there is no
+   real reason to have this extra mask in place.
+
+#2 will prevent the resend of a pending interrupt, which can result in
+   lost interrupts for edge type interrupts. For level type interrupts
+   the resend is a noop in the generic code. According to the
+   datasheet all interrupts are level type, so marking them as such
+   will result in the exact same behaviour as the private
+   handle_prio_irq implementation.
+
+#3 is just stupid. Crashing the kernel instead of handling a problem
+   gracefully is just wrong. With the current semantics- all handlers
+   run with interrupts disabled - this is even more wrong.
+
+Rename ack to eoi, remove the unused mask_ack, switch to
+handle_fasteoi_irq and remove the private function.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Colin Cross <ccross@android.com>
-Cc: linux-tegra@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org
+LKML-Reference: <20110202212552.299898447@linutronix.de>
 ---
- arch/arm/mach-tegra/gpio.c                 |   63 -----------------------------
- arch/arm/mach-tegra/include/mach/suspend.h |    2 
- 2 files changed, 65 deletions(-)
+ arch/arm/mach-ns9xxx/irq.c |   58 +++------------------------------------------
+ 1 file changed, 4 insertions(+), 54 deletions(-)
 
-Index: linux-2.6/arch/arm/mach-tegra/gpio.c
+Index: linux-2.6-tip/arch/arm/mach-ns9xxx/irq.c
 ===================================================================
---- linux-2.6.orig/arch/arm/mach-tegra/gpio.c
-+++ linux-2.6/arch/arm/mach-tegra/gpio.c
-@@ -254,69 +254,6 @@ static void tegra_gpio_irq_handler(unsig
+--- linux-2.6-tip.orig/arch/arm/mach-ns9xxx/irq.c
++++ linux-2.6-tip/arch/arm/mach-ns9xxx/irq.c
+@@ -31,17 +31,11 @@ static void ns9xxx_mask_irq(struct irq_d
+ 	__raw_writel(ic, SYS_IC(prio / 4));
  }
  
- #ifdef CONFIG_PM
--void tegra_gpio_resume(void)
--{
--	unsigned long flags;
--	int b, p, i;
--
--	local_irq_save(flags);
--
--	for (b = 0; b < ARRAY_SIZE(tegra_gpio_banks); b++) {
--		struct tegra_gpio_bank *bank = &tegra_gpio_banks[b];
--
--		for (p = 0; p < ARRAY_SIZE(bank->oe); p++) {
--			unsigned int gpio = (b<<5) | (p<<3);
--			__raw_writel(bank->cnf[p], GPIO_CNF(gpio));
--			__raw_writel(bank->out[p], GPIO_OUT(gpio));
--			__raw_writel(bank->oe[p], GPIO_OE(gpio));
--			__raw_writel(bank->int_lvl[p], GPIO_INT_LVL(gpio));
--			__raw_writel(bank->int_enb[p], GPIO_INT_ENB(gpio));
--		}
--	}
--
--	local_irq_restore(flags);
--
--	for (i = INT_GPIO_BASE; i < (INT_GPIO_BASE + TEGRA_NR_GPIOS); i++) {
--		struct irq_desc *desc = irq_to_desc(i);
--		if (!desc || (desc->status & IRQ_WAKEUP))
--			continue;
--		enable_irq(i);
--	}
--}
--
--void tegra_gpio_suspend(void)
--{
--	unsigned long flags;
--	int b, p, i;
--
--	for (i = INT_GPIO_BASE; i < (INT_GPIO_BASE + TEGRA_NR_GPIOS); i++) {
--		struct irq_desc *desc = irq_to_desc(i);
--		if (!desc)
--			continue;
--		if (desc->status & IRQ_WAKEUP) {
--			int gpio = i - INT_GPIO_BASE;
--			pr_debug("gpio %d.%d is wakeup\n", gpio/8, gpio&7);
--			continue;
--		}
--		disable_irq(i);
--	}
--
--	local_irq_save(flags);
--	for (b = 0; b < ARRAY_SIZE(tegra_gpio_banks); b++) {
--		struct tegra_gpio_bank *bank = &tegra_gpio_banks[b];
--
--		for (p = 0; p < ARRAY_SIZE(bank->oe); p++) {
--			unsigned int gpio = (b<<5) | (p<<3);
--			bank->cnf[p] = __raw_readl(GPIO_CNF(gpio));
--			bank->out[p] = __raw_readl(GPIO_OUT(gpio));
--			bank->oe[p] = __raw_readl(GPIO_OE(gpio));
--			bank->int_enb[p] = __raw_readl(GPIO_INT_ENB(gpio));
--			bank->int_lvl[p] = __raw_readl(GPIO_INT_LVL(gpio));
--		}
--	}
--	local_irq_restore(flags);
--}
--
- static int tegra_gpio_wake_enable(struct irq_data *d, unsigned int enable)
+-static void ns9xxx_ack_irq(struct irq_data *d)
++static void ns9xxx_eoi_irq(struct irq_data *d)
  {
- 	struct tegra_gpio_bank *bank = irq_data_get_irq_chip_data(d);
-Index: linux-2.6/arch/arm/mach-tegra/include/mach/suspend.h
-===================================================================
---- linux-2.6.orig/arch/arm/mach-tegra/include/mach/suspend.h
-+++ linux-2.6/arch/arm/mach-tegra/include/mach/suspend.h
-@@ -23,14 +23,12 @@
+ 	__raw_writel(0, SYS_ISRADDR);
+ }
  
- void tegra_pinmux_suspend(void);
- void tegra_irq_suspend(void);
--void tegra_gpio_suspend(void);
- void tegra_clk_suspend(void);
- void tegra_dma_suspend(void);
- void tegra_timer_suspend(void);
+-static void ns9xxx_maskack_irq(struct irq_data *d)
+-{
+-	ns9xxx_mask_irq(d);
+-	ns9xxx_ack_irq(d);
+-}
+-
+ static void ns9xxx_unmask_irq(struct irq_data *d)
+ {
+ 	/* XXX: better use cpp symbols */
+@@ -52,56 +46,11 @@ static void ns9xxx_unmask_irq(struct irq
+ }
  
- void tegra_pinmux_resume(void);
- void tegra_irq_resume(void);
--void tegra_gpio_resume(void);
- void tegra_clk_resume(void);
- void tegra_dma_resume(void);
- void tegra_timer_resume(void);
+ static struct irq_chip ns9xxx_chip = {
+-	.irq_ack	= ns9xxx_ack_irq,
++	.irq_eoi	= ns9xxx_eoi_irq,
+ 	.irq_mask	= ns9xxx_mask_irq,
+-	.irq_mask_ack	= ns9xxx_maskack_irq,
+ 	.irq_unmask	= ns9xxx_unmask_irq,
+ };
+ 
+-#if 0
+-#define handle_irq handle_level_irq
+-#else
+-static void handle_prio_irq(unsigned int irq, struct irq_desc *desc)
+-{
+-	struct irqaction *action;
+-	irqreturn_t action_ret;
+-
+-	raw_spin_lock(&desc->lock);
+-
+-	BUG_ON(desc->status & IRQ_INPROGRESS);
+-
+-	desc->status &= ~(IRQ_REPLAY | IRQ_WAITING);
+-	kstat_incr_irqs_this_cpu(irq, desc);
+-
+-	action = desc->action;
+-	if (unlikely(!action || (desc->status & IRQ_DISABLED)))
+-		goto out_mask;
+-
+-	desc->status |= IRQ_INPROGRESS;
+-	raw_spin_unlock(&desc->lock);
+-
+-	action_ret = handle_IRQ_event(irq, action);
+-
+-	/* XXX: There is no direct way to access noirqdebug, so check
+-	 * unconditionally for spurious irqs...
+-	 * Maybe this function should go to kernel/irq/chip.c? */
+-	note_interrupt(irq, desc, action_ret);
+-
+-	raw_spin_lock(&desc->lock);
+-	desc->status &= ~IRQ_INPROGRESS;
+-
+-	if (desc->status & IRQ_DISABLED)
+-out_mask:
+-		desc->irq_data.chip->irq_mask(&desc->irq_data);
+-
+-	/* ack unconditionally to unmask lower prio irqs */
+-	desc->irq_data.chip->irq_ack(&desc->irq_data);
+-
+-	raw_spin_unlock(&desc->lock);
+-}
+-#define handle_irq handle_prio_irq
+-#endif
+-
+ void __init ns9xxx_init_irq(void)
+ {
+ 	int i;
+@@ -119,7 +68,8 @@ void __init ns9xxx_init_irq(void)
+ 
+ 	for (i = 0; i <= 31; ++i) {
+ 		set_irq_chip(i, &ns9xxx_chip);
+-		set_irq_handler(i, handle_irq);
++		set_irq_handler(i, handle_fasteoi_irq);
+ 		set_irq_flags(i, IRQF_VALID);
++		irq_set_status_flags(i, IRQ_LEVEL);
+ 	}
+ }
 
 
