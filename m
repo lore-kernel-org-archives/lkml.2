@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab1CYTwF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 15:52:05 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42394 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359Ab1CYTwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 15:52:02 -0400
-Date: Fri, 25 Mar 2011 20:51:36 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrey Kuzmin <andrey.v.kuzmin@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
-Message-ID: <20110325195136.GA7346@elte.hu>
-References: <20110323153727.GB12003@htj.dyndns.org>
- <20110324094119.GD12038@htj.dyndns.org>
- <20110324094151.GE12038@htj.dyndns.org>
- <20110325033956.GB9313@home.goodmis.org>
- <AANLkTimO3b3D+SofYFLyh8Txk+e4Ke4ToKrBiatdFghr@mail.gmail.com>
- <1301058727.14261.174.camel@gandalf.stny.rr.com>
- <AANLkTi=BaRFeAL1mS1Rjq_QGgcMb1rOKkvf=ig+23jvP@mail.gmail.com>
- <1301061918.14261.188.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301061918.14261.188.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754953Ab1CYTxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 15:53:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54986 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab1CYTxK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 15:53:10 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=s8bQjA_BN_cA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=psVRvG15vVdg5EZTR4sA:9 a=TiLsxaH2z-i2nONOCnkA:7 a=FOaH4DpsctEbIfonX081Hb9vmCMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [tip:core/urgent] WARN_ON_SMP(): Allow use in if() statements
+ on UP
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, dvhart@linux.intel.com,
+        peterz@infradead.org, akpm@linux-foundation.org, srostedt@redhat.com,
+        tglx@linutronix.de, laijs@cn.fujitsu.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <20110325194729.GA6192@p183.telecom.by>
+References: <20110317192208.444147791@goodmis.org>
+	 <tip-2092e6be82ec71ecbf5a8ceeef004bbcbdb78812@git.kernel.org>
+	 <AANLkTikfq9bz_cKdvq9ab+KS218Q7uVvoNdJeMe_-RUg@mail.gmail.com>
+	 <1301076981.14261.197.camel@gandalf.stny.rr.com>
+	 <1301077163.14261.199.camel@gandalf.stny.rr.com>
+	 <20110325193128.GA5839@p183.telecom.by>
+	 <1301082034.14261.202.camel@gandalf.stny.rr.com>
+	 <20110325194729.GA6192@p183.telecom.by>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 25 Mar 2011 15:53:08 -0400
+Message-ID: <1301082788.14261.204.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-03-25 at 21:47 +0200, Alexey Dobriyan wrote:
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+> I always thought if (WARN_ON(x)) is confusing and should be banned.
 
-> On Fri, 2011-03-25 at 16:50 +0300, Andrey Kuzmin wrote:
-> > On Fri, Mar 25, 2011 at 4:12 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > > On Fri, 2011-03-25 at 14:13 +0300, Andrey Kuzmin wrote:
-> > >> Turning try_lock into indefinitely spinning one breaks its semantics,
-> > >> so deadlock is to be expected. But what's wrong in this scenario if
-> > >> try_lock spins a bit before giving up?
-> > >
-> > > Because that will cause this scenario to spin that "little longer"
-> > > always, and introduce latencies that did not exist before. Either the
-> > > solution does not break this scenario, or it should not go in.
-> > 
-> > Broken semantics and extra latency are two separate issues. If the
-> > former is fixed, the latter is easily handled by introducing new
-> > mutex_trylock_spin call that lets one either stick to existing
-> > behavior (try/fail) or choose a new one where latency penalty is
-> > justified by locking patterns.
-> > 
-> 
-> For those wanting a more RT deterministic OS, I will argue against
-> latency penalties.
+I think that's the preferred method (I use it all the time).
 
-Later mails from Tejun suggest that the benchmark results are varied, and that 
-it's not a clear win after all.
+	if (WARN_ON(blah))
+		goto fail;
 
-It's possible that if useless spinning is introduced then that might explain 
-such workload variations. I.e. it's not really 'latencies' but 'unnecessary 
-overhead spent spinning' - and also 'extra non-deterministic noise' - none of 
-which help consistent performance.
+Better than:
 
-Thanks,
+	if (x) {
+		WARN_ON(1);
+		goto fail;
+	}
 
-	Ingo
+-- Steve
+
+
