@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933618Ab1CZAS2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:18:28 -0400
-Received: from kroah.org ([198.145.64.141]:41772 "EHLO coco.kroah.org"
+	id S933699Ab1CZAS5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:18:57 -0400
+Received: from kroah.org ([198.145.64.141]:41582 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932451Ab1CYXwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:49 -0400
+	id S932285Ab1CYXwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:45 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:42 2011
-Message-Id: <20110325234842.544666587@clark.kroah.org>
+Message-Id: <20110325234842.217942194@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:27 -0700
+Date: Fri, 25 Mar 2011 16:47:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Engraf <david.engraf@sysgo.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [34/55] sh: Fix ptrace hw_breakpoint handling
+        Stephan Lachowsky <stephan.lachowsky@maxim-ic.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [31/55] [media] uvcvideo: Fix uvc_fixup_video_ctrl() format search
 In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Engraf <david.engraf@sysgo.com>
+From: Stephan Lachowsky <stephan.lachowsky@maxim-ic.com>
 
-commit fb7f045ace0624f1e59a7db8497e460bd54b1cbc upstream.
+commit 38a66824d96de8aeeb915e6f46f0d3fe55828eb1 upstream.
 
-Since commit 34d0b5af50a063cded842716633501b38ff815fb it is no longer
-possible to debug an application using singlestep. The old commit
-converted singlestep handling via ptrace to hw_breakpoints. The
-hw_breakpoint is disabled when an event is triggered and not re-enabled
-again. This patch re-enables the existing hw_breakpoint before the
-existing breakpoint is reused.
+The scheme used to index format in uvc_fixup_video_ctrl() is not robust:
+format index is based on descriptor ordering, which does not necessarily
+match bFormatIndex ordering.  Searching for first matching format will
+prevent uvc_fixup_video_ctrl() from using the wrong format/frame to make
+adjustments.
 
-Signed-off-by: David Engraf <david.engraf@sysgo.com>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Stephan Lachowsky <stephan.lachowsky@maxim-ic.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/sh/kernel/ptrace_32.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/video/uvc/uvc_video.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
---- a/arch/sh/kernel/ptrace_32.c
-+++ b/arch/sh/kernel/ptrace_32.c
-@@ -101,6 +101,8 @@ static int set_single_step(struct task_s
+--- a/drivers/media/video/uvc/uvc_video.c
++++ b/drivers/media/video/uvc/uvc_video.c
+@@ -89,15 +89,19 @@ int uvc_query_ctrl(struct uvc_device *de
+ static void uvc_fixup_video_ctrl(struct uvc_streaming *stream,
+ 	struct uvc_streaming_control *ctrl)
+ {
+-	struct uvc_format *format;
++	struct uvc_format *format = NULL;
+ 	struct uvc_frame *frame = NULL;
+ 	unsigned int i;
  
- 		attr = bp->attr;
- 		attr.bp_addr = addr;
-+		/* reenable breakpoint */
-+		attr.disabled = false;
- 		err = modify_user_hw_breakpoint(bp, &attr);
- 		if (unlikely(err))
- 			return err;
+-	if (ctrl->bFormatIndex <= 0 ||
+-	    ctrl->bFormatIndex > stream->nformats)
+-		return;
++	for (i = 0; i < stream->nformats; ++i) {
++		if (stream->format[i].index == ctrl->bFormatIndex) {
++			format = &stream->format[i];
++			break;
++		}
++	}
+ 
+-	format = &stream->format[ctrl->bFormatIndex - 1];
++	if (format == NULL)
++		return;
+ 
+ 	for (i = 0; i < format->nframes; ++i) {
+ 		if (format->frame[i].bFrameIndex == ctrl->bFrameIndex) {
 
 
