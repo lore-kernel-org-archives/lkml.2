@@ -1,105 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab1CYSIt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 14:08:49 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53783 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145Ab1CYSIr (ORCPT
+	id S1754641Ab1CYSJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 14:09:55 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47043 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145Ab1CYSJy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 14:08:47 -0400
+	Fri, 25 Mar 2011 14:09:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=NjYxzeJ/jZujQ5+U63A+97K4An8f+e5CKPBKtavKvqAThY76vgETw6jfmWnfR/3C1W
-         2YDjzOcefWg3O2e31JCMbokwmKESOYnKEsS2uBkzzzBn5XOHR6VeA6E9ZeIIFfeh8Bjz
-         QGkDhSlEtY1+RgqFYg8LHTWbgMsp+qWBcRrKo=
-Date: Fri, 25 Mar 2011 15:08:40 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH] perf tools: Emit clearer message for sys_perf_event_open
- ENOENT return
-Message-ID: <20110325180840.GE13180@ghostprotocols.net>
-References: <1301076350-19593-1-git-send-email-daahern@cisco.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FiO5wxzJiafzfBgEy+jAzHmD8Njwx1KurITuh+8xbPpZDRonoB1du1sgpnI0VJV3FG
+         uYpHi9wBTVXMJ/OaujWIZaTGwzVIqP87EsAHEI5IEpETVCHh9OumEFxMffvlnQe8oWo9
+         JP0FzQ41eYDOPUPYmcF3aCuuIZsNyh4t+4IuE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301076350-19593-1-git-send-email-daahern@cisco.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110325103425.11c05315@jbarnes-desktop>
+References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
+	<1300864998.3522.71.camel@thor.local>
+	<AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
+	<1300868532.3522.81.camel@thor.local>
+	<AANLkTi=mFKBqF48DwGsQL278grJChCVzw==D7vr49n09@mail.gmail.com>
+	<Pine.GSO.4.62.1103230633160.12612@umail>
+	<1300880747.16522.13.camel@thor.local>
+	<AANLkTik=GH8tGMjeKVfsmvX5WeX+4avnYan_nkGcCx20@mail.gmail.com>
+	<Pine.GSO.4.62.1103240628490.1156@umail>
+	<AANLkTimZWtOLiDT3KoUKZtsKfj4Aeu+XMF+rLc0wCSYk@mail.gmail.com>
+	<AANLkTimrHa-Fb=3HN68OML7RddsX_8rrJV_YOK3H6xST@mail.gmail.com>
+	<AANLkTi=x0ZZNfzCpKURXMCaiEncsFNQ2tg1zbARnJjx1@mail.gmail.com>
+	<AANLkTikti-xUYO_S-ipHzXeNsPtwD1kaLuHbGDMMTXev@mail.gmail.com>
+	<AANLkTik1HCrAus2Rv29EK_vGDf9d2m0E=cAuvF6LEQiQ@mail.gmail.com>
+	<AANLkTi=pKTAcbe9x62pQu6dkDFX=zO9r4b_6T0Uo-ay7@mail.gmail.com>
+	<9C992DD6-02C7-437C-B78B-13A4282E9AE3@gmail.com>
+	<AANLkTik4JbopDbdqrSAbontJmYcDeXcbGf=Ah0deo=P9@mail.gmail.com>
+	<20110325103425.11c05315@jbarnes-desktop>
+Date: Fri, 25 Mar 2011 14:09:52 -0400
+Message-ID: <AANLkTi=s=79JXvFiB4GkorW08702NRjkp9KCuCqFHjN=@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Ben Skeggs <skeggsb@gmail.com>,
+        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Mar 25, 2011 at 12:05:50PM -0600, David Ahern escreveu:
-> Resend of patch sent back in January 2011 in light of recent confusion around
-> unsupported events for a given platform.
-> 
-> Improve sys_perf_event_open ENOENT return handling in top and record, just
-> like 5a3446b does for stat.
-> 
-> Retry of Arnaldo's patch using error instead of die which allows the fallback
-> from hardware cycles to software clock.
+On Fri, Mar 25, 2011 at 1:34 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> On Fri, 25 Mar 2011 10:01:14 -0400
+> Jerome Glisse <j.glisse@gmail.com> wrote:
+>
+>> On Fri, Mar 25, 2011 at 6:25 AM, Ben Skeggs <skeggsb@gmail.com> wrote:
+>> > Oh, I wish this were actually the case.  The last time we attempted such a thing we were blasted by Linus.  It does make me wonder at why we're even bothering being in staging.
+>> >
+>> > This is where the binary drivers have a huge advantage, they package all the pieces of their driver together and can modify things as necessary.
+>> >
+>> > Part of me does think such an approach with the open source graphics drivers would be better.  The current model doesn't really fit too well in my opinion.  Though, admittedly, there's different problems to going other ways.
+>> >
+>> > Ben.
+>>
+>> Well i think being able to evolve the API would help a lot, it should
+>> still be possible to keep supporting old API over a year or so. But my
+>> feeling is some of the current API for some of the device, needs heavy
+>> lifting if we ever want to improve things.
+>
+> Going back to the old model of a separate drm repo would create more
+> problems than it solves, IMO.
+>
+> One thing I think Linus has been fairly consistent about is that making
+> things easy for users (well at least power users who build their own
+> kernels) is important.  That means ABIs need to be stable so that their
+> existing userspace continues to work even after a kernel upgrade.
+>
+> If we went back to the old, out of tree model, we might be able to
+> break things more easily (i.e. require lockstep upgrades of kernel &
+> userspace when we change things, hopefully for a good reason), but I
+> think end users would end up suffering.  They'd have to rely on their
+> distro to pick up such changes and make sure dependencies were met and
+> that upgrades/downgrades worked properly across the pre-packaged
+> kernels that they made available.
+>
+> One of the main reasons we moved in-tree was to make sure our bits got
+> into the hands of users more quickly, and to make life easier for the
+> various downstream distros, not all of which have deep expertise in the
+> graphics stack.
+>
+> Fortunately, neither of the issues that started this thread, the
+> suspend/resume regression in i915 and the vblank ioctl enhancement, are
+> problems in this respect.  The former is just a bug (though definitely
+> not one that should have made it to Linus's tree) and the latter does
+> preserve compatibility and fix a major issue, so isn't really a problem
+> imo.
+>
+> But in the general sense, I think we just have to bite the bullet, take
+> our time with ABI additions and changes so as to preserve compatibility
+> for a long time (I think we've been doing well with this on the Intel
+> side at least; we add feature flags every time we change something, and
+> make sure userspace is forward and backward compatible).  This is more
+> work for us, but I think it benefits the user in the end.  And it could
+> be worse, at least we're not still dealing with memory layout
+> compatibility between the DRM, fbdev, DDX and DRI drivers anymore!
+>
+> --
+> Jesse Barnes, Intel Open Source Technology Center
+>
 
-Please use ui__warning(""...) as it will work in the TUI too.
- 
-> Signed-off-by: David Ahern <daahern@cisco.com>
-> ---
->  tools/perf/builtin-record.c |    6 ++++++
->  tools/perf/builtin-top.c    |    7 +++++++
->  2 files changed, 13 insertions(+), 0 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 6febcc1..73fa8b7 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -282,6 +282,8 @@ try_again:
->  			else if (err ==  ENODEV && cpu_list) {
->  				die("No such device - did you specify"
->  					" an out-of-range profile CPU?\n");
-> +			} else if (err ==  ENOENT) {
-> +				error("%s event is not supported.", event_name(pos));
->  			} else if (err == EINVAL && sample_id_all_avail) {
->  				/*
->  				 * Old kernel, no attr->sample_id_type_all field
-> @@ -307,6 +309,10 @@ try_again:
->  				attr->config = PERF_COUNT_SW_CPU_CLOCK;
->  				goto try_again;
->  			}
-> +
-> +			if (err == ENOENT)
-> +				exit(1);
-> +
->  			printf("\n");
->  			error("sys_perf_event_open() syscall returned with %d (%s).  /bin/dmesg may provide additional information.\n",
->  			      err, strerror(err));
-> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> index 80c9e06..ab27693 100644
-> --- a/tools/perf/builtin-top.c
-> +++ b/tools/perf/builtin-top.c
-> @@ -852,6 +852,9 @@ try_again:
->  				die("Permission error - are you root?\n"
->  					"\t Consider tweaking"
->  					" /proc/sys/kernel/perf_event_paranoid.\n");
-> +			else if (err == ENOENT)
-> +				error("%s event is not supported.", event_name(counter));
-> +
->  			/*
->  			 * If it's cycles then fall back to hrtimer
->  			 * based cpu-clock-tick sw counter, which
-> @@ -867,6 +870,10 @@ try_again:
->  				attr->config = PERF_COUNT_SW_CPU_CLOCK;
->  				goto try_again;
->  			}
-> +
-> +			if (err == ENOENT)
-> +				exit(1);
-> +
->  			printf("\n");
->  			error("sys_perf_event_open() syscall returned with %d "
->  			      "(%s).  /bin/dmesg may provide additional information.\n",
-> -- 
-> 1.7.4
+While for small change, slowly evolving the API is doable in backward
+compatible way, major change are not. For instance if i were to write
+radeon kms today i would drop the domain stuff out of the mix, would
+not do the command submission the way they are and bunch of others
+things that i have been meaning to try but have yet to prototype.
+Change i am thinking about here means different userspace which would
+communicate with kernel in a completely different way.
+
+I am just acknowledging the fact that i did a bunch of very poor
+decision in radeon kms and i feel that today i know better what would
+be a good API but i can be wrong once again.
+
+That aside, i would prefer if we stay upstream but if moving in our
+own repo allow us to break API then i would jump in right away.
+
+Note that when changing API one could keep old API with old code
+around and just refuse to fix any issue with the old one, that means
+some one updating kernel with something that worked will still have a
+working configuration. If he then want to improve its graphics
+experience he would have to update the userspace bits.
+
+Cheers,
+Jerome
