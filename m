@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab1CYH3K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 03:29:10 -0400
-Received: from vms173001pub.verizon.net ([206.46.173.1]:55073 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab1CYH3I (ORCPT
+	id S1755223Ab1CYHbC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 03:31:02 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45142 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752Ab1CYHbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 03:29:08 -0400
-Date: Fri, 25 Mar 2011 03:28:59 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-Cc: arjan@linux.intel.com, peterz@infradead.org, suresh.b.siddha@intel.com,
-        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V1 0/2] cpuidle: global registration of idle states
- with per-cpu statistics
-In-reply-to: <20110322124724.29408.12885.stgit@tringupt.in.ibm.com>
-Message-id: <alpine.LFD.2.02.1103250326160.32565@x980>
-References: <20110322124724.29408.12885.stgit@tringupt.in.ibm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 25 Mar 2011 03:31:00 -0400
+Date: Fri, 25 Mar 2011 08:30:54 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
+        arnaud.patard@rtp-net.org, ra5478@freescale.com,
+        xiao-lizhang@freescale.com, festevam@gmail.com
+Subject: Re: [PATCHv6 4/4] ARM: mx51: Add support for low power suspend on
+ MX51
+Message-ID: <20110325073054.GE7285@pengutronix.de>
+References: <1300915676-10359-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300915676-10359-2-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300915676-10359-3-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300915676-10359-4-git-send-email-Dinh.Nguyen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300915676-10359-4-git-send-email-Dinh.Nguyen@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:28:14 up 20:47, 11 users,  load average: 0.04, 0.09, 0.08
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Mar 2011, Trinabh Gupta wrote:
+On Wed, Mar 23, 2011 at 04:27:56PM -0500, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> 
+> Adds initial low power suspend functionality to MX51.
+> Supports "mem" and "standby" modes.
+> 
+> +
+> +static int __init mx5_pm_init(void)
+> +{
+> +	if (gpc_dvfs_clk == NULL)
+> +		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
+> +
+> +	if (!IS_ERR(gpc_dvfs_clk)) {
+> +		if (cpu_is_mx51())
+> +			suspend_set_ops(&mx5_suspend_ops);
+> +	} else {
+> +		printk(KERN_ERR "Cannot enter SRPG suspend -no gpc_dvfs clock!\n");
+> +		return -EPERM;
 
-> This patch series is an early RFC to discuss the feasibility of
-> avoiding registering of idle states from each cpu.
-> 
-> The core change is to split the cpuidle_device structure into parts
-> that can be global and parts that has to remain per-cpu.  The per-cpu
-> pieces are mostly generic statistics that can be independent of
-> current running driver.
-> 
-> Motivation:
-> * Simplify the cpuidle subsystem framework and have
->   registration/unregistration done by single cpu.
-> 
-> * Minimise the data structure that needs to be maintained for multiple
->   cpuidle drivers
-> 
-> * Reference: https://lkml.org/lkml/2011/2/10/37
-> 
-> Advantages:
-> * Make the cpuidle framework simple for most use cases where C-States
->   are symmetric.  In case there are asymmetric C-States detected,
->   fallback mechanism should be incorporated to maintain the system
->   functional
->   https://lkml.org/lkml/2011/2/10/257
->   https://lkml.org/lkml/2011/2/10/37
-> 
-> * Non x86 archs that does not have asymmetric C-States like POWER, may
->   not need the fallback mechanism and hence the framework will be
->   simple for most use cases.
-> 
-> Disadvantages:
-> * Asymmetric C-States are part of x86 ACPI specification.  Incorrect
->   handling may functionally affect the system
+This will print a warning on every non i.MX51 machine, not a good idea.
+Please just bail out early on irrelevant machines.
 
-I think this is a non-issue.
+Sascha
 
-> * Incorporating per-cpu masks for each state to allow/dis-allow global
->   states on subset of CPUs may result in an implementation that is
->   not better than current solution of having per-cpu states.
-
-I don't think this is needed.
-
-> This patch series applies on top of the pm_idle cleanup patch
-> https://lkml.org/lkml/2011/3/22/150 (cpuidle: Cleanup pm_idle and 
-> include driver/cpuidle.c in-kernel)
+> +	}
+> +
+> +	return 0;
+> +}
+> +device_initcall(mx5_pm_init);
+> -- 
+> 1.6.0.4
 > 
-> This patch series is tested on x86 Nehalem system with multiple ACPI
-> C-States.
 > 
-> This patch series has limitations of not handling multiple driver
-> registration and switching between drivers on all CPUs mainly due to
-> incomplete handling of per-cpu enable/disable and driver_data.
+> 
 
-I think this series is more important than the feature of multiple
-driver/system support, and thus should come first.
-
-thanks,
-Len Brown, Intel Open Source Technology Center
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
