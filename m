@@ -1,120 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934136Ab1CZA14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:27:56 -0400
-Received: from kroah.org ([198.145.64.141]:41450 "EHLO coco.kroah.org"
+	id S934089Ab1CZA1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:27:54 -0400
+Received: from kroah.org ([198.145.64.141]:41462 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932245Ab1CYXwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932254Ab1CYXwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 19:52:22 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:40 2011
-Message-Id: <20110325234840.292017361@clark.kroah.org>
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
+Message-Id: <20110325234509.136327758@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:06 -0700
+Date: Fri, 25 Mar 2011 16:43:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: [13/55] oom: prevent unnecessary oom kills or kernel panics
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [12/63] cgroups: if you list_empty() a head then dont list_del() it
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
 
-commit 3a5dda7a17cf3706f79b86293f29db02d61e0d48 upstream.
+commit 8d2587970b8bdf7c8d9208e3f4bb93182aef1a0f upstream.
 
-This patch prevents unnecessary oom kills or kernel panics by reverting
-two commits:
+list_del() leaves poison in the prev and next pointers.  The next
+list_empty() will compare those poisons, and say the list isn't empty.
+Any list operations that assume the node is on a list because of such a
+check will be fooled into dereferencing poison.  One needs to INIT the
+node after the del, and fortunately there's already a wrapper for that -
+list_del_init().
 
-	495789a5 (oom: make oom_score to per-process value)
-	cef1d352 (oom: multi threaded process coredump don't make deadlock)
+Some of the dels are followed by deallocations, so can be ignored, and one
+can be merged with an add to make a move.  Apart from that, I erred on the
+side of caution in making nodes list_empty()-queriable.
 
-First, 495789a5 (oom: make oom_score to per-process value) ignores the
-fact that all threads in a thread group do not necessarily exit at the
-same time.
-
-It is imperative that select_bad_process() detect threads that are in the
-exit path, specifically those with PF_EXITING set, to prevent needlessly
-killing additional tasks.  If a process is oom killed and the thread group
-leader exits, select_bad_process() cannot detect the other threads that
-are PF_EXITING by iterating over only processes.  Thus, it currently
-chooses another task unnecessarily for oom kill or panics the machine when
-nothing else is eligible.
-
-By iterating over threads instead, it is possible to detect threads that
-are exiting and nominate them for oom kill so they get access to memory
-reserves.
-
-Second, cef1d352 (oom: multi threaded process coredump don't make
-deadlock) erroneously avoids making the oom killer a no-op when an
-eligible thread other than current isfound to be exiting.  We want to
-detect this situation so that we may allow that exiting thread time to
-exit and free its memory; if it is able to exit on its own, that should
-free memory so current is no loner oom.  If it is not able to exit on its
-own, the oom killer will nominate it for oom kill which, in this case,
-only means it will get access to memory reserves.
-
-Without this change, it is easy for the oom killer to unnecessarily target
-tasks when all threads of a victim don't exit before the thread group
-leader or, in the worst case, panic the machine.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Reviewed-by: Paul Menage <menage@google.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/oom_kill.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/cgroup.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -292,11 +292,11 @@ static struct task_struct *select_bad_pr
- 		unsigned long totalpages, struct mem_cgroup *mem,
- 		const nodemask_t *nodemask)
- {
--	struct task_struct *p;
-+	struct task_struct *g, *p;
- 	struct task_struct *chosen = NULL;
- 	*ppoints = 0;
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1813,10 +1813,8 @@ int cgroup_attach_task(struct cgroup *cg
  
--	for_each_process(p) {
-+	do_each_thread(g, p) {
- 		unsigned int points;
- 
- 		if (oom_unkillable_task(p, mem, nodemask))
-@@ -324,7 +324,7 @@ static struct task_struct *select_bad_pr
- 		 * the process of exiting and releasing its resources.
- 		 * Otherwise we could get an easy OOM deadlock.
- 		 */
--		if (thread_group_empty(p) && (p->flags & PF_EXITING) && p->mm) {
-+		if ((p->flags & PF_EXITING) && p->mm) {
- 			if (p != current)
- 				return ERR_PTR(-1UL);
- 
-@@ -337,7 +337,7 @@ static struct task_struct *select_bad_pr
- 			chosen = p;
- 			*ppoints = points;
- 		}
+ 	/* Update the css_set linked lists if we're using them */
+ 	write_lock(&css_set_lock);
+-	if (!list_empty(&tsk->cg_list)) {
+-		list_del(&tsk->cg_list);
+-		list_add(&tsk->cg_list, &newcg->tasks);
 -	}
-+	} while_each_thread(g, p);
++	if (!list_empty(&tsk->cg_list))
++		list_move(&tsk->cg_list, &newcg->tasks);
+ 	write_unlock(&css_set_lock);
  
- 	return chosen;
- }
+ 	for_each_subsys(root, ss) {
+@@ -3655,12 +3653,12 @@ again:
+ 	spin_lock(&release_list_lock);
+ 	set_bit(CGRP_REMOVED, &cgrp->flags);
+ 	if (!list_empty(&cgrp->release_list))
+-		list_del(&cgrp->release_list);
++		list_del_init(&cgrp->release_list);
+ 	spin_unlock(&release_list_lock);
+ 
+ 	cgroup_lock_hierarchy(cgrp->root);
+ 	/* delete this cgroup from parent->children */
+-	list_del(&cgrp->sibling);
++	list_del_init(&cgrp->sibling);
+ 	cgroup_unlock_hierarchy(cgrp->root);
+ 
+ 	d = dget(cgrp->dentry);
+@@ -3879,7 +3877,7 @@ void cgroup_unload_subsys(struct cgroup_
+ 	subsys[ss->subsys_id] = NULL;
+ 
+ 	/* remove subsystem from rootnode's list of subsystems */
+-	list_del(&ss->sibling);
++	list_del_init(&ss->sibling);
+ 
+ 	/*
+ 	 * disentangle the css from all css_sets attached to the dummytop. as
+@@ -4253,7 +4251,7 @@ void cgroup_exit(struct task_struct *tsk
+ 	if (!list_empty(&tsk->cg_list)) {
+ 		write_lock(&css_set_lock);
+ 		if (!list_empty(&tsk->cg_list))
+-			list_del(&tsk->cg_list);
++			list_del_init(&tsk->cg_list);
+ 		write_unlock(&css_set_lock);
+ 	}
+ 
 
 
