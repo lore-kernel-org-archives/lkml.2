@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab1CYXxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:53:06 -0400
-Received: from kroah.org ([198.145.64.141]:41844 "EHLO coco.kroah.org"
+	id S932714Ab1CYX5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:57:12 -0400
+Received: from kroah.org ([198.145.64.141]:41972 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932523Ab1CYXw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:56 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:12 2011
-Message-Id: <20110325234512.449801478@clark.kroah.org>
+	id S932596Ab1CYXxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:10 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:13 2011
+Message-Id: <20110325234513.822555593@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:20 -0700
+Date: Fri, 25 Mar 2011 16:44:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Holik <peter@holik.at>, Thomas Sailer <t.sailer@alumni.ethz.ch>
-Subject: [44/63] USB: uss720 fixup refcount position
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [57/63] drm/radeon/kms: fix hardcoded EDID handling
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +25,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Holik <peter@holik.at>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit adaa3c6342b249548ea830fe8e02aa5b45be8688 upstream.
+commit fafcf94e2b5732d1e13b440291c53115d2b172e9 upstream.
 
-My testprog do a lot of bitbang - after hours i got following warning and my machine lockups:
-WARNING: at /build/buildd/linux-2.6.38/lib/kref.c:34
-After debugging uss720 driver i discovered that the completion callback was called before
-usb_submit_urb returns. The callback frees the request structure that is krefed on return by
-usb_submit_urb.
+On some servers there is a hardcoded EDID provided
+in the vbios so that the driver will always see a
+display connected even if something like a KVM
+prevents traditional means like DDC or load
+detection from working properly.  Also most
+server boards with DVI are not actually DVI, but
+DVO connected to a virtual KVM service processor.
+If we fail to detect a monitor via DDC or load
+detection and a hardcoded EDID is available, use
+it.
 
-Signed-off-by: Peter Holik <peter@holik.at>
-Acked-by: Thomas Sailer <t.sailer@alumni.ethz.ch>
+Additionally, when using the hardcoded EDID, use
+a copy of it rather than the actual one stored
+in the driver as the detect() and get_modes()
+functions may free it if DDC is successful.
+
+This fixes the virtual KVM on several internal
+servers.
+
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/misc/uss720.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_combios.c    |   21 +++++++++++++++-----
+ drivers/gpu/drm/radeon/radeon_connectors.c |   30 +++++++++++++++++++++++++++--
+ drivers/gpu/drm/radeon/radeon_mode.h       |    1 
+ 3 files changed, 45 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/misc/uss720.c
-+++ b/drivers/usb/misc/uss720.c
-@@ -177,12 +177,11 @@ static struct uss720_async_request *subm
- 	spin_lock_irqsave(&priv->asynclock, flags);
- 	list_add_tail(&rq->asynclist, &priv->asynclist);
- 	spin_unlock_irqrestore(&priv->asynclock, flags);
-+	kref_get(&rq->ref_count);
- 	ret = usb_submit_urb(rq->urb, mem_flags);
--	if (!ret) {
--		kref_get(&rq->ref_count);
-+	if (!ret)
- 		return rq;
--	}
--	kref_put(&rq->ref_count, destroy_async);
-+	destroy_async(&rq->ref_count);
- 	err("submit_async_request submit_urb failed with %d", ret);
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -448,7 +448,7 @@ static uint16_t combios_get_table_offset
+ 
+ bool radeon_combios_check_hardcoded_edid(struct radeon_device *rdev)
+ {
+-	int edid_info;
++	int edid_info, size;
+ 	struct edid *edid;
+ 	unsigned char *raw;
+ 	edid_info = combios_get_table_offset(rdev->ddev, COMBIOS_HARDCODED_EDID_TABLE);
+@@ -456,11 +456,12 @@ bool radeon_combios_check_hardcoded_edid
+ 		return false;
+ 
+ 	raw = rdev->bios + edid_info;
+-	edid = kmalloc(EDID_LENGTH * (raw[0x7e] + 1), GFP_KERNEL);
++	size = EDID_LENGTH * (raw[0x7e] + 1);
++	edid = kmalloc(size, GFP_KERNEL);
+ 	if (edid == NULL)
+ 		return false;
+ 
+-	memcpy((unsigned char *)edid, raw, EDID_LENGTH * (raw[0x7e] + 1));
++	memcpy((unsigned char *)edid, raw, size);
+ 
+ 	if (!drm_edid_is_valid(edid)) {
+ 		kfree(edid);
+@@ -468,6 +469,7 @@ bool radeon_combios_check_hardcoded_edid
+ 	}
+ 
+ 	rdev->mode_info.bios_hardcoded_edid = edid;
++	rdev->mode_info.bios_hardcoded_edid_size = size;
+ 	return true;
+ }
+ 
+@@ -475,8 +477,17 @@ bool radeon_combios_check_hardcoded_edid
+ struct edid *
+ radeon_bios_get_hardcoded_edid(struct radeon_device *rdev)
+ {
+-	if (rdev->mode_info.bios_hardcoded_edid)
+-		return rdev->mode_info.bios_hardcoded_edid;
++	struct edid *edid;
++
++	if (rdev->mode_info.bios_hardcoded_edid) {
++		edid = kmalloc(rdev->mode_info.bios_hardcoded_edid_size, GFP_KERNEL);
++		if (edid) {
++			memcpy((unsigned char *)edid,
++			       (unsigned char *)rdev->mode_info.bios_hardcoded_edid,
++			       rdev->mode_info.bios_hardcoded_edid_size);
++			return edid;
++		}
++	}
  	return NULL;
  }
+ 
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -629,6 +629,8 @@ static int radeon_vga_mode_valid(struct
+ static enum drm_connector_status
+ radeon_vga_detect(struct drm_connector *connector, bool force)
+ {
++	struct drm_device *dev = connector->dev;
++	struct radeon_device *rdev = dev->dev_private;
+ 	struct radeon_connector *radeon_connector = to_radeon_connector(connector);
+ 	struct drm_encoder *encoder;
+ 	struct drm_encoder_helper_funcs *encoder_funcs;
+@@ -679,6 +681,17 @@ radeon_vga_detect(struct drm_connector *
+ 
+ 	if (ret == connector_status_connected)
+ 		ret = radeon_connector_analog_encoder_conflict_solve(connector, encoder, ret, true);
++
++	/* RN50 and some RV100 asics in servers often have a hardcoded EDID in the
++	 * vbios to deal with KVMs. If we have one and are not able to detect a monitor
++	 * by other means, assume the CRT is connected and use that EDID.
++	 */
++	if ((!rdev->is_atom_bios) &&
++	    (ret == connector_status_disconnected) &&
++	    rdev->mode_info.bios_hardcoded_edid_size) {
++		ret = connector_status_connected;
++	}
++
+ 	radeon_connector_update_scratch_regs(connector, ret);
+ 	return ret;
+ }
+@@ -790,6 +803,8 @@ static int radeon_dvi_get_modes(struct d
+ static enum drm_connector_status
+ radeon_dvi_detect(struct drm_connector *connector, bool force)
+ {
++	struct drm_device *dev = connector->dev;
++	struct radeon_device *rdev = dev->dev_private;
+ 	struct radeon_connector *radeon_connector = to_radeon_connector(connector);
+ 	struct drm_encoder *encoder = NULL;
+ 	struct drm_encoder_helper_funcs *encoder_funcs;
+@@ -829,8 +844,6 @@ radeon_dvi_detect(struct drm_connector *
+ 			 * you don't really know what's connected to which port as both are digital.
+ 			 */
+ 			if (radeon_connector->shared_ddc && (ret == connector_status_connected)) {
+-				struct drm_device *dev = connector->dev;
+-				struct radeon_device *rdev = dev->dev_private;
+ 				struct drm_connector *list_connector;
+ 				struct radeon_connector *list_radeon_connector;
+ 				list_for_each_entry(list_connector, &dev->mode_config.connector_list, head) {
+@@ -895,6 +908,19 @@ radeon_dvi_detect(struct drm_connector *
+ 		ret = radeon_connector_analog_encoder_conflict_solve(connector, encoder, ret, true);
+ 	}
+ 
++	/* RN50 and some RV100 asics in servers often have a hardcoded EDID in the
++	 * vbios to deal with KVMs. If we have one and are not able to detect a monitor
++	 * by other means, assume the DFP is connected and use that EDID.  In most
++	 * cases the DVI port is actually a virtual KVM port connected to the service
++	 * processor.
++	 */
++	if ((!rdev->is_atom_bios) &&
++	    (ret == connector_status_disconnected) &&
++	    rdev->mode_info.bios_hardcoded_edid_size) {
++		radeon_connector->use_digital = true;
++		ret = connector_status_connected;
++	}
++
+ out:
+ 	/* updated in get modes as well since we need to know if it's analog or digital */
+ 	radeon_connector_update_scratch_regs(connector, ret);
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -239,6 +239,7 @@ struct radeon_mode_info {
+ 	struct drm_property *underscan_vborder_property;
+ 	/* hardcoded DFP edid from BIOS */
+ 	struct edid *bios_hardcoded_edid;
++	int bios_hardcoded_edid_size;
+ 
+ 	/* pointer to fbdev info structure */
+ 	struct radeon_fbdev *rfbdev;
 
 
