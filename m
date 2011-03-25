@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934185Ab1CZAcA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:32:00 -0400
-Received: from kroah.org ([198.145.64.141]:44161 "EHLO coco.kroah.org"
+	id S934159Ab1CZAb7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:31:59 -0400
+Received: from kroah.org ([198.145.64.141]:44167 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752095Ab1CYXwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932152Ab1CYXwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 19:52:11 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:08 2011
-Message-Id: <20110325234508.053615951@clark.kroah.org>
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:39 2011
+Message-Id: <20110325234839.309128850@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:38 -0700
+Date: Fri, 25 Mar 2011 16:46:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Lydia Wang <lydiawang@viatech.com.cn>, Takashi Iwai <tiwai@suse.de>
-Subject: [02/63] ALSA: hda - VIA: Fix stereo mixer recording no sound issue
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+Subject: [04/55] ALSA: hda - VIA: Fix invalid A-A path volume adjust issue
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
 From: Lydia Wang <lydiawang@viatech.com.cn>
 
-commit bff5fbf50bd498c217994bd2d41a53ac3141185a upstream.
+commit 169222813eec8403c76394fb7b35ecab98e3c607 upstream.
 
-Modify function via_mux_enum_put() to fix stereo mixer recording
-no sound issue.
+Modify vt_auto_create_analog_input_ctls() function to fix invalid a-a path
+volume adjust issue for VT1708S, VT1702 and VT1716S codecs.
 
 Signed-off-by: Lydia Wang <lydiawang@viatech.com.cn>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_via.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_via.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
 --- a/sound/pci/hda/patch_via.c
 +++ b/sound/pci/hda/patch_via.c
-@@ -1101,6 +1101,7 @@ static int via_mux_enum_put(struct snd_k
- 	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
- 	struct via_spec *spec = codec->spec;
- 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
-+	int ret;
- 
- 	if (!spec->mux_nids[adc_idx])
- 		return -EINVAL;
-@@ -1109,12 +1110,14 @@ static int via_mux_enum_put(struct snd_k
- 			       AC_VERB_GET_POWER_STATE, 0x00) != AC_PWRST_D0)
- 		snd_hda_codec_write(codec, spec->mux_nids[adc_idx], 0,
- 				    AC_VERB_SET_POWER_STATE, AC_PWRST_D0);
--	/* update jack power state */
--	set_jack_power_state(codec);
- 
--	return snd_hda_input_mux_put(codec, spec->input_mux, ucontrol,
-+	ret = snd_hda_input_mux_put(codec, spec->input_mux, ucontrol,
- 				     spec->mux_nids[adc_idx],
- 				     &spec->cur_mux[adc_idx]);
-+	/* update jack power state */
-+	set_jack_power_state(codec);
-+
-+	return ret;
- }
- 
- static int via_independent_hp_info(struct snd_kcontrol *kcontrol,
+@@ -2455,7 +2455,14 @@ static int vt_auto_create_analog_input_c
+ 		else
+ 			type_idx = 0;
+ 		label = hda_get_autocfg_input_label(codec, cfg, i);
+-		err = via_new_analog_input(spec, label, type_idx, idx, cap_nid);
++		if (spec->codec_type == VT1708S ||
++		    spec->codec_type == VT1702 ||
++		    spec->codec_type == VT1716S)
++			err = via_new_analog_input(spec, label, type_idx,
++						   idx+1, cap_nid);
++		else
++			err = via_new_analog_input(spec, label, type_idx,
++						   idx, cap_nid);
+ 		if (err < 0)
+ 			return err;
+ 		snd_hda_add_imux_item(imux, label, idx, NULL);
 
 
