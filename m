@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab1CYXCX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:02:23 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62987 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab1CYXCW (ORCPT
+	id S932092Ab1CYXEA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:04:00 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50538 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753072Ab1CYXD7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:02:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jamie Iles <jamie@jamieiles.com>
-Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
-Date: Sat, 26 Mar 2011 00:02:19 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
-Cc: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com> <AANLkTinQ_M92zDZx_Jfe=rvPO0Gr4kHhXZUATvgVBywh@mail.gmail.com> <20110325225220.GV3130@pulham.picochip.com>
-In-Reply-To: <20110325225220.GV3130@pulham.picochip.com>
+	Fri, 25 Mar 2011 19:03:59 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103260002.19291.arnd@arndb.de>
-X-Provags-ID: V02:K0:vGst3C4DLb1TyZKcb7u/vBsX8Rsk82CmaG4jX87j+0H
- wL6q6yDXla3JR2NfI+RZjTf6gLs18yLm/cOd8rEgZkKs5DP+v3
- wEZ0mIbMtncP6GPj+JUmemzfCUEKnmt1e+/TWkcTGpgXoaJWmc
- sCD8eAQzHjhUUe8/aBIxHUA8ibyUG3WOhNPtD/VS3JUZAg1Ep3
- tY/ry74kLItf4GOr3ChNw==
+In-Reply-To: <20110325074920.GF2590@core.coreip.homeip.net>
+References: <1300842244-42723-1-git-send-email-jeffbrown@android.com>
+ <1300842244-42723-5-git-send-email-jeffbrown@android.com> <20110325074920.GF2590@core.coreip.homeip.net>
+From: Jeffrey Brown <jeffbrown@android.com>
+Date: Fri, 25 Mar 2011 16:03:18 -0700
+Message-ID: <AANLkTikTOEimVER8eWT7yTUe7+4QS5epQWUAnoJD=B+=@mail.gmail.com>
+Subject: Re: [PATCH 4/4] input: evdev: only wake poll on EV_SYN
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 25 March 2011 23:52:20 Jamie Iles wrote:
-> That's what I intended but I guess it isn't that clear from the code.  
-> Perhaps instead of:
-> 
->         mutex_lock();
->         region->ops->ioctl();
->         mutex_unlock();
-> 
-> if I change it to:
-> 
->         mutex_lock();
->         switch (cmd) {
->         default:
->                 region->ops->ioctl();
->         }
->         mutex_unlock();
-> 
-> then that's a bit clearer.  If there's stuff common across different OTP 
-> implementations then we can add it to the region ops and decode it here 
-> and if not fall back to the specific implementation.
+It helps with every packet.  I have seen situations where user space
+somehow manages to read events faster than the driver enqueues them.
 
-This will make it a lot harder to support compat_ioctl as well.
-Just drop the ->ioctl callback into the driver and make one
-callback per command. Any command that could be reused on
-another driver will then be defined in the common header file
-already and just work on new drivers.
+Pseudo-code basic processing loop:
 
-If you are tempted to add commands that cannot possibly work
-on other hardware, that is usually a good indication that this
-command should not be added, or should be generalized in some way.
+struct input_event buffer[100];
+for (;;) {
+    poll(...);
+    count = read(fd, buffer, sizeof(buffer) / sizeof(buffer[0]));
+    process(buffer, count / sizeof(buffer[0]));
+}
 
-	Arnd
+I've seen cases on a dual-core ARM processor where instead of reading
+a block of 71 events all at once, it ends up reading 1 event after
+another 71 times.  CPU usage for the reading thread climbs to 35%
+whereas it should be less than 5%.
+
+The problem is that poll() wakes up after the first event becomes
+available.  So the reader wakes up, promptly reads the event and goes
+back to sleep waiting for the next one.  Of course nothing useful
+happens until a SYN_REPORT arrives to complete the packet.
+
+Adding a usleep(100) after the poll() is enough to allow the driver
+time to finish writing the packet into the evdev ring buffer before
+the reader tries to read it.  In that case, we mostly read complete 71
+event packets although sometimes the 100us sleep isn't enough so we
+end up reading half a packet instead of the whole thing, eg. 28 events
++ 43 events.
+
+Instead it would be better if the poll() didn't wake up until a
+complete packet is available for reading all at once.
+
+Jeff.
+
+On Fri, Mar 25, 2011 at 12:49 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Tue, Mar 22, 2011 at 06:04:04PM -0700, Jeff Brown wrote:
+>> On SMP systems, it is possible for an evdev client blocked on poll()
+>> to wake up and read events from the evdev ring buffer at the same
+>> rate as they are enqueued.  This can result in high CPU usage,
+>> particularly for MT devices, because the client ends up reading
+>> events one at a time instead of reading complete packets.  This patch
+>> ensures that the client only wakes from poll() when a complete packet
+>> is ready to be read.
+>
+> Doesn't this only help with very first packet after a pause in event
+> stream?
+>
+> --
+> Dmitry
+>
