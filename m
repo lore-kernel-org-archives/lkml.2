@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab1CZAbR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:31:17 -0400
-Received: from kroah.org ([198.145.64.141]:44177 "EHLO coco.kroah.org"
+	id S932145Ab1CYXwL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:52:11 -0400
+Received: from kroah.org ([198.145.64.141]:44137 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932173Ab1CYXwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:13 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:08 2011
-Message-Id: <20110325234508.302220099@clark.kroah.org>
+	id S1752095Ab1CYXwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:08 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:39 2011
+Message-Id: <20110325234838.997104166@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:40 -0700
+Date: Fri, 25 Mar 2011 16:46:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Lydia Wang <lydiawang@viatech.com.cn>, Takashi Iwai <tiwai@suse.de>
-Subject: [04/63] ALSA: hda - VIA: Add missing support for VT1718S in A-A path
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+Subject: [01/55] ALSA: hda - VIA: Fix stereo mixer recording no sound issue
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
 From: Lydia Wang <lydiawang@viatech.com.cn>
 
-commit ab657e0cacc39d88145871c6a3c844597c02d406 upstream.
+commit bff5fbf50bd498c217994bd2d41a53ac3141185a upstream.
 
-Modify mute_aa_path() function to support VT1718S codec.
+Modify function via_mux_enum_put() to fix stereo mixer recording
+no sound issue.
 
 Signed-off-by: Lydia Wang <lydiawang@viatech.com.cn>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_via.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ sound/pci/hda/patch_via.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
 --- a/sound/pci/hda/patch_via.c
 +++ b/sound/pci/hda/patch_via.c
-@@ -1323,6 +1323,11 @@ static void mute_aa_path(struct hda_code
- 		start_idx = 2;
- 		end_idx = 4;
- 		break;
-+	case VT1718S:
-+		nid_mixer = 0x21;
-+		start_idx = 1;
-+		end_idx = 3;
-+		break;
- 	default:
- 		return;
- 	}
+@@ -1102,6 +1102,7 @@ static int via_mux_enum_put(struct snd_k
+ 	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
+ 	struct via_spec *spec = codec->spec;
+ 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
++	int ret;
+ 
+ 	if (!spec->mux_nids[adc_idx])
+ 		return -EINVAL;
+@@ -1110,12 +1111,14 @@ static int via_mux_enum_put(struct snd_k
+ 			       AC_VERB_GET_POWER_STATE, 0x00) != AC_PWRST_D0)
+ 		snd_hda_codec_write(codec, spec->mux_nids[adc_idx], 0,
+ 				    AC_VERB_SET_POWER_STATE, AC_PWRST_D0);
+-	/* update jack power state */
+-	set_jack_power_state(codec);
+ 
+-	return snd_hda_input_mux_put(codec, spec->input_mux, ucontrol,
++	ret = snd_hda_input_mux_put(codec, spec->input_mux, ucontrol,
+ 				     spec->mux_nids[adc_idx],
+ 				     &spec->cur_mux[adc_idx]);
++	/* update jack power state */
++	set_jack_power_state(codec);
++
++	return ret;
+ }
+ 
+ static int via_independent_hp_info(struct snd_kcontrol *kcontrol,
 
 
