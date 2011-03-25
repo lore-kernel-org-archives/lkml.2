@@ -1,294 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab1CYRPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 13:15:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39167 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab1CYRPE (ORCPT
+	id S1754869Ab1CYRP0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 13:15:26 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:42629 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab1CYRPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 13:15:04 -0400
-From: Jamie Iles <jamie@jamieiles.com>
-To: linux-kernel@vger.kernel.org
-Cc: vapier@gentoo.org, gregkh@suse.de, Jamie Iles <jamie@jamieiles.com>,
-        Mike Frysinger <vapier@gmail.com>
-Subject: [RFC PATCHv3 4/4] Blackfin: add the OTP device as a platform device
-Date: Fri, 25 Mar 2011 17:14:43 +0000
-Message-Id: <1301073283-30821-5-git-send-email-jamie@jamieiles.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1301073283-30821-1-git-send-email-jamie@jamieiles.com>
-References: <1301073283-30821-1-git-send-email-jamie@jamieiles.com>
+	Fri, 25 Mar 2011 13:15:24 -0400
+Date: Fri, 25 Mar 2011 18:15:19 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Jack Steiner <steiner@sgi.com>,
+        Jan Beulich <JBeulich@novell.com>, Borislav Petkov <bp@amd64.org>,
+        Nick Piggin <npiggin@kernel.dk>, "x86@kernel.org" <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, tee@sgi.com,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH RFC] x86: avoid atomic operation in test_and_set_bit_lock if possible
+Message-ID: <20110325171519.GO21838@one.firstfloor.org>
+References: <20110324173020.GA26761@sgi.com> <20110324200010.GB7957@elte.hu> <1300999682.2714.23.camel@edumazet-laptop> <20110324205422.GB2393@elte.hu> <1301000557.2714.33.camel@edumazet-laptop> <m2oc50kxg0.fsf@firstfloor.org> <AANLkTimib3TqemF9L=VNkcXT3uFam1gYmVtuA3wrAv1j@mail.gmail.com> <20110324235654.GM21838@one.firstfloor.org> <20110325092227.GA13640@elte.hu> <1301048476.2250.181.camel@laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301048476.2250.181.camel@laptop>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register the OTP as a platform device so that we can use the generic
-OTP subsystem.
+> Also seriously complicated by the kexec case where the previous kernel
+> didn't clean up PMU state. There is simply no sane way to detect if its
 
-Cc: Mike Frysinger <vapier@gmail.com>
-Signed-off-by: Jamie Iles <jamie@jamieiles.com>
----
- arch/blackfin/mach-bf518/boards/ezbrd.c      |   10 ++++++++++
- arch/blackfin/mach-bf518/boards/tcm-bf518.c  |   10 ++++++++++
- arch/blackfin/mach-bf527/boards/ad7160eval.c |   10 ++++++++++
- arch/blackfin/mach-bf527/boards/cm_bf527.c   |   10 ++++++++++
- arch/blackfin/mach-bf527/boards/ezbrd.c      |   10 ++++++++++
- arch/blackfin/mach-bf527/boards/ezkit.c      |   10 ++++++++++
- arch/blackfin/mach-bf527/boards/tll6527m.c   |   10 ++++++++++
- arch/blackfin/mach-bf548/boards/cm_bf548.c   |    9 +++++++++
- arch/blackfin/mach-bf548/boards/ezkit.c      |   10 ++++++++++
- 9 files changed, 89 insertions(+), 0 deletions(-)
+That's a good point, but we can easily stop the PMU before kexec.
 
-diff --git a/arch/blackfin/mach-bf518/boards/ezbrd.c b/arch/blackfin/mach-bf518/boards/ezbrd.c
-index c0ccadc..7328ea1 100644
---- a/arch/blackfin/mach-bf518/boards/ezbrd.c
-+++ b/arch/blackfin/mach-bf518/boards/ezbrd.c
-@@ -747,6 +747,12 @@ static struct platform_device bfin_dpmc = {
- 	},
- };
+> actually used and by whoem.
+
+You check if the counter is enabled. If it's already enabled it's
+used by someone else.
  
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+static struct platform_device bfin_otp_device = {
-+	.name = "bfin-otp",
-+};
-+#endif
-+
- static struct platform_device *stamp_devices[] __initdata = {
- 
- 	&bfin_dpmc,
-@@ -814,6 +820,10 @@ static struct platform_device *stamp_devices[] __initdata = {
- #if defined(CONFIG_MTD_PHYSMAP) || defined(CONFIG_MTD_PHYSMAP_MODULE)
- 	&ezbrd_flash_device,
- #endif
-+
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+	&bfin_otp_device,
-+#endif
- };
- 
- static int __init ezbrd_init(void)
-diff --git a/arch/blackfin/mach-bf518/boards/tcm-bf518.c b/arch/blackfin/mach-bf518/boards/tcm-bf518.c
-index 50fc5c8..a36a1b2 100644
---- a/arch/blackfin/mach-bf518/boards/tcm-bf518.c
-+++ b/arch/blackfin/mach-bf518/boards/tcm-bf518.c
-@@ -659,6 +659,12 @@ static struct platform_device bfin_dpmc = {
- 	},
- };
- 
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+static struct platform_device bfin_otp_device = {
-+	.name = "bfin-otp",
-+};
-+#endif
-+
- static struct platform_device *tcm_devices[] __initdata = {
- 
- 	&bfin_dpmc,
-@@ -719,6 +725,10 @@ static struct platform_device *tcm_devices[] __initdata = {
- #if defined(CONFIG_MTD_PHYSMAP) || defined(CONFIG_MTD_PHYSMAP_MODULE)
- 	&tcm_flash_device,
- #endif
-+
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+	&bfin_otp_device,
-+#endif
- };
- 
- static int __init tcm_init(void)
-diff --git a/arch/blackfin/mach-bf527/boards/ad7160eval.c b/arch/blackfin/mach-bf527/boards/ad7160eval.c
-index ccab4c6..05ac322 100644
---- a/arch/blackfin/mach-bf527/boards/ad7160eval.c
-+++ b/arch/blackfin/mach-bf527/boards/ad7160eval.c
-@@ -731,6 +731,12 @@ static struct platform_device bfin_dpmc = {
- 	},
- };
- 
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+static struct platform_device bfin_otp_device = {
-+	.name = "bfin-otp",
-+};
-+#endif
-+
- static struct platform_device *stamp_devices[] __initdata = {
- 
- 	&bfin_dpmc,
-@@ -806,6 +812,10 @@ static struct platform_device *stamp_devices[] __initdata = {
- #if defined(CONFIG_SND_BF5XX_TDM) || defined(CONFIG_SND_BF5XX_TDM_MODULE)
- 	&bfin_tdm,
- #endif
-+
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+	&bfin_otp_device,
-+#endif
- };
- 
- static int __init ad7160eval_init(void)
-diff --git a/arch/blackfin/mach-bf527/boards/cm_bf527.c b/arch/blackfin/mach-bf527/boards/cm_bf527.c
-index c9d6dc8..a8e807a 100644
---- a/arch/blackfin/mach-bf527/boards/cm_bf527.c
-+++ b/arch/blackfin/mach-bf527/boards/cm_bf527.c
-@@ -896,6 +896,12 @@ static struct platform_device bfin_dpmc = {
- 	},
- };
- 
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+static struct platform_device bfin_otp_device = {
-+	.name = "bfin-otp",
-+};
-+#endif
-+
- static struct platform_device *cmbf527_devices[] __initdata = {
- 
- 	&bfin_dpmc,
-@@ -979,6 +985,10 @@ static struct platform_device *cmbf527_devices[] __initdata = {
- #if defined(CONFIG_MTD_GPIO_ADDR) || defined(CONFIG_MTD_GPIO_ADDR_MODULE)
- 	&cm_flash_device,
- #endif
-+
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+	&bfin_otp_device,
-+#endif
- };
- 
- static int __init cm_init(void)
-diff --git a/arch/blackfin/mach-bf527/boards/ezbrd.c b/arch/blackfin/mach-bf527/boards/ezbrd.c
-index b7101aa..aabfb72 100644
---- a/arch/blackfin/mach-bf527/boards/ezbrd.c
-+++ b/arch/blackfin/mach-bf527/boards/ezbrd.c
-@@ -806,6 +806,12 @@ static struct platform_device bfin_lq035q1_device = {
- };
- #endif
- 
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+static struct platform_device bfin_otp_device = {
-+	.name = "bfin-otp",
-+};
-+#endif
-+
- static struct platform_device *stamp_devices[] __initdata = {
- 
- 	&bfin_dpmc,
-@@ -873,6 +879,10 @@ static struct platform_device *stamp_devices[] __initdata = {
- #if defined(CONFIG_MTD_PHYSMAP) || defined(CONFIG_MTD_PHYSMAP_MODULE)
- 	&ezbrd_flash_device,
- #endif
-+
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+	&bfin_otp_device,
-+#endif
- };
- 
- static int __init ezbrd_init(void)
-diff --git a/arch/blackfin/mach-bf527/boards/ezkit.c b/arch/blackfin/mach-bf527/boards/ezkit.c
-index 2cd2ff6..8e1d6eb 100644
---- a/arch/blackfin/mach-bf527/boards/ezkit.c
-+++ b/arch/blackfin/mach-bf527/boards/ezkit.c
-@@ -1115,6 +1115,12 @@ static struct platform_device bfin_dpmc = {
- 	},
- };
- 
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+static struct platform_device bfin_otp_device = {
-+	.name = "bfin-otp",
-+};
-+#endif
-+
- static struct platform_device *stamp_devices[] __initdata = {
- 
- 	&bfin_dpmc,
-@@ -1218,6 +1224,10 @@ static struct platform_device *stamp_devices[] __initdata = {
- #if defined(CONFIG_SND_BF5XX_TDM) || defined(CONFIG_SND_BF5XX_TDM_MODULE)
- 	&bfin_tdm,
- #endif
-+
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+	&bfin_otp_device,
-+#endif
- };
- 
- static int __init ezkit_init(void)
-diff --git a/arch/blackfin/mach-bf527/boards/tll6527m.c b/arch/blackfin/mach-bf527/boards/tll6527m.c
-index 18d303d..f1de548 100644
---- a/arch/blackfin/mach-bf527/boards/tll6527m.c
-+++ b/arch/blackfin/mach-bf527/boards/tll6527m.c
-@@ -873,6 +873,12 @@ static struct platform_device bfin_dpmc = {
- 	},
- };
- 
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+static struct platform_device bfin_otp_device = {
-+	.name = "bfin-otp",
-+};
-+#endif
-+
- static struct platform_device *tll6527m_devices[] __initdata = {
- 
- 	&bfin_dpmc,
-@@ -941,6 +947,10 @@ static struct platform_device *tll6527m_devices[] __initdata = {
- #if defined(CONFIG_GPIO_DECODER) || defined(CONFIG_GPIO_DECODER_MODULE)
- 	&spi_decoded_gpio,
- #endif
-+
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+	&bfin_otp_device,
-+#endif
- };
- 
- static int __init tll6527m_init(void)
-diff --git a/arch/blackfin/mach-bf548/boards/cm_bf548.c b/arch/blackfin/mach-bf548/boards/cm_bf548.c
-index d11502a..746b3df 100644
---- a/arch/blackfin/mach-bf548/boards/cm_bf548.c
-+++ b/arch/blackfin/mach-bf548/boards/cm_bf548.c
-@@ -1093,6 +1093,12 @@ static struct platform_device bfin_dpmc = {
- 	},
- };
- 
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+static struct platform_device bfin_otp_device = {
-+	.name = "bfin-otp",
-+};
-+#endif
-+
- static struct platform_device *cm_bf548_devices[] __initdata = {
- 
- 	&bfin_dpmc,
-@@ -1198,6 +1204,9 @@ static struct platform_device *cm_bf548_devices[] __initdata = {
- 	&bfin_can_device,
- #endif
- 
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+	&bfin_otp_device,
-+#endif
- };
- 
- static int __init cm_bf548_init(void)
-diff --git a/arch/blackfin/mach-bf548/boards/ezkit.c b/arch/blackfin/mach-bf548/boards/ezkit.c
-index 93e19a5..6385c4e 100644
---- a/arch/blackfin/mach-bf548/boards/ezkit.c
-+++ b/arch/blackfin/mach-bf548/boards/ezkit.c
-@@ -1336,6 +1336,12 @@ static struct platform_device bfin_ac97 = {
- };
- #endif
- 
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+static struct platform_device bfin_otp_device = {
-+	.name = "bfin-otp",
-+};
-+#endif
-+
- static struct platform_device *ezkit_devices[] __initdata = {
- 
- 	&bfin_dpmc,
-@@ -1461,6 +1467,10 @@ static struct platform_device *ezkit_devices[] __initdata = {
- #if defined(CONFIG_SND_BF5XX_AC97) || defined(CONFIG_SND_BF5XX_AC97_MODULE)
- 	&bfin_ac97,
- #endif
-+
-+#if defined(CONFIG_BFIN_OTP) || defined(CONFIG_BFIN_OTP_MODULE)
-+	&bfin_otp_device,
-+#endif
- };
- 
- static int __init ezkit_init(void)
--- 
-1.7.4
+> The whole PMU 'sharing' concept championed by Andi is utter crap.
+
+Why? It's the same thing as having some less counters. You need
+to already support that for architectural perfmon with variable
+counters anyways or for sharing with oprofile.
+
+> As for simply using it despite the BIOS corrupting it, that might not
+> always work, the BIOS might simply over-write your state because it
+> one-sidedly declares to own the MSRs (observed behaviour).
+
+Yes, that doesn't work. If someone else is active you have to step back.
+
+> Its all a big clusterfuck and really the best way (IMO) is what we have
+> now to put pressure on and force the BIOS vendors to play nice.
+
+It just results in users like Eric being screwed.  I doubt that any
+BIOS writer ever heard about it. Congratulations for a great plan.
+
+-Andi
 
