@@ -1,107 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933906Ab1CZAZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:25:12 -0400
-Received: from smtp103.prem.mail.sp1.yahoo.com ([98.136.44.58]:26110 "HELO
-	smtp103.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932293Ab1CZAZJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:25:09 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: HVj_wWsVM1nbbhTBS_oM4LCD2Jl9NaC_6DlUpvDBzYo1dUh
- Rd77jpcDI_tnDhf3AJpZVDG6REPddBXqda1drjyaRb1iiJGHAbKsOW2NEcS2
- yp6YCP2b.5CrkehYPga.pzSo_KNccDssbzyBnSoBS6.U0eVb8hDAImzxt5Om
- gUnxujJPXd5TVEy5vTbiz0o98oPWl2V7EN6fR_lXZUH96Qf8D_AN7HokwhVC
- ypfte5XTchV3Puh4ctoAf3pByVF6ZJRQz7hkGkwaE6e6feRegDR99Lrnl13E
- cnyF3R2Z5.PMOuSOt1RDTrWjy4OvZcGdclKAr6GJ3om.qblivxfBy9TWd8Mg
- PtlciAP7rfUNbg_Uzc2nKu07u8aZmdwc9TNHaWyhw7FI-
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4D8D3258.5090804@schaufler-ca.com>
-Date: Fri, 25 Mar 2011 17:24:56 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josef Bacik <josef@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Chuck Ebbert <cebbert@redhat.com>
-Subject: Re: [34/35] fs: call security_d_instantiate in d_obtain_alias V2
-References: <20110326000459.388812559@clark.kroah.org>
-In-Reply-To: <20110326000459.388812559@clark.kroah.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932361Ab1CZAZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:25:44 -0400
+Received: from kroah.org ([198.145.64.141]:41533 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755572Ab1CYXw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:29 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
+Message-Id: <20110325234509.714664633@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 25 Mar 2011 16:43:54 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Andrey Vagin <avagin@openvz.org>
+Subject: [18/63] oom: avoid deferring oom killer if exiting task is being traced
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/25/2011 5:04 PM, Greg KH wrote:
-> 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
->
-> ------------------
->
-> From: Josef Bacik <josef@redhat.com>
->
-> commit 24ff6663ccfdaf088dfa7acae489cb11ed4f43c4 upstream.
->
-> While trying to track down some NFS problems with BTRFS, I kept noticing I was
-> getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-> figure out that it was SELinux that was giving me grief, with the following
-> denial
->
-> type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-> comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-> tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
->
-> Turns out this is because in d_obtain_alias if we can't find an alias we create
-> one and do all the normal instantiation stuff, but we don't do the
-> security_d_instantiate.
->
-> Usually we are protected from getting a hashed dentry that hasn't yet run
-> security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
-> option there, so in order to deal with the case that a second thread comes in
-> and finds our new dentry before we get to run security_d_instantiate(), we go
-> ahead and call it if we find a dentry already.  Eric assures me that this is ok
-> as the code checks to see if the dentry has been initialized already so calling
-> security_d_instantiate() against the same dentry multiple times is ok.  With
-> this patch I'm no longer getting errant -EACCESS values.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-Not to be a bother, but did you try this with Smack as well as SELinux?
-Smack should be fine with the change, but if you're not going to try
-Smack I need to know.
+------------------
 
-> Signed-off-by: Josef Bacik <josef@redhat.com>
-> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Chuck Ebbert <cebbert@redhat.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
->
-> ---
->  fs/dcache.c |    3 +++
->  1 file changed, 3 insertions(+)
->
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1176,9 +1176,12 @@ struct dentry *d_obtain_alias(struct ino
->  	spin_unlock(&tmp->d_lock);
->  
->  	spin_unlock(&dcache_lock);
-> +	security_d_instantiate(tmp, inode);
->  	return tmp;
->  
->   out_iput:
-> +	if (res && !IS_ERR(res))
-> +		security_d_instantiate(res, inode);
->  	iput(inode);
->  	return res;
->  }
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+From: David Rientjes <rientjes@google.com>
+
+commit edd45544c6f09550df0a5491aa8a07af24767e73 upstream.
+
+The oom killer naturally defers killing anything if it finds an eligible
+task that is already exiting and has yet to detach its ->mm.  This avoids
+unnecessarily killing tasks when one is already in the exit path and may
+free enough memory that the oom killer is no longer needed.  This is
+detected by PF_EXITING since threads that have already detached its ->mm
+are no longer considered at all.
+
+The problem with always deferring when a thread is PF_EXITING, however, is
+that it may never actually exit when being traced, specifically if another
+task is tracing it with PTRACE_O_TRACEEXIT.  The oom killer does not want
+to defer in this case since there is no guarantee that thread will ever
+exit without intervention.
+
+This patch will now only defer the oom killer when a thread is PF_EXITING
+and no ptracer has stopped its progress in the exit path.  It also ensures
+that a child is sacrificed for the chosen parent only if it has a
+different ->mm as the comment implies: this ensures that the thread group
+leader is always targeted appropriately.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ mm/oom_kill.c |   40 +++++++++++++++++++++++++---------------
+ 1 file changed, 25 insertions(+), 15 deletions(-)
+
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -31,6 +31,7 @@
+ #include <linux/memcontrol.h>
+ #include <linux/mempolicy.h>
+ #include <linux/security.h>
++#include <linux/ptrace.h>
+ 
+ int sysctl_panic_on_oom;
+ int sysctl_oom_kill_allocating_task;
+@@ -316,22 +317,29 @@ static struct task_struct *select_bad_pr
+ 		if (test_tsk_thread_flag(p, TIF_MEMDIE))
+ 			return ERR_PTR(-1UL);
+ 
+-		/*
+-		 * This is in the process of releasing memory so wait for it
+-		 * to finish before killing some other task by mistake.
+-		 *
+-		 * However, if p is the current task, we allow the 'kill' to
+-		 * go ahead if it is exiting: this will simply set TIF_MEMDIE,
+-		 * which will allow it to gain access to memory reserves in
+-		 * the process of exiting and releasing its resources.
+-		 * Otherwise we could get an easy OOM deadlock.
+-		 */
+ 		if (p->flags & PF_EXITING) {
+-			if (p != current)
+-				return ERR_PTR(-1UL);
+-
+-			chosen = p;
+-			*ppoints = 1000;
++			/*
++			 * If p is the current task and is in the process of
++			 * releasing memory, we allow the "kill" to set
++			 * TIF_MEMDIE, which will allow it to gain access to
++			 * memory reserves.  Otherwise, it may stall forever.
++			 *
++			 * The loop isn't broken here, however, in case other
++			 * threads are found to have already been oom killed.
++			 */
++			if (p == current) {
++				chosen = p;
++				*ppoints = 1000;
++			} else {
++				/*
++				 * If this task is not being ptraced on exit,
++				 * then wait for it to finish before killing
++				 * some other task unnecessarily.
++				 */
++				if (!(task_ptrace(p->group_leader) &
++							PT_TRACE_EXIT))
++					return ERR_PTR(-1UL);
++			}
+ 		}
+ 
+ 		points = oom_badness(p, mem, nodemask, totalpages);
+@@ -493,6 +501,8 @@ static int oom_kill_process(struct task_
+ 		list_for_each_entry(child, &t->children, sibling) {
+ 			unsigned int child_points;
+ 
++			if (child->mm == p->mm)
++				continue;
+ 			/*
+ 			 * oom_badness() returns 0 if the thread is unkillable
+ 			 */
+
 
