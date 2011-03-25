@@ -1,65 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933809Ab1CZAUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:20:12 -0400
-Received: from kroah.org ([198.145.64.141]:41582 "EHLO coco.kroah.org"
+	id S933719Ab1CZAUK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:20:10 -0400
+Received: from kroah.org ([198.145.64.141]:41715 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932404Ab1CYXwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932407Ab1CYXwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 19:52:43 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:11 2011
-Message-Id: <20110325234511.089595721@clark.kroah.org>
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:42 2011
+Message-Id: <20110325234841.993088964@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:07 -0700
+Date: Fri, 25 Mar 2011 16:47:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mi Jinlong <mijinlong@cn.fujitsu.com>,
         "J. Bruce Fields" <bfields@redhat.com>
-Subject: [31/63] nfsd41: modify the members value of nfsd4_op_flags
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+Subject: [29/55] nfsd4: fix struct file leak
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Mi Jinlong <mijinlong@cn.fujitsu.com>
+From: J. Bruce Fields <bfields@redhat.com>
 
-commit 5ece3cafbd88d4da5c734e1810c4a2e6474b57b2 upstream.
+commit 0997b173609b9229ece28941c118a2a9b278796e upstream.
 
-The members of nfsd4_op_flags, (ALLOWED_WITHOUT_FH | ALLOWED_ON_ABSENT_FS)
-equals to  ALLOWED_AS_FIRST_OP, maybe that's not what we want.
+Make sure we properly reference count the struct files that a lock
+depends on, and release them when the lock stateid is released.
 
-OP_PUTROOTFH with op_flags = ALLOWED_WITHOUT_FH | ALLOWED_ON_ABSENT_FS,
-can't appears as the first operation with out SEQUENCE ops.
+This fixes a major leak of struct files when using locking over nfsv4.
 
-This patch modify the wrong value of ALLOWED_WITHOUT_FH etc which
-was introduced by f9bb94c4.
-
-Reviewed-by: Benny Halevy <bhalevy@panasas.com>
-Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+Reported-by: Rick Koshi <nfs-bug-report@more-right-rudder.com>
+Tested-by: Ivo Přikryl <prikryl@eurosat.cz>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4proc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4state.c |   32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -984,8 +984,8 @@ typedef __be32(*nfsd4op_func)(struct svc
- 			      void *);
- enum nfsd4_op_flags {
- 	ALLOWED_WITHOUT_FH = 1 << 0,	/* No current filehandle required */
--	ALLOWED_ON_ABSENT_FS = 2 << 0,	/* ops processed on absent fs */
--	ALLOWED_AS_FIRST_OP = 3 << 0,	/* ops reqired first in compound */
-+	ALLOWED_ON_ABSENT_FS = 1 << 1,	/* ops processed on absent fs */
-+	ALLOWED_AS_FIRST_OP = 1 << 2,	/* ops reqired first in compound */
- };
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -408,6 +408,9 @@ static void unhash_generic_stateid(struc
  
- struct nfsd4_operation {
+ static void free_generic_stateid(struct nfs4_stateid *stp)
+ {
++	int oflag = nfs4_access_bmap_to_omode(stp);
++
++	nfs4_file_put_access(stp->st_file, oflag);
+ 	put_nfs4_file(stp->st_file);
+ 	kmem_cache_free(stateid_slab, stp);
+ }
+@@ -459,11 +462,8 @@ release_stateid_lockowners(struct nfs4_s
+ 
+ static void release_open_stateid(struct nfs4_stateid *stp)
+ {
+-	int oflag = nfs4_access_bmap_to_omode(stp);
+-
+ 	unhash_generic_stateid(stp);
+ 	release_stateid_lockowners(stp);
+-	nfs4_file_put_access(stp->st_file, oflag);
+ 	free_generic_stateid(stp);
+ }
+ 
+@@ -3661,6 +3661,7 @@ alloc_init_lock_stateid(struct nfs4_stat
+ 	stp->st_stateid.si_stateownerid = sop->so_id;
+ 	stp->st_stateid.si_fileid = fp->fi_id;
+ 	stp->st_stateid.si_generation = 0;
++	stp->st_access_bmap = 0;
+ 	stp->st_deny_bmap = open_stp->st_deny_bmap;
+ 	stp->st_openstp = open_stp;
+ 
+@@ -3675,6 +3676,17 @@ check_lock_length(u64 offset, u64 length
+ 	     LOFF_OVERFLOW(offset, length)));
+ }
+ 
++static void get_lock_access(struct nfs4_stateid *lock_stp, u32 access)
++{
++	struct nfs4_file *fp = lock_stp->st_file;
++	int oflag = nfs4_access_to_omode(access);
++
++	if (test_bit(access, &lock_stp->st_access_bmap))
++		return;
++	nfs4_file_get_access(fp, oflag);
++	__set_bit(access, &lock_stp->st_access_bmap);
++}
++
+ /*
+  *  LOCK operation 
+  */
+@@ -3772,18 +3784,16 @@ nfsd4_lock(struct svc_rqst *rqstp, struc
+ 	switch (lock->lk_type) {
+ 		case NFS4_READ_LT:
+ 		case NFS4_READW_LT:
+-			if (find_readable_file(lock_stp->st_file)) {
+-				nfs4_get_vfs_file(rqstp, fp, &cstate->current_fh, NFS4_SHARE_ACCESS_READ);
+-				filp = find_readable_file(lock_stp->st_file);
+-			}
++			filp = find_readable_file(lock_stp->st_file);
++			if (filp)
++				get_lock_access(lock_stp, NFS4_SHARE_ACCESS_READ);
+ 			file_lock.fl_type = F_RDLCK;
+ 			break;
+ 		case NFS4_WRITE_LT:
+ 		case NFS4_WRITEW_LT:
+-			if (find_writeable_file(lock_stp->st_file)) {
+-				nfs4_get_vfs_file(rqstp, fp, &cstate->current_fh, NFS4_SHARE_ACCESS_WRITE);
+-				filp = find_writeable_file(lock_stp->st_file);
+-			}
++			filp = find_writeable_file(lock_stp->st_file);
++			if (filp)
++				get_lock_access(lock_stp, NFS4_SHARE_ACCESS_WRITE);
+ 			file_lock.fl_type = F_WRLCK;
+ 			break;
+ 		default:
 
 
