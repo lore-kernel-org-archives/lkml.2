@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab1CZA04 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:26:56 -0400
-Received: from kroah.org ([198.145.64.141]:41469 "EHLO coco.kroah.org"
+	id S932258Ab1CYXwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:52:23 -0400
+Received: from kroah.org ([198.145.64.141]:41411 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932266Ab1CYXwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:25 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
-Message-Id: <20110325234509.325690610@clark.kroah.org>
+	id S1755620Ab1CYXwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:18 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:08 2011
+Message-Id: <20110325234508.797098685@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:50 -0700
+Date: Fri, 25 Mar 2011 16:43:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
-Subject: [14/63] mm: swap: unlock swapfile inode mutex before closing file on bad swapfiles
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [09/63] ethtool: Compat handling for struct ethtool_rxnfc
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,82 +27,206 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 52c50567d8ab0a0a87f12cceaa4194967854f0bd upstream.
+commit 3a7da39d165e0c363c294feec119db1427032afd upstream.
 
-If an administrator tries to swapon a file backed by NFS, the inode mutex is
-taken (as it is for any swapfile) but later identified to be a bad swapfile
-due to the lack of bmap and tries to cleanup. During cleanup, an attempt is
-made to close the file but with inode->i_mutex still held. Closing an NFS
-file syncs it which tries to acquire the inode mutex leading to deadlock. If
-lockdep is enabled the following appears on the console;
+This structure was accidentally defined such that its layout can
+differ between 32-bit and 64-bit processes.  Add compat structure
+definitions and an ioctl wrapper function.
 
-    =============================================
-    [ INFO: possible recursive locking detected ]
-    2.6.38-rc8-autobuild #1
-    ---------------------------------------------
-    swapon/2192 is trying to acquire lock:
-     (&sb->s_type->i_mutex_key#13){+.+.+.}, at: vfs_fsync_range+0x47/0x7c
-
-    but task is already holding lock:
-     (&sb->s_type->i_mutex_key#13){+.+.+.}, at: sys_swapon+0x28d/0xae7
-
-    other info that might help us debug this:
-    1 lock held by swapon/2192:
-     #0:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: sys_swapon+0x28d/0xae7
-
-    stack backtrace:
-    Pid: 2192, comm: swapon Not tainted 2.6.38-rc8-autobuild #1
-    Call Trace:
-        __lock_acquire+0x2eb/0x1623
-        find_get_pages_tag+0x14a/0x174
-        pagevec_lookup_tag+0x25/0x2e
-        vfs_fsync_range+0x47/0x7c
-        lock_acquire+0xd3/0x100
-        vfs_fsync_range+0x47/0x7c
-        nfs_flush_one+0x0/0xdf [nfs]
-        mutex_lock_nested+0x40/0x2b1
-        vfs_fsync_range+0x47/0x7c
-        vfs_fsync_range+0x47/0x7c
-        vfs_fsync+0x1c/0x1e
-        nfs_file_flush+0x64/0x69 [nfs]
-        filp_close+0x43/0x72
-        sys_swapon+0xa39/0xae7
-        sysret_check+0x2e/0x69
-        system_call_fastpath+0x16/0x1b
-
-This patch releases the mutex if its held before calling filep_close()
-so swapon fails as expected without deadlock when the swapfile is backed
-by NFS.  If accepted for 2.6.39, it should also be considered a -stable
-candidate for 2.6.38 and 2.6.37.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Acked-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/swapfile.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ include/linux/ethtool.h |   34 ++++++++++++++
+ net/socket.c            |  114 +++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 141 insertions(+), 7 deletions(-)
 
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -2149,8 +2149,13 @@ bad_swap_2:
- 	p->flags = 0;
- 	spin_unlock(&swap_lock);
- 	vfree(swap_map);
--	if (swap_file)
-+	if (swap_file) {
-+		if (did_down) {
-+			mutex_unlock(&inode->i_mutex);
-+			did_down = 0;
-+		}
- 		filp_close(swap_file, NULL);
+--- a/include/linux/ethtool.h
++++ b/include/linux/ethtool.h
+@@ -13,6 +13,9 @@
+ #ifndef _LINUX_ETHTOOL_H
+ #define _LINUX_ETHTOOL_H
+ 
++#ifdef __KERNEL__
++#include <linux/compat.h>
++#endif
+ #include <linux/types.h>
+ #include <linux/if_ether.h>
+ 
+@@ -449,6 +452,37 @@ struct ethtool_rxnfc {
+ 	__u32				rule_locs[0];
+ };
+ 
++#ifdef __KERNEL__
++#ifdef CONFIG_COMPAT
++
++struct compat_ethtool_rx_flow_spec {
++	u32		flow_type;
++	union {
++		struct ethtool_tcpip4_spec		tcp_ip4_spec;
++		struct ethtool_tcpip4_spec		udp_ip4_spec;
++		struct ethtool_tcpip4_spec		sctp_ip4_spec;
++		struct ethtool_ah_espip4_spec		ah_ip4_spec;
++		struct ethtool_ah_espip4_spec		esp_ip4_spec;
++		struct ethtool_usrip4_spec		usr_ip4_spec;
++		struct ethhdr				ether_spec;
++		u8					hdata[72];
++	} h_u, m_u;
++	compat_u64	ring_cookie;
++	u32		location;
++};
++
++struct compat_ethtool_rxnfc {
++	u32				cmd;
++	u32				flow_type;
++	compat_u64			data;
++	struct compat_ethtool_rx_flow_spec fs;
++	u32				rule_cnt;
++	u32				rule_locs[0];
++};
++
++#endif /* CONFIG_COMPAT */
++#endif /* __KERNEL__ */
++
+ /**
+  * struct ethtool_rxfh_indir - command to get or set RX flow hash indirection
+  * @cmd: Specific command number - %ETHTOOL_GRXFHINDIR or %ETHTOOL_SRXFHINDIR
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2583,23 +2583,123 @@ static int dev_ifconf(struct net *net, s
+ 
+ static int ethtool_ioctl(struct net *net, struct compat_ifreq __user *ifr32)
+ {
++	struct compat_ethtool_rxnfc __user *compat_rxnfc;
++	bool convert_in = false, convert_out = false;
++	size_t buf_size = ALIGN(sizeof(struct ifreq), 8);
++	struct ethtool_rxnfc __user *rxnfc;
+ 	struct ifreq __user *ifr;
++	u32 rule_cnt = 0, actual_rule_cnt;
++	u32 ethcmd;
+ 	u32 data;
+-	void __user *datap;
++	int ret;
+ 
+-	ifr = compat_alloc_user_space(sizeof(*ifr));
++	if (get_user(data, &ifr32->ifr_ifru.ifru_data))
++		return -EFAULT;
+ 
+-	if (copy_in_user(&ifr->ifr_name, &ifr32->ifr_name, IFNAMSIZ))
++	compat_rxnfc = compat_ptr(data);
++
++	if (get_user(ethcmd, &compat_rxnfc->cmd))
+ 		return -EFAULT;
+ 
+-	if (get_user(data, &ifr32->ifr_ifru.ifru_data))
++	/* Most ethtool structures are defined without padding.
++	 * Unfortunately struct ethtool_rxnfc is an exception.
++	 */
++	switch (ethcmd) {
++	default:
++		break;
++	case ETHTOOL_GRXCLSRLALL:
++		/* Buffer size is variable */
++		if (get_user(rule_cnt, &compat_rxnfc->rule_cnt))
++			return -EFAULT;
++		if (rule_cnt > KMALLOC_MAX_SIZE / sizeof(u32))
++			return -ENOMEM;
++		buf_size += rule_cnt * sizeof(u32);
++		/* fall through */
++	case ETHTOOL_GRXRINGS:
++	case ETHTOOL_GRXCLSRLCNT:
++	case ETHTOOL_GRXCLSRULE:
++		convert_out = true;
++		/* fall through */
++	case ETHTOOL_SRXCLSRLDEL:
++	case ETHTOOL_SRXCLSRLINS:
++		buf_size += sizeof(struct ethtool_rxnfc);
++		convert_in = true;
++		break;
 +	}
- out:
- 	if (page && !IS_ERR(page)) {
- 		kunmap(page);
++
++	ifr = compat_alloc_user_space(buf_size);
++	rxnfc = (void *)ifr + ALIGN(sizeof(struct ifreq), 8);
++
++	if (copy_in_user(&ifr->ifr_name, &ifr32->ifr_name, IFNAMSIZ))
+ 		return -EFAULT;
+ 
+-	datap = compat_ptr(data);
+-	if (put_user(datap, &ifr->ifr_ifru.ifru_data))
++	if (put_user(convert_in ? rxnfc : compat_ptr(data),
++		     &ifr->ifr_ifru.ifru_data))
+ 		return -EFAULT;
+ 
+-	return dev_ioctl(net, SIOCETHTOOL, ifr);
++	if (convert_in) {
++		/* We expect there to be holes between fs.m_u and
++		 * fs.ring_cookie and at the end of fs, but nowhere else.
++		 */
++		BUILD_BUG_ON(offsetof(struct compat_ethtool_rxnfc, fs.m_u) +
++			     sizeof(compat_rxnfc->fs.m_u) !=
++			     offsetof(struct ethtool_rxnfc, fs.m_u) +
++			     sizeof(rxnfc->fs.m_u));
++		BUILD_BUG_ON(
++			offsetof(struct compat_ethtool_rxnfc, fs.location) -
++			offsetof(struct compat_ethtool_rxnfc, fs.ring_cookie) !=
++			offsetof(struct ethtool_rxnfc, fs.location) -
++			offsetof(struct ethtool_rxnfc, fs.ring_cookie));
++
++		if (copy_in_user(rxnfc, compat_rxnfc,
++				 (void *)(&rxnfc->fs.m_u + 1) -
++				 (void *)rxnfc) ||
++		    copy_in_user(&rxnfc->fs.ring_cookie,
++				 &compat_rxnfc->fs.ring_cookie,
++				 (void *)(&rxnfc->fs.location + 1) -
++				 (void *)&rxnfc->fs.ring_cookie) ||
++		    copy_in_user(&rxnfc->rule_cnt, &compat_rxnfc->rule_cnt,
++				 sizeof(rxnfc->rule_cnt)))
++			return -EFAULT;
++	}
++
++	ret = dev_ioctl(net, SIOCETHTOOL, ifr);
++	if (ret)
++		return ret;
++
++	if (convert_out) {
++		if (copy_in_user(compat_rxnfc, rxnfc,
++				 (const void *)(&rxnfc->fs.m_u + 1) -
++				 (const void *)rxnfc) ||
++		    copy_in_user(&compat_rxnfc->fs.ring_cookie,
++				 &rxnfc->fs.ring_cookie,
++				 (const void *)(&rxnfc->fs.location + 1) -
++				 (const void *)&rxnfc->fs.ring_cookie) ||
++		    copy_in_user(&compat_rxnfc->rule_cnt, &rxnfc->rule_cnt,
++				 sizeof(rxnfc->rule_cnt)))
++			return -EFAULT;
++
++		if (ethcmd == ETHTOOL_GRXCLSRLALL) {
++			/* As an optimisation, we only copy the actual
++			 * number of rules that the underlying
++			 * function returned.  Since Mallory might
++			 * change the rule count in user memory, we
++			 * check that it is less than the rule count
++			 * originally given (as the user buffer size),
++			 * which has been range-checked.
++			 */
++			if (get_user(actual_rule_cnt, &rxnfc->rule_cnt))
++				return -EFAULT;
++			if (actual_rule_cnt < rule_cnt)
++				rule_cnt = actual_rule_cnt;
++			if (copy_in_user(&compat_rxnfc->rule_locs[0],
++					 &rxnfc->rule_locs[0],
++					 rule_cnt * sizeof(u32)))
++				return -EFAULT;
++		}
++	}
++
++	return 0;
+ }
+ 
+ static int compat_siocwandev(struct net *net, struct compat_ifreq __user *uifr32)
 
 
