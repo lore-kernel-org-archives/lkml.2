@@ -1,106 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934089Ab1CZA1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:27:54 -0400
-Received: from kroah.org ([198.145.64.141]:41462 "EHLO coco.kroah.org"
+	id S932269Ab1CZA2d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:28:33 -0400
+Received: from kroah.org ([198.145.64.141]:41439 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932254Ab1CYXwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:22 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
-Message-Id: <20110325234509.136327758@clark.kroah.org>
+	id S932223Ab1CYXwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:21 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:40 2011
+Message-Id: <20110325234840.165573424@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:48 -0700
+Date: Fri, 25 Mar 2011 16:47:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [12/63] cgroups: if you list_empty() a head then dont list_del() it
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
+Subject: [12/55] mm: swap: unlock swapfile inode mutex before closing file on bad swapfiles
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 8d2587970b8bdf7c8d9208e3f4bb93182aef1a0f upstream.
+commit 52c50567d8ab0a0a87f12cceaa4194967854f0bd upstream.
 
-list_del() leaves poison in the prev and next pointers.  The next
-list_empty() will compare those poisons, and say the list isn't empty.
-Any list operations that assume the node is on a list because of such a
-check will be fooled into dereferencing poison.  One needs to INIT the
-node after the del, and fortunately there's already a wrapper for that -
-list_del_init().
+If an administrator tries to swapon a file backed by NFS, the inode mutex is
+taken (as it is for any swapfile) but later identified to be a bad swapfile
+due to the lack of bmap and tries to cleanup. During cleanup, an attempt is
+made to close the file but with inode->i_mutex still held. Closing an NFS
+file syncs it which tries to acquire the inode mutex leading to deadlock. If
+lockdep is enabled the following appears on the console;
 
-Some of the dels are followed by deallocations, so can be ignored, and one
-can be merged with an add to make a move.  Apart from that, I erred on the
-side of caution in making nodes list_empty()-queriable.
+    =============================================
+    [ INFO: possible recursive locking detected ]
+    2.6.38-rc8-autobuild #1
+    ---------------------------------------------
+    swapon/2192 is trying to acquire lock:
+     (&sb->s_type->i_mutex_key#13){+.+.+.}, at: vfs_fsync_range+0x47/0x7c
 
-Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Reviewed-by: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+    but task is already holding lock:
+     (&sb->s_type->i_mutex_key#13){+.+.+.}, at: sys_swapon+0x28d/0xae7
+
+    other info that might help us debug this:
+    1 lock held by swapon/2192:
+     #0:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: sys_swapon+0x28d/0xae7
+
+    stack backtrace:
+    Pid: 2192, comm: swapon Not tainted 2.6.38-rc8-autobuild #1
+    Call Trace:
+        __lock_acquire+0x2eb/0x1623
+        find_get_pages_tag+0x14a/0x174
+        pagevec_lookup_tag+0x25/0x2e
+        vfs_fsync_range+0x47/0x7c
+        lock_acquire+0xd3/0x100
+        vfs_fsync_range+0x47/0x7c
+        nfs_flush_one+0x0/0xdf [nfs]
+        mutex_lock_nested+0x40/0x2b1
+        vfs_fsync_range+0x47/0x7c
+        vfs_fsync_range+0x47/0x7c
+        vfs_fsync+0x1c/0x1e
+        nfs_file_flush+0x64/0x69 [nfs]
+        filp_close+0x43/0x72
+        sys_swapon+0xa39/0xae7
+        sysret_check+0x2e/0x69
+        system_call_fastpath+0x16/0x1b
+
+This patch releases the mutex if its held before calling filep_close()
+so swapon fails as expected without deadlock when the swapfile is backed
+by NFS.  If accepted for 2.6.39, it should also be considered a -stable
+candidate for 2.6.38 and 2.6.37.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Hugh Dickins <hughd@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/cgroup.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ mm/swapfile.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1813,10 +1813,8 @@ int cgroup_attach_task(struct cgroup *cg
- 
- 	/* Update the css_set linked lists if we're using them */
- 	write_lock(&css_set_lock);
--	if (!list_empty(&tsk->cg_list)) {
--		list_del(&tsk->cg_list);
--		list_add(&tsk->cg_list, &newcg->tasks);
--	}
-+	if (!list_empty(&tsk->cg_list))
-+		list_move(&tsk->cg_list, &newcg->tasks);
- 	write_unlock(&css_set_lock);
- 
- 	for_each_subsys(root, ss) {
-@@ -3655,12 +3653,12 @@ again:
- 	spin_lock(&release_list_lock);
- 	set_bit(CGRP_REMOVED, &cgrp->flags);
- 	if (!list_empty(&cgrp->release_list))
--		list_del(&cgrp->release_list);
-+		list_del_init(&cgrp->release_list);
- 	spin_unlock(&release_list_lock);
- 
- 	cgroup_lock_hierarchy(cgrp->root);
- 	/* delete this cgroup from parent->children */
--	list_del(&cgrp->sibling);
-+	list_del_init(&cgrp->sibling);
- 	cgroup_unlock_hierarchy(cgrp->root);
- 
- 	d = dget(cgrp->dentry);
-@@ -3879,7 +3877,7 @@ void cgroup_unload_subsys(struct cgroup_
- 	subsys[ss->subsys_id] = NULL;
- 
- 	/* remove subsystem from rootnode's list of subsystems */
--	list_del(&ss->sibling);
-+	list_del_init(&ss->sibling);
- 
- 	/*
- 	 * disentangle the css from all css_sets attached to the dummytop. as
-@@ -4253,7 +4251,7 @@ void cgroup_exit(struct task_struct *tsk
- 	if (!list_empty(&tsk->cg_list)) {
- 		write_lock(&css_set_lock);
- 		if (!list_empty(&tsk->cg_list))
--			list_del(&tsk->cg_list);
-+			list_del_init(&tsk->cg_list);
- 		write_unlock(&css_set_lock);
- 	}
- 
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -2146,8 +2146,13 @@ bad_swap_2:
+ 	p->flags = 0;
+ 	spin_unlock(&swap_lock);
+ 	vfree(swap_map);
+-	if (swap_file)
++	if (swap_file) {
++		if (did_down) {
++			mutex_unlock(&inode->i_mutex);
++			did_down = 0;
++		}
+ 		filp_close(swap_file, NULL);
++	}
+ out:
+ 	if (page && !IS_ERR(page)) {
+ 		kunmap(page);
 
 
