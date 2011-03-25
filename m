@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab1CYV1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 17:27:13 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:33803 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257Ab1CYV1K (ORCPT
+	id S1755255Ab1CYVbz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 17:31:55 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:58674 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755132Ab1CYVby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 17:27:10 -0400
-Message-ID: <4D8D08A7.1090706@linux.vnet.ibm.com>
-Date: Fri, 25 Mar 2011 14:27:03 -0700
-From: Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Fri, 25 Mar 2011 17:31:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=k+wt3mkdmrP8x3607Hfub/nCi4DkGhiFk5OxwXphV8kGKBa9hO/4QerLMhIVLbs+c7
+         BcehStZisSXkaPCr01JXvTsrJ2Z3IOSmcKwmNmzJFBW/bhx5+vt9UCbWMtLYNFjidWeY
+         KOfH6uclQ9xT0c2LCKWIBOqnBFC7qUnclnvqI=
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [V9fs-developer] [PATCH 4/5] fs/9p: Fix error reported by coccicheck
-References: <1301052651-21440-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1301052651-21440-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1301052651-21440-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110325194946.GQ21838@one.firstfloor.org>
+References: <1300914043-2297-1-git-send-email-abogani@kernel.org>
+	<1300914043-2297-3-git-send-email-abogani@kernel.org>
+	<m27hbov7hq.fsf@firstfloor.org>
+	<8739mblr2n.fsf@rustcorp.com.au>
+	<20110325154118.GN21838@one.firstfloor.org>
+	<AANLkTinW4GA094Yz94Y0qTEJvjOmRe4_C+5yc7_VcKM3@mail.gmail.com>
+	<20110325194946.GQ21838@one.firstfloor.org>
+Date: Fri, 25 Mar 2011 22:31:53 +0100
+X-Google-Sender-Auth: bCRvERleF1oi0JLIqLaZDboLKqM
+Message-ID: <AANLkTinYY0vRzVHKqaZghiK=SvFUAVbM5s3Hf6H9C5Pv@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Replace the linear search with a binary search for
+ locate the symbols
+From: Alessio Igor Bogani <abogani@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Ian Lance Taylor <ian@airs.com>, Tim Bird <tim.bird@am.sony.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2011 04:30 AM, Aneesh Kumar K.V wrote:
-> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
-Reviewed-by : Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
-> ---
->   fs/9p/vfs_inode_dotl.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
-> index ffbb113..82a7c38 100644
-> --- a/fs/9p/vfs_inode_dotl.c
-> +++ b/fs/9p/vfs_inode_dotl.c
-> @@ -811,7 +811,7 @@ v9fs_vfs_follow_link_dotl(struct dentry *dentry, struct nameidata *nd)
->   	fid = v9fs_fid_lookup(dentry);
->   	if (IS_ERR(fid)) {
->   		__putname(link);
-> -		link = ERR_PTR(PTR_ERR(fid));
-> +		link = ERR_CAST(fid);
->   		goto ndset;
->   	}
->   	retval = p9_client_readlink(fid,&target);
+Dear Mr. Kleen,
 
+2011/3/25 Andi Kleen <andi@firstfloor.org>:
+> For kallsyms you either look it up by address or by name.
+
+Sorry but I still don't understand the problem in particularly this
+your sentence:
+
+> You can only sort for one of those.
+
+I have felt sure to have sorted both: indeed the linker sorts symbols
+*before* it writes down their addresses (and not after). But I could
+have made a mistake, obviously.
+
+Could you pinpoint me to an sure method for clarify this point, please?
+
+Thank you very much and sorry for my stupidity.
+
+Ciao,
+Alessio
