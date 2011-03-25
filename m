@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab1CYQHJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 12:07:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33933 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753973Ab1CYQHH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 12:07:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=uG8uP1Vw62jaJP3cLpQxqWb9e/WOAlLGAN7r4Z1HVwaPO+3wa4OT3d5PMiQwEKd2BS
-         3flFCKV6ZeDuFPEEm+T8Hg+oAAMHzMeUqxMUnMHOBdci1QTdOdZSbfPclz0Xjb3KwxGC
-         viflMu2b7VrpZaus8P6M4IJ4zLcIopAb7NczI=
-Date: Fri, 25 Mar 2011 09:07:02 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Chris Bagwell <chris@cnpbagwell.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: [PATCH] eeepc-wmi: Add support for T101MT "Express Gate" key
-Message-ID: <20110325160702.GB5099@core.coreip.homeip.net>
-References: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
- <AANLkTinZpt8qmHzhe4WyteMt-C-nkVNwEGQVvq3Nk9Lx@mail.gmail.com>
- <20110324131414.GA20612@thinkpad-t410>
- <AANLkTikrX_wypmrd-PbST603jsHqkuwtA6t5X65Lg1+O@mail.gmail.com>
- <AANLkTi=2OKxvHN75PO4RGb9rtpnA0iGHNb9JPZwb0z9J@mail.gmail.com>
- <AANLkTik7D0j=JOhzPk6Y2NrTA89-vS28wPDSS=j0VW4_@mail.gmail.com>
+	id S1754376Ab1CYQHQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 12:07:16 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:35755 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754338Ab1CYQHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 12:07:13 -0400
+X-ASG-Debug-ID: 1301069232-03d6a555d501dd0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D8CBDAB.2010507@fusionio.com>
+Date: Fri, 25 Mar 2011 17:07:07 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik7D0j=JOhzPk6Y2NrTA89-vS28wPDSS=j0VW4_@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Chris Mason <chris.mason@oracle.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Two fixups for the block IO merge
+Content-Type: text/plain; charset="ISO-8859-1"
+X-ASG-Orig-Subj: [GIT PULL] Two fixups for the block IO merge
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301069232
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58939
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 09:00:14AM -0500, Chris Bagwell wrote:
-> On Thu, Mar 24, 2011 at 8:40 AM, Corentin Chary
-> <corentin.chary@gmail.com> wrote:
-> >> I would suggest sending BTN_HOME upon button release 0xe5 (not press
-> >> 0xe4 and do the autorelease because of it) and BTN_PROG2 on
-> >> press-and-hold 0xea.
-> >>
-> >> If you press-and-hold, does it still send the 0xe5 upon release?  That
-> >> could complicate things so that both button events do not get sent.
-> >>
-> >> I'm not sure what BTN_HOME is commonly used for.  This button does
-> >> sound like a HOME button in iPad sense but not in web browser sense.
-> >
-> > Except the fact that I don't find BTN_HOME in inpout.h, that's seems a
-> > better idea, forget what I've said earlier.
-> 
-> Ha... Sorry, I had buttons on my brain.  I meant KEY_HOME as you suggested.
-> 
-> >
-> > 0xe4 -> KEY_IGNORE
-> > 0xe5 -> KEY_HOME
-> > 0xea -> KEY_PROG2, (or BTN_TASK to copy android/iOS ?)
-> 
-> From a quick google, I couldn't finding any specific meaning of
-> BTN_TASK but it looks like xf86-input-evdev turns it into a button
-> press so we may not want that one.
-> 
+Hi Linus,
 
-It was one of additional keys on Logitech mice IIRC.
+An embarassing bug made the block IO merge a bit less enjoyable for some
+people than it should have.
+
+- The oops problem (with CFQ), or potential corruption (with noop) due
+  to a bad insertion type for some requests.
+
+- A warning spew on virt_io using blk_stop_queue() inside it's callback.
+
+Please pull these two fixes, so hopefully we can put this behind us.
+Thanks a lot to the people involved with fixing the first issue.
+
+  git://git.kernel.dk/linux-2.6-block.git for-linus
+
+Jens Axboe (2):
+      block: fix bug with inserting flush requests as sort/merge
+      block: fix issue with calling blk_stop_queue() from the request_fn handler
+
+ block/blk-core.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 59b5c00..e0a0623 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -271,7 +271,7 @@ EXPORT_SYMBOL(blk_start_queue);
+  **/
+ void blk_stop_queue(struct request_queue *q)
+ {
+-	cancel_delayed_work(&q->delay_work);
++	__cancel_delayed_work(&q->delay_work);
+ 	queue_flag_set(QUEUE_FLAG_STOPPED, q);
+ }
+ EXPORT_SYMBOL(blk_stop_queue);
+@@ -2702,7 +2702,10 @@ static void flush_plug_list(struct blk_plug *plug)
+ 		/*
+ 		 * rq is already accounted, so use raw insert
+ 		 */
+-		__elv_add_request(q, rq, ELEVATOR_INSERT_SORT_MERGE);
++		if (rq->cmd_flags & (REQ_FLUSH | REQ_FUA))
++			__elv_add_request(q, rq, ELEVATOR_INSERT_FLUSH);
++		else
++			__elv_add_request(q, rq, ELEVATOR_INSERT_SORT_MERGE);
+ 	}
+ 
+ 	if (q) {
 
 -- 
-Dmitry
+Jens Axboe
+
