@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933608Ab1CZANa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:13:30 -0400
-Received: from kroah.org ([198.145.64.141]:35821 "EHLO coco.kroah.org"
+	id S933205Ab1CZAGR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:06:17 -0400
+Received: from kroah.org ([198.145.64.141]:41870 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933218Ab1CZAGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:06:18 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:56 2011
-Message-Id: <20110326000456.551784958@clark.kroah.org>
+	id S932555Ab1CYXw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:59 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:43 2011
+Message-Id: <20110325234843.195609648@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 17:03:39 -0700
+Date: Fri, 25 Mar 2011 16:47:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Jan Beulich <jbeulich@novell.com>, "H.J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <kees.cook@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [07/35] x86, binutils, xen: Fix another wrong size directive
-In-Reply-To: <20110326000509.GA29736@kroah.com>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [40/55] USB: cdc-acm: fix potential null-pointer dereference
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Alexander van Heukelum <heukelum@fastmail.fm>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 371c394af27ab7d1e58a66bc19d9f1f3ac1f67b4 upstream.
+commit 15e5bee33ffc11d0e5c6f819a65e7881c5c407be upstream.
 
-The latest binutils (2.21.0.20110302/Ubuntu) breaks the build
-yet another time, under CONFIG_XEN=y due to a .size directive that
-refers to a slightly differently named (hence, to the now very
-strict and unforgiving assembler, non-existent) symbol.
+Must check return value of tty_port_tty_get.
 
-[ mingo:
-
-   This unnecessary build breakage caused by new binutils
-   version 2.21 gets escallated back several kernel releases spanning
-   several years of Linux history, affecting over 130,000 upstream
-   kernel commits (!), on CONFIG_XEN=y 64-bit kernels (i.e. essentially
-   affecting all major Linux distro kernel configs).
-
-   Git annotate tells us that this slight debug symbol code mismatch
-   bug has been introduced in 2008 in commit 3d75e1b8:
-
-     3d75e1b8        (Jeremy Fitzhardinge    2008-07-08 15:06:49 -0700 1231) ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
-
-   The 'bug' is just a slight assymetry in ENTRY()/END()
-   debug-symbols sequences, with lots of assembly code between the
-   ENTRY() and the END():
-
-     ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
-       ...
-     END(do_hypervisor_callback)
-
-   Human reviewers almost never catch such small mismatches, and binutils
-   never even warned about it either.
-
-   This new binutils version thus breaks the Xen build on all upstream kernels
-   since v2.6.27, out of the blue.
-
-   This makes a straightforward Git bisection of all 64-bit Xen-enabled kernels
-   impossible on such binutils, for a bisection window of over hundred
-   thousand historic commits. (!)
-
-   This is a major fail on the side of binutils and binutils needs to turn
-   this show-stopper build failure into a warning ASAP. ]
-
-Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Jan Beulich <jbeulich@novell.com>
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <kees.cook@canonical.com>
-LKML-Reference: <1299877178-26063-1-git-send-email-heukelum@fastmail.fm>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/entry_64.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1268,7 +1268,7 @@ ENTRY(xen_do_hypervisor_callback)   # do
- 	decl PER_CPU_VAR(irq_count)
- 	jmp  error_exit
- 	CFI_ENDPROC
--END(do_hypervisor_callback)
-+END(xen_do_hypervisor_callback)
- 
- /*
-  * Hypervisor uses this for application faults while it executes.
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -533,6 +533,8 @@ static void acm_softint(struct work_stru
+ 	if (!ACM_READY(acm))
+ 		return;
+ 	tty = tty_port_tty_get(&acm->port);
++	if (!tty)
++		return;
+ 	tty_wakeup(tty);
+ 	tty_kref_put(tty);
+ }
 
 
