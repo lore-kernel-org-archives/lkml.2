@@ -1,351 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab1CYAm4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 20:42:56 -0400
-Received: from leo.clearchain.com ([199.73.29.74]:53227 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755356Ab1CYAmy (ORCPT
+	id S1757402Ab1CYAx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 20:53:28 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64686 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755410Ab1CYAxZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 20:42:54 -0400
-Date: Fri, 25 Mar 2011 10:42:40 +1000
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Nikolai Kondrashov <spbnick@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Documentation: Add evdev type and code definitions
-Message-ID: <20110325004240.GA13453@barra.bne.redhat.com>
-References: <1300988652-25353-1-git-send-email-chase.douglas@canonical.com>
+	Thu, 24 Mar 2011 20:53:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300988652-25353-1-git-send-email-chase.douglas@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Fri, 25 Mar 2011 11:12:45 +1030 (CST)
+In-Reply-To: <AANLkTi=Xb3KCBKoVCcaVD5iyCtMCAnYaGF_DTeFQ0ays@mail.gmail.com>
+References: <1301005107.2714.113.camel@edumazet-laptop> <AANLkTinv+XGBjbFoK6vpyiDW6gBEBKFjUef+mCAMJU9i@mail.gmail.com>
+ <1301005946.2714.130.camel@edumazet-laptop> <20110324.153623.45921344.davem@davemloft.net>
+ <1301006652.2714.145.camel@edumazet-laptop> <AANLkTi=Xb3KCBKoVCcaVD5iyCtMCAnYaGF_DTeFQ0ays@mail.gmail.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Thu, 24 Mar 2011 20:53:02 -0400
+Message-ID: <AANLkTinh9Li7DGgSqcZ+p9peS5XrHWomerSvKTYwHZ9-@mail.gmail.com>
+Subject: Re: [PATCH] ipv4: fix fib metrics
+To: Alessandro Suardi <alessandro.suardi@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 01:44:12PM -0400, Chase Douglas wrote:
-> This commit adds the file Documentation/input/evdev-codes.txt.
-> 
-> Cc: Henrik Rydberg <rydberg@euromail.se>
-> Cc: Chris Bagwell <chris@cnpbagwell.com>
-> Cc: Peter Hutterer <peter.hutterer@who-t.net>
-> Cc: Nikolai Kondrashov <spbnick@gmail.com>
-> Cc: linux-input@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Acked-by: Henrik Rydberg <rydberg@euromail.se>
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> ---
-> This revision has been a long time coming. Sorry for the delay! Changes from the
-> previous revision:
-> 
-> * Use EVIOCG* to retrieve evdev state and note sysfs capabilities info
-> * Clarify wording of BTN_TOOL_<name> and BTN_TOUCH usage for multi-finger modes
-> * Remove KEY_POWER, KEY_SUSPEND documentation
-> * State that EV_PWR is not well defined and will be addressed later
-> * Add text about reporting switch state when binding or resuming
-> * Add a "Guidelines" section describing basic mouse, touchscreen, and trackpad
->   protocol usage
-> 
-> This is perhaps more important than ever before. We're seeing a lot of new
-> drivers that were obviously only written to support Android and do not conform
-> to the evdev protocol that X.org's input modules need and expect. I've had
-> multiple people come to me asking why their android derived touchscreen driver
-> isn't working properly in Ubuntu, only to find that the driver is only reporting
-> ABS_MT_POSITION_{X,Y} and ABS_MT_TOUCH_MAJOR. Hopefully this will help others
-> understand what is required for a full window management system based on
-> historical X.org usage.
-> 
->  Documentation/input/evdev-codes.txt |  238 +++++++++++++++++++++++++++++++++++
->  1 files changed, 238 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/input/evdev-codes.txt
-> 
-> diff --git a/Documentation/input/evdev-codes.txt b/Documentation/input/evdev-codes.txt
-> new file mode 100644
-> index 0000000..473ce9d
-> --- /dev/null
-> +++ b/Documentation/input/evdev-codes.txt
-> @@ -0,0 +1,238 @@
-> +The evdev protocol uses a map of types and codes to express input device values
-> +to userspace. This document describes the types and codes and how and when they
-> +may be used.
+On Thu, Mar 24, 2011 at 20:12, Alessandro Suardi
+<alessandro.suardi@gmail.com> wrote:
+> On Thu, Mar 24, 2011 at 11:44 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> Le jeudi 24 mars 2011 à 15:36 -0700, David Miller a écrit :
+>>> From: Eric Dumazet <eric.dumazet@gmail.com>
+>>> Date: Thu, 24 Mar 2011 23:32:26 +0100
+>>>
+>>> > Then it doesnt work anymore because it parses an ipip field from
+>>> > ip route get ...
+>>> >
+>>> > $ ip ro get 192.168.1.1
+>>> > 192.168.1.1 dev wlan0  src 192.168.1.21
+>>> >     cache  ipid 0x784c mtu 1500 advmss 1460 hoplimit 64
+>>> >
+>>> >
+>>> > Maybe you upgraded iproute2
+>>>
+>>> I'm leaning towards app bug too.
+>>>
+>>> These default metrics wouldn't get printed before, but now because of
+>>> how metrics are handled, they will.
+>>>
+>>> Userland needs to cope properly with this.
+>>
+>>
+>> BTW, ipip is not always printed (even on old kernels) : One needs to
+>> actually need ipip generation .
+>>
+>> edumazet@edumazet-laptop:~$ ping 4.4.4.4
+>> PING 4.4.4.4 (4.4.4.4) 56(84) bytes of data.
+>> ^C
+>>
+>> edumazet@edumazet-laptop:~$ ip ro get 4.4.4.4
+>> 4.4.4.4 dev ppp0  src 10.150.51.210
+>>    cache  mtu 1500 advmss 1460 hoplimit 64
+>>
+>> edumazet@edumazet-laptop:~$ ping -s 2000 4.4.4.4
+>> PING 4.4.4.4 (4.4.4.4) 2000(2028) bytes of data.
+>> ^C
+>>
+>> edumazet@edumazet-laptop:~$ ip ro get 4.4.4.4
+>> 4.4.4.4 dev ppp0  src 10.150.51.210
+>>    cache  ipid 0xf99a mtu 1500 advmss 1460 hoplimit 64
+>>
+>>
+>> This on a 2.6.35 kernel
+>>
+>> I suspect Alessandro tool had a bug anyway.
+>
+> I still contend this is a kernel regression :)
+>
+>
+> vpnc is a custom build from trunk as of June 2010, with openssl support
+>  to talk to my corporate VPN concentrator:
+>
+[...snip...]
+>
+> My iproute package, on this up-to-date Fedora 14 x86_64, has last been
+>  updated on 20 Nov 2010, and back then I was running 2.6.37-rc2-git4
+>  (I keep around my historical .config files, so I know for sure).
+>
+> [root@duff ~]# ip -V
+> ip utility, iproute2-ss100804
+> [root@duff ~]# rpm -qf /sbin/ip
+> iproute-2.6.35-6.fc14.x86_64
+>
+> The behavior of this version of 'ip' as invoked by this version of 'vpnc'
+>  is something that has worked for the last 4 months, and isn't working
+>  right now. Furthermore, previous versions of 'ip' in Fedora 14 were
+>  also working with the same 'vpnc', which means it's actually 9 months
+>  minimum of working behavior.
+>
+> If some change in the kernel broke my userspace, this usually qualifies
+>  as a regression.
+>
+> That said, if you can point me to a working version of iproute with the
+>  current kernel, I have no problem in upgrading it :)
 
-the term "event" is overloaded. You use EV_SYN to "separate events" but
-EV_REL to "describe relative input events". some explanation before you
-start with the Types would be useful. e.g.
+Historically you could usually take the text output of "ip route get"
+and feed it right back to "ip route add", and it would work, but this
+was never guaranteed.
 
-    A single hardware event may result in multiple struct input_event. Each
-    such event contains the new value of a single data item. EV_SYN is used
-    to separate between hardware events. In the following, the term "event"
-    refers to a single struct input_event and the term "hardware event" to
-    an a series of struct input_events that reflect the hardware state
-    change.
+Recently, the "ip route get" command started printing extra statistics
+(like "ipid") after the other information, but obviously those
+statistics are not valid for an "ip route add" command.
 
-and then use some other word instead of events for the remainder.
+The kernel bug was that the "ip" command was not always getting those
+statistics from the kernel, so obviously they would not be printed.
 
-also missing something like this:
-"A (struct input_event) event is a triplet of type, code and value. The type
-classifies the logical category of the event. The code specifies the data
-item affected.  The value is the new value for this data item."
+Unfortunately vpnc still tries to pass the entire output of "ip route
+get" as arguments to "ip route add"; the latter command reports an
+error when it gets the statistics from the former command as input.
 
-> +
-> +The evdev protocol is a stateful protocol. Events are emitted only when values
-> +of evdev codes have changed. However, the state is maintained within the Linux
-> +input subsystem; drivers do not need to maintain the state and may attempt to
-> +emit unchanged values without harm. Userspace may obtain the current state of
-> +evdev code values using the EVIOCG* ioctls defined in linux/input.h. The evdev
-> +reports supported by a device are also provided by sysfs in
-> +class/input/event*/device/capabilities/, and the properties of a device are
-> +provided in class/input/event*/device/properties.
-> +
-> +Types:
-> +==========
-> +Types are groupings of codes under a logical input construct. Each type has a
-> +set of applicable codes to be used in generating events. See the Codes section
-> +for details on valid codes for each type.
-> +
-> +* EV_SYN:
-> +  - Used as markers to separate events. Events may be separated in time or in
-> +    space, such as with the multitouch protocol.
-> +
-> +* EV_KEY:
-> +  - Used to describe keyboard and other key-like input events.
-
-"Used to describe state changes of keyboards, buttons or other key-like
-devices"
-
-> +
-> +* EV_REL:
-> +  - Used to describe relative input events, e.g. moving the mouse 5 units to the
-> +    left.
-> +
-> +* EV_ABS:
-> +  - Used to describe absolute input events, e.g. describing the coordinates of a
-> +    touch on a touchscreen.
-
-I'd use "relative axis value changes" to avoid the "event" term overloading.
-
-> +
-> +* EV_MSC:
-> +  - Used to describe miscellaneous input events that do not fit into other
-> +    types.
-
-s/input events/input data/
-
-> +
-> +* EV_SW:
-> +  - Used to describe binary state input switches.
-> +
-> +* EV_LED:
-> +  - Used to turn LEDs on devices on and off.
-> +
-> +* EV_SND:
-> +  - Used to output sound to devices.
-> +
-> +* EV_REP:
-> +  - Used for autorepeating devices.
-> +
-> +* EV_FF:
-> +  - Used to send force feedback commands to an input device.
-> +
-> +* EV_PWR:
-> +  - A special type for power button and switch input.
-> +
-> +* EV_FF_STATUS:
-> +  - Used to receive force feedback device status.
-> +
-> +Codes:
-> +==========
-> +Codes define the precise type of event.
-
-s/event/<something less ambiguous> :)
-
-> +
-> +EV_SYN:
-> +----------
-> +EV_SYN event values are undefined. Their usage is
-
-> +defined only by when they are sent in the evdev event stream.
-> +
-> +* SYN_REPORT:
-> +  - Used to synchronize and separate events into frames of time. For example,
-> +    motion of a mouse may set the REL_X and REL_Y values for one motion, then
-> +    emit a SYN_REPORT. The next motion will emit more REL_X and REL_Y values and
-> +    send another SYN_REPORT.
-> +
-> +* SYN_CONFIG:
-> +  - TBD
-> +
-> +* SYN_MT_REPORT:
-> +  - Used to synchronize and separate touch events. See the
-> +    multi-touch-protocol.txt document for more information.
-> +
-> +EV_KEY:
-> +----------
-> +EV_KEY events take the form KEY_<name> or BTN_<name>. For example, KEY_A is used
-> +to represent the 'A' key on a keyboard. When a key is depressed, an event with
-> +the key's code is emitted with value 1. When the key is released, an event is
-> +emitted with value 0. Some hardware send events when a key is repeated. These
-> +events have a value of 2. In general, KEY_<name> is used for keyboard keys, and
-> +BTN_<name> is used for other types of momentary switch events.
-> +
-> +A few EV_KEY codes have special meanings:
-> +
-> +* BTN_TOOL_<name>:
-> +  - These codes are used in conjunction with input trackpads, tablets, and
-> +    touchscreens. These devices may be used with fingers, pens, or other tools.
-> +    When an event occurs and a tool is used, the corresponding BTN_TOOL_<name>
-> +    code should be set to a value of 1. When the tool is no longer interacting
-> +    with the input device, the BTN_TOOL_<name> code should be reset to 0. All
-> +    trackpads, tablets, and touchscreens should use at least one BTN_TOOL_<name>
-> +    code when events are generated.
-> +
-> +* BTN_TOUCH:
-> +    BTN_TOUCH is used for touch contact. While an input tool is determined to be
-> +    within meaningful physical contact, the value of this property must be set
-> +    to 1. Meaningful physical contact may mean any contact, or it may mean
-> +    contact conditioned by an implementation defined property. For example, a
-> +    touchpad may set the value to 1 only when the touch pressure rises above a
-> +    certain value. BTN_TOUCH may be combined with BTN_TOOL_<name> codes. For
-> +    example, a pen tablet may set BTN_TOOL_PEN to 1 and BTN_TOUCH to 0 while the
-> +    pen is hovering over but not touching the tablet surface.
-> +
-> +Note: For appropriate function of the legacy mousedev emulation driver,
-> +BTN_TOUCH must be the first evdev code emitted in a synchronization frame.
-> +
-> +Note: Historically a touch device with BTN_TOOL_FINGER and BTN_TOUCH was
-> +interpreted as a touchpad by userspace, while a similar device without
-> +BTN_TOOL_FINGER was interpreted as a touchscreen. For backwards compatibility
-> +with current userspace it is recommended to follow this distinction. In the
-> +future, this distinction will be deprecated and the device properties ioctl
-> +EVIOCGPROP, defined in linux/input.h, will be used to convey the device type.
-> +
-> +* BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP, BTN_TOOL_TRIPLETAP, BTN_TOOL_QUADTAP:
-> +  - These codes denote one, two, three, and four finger interaction on a
-> +    trackpad or touchscreen. For example, if the user uses two fingers and moves
-> +    them on the touchpad in an effort to scroll content on screen,
-> +    BTN_TOOL_DOUBLETAP should be set to value 1 for the duration of the motion.
-> +    Note that all BTN_TOOL_<name> codes and the BTN_TOUCH code are orthogonal in
-> +    purpose. A trackpad event generated by finger touches should generate events
-> +    for one code from each group. At most only one of these BTN_TOOL_<name>
-> +    codes should have a value of 1 during any synchronization frame.
-> +
-> +Note: Historically some drivers emitted multiple of the finger count codes with
-> +a value of 1 in the same synchronization frame. This usage is deprecated.
-> +
-> +Note: In multitouch drivers, the input_mt_report_finger_count() function should
-> +be used to emit these codes. Please see multi-touch-protocol.txt for details.
-> +
-> +EV_REL:
-> +----------
-> +EV_REL events describe relative changes in a property. For example, a mouse may
-> +move to the left by a certain number of units, but its absolute position in
-> +space is unknown. If the absolute position is known, EV_ABS codes should be used
-> +instead of EV_REL codes.
-> +
-> +A few EV_REL codes have special meanings:
-> +
-> +* REL_WHEEL, REL_HWHEEL:
-> +  - These codes are used for vertical and horizontal scroll wheels,
-> +    respectively.
-> +
-> +EV_ABS:
-> +----------
-> +EV_ABS events describe absolute changes in a property. For example, a touchpad
-> +may emit coordinates for a touch location.
-> +
-> +A few EV_ABS codes have special meanings:
-> +
-> +* ABS_DISTANCE:
-> +  - Used to describe the distance of a tool from an interaction surface. This
-> +    should only be used while the tool is hovering, meaning in close proximity
-> +    of the device. If the input device may be used freely in three dimensions,
-> +    consider ABS_Z instead.
-
-reference to BTN_TOUCH == 0 maybe?
+So this is certainly not a kernel bug.  At *best* it's an iproute bug,
+depending on whether or not this is considered valid:
+  RT="$(ip route get [...])"
+  ip route flush
+  ip route add ${RT}
 
 Cheers,
-  Peter
-> +
-> +* ABS_MT_<name>:
-> +  - Used to describe multitouch input events. Please see
-> +    multi-touch-protocol.txt for details.
-> +
-> +EV_SW:
-> +----------
-> +EV_SW events describe stateful binary switches. For example, the SW_LID code is
-> +used to denote when a laptop lid is closed.
-> +
-> +Upon binding to a device or resuming from suspend, a driver must report the
-> +the current switch state. This ensures that the device, kernel, and userspace
-> +state is in sync.
-> +
-> +Upon resume, if the switch state is the same as before suspend, then the input
-> +subsystem will filter out the duplicate switch state reports. The driver does
-> +not need to keep the state of the switch at any time.
-> +
-> +EV_MSC:
-> +----------
-> +EV_MSC events are used for input and output events that do not fall under other
-> +categories.
-> +
-> +EV_LED:
-> +----------
-> +EV_LED events are used for input and output to set and query the state of
-> +various LEDs on devices.
-> +
-> +EV_REP:
-> +----------
-> +EV_REP events are used for specifying autorepeating events.
-> +
-> +EV_SND:
-> +----------
-> +EV_SND events are used for sending sound commands to simple sound output
-> +devices.
-> +
-> +EV_FF:
-> +----------
-> +EV_FF events are used to initialize a force feedback capable device and to cause
-> +such device to feedback.
-> +
-> +EV_PWR:
-> +----------
-> +EV_PWR events are a special type of event used specifically for power
-> +mangement. Its usage is not well defined. To be addressed later.
-> +
-> +Guidelines:
-> +==========
-> +The guidelines below ensure proper single-touch and multi-finger functionality.
-> +For multi-touch functionality, see the multi-touch-protocol.txt document for
-> +more information.
-> +
-> +Mice:
-> +----------
-> +REL_{X,Y} must be reported when the mouse moves. BTN_LEFT must be used to report
-> +the primary button press. BTN_{MIDDLE,RIGHT,4,5,etc.} should be used to report
-> +further buttons of the device. REL_WHEEL and REL_HWHEEL should be used to report
-> +scroll wheel events where available.
-> +
-> +Touchscreens:
-> +----------
-> +ABS_{X,Y} must be reported with the location of the touch. BTN_TOUCH must be
-> +used to report when a touch is active on the screen.
-> +BTN_{MOUSE,LEFT,MIDDLE,RIGHT} must not be reported. BTN_TOOL_<name> events
-> +should be reported where possible.
-> +
-> +Trackpads:
-> +----------
-> +Legacy trackpads that only provide relative position information must report
-> +events like mice described above.
-> +
-> +Trackpads that provide absolute touch position must report ABS_{X,Y} for the
-> +location of the touch. BTN_TOUCH should be used to report when a touch is active
-> +on the trackpad. Where multi-finger support is available, BTN_TOOL_<name> should
-> +be used to report the number of touches active on the trackpad.
-> -- 
-> 1.7.1
-> 
+Kyle Moffett
