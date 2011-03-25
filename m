@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934405Ab1CYBwG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 21:52:06 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:36963 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab1CYBwD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 21:52:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=HKB7J8U0jDjou4ZHtea6us86CbNaOdRf5Fs1jKZ8ipgPZ40+VTEASV3qF0q2dul1Mw
-         0EsHko/JdXHQETP+PQzQ==
-MIME-Version: 1.0
-In-Reply-To: <20110324135657.GC20434@redhat.com>
-References: <1300835335-2777-1-git-send-email-teravest@google.com>
- <20110323012755.GA10325@redhat.com> <AANLkTi=YyY0dCVP+JAJsyiYYqWMwf1XBROf_h_eG0yEL@mail.gmail.com>
- <20110323200621.GJ13315@redhat.com> <AANLkTi=mCAdX1KJrQRoi=mwtW=ZAANWo_Tzc+JNR34rr@mail.gmail.com>
- <20110324135657.GC20434@redhat.com>
-From: Justin TerAvest <teravest@google.com>
-Date: Thu, 24 Mar 2011 18:51:24 -0700
-Message-ID: <BANLkTimQsZYTb=n4B-U2BZJcjBbL+DwR8Q@mail.gmail.com>
-Subject: Re: [RFC] [PATCH v2 0/8] Provide cgroup isolation for buffered writes.
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: jaxboe@fusionio.com, m-ikeda@ds.jp.nec.com, ryov@valinux.co.jp,
-        taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
-        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
-        balbir@linux.vnet.ibm.com, ctalbott@google.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S934420Ab1CYB45 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 21:56:57 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38604 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933857Ab1CYB4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 21:56:53 -0400
+Date: Fri, 25 Mar 2011 12:56:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mingming Cao <cmm@us.ibm.com>, Tejun Heo <tj@kernel.org>
+Subject: linux-next: manual merge of the ext4 tree with Linus' tree
+Message-Id: <20110325125643.91510e0e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__25_Mar_2011_12_56_43_+1100_g9Vbag9zgkR+G2c6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 6:56 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Wed, Mar 23, 2011 at 03:32:51PM -0700, Justin TerAvest wrote:
->
-> [..]
->> > Ok, In the past I had tried it with 2 cgroups (running dd inside these
->> > cgroups) and I had no success. I am wondering what has changed.
->>
->> It could just be a difference in workload, or dd size, or filesystem?
->
-> Once you have sorted out the bug and I can boot my system, I will test
-> it to see what's happening.
+--Signature=_Fri__25_Mar_2011_12_56_43_+1100_g9Vbag9zgkR+G2c6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks. I'll send out a version 3 of the patch (and organize my
-current results better in the cover letter), as soon as I have the
-problem resolved. I see a very similar panic during fsck that I'm
-trying to track down.
+Hi Ted,
 
->
->>
->> >
->> > In the past a high priority throttled process can very well try to
->> > pick up a inode from low prio cgroup and start writting it and get
->> > blocked. I believe similar thing should happen now.
->>
->> You're right that it's very dependent on what inodes get picked up
->> when from writeback.
->
-> So then above results should not be reproducible consistently? Are you
-> using additional patches internally to make this work reliably. My
-> concenrn is that it will not make sense to have half baked pieces
-> in upstream kernel. That's why I was hoping that this piece can go in
-> once we have sorted out following.
+Today's linux-next merge of the ext4 tree got a conflict in
+fs/ext4/super.c between commit fd89d5f2030a ("ext4: convert to
+alloc_workqueue()") from Linus' tree and commit 198868f35de9 ("ext4: Use
+single thread to perform DIO unwritten convertion") from the ext4 tree.
 
-I am not using additional patches to make this work reliably. However,
-I've noticed the behavior is better with some filesystems than others.
+I just used the ext4 tree version.
 
->
-> - IO less throttling
-> - Per cgroup dirty ratio
-> - Some work w.r.t cgroup aware writeback.
->
-> In fact cgroup aware writeback can be part of this patch series once
-> first two pieces are in the kernel.
+P.S. Ted, that ext4 tree commit has no SOB from you even though you are
+the committer ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-I understand your preference for a complete, reliable solution for all
-of this. Right now, I'm concerned that it's hard to tie all these
-systems together, and I haven't seen an overall plan for how all of
-these things work together. If this patchset works reliably for enough
-workloads, we'll just see isolation improve as writeback is more
-cgroup aware.
+--Signature=_Fri__25_Mar_2011_12_56_43_+1100_g9Vbag9zgkR+G2c6
+Content-Type: application/pgp-signature
 
->
-> Thanks
-> Vivek
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNi/ZbAAoJEDMEi1NhKgbsLAAH/A3ESk24dNt/MufzJ2UKM1Mm
+bhPQUnD5F9nuDISZT4pIAJvYRagAUInWkMZHcAxWWvi2r6Y39MkpdKELLjpFdWxp
+ZqmxoKk/NQSlTIw3BS2Kjyz19ELrrgmpPQHcvBPyJNE3BqbGATvHgQuJQ80Azw1B
+cASftQbj/YWfv6bCFGAafRl5ip4mUmaULoN57lNzrcInI1CncPaXRludNRxTTeY/
+FLoINBAbT2IqphPuwHl7wsuuWl7yQ2AtCAP9bAcThYgxtqqKPOM+wS8UkE+HStcT
+X0+nN1CHNseUtbXoItb1+mKq3qEaq2BOkrEKZgaZ8R+iUQrZ1UvriN7Yemh3m5Q=
+=3mB3
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__25_Mar_2011_12_56_43_+1100_g9Vbag9zgkR+G2c6--
