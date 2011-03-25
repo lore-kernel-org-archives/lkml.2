@@ -1,74 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab1CYNC6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:02:58 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16792 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab1CYNC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:02:57 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-In-reply-to: <20110325044128.GJ26611@dastard>
-References: <4D8B4A89.80608@fusionio.com> <20110324183019.GA1676@gentoo.trippels.de> <4D8B8F34.5000203@fusionio.com> <4D8B92AE.8090308@fusionio.com> <20110324185445.GB1696@gentoo.trippels.de> <4D8B9457.2020608@fusionio.com> <20110324193441.GA1723@gentoo.trippels.de> <20110325044128.GJ26611@dastard>
-Date: Fri, 25 Mar 2011 09:01:40 -0400
-Message-Id: <1301057952-sup-6679@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D8C926B.01C1,ss=1,fgs=0
+	id S1752174Ab1CYND2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:03:28 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56594 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751224Ab1CYND1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 09:03:27 -0400
+Date: Fri, 25 Mar 2011 14:03:18 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] irq fixes
+Message-ID: <20110325130318.GA9827@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Dave Chinner's message of 2011-03-25 00:41:28 -0400:
-> On Thu, Mar 24, 2011 at 08:34:41PM +0100, Markus Trippelsdorf wrote:
+Linus,
 
-[ oopsen and fs corruptions in linus master ]
+Please pull the latest irq-fixes-for-linus git tree from:
 
-> 
-> So the patchset is causing repeatable filesystem corruption? Sounds
-> to me like this series is not yet ready for mainline merging. Last
-> thing I want to spend the .39 cycle helping people recover busted
-> filesystems as a result of undercooked block layer changes...
-> 
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-fixes-for-linus
 
-I tried to reproduce this, but didn't get farther than make
-modules_install.  My setup works like this:
+ Thanks,
 
-build new kernel
-start virtual machine off new kernel
-make modules_install over NFS to get new modules (just the filesystems)
+	Ingo
 
-make modules_install instantly did this:
-BUG: spinlock recursion on CPU#0, as/2014
- lock: ffff88006e939d08, .magic: dead4ead, .owner: as/2014, .owner_cpu: 0
-Pid: 2014, comm: as Tainted: G        W   2.6.38-josef+ #228
-Call Trace:
- [<ffffffff812712e5>] spin_bug+0x9c/0xa3
- [<ffffffff81271333>] do_raw_spin_lock+0x47/0x13c
- [<ffffffff81068329>] ? get_parent_ip+0x11/0x41
- [<ffffffff815dd796>] _raw_spin_lock+0x23/0x27
- [<ffffffff811258f9>] igrab+0x1b/0x48
- [<ffffffff811b2249>] nfs_updatepage+0x2ac/0x469
- [<ffffffff811a4eff>] nfs_write_end+0x26d/0x298
- [<ffffffff81068329>] ? get_parent_ip+0x11/0x41
- [<ffffffff810d43b7>] generic_file_buffered_write+0x189/0x26a
- [<ffffffff810db611>] ? __alloc_pages_nodemask+0x14d/0x7a8
- [<ffffffff810d5b2e>] __generic_file_aio_write+0x32b/0x35b
- [<ffffffff810d5bbf>] generic_file_aio_write+0x61/0xba
- [<ffffffff811a5ab7>] nfs_file_write+0xde/0x161
- [<ffffffff8110f3ba>] do_sync_write+0xcb/0x108
- [<ffffffff810f78d4>] ? do_mmap_pgoff+0x29a/0x2f4
- [<ffffffff8110f9f7>] vfs_write+0xb5/0x131
- [<ffffffff8110fc5c>] sys_write+0x4a/0x71
- [<ffffffff815e34ab>] system_call_fastpath+0x16/0x1b
+------------------>
+Thomas Gleixner (3):
+      genirq; Remove the last leftovers of the old sparse irq code
+      genirq: Provide a lockdep helper
+      genirq: Provide locked setter for chip, handler, name
 
--chris
+
+ include/linux/irqdesc.h |   45 +++++++++++++++++++++++++++++++++------------
+ kernel/irq/irqdesc.c    |   14 --------------
+ 2 files changed, 33 insertions(+), 26 deletions(-)
+
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 0021837..15e6c39 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -100,13 +100,6 @@ struct irq_desc {
+ extern struct irq_desc irq_desc[NR_IRQS];
+ #endif
+ 
+-/* Will be removed once the last users in power and sh are gone */
+-extern struct irq_desc *irq_to_desc_alloc_node(unsigned int irq, int node);
+-static inline struct irq_desc *move_irq_desc(struct irq_desc *desc, int node)
+-{
+-	return desc;
+-}
+-
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ 
+ static inline struct irq_data *irq_desc_get_irq_data(struct irq_desc *desc)
+@@ -178,24 +171,52 @@ static inline int irq_has_action(unsigned int irq)
+ 	return desc->action != NULL;
+ }
+ 
+-#ifndef CONFIG_GENERIC_HARDIRQS_NO_COMPAT
+-static inline int irq_balancing_disabled(unsigned int irq)
++/* caller has locked the irq_desc and both params are valid */
++static inline void __irq_set_handler_locked(unsigned int irq,
++					    irq_flow_handler_t handler)
+ {
+ 	struct irq_desc *desc;
+ 
+ 	desc = irq_to_desc(irq);
+-	return desc->status & IRQ_NO_BALANCING_MASK;
++	desc->handle_irq = handler;
+ }
+-#endif
+ 
+ /* caller has locked the irq_desc and both params are valid */
++static inline void
++__irq_set_chip_handler_name_locked(unsigned int irq, struct irq_chip *chip,
++				   irq_flow_handler_t handler, const char *name)
++{
++	struct irq_desc *desc;
++
++	desc = irq_to_desc(irq);
++	irq_desc_get_irq_data(desc)->chip = chip;
++	desc->handle_irq = handler;
++	desc->name = name;
++}
++
++#ifndef CONFIG_GENERIC_HARDIRQS_NO_COMPAT
+ static inline void __set_irq_handler_unlocked(int irq,
+ 					      irq_flow_handler_t handler)
+ {
++	__irq_set_handler_locked(irq, handler);
++}
++
++static inline int irq_balancing_disabled(unsigned int irq)
++{
+ 	struct irq_desc *desc;
+ 
+ 	desc = irq_to_desc(irq);
+-	desc->handle_irq = handler;
++	return desc->status & IRQ_NO_BALANCING_MASK;
++}
++#endif
++
++static inline void
++irq_set_lockdep_class(unsigned int irq, struct lock_class_key *class)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (desc)
++		lockdep_set_class(&desc->lock, class);
+ }
+ 
+ #ifdef CONFIG_IRQ_PREFLOW_FASTEOI
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index dbccc79..6fb014f 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -198,15 +198,6 @@ err:
+ 	return -ENOMEM;
+ }
+ 
+-struct irq_desc * __ref irq_to_desc_alloc_node(unsigned int irq, int node)
+-{
+-	int res = irq_alloc_descs(irq, irq, 1, node);
+-
+-	if (res == -EEXIST || res == irq)
+-		return irq_to_desc(irq);
+-	return NULL;
+-}
+-
+ static int irq_expand_nr_irqs(unsigned int nr)
+ {
+ 	if (nr > IRQ_BITMAP_BITS)
+@@ -283,11 +274,6 @@ struct irq_desc *irq_to_desc(unsigned int irq)
+ 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
+ }
+ 
+-struct irq_desc *irq_to_desc_alloc_node(unsigned int irq, int node)
+-{
+-	return irq_to_desc(irq);
+-}
+-
+ static void free_desc(unsigned int irq)
+ {
+ 	dynamic_irq_cleanup(irq);
