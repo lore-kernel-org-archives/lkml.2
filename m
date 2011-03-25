@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933809Ab1CYIfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 04:35:04 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35333 "EHLO mx1.suse.de"
+	id S933850Ab1CYIgw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 04:36:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33605 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933346Ab1CYIfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 04:35:03 -0400
-Date: Fri, 25 Mar 2011 09:34:59 +0100
+	id S933648Ab1CYIgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 04:36:50 -0400
+Date: Fri, 25 Mar 2011 09:36:49 +0100
 From: Libor Pechacek <lpechacek@suse.cz>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: remove dead code from usb_deregister_dev()
-Message-ID: <20110325083458.GB30773@fm.suse.cz>
-References: <20110324132426.GA27561@fm.suse.cz> <4D8B48D2.1050704@ru.mvista.com>
+Subject: [PATCH v2] USB: remove dead code from usb_deregister_dev()
+Message-ID: <20110325083649.GC30773@fm.suse.cz>
+References: <20110324132426.GA27561@fm.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D8B48D2.1050704@ru.mvista.com>
+In-Reply-To: <20110324132426.GA27561@fm.suse.cz>
 User-Agent: Mutt/1.5.18-muttng (2008-05-17-r1399)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 24-03-11 16:36:18, Sergei Shtylyov wrote:
-> On 24-03-2011 16:24, Libor Pechacek wrote:
->> The `name' variable is unused in usb_deregister_dev() since commit d6e5bcf.
->
->    Please also specify that commit's summary in parens for the human 
-> readers,
+The `name' variable is unused in usb_deregister_dev() since commit d6e5bcf
+(devfs: Remove the mode field from usb_class_driver as it's no longer needed).
 
-OK, sounds sane.  Updated patch will follow.
+Signed-off-by: Libor Pechacek <lpechacek@suse.cz>
+---
+ drivers/usb/core/file.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-> as asked by Linus.
-
-Can you please post a reference to the thread?  I'd like to read it but can't
-find it.
-
-Libor
+diff --git a/drivers/usb/core/file.c b/drivers/usb/core/file.c
+index cf6a542..99458c8 100644
+--- a/drivers/usb/core/file.c
++++ b/drivers/usb/core/file.c
+@@ -236,13 +236,6 @@ EXPORT_SYMBOL_GPL(usb_register_dev);
+ void usb_deregister_dev(struct usb_interface *intf,
+ 			struct usb_class_driver *class_driver)
+ {
+-	int minor_base = class_driver->minor_base;
+-	char name[20];
+-
+-#ifdef CONFIG_USB_DYNAMIC_MINORS
+-	minor_base = 0;
+-#endif
+-
+ 	if (intf->minor == -1)
+ 		return;
+ 
+@@ -252,7 +245,6 @@ void usb_deregister_dev(struct usb_interface *intf,
+ 	usb_minors[intf->minor] = NULL;
+ 	up_write(&minor_rwsem);
+ 
+-	snprintf(name, sizeof(name), class_driver->name, intf->minor - minor_base);
+ 	device_destroy(usb_class->class, MKDEV(USB_MAJOR, intf->minor));
+ 	intf->usb_dev = NULL;
+ 	intf->minor = -1;
 -- 
-Libor Pechacek
-SUSE L3 Team, Prague
+1.6.0.2
