@@ -1,108 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab1CYXxY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:53:24 -0400
-Received: from kroah.org ([198.145.64.141]:41990 "EHLO coco.kroah.org"
+	id S1755694Ab1CYXxW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:53:22 -0400
+Received: from kroah.org ([198.145.64.141]:41922 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932626Ab1CYXxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:13 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:14 2011
-Message-Id: <20110325234514.031685470@clark.kroah.org>
+	id S932378Ab1CYXxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:08 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:44 2011
+Message-Id: <20110325234844.156732450@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:35 -0700
+Date: Fri, 25 Mar 2011 16:47:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [59/63] NFS: Fix a hang/infinite loop in nfs_wb_page()
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [49/55] drm/radeon/kms: fix hardcoded EDID handling
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit b8413f98f997bb3ed7327e6d7117e7e91ce010c3 upstream.
+commit fafcf94e2b5732d1e13b440291c53115d2b172e9 upstream.
 
-When one of the two waits in nfs_commit_inode() is interrupted, it
-returns a non-negative value, which causes nfs_wb_page() to think
-that the operation was successful causing it to busy-loop rather
-than exiting.
-It also causes nfs_file_fsync() to incorrectly report the file as
-being successfully committed to disk.
+On some servers there is a hardcoded EDID provided
+in the vbios so that the driver will always see a
+display connected even if something like a KVM
+prevents traditional means like DDC or load
+detection from working properly.  Also most
+server boards with DVI are not actually DVI, but
+DVO connected to a virtual KVM service processor.
+If we fail to detect a monitor via DDC or load
+detection and a hardcoded EDID is available, use
+it.
 
-This patch fixes both problems by ensuring that we return an error
-if the attempts to wait fail.
+Additionally, when using the hardcoded EDID, use
+a copy of it rather than the actual one stored
+in the driver as the detect() and get_modes()
+functions may free it if DDC is successful.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+This fixes the virtual KVM on several internal
+servers.
+
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/write.c |   31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/radeon/radeon_combios.c    |   21 +++++++++++++++-----
+ drivers/gpu/drm/radeon/radeon_connectors.c |   30 +++++++++++++++++++++++++++--
+ drivers/gpu/drm/radeon/radeon_mode.h       |    1 
+ 3 files changed, 45 insertions(+), 7 deletions(-)
 
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1214,13 +1214,17 @@ int nfs_writeback_done(struct rpc_task *
- #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
- static int nfs_commit_set_lock(struct nfs_inode *nfsi, int may_wait)
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -448,7 +448,7 @@ static uint16_t combios_get_table_offset
+ 
+ bool radeon_combios_check_hardcoded_edid(struct radeon_device *rdev)
  {
-+	int ret;
-+
- 	if (!test_and_set_bit(NFS_INO_COMMIT, &nfsi->flags))
- 		return 1;
--	if (may_wait && !out_of_line_wait_on_bit_lock(&nfsi->flags,
--				NFS_INO_COMMIT, nfs_wait_bit_killable,
--				TASK_KILLABLE))
--		return 1;
--	return 0;
-+	if (!may_wait)
-+		return 0;
-+	ret = out_of_line_wait_on_bit_lock(&nfsi->flags,
-+				NFS_INO_COMMIT,
-+				nfs_wait_bit_killable,
-+				TASK_KILLABLE);
-+	return (ret < 0) ? ret : 1;
+-	int edid_info;
++	int edid_info, size;
+ 	struct edid *edid;
+ 	unsigned char *raw;
+ 	edid_info = combios_get_table_offset(rdev->ddev, COMBIOS_HARDCODED_EDID_TABLE);
+@@ -456,11 +456,12 @@ bool radeon_combios_check_hardcoded_edid
+ 		return false;
+ 
+ 	raw = rdev->bios + edid_info;
+-	edid = kmalloc(EDID_LENGTH * (raw[0x7e] + 1), GFP_KERNEL);
++	size = EDID_LENGTH * (raw[0x7e] + 1);
++	edid = kmalloc(size, GFP_KERNEL);
+ 	if (edid == NULL)
+ 		return false;
+ 
+-	memcpy((unsigned char *)edid, raw, EDID_LENGTH * (raw[0x7e] + 1));
++	memcpy((unsigned char *)edid, raw, size);
+ 
+ 	if (!drm_edid_is_valid(edid)) {
+ 		kfree(edid);
+@@ -468,14 +469,24 @@ bool radeon_combios_check_hardcoded_edid
+ 	}
+ 
+ 	rdev->mode_info.bios_hardcoded_edid = edid;
++	rdev->mode_info.bios_hardcoded_edid_size = size;
+ 	return true;
  }
  
- static void nfs_commit_clear_lock(struct nfs_inode *nfsi)
-@@ -1396,9 +1400,10 @@ int nfs_commit_inode(struct inode *inode
+ struct edid *
+ radeon_combios_get_hardcoded_edid(struct radeon_device *rdev)
  {
- 	LIST_HEAD(head);
- 	int may_wait = how & FLUSH_SYNC;
--	int res = 0;
-+	int res;
+-	if (rdev->mode_info.bios_hardcoded_edid)
+-		return rdev->mode_info.bios_hardcoded_edid;
++	struct edid *edid;
++
++	if (rdev->mode_info.bios_hardcoded_edid) {
++		edid = kmalloc(rdev->mode_info.bios_hardcoded_edid_size, GFP_KERNEL);
++		if (edid) {
++			memcpy((unsigned char *)edid,
++			       (unsigned char *)rdev->mode_info.bios_hardcoded_edid,
++			       rdev->mode_info.bios_hardcoded_edid_size);
++			return edid;
++		}
++	}
+ 	return NULL;
+ }
  
--	if (!nfs_commit_set_lock(NFS_I(inode), may_wait))
-+	res = nfs_commit_set_lock(NFS_I(inode), may_wait);
-+	if (res <= 0)
- 		goto out_mark_dirty;
- 	spin_lock(&inode->i_lock);
- 	res = nfs_scan_commit(inode, &head, 0, 0);
-@@ -1407,12 +1412,14 @@ int nfs_commit_inode(struct inode *inode
- 		int error = nfs_commit_list(inode, &head, how);
- 		if (error < 0)
- 			return error;
--		if (may_wait)
--			wait_on_bit(&NFS_I(inode)->flags, NFS_INO_COMMIT,
--					nfs_wait_bit_killable,
--					TASK_KILLABLE);
--		else
-+		if (!may_wait)
- 			goto out_mark_dirty;
-+		error = wait_on_bit(&NFS_I(inode)->flags,
-+				NFS_INO_COMMIT,
-+				nfs_wait_bit_killable,
-+				TASK_KILLABLE);
-+		if (error < 0)
-+			return error;
- 	} else
- 		nfs_commit_clear_lock(NFS_I(inode));
- 	return res;
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -626,6 +626,8 @@ static int radeon_vga_mode_valid(struct
+ static enum drm_connector_status
+ radeon_vga_detect(struct drm_connector *connector, bool force)
+ {
++	struct drm_device *dev = connector->dev;
++	struct radeon_device *rdev = dev->dev_private;
+ 	struct radeon_connector *radeon_connector = to_radeon_connector(connector);
+ 	struct drm_encoder *encoder;
+ 	struct drm_encoder_helper_funcs *encoder_funcs;
+@@ -676,6 +678,17 @@ radeon_vga_detect(struct drm_connector *
+ 
+ 	if (ret == connector_status_connected)
+ 		ret = radeon_connector_analog_encoder_conflict_solve(connector, encoder, ret, true);
++
++	/* RN50 and some RV100 asics in servers often have a hardcoded EDID in the
++	 * vbios to deal with KVMs. If we have one and are not able to detect a monitor
++	 * by other means, assume the CRT is connected and use that EDID.
++	 */
++	if ((!rdev->is_atom_bios) &&
++	    (ret == connector_status_disconnected) &&
++	    rdev->mode_info.bios_hardcoded_edid_size) {
++		ret = connector_status_connected;
++	}
++
+ 	radeon_connector_update_scratch_regs(connector, ret);
+ 	return ret;
+ }
+@@ -787,6 +800,8 @@ static int radeon_dvi_get_modes(struct d
+ static enum drm_connector_status
+ radeon_dvi_detect(struct drm_connector *connector, bool force)
+ {
++	struct drm_device *dev = connector->dev;
++	struct radeon_device *rdev = dev->dev_private;
+ 	struct radeon_connector *radeon_connector = to_radeon_connector(connector);
+ 	struct drm_encoder *encoder = NULL;
+ 	struct drm_encoder_helper_funcs *encoder_funcs;
+@@ -826,8 +841,6 @@ radeon_dvi_detect(struct drm_connector *
+ 			 * you don't really know what's connected to which port as both are digital.
+ 			 */
+ 			if (radeon_connector->shared_ddc && (ret == connector_status_connected)) {
+-				struct drm_device *dev = connector->dev;
+-				struct radeon_device *rdev = dev->dev_private;
+ 				struct drm_connector *list_connector;
+ 				struct radeon_connector *list_radeon_connector;
+ 				list_for_each_entry(list_connector, &dev->mode_config.connector_list, head) {
+@@ -892,6 +905,19 @@ radeon_dvi_detect(struct drm_connector *
+ 		ret = radeon_connector_analog_encoder_conflict_solve(connector, encoder, ret, true);
+ 	}
+ 
++	/* RN50 and some RV100 asics in servers often have a hardcoded EDID in the
++	 * vbios to deal with KVMs. If we have one and are not able to detect a monitor
++	 * by other means, assume the DFP is connected and use that EDID.  In most
++	 * cases the DVI port is actually a virtual KVM port connected to the service
++	 * processor.
++	 */
++	if ((!rdev->is_atom_bios) &&
++	    (ret == connector_status_disconnected) &&
++	    rdev->mode_info.bios_hardcoded_edid_size) {
++		radeon_connector->use_digital = true;
++		ret = connector_status_connected;
++	}
++
+ out:
+ 	/* updated in get modes as well since we need to know if it's analog or digital */
+ 	radeon_connector_update_scratch_regs(connector, ret);
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -239,6 +239,7 @@ struct radeon_mode_info {
+ 	struct drm_property *underscan_vborder_property;
+ 	/* hardcoded DFP edid from BIOS */
+ 	struct edid *bios_hardcoded_edid;
++	int bios_hardcoded_edid_size;
+ 
+ 	/* pointer to fbdev info structure */
+ 	struct radeon_fbdev *rfbdev;
 
 
