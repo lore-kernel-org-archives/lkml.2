@@ -1,235 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab1CYVUe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 17:20:34 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44623 "EHLO e9.ny.us.ibm.com"
+	id S1755141Ab1CYVWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 17:22:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60384 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754142Ab1CYVUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 17:20:33 -0400
-Message-ID: <4D8D0704.7080106@linux.vnet.ibm.com>
-Date: Fri, 25 Mar 2011 14:20:04 -0700
-From: Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1754530Ab1CYVWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 17:22:49 -0400
+Message-ID: <4D8D078C.1040201@redhat.com>
+Date: Fri, 25 Mar 2011 18:22:20 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [V9fs-developer] [PATCH 3/5] 9p: revert tsyncfs related changes
-References: <1301052651-21440-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1301052651-21440-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1301052651-21440-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Borislav Petkov <bp@amd64.org>
+CC: Borislav Petkov <bp@alien8.de>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly Report
+ Mechanism (HARM)
+References: <cover.1300996141.git.mchehab@redhat.com> <20110324173257.36680b90@pedra> <20110324223907.GA10498@liondog.tnic> <4D8C6C80.8010600@redhat.com> <20110325141322.GB28313@gere.osrc.amd.com>
+In-Reply-To: <20110325141322.GB28313@gere.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2011 04:30 AM, Aneesh Kumar K.V wrote:
-> Now that we use write_inode to flush server
-> cache related to fid, we don't need tsyncfs.
-> This help us to do a more efficient server flush
-> for dotu protocol
-Why are you singling out dotu only? won't it be applicable to dotl too?
+Em 25-03-2011 11:13, Borislav Petkov escreveu:
+> On Fri, Mar 25, 2011 at 07:20:48AM -0300, Mauro Carvalho Chehab wrote:
+> 
+> [..]
+> 
+>>> I think this is too fine-grained. You see, all those error records are
+>>> of type MCE so there's no need to have a trace event for corrected,
+>>> uncorrected, out of range etc. error types. You basically add a
+>>> flags argument to the trace_mce_record() tracepoint so that you can
+>>> differentiate between the different error records in the tracebuffer.
+>>> Then, you add additional fields like above for the MCEs which report a
+>>> DRAM ECC error.
+>>>
+>>> IOW, what we need are two basic error records (tracepoints, etc.): MCEs
+>>> and PCI(e) errors which are derived from the hw_event_class.
+>>>
+>>> Btw, I've played with the MCE tracepoint extension a bit and it looks
+>>> doable: http://lkml.org/lkml/2010/5/15/40.
+>>>
+>>
+>> As discussed on LPC, those are some requirements for the subsystem:
+>>
+>> *) Architecture independent (both power and arm are potentially interested)
+> 
+> I knew you'll play the arch-independent card :)
 
-- JV
-> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
-> ---
->   fs/9p/fid.c             |   15 ++-------------
->   fs/9p/v9fs.h            |    1 -
->   fs/9p/vfs_super.c       |   33 +++++++++------------------------
->   include/net/9p/9p.h     |    2 --
->   include/net/9p/client.h |    1 -
->   net/9p/client.c         |   21 ---------------------
->   6 files changed, 11 insertions(+), 62 deletions(-)
->
-> diff --git a/fs/9p/fid.c b/fs/9p/fid.c
-> index 0ee5945..85b67ff 100644
-> --- a/fs/9p/fid.c
-> +++ b/fs/9p/fid.c
-> @@ -286,11 +286,9 @@ static struct p9_fid *v9fs_fid_clone_with_uid(struct dentry *dentry, uid_t uid)
->
->   struct p9_fid *v9fs_writeback_fid(struct dentry *dentry)
->   {
-> -	int err, flags;
-> +	int err;
->   	struct p9_fid *fid;
-> -	struct v9fs_session_info *v9ses;
->
-> -	v9ses = v9fs_dentry2v9ses(dentry);
->   	fid = v9fs_fid_clone_with_uid(dentry, 0);
->   	if (IS_ERR(fid))
->   		goto error_out;
-> @@ -299,17 +297,8 @@ struct p9_fid *v9fs_writeback_fid(struct dentry *dentry)
->   	 * dirty pages. We always request for the open fid in read-write
->   	 * mode so that a partial page write which result in page
->   	 * read can work.
-> -	 *
-> -	 * we don't have a tsyncfs operation for older version
-> -	 * of protocol. So make sure the write back fid is
-> -	 * opened in O_SYNC mode.
->   	 */
-> -	if (!v9fs_proto_dotl(v9ses))
-> -		flags = O_RDWR | O_SYNC;
-> -	else
-> -		flags = O_RDWR;
-> -
-> -	err = p9_client_open(fid, flags);
-> +	err = p9_client_open(fid, O_RDWR);
->   	if (err<  0) {
->   		p9_client_clunk(fid);
->   		fid = ERR_PTR(err);
-> diff --git a/fs/9p/v9fs.h b/fs/9p/v9fs.h
-> index 9665c2b..e5ebedf 100644
-> --- a/fs/9p/v9fs.h
-> +++ b/fs/9p/v9fs.h
-> @@ -116,7 +116,6 @@ struct v9fs_session_info {
->   	struct list_head slist; /* list of sessions registered with v9fs */
->   	struct backing_dev_info bdi;
->   	struct rw_semaphore rename_sem;
-> -	struct p9_fid *root_fid; /* Used for file system sync */
->   };
->
->   /* cache_validity flags */
-> diff --git a/fs/9p/vfs_super.c b/fs/9p/vfs_super.c
-> index d94adcb..118078d 100644
-> --- a/fs/9p/vfs_super.c
-> +++ b/fs/9p/vfs_super.c
-> @@ -154,6 +154,7 @@ static struct dentry *v9fs_mount(struct file_system_type *fs_type, int flags,
->   		retval = PTR_ERR(inode);
->   		goto release_sb;
->   	}
-> +
->   	root = d_alloc_root(inode);
->   	if (!root) {
->   		iput(inode);
-> @@ -185,21 +186,10 @@ static struct dentry *v9fs_mount(struct file_system_type *fs_type, int flags,
->   		p9stat_free(st);
->   		kfree(st);
->   	}
-> -	v9fs_fid_add(root, fid);
->   	retval = v9fs_get_acl(inode, fid);
->   	if (retval)
->   		goto release_sb;
-> -	/*
-> -	 * Add the root fid to session info. This is used
-> -	 * for file system sync. We want a cloned fid here
-> -	 * so that we can do a sync_filesystem after a
-> -	 * shrink_dcache_for_umount
-> -	 */
-> -	v9ses->root_fid = v9fs_fid_clone(root);
-> -	if (IS_ERR(v9ses->root_fid)) {
-> -		retval = PTR_ERR(v9ses->root_fid);
-> -		goto release_sb;
-> -	}
-> +	v9fs_fid_add(root, fid);
->
->   	P9_DPRINTK(P9_DEBUG_VFS, " simple set mount, return 0\n");
->   	return dget(sb->s_root);
-> @@ -210,11 +200,15 @@ close_session:
->   	v9fs_session_close(v9ses);
->   	kfree(v9ses);
->   	return ERR_PTR(retval);
-> +
->   release_sb:
->   	/*
-> -	 * we will do the session_close and root dentry
-> -	 * release in the below call.
-> +	 * we will do the session_close and root dentry release
-> +	 * in the below call. But we need to clunk fid, because we haven't
-> +	 * attached the fid to dentry so it won't get clunked
-> +	 * automatically.
->   	 */
-> +	p9_client_clunk(fid);
->   	deactivate_locked_super(sb);
->   	return ERR_PTR(retval);
->   }
-> @@ -232,7 +226,7 @@ static void v9fs_kill_super(struct super_block *s)
->   	P9_DPRINTK(P9_DEBUG_VFS, " %p\n", s);
->
->   	kill_anon_super(s);
-> -	p9_client_clunk(v9ses->root_fid);
-> +
->   	v9fs_session_cancel(v9ses);
->   	v9fs_session_close(v9ses);
->   	kfree(v9ses);
-> @@ -285,14 +279,6 @@ done:
->   	return res;
->   }
->
-> -static int v9fs_sync_fs(struct super_block *sb, int wait)
-> -{
-> -	struct v9fs_session_info *v9ses = sb->s_fs_info;
-> -
-> -	P9_DPRINTK(P9_DEBUG_VFS, "v9fs_sync_fs: super_block %p\n", sb);
-> -	return p9_client_sync_fs(v9ses->root_fid);
-> -}
-> -
->   static int v9fs_drop_inode(struct inode *inode)
->   {
->   	struct v9fs_session_info *v9ses;
-> @@ -361,7 +347,6 @@ static const struct super_operations v9fs_super_ops = {
->   static const struct super_operations v9fs_super_ops_dotl = {
->   	.alloc_inode = v9fs_alloc_inode,
->   	.destroy_inode = v9fs_destroy_inode,
-> -	.sync_fs = v9fs_sync_fs,
->   	.statfs = v9fs_statfs,
->   	.drop_inode = v9fs_drop_inode,
->   	.evict_inode = v9fs_evict_inode,
-> diff --git a/include/net/9p/9p.h b/include/net/9p/9p.h
-> index 6b75a69..eaa45f9 100644
-> --- a/include/net/9p/9p.h
-> +++ b/include/net/9p/9p.h
-> @@ -139,8 +139,6 @@ do { \
->    */
->
->   enum p9_msg_t {
-> -	P9_TSYNCFS = 0,
-> -	P9_RSYNCFS,
->   	P9_TLERROR = 6,
->   	P9_RLERROR,
->   	P9_TSTATFS = 8,
-> diff --git a/include/net/9p/client.h b/include/net/9p/client.h
-> index 0a30977..83ba6a4 100644
-> --- a/include/net/9p/client.h
-> +++ b/include/net/9p/client.h
-> @@ -230,7 +230,6 @@ int p9_client_create_dotl(struct p9_fid *ofid, char *name, u32 flags, u32 mode,
->   		gid_t gid, struct p9_qid *qid);
->   int p9_client_clunk(struct p9_fid *fid);
->   int p9_client_fsync(struct p9_fid *fid, int datasync);
-> -int p9_client_sync_fs(struct p9_fid *fid);
->   int p9_client_remove(struct p9_fid *fid);
->   int p9_client_read(struct p9_fid *fid, char *data, char __user *udata,
->   							u64 offset, u32 count);
-> diff --git a/net/9p/client.c b/net/9p/client.c
-> index 2ccbf04..fd7fb37 100644
-> --- a/net/9p/client.c
-> +++ b/net/9p/client.c
-> @@ -1220,27 +1220,6 @@ error:
->   }
->   EXPORT_SYMBOL(p9_client_fsync);
->
-> -int p9_client_sync_fs(struct p9_fid *fid)
-> -{
-> -	int err = 0;
-> -	struct p9_req_t *req;
-> -	struct p9_client *clnt;
-> -
-> -	P9_DPRINTK(P9_DEBUG_9P, ">>>  TSYNC_FS fid %d\n", fid->fid);
-> -
-> -	clnt = fid->clnt;
-> -	req = p9_client_rpc(clnt, P9_TSYNCFS, "d", fid->fid);
-> -	if (IS_ERR(req)) {
-> -		err = PTR_ERR(req);
-> -		goto error;
-> -	}
-> -	P9_DPRINTK(P9_DEBUG_9P, "<<<  RSYNCFS fid %d\n", fid->fid);
-> -	p9_free_req(clnt, req);
-> -error:
-> -	return err;
-> -}
-> -EXPORT_SYMBOL(p9_client_sync_fs);
-> -
->   int p9_client_clunk(struct p9_fid *fid)
->   {
->   	int err;
+:) It is an important feature. Since the beginning, Unix differentiated
+from other OS'ses because it provides layers to abstract for device and
+architecture-specific implementations. Due to that, it become so successful.
+
+> 
+> I don't know how well a single hw event would fit all architectures
+> though, since I don't know what error formats the others require.
+
+The EDAC layer is architecture independent, as it decodes the errors internally
+and provides a higher layer. But I see your point: there will be some events
+that are dependent on the architecture. That's one of the reasons why we need
+a class of events.
+
+> We could make the hw_event different on every arch but use a superset of
+> arguments which we can wrap with a macro that picks up only the relevant
+> args on each arch.
+
+Makes sense to me.
+
+>> *) Report errors against human readable labels (e.g. using motherboard
+>>    labels to identify DIMM or PCI slots).  This is hard (will often need
+>>    some platform-specific mapping table to provide, or override, detailed
+>>    information).
+> 
+> That doesn't have anything to do with the hw event - a DRAM CE/UE error
+> is a MCE with certain bits set. You can have an additional field in the
+> MCE TP:
+> 
+> 		__field(	const char *,	label			)
+
+Assuming an architecture with MCE, I think it should provide a little more than just
+the label: it should also provide the parsed information about the event.
+In other words, I think that such error should have those two extra fields:
+
+ 		__field(	const char *,	msg			)
+ 		__field(	const char *,	label			)
+
+where msg is a brief description about what type of error happened, extracted
+from MCE log.
+
+> 
+>> *) General interface available for any kind of h/w error report (e.g.
+>>    device driver might use it for board level problems, or IPMI might
+>>    report fan speed problems or over-temperature events).
+> 
+> Those can be another tracepoint.
+
+Yes. It makes sense though to group it at the hw_event class.
+
+>> *) Useful to make it easy to adapt existing EDAC drivers, machine-check
+>>    bank decoders and other existing error reporters to use this new
+>>    mechanism.
+>>
+>> *) Robust - should not lose error information.  If the platform provides
+>>    some sort of persistent storage, should make use of it to preserve
+>>    details for fatal errors across reboot.  But may need some threshold
+>>    mechanism that copes with floods of errors from a failed object.
+> 
+> This can be done in userspace - a logging daemon which flushes the trace
+> buffers so that there's more room for new errors.
+
+Yes, but it helps to have support for it on Kernel and hardware, in order to
+avoid loose events that may happen before the daemon starts.
+
+>> *) Flexible: Errors may be discovered by polling, or reported by some
+>>    interrupt/exception
+> 
+> Although we should try to avoid polling as much as possible.
+
+Agreed.
+
+>> People at the audience also commented that there are some other parts of the
+>> Kernel that produce hardware errors and may also be interesting to map them
+>> via perf, so grouping them together into just two types may not fit.
+>>
+>> Also, as we want to have errors generated even for uncorrected errors that
+>> can be fatal, and the report system should provide user-friendly error
+>> reports, just printing a MCE code (and the MCE-specific data) is not enough:
+>> the error should be parsed on kernel to avoid loosing fatal errors.
+> 
+> This is already the case on AMD - we decode those. 
+
+Yes, and that's great. The i7core_edac driver also does that, but only for a 
+subset of the existing errors and CPU's.
+
+I think that moving the call to the tracepoint function on MCE to happen after
+the AMD decode routine (for AMD), and adding a similar logic for Intel will
+be the proper way to provide useful info to the system admin.
+
+> However, there's
+> another issue with fatal errors - you want to execute as less code as
+> possible in the wake of a fatal error.
+
+Yes. That's one of the reasons why it may make sense to have a separate event
+for fatal errors.
+
+> There are situations where an
+> MCE exception doesn't even call the MCE handler but simply stops the
+> machine completely. For such cases, persistent storage is our safest
+> bet.
+
+Agreed.
+
+> However, we still don't have a solution for clients like laptops
+> and desktops with no RAS features. We need to think about those too,
+> especially for debugging kernel oopses, suspend/resume, etc.
+
+It would be good to use some non-volatile ram for these. I was told that
+APEI spec defines a way for that, but I'm not sure if low end machines would
+be shipped with that.
+
+>> Maybe the way I mapped is too fine-grained, and we may want to group some
+>> events together, but, on the other hand, having more events allow users
+>> to filter some events that may not be relevant to them. For example, some
+>> systems with i7300 memory controller, under certain circumstances (it seems
+>> to be related to a bug at BIOS quick boot implementation), don't properly 
+>> initialize the memory controller registers. The net result is that, on every 
+>> one second (the poll interval of the edac driver), a false error report is 
+>> produced. Having events fine-grained, users can just change the perf filter 
+>> to discard the false alarms, but keeping the other hardware errors enabled.
+>>  
+>> In the specific case of MCE errors, I think we should create a new
+>> hw_event pair that will provide the decoded info and the raw MCE info, on
+>> a format like:
+>>
+>> 	Corrected Error %s at label "%s" (CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, PROCESSOR: %u:%x, TIME: %llu, SOCKET: %u, APIC: % x)
+>> 	Uncorrected Error %s at label "%s" (CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, PROCESSOR: %u:%x, TIME: %llu, SOCKET: %u, APIC: % x)
+> 
+> Why like this? This is the same tracepoint with almost all fields
+> repeated except a small difference which can be expressed with a single
+> bit: Corrected vs Uncorrected error.
+
+It might be mapped as a bit, like:
+
+ 		__field(	bool,	is_uncorrected			)
+
+and the printk might do something like:
+
+	"%s ...",
+	(is_uncorrected ? " Uncorrected" : "Corrected" )
+
+However, this would prevent the capability of filtering just the UE events.
+Also, we may eventually provide more information for the corrected case, as we may
+execute more code on that situation.
+
+I don't have a strong preference, but it seems better to use two different events.
+It would be nice to hear other opinions about this subject.
+
+>> This way, the info that it is relevant to the system admin is clearly pointed
+>> (error type and label), while hardware vendors may use the MCE data to better
+>> analyse the issue.
+> 
+> So it all sounds like we need simply to expand the MCE tracepoint with
+> DIMM-related information and wrap it in an arch-agnostic macro in the
+> EDAC code. Other arches will hide their error sources behind it too
+> depending on how they read those errors from the hardware.
+
+It seems so. By purpose, I decided to take the approach of touching first the
+EDAC arch-agnostic events. With those mapped, it is easier to compare them with
+the MCE traces and adjust both trace calls to get the best of the both words.
+
+I think that, in the specific case of i7core_edac and amd64_edac, what we need
+is to add a function at the EDAC core that will translate a MCE event into
+a memory label, and call it from the arch-dependent code (so, inside the mce driver).
+
+Alternatively, edac could fill a translation table, and the decoding code at
+mce would be just a table retrieve routine (in order to speed-up translation,
+in the case of fatal errors.
+
+Cheers,
+Mauro.
 
