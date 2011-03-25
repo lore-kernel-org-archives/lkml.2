@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab1CYWu6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 18:50:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44753 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab1CYWu5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 18:50:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=eKWUPi3RvJAx5tut+wJs7WqGGWKb19xy/8w9PF93SZKwIvcJq3WXT0j+uZMEutHdMt
-         tispuIDb3BW2kgllloprQq7qi6qYwrDttRNLghz4LBq720mpOtR8jAAMTuNUPSMceT/c
-         UDp9xqRW8onvyMCt89Lono+B2GLOqab7ZOcz0=
+	id S1755389Ab1CYWvr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 18:51:47 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42998 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751840Ab1CYWvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 18:51:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] More power management updates for 2.6.39
+Date: Fri, 25 Mar 2011 23:51:54 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
+        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Avi Kivity <avi@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
+        kvm@vger.kernel.org, iommu@lists.linux-foundation.org,
+        cpufreq@vger.kernel.org
+References: <201103100131.58206.rjw@sisk.pl> <20110322103258.GC4448@elte.hu> <201103222133.14054.rjw@sisk.pl>
+In-Reply-To: <201103222133.14054.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <20110325224726.GU3130@pulham.picochip.com>
-References: <1301073283-30821-1-git-send-email-jamie@jamieiles.com>
- <1301073283-30821-2-git-send-email-jamie@jamieiles.com> <AANLkTinLBbKaw=DwVFgORtQ=uA+zkF8QUUKj6uiqLaMw@mail.gmail.com>
- <20110325224726.GU3130@pulham.picochip.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 25 Mar 2011 18:50:36 -0400
-X-Google-Sender-Auth: UPEQTNikjZdEn3N22D0J-EDYiPI
-Message-ID: <AANLkTi=XGNdLq4=cp3iv++rg=yXUVsp4mjcW7CVuQZUV@mail.gmail.com>
-Subject: Re: [RFC PATCHv3 1/4] drivers/otp: add initial support for OTP memory
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103252351.54825.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 18:47, Jamie Iles wrote:
-> On Fri, Mar 25, 2011 at 05:58:05PM -0400, Mike Frysinger wrote:
->> On Fri, Mar 25, 2011 at 13:14, Jamie Iles wrote:
->> > +/* We'll allow OTP devices to be named otpa-otpz. */
->> > +#define MAX_OTP_DEVICES                26
->>
->> mmm is that still true ?
->
-> I think so - the actual devices should be otpa-otpz, but when you
-> register regions they could be otpa1, otpa2, otpb1, otpb2 etc.
->
->>
->> > +static unsigned long registered_otp_map[BITS_TO_LONGS(MAX_OTP_DEVICES)];
->> > +static DEFINE_MUTEX(otp_register_mutex);
->>
->> do we really need this ?  if we let the minor number dictate
->> availability, then we can increment until that errors/wraps, and we
->> dont need to do any tracking ...
->
-> OK, so it would be nice to get rid of this but afaict we still need to
-> do some accounting of available minor numbers in the range that we've
-> allocated.  We could do a simple increment % 255 for the minor number
-> but if OTP devices are removed at runtime then that may get fragmented
-> and we would need to do retries of device_register() which feels a bit
-> too easy to mess up.
->
-> Certainly allocating one major number for OTP devices then allocating
-> the minors one by one would be much better than what I have now.
->
-> We probably also want it so that if you remove the OTP device that has
-> had regions called otpaN then reinsert it they doesn't suddenly become
-> otpbN.
+Hi Linus,
 
-yeah that's true.  guess i'll leave it be then ;).
+Please pull additional power management updates for 2.6.39 from:
 
-whatever naming is picked in /dev/ should match the stuff in /sys/ btw ...
--mike
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git syscore
+
+They make subsystems that x86 depends on use struct syscore_ops objects instead
+of sysdevs for "core" power management, which reduces the code size and kernel
+memory footprint a bit and sipmlifies the "core" suspend/resume and shutdown
+code paths.
+
+
+ arch/x86/Kconfig                 |    1 +
+ arch/x86/kernel/amd_iommu_init.c |   26 ++--------
+ arch/x86/kernel/apic/apic.c      |   33 ++++---------
+ arch/x86/kernel/apic/io_apic.c   |   97 ++++++++++++++++++--------------------
+ arch/x86/kernel/cpu/mcheck/mce.c |   21 +++++----
+ arch/x86/kernel/cpu/mtrr/main.c  |   10 ++--
+ arch/x86/kernel/i8237.c          |   30 +++---------
+ arch/x86/kernel/i8259.c          |   33 ++++---------
+ arch/x86/kernel/microcode_core.c |   34 ++++++--------
+ arch/x86/kernel/pci-gart_64.c    |   32 +++----------
+ arch/x86/oprofile/nmi_int.c      |   44 +++++------------
+ drivers/base/Kconfig             |    7 +++
+ drivers/base/sys.c               |    3 +-
+ drivers/cpufreq/cpufreq.c        |   66 ++++++++++----------------
+ drivers/pci/intel-iommu.c        |   38 ++++-----------
+ include/linux/device.h           |    4 ++
+ include/linux/pm.h               |   10 +++-
+ include/linux/sysdev.h           |    7 ++-
+ kernel/time/timekeeping.c        |   27 +++-------
+ virt/kvm/kvm_main.c              |   34 +++----------
+ 20 files changed, 206 insertions(+), 351 deletions(-)
+
+---------------
+
+Rafael J. Wysocki (6):
+      x86: Use syscore_ops instead of sysdev classes and sysdevs
+      timekeeping: Use syscore_ops instead of sysdev class and sysdev
+      PCI / Intel IOMMU: Use syscore_ops instead of sysdev class and sysdev
+      KVM: Use syscore_ops instead of sysdev class and sysdev
+      cpufreq: Use syscore_ops for boot CPU suspend/resume (v2)
+      Introduce ARCH_NO_SYSDEV_OPS config option (v2)
+
