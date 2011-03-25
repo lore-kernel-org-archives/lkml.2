@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819Ab1CZAEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:04:15 -0400
-Received: from kroah.org ([198.145.64.141]:41922 "EHLO coco.kroah.org"
+	id S932977Ab1CZAES (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:04:18 -0400
+Received: from kroah.org ([198.145.64.141]:41919 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932586Ab1CYXxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932583Ab1CYXxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 19:53:03 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:13 2011
-Message-Id: <20110325234513.208887551@clark.kroah.org>
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:43 2011
+Message-Id: <20110325234843.614448024@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:27 -0700
+Date: Fri, 25 Mar 2011 16:47:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -17,13 +17,13 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         Yinghai Lu <yinghai@kernel.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         "H. Peter Anvin" <hpa@zytor.com>
-Subject: [51/63] x86: Cleanup highmap after brk is concluded
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+Subject: [44/55] x86: Cleanup highmap after brk is concluded
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
