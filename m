@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab1CYRYx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 13:24:53 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59753 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab1CYRYw (ORCPT
+	id S1753907Ab1CYR1d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 13:27:33 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:45290 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab1CYR1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 13:24:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=azyASZt29myKyscPQOJ1Gg1b++tlyJk4sd8/pZY57mAyhaTeZQ/Hrz3o2QrxUzKEOc
-         EYuw29j6AM71FeuBAgh9nXroPVAi/dGXmeFuHI0rGmlfPK0mE1zO761fgCTx0oYwXASI
-         HMLcgmQR6P8L3JWsDezEMVRzgT/owBaOQZqps=
-Date: Fri, 25 Mar 2011 18:24:46 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au
-Subject: Re: [GIT PULL] ext4 update for 2.6.39-rc1
-Message-ID: <20110325172446.GH1409@htj.dyndns.org>
-References: <E1Q2wpD-0002It-CE@tytso-glaptop>
- <AANLkTi=aKLhtuuMtd=KZ8YBykCp=yJ-KPAJ3jKQq0jQW@mail.gmail.com>
+	Fri, 25 Mar 2011 13:27:31 -0400
+Date: Fri, 25 Mar 2011 18:27:09 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: naveen yadav <yad.naveen@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: flush_kernel_vmap_range() invalidate_kernel_vmap_range() API not
+ exists for MIPS
+Message-ID: <20110325172709.GC8483@linux-mips.org>
+References: <AANLkTimkh2QLvupu+62NGrKfqRb_gC7KLCAKkEoS9N9N@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=aKLhtuuMtd=KZ8YBykCp=yJ-KPAJ3jKQq0jQW@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimkh2QLvupu+62NGrKfqRb_gC7KLCAKkEoS9N9N@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Fri, Mar 25, 2011 at 02:38:13PM +0530, naveen yadav wrote:
 
-On Fri, Mar 25, 2011 at 10:02:48AM -0700, Linus Torvalds wrote:
-> Ok, guys, can you verify my merge? In one branch, we had Tejun change
-> it to use "alloc_workqueue()", and in another, ext4 switched from
-> create_workqueue() to create_singlethread_workqueue().
+> We are working on 2.6.35.9 linux kernel on MIPS 34kce core and our
+> cache is VIVT having cache aliasing .
+
+No, they're VIPT unless you successfully modified your 34K core to
+change it from a less than perfect cache design to the most lunatic
+cache policy known to man kind ...
+
+> When I check the implementation on ARM I can check the implemenation
+> exists , but there is not similar implementation exists on MIPS.
+> These API's are used by XFS module:
 > 
-> My resolution was to use WQ_UNBOUND in allow_workqueue() in the
-> resulting merge, which I think should be semantically the correct
-> resolve. But the commit message in the create_singlethread_workqueue()
-> change seems to imply that the single-threadedness isn't a
-> _correctness_ issue as much as it is just a "we don't need multiple
-> threads" issue, so maybe the WQ_UNBOUND isn't necessary. So WQ_UNBOUND
-> may or may not be a good idea.
-> 
-> Regardless, please give it a look, ok?
+> static inline void flush_kernel_vmap_range(void *vaddr, int size)
+> static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
+> static inline void flush_kernel_dcache_page(struct page *page)
 
-The merg should be safe but WQ_UNBOUND isn't necessary there, so I
-think the version from commit fd89d5f2030a ("ext4: convert to
-alloc_workqueue()") would be better.  BTW, Stephen already spotted
-this earlier today - https://lkml.org/lkml/2011/3/24/652
+A known problem for (too ...) long.  I'll finally take care of it.
 
-Thanks.
-
--- 
-tejun
+  Ralf
