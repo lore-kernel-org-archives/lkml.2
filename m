@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab1CYH2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 03:28:07 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64284 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab1CYH2F (ORCPT
+	id S1754893Ab1CYH3K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 03:29:10 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:55073 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab1CYH3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 03:28:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=w1ZQM7x5kjQjFntNooH9LsQT8pBUIF9k5Co88rWG4i7f8fPXuyvXPESirFUsRkqJeK
-         ikydajpG6FCGDlII04/s4/1z56T5nfzd33mcME4LVe46iseTOIgR1yw5ppKxlF4y2jn8
-         RQdCxH5XteTc4TwnNn3Gb0k131W6m68VT5nro=
-Date: Fri, 25 Mar 2011 00:27:59 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 2.6.39-rc0
-Message-ID: <20110325072759.GA2590@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 25 Mar 2011 03:29:08 -0400
+Date: Fri, 25 Mar 2011 03:28:59 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Cc: arjan@linux.intel.com, peterz@infradead.org, suresh.b.siddha@intel.com,
+        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V1 0/2] cpuidle: global registration of idle states
+ with per-cpu statistics
+In-reply-to: <20110322124724.29408.12885.stgit@tringupt.in.ibm.com>
+Message-id: <alpine.LFD.2.02.1103250326160.32565@x980>
+References: <20110322124724.29408.12885.stgit@tringupt.in.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 22 Mar 2011, Trinabh Gupta wrote:
 
-Please pull from:
+> This patch series is an early RFC to discuss the feasibility of
+> avoiding registering of idle states from each cpu.
+> 
+> The core change is to split the cpuidle_device structure into parts
+> that can be global and parts that has to remain per-cpu.  The per-cpu
+> pieces are mostly generic statistics that can be independent of
+> current running driver.
+> 
+> Motivation:
+> * Simplify the cpuidle subsystem framework and have
+>   registration/unregistration done by single cpu.
+> 
+> * Minimise the data structure that needs to be maintained for multiple
+>   cpuidle drivers
+> 
+> * Reference: https://lkml.org/lkml/2011/2/10/37
+> 
+> Advantages:
+> * Make the cpuidle framework simple for most use cases where C-States
+>   are symmetric.  In case there are asymmetric C-States detected,
+>   fallback mechanism should be incorporated to maintain the system
+>   functional
+>   https://lkml.org/lkml/2011/2/10/257
+>   https://lkml.org/lkml/2011/2/10/37
+> 
+> * Non x86 archs that does not have asymmetric C-States like POWER, may
+>   not need the fallback mechanism and hence the framework will be
+>   simple for most use cases.
+> 
+> Disadvantages:
+> * Asymmetric C-States are part of x86 ACPI specification.  Incorrect
+>   handling may functionally affect the system
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+I think this is a non-issue.
 
-to receive a few updates to recently merged tsc2005 driver.
+> * Incorporating per-cpu masks for each state to allow/dis-allow global
+>   states on subset of CPUs may result in an implementation that is
+>   not better than current solution of having per-cpu states.
 
-Changelog:
----------
+I don't think this is needed.
 
-Aaro Koskinen (2):
-      Input: tsc2005 - use relative jiffies to schedule the watchdog
-      Input: tsc2005 - fix locking issue
+> This patch series applies on top of the pm_idle cleanup patch
+> https://lkml.org/lkml/2011/3/22/150 (cpuidle: Cleanup pm_idle and 
+> include driver/cpuidle.c in-kernel)
+> 
+> This patch series is tested on x86 Nehalem system with multiple ACPI
+> C-States.
+> 
+> This patch series has limitations of not handling multiple driver
+> registration and switching between drivers on all CPUs mainly due to
+> incomplete handling of per-cpu enable/disable and driver_data.
 
-Geert Uytterhoeven (1):
-      Input: tsc2005 - driver should depend on GENERIC_HARDIRQS
+I think this series is more important than the feature of multiple
+driver/system support, and thus should come first.
 
-
-Diffstat:
---------
-
- drivers/input/touchscreen/Kconfig   |    2 +-
- drivers/input/touchscreen/tsc2005.c |   18 +++++++++++++-----
- 2 files changed, 14 insertions(+), 6 deletions(-)
-
--- 
-Dmitry
+thanks,
+Len Brown, Intel Open Source Technology Center
 
