@@ -1,151 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933840Ab1CZAVv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:21:51 -0400
-Received: from kroah.org ([198.145.64.141]:41582 "EHLO coco.kroah.org"
+	id S933825Ab1CZAWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:22:06 -0400
+Received: from kroah.org ([198.145.64.141]:41589 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932385Ab1CYXwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:40 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:10 2011
-Message-Id: <20110325234510.763878365@clark.kroah.org>
+	id S932375Ab1CYXwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:39 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:41 2011
+Message-Id: <20110325234841.538430456@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:04 -0700
+Date: Fri, 25 Mar 2011 16:47:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Aaro Koskinen <aaro.koskinen@nokia.com>
-Subject: [28/63] procfs: fix /proc/<pid>/maps heap check
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+        Kees Cook <kees.cook@canonical.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        David Howells <dhowells@redhat.com>, Eugene Teo <eugeneteo@kernel.sg>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: [25/55] proc: protect mm start_code/end_code in /proc/pid/stat
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
+From: Kees Cook <kees.cook@canonical.com>
 
-commit 0db0c01b53a1a421513f91573241aabafb87802a upstream.
+commit 5883f57ca0008ffc93e09cbb9847a1928e50c6f3 upstream.
 
-The current code fails to print the "[heap]" marking if the heap is split
-into multiple mappings.
+While mm->start_stack was protected from cross-uid viewing (commit
+f83ce3e6b02d5 ("proc: avoid information leaks to non-privileged
+processes")), the start_code and end_code values were not.  This would
+allow the text location of a PIE binary to leak, defeating ASLR.
 
-Fix the check so that the marking is displayed in all possible cases:
-	1. vma matches exactly the heap
-	2. the heap vma is merged e.g. with bss
-	3. the heap vma is splitted e.g. due to locked pages
+Note that the value "1" is used instead of "0" for a protected value since
+"ps", "killall", and likely other readers of /proc/pid/stat, take
+start_code of "0" to mean a kernel thread and will misbehave.  Thanks to
+Brad Spengler for pointing this out.
 
-Test cases. In all cases, the process should have mapping(s) with
-[heap] marking:
+Addresses CVE-2011-0726
 
-	(1) vma matches exactly the heap
-
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/types.h>
-
-	int main (void)
-	{
-		if (sbrk(4096) != (void *)-1) {
-			printf("check /proc/%d/maps\n", (int)getpid());
-			while (1)
-				sleep(1);
-		}
-		return 0;
-	}
-
-	# ./test1
-	check /proc/553/maps
-	[1] + Stopped                    ./test1
-	# cat /proc/553/maps | head -4
-	00008000-00009000 r-xp 00000000 01:00 3113640    /test1
-	00010000-00011000 rw-p 00000000 01:00 3113640    /test1
-	00011000-00012000 rw-p 00000000 00:00 0          [heap]
-	4006f000-40070000 rw-p 00000000 00:00 0
-
-	(2) the heap vma is merged
-
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/types.h>
-
-	char foo[4096] = "foo";
-	char bar[4096];
-
-	int main (void)
-	{
-		if (sbrk(4096) != (void *)-1) {
-			printf("check /proc/%d/maps\n", (int)getpid());
-			while (1)
-				sleep(1);
-		}
-		return 0;
-	}
-
-	# ./test2
-	check /proc/556/maps
-	[2] + Stopped                    ./test2
-	# cat /proc/556/maps | head -4
-	00008000-00009000 r-xp 00000000 01:00 3116312    /test2
-	00010000-00012000 rw-p 00000000 01:00 3116312    /test2
-	00012000-00014000 rw-p 00000000 00:00 0          [heap]
-	4004a000-4004b000 rw-p 00000000 00:00 0
-
-	(3) the heap vma is splitted (this fails without the patch)
-
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/mman.h>
-	#include <sys/types.h>
-
-	int main (void)
-	{
-		if ((sbrk(4096) != (void *)-1) && !mlockall(MCL_FUTURE) &&
-		    (sbrk(4096) != (void *)-1)) {
-			printf("check /proc/%d/maps\n", (int)getpid());
-			while (1)
-				sleep(1);
-		}
-		return 0;
-	}
-
-	# ./test3
-	check /proc/559/maps
-	[1] + Stopped                    ./test3
-	# cat /proc/559/maps|head -4
-	00008000-00009000 r-xp 00000000 01:00 3119108    /test3
-	00010000-00011000 rw-p 00000000 01:00 3119108    /test3
-	00011000-00012000 rw-p 00000000 00:00 0          [heap]
-	00012000-00013000 rw-p 00000000 00:00 0          [heap]
-
-It looks like the bug has been there forever, and since it only results in
-some information missing from a procfile, it does not fulfil the -stable
-"critical issue" criteria.
-
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Eugene Teo <eugeneteo@kernel.sg>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Brad Spengler <spender@grsecurity.net>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/task_mmu.c |    4 ++--
+ fs/proc/array.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -249,8 +249,8 @@ static void show_map_vma(struct seq_file
- 		const char *name = arch_vma_name(vma);
- 		if (!name) {
- 			if (mm) {
--				if (vma->vm_start <= mm->start_brk &&
--						vma->vm_end >= mm->brk) {
-+				if (vma->vm_start <= mm->brk &&
-+						vma->vm_end >= mm->start_brk) {
- 					name = "[heap]";
- 				} else if (vma->vm_start <= mm->start_stack &&
- 					   vma->vm_end >= mm->start_stack) {
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -489,8 +489,8 @@ static int do_task_stat(struct seq_file
+ 		vsize,
+ 		mm ? get_mm_rss(mm) : 0,
+ 		rsslim,
+-		mm ? mm->start_code : 0,
+-		mm ? mm->end_code : 0,
++		mm ? (permitted ? mm->start_code : 1) : 0,
++		mm ? (permitted ? mm->end_code : 1) : 0,
+ 		(permitted && mm) ? mm->start_stack : 0,
+ 		esp,
+ 		eip,
 
 
