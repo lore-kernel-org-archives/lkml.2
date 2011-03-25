@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933937Ab1CZAWk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:22:40 -0400
-Received: from kroah.org ([198.145.64.141]:41589 "EHLO coco.kroah.org"
+	id S933779Ab1CZAXA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:23:00 -0400
+Received: from kroah.org ([198.145.64.141]:41582 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932325Ab1CYXwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:38 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:10 2011
-Message-Id: <20110325234510.644660638@clark.kroah.org>
+	id S932361Ab1CYXwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:37 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:41 2011
+Message-Id: <20110325234841.334650033@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:03 -0700
+Date: Fri, 25 Mar 2011 16:47:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -19,13 +19,13 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         "Serge E. Hallyn" <serge@hallyn.com>, Eric Paris <eparis@redhat.com>,
         Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
         Eugene Teo <eugeneteo@kernel.org>
-Subject: [27/63] sysctl: restrict write access to dmesg_restrict
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+Subject: [23/55] sysctl: restrict write access to dmesg_restrict
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
@@ -61,7 +61,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 --- a/kernel/sysctl.c
 +++ b/kernel/sysctl.c
-@@ -169,6 +169,11 @@ static int proc_taint(struct ctl_table *
+@@ -168,6 +168,11 @@ static int proc_taint(struct ctl_table *
  			       void __user *buffer, size_t *lenp, loff_t *ppos);
  #endif
  
@@ -73,8 +73,8 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
  #ifdef CONFIG_MAGIC_SYSRQ
  /* Note: sysrq code uses it's own private copy */
  static int __sysrq_enabled = SYSRQ_DEFAULT_ENABLE;
-@@ -713,7 +718,7 @@ static struct ctl_table kern_table[] = {
- 		.data		= &kptr_restrict,
+@@ -1469,7 +1474,7 @@ static struct ctl_table fs_table[] = {
+ 		.data		= &suid_dumpable,
  		.maxlen		= sizeof(int),
  		.mode		= 0644,
 -		.proc_handler	= proc_dointvec_minmax,
@@ -82,7 +82,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
  		.extra1		= &zero,
  		.extra2		= &two,
  	},
-@@ -2397,6 +2402,17 @@ static int proc_taint(struct ctl_table *
+@@ -2400,6 +2405,17 @@ static int proc_taint(struct ctl_table *
  	return err;
  }
  
