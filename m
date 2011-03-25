@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687Ab1CYHOe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 03:14:34 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41322 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933032Ab1CYHOd (ORCPT
+	id S933747Ab1CYHTs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 03:19:48 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:60636 "EHLO
+	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933067Ab1CYHTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 03:14:33 -0400
-X-Originating-IP: 217.70.178.44
-X-Originating-IP: 134.134.139.72
-Message-ID: <4D8C40D0.80109@pbjtriplett.org>
-Date: Fri, 25 Mar 2011 00:14:24 -0700
-From: Burt Triplett <burt@pbjtriplett.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: x86/microcode: intel: correctly handle negative revisions
-References: <4D65EE74.1050709@pbjtriplett.org> <20110312023001.GB27550@khazad-dum.debian.net> <4D87E2CD.6020306@pbjtriplett.org> <20110324001451.GA7950@khazad-dum.debian.net> <20110325020954.GC4535@khazad-dum.debian.net>
-In-Reply-To: <20110325020954.GC4535@khazad-dum.debian.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Mar 2011 03:19:46 -0400
+Date: Fri, 25 Mar 2011 03:19:25 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Trinabh Gupta <trinabh@linux.vnet.ibm.com>, arjan@linux.intel.com,
+        peterz@infradead.org, suresh.b.siddha@intel.com,
+        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
+        xen-devel@lists.xensource.com
+Subject: Re: [RFC PATCH V4 4/5] cpuidle: driver for xen
+In-reply-to: <20110324120522.GB29294@dumpdata.com>
+Message-id: <alpine.LFD.2.02.1103250315180.32565@x980>
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
+ <20110322123324.28725.3131.stgit@tringupt.in.ibm.com>
+ <20110322145054.GB26952@dumpdata.com> <4D89C40B.4020809@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1103231659210.12911@x980>
+ <20110324120522.GB29294@dumpdata.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/24/2011 7:09 PM, Henrique de Moraes Holschuh wrote:
-> As per the Intel SDM vol 3A, microcode revisions are signed 32-bit
-> numbers.  The code was handling them as unsigned int in some places and as
-> an int in other places.
+> On Thu, Mar 24, 2011 at 03:18:14AM -0400, Len Brown wrote:
+> > Is a CONFIG_XEN kernel supposed to use just HLT in idle?
 > 
-> As per the clarification posted by Burt Triplett from the Intel BITS
-> project, negative microcode revisions are used internally at Intel and
-> should always get loaded.  Also, they should not be overriden unless we
-> can somehow differentiate "automated" loading from "forced" loading (which
-> we cannot at this time).  Burt says the SDM will be updated with this
-> information eventually.
+> For right now..
+> > 
+> > xen_arch_setup() does this:
+> > 
+> >         pm_idle = default_idle;
+> >         boot_option_idle_override = IDLE_HALT;
+> > 
+> > which has that effect.  I guess this makes sense b/c the
+> > CONFIG_XEN kernel is Dom0 and the real C-sates are done
+> > by the hypervisor?
 > 
-> The code should:
-> 
-> 1. Ignore attempts to load a zero-revision microcode (that value is
-> reserved for the CPU to signal that it is running with the factory
-> microcode, and must not be present in a normal microcode update);
-> 
-> 2. Always load negative revision microcodes, to help Intel's engineers;
-> 
-> 3. Avoid upgrading from a BIOS-loaded negative revision microcode to
-> a normal microcode, to not get in the way of Intel's engineers.
-> 
-> 4. Upgrade from revision 0 (no updates loaded in CPU) to any revision.
-> 
-> It was already doing some of that, but I don't feel like trying to track
-> down exactly how the old code with its mix of signed/unsigned handling of
-> revisions would behave in each of the above cases.
-> 
-> Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> LKML-Reference: <4D87E2CD.6020306@pbjtriplett.org>
-> Cc: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Burt Triplett <burt@pbjtriplett.org>
+> Correct. There are some patches that make the C-states 
+> be visible in the Linux kernel, but that hasn't been ported
+> over yet.
 
-Reviewed-by: Burt Triplett <burt@pbjtriplett.org>
+The Xen Dom0 kernel will trap into the hypervisor
+whenever it does a HLT or an MWAIT, yes?
 
-Thanks,
-Burt Triplett
+What is the benefit of having Dom0 decided between
+C-states that it can't actually enter?
+
+What is the mechanism by which those C-states are
+made visible to Dom0, and how are those states
+related to the states that are supported on
+the bare iron?
+
+> > Would the same CONFIG_XEN kernel binary ever not
+> > run xen_arch_setup(), run on raw hardware, and want
+> > to use idle states other than HLT?
+
+> ever not? I am not sure of the question, so let me state:
+> The Linux kernel if compiled with CONFIG_XEN, and if run on
+> native hardware, would _never_ run 'xen_arch_setup()'*. It would
+> run the normal, native type setup.
+
+Thanks, that clarifies.
+-Len Brown, Intel Open Source Technolgy Center
+
