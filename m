@@ -1,213 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905Ab1CZA01 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:26:27 -0400
-Received: from kroah.org ([198.145.64.141]:41498 "EHLO coco.kroah.org"
+	id S934030Ab1CZA05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:26:57 -0400
+Received: from kroah.org ([198.145.64.141]:41480 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932281Ab1CYXw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:26 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
-Message-Id: <20110325234509.429413611@clark.kroah.org>
+	id S932262Ab1CYXwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:24 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:40 2011
+Message-Id: <20110325234840.523416550@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:51 -0700
+Date: Fri, 25 Mar 2011 16:47:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [15/63] mm: compaction: prevent kswapd compacting memory to reduce CPU usage
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Andrey Vagin <avagin@openvz.org>
+Subject: [15/55] oom: avoid deferring oom killer if exiting task is being traced
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: David Rientjes <rientjes@google.com>
 
-commit d527caf22e48480b102c7c6ee5b9ba12170148f7 upstream.
+commit edd45544c6f09550df0a5491aa8a07af24767e73 upstream.
 
-This patch reverts 5a03b051 ("thp: use compaction in kswapd for GFP_ATOMIC
-order > 0") due to reports stating that kswapd CPU usage was higher and
-IRQs were being disabled more frequently.  This was reported at
-http://www.spinics.net/linux/fedora/alsa-user/msg09885.html.
+The oom killer naturally defers killing anything if it finds an eligible
+task that is already exiting and has yet to detach its ->mm.  This avoids
+unnecessarily killing tasks when one is already in the exit path and may
+free enough memory that the oom killer is no longer needed.  This is
+detected by PF_EXITING since threads that have already detached its ->mm
+are no longer considered at all.
 
-Without this patch applied, CPU usage by kswapd hovers around the 20% mark
-according to the tester (Arthur Marsh:
-http://www.spinics.net/linux/fedora/alsa-user/msg09899.html).  With this
-patch applied, it's around 2%.
+The problem with always deferring when a thread is PF_EXITING, however, is
+that it may never actually exit when being traced, specifically if another
+task is tracing it with PTRACE_O_TRACEEXIT.  The oom killer does not want
+to defer in this case since there is no guarantee that thread will ever
+exit without intervention.
 
-The problem is not related to THP which specifies __GFP_NO_KSWAPD but is
-triggered by high-order allocations hitting the low watermark for their
-order and waking kswapd on kernels with CONFIG_COMPACTION set.  The most
-common trigger for this is network cards configured for jumbo frames but
-it's also possible it'll be triggered by fork-heavy workloads (order-1)
-and some wireless cards which depend on order-1 allocations.
+This patch will now only defer the oom killer when a thread is PF_EXITING
+and no ptracer has stopped its progress in the exit path.  It also ensures
+that a child is sacrificed for the chosen parent only if it has a
+different ->mm as the comment implies: this ensures that the thread group
+leader is always targeted appropriately.
 
-The symptoms for the user will be high CPU usage by kswapd in low-memory
-situations which could be confused with another writeback problem.  While
-a patch like 5a03b051 may be reintroduced in the future, this patch plays
-it safe for now and reverts it.
-
-[mel@csn.ul.ie: Beefed up the changelog]
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reported-by: Arthur Marsh <arthur.marsh@internode.on.net>
-Tested-by: Arthur Marsh <arthur.marsh@internode.on.net>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Andrey Vagin <avagin@openvz.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/compaction.h |    9 ++-------
- mm/compaction.c            |   24 +++---------------------
- mm/vmscan.c                |   18 +-----------------
- 3 files changed, 6 insertions(+), 45 deletions(-)
+ mm/oom_kill.c |   40 +++++++++++++++++++++++++---------------
+ 1 file changed, 25 insertions(+), 15 deletions(-)
 
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -11,9 +11,6 @@
- /* The full zone was compacted */
- #define COMPACT_COMPLETE	3
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -31,6 +31,7 @@
+ #include <linux/memcontrol.h>
+ #include <linux/mempolicy.h>
+ #include <linux/security.h>
++#include <linux/ptrace.h>
  
--#define COMPACT_MODE_DIRECT_RECLAIM	0
--#define COMPACT_MODE_KSWAPD		1
+ int sysctl_panic_on_oom;
+ int sysctl_oom_kill_allocating_task;
+@@ -316,22 +317,29 @@ static struct task_struct *select_bad_pr
+ 		if (test_tsk_thread_flag(p, TIF_MEMDIE))
+ 			return ERR_PTR(-1UL);
+ 
+-		/*
+-		 * This is in the process of releasing memory so wait for it
+-		 * to finish before killing some other task by mistake.
+-		 *
+-		 * However, if p is the current task, we allow the 'kill' to
+-		 * go ahead if it is exiting: this will simply set TIF_MEMDIE,
+-		 * which will allow it to gain access to memory reserves in
+-		 * the process of exiting and releasing its resources.
+-		 * Otherwise we could get an easy OOM deadlock.
+-		 */
+ 		if (p->flags & PF_EXITING) {
+-			if (p != current)
+-				return ERR_PTR(-1UL);
 -
- #ifdef CONFIG_COMPACTION
- extern int sysctl_compact_memory;
- extern int sysctl_compaction_handler(struct ctl_table *table, int write,
-@@ -28,8 +25,7 @@ extern unsigned long try_to_compact_page
- 			bool sync);
- extern unsigned long compaction_suitable(struct zone *zone, int order);
- extern unsigned long compact_zone_order(struct zone *zone, int order,
--					gfp_t gfp_mask, bool sync,
--					int compact_mode);
-+					gfp_t gfp_mask, bool sync);
+-			chosen = p;
+-			*ppoints = 1000;
++			/*
++			 * If p is the current task and is in the process of
++			 * releasing memory, we allow the "kill" to set
++			 * TIF_MEMDIE, which will allow it to gain access to
++			 * memory reserves.  Otherwise, it may stall forever.
++			 *
++			 * The loop isn't broken here, however, in case other
++			 * threads are found to have already been oom killed.
++			 */
++			if (p == current) {
++				chosen = p;
++				*ppoints = 1000;
++			} else {
++				/*
++				 * If this task is not being ptraced on exit,
++				 * then wait for it to finish before killing
++				 * some other task unnecessarily.
++				 */
++				if (!(task_ptrace(p->group_leader) &
++							PT_TRACE_EXIT))
++					return ERR_PTR(-1UL);
++			}
+ 		}
  
- /* Do not skip compaction more than 64 times */
- #define COMPACT_MAX_DEFER_SHIFT 6
-@@ -74,8 +70,7 @@ static inline unsigned long compaction_s
- }
+ 		points = oom_badness(p, mem, nodemask, totalpages);
+@@ -493,6 +501,8 @@ static int oom_kill_process(struct task_
+ 		list_for_each_entry(child, &t->children, sibling) {
+ 			unsigned int child_points;
  
- static inline unsigned long compact_zone_order(struct zone *zone, int order,
--					       gfp_t gfp_mask, bool sync,
--					       int compact_mode)
-+					       gfp_t gfp_mask, bool sync)
- {
- 	return COMPACT_CONTINUE;
- }
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -42,8 +42,6 @@ struct compact_control {
- 	unsigned int order;		/* order a direct compactor needs */
- 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
- 	struct zone *zone;
--
--	int compact_mode;
- };
- 
- static unsigned long release_freepages(struct list_head *freelist)
-@@ -397,10 +395,7 @@ static int compact_finished(struct zone
- 		return COMPACT_COMPLETE;
- 
- 	/* Compaction run is not finished if the watermark is not met */
--	if (cc->compact_mode != COMPACT_MODE_KSWAPD)
--		watermark = low_wmark_pages(zone);
--	else
--		watermark = high_wmark_pages(zone);
-+	watermark = low_wmark_pages(zone);
- 	watermark += (1 << cc->order);
- 
- 	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
-@@ -413,15 +408,6 @@ static int compact_finished(struct zone
- 	if (cc->order == -1)
- 		return COMPACT_CONTINUE;
- 
--	/*
--	 * Generating only one page of the right order is not enough
--	 * for kswapd, we must continue until we're above the high
--	 * watermark as a pool for high order GFP_ATOMIC allocations
--	 * too.
--	 */
--	if (cc->compact_mode == COMPACT_MODE_KSWAPD)
--		return COMPACT_CONTINUE;
--
- 	/* Direct compactor: Is a suitable page free? */
- 	for (order = cc->order; order < MAX_ORDER; order++) {
- 		/* Job done if page is free of the right migratetype */
-@@ -543,8 +529,7 @@ static int compact_zone(struct zone *zon
- 
- unsigned long compact_zone_order(struct zone *zone,
- 				 int order, gfp_t gfp_mask,
--				 bool sync,
--				 int compact_mode)
-+				 bool sync)
- {
- 	struct compact_control cc = {
- 		.nr_freepages = 0,
-@@ -553,7 +538,6 @@ unsigned long compact_zone_order(struct
- 		.migratetype = allocflags_to_migratetype(gfp_mask),
- 		.zone = zone,
- 		.sync = sync,
--		.compact_mode = compact_mode,
- 	};
- 	INIT_LIST_HEAD(&cc.freepages);
- 	INIT_LIST_HEAD(&cc.migratepages);
-@@ -599,8 +583,7 @@ unsigned long try_to_compact_pages(struc
- 								nodemask) {
- 		int status;
- 
--		status = compact_zone_order(zone, order, gfp_mask, sync,
--					    COMPACT_MODE_DIRECT_RECLAIM);
-+		status = compact_zone_order(zone, order, gfp_mask, sync);
- 		rc = max(status, rc);
- 
- 		/* If a normal allocation would succeed, stop compacting */
-@@ -631,7 +614,6 @@ static int compact_node(int nid)
- 			.nr_freepages = 0,
- 			.nr_migratepages = 0,
- 			.order = -1,
--			.compact_mode = COMPACT_MODE_DIRECT_RECLAIM,
- 		};
- 
- 		zone = &pgdat->node_zones[zoneid];
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2397,7 +2397,6 @@ loop_again:
- 		 * cause too much scanning of the lower zones.
- 		 */
- 		for (i = 0; i <= end_zone; i++) {
--			int compaction;
- 			struct zone *zone = pgdat->node_zones + i;
- 			int nr_slab;
- 
-@@ -2428,24 +2427,9 @@ loop_again:
- 			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
- 			total_scanned += sc.nr_scanned;
- 
--			compaction = 0;
--			if (order &&
--			    zone_watermark_ok(zone, 0,
--					       high_wmark_pages(zone),
--					      end_zone, 0) &&
--			    !zone_watermark_ok(zone, order,
--					       high_wmark_pages(zone),
--					       end_zone, 0)) {
--				compact_zone_order(zone,
--						   order,
--						   sc.gfp_mask, false,
--						   COMPACT_MODE_KSWAPD);
--				compaction = 1;
--			}
--
- 			if (zone->all_unreclaimable)
- 				continue;
--			if (!compaction && nr_slab == 0 &&
-+			if (nr_slab == 0 &&
- 			    !zone_reclaimable(zone))
- 				zone->all_unreclaimable = 1;
++			if (child->mm == p->mm)
++				continue;
  			/*
+ 			 * oom_badness() returns 0 if the thread is unkillable
+ 			 */
 
 
