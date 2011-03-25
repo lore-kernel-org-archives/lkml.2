@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555Ab1CYHGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 03:06:09 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36103 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932237Ab1CYHGE (ORCPT
+	id S933522Ab1CYHNh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 03:13:37 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:52689 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933125Ab1CYHNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 03:06:04 -0400
-X-Greylist: delayed 36742 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Mar 2011 03:06:04 EDT
-X-Originating-IP: 217.70.178.129
-X-Originating-IP: 134.134.137.73
-Message-ID: <4D8C3ED1.5000704@pbjtriplett.org>
-Date: Fri, 25 Mar 2011 00:05:53 -0700
-From: Burt Triplett <burt@pbjtriplett.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, linux-kernel@vger.kernel.org
-Subject: Re: BITS handling of CPU microcode updates
-References: <4D65EE74.1050709@pbjtriplett.org>	<20110312023001.GB27550@khazad-dum.debian.net>	<4D87E2CD.6020306@pbjtriplett.org>	<20110324001451.GA7950@khazad-dum.debian.net> <m2ipv8kx8y.fsf@firstfloor.org>
-In-Reply-To: <m2ipv8kx8y.fsf@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Mar 2011 03:13:36 -0400
+Date: Fri, 25 Mar 2011 03:13:04 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: Trinabh Gupta <trinabh@linux.vnet.ibm.com>, arjan@linux.intel.com,
+        peterz@infradead.org, suresh.b.siddha@intel.com,
+        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
+        xen-devel@lists.xensource.com
+Subject: Re: [RFC PATCH V4 2/5] cpuidle: list based cpuidle driver registration
+ and selection
+In-reply-to: <20110324165200.GC16408@dirshya.in.ibm.com>
+Message-id: <alpine.LFD.2.02.1103250307330.32565@x980>
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
+ <20110322123233.28725.92874.stgit@tringupt.in.ibm.com>
+ <alpine.LFD.2.02.1103222254420.10549@x980>
+ <4D89BBDD.5090505@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1103231633030.12911@x980>
+ <4D8B5197.2060306@linux.vnet.ibm.com>
+ <20110324165200.GC16408@dirshya.in.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/24/2011 2:46 PM, Andi Kleen wrote:
-> Henrique de Moraes Holschuh<hmh@hmh.eng.br>  writes:
->>
->> Very well, I will send patches to fix that behaviour, as well as some
->> other stuff I noticed that was not updated to match the recommended
->> actions documented by the SDM and some Intel application notes.
->
-> I don't think you can easily -- there's no kernel interface
-> to distingush the "explicit user action" case from automatic loading.
+> > So what do you suggest can be removed?
+> 
+> Can we use safe_halt() until intel_idle/acpi_idle take over? But what
+> if they do not take over?  If safe_halt() is not very bad compared to
+> the variants like mwait_idle and c1e_idle, then we can remove the old
+> code and no need to move them to default driver.
 
-Correct, but the microcode module can still implement the "automatic 
-loading" case, as Henrique's patch does.
+One reason I'd like a default cpuidle driver is that today
+there is a race.  cpuidle registers, but until its driver
+registers it will use polling.  go ahead and look:
 
-> I suppose all the test labs have learned by now how to disable
-> automatic updates ...
+grep . /sys/devices/system/cpu/cpu*/cpuidle/state0/usage
 
-The microcode driver's current unsigned revision checking happens to 
-treat negative revisions as large positive revisions, so it happened to 
-work OK in the test lab environments, though not by design. :)
+that should be 0, but it isn't...
 
-- Burt Triplett
+> > >Are we suggesting that x86 must always build with cpuidle?
+> > >I'm sure that somebody someplace will object to that.
+> > 
+> > Arjan argued that since almost everyone today runs cpuidle
+> > it may be best to include it in the kernel
+> > (https://lkml.org/lkml/2010/10/20/243). But yes, we agreed
+> > that we would have to make cpuidle lighter incrementally.
+> > Making ladder governor optional could be one way for example.
+> > >
+> > >OTOH, if cpuidle is included, I'd like to see the
+> > >non-cpuidle code excluded, since nobody will run it...
+> 
+> The non-cpuidle code will be the select_idle_routine() and related
+> function that cam move to default_driver that register to cpuidle.
+> We can load on-demand as module if better routines fail to register.
+> Maybe we don't need this at all as discussed in the above point?
+
+Right, though I don't share your fascination with modules.
+
+cheers,
+Len Brown, Intel Open Source Technology Center
+
+
