@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab1CYX4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:56:25 -0400
-Received: from kroah.org ([198.145.64.141]:41987 "EHLO coco.kroah.org"
+	id S932981Ab1CYX6W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:58:22 -0400
+Received: from kroah.org ([198.145.64.141]:48922 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932619Ab1CYXxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:12 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:44 2011
-Message-Id: <20110325234844.469790361@clark.kroah.org>
+	id S932457Ab1CYX6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:58:20 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:56:37 2011
+Message-Id: <20110325235637.803826051@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:45 -0700
+Date: Fri, 25 Mar 2011 16:55:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [52/55] SUNRPC: Never reuse the socket port after an xs_close()
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Mi Jinlong <mijinlong@cn.fujitsu.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [13/23] nfsd: wrong index used in inner loop
+References: <20110325235537.660072281@clark.kroah.org>
+Content-Disposition: inline; filename=nfsd-wrong-index-used-in-inner-loop.patch
+In-Reply-To: <20110325235654.GA24416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+From: Mi Jinlong <mijinlong@cn.fujitsu.com>
 
-------------------
+commit 5a02ab7c3c4580f94d13c683721039855b67cda6 upstream.
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+We must not use dummy for index.
+After the first index, READ32(dummy) will change dummy!!!!
 
-commit 246408dcd5dfeef2df437ccb0ef4d6ee87805f58 upstream.
-
-If we call xs_close(), we're in one of two situations:
- - Autoclose, which means we don't expect to resend a request
- - bind+connect failed, which probably means the port is in use
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+[bfields@redhat.com: Trond points out READ_BUF alone is sufficient.]
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/xprtsock.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/nfsd/nfs4xdr.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -710,6 +710,8 @@ static void xs_reset_transport(struct so
- 	if (sk == NULL)
- 		return;
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1114,7 +1114,7 @@ nfsd4_decode_create_session(struct nfsd4
  
-+	transport->srcport = 0;
-+
- 	write_lock_bh(&sk->sk_callback_lock);
- 	transport->inet = NULL;
- 	transport->sock = NULL;
+ 	u32 dummy;
+ 	char *machine_name;
+-	int i, j;
++	int i;
+ 	int nr_secflavs;
+ 
+ 	READ_BUF(16);
+@@ -1187,8 +1187,6 @@ nfsd4_decode_create_session(struct nfsd4
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy * 4);
+-			for (j = 0; j < dummy; ++j)
+-				READ32(dummy);
+ 			break;
+ 		case RPC_AUTH_GSS:
+ 			dprintk("RPC_AUTH_GSS callback secflavor "
+@@ -1204,7 +1202,6 @@ nfsd4_decode_create_session(struct nfsd4
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy);
+-			p += XDR_QUADLEN(dummy);
+ 			break;
+ 		default:
+ 			dprintk("Illegal callback secflavor\n");
 
 
