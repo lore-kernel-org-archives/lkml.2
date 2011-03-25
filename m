@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab1CYNV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:21:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34595 "EHLO
+	id S1752857Ab1CYN1C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:27:02 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34610 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751926Ab1CYNVz (ORCPT
+	with ESMTP id S1752386Ab1CYNV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:21:55 -0400
-Message-Id: <20110325132047.644977678@linutronix.de>
+	Fri, 25 Mar 2011 09:21:57 -0400
+Message-Id: <20110325132047.844709252@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Fri, 25 Mar 2011 13:21:53 -0000
+Date: Fri, 25 Mar 2011 13:21:55 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LAK <linux-arm-kernel@lists.infradead.org>,
         Russell King <linux@arm.linux.org.uk>,
         Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: [patch 03/23] arm: Use genirq lockdep helper to set lock class
+Subject: [patch 05/23] arm: msm: Convert to new irq chip functions
 References: <20110325131617.258789658@linutronix.de>
-Content-Disposition: inline; filename=genirq-use-lockdep-helper.patch
+Content-Disposition: inline; filename=arm-msm-convert-chip-functions.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
@@ -25,56 +25,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the open coded access to irq_desc which will fail on sparse irq
-and use the proper wrappers.
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/arm/mach-at91/gpio.c  |    2 +-
- arch/arm/mach-tegra/gpio.c |    2 +-
- arch/arm/plat-omap/gpio.c  |    4 +---
- 3 files changed, 3 insertions(+), 5 deletions(-)
+ arch/arm/mach-msm/gpio-v2.c |   33 +++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 16 deletions(-)
 
-Index: linux-2.6-tip/arch/arm/mach-at91/gpio.c
+Index: linux-2.6-tip/arch/arm/mach-msm/gpio-v2.c
 ===================================================================
---- linux-2.6-tip.orig/arch/arm/mach-at91/gpio.c
-+++ linux-2.6-tip/arch/arm/mach-at91/gpio.c
-@@ -518,7 +518,7 @@ void __init at91_gpio_irq_setup(void)
- 		__raw_writel(~0, this->regbase + PIO_IDR);
+--- linux-2.6-tip.orig/arch/arm/mach-msm/gpio-v2.c
++++ linux-2.6-tip/arch/arm/mach-msm/gpio-v2.c
+@@ -230,18 +230,18 @@ static void msm_gpio_update_dual_edge_po
+ 	       val, val2);
+ }
  
- 		for (i = 0, pin = this->chip.base; i < 32; i++, pin++) {
--			lockdep_set_class(&irq_desc[pin].lock, &gpio_lock_class);
-+			irq_set_lockdep_class(pin, &gpio_lock_class);
+-static void msm_gpio_irq_ack(unsigned int irq)
++static void msm_gpio_irq_ack(struct irq_data *d)
+ {
+-	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
++	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, d->irq);
  
- 			/*
- 			 * Can use the "simple" and not "edge" handler since it's
-Index: linux-2.6-tip/arch/arm/mach-tegra/gpio.c
-===================================================================
---- linux-2.6-tip.orig/arch/arm/mach-tegra/gpio.c
-+++ linux-2.6-tip/arch/arm/mach-tegra/gpio.c
-@@ -296,7 +296,7 @@ static int __init tegra_gpio_init(void)
- 	for (i = INT_GPIO_BASE; i < (INT_GPIO_BASE + TEGRA_NR_GPIOS); i++) {
- 		bank = &tegra_gpio_banks[GPIO_BANK(irq_to_gpio(i))];
+ 	writel(BIT(INTR_STATUS), GPIO_INTR_STATUS(gpio));
+ 	if (test_bit(gpio, msm_gpio.dual_edge_irqs))
+ 		msm_gpio_update_dual_edge_pos(gpio);
+ }
  
--		lockdep_set_class(&irq_desc[i].lock, &gpio_lock_class);
-+		irq_set_lockdep_class(i, &gpio_lock_class);
- 		set_irq_chip_data(i, bank);
- 		set_irq_chip(i, &tegra_gpio_irq_chip);
- 		set_irq_handler(i, handle_simple_irq);
-Index: linux-2.6-tip/arch/arm/plat-omap/gpio.c
-===================================================================
---- linux-2.6-tip.orig/arch/arm/plat-omap/gpio.c
-+++ linux-2.6-tip/arch/arm/plat-omap/gpio.c
-@@ -1672,9 +1672,7 @@ static void __init omap_gpio_chip_init(s
+-static void msm_gpio_irq_mask(unsigned int irq)
++static void msm_gpio_irq_mask(struct irq_data *d)
+ {
+-	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
++	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, d->irq);
+ 	unsigned long irq_flags;
  
- 	for (j = bank->virtual_irq_start;
- 		     j < bank->virtual_irq_start + bank_width; j++) {
--		struct irq_desc *d = irq_to_desc(j);
--
--		lockdep_set_class(&d->lock, &gpio_lock_class);
-+		irq_set_lockdep_class(j, &gpio_lock_class);
- 		set_irq_chip_data(j, bank);
- 		if (bank_is_mpuio(bank))
- 			set_irq_chip(j, &mpuio_irq_chip);
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+@@ -251,9 +251,9 @@ static void msm_gpio_irq_mask(unsigned i
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+ }
+ 
+-static void msm_gpio_irq_unmask(unsigned int irq)
++static void msm_gpio_irq_unmask(struct irq_data *d)
+ {
+-	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
++	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, d->irq);
+ 	unsigned long irq_flags;
+ 
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+@@ -263,9 +263,9 @@ static void msm_gpio_irq_unmask(unsigned
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+ }
+ 
+-static int msm_gpio_irq_set_type(unsigned int irq, unsigned int flow_type)
++static int msm_gpio_irq_set_type(struct irq_data *d, unsigned int flow_type)
+ {
+-	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
++	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, d->irq);
+ 	unsigned long irq_flags;
+ 	uint32_t bits;
+ 
+@@ -309,6 +309,7 @@ static int msm_gpio_irq_set_type(unsigne
+  */
+ static void msm_summary_irq_handler(unsigned int irq, struct irq_desc *desc)
+ {
++	struct irq_data *data = irq_desc_get_irq_data(desc);
+ 	unsigned long i;
+ 
+ 	for (i = find_first_bit(msm_gpio.enabled_irqs, NR_GPIO_IRQS);
+@@ -318,12 +319,12 @@ static void msm_summary_irq_handler(unsi
+ 			generic_handle_irq(msm_gpio_to_irq(&msm_gpio.gpio_chip,
+ 							   i));
+ 	}
+-	desc->chip->ack(irq);
++	data->chip->irq_ack(data);
+ }
+ 
+-static int msm_gpio_irq_set_wake(unsigned int irq, unsigned int on)
++static int msm_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
+ {
+-	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
++	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, d->irq);
+ 
+ 	if (on) {
+ 		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
+@@ -340,11 +341,11 @@ static int msm_gpio_irq_set_wake(unsigne
+ 
+ static struct irq_chip msm_gpio_irq_chip = {
+ 	.name		= "msmgpio",
+-	.mask		= msm_gpio_irq_mask,
+-	.unmask		= msm_gpio_irq_unmask,
+-	.ack		= msm_gpio_irq_ack,
+-	.set_type	= msm_gpio_irq_set_type,
+-	.set_wake	= msm_gpio_irq_set_wake,
++	.irq_mask	= msm_gpio_irq_mask,
++	.irq_unmask	= msm_gpio_irq_unmask,
++	.irq_ack	= msm_gpio_irq_ack,
++	.irq_set_type	= msm_gpio_irq_set_type,
++	.irq_set_wake	= msm_gpio_irq_set_wake,
+ };
+ 
+ static int __devinit msm_gpio_probe(struct platform_device *dev)
 
 
