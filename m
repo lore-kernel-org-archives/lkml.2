@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab1CYGwM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 02:52:12 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36434 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754203Ab1CYGwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 02:52:08 -0400
-Subject: ALSA: vmalloc buffers should use normal mmap
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Mar 2011 17:51:54 +1100
-Message-ID: <1301035914.2402.472.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932937Ab1CYGxJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 02:53:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36873 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754203Ab1CYGxF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 02:53:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ob5/suwH8PQFlvYgbe6Tx5pOl/LY0t9LWEXs9LBuLaLehrYO+9jWrY/JcWN35Dtdan
+         +unM7RnOIa3bsKmBxN7q3NQtTMN7tlATtGSjRfboR1E6Fcb5nmtIGaMpIer+dh6XiOx+
+         bDDGTMSWxcYdzDUdQGEkjRhWe5ec9nqkWUXFQ=
+Date: Fri, 25 Mar 2011 07:53:00 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
+Message-ID: <20110325065300.GB1409@htj.dyndns.org>
+References: <20110323153727.GB12003@htj.dyndns.org>
+ <20110324094119.GD12038@htj.dyndns.org>
+ <20110324094151.GE12038@htj.dyndns.org>
+ <20110325033956.GB9313@home.goodmis.org>
+ <AANLkTikayCJyYVo1MNpg1EN+88bSQNOu=NPW5s_j4shD@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikayCJyYVo1MNpg1EN+88bSQNOu=NPW5s_j4shD@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's a big no-no to use pgprot_noncached() when mmap'ing such buffers
-into userspace since they are mapped cachable in kernel space.
+Hello, Steven, Linus.
 
-This can cause all sort of interesting things ranging from to garbled
-sound to lockups on various architectures. I've observed that usb-audio
-is broken on powerpc 4xx for example because of that.
+On Thu, Mar 24, 2011 at 09:38:58PM -0700, Linus Torvalds wrote:
+> On Thu, Mar 24, 2011 at 8:39 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > But now, mutex_trylock(B) becomes a spinner too, and since the B's owner
+> > is running (spinning on A) it will spin as well waiting for A's owner to
+> > release it. Unfortunately, A's owner is also spinning waiting for B to
+> > release it.
+> >
+> > If both A and B's owners are real time tasks, then boom! deadlock.
+> 
+> Hmm. I think you're right. And it looks pretty fundamental - I don't
+> see any reasonable approach to avoid it.
 
-Also remove the now unused snd_pcm_lib_mmap_noncached(). It's
-an arch business to know when to use uncached mappings, there's
-already hacks for MIPS inside snd_pcm_default_mmap() and other
-archs are supposed to use dma_mmap_coherent().
+Hmmm... I have an idea.  Will play with it a bit and post if it works
+out okay.
 
-(See my separate patch that adds dma_mmap_coherent() to powerpc)
+> I think the RT issue is a red herring too - afaik, you can get a
+> deadlock with two perfectly normal processes too. Of course, for
+> non-RT tasks, any other process will eventually disturb the situation
+> and you'd get kicked out due to need_resched(), but even that might be
+> avoided for a long time if there are other CPU's - leading to tons of
+> wasted CPU time.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Takashi Iwai <tiwai@suse.de>
----
- include/sound/pcm.h     |    4 +---
- sound/core/pcm_native.c |    9 ---------
- 2 files changed, 1 insertions(+), 12 deletions(-)
+Yeap, need_resched() currently is the only thing which limits the
+duration of spinning when the owner continues to run.
 
-diff --git a/include/sound/pcm.h b/include/sound/pcm.h
-index 430a9cc..e1bad11 100644
---- a/include/sound/pcm.h
-+++ b/include/sound/pcm.h
-@@ -1031,9 +1031,7 @@ int snd_pcm_lib_mmap_iomem(struct snd_pcm_substream *substream, struct vm_area_s
- #define snd_pcm_lib_mmap_iomem	NULL
- #endif
- 
--int snd_pcm_lib_mmap_noncached(struct snd_pcm_substream *substream,
--			       struct vm_area_struct *area);
--#define snd_pcm_lib_mmap_vmalloc	snd_pcm_lib_mmap_noncached
-+#define snd_pcm_lib_mmap_vmalloc NULL
- 
- static inline void snd_pcm_limit_isa_dma_size(int dma, size_t *max)
- {
-diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
-index 2d99c37..7639407 100644
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -3194,15 +3194,6 @@ int snd_pcm_lib_mmap_iomem(struct snd_pcm_substream *substream,
- EXPORT_SYMBOL(snd_pcm_lib_mmap_iomem);
- #endif /* SNDRV_PCM_INFO_MMAP */
- 
--/* mmap callback with pgprot_noncached */
--int snd_pcm_lib_mmap_noncached(struct snd_pcm_substream *substream,
--			       struct vm_area_struct *area)
--{
--	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
--	return snd_pcm_default_mmap(substream, area);
--}
--EXPORT_SYMBOL(snd_pcm_lib_mmap_noncached);
--
- /*
-  * mmap DMA buffer
-  */
+Thanks.
 
-
+-- 
+tejun
