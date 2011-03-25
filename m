@@ -1,122 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab1CZAT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:19:28 -0400
-Received: from kroah.org ([198.145.64.141]:41589 "EHLO coco.kroah.org"
+	id S933673Ab1CZATb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:19:31 -0400
+Received: from kroah.org ([198.145.64.141]:41722 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932425Ab1CYXwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:45 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:11 2011
-Message-Id: <20110325234511.313858766@clark.kroah.org>
+	id S932419Ab1CYXwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:44 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:42 2011
+Message-Id: <20110325234842.103480879@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:09 -0700
+Date: Fri, 25 Mar 2011 16:47:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Mi Jinlong <mijinlong@cn.fujitsu.com>,
         "J. Bruce Fields" <bfields@redhat.com>
-Subject: [33/63] nfsd4: fix struct file leak
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+Subject: [30/55] nfsd: wrong index used in inner loop
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: J. Bruce Fields <bfields@redhat.com>
+From: Mi Jinlong <mijinlong@cn.fujitsu.com>
 
-commit 0997b173609b9229ece28941c118a2a9b278796e upstream.
+commit 5a02ab7c3c4580f94d13c683721039855b67cda6 upstream.
 
-Make sure we properly reference count the struct files that a lock
-depends on, and release them when the lock stateid is released.
+We must not use dummy for index.
+After the first index, READ32(dummy) will change dummy!!!!
 
-This fixes a major leak of struct files when using locking over nfsv4.
-
-Reported-by: Rick Koshi <nfs-bug-report@more-right-rudder.com>
-Tested-by: Ivo Přikryl <prikryl@eurosat.cz>
+Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+[bfields@redhat.com: Trond points out READ_BUF alone is sufficient.]
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4state.c |   32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+ fs/nfsd/nfs4xdr.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -397,6 +397,9 @@ static void unhash_generic_stateid(struc
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1107,7 +1107,7 @@ nfsd4_decode_create_session(struct nfsd4
  
- static void free_generic_stateid(struct nfs4_stateid *stp)
- {
-+	int oflag = nfs4_access_bmap_to_omode(stp);
-+
-+	nfs4_file_put_access(stp->st_file, oflag);
- 	put_nfs4_file(stp->st_file);
- 	kmem_cache_free(stateid_slab, stp);
- }
-@@ -448,11 +451,8 @@ release_stateid_lockowners(struct nfs4_s
+ 	u32 dummy;
+ 	char *machine_name;
+-	int i, j;
++	int i;
+ 	int nr_secflavs;
  
- static void release_open_stateid(struct nfs4_stateid *stp)
- {
--	int oflag = nfs4_access_bmap_to_omode(stp);
--
- 	unhash_generic_stateid(stp);
- 	release_stateid_lockowners(stp);
--	nfs4_file_put_access(stp->st_file, oflag);
- 	free_generic_stateid(stp);
- }
- 
-@@ -3735,6 +3735,7 @@ alloc_init_lock_stateid(struct nfs4_stat
- 	stp->st_stateid.si_stateownerid = sop->so_id;
- 	stp->st_stateid.si_fileid = fp->fi_id;
- 	stp->st_stateid.si_generation = 0;
-+	stp->st_access_bmap = 0;
- 	stp->st_deny_bmap = open_stp->st_deny_bmap;
- 	stp->st_openstp = open_stp;
- 
-@@ -3749,6 +3750,17 @@ check_lock_length(u64 offset, u64 length
- 	     LOFF_OVERFLOW(offset, length)));
- }
- 
-+static void get_lock_access(struct nfs4_stateid *lock_stp, u32 access)
-+{
-+	struct nfs4_file *fp = lock_stp->st_file;
-+	int oflag = nfs4_access_to_omode(access);
-+
-+	if (test_bit(access, &lock_stp->st_access_bmap))
-+		return;
-+	nfs4_file_get_access(fp, oflag);
-+	__set_bit(access, &lock_stp->st_access_bmap);
-+}
-+
- /*
-  *  LOCK operation 
-  */
-@@ -3846,18 +3858,16 @@ nfsd4_lock(struct svc_rqst *rqstp, struc
- 	switch (lock->lk_type) {
- 		case NFS4_READ_LT:
- 		case NFS4_READW_LT:
--			if (find_readable_file(lock_stp->st_file)) {
--				nfs4_get_vfs_file(rqstp, fp, &cstate->current_fh, NFS4_SHARE_ACCESS_READ);
--				filp = find_readable_file(lock_stp->st_file);
--			}
-+			filp = find_readable_file(lock_stp->st_file);
-+			if (filp)
-+				get_lock_access(lock_stp, NFS4_SHARE_ACCESS_READ);
- 			file_lock.fl_type = F_RDLCK;
+ 	READ_BUF(16);
+@@ -1180,8 +1180,6 @@ nfsd4_decode_create_session(struct nfsd4
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy * 4);
+-			for (j = 0; j < dummy; ++j)
+-				READ32(dummy);
  			break;
- 		case NFS4_WRITE_LT:
- 		case NFS4_WRITEW_LT:
--			if (find_writeable_file(lock_stp->st_file)) {
--				nfs4_get_vfs_file(rqstp, fp, &cstate->current_fh, NFS4_SHARE_ACCESS_WRITE);
--				filp = find_writeable_file(lock_stp->st_file);
--			}
-+			filp = find_writeable_file(lock_stp->st_file);
-+			if (filp)
-+				get_lock_access(lock_stp, NFS4_SHARE_ACCESS_WRITE);
- 			file_lock.fl_type = F_WRLCK;
+ 		case RPC_AUTH_GSS:
+ 			dprintk("RPC_AUTH_GSS callback secflavor "
+@@ -1197,7 +1195,6 @@ nfsd4_decode_create_session(struct nfsd4
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy);
+-			p += XDR_QUADLEN(dummy);
  			break;
  		default:
+ 			dprintk("Illegal callback secflavor\n");
 
 
