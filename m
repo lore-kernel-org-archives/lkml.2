@@ -1,65 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488Ab1CYXww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:52:52 -0400
-Received: from kroah.org ([198.145.64.141]:41743 "EHLO coco.kroah.org"
+	id S933285Ab1CZARP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:17:15 -0400
+Received: from kroah.org ([198.145.64.141]:41809 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932441Ab1CYXwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:47 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:42 2011
-Message-Id: <20110325234842.317963445@clark.kroah.org>
+	id S932487Ab1CYXww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:52 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:12 2011
+Message-Id: <20110325234512.042344409@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:25 -0700
+Date: Fri, 25 Mar 2011 16:44:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [32/55] [media] uvcvideo: Fix descriptor parsing for video output devices
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <david-b@pacbell.net>
+Subject: [40/63] ehci-hcd: Bug fix: dont set a QHs Halt bit
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 4093a5c4a3f59cba1a085bbf87b6ffdddc5a443d upstream.
+commit b5a3b3d985493c173925907adfebf3edab236fe7 upstream.
 
-Commit 4057ac6ca9a77c4275b34b5925ab5c99557913b1
+This patch (as1453) fixes a long-standing bug in the ehci-hcd driver.
 
-    V4L/DVB (13505): uvcvideo: Refactor chain scan
+There is no need to set the Halt bit in the overlay region for an
+unlinked or blocked QH.  Contrary to what the comment says, setting
+the Halt bit does not cause the QH to be patched later; that decision
+(made in qh_refresh()) depends only on whether the QH is currently
+pointing to a valid qTD.  Likewise, setting the Halt bit does not
+prevent completions from activating the QH while it is "stopped"; they
+are prevented by the fact that qh_completions() temporarily changes
+qh->qh_state to QH_STATE_COMPLETING.
 
-broke output terminals parsing. Fix it.
+On the other hand, there are circumstances in which the QH will be
+reactivated _without_ being patched; this happens after an URB beyond
+the head of the queue is unlinked.  Setting the Halt bit will then
+cause the hardware to see the QH with both the Active and Halt bits
+set, an invalid combination that will prevent the queue from
+advancing and may even crash some controllers.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Apparently the only reason this hasn't been reported before is that
+unlinking URBs from the middle of a running queue is quite uncommon.
+However Test 17, recently added to the usbtest driver, does exactly
+this, and it confirms the presence of the bug.
+
+In short, there is no reason to set the Halt bit for an unlinked or
+blocked QH, and there is a very good reason not to set it.  Therefore
+the code that sets it is removed.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Andiry Xu <andiry.xu@amd.com>
+CC: David Brownell <david-b@pacbell.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/uvc/uvc_driver.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/host/ehci-q.c |   12 ------------
+ 1 file changed, 12 deletions(-)
 
---- a/drivers/media/video/uvc/uvc_driver.c
-+++ b/drivers/media/video/uvc/uvc_driver.c
-@@ -1264,6 +1264,14 @@ static int uvc_scan_chain_entity(struct
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -315,7 +315,6 @@ qh_completions (struct ehci_hcd *ehci, s
+ 	int			stopped;
+ 	unsigned		count = 0;
+ 	u8			state;
+-	const __le32		halt = HALT_BIT(ehci);
+ 	struct ehci_qh_hw	*hw = qh->hw;
  
- 		break;
+ 	if (unlikely (list_empty (&qh->qtd_list)))
+@@ -422,7 +421,6 @@ qh_completions (struct ehci_hcd *ehci, s
+ 					&& !(qtd->hw_alt_next
+ 						& EHCI_LIST_END(ehci))) {
+ 				stopped = 1;
+-				goto halt;
+ 			}
  
-+	case UVC_OTT_VENDOR_SPECIFIC:
-+	case UVC_OTT_DISPLAY:
-+	case UVC_OTT_MEDIA_TRANSPORT_OUTPUT:
-+		if (uvc_trace_param & UVC_TRACE_PROBE)
-+			printk(" OT %d", entity->id);
-+
-+		break;
-+
- 	case UVC_TT_STREAMING:
- 		if (UVC_ENTITY_IS_ITERM(entity)) {
- 			if (uvc_trace_param & UVC_TRACE_PROBE)
+ 		/* stop scanning when we reach qtds the hc is using */
+@@ -456,16 +454,6 @@ qh_completions (struct ehci_hcd *ehci, s
+ 				 */
+ 				ehci_clear_tt_buffer(ehci, qh, urb, token);
+ 			}
+-
+-			/* force halt for unlinked or blocked qh, so we'll
+-			 * patch the qh later and so that completions can't
+-			 * activate it while we "know" it's stopped.
+-			 */
+-			if ((halt & hw->hw_token) == 0) {
+-halt:
+-				hw->hw_token |= halt;
+-				wmb ();
+-			}
+ 		}
+ 
+ 		/* unless we already know the urb's status, collect qtd status
 
 
