@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932685Ab1CYX4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:56:53 -0400
-Received: from kroah.org ([198.145.64.141]:41980 "EHLO coco.kroah.org"
+	id S932787Ab1CYX5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:57:14 -0400
+Received: from kroah.org ([198.145.64.141]:41968 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932604Ab1CYXxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:11 -0400
+	id S932593Ab1CYXxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:10 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:44 2011
-Message-Id: <20110325234844.362111829@clark.kroah.org>
+Message-Id: <20110325234844.258247976@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:44 -0700
+Date: Fri, 25 Mar 2011 16:47:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [51/55] NFS: Fix a hang/infinite loop in nfs_wb_page()
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [50/55] perf: Fix tear-down of inherited group events
 In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,84 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit b8413f98f997bb3ed7327e6d7117e7e91ce010c3 upstream.
+commit 38b435b16c36b0d863efcf3f07b34a6fac9873fd upstream.
 
-When one of the two waits in nfs_commit_inode() is interrupted, it
-returns a non-negative value, which causes nfs_wb_page() to think
-that the operation was successful causing it to busy-loop rather
-than exiting.
-It also causes nfs_file_fsync() to incorrectly report the file as
-being successfully committed to disk.
+When destroying inherited events, we need to destroy groups too,
+otherwise the event iteration in perf_event_exit_task_context() will
+miss group siblings and we leak events with all the consequences.
 
-This patch fixes both problems by ensuring that we return an error
-if the attempts to wait fail.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-and-tested-by: Vince Weaver <vweaver1@eecs.utk.edu>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1300196470.2203.61.camel@twins>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/write.c |   31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+ kernel/perf_event.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1214,13 +1214,17 @@ int nfs_writeback_done(struct rpc_task *
- #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
- static int nfs_commit_set_lock(struct nfs_inode *nfsi, int may_wait)
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -5863,17 +5863,20 @@ __perf_event_exit_task(struct perf_event
+ 			 struct perf_event_context *child_ctx,
+ 			 struct task_struct *child)
  {
-+	int ret;
-+
- 	if (!test_and_set_bit(NFS_INO_COMMIT, &nfsi->flags))
- 		return 1;
--	if (may_wait && !out_of_line_wait_on_bit_lock(&nfsi->flags,
--				NFS_INO_COMMIT, nfs_wait_bit_killable,
--				TASK_KILLABLE))
--		return 1;
--	return 0;
-+	if (!may_wait)
-+		return 0;
-+	ret = out_of_line_wait_on_bit_lock(&nfsi->flags,
-+				NFS_INO_COMMIT,
-+				nfs_wait_bit_killable,
-+				TASK_KILLABLE);
-+	return (ret < 0) ? ret : 1;
- }
+-	struct perf_event *parent_event;
++	if (child_event->parent) {
++		raw_spin_lock_irq(&child_ctx->lock);
++		perf_group_detach(child_event);
++		raw_spin_unlock_irq(&child_ctx->lock);
++	}
  
- static void nfs_commit_clear_lock(struct nfs_inode *nfsi)
-@@ -1394,9 +1398,10 @@ int nfs_commit_inode(struct inode *inode
- {
- 	LIST_HEAD(head);
- 	int may_wait = how & FLUSH_SYNC;
--	int res = 0;
-+	int res;
+ 	perf_event_remove_from_context(child_event);
  
--	if (!nfs_commit_set_lock(NFS_I(inode), may_wait))
-+	res = nfs_commit_set_lock(NFS_I(inode), may_wait);
-+	if (res <= 0)
- 		goto out_mark_dirty;
- 	spin_lock(&inode->i_lock);
- 	res = nfs_scan_commit(inode, &head, 0, 0);
-@@ -1405,12 +1410,14 @@ int nfs_commit_inode(struct inode *inode
- 		int error = nfs_commit_list(inode, &head, how);
- 		if (error < 0)
- 			return error;
--		if (may_wait)
--			wait_on_bit(&NFS_I(inode)->flags, NFS_INO_COMMIT,
--					nfs_wait_bit_killable,
--					TASK_KILLABLE);
--		else
-+		if (!may_wait)
- 			goto out_mark_dirty;
-+		error = wait_on_bit(&NFS_I(inode)->flags,
-+				NFS_INO_COMMIT,
-+				nfs_wait_bit_killable,
-+				TASK_KILLABLE);
-+		if (error < 0)
-+			return error;
- 	} else
- 		nfs_commit_clear_lock(NFS_I(inode));
- 	return res;
+-	parent_event = child_event->parent;
+ 	/*
+-	 * It can happen that parent exits first, and has events
++	 * It can happen that the parent exits first, and has events
+ 	 * that are still around due to the child reference. These
+-	 * events need to be zapped - but otherwise linger.
++	 * events need to be zapped.
+ 	 */
+-	if (parent_event) {
++	if (child_event->parent) {
+ 		sync_child_event(child_event, child);
+ 		free_event(child_event);
+ 	}
 
 
