@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab1CYP5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 11:57:19 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:47225 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070Ab1CYP5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 11:57:18 -0400
-Message-ID: <4D8CBB5C.5070406@kernel.dk>
-Date: Fri, 25 Mar 2011 16:57:16 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>,
+	id S1754195Ab1CYP6Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 11:58:25 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:35053 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab1CYP6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 11:58:24 -0400
+Date: Fri, 25 Mar 2011 16:58:21 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Chris Mason <chris.mason@oracle.com>
-Subject: Re: [OOPS] elevator private data for REQ_FLUSH
-References: <20110325151530.GA4414@swordfish.minsk.epam.com> <20110325152228.GA1707@gentoo.trippels.de>
-In-Reply-To: <20110325152228.GA1707@gentoo.trippels.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+Message-ID: <20110325155821.GA1661@gentoo.trippels.de>
+References: <20110325083757.GA1754@gentoo.trippels.de>
+ <4D8C55D9.1060903@fusionio.com>
+ <20110325095704.GA1694@gentoo.trippels.de>
+ <4D8C8E1C.1020304@fusionio.com>
+ <20110325130959.GA1698@gentoo.trippels.de>
+ <4D8CA263.9090006@fusionio.com>
+ <20110325141413.GA1725@gentoo.trippels.de>
+ <4D8CA498.8060403@fusionio.com>
+ <20110325142827.GA1739@gentoo.trippels.de>
+ <4D8CBA0A.9040105@fusionio.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D8CBA0A.9040105@fusionio.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-25 16:22, Markus Trippelsdorf wrote:
-> On 2011.03.25 at 17:15 +0200, Sergey Senozhatsky wrote:
->> Hello,
->>
->> Commit
->>     9d5a4e946ce5352f19400b6370f4cd8e72806278
->>     block: skip elevator data initialization for flush requests
->>     
->>     Skip elevator initialization for flush requests by passing priv=0 to
->>     blk_alloc_request() in get_request().  As such elv_set_request() is
->>     never called for flush requests.
->>
->> introduced priv flag, to skip elevator_private data init for FLUSH requests.
->> This, I guess, lead to NULL pointer deref on my machine in cfq_insert_request,
->> which requires elevator_private to be set:
->>
->>   1 [   78.982169] Call Trace:                                                                                                                                                                                                     
->>   2 [   78.982178]  [<ffffffff8122d1fe>] cfq_insert_request+0x4e/0x47d
->>   3 [   78.982184]  [<ffffffff8123e139>] ? do_raw_spin_lock+0x6b/0x122
+On 2011.03.25 at 16:51 +0100, Jens Axboe wrote:
+> On 2011-03-25 15:28, Markus Trippelsdorf wrote:
+> > On 2011.03.25 at 15:20 +0100, Jens Axboe wrote:
+> >> On 2011-03-25 15:14, Markus Trippelsdorf wrote:
+> >>> On 2011.03.25 at 15:10 +0100, Jens Axboe wrote:
+> >>>> On 2011-03-25 14:09, Markus Trippelsdorf wrote:
+> >>>>> On 2011.03.25 at 13:44 +0100, Jens Axboe wrote:
+> >>>>>> On 2011-03-25 10:57, Markus Trippelsdorf wrote:
+> >>>>>>>
+> >>>>>>> Reverting it solves all problems here.
+> >>>>>>
+> >>>>>> Can you try this one?
+> >>>>>
+> >>>>> This one doesn't help; I still get the same BUG.
+> >>>>>
+> >>>>> BTW if you're having trouble reproducing this, here is the only non
+> >>>>> stock xfs option that I use on the affected partitions:
+> >>>>>
+> >>>>> noatime,logbsize=262144
+> >>>>
+> >>>> This?
+> >>>
+> >>> No.
+> >>
+> >> Lets expand the scope a bit, this one?
+> > 
+> > No. And setting CONFIG_PREEMPT_NONE also doesn't help.
+> > 
 > 
->> Should we in that case use ELEVATOR_INSERT_FLUSH for REQ_FLUSH | REQ_FUA requests
->> (like below)?
->>
->> ---
->>
->>  block/elevator.c |    2 ++
->>  1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/block/elevator.c b/block/elevator.c
->> index c387d31..b17e577 100644
->> --- a/block/elevator.c
->> +++ b/block/elevator.c
->> @@ -734,6 +734,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
->>  			q->end_sector = rq_end_sector(rq);
->>  			q->boundary_rq = rq;
->>  		}
->> +	} else if (rq->cmd_flags & (REQ_FLUSH | REQ_FUA)) {
->> +		where = ELEVATOR_INSERT_FLUSH;
->>  	} else if (!(rq->cmd_flags & REQ_ELVPRIV) &&
->>  		    where == ELEVATOR_INSERT_SORT)
->>  		where = ELEVATOR_INSERT_BACK;
-> 
-> Thanks. That solves all (corruption-) problems that I reported earlier
-> in an other thread. 
+> Does this work? I'm actually relieved that the preempt was a red
+> herring. I had earlier convinced myself that it was all safe without
+> that mucking around with preempt counts.
 
-That's great. I'm surprised that this would cause silent corruption for
-you, should have been accompanied by an oops. Or was that with noop
-only?
-
+Finally: YES. 
+Many thanks Jens.
 
 -- 
-Jens Axboe
-
+Markus
