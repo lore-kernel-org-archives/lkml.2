@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933937Ab1CYJpG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 05:45:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48992 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932140Ab1CYJpE (ORCPT
+	id S932252Ab1CYJ4f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 05:56:35 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58995 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753304Ab1CYJ4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 05:45:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=SFJgO1Czwwkh2gsIByxawHga2+fWe0pfsskSQdQXPDQnPvRkVryG3uo6mb9RDVrFoU
-         FfLllLWhx8C0KWIQAqIxFBnL9zuE9vBtf1Y8EcYlJnp7CEXeNFrM8TlZ4b6aaWM3gNXE
-         3wmBug75sYFe6ky9PXjIfLQaoFSSO3NPHNcwE=
-Subject: Re: [PATCH RFC] x86: avoid atomic operation in
- test_and_set_bit_lock if possible
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jack Steiner <steiner@sgi.com>, Jan Beulich <JBeulich@novell.com>,
-        Borislav Petkov <bp@amd64.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@kernel.dk>, "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, tee@sgi.com,
-        Nikanth Karthikesan <knikanth@suse.de>,
+	Fri, 25 Mar 2011 05:56:34 -0400
+Date: Fri, 25 Mar 2011 09:56:24 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@redhat.com>,
+        "jozef.kralik@eset.sk" <jozef.kralik@eset.sk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <20110325093228.GB13640@elte.hu>
-References: <4D8B83DA02000078000381DE@vpn.id2.novell.com>
-	 <20110324173020.GA26761@sgi.com> <20110324200010.GB7957@elte.hu>
-	 <1300999682.2714.23.camel@edumazet-laptop> <20110324205422.GB2393@elte.hu>
-	 <1301000557.2714.33.camel@edumazet-laptop> <m2oc50kxg0.fsf@firstfloor.org>
-	 <AANLkTimib3TqemF9L=VNkcXT3uFam1gYmVtuA3wrAv1j@mail.gmail.com>
-	 <20110324235654.GM21838@one.firstfloor.org>
-	 <1301032040.2714.569.camel@edumazet-laptop>
-	 <20110325093228.GB13640@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Mar 2011 10:44:58 +0100
-Message-ID: <1301046298.3268.4.camel@edumazet-laptop>
+        viro@zeniv.linux.org.uk
+Subject: Re: [Patch 1/1] fsnotify,fanotify: adding flag for execution
+Message-ID: <20110325095624.0524d975@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTi=yQ=n8xNC2GdXic_O6yQYD0r0D8QZwb2CqSk4r@mail.gmail.com>
+References: <417044.386125298-sendEmail@jojo-hp-compaq-8100-elite-cmt-pc>
+	<1300980654.2398.3.camel@localhost.localdomain>
+	<AANLkTi=yQ=n8xNC2GdXic_O6yQYD0r0D8QZwb2CqSk4r@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 25 mars 2011 à 10:32 +0100, Ingo Molnar a écrit :
-> * Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> 
-> > Le vendredi 25 mars 2011 à 00:56 +0100, Andi Kleen a écrit :
-> > > > never EVER seen any good explanation of why that particular sh*t
-> > > > argument would b true. It seems to be purely about politics, where
-> > > > some idiotic vendor (namely HP) has convinced Intel that they really
-> > > > need it. To the point where some engineers seem to have bought into
-> > > > the whole thing and actually believe that fairy tale ("firmware can do
-> > > > better" - hah! They must be feeding people some bad drugs at the
-> > > > cafeteria)
-> > > 
-> > > For the record I don't think it's a good idea for the BIOS to do 
-> > > this (and I'm not aware of any engineer who does),  
-> > > but I think Linux should do better than just disabling PMU use when 
-> > > this happens.
-> > > 
-> > > However I suspect taking over SCI would cause endless problems
-> > > and is very likely not a good idea.
-> > 
-> > I tried many different changes in BIOS and all failed (the machine is
-> > damn slow at boot, this takes age).
-> > 
-> > I am stuck :(
-> 
-> Could you please try the patch below?
+> We have indeed historically had those kinds of bugs. For example,
+> having 'noexec' disable execve() on files, but *not* disabling using
+> them as LD_PRELOAD=xyz things where they aren't the target of an
+> execve(), but the code in them is run anyway (thanks to just an
+> executable mmap(), or even a "read()" into a data segment that is
+> executable)
 
-This obviously works, but you probably need to make a full pass to make
-sure we dont have a MSR failure -this should return false in this case.
+Actually there is a difference
 
+> So I don't know what makes "executed" different from "read". Because
+> at some point we really cannot tell the difference.
 
+And this isn't quite true
 
+> The one special thing about execve() is that it can execute something
+> even when it's not readable. But people who have depended on that as a
+> security feature have always been disappointed (ie just execve it and
+> then use ptrace to read the contents of the file _anyway_). So once
 
+And ptrace covers this
 
+The specific case that has always been the one Unix has cared about is
+'exec but no read bit', and execve() covers that correctly, including
+stopping it being dumpable thus blocking ptrace.
+
+Various standard Unix tricks rely upon this behaviour, notably the cd
+into a directory whose name you can't determine to access "protected" by
+writable stuff. All of the latter is really about suid apps though.
+
+Alan
