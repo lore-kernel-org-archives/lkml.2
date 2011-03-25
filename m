@@ -1,37 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934370Ab1CYKaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 06:30:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60106 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934109Ab1CYKaF (ORCPT
+	id S934382Ab1CYKbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 06:31:32 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:50181 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934109Ab1CYKbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 06:30:05 -0400
-Subject: Re: [PATCH] perf: Better fit max unprivileged mlock pages for
- tools needs
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Han Pingtian <phan@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Stable <stable@kernel.org>
-In-Reply-To: <1300904979-5508-1-git-send-email-fweisbec@gmail.com>
-References: <1300904979-5508-1-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Mar 2011 11:32:10 +0100
-Message-ID: <1301049130.2250.185.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Mar 2011 06:31:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=hEXeJ6/MNQIk4Jl0Hh0EsNhC7t4q04DmJzrN5bvBP1hEAz3vmbDqNPctUJlaUlHRfV
+         RgAKYP1wII9JXtrqriXTyIhFG43AjobxXKJwH8suBQ6cevWdOtNuR6BJENhdqkVS0p+K
+         E8kV76IdTJQFvpxEjZ5pQixT9DYr4XKMfzLB8=
+MIME-Version: 1.0
+In-Reply-To: <20110324151649.GA635@kroah.com>
+References: <20110324151649.GA635@kroah.com>
+Date: Fri, 25 Mar 2011 13:31:30 +0300
+Message-ID: <AANLkTik7sftrrx9dfmpGyzpek_YDjUjfsPWE5AdpQiWc@mail.gmail.com>
+Subject: Re: Linux 2.6.32.35
+From: Alexander Beregalov <a.beregalov@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-23 at 19:29 +0100, Frederic Weisbecker wrote:
+On 24 March 2011 18:16, Greg KH <gregkh@suse.de> wrote:
+> I'm announcing the release of the 2.6.32.35 kernel.
 
-> -int sysctl_perf_event_mlock __read_mostly = 512; /* 'free' kb per user */
-> +/* Minimum for 128 pages + 1 for the user control page */
-> +int sysctl_perf_event_mlock __read_mostly = 516; /* 'free' kb per user */
-
-This assumes PAGE_SIZE = 4k..
-
+It is not available in linux-2.6-allstable tree.
+v2.6.32.28 is the last tag for 2.6.32.x releases.
