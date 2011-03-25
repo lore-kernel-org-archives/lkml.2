@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392Ab1CYXwl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:52:41 -0400
+	id S933845Ab1CZAVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:21:00 -0400
 Received: from kroah.org ([198.145.64.141]:41589 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932339Ab1CYXwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:35 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:41 2011
-Message-Id: <20110325234841.022755284@clark.kroah.org>
+	id S932395Ab1CYXwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:41 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:10 2011
+Message-Id: <20110325234510.869749212@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:13 -0700
+Date: Fri, 25 Mar 2011 16:44:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julien Tinnes <jln@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: [20/55] Prevent rt_sigqueueinfo and rt_tgsigqueueinfo from spoofing the signal code
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Kees Cook <kees.cook@canonical.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        David Howells <dhowells@redhat.com>, Eugene Teo <eugeneteo@kernel.sg>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: [29/63] proc: protect mm start_code/end_code in /proc/pid/stat
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Julien Tinnes <jln@google.com>
+From: Kees Cook <kees.cook@canonical.com>
 
-commit da48524eb20662618854bb3df2db01fc65f3070c upstream.
+commit 5883f57ca0008ffc93e09cbb9847a1928e50c6f3 upstream.
 
-Userland should be able to trust the pid and uid of the sender of a
-signal if the si_code is SI_TKILL.
+While mm->start_stack was protected from cross-uid viewing (commit
+f83ce3e6b02d5 ("proc: avoid information leaks to non-privileged
+processes")), the start_code and end_code values were not.  This would
+allow the text location of a PIE binary to leak, defeating ASLR.
 
-Unfortunately, the kernel has historically allowed sigqueueinfo() to
-send any si_code at all (as long as it was negative - to distinguish it
-from kernel-generated signals like SIGILL etc), so it could spoof a
-SI_TKILL with incorrect siginfo values.
+Note that the value "1" is used instead of "0" for a protected value since
+"ps", "killall", and likely other readers of /proc/pid/stat, take
+start_code of "0" to mean a kernel thread and will misbehave.  Thanks to
+Brad Spengler for pointing this out.
 
-Happily, it looks like glibc has always set si_code to the appropriate
-SI_QUEUE, so there are probably no actual user code that ever uses
-anything but the appropriate SI_QUEUE flag.
+Addresses CVE-2011-0726
 
-So just tighten the check for si_code (we used to allow any negative
-value), and add a (one-time) warning in case there are binaries out
-there that might depend on using other si_code values.
-
-Signed-off-by: Julien Tinnes <jln@google.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Eugene Teo <eugeneteo@kernel.sg>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/signal.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ fs/proc/array.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2421,9 +2421,13 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t,
- 		return -EFAULT;
- 
- 	/* Not even root can pretend to send signals from the kernel.
--	   Nor can they impersonate a kill(), which adds source info.  */
--	if (info.si_code >= 0)
-+	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
-+	 */
-+	if (info.si_code != SI_QUEUE) {
-+		/* We used to allow any < 0 si_code */
-+		WARN_ON_ONCE(info.si_code < 0);
- 		return -EPERM;
-+	}
- 	info.si_signo = sig;
- 
- 	/* POSIX.1b doesn't mention process groups.  */
-@@ -2437,9 +2441,13 @@ long do_rt_tgsigqueueinfo(pid_t tgid, pi
- 		return -EINVAL;
- 
- 	/* Not even root can pretend to send signals from the kernel.
--	   Nor can they impersonate a kill(), which adds source info.  */
--	if (info->si_code >= 0)
-+	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
-+	 */
-+	if (info->si_code != SI_QUEUE) {
-+		/* We used to allow any < 0 si_code */
-+		WARN_ON_ONCE(info->si_code < 0);
- 		return -EPERM;
-+	}
- 	info->si_signo = sig;
- 
- 	return do_send_specific(tgid, pid, sig, info);
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -489,8 +489,8 @@ static int do_task_stat(struct seq_file
+ 		vsize,
+ 		mm ? get_mm_rss(mm) : 0,
+ 		rsslim,
+-		mm ? mm->start_code : 0,
+-		mm ? mm->end_code : 0,
++		mm ? (permitted ? mm->start_code : 1) : 0,
++		mm ? (permitted ? mm->end_code : 1) : 0,
+ 		(permitted && mm) ? mm->start_stack : 0,
+ 		esp,
+ 		eip,
 
 
