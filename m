@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934481Ab1CYKvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 06:51:23 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55968 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934195Ab1CYKvW (ORCPT
+	id S934486Ab1CYKx5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 06:53:57 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53726 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934405Ab1CYKx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 06:51:22 -0400
-Date: Fri, 25 Mar 2011 11:50:55 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jack Steiner <steiner@sgi.com>, Jan Beulich <JBeulich@novell.com>,
-        Borislav Petkov <bp@amd64.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@kernel.dk>, "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, "tee@sgi.com" <tee@sgi.com>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH RFC] x86: avoid atomic operation in
- test_and_set_bit_lock if possible
-Message-ID: <20110325105055.GA7281@aftab>
-References: <1300999682.2714.23.camel@edumazet-laptop>
- <20110324205422.GB2393@elte.hu>
- <1301000557.2714.33.camel@edumazet-laptop>
- <m2oc50kxg0.fsf@firstfloor.org>
- <AANLkTimib3TqemF9L=VNkcXT3uFam1gYmVtuA3wrAv1j@mail.gmail.com>
- <20110324235654.GM21838@one.firstfloor.org>
- <1301032040.2714.569.camel@edumazet-laptop>
- <20110325093228.GB13640@elte.hu>
- <1301046298.3268.4.camel@edumazet-laptop>
- <20110325095931.GA31903@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110325095931.GA31903@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 25 Mar 2011 06:53:56 -0400
+Subject: Re: Deadlock scenario in regulator core
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Collins <collinsd@codeaurora.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1300838856.14261.35.camel@gandalf.stny.rr.com>
+References: <4D891C59.1030009@codeaurora.org>
+	 <20110322223702.GO14675@home.goodmis.org> <4D892C0A.1090606@codeaurora.org>
+	 <1300835998.14261.13.camel@gandalf.stny.rr.com>
+	 <4D8933A8.8080607@codeaurora.org>
+	 <1300838856.14261.35.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Mar 2011 11:55:58 +0100
+Message-ID: <1301050558.2250.187.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 05:59:31AM -0400, Ingo Molnar wrote:
-> > [...] but you probably need to make a full pass to make sure we dont have a 
-> > MSR failure -this should return false in this case.
->
-> Wanted to keep this patch simple - we are not really hitting MSR
-> failure cases in practice, and by getting the message the user is at
-> least warned that *something* is amiss.
+On Tue, 2011-03-22 at 20:07 -0400, Steven Rostedt wrote:
+> On Tue, 2011-03-22 at 16:41 -0700, David Collins wrote:
+> 
+> > There seem to be very few uses of mutex_lock_nested() in the kernel.  Most
+> > of them use subclass = SINGLE_DEPTH_NESTING.  Would this be sufficient for
+> > usage in the regulator core in _notifier_call_chain (and perhaps other
+> > places) or should some other subclass be used?
+> 
+> Note, I do not know this code well enough to say. I'm assuming that an
+> rdevA on a rdevB->supply_list never has rdevB on its own
+> rdevA->supply_list.
+> 
+> If this is the case, and that you only ever have a lock nesting of one,
+> then sure, use the SINGLE_DEPTH_NESTING.
+> 
+> Peter or Ingo could correct me if I'm wrong.
 
-AFAIR, Robert was telling me couple of months ago about some braindead
-BIOSes doing power management by using at least one perf counter. A
-radical approach like that might interfere with that BIOS since it will
-try to reprogram the counter continuously and f*ck up OS PMU use.
+Right, so be aware that you can annotate an actual deadlock away with
+mutex_lock_nested(), so use with care. The thing to avoid is something
+like:
 
-Anyway, adding Robert for clarification.
+  mutex_lock(instance1);
+  mutex_lock_nested(instance2, SINGLE_DEPTH_NESTING);
 
--- 
-Regards/Gruss,
-Boris.
+vs
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+  mutex_lock(instance2);
+  mutex_lock_nested(instance1, SINGLE_DEPTH_NESTING);
+
+Lockdep will not complain anymore but it will cause deadlocks.
+
