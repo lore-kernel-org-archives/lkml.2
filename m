@@ -1,66 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab1CZADd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:03:33 -0400
-Received: from kroah.org ([198.145.64.141]:41906 "EHLO coco.kroah.org"
+	id S932819Ab1CZAEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:04:15 -0400
+Received: from kroah.org ([198.145.64.141]:41922 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755651Ab1CYXxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:04 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:43 2011
-Message-Id: <20110325234843.302092878@clark.kroah.org>
+	id S932586Ab1CYXxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:03 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:13 2011
+Message-Id: <20110325234513.208887551@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:34 -0700
+Date: Fri, 25 Mar 2011 16:44:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [41/55] USB: cdc-acm: fix potential null-pointer dereference on disconnect
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Yinghai Lu <yinghai@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [51/63] x86: Cleanup highmap after brk is concluded
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 7e7797e7f6f7bfab73fca02c65e40eaa5bb9000c upstream.
+commit e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e upstream.
 
-Fix potential null-pointer exception on disconnect introduced by commit
-11ea859d64b69a747d6b060b9ed1520eab1161fe (USB: additional power savings
-for cdc-acm devices that support remote wakeup).
+Now cleanup_highmap actually is in two steps: one is early in head64.c
+and only clears above _end; a second one is in init_memory_mapping() and
+tries to clean from _brk_end to _end.
+It should check if those boundaries are PMD_SIZE aligned but currently
+does not.
+Also init_memory_mapping() is called several times for numa or memory
+hotplug, so we really should not handle initial kernel mappings there.
 
-Only access acm->dev after making sure it is non-null in control urb
-completion handler.
+This patch moves cleanup_highmap() down after _brk_end is settled so
+we can do everything in one step.
+Also we honor max_pfn_mapped in the implementation of cleanup_highmap.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+LKML-Reference: <alpine.DEB.2.00.1103171739050.3382@kaball-desktop>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/head64.c |    3 ---
+ arch/x86/kernel/setup.c  |    5 +++++
+ arch/x86/mm/init.c       |   19 -------------------
+ arch/x86/mm/init_64.c    |   11 ++++++-----
+ 4 files changed, 11 insertions(+), 27 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -297,6 +297,8 @@ static void acm_ctrl_irq(struct urb *urb
- 	if (!ACM_READY(acm))
- 		goto exit;
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -77,9 +77,6 @@ void __init x86_64_start_kernel(char * r
+ 	/* Make NULL pointers segfault */
+ 	zap_identity_mappings();
  
-+	usb_mark_last_busy(acm->dev);
+-	/* Cleanup the over mapped high alias */
+-	cleanup_highmap();
+-
+ 	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+ 
+ 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -297,6 +297,9 @@ static void __init init_gbpages(void)
+ static inline void init_gbpages(void)
+ {
+ }
++static void __init cleanup_highmap(void)
++{
++}
+ #endif
+ 
+ static void __init reserve_brk(void)
+@@ -922,6 +925,8 @@ void __init setup_arch(char **cmdline_p)
+ 	 */
+ 	reserve_brk();
+ 
++	cleanup_highmap();
 +
- 	data = (unsigned char *)(dr + 1);
- 	switch (dr->bNotificationType) {
- 	case USB_CDC_NOTIFY_NETWORK_CONNECTION:
-@@ -336,7 +338,6 @@ static void acm_ctrl_irq(struct urb *urb
- 		break;
- 	}
- exit:
--	usb_mark_last_busy(acm->dev);
- 	retval = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (retval)
- 		dev_err(&urb->dev->dev, "%s - usb_submit_urb failed with "
+ 	memblock.current_limit = get_max_mapped();
+ 	memblock_x86_fill();
+ 
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -279,25 +279,6 @@ unsigned long __init_refok init_memory_m
+ 	load_cr3(swapper_pg_dir);
+ #endif
+ 
+-#ifdef CONFIG_X86_64
+-	if (!after_bootmem && !start) {
+-		pud_t *pud;
+-		pmd_t *pmd;
+-
+-		mmu_cr4_features = read_cr4();
+-
+-		/*
+-		 * _brk_end cannot change anymore, but it and _end may be
+-		 * located on different 2M pages. cleanup_highmap(), however,
+-		 * can only consider _end when it runs, so destroy any
+-		 * mappings beyond _brk_end here.
+-		 */
+-		pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
+-		pmd = pmd_offset(pud, _brk_end - 1);
+-		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
+-			pmd_clear(pmd);
+-	}
+-#endif
+ 	__flush_tlb_all();
+ 
+ 	if (!after_bootmem && e820_table_end > e820_table_start)
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -51,6 +51,7 @@
+ #include <asm/numa.h>
+ #include <asm/cacheflush.h>
+ #include <asm/init.h>
++#include <asm/setup.h>
+ 
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+@@ -293,18 +294,18 @@ void __init init_extra_mapping_uc(unsign
+  * to the compile time generated pmds. This results in invalid pmds up
+  * to the point where we hit the physaddr 0 mapping.
+  *
+- * We limit the mappings to the region from _text to _end.  _end is
+- * rounded up to the 2MB boundary. This catches the invalid pmds as
++ * We limit the mappings to the region from _text to _brk_end.  _brk_end
++ * is rounded up to the 2MB boundary. This catches the invalid pmds as
+  * well, as they are located before _text:
+  */
+ void __init cleanup_highmap(void)
+ {
+ 	unsigned long vaddr = __START_KERNEL_map;
+-	unsigned long end = roundup((unsigned long)_end, PMD_SIZE) - 1;
++	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
++	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
+ 	pmd_t *pmd = level2_kernel_pgt;
+-	pmd_t *last_pmd = pmd + PTRS_PER_PMD;
+ 
+-	for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
++	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
+ 		if (pmd_none(*pmd))
+ 			continue;
+ 		if (vaddr < (unsigned long) _text || vaddr > end)
 
 
