@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203Ab1CYVE0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 17:04:26 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39251 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074Ab1CYVEZ (ORCPT
+	id S1755248Ab1CYVEg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 17:04:36 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53601
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755221Ab1CYVEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 17:04:25 -0400
-Subject: Re: [RFC][PATCH 09/14] sched: Dynamically allocate
- sched_domain/sched_group data-structures
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-In-Reply-To: <AANLkTikUGwkOwUoGcti0SOFWVKxAMZNUk9c30oBRFmMx@mail.gmail.com>
-References: <20110314150613.749843433@chello.nl>
-	 <20110314152227.191956337@chello.nl>
-	 <AANLkTikUGwkOwUoGcti0SOFWVKxAMZNUk9c30oBRFmMx@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Mar 2011 22:06:23 +0100
-Message-ID: <1301087183.2250.306.camel@laptop>
+	Fri, 25 Mar 2011 17:04:34 -0400
+Date: Fri, 25 Mar 2011 14:05:13 -0700 (PDT)
+Message-Id: <20110325.140513.90785615.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-18 at 18:23 -0700, Venkatesh Pallipadi wrote:
-> >        if (affine_sd) {
-> > -               if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
-> > -                       return select_idle_sibling(p, cpu);
-> > -               else
-> > -                       return select_idle_sibling(p, prev_cpu);
-> > +               if (wake_affine(affine_sd, p, sync))
-> > +                       prev_cpu = cpu;
-> > +
-> > +               new_cpu = select_idle_sibling(p, prev_cpu);
-> > +               goto unlock;
-> >        }
-> >
-> >        while (sd) {
-> 
-> This would result in going through wake_affine() doing all
-> effective_load stuff even with cpu == prev_cpu. No?
-> So, we need either if (cpu != prev_cpu && wake_affine(affine_sd, p,
-> sync)) or an check at the start to have want_affine=0 for this case.
 
-D'0h yeah, I missed the conditional execution of wake_affine there, silly me.
+Please pull to get this RTC probing bug fix.
 
+Thanks!
+
+The following changes since commit 40471856f2e38e9bfa8d605295e8234421110dd6:
+
+  Merge branch 'nfs-for-2.6.39' of git://git.linux-nfs.org/projects/trondmy/nfs-2.6 (2011-03-25 10:03:28 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-2.6.git master
+
+Kjetil Oftedal (1):
+      sparc32: Fix multiple RTC detections on SUN4D
+
+ arch/sparc/kernel/time_32.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
