@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab1CYI7n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 04:59:43 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55136 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab1CYI7l (ORCPT
+	id S1755018Ab1CYJIQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 05:08:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59843 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab1CYJIP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 04:59:41 -0400
+	Fri, 25 Mar 2011 05:08:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=UGeAnNnltKJE6jS/2tva4I88TlzRuOkcXmTnF/Yf+Iw2YdUf0Rpu2PnIrCoA28UltU
-         xZyctNQNJ5ov0GQ7dE0FB4DuUzIUHSk0NvgxVZsV8QXakry3mVAFJuswWhoKUg0MFTmF
-         SL6EA7JAHeNmpr2H3CiEJgNN+FiqqeFwfpIxE=
-Message-ID: <4D8C5974.7090004@gmail.com>
-Date: Fri, 25 Mar 2011 08:59:32 +0000
-From: Lukasz Sokol <el.es.cr@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=dsN0S/CeHxxFd0MEn9w+tSqDfkuCG8XiKCdVMySRQOuQuzxpiNEwwOahiHShlt5K29
+         +dh4HVf9ScpzTGi5pRd555tw9tTPPWiLGnbGlu3H0rIby7B6UNIG/8JX46y6mEOq6b8P
+         gGt5R22RckTwTet7RdhlMR7zR6V2dQBYSpZWE=
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: In_fridge_ment?
-References: <loom.20110325T000152-297@post.gmane.org> <20110324231850.13c604e1@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110324231850.13c604e1@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Date: Fri, 25 Mar 2011 14:38:13 +0530
+Message-ID: <AANLkTimkh2QLvupu+62NGrKfqRb_gC7KLCAKkEoS9N9N@mail.gmail.com>
+Subject: flush_kernel_vmap_range() invalidate_kernel_vmap_range() API not
+ exists for MIPS
+From: naveen yadav <yad.naveen@gmail.com>
+To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/03/2011 23:18, Alan Cox wrote:
+Dear All,
 
-> Chuckle.. the left hand one does indeed look a little tuxlike but more
-> worrying is the unfortunate placing of the stick which means it looks like
-> its taking a crap.
+We are working on 2.6.35.9 linux kernel on MIPS 34kce core and our
+cache is VIVT having cache aliasing .
+When I check the implementation on ARM I can check the implemenation
+exists , but there is not similar implementation exists on MIPS.
+These API's are used by XFS module:
 
-Or impaled ;) MS Propaganda, hell yeah ;)
+static inline void flush_kernel_vmap_range(void *vaddr, int size)
+static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
+static inline void flush_kernel_dcache_page(struct page *page)
 
-> The other one indeed also looks like the crystal tux
-> 
-> Tux however isn't just a Linux penguin. If you read the blurb Larry said
-> "Permission to use and/or modify this image is granted provided you
-> acknowledge me lewing@isc.tamu.edu and The GIMP if someone asks. "
-> 
-> So he's sort of CC-BY, only he's older ;)
 
-Well, people who use it on shirts, I understand they can read ;) 
-Ice lollies designers - I don't know any of this sort, so I can't say...
-Oh well they probably use some sorts of computers too ;)
+I can check implementation on ARM at
+http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.34.y.git;a=commit;h=252a9afff76097667429b583e8b5b170b47665a4
+ and
+----------------------------------------------------------------------------------------------------------------------------
+--- a/arch/arm/include/asm/cacheflush.h+++ b/arch/arm/include/asm/cacheflush.h
+@@ -432,6 +432,16
+ @@ static inline void __flush_icache_all(void)
+  : "r" (0)); #endif }
++static inline void flush_kernel_vmap_range(void *addr, int size)
++{
++       if ((cache_is_vivt() || cache_is_vipt_aliasing()))
++         __cpuc_flush_dcache_area(addr, (size_t)size);
++}
++static inline void invalidate_kernel_vmap_range(void *addr, int size)
++{
++       if ((cache_is_vivt() || cache_is_vipt_aliasing()))
++         __cpuc_flush_dcache_area(addr, (size_t)size);
++}
+-------------------------------------------------------------------------------------------------------------------------------------
 
-> 
-> He's been legitimately used in all sorts of things including an ice rink
-> advert!
 
-Well this more-Tux-like is more like a parody but that may be down to production process too.
+http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.34.y.git;a=blobdiff;f=arch/arm/include/asm/cacheflush.h;h=1a711ea8418b6045c581a576caa3f85496ee2673;hp=bb7d695f3900f70d635a3597cd19d7cb68c0d732;hb=73be1591579084a8103a7005dd3172f3e9dd7362;hpb=44b7532b8b464f606053562400719c9c21276037
 
-If I wasn't thinking this image is a little bit offensive, it would be a nice logo for a pun...
+======================================================
++#define ARCH_HAS_FLUSH_KERNEL_DCACHE_PAGE
++static inline void flush_kernel_dcache_page(struct page *page)
++{
++       /* highmem pages are always flushed upon kunmap already */
++       if ((cache_is_vivt() || cache_is_vipt_aliasing()) && !PageHighMem(page))
++               __cpuc_flush_dcache_page(page_address(page));
++}
++
+==========================================================
 
-> 
-> Alan
-> 
-> 
 
-L.
+Is there any similar API exists for MIPS.  I want to use for XFS these API's
+
+thanks
