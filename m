@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab1CYPwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 11:52:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58682 "EHLO
+	id S1754136Ab1CYPwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 11:52:10 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58685 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab1CYPwE (ORCPT
+	with ESMTP id S1754098Ab1CYPwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 11:52:04 -0400
 From: Wolfram Sang <w.sang@pengutronix.de>
@@ -12,16 +12,18 @@ To: alsa-devel@alsa-project.org
 Cc: Sascha Hauer <s.hauer@pengutronix.de>,
         Wolfram Sang <w.sang@pengutronix.de>,
         Liam Girdwood <lrg@slimlogic.co.uk> (supporter:SOUND - SOC LAYER...
-	,commit_signer:6/12=50%),
+	,commit_signer:9/19=47%),
         Mark Brown <broonie@opensource.wolfsonmicro.com> (supporter:SOUND -
-	SOC LAYER...,commit_signer:6/12=50%),
+	SOC LAYER...,commit_signer:9/19=47%),
         Jaroslav Kysela <perex@perex.cz> (maintainer:SOUND),
         Takashi Iwai <tiwai@suse.de> (maintainer:SOUND),
-        Timur Tabi <timur@freescale.com> (commit_signer:2/12=17%),
+        Timur Tabi <timur@freescale.com> (commit_signer:2/19=11%),
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de> (commit_signer:2/19=11%),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 2/3] ASoC: imx: fix burstsize for DMA
-Date: Fri, 25 Mar 2011 16:51:45 +0100
-Message-Id: <1301068306-11997-3-git-send-email-w.sang@pengutronix.de>
+Subject: [PATCH 3/3] ASoC: imx: remove superfluous code in imx-ssi.c
+Date: Fri, 25 Mar 2011 16:51:46 +0100
+Message-Id: <1301068306-11997-4-git-send-email-w.sang@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1301068306-11997-1-git-send-email-w.sang@pengutronix.de>
 References: <1301068306-11997-1-git-send-email-w.sang@pengutronix.de>
@@ -33,33 +35,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SSI counts in words, the DMA engine in bytes. (Wrong) factor got removed
-in bf974a0 (ASoC i.MX: switch to new DMA api).
+Checking if IMX_SSI_DMA is set and then set it again is useless.
 
 Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
- sound/soc/imx/imx-pcm-dma-mx2.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/imx/imx-ssi.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/sound/soc/imx/imx-pcm-dma-mx2.c b/sound/soc/imx/imx-pcm-dma-mx2.c
-index b2ed764..aab7765 100644
---- a/sound/soc/imx/imx-pcm-dma-mx2.c
-+++ b/sound/soc/imx/imx-pcm-dma-mx2.c
-@@ -110,12 +110,12 @@ static int imx_ssi_dma_alloc(struct snd_pcm_substream *substream,
- 		slave_config.direction = DMA_TO_DEVICE;
- 		slave_config.dst_addr = dma_params->dma_addr;
- 		slave_config.dst_addr_width = buswidth;
--		slave_config.dst_maxburst = dma_params->burstsize;
-+		slave_config.dst_maxburst = dma_params->burstsize * buswidth;
- 	} else {
- 		slave_config.direction = DMA_FROM_DEVICE;
- 		slave_config.src_addr = dma_params->dma_addr;
- 		slave_config.src_addr_width = buswidth;
--		slave_config.src_maxburst = dma_params->burstsize;
-+		slave_config.src_maxburst = dma_params->burstsize * buswidth;
- 	}
+diff --git a/sound/soc/imx/imx-ssi.c b/sound/soc/imx/imx-ssi.c
+index bc92ec6..c331d65 100644
+--- a/sound/soc/imx/imx-ssi.c
++++ b/sound/soc/imx/imx-ssi.c
+@@ -667,12 +667,6 @@ static int imx_ssi_probe(struct platform_device *pdev)
+ 	if (res)
+ 		ssi->dma_params_rx.dma = res->start;
  
- 	ret = dmaengine_slave_config(iprtd->dma_chan, &slave_config);
+-	if ((cpu_is_mx27() || cpu_is_mx21()) &&
+-			!(ssi->flags & IMX_SSI_USE_AC97) &&
+-			(ssi->flags & IMX_SSI_DMA)) {
+-		ssi->flags |= IMX_SSI_DMA;
+-	}
+-
+ 	platform_set_drvdata(pdev, ssi);
+ 
+ 	ret = snd_soc_register_dai(&pdev->dev, dai);
 -- 
 1.7.2.5
 
