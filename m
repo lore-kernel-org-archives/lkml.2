@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933688Ab1CZAOq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:14:46 -0400
-Received: from kroah.org ([198.145.64.141]:41858 "EHLO coco.kroah.org"
+	id S933657Ab1CZAOo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:14:44 -0400
+Received: from kroah.org ([198.145.64.141]:41865 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932541Ab1CYXw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932547Ab1CYXw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 19:52:58 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:43 2011
-Message-Id: <20110325234843.088307952@clark.kroah.org>
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:12 2011
+Message-Id: <20110325234512.646048952@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:32 -0700
+Date: Fri, 25 Mar 2011 16:44:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [39/55] USB: cdc-acm: fix memory corruption / panic
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+Subject: [46/63] USB: cdc-acm: fix memory corruption / panic
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
