@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933878Ab1CZAWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:22:23 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45620 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932387Ab1CZAWF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:22:05 -0400
-Date: Sat, 26 Mar 2011 00:21:59 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jamie Iles <jamie@jamieiles.com>, Mike Frysinger <vapier@gentoo.org>,
-        linux-kernel@vger.kernel.org, gregkh@suse.de
-Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
-Message-ID: <20110326002159.GY3130@pulham.picochip.com>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
- <AANLkTinQ_M92zDZx_Jfe=rvPO0Gr4kHhXZUATvgVBywh@mail.gmail.com>
- <20110325225220.GV3130@pulham.picochip.com>
- <201103260002.19291.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103260002.19291.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932367Ab1CYXwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:52:38 -0400
+Received: from kroah.org ([198.145.64.141]:41574 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932325Ab1CYXwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:41 2011
+Message-Id: <20110325234840.908731104@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 25 Mar 2011 16:47:12 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Len Brown <len.brown@intel.com>
+Subject: [19/55] intel_idle: disable Atom/Lincroft HW C-state auto-demotion
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 26, 2011 at 12:02:19AM +0100, Arnd Bergmann wrote:
-> On Friday 25 March 2011 23:52:20 Jamie Iles wrote:
-> > That's what I intended but I guess it isn't that clear from the code.  
-> > Perhaps instead of:
-> > 
-> >         mutex_lock();
-> >         region->ops->ioctl();
-> >         mutex_unlock();
-> > 
-> > if I change it to:
-> > 
-> >         mutex_lock();
-> >         switch (cmd) {
-> >         default:
-> >                 region->ops->ioctl();
-> >         }
-> >         mutex_unlock();
-> > 
-> > then that's a bit clearer.  If there's stuff common across different OTP 
-> > implementations then we can add it to the region ops and decode it here 
-> > and if not fall back to the specific implementation.
-> 
-> This will make it a lot harder to support compat_ioctl as well.
-> Just drop the ->ioctl callback into the driver and make one
-> callback per command. Any command that could be reused on
-> another driver will then be defined in the common header file
-> already and just work on new drivers.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
-OK, you've convinced me :-)
+------------------
 
-The only use of an ioctl() at the moment is for locking portions of the 
-OTP so perhaps we add a new region op .lock(unsigned long start_addr, 
-size_t nr_words).
+From: Len Brown <len.brown@intel.com>
 
-For the actual ioctl() we should assume byte addressing rather than 
-words though and do the conversion in the driver so we can cope with 
-devices that don't have 64-bit words and do the locking on a looping 
-word-by-word basis.
+commit bfb53ccf1c734b1907df7189eef4c08489827951 upstream.
 
-	struct otp_lock_req {
-		__u32	start_addr;
-		__u32	byte_count;
-	};
+Just as we had to disable auto-demotion for NHM/WSM,
+we need to do the same for Atom (Lincroft version).
 
-The start_addr would be relative to the start of the region.
+In particular, auto-demotion will prevent Lincroft
+from entering the S0i3 idle power saving state.
 
-Mike, would this be OK with you if we used a different ioctl() to the 
-one bfin-otp is using currently?  I notice that it's using the OTPLOCK 
-ioctl() from MTD but I think it's using the argument in a different way.
+https://bugzilla.kernel.org/show_bug.cgi?id=25252
 
-Jamie
+Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/x86/include/asm/msr-index.h |    1 +
+ drivers/idle/intel_idle.c        |    4 ++++
+ 2 files changed, 5 insertions(+)
+
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -39,6 +39,7 @@
+ #define MSR_NHM_SNB_PKG_CST_CFG_CTL	0x000000e2
+ #define NHM_C3_AUTO_DEMOTE		(1UL << 25)
+ #define NHM_C1_AUTO_DEMOTE		(1UL << 26)
++#define ATM_LNC_C6_AUTO_DEMOTE		(1UL << 25)
+ 
+ #define MSR_MTRRcap			0x000000fe
+ #define MSR_IA32_BBL_CR_CTL		0x00000119
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -340,8 +340,12 @@ static int intel_idle_probe(void)
+ 		break;
+ 
+ 	case 0x1C:	/* 28 - Atom Processor */
++		cpuidle_state_table = atom_cstates;
++		break;
++
+ 	case 0x26:	/* 38 - Lincroft Atom Processor */
+ 		cpuidle_state_table = atom_cstates;
++		auto_demotion_disable_flags = ATM_LNC_C6_AUTO_DEMOTE;
+ 		break;
+ 
+ 	case 0x2A:	/* SNB */
+
+
