@@ -1,139 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab1CYRJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 13:09:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:45561 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754673Ab1CYRJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 13:09:39 -0400
-Subject: Re: [tip:perf/urgent] perf, x86: Complain louder about BIOSen
- corrupting CPU/PMU state and continue
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com, efault@gmx.de,
-        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        mingo@elte.hu, linux-tip-commits@vger.kernel.org
-In-Reply-To: <AANLkTi=Dgo7Ck-Nc+qq7roRqcO9mtoA_FLt=QA6mdK_W@mail.gmail.com>
-References: <tip-45daae575e08bbf7405c5a3633e956fa364d1b4f@git.kernel.org>
-	 <AANLkTi=Dgo7Ck-Nc+qq7roRqcO9mtoA_FLt=QA6mdK_W@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Mar 2011 18:11:40 +0100
-Message-ID: <1301073100.2250.229.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754776Ab1CYRKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 13:10:00 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:25810
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754717Ab1CYRJ6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 13:09:58 -0400
+X-SpamScore: -29
+X-BigFish: VPS-29(z2005kzbb2dK542N1432N98dN4015L9371Pzz1202hzz8275eh8275dha1495iz2dh95h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: multiple definition of `show_mem'
+Date: Fri, 25 Mar 2011 11:09:52 -0600
+In-Reply-To: <4D8C7750.5070102@pengutronix.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: multiple definition of `show_mem'
+Thread-Index: Acvq3O2fUH5oqrpARQKK+0QBXVXhmwAMmeiw
+References: <4D8B6140.4020300@pengutronix.de><alpine.DEB.2.00.1103241522230.26730@chino.kir.corp.google.com> <4D8C7750.5070102@pengutronix.de>
+From: John Linn <John.Linn@xilinx.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>,
+        David Rientjes <rientjes@google.com>
+CC: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, <kernel@pengutronix.de>
+X-OriginalArrivalTime: 25 Mar 2011 17:09:54.0817 (UTC) FILETIME=[7612C710:01CBEB0F]
+X-RCIS-Action: ALLOW
+Message-ID: <4dc8fdc5-b255-4c26-93ec-8be5056f8646@VA3EHSMHS001.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-25 at 09:44 -0700, Linus Torvalds wrote:
-> On Fri, Mar 25, 2011 at 4:52 AM, tip-bot for Ingo Molnar <mingo@elte.hu> wrote:
+> -----Original Message-----
+> From: linux-arm-kernel-bounces@lists.infradead.org
+[mailto:linux-arm-kernel-
+> bounces@lists.infradead.org] On Behalf Of Marc Kleine-Budde
+> Sent: Friday, March 25, 2011 5:07 AM
+> To: David Rientjes
+> Cc: linux-arm-kernel; LKML; kernel@pengutronix.de
+> Subject: Re: multiple definition of `show_mem'
+> 
+> On 03/24/2011 11:22 PM, David Rientjes wrote:
+> >> current mainline (v2.6.38-7210-gb81a618) on ARM/mxs has the
+following build failure:
+> >>
+> >>> lib/lib.a(show_mem.o): In function `show_mem':
+> >>> .../linux-2.6/lib/show_mem.c:67: multiple definition of `show_mem'
+> >>> arch/arm/mm/built-in.o:.../linux-2.6/arch/arm/mm/init.c:82: first
+> >>> defined here
+> >>> make: *** [vmlinux.o] Error 1
+> 
+> [..]
+> 
+> > Sorry about that, Marc.  I have a patch at
 > >
-> > perf, x86: Complain louder about BIOSen corrupting CPU/PMU state and continue
+> > 	http://marc.info/?l=linux-kernel&m=130100511521954
+> >
+> > which should fix the issue for you (and I tested it with my arm
+cross
+> > compiler).
+> 
+> \o/ - the patch is already in mainline, boots like charm on my
+mx28evk.
 
-> Also, don't we need to make sure that the event isn't tied to the SCI
-> line? I thought the affected BIOSen did something odd with the local
-> apic setup too? But that might be some fevered nightmare dream of
-> mine, and/or just a misunderstanding from the hallway discussion I've
-> had with people about this.
+I pulled it, rebuilt without any issues, and it runs also on the Xilinx
+platform.
 
-I don't think they actually can do this, there is only a single PMU
-interrupt line and we program that to the NMI vector on startup. Now the
-SMM crap could of course read out the APIC programming and put an SMI
-trap on whatever interrupt it points to, but I'm not sure its doing
-that. Afaik its simply polling state or somesuch.
+Thanks,
+John
 
-> This might also be something we do want to give a kernel command line
-> option for. As in "bios=allow-annoying-pmu-thing" or whatever.
+> 
+> regards, Marc
+> --
+> Pengutronix e.K.                  | Marc Kleine-Budde           |
+> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-I had such a patch, Ingo argued against it and we decided not to do it,
-but we could still.
 
----
-Subject: perf, x86: Allow forcing the PMU
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Thu Dec 09 15:03:11 CET 2010
-
-Allow an admin to force the PMU, even though it appears to be in use.
-
-Use with caustion, abusers get to keep all pieces.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- Documentation/kernel-parameters.txt |    6 ++++++
- arch/x86/kernel/cpu/perf_event.c    |   20 ++++++++++++++++++++
- 2 files changed, 26 insertions(+)
-
-Index: linux-2.6/Documentation/kernel-parameters.txt
-===================================================================
---- linux-2.6.orig/Documentation/kernel-parameters.txt
-+++ linux-2.6/Documentation/kernel-parameters.txt
-@@ -2020,6 +2020,12 @@ and is between 256 and 4096 characters.
- 			allocator.  This parameter is primarily	for debugging
- 			and performance comparison.
- 
-+	perf_event.force.	[x86] Force the usage of the PMU, even if there were
-+			active counters. This usually indicates a broken BIOS
-+			and forcing it will result in an ill-functioning system.
-+			It is useful however with kexec/kdump when you know
-+			the BIOS is good and the previous OS didn't clean up.
-+
- 	pf.		[PARIDE]
- 			See Documentation/blockdev/paride.txt.
- 
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
-@@ -43,6 +43,18 @@ do {								\
- #endif
- 
- /*
-+ * Kernel parameter to force the PMU despite it appearing in-use.
-+ *
-+ * If you use this when the BIOS actually has stolen a resource you will end up
-+ * with an ill-functioning system.
-+ *
-+ * This flag is only useful for kexec/kdump like things where the previous
-+ * kernel did set up PMU resources and forgot to shut them down.
-+ */
-+static int force;
-+module_param(force, bool, 0444);
-+
-+/*
-  * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
-  */
- static unsigned long
-@@ -195,6 +207,7 @@ struct x86_pmu {
- 	 */
- 	const char	*name;
- 	int		version;
-+	int		forced;
- 	int		(*handle_irq)(struct pt_regs *);
- 	void		(*disable_all)(void);
- 	void		(*enable_all)(int added);
-@@ -415,6 +428,10 @@ static bool check_hw_exists(void)
- 	return true;
- 
- bios_fail:
-+	if (force) {
-+		x86_pmu.forced = 1;
-+		return true;
-+	}
- 	printk(KERN_CONT "Broken BIOS detected, software events only.\n");
- 	printk(KERN_ERR FW_BUG "the BIOS has corrupted hw-PMU resources (MSR: %x=%Lx)\n", reg, val);
- 	return false;
-@@ -1421,6 +1438,9 @@ int __init init_hw_perf_events(void)
- 
- 	pr_cont("%s PMU driver.\n", x86_pmu.name);
- 
-+	if (x86_pmu.forced)
-+		printk(KERN_WARNING "WARNING: Forced the PMU, might not work correctly due to BIOS wreckage.\n");
-+
- 	if (x86_pmu.quirks)
- 		x86_pmu.quirks();
- 
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
 
 
