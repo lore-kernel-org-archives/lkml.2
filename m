@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934504Ab1CYLGE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 07:06:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58333 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755726Ab1CYLGB (ORCPT
+	id S1756916Ab1CYLHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 07:07:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60930 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756746Ab1CYLHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 07:06:01 -0400
-Subject: Re: [RFC] perf: EBNF for event syntax
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: mingo@elte.hu, Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Matt Fleming <matt@console-pimps.org>
-In-Reply-To: <1300851416.31224.58.camel@minggr.sh.intel.com>
-References: <1300851416.31224.58.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Mar 2011 12:07:57 +0100
-Message-ID: <1301051277.2250.195.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Mar 2011 07:07:03 -0400
+Message-ID: <4D8C7750.5070102@pengutronix.de>
+Date: Fri, 25 Mar 2011 12:06:56 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: multiple definition of `show_mem'
+References: <4D8B6140.4020300@pengutronix.de> <alpine.DEB.2.00.1103241522230.26730@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1103241522230.26730@chino.kir.corp.google.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig31BA9E0CA8209B8AD42B4FE8"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-23 at 11:36 +0800, Lin Ming wrote:
-> Hi, all
-> 
-> On Thu, Mar 17, 2011 at 2:02 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > How about we start writing proper EBNF syntax rules for this stuff, its
-> > getting seriously out of hand.
-> http://marc.info/?l=linux-kernel&m=130029871318866&w=2
-> 
-> As Peter suggested, I wrote a simple EBNF for event syntax, as below.
-> My first plan is to pass in extra config value for some events,
-> for example, offcore response and load latency.
-> 
-> perf record -e r100b(0004):p
-> 
-> As above, the extra config value 0004 is passed in the parentheses.
-> 
-> The EBNF
-> ========
-> 
-> EventList		:=	Event [',' EventList]
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig31BA9E0CA8209B8AD42B4FE8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-There was a suggestion a while back to make:
+On 03/24/2011 11:22 PM, David Rientjes wrote:
+>> current mainline (v2.6.38-7210-gb81a618) on ARM/mxs has the following =
+build failure:
+>>
+>>> lib/lib.a(show_mem.o): In function `show_mem':
+>>> .../linux-2.6/lib/show_mem.c:67: multiple definition of `show_mem'
+>>> arch/arm/mm/built-in.o:.../linux-2.6/arch/arm/mm/init.c:82: first def=
+ined here
+>>> make: *** [vmlinux.o] Error 1
 
- -e ev1,ev2,ev3
+[..]
 
-create an event group with ev2 and ev3 siblings of ev1, and have
-multiple -e instances create separate counters.
+> Sorry about that, Marc.  I have a patch at
+>=20
+> 	http://marc.info/?l=3Dlinux-kernel&m=3D130100511521954
+>=20
+> which should fix the issue for you (and I tested it with my arm cross=20
+> compiler).
 
-The problem is that its not backwards compatible, but something like
-that would still be very nice to have.
+\o/ - the patch is already in mainline, boots like charm on my mx28evk.
 
-> Event			:= 	HardwareEvent 		|
-> 				RawEvent		|
-> 				SoftwareEvent		|
-> 				TracepointEvent		|
-> 				HardwareBreakpointEvent
-> 
-> HardwareEvent		:=	HardwareEventName [ExtraConfig] [Modifer]
-> HardwareEventName	:=	'cpu-cycles' | 'cycles' | 'instructions' /* and so on ...*/
-> ExtraConfig		:=	'(' ConfigValue [',' ConfigValue] ')'
-> ConfigValue		:=	HexNumber
-> 
-> RawEvent		:=	RawSeperator RawCode [ExtraConfig] [Modifer]
-> RawSeperator		:=	'r'
-> RawCode			:=	HexNumber
-> 
-> SoftwareEvent		:=	SoftwareEventName
-> SoftwareEventName	:=	'cpu-clock' | 'task-clock' | 'faults' /* and so on ...*/
-> 
-> TracepointEvent		:=	SubsystemName ':' TracepointName
-> SubsystemName		:=	/* All AsciiString except the pre-defined hardware/software/cache events name and BreakpointSeparator */
-> TracepointName		:=	'*' | AsciiString
-> 
-> HardwareBreakpointEvent	:=	BreakpointSeparator BreakpointAddress [':' AccessType]
-> BreakpointSeparator	:=	'mem:'
-> BreakpointAddress	:=	HexNumber
-> AccessType		:=	'r' | 'w' | 'x'
-> 
-> Modifier		:= 	ModifierSperator ModifierList
-> ModifierSperator	:= 	':'
-> ModifierList		:= 	ModifierItem ModifierList
-> ModifierItem		:= 	{PreciseModifer} | kernelModifer | UserModifer | HypervisorModifer
-> PreciseModifer		:= 	'p' /* Can be multiple PreciseModifers */
-> kernelModifer		:= 	'k'
-> UserModifer		:= 	'u'
-> HypervisorModifer	:= 	'h'
+regards, Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-Otherwise, very nice. Eventually we'll be able to use a parser generator
-for this.
 
+--------------enig31BA9E0CA8209B8AD42B4FE8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk2Md1MACgkQjTAFq1RaXHNqrQCeNpsveSZK342Li8frdc696D8+
+umcAoJGrX/OO/dLbTtxJCza/wnQRMqD6
+=j1Kd
+-----END PGP SIGNATURE-----
+
+--------------enig31BA9E0CA8209B8AD42B4FE8--
