@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab1CYRWk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 13:22:40 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:47399 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752072Ab1CYRWi (ORCPT
+	id S1753961Ab1CYRYx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 13:24:53 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59753 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1CYRYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 13:22:38 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=d7h/4x0RlqTWZbGcx6DatLtPFJDwtZC7mMc6LOP21TgTVSZ15fhvFhCIZW1g0GnNg8DDdgu7eHE8qZnnQapozLVz8/qzxVIN+Y8zFqyoI86MJAAgSGHrxhTdK/WVdbQs;
-Date: Fri, 25 Mar 2011 10:22:31 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] PCI fixes
-Message-ID: <20110325102231.44ea28dc@jbarnes-desktop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 25 Mar 2011 13:24:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=azyASZt29myKyscPQOJ1Gg1b++tlyJk4sd8/pZY57mAyhaTeZQ/Hrz3o2QrxUzKEOc
+         EYuw29j6AM71FeuBAgh9nXroPVAi/dGXmeFuHI0rGmlfPK0mE1zO761fgCTx0oYwXASI
+         HMLcgmQR6P8L3JWsDezEMVRzgT/owBaOQZqps=
+Date: Fri, 25 Mar 2011 18:24:46 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au
+Subject: Re: [GIT PULL] ext4 update for 2.6.39-rc1
+Message-ID: <20110325172446.GH1409@htj.dyndns.org>
+References: <E1Q2wpD-0002It-CE@tytso-glaptop>
+ <AANLkTi=aKLhtuuMtd=KZ8YBykCp=yJ-KPAJ3jKQq0jQW@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=aKLhtuuMtd=KZ8YBykCp=yJ-KPAJ3jKQq0jQW@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit
-a44f99c7efdb88fa41128065c9a9445c19894e34:
+Hello, Linus.
 
-  Merge branch 'trivial' of git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6 (2011-03-20 18:14:55 -0700)
+On Fri, Mar 25, 2011 at 10:02:48AM -0700, Linus Torvalds wrote:
+> Ok, guys, can you verify my merge? In one branch, we had Tejun change
+> it to use "alloc_workqueue()", and in another, ext4 switched from
+> create_workqueue() to create_singlethread_workqueue().
+> 
+> My resolution was to use WQ_UNBOUND in allow_workqueue() in the
+> resulting merge, which I think should be semantically the correct
+> resolve. But the commit message in the create_singlethread_workqueue()
+> change seems to imply that the single-threadedness isn't a
+> _correctness_ issue as much as it is just a "we don't need multiple
+> threads" issue, so maybe the WQ_UNBOUND isn't necessary. So WQ_UNBOUND
+> may or may not be a good idea.
+> 
+> Regardless, please give it a look, ok?
 
-are available in the git repository at:
+The merg should be safe but WQ_UNBOUND isn't necessary there, so I
+think the version from commit fd89d5f2030a ("ext4: convert to
+alloc_workqueue()") would be better.  BTW, Stephen already spotted
+this earlier today - https://lkml.org/lkml/2011/3/24/652
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 for-linus
-
-A few misc. fixes.
-
-Naga Chumbalkar (3):
-      PCI: PCIe links may not get configured for ASPM under POWERSAVE mode
-      PCI: Changing ASPM policy, via /sys, to POWERSAVE could cause NMIs
-      PCI: Disable ASPM when _OSC control is not granted for PCIe services
-
-Rafael J. Wysocki (1):
-      PCI/ACPI: Report ASPM support to BIOS if not disabled from command line
-
- drivers/acpi/pci_root.c         |   11 ++++++++---
- drivers/pci/pci.c               |    6 ++++++
- drivers/pci/pcie/aspm.c         |   33 +++++++++++++++++++++++++++++++++
- drivers/pci/pcie/portdrv_core.c |    5 +----
- include/linux/pci-aspm.h        |    4 ++++
- include/linux/pci.h             |    7 +++----
- 6 files changed, 55 insertions(+), 11 deletions(-)
-
+Thanks.
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+tejun
