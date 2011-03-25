@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab1CYEoe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 00:44:34 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52511 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab1CYEob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 00:44:31 -0400
-Date: Fri, 25 Mar 2011 15:44:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Paul Fox <pgf@laptop.org>
-Subject: Re: linux-next: build failure after merge of the drivers-x86 tree
-Message-Id: <20110325154421.1c328ee2.sfr@canb.auug.org.au>
-In-Reply-To: <20110214163944.53c1241d.sfr@canb.auug.org.au>
-References: <20110214163944.53c1241d.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752428Ab1CYFE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 01:04:29 -0400
+Received: from nwd2mail11.analog.com ([137.71.25.57]:4714 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab1CYFE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 01:04:26 -0400
+X-IronPort-AV: E=Sophos;i="4.63,241,1299474000"; 
+   d="scan'208";a="30792930"
+From: <cliff.cai@analog.com>
+To: gregkh@suse.de
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, jic23@cam.ac.uk,
+        device-drivers-devel@blackfin.uclinux.org,
+        Cliff Cai <cliff.cai@analog.com>
+Subject: [PATCH 2/2] Add ABI document for gyro quadrature correction
+Date: Fri, 25 Mar 2011 12:05:58 +0800
+Message-ID: <1301025958-2175-2-git-send-email-cliff.cai@analog.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1301025958-2175-1-git-send-email-cliff.cai@analog.com>
+References: <1301025958-2175-1-git-send-email-cliff.cai@analog.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthew,
+From: Cliff Cai <cliff.cai@analog.com>
 
-On Mon, 14 Feb 2011 16:39:44 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
-> After merging the drivers-x86 tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/platform/x86/xo15-ebook.c: In function 'ebook_switch_add':
-> drivers/platform/x86/xo15-ebook.c:136: error: 'struct acpi_device_wakeup' has no member named 'run_wake_count'
-> 
-> Caused by commit f160ad4c2a720411a136db7b867c3b4b868b8933 ("OLPC XO-1.5
-> ebook switch driver") interacting with commit
-> 0cab2dcf9963b1a7ed32e730384e1e8925b099cd ("ACPI: Remove the
-> wakeup.run_wake_count device field") from the acpi tree.
+Add ABI document for gyro quadrature correction.
 
-This acpi commit has now been merged into Linus' tree (as commit
-5190726765b4) so the patch below can now be applied to the drivers-x86
-tree (after merging Linus' tree).  Or should be sent to Linus along with
-your merge request.
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 14 Feb 2011 16:36:41 +1100
-Subject: [PATCH] OLPC: fix for removal of run_wake_count
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Cliff Cai <cliff.cai@analog.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/platform/x86/xo15-ebook.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/staging/iio/Documentation/sysfs-bus-iio |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/platform/x86/xo15-ebook.c b/drivers/platform/x86/xo15-ebook.c
-index 2343bb3..c1372ed 100644
---- a/drivers/platform/x86/xo15-ebook.c
-+++ b/drivers/platform/x86/xo15-ebook.c
-@@ -133,7 +133,6 @@ static int ebook_switch_add(struct acpi_device *device)
- 		/* Button's GPE is run-wake GPE */
- 		acpi_enable_gpe(device->wakeup.gpe_device,
- 				device->wakeup.gpe_number);
--		device->wakeup.run_wake_count++;
- 		device_set_wakeup_enable(&device->dev, true);
- 	}
- 
+diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio b/drivers/staging/iio/Documentation/sysfs-bus-iio
+index 4915aee..824a56c 100644
+--- a/drivers/staging/iio/Documentation/sysfs-bus-iio
++++ b/drivers/staging/iio/Documentation/sysfs-bus-iio
+@@ -698,3 +698,10 @@ Description:
+ 		with all _en attributes to establish which channels are present,
+ 		and the relevant _type attributes to establish the data storage
+ 		format.
++
++What:		/sys/bus/iio/devices/deviceX/gyro_z_quadrature_correction_raw
++KernelVersion:	2.6.38
++Contact:	linux-iio@vger.kernel.org
++Description:
++		This attribute is used to read the amount of quadrature error
++		present in the device at a given time.
 -- 
-1.7.2.3
+1.7.1
 
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
