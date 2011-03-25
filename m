@@ -1,98 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab1CYOVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 10:21:40 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48788 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753252Ab1CYOVT (ORCPT
+	id S1753542Ab1CYOXp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 10:23:45 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56020 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006Ab1CYOXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 10:21:19 -0400
-Message-Id: <20110325142049.536190130@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Fri, 25 Mar 2011 14:21:17 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Subject: [patch 2/2] tile: Use generic show_interupts()
-References: <20110325141938.846639464@linutronix.de>
-Content-Disposition: inline; filename=tile-use-show.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
+	Fri, 25 Mar 2011 10:23:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:subject:to:cc:date:message-id:user-agent:mime-version
+         :content-type:content-transfer-encoding;
+        b=c52rm2R9yd5zknRQpN7CwK7u7nGudr8fZFqyf+d5nLJjil5COT/HCtOycQCONA9Prt
+         uGHnYLKpNYjIRzYSgQguXjQZfLU6S7ZD2LchKYRKziGDrt66Nne7cqaGH4VSh5D13Uko
+         FDXhSkzYhUB3+tEJXJzEZ39fciuzZXTgInV3M=
+From: Chuck Lever <chuck.lever@oracle.com>
+Subject: [PATCH] NFS: Revert NFSROOT default mount options
+To: marek.belisko@gmail.com
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 25 Mar 2011 10:23:40 -0400
+Message-ID: <20110325141947.3236.83222.stgit@matisse.1015granger.net>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
+Marek Belisko <marek.belisko@gmail.com> reports that recent attempts
+to fix regressions in NFSROOT have broken his configuration:
+
+> After update from 2.6.38-rc8 to 2.6.38 is mounting rootfs over nfs not possible.
+> Log:
+> VFS: Mounted root (nfs filesystem) on device 0:14.
+> Freeing init memory: 132K
+> nfs: server 10.146.1.21 not responding, still trying
+> nfs: server 10.146.1.21 not responding, still trying
+>
+> This is never ending. I make short bisect (not too much commits
+> between versions)
+> and bad commit was reported: 53d4737580535e073963b91ce87d4216e434fab5
+>
+> NFS: NFSROOT should default to "proto=udp"
+>
+> I've tested on mini2440 board (DM9000, static IP).
+> Is there some missing option or something else to be checked?
+
+An examination of a network trace captured during the failure shows
+that the mount is actually succeeding, but that the client is not
+seeing READ replies larger than 16KB.
+
+Last fall we removed the ad hoc mount option parser in fs/nfs/nfsroot.c
+in favor of using the main parser in fs/nfs/super.c (see commit
+56463e50 "NFS: Use super.c for NFSROOT mount option parsing").  That
+commit changed the default NFSROOT mount options to be the same as
+those employed by user space mounts.  As it turns out, that change is
+not tolerated by many embedded systems.
+
+Subsequently, commit 53d47375 introduced a clean way to specify
+default mount options for NFSROOT, so we can restore the traditional
+defaults for NFSROOT easily now:
+
+   vers=2,udp,rsize=4096,wsize=4096
+
+This should revert the changed default NFSROOT mount options
+introduced with commit 56463e50.
+
+Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
 ---
- arch/tile/Kconfig      |    1 +
- arch/tile/kernel/irq.c |   41 -----------------------------------------
- 2 files changed, 1 insertion(+), 41 deletions(-)
 
-Index: linux-2.6-tip/arch/tile/Kconfig
-===================================================================
---- linux-2.6-tip.orig/arch/tile/Kconfig
-+++ linux-2.6-tip/arch/tile/Kconfig
-@@ -12,6 +12,7 @@ config TILE
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
- 	select GENERIC_HARDIRQS_NO_DEPRECATED
-+	select GENERIC_IRQ_SHOW
- 
- # FIXME: investigate whether we need/want these options.
- #	select HAVE_IOREMAP_PROT
-Index: linux-2.6-tip/arch/tile/kernel/irq.c
-===================================================================
---- linux-2.6-tip.orig/arch/tile/kernel/irq.c
-+++ linux-2.6-tip/arch/tile/kernel/irq.c
-@@ -262,47 +262,6 @@ void ack_bad_irq(unsigned int irq)
-  * Generic, controller-independent functions:
-  */
- 
--int show_interrupts(struct seq_file *p, void *v)
--{
--	int i = *(loff_t *) v, j;
--	struct irqaction *action;
--	unsigned long flags;
--
--	if (i == 0) {
--		seq_printf(p, "           ");
--		for (j = 0; j < NR_CPUS; j++)
--			if (cpu_online(j))
--				seq_printf(p, "CPU%-8d", j);
--		seq_putc(p, '\n');
--	}
--
--	if (i < NR_IRQS) {
--		struct irq_desc *desc = irq_to_desc(i);
--
--		raw_spin_lock_irqsave(&desc->lock, flags);
--		action = desc->action;
--		if (!action)
--			goto skip;
--		seq_printf(p, "%3d: ", i);
--#ifndef CONFIG_SMP
--		seq_printf(p, "%10u ", kstat_irqs(i));
--#else
--		for_each_online_cpu(j)
--			seq_printf(p, "%10u ", kstat_irqs_cpu(i, j));
--#endif
--		seq_printf(p, " %14s", irq_desc_get_chip(desc)->name);
--		seq_printf(p, "  %s", action->name);
--
--		for (action = action->next; action; action = action->next)
--			seq_printf(p, ", %s", action->name);
--
--		seq_putc(p, '\n');
--skip:
--		raw_spin_unlock_irqrestore(&desc->lock, flags);
--	}
--	return 0;
--}
--
- #if CHIP_HAS_IPI()
- int create_irq(void)
- {
+Hi-
 
+Please test this, as I no longer have an NFSROOT rig here.
+
+Can some responsible maintainer type see that this gets into
+linux-next quickly for broader testing?
+
+ fs/nfs/nfsroot.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
+index c541093..c4744e1 100644
+--- a/fs/nfs/nfsroot.c
++++ b/fs/nfs/nfsroot.c
+@@ -87,7 +87,7 @@
+ #define NFS_ROOT		"/tftpboot/%s"
+ 
+ /* Default NFSROOT mount options. */
+-#define NFS_DEF_OPTIONS		"udp"
++#define NFS_DEF_OPTIONS		"vers=2,udp,rsize=4096,wsize=4096"
+ 
+ /* Parameters passed from the kernel command line */
+ static char nfs_root_parms[256] __initdata = "";
 
