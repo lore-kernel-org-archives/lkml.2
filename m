@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933978Ab1CYH0a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 03:26:30 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:60851 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753752Ab1CYH02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 03:26:28 -0400
-X-ASG-Debug-ID: 1301037986-01de284cf8ba280001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D8C43A0.3070908@fusionio.com>
-Date: Fri, 25 Mar 2011 08:26:24 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754768Ab1CYH2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 03:28:07 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64284 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab1CYH2F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 03:28:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=w1ZQM7x5kjQjFntNooH9LsQT8pBUIF9k5Co88rWG4i7f8fPXuyvXPESirFUsRkqJeK
+         ikydajpG6FCGDlII04/s4/1z56T5nfzd33mcME4LVe46iseTOIgR1yw5ppKxlF4y2jn8
+         RQdCxH5XteTc4TwnNn3Gb0k131W6m68VT5nro=
+Date: Fri, 25 Mar 2011 00:27:59 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.39-rc0
+Message-ID: <20110325072759.GA2590@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-References: <4D8B4A89.80608@fusionio.com> <20110324183019.GA1676@gentoo.trippels.de> <4D8B8F34.5000203@fusionio.com> <4D8B92AE.8090308@fusionio.com> <20110324185445.GB1696@gentoo.trippels.de> <4D8B9457.2020608@fusionio.com> <20110324193441.GA1723@gentoo.trippels.de> <20110325044128.GJ26611@dastard>
-X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-In-Reply-To: <20110325044128.GJ26611@dastard>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1301037986
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58904
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-25 05:41, Dave Chinner wrote:
-> On Thu, Mar 24, 2011 at 08:34:41PM +0100, Markus Trippelsdorf wrote:
->> On 2011.03.24 at 19:58 +0100, Jens Axboe wrote:
->>> On 2011-03-24 19:54, Markus Trippelsdorf wrote:
->>>> On 2011.03.24 at 19:51 +0100, Jens Axboe wrote:
->>>>> On 2011-03-24 19:36, Jens Axboe wrote:
->>>>>> On 2011-03-24 19:30, Markus Trippelsdorf wrote:
->>>>>>> On 2011.03.24 at 14:43 +0100, Jens Axboe wrote:
->>>>>>>>
->>>>>>>> This is the main pull request for the block IO layer and friends for
->>>>>>>> 2.6.39.
->>>>>>>
->>>>>>> This merge results in an early oops on my system (amd64, xfs).
->>>>>>> See the attached photo.
->>>>>>>
->>>>>>
->>>>>> Auch. Can you ensure that you have CONFIG_DEBUGINFO=y in your .config
->>>>>> and then do:
->>>>>>
->>>>>> $ gdb vmlinux
->>>>>> ...
->>>>>> l *cfq_insert_request+0x32
->>>>>>
->>>>>> and send that output?
->>>>>
->>>>> I took a closer look at the oops, and it most likely looks like q ==
->>>>> NULL (offset 0x18 == q->elevator). You left out the Code part, so I
->>>>> can't verify that for certain. Which makes very little sense. I take it
->>>>> this is 100% reproducible? When you send the gdb output, please also
->>>>> attach your .config.
->>>>
->>>> Yes, it's 100% reproducible here. My .config follows:
->>>
->>> Can you try this patch and see if it makes a difference?
->>
->> There's no patch ;-)
->>
->>> If you boot without the patch and add elevator=noop, does it then work?
->>
->> It works insofar as the Oops is gone. But my xfs partitions apparently
->> still get corrupted (I had to run xfs_repair on several of them, because
->> they would not mount otherwise).
-> 
-> So the patchset is causing repeatable filesystem corruption? Sounds
-> to me like this series is not yet ready for mainline merging. Last
-> thing I want to spend the .39 cycle helping people recover busted
-> filesystems as a result of undercooked block layer changes...
+Hi Linus,
 
-Well, the last thing I want to do is be responsible for screwing peoples
-file systems. I have been running these changes on my laptop, desktop,
-and test machines for the last month at least. It's been in linux-next
-for about that long, too. I'm extremely puzzled at this issue that
-Markus reports.
+Please pull from:
 
-So believe me, if we can't resolve this very quickly then we'll pull it
-back out.
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive a few updates to recently merged tsc2005 driver.
+
+Changelog:
+---------
+
+Aaro Koskinen (2):
+      Input: tsc2005 - use relative jiffies to schedule the watchdog
+      Input: tsc2005 - fix locking issue
+
+Geert Uytterhoeven (1):
+      Input: tsc2005 - driver should depend on GENERIC_HARDIRQS
+
+
+Diffstat:
+--------
+
+ drivers/input/touchscreen/Kconfig   |    2 +-
+ drivers/input/touchscreen/tsc2005.c |   18 +++++++++++++-----
+ 2 files changed, 14 insertions(+), 6 deletions(-)
 
 -- 
-Jens Axboe
+Dmitry
 
