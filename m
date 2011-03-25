@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab1CYXw0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:52:26 -0400
-Received: from kroah.org ([198.145.64.141]:41416 "EHLO coco.kroah.org"
+	id S932209Ab1CYXwS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:52:18 -0400
+Received: from kroah.org ([198.145.64.141]:41367 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932188Ab1CYXwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:19 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:40 2011
-Message-Id: <20110325234840.058264315@clark.kroah.org>
+	id S932188Ab1CYXwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:13 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:39 2011
+Message-Id: <20110325234839.517978523@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:04 -0700
+Date: Fri, 25 Mar 2011 16:46:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hugh Dickins <hughd@google.com>
-Subject: [11/55] shmem: let shared anonymous be nonlinear again
+        Lydia Wang <lydiawang@viatech.com.cn>, Takashi Iwai <tiwai@suse.de>
+Subject: [06/55] ALSA: hda - VIA: Fix VT1708 cant build up Headphone control issue
 In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Lydia Wang <lydiawang@viatech.com.cn>
 
-commit bee4c36a5cf5c9f63ce1d7372aa62045fbd16d47 upstream.
+commit ee3c35c0827de02de414d08b2ddcbb910c2263ab upstream.
 
-Up to 2.6.22, you could use remap_file_pages(2) on a tmpfs file or a
-shared mapping of /dev/zero or a shared anonymous mapping.  In 2.6.23 we
-disabled it by default, but set VM_CAN_NONLINEAR to enable it on safe
-mappings.  We made sure to set it in shmem_mmap() for tmpfs files, but
-missed it in shmem_zero_setup() for the others.  Fix that at last.
+Since VT1708 didn't support the control of getting connection number,
+building of headphone control will fail in via_hp_build() function.
 
-Reported-by: Kenny Simpson <theonetruekenny@yahoo.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Lydia Wang <lydiawang@viatech.com.cn>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/shmem.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_via.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2784,5 +2784,6 @@ int shmem_zero_setup(struct vm_area_stru
- 		fput(vma->vm_file);
- 	vma->vm_file = file;
- 	vma->vm_ops = &shmem_vm_ops;
-+	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
- }
+--- a/sound/pci/hda/patch_via.c
++++ b/sound/pci/hda/patch_via.c
+@@ -1267,9 +1267,12 @@ static int via_hp_build(struct hda_codec
+ 		break;
+ 	}
+ 
+-	nums = snd_hda_get_connections(codec, nid, conn, HDA_MAX_CONNECTIONS);
+-	if (nums <= 1)
+-		return 0;
++	if (spec->codec_type != VT1708) {
++		nums = snd_hda_get_connections(codec, nid,
++					       conn, HDA_MAX_CONNECTIONS);
++		if (nums <= 1)
++			return 0;
++	}
+ 
+ 	knew = via_clone_control(spec, &via_hp_mixer[0]);
+ 	if (knew == NULL)
 
 
