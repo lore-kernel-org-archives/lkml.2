@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932951Ab1CYX6T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:58:19 -0400
-Received: from kroah.org ([198.145.64.141]:48856 "EHLO coco.kroah.org"
+	id S933146Ab1CZAAG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:00:06 -0400
+Received: from kroah.org ([198.145.64.141]:48935 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932457Ab1CYX6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:58:08 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:56:36 2011
-Message-Id: <20110325235636.570549856@clark.kroah.org>
+	id S932689Ab1CYX6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:58:23 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:56:38 2011
+Message-Id: <20110325235638.107361934@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:55:38 -0700
+Date: Fri, 25 Mar 2011 16:55:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>
-Subject: [01/23] aio: wake all waiters when destroying ctx
+        Peter Holik <peter@holik.at>, Thomas Sailer <t.sailer@alumni.ethz.ch>
+Subject: [16/23] USB: uss720 fixup refcount position
 References: <20110325235537.660072281@clark.kroah.org>
-Content-Disposition: inline; filename=aio-wake-all-waiters-when-destroying-ctx.patch
+Content-Disposition: inline; filename=usb-uss720-fixup-refcount-position.patch
 In-Reply-To: <20110325235654.GA24416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Dreier <roland@purestorage.com>
+From: Peter Holik <peter@holik.at>
 
-commit e91f90bb0bb10be9cc8efd09a3cf4ecffcad0db1 upstream.
+commit adaa3c6342b249548ea830fe8e02aa5b45be8688 upstream.
 
-The test program below will hang because io_getevents() uses
-add_wait_queue_exclusive(), which means the wake_up() in io_destroy() only
-wakes up one of the threads.  Fix this by using wake_up_all() in the aio
-code paths where we want to make sure no one gets stuck.
+My testprog do a lot of bitbang - after hours i got following warning and my machine lockups:
+WARNING: at /build/buildd/linux-2.6.38/lib/kref.c:34
+After debugging uss720 driver i discovered that the completion callback was called before
+usb_submit_urb returns. The callback frees the request structure that is krefed on return by
+usb_submit_urb.
 
-	// t.c -- compile with gcc -lpthread -laio t.c
-
-	#include <libaio.h>
-	#include <pthread.h>
-	#include <stdio.h>
-	#include <unistd.h>
-
-	static const int nthr = 2;
-
-	void *getev(void *ctx)
-	{
-		struct io_event ev;
-		io_getevents(ctx, 1, 1, &ev, NULL);
-		printf("io_getevents returned\n");
-		return NULL;
-	}
-
-	int main(int argc, char *argv[])
-	{
-		io_context_t ctx = 0;
-		pthread_t thread[nthr];
-		int i;
-
-		io_setup(1024, &ctx);
-
-		for (i = 0; i < nthr; ++i)
-			pthread_create(&thread[i], NULL, getev, ctx);
-
-		sleep(1);
-
-		io_destroy(ctx);
-
-		for (i = 0; i < nthr; ++i)
-			pthread_join(thread[i], NULL);
-
-		return 0;
-	}
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Holik <peter@holik.at>
+Acked-by: Thomas Sailer <t.sailer@alumni.ethz.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/aio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/misc/uss720.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -497,7 +497,7 @@ static inline void really_put_req(struct
- 	ctx->reqs_active--;
- 
- 	if (unlikely(!ctx->reqs_active && ctx->dead))
--		wake_up(&ctx->wait);
-+		wake_up_all(&ctx->wait);
+--- a/drivers/usb/misc/uss720.c
++++ b/drivers/usb/misc/uss720.c
+@@ -176,12 +176,11 @@ static struct uss720_async_request *subm
+ 	spin_lock_irqsave(&priv->asynclock, flags);
+ 	list_add_tail(&rq->asynclist, &priv->asynclist);
+ 	spin_unlock_irqrestore(&priv->asynclock, flags);
++	kref_get(&rq->ref_count);
+ 	ret = usb_submit_urb(rq->urb, mem_flags);
+-	if (!ret) {
+-		kref_get(&rq->ref_count);
++	if (!ret)
+ 		return rq;
+-	}
+-	kref_put(&rq->ref_count, destroy_async);
++	destroy_async(&rq->ref_count);
+ 	err("submit_async_request submit_urb failed with %d", ret);
+ 	return NULL;
  }
- 
- static void aio_fput_routine(struct work_struct *data)
-@@ -1219,7 +1219,7 @@ static void io_destroy(struct kioctx *io
- 	 * by other CPUs at this point.  Right now, we rely on the
- 	 * locking done by the above calls to ensure this consistency.
- 	 */
--	wake_up(&ioctx->wait);
-+	wake_up_all(&ioctx->wait);
- 	put_ioctx(ioctx);	/* once for the lookup */
- }
- 
 
 
