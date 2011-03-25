@@ -1,187 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab1CYOxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 10:53:22 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41347 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab1CYOxV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 10:53:21 -0400
+	id S1753892Ab1CYPAd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 11:00:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60886 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761Ab1CYPAc (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 25 Mar 2011 11:00:32 -0400
+Date: Fri, 25 Mar 2011 10:59:43 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 07/21]drivers:xen Remove extra comma.
+Message-ID: <20110325145943.GE27651@dumpdata.com>
+References: <1300994819-30930-1-git-send-email-justinmattock@gmail.com>
+ <1300994819-30930-7-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin3MDYdL6x1Qs8Q9oMMgDMfsoO2GjWMJO_65GAR@mail.gmail.com>
-References: <20110324195720.GB31713@thinkpad-t410>
-	<1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
-	<AANLkTimF2UR8BVQW-3YJaGFEz39q8ydESAiMOjmdM1X7@mail.gmail.com>
-	<20110325135311.GA14328@thinkpad-t410>
-	<AANLkTin3MDYdL6x1Qs8Q9oMMgDMfsoO2GjWMJO_65GAR@mail.gmail.com>
-Date: Fri, 25 Mar 2011 09:53:20 -0500
-Message-ID: <AANLkTi=iWeKVww_XPm0PQa09NLtPCo4wvz7ZYkk1ajhQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate key
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300994819-30930-7-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D8CADE0.0076,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 9:05 AM, Corentin Chary
-<corentin.chary@gmail.com> wrote:
-> On Fri, Mar 25, 2011 at 1:53 PM, Seth Forshee
-> <seth.forshee@canonical.com> wrote:
->> On Fri, Mar 25, 2011 at 01:28:30PM +0000, Corentin Chary wrote:
->>> > +static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int *code,
->>> > +                                int *value, int *autorelease)
->>> > +{
->>> > +       struct eeepc_wmi_driver *eeepc = to_eeepc_wmi_driver(asus_wmi);
->>> > +       int is_press;
->>> > +
->>> > +       /*
->>> > +        * The following behavior is used for T101MT "Home" key:
->>> > +        *
->>> > +        *   On press:   No event set
->>> > +        *   On hold:    KEY_PROG2 press sent once w/o autorelease
->>> > +        *   On release: If key was held, KEY_PROG2 release sent.
->>> > +        *               Otherwise KEY_HOME press sent w/ autorelease.
->>> > +        *
->>> > +        * The simple state machine below implements this behavior.
->>> > +        */
->>> > +       switch (*code) {
->>> > +       case HOME_PRESS:
->>> > +               eeepc->home_key_state = HOME_PRESS;
->>> > +               *code = ASUS_WMI_KEY_IGNORE;
->>> > +               break;
->>> > +       case HOME_HOLD:
->>> > +               if (eeepc->home_key_state == HOME_HOLD) {
->>> > +                       *code = ASUS_WMI_KEY_IGNORE;
->>> > +               } else {
->>> > +                       eeepc->home_key_state = HOME_HOLD;
->>> > +                       *value = 1;
->>> > +                       *autorelease = 0;
->>> > +               }
->>> > +               break;
->>> > +       case HOME_RELEASE:
->>> > +               if (eeepc->home_key_state == HOME_RELEASE) {
->>> > +                       dev_warn(&asus_wmi->platform_device->dev,
->>> > +                                "Unexpected home key release event\n");
->>> > +                       *code = ASUS_WMI_KEY_IGNORE;
->>> > +               } else {
->>> > +                       *code = eeepc->home_key_state;
->>> > +                       eeepc->home_key_state = HOME_RELEASE;
->>> > +                       is_press = (*code == HOME_PRESS);
->>> > +                       *value = is_press;
->>> > +                       *autorelease = is_press;
->>> > +               }
->>> > +               break;
->>> > +       }
->>> > +}
->>> > +
->>>
->>> Why not something simpler like this ?
->>>
->>> static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int code,
->>>                                                  int *value, int *autorelease)
->>> {
->>>         if (code == 0xe4) {
->>>                 *value = 1;
->>>                 *autorelease = 0;
->>>         } else if (code == 0xe5) {
->>>                 *value = 0;
->>>                 *autorelease = 0;
->>>        }
->>> }
->>>
->>> with this keymap :
->>>
->>>        { KE_KEY, 0xe4, { KEY_HOME } }, /* Home Key Down */
->>>        { KE_KEY, 0xe5, { KEY_HOME } }, /* Home Key Up */
->>>        { KE_KEY, 0xea, { KEY_PROG2 } }, /* Home Key hold more than one second */
->>>
->>>
->>> This sounds simpler and we don't loose information (key down and key
->>> up both event reported at the right time).
->>> 0xe5 is *always* sent after 0xe4 right ?
->>
->> I guess it depends on what key events we want on a press-and-hold.
->> Remember that you're going to get a scan code sequence like "0xe4 0xea
->> 0xea ... 0xea 0xe5", so with my implementation you get
->>
->>  KEY_PROG2 press
->>  KEY_PROG2 release
->>
->> With yours
->>
->>  KEY_HOME press
->>  KEY_PROG2 press
->>  KEY_PROG2 release
->>  // KEY_PROG2 press/release repeats every 0.5 secs while button held
->>  KEY_HOME release
->>
->> At minimum I'd think we'd want to only send a single PROG2 press/release
->> for button hold. My thought was that you'd only want to get the code for
->> 0xe4 or 0xea, not both, but I suppose that's debatable.
->
-> If you keep a keyboard key pressed, you want multiple events, not one right ?
-> I think it's important not to loose informations. If someone keep this
-> key pressed more than 1.5 second, I think it's good idea to send
-> multiple KEY_PROG2.
->
-> About KEY_HOME press / release, and filtering KEY_HOME after
-> KEY_PROG2, I'm not sure. So if you really want it, and nobody
-> complains, I'll be happy to accept your patch.
+On Thu, Mar 24, 2011 at 12:26:45PM -0700, Justin P. Mattock wrote:
+> The patch below removes an extra comma from various parts 
+> of the kernel. Please have a look when you have time, and let
+> me know if its legit or not.
 
-Here is how I envision using these keys.  I wanted to map quick press
-to GNOME3/KDE4/Unity's Activities menu and map press-and-hold to
-script that rotates screen.  I like the repeating of rotates but I
-didn't really want a rotate to also force a pop up of the activities
-menu.
-
->
->> And back to the question of KEY_HOME -- that's not really what you want,
->> is it? As in "move cursor to start of line"?
->
-> Ho .. right, that's what mean KEY_HOME :/. So no, I don't want that...
-> What about:
-> - KEY_CYCLEWINDOWS
-> - KEY_COMPUTER
-> - KEY_HOMEPAGE
-> - KEY_DASHBOARD
->
-> I think KEY_HOMEPAGE is the best choice.
-
-I've only had limited time to look more.  So far, I found under udev a
-toshiba tablet that maps what is probably a rotate button to
-KEY_DIRECTION so thats one option for it instead of KEY_PROG2.  I
-couldn't find anybody using that though.
-
-I see in /usr/share/X11/symbols/inet:
-
-    key <I162>   {      [ XF86RotateWindows     ]       };
-
-and in /usr/share/X11/xkb/symbols/evdev:
-
-xkb/keycodes/evdev:     <I162> = 162;   // #define KEY_CYCLEWINDOWS        154
-
-Looks like KEY_CYCLEWINDOWS is already hooked up to
-gnome-settings-daemon to auto-rotate screen?
-
-I ran into total dead end for finding a pre-existing example of home
-button usage.  I'm really surprised we do not yet have a KEY_LAUNCHER
-or similar because so many tablet PCs/smartphones/pads do have a
-button with this specific concept of "bring up your icon based
-application launcher".
-
-To add to your list, I'll also throw out:
-
-- KEY_MENU
-- KEY_EXIT (smartphones sometime mean this)
-- KEY_PROG3 (basically all that Windows is doing)
-- KEY_LAUNCHER (why not be the first to finally create it!)
-
-I vote for either KEY_PROG3 or KEY_HOMEPAGE for at least short term.
-
-Chris
+Looks ok.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/xen/evtchn.c      |    2 +-
+>  drivers/xen/swiotlb-xen.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
+> index ef11daf..dbc13e9 100644
+> --- a/drivers/xen/evtchn.c
+> +++ b/drivers/xen/evtchn.c
+> @@ -470,7 +470,7 @@ static int evtchn_open(struct inode *inode, struct file *filp)
+>  
+>  	filp->private_data = u;
+>  
+> -	return nonseekable_open(inode, filp);;
+> +	return nonseekable_open(inode, filp);
+>  }
+>  
+>  static int evtchn_release(struct inode *inode, struct file *filp)
+> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> index 54469c3..65ea21a 100644
+> --- a/drivers/xen/swiotlb-xen.c
+> +++ b/drivers/xen/swiotlb-xen.c
+> @@ -54,7 +54,7 @@ u64 start_dma_addr;
+>  
+>  static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
+>  {
+> -	return phys_to_machine(XPADDR(paddr)).maddr;;
+> +	return phys_to_machine(XPADDR(paddr)).maddr;
+>  }
+>  
+>  static phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
