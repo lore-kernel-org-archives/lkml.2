@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab1CYT7M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 15:59:12 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:47926 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753142Ab1CYT7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 15:59:11 -0400
-Date: Fri, 25 Mar 2011 15:58:56 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mingming Cao <cmm@us.ibm.com>
-Subject: Re: linux-next: manual merge of the ext4 tree with Linus' tree
-Message-ID: <20110325195856.GF2548@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Tejun Heo <tj@kernel.org>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org, Mingming Cao <cmm@us.ibm.com>
-References: <20110325125643.91510e0e.sfr@canb.auug.org.au>
- <20110325144544.GF1409@htj.dyndns.org>
+	id S1755026Ab1CYUAS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 16:00:18 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37827 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753139Ab1CYUAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 16:00:15 -0400
+Date: Fri, 25 Mar 2011 21:00:03 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Christoph Lameter <cl@linux.com>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [boot crash #2] Re: [GIT PULL] SLAB changes for v2.6.39-rc1
+Message-ID: <20110325200003.GC7346@elte.hu>
+References: <alpine.DEB.2.00.1103221635400.4521@tiger>
+ <20110324142146.GA11682@elte.hu>
+ <alpine.DEB.2.00.1103240940570.32226@router.home>
+ <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
+ <20110324172653.GA28507@elte.hu>
+ <20110324185258.GA28370@elte.hu>
+ <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6>
+ <20110324192247.GA5477@elte.hu>
+ <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110325144544.GF1409@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 03:45:44PM +0100, Tejun Heo wrote:
-> Both are about the same conversion but the one using alloc_workqueue()
-> is better because 1. create_singlethread_workqueue() is going away and
-> 2. it doesn't require strict ordering among queued works.
+
+* Pekka Enberg <penberg@kernel.org> wrote:
+
+> On Thu, Mar 24, 2011 at 9:22 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Thomas Gleixner <tglx@linutronix.de> wrote:
+> >
+> >> On Thu, 24 Mar 2011, Ingo Molnar wrote:
+> >> > RIP: 0010:[<ffffffff810570a9>]  [<ffffffff810570a9>] get_next_timer_interrupt+0x119/0x260
+> >>
+> >> That's a typical timer crash, but you were unable to debug it with
+> >> debugobjects because commit d3f661d6 broke those.
+> >>
+> >> Christoph, debugobjects do not need to run with interupts
+> >> disabled. And just because they were in that section to keep all the
+> >> debug stuff together does not make an excuse for not looking at the
+> >> code and just slopping it into some totally unrelated ifdef along with
+> >> a completely bogus comment.
+> >>
+> >> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> >> ---
+> >>  mm/slub.c |    4 ++--
+> >>  1 file changed, 2 insertions(+), 2 deletions(-)
+> >>
+> >> Index: linux-2.6/mm/slub.c
+> >> ===================================================================
+> >> --- linux-2.6.orig/mm/slub.c
+> >> +++ linux-2.6/mm/slub.c
+> >> @@ -849,11 +849,11 @@ static inline void slab_free_hook(struct
+> >>               local_irq_save(flags);
+> >>               kmemcheck_slab_free(s, x, s->objsize);
+> >>               debug_check_no_locks_freed(x, s->objsize);
+> >> -             if (!(s->flags & SLAB_DEBUG_OBJECTS))
+> >> -                     debug_check_no_obj_freed(x, s->objsize);
+> >>               local_irq_restore(flags);
+> >>       }
+> >>  #endif
+> >> +     if (!(s->flags & SLAB_DEBUG_OBJECTS))
+> >> +             debug_check_no_obj_freed(x, s->objsize);
+> >
+> > Thanks, this did the trick!
+> >
+> > Tested-by: Ingo Molnar <mingo@elte.hu>
+> >
+> > With this fix i got the warning below - pinpointing a net/bluetooth/hci_core.c
+> > timer bug.
 > 
-> Ted, what do you think?
+> Applied, thanks!
 
-Agreed.  And it looks like Linus agreed as well:
+Just an update: all SLAB/SLUB problems appear to be fixed with the latest 
+patches, so i'm a happy camper!
 
-diff --cc fs/ext4/super.c
-index 203f9e4,ccfa686..22546ad
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@@ -3511,12 -3514,7 +3516,12 @@@ static int ext4_fill_super(struct super
-        percpu_counter_set(&sbi->s_dirtyblocks_counter, 0);
-  
-  no_journal:
- -      EXT4_SB(sb)->dio_unwritten_wq = create_singlethread_workqueue("ext4-dio-
- +      /*
- +       * The maximum number of concurrent works can be high and
- +       * concurrency isn't really necessary.  Limit it to 1.
- +       */
- +      EXT4_SB(sb)->dio_unwritten_wq =
--               alloc_workqueue("ext4-dio-unwritten", WQ_MEM_RECLAIM, 1);
-++              alloc_workqueue("ext4-dio-unwritten", WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
-        if (!EXT4_SB(sb)->dio_unwritten_wq) {
-                printk(KERN_ERR "EXT4-fs: failed to create DIO workqueue\n");
-                goto failed_mount_wq;
+Thanks Pekka,
 
-						- Ted
+	Ingo
