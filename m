@@ -1,88 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934070Ab1CYKId (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 06:08:33 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49569 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932180Ab1CYKIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 06:08:31 -0400
-Date: Fri, 25 Mar 2011 10:08:22 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
-Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
-Message-ID: <20110325100822.GP3130@pulham.picochip.com>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
- <1300980071-24645-2-git-send-email-jamie@jamieiles.com>
- <AANLkTinJH46U=ueUPs2bnuTp16Vtn_ViwDCrhsAGPQvM@mail.gmail.com>
- <20110324203523.GJ3130@pulham.picochip.com>
- <AANLkTi=pKfKeoQxB3Xb-kasfrs_aa2rqHyF9N0wR6H3z@mail.gmail.com>
+	id S934082Ab1CYKLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 06:11:45 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:51751 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756470Ab1CYKLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 06:11:44 -0400
+X-ASG-Debug-ID: 1301047903-03d6a577be015f0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D8C6A5C.3090904@fusionio.com>
+Date: Fri, 25 Mar 2011 11:11:40 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=pKfKeoQxB3Xb-kasfrs_aa2rqHyF9N0wR6H3z@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+References: <20110324193441.GA1723@gentoo.trippels.de> <4D8B9D2F.4010504@fusionio.com> <20110324194546.GA1741@gentoo.trippels.de> <4D8BA235.7060904@fusionio.com> <20110324200613.GA1724@gentoo.trippels.de> <4D8BB114.2070002@fusionio.com> <20110324214150.GA1739@gentoo.trippels.de> <4D8C4304.3050101@fusionio.com> <20110325083757.GA1754@gentoo.trippels.de> <4D8C55D9.1060903@fusionio.com> <20110325095704.GA1694@gentoo.trippels.de>
+X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+In-Reply-To: <20110325095704.GA1694@gentoo.trippels.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301047903
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58915
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 05:33:25PM -0400, Mike Frysinger wrote:
-> On Thu, Mar 24, 2011 at 16:35, Jamie Iles wrote:
-> > On Thu, Mar 24, 2011 at 02:32:41PM -0400, Mike Frysinger wrote:
-> >> On Thu, Mar 24, 2011 at 11:21, Jamie Iles wrote:
-> >> > +Description:
-> >> > +                The redundancy format of the region. Valid values are:
-> >> > +                       - single-ended (1 bit of storage per data bit).
-> >> > +                       - redundant (2 bits of storage, wire-OR'd per data
-> >> > +                         bit).
-> >> > +                       - differential (2 bits of storage, differential
-> >> > +                         voltage per data bit).
-> >> > +                       - differential-redundant (4 bits of storage, combining
-> >> > +                         redundant and differential).
-> >> > +               It is possible to increase redundancy of a region but care
-> >> > +               will be needed if there is data already in the region.
-> >>
-> >> where does ECC fit in ?  the Blackfin OTP is structured:
-> >>   - first 4 pages are write control bitfields for all other pages (so
-> >> blowing bit 5 of page 0 prevents further writing to page 5)
-> >>   - each 0x100 page region has 0x20 pages dedicated to ECC for the
-> >> other 0x80 pages ... this provides 1 bit error correction and 2 bits
-> >> of error detection (anymore and you're screwed!)
-> >
-> > How does the ECC correction work for bfin at the moment?  Does the user
-> > specify it manually when writing then check it themselves when reading
-> > back or does the hardware handle that?
+On 2011-03-25 10:57, Markus Trippelsdorf wrote:
+> On 2011.03.25 at 09:44 +0100, Jens Axboe wrote:
+>> On 2011-03-25 09:37, Markus Trippelsdorf wrote:
+>>> On 2011.03.25 at 08:23 +0100, Jens Axboe wrote:
+>>>> On 2011-03-24 22:41, Markus Trippelsdorf wrote:
+>>>>> On 2011.03.24 at 22:01 +0100, Jens Axboe wrote:
+>>>>>> On 2011-03-24 21:06, Markus Trippelsdorf wrote:
+>>>>>>> On 2011.03.24 at 20:57 +0100, Jens Axboe wrote:
+>>>>>>>>
+>>>>>>>> OK, still a data point. What was the last -git kernel you used?
+>>>>>>>
+>>>>>>> This one was the last and gave me no problems:
+>>>>>>>
+>>>>>>> commit b81a618dcd3ea99de292dbe624f41ca68f464376
+>>>>>>> Merge: 2f284c8 a9712bc
+>>>>>>> Author: Linus Torvalds <torvalds@linux-foundation.org>
+>>>>>>> Date:   Wed Mar 23 20:51:42 2011 -0700
+>>>>>>>
+>>>>>>>     Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
+>>>>>>
+>>>>>> Puzzling... Poking at straws here so far. Does this make any difference
+>>>>>> whatsoever?
+>>>>>
+>>>>> I will test your patch later.
+>>>>>
+>>>>> Git-bisect gave me this result thus far:
+>>>>>
+>>>>> 9026e521c0da0731eb31f9f9022dd00cc3cd8885 is bad
+>>>>> 82f04ab47e1d94d78503591a7460b2cad9601ede is good
+>>>>>
+>>>>> When I continue the bisection with 4345caba340f051e10847924fc078ae18ed6695c
+>>>>> the system will start normally, but it then silently corrupts my xfs
+>>>>> partitions. And on next (re)boot I get this (only fixable with
+>>>>> xfs_repair):
+>>>>>
+>>>> How confident are you in those bisection results? Not trying to put you
+>>>> on the spot, just wondering whether you tested and it's completely
+>>>> consistent, or whether it was a one-off.
+>>>
+>>> Just double checked and 82f04ab47e1d94d78503591a7460b2cad9601ede is also
+>>> bad. It just silently corrupts the file system (without a BUG) and I
+>>> didn't notice.
+>>> So back to square one. 
+>>>
+>>> How can I tell git-bisect just to try the commits in the block merge and
+>>> not to take wild swings in history?
+>>
+>> Something like:
+>>
+>> $ git bisect start
+>> $ git bisect good 3dab04e6978e358ad2307bca563fabd6c5d2c58b
+>> $ git bisect bad 6c5103890057b1bb781b26b7aae38d33e4c517d8
 > 
-> it is taken care of by the layers below the Linux driver.  when we say
-> "read a half page", the 64bits are returned via pointer args, and the
-> function return value will tell us if the contents read are valid (ECC
-> passed), corrected (1 bit error), or there was a read error (too may
-> bit errors to recover).
+> Ok this time I've found the commit:
 > 
-> > The way I was thinking that this sort of thing could be handled would be
-> > for the ECC to be transparent to the user.  Perhaps for bfin the OTP
-> > could be registered as 4 regions, otpa1-otpa4 which default to
-> > "single-ended".  Writing "ecc" as the format would generate the ecc and
-> > program it for that region then check the ECC when reading back.
+> 9b6096a65f99a89dfd8328c4e469e7b53b3ae04a is the first bad commit
+> commit 9b6096a65f99a89dfd8328c4e469e7b53b3ae04a
+> Author: Shaohua Li <shaohua.li@intel.com>
+> Date:   Thu Mar 17 10:47:06 2011 +0100
 > 
-> reads and writes atm always have ECC enabled, and the driver restricts
-> writes to the full half page (64bits).  if you wanted to be crafty,
-> you could blow individual bits in a single half page over multiple
-> writes before writing out the final ECC, but that isnt supported, and
-> no one has complained.
+>     mm: make generic_writepages() use plugging
+>     
+>     This recovers a performance regression caused by the removal
+>     of the per-device plugging.
+>     
+>     Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+> 
+> Reverting it solves all problems here.
 
-The current version I have will do read-modify-write if the file offset 
-isn't OTP word aligned so it sounds like I need to add a flag that says 
-only do full word writes.
+Great! I'll see if I can find out why. The patch itself should not cause
+problems. I'm suspecting some interaction with nested plugging and the
+auto-flush.
 
-I guess in this framework we could make the OTP look like a single 
-region of the 0x80 data pages concatenated or provide separate regions 
-for each group of 0x80 pages but the control and ECC pages aren't 
-directly accessible by the user.
+-- 
+Jens Axboe
 
-The other question that brings up is whether any compatibility with the 
-old driver is required.
-
-Jamie
