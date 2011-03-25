@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699Ab1CZAS5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:18:57 -0400
-Received: from kroah.org ([198.145.64.141]:41582 "EHLO coco.kroah.org"
+	id S932519Ab1CZAS4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:18:56 -0400
+Received: from kroah.org ([198.145.64.141]:41715 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932285Ab1CYXwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:45 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:42 2011
-Message-Id: <20110325234842.217942194@clark.kroah.org>
+	id S932428Ab1CYXwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:46 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:11 2011
+Message-Id: <20110325234511.421242994@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:24 -0700
+Date: Fri, 25 Mar 2011 16:44:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stephan Lachowsky <stephan.lachowsky@maxim-ic.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [31/55] [media] uvcvideo: Fix uvc_fixup_video_ctrl() format search
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Mi Jinlong <mijinlong@cn.fujitsu.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [34/63] nfsd: wrong index used in inner loop
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Stephan Lachowsky <stephan.lachowsky@maxim-ic.com>
+From: Mi Jinlong <mijinlong@cn.fujitsu.com>
 
-commit 38a66824d96de8aeeb915e6f46f0d3fe55828eb1 upstream.
+commit 5a02ab7c3c4580f94d13c683721039855b67cda6 upstream.
 
-The scheme used to index format in uvc_fixup_video_ctrl() is not robust:
-format index is based on descriptor ordering, which does not necessarily
-match bFormatIndex ordering.  Searching for first matching format will
-prevent uvc_fixup_video_ctrl() from using the wrong format/frame to make
-adjustments.
+We must not use dummy for index.
+After the first index, READ32(dummy) will change dummy!!!!
 
-Signed-off-by: Stephan Lachowsky <stephan.lachowsky@maxim-ic.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+[bfields@redhat.com: Trond points out READ_BUF alone is sufficient.]
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/uvc/uvc_video.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ fs/nfsd/nfs4xdr.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/media/video/uvc/uvc_video.c
-+++ b/drivers/media/video/uvc/uvc_video.c
-@@ -89,15 +89,19 @@ int uvc_query_ctrl(struct uvc_device *de
- static void uvc_fixup_video_ctrl(struct uvc_streaming *stream,
- 	struct uvc_streaming_control *ctrl)
- {
--	struct uvc_format *format;
-+	struct uvc_format *format = NULL;
- 	struct uvc_frame *frame = NULL;
- 	unsigned int i;
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4
  
--	if (ctrl->bFormatIndex <= 0 ||
--	    ctrl->bFormatIndex > stream->nformats)
--		return;
-+	for (i = 0; i < stream->nformats; ++i) {
-+		if (stream->format[i].index == ctrl->bFormatIndex) {
-+			format = &stream->format[i];
-+			break;
-+		}
-+	}
+ 	u32 dummy;
+ 	char *machine_name;
+-	int i, j;
++	int i;
+ 	int nr_secflavs;
  
--	format = &stream->format[ctrl->bFormatIndex - 1];
-+	if (format == NULL)
-+		return;
- 
- 	for (i = 0; i < format->nframes; ++i) {
- 		if (format->frame[i].bFrameIndex == ctrl->bFrameIndex) {
+ 	READ_BUF(16);
+@@ -1215,8 +1215,6 @@ nfsd4_decode_create_session(struct nfsd4
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy * 4);
+-			for (j = 0; j < dummy; ++j)
+-				READ32(dummy);
+ 			break;
+ 		case RPC_AUTH_GSS:
+ 			dprintk("RPC_AUTH_GSS callback secflavor "
+@@ -1232,7 +1230,6 @@ nfsd4_decode_create_session(struct nfsd4
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy);
+-			p += XDR_QUADLEN(dummy);
+ 			break;
+ 		default:
+ 			dprintk("Illegal callback secflavor\n");
 
 
