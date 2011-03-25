@@ -1,105 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932585Ab1CYXxD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:53:03 -0400
-Received: from kroah.org ([198.145.64.141]:41802 "EHLO coco.kroah.org"
+	id S932736Ab1CYXxY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:53:24 -0400
+Received: from kroah.org ([198.145.64.141]:41990 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755640Ab1CYXwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:51 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:42 2011
-Message-Id: <20110325234842.747910292@clark.kroah.org>
+	id S932626Ab1CYXxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:13 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:14 2011
+Message-Id: <20110325234514.031685470@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:29 -0700
+Date: Fri, 25 Mar 2011 16:44:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        David Brownell <david-b@pacbell.net>
-Subject: [36/55] ehci-hcd: Bug fix: dont set a QHs Halt bit
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [59/63] NFS: Fix a hang/infinite loop in nfs_wb_page()
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit b5a3b3d985493c173925907adfebf3edab236fe7 upstream.
+commit b8413f98f997bb3ed7327e6d7117e7e91ce010c3 upstream.
 
-This patch (as1453) fixes a long-standing bug in the ehci-hcd driver.
+When one of the two waits in nfs_commit_inode() is interrupted, it
+returns a non-negative value, which causes nfs_wb_page() to think
+that the operation was successful causing it to busy-loop rather
+than exiting.
+It also causes nfs_file_fsync() to incorrectly report the file as
+being successfully committed to disk.
 
-There is no need to set the Halt bit in the overlay region for an
-unlinked or blocked QH.  Contrary to what the comment says, setting
-the Halt bit does not cause the QH to be patched later; that decision
-(made in qh_refresh()) depends only on whether the QH is currently
-pointing to a valid qTD.  Likewise, setting the Halt bit does not
-prevent completions from activating the QH while it is "stopped"; they
-are prevented by the fact that qh_completions() temporarily changes
-qh->qh_state to QH_STATE_COMPLETING.
+This patch fixes both problems by ensuring that we return an error
+if the attempts to wait fail.
 
-On the other hand, there are circumstances in which the QH will be
-reactivated _without_ being patched; this happens after an URB beyond
-the head of the queue is unlinked.  Setting the Halt bit will then
-cause the hardware to see the QH with both the Active and Halt bits
-set, an invalid combination that will prevent the queue from
-advancing and may even crash some controllers.
-
-Apparently the only reason this hasn't been reported before is that
-unlinking URBs from the middle of a running queue is quite uncommon.
-However Test 17, recently added to the usbtest driver, does exactly
-this, and it confirms the presence of the bug.
-
-In short, there is no reason to set the Halt bit for an unlinked or
-blocked QH, and there is a very good reason not to set it.  Therefore
-the code that sets it is removed.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Andiry Xu <andiry.xu@amd.com>
-CC: David Brownell <david-b@pacbell.net>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-q.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ fs/nfs/write.c |   31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
 
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -315,7 +315,6 @@ qh_completions (struct ehci_hcd *ehci, s
- 	int			stopped;
- 	unsigned		count = 0;
- 	u8			state;
--	const __le32		halt = HALT_BIT(ehci);
- 	struct ehci_qh_hw	*hw = qh->hw;
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1214,13 +1214,17 @@ int nfs_writeback_done(struct rpc_task *
+ #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
+ static int nfs_commit_set_lock(struct nfs_inode *nfsi, int may_wait)
+ {
++	int ret;
++
+ 	if (!test_and_set_bit(NFS_INO_COMMIT, &nfsi->flags))
+ 		return 1;
+-	if (may_wait && !out_of_line_wait_on_bit_lock(&nfsi->flags,
+-				NFS_INO_COMMIT, nfs_wait_bit_killable,
+-				TASK_KILLABLE))
+-		return 1;
+-	return 0;
++	if (!may_wait)
++		return 0;
++	ret = out_of_line_wait_on_bit_lock(&nfsi->flags,
++				NFS_INO_COMMIT,
++				nfs_wait_bit_killable,
++				TASK_KILLABLE);
++	return (ret < 0) ? ret : 1;
+ }
  
- 	if (unlikely (list_empty (&qh->qtd_list)))
-@@ -422,7 +421,6 @@ qh_completions (struct ehci_hcd *ehci, s
- 					&& !(qtd->hw_alt_next
- 						& EHCI_LIST_END(ehci))) {
- 				stopped = 1;
--				goto halt;
- 			}
+ static void nfs_commit_clear_lock(struct nfs_inode *nfsi)
+@@ -1396,9 +1400,10 @@ int nfs_commit_inode(struct inode *inode
+ {
+ 	LIST_HEAD(head);
+ 	int may_wait = how & FLUSH_SYNC;
+-	int res = 0;
++	int res;
  
- 		/* stop scanning when we reach qtds the hc is using */
-@@ -456,16 +454,6 @@ qh_completions (struct ehci_hcd *ehci, s
- 				 */
- 				ehci_clear_tt_buffer(ehci, qh, urb, token);
- 			}
--
--			/* force halt for unlinked or blocked qh, so we'll
--			 * patch the qh later and so that completions can't
--			 * activate it while we "know" it's stopped.
--			 */
--			if ((halt & hw->hw_token) == 0) {
--halt:
--				hw->hw_token |= halt;
--				wmb ();
--			}
- 		}
- 
- 		/* unless we already know the urb's status, collect qtd status
+-	if (!nfs_commit_set_lock(NFS_I(inode), may_wait))
++	res = nfs_commit_set_lock(NFS_I(inode), may_wait);
++	if (res <= 0)
+ 		goto out_mark_dirty;
+ 	spin_lock(&inode->i_lock);
+ 	res = nfs_scan_commit(inode, &head, 0, 0);
+@@ -1407,12 +1412,14 @@ int nfs_commit_inode(struct inode *inode
+ 		int error = nfs_commit_list(inode, &head, how);
+ 		if (error < 0)
+ 			return error;
+-		if (may_wait)
+-			wait_on_bit(&NFS_I(inode)->flags, NFS_INO_COMMIT,
+-					nfs_wait_bit_killable,
+-					TASK_KILLABLE);
+-		else
++		if (!may_wait)
+ 			goto out_mark_dirty;
++		error = wait_on_bit(&NFS_I(inode)->flags,
++				NFS_INO_COMMIT,
++				nfs_wait_bit_killable,
++				TASK_KILLABLE);
++		if (error < 0)
++			return error;
+ 	} else
+ 		nfs_commit_clear_lock(NFS_I(inode));
+ 	return res;
 
 
