@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1CYO0p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 10:26:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51375 "EHLO
+	id S1753750Ab1CYO1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 10:27:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51376 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753605Ab1CYO0o (ORCPT
+	with ESMTP id S1753604Ab1CYO0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 10:26:44 -0400
-Message-Id: <20110325142511.639954930@linutronix.de>
+Message-Id: <20110325142511.735713243@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Fri, 25 Mar 2011 14:26:40 -0000
+Date: Fri, 25 Mar 2011 14:26:41 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: [patch 1/2] unicore32: Convert to new irq function names
+Subject: [patch 2/2] unicore32: Use generic show_interrupts()
 References: <20110325142344.058372664@linutronix.de>
-Content-Disposition: inline; filename=unicore-namespace.patch
+Content-Disposition: inline; filename=unicore-show.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
@@ -23,58 +23,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scripted with coccinelle.
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/unicore32/kernel/irq.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ arch/unicore32/Kconfig      |    1 +
+ arch/unicore32/kernel/irq.c |   42 ------------------------------------------
+ 2 files changed, 1 insertion(+), 42 deletions(-)
 
+Index: linux-2.6-tip/arch/unicore32/Kconfig
+===================================================================
+--- linux-2.6-tip.orig/arch/unicore32/Kconfig
++++ linux-2.6-tip/arch/unicore32/Kconfig
+@@ -11,6 +11,7 @@ config UNICORE32
+ 	select GENERIC_FIND_FIRST_BIT
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_HARDIRQS_NO_DEPRECATED
++	select GENERIC_IRQ_SHOW
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	help
+ 	  UniCore-32 is 32-bit Instruction Set Architecture,
 Index: linux-2.6-tip/arch/unicore32/kernel/irq.c
 ===================================================================
 --- linux-2.6-tip.orig/arch/unicore32/kernel/irq.c
 +++ linux-2.6-tip/arch/unicore32/kernel/irq.c
-@@ -321,24 +321,24 @@ void __init init_IRQ(void)
- 	writel(1, INTC_ICCR);
+@@ -355,48 +355,6 @@ void __init init_IRQ(void)
+ #endif
+ }
  
- 	for (irq = 0; irq < IRQ_GPIOHIGH; irq++) {
--		set_irq_chip(irq, &puv3_low_gpio_chip);
--		set_irq_handler(irq, handle_edge_irq);
-+		irq_set_chip(irq, &puv3_low_gpio_chip);
-+		irq_set_handler(irq, handle_edge_irq);
- 		irq_modify_status(irq,
- 			IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN,
- 			0);
- 	}
- 
- 	for (irq = IRQ_GPIOHIGH + 1; irq < IRQ_GPIO0; irq++) {
--		set_irq_chip(irq, &puv3_normal_chip);
--		set_irq_handler(irq, handle_level_irq);
-+		irq_set_chip(irq, &puv3_normal_chip);
-+		irq_set_handler(irq, handle_level_irq);
- 		irq_modify_status(irq,
- 			IRQ_NOREQUEST | IRQ_NOAUTOEN,
- 			IRQ_NOPROBE);
- 	}
- 
- 	for (irq = IRQ_GPIO0; irq <= IRQ_GPIO27; irq++) {
--		set_irq_chip(irq, &puv3_high_gpio_chip);
--		set_irq_handler(irq, handle_edge_irq);
-+		irq_set_chip(irq, &puv3_high_gpio_chip);
-+		irq_set_handler(irq, handle_edge_irq);
- 		irq_modify_status(irq,
- 			IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN,
- 			0);
-@@ -347,8 +347,8 @@ void __init init_IRQ(void)
- 	/*
- 	 * Install handler for GPIO 0-27 edge detect interrupts
- 	 */
--	set_irq_chip(IRQ_GPIOHIGH, &puv3_normal_chip);
--	set_irq_chained_handler(IRQ_GPIOHIGH, puv3_gpio_handler);
-+	irq_set_chip(IRQ_GPIOHIGH, &puv3_normal_chip);
-+	irq_set_chained_handler(IRQ_GPIOHIGH, puv3_gpio_handler);
- 
- #ifdef CONFIG_PUV3_GPIO
- 	puv3_init_gpio();
+-int show_interrupts(struct seq_file *p, void *v)
+-{
+-	int i = *(loff_t *) v, cpu;
+-	struct irq_desc *desc;
+-	struct irqaction *action;
+-	unsigned long flags;
+-
+-	if (i == 0) {
+-		char cpuname[12];
+-
+-		seq_printf(p, "    ");
+-		for_each_present_cpu(cpu) {
+-			sprintf(cpuname, "CPU%d", cpu);
+-			seq_printf(p, " %10s", cpuname);
+-		}
+-		seq_putc(p, '\n');
+-	}
+-
+-	if (i < nr_irqs) {
+-		desc = irq_to_desc(i);
+-		raw_spin_lock_irqsave(&desc->lock, flags);
+-		action = desc->action;
+-		if (!action)
+-			goto unlock;
+-
+-		seq_printf(p, "%3d: ", i);
+-		for_each_present_cpu(cpu)
+-			seq_printf(p, "%10u ", kstat_irqs_cpu(i, cpu));
+-		seq_printf(p, " %10s", desc->irq_data.chip->name ? : "-");
+-		seq_printf(p, "  %s", action->name);
+-		for (action = action->next; action; action = action->next)
+-			seq_printf(p, ", %s", action->name);
+-
+-		seq_putc(p, '\n');
+-unlock:
+-		raw_spin_unlock_irqrestore(&desc->lock, flags);
+-	} else if (i == nr_irqs) {
+-		seq_printf(p, "Error in interrupt!\n");
+-	}
+-	return 0;
+-}
+-
+ /*
+  * do_IRQ handles all hardware IRQ's.  Decoded IRQs should not
+  * come via this function.  Instead, they should provide their
 
 
