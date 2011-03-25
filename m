@@ -1,151 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933901Ab1CZAWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:22:38 -0400
-Received: from kroah.org ([198.145.64.141]:41648 "EHLO coco.kroah.org"
+	id S933937Ab1CZAWk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:22:40 -0400
+Received: from kroah.org ([198.145.64.141]:41589 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932369Ab1CYXwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932325Ab1CYXwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 19:52:38 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:41 2011
-Message-Id: <20110325234841.428887117@clark.kroah.org>
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:10 2011
+Message-Id: <20110325234510.644660638@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:17 -0700
+Date: Fri, 25 Mar 2011 16:44:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Aaro Koskinen <aaro.koskinen@nokia.com>
-Subject: [24/55] procfs: fix /proc/<pid>/maps heap check
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Richard Weinberger <richard@nod.at>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>, Eric Paris <eparis@redhat.com>,
+        Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
+        Eugene Teo <eugeneteo@kernel.org>
+Subject: [27/63] sysctl: restrict write access to dmesg_restrict
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit 0db0c01b53a1a421513f91573241aabafb87802a upstream.
+commit bfdc0b497faa82a0ba2f9dddcf109231dd519fcc upstream.
 
-The current code fails to print the "[heap]" marking if the heap is split
-into multiple mappings.
+When dmesg_restrict is set to 1 CAP_SYS_ADMIN is needed to read the kernel
+ring buffer.  But a root user without CAP_SYS_ADMIN is able to reset
+dmesg_restrict to 0.
 
-Fix the check so that the marking is displayed in all possible cases:
-	1. vma matches exactly the heap
-	2. the heap vma is merged e.g. with bss
-	3. the heap vma is splitted e.g. due to locked pages
+This is an issue when e.g.  LXC (Linux Containers) are used and complete
+user space is running without CAP_SYS_ADMIN.  A unprivileged and jailed
+root user can bypass the dmesg_restrict protection.
 
-Test cases. In all cases, the process should have mapping(s) with
-[heap] marking:
+With this patch writing to dmesg_restrict is only allowed when root has
+CAP_SYS_ADMIN.
 
-	(1) vma matches exactly the heap
-
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/types.h>
-
-	int main (void)
-	{
-		if (sbrk(4096) != (void *)-1) {
-			printf("check /proc/%d/maps\n", (int)getpid());
-			while (1)
-				sleep(1);
-		}
-		return 0;
-	}
-
-	# ./test1
-	check /proc/553/maps
-	[1] + Stopped                    ./test1
-	# cat /proc/553/maps | head -4
-	00008000-00009000 r-xp 00000000 01:00 3113640    /test1
-	00010000-00011000 rw-p 00000000 01:00 3113640    /test1
-	00011000-00012000 rw-p 00000000 00:00 0          [heap]
-	4006f000-40070000 rw-p 00000000 00:00 0
-
-	(2) the heap vma is merged
-
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/types.h>
-
-	char foo[4096] = "foo";
-	char bar[4096];
-
-	int main (void)
-	{
-		if (sbrk(4096) != (void *)-1) {
-			printf("check /proc/%d/maps\n", (int)getpid());
-			while (1)
-				sleep(1);
-		}
-		return 0;
-	}
-
-	# ./test2
-	check /proc/556/maps
-	[2] + Stopped                    ./test2
-	# cat /proc/556/maps | head -4
-	00008000-00009000 r-xp 00000000 01:00 3116312    /test2
-	00010000-00012000 rw-p 00000000 01:00 3116312    /test2
-	00012000-00014000 rw-p 00000000 00:00 0          [heap]
-	4004a000-4004b000 rw-p 00000000 00:00 0
-
-	(3) the heap vma is splitted (this fails without the patch)
-
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/mman.h>
-	#include <sys/types.h>
-
-	int main (void)
-	{
-		if ((sbrk(4096) != (void *)-1) && !mlockall(MCL_FUTURE) &&
-		    (sbrk(4096) != (void *)-1)) {
-			printf("check /proc/%d/maps\n", (int)getpid());
-			while (1)
-				sleep(1);
-		}
-		return 0;
-	}
-
-	# ./test3
-	check /proc/559/maps
-	[1] + Stopped                    ./test3
-	# cat /proc/559/maps|head -4
-	00008000-00009000 r-xp 00000000 01:00 3119108    /test3
-	00010000-00011000 rw-p 00000000 01:00 3119108    /test3
-	00011000-00012000 rw-p 00000000 00:00 0          [heap]
-	00012000-00013000 rw-p 00000000 00:00 0          [heap]
-
-It looks like the bug has been there forever, and since it only results in
-some information missing from a procfile, it does not fulfil the -stable
-"critical issue" criteria.
-
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Acked-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Acked-by: Serge E. Hallyn <serge@hallyn.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Kees Cook <kees.cook@canonical.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Eugene Teo <eugeneteo@kernel.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/task_mmu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sysctl.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -248,8 +248,8 @@ static void show_map_vma(struct seq_file
- 		const char *name = arch_vma_name(vma);
- 		if (!name) {
- 			if (mm) {
--				if (vma->vm_start <= mm->start_brk &&
--						vma->vm_end >= mm->brk) {
-+				if (vma->vm_start <= mm->brk &&
-+						vma->vm_end >= mm->start_brk) {
- 					name = "[heap]";
- 				} else if (vma->vm_start <= mm->start_stack &&
- 					   vma->vm_end >= mm->start_stack) {
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -169,6 +169,11 @@ static int proc_taint(struct ctl_table *
+ 			       void __user *buffer, size_t *lenp, loff_t *ppos);
+ #endif
+ 
++#ifdef CONFIG_PRINTK
++static int proc_dmesg_restrict(struct ctl_table *table, int write,
++				void __user *buffer, size_t *lenp, loff_t *ppos);
++#endif
++
+ #ifdef CONFIG_MAGIC_SYSRQ
+ /* Note: sysrq code uses it's own private copy */
+ static int __sysrq_enabled = SYSRQ_DEFAULT_ENABLE;
+@@ -713,7 +718,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &kptr_restrict,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
++		.proc_handler	= proc_dmesg_restrict,
+ 		.extra1		= &zero,
+ 		.extra2		= &two,
+ 	},
+@@ -2397,6 +2402,17 @@ static int proc_taint(struct ctl_table *
+ 	return err;
+ }
+ 
++#ifdef CONFIG_PRINTK
++static int proc_dmesg_restrict(struct ctl_table *table, int write,
++				void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	if (write && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
++	return proc_dointvec_minmax(table, write, buffer, lenp, ppos);
++}
++#endif
++
+ struct do_proc_dointvec_minmax_conv_param {
+ 	int *min;
+ 	int *max;
 
 
