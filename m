@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab1CYWvr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 18:51:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42998 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab1CYWvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 18:51:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] More power management updates for 2.6.39
-Date: Fri, 25 Mar 2011 23:51:54 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
-        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Avi Kivity <avi@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
-        kvm@vger.kernel.org, iommu@lists.linux-foundation.org,
-        cpufreq@vger.kernel.org
-References: <201103100131.58206.rjw@sisk.pl> <20110322103258.GC4448@elte.hu> <201103222133.14054.rjw@sisk.pl>
-In-Reply-To: <201103222133.14054.rjw@sisk.pl>
+	id S1755476Ab1CYWwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 18:52:24 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61967 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab1CYWwX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 18:52:23 -0400
+Date: Fri, 25 Mar 2011 22:52:20 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jamie Iles <jamie@jamieiles.com>,
+        linux-kernel@vger.kernel.org, gregkh@suse.de
+Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
+Message-ID: <20110325225220.GV3130@pulham.picochip.com>
+References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
+ <201103252112.22520.arnd@arndb.de>
+ <20110325222346.GS3130@pulham.picochip.com>
+ <201103252335.14676.arnd@arndb.de>
+ <AANLkTinQ_M92zDZx_Jfe=rvPO0Gr4kHhXZUATvgVBywh@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103252351.54825.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinQ_M92zDZx_Jfe=rvPO0Gr4kHhXZUATvgVBywh@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Mar 25, 2011 at 06:38:00PM -0400, Mike Frysinger wrote:
+> On Fri, Mar 25, 2011 at 18:35, Arnd Bergmann wrote:
+> > One more thing that I just realized:
+> > I think it would be better not to allow arbitrary ioctl commands to
+> > be interpreted by the individual drivers. Instead, interpret them
+> > in the common code and pass the data to the drivers through separate
+> > otp_device_ops function pointers, one per ioctl command.
+> >
+> > This will reduce the amount of code needed in each driver when you
+> > have multiple ones implementing the same ioctls, and help to
+> > ensure that they all treat the arguments in the same way.
+> 
+> i think we should do what the rtc framework did ... there are common
+> ioctls which call specific function pointers in the driver, and any
+> unhandled ioctls get passed to the driver-specific ioctl function.
+> this should cover everyone's needs.
 
-Please pull additional power management updates for 2.6.39 from:
+That's what I intended but I guess it isn't that clear from the code.  
+Perhaps instead of:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git syscore
+	mutex_lock();
+	region->ops->ioctl();
+	mutex_unlock();
 
-They make subsystems that x86 depends on use struct syscore_ops objects instead
-of sysdevs for "core" power management, which reduces the code size and kernel
-memory footprint a bit and sipmlifies the "core" suspend/resume and shutdown
-code paths.
+if I change it to:
 
+	mutex_lock();
+	switch (cmd) {
+	default:
+		region->ops->ioctl();
+	}
+	mutex_unlock();
 
- arch/x86/Kconfig                 |    1 +
- arch/x86/kernel/amd_iommu_init.c |   26 ++--------
- arch/x86/kernel/apic/apic.c      |   33 ++++---------
- arch/x86/kernel/apic/io_apic.c   |   97 ++++++++++++++++++--------------------
- arch/x86/kernel/cpu/mcheck/mce.c |   21 +++++----
- arch/x86/kernel/cpu/mtrr/main.c  |   10 ++--
- arch/x86/kernel/i8237.c          |   30 +++---------
- arch/x86/kernel/i8259.c          |   33 ++++---------
- arch/x86/kernel/microcode_core.c |   34 ++++++--------
- arch/x86/kernel/pci-gart_64.c    |   32 +++----------
- arch/x86/oprofile/nmi_int.c      |   44 +++++------------
- drivers/base/Kconfig             |    7 +++
- drivers/base/sys.c               |    3 +-
- drivers/cpufreq/cpufreq.c        |   66 ++++++++++----------------
- drivers/pci/intel-iommu.c        |   38 ++++-----------
- include/linux/device.h           |    4 ++
- include/linux/pm.h               |   10 +++-
- include/linux/sysdev.h           |    7 ++-
- kernel/time/timekeeping.c        |   27 +++-------
- virt/kvm/kvm_main.c              |   34 +++----------
- 20 files changed, 206 insertions(+), 351 deletions(-)
+then that's a bit clearer.  If there's stuff common across different OTP 
+implementations then we can add it to the region ops and decode it here 
+and if not fall back to the specific implementation.
 
----------------
-
-Rafael J. Wysocki (6):
-      x86: Use syscore_ops instead of sysdev classes and sysdevs
-      timekeeping: Use syscore_ops instead of sysdev class and sysdev
-      PCI / Intel IOMMU: Use syscore_ops instead of sysdev class and sysdev
-      KVM: Use syscore_ops instead of sysdev class and sysdev
-      cpufreq: Use syscore_ops for boot CPU suspend/resume (v2)
-      Introduce ARCH_NO_SYSDEV_OPS config option (v2)
-
+Jamie
