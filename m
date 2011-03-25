@@ -1,193 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab1CYVcJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 17:32:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755262Ab1CYVcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 17:32:07 -0400
-Date: Fri, 25 Mar 2011 17:32:02 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Chad Talbott <ctalbott@google.com>
-Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org, mrubin@google.com,
-        teravest@google.com
-Subject: Re: [PATCH 0/3] cfq-iosched: Fair cross-group preemption
-Message-ID: <20110325213202.GB21593@redhat.com>
-References: <1300756245-12380-1-git-send-email-ctalbott@google.com>
- <20110322150905.GD3757@redhat.com>
- <AANLkTinTiEAFG1F1df380BiDtVFVr=nCsSqhM9__XdQ4@mail.gmail.com>
- <20110322181231.GJ3757@redhat.com>
- <AANLkTi=uB_Wv08xu4SzpjCJ_9isvDPsN=ojTH=wAaDoS@mail.gmail.com>
- <20110323204146.GK13315@redhat.com>
- <AANLkTi=-7gZhEU6qRAt+uGBkb2s2=bkXC81WNScDM6jA@mail.gmail.com>
+	id S1755324Ab1CYVdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 17:33:17 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43715 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755063Ab1CYVdQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 17:33:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=d7U7IfGqTM0gKIIiHG1KHZem7NuIsZfEuveFLw0Q1cZ+D5yAZ/hmeKe8BEGSGOtO/J
+         lPn1JD4fJwfOaNDbN/WIPsicf7Vp7INeTJLwEAtKGtKk7iGCZ1hHo1I9aNnmmYS8mNhQ
+         JWX7LHyo0y+nE8NOqiCFvJg1ssW9hO4ai49fs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=-7gZhEU6qRAt+uGBkb2s2=bkXC81WNScDM6jA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110325100822.GP3130@pulham.picochip.com>
+References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
+ <1300980071-24645-2-git-send-email-jamie@jamieiles.com> <AANLkTinJH46U=ueUPs2bnuTp16Vtn_ViwDCrhsAGPQvM@mail.gmail.com>
+ <20110324203523.GJ3130@pulham.picochip.com> <AANLkTi=pKfKeoQxB3Xb-kasfrs_aa2rqHyF9N0wR6H3z@mail.gmail.com>
+ <20110325100822.GP3130@pulham.picochip.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Fri, 25 Mar 2011 17:32:54 -0400
+X-Google-Sender-Auth: mcP5D_pThZ50omr_EcaevSK-zV4
+Message-ID: <AANLkTinh+A-pxYYda6W58hNR+_N_rxX5qx-KegE0OzQH@mail.gmail.com>
+Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 02:47:54PM -0700, Chad Talbott wrote:
-> On Wed, Mar 23, 2011 at 1:41 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Wed, Mar 23, 2011 at 01:10:32PM -0700, Chad Talbott wrote:
-> >> On Tue, Mar 22, 2011 at 11:12 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >> > On Tue, Mar 22, 2011 at 10:39:36AM -0700, Chad Talbott wrote:
-> >> >> On Tue, Mar 22, 2011 at 8:09 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >> >> > Why not just implement simply RT class groups and always allow an RT
-> >> >> > group to preempt an BE class. Same thing we do for cfq queues. I will
-> >> >> > not worry too much about a run away application consuming all the
-> >> >> > bandwidth. If that's a concern we could use blkio controller to limit
-> >> >> > the IO rate of a latency sensitive applicaiton to make sure it does
-> >> >> > not starve BE applications.
-> >> >>
-> >> >> That is not quite the same semantics. �This limited preemption patch
-> >> >> is still work-conserving. �If the RT task in the only task on the
-> >> >> system with IO, it will be able to use all available disk time.
-> >> >>
-> >> >
-> >> > It is not same semantics but it feels like too much of special casing
-> >> > for a single use case.
-> >>
-> >> How are you counting use cases?
-> >
-> > This is the first time I have heard this requirement. So if 2-3 different
-> > folks come up with similar concern, then I have idea an idea that this
-> > is a generic need.
-> >
-> > You also have not explained what is the workload and what are the
-> > acceptable latencies etc.
-> >
-> >>
-> >> > You are using the generic notion of a RT thread (which in general means
-> >> > that it gets all the cpu or all the disk ahead of BE task). But you have
-> >> > changed the definition of RT for this special use case. And also now
-> >> > group RT is different from queue RT definition.
-> >>
-> >> Perhaps the name RT has too much of a "this group should be able to
-> >> starve all other groups" connotation. �Is there a better name? �Maybe
-> >> latency sensitive?
+On Fri, Mar 25, 2011 at 06:08, Jamie Iles wrote:
+> On Thu, Mar 24, 2011 at 05:33:25PM -0400, Mike Frysinger wrote:
+>> On Thu, Mar 24, 2011 at 16:35, Jamie Iles wrote:
+>> > The way I was thinking that this sort of thing could be handled would be
+>> > for the ECC to be transparent to the user.  Perhaps for bfin the OTP
+>> > could be registered as 4 regions, otpa1-otpa4 which default to
+>> > "single-ended".  Writing "ecc" as the format would generate the ecc and
+>> > program it for that region then check the ECC when reading back.
+>>
+>> reads and writes atm always have ECC enabled, and the driver restricts
+>> writes to the full half page (64bits).  if you wanted to be crafty,
+>> you could blow individual bits in a single half page over multiple
+>> writes before writing out the final ECC, but that isnt supported, and
+>> no one has complained.
+>
+> The current version I have will do read-modify-write if the file offset
+> isn't OTP word aligned so it sounds like I need to add a flag that says
+> only do full word writes.
 
-This is jut not RT name. It is also the using the term blkio.class. At
-some point of time, it will be a good idea to be able to define ioclass
-for group also (like taskss). So we can use blkio.class to define the
-ioclass of the group.
+yes, only full 64bit writes are allowed.
 
-> >
-> > I think what you are trying to achieve is that you want to define an
-> > additional task and group property, say latency sensitive. This is
-> > third property apart from ioclass and ioprio. To me you still want
-> > the task/group to be BE class so that it shares the disk in a
-> > proportional weight manner but this additional property will make sure
-> > that task can preempt the non latency sensitive task/group.
-> >
-> > We can't do this additional property for group alone because once we
-> > move to hierarhical setup and everything is entity (be it task or queue)
-> > and then we need to decide whether one entity can preempt another
-> > entity or not. By not definining this property for tasks, latency
-> > sensitive group will always preempt a task on same tree. (May be
-> > that's what you want for your use case). But it is still odd to add
-> > additional properties only for groups and not tasks.
-> 
-> You raise a good point about hierarchy.  We'd like to use Gui's
-> hierarchy patches or similar functionality.  As you point out there is
-> currently an asymmetry between groups and tasks.  Tasks can be RT, but
-> groups cannot.  This complicates the hierarchy implementation.
-> 
-> How about adding a blkio.class and blkio.class_device interface to a
-> truly RT service class?  This class would be able to starve a BE class
-> (thus be more like the traditional RT/BE divide), and could be
-> implemented similarly to RT/BE cfqqs today.  This way groups and
-> queues could easily be scheduled as peers.
+> I guess in this framework we could make the OTP look like a single
+> region of the 0x80 data pages concatenated or provide separate regions
+> for each group of 0x80 pages but the control and ECC pages aren't
+> directly accessible by the user.
 
-I think defining blkio.class and coming up with RT and IDLE (if needed)
-groups separately makes sense to me. So in cfqd we can define a news
-service tree where RT groups get queued up. Once hierarchical
-implementation happens, RT queue and RT group entities will go on a
-single tree.
+well, in the current driver, i let people dump the ECC.  for
+debugging, i think that's valuable.
 
-[..]
-> >> Is there a plan to provide RT class for groups in the hierarchical
-> >> future to allow full symmetry with RT tasks?
-> 
-> I'm still interested in the answer to this question.  If there's
-> currently no plan, is there at least an interest in seeing an
-> implementation?
+> The other question that brings up is whether any compatibility with the
+> old driver is required.
 
-This is one of the possible expansions I have in mind. Just that I did
-not plan to do it immediaely as I did not have any immediate need. So
-feel free to implement the notion of RT cfq groups.
-
-[..]
-> I'd like to provide the lowest possible latency to a single privileged
-> group per disk.  At the same time, I need to be able to ensure that
-> the privileged group isn't able to completely consume the throughput
-> on the disk.  It will likely share that disk with system daemons and
-> other "critical" functionality.  It's not important that those daemons
-> get the same latency guarantees, but they must be guaranteed some disk
-> time.
-> 
-> > If we really end up doing it, I think we shall have to define an
-> > additional group file say, blkio.preempt_fair_share. This will mean
-> > that this is a BE group but has additional property which allows it to
-> > preempt existing entity on service tree as long as it does not exceed
-> > it fair share. That way we don't have to define a new class or don't
-> > have to come up with additional service tree.
-> 
-> I think I hear you objecting more to the name RT.  And that if we had
-> this "limited preemption" functionality, it should be called by a
-> different name.
-> 
-
-I think, it was combination of few things.
-
-- Use of RT namespace.
-- usage of blkio.class namespace
-- Assymetry between task and group properties
-
-So 1 and 2 can be easily fixed by using a different name.
-say blkio_preempt_fair_share. The only remaining issue will be  3rd piece.
-
-> > But I would prefer that you seriously consider implementing RT group class
-> > and rate limit it with throttling logic. Because I believe it should solve
-> > your issue. Only question would be what should be upper limit and I think
-> > that will depend on type of storage your are using and what's your
-> > workload.
-> >
-> > Also if you can give a better example where this kind of latency matters,
-> > it will help to understand the problem better.
-> 
-> The general problem is that a distributed system is generally made up
-> of multiple machines, and that any significant operation against that
-> system will involved multiple machines.  The response to any external
-> request will likely be determined by the sum of the latencies of the
-> components.  So I want to reduce the latency on a single drive as much
-> as possible.
-> 
-> This thread is getting tangled.  I see a few options:
-> 
->   a) Pursue the functionality in my original patchset with a different name.
->   b) Build a true RT class for groups and try with blk-throttle.
-> 
-> You seem pretty unenthusiastic about a).  How do you feel about b)?
-
-IMHO, Using RT group with throttling avoids introducing asymmetry between
-task and group attributes. So I will prefer that approch. Though it means
-more code as we will be introducing RT groups but that might be useful
-in general for something else too. (I am assuming that somebody makes
-use of RT class for cfqq).
-
-The one more down side of trying to use throttling is that one needs to
-come up with absolute limit. So one shall have to know disk capacity
-and if there are no BE tasks running then latency sensitive task will
-be unnecessarily throttled (until and unless some management software
-can monitor it and change limit dynamically).
-
-So if you are worried about setting the absolute limit part, then I guess
-I am fine with option a). But if you think that setting absolute limit
-is not a problem, then option b) is preferred.
-
-Thanks
-Vivek
+it's already going to be changing names ;).  but what other
+compatibility are you thinking of ?  the requirements are you have to
+be able to:
+ - read it
+ - write in full/aligned 64bit chunks
+ - do an OTPLOCK ioctl (the drivers uses this to manage the first few
+pages which flags all other pages as "locked")
+-mike
