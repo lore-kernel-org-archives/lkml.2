@@ -1,128 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab1CYAKr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 20:10:47 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35329 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab1CYAKp (ORCPT
+	id S1755620Ab1CYAMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 20:12:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58975 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755150Ab1CYAML convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 20:10:45 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 25 Mar 2011 09:04:11 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 0/4] forkbomb killer
-Message-Id: <20110325090411.56c5e5b2.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110324105222.GA2625@barrios-desktop>
-References: <20110324182240.5fe56de2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110324105222.GA2625@barrios-desktop>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Mar 2011 20:12:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=yAIypE1QaEnEeycLL03UHi9nKCj72M/RoprdTyVoacUYNx2muXqTNnepO8/BlyLxKQ
+         /TaazlekPdU5Ya9DvbRhPs4+sro3NAXo5toeiyHsuiOYo08b3AkuYL3+OBRVvhMqnyPn
+         ban7D3H830e4UOleISTmH604b4/Mg3Ic6kZcs=
+MIME-Version: 1.0
+In-Reply-To: <1301006652.2714.145.camel@edumazet-laptop>
+References: <1301005107.2714.113.camel@edumazet-laptop>
+	<AANLkTinv+XGBjbFoK6vpyiDW6gBEBKFjUef+mCAMJU9i@mail.gmail.com>
+	<1301005946.2714.130.camel@edumazet-laptop>
+	<20110324.153623.45921344.davem@davemloft.net>
+	<1301006652.2714.145.camel@edumazet-laptop>
+Date: Fri, 25 Mar 2011 01:12:11 +0100
+Message-ID: <AANLkTi=Xb3KCBKoVCcaVD5iyCtMCAnYaGF_DTeFQ0ays@mail.gmail.com>
+Subject: Re: [PATCH] ipv4: fix fib metrics
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011 19:52:22 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+On Thu, Mar 24, 2011 at 11:44 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le jeudi 24 mars 2011 à 15:36 -0700, David Miller a écrit :
+>> From: Eric Dumazet <eric.dumazet@gmail.com>
+>> Date: Thu, 24 Mar 2011 23:32:26 +0100
+>>
+>> > Then it doesnt work anymore because it parses an ipip field from
+>> > ip route get ...
+>> >
+>> > $ ip ro get 192.168.1.1
+>> > 192.168.1.1 dev wlan0  src 192.168.1.21
+>> >     cache  ipid 0x784c mtu 1500 advmss 1460 hoplimit 64
+>> >
+>> >
+>> > Maybe you upgraded iproute2
+>>
+>> I'm leaning towards app bug too.
+>>
+>> These default metrics wouldn't get printed before, but now because of
+>> how metrics are handled, they will.
+>>
+>> Userland needs to cope properly with this.
+>
+>
+> BTW, ipip is not always printed (even on old kernels) : One needs to
+> actually need ipip generation .
+>
+> edumazet@edumazet-laptop:~$ ping 4.4.4.4
+> PING 4.4.4.4 (4.4.4.4) 56(84) bytes of data.
+> ^C
+>
+> edumazet@edumazet-laptop:~$ ip ro get 4.4.4.4
+> 4.4.4.4 dev ppp0  src 10.150.51.210
+>    cache  mtu 1500 advmss 1460 hoplimit 64
+>
+> edumazet@edumazet-laptop:~$ ping -s 2000 4.4.4.4
+> PING 4.4.4.4 (4.4.4.4) 2000(2028) bytes of data.
+> ^C
+>
+> edumazet@edumazet-laptop:~$ ip ro get 4.4.4.4
+> 4.4.4.4 dev ppp0  src 10.150.51.210
+>    cache  ipid 0xf99a mtu 1500 advmss 1460 hoplimit 64
+>
+>
+> This on a 2.6.35 kernel
+>
+> I suspect Alessandro tool had a bug anyway.
 
-> Hi Kame,
-> 
-Hi.
-
-> On Thu, Mar 24, 2011 at 06:22:40PM +0900, KAMEZAWA Hiroyuki wrote:
-> > 
-> > I tested with several forkbomb cases and this patch seems work fine.
-> > 
-> > Maybe some more 'heuristics' can be added....but I think this simple
-> > one works enough. Any comments are welcome.
-> 
-> Sorry for the late review. Recently I dont' have enough time to review patches.
-> Even I didn't start to review this series but I want to review this series.
-> It's one of my interest features. :)
-> 
-> But before digging in code, I would like to make a consensus to others to 
-> need this feature. Let's Cc others.
-> 
-> What I think is that about "cost(frequent case) VS effectiveness(very rare case)"
-> as you expected. :)
-> 
-> 1. At least, I don't meet any fork-bomb case for a few years. My primary linux usage
-> is just desktop and developement enviroment, NOT server. Only thing I have seen is
-> just ltp or intentional fork-bomb test like hackbench. AFAIR, ltp case was fixed
-> a few years ago. Although it happens suddenly, reboot in desktop isn't critical 
-> as much as server's one.
-> 
-
-Personally, I've met forkbombs several times by typing "make -j" .....by mistake.
-
-I met a forkbomb on production system by buggy script, once.
-That happens because
- 1. $PATH includes "."
- 2. a programmer write a scirpt "date" and call "date" in the script.
-
-Maybe this is a one of typical case of forkbomb. I needed to dig crashdump to find
-fragile of page-caches and see what happens...But, I guess, if appearent forkbomb
-happens, the issue will not be sent to my team because we're 2nd line support team 
-and 1st line should block it ;).
-
-So, I'm not sure how many forkbombs happens in server world in a year. But I guess
-forkbomb still happens in many development systems because there is no guard
-against it.
-
-
-> 2. I don't know server enviroment but I think applications executing on server
-> are selected by admin carefully. So virus program like fork-bomb is unlikely in there.
-> (Maybe I am wrong. You know than me).
-> If some normal program becomes fork-bomb unexpectedly, it's critical.
-> Admin should select application with much testing very carefully. But I don't know
-> the reality. :(
-> 
-
-Yes, admin selects applications carefully. There is no 100% protection by human's hand.
+I still contend this is a kernel regression :)
 
 
-> Of course, although he did such efforts, he could meet OOM hang situation. 
-> In the case, he can't avoid rebooting. Sad. But for helping him, should we pay cost 
-> in normal situation?(Again said, I didn't start looking at your code so 
-> I can't expect the cost but at least it's more than as-is).
-> It could help developing many virus program and to make careless admins.
-> 
-> It's just my private opinion. 
-> I don't have enough experience so I hope listen other's opinions 
-> about generic fork-bomb killer, not memcg.
-> 
-> I don't intend to ignore your effort but justify your and my effort rightly.
-> 
+vpnc is a custom build from trunk as of June 2010, with openssl support
+ to talk to my corporate VPN concentrator:
 
-To me, the fact "the system _can_ be broken by a normal user program" is the most
-terrible thing. With Andrey's case or make -j, a user doesn't need to be an admin.
-I believe it's worth to pay costs.
-(and I made this function configurable and can be turned off by sysfs.)
+[root@duff oldconfigs]# vpnc --version
+vpnc version 0.5.3-449M
+Copyright (C) 2002-2006 Geoffrey Keating, Maurice Massar, others
+vpnc comes with NO WARRANTY, to the extent permitted by law.
+You may redistribute copies of vpnc under the terms of the GNU General
+Public License.  For more information about these matters, see the files
+named COPYING.
+Built with openssl certificate support. Be aware of the
+license implications.
 
-And while testing Andrey's case, I used KVM finaly becasue cost of rebooting was small.
-My development server is on other building and I need to push server's button
-to reboot it when forkbomb happens ;)
-In some environement, cost of rebooting is not small even if it's a development system.
+Supported DH-Groups: nopfs dh1 dh2 dh5
+Supported Hash-Methods: md5 sha1
+Supported Encryptions: null des 3des aes128 aes192 aes256
+Supported Auth-Methods: psk psk+xauth hybrid(rsa)
 
+
+My iproute package, on this up-to-date Fedora 14 x86_64, has last been
+ updated on 20 Nov 2010, and back then I was running 2.6.37-rc2-git4
+ (I keep around my historical .config files, so I know for sure).
+
+[root@duff ~]# ip -V
+ip utility, iproute2-ss100804
+[root@duff ~]# rpm -qf /sbin/ip
+iproute-2.6.35-6.fc14.x86_64
+
+The behavior of this version of 'ip' as invoked by this version of 'vpnc'
+ is something that has worked for the last 4 months, and isn't working
+ right now. Furthermore, previous versions of 'ip' in Fedora 14 were
+ also working with the same 'vpnc', which means it's actually 9 months
+ minimum of working behavior.
+
+If some change in the kernel broke my userspace, this usually qualifies
+ as a regression.
+
+
+That said, if you can point me to a working version of iproute with the
+ current kernel, I have no problem in upgrading it :)
 
 Thanks,
--Kame
 
+--alessandro
 
+ "There's always a siren singing you to shipwreck"
 
-
-
-
-
-
-
+   (Radiohead, "There There")
