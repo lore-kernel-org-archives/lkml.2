@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab1CYVQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 17:16:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58766 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753907Ab1CYVQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 17:16:00 -0400
-Date: Fri, 25 Mar 2011 14:12:46 -0700
-From: Greg KH <gregkh@suse.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        vapier@gentoo.org
-Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
-Message-ID: <20110325211246.GA8741@suse.de>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
- <1300980071-24645-2-git-send-email-jamie@jamieiles.com>
- <201103252112.22520.arnd@arndb.de>
+	id S1754983Ab1CYVRd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 17:17:33 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:45521 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab1CYVRb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 17:17:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=dLgc3cgvTmB18QdddRF/qDO1+sUcm4DcxTIxRTiwmdWc09zqmKLMXb/jMV/bMqzAeN
+         P4CQGDRql7riuoZoc3Rtuu5JAhh0qtbhrlQXF2dsIDlzLTxAaheVZNIajDdGmTNrXJHW
+         gPXqxYVJSRx/VmMPHOnMZmatvV6lyeqIyhRa8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103252112.22520.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110325133039.521553268@linutronix.de>
+References: <20110325133039.521553268@linutronix.de>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Fri, 25 Mar 2011 17:17:11 -0400
+X-Google-Sender-Auth: b78lRAJTQmnXV_1o_vsvQGSAC90
+Message-ID: <AANLkTi=AOXL==fgOwsY9ujFehYnsUFAQrvLy1CLwFEhu@mail.gmail.com>
+Subject: Re: [patch 0/2] blackfin: Final irq cleanup
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 09:12:22PM +0100, Arnd Bergmann wrote:
-> On Thursday 24 March 2011 16:21:08 Jamie Iles wrote:
-> > OTP memory is typically found in some embedded devices and can be
-> > used for storing boot code, cryptographic keys and other persistent
-> > information onchip.  This patch adds a generic layer that devices can
-> > register OTP with and allows access through a set of character
-> > device nodes.
-> 
-> Looks very nice overall, but I have a few minor comments.
-> 
-> > diff --git a/Documentation/ABI/testing/sysfs-bus-otp b/Documentation/ABI/testing/sysfs-bus-otp
-> > new file mode 100644
-> > index 0000000..4dbc652
-> > --- /dev/null
-> > +++ b/Documentation/ABI/testing/sysfs-bus-otp
-> > @@ -0,0 +1,68 @@
-> > +What:           /sys/bus/otp/
-> > +Date:           March 2011
-> > +KernelVersion:  2.6.40+
-> > +Contact:        Jamie Iles <jamie@jamieiles.com>
-> > +Description:
-> > +                The otp bus presents a number of devices where each
-> > +		device represents a region or device in the SoC. Each region
-> > +		will create a device node which allows the region to be
-> > +		written with read()/write() calls and the device on the bus
-> > +		has attributes for controlling the redundancy format and
-> > +		getting the region size.
-> 
-> Why is this a bus? You don't have any device matching code or similar,
-> and the devices typically are on an existing bus_type (e.g. platform_bus).
-> I think it would make more sense to do this as a class.
+On Fri, Mar 25, 2011 at 09:32, Thomas Gleixner wrote:
+> this is the final cleanup and name space conversion, so that we can
+> remove the deprecated code in the core.
+>
+> It would be nice to get this Linus wards for .39
 
-No, for new things, we want to use busses instead of classes please.
-Especially as this does create devices, which are best put on a bus
-somewhere.
-
-thanks,
-
-greg k-h
+does this require some other patch ?  a recent merge from another tree
+broke Blackfin, so i need to push out stuff to Linus again anyways.
+-mike
