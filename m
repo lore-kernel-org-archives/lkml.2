@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933134Ab1CYX7o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:59:44 -0400
-Received: from kroah.org ([198.145.64.141]:48944 "EHLO coco.kroah.org"
+	id S933127Ab1CYX6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:58:47 -0400
+Received: from kroah.org ([198.145.64.141]:48957 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933025Ab1CYX60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:58:26 -0400
+	id S933058Ab1CYX63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:58:29 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:56:38 2011
-Message-Id: <20110325235638.429954233@clark.kroah.org>
+Message-Id: <20110325235638.765352236@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:55:56 -0700
+Date: Fri, 25 Mar 2011 16:55:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [19/23] USB: cdc-acm: fix potential null-pointer dereference on disconnect
+        Josef Bacik <josef@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Chuck Ebbert <cebbert@redhat.com>
+Subject: [22/23] fs: call security_d_instantiate in d_obtain_alias V2
 References: <20110325235537.660072281@clark.kroah.org>
-Content-Disposition: inline; filename=usb-cdc-acm-fix-potential-null-pointer-dereference-on-disconnect.patch
+Content-Disposition: inline; filename=fs-call-security_d_instantiate-in-d_obtain_alias-v2.patch
 In-Reply-To: <20110325235654.GA24416@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Josef Bacik <josef@redhat.com>
 
-commit 7e7797e7f6f7bfab73fca02c65e40eaa5bb9000c upstream.
+commit 24ff6663ccfdaf088dfa7acae489cb11ed4f43c4 upstream.
 
-Fix potential null-pointer exception on disconnect introduced by commit
-11ea859d64b69a747d6b060b9ed1520eab1161fe (USB: additional power savings
-for cdc-acm devices that support remote wakeup).
+While trying to track down some NFS problems with BTRFS, I kept noticing I was
+getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
+figure out that it was SELinux that was giving me grief, with the following
+denial
 
-Only access acm->dev after making sure it is non-null in control urb
-completion handler.
+type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
+comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
+tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Turns out this is because in d_obtain_alias if we can't find an alias we create
+one and do all the normal instantiation stuff, but we don't do the
+security_d_instantiate.
+
+Usually we are protected from getting a hashed dentry that hasn't yet run
+security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
+option there, so in order to deal with the case that a second thread comes in
+and finds our new dentry before we get to run security_d_instantiate(), we go
+ahead and call it if we find a dentry already.  Eric assures me that this is ok
+as the code checks to see if the dentry has been initialized already so calling
+security_d_instantiate() against the same dentry multiple times is ok.  With
+this patch I'm no longer getting errant -EACCESS values.
+
+Signed-off-by: Josef Bacik <josef@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Chuck Ebbert <cebbert@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/dcache.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -297,6 +297,8 @@ static void acm_ctrl_irq(struct urb *urb
- 	if (!ACM_READY(acm))
- 		goto exit;
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1175,9 +1175,12 @@ struct dentry *d_obtain_alias(struct ino
+ 	spin_unlock(&tmp->d_lock);
  
-+	usb_mark_last_busy(acm->dev);
-+
- 	data = (unsigned char *)(dr + 1);
- 	switch (dr->bNotificationType) {
- 	case USB_CDC_NOTIFY_NETWORK_CONNECTION:
-@@ -336,7 +338,6 @@ static void acm_ctrl_irq(struct urb *urb
- 		break;
- 	}
- exit:
--	usb_mark_last_busy(acm->dev);
- 	retval = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (retval)
- 		dev_err(&urb->dev->dev, "%s - usb_submit_urb failed with "
+ 	spin_unlock(&dcache_lock);
++	security_d_instantiate(tmp, inode);
+ 	return tmp;
+ 
+  out_iput:
++	if (res && !IS_ERR(res))
++		security_d_instantiate(res, inode);
+ 	iput(inode);
+ 	return res;
+ }
 
 
