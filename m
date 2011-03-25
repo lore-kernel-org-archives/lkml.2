@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab1CYOi2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 10:38:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65330 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab1CYOi1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 10:38:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bxt0CsalF/QxENOsBAvcLiC09p6u/wMtiDN4V8zy8dNOll8ZxNRV+Ms9rXVbW3DKQB
-         JpfDe0elzUfK52qX6FELz+eDNGl/mdNXIlkgG3/710tFOMSqUlKxsjinrlBXlFZt1YFD
-         77rIBX7neZAKh+tTANLlMpIXjvmqrDxHY3wq4=
-Date: Fri, 25 Mar 2011 15:38:22 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Milton Miller <miltonm@bga.com>,
-        Jens Axboe <axboe@kernel.dk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, David Cross <david.cross@cypress.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: Fix bdops->check_events() misconversion in
- cyasblkdev_block.c
-Message-ID: <20110325143822.GE1409@htj.dyndns.org>
-References: <check-events-cyasblkdev-block-suspect@mdm.bga.com>
+	id S1753776Ab1CYOjO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 10:39:14 -0400
+Received: from claw.goop.org ([74.207.240.146]:52436 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753609Ab1CYOjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 10:39:13 -0400
+Message-ID: <4D8CA902.7090907@goop.org>
+Date: Fri, 25 Mar 2011 14:38:58 +0000
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <check-events-cyasblkdev-block-suspect@mdm.bga.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Len Brown <lenb@kernel.org>, venki@google.com, ak@linux.intel.com,
+        suresh.b.siddha@intel.com, sfr@canb.auug.org.au, peterz@infradead.org,
+        benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, arjan@linux.intel.com,
+        Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Subject: Re: [Xen-devel] Re: [RFC PATCH V4 4/5] cpuidle: driver for xen
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>	<20110322123324.28725.3131.stgit@tringupt.in.ibm.com>	<20110322145054.GB26952@dumpdata.com>	<4D89C40B.4020809@linux.vnet.ibm.com>	<alpine.LFD.2.02.1103231659210.12911@x980> <20110324120522.GB29294@dumpdata.com>
+In-Reply-To: <20110324120522.GB29294@dumpdata.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit cafb0bfca1 (staging: Convert to bdops->check_events())
-incorrectly set bd->user_disk_0->events while initializing
-bd->user_disk_1.  Fix it.
+On 03/24/2011 12:05 PM, Konrad Rzeszutek Wilk wrote:
+> On Thu, Mar 24, 2011 at 03:18:14AM -0400, Len Brown wrote:
+>> Is a CONFIG_XEN kernel supposed to use just HLT in idle?
+> For right now..
 
-The problem was spotted by Milton's suspect code pattern detector.
+For always, I should think.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Milton Miller <miltonm@bga.com>
----
-Nice spotting Milton.  Thank you.
+>> xen_arch_setup() does this:
+>>
+>>         pm_idle = default_idle;
+>>         boot_option_idle_override = IDLE_HALT;
+>>
+>> which has that effect.  I guess this makes sense b/c the
+>> CONFIG_XEN kernel is Dom0 and the real C-sates are done
+>> by the hypervisor?
+> Correct. There are some patches that make the C-states 
+> be visible in the Linux kernel, but that hasn't been ported
+> over yet.
 
- drivers/staging/westbridge/astoria/block/cyasblkdev_block.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+All we need is for the idle CPU to block in the hypervisor; a plain
+"hlt" is always going to be sufficient (which is overridden as a pvop
+into a sched_idle hypercall).
 
-diff --git a/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c b/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-index 842cd92..289729d 100644
---- a/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-+++ b/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-@@ -1191,7 +1191,7 @@ static int cyasblkdev_add_disks(int bus_num,
- 		bd->user_disk_1->first_minor = (devidx + 1) << CYASBLKDEV_SHIFT;
- 		bd->user_disk_1->minors = 8;
- 		bd->user_disk_1->fops = &cyasblkdev_bdops;
--		bd->user_disk_0->events = DISK_EVENT_MEDIA_CHANGE;
-+		bd->user_disk_1->events = DISK_EVENT_MEDIA_CHANGE;
- 		bd->user_disk_1->private_data = bd;
- 		bd->user_disk_1->queue = bd->queue.queue;
- 		bd->dbgprn_flags = DBGPRN_RD_RQ;
+Xen will choose an appropriate power state for the physical cpus
+depending on the overall busyness of the system (which any individual
+virtual machine can't determine).
+
+    J
