@@ -1,89 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab1CYWDT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 18:03:19 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:46166 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab1CYWDR (ORCPT
+	id S1755435Ab1CYWIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 18:08:50 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52260 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755148Ab1CYWIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 18:03:17 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-2.tower-209.messagelabs.com!1301090595!374866!2
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.178]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: gpio: pca953x: prevent freeing IRQ 0 on probe error
-Date: Fri, 25 Mar 2011 15:02:54 -0700
-User-Agent: KMail/1.9.9
-CC: <grant.likely@secretlab.ca>
+	Fri, 25 Mar 2011 18:08:49 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+To: Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Vivek Goyal <vgoyal@redhat.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] generic-ipi: Initialize call_single_queue before enabling interrupt
+Date: Fri, 25 Mar 2011 18:07:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201103251502.54348.hartleys@visionengravers.com>
+X-Mailer: HidemaruMail 5.38 (WinNT,501)
+In-Reply-To: <generic-ipi-init-v2-reply@mdm.bga.com>
+References: <C7CBEB049FD464indou.takao@jp.fujitsu.com> <generic-ipi-init-v2-reply@mdm.bga.com>
+Message-Id: <CBCBEB391604FEindou.takao@jp.fujitsu.com>
+X-Antivirus: avast! (VPS 110325-1, 2011/03/25), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_GPIO_PCA953X_IRQ is enabled and an error occurs in the probe
-before pca953x_irq_setup() is called chip->client->irq will be 0 due to
-the kmalloc.  pca953x_irq_teardown() will then try to free_irq(0, chip)
-which will produce a:
+On Fri, 25 Mar 2011 11:48:21 -0600, Milton Miller wrote:
 
-	WARN(1, "Trying to free already-free IRQ %d\n", irq);
+>On Fri, 25 Mar 2011 about 11:52:20 -0400, Takao Indoh wrote:
+>> 
+>> Hi all,
+>> 
+>> Actually this is a v2 patch but I post with new subject.
+>> The first post is here.
+>> 
+>> [PATCH][KDUMP] Ignore spurious IPI
+>> http://www.gossamer-threads.com/lists/linux/kernel/1356389
+>> 
+>> The problem I found is that kdump(2nd kernel) sometimes hangs up due to
+>> pending IPI from 1st kernel. Kernel panic occurs because IPI comes
+>> before call_single_queue is initialized, so this patch moves
+>> init_call_single_data() so that it can be called before
+>> local_irq_enable().
+>> 
+>
+>This is good background, but I generally prefer changelogs to start
+>by describing what is being changed and then proceed on to why, and
+>then the history of the patch and discussion.
+>
+>> The details of the problem is below.
+>> 
+>> (1)
+>> 2nd kernel boot up
+>> 
+>> (2)
+>> A pending IPI from 1st kernel comes after unmasking interrupts at the
+>> following point.
+>> 
+>> asmlinkage void __init start_kernel(void)
+>> {
+>> (snip)
+>>     time_init();
+>>     profile_init();
+>>     if (!irqs_disabled())
+>>             printk(KERN_CRIT "start_kernel(): bug: interrupts were "
+>>                              "enabled early\n");
+>>     early_boot_irqs_disabled = false;
+>>     local_irq_enable(); <=======================================HERE
+>> 
+>
+>This could be described more concisely as "when irqs are first enabled
+>in start_kernel()".
+>
+>> (3)
+>> Kernel tries to handle the interrupt, but call_single_queue is not
+>> initialized yet at this point. As a result, in the
+>> generic_smp_call_function_single_interrupt(), NULL pointer dereference
+>> occurs when list_replace_init() tries to access &q->list.next.
+>> 
+>> Any comments would be appreciated.
+>> 
+>> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+>> ---
+>>  include/linux/smp.h |    1 +
+>>  init/main.c         |    1 +
+>>  kernel/smp.c        |   18 +++++++++++-------
+>>  3 files changed, 13 insertions(+), 7 deletions(-)
+>> 
+>> diff --git a/include/linux/smp.h b/include/linux/smp.h
+>> index 6dc95ca..0b81bba 100644
+>> --- a/include/linux/smp.h
+>> +++ b/include/linux/smp.h
+>> @@ -114,6 +114,7 @@ int on_each_cpu(smp_call_func_t func, void *info, int 
+>> wait);
+>>  void smp_prepare_boot_cpu(void);
+>>  
+>>  extern unsigned int setup_max_cpus;
+>> +void init_call_single_data(void);
+>>  
+>
+>This no longer applys (although it did to 2.6.38).
+>
+>>  #else /* !SMP */
+>>  
+>
+>I was going to point out that this will fail on up, but it looks
+>like ba8dd03ac09f51a69c154b8cb508b701d713a2cd (Full conversion to
+>early_initcall() interface, remove old interface) only found 2 of the
+>previous 3 occurrances.
+>
+>However, this does point out that not all CONFIG_SMP compiles are
+>CONFIG_USE_GENERIC_SMP_HELPERS, and you need to adjust accordingly.
+>
+>[ for other reviewers no this is not a simple revert of a hunk of that
+>2.6.27 change, this is moving the code yet earlier ].
+>
+>> diff --git a/init/main.c b/init/main.c
+>> index 33c37c3..02a7617 100644
+>> --- a/init/main.c
+>> +++ b/init/main.c
+>> @@ -631,6 +631,7 @@ asmlinkage void __init start_kernel(void)
+>>  		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
+>>  				 "enabled early\n");
+>>  	early_boot_irqs_disabled = false;
+>> +	init_call_single_data();
+>>  	local_irq_enable();
+>>  
+>
+>1) this is too late, the point of the printk and the state variable is
+>to make sure interrupts are enabled exactly when we expect for the
+>first time.
 
-Add an error path to prevent this.
+Ok, so the following place is correct?
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
+ 	profile_init();
++	call_function_init();
+ 	if (!irqs_disabled())
+ 		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
+ 				"enabled early\n");
+ 	early_boot_irqs_disabled = false;
+ 	local_irq_enable();
 
----
 
-diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
-index 2fc25de..e1ff4d5 100644
---- a/drivers/gpio/pca953x.c
-+++ b/drivers/gpio/pca953x.c
-@@ -523,7 +523,7 @@ static int __devinit pca953x_probe(struct i2c_client *client,
- 	if (pdata == NULL) {
- 		dev_dbg(&client->dev, "no platform data\n");
- 		ret = -EINVAL;
--		goto out_failed;
-+		goto out_free;
- 	}
- 
- 	chip->client = client;
-@@ -541,20 +541,20 @@ static int __devinit pca953x_probe(struct i2c_client *client,
- 
- 	ret = pca953x_read_reg(chip, PCA953X_OUTPUT, &chip->reg_output);
- 	if (ret)
--		goto out_failed;
-+		goto out_free;
- 
- 	ret = pca953x_read_reg(chip, PCA953X_DIRECTION, &chip->reg_direction);
- 	if (ret)
--		goto out_failed;
-+		goto out_free;
- 
- 	/* set platform specific polarity inversion */
- 	ret = pca953x_write_reg(chip, PCA953X_INVERT, pdata->invert);
- 	if (ret)
--		goto out_failed;
-+		goto out_free;
- 
- 	ret = pca953x_irq_setup(chip, id);
- 	if (ret)
--		goto out_failed;
-+		goto out_free;
- 
- 	ret = gpiochip_add(&chip->gpio_chip);
- 	if (ret)
-@@ -572,6 +572,7 @@ static int __devinit pca953x_probe(struct i2c_client *client,
- 
- out_failed:
- 	pca953x_irq_teardown(chip);
-+out_free:
- 	kfree(chip->dyn_pdata);
- 	kfree(chip);
- 	return ret;
+>
+>2) please follow the naming conventions and name this xxx_init.  Actually
+>I prefer xxx be the name of the subsystem (call_function) instead of
+>the name of the data structure (call_single_data).
+>
+>>  	/* Interrupts are enabled now so all GFP allocations are safe. */
+>> diff --git a/kernel/smp.c b/kernel/smp.c
+>> index 7cbd0f2..f119610 100644
+>> --- a/kernel/smp.c
+>> +++ b/kernel/smp.c
+>> @@ -74,9 +74,19 @@ static struct notifier_block __cpuinitdata 
+>> hotplug_cfd_notifier = {
+>>  	.notifier_call		= hotplug_cfd,
+>>  };
+>>  
+>> -static int __cpuinit init_call_single_data(void)
+>> +static int __cpuinit init_hotplug_cfd(void)
+>>  {
+>>  	void *cpu = (void *)(long)smp_processor_id();
+>> +
+>> +	hotplug_cfd(&hotplug_cfd_notifier, CPU_UP_PREPARE, cpu);
+>> +	register_cpu_notifier(&hotplug_cfd_notifier);
+>> +
+>> +	return 0;
+>> +}
+>> +early_initcall(init_hotplug_cfd);
+>> +
+>
+>Why did you seperate this from the rest of the function?  I haven't
+>tested the patch but don't why this needs to be delayed.  If there
+>is some reason I don't see, please describe it in the change log.
+
+There is not special reason. I just thought I should minimize the change
+to prevent regression because I cannot do hotplug test. Ok, next time
+I'll just change the name from init_call_single_data to
+call_function_init instead of separating it.
+
+It seems that Peter Zijlstra added this hotplug code at 8969a5ed, so I
+added him to Cc.
+
+Thanks for your review.
+
+Thanks,
+Takao Indoh
+
+
+>
+>> +void __init init_call_single_data(void)
+>> +{
+>>  	int i;
+>>  
+>>  	for_each_possible_cpu(i) {
+>> @@ -85,13 +95,7 @@ static int __cpuinit init_call_single_data(void)
+>>  		raw_spin_lock_init(&q->lock);
+>>  		INIT_LIST_HEAD(&q->list);
+>>  	}
+>> -
+>> -	hotplug_cfd(&hotplug_cfd_notifier, CPU_UP_PREPARE, cpu);
+>> -	register_cpu_notifier(&hotplug_cfd_notifier);
+>> -
+>> -	return 0;
+>>  }
+>> -early_initcall(init_call_single_data);
+>>  
+>>  /*
+>>   * csd_lock/csd_unlock used to serialize access to per-cpu csd resources
+>> 
+>
+>milton
