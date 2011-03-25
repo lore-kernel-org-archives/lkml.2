@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932841Ab1CZAEx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:04:53 -0400
-Received: from kroah.org ([198.145.64.141]:41910 "EHLO coco.kroah.org"
+	id S932668Ab1CZAFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:05:46 -0400
+Received: from kroah.org ([198.145.64.141]:41896 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932579Ab1CYXxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:02 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:13 2011
-Message-Id: <20110325234513.104015172@clark.kroah.org>
+	id S932566Ab1CYXxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:00 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:43 2011
+Message-Id: <20110325234843.411105098@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:26 -0700
+Date: Fri, 25 Mar 2011 16:47:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Jens Axboe <jaxboe@fusionio.com>
-Subject: [50/63] fs: assign sb->s_bdi to default_backing_dev_info if the bdi is going away
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+Subject: [42/55] fs: assign sb->s_bdi to default_backing_dev_info if the bdi is going away
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
@@ -47,15 +47,15 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 --- a/fs/super.c
 +++ b/fs/super.c
-@@ -71,6 +71,7 @@ static struct super_block *alloc_super(s
+@@ -70,6 +70,7 @@ static struct super_block *alloc_super(s
  #else
  		INIT_LIST_HEAD(&s->s_files);
  #endif
 +		s->s_bdi = &default_backing_dev_info;
  		INIT_LIST_HEAD(&s->s_instances);
- 		INIT_HLIST_BL_HEAD(&s->s_anon);
+ 		INIT_HLIST_HEAD(&s->s_anon);
  		INIT_LIST_HEAD(&s->s_inodes);
-@@ -1003,6 +1004,7 @@ vfs_kern_mount(struct file_system_type *
+@@ -996,6 +997,7 @@ vfs_kern_mount(struct file_system_type *
  	}
  	BUG_ON(!mnt->mnt_sb);
  	WARN_ON(!mnt->mnt_sb->s_bdi);
