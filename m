@@ -1,134 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab1CYAMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 20:12:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58975 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab1CYAML convert rfc822-to-8bit (ORCPT
+	id S1757099Ab1CYAM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 20:12:26 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55180 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab1CYAMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 20:12:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=yAIypE1QaEnEeycLL03UHi9nKCj72M/RoprdTyVoacUYNx2muXqTNnepO8/BlyLxKQ
-         /TaazlekPdU5Ya9DvbRhPs4+sro3NAXo5toeiyHsuiOYo08b3AkuYL3+OBRVvhMqnyPn
-         ban7D3H830e4UOleISTmH604b4/Mg3Ic6kZcs=
+	Thu, 24 Mar 2011 20:12:21 -0400
+Date: Fri, 25 Mar 2011 00:12:16 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
+        gregkh@suse.de
+Subject: Re: [RFC PATCHv2 0/4] Support for OTP memory
+Message-ID: <20110325001216.GA26856@sirena.org.uk>
+References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com> <AANLkTim3kMCE=LhCRcUDif8ENSA-E-_Xga5cDSYs0x25@mail.gmail.com> <20110324174722.GH3130@pulham.picochip.com> <AANLkTinDWA1xU1G0kBk8XPr_ZaRgHtBQP60DX6-x3tsn@mail.gmail.com> <20110324183205.GI3130@pulham.picochip.com>
 MIME-Version: 1.0
-In-Reply-To: <1301006652.2714.145.camel@edumazet-laptop>
-References: <1301005107.2714.113.camel@edumazet-laptop>
-	<AANLkTinv+XGBjbFoK6vpyiDW6gBEBKFjUef+mCAMJU9i@mail.gmail.com>
-	<1301005946.2714.130.camel@edumazet-laptop>
-	<20110324.153623.45921344.davem@davemloft.net>
-	<1301006652.2714.145.camel@edumazet-laptop>
-Date: Fri, 25 Mar 2011 01:12:11 +0100
-Message-ID: <AANLkTi=Xb3KCBKoVCcaVD5iyCtMCAnYaGF_DTeFQ0ays@mail.gmail.com>
-Subject: Re: [PATCH] ipv4: fix fib metrics
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110324183205.GI3130@pulham.picochip.com>
+X-Cookie: Live free or die.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 11:44 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le jeudi 24 mars 2011 à 15:36 -0700, David Miller a écrit :
->> From: Eric Dumazet <eric.dumazet@gmail.com>
->> Date: Thu, 24 Mar 2011 23:32:26 +0100
->>
->> > Then it doesnt work anymore because it parses an ipip field from
->> > ip route get ...
->> >
->> > $ ip ro get 192.168.1.1
->> > 192.168.1.1 dev wlan0  src 192.168.1.21
->> >     cache  ipid 0x784c mtu 1500 advmss 1460 hoplimit 64
->> >
->> >
->> > Maybe you upgraded iproute2
->>
->> I'm leaning towards app bug too.
->>
->> These default metrics wouldn't get printed before, but now because of
->> how metrics are handled, they will.
->>
->> Userland needs to cope properly with this.
->
->
-> BTW, ipip is not always printed (even on old kernels) : One needs to
-> actually need ipip generation .
->
-> edumazet@edumazet-laptop:~$ ping 4.4.4.4
-> PING 4.4.4.4 (4.4.4.4) 56(84) bytes of data.
-> ^C
->
-> edumazet@edumazet-laptop:~$ ip ro get 4.4.4.4
-> 4.4.4.4 dev ppp0  src 10.150.51.210
->    cache  mtu 1500 advmss 1460 hoplimit 64
->
-> edumazet@edumazet-laptop:~$ ping -s 2000 4.4.4.4
-> PING 4.4.4.4 (4.4.4.4) 2000(2028) bytes of data.
-> ^C
->
-> edumazet@edumazet-laptop:~$ ip ro get 4.4.4.4
-> 4.4.4.4 dev ppp0  src 10.150.51.210
->    cache  ipid 0xf99a mtu 1500 advmss 1460 hoplimit 64
->
->
-> This on a 2.6.35 kernel
->
-> I suspect Alessandro tool had a bug anyway.
+On Thu, Mar 24, 2011 at 06:32:05PM +0000, Jamie Iles wrote:
 
-I still contend this is a kernel regression :)
+> Yes, we have a similar thing here - a block of OTP from an IP vendor and 
+> a wrapper to provide an AXI interface.  As far as I know there are only 
+> a few OTP vendors so there may well be plenty of common code in 
+> different OTP implementations.
 
-
-vpnc is a custom build from trunk as of June 2010, with openssl support
- to talk to my corporate VPN concentrator:
-
-[root@duff oldconfigs]# vpnc --version
-vpnc version 0.5.3-449M
-Copyright (C) 2002-2006 Geoffrey Keating, Maurice Massar, others
-vpnc comes with NO WARRANTY, to the extent permitted by law.
-You may redistribute copies of vpnc under the terms of the GNU General
-Public License.  For more information about these matters, see the files
-named COPYING.
-Built with openssl certificate support. Be aware of the
-license implications.
-
-Supported DH-Groups: nopfs dh1 dh2 dh5
-Supported Hash-Methods: md5 sha1
-Supported Encryptions: null des 3des aes128 aes192 aes256
-Supported Auth-Methods: psk psk+xauth hybrid(rsa)
-
-
-My iproute package, on this up-to-date Fedora 14 x86_64, has last been
- updated on 20 Nov 2010, and back then I was running 2.6.37-rc2-git4
- (I keep around my historical .config files, so I know for sure).
-
-[root@duff ~]# ip -V
-ip utility, iproute2-ss100804
-[root@duff ~]# rpm -qf /sbin/ip
-iproute-2.6.35-6.fc14.x86_64
-
-The behavior of this version of 'ip' as invoked by this version of 'vpnc'
- is something that has worked for the last 4 months, and isn't working
- right now. Furthermore, previous versions of 'ip' in Fedora 14 were
- also working with the same 'vpnc', which means it's actually 9 months
- minimum of working behavior.
-
-If some change in the kernel broke my userspace, this usually qualifies
- as a regression.
-
-
-That said, if you can point me to a working version of iproute with the
- current kernel, I have no problem in upgrading it :)
-
-Thanks,
-
---alessandro
-
- "There's always a siren singing you to shipwreck"
-
-   (Radiohead, "There There")
+Seems possible, though I'm not sure how much of the register interface
+the OTP vendors provide so how much low level compatibility there might
+be.
