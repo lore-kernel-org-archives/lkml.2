@@ -1,106 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab1CZA2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:28:33 -0400
-Received: from kroah.org ([198.145.64.141]:41439 "EHLO coco.kroah.org"
+	id S934105Ab1CZA2f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:28:35 -0400
+Received: from kroah.org ([198.145.64.141]:41446 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932223Ab1CYXwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932228Ab1CYXwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 19:52:21 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:40 2011
-Message-Id: <20110325234840.165573424@clark.kroah.org>
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
+Message-Id: <20110325234509.032836303@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:05 -0700
+Date: Fri, 25 Mar 2011 16:43:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
-Subject: [12/55] mm: swap: unlock swapfile inode mutex before closing file on bad swapfiles
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Roland Dreier <roland@purestorage.com>
+Subject: [11/63] aio: wake all waiters when destroying ctx
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 52c50567d8ab0a0a87f12cceaa4194967854f0bd upstream.
+commit e91f90bb0bb10be9cc8efd09a3cf4ecffcad0db1 upstream.
 
-If an administrator tries to swapon a file backed by NFS, the inode mutex is
-taken (as it is for any swapfile) but later identified to be a bad swapfile
-due to the lack of bmap and tries to cleanup. During cleanup, an attempt is
-made to close the file but with inode->i_mutex still held. Closing an NFS
-file syncs it which tries to acquire the inode mutex leading to deadlock. If
-lockdep is enabled the following appears on the console;
+The test program below will hang because io_getevents() uses
+add_wait_queue_exclusive(), which means the wake_up() in io_destroy() only
+wakes up one of the threads.  Fix this by using wake_up_all() in the aio
+code paths where we want to make sure no one gets stuck.
 
-    =============================================
-    [ INFO: possible recursive locking detected ]
-    2.6.38-rc8-autobuild #1
-    ---------------------------------------------
-    swapon/2192 is trying to acquire lock:
-     (&sb->s_type->i_mutex_key#13){+.+.+.}, at: vfs_fsync_range+0x47/0x7c
+	// t.c -- compile with gcc -lpthread -laio t.c
 
-    but task is already holding lock:
-     (&sb->s_type->i_mutex_key#13){+.+.+.}, at: sys_swapon+0x28d/0xae7
+	#include <libaio.h>
+	#include <pthread.h>
+	#include <stdio.h>
+	#include <unistd.h>
 
-    other info that might help us debug this:
-    1 lock held by swapon/2192:
-     #0:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: sys_swapon+0x28d/0xae7
+	static const int nthr = 2;
 
-    stack backtrace:
-    Pid: 2192, comm: swapon Not tainted 2.6.38-rc8-autobuild #1
-    Call Trace:
-        __lock_acquire+0x2eb/0x1623
-        find_get_pages_tag+0x14a/0x174
-        pagevec_lookup_tag+0x25/0x2e
-        vfs_fsync_range+0x47/0x7c
-        lock_acquire+0xd3/0x100
-        vfs_fsync_range+0x47/0x7c
-        nfs_flush_one+0x0/0xdf [nfs]
-        mutex_lock_nested+0x40/0x2b1
-        vfs_fsync_range+0x47/0x7c
-        vfs_fsync_range+0x47/0x7c
-        vfs_fsync+0x1c/0x1e
-        nfs_file_flush+0x64/0x69 [nfs]
-        filp_close+0x43/0x72
-        sys_swapon+0xa39/0xae7
-        sysret_check+0x2e/0x69
-        system_call_fastpath+0x16/0x1b
+	void *getev(void *ctx)
+	{
+		struct io_event ev;
+		io_getevents(ctx, 1, 1, &ev, NULL);
+		printf("io_getevents returned\n");
+		return NULL;
+	}
 
-This patch releases the mutex if its held before calling filep_close()
-so swapon fails as expected without deadlock when the swapfile is backed
-by NFS.  If accepted for 2.6.39, it should also be considered a -stable
-candidate for 2.6.38 and 2.6.37.
+	int main(int argc, char *argv[])
+	{
+		io_context_t ctx = 0;
+		pthread_t thread[nthr];
+		int i;
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Hugh Dickins <hughd@google.com>
+		io_setup(1024, &ctx);
+
+		for (i = 0; i < nthr; ++i)
+			pthread_create(&thread[i], NULL, getev, ctx);
+
+		sleep(1);
+
+		io_destroy(ctx);
+
+		for (i = 0; i < nthr; ++i)
+			pthread_join(thread[i], NULL);
+
+		return 0;
+	}
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/swapfile.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/aio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -2146,8 +2146,13 @@ bad_swap_2:
- 	p->flags = 0;
- 	spin_unlock(&swap_lock);
- 	vfree(swap_map);
--	if (swap_file)
-+	if (swap_file) {
-+		if (did_down) {
-+			mutex_unlock(&inode->i_mutex);
-+			did_down = 0;
-+		}
- 		filp_close(swap_file, NULL);
-+	}
- out:
- 	if (page && !IS_ERR(page)) {
- 		kunmap(page);
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -520,7 +520,7 @@ static inline void really_put_req(struct
+ 	ctx->reqs_active--;
+ 
+ 	if (unlikely(!ctx->reqs_active && ctx->dead))
+-		wake_up(&ctx->wait);
++		wake_up_all(&ctx->wait);
+ }
+ 
+ static void aio_fput_routine(struct work_struct *data)
+@@ -1229,7 +1229,7 @@ static void io_destroy(struct kioctx *io
+ 	 * by other CPUs at this point.  Right now, we rely on the
+ 	 * locking done by the above calls to ensure this consistency.
+ 	 */
+-	wake_up(&ioctx->wait);
++	wake_up_all(&ioctx->wait);
+ 	put_ioctx(ioctx);	/* once for the lookup */
+ }
+ 
 
 
