@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab1CYOXp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 10:23:45 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56020 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006Ab1CYOXo (ORCPT
+	id S1753330Ab1CYOYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 10:24:54 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:39442 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595Ab1CYOYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 10:23:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:subject:to:cc:date:message-id:user-agent:mime-version
-         :content-type:content-transfer-encoding;
-        b=c52rm2R9yd5zknRQpN7CwK7u7nGudr8fZFqyf+d5nLJjil5COT/HCtOycQCONA9Prt
-         uGHnYLKpNYjIRzYSgQguXjQZfLU6S7ZD2LchKYRKziGDrt66Nne7cqaGH4VSh5D13Uko
-         FDXhSkzYhUB3+tEJXJzEZ39fciuzZXTgInV3M=
-From: Chuck Lever <chuck.lever@oracle.com>
-Subject: [PATCH] NFS: Revert NFSROOT default mount options
-To: marek.belisko@gmail.com
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 25 Mar 2011 10:23:40 -0400
-Message-ID: <20110325141947.3236.83222.stgit@matisse.1015granger.net>
-User-Agent: StGIT/0.14.3
+	Fri, 25 Mar 2011 10:24:53 -0400
+Date: Fri, 25 Mar 2011 15:24:50 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+Message-ID: <20110325142450.GA1737@gentoo.trippels.de>
+References: <4D8C4304.3050101@fusionio.com>
+ <20110325083757.GA1754@gentoo.trippels.de>
+ <4D8C55D9.1060903@fusionio.com>
+ <20110325095704.GA1694@gentoo.trippels.de>
+ <4D8C8E1C.1020304@fusionio.com>
+ <20110325130959.GA1698@gentoo.trippels.de>
+ <4D8CA263.9090006@fusionio.com>
+ <20110325141413.GA1725@gentoo.trippels.de>
+ <1301062675-sup-2548@think>
+ <1301062767-sup-540@think>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301062767-sup-540@think>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marek Belisko <marek.belisko@gmail.com> reports that recent attempts
-to fix regressions in NFSROOT have broken his configuration:
+On 2011.03.25 at 10:19 -0400, Chris Mason wrote:
+> Excerpts from Chris Mason's message of 2011-03-25 10:18:19 -0400:
+> > Excerpts from Markus Trippelsdorf's message of 2011-03-25 10:14:13 -0400:
+> > > On 2011.03.25 at 15:10 +0100, Jens Axboe wrote:
+> > > > On 2011-03-25 14:09, Markus Trippelsdorf wrote:
+> > > > > On 2011.03.25 at 13:44 +0100, Jens Axboe wrote:
+> > > > >> On 2011-03-25 10:57, Markus Trippelsdorf wrote:
+> > > > >>>
+> > > > >>> Reverting it solves all problems here.
+> > > > >>
+> > > > >> Can you try this one?
+> > > > > 
+> > > > > This one doesn't help; I still get the same BUG.
+> > > > > 
+> > > > > BTW if you're having trouble reproducing this, here is the only non
+> > > > > stock xfs option that I use on the affected partitions:
+> > > > > 
+> > > > > noatime,logbsize=262144
+> > > > 
+> > > > This?
+> > > 
+> > > No.
+> > > 
+> > 
+> > I was able to reproduce it here.  This is working for me:
+> > 
+> 
+> Sorry, this is working better but still explodes later.  Don't bother
+> with this one.
 
-> After update from 2.6.38-rc8 to 2.6.38 is mounting rootfs over nfs not possible.
-> Log:
-> VFS: Mounted root (nfs filesystem) on device 0:14.
-> Freeing init memory: 132K
-> nfs: server 10.146.1.21 not responding, still trying
-> nfs: server 10.146.1.21 not responding, still trying
->
-> This is never ending. I make short bisect (not too much commits
-> between versions)
-> and bad commit was reported: 53d4737580535e073963b91ce87d4216e434fab5
->
-> NFS: NFSROOT should default to "proto=udp"
->
-> I've tested on mini2440 board (DM9000, static IP).
-> Is there some missing option or something else to be checked?
-
-An examination of a network trace captured during the failure shows
-that the mount is actually succeeding, but that the client is not
-seeing READ replies larger than 16KB.
-
-Last fall we removed the ad hoc mount option parser in fs/nfs/nfsroot.c
-in favor of using the main parser in fs/nfs/super.c (see commit
-56463e50 "NFS: Use super.c for NFSROOT mount option parsing").  That
-commit changed the default NFSROOT mount options to be the same as
-those employed by user space mounts.  As it turns out, that change is
-not tolerated by many embedded systems.
-
-Subsequently, commit 53d47375 introduced a clean way to specify
-default mount options for NFSROOT, so we can restore the traditional
-defaults for NFSROOT easily now:
-
-   vers=2,udp,rsize=4096,wsize=4096
-
-This should revert the changed default NFSROOT mount options
-introduced with commit 56463e50.
-
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
----
-
-Hi-
-
-Please test this, as I no longer have an NFSROOT rig here.
-
-Can some responsible maintainer type see that this gets into
-linux-next quickly for broader testing?
-
- fs/nfs/nfsroot.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
-index c541093..c4744e1 100644
---- a/fs/nfs/nfsroot.c
-+++ b/fs/nfs/nfsroot.c
-@@ -87,7 +87,7 @@
- #define NFS_ROOT		"/tftpboot/%s"
- 
- /* Default NFSROOT mount options. */
--#define NFS_DEF_OPTIONS		"udp"
-+#define NFS_DEF_OPTIONS		"vers=2,udp,rsize=4096,wsize=4096"
- 
- /* Parameters passed from the kernel command line */
- static char nfs_root_parms[256] __initdata = "";
-
+Yeah, doesn't help here also.
+-- 
+Markus
