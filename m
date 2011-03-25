@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1CYS6i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 14:58:38 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:43488 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab1CYS6g (ORCPT
+	id S1752550Ab1CYTCx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 15:02:53 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:54016 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab1CYTCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 14:58:36 -0400
-Date: Fri, 25 Mar 2011 13:58:24 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Chris Bagwell <chris@cnpbagwell.com>, Matthew Garrett <mjg@redhat.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vojtech@suze.cz
-Subject: Re: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate
- key
-Message-ID: <20110325185824.GE14328@thinkpad-t410>
-Mail-Followup-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Corentin Chary <corentin.chary@gmail.com>,
-	Chris Bagwell <chris@cnpbagwell.com>,
-	Matthew Garrett <mjg@redhat.com>,
-	acpi4asus-user@lists.sourceforge.net,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-	vojtech@suze.cz
-References: <20110324195720.GB31713@thinkpad-t410>
- <1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
- <AANLkTimF2UR8BVQW-3YJaGFEz39q8ydESAiMOjmdM1X7@mail.gmail.com>
- <20110325135311.GA14328@thinkpad-t410>
- <AANLkTin3MDYdL6x1Qs8Q9oMMgDMfsoO2GjWMJO_65GAR@mail.gmail.com>
- <20110325161405.GC5099@core.coreip.homeip.net>
- <20110325162850.GD14328@thinkpad-t410>
- <20110325170333.GD5099@core.coreip.homeip.net>
+	Fri, 25 Mar 2011 15:02:52 -0400
+Date: Sat, 26 Mar 2011 00:32:45 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Len Brown <lenb@kernel.org>
+Cc: x86@kernel.org, Len Brown <len.brown@intel.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [PATCH 5/5] x86 idle: remove NOP hlt_use_halt()
+Message-ID: <20110325190245.GA20328@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <67e90d97e0a77df4acd0c75e1bacc7714e011f3e.1300950095.git.len.brown@intel.com>
+ <6bdee95bc92adfbe9de20c415e936bf1bb94993d.1300950095.git.len.brown@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110325170333.GD5099@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <6bdee95bc92adfbe9de20c415e936bf1bb94993d.1300950095.git.len.brown@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 10:03:33AM -0700, Dmitry Torokhov wrote:
-> > So, would the following make sense (KEY_TBD is may abbreviation for "key
-> > to be determinded"):
-> > 
-> >  - On press (0xe4), send KEY_TBD, value = 1
-> >  - On hold (0xea), send KEY_TBD, value = 2
-> >  - On release (0xe5), send KEY_TBD, value = 0
+* Len Brown <lenb@kernel.org> [2011-03-24 03:08:28]:
+
+> From: Len Brown <len.brown@intel.com>
 > 
-> Yes.
+> hlt_use_halt() no longer has any effect,
+> except to complicate the indentation in default_idle().
+> 
+> no functional change.
+> 
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> ---
+>  arch/x86/kernel/process.c |   39 ++++++++++++++-------------------------
+>  1 files changed, 14 insertions(+), 25 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> index 8688ade..094d4ac 100644
+> --- a/arch/x86/kernel/process.c
+> +++ b/arch/x86/kernel/process.c
+> @@ -342,39 +342,28 @@ EXPORT_SYMBOL(boot_option_idle_override);
+>  void (*pm_idle)(void);
+>  EXPORT_SYMBOL(pm_idle);
+> 
+> -static inline int hlt_use_halt(void)
+> -{
+> -	return 1;
+> -}
+> -
+>  /*
+>   * We use this if we don't have any better
+>   * idle routine..
+>   */
+>  void default_idle(void)
+>  {
+> -	if (hlt_use_halt()) {
+> -		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
+> -		trace_cpu_idle(1, smp_processor_id());
+> -		current_thread_info()->status &= ~TS_POLLING;
+> -		/*
+> -		 * TS_POLLING-cleared state must be visible before we
+> -		 * test NEED_RESCHED:
+> -		 */
+> -		smp_mb();
+> +	trace_power_start(POWER_CSTATE, 1, smp_processor_id());
+> +	trace_cpu_idle(1, smp_processor_id());
+> +	current_thread_info()->status &= ~TS_POLLING;
+> +	/*
+> +	 * TS_POLLING-cleared state must be visible before we
+> +	 * test NEED_RESCHED:
+> +	 */
+> +	smp_mb();
+> 
+> -		if (!need_resched())
+> -			safe_halt();	/* enables interrupts racelessly */
+> -		else
+> -			local_irq_enable();
+> -		current_thread_info()->status |= TS_POLLING;
+> -		trace_power_end(smp_processor_id());
+> -		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
+> -	} else {
+> +	if (!need_resched())
+> +		safe_halt();	/* enables interrupts racelessly */
+> +	else
+>  		local_irq_enable();
+> -		/* loop is done by the caller */
+> -		cpu_relax();
+> -	}
+> +	current_thread_info()->status |= TS_POLLING;
+> +	trace_power_end(smp_processor_id());
+> +	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
+>  }
+>  #ifdef CONFIG_APM_MODULE
+>  EXPORT_SYMBOL(default_idle);
 
-There's a little problem with this. The driver uses sparse-keymap, which
-calls input_report_key(), which is doing this:
+Hi Len,
 
-	input_event(dev, EV_KEY, code, !!value);
+The cleanup looks good.
 
-I don't see the hold events in userspace, so they must be getting
-dropped as duplicates as you suggested.
-
-I'm not sure who is at fault here. Should input_report_key() not be
-forcing value to 0 or 1? Or should sparse-keymap be calling
-input_event() directly? Or is sparse-keymap the wrong tool for handling
-keys this way?
-
-Thanks,
-Seth
+--Vaidy
 
