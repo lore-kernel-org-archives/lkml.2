@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443Ab1CYXwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:52:47 -0400
-Received: from kroah.org ([198.145.64.141]:41568 "EHLO coco.kroah.org"
+	id S932507Ab1CZAS0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:18:26 -0400
+Received: from kroah.org ([198.145.64.141]:41780 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932324Ab1CYXwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:34 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:10 2011
-Message-Id: <20110325234510.230563224@clark.kroah.org>
+	id S932453Ab1CYXwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:49 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:11 2011
+Message-Id: <20110325234511.722825151@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:59 -0700
+Date: Fri, 25 Mar 2011 16:44:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [23/63] ALSA: HDA: Fix internal mic on Dell E5420/E5520
+        Phil Edworthy <phil.edworthy@renesas.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [37/63] sh: Fix ptrace fpu state initialisation
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,76 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Phil Edworthy <Phil.Edworthy@renesas.com>
 
-This is a fixup for the 2.6.38 kernel, as the issue is being resolved
-by upstream commits 699d899560cd7e72da39231e584412e7ac8114a4 and
-094a42452abd5564429045e210281c6d22e67fca - which are too invasive
-to reach 2.6.38. Instead make pin fixes as a workaround.
+commit c49b6ecf0870e78fa40497cd8b142915c1d5c7c9 upstream.
 
-BugLink: http://bugs.launchpad.net/bugs/740055
-Tested-by: Kent Baxley <kent.baxley@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Acked-by: Takashi Iwai <tiwai@suse.de>
+Commit 0ea820cf introduced the PTRACE_GETFPREGS/SETFPREGS cmds,
+but gdb-server still accesses the FPU state using the
+PTRACE_PEEKUSR/POKEUSR commands. In this case, xstate was not
+initialised.
+
+Signed-off-by: Phil Edworthy <phil.edworthy@renesas.com>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_sigmatel.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ arch/sh/kernel/ptrace_32.c |    6 ++++++
+ arch/sh/kernel/ptrace_64.c |    6 ++++++
+ 2 files changed, 12 insertions(+)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -94,6 +94,7 @@ enum {
- 	STAC_92HD83XXX_REF,
- 	STAC_92HD83XXX_PWR_REF,
- 	STAC_DELL_S14,
-+	STAC_DELL_E5520M,
- 	STAC_92HD83XXX_HP,
- 	STAC_HP_DV7_4000,
- 	STAC_92HD83XXX_MODELS
-@@ -1657,6 +1658,13 @@ static unsigned int dell_s14_pin_configs
- 	0x40f000f0, 0x40f000f0,
- };
- 
-+/* Switch int mic from 0x20 to 0x11 */
-+static unsigned int dell_e5520m_pin_configs[10] = {
-+	0x04a11020, 0x0421101f, 0x400000f0, 0x90170110,
-+	0x23011050, 0x23a1102e, 0x400000f3, 0xd5a30130,
-+	0x400000f0, 0x40f000f0,
-+};
-+
- static unsigned int hp_dv7_4000_pin_configs[10] = {
- 	0x03a12050, 0x0321201f, 0x40f000f0, 0x90170110,
- 	0x40f000f0, 0x40f000f0, 0x90170110, 0xd5a30140,
-@@ -1667,6 +1675,7 @@ static unsigned int *stac92hd83xxx_brd_t
- 	[STAC_92HD83XXX_REF] = ref92hd83xxx_pin_configs,
- 	[STAC_92HD83XXX_PWR_REF] = ref92hd83xxx_pin_configs,
- 	[STAC_DELL_S14] = dell_s14_pin_configs,
-+	[STAC_DELL_E5520M] = dell_e5520m_pin_configs,
- 	[STAC_HP_DV7_4000] = hp_dv7_4000_pin_configs,
- };
- 
-@@ -1675,6 +1684,7 @@ static const char * const stac92hd83xxx_
- 	[STAC_92HD83XXX_REF] = "ref",
- 	[STAC_92HD83XXX_PWR_REF] = "mic-ref",
- 	[STAC_DELL_S14] = "dell-s14",
-+	[STAC_DELL_E5520M] = "dell-e5520m",
- 	[STAC_92HD83XXX_HP] = "hp",
- 	[STAC_HP_DV7_4000] = "hp-dv7-4000",
- };
-@@ -1687,6 +1697,14 @@ static struct snd_pci_quirk stac92hd83xx
- 		      "DFI LanParty", STAC_92HD83XXX_REF),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02ba,
- 		      "unknown Dell", STAC_DELL_S14),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x049a,
-+		      "Dell E5520", STAC_DELL_E5520M),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x049b,
-+		      "Dell E5420", STAC_DELL_E5520M),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x04eb,
-+		      "Dell E5420m", STAC_DELL_E5520M),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x04ec,
-+		      "Dell E5520m", STAC_DELL_E5520M),
- 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xff00, 0x3600,
- 		      "HP", STAC_92HD83XXX_HP),
- 	{} /* terminator */
+--- a/arch/sh/kernel/ptrace_32.c
++++ b/arch/sh/kernel/ptrace_32.c
+@@ -392,6 +392,9 @@ long arch_ptrace(struct task_struct *chi
+ 					tmp = 0;
+ 			} else {
+ 				unsigned long index;
++				ret = init_fpu(child);
++				if (ret)
++					break;
+ 				index = addr - offsetof(struct user, fpu);
+ 				tmp = ((unsigned long *)child->thread.xstate)
+ 					[index >> 2];
+@@ -423,6 +426,9 @@ long arch_ptrace(struct task_struct *chi
+ 		else if (addr >= offsetof(struct user, fpu) &&
+ 			 addr < offsetof(struct user, u_fpvalid)) {
+ 			unsigned long index;
++			ret = init_fpu(child);
++			if (ret)
++				break;
+ 			index = addr - offsetof(struct user, fpu);
+ 			set_stopped_child_used_math(child);
+ 			((unsigned long *)child->thread.xstate)
+--- a/arch/sh/kernel/ptrace_64.c
++++ b/arch/sh/kernel/ptrace_64.c
+@@ -403,6 +403,9 @@ long arch_ptrace(struct task_struct *chi
+ 		else if ((addr >= offsetof(struct user, fpu)) &&
+ 			 (addr <  offsetof(struct user, u_fpvalid))) {
+ 			unsigned long index;
++			ret = init_fpu(child);
++			if (ret)
++				break;
+ 			index = addr - offsetof(struct user, fpu);
+ 			tmp = get_fpu_long(child, index);
+ 		} else if (addr == offsetof(struct user, u_fpvalid)) {
+@@ -442,6 +445,9 @@ long arch_ptrace(struct task_struct *chi
+ 		else if ((addr >= offsetof(struct user, fpu)) &&
+ 			 (addr <  offsetof(struct user, u_fpvalid))) {
+ 			unsigned long index;
++			ret = init_fpu(child);
++			if (ret)
++				break;
+ 			index = addr - offsetof(struct user, fpu);
+ 			ret = put_fpu_long(child, index, data);
+ 		}
 
 
