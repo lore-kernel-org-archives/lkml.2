@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab1CYNuo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:50:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50880 "EHLO
+	id S1753417Ab1CYNup (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:50:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50884 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753316Ab1CYNul (ORCPT
+	with ESMTP id S1753317Ab1CYNum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:50:41 -0400
-Message-Id: <20110325135032.971429913@linutronix.de>
+	Fri, 25 Mar 2011 09:50:42 -0400
+Message-Id: <20110325135033.068696457@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Fri, 25 Mar 2011 13:50:39 -0000
+Date: Fri, 25 Mar 2011 13:50:40 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Michal Simek <monstr@monstr.eu>
-Subject: [patch 1/2] microblaze: Convert to new irq function names
+Subject: [patch 2/2] microblaze: Use generic show_interrupts()
 References: <20110325134935.999574075@linutronix.de>
-Content-Disposition: inline; filename=microblaz.patch
+Content-Disposition: inline; filename=microblze-show-int.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
@@ -23,55 +23,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namespace conversion scripted with coccinelle.
-
-Also retrieve the irq type from irq_data in intc_enable_or_unmask()
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/microblaze/kernel/intc.c    |    6 +++---
- arch/microblaze/pci/pci-common.c |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/microblaze/Kconfig      |    1 +
+ arch/microblaze/kernel/irq.c |   42 ------------------------------------------
+ 2 files changed, 1 insertion(+), 42 deletions(-)
 
-Index: linux-2.6-tip/arch/microblaze/kernel/intc.c
+Index: linux-2.6-tip/arch/microblaze/Kconfig
 ===================================================================
---- linux-2.6-tip.orig/arch/microblaze/kernel/intc.c
-+++ linux-2.6-tip/arch/microblaze/kernel/intc.c
-@@ -50,7 +50,7 @@ static void intc_enable_or_unmask(struct
- 	 * ack function since the handle_level_irq function
- 	 * acks the irq before calling the interrupt handler
- 	 */
--	if (irq_to_desc(d->irq)->status & IRQ_LEVEL)
-+	if (irqd_is_level_type(d))
- 		out_be32(INTC_BASE + IAR, mask);
+--- linux-2.6-tip.orig/arch/microblaze/Kconfig
++++ linux-2.6-tip/arch/microblaze/Kconfig
+@@ -18,6 +18,7 @@ config MICROBLAZE
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_HARDIRQS_NO_DEPRECATED
++	select GENERIC_IRQ_SHOW
+ 
+ config SWAP
+ 	def_bool n
+Index: linux-2.6-tip/arch/microblaze/kernel/irq.c
+===================================================================
+--- linux-2.6-tip.orig/arch/microblaze/kernel/irq.c
++++ linux-2.6-tip/arch/microblaze/kernel/irq.c
+@@ -47,48 +47,6 @@ next_irq:
+ 	trace_hardirqs_on();
  }
  
-@@ -157,11 +157,11 @@ void __init init_IRQ(void)
- 
- 	for (i = 0; i < nr_irq; ++i) {
- 		if (intr_type & (0x00000001 << i)) {
--			set_irq_chip_and_handler_name(i, &intc_dev,
-+			irq_set_chip_and_handler_name(i, &intc_dev,
- 				handle_edge_irq, intc_dev.name);
- 			irq_clear_status_flags(i, IRQ_LEVEL);
- 		} else {
--			set_irq_chip_and_handler_name(i, &intc_dev,
-+			irq_set_chip_and_handler_name(i, &intc_dev,
- 				handle_level_irq, intc_dev.name);
- 			irq_set_status_flags(i, IRQ_LEVEL);
- 		}
-Index: linux-2.6-tip/arch/microblaze/pci/pci-common.c
-===================================================================
---- linux-2.6-tip.orig/arch/microblaze/pci/pci-common.c
-+++ linux-2.6-tip/arch/microblaze/pci/pci-common.c
-@@ -237,7 +237,7 @@ int pci_read_irq_line(struct pci_dev *pc
- 
- 		virq = irq_create_mapping(NULL, line);
- 		if (virq != NO_IRQ)
--			set_irq_type(virq, IRQ_TYPE_LEVEL_LOW);
-+			irq_set_irq_type(virq, IRQ_TYPE_LEVEL_LOW);
- 	} else {
- 		pr_debug(" Got one, spec %d cells (0x%08x 0x%08x...) on %s\n",
- 			 oirq.size, oirq.specifier[0], oirq.specifier[1],
+-int show_interrupts(struct seq_file *p, void *v)
+-{
+-	int i = *(loff_t *) v, j;
+-	struct irq_desc *desc;
+-	struct irqaction *action;
+-	unsigned long flags;
+-
+-	if (i == 0) {
+-		seq_printf(p, "		");
+-		for_each_online_cpu(j)
+-			seq_printf(p, "CPU%-8d", j);
+-		seq_putc(p, '\n');
+-	}
+-
+-	if (i < nr_irq) {
+-		desc = irq_to_desc(i);
+-		raw_spin_lock_irqsave(&desc->lock, flags);
+-		action = desc->action;
+-		if (!action)
+-			goto skip;
+-		seq_printf(p, "%3d: ", i);
+-#ifndef CONFIG_SMP
+-		seq_printf(p, "%10u ", kstat_irqs(i));
+-#else
+-		for_each_online_cpu(j)
+-			seq_printf(p, "%10u ", kstat_cpu(j).irqs[i]);
+-#endif
+-		seq_printf(p, " %8s", desc->status &
+-					IRQ_LEVEL ? "level" : "edge");
+-		seq_printf(p, " %8s", desc->irq_data.chip->name);
+-		seq_printf(p, "  %s", action->name);
+-
+-		for (action = action->next; action; action = action->next)
+-			seq_printf(p, ", %s", action->name);
+-
+-		seq_putc(p, '\n');
+-skip:
+-		raw_spin_unlock_irqrestore(&desc->lock, flags);
+-	}
+-	return 0;
+-}
+-
+ /* MS: There is no any advance mapping mechanism. We are using simple 32bit
+   intc without any cascades or any connection that's why mapping is 1:1 */
+ unsigned int irq_create_mapping(struct irq_host *host, irq_hw_number_t hwirq)
 
 
