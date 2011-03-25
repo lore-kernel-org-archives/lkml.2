@@ -1,137 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933790Ab1CYHVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 03:21:23 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:38020 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933067Ab1CYHVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 03:21:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=e5EHORl8F/AEg9nBkPsCEDlqhfwhQQHBJ7Fekhqpp51sEtz1xpIKc/Gsg8S01lADNS
-         R723ubn22fA4LyvQX6UCIR+Yb/Zy+8254AawJE2mei3Juzn0guaAbjeZxmnAaMZSqxat
-         b8ksEHFZI/zZu10DGCiJ4HYpKj+EXyD0bsUlM=
+	id S933805Ab1CYHXy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 03:23:54 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:47767 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754696Ab1CYHXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 03:23:52 -0400
+X-ASG-Debug-ID: 1301037831-03d6a577be00e80001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D8C4304.3050101@fusionio.com>
+Date: Fri, 25 Mar 2011 08:23:48 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik1HCrAus2Rv29EK_vGDf9d2m0E=cAuvF6LEQiQ@mail.gmail.com>
-References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
-	<1300864998.3522.71.camel@thor.local>
-	<AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
-	<1300868532.3522.81.camel@thor.local>
-	<AANLkTi=mFKBqF48DwGsQL278grJChCVzw==D7vr49n09@mail.gmail.com>
-	<Pine.GSO.4.62.1103230633160.12612@umail>
-	<1300880747.16522.13.camel@thor.local>
-	<AANLkTik=GH8tGMjeKVfsmvX5WeX+4avnYan_nkGcCx20@mail.gmail.com>
-	<Pine.GSO.4.62.1103240628490.1156@umail>
-	<AANLkTimZWtOLiDT3KoUKZtsKfj4Aeu+XMF+rLc0wCSYk@mail.gmail.com>
-	<AANLkTimrHa-Fb=3HN68OML7RddsX_8rrJV_YOK3H6xST@mail.gmail.com>
-	<AANLkTi=x0ZZNfzCpKURXMCaiEncsFNQ2tg1zbARnJjx1@mail.gmail.com>
-	<AANLkTikti-xUYO_S-ipHzXeNsPtwD1kaLuHbGDMMTXev@mail.gmail.com>
-	<AANLkTik1HCrAus2Rv29EK_vGDf9d2m0E=cAuvF6LEQiQ@mail.gmail.com>
-Date: Fri, 25 Mar 2011 17:21:21 +1000
-Message-ID: <AANLkTim4jYfAFHkaHAWRU2uAzgRJLP1p1=5dugZgYkhS@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
-        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+References: <4D8B8F34.5000203@fusionio.com> <4D8B92AE.8090308@fusionio.com> <20110324185445.GB1696@gentoo.trippels.de> <4D8B9457.2020608@fusionio.com> <20110324193441.GA1723@gentoo.trippels.de> <4D8B9D2F.4010504@fusionio.com> <20110324194546.GA1741@gentoo.trippels.de> <4D8BA235.7060904@fusionio.com> <20110324200613.GA1724@gentoo.trippels.de> <4D8BB114.2070002@fusionio.com> <20110324214150.GA1739@gentoo.trippels.de>
+X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+In-Reply-To: <20110324214150.GA1739@gentoo.trippels.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301037831
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58905
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 10:17 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Mar 24, 2011 at 5:07 PM, Dave Airlie <airlied@gmail.com> wrote:
+On 2011-03-24 22:41, Markus Trippelsdorf wrote:
+> On 2011.03.24 at 22:01 +0100, Jens Axboe wrote:
+>> On 2011-03-24 21:06, Markus Trippelsdorf wrote:
+>>> On 2011.03.24 at 20:57 +0100, Jens Axboe wrote:
+>>>>
+>>>> OK, still a data point. What was the last -git kernel you used?
+>>>
+>>> This one was the last and gave me no problems:
+>>>
+>>> commit b81a618dcd3ea99de292dbe624f41ca68f464376
+>>> Merge: 2f284c8 a9712bc
+>>> Author: Linus Torvalds <torvalds@linux-foundation.org>
+>>> Date:   Wed Mar 23 20:51:42 2011 -0700
+>>>
+>>>     Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
 >>
->> Like seriously you really think VFS locking rework wasn't under
->> development or discussion when you merged it? I'm sure Al would have
->> something to say about it considering the number of times he cursed in
->> irc about that code after you merged it.
->
-> Umm. That code was basically over a year old by the time it was merged.
->
-> How old was the code we're talking about now? Seriously?
+>> Puzzling... Poking at straws here so far. Does this make any difference
+>> whatsoever?
+> 
+> I will test your patch later.
+> 
+> Git-bisect gave me this result thus far:
+> 
+> 9026e521c0da0731eb31f9f9022dd00cc3cd8885 is bad
+> 82f04ab47e1d94d78503591a7460b2cad9601ede is good
+> 
+> When I continue the bisection with 4345caba340f051e10847924fc078ae18ed6695c
+> the system will start normally, but it then silently corrupts my xfs
+> partitions. And on next (re)boot I get this (only fixable with
+> xfs_repair):
+> 
+> BUG: unable to handle kernel NULL pointer dereference at 00000000000000f8
+> IP: [<ffffffff8123cb97>] xfs_cmn_err+0x27/0xc0
+> PGD 21c54c067 PUD 21c6bb067 PMD 0 
+> Oops: 0000 [#1] PREEMPT SMP 
+> last sysfs file: /sys/devices/pci0000:00/0000:00:11.0/host1/target1:0:0/1:0:0:0/block/sdb/sdb2/alignment_offset
+> CPU 3 
+> Pid: 1294, comm: rm Not tainted 2.6.38-rc6-00279-g4345cab #25 System manufacturer System Product Name/M4A78T-E
+> RIP: 0010:[<ffffffff8123cb97>]  [<ffffffff8123cb97>] xfs_cmn_err+0x27/0xc0
+> RSP: 0018:ffff88021c7b9ab8  EFLAGS: 00010246
+> RAX: ffff88021c7b9b38 RBX: ffff88021dd14118 RCX: ffffffff8167a348
+> RDX: 0000000000000000 RSI: ffffffff816501f0 RDI: 0000000000000008
+> RBP: ffff88021c7b9b28 R08: ffffffff81650119 R09: 000000000000058e
+> R10: 0000000000000001 R11: 0000000000012de8 R12: ffff88021dcc3340
+> R13: 0000000000000075 R14: ffff88021e126c80 R15: 00000000000b0208
+> FS:  00007fef28aec700(0000) GS:ffff8800dfd80000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 00000000000000f8 CR3: 000000021c5ae000 CR4: 00000000000006e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process rm (pid: 1294, threadinfo ffff88021c7b8000, task ffff88021c566710)
+> Stack:
+>  ffffffff811f2362 ffff88021dcc3340 ffff88021c7b9b08 ffffffff811f7dab
+>  000000000000ea60 ffff88021e173e00 ffff88021c7b9bb4 ffff88021c7b9bb0
+>  ffff88021c7b9bac ffff88021e126c80 ffff88021c7b9b48 ffffffff811dadfe
+> Call Trace:
+>  [<ffffffff811f2362>] ? xfs_btree_rec_addr+0x12/0x20
+>  [<ffffffff811f7dab>] ? xfs_btree_get_rec+0x5b/0x90
+>  [<ffffffff811dadfe>] ? xfs_alloc_get_rec+0x2e/0x70
+>  [<ffffffff812072f0>] xfs_error_report+0x40/0x50
+>  [<ffffffff811de274>] ? xfs_free_extent+0x94/0xc0
+>  [<ffffffff811dc120>] xfs_free_ag_extent+0x4e0/0x7d0
+>  [<ffffffff811de274>] xfs_free_extent+0x94/0xc0
+>  [<ffffffff8122d4d5>] ? kmem_zone_alloc+0x85/0xd0
+>  [<ffffffff811ee3e4>] xfs_bmap_finish+0x164/0x1b0
+>  [<ffffffff8120e6b0>] xfs_itruncate_finish+0x150/0x3f0
+>  [<ffffffff8122d4d5>] ? kmem_zone_alloc+0x85/0xd0
+>  [<ffffffff8122ae46>] xfs_inactive+0x2d6/0x440
+>  [<ffffffff812391ba>] xfs_fs_evict_inode+0xaa/0x130
+>  [<ffffffff81133d14>] evict+0x24/0xc0
+>  [<ffffffff81134a1b>] iput+0x1ab/0x280
+>  [<ffffffff8112a0c6>] do_unlinkat+0x116/0x1c0
+>  [<ffffffff811208fa>] ? sys_newfstatat+0x2a/0x40
+>  [<ffffffff8112a192>] sys_unlinkat+0x22/0x40
+>  [<ffffffff8103ddeb>] system_call_fastpath+0x16/0x1b
+> Code: 00 00 00 00 55 48 89 e5 48 83 ec 70 66 66 66 66 90 8b 05 59 d6 4b 00 4c 89 45 f0 4c 89 4d f8 85 c0 74 04 85 c7 75 3e 48 8d 45 10 <48> 8b b2 f8 
+> 00 00 00 48 8d 55 c0 48 c7 c7 ce 11 65 81 c7 45 a8 
+> RIP  [<ffffffff8123cb97>] xfs_cmn_err+0x27/0xc0
+>  RSP <ffff88021c7b9ab8>
+> CR2: 00000000000000f8
+> ---[ end trace 43fa8028bd7b575e ]--
 
-It was 30 lines of clean code, that really was fine to be merged in
-its first form it was merely a future maintaince issue to clean up the
-interface before it was released as stable.
+How confident are you in those bisection results? Not trying to put you
+on the spot, just wondering whether you tested and it's completely
+consistent, or whether it was a one-off.
 
-> And your argument that this case is something you'd have pushed even
-> outside the merge window - I think that sounds like more of the same
-> problem. You say it fixes a problem - but does it fix a REGRESSION?
->
-> Do you see the difference? Every single commit I get "fixes a
-> problem". But our rules for these things are much stricter than that.
+In any case, between those commits we the below. Since you get
+corruption with noop as well as with cfq, then we can rule out the cfq
+and blk-cgroup changes. I'm assuming you don't use the integrity stuff,
+so that goes too. And the accounting fix is very straight forward.
 
-Okay I'll explain something from my position and maybe you'll never
-want to pull from me again, but the kernel release cycle doesn't work
-at all well for graphics drivers.
+Dan Carpenter (1):
+      block: NULL dereference on error path in __blkdev_get()
 
-Why?
+Jens Axboe (2):
+      fs: assign sb->s_bdi to default_backing_dev_info if the bdi is
+going away
+      block: attempt to merge with existing requests on plug flush
 
-well the major fail case we have is my monitor doesn't switch on. Now
-if I merge new hardware support for a new GPU in 2.6.38, and sometime
-in 2.6.39-rc1 we come across a variant that is broken (this happens
-every kernel, we find at least 5 GPU variants or BIOS table reports on
-radeon, look at pretty much any post -rc1 patch from Alex Deucher).
-Now by your rules this isn't a regression, but now for a user to
-actually get this change in their hands I have to wait until
-2.6.40-rc1, and only once its in your tree, maybe it can go to stable.
-This is 6 months later. That is to pardon my french, fucking
-shithouse. I have to make judgement calls on a lot of patches on
-whether they are suitable or not to go upstream and I try to think
-that the sooner the poor bastard stuck with this hardware can get this
-fix then the better it is for everyone, regression or not.
+Justin TerAvest (3):
+      cfq-iosched: Don't update group weights when on service tree
+      cfq-iosched: Don't set active queue in preempt
+      blk-cgroup: Only give unaccounted_time under debug
 
-In this case, if you had a >2 monitor setup connected to an evergreen
-card, and you tried to do 3D on the 3rd monitor it would just hang the
-app in a loop forever, the fix needs 3 pieces, one in the kernel, and
-two userspace fixes. I can have the userspace fixes on users disks in
-under a week, literally. We release a new libdrm/-ati driver and
-distros will have it available in hours via rawhide or xorg-edgers in
-Ubuntu. Now under kernel rules you want me to hold it up for 6 months?
-just because it was a few days later for the merge window. Why 6
-months? because a distro won't ship it until 2.6.40 is released.
+Martin K. Petersen (1):
+      block: Require subsystems to explicitly allocate bio_set integrity
+mempool
 
-Another example is most of Marek's patches where he enables some
-userspace feature by allowing the kernel to accept new commands to
-send to the GPU. Again this is to avoid a 6 month window where nobody
-can use this feature of the 3D driver that is on their disk until they
-get a kernel upgrade. Despite what you have said before and obviously
-think its much easier to get users to update userspace than kernels in
-the real world.
+Shaohua Li (1):
+      block: fix non-atomic access to genhd inflight structures
 
-This is why I often put things that aren't strict regression fixes in
-after -rc1 and accept the same from intel and nouveau. I draw the line
-at things like performance enhancements and I should be more strict on
-some of the crap that gets past in Intel, but I make a lot more
-judgement calls on these things and I often make them wrong, but I'd
-rather be making them than just being an ass to people who are stuck
-in vesa mode and can't suspend/resume because their GPU just shows a
-black screen on startup on new hw or they can't get acceleration
-support for 4 months.
+So the lineup should be down to these three:
 
-I'm also aware we never get enough testing coverage before stuff hits
-your tree, we'd need 1000s of testers to run drm-next and we just
-don't have that variation. So yes when new features hit -rc1 with the
-drm they nearly always cause regressions, its just not possible to
-test this stuff on every GPU/monitor/bios combination in existance
-before we give it to you, that just isn't happening. Like radeon
-pageflipping caused machines to completely hang and I didn't find out
-until -rc7 due to lack of testing coverage.
+Dan Carpenter (1):
+      block: NULL dereference on error path in __blkdev_get()
 
-I'm seriously contemplating going back to out-of-tree drivers so we
-can actually get test coverage before you get things, however that
-comes with its own set of completely insane problems.
+Jens Axboe (2):
+      fs: assign sb->s_bdi to default_backing_dev_info if the bdi is
+going away
+      block: attempt to merge with existing requests on plug flush
 
-Its not like I'm not aware of the problems here, I'm very aware, I'm
-just clueless on how to provide actual valuable drm code to users in
-anything close to a timely manner, people buy new graphics card
-quicker than I can get code into the kernel.
+Since we already tested the plug merge theory by disabling that part in
+elevator.c, it's really down to the sb->s_bdi change or the NULL fix from
+Dan.
 
-Dave.
+The sb->s_bdi change is 95f28604a65b1c40b6c6cd95e58439cd7ded3add
+The __blkdev_get() is 4345caba340f051e10847924fc078ae18ed6695c
+
+Can you try Linus' tree and just back out both of those, then test? If
+it looks good, then apply one then the other to see which one is
+screwing this up.
+
+Thanks a lot for your testing!
+
+-- 
+Jens Axboe
+
