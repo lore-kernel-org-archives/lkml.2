@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab1CYTkS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 15:40:18 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52715 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752222Ab1CYTkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 15:40:14 -0400
-Date: Fri, 25 Mar 2011 20:40:10 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT pull] irq cleanups for .39
-Message-ID: <20110325194010.GG22960@elte.hu>
-References: <alpine.LFD.2.00.1103251747450.31464@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103251747450.31464@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754897Ab1CYTki (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 15:40:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:40986 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab1CYTkh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 15:40:37 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=s8bQjA_BN_cA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=kS3S4LvwYuzGJLQhBccA:9 a=B4yFmaYKDVIYKF9zeo4Gt2yQmV4A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [tip:core/urgent] WARN_ON_SMP(): Allow use in if() statements
+ on UP
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, dvhart@linux.intel.com,
+        peterz@infradead.org, akpm@linux-foundation.org, srostedt@redhat.com,
+        tglx@linutronix.de, laijs@cn.fujitsu.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <20110325193128.GA5839@p183.telecom.by>
+References: <20110317192208.444147791@goodmis.org>
+	 <tip-2092e6be82ec71ecbf5a8ceeef004bbcbdb78812@git.kernel.org>
+	 <AANLkTikfq9bz_cKdvq9ab+KS218Q7uVvoNdJeMe_-RUg@mail.gmail.com>
+	 <1301076981.14261.197.camel@gandalf.stny.rr.com>
+	 <1301077163.14261.199.camel@gandalf.stny.rr.com>
+	 <20110325193128.GA5839@p183.telecom.by>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 25 Mar 2011 15:40:34 -0400
+Message-ID: <1301082034.14261.202.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-03-25 at 21:31 +0200, Alexey Dobriyan wrote:
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+> > Would you like me to add a comment that states:
+> > 
+> > 	/*
+> > 	 * Use ({0;}) as just "0" will cause gcc to output:
+> > 	 *   warning: statement with no effect
+> > 	 */
+> 
+> Try ((void)0)
 
-> Linus,
-> 
-> Please pull the latest irq-cleanup-for-linus git tree from:
-> 
->    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-cleanup-for-linus
-> 
-> This contains the irq/urgent bits which Ingo asked to pull earlier, so
-> whatever you pull first does not matter.
-> 
-> The gpio patches have been acked by Grant.
-> 
-> The avr, h8300, xtensa, m32r, um bits is stuff which got ignored by
-> the arch maintainers. Those archs seem to be orphaned. 
-> 
-> The cleanup is necessary as we really want to get rid of all the
-> deprecated and compat stuff asap.
+Maybe I should update the comment to stop further confusion:
 
-Note, while the architectures are orphaned, i've done cross-build testing for 
-most of these architectures with your changes applies, so the ones that built 
-before should still work now.
+	/*
+	 * Use ({0;}) as it works nicely in both an if statement and
+	 * as a stand alone line statement.
+	 *   "0;" causes "warning: statement with no effect"
+	 *   ((void)0) does not work in an if () condition.
+	 */
 
-Thanks,
+-- Steve
 
-	Ingo
+
