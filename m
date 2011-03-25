@@ -1,133 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934030Ab1CZA05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:26:57 -0400
-Received: from kroah.org ([198.145.64.141]:41480 "EHLO coco.kroah.org"
+	id S932345Ab1CZA04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:26:56 -0400
+Received: from kroah.org ([198.145.64.141]:41469 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932262Ab1CYXwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:24 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:40 2011
-Message-Id: <20110325234840.523416550@clark.kroah.org>
+	id S932266Ab1CYXwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:25 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
+Message-Id: <20110325234509.325690610@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:08 -0700
+Date: Fri, 25 Mar 2011 16:43:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Andrey Vagin <avagin@openvz.org>
-Subject: [15/55] oom: avoid deferring oom killer if exiting task is being traced
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
+Subject: [14/63] mm: swap: unlock swapfile inode mutex before closing file on bad swapfiles
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit edd45544c6f09550df0a5491aa8a07af24767e73 upstream.
+commit 52c50567d8ab0a0a87f12cceaa4194967854f0bd upstream.
 
-The oom killer naturally defers killing anything if it finds an eligible
-task that is already exiting and has yet to detach its ->mm.  This avoids
-unnecessarily killing tasks when one is already in the exit path and may
-free enough memory that the oom killer is no longer needed.  This is
-detected by PF_EXITING since threads that have already detached its ->mm
-are no longer considered at all.
+If an administrator tries to swapon a file backed by NFS, the inode mutex is
+taken (as it is for any swapfile) but later identified to be a bad swapfile
+due to the lack of bmap and tries to cleanup. During cleanup, an attempt is
+made to close the file but with inode->i_mutex still held. Closing an NFS
+file syncs it which tries to acquire the inode mutex leading to deadlock. If
+lockdep is enabled the following appears on the console;
 
-The problem with always deferring when a thread is PF_EXITING, however, is
-that it may never actually exit when being traced, specifically if another
-task is tracing it with PTRACE_O_TRACEEXIT.  The oom killer does not want
-to defer in this case since there is no guarantee that thread will ever
-exit without intervention.
+    =============================================
+    [ INFO: possible recursive locking detected ]
+    2.6.38-rc8-autobuild #1
+    ---------------------------------------------
+    swapon/2192 is trying to acquire lock:
+     (&sb->s_type->i_mutex_key#13){+.+.+.}, at: vfs_fsync_range+0x47/0x7c
 
-This patch will now only defer the oom killer when a thread is PF_EXITING
-and no ptracer has stopped its progress in the exit path.  It also ensures
-that a child is sacrificed for the chosen parent only if it has a
-different ->mm as the comment implies: this ensures that the thread group
-leader is always targeted appropriately.
+    but task is already holding lock:
+     (&sb->s_type->i_mutex_key#13){+.+.+.}, at: sys_swapon+0x28d/0xae7
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Andrey Vagin <avagin@openvz.org>
+    other info that might help us debug this:
+    1 lock held by swapon/2192:
+     #0:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: sys_swapon+0x28d/0xae7
+
+    stack backtrace:
+    Pid: 2192, comm: swapon Not tainted 2.6.38-rc8-autobuild #1
+    Call Trace:
+        __lock_acquire+0x2eb/0x1623
+        find_get_pages_tag+0x14a/0x174
+        pagevec_lookup_tag+0x25/0x2e
+        vfs_fsync_range+0x47/0x7c
+        lock_acquire+0xd3/0x100
+        vfs_fsync_range+0x47/0x7c
+        nfs_flush_one+0x0/0xdf [nfs]
+        mutex_lock_nested+0x40/0x2b1
+        vfs_fsync_range+0x47/0x7c
+        vfs_fsync_range+0x47/0x7c
+        vfs_fsync+0x1c/0x1e
+        nfs_file_flush+0x64/0x69 [nfs]
+        filp_close+0x43/0x72
+        sys_swapon+0xa39/0xae7
+        sysret_check+0x2e/0x69
+        system_call_fastpath+0x16/0x1b
+
+This patch releases the mutex if its held before calling filep_close()
+so swapon fails as expected without deadlock when the swapfile is backed
+by NFS.  If accepted for 2.6.39, it should also be considered a -stable
+candidate for 2.6.38 and 2.6.37.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Hugh Dickins <hughd@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/oom_kill.c |   40 +++++++++++++++++++++++++---------------
- 1 file changed, 25 insertions(+), 15 deletions(-)
+ mm/swapfile.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -31,6 +31,7 @@
- #include <linux/memcontrol.h>
- #include <linux/mempolicy.h>
- #include <linux/security.h>
-+#include <linux/ptrace.h>
- 
- int sysctl_panic_on_oom;
- int sysctl_oom_kill_allocating_task;
-@@ -316,22 +317,29 @@ static struct task_struct *select_bad_pr
- 		if (test_tsk_thread_flag(p, TIF_MEMDIE))
- 			return ERR_PTR(-1UL);
- 
--		/*
--		 * This is in the process of releasing memory so wait for it
--		 * to finish before killing some other task by mistake.
--		 *
--		 * However, if p is the current task, we allow the 'kill' to
--		 * go ahead if it is exiting: this will simply set TIF_MEMDIE,
--		 * which will allow it to gain access to memory reserves in
--		 * the process of exiting and releasing its resources.
--		 * Otherwise we could get an easy OOM deadlock.
--		 */
- 		if (p->flags & PF_EXITING) {
--			if (p != current)
--				return ERR_PTR(-1UL);
--
--			chosen = p;
--			*ppoints = 1000;
-+			/*
-+			 * If p is the current task and is in the process of
-+			 * releasing memory, we allow the "kill" to set
-+			 * TIF_MEMDIE, which will allow it to gain access to
-+			 * memory reserves.  Otherwise, it may stall forever.
-+			 *
-+			 * The loop isn't broken here, however, in case other
-+			 * threads are found to have already been oom killed.
-+			 */
-+			if (p == current) {
-+				chosen = p;
-+				*ppoints = 1000;
-+			} else {
-+				/*
-+				 * If this task is not being ptraced on exit,
-+				 * then wait for it to finish before killing
-+				 * some other task unnecessarily.
-+				 */
-+				if (!(task_ptrace(p->group_leader) &
-+							PT_TRACE_EXIT))
-+					return ERR_PTR(-1UL);
-+			}
- 		}
- 
- 		points = oom_badness(p, mem, nodemask, totalpages);
-@@ -493,6 +501,8 @@ static int oom_kill_process(struct task_
- 		list_for_each_entry(child, &t->children, sibling) {
- 			unsigned int child_points;
- 
-+			if (child->mm == p->mm)
-+				continue;
- 			/*
- 			 * oom_badness() returns 0 if the thread is unkillable
- 			 */
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -2149,8 +2149,13 @@ bad_swap_2:
+ 	p->flags = 0;
+ 	spin_unlock(&swap_lock);
+ 	vfree(swap_map);
+-	if (swap_file)
++	if (swap_file) {
++		if (did_down) {
++			mutex_unlock(&inode->i_mutex);
++			did_down = 0;
++		}
+ 		filp_close(swap_file, NULL);
++	}
+ out:
+ 	if (page && !IS_ERR(page)) {
+ 		kunmap(page);
 
 
