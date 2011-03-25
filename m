@@ -1,106 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934105Ab1CZA2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:28:35 -0400
-Received: from kroah.org ([198.145.64.141]:41446 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932228Ab1CYXwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932234Ab1CYXwV (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 25 Mar 2011 19:52:21 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
-Message-Id: <20110325234509.032836303@clark.kroah.org>
+Received: from kroah.org ([198.145.64.141]:41416 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755619Ab1CYXwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:18 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:40 2011
+Message-Id: <20110325234839.956975466@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:47 -0700
+Date: Fri, 25 Mar 2011 16:47:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>
-Subject: [11/63] aio: wake all waiters when destroying ctx
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [10/55] cgroups: if you list_empty() a head then dont list_del() it
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
 
-commit e91f90bb0bb10be9cc8efd09a3cf4ecffcad0db1 upstream.
+commit 8d2587970b8bdf7c8d9208e3f4bb93182aef1a0f upstream.
 
-The test program below will hang because io_getevents() uses
-add_wait_queue_exclusive(), which means the wake_up() in io_destroy() only
-wakes up one of the threads.  Fix this by using wake_up_all() in the aio
-code paths where we want to make sure no one gets stuck.
+list_del() leaves poison in the prev and next pointers.  The next
+list_empty() will compare those poisons, and say the list isn't empty.
+Any list operations that assume the node is on a list because of such a
+check will be fooled into dereferencing poison.  One needs to INIT the
+node after the del, and fortunately there's already a wrapper for that -
+list_del_init().
 
-	// t.c -- compile with gcc -lpthread -laio t.c
+Some of the dels are followed by deallocations, so can be ignored, and one
+can be merged with an add to make a move.  Apart from that, I erred on the
+side of caution in making nodes list_empty()-queriable.
 
-	#include <libaio.h>
-	#include <pthread.h>
-	#include <stdio.h>
-	#include <unistd.h>
-
-	static const int nthr = 2;
-
-	void *getev(void *ctx)
-	{
-		struct io_event ev;
-		io_getevents(ctx, 1, 1, &ev, NULL);
-		printf("io_getevents returned\n");
-		return NULL;
-	}
-
-	int main(int argc, char *argv[])
-	{
-		io_context_t ctx = 0;
-		pthread_t thread[nthr];
-		int i;
-
-		io_setup(1024, &ctx);
-
-		for (i = 0; i < nthr; ++i)
-			pthread_create(&thread[i], NULL, getev, ctx);
-
-		sleep(1);
-
-		io_destroy(ctx);
-
-		for (i = 0; i < nthr; ++i)
-			pthread_join(thread[i], NULL);
-
-		return 0;
-	}
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Reviewed-by: Paul Menage <menage@google.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/aio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/cgroup.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -520,7 +520,7 @@ static inline void really_put_req(struct
- 	ctx->reqs_active--;
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1791,10 +1791,8 @@ int cgroup_attach_task(struct cgroup *cg
  
- 	if (unlikely(!ctx->reqs_active && ctx->dead))
--		wake_up(&ctx->wait);
-+		wake_up_all(&ctx->wait);
- }
+ 	/* Update the css_set linked lists if we're using them */
+ 	write_lock(&css_set_lock);
+-	if (!list_empty(&tsk->cg_list)) {
+-		list_del(&tsk->cg_list);
+-		list_add(&tsk->cg_list, &newcg->tasks);
+-	}
++	if (!list_empty(&tsk->cg_list))
++		list_move(&tsk->cg_list, &newcg->tasks);
+ 	write_unlock(&css_set_lock);
  
- static void aio_fput_routine(struct work_struct *data)
-@@ -1229,7 +1229,7 @@ static void io_destroy(struct kioctx *io
- 	 * by other CPUs at this point.  Right now, we rely on the
- 	 * locking done by the above calls to ensure this consistency.
- 	 */
--	wake_up(&ioctx->wait);
-+	wake_up_all(&ioctx->wait);
- 	put_ioctx(ioctx);	/* once for the lookup */
- }
+ 	for_each_subsys(root, ss) {
+@@ -3630,12 +3628,12 @@ again:
+ 	spin_lock(&release_list_lock);
+ 	set_bit(CGRP_REMOVED, &cgrp->flags);
+ 	if (!list_empty(&cgrp->release_list))
+-		list_del(&cgrp->release_list);
++		list_del_init(&cgrp->release_list);
+ 	spin_unlock(&release_list_lock);
+ 
+ 	cgroup_lock_hierarchy(cgrp->root);
+ 	/* delete this cgroup from parent->children */
+-	list_del(&cgrp->sibling);
++	list_del_init(&cgrp->sibling);
+ 	cgroup_unlock_hierarchy(cgrp->root);
+ 
+ 	spin_lock(&cgrp->dentry->d_lock);
+@@ -3856,7 +3854,7 @@ void cgroup_unload_subsys(struct cgroup_
+ 	subsys[ss->subsys_id] = NULL;
+ 
+ 	/* remove subsystem from rootnode's list of subsystems */
+-	list_del(&ss->sibling);
++	list_del_init(&ss->sibling);
+ 
+ 	/*
+ 	 * disentangle the css from all css_sets attached to the dummytop. as
+@@ -4230,7 +4228,7 @@ void cgroup_exit(struct task_struct *tsk
+ 	if (!list_empty(&tsk->cg_list)) {
+ 		write_lock(&css_set_lock);
+ 		if (!list_empty(&tsk->cg_list))
+-			list_del(&tsk->cg_list);
++			list_del_init(&tsk->cg_list);
+ 		write_unlock(&css_set_lock);
+ 	}
  
 
 
