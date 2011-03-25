@@ -1,97 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab1CYPBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 11:01:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33533 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761Ab1CYPBs (ORCPT
+	id S1753942Ab1CYPCT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 11:02:19 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:62631 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761Ab1CYPCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 11:01:48 -0400
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	Fri, 25 Mar 2011 11:02:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=RwG05KSnkFIMh7x4ceilpAvdqH1YbHP8y8kc5NpUBo32rXjchf5BEdHSx+mKqvEumC
+         KIVlR6h0TfC4Q2ErM2cZMIfx9uGXyaiLal0fMQYZUB9B/LCnzSCw5/7JuOta6joBwVpm
+         1I4429KN/LzFBZSa4omJOr9k+ye8BlJmH+JpM=
+Message-ID: <4D8CAE74.9080805@gmail.com>
+Date: Fri, 25 Mar 2011 09:02:12 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+CC: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-In-Reply-To: <AANLkTimNE102hf7=6c1txpKhF+9U=2Yq4RN7X0E=wb28@mail.gmail.com>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
-	 <1300228374.2250.42.camel@laptop> <20110316135308.GA1774@nowhere>
-	 <1300283775.2203.1516.camel@twins> <20110316140242.GB1774@nowhere>
-	 <1300285912.2203.1580.camel@twins>
-	 <AANLkTimNE102hf7=6c1txpKhF+9U=2Yq4RN7X0E=wb28@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Mar 2011 16:03:53 +0100
-Message-ID: <1301065433.2250.221.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
+References: <20110324113137.20235.42265.stgit@localhost6.localdomain6> <20110324113209.20235.61900.stgit@localhost6.localdomain6> <4D8B79E6.2050603@gmail.com> <4D8C6B1B.70409@hitachi.com>
+In-Reply-To: <4D8C6B1B.70409@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-25 at 15:47 +0100, Frederic Weisbecker wrote:
+On 03/25/11 04:14, Akihiro Nagai wrote:
+>> On 03/24/11 05:32, Akihiro Nagai wrote:
+>>> Provide the function to print pid and command name to
+>>> 'perf branch trace'. Users can select items to print with options.
+>>> For example,
+>>>      'perf branch -p trace' prints only pid,
+>>>      'perf branch -ac trace' prints address and comamnd name.
+>>>      'perf branch trace' prints only address (default)
+>>>
+>>> This is output sample (perf branch -ac trace):
+>>> command      address
+>>> ls           0xffffffff8146fe0e =>  ls           0x0000003806200b20
+>>> ls           0xffffffff8146fe0e =>  ls           0x0000003806200b20
+>>> ls           0x0000003806200b23 =>  ls           0x0000003806204910
+>>> ls           0xffffffff8146fe0e =>  ls           0x0000003806204910
+>>> ls           0xffffffff8146fe0e =>  ls           0x0000003806204936
+>>> ls           0xffffffff8146fe0e =>  ls           0x000000380620493d
+>>> ls           0x0000003806204981 =>  ls           0x00000038062049a3
+>>> ls           0x00000038062049a7 =>  ls           0x0000003806204988
+>>
+>> This can be easily added to perf-script. e.g,
+>>
+>> perf record -e branches:u -c 1 -d -- ls /tmp
+>>
+>> perf script -i /tmp/perf.data -f hw:comm,pid,event,sym,addr
+>>
+>> ...
+>> ls  8150 branches: 0x39d30144d0 ffffffff8146a48e  ()
+>> ls  8150 branches: 0x39d3014507 ffffffff8146a48e  ()
+>> ls  8150 branches: 0x39d3014510            14518 _dl_sysdep_start
+>> (/lib64/ld-2.13.so)
+>> ...
+>> ls  8150 branches: 0x39d3015250             1833 process_envvars
+>> (/lib64/ld-2.13.so)
+>> ls  8150 branches: 0x39d3015260            1526f _dl_next_ld_env_entry
+>> (/lib64/ld-2.13.so)
+>> ls  8150 branches: 0x39d3015260            1526f _dl_next_ld_env_entry
+>> (/lib64/ld-2.13.so)
+> It seems to analyze only 'branch from' address and,
+> print 'branch to' address just in hex.
+> I would like to analyze both of addresses branch from/to.
 
-> > Furthermore, there is a definite possibility for weird behaviour in
-> > there, in that if you're trying to measure a similar event to the one
-> > that is used to enable/disable it, it very much depends on the order of
-> > the demux lists as to which is processed first.
+from is sample->ip? to is sample->addr? In the above example
+0x39d3015260 is the value from sample->addr, 1526f is sample->ip which
+resolves to _dl_next_ld_env_entry from /lib64/ld-2.13.so.
+
 > 
-> Do you have an example of that? I have some trouble to figure out the
-> issue.
+> Can perf-script do it by writing scripts?
 
-Suppose you for some reason or other, gate irq_enter counting with
-irq_enter/irq_exit (pretty daft example but hey), they irq_enter will
-have two events associated, one trigger and one counter gated by the
-trigger.
+If you are pulling the data from a perf sample then you can accomplish
+the same goal within perf-script.
 
-Now when irq_enter happens, the software event code in
-do_perf_sw_event() will iterate the events interested in the event (yay
-for naming). If the trigger comes first it will have enabled the gate
-and the event will count, if the event comes first then the gate will
-still be disabled and we'll not count.
 
-> > The simply scheme I came up with is having these events be part of the
-> > event_group and add only one field:
-> >
-> >  pause_ops : 2
-> >
-> > with:
-> >
-> > enum perf_event_pause_ops {
-> >  PERF_PAUSE_OP_NOP = 0,
-> >  PERF_PAUSE_OP_INC,
-> >  PERF_PAUSE_OP_DEC,
-> >  PERF_PAUSE_OP_TOGGLE,
-> > };
-> >
-> > and have INC increment the parent pause field and clip at INT_MAX, DEC
-> > decrement the pause field and clip at 0, and TOGGLE do ^1.
-> >
-> > That however doesn't allow for these full expression trees, so we need
-> > to come up with something else. It does however do away with the
-> > ioctl()s, that redundant flag and the weird event separation.
-> 
-> That's a great idea! It indeed utterly simplifies the implementation
-> and the interface
-> and reuse what we already habe.
-> This makes me double reconsider the recursive issue now.
-> 
-> But I'm still worried. I don't know how useful the event tree could be. But
-> I have the feeling we are losing a nice and very flexible feature if
-> we get rid of it.
-> This can be something we solve later if we accept recursive groups may
-> be, although
-> things may be even more complicated if we take that path.
-
-Yeah, like I said I'm not sure my proposal is any good because of the
-limited functionality it provides, but its a different way of looking at
-the problem so I provided it.
-
-We'll have to try and explode the issue a bit more to see if there's
-anything else we can come up with.
-
+David
