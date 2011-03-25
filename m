@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab1CYOOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 10:14:19 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:46063 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab1CYOOR (ORCPT
+	id S1753143Ab1CYOPS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 10:15:18 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59475 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607Ab1CYOPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 10:14:17 -0400
-Date: Fri, 25 Mar 2011 15:14:13 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-Message-ID: <20110325141413.GA1725@gentoo.trippels.de>
-References: <20110324200613.GA1724@gentoo.trippels.de>
- <4D8BB114.2070002@fusionio.com>
- <20110324214150.GA1739@gentoo.trippels.de>
- <4D8C4304.3050101@fusionio.com>
- <20110325083757.GA1754@gentoo.trippels.de>
- <4D8C55D9.1060903@fusionio.com>
- <20110325095704.GA1694@gentoo.trippels.de>
- <4D8C8E1C.1020304@fusionio.com>
- <20110325130959.GA1698@gentoo.trippels.de>
- <4D8CA263.9090006@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D8CA263.9090006@fusionio.com>
+	Fri, 25 Mar 2011 10:15:17 -0400
+Subject: Re: [RFC] perf: EBNF for event syntax
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Matt Fleming <matt@console-pimps.org>
+In-Reply-To: <1301060121.2269.1.camel@localhost>
+References: <1300851416.31224.58.camel@minggr.sh.intel.com>
+	 <1301051277.2250.195.camel@laptop>  <1301060121.2269.1.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Mar 2011 15:17:15 +0100
+Message-ID: <1301062635.2250.212.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.03.25 at 15:10 +0100, Jens Axboe wrote:
-> On 2011-03-25 14:09, Markus Trippelsdorf wrote:
-> > On 2011.03.25 at 13:44 +0100, Jens Axboe wrote:
-> >> On 2011-03-25 10:57, Markus Trippelsdorf wrote:
-> >>>
-> >>> Reverting it solves all problems here.
-> >>
-> >> Can you try this one?
+On Fri, 2011-03-25 at 21:35 +0800, Lin Ming wrote:
+> > There was a suggestion a while back to make:
 > > 
-> > This one doesn't help; I still get the same BUG.
+> >  -e ev1,ev2,ev3
 > > 
-> > BTW if you're having trouble reproducing this, here is the only non
-> > stock xfs option that I use on the affected partitions:
+> > create an event group with ev2 and ev3 siblings of ev1, and have
+> > multiple -e instances create separate counters.
 > > 
-> > noatime,logbsize=262144
+> > The problem is that its not backwards compatible, but something like
+> > that would still be very nice to have.
 > 
-> This?
+> Currently, it means a list of independent events, right?
+> 
+Right, and as said changing this would create some backward compat
+problems so I'm not sure its the best proposal, just wanted to raise the
+issue that such functionality would be nice.
 
-No.
-
--- 
-Markus
