@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab1CYPDH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 11:03:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33555 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab1CYPDF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 11:03:05 -0400
-Subject: Re: [PATCH] perf: Better fit max unprivileged mlock pages for
- tools needs
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Han Pingtian <phan@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Stable <stable@kernel.org>
-In-Reply-To: <AANLkTinB2EAh=mpqh-y4=5xKPdyJWwUWFVMk=WAx1QBp@mail.gmail.com>
-References: <1300904979-5508-1-git-send-email-fweisbec@gmail.com>
-	 <1301049130.2250.185.camel@laptop>
-	 <AANLkTinB2EAh=mpqh-y4=5xKPdyJWwUWFVMk=WAx1QBp@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Mar 2011 16:05:12 +0100
-Message-ID: <1301065512.2250.223.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753957Ab1CYPEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 11:04:20 -0400
+Received: from xes-mad.com ([216.165.139.218]:22856 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753855Ab1CYPET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 11:04:19 -0400
+From: Peter Tyser <ptyser@xes-inc.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Tyser <ptyser@xes-inc.com>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH] gpio: pch_gpio: Fix output value of pch_gpio_direction_output()
+Date: Fri, 25 Mar 2011 10:04:00 -0500
+Message-Id: <1301065440-2418-1-git-send-email-ptyser@xes-inc.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1301008634-25429-1-git-send-email-ptyser@xes-inc.com>
+References: <1301008634-25429-1-git-send-email-ptyser@xes-inc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-25 at 15:50 +0100, Frederic Weisbecker wrote:
-> 2011/3/25 Peter Zijlstra <a.p.zijlstra@chello.nl>:
-> > On Wed, 2011-03-23 at 19:29 +0100, Frederic Weisbecker wrote:
-> >
-> >> -int sysctl_perf_event_mlock __read_mostly = 512; /* 'free' kb per user */
-> >> +/* Minimum for 128 pages + 1 for the user control page */
-> >> +int sysctl_perf_event_mlock __read_mostly = 516; /* 'free' kb per user */
-> >
-> > This assumes PAGE_SIZE = 4k..
-> 
-> Yeah, should I rebase the value on top of PAGE_SIZE?
+The pch_gpio_direction_output() function was missing a write to set the
+desired output value.  The function would properly set the GPIO
+direction, but not the output value.  The value would have to manually
+be set with a follow up call to pch_gpio_set().
 
-Possibly yeah, I guess that when the base page size if 64k you really
-can't do anything about wasting the whole first page, comes with the
-territory.
+Add the missing write so that pch_gpio_direction_output() sets both the
+GPIO direction and value.
+
+Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+---
+Just noticed this driver has the same bug.  This file looks nearly identical
+to ml_ioh_gpio.c.  They could likely be combined with minimal effort.
+
+ drivers/gpio/pch_gpio.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
+index c59d953..fa52862 100644
+--- a/drivers/gpio/pch_gpio.c
++++ b/drivers/gpio/pch_gpio.c
+@@ -105,6 +105,7 @@ static int pch_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
+ 		reg_val |= (1 << nr);
+ 	else
+ 		reg_val &= ~(1 << nr);
++	iowrite32(reg_val, &chip->reg->po);
+ 
+ 	mutex_unlock(&chip->lock);
+ 
+-- 
+1.7.0.4
 
