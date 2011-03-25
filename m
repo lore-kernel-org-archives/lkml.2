@@ -1,106 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab1CYXwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:52:21 -0400
-Received: from kroah.org ([198.145.64.141]:41416 "EHLO coco.kroah.org"
+	id S932275Ab1CZA3D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:29:03 -0400
+Received: from kroah.org ([198.145.64.141]:41433 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755619Ab1CYXwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:18 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:40 2011
-Message-Id: <20110325234839.956975466@clark.kroah.org>
+	id S932212Ab1CYXwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:20 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
+Message-Id: <20110325234508.912004151@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:03 -0700
+Date: Fri, 25 Mar 2011 16:43:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [10/55] cgroups: if you list_empty() a head then dont list_del() it
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+        Pekka Enberg <penberg@kernel.org>
+Subject: [10/63] Revert "slab: Fix missing DEBUG_SLAB last user"
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+From: Pekka Enberg <penberg@kernel.org>
 
-commit 8d2587970b8bdf7c8d9208e3f4bb93182aef1a0f upstream.
+commit 3ff84a7f36554b257cd57325b1a7c1fa4b49fbe3 upstream.
 
-list_del() leaves poison in the prev and next pointers.  The next
-list_empty() will compare those poisons, and say the list isn't empty.
-Any list operations that assume the node is on a list because of such a
-check will be fooled into dereferencing poison.  One needs to INIT the
-node after the del, and fortunately there's already a wrapper for that -
-list_del_init().
+This reverts commit 5c5e3b33b7cb959a401f823707bee006caadd76e.
 
-Some of the dels are followed by deallocations, so can be ignored, and one
-can be merged with an add to make a move.  Apart from that, I erred on the
-side of caution in making nodes list_empty()-queriable.
+The commit breaks ARM thusly:
 
-Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Reviewed-by: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+| Mount-cache hash table entries: 512
+| slab error in verify_redzone_free(): cache `idr_layer_cache': memory outside object was overwritten
+| Backtrace:
+| [<c0227088>] (dump_backtrace+0x0/0x110) from [<c0431afc>] (dump_stack+0x18/0x1c)
+| [<c0431ae4>] (dump_stack+0x0/0x1c) from [<c0293304>] (__slab_error+0x28/0x30)
+| [<c02932dc>] (__slab_error+0x0/0x30) from [<c0293a74>] (cache_free_debugcheck+0x1c0/0x2b8)
+| [<c02938b4>] (cache_free_debugcheck+0x0/0x2b8) from [<c0293f78>] (kmem_cache_free+0x3c/0xc0)
+| [<c0293f3c>] (kmem_cache_free+0x0/0xc0) from [<c032b1c8>] (ida_get_new_above+0x19c/0x1c0)
+| [<c032b02c>] (ida_get_new_above+0x0/0x1c0) from [<c02af7ec>] (alloc_vfsmnt+0x54/0x144)
+| [<c02af798>] (alloc_vfsmnt+0x0/0x144) from [<c0299830>] (vfs_kern_mount+0x30/0xec)
+| [<c0299800>] (vfs_kern_mount+0x0/0xec) from [<c0299908>] (kern_mount_data+0x1c/0x20)
+| [<c02998ec>] (kern_mount_data+0x0/0x20) from [<c02146c4>] (sysfs_init+0x68/0xc8)
+| [<c021465c>] (sysfs_init+0x0/0xc8) from [<c02137d4>] (mnt_init+0x90/0x1b0)
+| [<c0213744>] (mnt_init+0x0/0x1b0) from [<c0213388>] (vfs_caches_init+0x100/0x140)
+| [<c0213288>] (vfs_caches_init+0x0/0x140) from [<c0208c0c>] (start_kernel+0x2e8/0x368)
+| [<c0208924>] (start_kernel+0x0/0x368) from [<c0208034>] (__enable_mmu+0x0/0x2c)
+| c0113268: redzone 1:0xd84156c5c032b3ac, redzone 2:0xd84156c5635688c0.
+| slab error in cache_alloc_debugcheck_after(): cache `idr_layer_cache': double free, or memory outside object was overwritten
+| ...
+| c011307c: redzone 1:0x9f91102ffffffff, redzone 2:0x9f911029d74e35b
+| slab: Internal list corruption detected in cache 'idr_layer_cache'(24), slabp c0113000(16). Hexdump:
+|
+| 000: 20 4f 10 c0 20 4f 10 c0 7c 00 00 00 7c 30 11 c0
+| 010: 10 00 00 00 10 00 00 00 00 00 c9 17 fe ff ff ff
+| 020: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+| 030: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+| 040: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+| 050: fe ff ff ff fe ff ff ff fe ff ff ff 11 00 00 00
+| 060: 12 00 00 00 13 00 00 00 14 00 00 00 15 00 00 00
+| 070: 16 00 00 00 17 00 00 00 c0 88 56 63
+| kernel BUG at /home/rmk/git/linux-2.6-rmk/mm/slab.c:2928!
+
+Reference: https://lkml.org/lkml/2011/2/7/238
+Reported-and-analyzed-by: Russell King <rmk@arm.linux.org.uk>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/cgroup.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ mm/slab.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1791,10 +1791,8 @@ int cgroup_attach_task(struct cgroup *cg
- 
- 	/* Update the css_set linked lists if we're using them */
- 	write_lock(&css_set_lock);
--	if (!list_empty(&tsk->cg_list)) {
--		list_del(&tsk->cg_list);
--		list_add(&tsk->cg_list, &newcg->tasks);
--	}
-+	if (!list_empty(&tsk->cg_list))
-+		list_move(&tsk->cg_list, &newcg->tasks);
- 	write_unlock(&css_set_lock);
- 
- 	for_each_subsys(root, ss) {
-@@ -3630,12 +3628,12 @@ again:
- 	spin_lock(&release_list_lock);
- 	set_bit(CGRP_REMOVED, &cgrp->flags);
- 	if (!list_empty(&cgrp->release_list))
--		list_del(&cgrp->release_list);
-+		list_del_init(&cgrp->release_list);
- 	spin_unlock(&release_list_lock);
- 
- 	cgroup_lock_hierarchy(cgrp->root);
- 	/* delete this cgroup from parent->children */
--	list_del(&cgrp->sibling);
-+	list_del_init(&cgrp->sibling);
- 	cgroup_unlock_hierarchy(cgrp->root);
- 
- 	spin_lock(&cgrp->dentry->d_lock);
-@@ -3856,7 +3854,7 @@ void cgroup_unload_subsys(struct cgroup_
- 	subsys[ss->subsys_id] = NULL;
- 
- 	/* remove subsystem from rootnode's list of subsystems */
--	list_del(&ss->sibling);
-+	list_del_init(&ss->sibling);
- 
- 	/*
- 	 * disentangle the css from all css_sets attached to the dummytop. as
-@@ -4230,7 +4228,7 @@ void cgroup_exit(struct task_struct *tsk
- 	if (!list_empty(&tsk->cg_list)) {
- 		write_lock(&css_set_lock);
- 		if (!list_empty(&tsk->cg_list))
--			list_del(&tsk->cg_list);
-+			list_del_init(&tsk->cg_list);
- 		write_unlock(&css_set_lock);
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2288,8 +2288,8 @@ kmem_cache_create (const char *name, siz
+ 	if (ralign < align) {
+ 		ralign = align;
  	}
- 
+-	/* disable debug if not aligning with REDZONE_ALIGN */
+-	if (ralign & (__alignof__(unsigned long long) - 1))
++	/* disable debug if necessary */
++	if (ralign > __alignof__(unsigned long long))
+ 		flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
+ 	/*
+ 	 * 4) Store it.
+@@ -2315,8 +2315,8 @@ kmem_cache_create (const char *name, siz
+ 	 */
+ 	if (flags & SLAB_RED_ZONE) {
+ 		/* add space for red zone words */
+-		cachep->obj_offset += align;
+-		size += align + sizeof(unsigned long long);
++		cachep->obj_offset += sizeof(unsigned long long);
++		size += 2 * sizeof(unsigned long long);
+ 	}
+ 	if (flags & SLAB_STORE_USER) {
+ 		/* user store requires one word storage behind the end of
 
 
