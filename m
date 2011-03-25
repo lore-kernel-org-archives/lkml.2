@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab1CYOBR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 10:01:17 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:44945 "EHLO
+	id S1753408Ab1CYOEN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 10:04:13 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:41297 "EHLO
 	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160Ab1CYOBQ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753160Ab1CYOEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 10:01:16 -0400
+	Fri, 25 Mar 2011 10:04:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rp7aJWvECnuW5g09Q7tufdsozh/EhNe1vyi04+OnvyNk8oKakB4CjIhNQsVPmVTtZN
-         Z0V6n/oYNefr5MUG+lsQMjGFqBd7lbmFs3vd3pZpEH/LYARnfalEn52mQSzYBSZCETLu
-         Ypapc2r7u4QX6BzRptIikVIJV/ZFq/ERp5a6Q=
+         :cc:content-type;
+        b=o/o4VBksa+EY2AGzYf+pNn2F0Ti2+B+0fqF42hqyAxVNZcZ71Q/JkNAfW0Q4UoNzWa
+         XuUpgHLunUOWhM7kO1c6k+GzNQpyGfEqdlK+zbSjviAlx5frE0lbFvylhA0SaJEwtg5V
+         ND5UMzDqbpm8j+sXvx8BMlUy2Q6PEqmbnmlps=
 MIME-Version: 1.0
-In-Reply-To: <9C992DD6-02C7-437C-B78B-13A4282E9AE3@gmail.com>
+In-Reply-To: <AANLkTim4jYfAFHkaHAWRU2uAzgRJLP1p1=5dugZgYkhS@mail.gmail.com>
 References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
 	<1300864998.3522.71.camel@thor.local>
 	<AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
@@ -30,106 +30,122 @@ References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
 	<AANLkTi=x0ZZNfzCpKURXMCaiEncsFNQ2tg1zbARnJjx1@mail.gmail.com>
 	<AANLkTikti-xUYO_S-ipHzXeNsPtwD1kaLuHbGDMMTXev@mail.gmail.com>
 	<AANLkTik1HCrAus2Rv29EK_vGDf9d2m0E=cAuvF6LEQiQ@mail.gmail.com>
-	<AANLkTi=pKTAcbe9x62pQu6dkDFX=zO9r4b_6T0Uo-ay7@mail.gmail.com>
-	<9C992DD6-02C7-437C-B78B-13A4282E9AE3@gmail.com>
-Date: Fri, 25 Mar 2011 10:01:14 -0400
-Message-ID: <AANLkTik4JbopDbdqrSAbontJmYcDeXcbGf=Ah0deo=P9@mail.gmail.com>
+	<AANLkTim4jYfAFHkaHAWRU2uAzgRJLP1p1=5dugZgYkhS@mail.gmail.com>
+Date: Fri, 25 Mar 2011 10:04:10 -0400
+Message-ID: <AANLkTi=etKQPyGw-hrddy4aatEYg5boONZ2T1z4tKGZH@mail.gmail.com>
 Subject: Re: [git pull] drm fixes
 From: Jerome Glisse <j.glisse@gmail.com>
-To: Ben Skeggs <skeggsb@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
         DRI mailing list <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 6:25 AM, Ben Skeggs <skeggsb@gmail.com> wrote:
-> On 25/03/2011, at 10:55, Jerome Glisse <j.glisse@gmail.com> wrote:
->
->> On Thu, Mar 24, 2011 at 8:17 PM, Linus Torvalds
->> <torvalds@linux-foundation.org> wrote:
->>> On Thu, Mar 24, 2011 at 5:07 PM, Dave Airlie <airlied@gmail.com> wrote:
->>>>
->>>> Like seriously you really think VFS locking rework wasn't under
->>>> development or discussion when you merged it? I'm sure Al would have
->>>> something to say about it considering the number of times he cursed in
->>>> irc about that code after you merged it.
+On Fri, Mar 25, 2011 at 3:21 AM, Dave Airlie <airlied@gmail.com> wrote:
+> On Fri, Mar 25, 2011 at 10:17 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Thu, Mar 24, 2011 at 5:07 PM, Dave Airlie <airlied@gmail.com> wrote:
 >>>
->>> Umm. That code was basically over a year old by the time it was merged.
->>>
->>> How old was the code we're talking about now? Seriously?
->>>
->>> And your argument that this case is something you'd have pushed even
->>> outside the merge window - I think that sounds like more of the same
->>> problem. You say it fixes a problem - but does it fix a REGRESSION?
->>>
->>> Do you see the difference? Every single commit I get "fixes a
->>> problem". But our rules for these things are much stricter than that.
->>>
->>>> This isn't even close to the level of the usual type of fuckups you
->>>> get in a merge window, it just happens you were cc'ed on the
->>>> discusson, otherwise I'm betting you'd never even notice. I'm betting
->>>> something much worse landed in this merge window that you should be
->>>> giving a fuck about, but this isn't the droid you are lookin for.
->>>
->>> Maybe not. But why is it always the DRM tree that has these issues?
->>> Why is it that the DRM tree is the one that gets relatively _huge_
->>> patches after -rc1 is out?
->>>
->>> I really REALLY wish that you graphics people would at some point
->>> admit that you guys have a problem. I am hoping that the intel side is
->>> being worked on.
->>>
->>> Instead, I see what seems to be you being in a hurry, and arguments
->>> why uncooked code should be merged even outside the merge window.
->>>
->>> Do you see what I'm aiming at here?
->>>
->>> If this was a one-time event, we wouldn't be having this discussion.
->>> But the DRM tree is one of the BIGGEST issues after the merge window
->>> has closed. And it's EVERY SINGLE RELEASE.
->>>
->>> Why? Some introspection please. You don't even have to answer me. I
->>> ask you to answer that to yourself.
->>>
->>>                Linus
+>>> Like seriously you really think VFS locking rework wasn't under
+>>> development or discussion when you merged it? I'm sure Al would have
+>>> something to say about it considering the number of times he cursed in
+>>> irc about that code after you merged it.
 >>
->> Below are my feeling and likely don't reflect any others people feeling.
+>> Umm. That code was basically over a year old by the time it was merged.
 >>
->> DRM have been trying to play catchup for years, GPU are likely the
->> most complex piece of hardware you can find in a computer (from memory
->> management, to complex modesetting with all kind of tweaks to the
->> utterly crazy 3d engine and everythings that comes with it) Unlike
->> others piece of hardware, when it comes to fully use a GPU
->> acceleration, there is no common denominator that we would be able to
->> put in the kernel (like a tcp stack or filesystem). I am sure very few
->> people would like to see a full GL stack into the kernel.
+>> How old was the code we're talking about now? Seriously?
+>
+> It was 30 lines of clean code, that really was fine to be merged in
+> its first form it was merely a future maintaince issue to clean up the
+> interface before it was released as stable.
+>
+>> And your argument that this case is something you'd have pushed even
+>> outside the merge window - I think that sounds like more of the same
+>> problem. You say it fixes a problem - but does it fix a REGRESSION?
 >>
->> This results in various non common API that each driver expose to the
->> userspace and it's all half cooked, because we have a tendency to
->> release early (which is not necessarily wrong in my eyes). If i were
->> to do it cleanly for one device i wouldn't freeze the API before i got
->> a full fast stack (ie fast GL driver, video decompression, dual GPU,
->> efficient power management) this is exactly what nouveau is doing,
->> they are in the experimental for good reasons, they have the freedom
->> to fix their API and they keep improving it each time their userspace
->> progress.
-> Oh, I wish this were actually the case.  The last time we attempted such a thing we were blasted by Linus.  It does make me wonder at why we're even bothering being in staging.
+>> Do you see the difference? Every single commit I get "fixes a
+>> problem". But our rules for these things are much stricter than that.
 >
-> This is where the binary drivers have a huge advantage, they package all the pieces of their driver together and can modify things as necessary.
+> Okay I'll explain something from my position and maybe you'll never
+> want to pull from me again, but the kernel release cycle doesn't work
+> at all well for graphics drivers.
 >
-> Part of me does think such an approach with the open source graphics drivers would be better.  The current model doesn't really fit too well in my opinion.  Though, admittedly, there's different problems to going other ways.
+> Why?
 >
-> Ben.
+> well the major fail case we have is my monitor doesn't switch on. Now
+> if I merge new hardware support for a new GPU in 2.6.38, and sometime
+> in 2.6.39-rc1 we come across a variant that is broken (this happens
+> every kernel, we find at least 5 GPU variants or BIOS table reports on
+> radeon, look at pretty much any post -rc1 patch from Alex Deucher).
+> Now by your rules this isn't a regression, but now for a user to
+> actually get this change in their hands I have to wait until
+> 2.6.40-rc1, and only once its in your tree, maybe it can go to stable.
+> This is 6 months later. That is to pardon my french, fucking
+> shithouse. I have to make judgement calls on a lot of patches on
+> whether they are suitable or not to go upstream and I try to think
+> that the sooner the poor bastard stuck with this hardware can get this
+> fix then the better it is for everyone, regression or not.
+>
+> In this case, if you had a >2 monitor setup connected to an evergreen
+> card, and you tried to do 3D on the 3rd monitor it would just hang the
+> app in a loop forever, the fix needs 3 pieces, one in the kernel, and
+> two userspace fixes. I can have the userspace fixes on users disks in
+> under a week, literally. We release a new libdrm/-ati driver and
+> distros will have it available in hours via rawhide or xorg-edgers in
+> Ubuntu. Now under kernel rules you want me to hold it up for 6 months?
+> just because it was a few days later for the merge window. Why 6
+> months? because a distro won't ship it until 2.6.40 is released.
+>
+> Another example is most of Marek's patches where he enables some
+> userspace feature by allowing the kernel to accept new commands to
+> send to the GPU. Again this is to avoid a 6 month window where nobody
+> can use this feature of the 3D driver that is on their disk until they
+> get a kernel upgrade. Despite what you have said before and obviously
+> think its much easier to get users to update userspace than kernels in
+> the real world.
+>
+> This is why I often put things that aren't strict regression fixes in
+> after -rc1 and accept the same from intel and nouveau. I draw the line
+> at things like performance enhancements and I should be more strict on
+> some of the crap that gets past in Intel, but I make a lot more
+> judgement calls on these things and I often make them wrong, but I'd
+> rather be making them than just being an ass to people who are stuck
+> in vesa mode and can't suspend/resume because their GPU just shows a
+> black screen on startup on new hw or they can't get acceleration
+> support for 4 months.
+>
+> I'm also aware we never get enough testing coverage before stuff hits
+> your tree, we'd need 1000s of testers to run drm-next and we just
+> don't have that variation. So yes when new features hit -rc1 with the
+> drm they nearly always cause regressions, its just not possible to
+> test this stuff on every GPU/monitor/bios combination in existance
+> before we give it to you, that just isn't happening. Like radeon
+> pageflipping caused machines to completely hang and I didn't find out
+> until -rc7 due to lack of testing coverage.
 
-Well i think being able to evolve the API would help a lot, it should
-still be possible to keep supporting old API over a year or so. But my
-feeling is some of the current API for some of the device, needs heavy
-lifting if we ever want to improve things.
+My feeling on that is that maybe too much code sharing accross gpu of
+different generation hurt more than it helps. I have got the feeling
+that some of the newer Intel asic share some of the bit of older one
+and that intel is focusing there attention on newer one and obviously
+doesn't have time or resource to check that change they do don't
+impact older hw (i don't think such testing is doable without massive
+investment which is very very unlikely to happen given size of linux
+market).
+
+> I'm seriously contemplating going back to out-of-tree drivers so we
+> can actually get test coverage before you get things, however that
+> comes with its own set of completely insane problems.
+>
+> Its not like I'm not aware of the problems here, I'm very aware, I'm
+> just clueless on how to provide actual valuable drm code to users in
+> anything close to a timely manner, people buy new graphics card
+> quicker than I can get code into the kernel.
+>
+> Dave.
 
 Cheers,
 Jerome
