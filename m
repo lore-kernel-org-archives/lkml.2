@@ -1,34 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab1CYWwY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 18:52:24 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61967 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab1CYWwX (ORCPT
+	id S1755278Ab1CYWxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 18:53:51 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61162 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab1CYWxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 18:52:23 -0400
-Date: Fri, 25 Mar 2011 22:52:20 +0000
-From: Jamie Iles <jamie@jamieiles.com>
+	Fri, 25 Mar 2011 18:53:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
 To: Mike Frysinger <vapier@gentoo.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jamie Iles <jamie@jamieiles.com>,
-        linux-kernel@vger.kernel.org, gregkh@suse.de
 Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
-Message-ID: <20110325225220.GV3130@pulham.picochip.com>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
- <201103252112.22520.arnd@arndb.de>
- <20110325222346.GS3130@pulham.picochip.com>
- <201103252335.14676.arnd@arndb.de>
- <AANLkTinQ_M92zDZx_Jfe=rvPO0Gr4kHhXZUATvgVBywh@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Date: Fri, 25 Mar 2011 23:53:42 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        gregkh@suse.de
+References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com> <201103252335.14676.arnd@arndb.de> <AANLkTinQ_M92zDZx_Jfe=rvPO0Gr4kHhXZUATvgVBywh@mail.gmail.com>
 In-Reply-To: <AANLkTinQ_M92zDZx_Jfe=rvPO0Gr4kHhXZUATvgVBywh@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103252353.42901.arnd@arndb.de>
+X-Provags-ID: V02:K0:HpNhdw9mGoG4gWROpa0MPc5MtXsm4J9QkhRidFbjARZ
+ WUJleLTtoiGnoxnbgS58RZxNIlioalK+GTSRmD8E8Zb9oeiAWZ
+ K+S+brhB8/GwdBim/Ebu10w6+ylvNOFep6uoYipr2xRFgwW97W
+ 3SNK1YEOQPp0q4dJtP5rz8syF+2IXXZnUbEk0R+/dvnCPZA0UK
+ KVUMyfk+zIF0rxznL9Gbw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 06:38:00PM -0400, Mike Frysinger wrote:
+On Friday 25 March 2011 23:38:00 Mike Frysinger wrote:
 > On Fri, Mar 25, 2011 at 18:35, Arnd Bergmann wrote:
 > > One more thing that I just realized:
 > > I think it would be better not to allow arbitrary ioctl commands to
@@ -45,24 +47,15 @@ On Fri, Mar 25, 2011 at 06:38:00PM -0400, Mike Frysinger wrote:
 > unhandled ioctls get passed to the driver-specific ioctl function.
 > this should cover everyone's needs.
 
-That's what I intended but I guess it isn't that clear from the code.  
-Perhaps instead of:
+It depends on how obscure the ioctls get, but I think the first
+attempt should always be to standardize them across the subsystem.
+A lot of things are wrong with the whole concept, but when they
+are needed, you should at least try to shield individual drivers
+from them.
 
-	mutex_lock();
-	region->ops->ioctl();
-	mutex_unlock();
+Many subsystems end up needing both common and driver specific
+ioctls as they grow, I just wouldn't do that to start out with.
+There's always hope that the latest subsystem will be better than
+the others ;-).
 
-if I change it to:
-
-	mutex_lock();
-	switch (cmd) {
-	default:
-		region->ops->ioctl();
-	}
-	mutex_unlock();
-
-then that's a bit clearer.  If there's stuff common across different OTP 
-implementations then we can add it to the region ops and decode it here 
-and if not fall back to the specific implementation.
-
-Jamie
+	Arnd
