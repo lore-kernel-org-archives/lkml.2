@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab1CYXzL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:55:11 -0400
-Received: from kroah.org ([198.145.64.141]:42013 "EHLO coco.kroah.org"
+	id S1755727Ab1CYXzf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:55:35 -0400
+Received: from kroah.org ([198.145.64.141]:42001 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932648Ab1CYXxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:15 -0400
+	id S932638Ab1CYXxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:14 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:14 2011
-Message-Id: <20110325234514.242598834@clark.kroah.org>
+Message-Id: <20110325234514.142618235@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:37 -0700
+Date: Fri, 25 Mar 2011 16:44:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Josef Bacik <josef@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Chuck Ebbert <cebbert@redhat.com>
-Subject: [61/63] fs: call security_d_instantiate in d_obtain_alias V2
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [60/63] SUNRPC: Never reuse the socket port after an xs_close()
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,56 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <josef@redhat.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 24ff6663ccfdaf088dfa7acae489cb11ed4f43c4 upstream.
+commit 246408dcd5dfeef2df437ccb0ef4d6ee87805f58 upstream.
 
-While trying to track down some NFS problems with BTRFS, I kept noticing I was
-getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-figure out that it was SELinux that was giving me grief, with the following
-denial
+If we call xs_close(), we're in one of two situations:
+ - Autoclose, which means we don't expect to resend a request
+ - bind+connect failed, which probably means the port is in use
 
-type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
-
-Turns out this is because in d_obtain_alias if we can't find an alias we create
-one and do all the normal instantiation stuff, but we don't do the
-security_d_instantiate.
-
-Usually we are protected from getting a hashed dentry that hasn't yet run
-security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
-option there, so in order to deal with the case that a second thread comes in
-and finds our new dentry before we get to run security_d_instantiate(), we go
-ahead and call it if we find a dentry already.  Eric assures me that this is ok
-as the code checks to see if the dentry has been initialized already so calling
-security_d_instantiate() against the same dentry multiple times is ok.  With
-this patch I'm no longer getting errant -EACCESS values.
-
-Signed-off-by: Josef Bacik <josef@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Chuck Ebbert <cebbert@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/dcache.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/sunrpc/xprtsock.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1612,10 +1612,13 @@ struct dentry *d_obtain_alias(struct ino
- 	__bit_spin_unlock(0, (unsigned long *)&tmp->d_sb->s_anon.first);
- 	spin_unlock(&tmp->d_lock);
- 	spin_unlock(&inode->i_lock);
-+	security_d_instantiate(tmp, inode);
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -710,6 +710,8 @@ static void xs_reset_transport(struct so
+ 	if (sk == NULL)
+ 		return;
  
- 	return tmp;
- 
-  out_iput:
-+	if (res && !IS_ERR(res))
-+		security_d_instantiate(res, inode);
- 	iput(inode);
- 	return res;
- }
++	transport->srcport = 0;
++
+ 	write_lock_bh(&sk->sk_callback_lock);
+ 	transport->inet = NULL;
+ 	transport->sock = NULL;
 
 
