@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab1CYN0a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:26:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58744 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab1CYN01 convert rfc822-to-8bit (ORCPT
+	id S1752530Ab1CYNV7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:21:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34602 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752257Ab1CYNV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:26:27 -0400
-Subject: Re: [bisect] kernel 2.6.38 regression with root nfs mounting
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <AANLkTin4-+Mc7d0a-XnZvPKL-C_Cf+Kmnm1Bmh1XZZu4@mail.gmail.com>
-Date: Fri, 25 Mar 2011 09:26:17 -0400
-Cc: Trond.Myklebust@netapp.com, broonie@opensource.wolfsonmicro.com,
-        bdowning@lavos.net, linux-nfs@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4AD2FFC1-E777-4C29-8718-4E1717EFCD86@oracle.com>
-References: <AANLkTimjmdi8sFTTjSPerOVgHQ+pjjwwMvCUX3AJ16At@mail.gmail.com> <43F07477-9075-444D-9BBB-368650538EA8@oracle.com> <AANLkTinHUQkBvcvh9APVutOqcKOug6CA066kS_O4p4Tq@mail.gmail.com> <DC2B75F8-382A-4AFB-9286-4A55EAF7609A@oracle.com> <AANLkTikWyUbtHbbnSh8NBeP3mT4jDOu5Pbtfw=TwKrwE@mail.gmail.com> <977C528D-4540-4EB2-92F9-6DAF357D8C81@oracle.com> <AANLkTik0UgB+k2i=E5t9XcF50SoSr_iXaFYrhctDx0FJ@mail.gmail.com> <8F19F0FE-0800-4C45-B857-1C682CF6A30D@oracle.com> <AANLkTin4-+Mc7d0a-XnZvPKL-C_Cf+Kmnm1Bmh1XZZu4@mail.gmail.com>
-To: Belisko Marek <marek.belisko@gmail.com>
-X-Mailer: Apple Mail (2.1082)
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4D8C97FC.0194,ss=1,fgs=0
+	Fri, 25 Mar 2011 09:21:56 -0400
+Message-Id: <20110325132047.748781678@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Fri, 25 Mar 2011 13:21:54 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: LAK <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: [patch 04/23] arm: Use irq flag setter function
+References: <20110325131617.258789658@linutronix.de>
+Content-Disposition: inline; filename=arm-use-wrapper.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use the proper accessor function instead of fiddling in the status
+bits directly.
 
-On Mar 25, 2011, at 3:24 AM, Belisko Marek wrote:
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ arch/arm/kernel/irq.c |   15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-> On Wed, Mar 23, 2011 at 3:54 PM, Chuck Lever <chuck.lever@oracle.com> wrote:
->> 
->> On Mar 23, 2011, at 10:30 AM, Belisko Marek wrote:
->> 
->> The server is advertising NFS over UDP.  Why can't a client access your server via UDP?  What happens if you perform a normal post-boot mount of this file system via UDP?
-> Strange (rootfs mounted from SD card and try to mount nfs always fail)
-> 
-> mount -t nfs -o udp 10.146.1.21:/home/open-nandra/rootfs /mnt
-> svc: failed to register lockdv1 RPC service (errno 111).
-> lockd_up: makesock failed, error=-111
-> mount: mounting 10.146.1.21:/home/open-nandra/rootfs on /mnt failed:
-> Connection refused
-> # mount -t nfs -o tcp 10.146.1.21:/home/open-nandra/rootfs /mnt
-> svc: failed to register lockdv1 RPC service (errno 111).
-> mount: mounting 10.146.1.21:/home/open-nandra/rootfs on /mnt failed:
-> Connection refused
-
-The client system isn't running a portmapper that its NFS client (specifically lockd) can talk to.  That "connection refused" is due to an incorrect client configuration.  A simple workaround might be to specify the "nolock" mount option for this test.
-
-> 
->> 
->>>>>    100227    2   udp   2049
->>>>>    100227    3   udp   2049
->>>>>    100005    1   udp  58278  mountd
->>>>>    100005    1   tcp  37178  mountd
->>>>>    100005    2   udp  58278  mountd
->>>>>    100005    2   tcp  37178  mountd
->>>>>    100005    3   udp  58278  mountd
->>>>>    100005    3   tcp  37178  mountd
->>>> 
->>>> Can you boot if you specify either the "tcp" or "proto=tcp" NFSROOT mount options?
->>> When add proto=tcp to bootargs it boot fine
->>> (....nfsroot=10.146.1.21:/home/open-nandra/rootfs,proto=tcp....).
->>>> Perhaps a network trace would be probative.  Capture on the server with "tcpdump -s0 -w /tmp/foo ip 10.146.1.199" (untested, but I think you get the idea) while the client is attempting to boot, and post.
->>> Log is attached in attachment (too big 4.8M). Correct form is: tcpdump
->>> -s0 -w /tmp/foo host 10.146.1.199
->> 
->> Received.  I should have been clear: Please capture a non-working client boot attempt.  To reduce the size of the attachment, strip the TFTP packets before sending, and please gzip the file.
-> tcpdump log from wrong attemp in attachment.
-
-According to the trace, the mount succeeds, and NFS requests are working.  However, the server's replies to READ requests are not being seen by the client.  Something on the client host or in the network is dropping them.  I see successful 16KB reads, but 32KB reads do not work.  Check your client for packet filtering (either intentional filtering, or accidental filtering due to configuration issues).
-
-I'll revisit the mount option defaults for NFSROOT again.
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
+Index: linux-2.6-tip/arch/arm/kernel/irq.c
+===================================================================
+--- linux-2.6-tip.orig/arch/arm/kernel/irq.c
++++ linux-2.6-tip/arch/arm/kernel/irq.c
+@@ -144,24 +144,21 @@ asm_do_IRQ(unsigned int irq, struct pt_r
+ 
+ void set_irq_flags(unsigned int irq, unsigned int iflags)
+ {
+-	struct irq_desc *desc;
+-	unsigned long flags;
++	unsigned long clr = 0, set = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
+ 
+ 	if (irq >= nr_irqs) {
+ 		printk(KERN_ERR "Trying to set irq flags for IRQ%d\n", irq);
+ 		return;
+ 	}
+ 
+-	desc = irq_to_desc(irq);
+-	raw_spin_lock_irqsave(&desc->lock, flags);
+-	desc->status |= IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
+ 	if (iflags & IRQF_VALID)
+-		desc->status &= ~IRQ_NOREQUEST;
++		clr |= IRQ_NOREQUEST;
+ 	if (iflags & IRQF_PROBE)
+-		desc->status &= ~IRQ_NOPROBE;
++		clr |= IRQ_NOPROBE;
+ 	if (!(iflags & IRQF_NOAUTOEN))
+-		desc->status &= ~IRQ_NOAUTOEN;
+-	raw_spin_unlock_irqrestore(&desc->lock, flags);
++		clr |= IRQ_NOAUTOEN;
++	/* Order is clear bits in "clr" then set bits in "set" */
++	irq_modify_status(irq, clr, set & ~clr);
+ }
+ 
+ void __init init_IRQ(void)
 
 
