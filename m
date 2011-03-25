@@ -1,61 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab1CYBHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 21:07:21 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:39680 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755356Ab1CYBHI (ORCPT
+	id S934337Ab1CYBOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 21:14:35 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:40882 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933828Ab1CYBOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 21:07:08 -0400
-X-Sasl-enc: xxEw/3Mf34bliONpr0IGsDRtroF4O4PikeysoOzJgM7o 1301015227
-Date: Thu, 24 Mar 2011 22:07:05 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Len Brown <lenb@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] APM: delete APM in Linux-2.6.40
-Message-ID: <20110325010705.GB4535@khazad-dum.debian.net>
-References: <alpine.LFD.2.02.1103232321070.3848@x980>
- <20110324154505.934a56a0.sfr@canb.auug.org.au>
- <alpine.LFD.2.02.1103240336590.4529@x980>
- <20110324102116.GA17446@khazad-dum.debian.net>
- <alpine.LFD.2.02.1103241903030.16085@x980>
+	Thu, 24 Mar 2011 21:14:32 -0400
+X-AuditID: b753bd60-a314bba0000001d0-02-4d8bec752a38
+X-AuditID: b753bd60-a314bba0000001d0-02-4d8bec752a38
+Message-ID: <4D8BEC71.1040404@hitachi.com>
+Date: Fri, 25 Mar 2011 10:14:25 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1103241903030.16085@x980>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 -tip] perf probe: Add fastpath to do lookup by function
+ name
+References: <1300981134-7333-1-git-send-email-ming.m.lin@intel.com>	 <4D8B0A13.8000008@hitachi.com>  <1300974448.2283.17.camel@localhost> <1300975753.2283.20.camel@localhost>
+In-Reply-To: <1300975753.2283.20.camel@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011, Len Brown wrote:
-> > People with a ThinkPad T23, T30 will really not appreciate this, and it
-> > should not be too difficult to recruit some as testers.
+(2011/03/24 23:09), Lin Ming wrote:
+> v2 -> v1:
+> - Don't compare file names with cu_find_realpath(...), instead, compare them
+>   with the name returned by dwarf_decl_file(sp_die) 
 > 
-> I have both, and they both support ACPI.
+> The vmlinux file may have thousands of CUs.
+> We can lookup function name from .debug_pubnames section
+> to avoid the slow loop on CUs.
+> 
+> ./perf stat -r 10 -- ./perf probe -k /home/mlin/vmlinux \
+>         -s /home/mlin/linux-2.6 \
+> 	--line csum_partial_copy_to_user > tmp.log
+> 
+> before patch applied
+> =====================
+>         364.535892 task-clock-msecs         #      0.997 CPUs
+>                  0 context-switches         #      0.000 M/sec
+>                  0 CPU-migrations           #      0.000 M/sec
+>             29,993 page-faults              #      0.082 M/sec
+>        865,862,109 cycles                   #   2375.245 M/sec
+>      1,255,259,630 instructions             #      1.450 IPC
+>        252,400,884 branches                 #    692.390 M/sec
+>          3,429,376 branch-misses            #      1.359 %
+>          1,386,990 cache-references         #      3.805 M/sec
+>            687,188 cache-misses             #      1.885 M/sec
+> 
+>         0.365792170  seconds time elapsed
+> 
+> after patch applied
+> =====================
+>          89.896405 task-clock-msecs         #      0.991 CPUs
+>                  1 context-switches         #      0.000 M/sec
+>                  0 CPU-migrations           #      0.000 M/sec
+>             10,145 page-faults              #      0.113 M/sec
+>        214,553,875 cycles                   #   2386.679 M/sec
+>        226,915,559 instructions             #      1.058 IPC
+>         44,536,614 branches                 #    495.422 M/sec
+>            613,074 branch-misses            #      1.377 %
+>            860,787 cache-references         #      9.575 M/sec
+>            442,380 cache-misses             #      4.921 M/sec
+> 
+>         0.090716032  seconds time elapsed
 
-I wonder why I had some users of those two boxes advocating APM, maybe
-it used to work better or something.  Or I got the T21 and A30 confused
-with the T23.
+Thanks! Looks very good :)
 
-Well, I don't think we need to support the thre-digit series ThinkPads,
-the number of those still working is probably on the four digits
-world-wide.  And I haven't heard from anyone with a T21 or A31 in a
-while, so they might be down to five digits already.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-If the T23 can actually work well in ACPI mode, I retract my objection.
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  tools/perf/util/probe-finder.c |   39 +++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/probe-finder.h |    1 +
+>  2 files changed, 40 insertions(+), 0 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> index 194f9e2..5cf044c 100644
+> --- a/tools/perf/util/probe-finder.c
+> +++ b/tools/perf/util/probe-finder.c
+> @@ -1876,6 +1876,31 @@ static int find_line_range_by_func(struct line_finder *lf)
+>  	return param.retval;
+>  }
+>  
+> +static int pubname_search_cb(Dwarf *dbg, Dwarf_Global *gl, void *data)
+> +{
+> +	struct line_finder *lf = data;
+> +	struct line_range *lr = lf->lr;
+> +
+> +	if (dwarf_offdie(dbg, gl->die_offset, &lf->sp_die)) {
+> +		if (dwarf_tag(&lf->sp_die) != DW_TAG_subprogram)
+> +			return DWARF_CB_OK;
+> +
+> +		if (die_compare_name(&lf->sp_die, lr->function)) {
+> +			if (!dwarf_offdie(dbg, gl->cu_offset, &lf->cu_die))
+> +				return DWARF_CB_OK;
+> +
+> +			if (lr->file &&
+> +			    strtailcmp(lr->file, dwarf_decl_file(&lf->sp_die)))
+> +				return DWARF_CB_OK;
+> +
+> +			lf->found = 1;
+> +			return DWARF_CB_ABORT;
+> +		}
+> +	}
+> +
+> +	return DWARF_CB_OK;
+> +}
+> +
+>  int find_line_range(int fd, struct line_range *lr)
+>  {
+>  	struct line_finder lf = {.lr = lr, .found = 0};
+> @@ -1895,6 +1920,19 @@ int find_line_range(int fd, struct line_range *lr)
+>  		return -EBADF;
+>  	}
+>  
+> +	/* Fastpath: lookup by function name from .debug_pubnames section */
+> +	if (lr->function) {
+> +		struct dwarf_callback_param param = {.data = (void *)&lf, .retval = 0};
+> +
+> +		dwarf_getpubnames(dbg, pubname_search_cb, &lf, 0);
+> +		if (lf.found) {
+> +			lf.found = 0;
+> +			line_range_search_cb(&lf.sp_die, &param);
+> +			if (lf.found)
+> +				goto found;
+> +		}
+> +	}
+> +
+>  	/* Loop on CUs (Compilation Unit) */
+>  	while (!lf.found && ret >= 0) {
+>  		if (dwarf_nextcu(dbg, off, &noff, &cuhl, NULL, NULL, NULL) != 0)
+> @@ -1923,6 +1961,7 @@ int find_line_range(int fd, struct line_range *lr)
+>  		off = noff;
+>  	}
+>  
+> +found:
+>  	/* Store comp_dir */
+>  	if (lf.found) {
+>  		comp_dir = cu_get_comp_dir(&lf.cu_die);
+> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+> index beaefc3..4bc56a4 100644
+> --- a/tools/perf/util/probe-finder.h
+> +++ b/tools/perf/util/probe-finder.h
+> @@ -83,6 +83,7 @@ struct line_finder {
+>  	int			lno_s;		/* Start line number */
+>  	int			lno_e;		/* End line number */
+>  	Dwarf_Die		cu_die;		/* Current CU */
+> +	Dwarf_Die		sp_die;
+>  	int			found;
+>  };
+>  
 
-> Re: lasting for years.
-> Actually, I used to have several of both, but they're dying off,
-> and they are excruciatingly slow...
-
-Depends on what you use them for, I suppose.
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
