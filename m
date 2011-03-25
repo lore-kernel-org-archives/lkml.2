@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934506Ab1CYLMG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 07:12:06 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48910 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934407Ab1CYLMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 07:12:05 -0400
-Date: Fri, 25 Mar 2011 12:11:40 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jack Steiner <steiner@sgi.com>, Jan Beulich <JBeulich@novell.com>,
-        Borislav Petkov <bp@amd64.org>, Nick Piggin <npiggin@kernel.dk>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, tee@sgi.com,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH RFC] x86: avoid atomic operation in test_and_set_bit_lock
- if possible
-Message-ID: <20110325111140.GB29521@elte.hu>
-References: <20110324205422.GB2393@elte.hu>
- <1301000557.2714.33.camel@edumazet-laptop>
- <m2oc50kxg0.fsf@firstfloor.org>
- <AANLkTimib3TqemF9L=VNkcXT3uFam1gYmVtuA3wrAv1j@mail.gmail.com>
- <20110324235654.GM21838@one.firstfloor.org>
- <1301032040.2714.569.camel@edumazet-laptop>
- <20110325093228.GB13640@elte.hu>
- <1301046298.3268.4.camel@edumazet-laptop>
- <20110325095931.GA31903@elte.hu>
- <1301051416.2250.196.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301051416.2250.196.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S934557Ab1CYLMd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 07:12:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38570 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934407Ab1CYLMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 07:12:30 -0400
+Message-Id: <20110325111217.963062438@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Fri, 25 Mar 2011 11:12:28 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [patch 04/10] mfd: htc-egpio: Cleanup interrupt handling
+References: <20110325110939.701487744@linutronix.de>
+Content-Disposition: inline; filename=mff-htc-eg.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace the open coded handler call with the prober accessor. Retrieve
+the handler data from desc. That avoids a redundant lookup in the
+sparse irq case.
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/mfd/htc-egpio.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-> On Fri, 2011-03-25 at 10:59 +0100, Ingo Molnar wrote:
-> > 
-> > Wanted to keep this patch simple - we are not really hitting MSR failure cases 
-> > in practice, 
-> 
-> Everything qemu/kvm hits those.
+Index: linux-2.6-tip/drivers/mfd/htc-egpio.c
+===================================================================
+--- linux-2.6-tip.orig/drivers/mfd/htc-egpio.c
++++ linux-2.6-tip/drivers/mfd/htc-egpio.c
+@@ -100,7 +100,7 @@ static struct irq_chip egpio_muxed_chip 
+ 
+ static void egpio_handler(unsigned int irq, struct irq_desc *desc)
+ {
+-	struct egpio_info *ei = get_irq_data(irq);
++	struct egpio_info *ei = irq_desc_get_handler_data(desc);
+ 	int irqpin;
+ 
+ 	/* Read current pins. */
+@@ -113,9 +113,7 @@ static void egpio_handler(unsigned int i
+ 	for_each_set_bit(irqpin, &readval, ei->nirqs) {
+ 		/* Run irq handler */
+ 		pr_debug("got IRQ %d\n", irqpin);
+-		irq = ei->irq_start + irqpin;
+-		desc = irq_to_desc(irq);
+-		desc->handle_irq(irq, desc);
++		generic_handle_irq(ei->irq_start + irqpin);
+ 	}
+ }
+ 
 
-and other virtualizers as well. I meant on real hardware with a real BIOS.
 
-Thanks,
-
-	Ingo
