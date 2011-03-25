@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932420Ab1CYXwo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:52:44 -0400
-Received: from kroah.org ([198.145.64.141]:41582 "EHLO coco.kroah.org"
+	id S932496Ab1CZAT2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:19:28 -0400
+Received: from kroah.org ([198.145.64.141]:41589 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932285Ab1CYXwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:35 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:10 2011
-Message-Id: <20110325234510.330229533@clark.kroah.org>
+	id S932425Ab1CYXwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:45 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:11 2011
+Message-Id: <20110325234511.313858766@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:00 -0700
+Date: Fri, 25 Mar 2011 16:44:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [24/63] mm: PageBuddy and mapcount robustness
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [33/63] nfsd4: fix struct file leak
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,73 +25,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: J. Bruce Fields <bfields@redhat.com>
 
-commit ef2b4b95a63a1d23958dcb99eb2c6898eddc87d0 upstream.
+commit 0997b173609b9229ece28941c118a2a9b278796e upstream.
 
-Change the _mapcount value indicating PageBuddy from -2 to -128 for
-more robusteness against page_mapcount() undeflows.
+Make sure we properly reference count the struct files that a lock
+depends on, and release them when the lock stateid is released.
 
-Use reset_page_mapcount instead of __ClearPageBuddy in bad_page to
-ignore the previous retval of PageBuddy().
+This fixes a major leak of struct files when using locking over nfsv4.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reported-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Rick Koshi <nfs-bug-report@more-right-rudder.com>
+Tested-by: Ivo Přikryl <prikryl@eurosat.cz>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/mm.h |   11 +++++++++--
- mm/page_alloc.c    |    4 ++--
- 2 files changed, 11 insertions(+), 4 deletions(-)
+ fs/nfsd/nfs4state.c |   32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -402,16 +402,23 @@ static inline void init_page_count(struc
- /*
-  * PageBuddy() indicate that the page is free and in the buddy system
-  * (see mm/page_alloc.c).
-+ *
-+ * PAGE_BUDDY_MAPCOUNT_VALUE must be <= -2 but better not too close to
-+ * -2 so that an underflow of the page_mapcount() won't be mistaken
-+ * for a genuine PAGE_BUDDY_MAPCOUNT_VALUE. -128 can be created very
-+ * efficiently by most CPU architectures.
-  */
-+#define PAGE_BUDDY_MAPCOUNT_VALUE (-128)
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -397,6 +397,9 @@ static void unhash_generic_stateid(struc
+ 
+ static void free_generic_stateid(struct nfs4_stateid *stp)
+ {
++	int oflag = nfs4_access_bmap_to_omode(stp);
 +
- static inline int PageBuddy(struct page *page)
++	nfs4_file_put_access(stp->st_file, oflag);
+ 	put_nfs4_file(stp->st_file);
+ 	kmem_cache_free(stateid_slab, stp);
+ }
+@@ -448,11 +451,8 @@ release_stateid_lockowners(struct nfs4_s
+ 
+ static void release_open_stateid(struct nfs4_stateid *stp)
  {
--	return atomic_read(&page->_mapcount) == -2;
-+	return atomic_read(&page->_mapcount) == PAGE_BUDDY_MAPCOUNT_VALUE;
+-	int oflag = nfs4_access_bmap_to_omode(stp);
+-
+ 	unhash_generic_stateid(stp);
+ 	release_stateid_lockowners(stp);
+-	nfs4_file_put_access(stp->st_file, oflag);
+ 	free_generic_stateid(stp);
  }
  
- static inline void __SetPageBuddy(struct page *page)
- {
- 	VM_BUG_ON(atomic_read(&page->_mapcount) != -1);
--	atomic_set(&page->_mapcount, -2);
-+	atomic_set(&page->_mapcount, PAGE_BUDDY_MAPCOUNT_VALUE);
+@@ -3735,6 +3735,7 @@ alloc_init_lock_stateid(struct nfs4_stat
+ 	stp->st_stateid.si_stateownerid = sop->so_id;
+ 	stp->st_stateid.si_fileid = fp->fi_id;
+ 	stp->st_stateid.si_generation = 0;
++	stp->st_access_bmap = 0;
+ 	stp->st_deny_bmap = open_stp->st_deny_bmap;
+ 	stp->st_openstp = open_stp;
+ 
+@@ -3749,6 +3750,17 @@ check_lock_length(u64 offset, u64 length
+ 	     LOFF_OVERFLOW(offset, length)));
  }
  
- static inline void __ClearPageBuddy(struct page *page)
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -286,7 +286,7 @@ static void bad_page(struct page *page)
- 
- 	/* Don't complain about poisoned pages */
- 	if (PageHWPoison(page)) {
--		__ClearPageBuddy(page);
-+		reset_page_mapcount(page); /* remove PageBuddy */
- 		return;
- 	}
- 
-@@ -317,7 +317,7 @@ static void bad_page(struct page *page)
- 	dump_stack();
- out:
- 	/* Leave bad fields for debug, except PageBuddy could make trouble */
--	__ClearPageBuddy(page);
-+	reset_page_mapcount(page); /* remove PageBuddy */
- 	add_taint(TAINT_BAD_PAGE);
- }
- 
++static void get_lock_access(struct nfs4_stateid *lock_stp, u32 access)
++{
++	struct nfs4_file *fp = lock_stp->st_file;
++	int oflag = nfs4_access_to_omode(access);
++
++	if (test_bit(access, &lock_stp->st_access_bmap))
++		return;
++	nfs4_file_get_access(fp, oflag);
++	__set_bit(access, &lock_stp->st_access_bmap);
++}
++
+ /*
+  *  LOCK operation 
+  */
+@@ -3846,18 +3858,16 @@ nfsd4_lock(struct svc_rqst *rqstp, struc
+ 	switch (lock->lk_type) {
+ 		case NFS4_READ_LT:
+ 		case NFS4_READW_LT:
+-			if (find_readable_file(lock_stp->st_file)) {
+-				nfs4_get_vfs_file(rqstp, fp, &cstate->current_fh, NFS4_SHARE_ACCESS_READ);
+-				filp = find_readable_file(lock_stp->st_file);
+-			}
++			filp = find_readable_file(lock_stp->st_file);
++			if (filp)
++				get_lock_access(lock_stp, NFS4_SHARE_ACCESS_READ);
+ 			file_lock.fl_type = F_RDLCK;
+ 			break;
+ 		case NFS4_WRITE_LT:
+ 		case NFS4_WRITEW_LT:
+-			if (find_writeable_file(lock_stp->st_file)) {
+-				nfs4_get_vfs_file(rqstp, fp, &cstate->current_fh, NFS4_SHARE_ACCESS_WRITE);
+-				filp = find_writeable_file(lock_stp->st_file);
+-			}
++			filp = find_writeable_file(lock_stp->st_file);
++			if (filp)
++				get_lock_access(lock_stp, NFS4_SHARE_ACCESS_WRITE);
+ 			file_lock.fl_type = F_WRLCK;
+ 			break;
+ 		default:
 
 
