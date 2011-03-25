@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab1CYQ34 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 12:29:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51526 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751417Ab1CYQ3z (ORCPT
+	id S1754515Ab1CYQaO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 12:30:14 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43001 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754309Ab1CYQaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 12:29:55 -0400
+	Fri, 25 Mar 2011 12:30:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=t82P0z4NIyI2dq7yNzIlnFA0RPpaO084rMGpa+B+EBEAzMx9mqYyyXOYTwQQK7qD74
+         VUuw6ZekOvv6djhX/6HCmKS9lYFToyEqY326DuiWvNe5w+7TRT/Roi6N0T3Llm7RWkk4
+         l0opW0RdApRziTmiyZYCXWqR5FVCF7QXjQ0FE=
 MIME-Version: 1.0
-In-Reply-To: <4D8C772202000078000384E1@vpn.id2.novell.com>
-References: <201103241026.01624.knikanth@suse.de> <20110324085647.GI30812@elte.hu>
- <20110324145221.GC31194@aftab> <4D8B83DA02000078000381DE@vpn.id2.novell.com>
- <20110324171924.GC2414@elte.hu> <4D8C772202000078000384E1@vpn.id2.novell.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 25 Mar 2011 09:29:34 -0700
-Message-ID: <AANLkTimXLAV-xssvuKMs8ZqUKsRgHDedjTiGM6fxQ-ku@mail.gmail.com>
-Subject: Re: [PATCH RFC] x86: avoid atomic operation in test_and_set_bit_lock
- if possible
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-        Borislav Petkov <bp@amd64.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@kernel.dk>, "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, tee@sgi.com,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110325154118.GN21838@one.firstfloor.org>
+References: <1300914043-2297-1-git-send-email-abogani@kernel.org>
+	<1300914043-2297-3-git-send-email-abogani@kernel.org>
+	<m27hbov7hq.fsf@firstfloor.org>
+	<8739mblr2n.fsf@rustcorp.com.au>
+	<20110325154118.GN21838@one.firstfloor.org>
+Date: Fri, 25 Mar 2011 17:30:11 +0100
+X-Google-Sender-Auth: 5f3buj4-Dkzc8IDKZs-3vxHunnA
+Message-ID: <AANLkTinW4GA094Yz94Y0qTEJvjOmRe4_C+5yc7_VcKM3@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Replace the linear search with a binary search for
+ locate the symbols
+From: Alessio Igor Bogani <abogani@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Ian Lance Taylor <ian@airs.com>, Tim Bird <tim.bird@am.sony.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 3:06 AM, Jan Beulich <JBeulich@novell.com> wrote:
+Dear Mr. Kleen,
+
+2011/3/25 Andi Kleen <andi@firstfloor.org>:
+[...]
+>> > Patch looks good to me. SORT is a nice trick, too bad it won't
+>> > work for the main kernel.
+>>
+>> Why not?
 >
-> The problem was observed with __lock_page() (in a variant not
-> upstream for reasons not known to me), and prefixing e.g.
-> trylock_page() with an extra PageLocked() check yielded the
-> below quoted improvements.
+> Because kallsyms is supposed to be in address order, not name order.
 
-Ok. __lock_page() _definitely_ should do the test_bit() thing first,
-because it's normally called from lock_page() that has already tested
-the bit.
+What should that break exactly?
+Thanks you very much!
 
-But it already seems to do that, so I'm wondering what your variant is.
-
-I'm also a bit surprised that lock_page() is that hot (unless your
-_lock_page() variant is simply too broken and ends up spinning?).
-Maybe we have some path that takes the page lock unnecessarily? What's
-the load?
-
-                Linus
+Ciao,
+Alessio
