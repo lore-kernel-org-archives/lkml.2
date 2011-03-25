@@ -1,219 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab1CYWIu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 18:08:50 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52260 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab1CYWIt (ORCPT
+	id S1755448Ab1CYWXx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 18:23:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65358 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755148Ab1CYWXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 18:08:49 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-To: Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Vivek Goyal <vgoyal@redhat.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] generic-ipi: Initialize call_single_queue before enabling interrupt
-Date: Fri, 25 Mar 2011 18:07:52 -0400
+	Fri, 25 Mar 2011 18:23:52 -0400
+Date: Fri, 25 Mar 2011 22:23:46 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        gregkh@suse.de, vapier@gentoo.org
+Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
+Message-ID: <20110325222346.GS3130@pulham.picochip.com>
+References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
+ <1300980071-24645-2-git-send-email-jamie@jamieiles.com>
+ <201103252112.22520.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Mailer: HidemaruMail 5.38 (WinNT,501)
-In-Reply-To: <generic-ipi-init-v2-reply@mdm.bga.com>
-References: <C7CBEB049FD464indou.takao@jp.fujitsu.com> <generic-ipi-init-v2-reply@mdm.bga.com>
-Message-Id: <CBCBEB391604FEindou.takao@jp.fujitsu.com>
-X-Antivirus: avast! (VPS 110325-1, 2011/03/25), Outbound message
-X-Antivirus-Status: Clean
+Content-Disposition: inline
+In-Reply-To: <201103252112.22520.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Mar 2011 11:48:21 -0600, Milton Miller wrote:
+Hi Arnd,
 
->On Fri, 25 Mar 2011 about 11:52:20 -0400, Takao Indoh wrote:
->> 
->> Hi all,
->> 
->> Actually this is a v2 patch but I post with new subject.
->> The first post is here.
->> 
->> [PATCH][KDUMP] Ignore spurious IPI
->> http://www.gossamer-threads.com/lists/linux/kernel/1356389
->> 
->> The problem I found is that kdump(2nd kernel) sometimes hangs up due to
->> pending IPI from 1st kernel. Kernel panic occurs because IPI comes
->> before call_single_queue is initialized, so this patch moves
->> init_call_single_data() so that it can be called before
->> local_irq_enable().
->> 
->
->This is good background, but I generally prefer changelogs to start
->by describing what is being changed and then proceed on to why, and
->then the history of the patch and discussion.
->
->> The details of the problem is below.
->> 
->> (1)
->> 2nd kernel boot up
->> 
->> (2)
->> A pending IPI from 1st kernel comes after unmasking interrupts at the
->> following point.
->> 
->> asmlinkage void __init start_kernel(void)
->> {
->> (snip)
->>     time_init();
->>     profile_init();
->>     if (!irqs_disabled())
->>             printk(KERN_CRIT "start_kernel(): bug: interrupts were "
->>                              "enabled early\n");
->>     early_boot_irqs_disabled = false;
->>     local_irq_enable(); <=======================================HERE
->> 
->
->This could be described more concisely as "when irqs are first enabled
->in start_kernel()".
->
->> (3)
->> Kernel tries to handle the interrupt, but call_single_queue is not
->> initialized yet at this point. As a result, in the
->> generic_smp_call_function_single_interrupt(), NULL pointer dereference
->> occurs when list_replace_init() tries to access &q->list.next.
->> 
->> Any comments would be appreciated.
->> 
->> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
->> ---
->>  include/linux/smp.h |    1 +
->>  init/main.c         |    1 +
->>  kernel/smp.c        |   18 +++++++++++-------
->>  3 files changed, 13 insertions(+), 7 deletions(-)
->> 
->> diff --git a/include/linux/smp.h b/include/linux/smp.h
->> index 6dc95ca..0b81bba 100644
->> --- a/include/linux/smp.h
->> +++ b/include/linux/smp.h
->> @@ -114,6 +114,7 @@ int on_each_cpu(smp_call_func_t func, void *info, int 
->> wait);
->>  void smp_prepare_boot_cpu(void);
->>  
->>  extern unsigned int setup_max_cpus;
->> +void init_call_single_data(void);
->>  
->
->This no longer applys (although it did to 2.6.38).
->
->>  #else /* !SMP */
->>  
->
->I was going to point out that this will fail on up, but it looks
->like ba8dd03ac09f51a69c154b8cb508b701d713a2cd (Full conversion to
->early_initcall() interface, remove old interface) only found 2 of the
->previous 3 occurrances.
->
->However, this does point out that not all CONFIG_SMP compiles are
->CONFIG_USE_GENERIC_SMP_HELPERS, and you need to adjust accordingly.
->
->[ for other reviewers no this is not a simple revert of a hunk of that
->2.6.27 change, this is moving the code yet earlier ].
->
->> diff --git a/init/main.c b/init/main.c
->> index 33c37c3..02a7617 100644
->> --- a/init/main.c
->> +++ b/init/main.c
->> @@ -631,6 +631,7 @@ asmlinkage void __init start_kernel(void)
->>  		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
->>  				 "enabled early\n");
->>  	early_boot_irqs_disabled = false;
->> +	init_call_single_data();
->>  	local_irq_enable();
->>  
->
->1) this is too late, the point of the printk and the state variable is
->to make sure interrupts are enabled exactly when we expect for the
->first time.
+On Fri, Mar 25, 2011 at 09:12:22PM +0100, Arnd Bergmann wrote:
+> On Thursday 24 March 2011 16:21:08 Jamie Iles wrote:
+> > OTP memory is typically found in some embedded devices and can be
+> > used for storing boot code, cryptographic keys and other persistent
+> > information onchip.  This patch adds a generic layer that devices can
+> > register OTP with and allows access through a set of character
+> > device nodes.
+> 
+> Looks very nice overall, but I have a few minor comments.
 
-Ok, so the following place is correct?
+Thanks for taking the time to look at this.  I think I've addressed all 
+of your comments in the v3 series apart from defining OTP (which really 
+does need to be done so I'll make sure I do that in v4) and the sysfs 
+bus/class stuff.  I understand that the intention is for a bus to 
+actually represent a subsystem so that does make sense to me (I think!).
 
- 	profile_init();
-+	call_function_init();
- 	if (!irqs_disabled())
- 		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
- 				"enabled early\n");
- 	early_boot_irqs_disabled = false;
- 	local_irq_enable();
-
-
->
->2) please follow the naming conventions and name this xxx_init.  Actually
->I prefer xxx be the name of the subsystem (call_function) instead of
->the name of the data structure (call_single_data).
->
->>  	/* Interrupts are enabled now so all GFP allocations are safe. */
->> diff --git a/kernel/smp.c b/kernel/smp.c
->> index 7cbd0f2..f119610 100644
->> --- a/kernel/smp.c
->> +++ b/kernel/smp.c
->> @@ -74,9 +74,19 @@ static struct notifier_block __cpuinitdata 
->> hotplug_cfd_notifier = {
->>  	.notifier_call		= hotplug_cfd,
->>  };
->>  
->> -static int __cpuinit init_call_single_data(void)
->> +static int __cpuinit init_hotplug_cfd(void)
->>  {
->>  	void *cpu = (void *)(long)smp_processor_id();
->> +
->> +	hotplug_cfd(&hotplug_cfd_notifier, CPU_UP_PREPARE, cpu);
->> +	register_cpu_notifier(&hotplug_cfd_notifier);
->> +
->> +	return 0;
->> +}
->> +early_initcall(init_hotplug_cfd);
->> +
->
->Why did you seperate this from the rest of the function?  I haven't
->tested the patch but don't why this needs to be delayed.  If there
->is some reason I don't see, please describe it in the change log.
-
-There is not special reason. I just thought I should minimize the change
-to prevent regression because I cannot do hotplug test. Ok, next time
-I'll just change the name from init_call_single_data to
-call_function_init instead of separating it.
-
-It seems that Peter Zijlstra added this hotplug code at 8969a5ed, so I
-added him to Cc.
-
-Thanks for your review.
-
-Thanks,
-Takao Indoh
-
-
->
->> +void __init init_call_single_data(void)
->> +{
->>  	int i;
->>  
->>  	for_each_possible_cpu(i) {
->> @@ -85,13 +95,7 @@ static int __cpuinit init_call_single_data(void)
->>  		raw_spin_lock_init(&q->lock);
->>  		INIT_LIST_HEAD(&q->list);
->>  	}
->> -
->> -	hotplug_cfd(&hotplug_cfd_notifier, CPU_UP_PREPARE, cpu);
->> -	register_cpu_notifier(&hotplug_cfd_notifier);
->> -
->> -	return 0;
->>  }
->> -early_initcall(init_call_single_data);
->>  
->>  /*
->>   * csd_lock/csd_unlock used to serialize access to per-cpu csd resources
->> 
->
->milton
+Jamie
