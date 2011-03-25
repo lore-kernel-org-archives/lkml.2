@@ -1,158 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab1CYRky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 13:40:54 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38582 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab1CYRkv convert rfc822-to-8bit (ORCPT
+	id S1754213Ab1CYRqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 13:46:16 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:41393 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753110Ab1CYRqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 13:40:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kMQQ5lIJ+Rs+wPsuBImL948kmgc9nen6ne73IsPbCk/E5jIW7ybJu+YDeUaQu8JspW
-         XzD0f6roHX1XgBQk39DGH+pIYf+kV58FN8/nLnQ4yt+35RbORNkFjWokQJ7ODrWpfENI
-         Nw2VUnwr5EuWgGlVuTkbovzJcRMFz7p8RLyH4=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=ivaNVF2Jsz2rmxT-Pe2hs0jMUv7XZQ6K=2-d6@mail.gmail.com>
-References: <AANLkTin1kqjSgh8R5zzt_tkJAsTV_LxDjpPf5ngUHEr1@mail.gmail.com>
-	<s5hzkoluifr.wl%tiwai@suse.de>
-	<AANLkTi=RtEZyiry1FWiaT5LQbm3r-_9X_f2jPOQ6YCex@mail.gmail.com>
-	<s5hoc50vqrh.wl%tiwai@suse.de>
-	<AANLkTi=ivaNVF2Jsz2rmxT-Pe2hs0jMUv7XZQ6K=2-d6@mail.gmail.com>
-Date: Fri, 25 Mar 2011 10:40:50 -0700
-Message-ID: <AANLkTim57GdHyHdh=J2uOdBbqC+hMPV+uAZZvVt2V-SX@mail.gmail.com>
-Subject: Re: snd_card_disconnect race (sound/core/init.c)
-From: Russ Dill <russ.dill@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 Mar 2011 13:46:15 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=QGakrY7vGw+/DJbNdhklGMOfAiruVS2dm0AYmhFF3OYg56aCTaVFkxHnEhvcihGJVkV1I62c55My+yLkmmgbIE8dSd4gN9t/A8X8zqbhhDLQzQBG0bRzxezbjTR75em5;
+Date: Fri, 25 Mar 2011 10:46:09 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Dave Airlie <airlied@gmail.com>,
+        Michel =?ISO-8859-1?B?RORuemVy?= <michel@daenzer.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [git pull] drm fixes
+Message-ID: <20110325104609.2380f08e@jbarnes-desktop>
+In-Reply-To: <AANLkTi=etKQPyGw-hrddy4aatEYg5boONZ2T1z4tKGZH@mail.gmail.com>
+References: <alpine.DEB.2.00.1103230417270.29019@skynet.skynet.ie>
+	<1300864998.3522.71.camel@thor.local>
+	<AANLkTimg4n3Bb=XQYCPLGcCrC5NEQWjfzn-RHu2ZfW=h@mail.gmail.com>
+	<1300868532.3522.81.camel@thor.local>
+	<AANLkTi=mFKBqF48DwGsQL278grJChCVzw==D7vr49n09@mail.gmail.com>
+	<Pine.GSO.4.62.1103230633160.12612@umail>
+	<1300880747.16522.13.camel@thor.local>
+	<AANLkTik=GH8tGMjeKVfsmvX5WeX+4avnYan_nkGcCx20@mail.gmail.com>
+	<Pine.GSO.4.62.1103240628490.1156@umail>
+	<AANLkTimZWtOLiDT3KoUKZtsKfj4Aeu+XMF+rLc0wCSYk@mail.gmail.com>
+	<AANLkTimrHa-Fb=3HN68OML7RddsX_8rrJV_YOK3H6xST@mail.gmail.com>
+	<AANLkTi=x0ZZNfzCpKURXMCaiEncsFNQ2tg1zbARnJjx1@mail.gmail.com>
+	<AANLkTikti-xUYO_S-ipHzXeNsPtwD1kaLuHbGDMMTXev@mail.gmail.com>
+	<AANLkTik1HCrAus2Rv29EK_vGDf9d2m0E=cAuvF6LEQiQ@mail.gmail.com>
+	<AANLkTim4jYfAFHkaHAWRU2uAzgRJLP1p1=5dugZgYkhS@mail.gmail.com>
+	<AANLkTi=etKQPyGw-hrddy4aatEYg5boONZ2T1z4tKGZH@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 10:23 AM, Russ Dill <russ.dill@gmail.com> wrote:
-> On Thu, Mar 24, 2011 at 1:58 AM, Takashi Iwai <tiwai@suse.de> wrote:
->> At Thu, 24 Mar 2011 01:19:43 -0700,
->> Russ Dill wrote:
->>>
->>> On Wed, Mar 23, 2011 at 11:43 PM, Takashi Iwai <tiwai@suse.de> wrote:
->>> > At Wed, 23 Mar 2011 18:40:58 -0700,
->>> > Russ Dill wrote:
->>> >>
->>> >> With slub poisoning on, I'm seeing an oops in snd_disconnect_release
->>> >> with slub poison (6b6b6b6b). Investigating, snd_card_disconnect looks
->>> >> to be the possible culprit:
->>> >>
->>> >> 333         spin_lock(&card->files_lock);
->>> >> 334         mfile = card->files;
->>> >> 335         while (mfile) {
->>> >> 336                 file = mfile->file;
->>> >> 337
->>> >> 338                 /* it's critical part, use endless loop */
->>> >> 339                 /* we have no room to fail */
->>> >> 340                 mfile->disconnected_f_op = mfile->file->f_op;
->>> >> 341
->>> >> 342                 spin_lock(&shutdown_lock);
->>> >> 343                 list_add(&mfile->shutdown_list, &shutdown_files);
->>> >> 344                 spin_unlock(&shutdown_lock);
->>> >> 345
->>> >> 346                 mfile->file->f_op = &snd_shutdown_f_ops;
->>> >> 347                 fops_get(mfile->file->f_op);
->>> >> 348
->>> >> 349                 mfile = mfile->next;
->>> >> 350         }
->>> >> 351         spin_unlock(&card->files_lock);
->>> >>
->>> >> I'm not aware of any locking that would prevent the original release
->>> >> function running concurrently if it were started before line 346 was
->>> >> executed. The original release functions (such as snd_hwdep_release)
->>> >> call snd_card_remove_file which frees the mfile object which would
->>> >> have been just added to the shutdown_files list leading to a use of
->>> >> freed (or in my case poisoned) memory later on down the line when the
->>> >> shutdown_files gets walked again.
->>> >>
->>> >> It seems that 118dd6bf (ALSA: Clean up snd_monitor_file management,
->>> >> v2.6.30) may have either introduced this problem or made it worse
->>> >> since snd_card_file_remove previously removed items from the
->>> >> shutdown_files list before freeing them.
->>> >>
->>> >> I'm currently experiencing these crashes on 2.6.32.26, but I can't
->>> >> find any changes that would cause them not to occur on later kernel
->>> >> versions.
->>> >
->>> > Which device are you using?  USB-audio had a known problem at
->>> > disconnection, for example, and it was fixed recently.
->>> >
->>>
->>> I'm using USB-audio. I tried back-porting a couple of patches, to no avail:
->>>
->>> ALSA: usb-audio: fix oops due to cleanup race when disconnecting
->>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=382225e6
->>>
->>> ALSA: usb - Release capture substream URBs properly
->>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=76195fb0
->>>
->>> Backing out 118dd6bf fixes the problem. The app that is running when
->>> this crash occurs does full duplex streaming and segfaults while the
->>> USB-audio device is going away. I'd have to check, but I think its
->>> actually segfaulting it response to a disconnect of another piece of
->>> the composite device the USB-audio device is part of, so the release
->>> may actually be happening at the time the snd_card_disconnect is
->>> occurring. I don't see any locking that would prevent bad things from
->>> happening in this case, and the shutdown_files list is definitely
->>> poisoned.
->>
->> OK, what about the patch below?
->>
->>
->> Takashi
->>
->> ---
->> From: Takashi Iwai <tiwai@suse.de>
->> Subject: [PATCH] ALSA: Fix yet another race in disconnection
->>
->> This patch fixes a race between snd_card_file_remove() and
->> snd_card_disconnect().  When the card is added to shutdown_files list
->> in snd_card_disconnect(), but it's freed in snd_card_file_remove() at
->> the same time, the shutdown_files list gets corrupted.  The list member
->> must be freed in snd_card_file_remove() as well.
->>
->> Reported-by: Russ Dill <russ.dill@gmail.com>
->> Signed-off-by: Takashi Iwai <tiwai@suse.de>
->> ---
->>  sound/core/init.c |    4 ++++
->>  1 files changed, 4 insertions(+), 0 deletions(-)
->>
->> diff --git a/sound/core/init.c b/sound/core/init.c
->> index 3e65da2..a0080aa 100644
->> --- a/sound/core/init.c
->> +++ b/sound/core/init.c
->> @@ -848,6 +848,7 @@ int snd_card_file_add(struct snd_card *card, struct file *file)
->>                return -ENOMEM;
->>        mfile->file = file;
->>        mfile->disconnected_f_op = NULL;
->> +       INIT_LIST_HEAD(&mfile->shutdown_list);
->>        spin_lock(&card->files_lock);
->>        if (card->shutdown) {
->>                spin_unlock(&card->files_lock);
->> @@ -883,6 +884,9 @@ int snd_card_file_remove(struct snd_card *card, struct file *file)
->>        list_for_each_entry(mfile, &card->files_list, list) {
->>                if (mfile->file == file) {
->>                        list_del(&mfile->list);
->> +                       spin_lock(&shutdown_lock);
->> +                       list_del(&mfile->shutdown_list);
->> +                       spin_unlock(&shutdown_lock);
->>                        if (mfile->disconnected_f_op)
->>                                fops_put(mfile->disconnected_f_op);
->>                        found = mfile;
->> --
->> 1.7.4.1
->
-> It looks sane, I'll run it through my torture (about 24hr) testing and
-> let you know.
->
+On Fri, 25 Mar 2011 10:04:10 -0400
+Jerome Glisse <j.glisse@gmail.com> wrote:
 
-Passes testing and looks good! Thanks.
+> My feeling on that is that maybe too much code sharing accross gpu of
+> different generation hurt more than it helps. I have got the feeling
+> that some of the newer Intel asic share some of the bit of older one
+> and that intel is focusing there attention on newer one and obviously
+> doesn't have time or resource to check that change they do don't
+> impact older hw (i don't think such testing is doable without massive
+> investment which is very very unlikely to happen given size of linux
+> market).
+
+God yes.  The mantra of "code sharing is always good" sounds nice, but
+in my experience it's very often not true, especially when you're still
+trying to get things to work.
+
+We've been slowly splitting code out to make it more robust against
+changes to different generations, but we still have a little ways to
+go.  And of course, such splitting introduces problems in itself.
+
+But as a policy going forward, I'll advocate splitting code whenever a
+new generation requires something slightly different than an old one.
+As an example, rather than adding a few conditionals to our FDI
+training code to support newer chips, I've split it into separate
+functions entirely, leaving the old one alone.  If, after awhile we've
+decided that they really are mostly the same and we have things working
+well, we can consider merging them again, but only after extensive
+testing across generations.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
