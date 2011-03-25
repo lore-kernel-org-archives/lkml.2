@@ -1,105 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435Ab1CYCXW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 22:23:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38096 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab1CYCXV (ORCPT
+	id S934425Ab1CYCay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 22:30:54 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58210 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934385Ab1CYCax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 22:23:21 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=UaVp1nUTDLkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=EQ2y0qqVXTN24CGcXWwA:9 a=MOkRG8d7FNaKymhmsAAA:7 a=PtG8o-gHuOcN5nZ3UwP8AjpCsnQA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCHv2] tracing - avoid soft lockup in trace_pipe
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, fweisbec@gmail.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110321121008.GA1979@jolsa.brq.redhat.com>
-References: <1299970786-8075-1-git-send-email-jolsa@redhat.com>
-	 <1299970786-8075-3-git-send-email-jolsa@redhat.com>
-	 <20110313145811.GA30558@redhat.com>
-	 <1300111651.9910.87.camel@gandalf.stny.rr.com>
-	 <20110314141853.GB1936@jolsa.brq.redhat.com>
-	 <1300112926.9910.100.camel@gandalf.stny.rr.com>
-	 <20110314150746.GA4453@jolsa.brq.redhat.com>
-	 <1300116057.9910.106.camel@gandalf.stny.rr.com>
-	 <20110314180621.GA5987@jolsa.brq.redhat.com>
-	 <20110321121008.GA1979@jolsa.brq.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 24 Mar 2011 22:23:18 -0400
-Message-ID: <1301019798.14261.159.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Mar 2011 22:30:53 -0400
+Date: Thu, 24 Mar 2011 19:30:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com
+Subject: Re: [PATCH RFC tip/core/rcu 01/11] rcu: call __rcu_read_unlock()
+ in exit_rcu for tiny RCU
+Message-ID: <20110325023042.GA25459@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+ <1298425183-21265-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <4D67687A.6010906@cn.fujitsu.com>
+ <20110225194007.GC2269@linux.vnet.ibm.com>
+ <4D8ABE6C.7000105@cn.fujitsu.com>
+ <20110324130712.GH2322@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110324130712.GH2322@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-21 at 13:10 +0100, Jiri Olsa wrote:
-> On Mon, Mar 14, 2011 at 07:06:21PM +0100, Jiri Olsa wrote:
-> > On Mon, Mar 14, 2011 at 11:20:57AM -0400, Steven Rostedt wrote:
-> > > On Mon, 2011-03-14 at 16:07 +0100, Jiri Olsa wrote:
-> > > > So we get back the the while loop with no data added and with
-> > > > TRACE_TYPE_HANDLED return code, which will keep us in the loop.
-> > > > 
-> > > > Not sure this is bug or feature :)
-> > > > 
-> > > > 
-> > > Most bugs are features ;)
+On Thu, Mar 24, 2011 at 06:07:12AM -0700, Paul E. McKenney wrote:
+> On Thu, Mar 24, 2011 at 11:45:48AM +0800, Lai Jiangshan wrote:
+> > On 02/26/2011 03:40 AM, Paul E. McKenney wrote:
+> > > On Fri, Feb 25, 2011 at 04:29:46PM +0800, Lai Jiangshan wrote:
+> > >> On 02/23/2011 09:39 AM, Paul E. McKenney wrote:
+> > >>>
+> > >>> diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+> > >>> index 015abae..3cb8e36 100644
+> > >>> --- a/kernel/rcutiny_plugin.h
+> > >>> +++ b/kernel/rcutiny_plugin.h
+> > >>
+> > >> My original patch was just for tree RCU. It is not merged.
+> > >> I forgot the tiny RCU case then, this change is needed for tree & tiny RCU.
 > > > 
-> > > honestly, I'd love to rip out all the "bin", "hex" etc formats as they
-> > > are pretty much deprecated.
+> > > Good catch, I have applied the TREE_RCU patch.  I intend to submit
+> > > both for the next merge window.
 > > > 
-> > > But as you pointed out that this can keep us in the inner loop, we need
-> > > to fix that. I prefer to fix it within the nop print function. Perhaps
-> > > we need to fill in something. "type: %d", iter->ent->type ?
 > > 
-> > sounds ok :) attaching v2 patch
-> hi, any feedback?
+> > Hi, Paul
+> > 
+> > It is still not merged, and it is not in your git tree.
+> 
+> Indeed it is not yet in my external git tree.  Here is my normal work
+> flow:
+> 
+> 1.	Develop and test continuously.
+> 
+> 2.	Based on testing, review, etc., determin which commits are
+> 	ready for the next merge window.
+> 
+> 3.	Midway through the -rc releases, push the commits targeted
+> 	to the next merge window to rcu/next.  Push any additional
+> 	commits to rcu/testing.
+> 
+> 4.	Towards the last -rc, rebase, retest, wait for the -next
+> 	tree to take the changes, and, if all is well, send Ingo
+> 	a pull request.
+> 
+> Exposing your changes to -next during the merge window would cause
+> pointless irritation due to random conflicts with rapidly changing
+> code.
+> 
+> > I'm writing some patches, to avoid conflict with your code,
+> > which branch I should based on?
+> 
+> But, yes, it would be much easier for us to handle your changes if
+> I post them via -rcu.  So I have created a new branch rcu/kfree_rcu
+> that is -not- consumed by -next.  The rcu/next and rcu/testing
+> branches include your base kfree_rcu() patch, but not the uses of
+> it.  These branches are based on 2.6.38, and I will move them ahead
+> at -rc3 or -rc4.
+> 
+> These currently contain your original patches, but I will be pulling
+> your latest set.
 
-Ah, sorry, as this was a reply to the original thread, it didn't pop up
-immediately.
+Which are now available at rcu/kfree_rcu.
 
-> > 
-> > 
-> > ---
-> > running following commands:
-> > 
-> >   # enable the binary option
-> >   echo 1 > ./options/bin
-> >   # disable context info option
-> >   echo 0 > ./options/context-info 
-> >   # tracing only events
-> >   echo 1 > ./events/enable
-> >   cat trace_pipe
-> > 
-> > is causing lockup (in NON preemptive kernels) inside
-> > tracing_read_pipe function.
-> > 
-> > The reason are:
-> >  - bin/hex/raw output functions for events are set to
-> >    trace_nop_print function, which prints nothing and
-> >    returns TRACE_TYPE_HANDLED value
-> >  - LOST EVENT trace do not handle trace_seq overflow
-> > 
-> > These reasons force the while loop in tracing_read_pipe
-> > function never to break.
-> > 
-> > The attached patch fixies handling of lost event trace, and
-> > changes trace_nop_print to print minimal info, which is needed
-> > for the correct tracing_read_pipe processing.
-> > 
-> > v2 changes:
-> >  - omit the cond_resched changes by trace_nop_print changes
-> >  - WARN changed to WARN_ONCE and added info to be able
-> >    to find out the culprit
+							Thanx, Paul
 
-So this replaces both patches, correct?
-
-Thanks,
-
--- Steve
-
-
-
+> > Is origin/rcu/next OK?
+> 
+> origin/rcu/kfree_rcu for the moment to avoid messing up -next.  But
+> it will be origin/rcu/next after rebasing onto -rc3 or -rc4.
+> 
+> 							Thanx, Paul
