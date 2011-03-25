@@ -1,172 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934199Ab1CYBZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 21:25:07 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63088 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505Ab1CYBZF convert rfc822-to-8bit (ORCPT
+	id S1757406Ab1CYBeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 21:34:17 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:40546 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab1CYBeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 21:25:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=MlBVp2aNx/Fa/sh/j2+jeNm98sW3KcXJVhFaoVjnP7XNkFogHuEzUMZ+9Bi9GNpYbj
-         J47Rq4g9G9D9WV0V3r8ntJTN0QF8tritpEwAK1LamGB8GEmZ71W9i+TqNM7JnaDKuzz2
-         o9qdOJ7gId8jcyjZyoKn2lQQ921f1OSPfe3Sg=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=hgOcwO8ojQBtmqbROS1qrhm5HCmq7tRxesc=6@mail.gmail.com>
-References: <1301005107.2714.113.camel@edumazet-laptop>
-	<AANLkTinv+XGBjbFoK6vpyiDW6gBEBKFjUef+mCAMJU9i@mail.gmail.com>
-	<1301005946.2714.130.camel@edumazet-laptop>
-	<20110324.153623.45921344.davem@davemloft.net>
-	<1301006652.2714.145.camel@edumazet-laptop>
-	<AANLkTi=Xb3KCBKoVCcaVD5iyCtMCAnYaGF_DTeFQ0ays@mail.gmail.com>
-	<AANLkTinh9Li7DGgSqcZ+p9peS5XrHWomerSvKTYwHZ9-@mail.gmail.com>
-	<AANLkTi=hgOcwO8ojQBtmqbROS1qrhm5HCmq7tRxesc=6@mail.gmail.com>
-Date: Fri, 25 Mar 2011 02:25:04 +0100
-Message-ID: <AANLkTinQq=BAVS1FrH80+VukTfAK1OKOkjEH4=gwZkv6@mail.gmail.com>
-Subject: Re: [PATCH] ipv4: fix fib metrics
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 24 Mar 2011 21:34:16 -0400
+Date: Thu, 24 Mar 2011 21:34:02 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] APM: delete APM in Linux-2.6.40
+In-reply-to: <20110325010705.GB4535@khazad-dum.debian.net>
+Message-id: <alpine.LFD.2.02.1103242124470.32565@x980>
+References: <alpine.LFD.2.02.1103232321070.3848@x980>
+ <20110324154505.934a56a0.sfr@canb.auug.org.au>
+ <alpine.LFD.2.02.1103240336590.4529@x980>
+ <20110324102116.GA17446@khazad-dum.debian.net>
+ <alpine.LFD.2.02.1103241903030.16085@x980>
+ <20110325010705.GB4535@khazad-dum.debian.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 2:04 AM, Alessandro Suardi
-<alessandro.suardi@gmail.com> wrote:
-> On Fri, Mar 25, 2011 at 1:53 AM, Kyle Moffett <kyle@moffetthome.net> wrote:
->> On Thu, Mar 24, 2011 at 20:12, Alessandro Suardi
->> <alessandro.suardi@gmail.com> wrote:
->>> On Thu, Mar 24, 2011 at 11:44 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->>>> Le jeudi 24 mars 2011 à 15:36 -0700, David Miller a écrit :
->>>>> From: Eric Dumazet <eric.dumazet@gmail.com>
->>>>> Date: Thu, 24 Mar 2011 23:32:26 +0100
->>>>>
->>>>> > Then it doesnt work anymore because it parses an ipip field from
->>>>> > ip route get ...
->>>>> >
->>>>> > $ ip ro get 192.168.1.1
->>>>> > 192.168.1.1 dev wlan0  src 192.168.1.21
->>>>> >     cache  ipid 0x784c mtu 1500 advmss 1460 hoplimit 64
->>>>> >
->>>>> >
->>>>> > Maybe you upgraded iproute2
->>>>>
->>>>> I'm leaning towards app bug too.
->>>>>
->>>>> These default metrics wouldn't get printed before, but now because of
->>>>> how metrics are handled, they will.
->>>>>
->>>>> Userland needs to cope properly with this.
->>>>
->>>>
->>>> BTW, ipip is not always printed (even on old kernels) : One needs to
->>>> actually need ipip generation .
->>>>
->>>> edumazet@edumazet-laptop:~$ ping 4.4.4.4
->>>> PING 4.4.4.4 (4.4.4.4) 56(84) bytes of data.
->>>> ^C
->>>>
->>>> edumazet@edumazet-laptop:~$ ip ro get 4.4.4.4
->>>> 4.4.4.4 dev ppp0  src 10.150.51.210
->>>>    cache  mtu 1500 advmss 1460 hoplimit 64
->>>>
->>>> edumazet@edumazet-laptop:~$ ping -s 2000 4.4.4.4
->>>> PING 4.4.4.4 (4.4.4.4) 2000(2028) bytes of data.
->>>> ^C
->>>>
->>>> edumazet@edumazet-laptop:~$ ip ro get 4.4.4.4
->>>> 4.4.4.4 dev ppp0  src 10.150.51.210
->>>>    cache  ipid 0xf99a mtu 1500 advmss 1460 hoplimit 64
->>>>
->>>>
->>>> This on a 2.6.35 kernel
->>>>
->>>> I suspect Alessandro tool had a bug anyway.
->>>
->>> I still contend this is a kernel regression :)
->>>
->>>
->>> vpnc is a custom build from trunk as of June 2010, with openssl support
->>>  to talk to my corporate VPN concentrator:
->>>
->> [...snip...]
->>>
->>> My iproute package, on this up-to-date Fedora 14 x86_64, has last been
->>>  updated on 20 Nov 2010, and back then I was running 2.6.37-rc2-git4
->>>  (I keep around my historical .config files, so I know for sure).
->>>
->>> [root@duff ~]# ip -V
->>> ip utility, iproute2-ss100804
->>> [root@duff ~]# rpm -qf /sbin/ip
->>> iproute-2.6.35-6.fc14.x86_64
->>>
->>> The behavior of this version of 'ip' as invoked by this version of 'vpnc'
->>>  is something that has worked for the last 4 months, and isn't working
->>>  right now. Furthermore, previous versions of 'ip' in Fedora 14 were
->>>  also working with the same 'vpnc', which means it's actually 9 months
->>>  minimum of working behavior.
->>>
->>> If some change in the kernel broke my userspace, this usually qualifies
->>>  as a regression.
->>>
->>> That said, if you can point me to a working version of iproute with the
->>>  current kernel, I have no problem in upgrading it :)
->>
->> Historically you could usually take the text output of "ip route get"
->> and feed it right back to "ip route add", and it would work, but this
->> was never guaranteed.
->>
->> Recently, the "ip route get" command started printing extra statistics
->> (like "ipid") after the other information, but obviously those
->> statistics are not valid for an "ip route add" command.
->>
->> The kernel bug was that the "ip" command was not always getting those
->> statistics from the kernel, so obviously they would not be printed.
->>
->> Unfortunately vpnc still tries to pass the entire output of "ip route
->> get" as arguments to "ip route add"; the latter command reports an
->> error when it gets the statistics from the former command as input.
->>
->> So this is certainly not a kernel bug.  At *best* it's an iproute bug,
->> depending on whether or not this is considered valid:
->>  RT="$(ip route get [...])"
->>  ip route flush
->>  ip route add ${RT}
->
-> Fair enough, I get it.
->
-> Looks like the fix_ip_get_output() function in /etc/vpnc/vpnc-script
->  needs to be augmented from the current
->
->  sed 's/cache//;s/metric \?[0-9]\+ [0-9]\+//g;s/hoplimit [0-9]\+//g'
->
->  to something slightly more comprehensive.
->
->
-> Thanks for the explanation - will keep around -git2 for my vpnc
->  needs until I get this one sorted out :)
+> > > People with a ThinkPad T23, T30 will really not appreciate this, and it
+> > > should not be too difficult to recruit some as testers.
+> > 
+> > I have both, and they both support ACPI.
+> 
+> I wonder why I had some users of those two boxes advocating APM, maybe
+> it used to work better or something.  Or I got the T21 and A30 confused
+> with the T23.
 
-...which didn't take that long - one last bugging question and I'm happily
- off to sleep; does ipid always come in the form of 0x followed by four
- bytes representing hex values ? In a perhaps inelegant but working way
- (I'm now writing through the VPN tunnel),
+In 2003, APM worked better than ACPI on the T21 and the T23.
+In 2005 or so, I think ACPI was working fine on them.
 
-  sed 's/cache//;s/metric \?[0-9]\+ [0-9]\+//g;s/hoplimit
-[0-9]\+//g;s/ipid 0x....//g'
+> Well, I don't think we need to support the thre-digit series ThinkPads,
+> the number of those still working is probably on the four digits
+> world-wide.  And I haven't heard from anyone with a T21 or A31 in a
+> while, so they might be down to five digits already.
+> 
+> If the T23 can actually work well in ACPI mode, I retract my objection.
 
- appears to be Work For Me (TM).
+Thanks, ACPI works well on the T23.
+Indeed, it works well back to the T20:-)
+
+> > Re: lasting for years.
+> > Actually, I used to have several of both, but they're dying off,
+> > and they are excruciatingly slow...
+> 
+> Depends on what you use them for, I suppose.
+
+My experience with old-laptops is:
+
+1. hdd dies
+2. CMOS battery dies
+3. main battery dies
+
+But from a practical view of runing a new distro on an old laptop,
+the distros seem to drop the video support for the old controllers,
+leaving you in VGA mode.  That is the case with the T23, which
+has an S3 SuperSavage video controller.
+
+cheers,
+Len Brown, Intel Open Source Technolgy Center
 
 
-Thanks loads,
-
---alessandro
-
- "There's always a siren singing you to shipwreck"
-
-   (Radiohead, "There There")
