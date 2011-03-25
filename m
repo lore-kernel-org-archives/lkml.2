@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab1CYXyj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:54:39 -0400
-Received: from kroah.org ([198.145.64.141]:42028 "EHLO coco.kroah.org"
+	id S932799Ab1CYXyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:54:41 -0400
+Received: from kroah.org ([198.145.64.141]:42021 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932677Ab1CYXxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932672Ab1CYXxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 19:53:16 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:14 2011
-Message-Id: <20110325234514.342046298@clark.kroah.org>
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:44 2011
+Message-Id: <20110325234844.780045218@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:38 -0700
+Date: Fri, 25 Mar 2011 16:47:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stuart Hayes <stuart_hayes@yahoo.com>,
-        Doug Warzecha <douglas_warzecha@dell.com>,
-        Chuck Ebbert <cebbert@redhat.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [62/63] dcdbas: force SMI to happen when expected
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+        Amir Goldstein <amir73il@users.sf.net>, "Theodore Tso" <tytso@mit.edu>
+Subject: [55/55] ext4: skip orphan cleanup if fs has unknown ROCOMPAT features
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Stuart Hayes <stuart_hayes@yahoo.com>
+From: Amir Goldstein <amir73il@gmail.com>
 
-commit dd65c736d1b5312c80c88a64bf521db4959eded5 upstream.
+commit d39195c33bb1b5fdcb0f416e8a0b34bfdb07a027 upstream.
 
-The dcdbas driver can do an I/O write to cause a SMI to occur.  The SMI handler
-looks at certain registers and memory locations, so the SMI needs to happen
-immediately.  On some systems I/O writes are posted, though, causing the SMI to
-happen well after the "outb" occurred, which causes random failures.  Following
-the "outb" with an "inb" forces the write to go through even if it is posted.
+Orphan cleanup is currently executed even if the file system has some
+number of unknown ROCOMPAT features, which deletes inodes and frees
+blocks, which could be very bad for some RO_COMPAT features,
+especially the SNAPSHOT feature.
 
-Signed-off-by: Stuart Hayes <stuart_hayes@yahoo.com>
-Acked-by: Doug Warzecha <douglas_warzecha@dell.com>
-Cc: Chuck Ebbert <cebbert@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+This patch skips the orphan cleanup if it contains readonly compatible
+features not known by this ext4 implementation, which would prevent
+the fs from being mounted (or remounted) readwrite.
+
+Signed-off-by: Amir Goldstein <amir73il@users.sf.net>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firmware/dcdbas.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/ext4/super.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/firmware/dcdbas.c
-+++ b/drivers/firmware/dcdbas.c
-@@ -268,8 +268,10 @@ int dcdbas_smi_request(struct smi_cmd *s
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -75,6 +75,7 @@ static void ext4_write_super(struct supe
+ static int ext4_freeze(struct super_block *sb);
+ static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
+ 		       const char *dev_name, void *data);
++static int ext4_feature_set_ok(struct super_block *sb, int readonly);
+ static void ext4_destroy_lazyinit_thread(void);
+ static void ext4_unregister_li_request(struct super_block *sb);
+ static void ext4_clear_request_list(void);
+@@ -2107,6 +2108,13 @@ static void ext4_orphan_cleanup(struct s
+ 		return;
  	}
  
- 	/* generate SMI */
-+	/* inb to force posted write through and make SMI happen now */
- 	asm volatile (
--		"outb %b0,%w1"
-+		"outb %b0,%w1\n"
-+		"inb %w1"
- 		: /* no output args */
- 		: "a" (smi_cmd->command_code),
- 		  "d" (smi_cmd->command_address),
++	/* Check if feature set would not allow a r/w mount */
++	if (!ext4_feature_set_ok(sb, 0)) {
++		ext4_msg(sb, KERN_INFO, "Skipping orphan cleanup due to "
++			 "unknown ROCOMPAT features");
++		return;
++	}
++
+ 	if (EXT4_SB(sb)->s_mount_state & EXT4_ERROR_FS) {
+ 		if (es->s_last_orphan)
+ 			jbd_debug(1, "Errors on filesystem, "
 
 
