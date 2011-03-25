@@ -1,164 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab1CYN1i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:27:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34584 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751981Ab1CYNVw (ORCPT
+	id S1752527Ab1CYN2X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:28:23 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:61132 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab1CYN2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:21:52 -0400
-Message-Id: <20110325132047.456346554@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Fri, 25 Mar 2011 13:21:50 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: LAK <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-Subject: [patch 01/23] arm: Ns9xxx: Remove private irq flow handler
-References: <20110325131617.258789658@linutronix.de>
-Content-Disposition: inline;
-	filename=arm-ns9xxx-remove-private-irq-flow-handler.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
+	Fri, 25 Mar 2011 09:28:22 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: benh@kernel.crashing.org
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, anton@samba.org,
+        Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH] POWER: perf_event: Skip updating kernel counters if register value shrinks
+Date: Fri, 25 Mar 2011 09:28:09 -0400
+Message-Id: <1301059689-4556-1-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-handle_prio_irq is almost identical with handle_fasteoi_irq. The
-subtle differences are
+It is possible on POWER7 for some perf events to have values decrease.  This
+causes a problem with the way the kernel counters are updated.  Deltas are
+computed and then stored in a 64 bit value while the registers are 32 bits
+wide so if new value is smaller than previous value, the delta is a very
+large positive value.  As a work around this patch skips updating the kernel
+counter in when the new value is smaller than the previous.  This can lead to
+a lack of precision in the coutner values, but from my testing the value is
+typcially fewer than 10 samples at a time.
 
-1) The handler checks for IRQ_DISABLED after the device handler has
-   been called. In case it's set it masks the interrupt.
-
-2) When the handler sees IRQ_DISABLED on entry it masks the interupt
-   in the same way as handle_fastoei_irq, but does not set the
-   IRQ_PENDING flag.
-
-3) Instead of gracefully handling a recursive interrupt it crashes the
-   kernel.
-
-#1 is just relevant when a device handler calls disable_irq_nosync()
-   and it does not matter whether we mask the interrupt right away or
-   not. We handle lazy masking for disable_irq anyway, so there is no
-   real reason to have this extra mask in place.
-
-#2 will prevent the resend of a pending interrupt, which can result in
-   lost interrupts for edge type interrupts. For level type interrupts
-   the resend is a noop in the generic code. According to the
-   datasheet all interrupts are level type, so marking them as such
-   will result in the exact same behaviour as the private
-   handle_prio_irq implementation.
-
-#3 is just stupid. Crashing the kernel instead of handling a problem
-   gracefully is just wrong. With the current semantics- all handlers
-   run with interrupts disabled - this is even more wrong.
-
-Rename ack to eoi, remove the unused mask_ack, switch to
-handle_fasteoi_irq and remove the private function.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org
-LKML-Reference: <20110202212552.299898447@linutronix.de>
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
 ---
- arch/arm/mach-ns9xxx/irq.c |   58 +++------------------------------------------
- 1 file changed, 4 insertions(+), 54 deletions(-)
+ arch/powerpc/kernel/perf_event.c |   26 +++++++++++++++++++++-----
+ 1 files changed, 21 insertions(+), 5 deletions(-)
 
-Index: linux-2.6-tip/arch/arm/mach-ns9xxx/irq.c
-===================================================================
---- linux-2.6-tip.orig/arch/arm/mach-ns9xxx/irq.c
-+++ linux-2.6-tip/arch/arm/mach-ns9xxx/irq.c
-@@ -31,17 +31,11 @@ static void ns9xxx_mask_irq(struct irq_d
- 	__raw_writel(ic, SYS_IC(prio / 4));
- }
+diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+index 97e0ae4..6752dc1 100644
+--- a/arch/powerpc/kernel/perf_event.c
++++ b/arch/powerpc/kernel/perf_event.c
+@@ -416,6 +416,15 @@ static void power_pmu_read(struct perf_event *event)
+ 		prev = local64_read(&event->hw.prev_count);
+ 		barrier();
+ 		val = read_pmc(event->hw.idx);
++		/*
++		 * POWER7 can roll back counter values, if the new value is
++		 * smaller than the previous value it will cause the delta
++		 * and the counter to have bogus values.  If this is the
++		 * case skip updating anything until the counter grows again.
++		 * This can lead to a small lack of precision in the counters.
++		 */
++		if (val < prev)
++			return;
+ 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
  
--static void ns9xxx_ack_irq(struct irq_data *d)
-+static void ns9xxx_eoi_irq(struct irq_data *d)
- {
- 	__raw_writel(0, SYS_ISRADDR);
- }
- 
--static void ns9xxx_maskack_irq(struct irq_data *d)
--{
--	ns9xxx_mask_irq(d);
--	ns9xxx_ack_irq(d);
--}
--
- static void ns9xxx_unmask_irq(struct irq_data *d)
- {
- 	/* XXX: better use cpp symbols */
-@@ -52,56 +46,11 @@ static void ns9xxx_unmask_irq(struct irq
- }
- 
- static struct irq_chip ns9xxx_chip = {
--	.irq_ack	= ns9xxx_ack_irq,
-+	.irq_eoi	= ns9xxx_eoi_irq,
- 	.irq_mask	= ns9xxx_mask_irq,
--	.irq_mask_ack	= ns9xxx_maskack_irq,
- 	.irq_unmask	= ns9xxx_unmask_irq,
- };
- 
--#if 0
--#define handle_irq handle_level_irq
--#else
--static void handle_prio_irq(unsigned int irq, struct irq_desc *desc)
--{
--	struct irqaction *action;
--	irqreturn_t action_ret;
--
--	raw_spin_lock(&desc->lock);
--
--	BUG_ON(desc->status & IRQ_INPROGRESS);
--
--	desc->status &= ~(IRQ_REPLAY | IRQ_WAITING);
--	kstat_incr_irqs_this_cpu(irq, desc);
--
--	action = desc->action;
--	if (unlikely(!action || (desc->status & IRQ_DISABLED)))
--		goto out_mask;
--
--	desc->status |= IRQ_INPROGRESS;
--	raw_spin_unlock(&desc->lock);
--
--	action_ret = handle_IRQ_event(irq, action);
--
--	/* XXX: There is no direct way to access noirqdebug, so check
--	 * unconditionally for spurious irqs...
--	 * Maybe this function should go to kernel/irq/chip.c? */
--	note_interrupt(irq, desc, action_ret);
--
--	raw_spin_lock(&desc->lock);
--	desc->status &= ~IRQ_INPROGRESS;
--
--	if (desc->status & IRQ_DISABLED)
--out_mask:
--		desc->irq_data.chip->irq_mask(&desc->irq_data);
--
--	/* ack unconditionally to unmask lower prio irqs */
--	desc->irq_data.chip->irq_ack(&desc->irq_data);
--
--	raw_spin_unlock(&desc->lock);
--}
--#define handle_irq handle_prio_irq
--#endif
--
- void __init ns9xxx_init_irq(void)
- {
- 	int i;
-@@ -119,7 +68,8 @@ void __init ns9xxx_init_irq(void)
- 
- 	for (i = 0; i <= 31; ++i) {
- 		set_irq_chip(i, &ns9xxx_chip);
--		set_irq_handler(i, handle_irq);
-+		set_irq_handler(i, handle_fasteoi_irq);
- 		set_irq_flags(i, IRQF_VALID);
-+		irq_set_status_flags(i, IRQ_LEVEL);
+ 	/* The counters are only 32 bits wide */
+@@ -449,8 +458,10 @@ static void freeze_limited_counters(struct cpu_hw_events *cpuhw,
+ 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
+ 		prev = local64_read(&event->hw.prev_count);
+ 		event->hw.idx = 0;
+-		delta = (val - prev) & 0xfffffffful;
+-		local64_add(delta, &event->count);
++		if (val >= prev) {
++			delta = (val - prev) & 0xfffffffful;
++			local64_add(delta, &event->count);
++		}
  	}
  }
-
+ 
+@@ -458,14 +469,16 @@ static void thaw_limited_counters(struct cpu_hw_events *cpuhw,
+ 				  unsigned long pmc5, unsigned long pmc6)
+ {
+ 	struct perf_event *event;
+-	u64 val;
++	u64 val, prev;
+ 	int i;
+ 
+ 	for (i = 0; i < cpuhw->n_limited; ++i) {
+ 		event = cpuhw->limited_counter[i];
+ 		event->hw.idx = cpuhw->limited_hwidx[i];
+ 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
+-		local64_set(&event->hw.prev_count, val);
++		prev = local64_read(&event->hw.prev_count);
++		if (val > prev)
++			local64_set(&event->hw.prev_count, val);
+ 		perf_event_update_userpage(event);
+ 	}
+ }
+@@ -1197,7 +1210,10 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+ 
+ 	/* we don't have to worry about interrupts here */
+ 	prev = local64_read(&event->hw.prev_count);
+-	delta = (val - prev) & 0xfffffffful;
++	if (val < prev)
++		delta = 0;
++	else
++		delta = (val - prev) & 0xfffffffful;
+ 	local64_add(delta, &event->count);
+ 
+ 	/*
+-- 
+1.7.1
 
