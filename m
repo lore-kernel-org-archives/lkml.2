@@ -1,107 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab1CYAgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 20:36:22 -0400
-Received: from leo.clearchain.com ([199.73.29.74]:54797 "EHLO
+	id S1757389Ab1CYAm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 20:42:56 -0400
+Received: from leo.clearchain.com ([199.73.29.74]:53227 "EHLO
 	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab1CYAgU (ORCPT
+	with ESMTP id S1755356Ab1CYAmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 20:36:20 -0400
-Date: Fri, 25 Mar 2011 10:36:02 +1000
+	Thu, 24 Mar 2011 20:42:54 -0400
+Date: Fri, 25 Mar 2011 10:42:40 +1000
 From: Peter Hutterer <peter.hutterer@who-t.net>
 To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Chris Bagwell <chris@cnpbagwell.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>,
+        Chris Bagwell <chris@cnpbagwell.com>,
         Nikolai Kondrashov <spbnick@gmail.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v3] Documentation: Add evdev type and code definitions
-Message-ID: <20110325003602.GA14035@barra.bne.redhat.com>
+Message-ID: <20110325004240.GA13453@barra.bne.redhat.com>
 References: <1300988652-25353-1-git-send-email-chase.douglas@canonical.com>
- <AANLkTimv3ZVQmgB-tbMthCYdEsK3Spk0WY9Vs9VLQEVs@mail.gmail.com>
- <4D8B9F6F.5010705@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D8B9F6F.5010705@canonical.com>
+In-Reply-To: <1300988652-25353-1-git-send-email-chase.douglas@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Fri, 25 Mar 2011 11:06:09 +1030 (CST)
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Fri, 25 Mar 2011 11:12:45 +1030 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 03:45:51PM -0400, Chase Douglas wrote:
-> On 03/24/2011 02:44 PM, Chris Bagwell wrote:
-> > Looking good.  Minor comments at end.
-> > 
-> > On Thu, Mar 24, 2011 at 12:44 PM, Chase Douglas
-> > <chase.douglas@canonical.com> wrote:
-> >> +Touchscreens:
-> >> +----------
-> >> +ABS_{X,Y} must be reported with the location of the touch. BTN_TOUCH must be
-> >> +used to report when a touch is active on the screen.
-> >> +BTN_{MOUSE,LEFT,MIDDLE,RIGHT} must not be reported. BTN_TOOL_<name> events
-> >> +should be reported where possible.
-> > 
-> > Does the real button event restriction solve something?  I know
-> > majority of touchscreens are not sending a button today but usually
-> > there is a button on the touchscreen frame that I'd image at least
-> > some devices hooking it up to touchscreen interface.
-> >
-> > stylus+touchscreen combo devices are surely going to want to do this.
+On Thu, Mar 24, 2011 at 01:44:12PM -0400, Chase Douglas wrote:
+> This commit adds the file Documentation/input/evdev-codes.txt.
 > 
-> Perhaps this should be more clearly for touchscreen-only devices (not
-> tablets or a mix). The problem we end up seeing is drivers who use
-> BTN_LEFT because they want a touch to generate a primary button press in
-> X. I want to prevent people from doing this.
+> Cc: Henrik Rydberg <rydberg@euromail.se>
+> Cc: Chris Bagwell <chris@cnpbagwell.com>
+> Cc: Peter Hutterer <peter.hutterer@who-t.net>
+> Cc: Nikolai Kondrashov <spbnick@gmail.com>
+> Cc: linux-input@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Acked-by: Henrik Rydberg <rydberg@euromail.se>
+> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> ---
+> This revision has been a long time coming. Sorry for the delay! Changes from the
+> previous revision:
+> 
+> * Use EVIOCG* to retrieve evdev state and note sysfs capabilities info
+> * Clarify wording of BTN_TOOL_<name> and BTN_TOUCH usage for multi-finger modes
+> * Remove KEY_POWER, KEY_SUSPEND documentation
+> * State that EV_PWR is not well defined and will be addressed later
+> * Add text about reporting switch state when binding or resuming
+> * Add a "Guidelines" section describing basic mouse, touchscreen, and trackpad
+>   protocol usage
+> 
+> This is perhaps more important than ever before. We're seeing a lot of new
+> drivers that were obviously only written to support Android and do not conform
+> to the evdev protocol that X.org's input modules need and expect. I've had
+> multiple people come to me asking why their android derived touchscreen driver
+> isn't working properly in Ubuntu, only to find that the driver is only reporting
+> ABS_MT_POSITION_{X,Y} and ABS_MT_TOUCH_MAJOR. Hopefully this will help others
+> understand what is required for a full window management system based on
+> historical X.org usage.
+> 
+>  Documentation/input/evdev-codes.txt |  238 +++++++++++++++++++++++++++++++++++
+>  1 files changed, 238 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/input/evdev-codes.txt
+> 
+> diff --git a/Documentation/input/evdev-codes.txt b/Documentation/input/evdev-codes.txt
+> new file mode 100644
+> index 0000000..473ce9d
+> --- /dev/null
+> +++ b/Documentation/input/evdev-codes.txt
+> @@ -0,0 +1,238 @@
+> +The evdev protocol uses a map of types and codes to express input device values
+> +to userspace. This document describes the types and codes and how and when they
+> +may be used.
 
-suggest that they use BTN_0 instead then?
+the term "event" is overloaded. You use EV_SYN to "separate events" but
+EV_REL to "describe relative input events". some explanation before you
+start with the Types would be useful. e.g.
+
+    A single hardware event may result in multiple struct input_event. Each
+    such event contains the new value of a single data item. EV_SYN is used
+    to separate between hardware events. In the following, the term "event"
+    refers to a single struct input_event and the term "hardware event" to
+    an a series of struct input_events that reflect the hardware state
+    change.
+
+and then use some other word instead of events for the remainder.
+
+also missing something like this:
+"A (struct input_event) event is a triplet of type, code and value. The type
+classifies the logical category of the event. The code specifies the data
+item affected.  The value is the new value for this data item."
+
+> +
+> +The evdev protocol is a stateful protocol. Events are emitted only when values
+> +of evdev codes have changed. However, the state is maintained within the Linux
+> +input subsystem; drivers do not need to maintain the state and may attempt to
+> +emit unchanged values without harm. Userspace may obtain the current state of
+> +evdev code values using the EVIOCG* ioctls defined in linux/input.h. The evdev
+> +reports supported by a device are also provided by sysfs in
+> +class/input/event*/device/capabilities/, and the properties of a device are
+> +provided in class/input/event*/device/properties.
+> +
+> +Types:
+> +==========
+> +Types are groupings of codes under a logical input construct. Each type has a
+> +set of applicable codes to be used in generating events. See the Codes section
+> +for details on valid codes for each type.
+> +
+> +* EV_SYN:
+> +  - Used as markers to separate events. Events may be separated in time or in
+> +    space, such as with the multitouch protocol.
+> +
+> +* EV_KEY:
+> +  - Used to describe keyboard and other key-like input events.
+
+"Used to describe state changes of keyboards, buttons or other key-like
+devices"
+
+> +
+> +* EV_REL:
+> +  - Used to describe relative input events, e.g. moving the mouse 5 units to the
+> +    left.
+> +
+> +* EV_ABS:
+> +  - Used to describe absolute input events, e.g. describing the coordinates of a
+> +    touch on a touchscreen.
+
+I'd use "relative axis value changes" to avoid the "event" term overloading.
+
+> +
+> +* EV_MSC:
+> +  - Used to describe miscellaneous input events that do not fit into other
+> +    types.
+
+s/input events/input data/
+
+> +
+> +* EV_SW:
+> +  - Used to describe binary state input switches.
+> +
+> +* EV_LED:
+> +  - Used to turn LEDs on devices on and off.
+> +
+> +* EV_SND:
+> +  - Used to output sound to devices.
+> +
+> +* EV_REP:
+> +  - Used for autorepeating devices.
+> +
+> +* EV_FF:
+> +  - Used to send force feedback commands to an input device.
+> +
+> +* EV_PWR:
+> +  - A special type for power button and switch input.
+> +
+> +* EV_FF_STATUS:
+> +  - Used to receive force feedback device status.
+> +
+> +Codes:
+> +==========
+> +Codes define the precise type of event.
+
+s/event/<something less ambiguous> :)
+
+> +
+> +EV_SYN:
+> +----------
+> +EV_SYN event values are undefined. Their usage is
+
+> +defined only by when they are sent in the evdev event stream.
+> +
+> +* SYN_REPORT:
+> +  - Used to synchronize and separate events into frames of time. For example,
+> +    motion of a mouse may set the REL_X and REL_Y values for one motion, then
+> +    emit a SYN_REPORT. The next motion will emit more REL_X and REL_Y values and
+> +    send another SYN_REPORT.
+> +
+> +* SYN_CONFIG:
+> +  - TBD
+> +
+> +* SYN_MT_REPORT:
+> +  - Used to synchronize and separate touch events. See the
+> +    multi-touch-protocol.txt document for more information.
+> +
+> +EV_KEY:
+> +----------
+> +EV_KEY events take the form KEY_<name> or BTN_<name>. For example, KEY_A is used
+> +to represent the 'A' key on a keyboard. When a key is depressed, an event with
+> +the key's code is emitted with value 1. When the key is released, an event is
+> +emitted with value 0. Some hardware send events when a key is repeated. These
+> +events have a value of 2. In general, KEY_<name> is used for keyboard keys, and
+> +BTN_<name> is used for other types of momentary switch events.
+> +
+> +A few EV_KEY codes have special meanings:
+> +
+> +* BTN_TOOL_<name>:
+> +  - These codes are used in conjunction with input trackpads, tablets, and
+> +    touchscreens. These devices may be used with fingers, pens, or other tools.
+> +    When an event occurs and a tool is used, the corresponding BTN_TOOL_<name>
+> +    code should be set to a value of 1. When the tool is no longer interacting
+> +    with the input device, the BTN_TOOL_<name> code should be reset to 0. All
+> +    trackpads, tablets, and touchscreens should use at least one BTN_TOOL_<name>
+> +    code when events are generated.
+> +
+> +* BTN_TOUCH:
+> +    BTN_TOUCH is used for touch contact. While an input tool is determined to be
+> +    within meaningful physical contact, the value of this property must be set
+> +    to 1. Meaningful physical contact may mean any contact, or it may mean
+> +    contact conditioned by an implementation defined property. For example, a
+> +    touchpad may set the value to 1 only when the touch pressure rises above a
+> +    certain value. BTN_TOUCH may be combined with BTN_TOOL_<name> codes. For
+> +    example, a pen tablet may set BTN_TOOL_PEN to 1 and BTN_TOUCH to 0 while the
+> +    pen is hovering over but not touching the tablet surface.
+> +
+> +Note: For appropriate function of the legacy mousedev emulation driver,
+> +BTN_TOUCH must be the first evdev code emitted in a synchronization frame.
+> +
+> +Note: Historically a touch device with BTN_TOOL_FINGER and BTN_TOUCH was
+> +interpreted as a touchpad by userspace, while a similar device without
+> +BTN_TOOL_FINGER was interpreted as a touchscreen. For backwards compatibility
+> +with current userspace it is recommended to follow this distinction. In the
+> +future, this distinction will be deprecated and the device properties ioctl
+> +EVIOCGPROP, defined in linux/input.h, will be used to convey the device type.
+> +
+> +* BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP, BTN_TOOL_TRIPLETAP, BTN_TOOL_QUADTAP:
+> +  - These codes denote one, two, three, and four finger interaction on a
+> +    trackpad or touchscreen. For example, if the user uses two fingers and moves
+> +    them on the touchpad in an effort to scroll content on screen,
+> +    BTN_TOOL_DOUBLETAP should be set to value 1 for the duration of the motion.
+> +    Note that all BTN_TOOL_<name> codes and the BTN_TOUCH code are orthogonal in
+> +    purpose. A trackpad event generated by finger touches should generate events
+> +    for one code from each group. At most only one of these BTN_TOOL_<name>
+> +    codes should have a value of 1 during any synchronization frame.
+> +
+> +Note: Historically some drivers emitted multiple of the finger count codes with
+> +a value of 1 in the same synchronization frame. This usage is deprecated.
+> +
+> +Note: In multitouch drivers, the input_mt_report_finger_count() function should
+> +be used to emit these codes. Please see multi-touch-protocol.txt for details.
+> +
+> +EV_REL:
+> +----------
+> +EV_REL events describe relative changes in a property. For example, a mouse may
+> +move to the left by a certain number of units, but its absolute position in
+> +space is unknown. If the absolute position is known, EV_ABS codes should be used
+> +instead of EV_REL codes.
+> +
+> +A few EV_REL codes have special meanings:
+> +
+> +* REL_WHEEL, REL_HWHEEL:
+> +  - These codes are used for vertical and horizontal scroll wheels,
+> +    respectively.
+> +
+> +EV_ABS:
+> +----------
+> +EV_ABS events describe absolute changes in a property. For example, a touchpad
+> +may emit coordinates for a touch location.
+> +
+> +A few EV_ABS codes have special meanings:
+> +
+> +* ABS_DISTANCE:
+> +  - Used to describe the distance of a tool from an interaction surface. This
+> +    should only be used while the tool is hovering, meaning in close proximity
+> +    of the device. If the input device may be used freely in three dimensions,
+> +    consider ABS_Z instead.
+
+reference to BTN_TOUCH == 0 maybe?
 
 Cheers,
   Peter
-
-> I believe mixed devices are hard to detect between tablets and
-> stylus+touchscreen right now, as evidenced by the X evdev driver not
-> handling the former by default while wacom is often used for the latter.
-> However, with the device properties a userspace driver should be able to
-> tell the two apart.
+> +
+> +* ABS_MT_<name>:
+> +  - Used to describe multitouch input events. Please see
+> +    multi-touch-protocol.txt for details.
+> +
+> +EV_SW:
+> +----------
+> +EV_SW events describe stateful binary switches. For example, the SW_LID code is
+> +used to denote when a laptop lid is closed.
+> +
+> +Upon binding to a device or resuming from suspend, a driver must report the
+> +the current switch state. This ensures that the device, kernel, and userspace
+> +state is in sync.
+> +
+> +Upon resume, if the switch state is the same as before suspend, then the input
+> +subsystem will filter out the duplicate switch state reports. The driver does
+> +not need to keep the state of the switch at any time.
+> +
+> +EV_MSC:
+> +----------
+> +EV_MSC events are used for input and output events that do not fall under other
+> +categories.
+> +
+> +EV_LED:
+> +----------
+> +EV_LED events are used for input and output to set and query the state of
+> +various LEDs on devices.
+> +
+> +EV_REP:
+> +----------
+> +EV_REP events are used for specifying autorepeating events.
+> +
+> +EV_SND:
+> +----------
+> +EV_SND events are used for sending sound commands to simple sound output
+> +devices.
+> +
+> +EV_FF:
+> +----------
+> +EV_FF events are used to initialize a force feedback capable device and to cause
+> +such device to feedback.
+> +
+> +EV_PWR:
+> +----------
+> +EV_PWR events are a special type of event used specifically for power
+> +mangement. Its usage is not well defined. To be addressed later.
+> +
+> +Guidelines:
+> +==========
+> +The guidelines below ensure proper single-touch and multi-finger functionality.
+> +For multi-touch functionality, see the multi-touch-protocol.txt document for
+> +more information.
+> +
+> +Mice:
+> +----------
+> +REL_{X,Y} must be reported when the mouse moves. BTN_LEFT must be used to report
+> +the primary button press. BTN_{MIDDLE,RIGHT,4,5,etc.} should be used to report
+> +further buttons of the device. REL_WHEEL and REL_HWHEEL should be used to report
+> +scroll wheel events where available.
+> +
+> +Touchscreens:
+> +----------
+> +ABS_{X,Y} must be reported with the location of the touch. BTN_TOUCH must be
+> +used to report when a touch is active on the screen.
+> +BTN_{MOUSE,LEFT,MIDDLE,RIGHT} must not be reported. BTN_TOOL_<name> events
+> +should be reported where possible.
+> +
+> +Trackpads:
+> +----------
+> +Legacy trackpads that only provide relative position information must report
+> +events like mice described above.
+> +
+> +Trackpads that provide absolute touch position must report ABS_{X,Y} for the
+> +location of the touch. BTN_TOUCH should be used to report when a touch is active
+> +on the trackpad. Where multi-finger support is available, BTN_TOOL_<name> should
+> +be used to report the number of touches active on the trackpad.
+> -- 
+> 1.7.1
 > 
-> I'll rename this guideline: Touchscreens without stylus tools. Any issues?
-> 
-> >> +
-> >> +Trackpads:
-> >> +----------
-> >> +Legacy trackpads that only provide relative position information must report
-> >> +events like mice described above.
-> >> +
-> >> +Trackpads that provide absolute touch position must report ABS_{X,Y} for the
-> >> +location of the touch. BTN_TOUCH should be used to report when a touch is active
-> >> +on the trackpad. Where multi-finger support is available, BTN_TOOL_<name> should
-> >> +be used to report the number of touches active on the trackpad.
-> > 
-> > How about a Tablet?
-> > 
-> > Something like:
-> > 
-> > Tablets:
-> > --------
-> > 
-> > BTN_TOOL_<name> events must be reported when a stylus or other tool is
-> > active on tablet.  ABS_{X,Y} must be reported with the location of the
-> > tool. BTN_TOUCH should be used to report when the tool is in contact
-> > with the tablet. BTN_{STYLUS,STLUS2} should be used to report buttons
-> > on tool itself and BTN_{LEFT,MIDDLE,RIGHT,1,2,etc} should be used to
-> > report buttons on tablet.
-> 
-> Thanks for the addition! I'll add it in and add you on a SOB line if
-> that's alright with you.
-> 
-> > Some tablets send ABS_PRESSURE with no BTN_TOUCH (why I said should
-> > instead of must).  Probably this is not worth mentioning here?
-> 
-> Yeah, I'd leave that off as I think we want to set the guidelines to use
-> BTN_TOUCH.
-> 
-> Thanks,
-> 
-> -- Chase
