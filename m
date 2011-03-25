@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932937Ab1CYGxJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 02:53:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36873 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203Ab1CYGxF (ORCPT
+	id S933283Ab1CYHFw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 03:05:52 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:52723 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932268Ab1CYHFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 02:53:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ob5/suwH8PQFlvYgbe6Tx5pOl/LY0t9LWEXs9LBuLaLehrYO+9jWrY/JcWN35Dtdan
-         +unM7RnOIa3bsKmBxN7q3NQtTMN7tlATtGSjRfboR1E6Fcb5nmtIGaMpIer+dh6XiOx+
-         bDDGTMSWxcYdzDUdQGEkjRhWe5ec9nqkWUXFQ=
-Date: Fri, 25 Mar 2011 07:53:00 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
-Message-ID: <20110325065300.GB1409@htj.dyndns.org>
-References: <20110323153727.GB12003@htj.dyndns.org>
- <20110324094119.GD12038@htj.dyndns.org>
- <20110324094151.GE12038@htj.dyndns.org>
- <20110325033956.GB9313@home.goodmis.org>
- <AANLkTikayCJyYVo1MNpg1EN+88bSQNOu=NPW5s_j4shD@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikayCJyYVo1MNpg1EN+88bSQNOu=NPW5s_j4shD@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 25 Mar 2011 03:05:51 -0400
+Date: Fri, 25 Mar 2011 03:05:36 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Cc: arjan@linux.intel.com, peterz@infradead.org, suresh.b.siddha@intel.com,
+        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
+        xen-devel@lists.xensource.com
+Subject: Re: [RFC PATCH V4 2/5] cpuidle: list based cpuidle driver registration
+ and selection
+In-reply-to: <4D8B5197.2060306@linux.vnet.ibm.com>
+Message-id: <alpine.LFD.2.02.1103250245570.32565@x980>
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
+ <20110322123233.28725.92874.stgit@tringupt.in.ibm.com>
+ <alpine.LFD.2.02.1103222254420.10549@x980>
+ <4D89BBDD.5090505@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1103231633030.12911@x980>
+ <4D8B5197.2060306@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Steven, Linus.
-
-On Thu, Mar 24, 2011 at 09:38:58PM -0700, Linus Torvalds wrote:
-> On Thu, Mar 24, 2011 at 8:39 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > But now, mutex_trylock(B) becomes a spinner too, and since the B's owner
-> > is running (spinning on A) it will spin as well waiting for A's owner to
-> > release it. Unfortunately, A's owner is also spinning waiting for B to
-> > release it.
-> >
-> > If both A and B's owners are real time tasks, then boom! deadlock.
+> I think there are other problems too, related to saving and restoring
+> of pm_idle pointer. For example, cpuidle itself saves current value
+> of pm_idle, flips it and then restores the saved value. There is
+> no guarantee that the saved function still exists. APM does exact
+> same thing (though it may not be used these days).
 > 
-> Hmm. I think you're right. And it looks pretty fundamental - I don't
-> see any reasonable approach to avoid it.
+> The problem also is that a number of architectures have copied the
+> same design based on pm_idle; so its spreading.
 
-Hmmm... I have an idea.  Will play with it a bit and post if it works
-out okay.
+pm_idle is a primitive design yes, but I think the issue
+with pm_idle is a theoretical one, at least on x86;
+as there isn't any other code scribbling on pm_idle
+in practice.  So this is clean-up, rather than bug-fix work...
 
-> I think the RT issue is a red herring too - afaik, you can get a
-> deadlock with two perfectly normal processes too. Of course, for
-> non-RT tasks, any other process will eventually disturb the situation
-> and you'd get kicked out due to need_resched(), but even that might be
-> avoided for a long time if there are other CPU's - leading to tons of
-> wasted CPU time.
+> > It isn't immediately clear to me that all of these options
+> > need to be preserved.
+> 
+> So what do you suggest can be removed?
 
-Yeap, need_resched() currently is the only thing which limits the
-duration of spinning when the owner continues to run.
+I sent a series of small patches yesterday to get the ball rolling...
+https://lkml.org/lkml/2011/3/24/54
 
-Thanks.
+I think the xen thing can go away.
 
--- 
-tejun
+I proposed that APM be removed entirely,
+but that will take a few releases to conclude....
+
+> > Are we suggesting that x86 must always build with cpuidle?
+> > I'm sure that somebody someplace will object to that.
+> 
+> Arjan argued that since almost everyone today runs cpuidle
+> it may be best to include it in the kernel
+> (https://lkml.org/lkml/2010/10/20/243). But yes, we agreed
+> that we would have to make cpuidle lighter incrementally.
+> Making ladder governor optional could be one way for example.
+
+ladder is already optional.
+
+cheers,
+-Len Brown, Intel Open Source Technology Center
