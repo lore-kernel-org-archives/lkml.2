@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab1CYXdN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:33:13 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63470 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab1CYXdM (ORCPT
+	id S1755562Ab1CYXnB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:43:01 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:39820 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755456Ab1CYXnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:33:12 -0400
+	Fri, 25 Mar 2011 19:43:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=dS/IKdEyGQA3ORzxNY4WdzshvIFSBwdl5fPfsD8g3OOHkUDU5UK6gbjzKPmcW6MBf0
-         iY32nSWSdkRV24gKr3PYENIup2Re7VxLhn1pzHWeK8nNFnC9E3r7ab6qw96L45e4PRfn
-         bi43u9jfrxBAKiOXv7ORok+Us/UsWPqI3lqs0=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=D6JS2lqtK6AUEZNiXDKq5VoIBhQBZS4XjbLHAq4McZpDk/F+dBKPzcTzvJFI2GqvdO
+         QpCyG3B3gWBdDAHLhzSw==
 MIME-Version: 1.0
-Date: Fri, 25 Mar 2011 19:33:11 -0400
-Message-ID: <AANLkTinR7-uaK9_WB=nqD+SCBPCkRXJGA5QdURe7ZK5r@mail.gmail.com>
-Subject: Ext3: Why journal is better than ordered when data needs to be read
- from and written to disk at the same time
-From: Jidong Xiao <jidong.xiao@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <20110324133244.acffd99a.randy.dunlap@oracle.com>
+References: <20110324133244.acffd99a.randy.dunlap@oracle.com>
+From: Mike Waychison <mikew@google.com>
+Date: Fri, 25 Mar 2011 16:42:36 -0700
+Message-ID: <AANLkTikLSVpw73r_g++_oRs=nTjYf5WmH=XNjjp8o5uo@mail.gmail.com>
+Subject: Re: [PATCH] watchdog: fix nv_tco section mismatch
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Mar 24, 2011 at 1:32 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+>
+> Fix section mismatch warning:
+> Mark the called nv_tco_getdevice() as __devinit, just like its caller.
 
-I see many literatures mentioned this, but I have never seen any one
-explains it in detail.(Although this link exposed the original story:
-http://lkml.indiana.edu/hypermail//linux/kernel/0107.1/0364.html)
+This looks fine.
 
-"Journal mode: This mode is the slowest except when data needs to be
-read from and written to disk at the same time where it outperform all
-others mode."
-
-Since this is counter-intuitive, I believe many people are not aware
-about the root cause. Can any one kindly explain it so as to make it
-more clear? Thank you!
-
-Regards
-Jidong
+I can't seem to reproduce the warning on my end however, compiling
+this as a built-in nor as a module.  How do I trigger a difference
+between __init and __devinit?
