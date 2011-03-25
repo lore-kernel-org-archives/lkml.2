@@ -1,106 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751061Ab1CYPLK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 11:11:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45345 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab1CYPLI (ORCPT
+	id S1751804Ab1CYPNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 11:13:24 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:51728 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab1CYPNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 11:11:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=nU4v1ybOxSifApnFjjKJsFOYTZbGoPrkQBg+lx+W8zuH64o/22v/1TXg3cfizYmEnb
-         4mGYtXrAFoiepTLxrTBw7v+Lnk+wFU+YvcZRuuOyvV5cyskb+q6TlMfesbaGfK1fMn5X
-         0tTElwn2zSwWR1KgGC8nIkns6AIHrm5efsVo0=
-Date: Fri, 25 Mar 2011 17:15:30 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>
-Subject: [OOPS] elevator private data for REQ_FLUSH
-Message-ID: <20110325151530.GA4414@swordfish.minsk.epam.com>
+	Fri, 25 Mar 2011 11:13:22 -0400
+Date: Fri, 25 Mar 2011 10:13:10 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Chris Bagwell <chris@cnpbagwell.com>,
+        Corentin Chary <corentin.chary@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate
+ key
+Message-ID: <20110325151310.GB14328@thinkpad-t410>
+Mail-Followup-To: Chris Bagwell <chris@cnpbagwell.com>,
+	Corentin Chary <corentin.chary@gmail.com>,
+	Matthew Garrett <mjg@redhat.com>,
+	acpi4asus-user@lists.sourceforge.net,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>
+References: <20110324195720.GB31713@thinkpad-t410>
+ <1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
+ <AANLkTimF2UR8BVQW-3YJaGFEz39q8ydESAiMOjmdM1X7@mail.gmail.com>
+ <20110325135311.GA14328@thinkpad-t410>
+ <AANLkTin3MDYdL6x1Qs8Q9oMMgDMfsoO2GjWMJO_65GAR@mail.gmail.com>
+ <AANLkTi=iWeKVww_XPm0PQa09NLtPCo4wvz7ZYkk1ajhQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=iWeKVww_XPm0PQa09NLtPCo4wvz7ZYkk1ajhQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Mar 25, 2011 at 09:53:20AM -0500, Chris Bagwell wrote:
+> On Fri, Mar 25, 2011 at 9:05 AM, Corentin Chary
+> <corentin.chary@gmail.com> wrote:
+> > On Fri, Mar 25, 2011 at 1:53 PM, Seth Forshee
+> > <seth.forshee@canonical.com> wrote:
+> >> On Fri, Mar 25, 2011 at 01:28:30PM +0000, Corentin Chary wrote:
+> >>> > +static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int *code,
+> >>> > +                                int *value, int *autorelease)
+> >>> > +{
+> >>> > +       struct eeepc_wmi_driver *eeepc = to_eeepc_wmi_driver(asus_wmi);
+> >>> > +       int is_press;
+> >>> > +
+> >>> > +       /*
+> >>> > +        * The following behavior is used for T101MT "Home" key:
+> >>> > +        *
+> >>> > +        *   On press:   No event set
+> >>> > +        *   On hold:    KEY_PROG2 press sent once w/o autorelease
+> >>> > +        *   On release: If key was held, KEY_PROG2 release sent.
+> >>> > +        *               Otherwise KEY_HOME press sent w/ autorelease.
+> >>> > +        *
+> >>> > +        * The simple state machine below implements this behavior.
+> >>> > +        */
+> >>> > +       switch (*code) {
+> >>> > +       case HOME_PRESS:
+> >>> > +               eeepc->home_key_state = HOME_PRESS;
+> >>> > +               *code = ASUS_WMI_KEY_IGNORE;
+> >>> > +               break;
+> >>> > +       case HOME_HOLD:
+> >>> > +               if (eeepc->home_key_state == HOME_HOLD) {
+> >>> > +                       *code = ASUS_WMI_KEY_IGNORE;
+> >>> > +               } else {
+> >>> > +                       eeepc->home_key_state = HOME_HOLD;
+> >>> > +                       *value = 1;
+> >>> > +                       *autorelease = 0;
+> >>> > +               }
+> >>> > +               break;
+> >>> > +       case HOME_RELEASE:
+> >>> > +               if (eeepc->home_key_state == HOME_RELEASE) {
+> >>> > +                       dev_warn(&asus_wmi->platform_device->dev,
+> >>> > +                                "Unexpected home key release event\n");
+> >>> > +                       *code = ASUS_WMI_KEY_IGNORE;
+> >>> > +               } else {
+> >>> > +                       *code = eeepc->home_key_state;
+> >>> > +                       eeepc->home_key_state = HOME_RELEASE;
+> >>> > +                       is_press = (*code == HOME_PRESS);
+> >>> > +                       *value = is_press;
+> >>> > +                       *autorelease = is_press;
+> >>> > +               }
+> >>> > +               break;
+> >>> > +       }
+> >>> > +}
+> >>> > +
+> >>>
+> >>> Why not something simpler like this ?
+> >>>
+> >>> static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int code,
+> >>>                                                  int *value, int *autorelease)
+> >>> {
+> >>>         if (code == 0xe4) {
+> >>>                 *value = 1;
+> >>>                 *autorelease = 0;
+> >>>         } else if (code == 0xe5) {
+> >>>                 *value = 0;
+> >>>                 *autorelease = 0;
+> >>>        }
+> >>> }
+> >>>
+> >>> with this keymap :
+> >>>
+> >>>        { KE_KEY, 0xe4, { KEY_HOME } }, /* Home Key Down */
+> >>>        { KE_KEY, 0xe5, { KEY_HOME } }, /* Home Key Up */
+> >>>        { KE_KEY, 0xea, { KEY_PROG2 } }, /* Home Key hold more than one second */
+> >>>
+> >>>
+> >>> This sounds simpler and we don't loose information (key down and key
+> >>> up both event reported at the right time).
+> >>> 0xe5 is *always* sent after 0xe4 right ?
+> >>
+> >> I guess it depends on what key events we want on a press-and-hold.
+> >> Remember that you're going to get a scan code sequence like "0xe4 0xea
+> >> 0xea ... 0xea 0xe5", so with my implementation you get
+> >>
+> >>  KEY_PROG2 press
+> >>  KEY_PROG2 release
+> >>
+> >> With yours
+> >>
+> >>  KEY_HOME press
+> >>  KEY_PROG2 press
+> >>  KEY_PROG2 release
+> >>  // KEY_PROG2 press/release repeats every 0.5 secs while button held
+> >>  KEY_HOME release
+> >>
+> >> At minimum I'd think we'd want to only send a single PROG2 press/release
+> >> for button hold. My thought was that you'd only want to get the code for
+> >> 0xe4 or 0xea, not both, but I suppose that's debatable.
+> >
+> > If you keep a keyboard key pressed, you want multiple events, not one right ?
+> > I think it's important not to loose informations. If someone keep this
+> > key pressed more than 1.5 second, I think it's good idea to send
+> > multiple KEY_PROG2.
+> >
+> > About KEY_HOME press / release, and filtering KEY_HOME after
+> > KEY_PROG2, I'm not sure. So if you really want it, and nobody
+> > complains, I'll be happy to accept your patch.
+> 
+> Here is how I envision using these keys.  I wanted to map quick press
+> to GNOME3/KDE4/Unity's Activities menu and map press-and-hold to
+> script that rotates screen.  I like the repeating of rotates but I
+> didn't really want a rotate to also force a pop up of the activities
+> menu.
 
-Commit
-    9d5a4e946ce5352f19400b6370f4cd8e72806278
-    block: skip elevator data initialization for flush requests
-    
-    Skip elevator initialization for flush requests by passing priv=0 to
-    blk_alloc_request() in get_request().  As such elv_set_request() is
-    never called for flush requests.
+I've been experimenting with different keyboards a bit, and I basically
+see two different behaviours.
 
-introduced priv flag, to skip elevator_private data init for FLUSH requests.
-This, I guess, lead to NULL pointer deref on my machine in cfq_insert_request,
-which requires elevator_private to be set:
+  1. Standard keys and some hotkeys - These tend to send a press event
+     followed by a short delay, followed by rapidly-repeating press
+     events. I.e. what you normally see when you are typing. For hotkeys
+     userspace seems to only act upon the release event.
 
-  1 [   78.982169] Call Trace:                                                                                                                                                                                                     
-  2 [   78.982178]  [<ffffffff8122d1fe>] cfq_insert_request+0x4e/0x47d
-  3 [   78.982184]  [<ffffffff8123e139>] ? do_raw_spin_lock+0x6b/0x122
-  4 [   78.982189]  [<ffffffff81218c4a>] elv_insert+0x212/0x265
-  5 [   78.982192]  [<ffffffff81218ced>] __elv_add_request+0x50/0x52
-  6 [   78.982195]  [<ffffffff8121b44a>] flush_plug_list+0xce/0x12f
-  7 [   78.982199]  [<ffffffff8121b4c0>] __blk_flush_plug+0x15/0x21
-  8 [   78.982205]  [<ffffffff8146b321>] schedule+0x43e/0xbea
-  9 [   78.982211]  [<ffffffff8106f8bd>] ? __lock_acquire+0x149d/0x1576
- 10 [   78.982215]  [<ffffffff8121ba9e>] ? drive_stat_acct+0x1b6/0x1c3
- 11 [   78.982218]  [<ffffffff8121b92c>] ? drive_stat_acct+0x44/0x1c3
- 12 [   78.982223]  [<ffffffff8121f641>] ? __make_request+0x268/0x2bf
- 13 [   78.982226]  [<ffffffff8146bf66>] schedule_timeout+0x35/0x3b8
- 14 [   78.982230]  [<ffffffff810705ed>] ? mark_held_locks+0x4b/0x6d
- 15 [   78.982234]  [<ffffffff8146e768>] ? _raw_spin_unlock_irq+0x28/0x56
- 16 [   78.982239]  [<ffffffff81033bc1>] ? get_parent_ip+0xe/0x3e
- 17 [   78.982244]  [<ffffffff81471822>] ? sub_preempt_count+0x90/0xa3
- 18 [   78.982247]  [<ffffffff8146acbb>] wait_for_common+0xc3/0x141
- 19 [   78.982251]  [<ffffffff8103823a>] ? default_wake_function+0x0/0xf
- 20 [   78.982254]  [<ffffffff8146ad51>] wait_for_completion+0x18/0x1a
- 21 [   78.982258]  [<ffffffff8122087b>] blkdev_issue_flush+0xcb/0x11a
- 22 [   78.982264]  [<ffffffff811a9d65>] ext4_sync_file+0x2b3/0x302
- 23 [   78.982268]  [<ffffffff81129e25>] vfs_fsync_range+0x55/0x75
- 24 [   78.982271]  [<ffffffff81129e84>] generic_write_sync+0x3f/0x41
- 25 [   78.982278]  [<ffffffff810c6c6c>] generic_file_aio_write+0x8c/0xb9
- 26 [   78.982281]  [<ffffffff811a99a9>] ext4_file_write+0x1dc/0x237
- 27 [   78.982285]  [<ffffffff8123e139>] ? do_raw_spin_lock+0x6b/0x122
- 28 [   78.982288]  [<ffffffff811a97cd>] ? ext4_file_write+0x0/0x237
- 29 [   78.982292]  [<ffffffff81104859>] do_sync_readv_writev+0xb4/0xf9
- 30 [   78.982298]  [<ffffffff8120af11>] ? security_file_permission+0x1e/0x84
- 31 [   78.982302]  [<ffffffff8110418e>] ? rw_verify_area+0xab/0xc8
- 32 [   78.982305]  [<ffffffff81104ac6>] do_readv_writev+0xb8/0x17d
- 33 [   78.982309]  [<ffffffff81105b5e>] ? fget_light+0x166/0x30b
- 34 [   78.982312]  [<ffffffff81104bcb>] vfs_writev+0x40/0x42
- 35 [   78.982315]  [<ffffffff81104e1c>] sys_pwritev+0x55/0x99
- 36 [   78.982320]  [<ffffffff81474a52>] system_call_fastpath+0x16/0x1b
- 37 
- 
+  2. Some hotkeys only seem to send a single scan code when the key is
+     released (this seems to be the case with most of the T101MT
+     hotkeys). In these cases the drivers send a press followed
+     immediately by a release.
 
-Should we in that case use ELEVATOR_INSERT_FLUSH for REQ_FLUSH | REQ_FUA requests
-(like below)?
+So I'm starting to think that the most natural way to handle this is to
+treat it as a single key with a couple of special flags (bit 3 = repeat
+event and bit 0 = release event). I.e. we only send on keycode and the
+filter code just clears the flag bits, clears autorelease, and decides
+whether to send a press or release, if (code & ~0x09) == 0xe4. Then
+userspace could map seperate events on press and hold if desired.
 
----
+In any case I don't think multiple repeat events while the button is
+held is the right thing to do.
 
- block/elevator.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> >> And back to the question of KEY_HOME -- that's not really what you want,
+> >> is it? As in "move cursor to start of line"?
+> >
+> > Ho .. right, that's what mean KEY_HOME :/. So no, I don't want that...
+> > What about:
+> > - KEY_CYCLEWINDOWS
+> > - KEY_COMPUTER
+> > - KEY_HOMEPAGE
+> > - KEY_DASHBOARD
+> >
+> > I think KEY_HOMEPAGE is the best choice.
+> 
+> I've only had limited time to look more.  So far, I found under udev a
+> toshiba tablet that maps what is probably a rotate button to
+> KEY_DIRECTION so thats one option for it instead of KEY_PROG2.  I
+> couldn't find anybody using that though.
+> 
+> I see in /usr/share/X11/symbols/inet:
+> 
+>     key <I162>   {      [ XF86RotateWindows     ]       };
+> 
+> and in /usr/share/X11/xkb/symbols/evdev:
+> 
+> xkb/keycodes/evdev:     <I162> = 162;   // #define KEY_CYCLEWINDOWS        154
+> 
+> Looks like KEY_CYCLEWINDOWS is already hooked up to
+> gnome-settings-daemon to auto-rotate screen?
+> 
+> I ran into total dead end for finding a pre-existing example of home
+> button usage.  I'm really surprised we do not yet have a KEY_LAUNCHER
+> or similar because so many tablet PCs/smartphones/pads do have a
+> button with this specific concept of "bring up your icon based
+> application launcher".
 
-diff --git a/block/elevator.c b/block/elevator.c
-index c387d31..b17e577 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -734,6 +734,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
- 			q->end_sector = rq_end_sector(rq);
- 			q->boundary_rq = rq;
- 		}
-+	} else if (rq->cmd_flags & (REQ_FLUSH | REQ_FUA)) {
-+		where = ELEVATOR_INSERT_FLUSH;
- 	} else if (!(rq->cmd_flags & REQ_ELVPRIV) &&
- 		    where == ELEVATOR_INSERT_SORT)
- 		where = ELEVATOR_INSERT_BACK;
+That seems to map well onto the idea of the Windows button, which iirc
+maps to KEY_LEFTMETA or KEY_RIGHMETA.
 
-
+> 
+> To add to your list, I'll also throw out:
+> 
+> - KEY_MENU
+> - KEY_EXIT (smartphones sometime mean this)
+> - KEY_PROG3 (basically all that Windows is doing)
+> - KEY_LAUNCHER (why not be the first to finally create it!)
+> 
+> I vote for either KEY_PROG3 or KEY_HOMEPAGE for at least short term.
+> 
+> Chris
+> 
