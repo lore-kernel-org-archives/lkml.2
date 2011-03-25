@@ -1,54 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab1CYMni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 08:43:38 -0400
-Received: from ns3.cte.net.br ([200.228.36.136]:43848 "EHLO cpanel.cte.net.br"
+	id S1752025Ab1CYMoS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 08:44:18 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:33649 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823Ab1CYMnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 08:43:33 -0400
-Message-ID: <84b640cbd6e02c851d888d77e2733532.squirrel@webmail.pmaratiba.com.br>
-Date: Fri, 25 Mar 2011 09:40:13 -0300
-Subject: MONEY TRANSFER
-From: "WESTERN UNION." <nfo@google.co.uk>
-Reply-To: western.union908@gmail.com
-User-Agent: SquirrelMail/1.4.21
+	id S1750982Ab1CYMoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 08:44:16 -0400
+X-ASG-Debug-ID: 1301057054-01de284cf8bb060001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D8C8E1C.1020304@fusionio.com>
+Date: Fri, 25 Mar 2011 13:44:12 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel.cte.net.br
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - google.co.uk
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
-To: unlisted-recipients:; (no To-header on input)
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+References: <20110324193441.GA1723@gentoo.trippels.de> <4D8B9D2F.4010504@fusionio.com> <20110324194546.GA1741@gentoo.trippels.de> <4D8BA235.7060904@fusionio.com> <20110324200613.GA1724@gentoo.trippels.de> <4D8BB114.2070002@fusionio.com> <20110324214150.GA1739@gentoo.trippels.de> <4D8C4304.3050101@fusionio.com> <20110325083757.GA1754@gentoo.trippels.de> <4D8C55D9.1060903@fusionio.com> <20110325095704.GA1694@gentoo.trippels.de>
+X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
+In-Reply-To: <20110325095704.GA1694@gentoo.trippels.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301057054
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.50
+X-Barracuda-Spam-Status: No, SCORE=0.50 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_RULE7568M
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58926
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.50 BSF_RULE7568M          Custom Rule 7568M
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My associate has helped me to send your first payment of US$7,500 to you
-as instructed by Mr.David Cameron the British prime minister after the
-last G20 meeting that was held on April 2nd in London, making you one of
-the beneficiaries. Heres is the information below:
+On 2011-03-25 10:57, Markus Trippelsdorf wrote:
+> On 2011.03.25 at 09:44 +0100, Jens Axboe wrote:
+>> On 2011-03-25 09:37, Markus Trippelsdorf wrote:
+>>> On 2011.03.25 at 08:23 +0100, Jens Axboe wrote:
+>>>> On 2011-03-24 22:41, Markus Trippelsdorf wrote:
+>>>>> On 2011.03.24 at 22:01 +0100, Jens Axboe wrote:
+>>>>>> On 2011-03-24 21:06, Markus Trippelsdorf wrote:
+>>>>>>> On 2011.03.24 at 20:57 +0100, Jens Axboe wrote:
+>>>>>>>>
+>>>>>>>> OK, still a data point. What was the last -git kernel you used?
+>>>>>>>
+>>>>>>> This one was the last and gave me no problems:
+>>>>>>>
+>>>>>>> commit b81a618dcd3ea99de292dbe624f41ca68f464376
+>>>>>>> Merge: 2f284c8 a9712bc
+>>>>>>> Author: Linus Torvalds <torvalds@linux-foundation.org>
+>>>>>>> Date:   Wed Mar 23 20:51:42 2011 -0700
+>>>>>>>
+>>>>>>>     Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
+>>>>>>
+>>>>>> Puzzling... Poking at straws here so far. Does this make any difference
+>>>>>> whatsoever?
+>>>>>
+>>>>> I will test your patch later.
+>>>>>
+>>>>> Git-bisect gave me this result thus far:
+>>>>>
+>>>>> 9026e521c0da0731eb31f9f9022dd00cc3cd8885 is bad
+>>>>> 82f04ab47e1d94d78503591a7460b2cad9601ede is good
+>>>>>
+>>>>> When I continue the bisection with 4345caba340f051e10847924fc078ae18ed6695c
+>>>>> the system will start normally, but it then silently corrupts my xfs
+>>>>> partitions. And on next (re)boot I get this (only fixable with
+>>>>> xfs_repair):
+>>>>>
+>>>> How confident are you in those bisection results? Not trying to put you
+>>>> on the spot, just wondering whether you tested and it's completely
+>>>> consistent, or whether it was a one-off.
+>>>
+>>> Just double checked and 82f04ab47e1d94d78503591a7460b2cad9601ede is also
+>>> bad. It just silently corrupts the file system (without a BUG) and I
+>>> didn't notice.
+>>> So back to square one. 
+>>>
+>>> How can I tell git-bisect just to try the commits in the block merge and
+>>> not to take wild swings in history?
+>>
+>> Something like:
+>>
+>> $ git bisect start
+>> $ git bisect good 3dab04e6978e358ad2307bca563fabd6c5d2c58b
+>> $ git bisect bad 6c5103890057b1bb781b26b7aae38d33e4c517d8
+> 
+> Ok this time I've found the commit:
+> 
+> 9b6096a65f99a89dfd8328c4e469e7b53b3ae04a is the first bad commit
+> commit 9b6096a65f99a89dfd8328c4e469e7b53b3ae04a
+> Author: Shaohua Li <shaohua.li@intel.com>
+> Date:   Thu Mar 17 10:47:06 2011 +0100
+> 
+>     mm: make generic_writepages() use plugging
+>     
+>     This recovers a performance regression caused by the removal
+>     of the per-device plugging.
+>     
+>     Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+> 
+> Reverting it solves all problems here.
 
+Can you try this one?
 
-MONEY TRANSFER CONTROL NUMBER:8309124803
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 59b5c00..8906ff1 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1197,6 +1197,7 @@ static bool attempt_plug_merge(struct task_struct *tsk, struct request_queue *q,
+ 	if (!plug)
+ 		goto out;
+ 
++	preempt_disable();
+ 	list_for_each_entry_reverse(rq, &plug->list, queuelist) {
+ 		int el_ret;
+ 
+@@ -1214,6 +1215,7 @@ static bool attempt_plug_merge(struct task_struct *tsk, struct request_queue *q,
+ 				break;
+ 		}
+ 	}
++	preempt_enable();
+ out:
+ 	return ret;
+ }
 
-Senders First Name:SOLOMON
-Last Name:DANEIL.Q
-Address :Uk, London
-Amount:US$7,500
-
-I told him to keep sending you US$7,500 twice a week until the FULL
-payment of (US $360,000.00 Dollars) is completed within 6 (six) Months.
-For track, send your Full Names, Address and phone number via Email to:
-
-Mr Garry Moore
-E-mail:western.union908@gmail.com
-Tel: +447031962967
-
+-- 
+Jens Axboe
 
