@@ -1,165 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab1CYQQs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 12:16:48 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:16522
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750853Ab1CYQQq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 12:16:46 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(zzbb2cK146fK1432N98dN4015Lzz1202hzz8275bh8275dhz32i637h668h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LIMFVI-02-IIU-02
-X-M-MSG: 
-Date: Fri, 25 Mar 2011 17:16:28 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jack Steiner <steiner@sgi.com>, Jan Beulich <JBeulich@novell.com>,
-        Borislav Petkov <bp@amd64.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@kernel.dk>, "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, "tee@sgi.com" <tee@sgi.com>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH RFC] x86: avoid atomic operation in
- test_and_set_bit_lock if possible
-Message-ID: <20110325161628.GB12393@erda.amd.com>
-References: <20110324173020.GA26761@sgi.com>
- <20110324200010.GB7957@elte.hu>
- <1300999682.2714.23.camel@edumazet-laptop>
- <20110324205422.GB2393@elte.hu>
- <1301000557.2714.33.camel@edumazet-laptop>
- <m2oc50kxg0.fsf@firstfloor.org>
- <AANLkTimib3TqemF9L=VNkcXT3uFam1gYmVtuA3wrAv1j@mail.gmail.com>
- <20110324235654.GM21838@one.firstfloor.org>
- <1301032040.2714.569.camel@edumazet-laptop>
- <20110325093228.GB13640@elte.hu>
+	id S1754329Ab1CYQRg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 12:17:36 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:34708 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab1CYQRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 12:17:35 -0400
+Date: Fri, 25 Mar 2011 11:17:24 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: Chris Bagwell <chris@cnpbagwell.com>, Matthew Garrett <mjg@redhat.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate
+ key
+Message-ID: <20110325161724.GC14328@thinkpad-t410>
+Mail-Followup-To: Corentin Chary <corentin.chary@gmail.com>,
+	Chris Bagwell <chris@cnpbagwell.com>,
+	Matthew Garrett <mjg@redhat.com>,
+	acpi4asus-user@lists.sourceforge.net,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>
+References: <20110324195720.GB31713@thinkpad-t410>
+ <1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
+ <AANLkTimF2UR8BVQW-3YJaGFEz39q8ydESAiMOjmdM1X7@mail.gmail.com>
+ <20110325135311.GA14328@thinkpad-t410>
+ <AANLkTin3MDYdL6x1Qs8Q9oMMgDMfsoO2GjWMJO_65GAR@mail.gmail.com>
+ <AANLkTi=iWeKVww_XPm0PQa09NLtPCo4wvz7ZYkk1ajhQ@mail.gmail.com>
+ <AANLkTinr2FJA2H3CJWx-wZ_g-hCZ3DT7PR6QsXqi5Rkw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110325093228.GB13640@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinr2FJA2H3CJWx-wZ_g-hCZ3DT7PR6QsXqi5Rkw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.03.11 05:32:28, Ingo Molnar wrote:
+On Fri, Mar 25, 2011 at 03:43:11PM +0000, Corentin Chary wrote:
+> > Here is how I envision using these keys.  I wanted to map quick press
+> > to GNOME3/KDE4/Unity's Activities menu and map press-and-hold to
+> > script that rotates screen.  I like the repeating of rotates but I
+> > didn't really want a rotate to also force a pop up of the activities
+> > menu.
 > 
-> * Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Makes sense.
 > 
-> > Le vendredi 25 mars 2011 � 00:56 +0100, Andi Kleen a �crit :
-> > > > never EVER seen any good explanation of why that particular sh*t
-> > > > argument would b true. It seems to be purely about politics, where
-> > > > some idiotic vendor (namely HP) has convinced Intel that they really
-> > > > need it. To the point where some engineers seem to have bought into
-> > > > the whole thing and actually believe that fairy tale ("firmware can do
-> > > > better" - hah! They must be feeding people some bad drugs at the
-> > > > cafeteria)
-> > > 
-> > > For the record I don't think it's a good idea for the BIOS to do 
-> > > this (and I'm not aware of any engineer who does),  
-> > > but I think Linux should do better than just disabling PMU use when 
-> > > this happens.
-> > > 
-> > > However I suspect taking over SCI would cause endless problems
-> > > and is very likely not a good idea.
-> > 
-> > I tried many different changes in BIOS and all failed (the machine is
-> > damn slow at boot, this takes age).
-> > 
-> > I am stuck :(
+> >>
+> >>> And back to the question of KEY_HOME -- that's not really what you want,
+> >>> is it? As in "move cursor to start of line"?
+> >>
+> >> Ho .. right, that's what mean KEY_HOME :/. So no, I don't want that...
+> >> What about:
+> >> - KEY_CYCLEWINDOWS
+> >> - KEY_COMPUTER
+> >> - KEY_HOMEPAGE
+> >> - KEY_DASHBOARD
+> >>
+> >> I think KEY_HOMEPAGE is the best choice.
+> >
+> > I've only had limited time to look more.  So far, I found under udev a
+> > toshiba tablet that maps what is probably a rotate button to
+> > KEY_DIRECTION so thats one option for it instead of KEY_PROG2.  I
+> > couldn't find anybody using that though.
+> >
+> > I see in /usr/share/X11/symbols/inet:
+> >
+> >    key <I162>   {      [ XF86RotateWindows     ]       };
+> >
+> > and in /usr/share/X11/xkb/symbols/evdev:
+> >
+> > xkb/keycodes/evdev:     <I162> = 162;   // #define KEY_CYCLEWINDOWS        154
+> >
+> > Looks like KEY_CYCLEWINDOWS is already hooked up to
+> > gnome-settings-daemon to auto-rotate screen?
 > 
-> Could you please try the patch below?
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-> ------------------->
-> From 14df27334ac47a5cec67fb2238d14499346acc38 Mon Sep 17 00:00:00 2001
-> From: Ingo Molnar <mingo@elte.hu>
-> Date: Fri, 25 Mar 2011 10:24:23 +0100
-> Subject: [PATCH] perf, x86: Complain louder about BIOSen corrupting CPU/PMU state and continue
-> 
-> Eric Dumazet reported that hardware PMU events do not work on his
-> system, due to the BIOS corrupting PMU state:
-> 
->     Performance Events: PEBS fmt0+, Core2 events, Broken BIOS detected, using software events only.
->     [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 186 is 43003c)
-> 
-> Linus suggested that we continue in the face of such BIOS-induced CPU
-> state corruption:
-> 
->    http://lkml.org/lkml/2011/3/24/608
-> 
-> Such BIOSes will have to be fixed - developers rely on a working and fully
-> capable PMU and BIOS interfering with CPU state is simply not acceptable.
-> 
-> So this patch changes perf to continue when it detects such BIOS
-> interaction, some hardware events may be unreliable due to the BIOS writing
-> and re-writing them - there's not much the kernel can do about that.
-> 
-> Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> LKML-Reference: <new-submission>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  arch/x86/kernel/cpu/perf_event.c |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index ec46eea..eb00677 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -500,12 +500,17 @@ static bool check_hw_exists(void)
->  	return true;
->  
->  bios_fail:
-> -	printk(KERN_CONT "Broken BIOS detected, using software events only.\n");
-> +	/*
-> +	 * We still allow the PMU driver to operate:
-> +	 */
-> +	printk(KERN_CONT "Broken BIOS detected, complain to your hardware vendor.\n");
->  	printk(KERN_ERR FW_BUG "the BIOS has corrupted hw-PMU resources (MSR %x is %Lx)\n", reg, val);
-> -	return false;
-> +
-> +	return true;
+> XF86RotateWindows is probably more "alt-tab" than "rotate screen".
 
-Ingo, you jump out the loop here. This skips checks on other registers
-and msr access. And if we want to continue anyway, checking msr access
-becomes more important as the bios may block it.
+Gnome at least seems to handle it by doing a screen rotation.
 
--Robert
-
->  
->  msr_fail:
->  	printk(KERN_CONT "Broken PMU hardware detected, using software events only.\n");
-> +
->  	return false;
->  }
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> > I ran into total dead end for finding a pre-existing example of home
+> > button usage.  I'm really surprised we do not yet have a KEY_LAUNCHER
+> > or similar because so many tablet PCs/smartphones/pads do have a
+> > button with this specific concept of "bring up your icon based
+> > application launcher".
 > 
+> KEY_LAUNCHER sounds like "Alt-F2" (that means krunner on KDE).
+> The advantage over KEY_HOMEPAGE is that it would work even when a
+> browser have the focus.
+> 
+> > - KEY_MENU
+> > - KEY_EXIT (smartphones sometime mean this)
+> > - KEY_PROG3 (basically all that Windows is doing)
+> > - KEY_LAUNCHER (why not be the first to finally create it!)
+> >
+> > I vote for either KEY_PROG3 or KEY_HOMEPAGE for at least short term.
+> 
+> So now, I vote (in order):
+> - KEY_LAUNCHER
+> - KEY_DASHBOARD
+> - KEY_PROG3
+> 
+> With this behavior (I'll use KEY_LAUCHER and KEY_PROG2)
+> 
+> - On press, do nothing
+> - On release, emit KEY_LAUNCHER if KEY_PROG2 wasn't emited
+> - On press, emit only one  KEY_PROG2 (I'd like to emit repeated
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Do you mean on hold?
+
+> KEY_PROG2, but I understand that it makes things harder for
+> userspace).
+
+I have a keyboard that emit repeated press events for hotkeys, so I
+think userspace can handle this. It just waits for the release before
+doing anything, so as long as it's multiple press events and a single
+release I think we're okay.
+
+Since it seems KEY_CYCLEWINDOWS might actually accomplish what a hold is
+intended to do, I think I'll proceed with the following slightly amended
+version of your plan.
+
+ - On press, do nothing
+ - On hold, emit KEY_CYCLEWINDOWS repeatedly
+ - On release, emit KEY_LAUNCHER w/ autorelease if KEY_CYCLEWINDOWS
+   wasn't released, else emit KEY_CYCLEWINDOWS release
+
+Assuming of course that Dmitry agrees that adding KEY_LAUNCHER makes
+sense.
+
+Seth
 
