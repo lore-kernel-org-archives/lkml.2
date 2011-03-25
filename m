@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab1CYWaK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 18:30:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36798 "EHLO linutronix.de"
+	id S932085Ab1CYWc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 18:32:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52924 "EHLO linutronix.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755285Ab1CYWaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 18:30:09 -0400
-Date: Fri, 25 Mar 2011 23:30:04 +0100 (CET)
+	id S1755285Ab1CYWcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 18:32:55 -0400
+Date: Fri, 25 Mar 2011 23:32:51 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: David Daney <ddaney@caviumnetworks.com>
 cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/4] genirq: Reserve the irq when calling
- irq_set_chip()
-In-Reply-To: <1301081931-11240-2-git-send-email-ddaney@caviumnetworks.com>
-Message-ID: <alpine.LFD.2.00.1103252328510.31464@localhost6.localdomain6>
-References: <1301081931-11240-1-git-send-email-ddaney@caviumnetworks.com> <1301081931-11240-2-git-send-email-ddaney@caviumnetworks.com>
+Subject: Re: [PATCH v3 3/4] genirq: Split irq_set_affinity() so it can be
+ called with lock held
+In-Reply-To: <1301081931-11240-4-git-send-email-ddaney@caviumnetworks.com>
+Message-ID: <alpine.LFD.2.00.1103252331490.31464@localhost6.localdomain6>
+References: <1301081931-11240-1-git-send-email-ddaney@caviumnetworks.com> <1301081931-11240-4-git-send-email-ddaney@caviumnetworks.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,45 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 25 Mar 2011, David Daney wrote:
 
-> The helper macros and functions like for_each_active_irq() don't work
-> unless the irq is in the allocated_irqs set.
-> 
-> In the case of !CONFIG_SPARSE_IRQ, instead of forcing all users of the
-> irq infrastructure to explicitly call irq_reserve_irq(), do it for
-> them.
+> The .irq_cpu_online() and .irq_cpu_offline() functions may need to
+> adjust affinity, but they are called with the descriptor lock held.
+> Create __irq_set_affinity_locked() which is called with the lock held.
+> Make irq_set_affinity() just a wrapper that acquires the lock.
 > 
 > Signed-off-by: David Daney <ddaney@caviumnetworks.com>
 > ---
->  kernel/irq/chip.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
+>  include/linux/interrupt.h |    2 ++
+>  kernel/irq/manage.c       |   40 ++++++++++++++++++++++++++--------------
+>  2 files changed, 28 insertions(+), 14 deletions(-)
 > 
-> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-> index c9c0601..54d9aab 100644
-> --- a/kernel/irq/chip.c
-> +++ b/kernel/irq/chip.c
-> @@ -37,6 +37,12 @@ int irq_set_chip(unsigned int irq, struct irq_chip *chip)
->  	irq_chip_set_defaults(chip);
->  	desc->irq_data.chip = chip;
->  	irq_put_desc_unlock(desc, flags);
-> +	/*
-> +	 * For !CONFIG_SPARSE_IRQ make the irq show up in
-> +	 * allocated_irqs.  For the CONFIG_SPARSE_IRQ case, it may
-> +	 * already be there, and this call is harmless.
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index 59b72ca..815f9fb 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -229,6 +229,8 @@ static inline int check_wakeup_irqs(void) { return 0; }
+>  extern cpumask_var_t irq_default_affinity;
+>  
+>  extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
+> +extern int __irq_set_affinity_locked(struct irq_desc *desc,
+> +				     const struct cpumask *cpumask);
+>  extern int irq_can_set_affinity(unsigned int irq);
+>  extern int irq_select_affinity(unsigned int irq);
+>  
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index 0a2aa73..3d3bed1 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -139,24 +139,12 @@ static inline void
+>  irq_get_pending(struct cpumask *mask, struct irq_desc *desc) { }
+>  #endif
+>  
+> -/**
+> - *	irq_set_affinity - Set the irq affinity of a given irq
+> - *	@irq:		Interrupt to set affinity
+> - *	@cpumask:	cpumask
+> - *
+> - */
+> -int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
+> +
+> +int __irq_set_affinity_locked(struct irq_desc *desc, const struct cpumask *mask)
+>  {
+> -	struct irq_desc *desc = irq_to_desc(irq);
+>  	struct irq_chip *chip = desc->irq_data.chip;
+> -	unsigned long flags;
+>  	int ret = 0;
+>  
+> -	if (!chip->irq_set_affinity)
+> -		return -EINVAL;
 
-For SPARSE=y it _IS_ already there, otherwise we would not reach that
-code.
+We want to keep that check here. No need to crash with a NULL pointer
+dereference, when we can deal with it gracefully.
 
-> +	 */
-> +	irq_reserve_irq(irq);
->  	return 0;
->  }
->  EXPORT_SYMBOL(irq_set_chip);
-> -- 
-> 1.7.2.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Thanks,
+
+	tglx
