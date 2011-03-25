@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab1CYXwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:52:38 -0400
-Received: from kroah.org ([198.145.64.141]:41574 "EHLO coco.kroah.org"
+	id S933901Ab1CZAWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:22:38 -0400
+Received: from kroah.org ([198.145.64.141]:41648 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932325Ab1CYXwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:34 -0400
+	id S932369Ab1CYXwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:38 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:41 2011
-Message-Id: <20110325234840.908731104@clark.kroah.org>
+Message-Id: <20110325234841.428887117@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:12 -0700
+Date: Fri, 25 Mar 2011 16:47:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Len Brown <len.brown@intel.com>
-Subject: [19/55] intel_idle: disable Atom/Lincroft HW C-state auto-demotion
+        Aaro Koskinen <aaro.koskinen@nokia.com>
+Subject: [24/55] procfs: fix /proc/<pid>/maps heap check
 In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Len Brown <len.brown@intel.com>
+From: Aaro Koskinen <aaro.koskinen@nokia.com>
 
-commit bfb53ccf1c734b1907df7189eef4c08489827951 upstream.
+commit 0db0c01b53a1a421513f91573241aabafb87802a upstream.
 
-Just as we had to disable auto-demotion for NHM/WSM,
-we need to do the same for Atom (Lincroft version).
+The current code fails to print the "[heap]" marking if the heap is split
+into multiple mappings.
 
-In particular, auto-demotion will prevent Lincroft
-from entering the S0i3 idle power saving state.
+Fix the check so that the marking is displayed in all possible cases:
+	1. vma matches exactly the heap
+	2. the heap vma is merged e.g. with bss
+	3. the heap vma is splitted e.g. due to locked pages
 
-https://bugzilla.kernel.org/show_bug.cgi?id=25252
+Test cases. In all cases, the process should have mapping(s) with
+[heap] marking:
 
-Signed-off-by: Len Brown <len.brown@intel.com>
+	(1) vma matches exactly the heap
+
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <sys/types.h>
+
+	int main (void)
+	{
+		if (sbrk(4096) != (void *)-1) {
+			printf("check /proc/%d/maps\n", (int)getpid());
+			while (1)
+				sleep(1);
+		}
+		return 0;
+	}
+
+	# ./test1
+	check /proc/553/maps
+	[1] + Stopped                    ./test1
+	# cat /proc/553/maps | head -4
+	00008000-00009000 r-xp 00000000 01:00 3113640    /test1
+	00010000-00011000 rw-p 00000000 01:00 3113640    /test1
+	00011000-00012000 rw-p 00000000 00:00 0          [heap]
+	4006f000-40070000 rw-p 00000000 00:00 0
+
+	(2) the heap vma is merged
+
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <sys/types.h>
+
+	char foo[4096] = "foo";
+	char bar[4096];
+
+	int main (void)
+	{
+		if (sbrk(4096) != (void *)-1) {
+			printf("check /proc/%d/maps\n", (int)getpid());
+			while (1)
+				sleep(1);
+		}
+		return 0;
+	}
+
+	# ./test2
+	check /proc/556/maps
+	[2] + Stopped                    ./test2
+	# cat /proc/556/maps | head -4
+	00008000-00009000 r-xp 00000000 01:00 3116312    /test2
+	00010000-00012000 rw-p 00000000 01:00 3116312    /test2
+	00012000-00014000 rw-p 00000000 00:00 0          [heap]
+	4004a000-4004b000 rw-p 00000000 00:00 0
+
+	(3) the heap vma is splitted (this fails without the patch)
+
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <sys/mman.h>
+	#include <sys/types.h>
+
+	int main (void)
+	{
+		if ((sbrk(4096) != (void *)-1) && !mlockall(MCL_FUTURE) &&
+		    (sbrk(4096) != (void *)-1)) {
+			printf("check /proc/%d/maps\n", (int)getpid());
+			while (1)
+				sleep(1);
+		}
+		return 0;
+	}
+
+	# ./test3
+	check /proc/559/maps
+	[1] + Stopped                    ./test3
+	# cat /proc/559/maps|head -4
+	00008000-00009000 r-xp 00000000 01:00 3119108    /test3
+	00010000-00011000 rw-p 00000000 01:00 3119108    /test3
+	00011000-00012000 rw-p 00000000 00:00 0          [heap]
+	00012000-00013000 rw-p 00000000 00:00 0          [heap]
+
+It looks like the bug has been there forever, and since it only results in
+some information missing from a procfile, it does not fulfil the -stable
+"critical issue" criteria.
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/msr-index.h |    1 +
- drivers/idle/intel_idle.c        |    4 ++++
- 2 files changed, 5 insertions(+)
+ fs/proc/task_mmu.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -39,6 +39,7 @@
- #define MSR_NHM_SNB_PKG_CST_CFG_CTL	0x000000e2
- #define NHM_C3_AUTO_DEMOTE		(1UL << 25)
- #define NHM_C1_AUTO_DEMOTE		(1UL << 26)
-+#define ATM_LNC_C6_AUTO_DEMOTE		(1UL << 25)
- 
- #define MSR_MTRRcap			0x000000fe
- #define MSR_IA32_BBL_CR_CTL		0x00000119
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -340,8 +340,12 @@ static int intel_idle_probe(void)
- 		break;
- 
- 	case 0x1C:	/* 28 - Atom Processor */
-+		cpuidle_state_table = atom_cstates;
-+		break;
-+
- 	case 0x26:	/* 38 - Lincroft Atom Processor */
- 		cpuidle_state_table = atom_cstates;
-+		auto_demotion_disable_flags = ATM_LNC_C6_AUTO_DEMOTE;
- 		break;
- 
- 	case 0x2A:	/* SNB */
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -248,8 +248,8 @@ static void show_map_vma(struct seq_file
+ 		const char *name = arch_vma_name(vma);
+ 		if (!name) {
+ 			if (mm) {
+-				if (vma->vm_start <= mm->start_brk &&
+-						vma->vm_end >= mm->brk) {
++				if (vma->vm_start <= mm->brk &&
++						vma->vm_end >= mm->start_brk) {
+ 					name = "[heap]";
+ 				} else if (vma->vm_start <= mm->start_stack &&
+ 					   vma->vm_end >= mm->start_stack) {
 
 
