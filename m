@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab1CYNWO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:22:14 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34680 "EHLO
+	id S1752868Ab1CYNW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:22:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34696 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752609Ab1CYNWJ (ORCPT
+	with ESMTP id S1752750Ab1CYNWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:22:09 -0400
-Message-Id: <20110325132048.996818347@linutronix.de>
+	Fri, 25 Mar 2011 09:22:13 -0400
+Message-Id: <20110325132049.288372222@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Fri, 25 Mar 2011 13:22:07 -0000
+Date: Fri, 25 Mar 2011 13:22:12 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LAK <linux-arm-kernel@lists.infradead.org>,
         Russell King <linux@arm.linux.org.uk>,
         Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: [patch 17/23] arm: at91: Cleanup irq chip
+Subject: [patch 20/23] arm: Use generic show_interrupts()
 References: <20110325131617.258789658@linutronix.de>
-Content-Disposition: inline; filename=arm-at91.patch
+Content-Disposition: inline; filename=arm-use-generic-show-interrupts.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
@@ -25,79 +25,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid the whole lazy disable dance in the demux handler by providing a
-irq_disable() callback.
-
-Use the proper accessor functions and tidy up gpio_irq_handler()
+Use the generic version and just keep the arch specific output.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/arm/mach-at91/gpio.c |   31 +++++++++----------------------
- 1 file changed, 9 insertions(+), 22 deletions(-)
+ arch/arm/Kconfig      |    1 
+ arch/arm/kernel/irq.c |   55 ++++----------------------------------------------
+ 2 files changed, 6 insertions(+), 50 deletions(-)
 
-Index: linux-2.6-tip/arch/arm/mach-at91/gpio.c
+Index: linux-2.6-tip/arch/arm/Kconfig
 ===================================================================
---- linux-2.6-tip.orig/arch/arm/mach-at91/gpio.c
-+++ linux-2.6-tip/arch/arm/mach-at91/gpio.c
-@@ -375,6 +375,7 @@ static int gpio_irq_type(struct irq_data
+--- linux-2.6-tip.orig/arch/arm/Kconfig
++++ linux-2.6-tip/arch/arm/Kconfig
+@@ -28,6 +28,7 @@ config ARM
+ 	select HAVE_C_RECORDMCOUNT
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_SPARSE_IRQ
++	select GENERIC_IRQ_SHOW
+ 	help
+ 	  The ARM series is a line of low-power-consumption RISC chip designs
+ 	  licensed by ARM Ltd and targeted at embedded applications and
+Index: linux-2.6-tip/arch/arm/kernel/irq.c
+===================================================================
+--- linux-2.6-tip.orig/arch/arm/kernel/irq.c
++++ linux-2.6-tip/arch/arm/kernel/irq.c
+@@ -51,63 +51,18 @@
  
- static struct irq_chip gpio_irqchip = {
- 	.name		= "GPIO",
-+	.irq_disable	= gpio_irq_mask,
- 	.irq_mask	= gpio_irq_mask,
- 	.irq_unmask	= gpio_irq_unmask,
- 	.irq_set_type	= gpio_irq_type,
-@@ -384,16 +385,14 @@ static struct irq_chip gpio_irqchip = {
- static void gpio_irq_handler(unsigned irq, struct irq_desc *desc)
+ unsigned long irq_err_count;
+ 
+-int show_interrupts(struct seq_file *p, void *v)
++int arch_show_interrupts(struct seq_file *p, int prec)
  {
- 	unsigned	pin;
--	struct irq_desc	*gpio;
--	struct at91_gpio_chip *at91_gpio;
--	void __iomem	*pio;
-+	struct irq_data *idata = irq_desc_get_irq_data(desc);
-+	struct irq_chip *chip = irq_data_get_chip(data);
-+	struct at91_gpio_chip *at91_gpio = irq_data_get_chip_data(data);
-+	void __iomem	*pio = at91_gpio->regbase;
- 	u32		isr;
- 
--	at91_gpio = get_irq_chip_data(irq);
--	pio = at91_gpio->regbase;
+-	int i = *(loff_t *) v, cpu;
+-	struct irq_desc *desc;
+-	struct irqaction * action;
+-	unsigned long flags;
+-	int prec, n;
 -
- 	/* temporarily mask (level sensitive) parent IRQ */
--	desc->irq_data.chip->irq_ack(&desc->irq_data);
-+	chip->irq_ack(idata);
- 	for (;;) {
- 		/* Reading ISR acks pending (edge triggered) GPIO interrupts.
- 		 * When there none are pending, we're finished unless we need
-@@ -409,27 +408,15 @@ static void gpio_irq_handler(unsigned ir
- 		}
- 
- 		pin = at91_gpio->chip.base;
--		gpio = &irq_desc[pin];
- 
- 		while (isr) {
--			if (isr & 1) {
--				if (unlikely(gpio->depth)) {
--					/*
--					 * The core ARM interrupt handler lazily disables IRQs so
--					 * another IRQ must be generated before it actually gets
--					 * here to be disabled on the GPIO controller.
--					 */
--					gpio_irq_mask(irq_get_irq_data(pin));
--				}
--				else
--					generic_handle_irq(pin);
--			}
-+			if (isr & 1)
-+				generic_handle_irq(pin);
- 			pin++;
--			gpio++;
- 			isr >>= 1;
- 		}
- 	}
--	desc->irq_data.chip->irq_unmask(&desc->irq_data);
-+	chip->irq_unmask(idata);
- 	/* now it may re-trigger */
+-	for (prec = 3, n = 1000; prec < 10 && n <= nr_irqs; prec++)
+-		n *= 10;
+-
+-#ifdef CONFIG_SMP
+-	if (prec < 4)
+-		prec = 4;
+-#endif
+-
+-	if (i == 0) {
+-		char cpuname[12];
+-
+-		seq_printf(p, "%*s ", prec, "");
+-		for_each_present_cpu(cpu) {
+-			sprintf(cpuname, "CPU%d", cpu);
+-			seq_printf(p, " %10s", cpuname);
+-		}
+-		seq_putc(p, '\n');
+-	}
+-
+-	if (i < nr_irqs) {
+-		desc = irq_to_desc(i);
+-		raw_spin_lock_irqsave(&desc->lock, flags);
+-		action = desc->action;
+-		if (!action)
+-			goto unlock;
+-
+-		seq_printf(p, "%*d: ", prec, i);
+-		for_each_present_cpu(cpu)
+-			seq_printf(p, "%10u ", kstat_irqs_cpu(i, cpu));
+-		seq_printf(p, " %10s", desc->irq_data.chip->name ? : "-");
+-		seq_printf(p, "  %s", action->name);
+-		for (action = action->next; action; action = action->next)
+-			seq_printf(p, ", %s", action->name);
+-
+-		seq_putc(p, '\n');
+-unlock:
+-		raw_spin_unlock_irqrestore(&desc->lock, flags);
+-	} else if (i == nr_irqs) {
+ #ifdef CONFIG_FIQ
+-		show_fiq_list(p, prec);
++	show_fiq_list(p, prec);
+ #endif
+ #ifdef CONFIG_SMP
+-		show_ipi_list(p, prec);
++	show_ipi_list(p, prec);
+ #endif
+ #ifdef CONFIG_LOCAL_TIMERS
+-		show_local_irqs(p, prec);
++	show_local_irqs(p, prec);
+ #endif
+-		seq_printf(p, "%*s: %10lu\n", prec, "Err", irq_err_count);
+-	}
++	seq_printf(p, "%*s: %10lu\n", prec, "Err", irq_err_count);
+ 	return 0;
  }
  
 
