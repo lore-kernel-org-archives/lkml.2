@@ -1,104 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1CYN2X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:28:23 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:61132 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab1CYN2W (ORCPT
+	id S1753077Ab1CYN2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:28:34 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34262 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab1CYN2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:28:22 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: benh@kernel.crashing.org
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
-        acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, anton@samba.org,
-        Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH] POWER: perf_event: Skip updating kernel counters if register value shrinks
-Date: Fri, 25 Mar 2011 09:28:09 -0400
-Message-Id: <1301059689-4556-1-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.1
+	Fri, 25 Mar 2011 09:28:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mLYVpcuxpOYOzaWGxjWf3Nc1VbY4Ctk2rSmaMxfIo+hYMO+WuDmYwPyFOrTn88T0xU
+         zjuBDLBPrxvf4p6lK/laqGoKDZHw4WG9YfC/552+xsRECFbaEFygLNnPUYrSe4RwUDaw
+         +tgQE/IxAK/Mg5Y3rHGLJSEl0Da2/S3AoGtp0=
+MIME-Version: 1.0
+In-Reply-To: <1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
+References: <20110324195720.GB31713@thinkpad-t410>
+	<1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
+Date: Fri, 25 Mar 2011 13:28:30 +0000
+Message-ID: <AANLkTimF2UR8BVQW-3YJaGFEz39q8ydESAiMOjmdM1X7@mail.gmail.com>
+Subject: Re: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate key
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Chris Bagwell <chris@cnpbagwell.com>, Matthew Garrett <mjg@redhat.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2PDSpJJ025925
 
-It is possible on POWER7 for some perf events to have values decrease.  This
-causes a problem with the way the kernel counters are updated.  Deltas are
-computed and then stored in a 64 bit value while the registers are 32 bits
-wide so if new value is smaller than previous value, the delta is a very
-large positive value.  As a work around this patch skips updating the kernel
-counter in when the new value is smaller than the previous.  This can lead to
-a lack of precision in the coutner values, but from my testing the value is
-typcially fewer than 10 samples at a time.
+> +static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int *code,
+> +                                int *value, int *autorelease)
+> +{
+> +       struct eeepc_wmi_driver *eeepc = to_eeepc_wmi_driver(asus_wmi);
+> +       int is_press;
+> +
+> +       /*
+> +        * The following behavior is used for T101MT "Home" key:
+> +        *
+> +        *   On press:   No event set
+> +        *   On hold:    KEY_PROG2 press sent once w/o autorelease
+> +        *   On release: If key was held, KEY_PROG2 release sent.
+> +        *               Otherwise KEY_HOME press sent w/ autorelease.
+> +        *
+> +        * The simple state machine below implements this behavior.
+> +        */
+> +       switch (*code) {
+> +       case HOME_PRESS:
+> +               eeepc->home_key_state = HOME_PRESS;
+> +               *code = ASUS_WMI_KEY_IGNORE;
+> +               break;
+> +       case HOME_HOLD:
+> +               if (eeepc->home_key_state == HOME_HOLD) {
+> +                       *code = ASUS_WMI_KEY_IGNORE;
+> +               } else {
+> +                       eeepc->home_key_state = HOME_HOLD;
+> +                       *value = 1;
+> +                       *autorelease = 0;
+> +               }
+> +               break;
+> +       case HOME_RELEASE:
+> +               if (eeepc->home_key_state == HOME_RELEASE) {
+> +                       dev_warn(&asus_wmi->platform_device->dev,
+> +                                "Unexpected home key release event\n");
+> +                       *code = ASUS_WMI_KEY_IGNORE;
+> +               } else {
+> +                       *code = eeepc->home_key_state;
+> +                       eeepc->home_key_state = HOME_RELEASE;
+> +                       is_press = (*code == HOME_PRESS);
+> +                       *value = is_press;
+> +                       *autorelease = is_press;
+> +               }
+> +               break;
+> +       }
+> +}
+> +
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
----
- arch/powerpc/kernel/perf_event.c |   26 +++++++++++++++++++++-----
- 1 files changed, 21 insertions(+), 5 deletions(-)
+Why not something simpler like this ?
 
-diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
-index 97e0ae4..6752dc1 100644
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -416,6 +416,15 @@ static void power_pmu_read(struct perf_event *event)
- 		prev = local64_read(&event->hw.prev_count);
- 		barrier();
- 		val = read_pmc(event->hw.idx);
-+		/*
-+		 * POWER7 can roll back counter values, if the new value is
-+		 * smaller than the previous value it will cause the delta
-+		 * and the counter to have bogus values.  If this is the
-+		 * case skip updating anything until the counter grows again.
-+		 * This can lead to a small lack of precision in the counters.
-+		 */
-+		if (val < prev)
-+			return;
- 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
- 
- 	/* The counters are only 32 bits wide */
-@@ -449,8 +458,10 @@ static void freeze_limited_counters(struct cpu_hw_events *cpuhw,
- 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
- 		prev = local64_read(&event->hw.prev_count);
- 		event->hw.idx = 0;
--		delta = (val - prev) & 0xfffffffful;
--		local64_add(delta, &event->count);
-+		if (val >= prev) {
-+			delta = (val - prev) & 0xfffffffful;
-+			local64_add(delta, &event->count);
-+		}
- 	}
- }
- 
-@@ -458,14 +469,16 @@ static void thaw_limited_counters(struct cpu_hw_events *cpuhw,
- 				  unsigned long pmc5, unsigned long pmc6)
- {
- 	struct perf_event *event;
--	u64 val;
-+	u64 val, prev;
- 	int i;
- 
- 	for (i = 0; i < cpuhw->n_limited; ++i) {
- 		event = cpuhw->limited_counter[i];
- 		event->hw.idx = cpuhw->limited_hwidx[i];
- 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
--		local64_set(&event->hw.prev_count, val);
-+		prev = local64_read(&event->hw.prev_count);
-+		if (val > prev)
-+			local64_set(&event->hw.prev_count, val);
- 		perf_event_update_userpage(event);
- 	}
- }
-@@ -1197,7 +1210,10 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
- 
- 	/* we don't have to worry about interrupts here */
- 	prev = local64_read(&event->hw.prev_count);
--	delta = (val - prev) & 0xfffffffful;
-+	if (val < prev)
-+		delta = 0;
-+	else
-+		delta = (val - prev) & 0xfffffffful;
- 	local64_add(delta, &event->count);
- 
- 	/*
+static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int code,
+                                                 int *value, int *autorelease)
+{
+        if (code == 0xe4) {
+                *value = 1;
+                *autorelease = 0;
+        } else if (code == 0xe5) {
+                *value = 0;
+                *autorelease = 0;
+       }
+}
+
+with this keymap :
+
+       { KE_KEY, 0xe4, { KEY_HOME } }, /* Home Key Down */
+       { KE_KEY, 0xe5, { KEY_HOME } }, /* Home Key Up */
+       { KE_KEY, 0xea, { KEY_PROG2 } }, /* Home Key hold more than one second */
+
+
+This sounds simpler and we don't loose information (key down and key
+up both event reported at the right time).
+0xe5 is *always* sent after 0xe4 right ?
+
+Also, for the callback, "value" should be an unsigned int, and
+"autorelease" a bool.
+
+Thanks,
 -- 
-1.7.1
-
+Corentin Chary
+http://xf.iksaif.net
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
