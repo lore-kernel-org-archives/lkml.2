@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab1CYT5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 15:57:07 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47006 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab1CYT5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 15:57:04 -0400
-Date: Fri, 25 Mar 2011 20:56:43 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, dvhart@linux.intel.com,
-        peterz@infradead.org, akpm@linux-foundation.org, srostedt@redhat.com,
-        tglx@linutronix.de, laijs@cn.fujitsu.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/urgent] WARN_ON_SMP(): Allow use in if() statements on
- UP
-Message-ID: <20110325195643.GB7346@elte.hu>
-References: <20110317192208.444147791@goodmis.org>
- <tip-2092e6be82ec71ecbf5a8ceeef004bbcbdb78812@git.kernel.org>
- <AANLkTikfq9bz_cKdvq9ab+KS218Q7uVvoNdJeMe_-RUg@mail.gmail.com>
- <1301076981.14261.197.camel@gandalf.stny.rr.com>
- <1301077163.14261.199.camel@gandalf.stny.rr.com>
- <20110325193128.GA5839@p183.telecom.by>
- <1301082034.14261.202.camel@gandalf.stny.rr.com>
- <20110325194729.GA6192@p183.telecom.by>
+	id S1754982Ab1CYT7M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 15:59:12 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:47926 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753142Ab1CYT7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 15:59:11 -0400
+Date: Fri, 25 Mar 2011 15:58:56 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mingming Cao <cmm@us.ibm.com>
+Subject: Re: linux-next: manual merge of the ext4 tree with Linus' tree
+Message-ID: <20110325195856.GF2548@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Tejun Heo <tj@kernel.org>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org, Mingming Cao <cmm@us.ibm.com>
+References: <20110325125643.91510e0e.sfr@canb.auug.org.au>
+ <20110325144544.GF1409@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110325194729.GA6192@p183.telecom.by>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110325144544.GF1409@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Alexey Dobriyan <adobriyan@gmail.com> wrote:
-
-> On Fri, Mar 25, 2011 at 03:40:34PM -0400, Steven Rostedt wrote:
-> > On Fri, 2011-03-25 at 21:31 +0200, Alexey Dobriyan wrote:
-> > 
-> > > > Would you like me to add a comment that states:
-> > > > 
-> > > > 	/*
-> > > > 	 * Use ({0;}) as just "0" will cause gcc to output:
-> > > > 	 *   warning: statement with no effect
-> > > > 	 */
-> > > 
-> > > Try ((void)0)
-> > 
-> > Maybe I should update the comment to stop further confusion:
+On Fri, Mar 25, 2011 at 03:45:44PM +0100, Tejun Heo wrote:
+> Both are about the same conversion but the one using alloc_workqueue()
+> is better because 1. create_singlethread_workqueue() is going away and
+> 2. it doesn't require strict ordering among queued works.
 > 
-> Ah!
-> 
-> I always thought if (WARN_ON(x)) is confusing and should be banned.
+> Ted, what do you think?
 
-I'd encourage you to read kernel/lockdep.c one day:
+Agreed.  And it looks like Linus agreed as well:
 
-		return DEBUG_LOCKS_WARN_ON(1);
-		DEBUG_LOCKS_WARN_ON(1);
-	if (DEBUG_LOCKS_WARN_ON(class->subclass != subclass))
-	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
-		if (DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
-	if (DEBUG_LOCKS_WARN_ON(unlikely(early_boot_irqs_disabled)))
-	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
-	if (DEBUG_LOCKS_WARN_ON(current->hardirq_context))
-	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
-	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
-	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
-		DEBUG_LOCKS_WARN_ON(!softirq_count());
-	if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
-	if (DEBUG_LOCKS_WARN_ON(!name)) {
-	if (DEBUG_LOCKS_WARN_ON(!key))
-		DEBUG_LOCKS_WARN_ON(1);
-	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
-	if (DEBUG_LOCKS_WARN_ON(depth >= MAX_LOCK_DEPTH))
-	if (DEBUG_LOCKS_WARN_ON(!class))
-	if (DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
-		if (DEBUG_LOCKS_WARN_ON(chain_key != 0))
-	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
-		if (DEBUG_LOCKS_WARN_ON(!class))
-		if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
-	if (DEBUG_LOCKS_WARN_ON(!depth))
-	if (DEBUG_LOCKS_WARN_ON(curr->lockdep_depth != depth))
-	if (DEBUG_LOCKS_WARN_ON(!depth))
-	if (DEBUG_LOCKS_WARN_ON(curr->lockdep_depth != depth - 1))
-	if (DEBUG_LOCKS_WARN_ON(!depth && (hlock->prev_chain_key != 0)))
-		if (DEBUG_LOCKS_WARN_ON(current->hardirqs_enabled)) {
-		if (DEBUG_LOCKS_WARN_ON(!current->hardirqs_enabled)) {
-			DEBUG_LOCKS_WARN_ON(current->softirqs_enabled);
-			DEBUG_LOCKS_WARN_ON(!current->softirqs_enabled);
-	if (DEBUG_LOCKS_WARN_ON(!depth))
-	if (DEBUG_LOCKS_WARN_ON(!depth))
+diff --cc fs/ext4/super.c
+index 203f9e4,ccfa686..22546ad
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@@ -3511,12 -3514,7 +3516,12 @@@ static int ext4_fill_super(struct super
+        percpu_counter_set(&sbi->s_dirtyblocks_counter, 0);
+  
+  no_journal:
+ -      EXT4_SB(sb)->dio_unwritten_wq = create_singlethread_workqueue("ext4-dio-
+ +      /*
+ +       * The maximum number of concurrent works can be high and
+ +       * concurrency isn't really necessary.  Limit it to 1.
+ +       */
+ +      EXT4_SB(sb)->dio_unwritten_wq =
+-               alloc_workqueue("ext4-dio-unwritten", WQ_MEM_RECLAIM, 1);
+++              alloc_workqueue("ext4-dio-unwritten", WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
+        if (!EXT4_SB(sb)->dio_unwritten_wq) {
+                printk(KERN_ERR "EXT4-fs: failed to create DIO workqueue\n");
+                goto failed_mount_wq;
 
-These conditional warnings made the flow a lot clearer and simpler - while 
-still giving us a very robust lockdep machinery that wont crash no matter what 
-kind of anomaly happens.
-
-But yes, i can imagine such constructs being misused as well when mixed into 
-real, non-debug functionality. As usual, it's just a tool, with good and evil 
-uses as well - so your 'it should be banned' position is too extreme IMHO.
-
-Thanks,
-
-	Ingo
+						- Ted
