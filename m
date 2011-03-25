@@ -1,101 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934425Ab1CYCay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 22:30:54 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:58210 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934385Ab1CYCax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 22:30:53 -0400
-Date: Thu, 24 Mar 2011 19:30:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com
-Subject: Re: [PATCH RFC tip/core/rcu 01/11] rcu: call __rcu_read_unlock()
- in exit_rcu for tiny RCU
-Message-ID: <20110325023042.GA25459@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
- <1298425183-21265-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <4D67687A.6010906@cn.fujitsu.com>
- <20110225194007.GC2269@linux.vnet.ibm.com>
- <4D8ABE6C.7000105@cn.fujitsu.com>
- <20110324130712.GH2322@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110324130712.GH2322@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934434Ab1CYCcj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 22:32:39 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:33206 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934385Ab1CYCcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 22:32:35 -0400
+Date: Thu, 24 Mar 2011 22:32:31 -0400
+Message-Id: <E1Q2wpD-0002It-CE@tytso-glaptop>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ext4 update for 2.6.39-rc1
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 06:07:12AM -0700, Paul E. McKenney wrote:
-> On Thu, Mar 24, 2011 at 11:45:48AM +0800, Lai Jiangshan wrote:
-> > On 02/26/2011 03:40 AM, Paul E. McKenney wrote:
-> > > On Fri, Feb 25, 2011 at 04:29:46PM +0800, Lai Jiangshan wrote:
-> > >> On 02/23/2011 09:39 AM, Paul E. McKenney wrote:
-> > >>>
-> > >>> diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-> > >>> index 015abae..3cb8e36 100644
-> > >>> --- a/kernel/rcutiny_plugin.h
-> > >>> +++ b/kernel/rcutiny_plugin.h
-> > >>
-> > >> My original patch was just for tree RCU. It is not merged.
-> > >> I forgot the tiny RCU case then, this change is needed for tree & tiny RCU.
-> > > 
-> > > Good catch, I have applied the TREE_RCU patch.  I intend to submit
-> > > both for the next merge window.
-> > > 
-> > 
-> > Hi, Paul
-> > 
-> > It is still not merged, and it is not in your git tree.
-> 
-> Indeed it is not yet in my external git tree.  Here is my normal work
-> flow:
-> 
-> 1.	Develop and test continuously.
-> 
-> 2.	Based on testing, review, etc., determin which commits are
-> 	ready for the next merge window.
-> 
-> 3.	Midway through the -rc releases, push the commits targeted
-> 	to the next merge window to rcu/next.  Push any additional
-> 	commits to rcu/testing.
-> 
-> 4.	Towards the last -rc, rebase, retest, wait for the -next
-> 	tree to take the changes, and, if all is well, send Ingo
-> 	a pull request.
-> 
-> Exposing your changes to -next during the merge window would cause
-> pointless irritation due to random conflicts with rapidly changing
-> code.
-> 
-> > I'm writing some patches, to avoid conflict with your code,
-> > which branch I should based on?
-> 
-> But, yes, it would be much easier for us to handle your changes if
-> I post them via -rcu.  So I have created a new branch rcu/kfree_rcu
-> that is -not- consumed by -next.  The rcu/next and rcu/testing
-> branches include your base kfree_rcu() patch, but not the uses of
-> it.  These branches are based on 2.6.38, and I will move them ahead
-> at -rc3 or -rc4.
-> 
-> These currently contain your original patches, but I will be pulling
-> your latest set.
 
-Which are now available at rcu/kfree_rcu.
+Hi Linus,
 
-							Thanx, Paul
+Please pull from:
 
-> > Is origin/rcu/next OK?
-> 
-> origin/rcu/kfree_rcu for the moment to avoid messing up -next.  But
-> it will be origin/rcu/next after rebasing onto -rc3 or -rc4.
-> 
-> 							Thanx, Paul
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
+
+to get the ext4 updates for the 2.6.39 merge window.
+
+Thanks,
+
+					- Ted
+
+Alexander V. Lukyanov (1):
+      ext4: allow inode_readahead_blks=0 (linux-2.6.37)
+
+Amir Goldstein (7):
+      ext4: use the nblocks arg to ext4_truncate_restart_trans()
+      ext4: skip orphan cleanup if fs has unknown ROCOMPAT features
+      jbd2: add the b_cow_tid field to journal_head struct
+      jbd2: add COW fields to struct jbd2_journal_handle
+      ext4: handle errors in ext4_rename
+      ext4: unify the ext4_handle_release_buffer() api
+      ext4: handle errors in ext4_clear_blocks()
+
+Coly Li (5):
+      ext4: code cleanup in mb_find_buddy()
+      ext4: remove unncessary call mb_find_buddy() in debugging code
+      mballoc: add comments to ext4_mb_mark_free_simple()
+      ext4: clarify description of ac_g_ex in struct ext4_allocation_context
+      ext4: mballoc: don't replace the current preallocation group unnecessarily
+
+Curt Wohlgemuth (2):
+      ext4: mark multi-page IO complete on mapping failure
+      ext4: fix ext4_da_block_invalidatepages() to handle page range properly
+
+Eric Sandeen (2):
+      ext4: enable acls and user_xattr by default
+      ext4: don't kfree uninitialized s_group_info members
+
+Feng Tang (1):
+      ext4: remove redundant set_buffer_mapped() in ext4_da_get_block_prep()
+
+Jiaying Zhang (1):
+      ext4: add more tracepoints and use dev_t in the trace buffer
+
+Lukas Czerner (4):
+      ext4: update ext4 documentation
+      ext4: mark file-local functions and variables as static
+      ext4: check if device support discard in FITRIM ioctl
+      ext4: Adjust minlen with discard_granularity in the FITRIM ioctl
+
+Manish Katiyar (1):
+      ext4: fix missing iput of root inode for some mount error paths
+
+Mingming Cao (1):
+      ext4: Use single thread to perform DIO unwritten convertion
+
+Peter Huewe (1):
+      ext4: Fix sparse warning: Using plain integer as NULL pointer
+
+Robin Dong (1):
+      ext4: add missing space in printk's in __ext4_grp_locked_error()
+
+Sergey Senozhatsky (1):
+      ext4: unused variables cleanup in fs/ext4/extents.c
+
+Tao Ma (2):
+      ext4: add FITRIM to compat_ioctl.
+      ext4: fix a BUG in mb_mark_used during trim.
+
+Theodore Ts'o (12):
+      ext4: fix compile warnings with EXT4FS_DEBUG enabled
+      ext4: enable mblk_io_submit by default
+      ext4: fold __mpage_da_writepage() into write_cache_pages_da()
+      ext4: simple cleanups to write_cache_pages_da()
+      ext4: clear the dirty bit for a page in writeback at the last minute
+      ext4: remove page_skipped hackery in ext4_da_writepages()
+      ext4: don't lock the next page in write_cache_pages if not needed
+      ext4: move setup of the mpd structure to write_cache_pages_da()
+      ext4: don't leave PageWriteback set after memory failure
+      ext4: suppress verbose debugging information if malloc-debug is off
+      ext4: optimize ext4_bio_write_page() when no extent conversion is needed
+      ext4: Initialize fsync transaction ids in ext4_new_inode()
+
+Yongqiang Yang (1):
+      ext4: make FIEMAP and delayed allocation play well together
+
+
+ Documentation/ABI/testing/sysfs-fs-ext4 |   13 +-
+ Documentation/filesystems/ext4.txt      |  207 ++++++++-
+ fs/ext4/balloc.c                        |    3 +
+ fs/ext4/ext4_jbd2.h                     |    7 -
+ fs/ext4/extents.c                       |  213 +++++++--
+ fs/ext4/fsync.c                         |   14 +-
+ fs/ext4/ialloc.c                        |    8 +-
+ fs/ext4/inode.c                         |  410 +++++++----------
+ fs/ext4/ioctl.c                         |    7 +
+ fs/ext4/mballoc.c                       |   34 +-
+ fs/ext4/mballoc.h                       |    2 +-
+ fs/ext4/migrate.c                       |   10 +-
+ fs/ext4/namei.c                         |   13 +-
+ fs/ext4/page-io.c                       |   13 +-
+ fs/ext4/resize.c                        |   12 +-
+ fs/ext4/super.c                         |   48 ++-
+ fs/ext4/xattr.c                         |    4 +-
+ include/linux/jbd2.h                    |   28 +-
+ include/linux/journal-head.h            |    7 +
+ include/trace/events/ext4.h             |  775 +++++++++++++++++++++++--------
+ include/trace/events/jbd2.h             |   78 ++--
+ 21 files changed, 1307 insertions(+), 599 deletions(-)
