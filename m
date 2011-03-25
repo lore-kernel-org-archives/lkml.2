@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab1CYLwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 07:52:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38339 "EHLO hera.kernel.org"
+	id S1757201Ab1CYLwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 07:52:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38354 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751588Ab1CYLwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 07:52:08 -0400
-Date: Fri, 25 Mar 2011 11:51:47 GMT
-From: tip-bot for Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        gorcunov@openvz.org, ming.m.lin@intel.com, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        gorcunov@openvz.org, ming.m.lin@intel.com, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
-In-Reply-To: <4D8BAB49.3080701@openvz.org>
-References: <4D8BAB49.3080701@openvz.org>
+	id S1752576Ab1CYLwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 07:52:40 -0400
+Date: Fri, 25 Mar 2011 11:52:09 GMT
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, efault@gmx.de, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, efault@gmx.de,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf, x86: P4 PMU - Read proper MSR register to catch unflagged overflows
-Message-ID: <tip-242214f9c1eeaae40eca11e3b4d37bfce960a7cd@git.kernel.org>
-Git-Commit-ID: 242214f9c1eeaae40eca11e3b4d37bfce960a7cd
+Subject: [tip:perf/urgent] perf, x86: Complain louder about BIOSen corrupting CPU/PMU state and continue
+Message-ID: <tip-45daae575e08bbf7405c5a3633e956fa364d1b4f@git.kernel.org>
+Git-Commit-ID: 45daae575e08bbf7405c5a3633e956fa364d1b4f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 25 Mar 2011 11:51:48 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 25 Mar 2011 11:52:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  242214f9c1eeaae40eca11e3b4d37bfce960a7cd
-Gitweb:     http://git.kernel.org/tip/242214f9c1eeaae40eca11e3b4d37bfce960a7cd
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Thu, 24 Mar 2011 23:36:25 +0300
+Commit-ID:  45daae575e08bbf7405c5a3633e956fa364d1b4f
+Gitweb:     http://git.kernel.org/tip/45daae575e08bbf7405c5a3633e956fa364d1b4f
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Fri, 25 Mar 2011 10:24:23 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 24 Mar 2011 21:40:01 +0100
+CommitDate: Fri, 25 Mar 2011 11:23:41 +0100
 
-perf, x86: P4 PMU - Read proper MSR register to catch unflagged overflows
+perf, x86: Complain louder about BIOSen corrupting CPU/PMU state and continue
 
-The read of a proper MSR register was missed and instead of
-counter the configration register was tested (it has
-ARCH_P4_UNFLAGGED_BIT always cleared) leading to unknown NMI
-hitting the system. As result the user may obtain "Dazed and
-confused, but trying to continue" message. Fix it by reading a
-proper MSR register.
+Eric Dumazet reported that hardware PMU events do not work on his
+system, due to the BIOS corrupting PMU state:
 
-When an NMI happens on a P4, the perf nmi handler checks the
-configuration register to see if the overflow bit is set or not
-before taking appropriate action.  Unfortunately, various P4
-machines had a broken overflow bit, so a backup mechanism was
-implemented.  This mechanism checked to see if the counter
-rolled over or not.
+    Performance Events: PEBS fmt0+, Core2 events, Broken BIOS detected, using software events only.
+    [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 186 is 43003c)
 
-A previous commit that implemented this backup mechanism was
-broken. Instead of reading the counter register, it used the
-configuration register to determine if the counter rolled over
-or not. Reading that bit would give incorrect results.
+Linus suggested that we continue in the face of such BIOS-induced CPU
+state corruption:
 
-This would lead to 'Dazed and confused' messages for the end
-user when using the perf tool (or if the nmi watchdog is
-running).
+   http://lkml.org/lkml/2011/3/24/608
 
-The fix is to read the counter register before determining if
-the counter rolled over or not.
+Such BIOSes will have to be fixed - Linux developers rely on a working and
+fully capable PMU and the BIOS interfering with the CPU's PMU state is simply
+not acceptable.
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Lin Ming <ming.m.lin@intel.com>
-LKML-Reference: <4D8BAB49.3080701@openvz.org>
+So this patch changes perf to continue when it detects such BIOS
+interaction, some hardware events may be unreliable due to the BIOS
+writing and re-writing them - there's not much the kernel can do
+about that but to detect the corruption and report it.
+
+Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+LKML-Reference: <new-submission>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event_p4.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index 3769ac8..d3d7b59 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -777,6 +777,7 @@ static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
- 	 * the counter has reached zero value and continued counting before
- 	 * real NMI signal was received:
- 	 */
-+	rdmsrl(hwc->event_base, v);
- 	if (!(v & ARCH_P4_UNFLAGGED_BIT))
- 		return 1;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index ec46eea..eb00677 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -500,12 +500,17 @@ static bool check_hw_exists(void)
+ 	return true;
+ 
+ bios_fail:
+-	printk(KERN_CONT "Broken BIOS detected, using software events only.\n");
++	/*
++	 * We still allow the PMU driver to operate:
++	 */
++	printk(KERN_CONT "Broken BIOS detected, complain to your hardware vendor.\n");
+ 	printk(KERN_ERR FW_BUG "the BIOS has corrupted hw-PMU resources (MSR %x is %Lx)\n", reg, val);
+-	return false;
++
++	return true;
+ 
+ msr_fail:
+ 	printk(KERN_CONT "Broken PMU hardware detected, using software events only.\n");
++
+ 	return false;
+ }
  
