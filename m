@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743Ab1CYXyF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:54:05 -0400
-Received: from kroah.org ([198.145.64.141]:42031 "EHLO coco.kroah.org"
+	id S932636Ab1CYXxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:53:13 -0400
+Received: from kroah.org ([198.145.64.141]:41910 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932684Ab1CYXxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:18 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:14 2011
-Message-Id: <20110325234514.446533063@clark.kroah.org>
+	id S1755676Ab1CYXxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:07 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:44 2011
+Message-Id: <20110325234844.045159544@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:39 -0700
+Date: Fri, 25 Mar 2011 16:47:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Amir Goldstein <amir73il@users.sf.net>, "Theodore Tso" <tytso@mit.edu>
-Subject: [63/63] ext4: skip orphan cleanup if fs has unknown ROCOMPAT features
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [48/55] drm/radeon/kms: prefer legacy pll algo for tv-out
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Amir Goldstein <amir73il@gmail.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit d39195c33bb1b5fdcb0f416e8a0b34bfdb07a027 upstream.
+commit 64146f8b2af1ba77fe3c21d9d6d7213b9bb72b40 upstream.
 
-Orphan cleanup is currently executed even if the file system has some
-number of unknown ROCOMPAT features, which deletes inodes and frees
-blocks, which could be very bad for some RO_COMPAT features,
-especially the SNAPSHOT feature.
+ntsc seems to work fine with either algo, some
+pal TVs seem pickier.
 
-This patch skips the orphan cleanup if it contains readonly compatible
-features not known by this ext4 implementation, which would prevent
-the fs from being mounted (or remounted) readwrite.
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=30832
 
-Signed-off-by: Amir Goldstein <amir73il@users.sf.net>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/super.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -75,6 +75,7 @@ static void ext4_write_super(struct supe
- static int ext4_freeze(struct super_block *sb);
- static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
- 		       const char *dev_name, void *data);
-+static int ext4_feature_set_ok(struct super_block *sb, int readonly);
- static void ext4_destroy_lazyinit_thread(void);
- static void ext4_unregister_li_request(struct super_block *sb);
- static void ext4_clear_request_list(void);
-@@ -2120,6 +2121,13 @@ static void ext4_orphan_cleanup(struct s
- 		return;
- 	}
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -921,7 +921,11 @@ static void atombios_crtc_set_pll(struct
+ 	/* adjust pixel clock as needed */
+ 	adjusted_clock = atombios_adjust_pll(crtc, mode, pll, ss_enabled, &ss);
  
-+	/* Check if feature set would not allow a r/w mount */
-+	if (!ext4_feature_set_ok(sb, 0)) {
-+		ext4_msg(sb, KERN_INFO, "Skipping orphan cleanup due to "
-+			 "unknown ROCOMPAT features");
-+		return;
-+	}
-+
- 	if (EXT4_SB(sb)->s_mount_state & EXT4_ERROR_FS) {
- 		if (es->s_last_orphan)
- 			jbd_debug(1, "Errors on filesystem, "
+-	if (ASIC_IS_AVIVO(rdev))
++	if (radeon_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
++		/* TV seems to prefer the legacy algo on some boards */
++		radeon_compute_pll_legacy(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
++					  &ref_div, &post_div);
++	else if (ASIC_IS_AVIVO(rdev))
+ 		radeon_compute_pll_avivo(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
+ 					 &ref_div, &post_div);
+ 	else
 
 
