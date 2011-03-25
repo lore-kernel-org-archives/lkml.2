@@ -1,117 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab1CYV61 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 17:58:27 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:51382 "EHLO
+	id S1755400Ab1CYV7G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 17:59:06 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:51416 "EHLO
 	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab1CYV6Z (ORCPT
+	with ESMTP id S1755148Ab1CYV7D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 17:58:25 -0400
+	Fri, 25 Mar 2011 17:59:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=az+b7No8iAW5B6f+vdb5KS3M9Nc2rUvn0ZBWeMQGQvey/PRiRb3AbmFXBneJlRTuRq
-         UEo8x8zCvK+TzO8SC5GgtiCyg/4MpYratBRr5JZFgL6GainDlBh8ibfBA+Hoe5uG1nmw
-         S8UAYHvGLD6ahFSYx4hAPJZ98i6nsO6pQ79io=
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=uW3FDPLEI2W3Xc0qjBXZhZnb2Ef7cyzQaqT9LDQkdMTSuAeQ078U5/KQU2kkLGeOc4
+         CAbmpvjUFYpYYrUDagNpE3ChyB0vkdU8LPHgsUk8yf0MIz2lsJB0xYFek21lDvybnZ2f
+         QR1T8xNKkMT0WUUffTSIbuiH/BhY9ohfgLEpY=
 MIME-Version: 1.0
-In-Reply-To: <1301073283-30821-2-git-send-email-jamie@jamieiles.com>
-References: <1301073283-30821-1-git-send-email-jamie@jamieiles.com> <1301073283-30821-2-git-send-email-jamie@jamieiles.com>
+In-Reply-To: <alpine.LFD.2.00.1103252246040.31464@localhost6.localdomain6>
+References: <20110325133039.521553268@linutronix.de> <20110325133203.039794496@linutronix.de>
+ <AANLkTinmwi8qa2_OFWz7o2sJoa04cK8Kod0QvpwvcBgm@mail.gmail.com>
+ <AANLkTinsfJVF0wFiyZ=D=nM6gGVnpA8h9SyeoSRcnyqm@mail.gmail.com> <alpine.LFD.2.00.1103252246040.31464@localhost6.localdomain6>
 From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 25 Mar 2011 17:58:05 -0400
-X-Google-Sender-Auth: 7S0nKFmw9Evrug6tTZiEshgGoqo
-Message-ID: <AANLkTinLBbKaw=DwVFgORtQ=uA+zkF8QUUKj6uiqLaMw@mail.gmail.com>
-Subject: Re: [RFC PATCHv3 1/4] drivers/otp: add initial support for OTP memory
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
+Date: Fri, 25 Mar 2011 17:58:43 -0400
+X-Google-Sender-Auth: 2Zv87nTZAbO6TVFFxwWCnD5Kask
+Message-ID: <AANLkTi=fV+UtmZda+o7HhGXfh1vQKB=Xk=XVsULVixQh@mail.gmail.com>
+Subject: Re: [uclinux-dist-devel] [patch 2/2] bfin: Convert irq namespace
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: uclinux-dist-devel@blackfin.uclinux.org,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 13:14, Jamie Iles wrote:
-> --- /dev/null
-> +++ b/drivers/otp/Kconfig
-> +         may have different characterstics.  This provides a character device
+On Fri, Mar 25, 2011 at 17:47, Thomas Gleixner wrote:
+> On Fri, 25 Mar 2011, Mike Frysinger wrote:
+>> On Fri, Mar 25, 2011 at 17:34, Mike Frysinger wrote:
+>> > On Fri, Mar 25, 2011 at 09:32, Thomas Gleixner wrote:
+>> >> -       __set_irq_handler_unlocked(irq, handle);
+>> >> +       __irq_set_handler_locked(irq, handle);
+>> >
+>> > looks like a typo in your patch ?  should still be unlocked right ?
+>>
+>> although that still doesnt fix the build failure for me ...
+>>
+>> arch/blackfin/mach-common/ints-priority.c: In function ‘bfin_set_irq_handler’:
+>> arch/blackfin/mach-common/ints-priority.c:562: error: implicit
+>> declaration of function ‘__irq_set_handler_unlocked’
+>
+> Sorry the patch is correct, but it depends on a pending pull
+> request. I hope that hits linus tree tonight.
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq/urgent
 
-characterstics -> characteristics
-
-> +if OTP
-> +
-> +config WRITE_ENABLE
-> +       bool "Enable writing support of OTP pages"
-> +       default n
-> +       help
-
-does this show correctly in the kconfig by putting this under "if otp"
-instead of "depends otp" ?  it should show the write option indented
-rather than at the same level.
-
-> +/* We'll allow OTP devices to be named otpa-otpz. */
-> +#define MAX_OTP_DEVICES                26
-
-mmm is that still true ?
-
-> +static unsigned long registered_otp_map[BITS_TO_LONGS(MAX_OTP_DEVICES)];
-> +static DEFINE_MUTEX(otp_register_mutex);
-
-do we really need this ?  if we let the minor number dictate
-availability, then we can increment until that errors/wraps, and we
-dont need to do any tracking ...
-
-> +       if (fmt == OTP_REDUNDANCY_FMT_SINGLE_ENDED)
-> +               fmt_string = "single-ended";
-> +       else if (fmt == OTP_REDUNDANCY_FMT_REDUNDANT)
-> +               fmt_string = "redundant";
-> +       else if (fmt == OTP_REDUNDANCY_FMT_DIFFERENTIAL)
-> +               fmt_string = "differential";
-> +       else if (fmt == OTP_REDUNDANCY_FMT_DIFFERENTIAL_REDUNDANT)
-> +               fmt_string = "differential-redundant";
-> +       else if (fmt == OTP_REDUNDANCY_FMT_ECC)
-> +               fmt_string = "ecc";
-> +       else
-> +               return -EINVAL;
-
-i wonder if the code would be simpler if we had a local static array.
-then the show/store funcs would simply walk that tree, and when you
-add a new format in the future, you only have to update one place.
-
-static const char * const otp_redundancy_str[] = {
-	[OTP_REDUNDANCY_FMT_SINGLE_ENDED] = "single-ended",
-	[OTP_REDUNDANCY_FMT_REDUNDANT] = "redundant",
-	........
-};
-
-> +static ssize_t otp_num_regions_show(struct device *dev,
-> +                                   struct device_attribute *attr, char *buf)
-> +{
-> +       int nr_regions;
-> +
-> +       nr_regions = otp_dev->ops->get_nr_regions(otp_dev);
-> +
-> +       if (nr_regions < 0)
-> +               return (ssize_t)nr_regions;
-
-we could make get_nr_regions() return a ssize_t ...
-
-> +       err = alloc_chrdev_region(&otp_dev->devno, 0, max_regions, "otp");
-
-hmm, i was thinking that we'd have 1 major for otp devices.  isnt this
-how MTD does it ?
-
-> --- /dev/null
-> +++ b/include/linux/otp.h
-> +/**
-> + * enum otp_device_flags - Flags to indicate capabilities for the OTP device.
-> + *
-> + * @OTP_DEVICE_FNO_SUBWORD_WRITE:      only full word sized writes may be
-> + *                                     performed.  Don't use
-> + *                                     read-modify-write cycles for
-> + *                                     performing unaligned writes.
-> + */
-> +enum otp_device_flags {
-> +       OTP_DEVICE_FNO_SUBWORD_WRITE    = (1 << 0),
-> +};
-
-use OTP_CAPS_xxx instead ?
+OK, i'll look at the patches tomorrow then ;)
 -mike
