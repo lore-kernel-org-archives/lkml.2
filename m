@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab1CYOUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 10:20:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31179 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab1CYOUv (ORCPT
+	id S1753554Ab1CYOVU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 10:21:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48784 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753309Ab1CYOVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 10:20:51 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-In-reply-to: <1301062675-sup-2548@think>
-References: <20110324200613.GA1724@gentoo.trippels.de> <4D8BB114.2070002@fusionio.com> <20110324214150.GA1739@gentoo.trippels.de> <4D8C4304.3050101@fusionio.com> <20110325083757.GA1754@gentoo.trippels.de> <4D8C55D9.1060903@fusionio.com> <20110325095704.GA1694@gentoo.trippels.de> <4D8C8E1C.1020304@fusionio.com> <20110325130959.GA1698@gentoo.trippels.de> <4D8CA263.9090006@fusionio.com> <20110325141413.GA1725@gentoo.trippels.de> <1301062675-sup-2548@think>
-Date: Fri, 25 Mar 2011 10:19:49 -0400
-Message-Id: <1301062767-sup-540@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4D8CA4BC.019E,ss=1,fgs=0
+	Fri, 25 Mar 2011 10:21:18 -0400
+Message-Id: <20110325142049.441954268@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Fri, 25 Mar 2011 14:21:16 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Subject: [patch 1/2] tile: Convert to new irq function names
+References: <20110325141938.846639464@linutronix.de>
+Content-Disposition: inline; filename=tile-namespace.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Chris Mason's message of 2011-03-25 10:18:19 -0400:
-> Excerpts from Markus Trippelsdorf's message of 2011-03-25 10:14:13 -0400:
-> > On 2011.03.25 at 15:10 +0100, Jens Axboe wrote:
-> > > On 2011-03-25 14:09, Markus Trippelsdorf wrote:
-> > > > On 2011.03.25 at 13:44 +0100, Jens Axboe wrote:
-> > > >> On 2011-03-25 10:57, Markus Trippelsdorf wrote:
-> > > >>>
-> > > >>> Reverting it solves all problems here.
-> > > >>
-> > > >> Can you try this one?
-> > > > 
-> > > > This one doesn't help; I still get the same BUG.
-> > > > 
-> > > > BTW if you're having trouble reproducing this, here is the only non
-> > > > stock xfs option that I use on the affected partitions:
-> > > > 
-> > > > noatime,logbsize=262144
-> > > 
-> > > This?
-> > 
-> > No.
-> > 
-> 
-> I was able to reproduce it here.  This is working for me:
-> 
+Converted with coccinelle.
 
-Sorry, this is working better but still explodes later.  Don't bother
-with this one.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/irq.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
--chris
+Index: linux-2.6-tip/arch/tile/kernel/irq.c
+===================================================================
+--- linux-2.6-tip.orig/arch/tile/kernel/irq.c
++++ linux-2.6-tip/arch/tile/kernel/irq.c
+@@ -241,14 +241,14 @@ void tile_irq_activate(unsigned int irq,
+ 	irq_flow_handler_t handle = handle_level_irq;
+ 	if (tile_irq_type == TILE_IRQ_PERCPU)
+ 		handle = handle_percpu_irq;
+-	set_irq_chip_and_handler(irq, &tile_irq_chip, handle);
++	irq_set_chip_and_handler(irq, &tile_irq_chip, handle);
+ 
+ 	/*
+ 	 * Flag interrupts that are hardware-cleared so that ack()
+ 	 * won't clear them.
+ 	 */
+ 	if (tile_irq_type == TILE_IRQ_HW_CLEAR)
+-		set_irq_chip_data(irq, (void *)IS_HW_CLEARED);
++		irq_set_chip_data(irq, (void *)IS_HW_CLEARED);
+ }
+ EXPORT_SYMBOL(tile_irq_activate);
+ 
+@@ -290,7 +290,7 @@ int show_interrupts(struct seq_file *p, 
+ 		for_each_online_cpu(j)
+ 			seq_printf(p, "%10u ", kstat_irqs_cpu(i, j));
+ #endif
+-		seq_printf(p, " %14s", get_irq_desc_chip(desc)->name);
++		seq_printf(p, " %14s", irq_desc_get_chip(desc)->name);
+ 		seq_printf(p, "  %s", action->name);
+ 
+ 		for (action = action->next; action; action = action->next)
+
+
