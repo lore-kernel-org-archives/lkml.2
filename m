@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933285Ab1CZARP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:17:15 -0400
-Received: from kroah.org ([198.145.64.141]:41809 "EHLO coco.kroah.org"
+	id S932545Ab1CZARi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:17:38 -0400
+Received: from kroah.org ([198.145.64.141]:41798 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932487Ab1CYXww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:52 -0400
+	id S932400Ab1CYXwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:51 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:12 2011
-Message-Id: <20110325234512.042344409@clark.kroah.org>
+Message-Id: <20110325234511.934618522@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:16 -0700
+Date: Fri, 25 Mar 2011 16:44:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        David Brownell <david-b@pacbell.net>
-Subject: [40/63] ehci-hcd: Bug fix: dont set a QHs Halt bit
+        Michal Sojka <sojkam1@fel.cvut.cz>
+Subject: [39/63] USB: Do not pass negative length to snoop_urb()
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,80 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Michal Sojka <sojkam1@fel.cvut.cz>
 
-commit b5a3b3d985493c173925907adfebf3edab236fe7 upstream.
+commit 9d02b42614149ebccf12c9c580601ed01bd83070 upstream.
 
-This patch (as1453) fixes a long-standing bug in the ehci-hcd driver.
+When `echo Y > /sys/module/usbcore/parameters/usbfs_snoop` and
+usb_control_msg() returns error, a lot of kernel memory is dumped to dmesg
+until unhandled kernel paging request occurs.
 
-There is no need to set the Halt bit in the overlay region for an
-unlinked or blocked QH.  Contrary to what the comment says, setting
-the Halt bit does not cause the QH to be patched later; that decision
-(made in qh_refresh()) depends only on whether the QH is currently
-pointing to a valid qTD.  Likewise, setting the Halt bit does not
-prevent completions from activating the QH while it is "stopped"; they
-are prevented by the fact that qh_completions() temporarily changes
-qh->qh_state to QH_STATE_COMPLETING.
-
-On the other hand, there are circumstances in which the QH will be
-reactivated _without_ being patched; this happens after an URB beyond
-the head of the queue is unlinked.  Setting the Halt bit will then
-cause the hardware to see the QH with both the Active and Halt bits
-set, an invalid combination that will prevent the queue from
-advancing and may even crash some controllers.
-
-Apparently the only reason this hasn't been reported before is that
-unlinking URBs from the middle of a running queue is quite uncommon.
-However Test 17, recently added to the usbtest driver, does exactly
-this, and it confirms the presence of the bug.
-
-In short, there is no reason to set the Halt bit for an unlinked or
-blocked QH, and there is a very good reason not to set it.  Therefore
-the code that sets it is removed.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Andiry Xu <andiry.xu@amd.com>
-CC: David Brownell <david-b@pacbell.net>
+Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-q.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ drivers/usb/core/devio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -315,7 +315,6 @@ qh_completions (struct ehci_hcd *ehci, s
- 	int			stopped;
- 	unsigned		count = 0;
- 	u8			state;
--	const __le32		halt = HALT_BIT(ehci);
- 	struct ehci_qh_hw	*hw = qh->hw;
- 
- 	if (unlikely (list_empty (&qh->qtd_list)))
-@@ -422,7 +421,6 @@ qh_completions (struct ehci_hcd *ehci, s
- 					&& !(qtd->hw_alt_next
- 						& EHCI_LIST_END(ehci))) {
- 				stopped = 1;
--				goto halt;
- 			}
- 
- 		/* stop scanning when we reach qtds the hc is using */
-@@ -456,16 +454,6 @@ qh_completions (struct ehci_hcd *ehci, s
- 				 */
- 				ehci_clear_tt_buffer(ehci, qh, urb, token);
- 			}
--
--			/* force halt for unlinked or blocked qh, so we'll
--			 * patch the qh later and so that completions can't
--			 * activate it while we "know" it's stopped.
--			 */
--			if ((halt & hw->hw_token) == 0) {
--halt:
--				hw->hw_token |= halt;
--				wmb ();
--			}
- 		}
- 
- 		/* unless we already know the urb's status, collect qtd status
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -802,7 +802,7 @@ static int proc_control(struct dev_state
+ 				    tbuf, ctrl.wLength, tmo);
+ 		usb_lock_device(dev);
+ 		snoop_urb(dev, NULL, pipe, max(i, 0), min(i, 0), COMPLETE,
+-			tbuf, i);
++			  tbuf, max(i, 0));
+ 		if ((i > 0) && ctrl.wLength) {
+ 			if (copy_to_user(ctrl.data, tbuf, i)) {
+ 				free_page((unsigned long)tbuf);
 
 
