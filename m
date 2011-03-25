@@ -1,212 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773Ab1CYRkl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 13:40:41 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:48361 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545Ab1CYRkj convert rfc822-to-8bit (ORCPT
+	id S1754157Ab1CYRky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 13:40:54 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38582 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753997Ab1CYRkv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 13:40:39 -0400
+	Fri, 25 Mar 2011 13:40:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=hmzXyEKFHkKq3DnWXH5d9idssvZ3H6SuUyUaSmh5dAWfsqR0qBO2rCozG+sN1yl/cp
-         lS3UL6HZpNHEE5YL1ydYXPW97UR8kXUQpKqf+CWK0kdfSdxTlf4T8HKPA38y9ZHVJFXk
-         aF0vPXm8H1HtuE5zBVERNRB0lfL0Om7ZK0mIQ=
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kMQQ5lIJ+Rs+wPsuBImL948kmgc9nen6ne73IsPbCk/E5jIW7ybJu+YDeUaQu8JspW
+         XzD0f6roHX1XgBQk39DGH+pIYf+kV58FN8/nLnQ4yt+35RbORNkFjWokQJ7ODrWpfENI
+         Nw2VUnwr5EuWgGlVuTkbovzJcRMFz7p8RLyH4=
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTim08Ff==7mY9fuU8tUJrTmEhZ+PrsJSQO5PKOH6@mail.gmail.com>
-References: <AANLkTimg-DVXUOrrRZCggZiaajSJWi=onWUxUrnnGXQB@mail.gmail.com>
-	<AANLkTima-bYDkHDfSSAGJFmeRedBQ-VyaAdE7gfhHb3J@mail.gmail.com>
-	<20110325155516.GA27484@feather>
-	<20110325164236.GP2322@linux.vnet.ibm.com>
-	<AANLkTim08Ff==7mY9fuU8tUJrTmEhZ+PrsJSQO5PKOH6@mail.gmail.com>
-Date: Fri, 25 Mar 2011 18:40:38 +0100
-Message-ID: <AANLkTi=N6Z0bDg1YXVFkUbv7phM8XvQ5U3=vS6Ej8Af5@mail.gmail.com>
-Subject: Re: linux-next: Tree for March 25 (Call trace: RCU|workqueues|block|VFS|ext4
- related?)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Nick Piggin <npiggin@kernel.dk>
+In-Reply-To: <AANLkTi=ivaNVF2Jsz2rmxT-Pe2hs0jMUv7XZQ6K=2-d6@mail.gmail.com>
+References: <AANLkTin1kqjSgh8R5zzt_tkJAsTV_LxDjpPf5ngUHEr1@mail.gmail.com>
+	<s5hzkoluifr.wl%tiwai@suse.de>
+	<AANLkTi=RtEZyiry1FWiaT5LQbm3r-_9X_f2jPOQ6YCex@mail.gmail.com>
+	<s5hoc50vqrh.wl%tiwai@suse.de>
+	<AANLkTi=ivaNVF2Jsz2rmxT-Pe2hs0jMUv7XZQ6K=2-d6@mail.gmail.com>
+Date: Fri, 25 Mar 2011 10:40:50 -0700
+Message-ID: <AANLkTim57GdHyHdh=J2uOdBbqC+hMPV+uAZZvVt2V-SX@mail.gmail.com>
+Subject: Re: snd_card_disconnect race (sound/core/init.c)
+From: Russ Dill <russ.dill@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 5:51 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> On Fri, Mar 25, 2011 at 5:42 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
->> On Fri, Mar 25, 2011 at 08:55:16AM -0700, Josh Triplett wrote:
->>> On Fri, Mar 25, 2011 at 02:05:33PM +0100, Sedat Dilek wrote:
->>> > On Fri, Mar 25, 2011 at 11:16 AM, Sedat Dilek
->>> > <sedat.dilek@googlemail.com> wrote:
->>> > > right after I have finished building a new linux-next kernel, booting
->>> > > into desktop and archiving my build-tree (ext4) as tarball to an
->>> > > external USB harddisk (partition there is ext3).
->>> > > ( Yesterday, I have seen similiar call-traces in my logs, but it was
->>> > > hard to reproduce [1]. )
->>> > > I am unsure from where the problem aroses, if you have a hint, let me know.
->>> > >
->>> > > Regards,
->>> > > - Sedat -
->>> > >
->>> > > [1] http://lkml.org/lkml/2011/3/24/268
->>> > >
->>> > > P.S.: Attached are the dmesg outputs and my kernel-config
->>> > >
+On Thu, Mar 24, 2011 at 10:23 AM, Russ Dill <russ.dill@gmail.com> wrote:
+> On Thu, Mar 24, 2011 at 1:58 AM, Takashi Iwai <tiwai@suse.de> wrote:
+>> At Thu, 24 Mar 2011 01:19:43 -0700,
+>> Russ Dill wrote:
+>>>
+>>> On Wed, Mar 23, 2011 at 11:43 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>>> > At Wed, 23 Mar 2011 18:40:58 -0700,
+>>> > Russ Dill wrote:
+>>> >>
+>>> >> With slub poisoning on, I'm seeing an oops in snd_disconnect_release
+>>> >> with slub poison (6b6b6b6b). Investigating, snd_card_disconnect looks
+>>> >> to be the possible culprit:
+>>> >>
+>>> >> 333         spin_lock(&card->files_lock);
+>>> >> 334         mfile = card->files;
+>>> >> 335         while (mfile) {
+>>> >> 336                 file = mfile->file;
+>>> >> 337
+>>> >> 338                 /* it's critical part, use endless loop */
+>>> >> 339                 /* we have no room to fail */
+>>> >> 340                 mfile->disconnected_f_op = mfile->file->f_op;
+>>> >> 341
+>>> >> 342                 spin_lock(&shutdown_lock);
+>>> >> 343                 list_add(&mfile->shutdown_list, &shutdown_files);
+>>> >> 344                 spin_unlock(&shutdown_lock);
+>>> >> 345
+>>> >> 346                 mfile->file->f_op = &snd_shutdown_f_ops;
+>>> >> 347                 fops_get(mfile->file->f_op);
+>>> >> 348
+>>> >> 349                 mfile = mfile->next;
+>>> >> 350         }
+>>> >> 351         spin_unlock(&card->files_lock);
+>>> >>
+>>> >> I'm not aware of any locking that would prevent the original release
+>>> >> function running concurrently if it were started before line 346 was
+>>> >> executed. The original release functions (such as snd_hwdep_release)
+>>> >> call snd_card_remove_file which frees the mfile object which would
+>>> >> have been just added to the shutdown_files list leading to a use of
+>>> >> freed (or in my case poisoned) memory later on down the line when the
+>>> >> shutdown_files gets walked again.
+>>> >>
+>>> >> It seems that 118dd6bf (ALSA: Clean up snd_monitor_file management,
+>>> >> v2.6.30) may have either introduced this problem or made it worse
+>>> >> since snd_card_file_remove previously removed items from the
+>>> >> shutdown_files list before freeing them.
+>>> >>
+>>> >> I'm currently experiencing these crashes on 2.6.32.26, but I can't
+>>> >> find any changes that would cause them not to occur on later kernel
+>>> >> versions.
 >>> >
->>> > I turned off the notebook for about 2hrs to avoid thermal problems and
->>> > hoax reports.
->>> > Jumped into desktop and started an archive job as 1st job while doing daily job.
->>> > Yeah, it is reproducible.
->>> [...]
->>> > [  212.453822] EXT3-fs (sdb5): mounted filesystem with ordered data mode
->>> > [  273.224044] INFO: rcu_sched_state detected stall on CPU 0 (t=15000 jiffies)
+>>> > Which device are you using?  USB-audio had a known problem at
+>>> > disconnection, for example, and it was fixed recently.
+>>> >
 >>>
->>> 15000 jiffies matches this 60-second gap, assuming you use HZ=250.
+>>> I'm using USB-audio. I tried back-porting a couple of patches, to no avail:
 >>>
->>> > [  273.224059] sending NMI to all CPUs:
->>> > [  273.224074] NMI backtrace for cpu 0
->>> > [  273.224081] Modules linked in: ext3 jbd bnep rfcomm bluetooth aes_i586 aes_generic binfmt_misc ppdev acpi_cpufreq mperf cpufreq_powersave cpufreq_userspace lp cpufreq_stats cpufreq_conservative fuse snd_intel8x0 snd_intel8x0m snd_ac97_codec ac97_bus snd_pcm_oss snd_mixer_oss snd_pcm radeon thinkpad_acpi snd_seq_midi pcmcia ttm snd_rawmidi snd_seq_midi_event drm_kms_helper yenta_socket snd_seq pcmcia_rsrc drm pcmcia_core joydev snd_timer snd_seq_device snd i2c_algo_bit tpm_tis shpchp i2c_i801 tpm nsc_ircc irda snd_page_alloc soundcore pci_hotplug rng_core i2c_core tpm_bios psmouse crc_ccitt nvram parport_pc pcspkr parport evdev battery video ac processor power_supply serio_raw button arc4 ecb ath5k ath mac80211 cfg80211 rfkill autofs4 ext4 mbcache jbd2 crc16 dm_mod usbhid hid usb_storage uas sg sd_mod sr_mod crc_t10dif cdrom ata_generic ata_piix libata uhci_hcd ehci_hcd usbcore scsi_mod thermal e1000 thermal_sys floppy [last unloaded: scsi_wait_scan]
->>> > [  273.224367]
->>> > [  273.224377] Pid: 0, comm: swapper Not tainted 2.6.38-next20110325-2-686-iniza #1 IBM 2374SG6/2374SG6
->>> > [  273.224397] EIP: 0060:[<c11514f0>] EFLAGS: 00000807 CPU: 0
->>> > [  273.224414] EIP is at delay_tsc+0x16/0x5e
->>> > [  273.224424] EAX: 00090d42 EBX: 00002710 ECX: c133faf5 EDX: 00090d41
->>> > [  273.224435] ESI: 00000000 EDI: 00090d42 EBP: f5819e9c ESP: f5819e8c
->>> > [  273.224445]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
->>> > [  273.224458] Process swapper (pid: 0, ti=f5818000 task=c13e3fa0 task.ti=c13b6000)
->>> > [  273.224466] Stack:
->>> > [  273.224472]  00090d41 00002710 c13ee580 c13ee600 f5819ea4 c115149f f5819eac c11514bb
->>> > [  273.224497]  f5819eb8 c1016532 c13ee580 f5819ed4 c1078dc1 c134e61e c134e6c2 00000000
->>> > [  273.224520]  00003a98 f5c03488 f5819ee8 c1078e36 00000000 00000000 c13e3fa0 f5819ef4
->>> > [  273.224544] Call Trace:
->>> > [  273.224559]  [<c115149f>] __delay+0x9/0xb
->>> > [  273.224571]  [<c11514bb>] __const_udelay+0x1a/0x1c
->>> > [  273.224590]  [<c1016532>] arch_trigger_all_cpu_backtrace+0x50/0x62
->>> > [  273.224608]  [<c1078dc1>] check_cpu_stall+0x58/0xb8
->>> > [  273.224622]  [<c1078e36>] __rcu_pending+0x15/0xc4
->>> > [  273.224637]  [<c10791df>] rcu_check_callbacks+0x6d/0x93
->>> > [  273.224652]  [<c1039c6c>] update_process_times+0x2d/0x58
->>> > [  273.224666]  [<c10509e9>] tick_sched_timer+0x6b/0x9a
->>> > [  273.224682]  [<c1047196>] __run_hrtimer+0x9c/0x111
->>> > [  273.224694]  [<c105097e>] ? tick_sched_timer+0x0/0x9a
->>> > [  273.224708]  [<c1047b38>] hrtimer_interrupt+0xd6/0x1bb
->>> > [  273.224727]  [<c104fca1>] tick_do_broadcast.constprop.4+0x38/0x6a
->>> > [  273.224741]  [<c104fd80>] tick_handle_oneshot_broadcast+0xad/0xe1
->>> > [  273.224757]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
->>> > [  273.224772]  [<c1004215>] timer_interrupt+0x15/0x1c
->>> > [  273.224785]  [<c107536d>] handle_irq_event_percpu+0x4e/0x164
->>> > [  273.224799]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
->>> > [  273.224811]  [<c10754b9>] handle_irq_event+0x36/0x51
->>> > [  273.224824]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
->>> > [  273.224837]  [<c1076d0f>] handle_level_irq+0x4d/0x63
->>> > [  273.224845]  <IRQ>
->>> > [  273.224857]  [<c1003b8d>] ? do_IRQ+0x35/0x80
->>> > [  273.224871]  [<c12ac0f0>] ? common_interrupt+0x30/0x38
->>> > [  273.224886]  [<c10400d8>] ? destroy_worker+0x52/0x6c
->>> > [  273.224922]  [<f87b730f>] ? arch_local_irq_enable+0x5/0xb [processor]
->>> > [  273.224947]  [<f87b7ef5>] ? acpi_idle_enter_simple+0x100/0x138 [processor]
->>> > [  273.224964]  [<c11ebd92>] ? cpuidle_idle_call+0xc2/0x137
->>> > [  273.224978]  [<c1001da3>] ? cpu_idle+0x89/0xa3
->>> > [  273.224995]  [<c128c26c>] ? rest_init+0x58/0x5a
->>> > [  273.225008]  [<c1418722>] ? start_kernel+0x315/0x31a
->>> > [  273.225022]  [<c14180a2>] ? i386_start_kernel+0xa2/0xaa
->>> > [  273.225029] Code: e5 e8 d6 ff ff ff 5d c3 55 89 e5 8d 04 80 e8 c9 ff ff ff 5d c3 55 89 e5 57 89 c7 56 53 52 64 8b 35 04 20 47 c1 8d 76 00 0f ae e8 <e8> 6b ff ff ff 89 c3 8d 76 00 0f ae e8 e8 5e ff ff ff 89 c2 29
->>> > [  273.225154] Call Trace:
->>> > [  273.225166]  [<c115149f>] __delay+0x9/0xb
->>> > [  273.225178]  [<c11514bb>] __const_udelay+0x1a/0x1c
->>> > [  273.225192]  [<c1016532>] arch_trigger_all_cpu_backtrace+0x50/0x62
->>> > [  273.225207]  [<c1078dc1>] check_cpu_stall+0x58/0xb8
->>> > [  273.225220]  [<c1078e36>] __rcu_pending+0x15/0xc4
->>> > [  273.225234]  [<c10791df>] rcu_check_callbacks+0x6d/0x93
->>> > [  273.225247]  [<c1039c6c>] update_process_times+0x2d/0x58
->>> > [  273.225260]  [<c10509e9>] tick_sched_timer+0x6b/0x9a
->>> > [  273.225274]  [<c1047196>] __run_hrtimer+0x9c/0x111
->>> > [  273.225286]  [<c105097e>] ? tick_sched_timer+0x0/0x9a
->>> > [  273.225300]  [<c1047b38>] hrtimer_interrupt+0xd6/0x1bb
->>> > [  273.225316]  [<c104fca1>] tick_do_broadcast.constprop.4+0x38/0x6a
->>> > [  273.225330]  [<c104fd80>] tick_handle_oneshot_broadcast+0xad/0xe1
->>> > [  273.225345]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
->>> > [  273.225358]  [<c1004215>] timer_interrupt+0x15/0x1c
->>> > [  273.225370]  [<c107536d>] handle_irq_event_percpu+0x4e/0x164
->>> > [  273.225384]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
->>> > [  273.225396]  [<c10754b9>] handle_irq_event+0x36/0x51
->>> > [  273.225409]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
->>> > [  273.225421]  [<c1076d0f>] handle_level_irq+0x4d/0x63
->>> > [  273.225429]  <IRQ>  [<c1003b8d>] ? do_IRQ+0x35/0x80
->>> > [  273.225450]  [<c12ac0f0>] ? common_interrupt+0x30/0x38
->>> > [  273.225464]  [<c10400d8>] ? destroy_worker+0x52/0x6c
->>> > [  273.225493]  [<f87b730f>] ? arch_local_irq_enable+0x5/0xb [processor]
->>> > [  273.225517]  [<f87b7ef5>] ? acpi_idle_enter_simple+0x100/0x138 [processor]
->>> > [  273.225532]  [<c11ebd92>] ? cpuidle_idle_call+0xc2/0x137
->>> > [  273.225545]  [<c1001da3>] ? cpu_idle+0x89/0xa3
->>> > [  273.225559]  [<c128c26c>] ? rest_init+0x58/0x5a
->>> > [  273.225571]  [<c1418722>] ? start_kernel+0x315/0x31a
->>> > [  273.225584]  [<c14180a2>] ? i386_start_kernel+0xa2/0xaa
+>>> ALSA: usb-audio: fix oops due to cleanup race when disconnecting
+>>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=382225e6
 >>>
->>> Interesting.  Looks like RCU detected a stall while the CPU sits in
->>> cpu_idle.  That *shouldn't* happen...
+>>> ALSA: usb - Release capture substream URBs properly
+>>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=76195fb0
+>>>
+>>> Backing out 118dd6bf fixes the problem. The app that is running when
+>>> this crash occurs does full duplex streaming and segfaults while the
+>>> USB-audio device is going away. I'd have to check, but I think its
+>>> actually segfaulting it response to a disconnect of another piece of
+>>> the composite device the USB-audio device is part of, so the release
+>>> may actually be happening at the time the snd_card_disconnect is
+>>> occurring. I don't see any locking that would prevent bad things from
+>>> happening in this case, and the shutdown_files list is definitely
+>>> poisoned.
 >>
->> There have been a few of these things recently that turned out to
->> be BIOS misconfigurations, though that would not be the first thing
->> I would suspect if the system had run other versions successfully.
->> Another possibility is that the CPU spent the full time in interrupt.
->> Get an interrupt from the idle loop, stay in interrupt for 60 seconds,
->> get an RCU CPU stall warning.
+>> OK, what about the patch below?
 >>
->> Or I could have somehow inserted a bug in RCU.  But I am not seeing
->> this in my testing.
 >>
->>                                                        Thanx, Paul
+>> Takashi
 >>
+>> ---
+>> From: Takashi Iwai <tiwai@suse.de>
+>> Subject: [PATCH] ALSA: Fix yet another race in disconnection
+>>
+>> This patch fixes a race between snd_card_file_remove() and
+>> snd_card_disconnect().  When the card is added to shutdown_files list
+>> in snd_card_disconnect(), but it's freed in snd_card_file_remove() at
+>> the same time, the shutdown_files list gets corrupted.  The list member
+>> must be freed in snd_card_file_remove() as well.
+>>
+>> Reported-by: Russ Dill <russ.dill@gmail.com>
+>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>> ---
+>>  sound/core/init.c |    4 ++++
+>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/sound/core/init.c b/sound/core/init.c
+>> index 3e65da2..a0080aa 100644
+>> --- a/sound/core/init.c
+>> +++ b/sound/core/init.c
+>> @@ -848,6 +848,7 @@ int snd_card_file_add(struct snd_card *card, struct file *file)
+>>                return -ENOMEM;
+>>        mfile->file = file;
+>>        mfile->disconnected_f_op = NULL;
+>> +       INIT_LIST_HEAD(&mfile->shutdown_list);
+>>        spin_lock(&card->files_lock);
+>>        if (card->shutdown) {
+>>                spin_unlock(&card->files_lock);
+>> @@ -883,6 +884,9 @@ int snd_card_file_remove(struct snd_card *card, struct file *file)
+>>        list_for_each_entry(mfile, &card->files_list, list) {
+>>                if (mfile->file == file) {
+>>                        list_del(&mfile->list);
+>> +                       spin_lock(&shutdown_lock);
+>> +                       list_del(&mfile->shutdown_list);
+>> +                       spin_unlock(&shutdown_lock);
+>>                        if (mfile->disconnected_f_op)
+>>                                fops_put(mfile->disconnected_f_op);
+>>                        found = mfile;
+>> --
+>> 1.7.4.1
 >
-> The problems started when I first saw CONFIG_RCU_CPU_STALL_TIMEOUT=60
-> in my configs.
->
-> This an old IBM T40p notebook with Pentium-M (Banias) UP processor.
-> IIRC I have flashed the latest BIOS available for this notebook.
->
-> [   11.786073] thinkpad_acpi: ThinkPad BIOS 1RETDRWW (3.23 ), EC 1RHT71WW-3.04
-> [   11.786111] thinkpad_acpi: IBM ThinkPad T40p, model 2374SG6
->
-> As I am still sitting in the dark, it would be very helpful to know if
-> I can play with HZ or RCU kernel-config parameters.
-> Can I change RCU behaviour from user-space?
->
-> - Sedat -
->
-> P.S.: Note to myself: Read Documentation/RCU/stallwarn.txt & check
-> possible values in lib/Kconfig.debug
+> It looks sane, I'll run it through my torture (about 24hr) testing and
+> let you know.
 >
 
-OK, I had a deeper look at the RCU (STALL) kernel-configs.
-
-$ grep RCU /boot/config-2.6.38-next20110323-3-686-iniza | grep STALL
-# CONFIG_RCU_CPU_STALL_DETECTOR is not set
-
-$ grep RCU /boot/config-2.6.38-next20110324-2-686-iniza | grep STALL
-# CONFIG_RCU_CPU_STALL_DETECTOR is not set
-
-$ grep RCU /boot/config-2.6.38-next20110325-2-686-iniza | grep STALL
-CONFIG_RCU_CPU_STALL_TIMEOUT=60
-
-With my todays (next-20110325) linux-next kernel I cannot work!
-The yesterday call-traces could be indeed a different issue (I am
-currently testing with the 2 patches from block-tree [1]).
-
-Now, I am building a new linux-next kernel with CONFIG_TREE_RCU=y as
-recommended in Documentation/RCU/stallwarn.txt file.
-
-- Sedat -
-
-[1] http://lkml.org/lkml/2011/3/25/326
+Passes testing and looks good! Thanks.
