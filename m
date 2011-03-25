@@ -1,138 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab1CYNxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 09:53:22 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:59845 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160Ab1CYNxV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 09:53:21 -0400
-Date: Fri, 25 Mar 2011 08:53:11 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Chris Bagwell <chris@cnpbagwell.com>, Matthew Garrett <mjg@redhat.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate
- key
-Message-ID: <20110325135311.GA14328@thinkpad-t410>
-Mail-Followup-To: Corentin Chary <corentin.chary@gmail.com>,
-	Chris Bagwell <chris@cnpbagwell.com>,
-	Matthew Garrett <mjg@redhat.com>,
-	acpi4asus-user@lists.sourceforge.net,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>
-References: <20110324195720.GB31713@thinkpad-t410>
- <1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
- <AANLkTimF2UR8BVQW-3YJaGFEz39q8ydESAiMOjmdM1X7@mail.gmail.com>
+	id S1753362Ab1CYN4t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 09:56:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31038 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752429Ab1CYN4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 09:56:48 -0400
+Date: Fri, 25 Mar 2011 09:56:09 -0400
+From: Jarod Wilson <jarod@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Akinobu Mita <akinobu.mita@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Juan J. Garcia de Soria" <skandalfo@gmail.com>
+Subject: Re: linux-next: build failure after merge of the Linus' tree
+Message-ID: <20110325135609.GB28606@redhat.com>
+References: <20110325123535.f980dfe8.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimF2UR8BVQW-3YJaGFEz39q8ydESAiMOjmdM1X7@mail.gmail.com>
+In-Reply-To: <20110325123535.f980dfe8.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 01:28:30PM +0000, Corentin Chary wrote:
-> > +static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int *code,
-> > +                                int *value, int *autorelease)
-> > +{
-> > +       struct eeepc_wmi_driver *eeepc = to_eeepc_wmi_driver(asus_wmi);
-> > +       int is_press;
-> > +
-> > +       /*
-> > +        * The following behavior is used for T101MT "Home" key:
-> > +        *
-> > +        *   On press:   No event set
-> > +        *   On hold:    KEY_PROG2 press sent once w/o autorelease
-> > +        *   On release: If key was held, KEY_PROG2 release sent.
-> > +        *               Otherwise KEY_HOME press sent w/ autorelease.
-> > +        *
-> > +        * The simple state machine below implements this behavior.
-> > +        */
-> > +       switch (*code) {
-> > +       case HOME_PRESS:
-> > +               eeepc->home_key_state = HOME_PRESS;
-> > +               *code = ASUS_WMI_KEY_IGNORE;
-> > +               break;
-> > +       case HOME_HOLD:
-> > +               if (eeepc->home_key_state == HOME_HOLD) {
-> > +                       *code = ASUS_WMI_KEY_IGNORE;
-> > +               } else {
-> > +                       eeepc->home_key_state = HOME_HOLD;
-> > +                       *value = 1;
-> > +                       *autorelease = 0;
-> > +               }
-> > +               break;
-> > +       case HOME_RELEASE:
-> > +               if (eeepc->home_key_state == HOME_RELEASE) {
-> > +                       dev_warn(&asus_wmi->platform_device->dev,
-> > +                                "Unexpected home key release event\n");
-> > +                       *code = ASUS_WMI_KEY_IGNORE;
-> > +               } else {
-> > +                       *code = eeepc->home_key_state;
-> > +                       eeepc->home_key_state = HOME_RELEASE;
-> > +                       is_press = (*code == HOME_PRESS);
-> > +                       *value = is_press;
-> > +                       *autorelease = is_press;
-> > +               }
-> > +               break;
-> > +       }
-> > +}
-> > +
+On Fri, Mar 25, 2011 at 12:35:35PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Why not something simpler like this ?
+> In Linus' tree, today's linux-next build (x86_64 allmodconfig) failed
+> like this:
 > 
-> static void eeepc_wmi_key_filter(struct asus_wmi_driver *asus_wmi, int code,
->                                                  int *value, int *autorelease)
-> {
->         if (code == 0xe4) {
->                 *value = 1;
->                 *autorelease = 0;
->         } else if (code == 0xe5) {
->                 *value = 0;
->                 *autorelease = 0;
->        }
-> }
+> drivers/media/rc/ite-cir.c: In function 'ite_decode_bytes':
+> drivers/media/rc/ite-cir.c:190: error: implicit declaration of function 'generic_find_next_le_bit'
+> drivers/media/rc/ite-cir.c:199: error: implicit declaration of function 'generic_find_next_zero_le_bit'
 > 
-> with this keymap :
+> Caused by commit 620a32bba4a2 ("[media] rc: New rc-based ite-cir driver
+> for several ITE CIRs") interacting with commit c4945b9ed472
+> ("asm-generic: rename generic little-endian bitops functions").
 > 
->        { KE_KEY, 0xe4, { KEY_HOME } }, /* Home Key Down */
->        { KE_KEY, 0xe5, { KEY_HOME } }, /* Home Key Up */
->        { KE_KEY, 0xea, { KEY_PROG2 } }, /* Home Key hold more than one second */
+> I applied the patch below for today.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> 
-> This sounds simpler and we don't loose information (key down and key
-> up both event reported at the right time).
-> 0xe5 is *always* sent after 0xe4 right ?
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 25 Mar 2011 12:30:05 +1100
+> Subject: [PATCH] [media] rc: update for bitop name changes
 
-I guess it depends on what key events we want on a press-and-hold.
-Remember that you're going to get a scan code sequence like "0xe4 0xea
-0xea ... 0xea 0xe5", so with my implementation you get
+Thanks Stephen, obviously the correct thing to do here.
 
-  KEY_PROG2 press
-  KEY_PROG2 release
+Acked-by: Jarod Wilson <jarod@redhat.com>
 
-With yours
-
-  KEY_HOME press
-  KEY_PROG2 press
-  KEY_PROG2 release
-  // KEY_PROG2 press/release repeats every 0.5 secs while button held
-  KEY_HOME release
-
-At minimum I'd think we'd want to only send a single PROG2 press/release
-for button hold. My thought was that you'd only want to get the code for
-0xe4 or 0xea, not both, but I suppose that's debatable.
-
-And back to the question of KEY_HOME -- that's not really what you want,
-is it? As in "move cursor to start of line"?
-
-> Also, for the callback, "value" should be an unsigned int, and
-> "autorelease" a bool.
-
-Right, silly mistake. Thanks for catching it.
+-- 
+Jarod Wilson
+jarod@redhat.com
 
