@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab1CYXbD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:31:03 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42638 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab1CYXbA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:31:00 -0400
+	id S1755537Ab1CYXbu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:31:50 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37569 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751637Ab1CYXbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:31:49 -0400
+Date: Fri, 25 Mar 2011 16:28:47 -0700
+From: Greg KH <gregkh@suse.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        vapier@gentoo.org
+Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
+Message-ID: <20110325232847.GA5551@suse.de>
+References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
+ <201103252112.22520.arnd@arndb.de>
+ <20110325211246.GA8741@suse.de>
+ <201103252301.56718.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20110325082030.GB5664@polaris.bitmath.org>
-References: <1300842244-42723-1-git-send-email-jeffbrown@android.com>
- <1300842244-42723-2-git-send-email-jeffbrown@android.com> <20110325082030.GB5664@polaris.bitmath.org>
-From: Jeffrey Brown <jeffbrown@android.com>
-Date: Fri, 25 Mar 2011 16:30:20 -0700
-Message-ID: <AANLkTi=KotXd4TyyUrhMdKn3mEq+pz2ac3Vnraa5udFh@mail.gmail.com>
-Subject: Re: [PATCH 1/4] input: Set default events per packet.
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201103252301.56718.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 1:20 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> +static inline bool is_mt_axis(int axis)
->> +{
->> +     return axis == ABS_MT_SLOT ||
->> +             (axis >= ABS_MT_FIRST && axis <= ABS_MT_LAST);
->> +}
->
-> It would be great to get this inline into input/mt.h instead.
+On Fri, Mar 25, 2011 at 11:01:56PM +0100, Arnd Bergmann wrote:
+> On Friday 25 March 2011 22:12:46 Greg KH wrote:
+> > > Why is this a bus? You don't have any device matching code or similar,
+> > > and the devices typically are on an existing bus_type (e.g. platform_bus).
+> > > I think it would make more sense to do this as a class.
+> > 
+> > No, for new things, we want to use busses instead of classes please.
+> > Especially as this does create devices, which are best put on a bus
+> > somewhere.
+> 
+> I don't understand. Isn't that rather inconsistent?
+> 
+> I realize the same thing came up with the IIO subsystem, where I also
+> didn't understand it.
+> 
+> In my mental model of Linux drivers, a bus is something that physically
+> connects devices and the bus code matches devices with drivers, while a
+> class groups logical devices that get created by the driver itself.
 
-Makes sense.  I'll do that.
+Yes, that is how it used to be, but then it turns out that both of them
+are really just "subsystems" as far as it all goes.  They are just ways
+that devices are bound to drivers in a logical manner.  We have patches
+floating around that get rid of both busses and classes to merge them
+together, which is the end goal here.  I know Kay has posted detailed
+reasons for why this all is on lkml in the past, and had working code
+about 5 years ago, it's just been slow going...
 
->> +     else if (test_bit(ABS_MT_TRACKING_ID, dev->absbit))
->> +             mt_slots = dev->absinfo[ABS_MT_TRACKING_ID].maximum -
->> +                     dev->absinfo[ABS_MT_TRACKING_ID].minimum + 1;
->
-> This one is a bit iffy - the tracking id is not limited like this in
-> mainline, looks like android usage. A test againts some arbitrary max
-> should do it.
+So we recommend all new subsystems use the bus code, it's simple and
+works well.
 
-Yeah, I'm not sure about this one.  Tracking ID could effectively have
-any range.  All of the MT Protocol A touch screen drivers I have
-looked at, assuming they report tracking ids at all, report a
-reasonable upper bound on the contact points they support.
+thanks,
 
-Originally, I set an arbitrary maximum bound of 20 slots.  In the
-interests of keeping it simple, I decided to remove that bound when I
-submitted the patch for review here.
-
-How about:
-
-mt_slots = min(MAX_MT_SLOTS_TO_INFER_FROM_TRACKING_ID_RANGE,
-   dev->absinfo[ABS_MT_TRACKING_ID].maximum -
-dev->absinfo[ABS_MT_TRACKING_ID].minimum + 1);
-
-Where MAX_MT_SLOTS_TO_INFER_FROM_TRACKING_ID_RANGE is set to 32 or something.
-
-There's also the question of how many slots we should infer when
-neither ABS_MT_SLOT or ABS_MT_TRACKING_ID is available.  The drivers
-I've seen that don't provide tracking ids, are very basic and tend to
-only support 2 touch points.
-
-I guess we could add a DEFAULT_NUMBER_OF_MT_SLOTS constant to handle that case.
-
-Please feel free to suggest better names for these constants.
-
-Jeff.
+greg k-h
