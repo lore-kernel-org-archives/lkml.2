@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab1CYTua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 15:50:30 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:38088 "EHLO kernel.dk"
+	id S1754913Ab1CYTwF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 15:52:05 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42394 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754560Ab1CYTu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 15:50:29 -0400
-Message-ID: <4D8CF202.9010809@kernel.dk>
-Date: Fri, 25 Mar 2011 20:50:26 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752359Ab1CYTwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 15:52:02 -0400
+Date: Fri, 25 Mar 2011 20:51:36 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrey Kuzmin <andrey.v.kuzmin@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
+Message-ID: <20110325195136.GA7346@elte.hu>
+References: <20110323153727.GB12003@htj.dyndns.org>
+ <20110324094119.GD12038@htj.dyndns.org>
+ <20110324094151.GE12038@htj.dyndns.org>
+ <20110325033956.GB9313@home.goodmis.org>
+ <AANLkTimO3b3D+SofYFLyh8Txk+e4Ke4ToKrBiatdFghr@mail.gmail.com>
+ <1301058727.14261.174.camel@gandalf.stny.rr.com>
+ <AANLkTi=BaRFeAL1mS1Rjq_QGgcMb1rOKkvf=ig+23jvP@mail.gmail.com>
+ <1301061918.14261.188.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        tj@kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: elevator private data for REQ_FLUSH
-References: <20110325151530.GA4414@swordfish.minsk.epam.com> <20110325152228.GA1707@gentoo.trippels.de> <20110325154024.GA16029@redhat.com> <4D8CB9C9.5010208@kernel.dk> <20110325185455.GA2969@redhat.com>
-In-Reply-To: <20110325185455.GA2969@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301061918.14261.188.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-25 19:54, Mike Snitzer wrote:
-> On Fri, Mar 25 2011 at 11:50am -0400,
-> Jens Axboe <axboe@kernel.dk> wrote:
+
+* Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> On Fri, 2011-03-25 at 16:50 +0300, Andrey Kuzmin wrote:
+> > On Fri, Mar 25, 2011 at 4:12 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > > On Fri, 2011-03-25 at 14:13 +0300, Andrey Kuzmin wrote:
+> > >> Turning try_lock into indefinitely spinning one breaks its semantics,
+> > >> so deadlock is to be expected. But what's wrong in this scenario if
+> > >> try_lock spins a bit before giving up?
+> > >
+> > > Because that will cause this scenario to spin that "little longer"
+> > > always, and introduce latencies that did not exist before. Either the
+> > > solution does not break this scenario, or it should not go in.
+> > 
+> > Broken semantics and extra latency are two separate issues. If the
+> > former is fixed, the latter is easily handled by introducing new
+> > mutex_trylock_spin call that lets one either stick to existing
+> > behavior (try/fail) or choose a new one where latency penalty is
+> > justified by locking patterns.
+> > 
 > 
->> On 2011-03-25 16:40, Mike Snitzer wrote:
->>> On Fri, Mar 25 2011 at 11:22am -0400,
->>> Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
->>>
->>>> On 2011.03.25 at 17:15 +0200, Sergey Senozhatsky wrote:
->>>>> Hello,
->>>>>
->>>>> Commit
->>>>>     9d5a4e946ce5352f19400b6370f4cd8e72806278
->>>>>     block: skip elevator data initialization for flush requests
->>>>>     
->>>>>     Skip elevator initialization for flush requests by passing priv=0 to
->>>>>     blk_alloc_request() in get_request().  As such elv_set_request() is
->>>>>     never called for flush requests.
->>>>>
->>>>> introduced priv flag, to skip elevator_private data init for FLUSH requests.
->>>>> This, I guess, lead to NULL pointer deref on my machine in cfq_insert_request,
->>>>> which requires elevator_private to be set:
->>>>>
->>>>>   1 [   78.982169] Call Trace:                                                                                                                                                                                                     
->>>>>   2 [   78.982178]  [<ffffffff8122d1fe>] cfq_insert_request+0x4e/0x47d
->>>>>   3 [   78.982184]  [<ffffffff8123e139>] ? do_raw_spin_lock+0x6b/0x122
->>>>
->>>>> Should we in that case use ELEVATOR_INSERT_FLUSH for REQ_FLUSH | REQ_FUA requests
->>>>> (like below)?
->>>>>
->>>>> ---
->>>>>
->>>>>  block/elevator.c |    2 ++
->>>>>  1 files changed, 2 insertions(+), 0 deletions(-)
->>>>>
->>>>> diff --git a/block/elevator.c b/block/elevator.c
->>>>> index c387d31..b17e577 100644
->>>>> --- a/block/elevator.c
->>>>> +++ b/block/elevator.c
->>>>> @@ -734,6 +734,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
->>>>>  			q->end_sector = rq_end_sector(rq);
->>>>>  			q->boundary_rq = rq;
->>>>>  		}
->>>>> +	} else if (rq->cmd_flags & (REQ_FLUSH | REQ_FUA)) {
->>>>> +		where = ELEVATOR_INSERT_FLUSH;
->>>>>  	} else if (!(rq->cmd_flags & REQ_ELVPRIV) &&
->>>>>  		    where == ELEVATOR_INSERT_SORT)
->>>>>  		where = ELEVATOR_INSERT_BACK;
->>>>
->>>> Thanks. That solves all (corruption-) problems that I reported earlier in an other
->>>> thread. 
->>>
->>> So the flush-merge changes introduced ELEVATOR_INSERT_FLUSH (via commit
->>> ae1b1539).  And the flush bio will now get ELEVATOR_INSERT_FLUSH in
->>> __make_request().
->>>
->>> So it is interesting that the flush is getting inserted in the elevator
->>> at all.  AFAIK that shouldn't be (and historically hasn't been) the
->>> case.
->>>
->>> Combination of onstack plug changes?
->>
->> It is, it forces a sort insert. I'll fix this up, I'm relieved we have a
->> good handle on this issue now.
-> 
-> Should we also add a safety net to avoid the potential for future silent
-> corruption, etc?  E.g.:
+> For those wanting a more RT deterministic OS, I will argue against
+> latency penalties.
 
-Yes, I was thinking about something like that. I consider the patch
-merged an immediate stop gap, we need to improve this situation. It's
-not exactly pretty to have this sort of condition in both
-__make_request() and flush_plug_list(). Clearly it should be handled
-further down.
+Later mails from Tejun suggest that the benchmark results are varied, and that 
+it's not a clear win after all.
 
+It's possible that if useless spinning is introduced then that might explain 
+such workload variations. I.e. it's not really 'latencies' but 'unnecessary 
+overhead spent spinning' - and also 'extra non-deterministic noise' - none of 
+which help consistent performance.
 
--- 
-Jens Axboe
+Thanks,
 
+	Ingo
