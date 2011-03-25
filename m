@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab1CYTtu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 15:49:50 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35408 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309Ab1CYTtt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 15:49:49 -0400
-Date: Fri, 25 Mar 2011 20:49:46 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        LKML <linux-kernel@vger.kernel.org>, Ian Lance Taylor <ian@airs.com>,
-        Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH 2/2] Replace the linear search with a binary search for locate the symbols
-Message-ID: <20110325194946.GQ21838@one.firstfloor.org>
-References: <1300914043-2297-1-git-send-email-abogani@kernel.org> <1300914043-2297-3-git-send-email-abogani@kernel.org> <m27hbov7hq.fsf@firstfloor.org> <8739mblr2n.fsf@rustcorp.com.au> <20110325154118.GN21838@one.firstfloor.org> <AANLkTinW4GA094Yz94Y0qTEJvjOmRe4_C+5yc7_VcKM3@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinW4GA094Yz94Y0qTEJvjOmRe4_C+5yc7_VcKM3@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1754986Ab1CYTua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 15:50:30 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:38088 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754560Ab1CYTu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 15:50:29 -0400
+Message-ID: <4D8CF202.9010809@kernel.dk>
+Date: Fri, 25 Mar 2011 20:50:26 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Mike Snitzer <snitzer@redhat.com>
+CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+        tj@kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: elevator private data for REQ_FLUSH
+References: <20110325151530.GA4414@swordfish.minsk.epam.com> <20110325152228.GA1707@gentoo.trippels.de> <20110325154024.GA16029@redhat.com> <4D8CB9C9.5010208@kernel.dk> <20110325185455.GA2969@redhat.com>
+In-Reply-To: <20110325185455.GA2969@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 05:30:11PM +0100, Alessio Igor Bogani wrote:
-> Dear Mr. Kleen,
+On 2011-03-25 19:54, Mike Snitzer wrote:
+> On Fri, Mar 25 2011 at 11:50am -0400,
+> Jens Axboe <axboe@kernel.dk> wrote:
 > 
-> 2011/3/25 Andi Kleen <andi@firstfloor.org>:
-> [...]
-> >> > Patch looks good to me. SORT is a nice trick, too bad it won't
-> >> > work for the main kernel.
-> >>
-> >> Why not?
-> >
-> > Because kallsyms is supposed to be in address order, not name order.
+>> On 2011-03-25 16:40, Mike Snitzer wrote:
+>>> On Fri, Mar 25 2011 at 11:22am -0400,
+>>> Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+>>>
+>>>> On 2011.03.25 at 17:15 +0200, Sergey Senozhatsky wrote:
+>>>>> Hello,
+>>>>>
+>>>>> Commit
+>>>>>     9d5a4e946ce5352f19400b6370f4cd8e72806278
+>>>>>     block: skip elevator data initialization for flush requests
+>>>>>     
+>>>>>     Skip elevator initialization for flush requests by passing priv=0 to
+>>>>>     blk_alloc_request() in get_request().  As such elv_set_request() is
+>>>>>     never called for flush requests.
+>>>>>
+>>>>> introduced priv flag, to skip elevator_private data init for FLUSH requests.
+>>>>> This, I guess, lead to NULL pointer deref on my machine in cfq_insert_request,
+>>>>> which requires elevator_private to be set:
+>>>>>
+>>>>>   1 [   78.982169] Call Trace:                                                                                                                                                                                                     
+>>>>>   2 [   78.982178]  [<ffffffff8122d1fe>] cfq_insert_request+0x4e/0x47d
+>>>>>   3 [   78.982184]  [<ffffffff8123e139>] ? do_raw_spin_lock+0x6b/0x122
+>>>>
+>>>>> Should we in that case use ELEVATOR_INSERT_FLUSH for REQ_FLUSH | REQ_FUA requests
+>>>>> (like below)?
+>>>>>
+>>>>> ---
+>>>>>
+>>>>>  block/elevator.c |    2 ++
+>>>>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>>>>>
+>>>>> diff --git a/block/elevator.c b/block/elevator.c
+>>>>> index c387d31..b17e577 100644
+>>>>> --- a/block/elevator.c
+>>>>> +++ b/block/elevator.c
+>>>>> @@ -734,6 +734,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+>>>>>  			q->end_sector = rq_end_sector(rq);
+>>>>>  			q->boundary_rq = rq;
+>>>>>  		}
+>>>>> +	} else if (rq->cmd_flags & (REQ_FLUSH | REQ_FUA)) {
+>>>>> +		where = ELEVATOR_INSERT_FLUSH;
+>>>>>  	} else if (!(rq->cmd_flags & REQ_ELVPRIV) &&
+>>>>>  		    where == ELEVATOR_INSERT_SORT)
+>>>>>  		where = ELEVATOR_INSERT_BACK;
+>>>>
+>>>> Thanks. That solves all (corruption-) problems that I reported earlier in an other
+>>>> thread. 
+>>>
+>>> So the flush-merge changes introduced ELEVATOR_INSERT_FLUSH (via commit
+>>> ae1b1539).  And the flush bio will now get ELEVATOR_INSERT_FLUSH in
+>>> __make_request().
+>>>
+>>> So it is interesting that the flush is getting inserted in the elevator
+>>> at all.  AFAIK that shouldn't be (and historically hasn't been) the
+>>> case.
+>>>
+>>> Combination of onstack plug changes?
+>>
+>> It is, it forces a sort insert. I'll fix this up, I'm relieved we have a
+>> good handle on this issue now.
 > 
-> What should that break exactly?
-> Thanks you very much!
+> Should we also add a safety net to avoid the potential for future silent
+> corruption, etc?  E.g.:
 
-For kallsyms you either look it up by address or by name.
-You can only sort for one of those.
+Yes, I was thinking about something like that. I consider the patch
+merged an immediate stop gap, we need to improve this situation. It's
+not exactly pretty to have this sort of condition in both
+__make_request() and flush_plug_list(). Clearly it should be handled
+further down.
 
-Most likely address lookup is more important.
 
-If you sorted by name you would make the address case slower.
-
-Then the order is also exposed in /proc/kallsyms. If people use
-this like System.map they likely expect numeric order.
-
--Andi
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Jens Axboe
+
