@@ -1,63 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab1CYMAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 08:00:10 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52846 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab1CYMAI (ORCPT
+	id S933296Ab1CYMAm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 08:00:42 -0400
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:30381 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab1CYMAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 08:00:08 -0400
-Date: Fri, 25 Mar 2011 12:00:02 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        kyungmin.park@samsung.com, MyungJoo Ham <myungjoo.ham@gmail.com>
-Subject: Re: [rtc-linux] Re: [PATCH v2] RTC: Selectively enable PIE-Hrtimer
-	emulation.
-Message-ID: <20110325120002.GB22502@sirena.org.uk>
-References: <1300781334-30308-1-git-send-email-myungjoo.ham@samsung.com> <1300823076.2731.123.camel@work-vm> <AANLkTinuwuosJ27BRjREEq8m2_Z+0=U0x6ujGMS-5rKm@mail.gmail.com> <1301001498.848.160.camel@work-vm>
+	Fri, 25 Mar 2011 08:00:38 -0400
+Message-ID: <4D8C83D1.2060902@snapgear.com>
+Date: Fri, 25 Mar 2011 22:00:17 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301001498.848.160.camel@work-vm>
-X-Cookie: To order, call toll-free.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: <linux-m68k@vger.kernel.org>, <uclinux-dev@uclinux.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/1] m68k: merge m68k and m68knommu arch directories
+References: <1300768985-902-1-git-send-email-gerg@snapgear.com>
+In-Reply-To: <1300768985-902-1-git-send-email-gerg@snapgear.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 02:18:18PM -0700, John Stultz wrote:
-> On Thu, 2011-03-24 at 14:28 +0900, MyungJoo Ham wrote:
+Hi All,
 
-> > b. there could be multiple rtc devices in a system and we may need to
-> > setup them anyway without any s/w interrupt handlers. (RTC PIEs
-> > directly signalling some other H/W pieces?)
+I am ready to send a request to Linus to pull this in.
+Anyone not ready for this to happen?
 
-> Maybe I'm misunderstanding, but this sounds like an abuse of the RTC
-> interface. If you're using the RTC interface to enable some sort of
-> inter-hardware signaling, where the kernel itself wouldn't be handling
-> the irq, you probably really want to use a different driver
-> all-together. But again, I might just not understand what you're
-> meaning.
+Regards
+Greg
 
-This sort of thing is fairly common for embedded RTCs.  Usually there's
-no fixed connection, it's just that the RTC outputs a signal which can
-be wired to anything the system integrator feels like.  It does seem to
-make sense for the RTC driver to export this functionality to the rest
-of the world.
 
-> The benefit here is that since the kernel manages all of this, it will
-> then work on any RTC hardware that supports alarms, and doesn't need
-> some hardware-specific PIE mode support. Even better, since the kernel
-> can allow for multiplexing of events, userland can still set AIE mode
-> alarms using the legacy interface without affecting your periodic
-> rtc_timer.
+On 22/03/11 14:43, gerg@snapgear.com wrote:
+> The following patch merges the m68k and m68knommu arch directories.
+> This patch has been trimmed for review purposes - the automated file
+> moving and mergeing carried out by the script contained in this email
+> has been removed. Only the manually required changes after running the
+> script are shown as the patch. (So to end up with the final required
+> change you need to run this script then apply the patch).
+>
+> This change is available as the only commit on the m68knommu git tree,
+> for-linux branch:
+>
+> The following changes since commit a952baa034ae7c2e4a66932005cbc7ebbccfe28d:
+>    Linus Torvalds (1):
+>          Merge branch 'for-linus' of git://git.kernel.org/.../dtor/input
+>
+> are available in the git repository at:
+>
+>    git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
+>
+> Greg Ungerer (1):
+>        m68k: merge m68k and m68knommu arch directories
+>
+>
+> It is also on the for-next branch in that tree, so will get some testing
+> in the next tree for the next few days.
+>
+> I have done some testing on both MMU and non-MMU targets, and they
+> worked fine. I tried a few ColdFire non-MMU builds, and I built and
+> ran the Atari target in the AranyM emulator. Other than some option
+> re-ordering the configs produced are the same.
+>
+> If everyone is happy I would like to ask Linus to pull this before the
+> end of the current merge window.
+>
+> Regards
+> Greg
+>
+>
+> -----
+>
+> #!/bin/bash
+>
+> mergefile() {
+> 	BASE=${1%.?}
+> 	EXT=${1#${BASE}}
+> 	git mv ${TARGET}/$1 ${TARGET}/${BASE}_mm${EXT}
+> 	git mv ${SOURCE}/$1 ${TARGET}/${BASE}_no${EXT}
+> 	cat<<-EOF>  ${TARGET}/$1
+> 	#ifdef CONFIG_MMU
+> 	#include "${BASE}_mm${EXT}"
+> 	#else
+> 	#include "${BASE}_no${EXT}"
+> 	#endif
+> 	EOF
+> 	git add ${TARGET}/$1
+> }
+>
+> mergedir() {
+> 	TARGET=arch/m68k/$1
+> 	SOURCE=arch/m68knommu/$1
+> 	files=${1}_MERGE_FILES
+> 	MERGE_FILES=${!files}
+>
+> 	echo "merging files in $1"
+> 	for F in $MERGE_FILES ; do
+> 		mergefile $F
+> 	done
+>
+> 	files=${1}_NOMERGE_FILES
+> 	NOMERGE_FILES=${!files}
+>
+> 	echo "moving files in $1"
+> 	for F in $NOMERGE_FILES ; do
+> 		git mv ${SOURCE}/$F ${TARGET}/$F
+> 	done
+>
+> 	files=${1}_REMOVE_FILES
+> 	REMOVE_FILES=${!files}
+>
+> 	echo "removing common files in $1"
+> 	for F in $REMOVE_FILES ; do
+> 		git rm ${SOURCE}/$F
+> 	done
+>
+> 	if [ -e ${SOURCE}/Makefile ]; then
+> 		git mv ${TARGET}/Makefile ${TARGET}/Makefile_mm
+> 		git mv ${SOURCE}/Makefile ${TARGET}/Makefile_no
+> 		cat<<-EOF>  ${TARGET}/Makefile
+> 		ifdef CONFIG_MMU
+> 		include ${TARGET}/Makefile_mm
+> 		else
+> 		include ${TARGET}/Makefile_no
+> 		endif
+> 		EOF
+> 		git add ${TARGET}/Makefile
+> 	fi
+> }
+>
+> configs_MERGE_FILES=""
+> configs_NOMERGE_FILES="m5208evb_defconfig \
+> 			m5272c3_defconfig \
+> 			m5307c3_defconfig \
+> 			m5249evb_defconfig \
+> 			m5275evb_defconfig \
+> 			m5407c3_defconfig"
+> configs_REMOVE_FILES=""
+> kernel_MERGE_FILES="asm-offsets.c \
+> 			dma.c entry.S \
+> 			m68k_ksyms.c \
+> 			module.c \
+> 			process.c \
+> 			ptrace.c \
+> 			setup.c \
+> 			signal.c \
+> 			sys_m68k.c \
+> 			time.c \
+> 			traps.c \
+> 			vmlinux.lds.S"
+> kernel_NOMERGE_FILES="init_task.c \
+> 			irq.c \
+> 			syscalltable.S"
+> kernel_REMOVE_FILES=""
+> lib_MERGE_FILES="checksum.c \
+> 			muldi3.c"
+> lib_NOMERGE_FILES="delay.c \
+> 			divsi3.S \
+> 			memcpy.c \
+> 			memmove.c \
+> 			memset.c \
+> 			modsi3.S \
+> 			mulsi3.S \
+> 			udivsi3.S \
+> 			umodsi3.S"
+> lib_REMOVE_FILES="ashldi3.c \
+> 			ashrdi3.c \
+> 			lshrdi3.c"
+> mm_MERGE_FILES="init.c kmap.c"
+> mm_NOMERGE_FILES=""
+> mm_REMOVE_FILES=""
+>
+> DIRS="configs kernel lib mm"
+>
+> echo "STARTing merge"
+> for dir in $DIRS ; do
+> 	echo "merging $dir..."
+> 	mergedir $dir
+> done
+> echo "moving platform"
+> git mv arch/m68knommu/platform arch/m68k/
+> git rm arch/m68knommu/defconfig
+>
+> echo "merging master Makefile"
+> git mv arch/m68k/Makefile arch/m68k/Makefile_mm
+> git mv arch/m68knommu/Makefile arch/m68k/Makefile_no
+> cat<<-EOF>  arch/m68k/Makefile
+> ifdef CONFIG_MMU
+> include arch/m68k/Makefile_mm
+> else
+> include arch/m68k/Makefile_no
+> endif
+> EOF
+> git add arch/m68k/Makefile
+>
+> echo "removing remaining m68knommu dirs"
+> git rm -r arch/m68knommu
+> rm -r arch/m68knommu
+> exit 0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-m68k" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
 
-This only works if you're not generating a hardware signal from the RTC
-- if it's a hardware signal you may not be able to do it from software
-at all.  This may not be relevant for the particular application,
-though.
+
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
