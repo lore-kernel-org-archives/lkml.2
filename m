@@ -1,110 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934423Ab1CYCKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 22:10:04 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:50415 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934394Ab1CYCJ7 (ORCPT
+	id S1757435Ab1CYCXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 22:23:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38096 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab1CYCXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 22:09:59 -0400
-X-Sasl-enc: Hbqkkhh0qxNwgJPSHo5arzqVzBPMdJ9fYco8hbddTyWG 1301018998
-Date: Thu, 24 Mar 2011 23:09:54 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Burt Triplett <burt@pbjtriplett.org>
-Subject: x86/microcode: intel: correctly handle negative revisions
-Message-ID: <20110325020954.GC4535@khazad-dum.debian.net>
-References: <4D65EE74.1050709@pbjtriplett.org>
- <20110312023001.GB27550@khazad-dum.debian.net>
- <4D87E2CD.6020306@pbjtriplett.org>
- <20110324001451.GA7950@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110324001451.GA7950@khazad-dum.debian.net>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 24 Mar 2011 22:23:21 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=UaVp1nUTDLkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=EQ2y0qqVXTN24CGcXWwA:9 a=MOkRG8d7FNaKymhmsAAA:7 a=PtG8o-gHuOcN5nZ3UwP8AjpCsnQA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCHv2] tracing - avoid soft lockup in trace_pipe
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, fweisbec@gmail.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110321121008.GA1979@jolsa.brq.redhat.com>
+References: <1299970786-8075-1-git-send-email-jolsa@redhat.com>
+	 <1299970786-8075-3-git-send-email-jolsa@redhat.com>
+	 <20110313145811.GA30558@redhat.com>
+	 <1300111651.9910.87.camel@gandalf.stny.rr.com>
+	 <20110314141853.GB1936@jolsa.brq.redhat.com>
+	 <1300112926.9910.100.camel@gandalf.stny.rr.com>
+	 <20110314150746.GA4453@jolsa.brq.redhat.com>
+	 <1300116057.9910.106.camel@gandalf.stny.rr.com>
+	 <20110314180621.GA5987@jolsa.brq.redhat.com>
+	 <20110321121008.GA1979@jolsa.brq.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 24 Mar 2011 22:23:18 -0400
+Message-ID: <1301019798.14261.159.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per the Intel SDM vol 3A, microcode revisions are signed 32-bit
-numbers.  The code was handling them as unsigned int in some places and as
-an int in other places.
+On Mon, 2011-03-21 at 13:10 +0100, Jiri Olsa wrote:
+> On Mon, Mar 14, 2011 at 07:06:21PM +0100, Jiri Olsa wrote:
+> > On Mon, Mar 14, 2011 at 11:20:57AM -0400, Steven Rostedt wrote:
+> > > On Mon, 2011-03-14 at 16:07 +0100, Jiri Olsa wrote:
+> > > > So we get back the the while loop with no data added and with
+> > > > TRACE_TYPE_HANDLED return code, which will keep us in the loop.
+> > > > 
+> > > > Not sure this is bug or feature :)
+> > > > 
+> > > > 
+> > > Most bugs are features ;)
+> > > 
+> > > honestly, I'd love to rip out all the "bin", "hex" etc formats as they
+> > > are pretty much deprecated.
+> > > 
+> > > But as you pointed out that this can keep us in the inner loop, we need
+> > > to fix that. I prefer to fix it within the nop print function. Perhaps
+> > > we need to fill in something. "type: %d", iter->ent->type ?
+> > 
+> > sounds ok :) attaching v2 patch
+> hi, any feedback?
 
-As per the clarification posted by Burt Triplett from the Intel BITS
-project, negative microcode revisions are used internally at Intel and
-should always get loaded.  Also, they should not be overriden unless we
-can somehow differentiate "automated" loading from "forced" loading (which
-we cannot at this time).  Burt says the SDM will be updated with this
-information eventually.
+Ah, sorry, as this was a reply to the original thread, it didn't pop up
+immediately.
 
-The code should:
+> > 
+> > 
+> > ---
+> > running following commands:
+> > 
+> >   # enable the binary option
+> >   echo 1 > ./options/bin
+> >   # disable context info option
+> >   echo 0 > ./options/context-info 
+> >   # tracing only events
+> >   echo 1 > ./events/enable
+> >   cat trace_pipe
+> > 
+> > is causing lockup (in NON preemptive kernels) inside
+> > tracing_read_pipe function.
+> > 
+> > The reason are:
+> >  - bin/hex/raw output functions for events are set to
+> >    trace_nop_print function, which prints nothing and
+> >    returns TRACE_TYPE_HANDLED value
+> >  - LOST EVENT trace do not handle trace_seq overflow
+> > 
+> > These reasons force the while loop in tracing_read_pipe
+> > function never to break.
+> > 
+> > The attached patch fixies handling of lost event trace, and
+> > changes trace_nop_print to print minimal info, which is needed
+> > for the correct tracing_read_pipe processing.
+> > 
+> > v2 changes:
+> >  - omit the cond_resched changes by trace_nop_print changes
+> >  - WARN changed to WARN_ONCE and added info to be able
+> >    to find out the culprit
 
-1. Ignore attempts to load a zero-revision microcode (that value is
-reserved for the CPU to signal that it is running with the factory
-microcode, and must not be present in a normal microcode update);
+So this replaces both patches, correct?
 
-2. Always load negative revision microcodes, to help Intel's engineers;
+Thanks,
 
-3. Avoid upgrading from a BIOS-loaded negative revision microcode to
-a normal microcode, to not get in the way of Intel's engineers.
+-- Steve
 
-4. Upgrade from revision 0 (no updates loaded in CPU) to any revision.
 
-It was already doing some of that, but I don't feel like trying to track
-down exactly how the old code with its mix of signed/unsigned handling of
-revisions would behave in each of the above cases.
 
-Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-LKML-Reference: <4D87E2CD.6020306@pbjtriplett.org>
-Cc: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Burt Triplett <burt@pbjtriplett.org>
-
-diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
-index 1a1b606..92b7cfe 100644
---- a/arch/x86/kernel/microcode_intel.c
-+++ b/arch/x86/kernel/microcode_intel.c
-@@ -89,7 +89,7 @@ MODULE_LICENSE("GPL");
- 
- struct microcode_header_intel {
- 	unsigned int            hdrver;
--	unsigned int            rev;
-+	int                     rev;
- 	unsigned int            date;
- 	unsigned int            sig;
- 	unsigned int            cksum;
-@@ -178,10 +178,15 @@ static inline int update_match_cpu(struct cpu_signature *csig, int sig, int pf)
- 	return (!sigmatch(sig, csig->sig, pf, csig->pf)) ? 0 : 1;
- }
- 
-+/*
-+ * rev < 0 : devel/test microcode, always install
-+ * rev = 0 : (cpu: no microcode installed.  data file: illegal)
-+ * rev > 0 : normal microcode, avoid downgrading
-+ */
- static inline int
- update_match_revision(struct microcode_header_intel *mc_header, int rev)
- {
--	return (mc_header->rev <= rev) ? 0 : 1;
-+	return !!(mc_header->rev < 0 || (mc_header->rev > rev && rev >= 0));
- }
- 
- static int microcode_sanity_check(void *mc)
-@@ -298,7 +303,7 @@ static int apply_microcode(int cpu)
- {
- 	struct microcode_intel *mc_intel;
- 	struct ucode_cpu_info *uci;
--	unsigned int val[2];
-+	int val[2];
- 	int cpu_num;
- 
- 	cpu_num = raw_smp_processor_id();
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
