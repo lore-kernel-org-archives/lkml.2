@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab1CYSQZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 14:16:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33074 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab1CYSQY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 14:16:24 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=s8bQjA_BN_cA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=86U65m-h4kyeZu7suGgA:9 a=g6hcjU623_lIVJUvGiZwQdg5oHsA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [tip:core/urgent] WARN_ON_SMP(): Allow use in if() statements
- on UP
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dvhart@linux.intel.com, peterz@infradead.org,
-        akpm@linux-foundation.org, srostedt@redhat.com, tglx@linutronix.de,
-        laijs@cn.fujitsu.com, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-In-Reply-To: <AANLkTikfq9bz_cKdvq9ab+KS218Q7uVvoNdJeMe_-RUg@mail.gmail.com>
-References: <20110317192208.444147791@goodmis.org>
-	 <tip-2092e6be82ec71ecbf5a8ceeef004bbcbdb78812@git.kernel.org>
-	 <AANLkTikfq9bz_cKdvq9ab+KS218Q7uVvoNdJeMe_-RUg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 25 Mar 2011 14:16:21 -0400
-Message-ID: <1301076981.14261.197.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754645Ab1CYSSF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 14:18:05 -0400
+Received: from ns2.coplanar.net ([199.27.182.4]:36033 "EHLO titan.coplanar.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752343Ab1CYSSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 14:18:04 -0400
+X-Greylist: delayed 2165 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Mar 2011 14:18:04 EDT
+Message-ID: <4D8CD3D4.90900@coplanar.net>
+Date: Fri, 25 Mar 2011 13:41:40 -0400
+From: Jeremy Jackson <jerj@coplanar.net>
+Organization: Coplanar Networks
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: signal to PID 1 from serial console like KeyboardRequest or CAD
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.4 (titan.coplanar.net [199.27.182.2]); Fri, 25 Mar 2011 13:41:57 -0400 (EDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-25 at 09:45 -0700, Linus Torvalds wrote:
-> On Fri, Mar 25, 2011 at 3:48 AM, tip-bot for Steven Rostedt
-> <srostedt@redhat.com> wrote:
-> > -# define WARN_ON_SMP(x)                        do { } while (0)
-> > +# define WARN_ON_SMP(x)                        ({0;})
-> 
-> That's a VERY odd way of writing "0".
-> 
-> Am I missing something subtle?
+Hi,
 
-I thought about using "0", but when WARN_ON_SMP() is used outside of an
-if statement, it turns into:
+Sent to linux-console with no reply for over a week...
 
-	0;
+I ran into a problem recently on a Linux server with a remote serial 
+console.  /sbin/init (actually Upstart) was in a state where nothing 
+(useful) was running.  I had to power cycle the machine to get back to 
+the boot prompt.  This has the side-effect of triggering raid rebuilds.
 
-Which seems strange to me. Thus the ({0;}) was basically a way to state
-that this is also a function and not just a 0 value.
+It would be nice to have what Ctrl-Alt-Del does at the VGA console with 
+PS/2 or USB keyboard. This sends a SIGINT to PID 1, and most distros 
+have this set to do "shutdown -r now" which attempts a clean reboot.
 
-Also, a quick test shows that
+Once upon a time there was KeyboardRequest, which would send a SIGWINCH 
+to PID 1 (when pressing Alt-UP_arrow?).  I don't see any sign of this 
+feature in Linux 2.6.32 though.
 
-	0;
+Looking at the Sysrq handlers in the kernel I don't see any keystrokes 
+that send SIGINT to PID 1 either.
 
-gives the warning:
+So, I'm wondering if it makes sense to add a Sysrq key to send a signal 
+to PID1 ?
 
-	"warning: statement with no effect"
-
--- Steve
-
-
+-- 
+Coplanar Networks
+http://www.coplanar.net
+(519)489-4903
