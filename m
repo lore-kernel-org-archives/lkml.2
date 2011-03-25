@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934428Ab1CYKpq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 06:45:46 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37188 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934195Ab1CYKpo (ORCPT
+	id S934447Ab1CYKsE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 06:48:04 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:61722 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934195Ab1CYKsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 06:45:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :x-enigmail-version:content-type:content-transfer-encoding;
-        b=ZPqifG89LPz9CrDGm+s4TORN97uYJbPVl0Ube3NrFCt4TnDusMfnCYaj0dQcZu5ocC
-         /aPjQBoZKQbqnj2vaUgv7uQ9SvYKr/+CeXzolNAVtyyF6mCMFcTjyRGU7yCtWAaC/yJ6
-         oioPfJ9mnOhXbO9+PzFIuxFDR4CiMpncc+fkM=
-Message-ID: <4D8C7253.3040204@suse.cz>
-Date: Fri, 25 Mar 2011 11:45:39 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>
-Subject: Should .dtr_rts do tty_port_tty_get?
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Mar 2011 06:48:03 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+Subject: suspect code in cyasblkdev_block conversion to bdops->check_events()
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        David Cross <david.cross@cypress.com>, linux-kernel@vger.kernel.org
+Message-Id: <check-events-cyasblkdev-block-suspect@mdm.bga.com>
+Date: Fri, 25 Mar 2011 06:48:03 -0400
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> commit cafb0bfca1a73efd6d8a4a6a6a716e6134b96c24
+> Author: Tejun Heo <tj@kernel.org>
+> Commit: Tejun Heo <tj@kernel.org>
+> 
+>     staging: Convert to bdops->check_events()
+>     
+>     Convert two staging drivers - blkvsc_drv and cyasblkdev_block - from
+>     ->media_changed() to ->check_events().  The former always indicated
+>     media changed while the latter always indicated media not changed.
+>     Not sure what the drivers are trying to achieve but keep the original
+>     behavior.
+>     
+>     Signed-off-by: Tejun Heo <tj@kernel.org>
+>     Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+>     Cc: Jens Axboe <axboe@kernel.dk>
+>     Cc: Kay Sievers <kay.sievers@vrfy.org>
+> 
+..
+> diff --git a/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c b/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
+> index e1851f0..842cd92 100644
+..
+> @@ -1090,6 +1090,7 @@ static int cyasblkdev_add_disks(int bus_num,
+>  		bd->user_disk_0->first_minor = devidx << CYASBLKDEV_SHIFT;
+>  		bd->user_disk_0->minors = 8;
+>  		bd->user_disk_0->fops = &cyasblkdev_bdops;
+> +		bd->user_disk_0->events = DISK_EVENT_MEDIA_CHANGE;
+>  		bd->user_disk_0->private_data = bd;
+>  		bd->user_disk_0->queue = bd->queue.queue;
+>  		bd->dbgprn_flags = DBGPRN_RD_RQ;
+> @@ -1190,6 +1191,7 @@ static int cyasblkdev_add_disks(int bus_num,
+>  		bd->user_disk_1->first_minor = (devidx + 1) << CYASBLKDEV_SHIFT;
+>  		bd->user_disk_1->minors = 8;
+>  		bd->user_disk_1->fops = &cyasblkdev_bdops;
+> +		bd->user_disk_0->events = DISK_EVENT_MEDIA_CHANGE;
+>  		bd->user_disk_1->private_data = bd;
+Date: Fri, 25 Mar 2011 04:48:01 -0600
+X-Originating-IP: 71.22.127.106
 
-I'm playing with a serial device and got a nice oops. Maybe after some
-weird stty's, I don't know. But it dies in uart_dtr_rts:
-        .loc 1 1535 0
-        movq    (%rbx), %r13    # port_1(D)->tty, D.26746
-...
-        .loc 1 1494 0
-        testb   $2, 224(%r13)   #, D.26746_10->flags
-                    ^^^^^^^^^
-                      HERE
+The 0 on the above line triggered my suspect code pattern detector.
 
-Because r13 (port->tty) is NULL. So the question is about the principle.
-Should it call tty_port_tty_get or is it a bug in the TTY layer and
-uart_dtr_rts should not be called with port->tty == NULL?
+>  		bd->user_disk_1->queue = bd->queue.queue;
+>  		bd->dbgprn_flags = DBGPRN_RD_RQ;
+> @@ -1278,6 +1280,7 @@ static int cyasblkdev_add_disks(int bus_num,
+>  				(devidx + 2) << CYASBLKDEV_SHIFT;
+>  			bd->system_disk->minors = 8;
+>  			bd->system_disk->fops = &cyasblkdev_bdops;
+> +			bd->system_disk->events = DISK_EVENT_MEDIA_CHANGE;
+>  			bd->system_disk->private_data = bd;
+>  			bd->system_disk->queue = bd->queue.queue;
+>  			/* don't search for vfat
 
-I'll attach a patch which does the former as a reply to this message.
-
-BTW only serial_core needs tty in dtr_rts.
-
-thanks,
--- 
-js
-suse labs
+milton
