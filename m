@@ -1,135 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab1CYTjI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 15:39:08 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:19564 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754139Ab1CYTjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 15:39:05 -0400
-From: David Daney <ddaney@caviumnetworks.com>
-To: tglx@linutronix.de, linux-mips@linux-mips.org, ralf@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH v3 2/4] genirq: Add chip hooks for taking CPUs on/off line.
-Date: Fri, 25 Mar 2011 12:38:49 -0700
-Message-Id: <1301081931-11240-3-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1301081931-11240-1-git-send-email-ddaney@caviumnetworks.com>
-References: <1301081931-11240-1-git-send-email-ddaney@caviumnetworks.com>
-X-OriginalArrivalTime: 25 Mar 2011 19:39:04.0204 (UTC) FILETIME=[4C52DCC0:01CBEB24]
+	id S1752929Ab1CYTkS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 15:40:18 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52715 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752222Ab1CYTkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 15:40:14 -0400
+Date: Fri, 25 Mar 2011 20:40:10 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT pull] irq cleanups for .39
+Message-ID: <20110325194010.GG22960@elte.hu>
+References: <alpine.LFD.2.00.1103251747450.31464@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1103251747450.31464@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
----
- include/linux/irq.h |    8 ++++++
- kernel/irq/chip.c   |   62 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 70 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 1d3577f..f517b25 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -270,6 +270,8 @@ static inline bool irqd_can_move_in_process_context(struct irq_data *d)
-  * @irq_set_wake:	enable/disable power-management wake-on of an IRQ
-  * @irq_bus_lock:	function to lock access to slow bus (i2c) chips
-  * @irq_bus_sync_unlock:function to sync and unlock slow bus (i2c) chips
-+ * @irq_cpu_online:	configure an interrupt source for a secondary CPU
-+ * @irq_cpu_offline:	un-configure an interrupt source for a secondary CPU
-  * @flags:		chip specific flags
-  *
-  * @release:		release function solely used by UML
-@@ -317,6 +319,9 @@ struct irq_chip {
- 	void		(*irq_bus_lock)(struct irq_data *data);
- 	void		(*irq_bus_sync_unlock)(struct irq_data *data);
- 
-+	void		(*irq_cpu_online)(struct irq_data *data, bool enabled);
-+	void		(*irq_cpu_offline)(struct irq_data *data, bool enabled);
-+
- 	unsigned long	flags;
- 
- 	/* Currently used only by UML, might disappear one day.*/
-@@ -360,6 +365,9 @@ struct irqaction;
- extern int setup_irq(unsigned int irq, struct irqaction *new);
- extern void remove_irq(unsigned int irq, struct irqaction *act);
- 
-+extern void irq_cpu_online(void);
-+extern void irq_cpu_offline(void);
-+
- #ifdef CONFIG_GENERIC_HARDIRQS
- 
- #if defined(CONFIG_SMP) && defined(CONFIG_GENERIC_PENDING_IRQ)
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 54d9aab..5a385a9 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -695,3 +695,65 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
- 
- 	irq_put_desc_unlock(desc, flags);
- }
-+
-+/**
-+ *	irq_cpu_online - Invoke all irq_cpu_online functions.
-+ *
-+ *	Iterate through all irqs and invoke the chip.irq_cpu_online()
-+ *	for each.
-+ */
-+void irq_cpu_online(void)
-+{
-+	struct irq_desc *desc;
-+	struct irq_chip *chip;
-+	unsigned int irq;
-+	unsigned long flags;
-+
-+	for_each_active_irq(irq) {
-+		desc = irq_to_desc(irq);
-+		if (!desc)
-+			continue;
-+
-+		raw_spin_lock_irqsave(&desc->lock, flags);
-+
-+		chip = irq_data_get_irq_chip(&desc->irq_data);
-+
-+		if (chip && chip->irq_cpu_online) {
-+			bool enabled = !(desc->istate & IRQS_DISABLED);
-+			chip->irq_cpu_online(&desc->irq_data, enabled);
-+		}
-+
-+		raw_spin_unlock_irqrestore(&desc->lock, flags);
-+	}
-+}
-+
-+/**
-+ *	irq_cpu_offline - Invoke all irq_cpu_offline functions.
-+ *
-+ *	Iterate through all irqs and invoke the chip.irq_cpu_offline()
-+ *	for each.
-+ */
-+void irq_cpu_offline(void)
-+{
-+	struct irq_desc *desc;
-+	struct irq_chip *chip;
-+	unsigned int irq;
-+	unsigned long flags;
-+
-+	for_each_active_irq(irq) {
-+		desc = irq_to_desc(irq);
-+		if (!desc)
-+			continue;
-+
-+		raw_spin_lock_irqsave(&desc->lock, flags);
-+
-+		chip = irq_data_get_irq_chip(&desc->irq_data);
-+
-+		if (chip && chip->irq_cpu_offline) {
-+			bool enabled = !(desc->istate & IRQS_DISABLED);
-+			chip->irq_cpu_offline(&desc->irq_data, enabled);
-+		}
-+
-+		raw_spin_unlock_irqrestore(&desc->lock, flags);
-+	}
-+}
--- 
-1.7.2.3
+* Thomas Gleixner <tglx@linutronix.de> wrote:
 
+> Linus,
+> 
+> Please pull the latest irq-cleanup-for-linus git tree from:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-cleanup-for-linus
+> 
+> This contains the irq/urgent bits which Ingo asked to pull earlier, so
+> whatever you pull first does not matter.
+> 
+> The gpio patches have been acked by Grant.
+> 
+> The avr, h8300, xtensa, m32r, um bits is stuff which got ignored by
+> the arch maintainers. Those archs seem to be orphaned. 
+> 
+> The cleanup is necessary as we really want to get rid of all the
+> deprecated and compat stuff asap.
+
+Note, while the architectures are orphaned, i've done cross-build testing for 
+most of these architectures with your changes applies, so the ones that built 
+before should still work now.
+
+Thanks,
+
+	Ingo
