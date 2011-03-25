@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab1CYQDS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 12:03:18 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:52851 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab1CYQDR (ORCPT
+	id S1754322Ab1CYQF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 12:05:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40113 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab1CYQF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 12:03:17 -0400
-Date: Fri, 25 Mar 2011 17:03:15 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [OOPS] elevator private data for REQ_FLUSH
-Message-ID: <20110325160315.GB1661@gentoo.trippels.de>
-References: <20110325151530.GA4414@swordfish.minsk.epam.com>
- <20110325152228.GA1707@gentoo.trippels.de>
- <4D8CBB5C.5070406@kernel.dk>
+	Fri, 25 Mar 2011 12:05:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=kzpcLoB0uvJ55eptiMHHng/WMwD/2419rtDsja3yP+vCB2L9H/glVT4kTuukUN4O3T
+         QJt+uqqu7Bo3QbYkEc0+cJS4HYOUDcS6RFZWxL1oppHsFHaf4SducKODUag+OnXMzcKr
+         IbLwAhro5U3zClUywlFzHqoF47zM/gZaMK8KE=
+Date: Fri, 25 Mar 2011 09:05:21 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Chris Bagwell <chris@cnpbagwell.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: Re: [PATCH] eeepc-wmi: Add support for T101MT "Express Gate" key
+Message-ID: <20110325160521.GA5099@core.coreip.homeip.net>
+References: <1300909189-4135-1-git-send-email-seth.forshee@canonical.com>
+ <AANLkTinZpt8qmHzhe4WyteMt-C-nkVNwEGQVvq3Nk9Lx@mail.gmail.com>
+ <20110324131414.GA20612@thinkpad-t410>
+ <AANLkTikrX_wypmrd-PbST603jsHqkuwtA6t5X65Lg1+O@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D8CBB5C.5070406@kernel.dk>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikrX_wypmrd-PbST603jsHqkuwtA6t5X65Lg1+O@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.03.25 at 16:57 +0100, Jens Axboe wrote:
-> On 2011-03-25 16:22, Markus Trippelsdorf wrote:
-> > On 2011.03.25 at 17:15 +0200, Sergey Senozhatsky wrote:
-> >> Hello,
+On Thu, Mar 24, 2011 at 08:27:41AM -0500, Chris Bagwell wrote:
+> On Thu, Mar 24, 2011 at 8:14 AM, Seth Forshee
+> <seth.forshee@canonical.com> wrote:
+> > On Thu, Mar 24, 2011 at 08:33:33AM +0100, Corentin Chary wrote:
+> >> On Wed, Mar 23, 2011 at 8:39 PM, Seth Forshee
+> >> <seth.forshee@canonical.com> wrote:
+> >> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> >> > ---
+> >> >
+> >> > This button is unusual. On press it emits scanocde 0xe4, on release
+> >> > 0xe5, and when held for a few seconds it begins emitting 0xea about
+> >> > twice per second. I chose to handle only the press event in order to
+> >> > make it behave like the other hotkeys.
+> >> >
+> >> > Probably the closest thing to the intended function of this button
+> >> > would be to alternate the display orientation between portrait and
+> >> > landscape, but since there doesn't appear to be a keycode defined for
+> >> > that function I went with KEY_PROG2. I'm open to other suggestions
+> >> > however.
 > >>
-> >> Commit
-> >>     9d5a4e946ce5352f19400b6370f4cd8e72806278
-> >>     block: skip elevator data initialization for flush requests
-> >>     
-> >>     Skip elevator initialization for flush requests by passing priv=0 to
-> >>     blk_alloc_request() in get_request().  As such elv_set_request() is
-> >>     never called for flush requests.
-> >>
-> >> introduced priv flag, to skip elevator_private data init for FLUSH requests.
-> >> This, I guess, lead to NULL pointer deref on my machine in cfq_insert_request,
-> >> which requires elevator_private to be set:
-> >>
-> >>   1 [   78.982169] Call Trace:                                                                                                                                                                                                     
-> >>   2 [   78.982178]  [<ffffffff8122d1fe>] cfq_insert_request+0x4e/0x47d
-> >>   3 [   78.982184]  [<ffffffff8123e139>] ? do_raw_spin_lock+0x6b/0x122
-> > 
-> >> Should we in that case use ELEVATOR_INSERT_FLUSH for REQ_FLUSH | REQ_FUA requests
-> >> (like below)?
-> >>
-> >> ---
-> >>
-> >>  block/elevator.c |    2 ++
-> >>  1 files changed, 2 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/block/elevator.c b/block/elevator.c
-> >> index c387d31..b17e577 100644
-> >> --- a/block/elevator.c
-> >> +++ b/block/elevator.c
-> >> @@ -734,6 +734,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
-> >>  			q->end_sector = rq_end_sector(rq);
-> >>  			q->boundary_rq = rq;
-> >>  		}
-> >> +	} else if (rq->cmd_flags & (REQ_FLUSH | REQ_FUA)) {
-> >> +		where = ELEVATOR_INSERT_FLUSH;
-> >>  	} else if (!(rq->cmd_flags & REQ_ELVPRIV) &&
-> >>  		    where == ELEVATOR_INSERT_SORT)
-> >>  		where = ELEVATOR_INSERT_BACK;
-> > 
-> > Thanks. That solves all (corruption-) problems that I reported earlier
-> > in an other thread. 
+> >> Hi,
+> >> The manual says that under Windows, this is the "Home Key", so
+> >> KEY_HOME would be more appropriate.
+> >
+> > The manual does call it the Home Key (I missed previously that the
+> > Express Gate description referred only to the quick boot mode), but the
+> > description of the key operation reads:
+> >
+> >  Shortly press this key to launch the Touch Gate touch screen
+> >  interface. Press and hold this key to preview desktop rotation, and
+> >  then release the key to finish desktop rotation.
+> >
+> > Which doesn't really sound like a home key to me, and the icon above the
+> > button also suggests display rotation. But then we don't seem to have a
+> > code for that function, so KEY_PROG2 may be no better than KEY_HOME...
+> >
+> >> Also, it would be great to preserve key up and key down informations
+> >> (sparse keymap have an "autorelease" parameter to control that).
+> >
+> > Okay, I'll add some special casing for this key to support that. Do you
+> > suggest ignoring the 0xea scan codes?
+> >
 > 
-> That's great. I'm surprised that this would cause silent corruption for
-> you, should have been accompanied by an oops. Or was that with noop
-> only?
+> I have one of these in the mail so I'm interested in outcome.
+> 
+> I suggest implementing as manual describes and can be handled similar
+> to brightness control logic.
+> 
+> I would suggest sending BTN_HOME upon button release 0xe5 (not press
+> 0xe4 and do the autorelease because of it) and BTN_PROG2 on
+> press-and-hold 0xea.
+> 
+> If you press-and-hold, does it still send the 0xe5 upon release?  That
+> could complicate things so that both button events do not get sent.
 
-The corruption happend during my bisection with cfq and also with noop
-on the latest git kernel.
+Not in the kernel. It is a single button and should generate single
+event. Have userspace decipher that pressing it once causes application
+launcher to appear, holding it longer causes screen rotation, and if you
+still keep it pressed for 10 minutes fireworks will start.
+
+> 
+> I'm not sure what BTN_HOME is commonly used for.  This button does
+> sound like a HOME button in iPad sense but not in web browser sense.
+> 
+
+It is 'Home' key on your full AT keyboard, normally making cursor to
+move to the very first column on the line.
+
+Thanks.
 
 -- 
-Markus
+Dmitry
