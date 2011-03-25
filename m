@@ -1,71 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab1CYXyI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:54:08 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:42353 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932678Ab1CYXxR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:53:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xQlsW9yQbhkMeJ63ZHqIOn2G3K0O/e++FVIC4CvsSkIpKIerlerOWdUtuoQ75NfyZ1
-         kkbceI3V72zBWHOkoCoA==
-MIME-Version: 1.0
-In-Reply-To: <20110325213202.GB21593@redhat.com>
-References: <1300756245-12380-1-git-send-email-ctalbott@google.com>
-	<20110322150905.GD3757@redhat.com>
-	<AANLkTinTiEAFG1F1df380BiDtVFVr=nCsSqhM9__XdQ4@mail.gmail.com>
-	<20110322181231.GJ3757@redhat.com>
-	<AANLkTi=uB_Wv08xu4SzpjCJ_9isvDPsN=ojTH=wAaDoS@mail.gmail.com>
-	<20110323204146.GK13315@redhat.com>
-	<AANLkTi=-7gZhEU6qRAt+uGBkb2s2=bkXC81WNScDM6jA@mail.gmail.com>
-	<20110325213202.GB21593@redhat.com>
-Date: Fri, 25 Mar 2011 16:53:13 -0700
-Message-ID: <AANLkTikTLCdHceaD98zxw90Qb=PuTvfALWELa=Yp6UAC@mail.gmail.com>
-Subject: Re: [PATCH 0/3] cfq-iosched: Fair cross-group preemption
-From: Chad Talbott <ctalbott@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>, Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org, mrubin@google.com,
-        teravest@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S932670Ab1CYXxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:53:16 -0400
+Received: from kroah.org ([198.145.64.141]:41896 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755672Ab1CYXxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:06 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:13 2011
+Message-Id: <20110325234513.520839490@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 25 Mar 2011 16:44:30 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [54/63] drm/i915: Prevent racy removal of request from client list
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 2:32 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> You seem pretty unenthusiastic about a).  How do you feel about b)?
->
-> IMHO, Using RT group with throttling avoids introducing asymmetry between
-> task and group attributes. So I will prefer that approch. Though it means
-> more code as we will be introducing RT groups but that might be useful
-> in general for something else too. (I am assuming that somebody makes
-> use of RT class for cfqq).
->
-> The one more down side of trying to use throttling is that one needs to
-> come up with absolute limit. So one shall have to know disk capacity
-> and if there are no BE tasks running then latency sensitive task will
-> be unnecessarily throttled (until and unless some management software
-> can monitor it and change limit dynamically).
->
-> So if you are worried about setting the absolute limit part, then I guess
-> I am fine with option a). But if you think that setting absolute limit
-> is not a problem, then option b) is preferred.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-I prefer option a) - so much so that even with the older CFQ group
-implementation we did work to merge the RT and BE service trees to
-achieve that behavior.  But I see that using blkio.class is a poor
-choice of interface name.  I will rename the interface and resubmit
-the patch series (also with Gui's suggestion to keep the "_device"
-suffix for consistency).
+------------------
 
-Also, we'll soon be working to adopt the hierarchy series, and we'll
-likely revisit using an RT service tree there.  It's difficult to
-justify introducing RT service tree before those patches arrive.
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-Thanks,
-Chad
+commit 09bfa51773c1e90f13000dc2fc0c4b84047009bc upstream.
+
+When i915_gem_retire_requests_ring calls i915_gem_request_remove_from_client,
+the client_list for that request may already be removed in i915_gem_release.
+So we may call twice list_del(&request->client_list), resulting in an
+oops like this report:
+
+[126167.230394] BUG: unable to handle kernel paging request at 00100104
+[126167.230699] IP: [<f8c2ce44>] i915_gem_retire_requests_ring+0xd4/0x240 [i915]
+[126167.231042] *pdpt = 00000000314c1001 *pde = 0000000000000000
+[126167.231314] Oops: 0002 [#1] SMP
+[126167.231471] last sysfs file: /sys/devices/LNXSYSTM:00/device:00/PNP0C0A:00/power_supply/BAT1/current_now
+[126167.231901] Modules linked in: snd_seq_dummy nls_utf8 isofs btrfs zlib_deflate libcrc32c ufs qnx4 hfsplus hfs minix ntfs vfat msdos fat jfs xfs exportfs reiserfs cryptd aes_i586 aes_generic binfmt_misc vboxnetadp vboxnetflt vboxdrv parport_pc ppdev snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep arc4 snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq uvcvideo videodev snd_timer snd_seq_device joydev iwlagn iwlcore mac80211 snd cfg80211 soundcore i915 drm_kms_helper snd_page_alloc psmouse drm serio_raw i2c_algo_bit video lp parport usbhid hid sky2 sdhci_pci ahci sdhci libahci
+[126167.232018]
+[126167.232018] Pid: 1101, comm: Xorg Not tainted 2.6.38-6-generic-pae #34-Ubuntu Gateway                          MC7833U /
+[126167.232018] EIP: 0060:[<f8c2ce44>] EFLAGS: 00213246 CPU: 0
+[126167.232018] EIP is at i915_gem_retire_requests_ring+0xd4/0x240 [i915]
+[126167.232018] EAX: 00200200 EBX: f1ac25b0 ECX: 00000040 EDX: 00100100
+[126167.232018] ESI: f1a2801c EDI: e87fc060 EBP: ef4d7dd8 ESP: ef4d7db0
+[126167.232018]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[126167.232018] Process Xorg (pid: 1101, ti=ef4d6000 task=f1ba6500 task.ti=ef4d6000)
+[126167.232018] Stack:
+[126167.232018]  f1a28000 f1a2809c f1a28094 0058bd97 f1aa2400 f1a2801c 0058bd7b 0058bd85
+[126167.232018]  f1a2801c f1a28000 ef4d7e38 f8c2e995 ef4d7e30 ef4d7e60 c14d1ebc f6b3a040
+[126167.232018]  f1522cc0 000000db 00000000 f1ba6500 ffffffa1 00000000 00000001 f1a29214
+[126167.232018] Call Trace:
+
+Unfortunately the call trace reported was cut, but looking at debug
+symbols the crash is at __list_del, when probably list_del is called
+twice on the same request->client_list, as the dereferenced value is
+LIST_POISON1 + 4, and by looking more at the debug symbols before
+list_del call it should have being called by
+i915_gem_request_remove_from_client
+
+And as I can see in the code, it seems we indeed have the possibility
+to remove a request->client_list twice, which would cause the above,
+because we do list_del(&request->client_list) on both
+i915_gem_request_remove_from_client and i915_gem_release
+
+As Chris Wilson pointed out, it's indeed the case:
+"(...) I had thought that the actual insertion/deletion was serialised
+under the struct mutex and the intention of the spinlock was to protect
+the unlocked list traversal during throttling. However, I missed that
+i915_gem_release() is also called without struct mutex and so we do need
+the double check for i915_gem_request_remove_from_client()."
+
+This change does the required check to avoid the duplicate remove of
+request->client_list.
+
+Bugzilla: http://bugs.launchpad.net/bugs/733780
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/gpu/drm/i915/i915_gem.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1749,8 +1749,10 @@ i915_gem_request_remove_from_client(stru
+ 		return;
+ 
+ 	spin_lock(&file_priv->mm.lock);
+-	list_del(&request->client_list);
+-	request->file_priv = NULL;
++	if (request->file_priv) {
++		list_del(&request->client_list);
++		request->file_priv = NULL;
++	}
+ 	spin_unlock(&file_priv->mm.lock);
+ }
+ 
+
+
