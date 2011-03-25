@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab1CYXwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:52:30 -0400
-Received: from kroah.org ([198.145.64.141]:41513 "EHLO coco.kroah.org"
+	id S932323Ab1CZAY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:24:56 -0400
+Received: from kroah.org ([198.145.64.141]:41540 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932188Ab1CYXw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:27 -0400
+	id S1755630Ab1CYXwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:30 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
-Message-Id: <20110325234509.522758506@clark.kroah.org>
+Message-Id: <20110325234509.818300291@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:52 -0700
+Date: Fri, 25 Mar 2011 16:43:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: [16/63] oom: prevent unnecessary oom kills or kernel panics
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [19/63] PCI hotplug: acpiphp: set current_state to D0 in register_slot
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,92 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 3a5dda7a17cf3706f79b86293f29db02d61e0d48 upstream.
+commit 47e9037ac16637cd7f12b8790ea7ce6680e42168 upstream.
 
-This patch prevents unnecessary oom kills or kernel panics by reverting
-two commits:
+If a device doesn't support power management (pm_cap == 0) but it is
+acpi_pci_power_manageable() because there is a _PS0 method declared for
+it and _EJ0 is also declared for the slot then nobody is going to set
+current_state = PCI_D0 for this device.  This is what I think it is
+happening:
 
-	495789a5 (oom: make oom_score to per-process value)
-	cef1d352 (oom: multi threaded process coredump don't make deadlock)
+pci_enable_device
+    |
+__pci_enable_device_flags
+/* here we do not set current_state because !pm_cap */
+    |
+do_pci_enable_device
+    |
+pci_set_power_state
+    |
+__pci_start_power_transition
+    |
+pci_platform_power_transition
+/* platform_pci_power_manageable() calls acpi_pci_power_manageable that
+ * returns true */
+    |
+platform_pci_set_power_state
+/* acpi_pci_set_power_state gets called and does nothing because the
+ * acpi device has _EJ0, see the comment "If the ACPI device has _EJ0,
+ * ignore the device" */
 
-First, 495789a5 (oom: make oom_score to per-process value) ignores the
-fact that all threads in a thread group do not necessarily exit at the
-same time.
+at this point if we refer to the commit message that introduced the
+comment above (10b3dcae0f275e2546e55303d64ddbb58cec7599), it is up to
+the hotplug driver to set the state to D0.
+However AFAICT the pci hotplug driver never does, in fact
+drivers/pci/hotplug/acpiphp_glue.c:register_slot sets the slot flags to
+(SLOT_ENABLED | SLOT_POWEREDON) but it does not set the pci device
+current state to PCI_D0.
 
-It is imperative that select_bad_process() detect threads that are in the
-exit path, specifically those with PF_EXITING set, to prevent needlessly
-killing additional tasks.  If a process is oom killed and the thread group
-leader exits, select_bad_process() cannot detect the other threads that
-are PF_EXITING by iterating over only processes.  Thus, it currently
-chooses another task unnecessarily for oom kill or panics the machine when
-nothing else is eligible.
+So my proposed fix is also to set current_state = PCI_D0 in
+register_slot.
+Comments are very welcome.
 
-By iterating over threads instead, it is possible to detect threads that
-are exiting and nominate them for oom kill so they get access to memory
-reserves.
-
-Second, cef1d352 (oom: multi threaded process coredump don't make
-deadlock) erroneously avoids making the oom killer a no-op when an
-eligible thread other than current isfound to be exiting.  We want to
-detect this situation so that we may allow that exiting thread time to
-exit and free its memory; if it is able to exit on its own, that should
-free memory so current is no loner oom.  If it is not able to exit on its
-own, the oom killer will nominate it for oom kill which, in this case,
-only means it will get access to memory reserves.
-
-Without this change, it is easy for the oom killer to unnecessarily target
-tasks when all threads of a victim don't exit before the thread group
-leader or, in the worst case, panic the machine.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Andrey Vagin <avagin@openvz.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/oom_kill.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -292,11 +292,11 @@ static struct task_struct *select_bad_pr
- 		unsigned long totalpages, struct mem_cgroup *mem,
- 		const nodemask_t *nodemask)
- {
--	struct task_struct *p;
-+	struct task_struct *g, *p;
- 	struct task_struct *chosen = NULL;
- 	*ppoints = 0;
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -212,6 +212,7 @@ register_slot(acpi_handle handle, u32 lv
  
--	for_each_process(p) {
-+	do_each_thread(g, p) {
- 		unsigned int points;
- 
- 		if (oom_unkillable_task(p, mem, nodemask))
-@@ -324,7 +324,7 @@ static struct task_struct *select_bad_pr
- 		 * the process of exiting and releasing its resources.
- 		 * Otherwise we could get an easy OOM deadlock.
- 		 */
--		if (thread_group_empty(p) && (p->flags & PF_EXITING) && p->mm) {
-+		if ((p->flags & PF_EXITING) && p->mm) {
- 			if (p != current)
- 				return ERR_PTR(-1UL);
- 
-@@ -337,7 +337,7 @@ static struct task_struct *select_bad_pr
- 			chosen = p;
- 			*ppoints = points;
- 		}
--	}
-+	} while_each_thread(g, p);
- 
- 	return chosen;
- }
+ 	pdev = pci_get_slot(pbus, PCI_DEVFN(device, function));
+ 	if (pdev) {
++		pdev->current_state = PCI_D0;
+ 		slot->flags |= (SLOT_ENABLED | SLOT_POWEREDON);
+ 		pci_dev_put(pdev);
+ 	}
 
 
