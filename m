@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933127Ab1CYX6r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:58:47 -0400
-Received: from kroah.org ([198.145.64.141]:48957 "EHLO coco.kroah.org"
+	id S932824Ab1CYX5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:57:50 -0400
+Received: from kroah.org ([198.145.64.141]:48852 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933058Ab1CYX63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:58:29 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:56:38 2011
-Message-Id: <20110325235638.765352236@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:55:59 -0700
+	id S1755706Ab1CYX5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:57:47 -0400
+Date: Fri, 25 Mar 2011 16:56:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Josef Bacik <josef@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Chuck Ebbert <cebbert@redhat.com>
-Subject: [22/23] fs: call security_d_instantiate in d_obtain_alias V2
-References: <20110325235537.660072281@clark.kroah.org>
-Content-Disposition: inline; filename=fs-call-security_d_instantiate-in-d_obtain_alias-v2.patch
-In-Reply-To: <20110325235654.GA24416@kroah.com>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/23] 2.6.32.36-longterm review
+Message-ID: <20110325235654.GA24416@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josef Bacik <josef@redhat.com>
+This is the start of the longterm review cycle for the 2.6.32.36 release.
+There are 23 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-commit 24ff6663ccfdaf088dfa7acae489cb11ed4f43c4 upstream.
+Responses should be made by Sunday, March 17, 2011, 23:00:00 UTC.
+Anything received after that time might be too late.
 
-While trying to track down some NFS problems with BTRFS, I kept noticing I was
-getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-figure out that it was SELinux that was giving me grief, with the following
-denial
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.36-rc1.gz
+and the diffstat can be found below.
 
-type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
+thanks,
 
-Turns out this is because in d_obtain_alias if we can't find an alias we create
-one and do all the normal instantiation stuff, but we don't do the
-security_d_instantiate.
-
-Usually we are protected from getting a hashed dentry that hasn't yet run
-security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
-option there, so in order to deal with the case that a second thread comes in
-and finds our new dentry before we get to run security_d_instantiate(), we go
-ahead and call it if we find a dentry already.  Eric assures me that this is ok
-as the code checks to see if the dentry has been initialized already so calling
-security_d_instantiate() against the same dentry multiple times is ok.  With
-this patch I'm no longer getting errant -EACCESS values.
-
-Signed-off-by: Josef Bacik <josef@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Chuck Ebbert <cebbert@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/dcache.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1175,9 +1175,12 @@ struct dentry *d_obtain_alias(struct ino
- 	spin_unlock(&tmp->d_lock);
- 
- 	spin_unlock(&dcache_lock);
-+	security_d_instantiate(tmp, inode);
- 	return tmp;
- 
-  out_iput:
-+	if (res && !IS_ERR(res))
-+		security_d_instantiate(res, inode);
- 	iput(inode);
- 	return res;
- }
+greg k-h
 
 
+ Makefile                            |    2 +-
+ arch/x86/kernel/head64.c            |    3 --
+ arch/x86/kernel/setup.c             |    5 ++++
+ arch/x86/mm/init.c                  |   19 --------------
+ arch/x86/mm/init_64.c               |   11 ++++----
+ arch/x86/xen/mmu.c                  |   13 +++++----
+ drivers/firmware/dcdbas.c           |    4 ++-
+ drivers/input/xen-kbdfront.c        |   45 ++++++++++++++++++----------------
+ drivers/media/video/uvc/uvc_video.c |   14 +++++++----
+ drivers/pci/hotplug/acpiphp_glue.c  |    1 +
+ drivers/pci/pci-sysfs.c             |    7 ++++-
+ drivers/usb/class/cdc-acm.c         |    7 ++++-
+ drivers/usb/host/ehci-q.c           |   12 ---------
+ drivers/usb/misc/uss720.c           |    7 ++---
+ drivers/video/console/tileblit.c    |    2 +-
+ fs/aio.c                            |    4 +-
+ fs/dcache.c                         |    3 ++
+ fs/ext3/super.c                     |    7 +++++
+ fs/nfsd/nfs4proc.c                  |    4 +-
+ fs/nfsd/nfs4xdr.c                   |    5 +---
+ fs/proc/array.c                     |    4 +-
+ fs/proc/task_mmu.c                  |    4 +-
+ kernel/signal.c                     |   16 +++++++++---
+ mm/shmem.c                          |    1 +
+ net/sunrpc/xprtsock.c               |    2 +
+ 25 files changed, 106 insertions(+), 96 deletions(-)
