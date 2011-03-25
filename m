@@ -1,133 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934434Ab1CYCcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Mar 2011 22:32:39 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:33206 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934385Ab1CYCcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Mar 2011 22:32:35 -0400
-Date: Thu, 24 Mar 2011 22:32:31 -0400
-Message-Id: <E1Q2wpD-0002It-CE@tytso-glaptop>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 update for 2.6.39-rc1
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S934447Ab1CYCcm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Mar 2011 22:32:42 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:36354 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934394Ab1CYCcg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Mar 2011 22:32:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=IhNvXyMW94KNyyi5KvelRsN15vjXvZegDPjUAMt2RVKmMgI+S0O07Aw74coykUOKV2
+         P1AX5mkTbpq/8C+uTZmv5lefqLqlO9lYLzSqbUoLLECiTGcyNHWjPbZrCCTw83LJDH02
+         3nX6IoOwGeeLOBsHTz0Qv61IbhgDYB/rBcah4=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20110324224047.GN2356@decadent.org.uk>
+References: <1300845590-14184-1-git-send-email-valerie.aurora@gmail.com>
+	<AANLkTinnRz2PPc3XqgCK72S9+fqTK0QCUOLkK98S5j_Q@mail.gmail.com>
+	<20110324224047.GN2356@decadent.org.uk>
+Date: Fri, 25 Mar 2011 03:32:35 +0100
+Message-ID: <AANLkTi=2axu52Mbj+N+qUL+1vUJAU2-maL3w3dV740Et@mail.gmail.com>
+Subject: Re: [PATCH 00/74] Union mounts version something or other
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Valerie Aurora <valerie.aurora@gmail.com>, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, LKML <linux-kernel@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>, hch@lst.de,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 24, 2011 at 11:40 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Wed, Mar 23, 2011 at 09:38:39AM +0100, Sedat Dilek wrote:
+> [...]
+>> Whuzzz up with AUFS?
+>> Even there where massive changes to VFS and FS in 2.6.38+, there is an
+>> adapted kernel patch around (for example see Debian's 2.6.38 linux-2.6
+>> packages in experimental branch).
+>
+> Do not cite the Debian kernel team as supporting aufs.  It is included
+> only because Debian Live needs some kind of union filesystem, and only
+> until that appears in-tree.
+>
 
-Hi Linus,
+Debian is using AUFS - that is a fact!
+That is exactly what I mean... as there is no *official* (and working!
+and really used) union-filesystem from kernel-side.
+Diverse distributions (and especially the embedded area) use AUFS (as
+overlay) and SquashFS (for compression) as an *unofficial* working
+solution for years. including Debian.
+SquashsFS and hopefully SquashFS-XZ is in the kernel, but not AUFS.
+So, I am interested in (a new discussion and) re-thinking what is the
+number #1 choice in that area.
+BTW, in the meantime Ric Wheeler asked for a comparison between
+Union-mounts and OverlayFS  [1].
+Let's see and read.
 
-Please pull from:
+>> From my POV OverlayFS is the new star at the skyline and should be
+>> promoted as 1st choice, now.
+> [...]
+>
+> This thread is for technical review, not marketing.
+>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
+My POV is clear - I already gave some technical arguments contra union-mounts.
+An official and working(!) solution is needed and "promoted" from the
+big five in Linux kernel (filesystem) development.
+A decision what is the (next and new preferred?) standard
+union-filesystem in the kernel-world.
+Now, there is a new problem for union-mounts as one of its main
+maintainer stopped working on it.
+Even OverlayFS is young, it is already used as a working(!) solution in OpenWRT.
+People do not need and want a never-ending "technical preview" for
+years, they need and want a working(!) solution, that is/was mostly
+AUFS chosen *unofficially* (and remember rejected into mainline).
+Personally, I did not see/read union-mounts used by any distro or in
+the embedded world.
 
-to get the ext4 updates for the 2.6.39 merge window.
+- Sedat -
 
-Thanks,
-
-					- Ted
-
-Alexander V. Lukyanov (1):
-      ext4: allow inode_readahead_blks=0 (linux-2.6.37)
-
-Amir Goldstein (7):
-      ext4: use the nblocks arg to ext4_truncate_restart_trans()
-      ext4: skip orphan cleanup if fs has unknown ROCOMPAT features
-      jbd2: add the b_cow_tid field to journal_head struct
-      jbd2: add COW fields to struct jbd2_journal_handle
-      ext4: handle errors in ext4_rename
-      ext4: unify the ext4_handle_release_buffer() api
-      ext4: handle errors in ext4_clear_blocks()
-
-Coly Li (5):
-      ext4: code cleanup in mb_find_buddy()
-      ext4: remove unncessary call mb_find_buddy() in debugging code
-      mballoc: add comments to ext4_mb_mark_free_simple()
-      ext4: clarify description of ac_g_ex in struct ext4_allocation_context
-      ext4: mballoc: don't replace the current preallocation group unnecessarily
-
-Curt Wohlgemuth (2):
-      ext4: mark multi-page IO complete on mapping failure
-      ext4: fix ext4_da_block_invalidatepages() to handle page range properly
-
-Eric Sandeen (2):
-      ext4: enable acls and user_xattr by default
-      ext4: don't kfree uninitialized s_group_info members
-
-Feng Tang (1):
-      ext4: remove redundant set_buffer_mapped() in ext4_da_get_block_prep()
-
-Jiaying Zhang (1):
-      ext4: add more tracepoints and use dev_t in the trace buffer
-
-Lukas Czerner (4):
-      ext4: update ext4 documentation
-      ext4: mark file-local functions and variables as static
-      ext4: check if device support discard in FITRIM ioctl
-      ext4: Adjust minlen with discard_granularity in the FITRIM ioctl
-
-Manish Katiyar (1):
-      ext4: fix missing iput of root inode for some mount error paths
-
-Mingming Cao (1):
-      ext4: Use single thread to perform DIO unwritten convertion
-
-Peter Huewe (1):
-      ext4: Fix sparse warning: Using plain integer as NULL pointer
-
-Robin Dong (1):
-      ext4: add missing space in printk's in __ext4_grp_locked_error()
-
-Sergey Senozhatsky (1):
-      ext4: unused variables cleanup in fs/ext4/extents.c
-
-Tao Ma (2):
-      ext4: add FITRIM to compat_ioctl.
-      ext4: fix a BUG in mb_mark_used during trim.
-
-Theodore Ts'o (12):
-      ext4: fix compile warnings with EXT4FS_DEBUG enabled
-      ext4: enable mblk_io_submit by default
-      ext4: fold __mpage_da_writepage() into write_cache_pages_da()
-      ext4: simple cleanups to write_cache_pages_da()
-      ext4: clear the dirty bit for a page in writeback at the last minute
-      ext4: remove page_skipped hackery in ext4_da_writepages()
-      ext4: don't lock the next page in write_cache_pages if not needed
-      ext4: move setup of the mpd structure to write_cache_pages_da()
-      ext4: don't leave PageWriteback set after memory failure
-      ext4: suppress verbose debugging information if malloc-debug is off
-      ext4: optimize ext4_bio_write_page() when no extent conversion is needed
-      ext4: Initialize fsync transaction ids in ext4_new_inode()
-
-Yongqiang Yang (1):
-      ext4: make FIEMAP and delayed allocation play well together
-
-
- Documentation/ABI/testing/sysfs-fs-ext4 |   13 +-
- Documentation/filesystems/ext4.txt      |  207 ++++++++-
- fs/ext4/balloc.c                        |    3 +
- fs/ext4/ext4_jbd2.h                     |    7 -
- fs/ext4/extents.c                       |  213 +++++++--
- fs/ext4/fsync.c                         |   14 +-
- fs/ext4/ialloc.c                        |    8 +-
- fs/ext4/inode.c                         |  410 +++++++----------
- fs/ext4/ioctl.c                         |    7 +
- fs/ext4/mballoc.c                       |   34 +-
- fs/ext4/mballoc.h                       |    2 +-
- fs/ext4/migrate.c                       |   10 +-
- fs/ext4/namei.c                         |   13 +-
- fs/ext4/page-io.c                       |   13 +-
- fs/ext4/resize.c                        |   12 +-
- fs/ext4/super.c                         |   48 ++-
- fs/ext4/xattr.c                         |    4 +-
- include/linux/jbd2.h                    |   28 +-
- include/linux/journal-head.h            |    7 +
- include/trace/events/ext4.h             |  775 +++++++++++++++++++++++--------
- include/trace/events/jbd2.h             |   78 ++--
- 21 files changed, 1307 insertions(+), 599 deletions(-)
+[1] http://www.spinics.net/lists/linux-fsdevel/msg43345.html
