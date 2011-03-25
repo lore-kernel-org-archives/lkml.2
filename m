@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab1CYI6z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 04:58:55 -0400
-Received: from ch-smtp04.sth.basefarm.net ([80.76.153.5]:39237 "EHLO
-	ch-smtp04.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753156Ab1CYI6w (ORCPT
+	id S1754498Ab1CYI7n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 04:59:43 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55136 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab1CYI7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 04:58:52 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 25 Mar 2011 10:02:10 +0100
-To: Jeff Brown <jeffbrown@android.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Brown <jeffbrown@google.com>
-Subject: Re: [PATCH 3/4] input: evdev: Indicate buffer overrun with
- SYN_DROPPED.
-Message-ID: <20110325090210.GA5860@polaris.bitmath.org>
-References: <1300842244-42723-1-git-send-email-jeffbrown@android.com>
- <1300842244-42723-4-git-send-email-jeffbrown@android.com>
+	Fri, 25 Mar 2011 04:59:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=UGeAnNnltKJE6jS/2tva4I88TlzRuOkcXmTnF/Yf+Iw2YdUf0Rpu2PnIrCoA28UltU
+         xZyctNQNJ5ov0GQ7dE0FB4DuUzIUHSk0NvgxVZsV8QXakry3mVAFJuswWhoKUg0MFTmF
+         SL6EA7JAHeNmpr2H3CiEJgNN+FiqqeFwfpIxE=
+Message-ID: <4D8C5974.7090004@gmail.com>
+Date: Fri, 25 Mar 2011 08:59:32 +0000
+From: Lukasz Sokol <el.es.cr@gmail.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300842244-42723-4-git-send-email-jeffbrown@android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1Q32qL-0002Y7-Ex.
-X-Scan-Signature: ch-smtp04.sth.basefarm.net 1Q32qL-0002Y7-Ex 852207d3a9fd972f61fbde7ad736bc15
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: In_fridge_ment?
+References: <loom.20110325T000152-297@post.gmane.org> <20110324231850.13c604e1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110324231850.13c604e1@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -57,14 +57,20 @@ static void evdev_pass_event(struct evdev_client *client,
->  {
->  	/*
->  	 * Interrupts are disabled, just acquire the lock.
-> -	 * Make sure we don't leave with the client buffer
-> -	 * "empty" by having client->head == client->tail.
-> +	 * When the client buffer is full, replace the tail with SYN_DROPPED
-> +	 * to let the client know that events were dropped.  Ensure that the
-> +	 * head and tail never coincide so the buffer does not appear "empty".
->  	 */
->  	spin_lock(&client->buffer_lock);
-> -	do {
-> -		client->buffer[client->head++] = *event;
-> -		client->head &= client->bufsize - 1;
-> -	} while (client->head == client->tail);
-> +	client->buffer[client->head++] = *event;
-> +	client->head &= client->bufsize - 1;
-> +	if (client->head == client->tail) {
-> +		client->tail = (client->tail + 1) & (client->bufsize - 1);
-> +		client->buffer[client->tail].time = event->time;
-> +		client->buffer[client->tail].type = EV_SYN;
-> +		client->buffer[client->tail].code = SYN_DROPPED;
-> +		client->buffer[client->tail].value = 0;
-> +	}
->  	spin_unlock(&client->buffer_lock);
+On 24/03/2011 23:18, Alan Cox wrote:
 
-My last comment was not right, the SYN_DROPPED is pushed ahead in the
-buffer, sorry about that. However, this change does not shrink the
-number of buffered elements in case of an overrun, which has been
-discussed before as a possibly important feature of the current
-code. I would be more comfortable prepending the head with a
-SYN_DROPPED, like this:
+> Chuckle.. the left hand one does indeed look a little tuxlike but more
+> worrying is the unfortunate placing of the stick which means it looks like
+> its taking a crap.
 
-if (client->head == client->tail) {
-	struct input_event drop;
+Or impaled ;) MS Propaganda, hell yeah ;)
 
-	drop.time = event->time;
-	drop.type = EV_SYN;
-	drop.code = SYN_DROPPED;
-	drop.value = 0;
-	client->buffer[client->head++] = drop;
-	client->head &= client->bufsize - 1;
+> The other one indeed also looks like the crystal tux
+> 
+> Tux however isn't just a Linux penguin. If you read the blurb Larry said
+> "Permission to use and/or modify this image is granted provided you
+> acknowledge me lewing@isc.tamu.edu and The GIMP if someone asks. "
+> 
+> So he's sort of CC-BY, only he's older ;)
 
-	client->buffer[client->head++] = *event;
-	client->head &= client->bufsize - 1;
-}
+Well, people who use it on shirts, I understand they can read ;) 
+Ice lollies designers - I don't know any of this sort, so I can't say...
+Oh well they probably use some sorts of computers too ;)
 
-The main point is that if we end up having to drop an event, it is
-likely we will have to drop the next one, too.
+> 
+> He's been legitimately used in all sorts of things including an ice rink
+> advert!
 
-Thanks,
-Henrik
+Well this more-Tux-like is more like a parody but that may be down to production process too.
+
+If I wasn't thinking this image is a little bit offensive, it would be a nice logo for a pun...
+
+> 
+> Alan
+> 
+> 
+
+L.
