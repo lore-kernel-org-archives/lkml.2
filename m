@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab1CZARi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:17:38 -0400
-Received: from kroah.org ([198.145.64.141]:41798 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932400Ab1CYXwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932475Ab1CYXwv (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 25 Mar 2011 19:52:51 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:12 2011
-Message-Id: <20110325234511.934618522@clark.kroah.org>
+Received: from kroah.org ([198.145.64.141]:41648 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932400Ab1CYXwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:42 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:11 2011
+Message-Id: <20110325234510.977939598@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:15 -0700
+Date: Fri, 25 Mar 2011 16:44:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Sojka <sojkam1@fel.cvut.cz>
-Subject: [39/63] USB: Do not pass negative length to snoop_urb()
+        Henry Nestler <henry.nestler@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [30/63] fbcon: Bugfix soft cursor detection in Tile Blitting
 In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Sojka <sojkam1@fel.cvut.cz>
+From: Henry Nestler <henry.nestler@gmail.com>
 
-commit 9d02b42614149ebccf12c9c580601ed01bd83070 upstream.
+commit d6244bc0ed0c52a795e6f4dcab3886daf3e74fac upstream.
 
-When `echo Y > /sys/module/usbcore/parameters/usbfs_snoop` and
-usb_control_msg() returns error, a lot of kernel memory is dumped to dmesg
-until unhandled kernel paging request occurs.
+Use mask 0x10 for "soft cursor" detection on in function tile_cursor.
+(Tile Blitting Operation in framebuffer console).
 
-Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
+The old mask 0x01 for vc_cursor_type detects CUR_NONE, CUR_LOWER_THIRD
+and every second mode value as "software cursor". This hides the cursor
+for these modes (cursor.mode = 0). But, only CUR_NONE or "software cursor"
+should hide the cursor.
+See also 0x10 in functions add_softcursor, bit_cursor and cw_cursor.
+
+Signed-off-by: Henry Nestler <henry.nestler@gmail.com>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/devio.c |    2 +-
+ drivers/video/console/tileblit.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -802,7 +802,7 @@ static int proc_control(struct dev_state
- 				    tbuf, ctrl.wLength, tmo);
- 		usb_lock_device(dev);
- 		snoop_urb(dev, NULL, pipe, max(i, 0), min(i, 0), COMPLETE,
--			tbuf, i);
-+			  tbuf, max(i, 0));
- 		if ((i > 0) && ctrl.wLength) {
- 			if (copy_to_user(ctrl.data, tbuf, i)) {
- 				free_page((unsigned long)tbuf);
+--- a/drivers/video/console/tileblit.c
++++ b/drivers/video/console/tileblit.c
+@@ -83,7 +83,7 @@ static void tile_cursor(struct vc_data *
+ 			int softback_lines, int fg, int bg)
+ {
+ 	struct fb_tilecursor cursor;
+-	int use_sw = (vc->vc_cursor_type & 0x01);
++	int use_sw = (vc->vc_cursor_type & 0x10);
+ 
+ 	cursor.sx = vc->vc_x;
+ 	cursor.sy = vc->vc_y;
 
 
