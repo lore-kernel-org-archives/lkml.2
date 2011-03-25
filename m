@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933816Ab1CZAU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:20:58 -0400
-Received: from kroah.org ([198.145.64.141]:41582 "EHLO coco.kroah.org"
+	id S933759Ab1CZAVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:21:35 -0400
+Received: from kroah.org ([198.145.64.141]:41648 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932397Ab1CYXwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:41 -0400
+	id S932390Ab1CYXwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:40 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:41 2011
-Message-Id: <20110325234841.760560537@clark.kroah.org>
+Message-Id: <20110325234841.647377249@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:20 -0700
+Date: Fri, 25 Mar 2011 16:47:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mi Jinlong <mijinlong@cn.fujitsu.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [27/55] nfsd41: modify the members value of nfsd4_op_flags
+        Henry Nestler <henry.nestler@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [26/55] fbcon: Bugfix soft cursor detection in Tile Blitting
 In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mi Jinlong <mijinlong@cn.fujitsu.com>
+From: Henry Nestler <henry.nestler@gmail.com>
 
-commit 5ece3cafbd88d4da5c734e1810c4a2e6474b57b2 upstream.
+commit d6244bc0ed0c52a795e6f4dcab3886daf3e74fac upstream.
 
-The members of nfsd4_op_flags, (ALLOWED_WITHOUT_FH | ALLOWED_ON_ABSENT_FS)
-equals to  ALLOWED_AS_FIRST_OP, maybe that's not what we want.
+Use mask 0x10 for "soft cursor" detection on in function tile_cursor.
+(Tile Blitting Operation in framebuffer console).
 
-OP_PUTROOTFH with op_flags = ALLOWED_WITHOUT_FH | ALLOWED_ON_ABSENT_FS,
-can't appears as the first operation with out SEQUENCE ops.
+The old mask 0x01 for vc_cursor_type detects CUR_NONE, CUR_LOWER_THIRD
+and every second mode value as "software cursor". This hides the cursor
+for these modes (cursor.mode = 0). But, only CUR_NONE or "software cursor"
+should hide the cursor.
+See also 0x10 in functions add_softcursor, bit_cursor and cw_cursor.
 
-This patch modify the wrong value of ALLOWED_WITHOUT_FH etc which
-was introduced by f9bb94c4.
-
-Reviewed-by: Benny Halevy <bhalevy@panasas.com>
-Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Henry Nestler <henry.nestler@gmail.com>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4proc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/console/tileblit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -954,8 +954,8 @@ typedef __be32(*nfsd4op_func)(struct svc
- 			      void *);
- enum nfsd4_op_flags {
- 	ALLOWED_WITHOUT_FH = 1 << 0,	/* No current filehandle required */
--	ALLOWED_ON_ABSENT_FS = 2 << 0,	/* ops processed on absent fs */
--	ALLOWED_AS_FIRST_OP = 3 << 0,	/* ops reqired first in compound */
-+	ALLOWED_ON_ABSENT_FS = 1 << 1,	/* ops processed on absent fs */
-+	ALLOWED_AS_FIRST_OP = 1 << 2,	/* ops reqired first in compound */
- };
+--- a/drivers/video/console/tileblit.c
++++ b/drivers/video/console/tileblit.c
+@@ -83,7 +83,7 @@ static void tile_cursor(struct vc_data *
+ 			int softback_lines, int fg, int bg)
+ {
+ 	struct fb_tilecursor cursor;
+-	int use_sw = (vc->vc_cursor_type & 0x01);
++	int use_sw = (vc->vc_cursor_type & 0x10);
  
- struct nfsd4_operation {
+ 	cursor.sx = vc->vc_x;
+ 	cursor.sy = vc->vc_y;
 
 
