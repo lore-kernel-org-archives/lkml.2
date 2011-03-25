@@ -1,236 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933085Ab1CYX6b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:58:31 -0400
-Received: from kroah.org ([198.145.64.141]:48938 "EHLO coco.kroah.org"
+	id S932608Ab1CYXxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 19:53:11 -0400
+Received: from kroah.org ([198.145.64.141]:41919 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933004Ab1CYX6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:58:24 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:56:38 2011
-Message-Id: <20110325235638.214823572@clark.kroah.org>
+	id S1755679Ab1CYXxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:53:07 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:13 2011
+Message-Id: <20110325234513.616164509@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:55:54 -0700
+Date: Fri, 25 Mar 2011 16:44:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [17/23] USB: cdc-acm: fix memory corruption / panic
-References: <20110325235537.660072281@clark.kroah.org>
-Content-Disposition: inline; filename=usb-cdc-acm-fix-memory-corruption-panic.patch
-In-Reply-To: <20110325235654.GA24416@kroah.com>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [55/63] drm: Fix use-after-free in drm_gem_vm_close()
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-commit 23b80550e2aa61d0ba3af98b831b9195be0db9ee upstream.
+------------------
 
-Prevent read urbs from being resubmitted from tasklet after port close.
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-The receive tasklet was not disabled on port close, which could lead to
-corruption of receive lists on consecutive port open. In particular,
-read urbs could be re-submitted before port open, added to free list in
-open, and then added a second time to the free list in the completion
-handler.
+commit b74ad5ae14def5e81ad0be3dddb96e485b861b1b upstream.
 
-cdc-acm.c: Entering acm_tty_open.
-cdc-acm.c: acm_control_msg: rq: 0x22 val: 0x3 len: 0x0 result: 0
-cdc-acm.c: Entering acm_rx_tasklet
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da280, rcv 0xf57fbc24, buf 0xf57fbd64
-cdc-acm.c: set line: 115200 0 0 8
-cdc-acm.c: acm_control_msg: rq: 0x20 val: 0x0 len: 0x7 result: 7
-cdc-acm.c: acm_tty_close
-cdc-acm.c: acm_port_down
-cdc-acm.c: acm_control_msg: rq: 0x22 val: 0x0 len: 0x0 result: 0
-cdc-acm.c: acm_ctrl_irq - urb shutting down with status: -2
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da300, rcv 0xf57fbc10, buf 0xf57fbd50
-cdc-acm.c: Entering acm_read_bulk with status -2
-cdc_acm 4-1:1.1: Aborting, acm not ready
-cdc-acm.c: Entering acm_read_bulk with status -2
-cdc_acm 4-1:1.1: Aborting, acm not ready
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da380, rcv 0xf57fbbfc, buf 0xf57fbd3c
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da400, rcv 0xf57fbbe8, buf 0xf57fbd28
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da480, rcv 0xf57fbbd4, buf 0xf57fbd14
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da900, rcv 0xf57fbbc0, buf 0xf57fbd00
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da980, rcv 0xf57fbbac, buf 0xf57fbcec
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50daa00, rcv 0xf57fbb98, buf 0xf57fbcd8
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50daa80, rcv 0xf57fbb84, buf 0xf57fbcc4
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50dab00, rcv 0xf57fbb70, buf 0xf57fbcb0
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50dab80, rcv 0xf57fbb5c, buf 0xf57fbc9c
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50dac00, rcv 0xf57fbb48, buf 0xf57fbc88
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50dac80, rcv 0xf57fbb34, buf 0xf57fbc74
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50dad00, rcv 0xf57fbb20, buf 0xf57fbc60
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50dad80, rcv 0xf57fbb0c, buf 0xf57fbc4c
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da880, rcv 0xf57fbaf8, buf 0xf57fbc38
-cdc-acm.c: Entering acm_tty_open.
-cdc-acm.c: acm_control_msg: rq: 0x22 val: 0x3 len: 0x0 result: 0
-cdc-acm.c: Entering acm_rx_tasklet
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da280, rcv 0xf57fbc24, buf 0xf57fbd64
-cdc-acm.c: Entering acm_tty_write to write 3 bytes,
-cdc-acm.c: Get 3 bytes...
-cdc-acm.c: acm_write_start susp_count: 0
-cdc-acm.c: Entering acm_read_bulk with status 0
-------------[ cut here ]------------
-WARNING: at /home/johan/src/linux/linux-2.6/lib/list_debug.c:57 list_del+0x10c/0x120()
-Hardware name: Vostro 1520
-list_del corruption. next->prev should be f57fbc10, but was f57fbaf8
-Modules linked in: cdc_acm
-Pid: 3, comm: ksoftirqd/0 Not tainted 2.6.37+ #39
-Call Trace:
- [<c103c7e2>] warn_slowpath_common+0x72/0xa0
- [<c11dd8ac>] ? list_del+0x10c/0x120
- [<c11dd8ac>] ? list_del+0x10c/0x120
- [<c103c8b3>] warn_slowpath_fmt+0x33/0x40
- [<c11dd8ac>] list_del+0x10c/0x120
- [<f8051dbf>] acm_rx_tasklet+0xef/0x3e0 [cdc_acm]
- [<c135465d>] ? net_rps_action_and_irq_enable+0x6d/0x80
- [<c1042bb6>] tasklet_action+0xe6/0x140
- [<c104342f>] __do_softirq+0xaf/0x210
- [<c1043380>] ? __do_softirq+0x0/0x210
- <IRQ>  [<c1042c9a>] ? run_ksoftirqd+0x8a/0x1c0
- [<c1042c10>] ? run_ksoftirqd+0x0/0x1c0
- [<c105ac24>] ? kthread+0x74/0x80
- [<c105abb0>] ? kthread+0x0/0x80
- [<c100337a>] ? kernel_thread_helper+0x6/0x10
----[ end trace efd9a11434f0082e ]---
-------------[ cut here ]------------
-WARNING: at /home/johan/src/linux/linux-2.6/lib/list_debug.c:57 list_del+0x10c/0x120()
-Hardware name: Vostro 1520
-list_del corruption. next->prev should be f57fbd50, but was f57fbdb0
-Modules linked in: cdc_acm
-Pid: 3, comm: ksoftirqd/0 Tainted: G        W   2.6.37+ #39
-Call Trace:
- [<c103c7e2>] warn_slowpath_common+0x72/0xa0
- [<c11dd8ac>] ? list_del+0x10c/0x120
- [<c11dd8ac>] ? list_del+0x10c/0x120
- [<c103c8b3>] warn_slowpath_fmt+0x33/0x40
- [<c11dd8ac>] list_del+0x10c/0x120
- [<f8051dd6>] acm_rx_tasklet+0x106/0x3e0 [cdc_acm]
- [<c135465d>] ? net_rps_action_and_irq_enable+0x6d/0x80
- [<c1042bb6>] tasklet_action+0xe6/0x140
- [<c104342f>] __do_softirq+0xaf/0x210
- [<c1043380>] ? __do_softirq+0x0/0x210
- <IRQ>  [<c1042c9a>] ? run_ksoftirqd+0x8a/0x1c0
- [<c1042c10>] ? run_ksoftirqd+0x0/0x1c0
- [<c105ac24>] ? kthread+0x74/0x80
- [<c105abb0>] ? kthread+0x0/0x80
- [<c100337a>] ? kernel_thread_helper+0x6/0x10
----[ end trace efd9a11434f0082f ]---
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da300, rcv 0xf57fbc10, buf 0xf57fbd50
-cdc-acm.c: disconnected from network
-cdc-acm.c: acm_rx_tasklet: sending urb 0xf50da380, rcv 0xf57fbbfc, buf 0xf57fbd3c
-cdc-acm.c: Entering acm_rx_tasklet
-------------[ cut here ]------------
-WARNING: at /home/johan/src/linux/linux-2.6/lib/list_debug.c:48 list_del+0xd5/0x120()
-Hardware name: Vostro 1520
-list_del corruption, next is LIST_POISON1 (00100100)
-Modules linked in: cdc_acm
-Pid: 3, comm: ksoftirqd/0 Tainted: G        W   2.6.37+ #39
-Call Trace:
- [<c103c7e2>] warn_slowpath_common+0x72/0xa0
- [<c11dd875>] ? list_del+0xd5/0x120
- [<c11dd875>] ? list_del+0xd5/0x120
- [<c103c8b3>] warn_slowpath_fmt+0x33/0x40
- [<c11dd875>] list_del+0xd5/0x120
- [<f8051fac>] acm_rx_tasklet+0x2dc/0x3e0 [cdc_acm]
- [<c106dbab>] ? trace_hardirqs_on+0xb/0x10
- [<c1042b30>] ? tasklet_action+0x60/0x140
- [<c1042bb6>] tasklet_action+0xe6/0x140
- [<c104342f>] __do_softirq+0xaf/0x210
- [<c1043380>] ? __do_softirq+0x0/0x210
- <IRQ>  [<c1042c9a>] ? run_ksoftirqd+0x8a/0x1c0
- [<c1042c10>] ? run_ksoftirqd+0x0/0x1c0
- [<c105ac24>] ? kthread+0x74/0x80
- [<c105abb0>] ? kthread+0x0/0x80
- [<c100337a>] ? kernel_thread_helper+0x6/0x10
----[ end trace efd9a11434f00830 ]---
-BUG: unable to handle kernel paging request at 00200200
-IP: [<c11dd7bd>] list_del+0x1d/0x120
-*pde = 00000000
-Oops: 0000 [#1] PREEMPT SMP
-last sysfs file: /sys/devices/pci0000:00/0000:00:1a.1/usb4/4-1/4-1:1.0/tty/ttyACM0/uevent
-Modules linked in: cdc_acm
-Pid: 3, comm: ksoftirqd/0 Tainted: G        W   2.6.37+ #39 0T816J/Vostro 1520
-EIP: 0060:[<c11dd7bd>] EFLAGS: 00010046 CPU: 0
-EIP is at list_del+0x1d/0x120
-EAX: f57fbd3c EBX: f57fb800 ECX: ffff8000 EDX: 00200200
-ESI: f57fbe90 EDI: f57fbd3c EBP: f600bf54 ESP: f600bf3c
- DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-Process ksoftirqd/0 (pid: 3, ti=f600a000 task=f60791c0 task.ti=f6082000)
-Stack:
- c1527e84 00000030 c1527e54 00100100 f57fb800 f57fbd3c f600bf98 f8051fac
- f8053104 f8052b94 f600bf6c c106dbab f600bf80 00000286 f60791c0 c1042b30
- f57fbda8 f57f5800 f57fbdb0 f57fbd80 f57fbe7c c1656b04 00000000 f600bfb0
-Call Trace:
- [<f8051fac>] ? acm_rx_tasklet+0x2dc/0x3e0 [cdc_acm]
- [<c106dbab>] ? trace_hardirqs_on+0xb/0x10
- [<c1042b30>] ? tasklet_action+0x60/0x140
- [<c1042bb6>] ? tasklet_action+0xe6/0x140
- [<c104342f>] ? __do_softirq+0xaf/0x210
- [<c1043380>] ? __do_softirq+0x0/0x210
- <IRQ>
- [<c1042c9a>] ? run_ksoftirqd+0x8a/0x1c0
- [<c1042c10>] ? run_ksoftirqd+0x0/0x1c0
- [<c105ac24>] ? kthread+0x74/0x80
- [<c105abb0>] ? kthread+0x0/0x80
- [<c100337a>] ? kernel_thread_helper+0x6/0x10
-Code: ff 48 14 e9 57 ff ff ff 90 90 90 90 90 90 55 89 e5 83 ec 18 81 38 00 01 10 00 0f 84 9c 00 00 00 8b 50 04 81 fa 00 02 20 00 74 33 <8b> 12 39 d0 75 5c 8b 10 8b 4a 04 39 c8 0f 85 b5 00 00 00 8b 48
-EIP: [<c11dd7bd>] list_del+0x1d/0x120 SS:ESP 0068:f600bf3c
-CR2: 0000000000200200
----[ end trace efd9a11434f00831 ]---
-Kernel panic - not syncing: Fatal exception in interrupt
-Pid: 3, comm: ksoftirqd/0 Tainted: G      D W   2.6.37+ #39
-Call Trace:
- [<c13fede1>] ? printk+0x1d/0x24
- [<c13fecce>] panic+0x66/0x15c
- [<c10067df>] oops_end+0x8f/0x90
- [<c1025476>] no_context+0xc6/0x160
- [<c10255a8>] __bad_area_nosemaphore+0x98/0x140
- [<c103cf68>] ? release_console_sem+0x1d8/0x210
- [<c1025667>] bad_area_nosemaphore+0x17/0x20
- [<c1025a49>] do_page_fault+0x279/0x420
- [<c1006a8f>] ? show_trace+0x1f/0x30
- [<c13fede1>] ? printk+0x1d/0x24
- [<c10257d0>] ? do_page_fault+0x0/0x420
- [<c140333b>] error_code+0x5f/0x64
- [<c103007b>] ? select_task_rq_fair+0x37b/0x6a0
- [<c10257d0>] ? do_page_fault+0x0/0x420
- [<c11dd7bd>] ? list_del+0x1d/0x120
- [<f8051fac>] acm_rx_tasklet+0x2dc/0x3e0 [cdc_acm]
- [<c106dbab>] ? trace_hardirqs_on+0xb/0x10
- [<c1042b30>] ? tasklet_action+0x60/0x140
- [<c1042bb6>] tasklet_action+0xe6/0x140
- [<c104342f>] __do_softirq+0xaf/0x210
- [<c1043380>] ? __do_softirq+0x0/0x210
- <IRQ>  [<c1042c9a>] ? run_ksoftirqd+0x8a/0x1c0
- [<c1042c10>] ? run_ksoftirqd+0x0/0x1c0
- [<c105ac24>] ? kthread+0x74/0x80
- [<c105abb0>] ? kthread+0x0/0x80
- [<c100337a>] ? kernel_thread_helper+0x6/0x10
-panic occurred, switching back to text console
-------------[ cut here ]------------
+As we may release the last reference, we need to store the device in a
+local variable in order to unlock afterwards.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+[   60.140768] BUG: unable to handle kernel paging request at 6b6b6b9f
+[   60.140973] IP: [<c1536d11>] __mutex_unlock_slowpath+0x5a/0x111
+[   60.141014] *pdpt = 0000000024a54001 *pde = 0000000000000000
+[   60.141014] Oops: 0002 [#1] PREEMPT SMP
+[   60.141014] last sysfs file: /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/PNP0C0A:00/power_supply/BAT0/voltage_now
+[   60.141014] Modules linked in: uvcvideo ath9k pegasus ath9k_common ath9k_hw hid_egalax ath3k joydev asus_laptop sparse_keymap battery input_polldev
+[   60.141014]
+[   60.141014] Pid: 771, comm: meego-ux-daemon Not tainted 2.6.37.2-7.1 #1 EXOPC EXOPG06411/EXOPG06411
+[   60.141014] EIP: 0060:[<c1536d11>] EFLAGS: 00010046 CPU: 0
+[   60.141014] EIP is at __mutex_unlock_slowpath+0x5a/0x111
+[   60.141014] EAX: 00000100 EBX: 6b6b6b9b ECX: e9b4a1b0 EDX: e4a4e580
+[   60.141014] ESI: db162558 EDI: 00000246 EBP: e480be50 ESP: e480be44
+[   60.141014]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+[   60.141014] Process meego-ux-daemon (pid: 771, ti=e480a000 task=e9b4a1b0 task.ti=e480a000)
+[   60.141014] Stack:
+[   60.141014]  e4a4e580 db162558 f5a2f838 e480be58 c1536dd0 e480be68 c125ab1b db162558
+[   60.141014]  db1624e0 e480be78 c10ba071 db162558 f760241c e480be94 c10bb0bc 000155fe
+[   60.141014]  f760241c f5a2f838 f5a2f8c8 00000000 e480bea4 c1037c24 00000000 f5a2f838
+[   60.141014] Call Trace:
+[   60.141014]  [<c1536dd0>] ? mutex_unlock+0x8/0xa
+[   60.141014]  [<c125ab1b>] ? drm_gem_vm_close+0x39/0x3d
+[   60.141014]  [<c10ba071>] ? remove_vma+0x2d/0x58
+[   60.141014]  [<c10bb0bc>] ? exit_mmap+0x126/0x13f
+[   60.141014]  [<c1037c24>] ? mmput+0x37/0x9a
+[   60.141014]  [<c10d450d>] ? exec_mmap+0x178/0x19c
+[   60.141014]  [<c1537f85>] ? _raw_spin_unlock+0x1d/0x36
+[   60.141014]  [<c10d4eb0>] ? flush_old_exec+0x42/0x75
+[   60.141014]  [<c1104442>] ? load_elf_binary+0x32a/0x922
+[   60.141014]  [<c10d3f76>] ? search_binary_handler+0x200/0x2ea
+[   60.141014]  [<c10d3ecf>] ? search_binary_handler+0x159/0x2ea
+[   60.141014]  [<c1104118>] ? load_elf_binary+0x0/0x922
+[   60.141014]  [<c10d56b2>] ? do_execve+0x1ff/0x2e6
+[   60.141014]  [<c100970e>] ? sys_execve+0x2d/0x55
+[   60.141014]  [<c1002a5a>] ? ptregs_execve+0x12/0x18
+[   60.141014]  [<c10029dc>] ? sysenter_do_call+0x12/0x3c
+[   60.141014]  [<c1530000>] ? init_centaur+0x9c/0x1ba
+[   60.141014] Code: c1 00 75 0f ba 38 01 00 00 b8 8c 3a 6c c1 e8 cc 2e b0 ff 9c 58 8d 74 26 00 89 c7 fa 90 8d 74 26 00 e8 d2 b4 b2 ff b8 00 01 00 00 <f0> 66 0f c1 43 04 38 e0 74 07 f3 90 8a 43 04 eb f5 83 3d 64 ef
+[   60.141014] EIP: [<c1536d11>] __mutex_unlock_slowpath+0x5a/0x111 SS:ESP 0068:e480be44
+[   60.141014] CR2: 000000006b6b6b9f
+
+Reported-by: Rusty Lynch <rusty.lynch@intel.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/drm_gem.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -652,8 +652,10 @@ static void acm_port_down(struct acm *ac
- 		usb_kill_urb(acm->ctrlurb);
- 		for (i = 0; i < ACM_NW; i++)
- 			usb_kill_urb(acm->wb[i].urb);
-+		tasklet_disable(&acm->urb_task);
- 		for (i = 0; i < nr; i++)
- 			usb_kill_urb(acm->ru[i].urb);
-+		tasklet_enable(&acm->urb_task);
- 		acm->control->needs_remote_wakeup = 0;
- 		usb_autopm_put_interface(acm->control);
- 	}
+--- a/drivers/gpu/drm/drm_gem.c
++++ b/drivers/gpu/drm/drm_gem.c
+@@ -498,11 +498,12 @@ EXPORT_SYMBOL(drm_gem_vm_open);
+ void drm_gem_vm_close(struct vm_area_struct *vma)
+ {
+ 	struct drm_gem_object *obj = vma->vm_private_data;
++	struct drm_device *dev = obj->dev;
+ 
+-	mutex_lock(&obj->dev->struct_mutex);
++	mutex_lock(&dev->struct_mutex);
+ 	drm_vm_close_locked(vma);
+ 	drm_gem_object_unreference(obj);
+-	mutex_unlock(&obj->dev->struct_mutex);
++	mutex_unlock(&dev->struct_mutex);
+ }
+ EXPORT_SYMBOL(drm_gem_vm_close);
+ 
 
 
