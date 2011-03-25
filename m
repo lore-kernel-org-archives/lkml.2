@@ -1,91 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933717Ab1CYIoP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 04:44:15 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:54638 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926Ab1CYIoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 04:44:13 -0400
-X-ASG-Debug-ID: 1301042651-03d6a5379d01700001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D8C55D9.1060903@fusionio.com>
-Date: Fri, 25 Mar 2011 09:44:09 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-References: <20110324185445.GB1696@gentoo.trippels.de> <4D8B9457.2020608@fusionio.com> <20110324193441.GA1723@gentoo.trippels.de> <4D8B9D2F.4010504@fusionio.com> <20110324194546.GA1741@gentoo.trippels.de> <4D8BA235.7060904@fusionio.com> <20110324200613.GA1724@gentoo.trippels.de> <4D8BB114.2070002@fusionio.com> <20110324214150.GA1739@gentoo.trippels.de> <4D8C4304.3050101@fusionio.com> <20110325083757.GA1754@gentoo.trippels.de>
-X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39 - early Oops
-In-Reply-To: <20110325083757.GA1754@gentoo.trippels.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1301042651
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58909
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1756402Ab1CYIp2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 04:45:28 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41335 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130Ab1CYIpY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 04:45:24 -0400
+From: Shawn Guo <shawn.guo@linaro.org>
+To: devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Subject: [PATCH 0/5] consolidate sdhci pltfm & OF drivers and get them self registered
+Date: Fri, 25 Mar 2011 16:48:46 +0800
+Message-Id: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-25 09:37, Markus Trippelsdorf wrote:
-> On 2011.03.25 at 08:23 +0100, Jens Axboe wrote:
->> On 2011-03-24 22:41, Markus Trippelsdorf wrote:
->>> On 2011.03.24 at 22:01 +0100, Jens Axboe wrote:
->>>> On 2011-03-24 21:06, Markus Trippelsdorf wrote:
->>>>> On 2011.03.24 at 20:57 +0100, Jens Axboe wrote:
->>>>>>
->>>>>> OK, still a data point. What was the last -git kernel you used?
->>>>>
->>>>> This one was the last and gave me no problems:
->>>>>
->>>>> commit b81a618dcd3ea99de292dbe624f41ca68f464376
->>>>> Merge: 2f284c8 a9712bc
->>>>> Author: Linus Torvalds <torvalds@linux-foundation.org>
->>>>> Date:   Wed Mar 23 20:51:42 2011 -0700
->>>>>
->>>>>     Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
->>>>
->>>> Puzzling... Poking at straws here so far. Does this make any difference
->>>> whatsoever?
->>>
->>> I will test your patch later.
->>>
->>> Git-bisect gave me this result thus far:
->>>
->>> 9026e521c0da0731eb31f9f9022dd00cc3cd8885 is bad
->>> 82f04ab47e1d94d78503591a7460b2cad9601ede is good
->>>
->>> When I continue the bisection with 4345caba340f051e10847924fc078ae18ed6695c
->>> the system will start normally, but it then silently corrupts my xfs
->>> partitions. And on next (re)boot I get this (only fixable with
->>> xfs_repair):
->>>
->> How confident are you in those bisection results? Not trying to put you
->> on the spot, just wondering whether you tested and it's completely
->> consistent, or whether it was a one-off.
-> 
-> Just double checked and 82f04ab47e1d94d78503591a7460b2cad9601ede is also
-> bad. It just silently corrupts the file system (without a BUG) and I
-> didn't notice.
-> So back to square one. 
-> 
-> How can I tell git-bisect just to try the commits in the block merge and
-> not to take wild swings in history?
+Here are what the patch set does.
 
-Something like:
+* Remove .probe and .remove hooks from sdhci-pltfm.c and make it be
+  a pure common helper function providers.
+* Add .probe and .remove hooks for sdhci pltfm drivers sdhci-cns3xxx,
+  sdhci-dove, sdhci-tegra, and sdhci-esdhc-imx to make them self
+  registered with calling helper functions created above.
+* Migrate the use of sdhci_of_host and sdhci_of_data to
+  sdhci_pltfm_host and sdhci_pltfm_data, so that OF version host and
+  data structure works can be saved, and pltfm version works for both
+  cases.
+* Add OF common helper stuff into sdhci-pltfm.c, and make OF version
+  sdhci drivers sdhci-of-esdhc and sdhci-of-hlwd become self
+  registered as well, so that sdhci-of-core.c and sdhci-of.h can be
+  removed.
+* Consolidate the OF and pltfm esdhc drivers into one with sharing
+  the same pair of .probe and .remove hooks.  As a result,
+  sdhci-esdhc-imx.c and sdhci-of-esdhc.c go away, while
+  sdhci-esdhc.c comes in and works for both MPCxxx and i.MX.
+* Eliminate include/linux/mmc/sdhci-pltfm.h with moving stuff into
+  drivers/mmc/host/sdhci-pltfm.h.
 
-$ git bisect start
-$ git bisect good 3dab04e6978e358ad2307bca563fabd6c5d2c58b
-$ git bisect bad 6c5103890057b1bb781b26b7aae38d33e4c517d8
+And the benefits we gain from the changes are:
 
--- 
-Jens Axboe
+* Get the sdhci device driver follow the Linux trend that driver
+  makes the registration by its own.
+* sdhci-pltfm.c becomes simple and clean as it only has common helper
+  stuff there now.
+* All sdhci device specific things are going back its own driver.
+* The dt and non-dt drivers are consolidated to use the same pair of
+  .probe and .remove hooks.
+* SDHCI driver for Freescale eSDHC controller found on both MPCxxx
+  and i.MX platforms is consolidated to use the same one .probe
+  function.
 
+The patch set works against the tree below, and was only tested on
+i.mx51 babbage board, all other targets were build tested.
+
+  git://git.secretlab.ca/git/linux-2.6.git devicetree/test
+
+Comments are welcomed and appreciated.
+
+Regards,
+Shawn
+
+PS: The first patch is a squashing of the patch set below, which was
+posted for review a few days back.
+
+  [PATCH 0/5] make sdhci device drivers self registered
+
+Some patches in this series are relatively large, involving more
+changes than expected, I chose to not split considering they are
+logically integral, and doing so can reduce the patch quantity much,
+and make bisect much easier.  But sorry for that it makes reviewers'
+life harder.
+
+Shawn Guo (5):
+      mmc: sdhci: make sdhci-pltfm device drivers self registered
+      mmc: sdhci: eliminate sdhci_of_host and sdhci_of_data
+      mmc: sdhci: make sdhci-of device drivers self registered
+      mmc: sdhci: consolidate sdhci-of-esdhc and sdhci-esdhc-imx
+      mmc: sdhci: merge two sdhci-pltfm.h into one
+
+ drivers/mmc/host/Kconfig           |   71 ++++---
+ drivers/mmc/host/Makefile          |   17 +-
+ drivers/mmc/host/sdhci-cns3xxx.c   |   68 ++++++-
+ drivers/mmc/host/sdhci-dove.c      |   69 ++++++-
+ drivers/mmc/host/sdhci-esdhc-imx.c |  149 -------------
+ drivers/mmc/host/sdhci-esdhc.c     |  412 ++++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/sdhci-of-core.c   |  247 ---------------------
+ drivers/mmc/host/sdhci-of-esdhc.c  |   89 --------
+ drivers/mmc/host/sdhci-of-hlwd.c   |   89 +++++++-
+ drivers/mmc/host/sdhci-of.h        |   42 ----
+ drivers/mmc/host/sdhci-pltfm.c     |  251 +++++++++-------------
+ drivers/mmc/host/sdhci-pltfm.h     |   36 +++-
+ drivers/mmc/host/sdhci-tegra.c     |  187 ++++++++++-------
+ include/linux/mmc/sdhci-pltfm.h    |   35 ---
+ 14 files changed, 912 insertions(+), 850 deletions(-)
