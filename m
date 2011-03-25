@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab1CYLid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 07:38:33 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34836 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab1CYLib (ORCPT
+	id S1756110Ab1CYLnn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 07:43:43 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:43997 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959Ab1CYLnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 07:38:31 -0400
+	Fri, 25 Mar 2011 07:43:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=HorqzGTCWHfSH35m2aqIp7+Hcponxj9RsOlbjmZrkvQq2G2d+0Gu7NKoZa9FDpW+54
-         A5JJYognW3DRcNi5m/8L7FmssN1/BZJa5ZtHte/rNHM8b7k2RhU2QuIZuanh/sCFPYm8
-         2qLhScwVYAWvjrXQrT/dS0/82+h1gIHukvMjM=
-MIME-Version: 1.0
-In-Reply-To: <4D8B4A6F.9040303@redhat.com>
-References: <1300845590-14184-1-git-send-email-valerie.aurora@gmail.com>
-	<AANLkTim7q5L9v5uFx9NB2Eai48WCTi5sSSx9yFbQgszi@mail.gmail.com>
-	<4D8B4A6F.9040303@redhat.com>
-Date: Fri, 25 Mar 2011 12:38:28 +0100
-X-Google-Sender-Auth: eRXxf3OS-CtrKXa7C76BzMKusI0
-Message-ID: <AANLkTikGybr-iynMG3T0TwY0aRSbMdDDB+D8QFnWgwA7@mail.gmail.com>
-Subject: Re: Union mounts comparison with overlay file system prototype?
-From: Szeredi Miklos <miklos@szeredi.hu>
-To: Ric Wheeler <rwheeler@redhat.com>
-Cc: Valerie Aurora <valerie.aurora@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=PD+oSS0dkJuBVE8UnOtDcA89KiiKEwFcnroHmJ4WVeBRZGyKU13YhISJ6CcW9Nqspf
+         C9ufFtYB6k3iDt8XwL2w==
+From: Michal Nazarewicz <mnazarewicz@google.com>
+To: "Greg Kroah-Hartman" <gregkh@suse.de>
+Cc: "Alan Stern" <stern@rowland.harvard.edu>,
+        "Sergey Senozhatsky" <sergey.senozhatsky@gmail.com>,
+        "Chris Wright" <chrisw@sous-sol.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>
+Subject: [PATCHv2] usb: core: Change usb_create_sysfs_intf_files()' return type to void
+Date: Fri, 25 Mar 2011 12:22:26 +0100
+Message-Id: <531a6364dd1220278e76479423ce697e32bf4082.1301003830.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <Pine.LNX.4.44L0.1103241150210.2006-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1103241150210.2006-100000@iolanthe.rowland.org>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 2:43 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
-> Can one or both of you summarize what we union mounts and overlay do better
-> or worse? Do we need both or just one?
+From: Michal Nazarewicz <mina86@mina86.com>
 
-The semantics are very similar, the differences are in the implementation.
+The usb_create_sysfs_intf_files() function always returned zero even
+if it failed to create sysfs fails.  Since this is a desired behaviour
+there is no need to return return code at all.  This commit changes
+function's return type (form int) to void.
 
-Union mounts:
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+---
+ drivers/usb/core/sysfs.c |   13 +++++--------
+ drivers/usb/core/usb.c   |    3 +--
+ drivers/usb/core/usb.h   |    2 +-
+ 3 files changed, 7 insertions(+), 11 deletions(-)
 
- - whiteout/opaque/fallthrough support in filesystems
- - whiteout operation is atomic
- - no dentry and inode duplication
- - copy up on lookup and readdir
- - does not support union of two read-only trees
- - merged directory stored in upper tree
+diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
+index 6781c36..f5b7b1c 100644
+--- a/drivers/usb/core/sysfs.c
++++ b/drivers/usb/core/sysfs.c
+@@ -842,22 +842,19 @@ const struct attribute_group *usb_interface_groups[] = {
+ 	NULL
+ };
+ 
+-int usb_create_sysfs_intf_files(struct usb_interface *intf)
++void usb_create_sysfs_intf_files(struct usb_interface *intf)
+ {
+ 	struct usb_device *udev = interface_to_usbdev(intf);
+ 	struct usb_host_interface *alt = intf->cur_altsetting;
+-	int retval;
+ 
+ 	if (intf->sysfs_files_created || intf->unregistering)
+-		return 0;
++		return;
+ 
+-	if (alt->string == NULL &&
+-			!(udev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
++	if (!alt->string && !(udev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
+ 		alt->string = usb_cache_string(udev, alt->desc.iInterface);
+-	if (alt->string)
+-		retval = device_create_file(&intf->dev, &dev_attr_interface);
++	if (alt->string && device_create_file(&intf->dev, &dev_attr_interface))
++		/* We don't actually care if the function fails. */;
+ 	intf->sysfs_files_created = 1;
+-	return 0;
+ }
+ 
+ void usb_remove_sysfs_intf_files(struct usb_interface *intf)
+diff --git a/drivers/usb/core/usb.c b/drivers/usb/core/usb.c
+index 079cb57..08b74f8 100644
+--- a/drivers/usb/core/usb.c
++++ b/drivers/usb/core/usb.c
+@@ -948,8 +948,7 @@ static int usb_bus_notify(struct notifier_block *nb, unsigned long action,
+ 		if (dev->type == &usb_device_type)
+ 			(void) usb_create_sysfs_dev_files(to_usb_device(dev));
+ 		else if (dev->type == &usb_if_device_type)
+-			(void) usb_create_sysfs_intf_files(
+-					to_usb_interface(dev));
++			usb_create_sysfs_intf_files(to_usb_interface(dev));
+ 		break;
+ 
+ 	case BUS_NOTIFY_DEL_DEVICE:
+diff --git a/drivers/usb/core/usb.h b/drivers/usb/core/usb.h
+index a9cf484..d51ab6a 100644
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -4,7 +4,7 @@
+ 
+ extern int usb_create_sysfs_dev_files(struct usb_device *dev);
+ extern void usb_remove_sysfs_dev_files(struct usb_device *dev);
+-extern int usb_create_sysfs_intf_files(struct usb_interface *intf);
++extern void usb_create_sysfs_intf_files(struct usb_interface *intf);
+ extern void usb_remove_sysfs_intf_files(struct usb_interface *intf);
+ extern int usb_create_ep_devs(struct device *parent,
+ 				struct usb_host_endpoint *endpoint,
+-- 
+1.7.3.1
 
-Overlayfs
-
-- whiteout/opaque as xattrs
-- whiteout operation is not atomic
-- dentry and inode duplication(*)
-- only copy up on modification
-- supports union of two read-only trees
-- merged directory not cached(**)
-
-(*) it's possible to eliminate inode duplication of non-directories
-with some VFS modifications
-(**) caching should be possible to do
