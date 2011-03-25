@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab1CYIao (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 04:30:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47278 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755497Ab1CYIal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 04:30:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,242,1299484800"; 
-   d="scan'208";a="671477286"
-Subject: Re: [PATCH v2 -tip] perf probe: Add fastpath to do lookup by
- function name
-From: Lin Ming <ming.m.lin@intel.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1301034825.2512.5.camel@hp6530s>
-References: <1300981134-7333-1-git-send-email-ming.m.lin@intel.com>
-	 <4D8B0A13.8000008@hitachi.com> <1300974448.2283.17.camel@localhost>
-	 <1300975753.2283.20.camel@localhost> <4D8BEC71.1040404@hitachi.com>
-	 <20110325025752.GB11195@ghostprotocols.net>
-	 <1301034825.2512.5.camel@hp6530s>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Mar 2011 16:30:21 +0800
-Message-ID: <1301041821.14111.53.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S933727Ab1CYIbK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 04:31:10 -0400
+Received: from ch-smtp04.sth.basefarm.net ([80.76.153.5]:51647 "EHLO
+	ch-smtp04.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933465Ab1CYIbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 04:31:05 -0400
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 25 Mar 2011 09:34:48 +0100
+To: Jeff Brown <jeffbrown@android.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] input: evdev: only wake poll on EV_SYN
+Message-ID: <20110325083448.GA5738@polaris.bitmath.org>
+References: <1300842244-42723-1-git-send-email-jeffbrown@android.com>
+ <1300842244-42723-5-git-send-email-jeffbrown@android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300842244-42723-5-git-send-email-jeffbrown@android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.254.52.20
+X-Scan-Result: No virus found in message 1Q32Pu-0003fF-DS.
+X-Scan-Signature: ch-smtp04.sth.basefarm.net 1Q32Pu-0003fF-DS ddc377d4bf4d0f4d973571201ee19f0e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-25 at 14:33 +0800, Lin Ming wrote:
-> 在 2011-03-25五的 10:57 +0800，Arnaldo Carvalho de Melo写道：
-> > Em Fri, Mar 25, 2011 at 10:14:25AM +0900, Masami Hiramatsu escreveu:
-> > > (2011/03/24 23:09), Lin Ming wrote:
-> > > > v2 -> v1:
-> > > > - Don't compare file names with cu_find_realpath(...), instead, compare them
-> > > >   with the name returned by dwarf_decl_file(sp_die) 
-> > > > 
-> > > > The vmlinux file may have thousands of CUs.
-> > > > We can lookup function name from .debug_pubnames section
-> > > > to avoid the slow loop on CUs.
-> > > > 
-> > > > ./perf stat -r 10 -- ./perf probe -k /home/mlin/vmlinux \
-> > > >         -s /home/mlin/linux-2.6 \
-> > > > 	--line csum_partial_copy_to_user > tmp.log
-> > > > 
-> > > > before patch applied
-> > > > =====================
-> > > >         364.535892 task-clock-msecs         #      0.997 CPUs
-> > > >                  0 context-switches         #      0.000 M/sec
-> > > >                  0 CPU-migrations           #      0.000 M/sec
-> > > >             29,993 page-faults              #      0.082 M/sec
-> > > >        865,862,109 cycles                   #   2375.245 M/sec
-> > > >      1,255,259,630 instructions             #      1.450 IPC
-> > > >        252,400,884 branches                 #    692.390 M/sec
-> > > >          3,429,376 branch-misses            #      1.359 %
-> > > >          1,386,990 cache-references         #      3.805 M/sec
-> > > >            687,188 cache-misses             #      1.885 M/sec
-> > > > 
-> > > >         0.365792170  seconds time elapsed
-> > > > 
-> > > > after patch applied
-> > > > =====================
-> > > >          89.896405 task-clock-msecs         #      0.991 CPUs
-> > > >                  1 context-switches         #      0.000 M/sec
-> > > >                  0 CPU-migrations           #      0.000 M/sec
-> > > >             10,145 page-faults              #      0.113 M/sec
-> > > >        214,553,875 cycles                   #   2386.679 M/sec
-> > > >        226,915,559 instructions             #      1.058 IPC
-> > > >         44,536,614 branches                 #    495.422 M/sec
-> > > >            613,074 branch-misses            #      1.377 %
-> > > >            860,787 cache-references         #      9.575 M/sec
-> > > >            442,380 cache-misses             #      4.921 M/sec
-> > > > 
-> > > >         0.090716032  seconds time elapsed
-> > > 
-> > > Thanks! Looks very good :)
-> > > 
-> > > Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > 
-> > Indeed, I'll try and process this one tomorrow,
+On Tue, Mar 22, 2011 at 06:04:04PM -0700, Jeff Brown wrote:
+> On SMP systems, it is possible for an evdev client blocked on poll()
+> to wake up and read events from the evdev ring buffer at the same
+> rate as they are enqueued.  This can result in high CPU usage,
+> particularly for MT devices, because the client ends up reading
+> events one at a time instead of reading complete packets.  This patch
+> ensures that the client only wakes from poll() when a complete packet
+> is ready to be read.
 > 
-> Except find_line_range, I just realized that the same optimization maybe
-> added for find_probes.
+> Signed-off-by: jeffbrown@android.com
+> ---
+>  drivers/input/evdev.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> index 203ed70..7b6770d 100644
+> --- a/drivers/input/evdev.c
+> +++ b/drivers/input/evdev.c
+> @@ -73,7 +73,7 @@ static void evdev_pass_event(struct evdev_client *client,
+>  	}
+>  	spin_unlock(&client->buffer_lock);
+>  
+> -	if (event->type == EV_SYN)
+> +	if (event->type == EV_SYN && event->code != SYN_MT_REPORT)
 
-I have send out a v3 patch to add fastpath for find_probes.
+It is not clear what should happen at the other SYN events.  Maybe
+event->code == SYN_REPORT instead?
+
+>  		kill_fasync(&client->fasync, SIGIO, POLL_IN);
+>  }
+>  
+> @@ -103,7 +103,8 @@ static void evdev_event(struct input_handle *handle,
+>  
+>  	rcu_read_unlock();
+>  
+> -	wake_up_interruptible(&evdev->wait);
+> +	if (type == EV_SYN && code != SYN_MT_REPORT)
+> +		wake_up_interruptible(&evdev->wait);
+
+Ah, this is a good one. Since the code depends on the same logic being
+applied in evdev_pass_event as well, a boolean argument to that
+function would be good.
 
 Thanks,
-Lin Ming
-
-> 
-> Thanks,
-> Lin Ming
-> 
-> > 
-> > Thanks a lot!
-> > 
-> > - Arnaldo
-> 
-
-
+Henrik
