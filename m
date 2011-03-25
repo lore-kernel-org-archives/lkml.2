@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab1CYRK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 13:10:58 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58299 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650Ab1CYRK4 (ORCPT
+	id S1754401Ab1CYROv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 13:14:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37607 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab1CYROu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 13:10:56 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Two fixups for the block IO merge
-In-reply-to: <4D8CBDAB.2010507@fusionio.com>
-References: <4D8CBDAB.2010507@fusionio.com>
-Date: Fri, 25 Mar 2011 13:09:52 -0400
-Message-Id: <1301072954-sup-4222@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D8CCC97.01A0,ss=1,fgs=0
+	Fri, 25 Mar 2011 13:14:50 -0400
+From: Jamie Iles <jamie@jamieiles.com>
+To: linux-kernel@vger.kernel.org
+Cc: vapier@gentoo.org, gregkh@suse.de, Jamie Iles <jamie@jamieiles.com>
+Subject: [RFC PATCHv3 0/4] Support for OTP memory
+Date: Fri, 25 Mar 2011 17:14:39 +0000
+Message-Id: <1301073283-30821-1-git-send-email-jamie@jamieiles.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Jens Axboe's message of 2011-03-25 12:07:07 -0400:
-> Hi Linus,
-> 
-> An embarassing bug made the block IO merge a bit less enjoyable for some
-> people than it should have.
-> 
-> - The oops problem (with CFQ), or potential corruption (with noop) due
->   to a bad insertion type for some requests.
-> 
-> - A warning spew on virt_io using blk_stop_queue() inside it's callback.
-> 
-> Please pull these two fixes, so hopefully we can put this behind us.
-> Thanks a lot to the people involved with fixing the first issue.
-> 
->   git://git.kernel.dk/linux-2.6-block.git for-linus
-> 
-> Jens Axboe (2):
->       block: fix bug with inserting flush requests as sort/merge
->       block: fix issue with calling blk_stop_queue() from the request_fn handler
+Hi,
 
-A quick stress test on this is going well on my box.  Before this pull
-it would crash within 5 minutes.
+I've updated this series following some great feedback from Greg and
+Mike, and aside from the code quality improvements, the main changes
+since v2 are:
 
--chris
+    - The OTP regions don't live directly in /sys/bus/otp/devices
+    anymore but just as a child device of the OTP device.
+    - CONFIG_OTP_WRITE_ENABLE has been created that replaces the
+    bfin-otp specific option and this disables all OTP writing at the
+    higher levels.  The PC3X3 OTP driver has also been converted to use
+    this.
+    - Multiple OTP devices can now be registered at the same time.
+    - The bfin-otp driver has been converted to a platform_driver and
+    the relevant Blackfin platforms have had a bfin-otp device added.
+    - The Blackfin OTP is now represented as a single region that does
+    not include the ECC or control bits.  This prevents users from
+    accidentally scribbling over those bits.
+
+Greg, Mike, thanks again for taking the time to review, it's much
+appreciated.
+
+Thanks,
+
+Jamie Iles (4):
+  drivers/otp: add initial support for OTP memory
+  drivers/otp: add support for Picoxcell PC3X3 OTP
+  drivers/otp: convert bfin otp to generic OTP
+  Blackfin: add the OTP device as a platform device
+
+ Documentation/ABI/testing/sysfs-bus-otp      |   93 +++
+ arch/blackfin/mach-bf518/boards/ezbrd.c      |   10 +
+ arch/blackfin/mach-bf518/boards/tcm-bf518.c  |   10 +
+ arch/blackfin/mach-bf527/boards/ad7160eval.c |   10 +
+ arch/blackfin/mach-bf527/boards/cm_bf527.c   |   10 +
+ arch/blackfin/mach-bf527/boards/ezbrd.c      |   10 +
+ arch/blackfin/mach-bf527/boards/ezkit.c      |   10 +
+ arch/blackfin/mach-bf527/boards/tll6527m.c   |   10 +
+ arch/blackfin/mach-bf548/boards/cm_bf548.c   |    9 +
+ arch/blackfin/mach-bf548/boards/ezkit.c      |   10 +
+ drivers/Kconfig                              |    2 +
+ drivers/Makefile                             |    1 +
+ drivers/char/Kconfig                         |   28 -
+ drivers/char/Makefile                        |    1 -
+ drivers/otp/Kconfig                          |   51 ++
+ drivers/otp/Makefile                         |    3 +
+ drivers/{char => otp}/bfin-otp.c             |  275 ++++---
+ drivers/otp/otp.c                            |  913 +++++++++++++++++++++
+ drivers/otp/otp_pc3x3.c                      | 1099 ++++++++++++++++++++++++++
+ include/linux/otp.h                          |  277 +++++++
+ 20 files changed, 2677 insertions(+), 155 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-otp
+ create mode 100644 drivers/otp/Kconfig
+ create mode 100644 drivers/otp/Makefile
+ rename drivers/{char => otp}/bfin-otp.c (40%)
+ create mode 100644 drivers/otp/otp.c
+ create mode 100644 drivers/otp/otp_pc3x3.c
+ create mode 100644 include/linux/otp.h
+
+-- 
+1.7.4
+
