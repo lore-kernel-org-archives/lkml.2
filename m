@@ -1,232 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab1CYXwX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 19:52:23 -0400
-Received: from kroah.org ([198.145.64.141]:41411 "EHLO coco.kroah.org"
+	id S934076Ab1CZA1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:27:32 -0400
+Received: from kroah.org ([198.145.64.141]:41469 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755620Ab1CYXwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:18 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:08 2011
-Message-Id: <20110325234508.797098685@clark.kroah.org>
+	id S932257Ab1CYXwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 19:52:23 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:40 2011
+Message-Id: <20110325234840.417557459@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:45 -0700
+Date: Fri, 25 Mar 2011 16:47:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [09/63] ethtool: Compat handling for struct ethtool_rxnfc
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+        Andrey Vagin <avagin@openvz.org>, David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [14/55] oom: skip zombies when iterating tasklist
+In-Reply-To: <20110325234853.GA21145@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit 3a7da39d165e0c363c294feec119db1427032afd upstream.
+commit 30e2b41f20b6238f51e7cffb879c7a0f0073f5fe upstream.
 
-This structure was accidentally defined such that its layout can
-differ between 32-bit and 64-bit processes.  Add compat structure
-definitions and an ioctl wrapper function.
+We shouldn't defer oom killing if a thread has already detached its ->mm
+and still has TIF_MEMDIE set.  Memory needs to be freed, so find kill
+other threads that pin the same ->mm or find another task to kill.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Acked-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/ethtool.h |   34 ++++++++++++++
- net/socket.c            |  114 +++++++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 141 insertions(+), 7 deletions(-)
+ mm/oom_kill.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/include/linux/ethtool.h
-+++ b/include/linux/ethtool.h
-@@ -13,6 +13,9 @@
- #ifndef _LINUX_ETHTOOL_H
- #define _LINUX_ETHTOOL_H
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -299,6 +299,8 @@ static struct task_struct *select_bad_pr
+ 	do_each_thread(g, p) {
+ 		unsigned int points;
  
-+#ifdef __KERNEL__
-+#include <linux/compat.h>
-+#endif
- #include <linux/types.h>
- #include <linux/if_ether.h>
++		if (!p->mm)
++			continue;
+ 		if (oom_unkillable_task(p, mem, nodemask))
+ 			continue;
  
-@@ -449,6 +452,37 @@ struct ethtool_rxnfc {
- 	__u32				rule_locs[0];
- };
+@@ -324,7 +326,7 @@ static struct task_struct *select_bad_pr
+ 		 * the process of exiting and releasing its resources.
+ 		 * Otherwise we could get an easy OOM deadlock.
+ 		 */
+-		if ((p->flags & PF_EXITING) && p->mm) {
++		if (p->flags & PF_EXITING) {
+ 			if (p != current)
+ 				return ERR_PTR(-1UL);
  
-+#ifdef __KERNEL__
-+#ifdef CONFIG_COMPAT
-+
-+struct compat_ethtool_rx_flow_spec {
-+	u32		flow_type;
-+	union {
-+		struct ethtool_tcpip4_spec		tcp_ip4_spec;
-+		struct ethtool_tcpip4_spec		udp_ip4_spec;
-+		struct ethtool_tcpip4_spec		sctp_ip4_spec;
-+		struct ethtool_ah_espip4_spec		ah_ip4_spec;
-+		struct ethtool_ah_espip4_spec		esp_ip4_spec;
-+		struct ethtool_usrip4_spec		usr_ip4_spec;
-+		struct ethhdr				ether_spec;
-+		u8					hdata[72];
-+	} h_u, m_u;
-+	compat_u64	ring_cookie;
-+	u32		location;
-+};
-+
-+struct compat_ethtool_rxnfc {
-+	u32				cmd;
-+	u32				flow_type;
-+	compat_u64			data;
-+	struct compat_ethtool_rx_flow_spec fs;
-+	u32				rule_cnt;
-+	u32				rule_locs[0];
-+};
-+
-+#endif /* CONFIG_COMPAT */
-+#endif /* __KERNEL__ */
-+
- /**
-  * struct ethtool_rxfh_indir - command to get or set RX flow hash indirection
-  * @cmd: Specific command number - %ETHTOOL_GRXFHINDIR or %ETHTOOL_SRXFHINDIR
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -2583,23 +2583,123 @@ static int dev_ifconf(struct net *net, s
- 
- static int ethtool_ioctl(struct net *net, struct compat_ifreq __user *ifr32)
- {
-+	struct compat_ethtool_rxnfc __user *compat_rxnfc;
-+	bool convert_in = false, convert_out = false;
-+	size_t buf_size = ALIGN(sizeof(struct ifreq), 8);
-+	struct ethtool_rxnfc __user *rxnfc;
- 	struct ifreq __user *ifr;
-+	u32 rule_cnt = 0, actual_rule_cnt;
-+	u32 ethcmd;
- 	u32 data;
--	void __user *datap;
-+	int ret;
- 
--	ifr = compat_alloc_user_space(sizeof(*ifr));
-+	if (get_user(data, &ifr32->ifr_ifru.ifru_data))
-+		return -EFAULT;
- 
--	if (copy_in_user(&ifr->ifr_name, &ifr32->ifr_name, IFNAMSIZ))
-+	compat_rxnfc = compat_ptr(data);
-+
-+	if (get_user(ethcmd, &compat_rxnfc->cmd))
- 		return -EFAULT;
- 
--	if (get_user(data, &ifr32->ifr_ifru.ifru_data))
-+	/* Most ethtool structures are defined without padding.
-+	 * Unfortunately struct ethtool_rxnfc is an exception.
-+	 */
-+	switch (ethcmd) {
-+	default:
-+		break;
-+	case ETHTOOL_GRXCLSRLALL:
-+		/* Buffer size is variable */
-+		if (get_user(rule_cnt, &compat_rxnfc->rule_cnt))
-+			return -EFAULT;
-+		if (rule_cnt > KMALLOC_MAX_SIZE / sizeof(u32))
-+			return -ENOMEM;
-+		buf_size += rule_cnt * sizeof(u32);
-+		/* fall through */
-+	case ETHTOOL_GRXRINGS:
-+	case ETHTOOL_GRXCLSRLCNT:
-+	case ETHTOOL_GRXCLSRULE:
-+		convert_out = true;
-+		/* fall through */
-+	case ETHTOOL_SRXCLSRLDEL:
-+	case ETHTOOL_SRXCLSRLINS:
-+		buf_size += sizeof(struct ethtool_rxnfc);
-+		convert_in = true;
-+		break;
-+	}
-+
-+	ifr = compat_alloc_user_space(buf_size);
-+	rxnfc = (void *)ifr + ALIGN(sizeof(struct ifreq), 8);
-+
-+	if (copy_in_user(&ifr->ifr_name, &ifr32->ifr_name, IFNAMSIZ))
- 		return -EFAULT;
- 
--	datap = compat_ptr(data);
--	if (put_user(datap, &ifr->ifr_ifru.ifru_data))
-+	if (put_user(convert_in ? rxnfc : compat_ptr(data),
-+		     &ifr->ifr_ifru.ifru_data))
- 		return -EFAULT;
- 
--	return dev_ioctl(net, SIOCETHTOOL, ifr);
-+	if (convert_in) {
-+		/* We expect there to be holes between fs.m_u and
-+		 * fs.ring_cookie and at the end of fs, but nowhere else.
-+		 */
-+		BUILD_BUG_ON(offsetof(struct compat_ethtool_rxnfc, fs.m_u) +
-+			     sizeof(compat_rxnfc->fs.m_u) !=
-+			     offsetof(struct ethtool_rxnfc, fs.m_u) +
-+			     sizeof(rxnfc->fs.m_u));
-+		BUILD_BUG_ON(
-+			offsetof(struct compat_ethtool_rxnfc, fs.location) -
-+			offsetof(struct compat_ethtool_rxnfc, fs.ring_cookie) !=
-+			offsetof(struct ethtool_rxnfc, fs.location) -
-+			offsetof(struct ethtool_rxnfc, fs.ring_cookie));
-+
-+		if (copy_in_user(rxnfc, compat_rxnfc,
-+				 (void *)(&rxnfc->fs.m_u + 1) -
-+				 (void *)rxnfc) ||
-+		    copy_in_user(&rxnfc->fs.ring_cookie,
-+				 &compat_rxnfc->fs.ring_cookie,
-+				 (void *)(&rxnfc->fs.location + 1) -
-+				 (void *)&rxnfc->fs.ring_cookie) ||
-+		    copy_in_user(&rxnfc->rule_cnt, &compat_rxnfc->rule_cnt,
-+				 sizeof(rxnfc->rule_cnt)))
-+			return -EFAULT;
-+	}
-+
-+	ret = dev_ioctl(net, SIOCETHTOOL, ifr);
-+	if (ret)
-+		return ret;
-+
-+	if (convert_out) {
-+		if (copy_in_user(compat_rxnfc, rxnfc,
-+				 (const void *)(&rxnfc->fs.m_u + 1) -
-+				 (const void *)rxnfc) ||
-+		    copy_in_user(&compat_rxnfc->fs.ring_cookie,
-+				 &rxnfc->fs.ring_cookie,
-+				 (const void *)(&rxnfc->fs.location + 1) -
-+				 (const void *)&rxnfc->fs.ring_cookie) ||
-+		    copy_in_user(&compat_rxnfc->rule_cnt, &rxnfc->rule_cnt,
-+				 sizeof(rxnfc->rule_cnt)))
-+			return -EFAULT;
-+
-+		if (ethcmd == ETHTOOL_GRXCLSRLALL) {
-+			/* As an optimisation, we only copy the actual
-+			 * number of rules that the underlying
-+			 * function returned.  Since Mallory might
-+			 * change the rule count in user memory, we
-+			 * check that it is less than the rule count
-+			 * originally given (as the user buffer size),
-+			 * which has been range-checked.
-+			 */
-+			if (get_user(actual_rule_cnt, &rxnfc->rule_cnt))
-+				return -EFAULT;
-+			if (actual_rule_cnt < rule_cnt)
-+				rule_cnt = actual_rule_cnt;
-+			if (copy_in_user(&compat_rxnfc->rule_locs[0],
-+					 &rxnfc->rule_locs[0],
-+					 rule_cnt * sizeof(u32)))
-+				return -EFAULT;
-+		}
-+	}
-+
-+	return 0;
- }
- 
- static int compat_siocwandev(struct net *net, struct compat_ifreq __user *uifr32)
 
 
