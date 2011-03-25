@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab1CYFr3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 01:47:29 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42672 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab1CYFr1 (ORCPT
+	id S1753816Ab1CYFub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 01:50:31 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48713 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab1CYFu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 01:47:27 -0400
+	Fri, 25 Mar 2011 01:50:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=O8fK5UFXCv75G6KUdlXsfOb2CkdimkdbebcVAsECDcIgafDA05ILB+1lUr6Cfviuzt
-         uagYz7IsphJZsUHAr70jYVn52sbImrtDbGR2V2rp4FvTlfeeYpFD+75lY9oxoZRURhYz
-         clb+a6WtX8UxtiCPJHV8YTuxJvXY9BUWocZSI=
-Subject: Re: [PATCH RFC] x86: avoid atomic operation in
- test_and_set_bit_lock if possible
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-        Jan Beulich <JBeulich@novell.com>, Borislav Petkov <bp@amd64.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@kernel.dk>, "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, tee@sgi.com,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <20110324235654.GM21838@one.firstfloor.org>
-References: <20110324085647.GI30812@elte.hu> <20110324145221.GC31194@aftab>
-	 <4D8B83DA02000078000381DE@vpn.id2.novell.com>
-	 <20110324173020.GA26761@sgi.com> <20110324200010.GB7957@elte.hu>
-	 <1300999682.2714.23.camel@edumazet-laptop> <20110324205422.GB2393@elte.hu>
-	 <1301000557.2714.33.camel@edumazet-laptop> <m2oc50kxg0.fsf@firstfloor.org>
-	 <AANLkTimib3TqemF9L=VNkcXT3uFam1gYmVtuA3wrAv1j@mail.gmail.com>
-	 <20110324235654.GM21838@one.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Mar 2011 06:47:20 +0100
-Message-ID: <1301032040.2714.569.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=HNU8/wKiV5Rq55iypYma7iszxzi3VvCrs1u0UgLz4FsJih1Rm2kxO7jwyH5PvRpOcQ
+         Fi+D868PWWpLdiBYzg2g2IJkadt5VKg940L9ld0zErVdVZ6zTZw+PmZFRBTY+cmCKjML
+         V8ATBe/9ogGQKVP6ipmbf77vbScaXn26HZ2nM=
+Date: Thu, 24 Mar 2011 22:50:23 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Peter Hutterer <peter.hutterer@who-t.net>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Nikolai Kondrashov <spbnick@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Documentation: Add evdev type and code definitions
+Message-ID: <20110325055023.GB4137@core.coreip.homeip.net>
+References: <1300988652-25353-1-git-send-email-chase.douglas@canonical.com>
+ <AANLkTimv3ZVQmgB-tbMthCYdEsK3Spk0WY9Vs9VLQEVs@mail.gmail.com>
+ <4D8B9F6F.5010705@canonical.com>
+ <20110325003602.GA14035@barra.bne.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110325003602.GA14035@barra.bne.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 25 mars 2011 à 00:56 +0100, Andi Kleen a écrit :
-> > never EVER seen any good explanation of why that particular sh*t
-> > argument would b true. It seems to be purely about politics, where
-> > some idiotic vendor (namely HP) has convinced Intel that they really
-> > need it. To the point where some engineers seem to have bought into
-> > the whole thing and actually believe that fairy tale ("firmware can do
-> > better" - hah! They must be feeding people some bad drugs at the
-> > cafeteria)
+On Fri, Mar 25, 2011 at 10:36:02AM +1000, Peter Hutterer wrote:
+> On Thu, Mar 24, 2011 at 03:45:51PM -0400, Chase Douglas wrote:
+> > On 03/24/2011 02:44 PM, Chris Bagwell wrote:
+> > > Looking good.  Minor comments at end.
+> > > 
+> > > On Thu, Mar 24, 2011 at 12:44 PM, Chase Douglas
+> > > <chase.douglas@canonical.com> wrote:
+> > >> +Touchscreens:
+> > >> +----------
+> > >> +ABS_{X,Y} must be reported with the location of the touch. BTN_TOUCH must be
+> > >> +used to report when a touch is active on the screen.
+> > >> +BTN_{MOUSE,LEFT,MIDDLE,RIGHT} must not be reported. BTN_TOOL_<name> events
+> > >> +should be reported where possible.
+> > > 
+> > > Does the real button event restriction solve something?  I know
+> > > majority of touchscreens are not sending a button today but usually
+> > > there is a button on the touchscreen frame that I'd image at least
+> > > some devices hooking it up to touchscreen interface.
+> > >
+> > > stylus+touchscreen combo devices are surely going to want to do this.
+> > 
+> > Perhaps this should be more clearly for touchscreen-only devices (not
+> > tablets or a mix). The problem we end up seeing is drivers who use
+> > BTN_LEFT because they want a touch to generate a primary button press in
+> > X. I want to prevent people from doing this.
 > 
-> For the record I don't think it's a good idea for the BIOS to do 
-> this (and I'm not aware of any engineer who does),  
-> but I think Linux should do better than just disabling PMU use when 
-> this happens.
+> suggest that they use BTN_0 instead then?
 > 
-> However I suspect taking over SCI would cause endless problems
-> and is very likely not a good idea.
 
-I tried many different changes in BIOS and all failed (the machine is
-damn slow at boot, this takes age).
+Umm, I'd hope X evdev driver could handle BTN_TOUCH without
+BTN_LEFT/BTN_0 to indicate primary button. Legacy mode (mousedev)
+already translateds BTN_TOUCH/BTN_LEFT/BTN_0 into "left PS/2 button".
 
-I am stuck :(
+Thanks.
 
-Thanks
-
-
+-- 
+Dmitry
