@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933158Ab1CZADf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:03:35 -0400
-Received: from kroah.org ([198.145.64.141]:41896 "EHLO coco.kroah.org"
+	id S933089Ab1CZADe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:03:34 -0400
+Received: from kroah.org ([198.145.64.141]:41888 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755640Ab1CYXxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755648Ab1CYXxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Mar 2011 19:53:04 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:48:43 2011
-Message-Id: <20110325234843.714858413@clark.kroah.org>
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:13 2011
+Message-Id: <20110325234513.310545074@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:47:38 -0700
+Date: Fri, 25 Mar 2011 16:44:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Dave Airlie <airlied@redhat.com>
-Subject: [45/55] drm: check for modesetting on modeset ioctls
-In-Reply-To: <20110325234853.GA21145@kroah.com>
+Subject: [52/63] drm: check for modesetting on modeset ioctls
+In-Reply-To: <20110325234526.GA18017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
