@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab1CZCkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 22:40:16 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36076 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab1CZCkO (ORCPT
+	id S1753626Ab1CZC4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 22:56:13 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50944 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980Ab1CZC4L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 22:40:14 -0400
-Date: Sat, 26 Mar 2011 02:40:10 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Jamie Iles <jamie@jamieiles.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, gregkh@suse.de
-Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
-Message-ID: <20110326024010.GA3130@pulham.picochip.com>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
- <AANLkTinQ_M92zDZx_Jfe=rvPO0Gr4kHhXZUATvgVBywh@mail.gmail.com>
- <20110325225220.GV3130@pulham.picochip.com>
- <201103260002.19291.arnd@arndb.de>
- <20110326002159.GY3130@pulham.picochip.com>
- <AANLkTinYd+4vtSBmBGHJwbCgFiZttSTtgQaQ0txwoUxt@mail.gmail.com>
+	Fri, 25 Mar 2011 22:56:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=Ct9RqSekhvg69K6emrNrdf9+LktjFGdEEhFg3z0GLNYdzGCPy6HC8gE/0EjQGJT7vg
+         DMfY8HVvgYhTKK4f4ohdIPxPgMF6YmkO5ZmFQII4ik3GzVtPPKZI2FJO17Rq1FWS+VJ5
+         FWXtjP2dKIeW568iEwoB1CZFl7//YXuBt+mX4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinYd+4vtSBmBGHJwbCgFiZttSTtgQaQ0txwoUxt@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110326023252.GZ3130@pulham.picochip.com>
+References: <1301073283-30821-1-git-send-email-jamie@jamieiles.com>
+ <1301073283-30821-4-git-send-email-jamie@jamieiles.com> <AANLkTin+Uvw8=CN+2oawAUHGot8gdM5u98S4zC8QoB=u@mail.gmail.com>
+ <20110326001143.GX3130@pulham.picochip.com> <AANLkTimfjaviwQg5XD9HwtXMOPXq_=N_WOwpQyPf4L_9@mail.gmail.com>
+ <20110326023252.GZ3130@pulham.picochip.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Fri, 25 Mar 2011 22:55:50 -0400
+X-Google-Sender-Auth: 9Bsodyt08o2g-KwRFnofY6sBocw
+Message-ID: <AANLkTinRL-6yNxbf7-Ax48VukH=6CQzPKPw83uSGMEye@mail.gmail.com>
+Subject: Re: [RFC PATCHv3 3/4] drivers/otp: convert bfin otp to generic OTP
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 10:16:48PM -0400, Mike Frysinger wrote:
-> On Fri, Mar 25, 2011 at 20:21, Jamie Iles wrote:
-> > For the actual ioctl() we should assume byte addressing rather than
-> > words though and do the conversion in the driver so we can cope with
-> > devices that don't have 64-bit words and do the locking on a looping
-> > word-by-word basis.
-> >
-> >        struct otp_lock_req {
-> >                __u32   start_addr;
-> >                __u32   byte_count;
-> >        };
-> 
-> i would add an ABI field here too so if in the future we want to add
-> stuff, we can do so without adding new ioctls.  like "u16 version; u16
-> flags;".  then in the ioctl, if version isnt 0, we return ENOTSUP.  in
-> the future, we can add flags or bump the version.
+On Fri, Mar 25, 2011 at 22:32, Jamie Iles wrote:
+> On Fri, Mar 25, 2011 at 10:11:40PM -0400, Mike Frysinger wrote:
+>> >> > +static const struct otp_region_ops bfin_region_ops = {
+>> >> > + Â  Â  Â  .read_word Â  Â  Â = bfin_region_read_word,
+>> >> > + Â  Â  Â  .write_word Â  Â  = bfin_region_write_word,
+>> >> > + Â  Â  Â  .get_size Â  Â  Â  = bfin_region_get_size,
+>> >> > + Â  Â  Â  .get_fmt Â  Â  Â  Â = bfin_region_get_fmt,
+>> >> > + Â  Â  Â  .ioctl Â  Â  Â  Â  Â = bfin_region_ioctl,
+>> >> > +};
+>> >>
+>> >> hmm, i just realized this stuff is per-region. Â wouldnt the
+>> >> read/write/ioctl make more sense as per-device ?
+>> >
+>> > No, I don't think so. Â The file_operations are all based on the regions
+>> > rather than the device so I think it makes sense to have these as region
+>> > based operations. Â We could make them per device and pass the region as
+>> > a parameter but I'm not sure that it gains us anything.
+>>
+>> for a device that exports more than one region, you dont need to
+>> duplicate the structure. Â as you add in more regions, the amount of
+>> duplication increases.
+>>
+>> how many regions does your device export ? Â does it need different
+>> read/write behavior for each ?
+>
+> The current devices are up to 8 regions and whilst the behaviour is the
+> same for each it does need to know what region it's operating on so it
+> can set the redundancy correctly.
+>
+> We could move the read and write methods into some device ops but they'd
+> need to take an otp_region as a parameter. Â Also, at the moment we don't
+> duplicate the structure as we're just keeping a pointer to it but I'm
+> happy to move these into the device ops if you have a strong preference.
 
-Sounds like a good idea.
-
-> > Mike, would this be OK with you if we used a different ioctl() to the
-> > one bfin-otp is using currently?  I notice that it's using the OTPLOCK
-> > ioctl() from MTD but I think it's using the argument in a different way.
-> 
-> i re-used OTPLOCK because it's exactly the name i wanted and it was
-> easier than carving out my own namespace, but the args are different.
-> i can see how people might find this undesirable.
-
-OK, well seeing as we're making this generic we may as well reserve a 
-range of ioctls.  I'll reserve a few of them and add OTP_LOCK_AREA for 
-now.
-
-Jamie
+i can see keeping the fmt/size in the region, but the read/write/ioctl
+really look like they belong at the device level
+-mike
