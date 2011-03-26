@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934245Ab1CZBuY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 21:50:24 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:50519 "HELO
+	id S934381Ab1CZBud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 21:50:33 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:50669 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932402Ab1CZBuW (ORCPT
+	with SMTP id S934357Ab1CZBu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 21:50:22 -0400
+	Fri, 25 Mar 2011 21:50:29 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19+ZvV763Z+lrM33dcac9YdFOYJsaAMevbfxbRcNT
-	I0/hg1QuhA3G8N
+X-Provags-ID: V01U2FsdGVkX1/uLb9C3p/uGYJsESM6FlP2o3N12EMtjZyJ7Jovi/
+	wV70MxfH+uOVvj
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg KH <greg@kroah.com>
 Cc: Greg KH <gregkh@suse.de>, devel@linuxdriverproject.org,
         linux-kernel@vger.kernel.org, Harry Wei <jiaweiwei.xiyou@gmail.com>,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 23/27] staging/vt6655: Fix common spelling mistakes
-Date: Sat, 26 Mar 2011 02:49:58 +0100
-Message-Id: <1301104202-16592-23-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 26/27] staging/wlags49_h2: Fix common spelling mistakes
+Date: Sat, 26 Mar 2011 02:50:01 +0100
+Message-Id: <1301104202-16592-26-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1301104202-16592-23-git-send-email-peterhuewe@gmx.de>
+References: <1301104202-16592-23-git-send-email-peterhuewe@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes some common spelling mistakes in
-drivers/staging/vt6655.
+This patch fixes a very common spelling mistake in
+drivers/staging/wlags49_h2.
 
 WRONG -> RIGHT
-enviroment	-> environment
-reguest		-> request
+accomodate  -> accommodate
 
 Kernel Version: staging/staging-next 20110325 (4bbba111)
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/vt6655/device_main.c |    2 +-
- drivers/staging/vt6655/tether.h      |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/wlags49_h2/hcf.c |    2 +-
+ drivers/staging/wlags49_h2/mdd.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
-index efaf19b..ad39c87 100644
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -137,7 +137,7 @@ DEVICE_PARAM(TxDescriptors1,"Number of transmit descriptors1");
- /* IP_byte_align[] is used for IP header unsigned long byte aligned
-    0: indicate the IP header won't be unsigned long byte aligned.(Default) .
-    1: indicate the IP header will be unsigned long byte aligned.
--      In some enviroment, the IP header should be unsigned long byte aligned,
-+      In some environment, the IP header should be unsigned long byte aligned,
-       or the packet will be droped when we receive it. (eg: IPVS)
- */
- DEVICE_PARAM(IP_byte_align,"Enable IP header dword aligned");
-diff --git a/drivers/staging/vt6655/tether.h b/drivers/staging/vt6655/tether.h
-index 787d885..3b4efb2 100644
---- a/drivers/staging/vt6655/tether.h
-+++ b/drivers/staging/vt6655/tether.h
-@@ -53,7 +53,7 @@
- #define TYPE_PKT_802_1x     0x888e
- #define TYPE_PKT_PreAuth    0x88C7
- 
--#define TYPE_PKT_PING_M_REQ 0x8011      // master reguest
-+#define TYPE_PKT_PING_M_REQ 0x8011      // master request
- #define TYPE_PKT_PING_S_GNT 0x8022      // slave grant
- #define TYPE_PKT_PING_M     0x8077      // pingpong master packet
- #define TYPE_PKT_PING_S     0x8088      // pingpong slave packet
-@@ -106,7 +106,7 @@
- #define TYPE_PKT_802_1x     0x8e88
- #define TYPE_PKT_PreAuth    0xC788
- 
--#define TYPE_PKT_PING_M_REQ 0x1180      // master reguest
-+#define TYPE_PKT_PING_M_REQ 0x1180      // master request
- #define TYPE_PKT_PING_S_GNT 0x2280      // slave grant
- #define TYPE_PKT_PING_M     0x7780      // pingpong master packet
- #define TYPE_PKT_PING_S     0x8880      // pingpong slave packet
+diff --git a/drivers/staging/wlags49_h2/hcf.c b/drivers/staging/wlags49_h2/hcf.c
+index d4bdd3e..bd8d3cc 100644
+--- a/drivers/staging/wlags49_h2/hcf.c
++++ b/drivers/staging/wlags49_h2/hcf.c
+@@ -1735,7 +1735,7 @@ DESC_STRCT *descp;	// pointer to start of FrameList
+ * - in case encapsulation by the HCF is selected:
+ *	  -	The FrameList does not consists of at least 2 Descriptors.
+ *	  -	The first databuffer does not contain exactly the (space for) the 802.11 header (== 28 words)
+-*	  -	The first databuffer does not have a size to additionally accomodate the 802.3 header and the
++*	  -	The first databuffer does not have a size to additionally accommodate the 802.3 header and the
+ *		SNAP header of the frame after encapsulation (== 39 words).
+ *	  -	The second databuffer does not contain at least DA, SA and 'type/length' (==14 bytes or 7 words)
+ *!! The 2nd part of the list of asserts should be kept in sync with put_frame_lst, in order to get
+diff --git a/drivers/staging/wlags49_h2/mdd.h b/drivers/staging/wlags49_h2/mdd.h
+index 5aa9eb8..5ce3342 100644
+--- a/drivers/staging/wlags49_h2/mdd.h
++++ b/drivers/staging/wlags49_h2/mdd.h
+@@ -851,7 +851,7 @@ XX1( CFG_SCAN,					SCAN_RS_STRCT, scan_result[32]		 ) /*Scan results											*
+ #define HCF_ERR_LEN					0x08	/* buffer size insufficient
+ 		 								  	 *		  -	IFB_ConfigTable too small
+ 		 								  	 *		  -	hcf_get_info buffer has a size of 0 or 1 or less than needed
+-		 							  		 *			to accomodate all data
++		 							  		 *			to accommodate all data
+ 		 							  		 *		  -	hcf_put_info: CFG_DLNV_DATA exceeds intermediate
+ 											 *		  buffer size */
+ #define HCF_ERR_INCOMP_PRI			0x09	// primary functions are not compatible
 -- 
 1.7.3.4
 
