@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab1CZPyN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 11:54:13 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53621 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751888Ab1CZPyK (ORCPT
+	id S1752687Ab1CZPyA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 11:54:00 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50187 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab1CZPx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 11:54:10 -0400
-Date: Sat, 26 Mar 2011 15:54:33 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: igor@novg.net
-Cc: <jgarzik@pobox.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2.6.38.1] pata_it821x: Add module param to force UDMA on
- Vortex86SX
-Message-ID: <20110326155433.323b6f6a@lxorguk.ukuu.org.uk>
-In-Reply-To: <90c1a5f93e6d67aec9f67a1d4c0deb86@novg.net>
-References: <89bf4e2c74a16f130208a485c6eafd77@novg.net>
-	<20110326125441.3e628850@lxorguk.ukuu.org.uk>
-	<90c1a5f93e6d67aec9f67a1d4c0deb86@novg.net>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Sat, 26 Mar 2011 11:53:59 -0400
+Subject: Re: [PATCH] ASoC: twl6040: Return -ENOMEM if
+ create_singlethread_workqueue fails
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+In-Reply-To: <1301126038.7662.2.camel@phoenix>
+References: <1301126038.7662.2.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 26 Mar 2011 15:53:55 +0000
+Message-ID: <1301154835.3455.54.camel@odin>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Although if you want to take it up with DMP and find out if they have
-> > updated rules or checks that want pushing that might be useful.
+On Sat, 2011-03-26 at 15:53 +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  sound/soc/codecs/twl6040.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
->  No, i do not intend to contact them, i just wanted people to have an 
->  on/off
->  switch in kernel, not to push this patch by all means necessary.
 
-If you want a patch in the upstream kernel then you need to do the
-related work. If you can't even be bothered to follow up why an erratum
-was added by the manufacturer then you've comprehensively missed the
-standards we work to.
+Applied.
 
->  If this option is considered by community unneeded, i'll just have to 
->  patch my
->  own kernel with every upgrade :)
+Thanks
 
-By all means. The GPL ensures you can do this and it means you won't
-leave us with a one off potentially unsafe and unmaintained update.
+Liam
 
-Alan
