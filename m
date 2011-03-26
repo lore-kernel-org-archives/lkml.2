@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933356Ab1CZAMG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:12:06 -0400
-Received: from kroah.org ([198.145.64.141]:35868 "EHLO coco.kroah.org"
+	id S933396Ab1CZAMZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:12:25 -0400
+Received: from kroah.org ([198.145.64.141]:35863 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932731Ab1CZAG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:06:26 -0400
+	id S932573Ab1CZAGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:06:25 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:57 2011
-Message-Id: <20110326000457.402478620@clark.kroah.org>
+Message-Id: <20110326000457.286058201@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 17:03:47 -0700
+Date: Fri, 25 Mar 2011 17:03:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [15/35] PCI: return correct value when writing to the "reset" attribute
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [14/35] xen: set max_pfn_mapped to the last pfn mapped
 In-Reply-To: <20110326000509.GA29736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 447c5dd7338638f526e9bcf7dcf69b4da5835c7d upstream.
+commit 14988a4d350ce3b41ecad4f63c4f44c56f5ae34d upstream.
 
-A successful write() to the "reset" sysfs attribute should return the
-number of bytes written, not 0. Otherwise userspace (bash) retries the
-write over and over again.
+Do not set max_pfn_mapped to the end of the initial memory mappings,
+that also contain pages that don't belong in pfn space (like the mfn
+list).
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Set max_pfn_mapped to the last real pfn mapped in the initial memory
+mappings that is the pfn backing _end.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+LKML-Reference: <alpine.DEB.2.00.1103171739050.3382@kaball-desktop>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pci-sysfs.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/x86/xen/mmu.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -966,7 +966,12 @@ static ssize_t reset_store(struct device
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1658,9 +1658,6 @@ static __init void xen_map_identity_earl
+ 		for (pteidx = 0; pteidx < PTRS_PER_PTE; pteidx++, pfn++) {
+ 			pte_t pte;
  
- 	if (val != 1)
- 		return -EINVAL;
--	return pci_reset_function(pdev);
-+
-+	result = pci_reset_function(pdev);
-+	if (result < 0)
-+		return result;
-+
-+	return count;
- }
+-			if (pfn > max_pfn_mapped)
+-				max_pfn_mapped = pfn;
+-
+ 			if (!pte_none(pte_page[pteidx]))
+ 				continue;
  
- static struct device_attribute reset_attr = __ATTR(reset, 0200, NULL, reset_store);
+@@ -1704,6 +1701,12 @@ __init pgd_t *xen_setup_kernel_pagetable
+ 	pud_t *l3;
+ 	pmd_t *l2;
+ 
++	/* max_pfn_mapped is the last pfn mapped in the initial memory
++	 * mappings. Considering that on Xen after the kernel mappings we
++	 * have the mappings of some pages that don't exist in pfn space, we
++	 * set max_pfn_mapped to the last real pfn mapped. */
++	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
++
+ 	/* Zap identity mapping */
+ 	init_level4_pgt[0] = __pgd(0);
+ 
+@@ -1767,9 +1770,7 @@ __init pgd_t *xen_setup_kernel_pagetable
+ {
+ 	pmd_t *kernel_pmd;
+ 
+-	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
+-				  xen_start_info->nr_pt_frames * PAGE_SIZE +
+-				  512*1024);
++	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
+ 
+ 	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
+ 	memcpy(level2_kernel_pgt, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
 
 
