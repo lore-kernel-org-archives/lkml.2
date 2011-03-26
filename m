@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933236Ab1CZAGU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:06:20 -0400
-Received: from kroah.org ([198.145.64.141]:35794 "EHLO coco.kroah.org"
+	id S933326Ab1CZAMz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:12:55 -0400
+Received: from kroah.org ([198.145.64.141]:35836 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932964Ab1CZAGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:06:14 -0400
+	id S932964Ab1CZAGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:06:20 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:56 2011
-Message-Id: <20110326000456.134496285@clark.kroah.org>
+Message-Id: <20110326000456.781738887@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 17:03:35 -0700
+Date: Fri, 25 Mar 2011 17:03:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roman Fietze <roman.fietze@telemotive.de>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [03/35] i2c: Fix typo in instantiating-devices document
+        Lydia Wang <lydiawang@viatech.com.cn>, Takashi Iwai <tiwai@suse.de>
+Subject: [09/35] ALSA: hda - VIA: Fix stereo mixer recording no sound issue
 In-Reply-To: <20110326000509.GA29736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roman Fietze <roman.fietze@telemotive.de>
+From: Lydia Wang <lydiawang@viatech.com.cn>
 
-commit 6ced9e6b3901af4ab6ac0a11231402c888286ea6 upstream.
+commit bff5fbf50bd498c217994bd2d41a53ac3141185a upstream.
 
-The struct i2c_board_info member holding the name is "type", not
-"name".
+Modify function via_mux_enum_put() to fix stereo mixer recording
+no sound issue.
 
-Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Lydia Wang <lydiawang@viatech.com.cn>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/i2c/instantiating-devices |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_via.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/Documentation/i2c/instantiating-devices
-+++ b/Documentation/i2c/instantiating-devices
-@@ -100,7 +100,7 @@ static int __devinit usb_hcd_pnx4008_pro
- 	(...)
- 	i2c_adap = i2c_get_adapter(2);
- 	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
--	strlcpy(i2c_info.name, "isp1301_pnx", I2C_NAME_SIZE);
-+	strlcpy(i2c_info.type, "isp1301_pnx", I2C_NAME_SIZE);
- 	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
- 						   normal_i2c);
- 	i2c_put_adapter(i2c_adap);
+--- a/sound/pci/hda/patch_via.c
++++ b/sound/pci/hda/patch_via.c
+@@ -1060,6 +1060,7 @@ static int via_mux_enum_put(struct snd_k
+ 	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
+ 	struct via_spec *spec = codec->spec;
+ 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
++	int ret;
+ 
+ 	if (!spec->mux_nids[adc_idx])
+ 		return -EINVAL;
+@@ -1068,12 +1069,14 @@ static int via_mux_enum_put(struct snd_k
+ 			       AC_VERB_GET_POWER_STATE, 0x00) != AC_PWRST_D0)
+ 		snd_hda_codec_write(codec, spec->mux_nids[adc_idx], 0,
+ 				    AC_VERB_SET_POWER_STATE, AC_PWRST_D0);
+-	/* update jack power state */
+-	set_jack_power_state(codec);
+ 
+-	return snd_hda_input_mux_put(codec, spec->input_mux, ucontrol,
++	ret = snd_hda_input_mux_put(codec, spec->input_mux, ucontrol,
+ 				     spec->mux_nids[adc_idx],
+ 				     &spec->cur_mux[adc_idx]);
++	/* update jack power state */
++	set_jack_power_state(codec);
++
++	return ret;
+ }
+ 
+ static int via_independent_hp_info(struct snd_kcontrol *kcontrol,
 
 
