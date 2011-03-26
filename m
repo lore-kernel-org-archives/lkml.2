@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab1CZPKn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 11:10:43 -0400
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:53349 "EHLO
-	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab1CZPKm (ORCPT
+	id S1752464Ab1CZP2u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 11:28:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34123 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab1CZP2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 11:10:42 -0400
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Tristram Ha <Tristram.Ha@micrel.com>, linux-kernel@vger.kernel.org,
-        Cesar Eduardo Barros <cesarb@cesarb.net>
-Subject: [PATCH] net: use CHECKSUM_NONE instead of magic number
-Date: Sat, 26 Mar 2011 12:10:30 -0300
-Message-Id: <1301152230-4897-1-git-send-email-cesarb@cesarb.net>
-X-Mailer: git-send-email 1.7.4
+	Sat, 26 Mar 2011 11:28:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=r6rlJvD1Y9PVF9+R+SKstSyoSYXHTgBHNoQME4PsCZp4TahuQ4lftj8P58nmvktItQ
+         P5Kwz6s1WrjUSwkDv7mskk2jbW8l3biAVNLVE12JGE76wYkjic0y+MGo/TVJmqhD+JeG
+         48GgoBpRwK1HCnnV3ks6ewVGWwKeJefhln13I=
+Subject: [PATCH] regulator: Add MODULE_DEVICE_TABLE to max8997 and max8998
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: MyungJoo Ham <myungjoo.ham@smasung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@smasung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 26 Mar 2011 23:28:42 +0800
+Message-ID: <1301153322.3302.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two places in the kernel were doing skb->ip_summed = 0.
+The device table is required to load modules based on modaliases.
 
-Change both to skb->ip_summed = CHECKSUM_NONE, which is more readable.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: MyungJoo Ham <myungjoo.ham@smasung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 ---
- drivers/net/ksz884x.c |    2 +-
- net/ipv6/ip6mr.c      |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/regulator/max8997.c |    1 +
+ drivers/regulator/max8998.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/ksz884x.c b/drivers/net/ksz884x.c
-index 540a8dc..7f7d570 100644
---- a/drivers/net/ksz884x.c
-+++ b/drivers/net/ksz884x.c
-@@ -4898,7 +4898,7 @@ static netdev_tx_t netdev_tx(struct sk_buff *skb, struct net_device *dev)
- 				goto unlock;
- 			}
- 			skb_copy_and_csum_dev(org_skb, skb->data);
--			org_skb->ip_summed = 0;
-+			org_skb->ip_summed = CHECKSUM_NONE;
- 			skb->len = org_skb->len;
- 			copy_old_skb(org_skb, skb);
- 		}
-diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
-index 7ff0343..29e4859 100644
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -663,7 +663,7 @@ static int pim6_rcv(struct sk_buff *skb)
- 	skb_pull(skb, (u8 *)encap - skb->data);
- 	skb_reset_network_header(skb);
- 	skb->protocol = htons(ETH_P_IPV6);
--	skb->ip_summed = 0;
-+	skb->ip_summed = CHECKSUM_NONE;
- 	skb->pkt_type = PACKET_HOST;
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+index 01ef7e9..77e0cfb 100644
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -1185,6 +1185,7 @@ static const struct platform_device_id max8997_pmic_id[] = {
+ 	{ "max8997-pmic", 0},
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(platform, max8997_pmic_id);
  
- 	skb_tunnel_rx(skb, reg_dev);
+ static struct platform_driver max8997_pmic_driver = {
+ 	.driver = {
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index 0ec49ca..4341026 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -887,6 +887,7 @@ static const struct platform_device_id max8998_pmic_id[] = {
+ 	{ "lp3974-pmic", TYPE_LP3974 },
+ 	{ }
+ };
++MODULE_DEVICE_TABLE(platform, max8998_pmic_id);
+ 
+ static struct platform_driver max8998_pmic_driver = {
+ 	.driver = {
 -- 
-1.7.4
+1.7.1
+
+
 
