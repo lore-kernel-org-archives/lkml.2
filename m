@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555Ab1CZAMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:12:40 -0400
-Received: from kroah.org ([198.145.64.141]:35843 "EHLO coco.kroah.org"
+	id S933236Ab1CZAGU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:06:20 -0400
+Received: from kroah.org ([198.145.64.141]:35794 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933254Ab1CZAGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:06:21 -0400
+	id S932964Ab1CZAGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:06:14 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:56 2011
-Message-Id: <20110326000456.873263491@clark.kroah.org>
+Message-Id: <20110326000456.134496285@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 17:03:42 -0700
+Date: Fri, 25 Mar 2011 17:03:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lydia Wang <lydiawang@viatech.com.cn>, Takashi Iwai <tiwai@suse.de>
-Subject: [10/35] ALSA: hda - VIA: Add missing support for VT1718S in A-A path
+        Roman Fietze <roman.fietze@telemotive.de>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [03/35] i2c: Fix typo in instantiating-devices document
 In-Reply-To: <20110326000509.GA29736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lydia Wang <lydiawang@viatech.com.cn>
+From: Roman Fietze <roman.fietze@telemotive.de>
 
-commit ab657e0cacc39d88145871c6a3c844597c02d406 upstream.
+commit 6ced9e6b3901af4ab6ac0a11231402c888286ea6 upstream.
 
-Modify mute_aa_path() function to support VT1718S codec.
+The struct i2c_board_info member holding the name is "type", not
+"name".
 
-Signed-off-by: Lydia Wang <lydiawang@viatech.com.cn>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_via.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ Documentation/i2c/instantiating-devices |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -1265,6 +1265,11 @@ static void mute_aa_path(struct hda_code
- 		start_idx = 2;
- 		end_idx = 4;
- 		break;
-+	case VT1718S:
-+		nid_mixer = 0x21;
-+		start_idx = 1;
-+		end_idx = 3;
-+		break;
- 	default:
- 		return;
- 	}
+--- a/Documentation/i2c/instantiating-devices
++++ b/Documentation/i2c/instantiating-devices
+@@ -100,7 +100,7 @@ static int __devinit usb_hcd_pnx4008_pro
+ 	(...)
+ 	i2c_adap = i2c_get_adapter(2);
+ 	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
+-	strlcpy(i2c_info.name, "isp1301_pnx", I2C_NAME_SIZE);
++	strlcpy(i2c_info.type, "isp1301_pnx", I2C_NAME_SIZE);
+ 	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
+ 						   normal_i2c);
+ 	i2c_put_adapter(i2c_adap);
 
 
