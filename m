@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab1CZUZE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 16:25:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35529 "EHLO linutronix.de"
+	id S1754098Ab1CZU13 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 16:27:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35263 "EHLO linutronix.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753985Ab1CZUZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 16:25:02 -0400
-Date: Sat, 26 Mar 2011 21:24:50 +0100 (CET)
+	id S1753985Ab1CZU12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 16:27:28 -0400
+Date: Sat, 26 Mar 2011 21:27:09 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Varun Wadekar <vwadekar@nvidia.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Colin Cross <ccross@android.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [patch 02/23] arm: tegra: Remove unused function which fiddles
- with irq_desc
-In-Reply-To: <4D8E4897.5030705@nvidia.com>
-Message-ID: <alpine.LFD.2.00.1103262118010.31464@localhost6.localdomain6>
-References: <20110325131617.258789658@linutronix.de> <20110325132047.552074703@linutronix.de> <4D8E4897.5030705@nvidia.com>
+To: Richard Weinberger <richard@nod.at>
+cc: akpm@linux-foundation.org, torvalds@linux-foundation.org, mingo@elte.hu,
+        jdike@addtoit.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] um: Add myself as co-maintainer
+In-Reply-To: <1301168937-21074-1-git-send-email-richard@nod.at>
+Message-ID: <alpine.LFD.2.00.1103262126230.31464@localhost6.localdomain6>
+References: <1301168937-21074-1-git-send-email-richard@nod.at>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,33 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 27 Mar 2011, Varun Wadekar wrote:
+
+
+On Sat, 26 Mar 2011, Richard Weinberger wrote:
+
+> LKML-Reference: <alpine.LFD.2.00.1103262010590.31464@localhost6.localdomain6>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+
+Acked-and-appreciated-by: Thomas Gleixner <tglx@linutronix.de>
+
+
+> ---
+>  MAINTAINERS |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> Thomas, then how do you think we should handle restoring of gpio states
-> across suspend-resume cycles?
-
-That code is unused. Period. No caller, nothing nada. So what does it
-handle?
- 
-> > -
-> > -	for (i = INT_GPIO_BASE; i < (INT_GPIO_BASE + TEGRA_NR_GPIOS); i++) {
-> > -		struct irq_desc *desc = irq_to_desc(i);
-> > -		if (!desc || (desc->status & IRQ_WAKEUP))
-> > -			continue;
-> > -		enable_irq(i);
-> > -	}
-
-And this part is totally unacceptable and should have never been
-merged. Further it is in the way of cleanups to the core code and as
-there is no user I'm not willing to even think about what it does and
-why it is there.
-
-FYI, the core code deals with interrupt suspending/resuming
-already. So if there is a problem with that which does not cover your
-specific problem, then you better talk to me before hacking up such
-private workarounds and expecting that I tolerate them in unused code.
-
-Thanks,
-
-	tglx
-
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 4fb9017..42471b8 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6633,6 +6633,7 @@ F:	drivers/media/video/zr364xx.c
+>  
+>  USER-MODE LINUX (UML)
+>  M:	Jeff Dike <jdike@addtoit.com>
+> +M:	Richard Weinberger <richard@nod.at>
+>  L:	user-mode-linux-devel@lists.sourceforge.net
+>  L:	user-mode-linux-user@lists.sourceforge.net
+>  W:	http://user-mode-linux.sourceforge.net
+> -- 
+> 1.6.6.1
+> 
+> 
