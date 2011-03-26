@@ -1,87 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab1CZNlR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 09:41:17 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51409 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab1CZNlP (ORCPT
+	id S1752133Ab1CZNvy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 09:51:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62745 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab1CZNvv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 09:41:15 -0400
+	Sat, 26 Mar 2011 09:51:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=eZHNIzkj3DoVxueP56JAkxMPpa3fNzwz/CRGIRCTLX/RNM26Y4G8E/X4VPTjs+waYL
-         /+Vlh3YAVl7jpmUYLHUHD0pZ58D5Bt7ofYjVyo+OEPJxDWipTchcIS66+9nTo8Ag8F58
-         1mcUgjsYYg63N9myQcJE4+B+e9fkk1+mQr40I=
-Date: Sat, 26 Mar 2011 14:40:59 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH V12 4/4] ptp: Added a clock driver for the National
- Semiconductor PHYTER.
-Message-ID: <20110326134059.GC23260@riccoc20.at.omicron.at>
-References: <cover.1298878618.git.richard.cochran@omicron.at>
- <f8af215ebe32a8c0f4b3a82b8ee7e8008b4feb1e.1298878618.git.richard.cochran@omicron.at>
- <1300916785.848.54.camel@work-vm>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Evt3OymD6wWV+xYWEPJTXYgYv8m6RVpfNSlNzkPs1fZn7wNhnwTjTnDhYHkPyOAYY5
+         /bAqSUKA5hBWzuwrmoXbWuQ4n/eFRcXSSLKcnWszD0Q5f4xOUOWQtTdpcyIVYwbN3Y3q
+         hB7Zp3YwlyQCC7zrk+BwhronWbErpNiACC1hs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300916785.848.54.camel@work-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LNX.2.00.1103251119120.26754@pobox.suse.cz>
+References: <alpine.LNX.2.00.1101030002390.26685@pobox.suse.cz>
+	<alpine.LNX.2.00.1101031237210.26685@pobox.suse.cz>
+	<alpine.LNX.2.00.1101031421470.26685@pobox.suse.cz>
+	<AANLkTinK-TYnY70Wst_FTbEtn7Dwm8wEQoWMewsYM8dh@mail.gmail.com>
+	<alpine.LNX.2.00.1103251119120.26754@pobox.suse.cz>
+Date: Sat, 26 Mar 2011 14:51:49 +0100
+X-Google-Sender-Auth: COHT5rZz8yQ0Qy_Jp3S2mKZWEJw
+Message-ID: <AANLkTi=g5z+GYkbOGbdLQcLaQkpY6yQ6tjGRjjk1H59R@mail.gmail.com>
+Subject: Re: [regression v2.6.38] Re: [PATCH v2] brk: fix min_brk lower bound
+ computation for COMPAT_BRK
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 23, 2011 at 02:46:25PM -0700, John Stultz wrote:
-> On Mon, 2011-02-28 at 08:58 +0100, Richard Cochran wrote:
-> > +static int tdr_write(int bc, struct phy_device *dev,
-> > +		     const struct timespec *ts, u16 cmd)
-> > +{
-> > +	ext_write(bc, dev, PAGE4, PTP_TDR, ts->tv_nsec & 0xffff);/* ns[15:0]  */
-> > +	ext_write(bc, dev, PAGE4, PTP_TDR, ts->tv_nsec >> 16);   /* ns[31:16] */
-> > +	ext_write(bc, dev, PAGE4, PTP_TDR, ts->tv_sec & 0xffff); /* sec[15:0] */
-> > +	ext_write(bc, dev, PAGE4, PTP_TDR, ts->tv_sec >> 16);    /* sec[31:16]*/
-> > +
-> > +	ext_write(bc, dev, PAGE4, PTP_CTL, cmd);
-> > +
-> > +	return 0;
-> > +}
-> 
-> The above needs to hold the extreg_lock, and should be commented as
-> such.
+Hi Jiri,
 
-Okay, will do.
+On Fri, Mar 25, 2011 at 11:20, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Thu, 24 Mar 2011, Geert Uytterhoeven wrote:
+>> > From: Jiri Kosina <jkosina@suse.cz>
+>> > Subject: [PATCH] brk: fix min_brk lower bound computation for COMPAT_BRK
+>> >
+>> > Even if CONFIG_COMPAT_BRK is set in the kernel configuration, it can still
+>> > be overriden by randomize_va_space sysctl.
+>> >
+>> > If this is the case, the min_brk computation in sys_brk() implementation
+>> > is wrong, as it solely takes into account COMPAT_BRK setting, assuming
+>> > that brk start is not randomized. But that might not be the case if
+>> > randomize_va_space sysctl has been set to '2' at the time the binary has
+>> > been loaded from disk.
+>> >
+>> > In such case, the check has to be done in a same way as in
+>> > !CONFIG_COMPAT_BRK case.
+>> >
+>> > In addition to that, the check for the COMPAT_BRK case introduced back in
+>> > a5b4592c ("brk: make sys_brk() honor COMPAT_BRK when computing lower
+>> > bound") is slightly wrong -- the lower bound shouldn't be mm->end_code,
+>> > but mm->end_data instead, as that's where the legacy applications expect
+>> > brk section to start (i.e. immediately after last global variable).
+>> >
+>> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+>> > ---
+>> >  mm/mmap.c |   10 +++++++++-
+>> >  1 files changed, 9 insertions(+), 1 deletions(-)
+>> >
+>> > diff --git a/mm/mmap.c b/mm/mmap.c
+>> > index 50a4aa0..ca2f164 100644
+>> > --- a/mm/mmap.c
+>> > +++ b/mm/mmap.c
+>> > @@ -253,7 +253,15 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
+>> >        down_write(&mm->mmap_sem);
+>> >
+>> >  #ifdef CONFIG_COMPAT_BRK
+>> > -       min_brk = mm->end_code;
+>> > +       /*
+>> > +        * CONFIG_COMPAT_BRK can still be overridden by setting
+>> > +        * randomize_va_space to 2, which will still make mm->start_brk
+>> > +        * to be arbitrarily shifted
+>> > +        */
+>> > +       if (mm->start_brk > PAGE_ALIGN(mm->end_data))
+>> > +               min_brk = mm->start_brk;
+>> > +       else
+>> > +               min_brk = mm->end_data;
+>> >  #else
+>> >        min_brk = mm->start_brk;
+>> >  #endif
+>> > --
+>> > 1.7.3.1
+>>
+>> Sorry for chiming in this late, but I've just bisected a problem in
+>> 2.6.38 to commit
+>> 5520e89485252c759ee60d313e9422447659947b ("brk: fix min_brk lower bound
+>> computation for COMPAT_BRK").
+>>
+>> When booting my very old test ramdisk on Amiga/m68k, it fails like this:
+>>
+>> | RAMDISK: gzip image found at block 0
+>> | VFS: Mounted root (ext2 filesystem) readonly on device 1:0.
+>> | warning: process `update' used the obsolete bdflush system call
+>> | Fix your initscripts?
+>> | init: cannot open inittab
+>> | Kernel panic - not syncing: Attempted to kill init!
+>>
+>> Sorry for not noticing earlier, I usually boot full Debians under ARAnyM,
+>> instead of booting old ramdisks with libc5-based binaries that once were
+>> considered new.
+>
+> Oh well, one has to love the libc5-based binaries indeed.
 
-> And again, the function names are sort of generic, and could use a
-> dp83640_ prefix or something.
+Yeah, binaries from 1996 ;-)
 
-So, I will rename the IXP functions in the other driver to make them
-more unique, but in this case I really prefer to keep the short names
-for the sake of readability.
+> Is the patch below fixing the issue you are seeing on your Amiga/m68k?
+> Thanks.
+>
+>
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 2ec8eb5..0a02531 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -262,7 +262,7 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
+>        if (mm->start_brk > PAGE_ALIGN(mm->end_data))
+>                min_brk = mm->start_brk;
+>        else
+> -               min_brk = mm->end_data;
+> +               min_brk = mm->end_code;
+>  #else
+>        min_brk = mm->start_brk;
+>  #endif
 
-Just about every operation on this PHY requires four 16-bit writes,
-where each write can really mean two writes, with the first one to set
-a "page" register for the following write.
+Unfortunately not...
 
-Keeping the tabular style (shown above) makes it much more clear what
-is going on, IMHO. If the function names become longer, that would
-force line breaks and spoil the nice formatting.
+I added some printk()s:
 
-Also, these names are not in use anywhere else in the kernel's eight
-million LOC.
+mm->start_brk = 0x8000a000, PAGE_ALIGN(mm->end_data = 0x8000a000)
+mm->start_brk = 0x8000a000, PAGE_ALIGN(mm->end_data = 0x8000a000)
+mm->start_brk = 0x8000a000, PAGE_ALIGN(mm->end_data = 0x8000a000)
+mm->start_brk = 0x8000a000, PAGE_ALIGN(mm->end_data = 0x8000a000)
+mm->start_brk = 0x80006000, PAGE_ALIGN(mm->end_data = 0x80004000)
 
-Thanks,
+I.e. just before the failure, "mm->start_brk > PAGE_ALIGN(mm->end_data)"
+became true.
 
-Richard
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
