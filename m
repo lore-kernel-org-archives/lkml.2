@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933509Ab1CZAJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:09:19 -0400
-Received: from kroah.org ([198.145.64.141]:35930 "EHLO coco.kroah.org"
+	id S933436Ab1CZAJk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:09:40 -0400
+Received: from kroah.org ([198.145.64.141]:35917 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933418Ab1CZAGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:06:39 -0400
+	id S933392Ab1CZAGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:06:37 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:58 2011
-Message-Id: <20110326000458.558949151@clark.kroah.org>
+Message-Id: <20110326000458.360643131@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 17:03:58 -0700
+Date: Fri, 25 Mar 2011 17:03:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        David Brownell <david-b@pacbell.net>
-Subject: [26/35] ehci-hcd: Bug fix: dont set a QHs Halt bit
+        Stephan Lachowsky <stephan.lachowsky@maxim-ic.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [24/35] [media] uvcvideo: Fix uvc_fixup_video_ctrl() format search
 In-Reply-To: <20110326000509.GA29736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,80 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Stephan Lachowsky <stephan.lachowsky@maxim-ic.com>
 
-commit b5a3b3d985493c173925907adfebf3edab236fe7 upstream.
+commit 38a66824d96de8aeeb915e6f46f0d3fe55828eb1 upstream.
 
-This patch (as1453) fixes a long-standing bug in the ehci-hcd driver.
+The scheme used to index format in uvc_fixup_video_ctrl() is not robust:
+format index is based on descriptor ordering, which does not necessarily
+match bFormatIndex ordering.  Searching for first matching format will
+prevent uvc_fixup_video_ctrl() from using the wrong format/frame to make
+adjustments.
 
-There is no need to set the Halt bit in the overlay region for an
-unlinked or blocked QH.  Contrary to what the comment says, setting
-the Halt bit does not cause the QH to be patched later; that decision
-(made in qh_refresh()) depends only on whether the QH is currently
-pointing to a valid qTD.  Likewise, setting the Halt bit does not
-prevent completions from activating the QH while it is "stopped"; they
-are prevented by the fact that qh_completions() temporarily changes
-qh->qh_state to QH_STATE_COMPLETING.
-
-On the other hand, there are circumstances in which the QH will be
-reactivated _without_ being patched; this happens after an URB beyond
-the head of the queue is unlinked.  Setting the Halt bit will then
-cause the hardware to see the QH with both the Active and Halt bits
-set, an invalid combination that will prevent the queue from
-advancing and may even crash some controllers.
-
-Apparently the only reason this hasn't been reported before is that
-unlinking URBs from the middle of a running queue is quite uncommon.
-However Test 17, recently added to the usbtest driver, does exactly
-this, and it confirms the presence of the bug.
-
-In short, there is no reason to set the Halt bit for an unlinked or
-blocked QH, and there is a very good reason not to set it.  Therefore
-the code that sets it is removed.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Andiry Xu <andiry.xu@amd.com>
-CC: David Brownell <david-b@pacbell.net>
+Signed-off-by: Stephan Lachowsky <stephan.lachowsky@maxim-ic.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-q.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ drivers/media/video/uvc/uvc_video.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -315,7 +315,6 @@ qh_completions (struct ehci_hcd *ehci, s
- 	int			stopped;
- 	unsigned		count = 0;
- 	u8			state;
--	const __le32		halt = HALT_BIT(ehci);
- 	struct ehci_qh_hw	*hw = qh->hw;
+--- a/drivers/media/video/uvc/uvc_video.c
++++ b/drivers/media/video/uvc/uvc_video.c
+@@ -64,15 +64,19 @@ int uvc_query_ctrl(struct uvc_device *de
+ static void uvc_fixup_video_ctrl(struct uvc_streaming *stream,
+ 	struct uvc_streaming_control *ctrl)
+ {
+-	struct uvc_format *format;
++	struct uvc_format *format = NULL;
+ 	struct uvc_frame *frame = NULL;
+ 	unsigned int i;
  
- 	if (unlikely (list_empty (&qh->qtd_list)))
-@@ -422,7 +421,6 @@ qh_completions (struct ehci_hcd *ehci, s
- 					&& !(qtd->hw_alt_next
- 						& EHCI_LIST_END(ehci))) {
- 				stopped = 1;
--				goto halt;
- 			}
+-	if (ctrl->bFormatIndex <= 0 ||
+-	    ctrl->bFormatIndex > stream->nformats)
+-		return;
++	for (i = 0; i < stream->nformats; ++i) {
++		if (stream->format[i].index == ctrl->bFormatIndex) {
++			format = &stream->format[i];
++			break;
++		}
++	}
  
- 		/* stop scanning when we reach qtds the hc is using */
-@@ -456,16 +454,6 @@ qh_completions (struct ehci_hcd *ehci, s
- 				 */
- 				ehci_clear_tt_buffer(ehci, qh, urb, token);
- 			}
--
--			/* force halt for unlinked or blocked qh, so we'll
--			 * patch the qh later and so that completions can't
--			 * activate it while we "know" it's stopped.
--			 */
--			if ((halt & hw->hw_token) == 0) {
--halt:
--				hw->hw_token |= halt;
--				wmb ();
--			}
- 		}
+-	format = &stream->format[ctrl->bFormatIndex - 1];
++	if (format == NULL)
++		return;
  
- 		/* unless we already know the urb's status, collect qtd status
+ 	for (i = 0; i < format->nframes; ++i) {
+ 		if (format->frame[i].bFrameIndex == ctrl->bFrameIndex) {
 
 
