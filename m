@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab1CZN7A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 09:59:00 -0400
-Received: from mail.bisel.ru ([80.93.56.210]:39499 "EHLO mail.bisel.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926Ab1CZN67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 09:58:59 -0400
-X-Envelope-Recipient: alan@lxorguk.ukuu.org.uk
-X-Envelope-Recipient: jgarzik@pobox.com
-X-Envelope-Recipient: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+	id S1751975Ab1CZOJC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 10:09:02 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53720 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab1CZOJB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 10:09:01 -0400
+Subject: Re: [PATCH] regulator: fix tps6524x section mismatch
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Cyril Chemparathy <cyril@ti.com>, akpm <akpm@linux-foundation.org>
+In-Reply-To: <20110324133059.eb17c442.randy.dunlap@oracle.com>
+References: <20110324133059.eb17c442.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 26 Mar 2011 14:08:51 +0000
+Message-ID: <1301148531.3455.48.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Date: Sat, 26 Mar 2011 16:58:55 +0300
-From: igor@novg.net
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: <jgarzik@pobox.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2.6.38.1] =?UTF-8?Q?pata=5Fit=38=32=31x=3A=20Add=20mod?=
- =?UTF-8?Q?ule=20param=20to=20force=20UDMA=20on=20Vortex=38=36SX?=
-In-Reply-To: <20110326125441.3e628850@lxorguk.ukuu.org.uk>
-References: <89bf4e2c74a16f130208a485c6eafd77@novg.net>
- <20110326125441.3e628850@lxorguk.ukuu.org.uk>
-Message-ID: <90c1a5f93e6d67aec9f67a1d4c0deb86@novg.net>
-User-Agent: Roundcube Webmail/0.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On Sat, 26 Mar 2011 12:54:41 +0000, Alan Cox wrote:
->>  May be there are errors with pure IDE devices or with older 
->> revisions
->>  of Vortex86SX
->>  boards, i do no know. But for my device i have 2x improvement in 
->> I/O
->>  speed when
->>  enabling UDMA/33 instead of MWDMA, so i think this parameter would 
->> be
->>  useful.
->
-> "I do not know" is not a good basis for hacking storage code,
-> particularly if it was to turn out that the reason was something like
-> silent data corruption (eg as with UDMA on the old OSB4 controllers 
-> in
-> some cases)
->
+On Thu, 2011-03-24 at 13:30 -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Fix section mismatch that is caused by init code calling exit code:
+> pmic_remove() cannot be marked as __devexit.
+> 
+> WARNING: drivers/regulator/tps6524x-regulator.o(.devinit.text+0x205): Section mismatch in reference from the function pmic_probe() to the function .devexit.text:pmic_remove()
+> The function __devinit pmic_probe() references
+> a function __devexit pmic_remove().
+> This is often seen when error handling in the init function
+> uses functionality in the exit path.
+> The fix is often to remove the __devexit annotation of
+> pmic_remove() so it may be used outside an exit section.
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc:	Liam Girdwood <lrg@slimlogic.co.uk>
+> Cc:	Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc:	Cyril Chemparathy <cyril@ti.com>
+> ---
+>  drivers/regulator/tps6524x-regulator.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
 
- Well, by "i do not know" i meant that i do not have other (older) DMP
- hardware, nor do i have means to connect pure IDE device to my device
- (DMP-2300).
- I just can state that i was having a root FS on a CompactFlash for 
- quite
- a long time with UDMA enabled, and i have not observed any problems, 
- and
- have seen no signs of data corruption either.
+Applied.
+Thanks
 
- I am just proposing to give users an option to enable UDMA at their own 
- risk,
- maybe add comment stating that enabling this option may or may not
- cause silent data corruption. Or maybe to add this as a sub-option to 
- the
- driver in Kconfig to switch on/off at compile time with detailed 
- description
- under ---help---
-
-> The change came via DMP signoff (the manufacturer) so any adjustment 
-> of
-> this sort of checking really ought to go via DMP as well.
->
->>  Also fix to initialize default value for parameter 'noraid'.
->
-> This does not need initialising - C guarantees static variables start 
-> at
-> zero. If that makes a difference you have other problems.
-
- Sorry, my bad.
-
-> So NAK this.
->
-> Although if you want to take it up with DMP and find out if they have
-> updated rules or checks that want pushing that might be useful.
-
- No, i do not intend to contact them, i just wanted people to have an 
- on/off
- switch in kernel, not to push this patch by all means necessary.
-
- If this option is considered by community unneeded, i'll just have to 
- patch my
- own kernel with every upgrade :)
-
-> Alan
+Liam
 
