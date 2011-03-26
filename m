@@ -1,181 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab1CZL3o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 07:29:44 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43950 "EHLO ogre.sisk.pl"
+	id S1752604Ab1CZLam (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 07:30:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43958 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab1CZL3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 07:29:43 -0400
+	id S1751913Ab1CZLal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 07:30:41 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-pm@lists.linux-foundation.org
-Subject: [PATCH] PM / Hibernate: Introduce CONFIG_HIBERNATE_INTERFACE
-Date: Sat, 26 Mar 2011 12:29:44 +0100
+To: Len Brown <lenb@kernel.org>
+Subject: [PATCH] ACPI: Drop ACPI_NO_HARDWARE_INIT
+Date: Sat, 26 Mar 2011 12:30:59 +0100
 User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: xen-devel@lists.xensource.com, Shriram Rajagopalan <rshriram@cs.ubc.ca>,
-        LKML <linux-kernel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103261229.44770.rjw@sisk.pl>
+Message-Id: <201103261231.00094.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Xen save/restore is going to use hibernate device callbacks for
-quiescing devices and putting them back to normal operations and it
-would need to select CONFIG_HIBERNATION for this purpose.  However,
-that also would cause the hibernate interfaces for user space to be
-enabled, which might confuse user space, because the Xen kernels
-don't support hibernation.  Moreover, it would be wasteful, as it
-would make the Xen kernels include a substantial amount of code that
-they would never use.
-
-To address this issue introduce new power management Kconfig option
-CONFIG_HIBERNATE_INTERFACE, such that the hibernate interfaces for
-user space and the image-handling code will depend on it and it will
-select CONFIG_HIBERNATION.  Then, Xen save/restore will be able to
-select CONFIG_HIBERNATION without dragging the entire hibernate code
-along with it.
+ACPI_NO_HARDWARE_INIT is only used by acpi_early_init() and
+acpi_bus_init() when calling acpi_enable_subsystem(), but
+acpi_enable_subsystem() doesn't check that flag, so it can be
+dropped.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Tested-by: Shriram Rajagopalan <rshriram@cs.ubc.ca>
 ---
- arch/x86/power/Makefile |    3 ++-
- include/linux/suspend.h |   15 +++++----------
- kernel/power/Kconfig    |    4 ++++
- kernel/power/Makefile   |    4 ++--
- kernel/power/main.c     |    2 +-
- kernel/power/power.h    |    6 +++---
- 6 files changed, 17 insertions(+), 17 deletions(-)
+ drivers/acpi/bus.c     |    8 ++------
+ include/acpi/actypes.h |    1 -
+ 2 files changed, 2 insertions(+), 7 deletions(-)
 
-Index: linux-2.6/kernel/power/Kconfig
+Index: linux-2.6/drivers/acpi/bus.c
 ===================================================================
---- linux-2.6.orig/kernel/power/Kconfig
-+++ linux-2.6/kernel/power/Kconfig
-@@ -19,8 +19,12 @@ config SUSPEND_FREEZER
- 	  Turning OFF this setting is NOT recommended! If in doubt, say Y.
- 
- config HIBERNATION
-+	bool
-+
-+config HIBERNATE_INTERFACE
- 	bool "Hibernation (aka 'suspend to disk')"
- 	depends on SWAP && ARCH_HIBERNATION_POSSIBLE
-+	select HIBERNATION
- 	select LZO_COMPRESS
- 	select LZO_DECOMPRESS
- 	---help---
-Index: linux-2.6/kernel/power/Makefile
-===================================================================
---- linux-2.6.orig/kernel/power/Makefile
-+++ linux-2.6/kernel/power/Makefile
-@@ -6,7 +6,7 @@ obj-$(CONFIG_PM_SLEEP)		+= console.o
- obj-$(CONFIG_FREEZER)		+= process.o
- obj-$(CONFIG_SUSPEND)		+= suspend.o
- obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
--obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
--				   block_io.o
-+obj-$(CONFIG_HIBERNATE_INTERFACE)	+= hibernate.o snapshot.o swap.o \
-+						user.o block_io.o
- 
- obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
-Index: linux-2.6/include/linux/suspend.h
-===================================================================
---- linux-2.6.orig/include/linux/suspend.h
-+++ linux-2.6/include/linux/suspend.h
-@@ -229,7 +229,7 @@ struct platform_hibernation_ops {
- 	void (*recover)(void);
- };
- 
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_INTERFACE
- /* kernel/power/snapshot.c */
- extern void __register_nosave_region(unsigned long b, unsigned long e, int km);
- static inline void __init register_nosave_region(unsigned long b, unsigned long e)
-@@ -248,7 +248,9 @@ extern unsigned long get_safe_page(gfp_t
- extern void hibernation_set_ops(const struct platform_hibernation_ops *ops);
- extern int hibernate(void);
- extern bool system_entering_hibernation(void);
--#else /* CONFIG_HIBERNATION */
-+#else /* !CONFIG_HIBERNATE_INTERFACE */
-+static inline void register_nosave_region(unsigned long b, unsigned long e) {}
-+static inline void register_nosave_region_late(unsigned long b, unsigned long e) {}
- static inline int swsusp_page_is_forbidden(struct page *p) { return 0; }
- static inline void swsusp_set_page_free(struct page *p) {}
- static inline void swsusp_unset_page_free(struct page *p) {}
-@@ -256,7 +258,7 @@ static inline void swsusp_unset_page_fre
- static inline void hibernation_set_ops(const struct platform_hibernation_ops *ops) {}
- static inline int hibernate(void) { return -ENOSYS; }
- static inline bool system_entering_hibernation(void) { return false; }
--#endif /* CONFIG_HIBERNATION */
-+#endif /* !CONFIG_HIBERNATE_INTERFACE */
- 
- #ifdef CONFIG_PM_SLEEP
- void save_processor_state(void);
-@@ -298,13 +300,6 @@ static inline bool pm_wakeup_pending(voi
- extern struct mutex pm_mutex;
- 
- #ifndef CONFIG_HIBERNATION
--static inline void register_nosave_region(unsigned long b, unsigned long e)
--{
--}
--static inline void register_nosave_region_late(unsigned long b, unsigned long e)
--{
--}
--
- static inline void lock_system_sleep(void) {}
- static inline void unlock_system_sleep(void) {}
- 
-Index: linux-2.6/arch/x86/power/Makefile
-===================================================================
---- linux-2.6.orig/arch/x86/power/Makefile
-+++ linux-2.6/arch/x86/power/Makefile
-@@ -4,4 +4,5 @@ nostackp := $(call cc-option, -fno-stack
- CFLAGS_cpu.o	:= $(nostackp)
- 
- obj-$(CONFIG_PM_SLEEP)		+= cpu.o
--obj-$(CONFIG_HIBERNATION)	+= hibernate_$(BITS).o hibernate_asm_$(BITS).o
-+obj-$(CONFIG_HIBERNATE_INTERFACE)	+= hibernate_$(BITS).o \
-+						hibernate_asm_$(BITS).o
-Index: linux-2.6/kernel/power/main.c
-===================================================================
---- linux-2.6.orig/kernel/power/main.c
-+++ linux-2.6/kernel/power/main.c
-@@ -156,7 +156,7 @@ static ssize_t state_show(struct kobject
- 			s += sprintf(s,"%s ", pm_states[i]);
+--- linux-2.6.orig/drivers/acpi/bus.c
++++ linux-2.6/drivers/acpi/bus.c
+@@ -901,10 +901,7 @@ void __init acpi_early_init(void)
  	}
  #endif
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_INTERFACE
- 	s += sprintf(s, "%s\n", "disk");
- #else
- 	if (s != buf)
-Index: linux-2.6/kernel/power/power.h
+ 
+-	status =
+-	    acpi_enable_subsystem(~
+-				  (ACPI_NO_HARDWARE_INIT |
+-				   ACPI_NO_ACPI_ENABLE));
++	status = acpi_enable_subsystem(~ACPI_NO_ACPI_ENABLE);
+ 	if (ACPI_FAILURE(status)) {
+ 		printk(KERN_ERR PREFIX "Unable to enable ACPI\n");
+ 		goto error0;
+@@ -925,8 +922,7 @@ static int __init acpi_bus_init(void)
+ 
+ 	acpi_os_initialize1();
+ 
+-	status =
+-	    acpi_enable_subsystem(ACPI_NO_HARDWARE_INIT | ACPI_NO_ACPI_ENABLE);
++	status = acpi_enable_subsystem(ACPI_NO_ACPI_ENABLE);
+ 	if (ACPI_FAILURE(status)) {
+ 		printk(KERN_ERR PREFIX
+ 		       "Unable to start the ACPI Interpreter\n");
+Index: linux-2.6/include/acpi/actypes.h
 ===================================================================
---- linux-2.6.orig/kernel/power/power.h
-+++ linux-2.6/kernel/power/power.h
-@@ -13,7 +13,7 @@ struct swsusp_info {
- 	unsigned long		size;
- } __attribute__((aligned(PAGE_SIZE)));
- 
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_INTERFACE
- /* kernel/power/snapshot.c */
- extern void __init hibernate_image_size_init(void);
- 
-@@ -53,10 +53,10 @@ extern int hibernation_snapshot(int plat
- extern int hibernation_restore(int platform_mode);
- extern int hibernation_platform_enter(void);
- 
--#else /* !CONFIG_HIBERNATION */
-+#else /* !CONFIG_HIBERNATE_INTERFACE */
- 
- static inline void hibernate_image_size_init(void) {}
--#endif /* !CONFIG_HIBERNATION */
-+#endif /* !CONFIG_HIBERNATE_INTERFACE */
- 
- extern int pfn_is_nosave(unsigned long);
- 
+--- linux-2.6.orig/include/acpi/actypes.h
++++ linux-2.6/include/acpi/actypes.h
+@@ -470,7 +470,6 @@ typedef u64 acpi_integer;
+  */
+ #define ACPI_FULL_INITIALIZATION        0x00
+ #define ACPI_NO_ADDRESS_SPACE_INIT      0x01
+-#define ACPI_NO_HARDWARE_INIT           0x02
+ #define ACPI_NO_EVENT_INIT              0x04
+ #define ACPI_NO_HANDLER_INIT            0x08
+ #define ACPI_NO_ACPI_ENABLE             0x10
