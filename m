@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933326Ab1CZAMz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:12:55 -0400
-Received: from kroah.org ([198.145.64.141]:35836 "EHLO coco.kroah.org"
+	id S933332Ab1CZANN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:13:13 -0400
+Received: from kroah.org ([198.145.64.141]:35831 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932964Ab1CZAGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:06:20 -0400
+	id S933221Ab1CZAGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:06:19 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:56 2011
-Message-Id: <20110326000456.781738887@clark.kroah.org>
+Message-Id: <20110326000456.672622298@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 17:03:41 -0700
+Date: Fri, 25 Mar 2011 17:03:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lydia Wang <lydiawang@viatech.com.cn>, Takashi Iwai <tiwai@suse.de>
-Subject: [09/35] ALSA: hda - VIA: Fix stereo mixer recording no sound issue
+        Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [08/35] hwmon: (sht15) Fix integer overflow in humidity calculation
 In-Reply-To: <20110326000509.GA29736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lydia Wang <lydiawang@viatech.com.cn>
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 
-commit bff5fbf50bd498c217994bd2d41a53ac3141185a upstream.
+commit ccd32e735de7a941906e093f8dca924bb05c5794 upstream.
 
-Modify function via_mux_enum_put() to fix stereo mixer recording
-no sound issue.
+An integer overflow occurs in the calculation of RHlinear when the
+relative humidity is greater than around 30%. The consequence is a subtle
+(but noticeable) error in the resulting humidity measurement.
 
-Signed-off-by: Lydia Wang <lydiawang@viatech.com.cn>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_via.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/hwmon/sht15.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -1060,6 +1060,7 @@ static int via_mux_enum_put(struct snd_k
- 	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
- 	struct via_spec *spec = codec->spec;
- 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
-+	int ret;
+--- a/drivers/hwmon/sht15.c
++++ b/drivers/hwmon/sht15.c
+@@ -332,11 +332,11 @@ static inline int sht15_calc_humid(struc
  
- 	if (!spec->mux_nids[adc_idx])
- 		return -EINVAL;
-@@ -1068,12 +1069,14 @@ static int via_mux_enum_put(struct snd_k
- 			       AC_VERB_GET_POWER_STATE, 0x00) != AC_PWRST_D0)
- 		snd_hda_codec_write(codec, spec->mux_nids[adc_idx], 0,
- 				    AC_VERB_SET_POWER_STATE, AC_PWRST_D0);
--	/* update jack power state */
--	set_jack_power_state(codec);
+ 	const int c1 = -4;
+ 	const int c2 = 40500; /* x 10 ^ -6 */
+-	const int c3 = -2800; /* x10 ^ -9 */
++	const int c3 = -28; /* x 10 ^ -7 */
  
--	return snd_hda_input_mux_put(codec, spec->input_mux, ucontrol,
-+	ret = snd_hda_input_mux_put(codec, spec->input_mux, ucontrol,
- 				     spec->mux_nids[adc_idx],
- 				     &spec->cur_mux[adc_idx]);
-+	/* update jack power state */
-+	set_jack_power_state(codec);
-+
-+	return ret;
+ 	RHlinear = c1*1000
+ 		+ c2 * data->val_humid/1000
+-		+ (data->val_humid * data->val_humid * c3)/1000000;
++		+ (data->val_humid * data->val_humid * c3) / 10000;
+ 	return (temp - 25000) * (10000 + 80 * data->val_humid)
+ 		/ 1000000 + RHlinear;
  }
- 
- static int via_independent_hp_info(struct snd_kcontrol *kcontrol,
 
 
