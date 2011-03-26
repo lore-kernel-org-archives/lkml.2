@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab1CZKfx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 06:35:53 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41057 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab1CZKfu (ORCPT
+	id S1753930Ab1CZKyX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 06:54:23 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64456 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab1CZKyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 06:35:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=d6Aaion+8AWlELZsO9XC3mljZopr5Z6x11T46xrUA0Abh0pK6RNtWYgNkVJBNL1TSY
-         +r6hOeosPEeYBCZ/d1UWzq2BOmAYT2sijWAepg6pCcLlx4B2TORKDtTpGSe8ZS403ozi
-         49jXhr9z498XNY/g8a0xynSUUEn0aFbqtdohc=
-Date: Sat, 26 Mar 2011 13:35:39 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: David Miller <davem@davemloft.net>
-Cc: shemminger@vyatta.com, serge.hallyn@ubuntu.com, bhutchings@solarflare.com,
-        eparis@redhat.com, eparis@parisplace.org, linux-kernel@vger.kernel.org,
-        mjt@tls.msk.ru, arnd@arndb.de, mirqus@gmail.com,
-        netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        eric.dumazet@gmail.com, therbert@google.com, xiaosuo@gmail.com,
-        jesse@nicira.com, kees.cook@canonical.com, eugene@redhat.com,
-        dan.j.rosenberg@gmail.com, akpm@linux-foundation.org, greg@kroah.com,
-        sds@tycho.nsa.gov, linux-security-module@vger.kernel.org,
-        dwalsh@redhat.com, dhowells@redhat.com
-Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
- kernel modules
-Message-ID: <20110326103539.GA4719@albatros>
-References: <1300991584.2689.35.camel@bwh-desktop>
- <20110324202634.GB9191@peq.hallyn.com>
- <20110324143944.29f4c362@nehalam>
- <20110324.144628.58411809.davem@davemloft.net>
+	Sat, 26 Mar 2011 06:54:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
+Date: Sat, 26 Mar 2011 11:54:18 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        gregkh@suse.de
+References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com> <20110326002159.GY3130@pulham.picochip.com> <AANLkTinYd+4vtSBmBGHJwbCgFiZttSTtgQaQ0txwoUxt@mail.gmail.com>
+In-Reply-To: <AANLkTinYd+4vtSBmBGHJwbCgFiZttSTtgQaQ0txwoUxt@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110324.144628.58411809.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103261154.18619.arnd@arndb.de>
+X-Provags-ID: V02:K0:s0/Tn8N1sKtLQZhSolc/AyEcX4A2PzpW3MwKLCvQ9Nw
+ THuWW0RM8XyGRXLYncbK4ZvmpPXa/SrsnvVvQzKs0EiTuBoHNe
+ C8AvsOkMI2gNXjP64J0MHxxCmvryYIGhQS3RzBEVWgi2Ep8jKd
+ PbptXUVjmxg5OXIqnBXQ9Ur7GiLeADiyXFA4DD88bG7hT6t3ui
+ MM/giKx2vSsacMLJga2tA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 14:46 -0700, David Miller wrote:
-> You can't say "userland will fix things up"
-> 
-> Because we're never supposed to break userland in the first place.
+On Saturday 26 March 2011 03:16:48 Mike Frysinger wrote:
+> On Fri, Mar 25, 2011 at 20:21, Jamie Iles wrote:
+> > For the actual ioctl() we should assume byte addressing rather than
+> > words though and do the conversion in the driver so we can cope with
+> > devices that don't have 64-bit words and do the locking on a looping
+> > word-by-word basis.
+> >
+> >        struct otp_lock_req {
+> >                __u32   start_addr;
+> >                __u32   byte_count;
+> >        };
 
-I admit that the patch breaks things.
+Looks good to me.
 
-But the thing is that kernel changes _are_ breaking userspace here and
-there, not only by such obvious policy changes, but by indirect changes.
-Note that the patch that changed CAP_SYS_MODULE to CAP_NET_ADMIN has
-broken userspace behavior too - one could load modules with
-CAP_SYS_MODULE without CAP_NET_ADMIN via "ifconfig wifi0" and after the
-patch it could not.
+> i would add an ABI field here too so if in the future we want to add
+> stuff, we can do so without adding new ioctls.  like "u16 version; u16
+> flags;".  then in the ioctl, if version isnt 0, we return ENOTSUP.  in
+> the future, we can add flags or bump the version.
 
-Look at this patch:
-http://patchwork.ozlabs.org/patch/42148/
+No, versioned APIs are just a pain to maintain, it's easier to add
+new ioctl commands when necessary.
+Note that the kernel would always have to support all versions of
+the API anyway.
 
-It breaks userspace tools too - one might run LSM in learning mode to
-create a profile for netfilter configuring, saw it didn't need any CAP_*
-and totally denied them in the profile.  After many years (the bug was
-fixed after 5+ years!) of good work it was broken by the patch.  The same
-with plenty of patches that introduce different checks in places where
-there were no permission checks at all or these checks were broken.
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+	Arnd
