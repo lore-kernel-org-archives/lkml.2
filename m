@@ -1,90 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab1CZAY4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:24:56 -0400
-Received: from kroah.org ([198.145.64.141]:41540 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755630Ab1CYXwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:30 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:09 2011
-Message-Id: <20110325234509.818300291@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:55 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [19/63] PCI hotplug: acpiphp: set current_state to D0 in register_slot
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+	id S933906Ab1CZAZM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:25:12 -0400
+Received: from smtp103.prem.mail.sp1.yahoo.com ([98.136.44.58]:26110 "HELO
+	smtp103.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932293Ab1CZAZJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:25:09 -0400
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: HVj_wWsVM1nbbhTBS_oM4LCD2Jl9NaC_6DlUpvDBzYo1dUh
+ Rd77jpcDI_tnDhf3AJpZVDG6REPddBXqda1drjyaRb1iiJGHAbKsOW2NEcS2
+ yp6YCP2b.5CrkehYPga.pzSo_KNccDssbzyBnSoBS6.U0eVb8hDAImzxt5Om
+ gUnxujJPXd5TVEy5vTbiz0o98oPWl2V7EN6fR_lXZUH96Qf8D_AN7HokwhVC
+ ypfte5XTchV3Puh4ctoAf3pByVF6ZJRQz7hkGkwaE6e6feRegDR99Lrnl13E
+ cnyF3R2Z5.PMOuSOt1RDTrWjy4OvZcGdclKAr6GJ3om.qblivxfBy9TWd8Mg
+ PtlciAP7rfUNbg_Uzc2nKu07u8aZmdwc9TNHaWyhw7FI-
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4D8D3258.5090804@schaufler-ca.com>
+Date: Fri, 25 Mar 2011 17:24:56 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Josef Bacik <josef@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Chuck Ebbert <cebbert@redhat.com>
+Subject: Re: [34/35] fs: call security_d_instantiate in d_obtain_alias V2
+References: <20110326000459.388812559@clark.kroah.org>
+In-Reply-To: <20110326000459.388812559@clark.kroah.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+On 3/25/2011 5:04 PM, Greg KH wrote:
+> 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+>
+> ------------------
+>
+> From: Josef Bacik <josef@redhat.com>
+>
+> commit 24ff6663ccfdaf088dfa7acae489cb11ed4f43c4 upstream.
+>
+> While trying to track down some NFS problems with BTRFS, I kept noticing I was
+> getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
+> figure out that it was SELinux that was giving me grief, with the following
+> denial
+>
+> type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
+> comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
+> tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
+>
+> Turns out this is because in d_obtain_alias if we can't find an alias we create
+> one and do all the normal instantiation stuff, but we don't do the
+> security_d_instantiate.
+>
+> Usually we are protected from getting a hashed dentry that hasn't yet run
+> security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
+> option there, so in order to deal with the case that a second thread comes in
+> and finds our new dentry before we get to run security_d_instantiate(), we go
+> ahead and call it if we find a dentry already.  Eric assures me that this is ok
+> as the code checks to see if the dentry has been initialized already so calling
+> security_d_instantiate() against the same dentry multiple times is ok.  With
+> this patch I'm no longer getting errant -EACCESS values.
 
-------------------
+Not to be a bother, but did you try this with Smack as well as SELinux?
+Smack should be fine with the change, but if you're not going to try
+Smack I need to know.
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-commit 47e9037ac16637cd7f12b8790ea7ce6680e42168 upstream.
-
-If a device doesn't support power management (pm_cap == 0) but it is
-acpi_pci_power_manageable() because there is a _PS0 method declared for
-it and _EJ0 is also declared for the slot then nobody is going to set
-current_state = PCI_D0 for this device.  This is what I think it is
-happening:
-
-pci_enable_device
-    |
-__pci_enable_device_flags
-/* here we do not set current_state because !pm_cap */
-    |
-do_pci_enable_device
-    |
-pci_set_power_state
-    |
-__pci_start_power_transition
-    |
-pci_platform_power_transition
-/* platform_pci_power_manageable() calls acpi_pci_power_manageable that
- * returns true */
-    |
-platform_pci_set_power_state
-/* acpi_pci_set_power_state gets called and does nothing because the
- * acpi device has _EJ0, see the comment "If the ACPI device has _EJ0,
- * ignore the device" */
-
-at this point if we refer to the commit message that introduced the
-comment above (10b3dcae0f275e2546e55303d64ddbb58cec7599), it is up to
-the hotplug driver to set the state to D0.
-However AFAICT the pci hotplug driver never does, in fact
-drivers/pci/hotplug/acpiphp_glue.c:register_slot sets the slot flags to
-(SLOT_ENABLED | SLOT_POWEREDON) but it does not set the pci device
-current state to PCI_D0.
-
-So my proposed fix is also to set current_state = PCI_D0 in
-register_slot.
-Comments are very welcome.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/pci/hotplug/acpiphp_glue.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -212,6 +212,7 @@ register_slot(acpi_handle handle, u32 lv
- 
- 	pdev = pci_get_slot(pbus, PCI_DEVFN(device, function));
- 	if (pdev) {
-+		pdev->current_state = PCI_D0;
- 		slot->flags |= (SLOT_ENABLED | SLOT_POWEREDON);
- 		pci_dev_put(pdev);
- 	}
-
+> Signed-off-by: Josef Bacik <josef@redhat.com>
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Chuck Ebbert <cebbert@redhat.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>
+> ---
+>  fs/dcache.c |    3 +++
+>  1 file changed, 3 insertions(+)
+>
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -1176,9 +1176,12 @@ struct dentry *d_obtain_alias(struct ino
+>  	spin_unlock(&tmp->d_lock);
+>  
+>  	spin_unlock(&dcache_lock);
+> +	security_d_instantiate(tmp, inode);
+>  	return tmp;
+>  
+>   out_iput:
+> +	if (res && !IS_ERR(res))
+> +		security_d_instantiate(res, inode);
+>  	iput(inode);
+>  	return res;
+>  }
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
 
