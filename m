@@ -1,106 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab1CZQXA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 12:23:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44190 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752645Ab1CZQW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 12:22:59 -0400
-Date: Sat, 26 Mar 2011 17:13:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
-	value
-Message-ID: <20110326161346.GA18272@redhat.com>
-References: <20110324164436.GC1930@jolsa.brq.redhat.com> <1301153868.2250.359.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301153868.2250.359.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752957Ab1CZQ0x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 12:26:53 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51616 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676Ab1CZQ0w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 12:26:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=i4zLKesVtaTFoWsqiWriiVTs4OQbqW3Jw0DS4HjAHJ6QWMRP6xfszyvJFOcfuDUwiV
+         47fELNP2oJW3t3FPRSsZExhDOMoGuWtuJDiPj9NZkHItJy8undfS1TA2+hM1bYZDxGje
+         wMZdjKTc/oyZkgXvRVYWctb4jQii4ZFBZe0+E=
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH 1/2] Fixed the format of column longer than 80 .
+Date: Sun, 27 Mar 2011 00:25:25 +0800
+Message-Id: <1301156726-23610-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26, Peter Zijlstra wrote:
->
-> On Thu, 2011-03-24 at 17:44 +0100, Jiri Olsa wrote:
-> >
-> > - close is called on event on CPU 0:
-> >         - the task is scheduled on CPU 0
-> >         - __perf_event_task_sched_in is called
-> >         - cpuctx->task_ctx is set
-> >         - perf_sched_events jump label is decremented and == 0
-> >         - __perf_event_task_sched_out is not called
-> >         - cpuctx->task_ctx on CPU 0 stays set
-> >
-> > - exit is called on CPU 1:
-> >         - the task is scheduled on CPU 1
-> >         - perf_event_exit_task is called
-> >         - task_ctx_sched_out unsets cpuctx->task_ctx on CPU 1
-> >         - put_ctx destroys the context
-> >
-> > - another call of perf_rotate_context on CPU 0 will use invalid
-> >   task_ctx pointer, and eventualy panic
-> >
-> >
-> > The attached workaround makes sure that the task_ctx is not set
-> > when the context is being removed.  As I said it's not ment to be
-> > fix.
->
-> Still having somewhat of a cold, how does the below look?
->
-> (completely untested so far, will have to bang on your testcase a bit to
-> make it work).
->
-> ---
->  kernel/perf_event.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index c75925c..2a03cc4 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -1112,6 +1112,8 @@ static int __perf_remove_from_context(void *info)
->  	raw_spin_lock(&ctx->lock);
->  	event_sched_out(event, cpuctx, ctx);
->  	list_del_event(event, ctx);
-> +	if (cpuctx->task_ctx == event->ctx && !event->ctx->nr_active)
-> +		cpuctx->task_ctx = NULL;
+---
+ drivers/base/memory.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+ mode change 100644 => 100755 drivers/base/memory.c
 
-I don't think this is right.
-
-It is too late to clear ->task_ctx when the task exits. It is simply
-wrong that cpuctx->task_ctx != NULL after context_switch(). And, once
-again ->is_active is still true.
-
-Besides, you can trust __get_cpu_context(), it possible that another
-CPU has cpuctx->task_ctx == event->ctx. Otherwise task_ctx_sched_out()
-has already cleared cpuctx->task_ctx.
-
-Finally, in this case there are no events attached to this context,
-close(event_fd) removes the only one.
-
-
-But there is one thing I can't understand. Jiri can trigger this bug
-even with HAVE_JUMP_LABEL. How? OK, jump_label_dec/jump_label_inc are
-obviously racy, but this test-case can't trigger the race.
-
-So, we are doing free_event()->jump_label_dec()->jump_label_update(DISABLE)
-and this implies __stop_machine(). This means we have at least one
-context_switch() from the task with the active ->task_ctx to the
-migration thread. And this happens before JUMP_LABEL() code was
-actually changed, perf_event_task_sched_out() should call
-__perf_event_task_sched_out() and clear task_ctx. perf_sched_events
-is already zero, but this shouldn't matter.
-
-Confused.
-
-Oleg.
-
-Oleg.
-
-Oleg.
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+old mode 100644
+new mode 100755
+index 3da6a43..3e9aa3d
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -48,7 +48,8 @@ static const char *memory_uevent_name(struct kset *kset, struct kobject *kobj)
+ 	return MEMORY_CLASS_NAME;
+ }
+ 
+-static int memory_uevent(struct kset *kset, struct kobject *obj, struct kobj_uevent_env *env)
++static int memory_uevent(struct kset *kset, struct kobject *obj,
++			struct kobj_uevent_env *env)
+ {
+ 	int retval = 0;
+ 
+-- 
+1.7.3
 
