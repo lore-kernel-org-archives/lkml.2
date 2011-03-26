@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab1CZHtc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 03:49:32 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50686 "EHLO
+	id S1753830Ab1CZHyJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 03:54:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55760 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab1CZHtb convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752666Ab1CZHyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 03:49:31 -0400
+	Sat, 26 Mar 2011 03:54:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=kMgdnQgD0EuzVUFyhAntQOhTvWNrBW9D5L+6YvzX3qn9/FRKVhWOWPkOFoP1DdN7lu
-         J8m4OmetotSwjLPu1XtORvYpgI7cMVNQIEFCuBzX0t46m/xyqGJj26rAc0/+MbydwS/A
-         xWiXBAN8UcR/vOlZJCiLRwcfUq4fxM5UleYeE=
-MIME-Version: 1.0
-In-Reply-To: <1300884347-3225-1-git-send-email-tailai.ly@taobao.com>
-References: <1300884347-3225-1-git-send-email-tailai.ly@taobao.com>
-Date: Sat, 26 Mar 2011 15:49:30 +0800
-Message-ID: <AANLkTimaF-MLHpG6JsmR+-EW-hDsVVWFZ2NWFrFHkE5d@mail.gmail.com>
-Subject: Re: [PATCH] drivers: Initialize ret to fix build warning in memory_probe_store
-From: Liu Yuan <namei.unix@gmail.com>
-To: linux-kernel@vger.kernel.org, greg@kroah.com, nfont@austin.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=aRVkxCChnFCN0yt5wdxclNe1p8L9N4KJoIpZfEUTU+O03PTOSYT1BR1o5DBBn3Kgig
+         isi4Wa+yo7zO/CD9iq9PB3k4LEPEGPDc4+5W/ipd6Ltu0xem+hRFrEMkR4fErVwEz+n8
+         mVt5BJLnkDN6hEmiYcTxGI0JjuLlPamAxnUrI=
+Subject: [PATCH] ASoC: twl6040: Return -ENOMEM if
+ create_singlethread_workqueue fails
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Misael Lopez Cruz <misael.lopez@ti.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 26 Mar 2011 15:53:58 +0800
+Message-ID: <1301126038.7662.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Nathan Fontenot <nfont@austin.ibm.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/twl6040.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-On Wed, Mar 23, 2011 at 8:45 PM, Liu Yuan  <namei.unix@gmail.com> wrote:
-> From: Liu Yuan <tailai.ly@taobao.com>
->
-> This fix a build warning in drivers/base/memory.c.
->
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
-> ---
->  drivers/base/memory.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index 3da6a43..f2ac71f 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -387,7 +387,7 @@ memory_probe_store(struct class *class, struct class_attribute *attr,
->  {
->        u64 phys_addr;
->        int nid;
-> -       int i, ret;
-> +       int i, ret = 0;
->
->        phys_addr = simple_strtoull(buf, NULL, 0);
->
-> --
-> 1.7.0.4
->
->
+diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
+index 482fcdb..255901c 100644
+--- a/sound/soc/codecs/twl6040.c
++++ b/sound/soc/codecs/twl6040.c
+@@ -1629,8 +1629,10 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+ 	priv->naudint = naudint;
+ 	priv->workqueue = create_singlethread_workqueue("twl6040-codec");
+ 
+-	if (!priv->workqueue)
++	if (!priv->workqueue) {
++		ret = -ENOMEM;
+ 		goto work_err;
++	}
+ 
+ 	INIT_DELAYED_WORK(&priv->delayed_work, twl6040_accessory_work);
+ 
+-- 
+1.7.1
+
+
+
