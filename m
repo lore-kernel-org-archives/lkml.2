@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1CZTbe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 15:31:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41222 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753431Ab1CZTbd (ORCPT
+	id S1754013Ab1CZTdG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 15:33:06 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34808 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab1CZTdE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 15:31:33 -0400
+	Sat, 26 Mar 2011 15:33:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=sxkR9BpEbAZTg2p8ANpMu6KFw/f0MjY8roGuGSiQgE9IKK5y1+M4FKFg0Xd5LV1UgG
+         26cRgontkXJhZKwoOgoHkp3UmYDj6f/R/77SWwb04wysq7hqPqQpF9CwTdUDi+SjJN2w
+         P0hRJPqau2lMjJuMdW8NQ5ltbvHNQLuKNbPAg=
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1103261406420.24195@router.home>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger> <20110324142146.GA11682@elte.hu>
- <alpine.DEB.2.00.1103240940570.32226@router.home> <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
- <20110324172653.GA28507@elte.hu> <20110324185258.GA28370@elte.hu>
- <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6>
- <20110324192247.GA5477@elte.hu> <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com>
- <20110326112725.GA28612@elte.hu> <20110326114736.GA8251@elte.hu>
- <1301161507.2979.105.camel@edumazet-laptop> <alpine.DEB.2.00.1103261406420.24195@router.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 26 Mar 2011 12:30:36 -0700
-Message-ID: <AANLkTin8jHz0a5oS4LWQCrYW2VDb9A0V2aL7O5dYaPBt@mail.gmail.com>
-Subject: Re: [PATCH] slub: Disable the lockless allocator
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1301167611.17567.12.camel@Joe-Laptop>
+References: <1301156180-12192-1-git-send-email-ralf.thielow@googlemail.com>
+	<1301156180-12192-2-git-send-email-ralf.thielow@googlemail.com>
+	<1301165486.17567.7.camel@Joe-Laptop>
+	<AANLkTi=dOCmcJ9MA03gtsK5oc4N4FH2thuhMjmv7_T6z@mail.gmail.com>
+	<1301167611.17567.12.camel@Joe-Laptop>
+Date: Sat, 26 Mar 2011 20:33:02 +0100
+Message-ID: <AANLkTim86tYiuEfDV5MumNHr_7BOtN0G7zGPDokVd=Tj@mail.gmail.com>
+Subject: Re: [PATCH 2/4] staging: keucr: smscsi: Includes missing KERN_
+ facility level to printk().
+From: Ralf Thielow <ralf.thielow@googlemail.com>
+To: Joe Perches <joe@perches.com>
+Cc: devel@driverdev.osuosl.org, gregkh@suse.de, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 26, 2011 at 12:18 PM, Christoph Lameter <cl@linux.com> wrote:
+Ooops, i thougth i can trust "make M=***".
+
+Thanks!
+
+2011/3/26 Joe Perches <joe@perches.com>:
+> On Sat, 2011-03-26 at 20:11 +0100, Ralf Thielow wrote:
+>> Of course, the whole staging directory with "make clean
+>> M=drivers/staging && make M=drivers/staging".
+>> You're right. The "printk" function accept these but it's wrong.
 >
-> Right. RSI should be in the range of the values you printed.
-> However, the determination RSI is independent of the emulation of the
-> instruction. If RSI is set wrong then we should see these failures on
-> machines that do not do the instruction emulation. A kvm run with Ingo's
-> config should show the same issues. Will do that now.
-
-I bet it's timing-dependent and/or dependent on some code layout
-issue. Why else would the totally pointless previous patch have made
-any difference for Ingo (the "SLUB: Write to per cpu data when
-allocating it" thing seems to be pure voodoo programming)?
-
-That said, this early in the boot I don't think we should have any
-parallelism going on, so I don't see what could make those kinds of
-random effects.
-
-                             Linus
+> Then you didn't really compile test it.
+> I suggest you check your compilation commands.
+>
+> For instance:
+>
+> diff --git a/drivers/staging/keucr/smscsi.c b/drivers/staging/keucr/smscsi.c
+> index 6211686..dd3cf95 100644
+> --- a/drivers/staging/keucr/smscsi.c
+> +++ b/drivers/staging/keucr/smscsi.c
+> @@ -98,7 +98,7 @@ int SM_SCSI_Read_Capacity(struct us_data *us, struct scsi_cmnd *srb)
+>        WORD    bl_len;
+>        BYTE    buf[8];
+>
+> -       printk("SM_SCSI_Read_Capacity\n");
+> +       printk(KERN_DEBUG, "SM_SCSI_Read_Capacity\n");
+>
+>        bl_len = 0x200;
+>        bl_num = Ssfdc.MaxLogBlocks * Ssfdc.MaxSectors * Ssfdc.MaxZones - 1;
+>
+> $ make drivers/staging/keucr/smscsi.o
+>  CHK     include/linux/version.h
+>  CHK     include/generated/utsrelease.h
+>  CALL    scripts/checksyscalls.sh
+>  CC      drivers/staging/keucr/smscsi.o
+> drivers/staging/keucr/smscsi.c: In function ‘SM_SCSI_Read_Capacity’:
+> drivers/staging/keucr/smscsi.c:101:2: warning: too many arguments for format
+>
+>
+>
