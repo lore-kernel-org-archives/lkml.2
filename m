@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab1CZS1J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 14:27:09 -0400
-Received: from unix.wroclaw.pl ([94.23.28.62]:58869 "EHLO unix.wroclaw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752208Ab1CZS1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 14:27:07 -0400
-From: Mariusz Kozlowski <mk@lab.zgora.pl>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mariusz Kozlowski <mk@lab.zgora.pl>
-Subject: [PATCH] cfg80211:: fix possible NULL pointer dereference
-Date: Sat, 26 Mar 2011 19:26:55 +0100
-Message-Id: <1301164015-7978-1-git-send-email-mk@lab.zgora.pl>
-X-Mailer: git-send-email 1.7.0.4
-X-SA-Report: SpamAssassin 3.2.5 (2008-06-10) on unix.wroclaw.pl
-	Spam=No score=-1.4 bayes=0.5 autolearn=disabled
-	Spam Tests:
-	* -1.4 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	id S1753572Ab1CZS1X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 14:27:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38330 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab1CZS1V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 14:27:21 -0400
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
+ value
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110326173545.GA22919@redhat.com>
+References: <20110324164436.GC1930@jolsa.brq.redhat.com>
+	 <1301153868.2250.359.camel@laptop> <20110326161346.GA18272@redhat.com>
+	 <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com>
+	 <20110326173545.GA22919@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 26 Mar 2011 19:29:28 +0100
+Message-ID: <1301164168.2250.370.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In cfg80211_inform_bss_frame() wiphy is first dereferenced on privsz
-initialisation and then it is checked for NULL. This patch fixes that.
+On Sat, 2011-03-26 at 18:35 +0100, Oleg Nesterov wrote:
+> On 03/26, Oleg Nesterov wrote:
+> >
+> > On 03/26, Peter Zijlstra wrote:
+> > >
+> > > diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> > > index c75925c..e9e4e35 100644
+> > > --- a/kernel/perf_event.c
+> > > +++ b/kernel/perf_event.c
+> > > @@ -1073,6 +1073,8 @@ event_sched_out(struct perf_event *event,
+> > >  	if (!is_software_event(event))
+> > >  		cpuctx->active_oncpu--;
+> > >  	ctx->nr_active--;
+> > > +	if (!ctx->nr_active && cpuctx->task_ctx == ctx)
+> > > +		cpuctx->task_ctx = NULL;
+> >
+> > If we clear cpuctx->task_ctx, we should also clear ctx->is_active.
 
-Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
----
- net/wireless/scan.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+Right.
 
-diff --git a/net/wireless/scan.c b/net/wireless/scan.c
-index ea427f4..300c11d 100644
---- a/net/wireless/scan.c
-+++ b/net/wireless/scan.c
-@@ -585,16 +585,23 @@ cfg80211_inform_bss_frame(struct wiphy *wiphy,
- 	struct cfg80211_internal_bss *res;
- 	size_t ielen = len - offsetof(struct ieee80211_mgmt,
- 				      u.probe_resp.variable);
--	size_t privsz = wiphy->bss_priv_size;
-+	size_t privsz;
-+
-+	if (WARN_ON(!mgmt))
-+		return NULL;
-+
-+	if (WARN_ON(!wiphy))
-+		return NULL;
- 
- 	if (WARN_ON(wiphy->signal_type == CFG80211_SIGNAL_TYPE_UNSPEC &&
- 	            (signal < 0 || signal > 100)))
- 		return NULL;
- 
--	if (WARN_ON(!mgmt || !wiphy ||
--		    len < offsetof(struct ieee80211_mgmt, u.probe_resp.variable)))
-+	if (WARN_ON(len < offsetof(struct ieee80211_mgmt, u.probe_resp.variable)))
- 		return NULL;
- 
-+	privsz = wiphy->bss_priv_size;
-+
- 	res = kzalloc(sizeof(*res) + privsz + ielen, gfp);
- 	if (!res)
- 		return NULL;
--- 
-1.7.0.4
+> > Otherwise I can't see any problem, but I do not understand this code
+> > enough.
+> 
+> but probably we also need update_context_time().
+
+It looks like event_sched_out() relies on up-to-date ctx->time through
+perf_event_time() and most call-paths leading to event_sched_out() do
+indeed seem to update the ctx time, all except the move_group branch in
+perf_event_open() afaict.
+
+Sadly the reproducer doesn't seem to trigger the issue at all, its still
+running on a plain -tip kernel.
 
