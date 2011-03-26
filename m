@@ -1,109 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934202Ab1CZAcs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:32:48 -0400
-Received: from kroah.org ([198.145.64.141]:44150 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932107Ab1CYXwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:10 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:08 2011
-Message-Id: <20110325234507.935918310@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:43:37 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [01/63] ALSA: HDA: Realtek: Avoid unnecessary volume control index on Surround/Side
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+	id S932201Ab1CZAuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:50:46 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33191 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932107Ab1CZAup convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:50:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=h/4HStL+BpY6qRPlWvVXZ4iI7mbx2Wpk7vtsKgpW0Llpkm13/Xp+IE4pGSM9Ew9Zqf
+         tOXwLlV0VBhkRUnX3Hm5xhxWFSycBdft/xETjwKfXkNIkSZfVYBLelbd5bGrvP2dmAZM
+         FtviIEP4k5yEN2isw5fKfCslSWl2OmneKBt6k=
+MIME-Version: 1.0
+In-Reply-To: <20110325235654.GA24416@kroah.com>
+References: <20110325235654.GA24416@kroah.com>
+Date: Sat, 26 Mar 2011 08:50:43 +0800
+Message-ID: <AANLkTin=F4BEY3ZUNLt5K6DH7gQJZwDUdG2SLdAbZLd7@mail.gmail.com>
+Subject: Re: [00/23] 2.6.32.36-longterm review
+From: Teck Choon Giam <giamteckchoon@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+On Sat, Mar 26, 2011 at 7:56 AM, Greg KH <gregkh@suse.de> wrote:
+> This is the start of the longterm review cycle for the 2.6.32.36 release.
+> There are 23 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let us know.  If anyone is a maintainer of the proper subsystem, and
+> wants to add a Signed-off-by: line to the patch, please respond with it.
+>
+> Responses should be made by Sunday, March 17, 2011, 23:00:00 UTC.
+> Anything received after that time might be too late.
 
-------------------
+I think you mean March 27 instead of March 17? :p
 
-From: David Henningsson <david.henningsson@canonical.com>
+Thanks.
 
-commit 5a8826463c19b0d1a2fc60b2adac0ec318047844 upstream.
-
-Similar to commit 7e59e097c09b82760bb0fe08b0fa2b704d76c3f4, this patch
-avoids unnecessary volume control indices for more
-Realtek auto-parsers, e g the ALC66x family, on the "Surround" and "Side"
-controls.
-These indices cause these volume controls to be ignored by PulseAudio and
-vmaster and should be removed whenever possible.
-
-Reported-by: Jan Losinski <losinski@wh2.tu-dresden.de>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- sound/pci/hda/patch_realtek.c |   25 +++++++++++++++++--------
- 1 file changed, 17 insertions(+), 8 deletions(-)
-
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -16085,9 +16085,12 @@ static int alc861_auto_create_multi_out_
- 				return err;
- 		} else {
- 			const char *name = pfx;
--			if (!name)
-+			int index = i;
-+			if (!name) {
- 				name = chname[i];
--			err = __alc861_create_out_sw(codec, name, nid, i, 3);
-+				index = 0;
-+			}
-+			err = __alc861_create_out_sw(codec, name, nid, index, 3);
- 			if (err < 0)
- 				return err;
- 		}
-@@ -17238,16 +17241,19 @@ static int alc861vd_auto_create_multi_ou
- 				return err;
- 		} else {
- 			const char *name = pfx;
--			if (!name)
-+			int index = i;
-+			if (!name) {
- 				name = chname[i];
-+				index = 0;
-+			}
- 			err = __add_pb_vol_ctrl(spec, ALC_CTL_WIDGET_VOL,
--						name, i,
-+						name, index,
- 					  HDA_COMPOSE_AMP_VAL(nid_v, 3, 0,
- 							      HDA_OUTPUT));
- 			if (err < 0)
- 				return err;
- 			err = __add_pb_sw_ctrl(spec, ALC_CTL_BIND_MUTE,
--					       name, i,
-+					       name, index,
- 					  HDA_COMPOSE_AMP_VAL(nid_s, 3, 2,
- 							      HDA_INPUT));
- 			if (err < 0)
-@@ -19296,12 +19302,15 @@ static int alc662_auto_create_multi_out_
- 				return err;
- 		} else {
- 			const char *name = pfx;
--			if (!name)
-+			int index = i;
-+			if (!name) {
- 				name = chname[i];
--			err = __alc662_add_vol_ctl(spec, name, nid, i, 3);
-+				index = 0;
-+			}
-+			err = __alc662_add_vol_ctl(spec, name, nid, index, 3);
- 			if (err < 0)
- 				return err;
--			err = __alc662_add_sw_ctl(spec, name, mix, i, 3);
-+			err = __alc662_add_sw_ctl(spec, name, mix, index, 3);
- 			if (err < 0)
- 				return err;
- 		}
-
-
+Kindest regards,
+Giam Teck Choon
