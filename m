@@ -1,122 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab1CZXGX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 19:06:23 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50930 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364Ab1CZXGW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 19:06:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=cbo1RZPxzI29kbr3BdgoV996Ac7732OqwCgF7pUyb2ZuF79yJ+P4pRKcFwjMvpllOY
-         ynG9wS025trbeI/ANF2ilWKsQoHb+i1lAm+vJn985S6xq+WQuMnTleIF3uqXdQvLTzmR
-         wh35ZQSMiBcAIG/tJqsymxU0+CzgXLRHyUkhA=
-Date: Sun, 27 Mar 2011 01:06:16 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] kstrtox: convert fs/proc/
-Message-ID: <20110326230616.GA6802@p183.telecom.by>
+	id S1752167Ab1CZX66 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 19:58:58 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44671 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262Ab1CZX65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 19:58:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [RFC][PATCH] PM / Platform: Remove __weak definitions of runtime PM callbacks
+Date: Sun, 27 Mar 2011 00:58:41 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103270058.41632.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert fs/proc/ from strict_strto*() to kstrto*() functions.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Remove the __weak definitions of platform bus type runtime PM
+callbacks, make platform_dev_pm_ops point to the generic routines
+as appropriate and allow architectures using platform_dev_pm_ops to
+replace the runtime PM callbacks in that structure with their own
+set.
+
+Convert architectures providing its own definitions of the platform
+runtime PM callbacks to use the new mechanism.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
+ arch/arm/mach-shmobile/pm_runtime.c      |    3 ++
+ arch/sh/kernel/cpu/shmobile/pm_runtime.c |    3 ++
+ drivers/base/platform.c                  |   43 ++++++++++---------------------
+ include/linux/platform_device.h          |    4 ++
+ 4 files changed, 24 insertions(+), 29 deletions(-)
 
- fs/proc/base.c     |   16 ++++++++--------
- fs/proc/task_mmu.c |    8 +++++---
- 2 files changed, 13 insertions(+), 11 deletions(-)
-
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1059,7 +1059,7 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
+Index: linux-2.6/drivers/base/platform.c
+===================================================================
+--- linux-2.6.orig/drivers/base/platform.c
++++ linux-2.6/drivers/base/platform.c
+@@ -922,32 +922,7 @@ static int platform_pm_restore_noirq(str
+ 
+ #endif /* !CONFIG_HIBERNATION */
+ 
+-#ifdef CONFIG_PM_RUNTIME
+-
+-int __weak platform_pm_runtime_suspend(struct device *dev)
+-{
+-	return pm_generic_runtime_suspend(dev);
+-};
+-
+-int __weak platform_pm_runtime_resume(struct device *dev)
+-{
+-	return pm_generic_runtime_resume(dev);
+-};
+-
+-int __weak platform_pm_runtime_idle(struct device *dev)
+-{
+-	return pm_generic_runtime_idle(dev);
+-};
+-
+-#else /* !CONFIG_PM_RUNTIME */
+-
+-#define platform_pm_runtime_suspend NULL
+-#define platform_pm_runtime_resume NULL
+-#define platform_pm_runtime_idle NULL
+-
+-#endif /* !CONFIG_PM_RUNTIME */
+-
+-static const struct dev_pm_ops platform_dev_pm_ops = {
++static struct dev_pm_ops platform_dev_pm_ops = {
+ 	.prepare = platform_pm_prepare,
+ 	.complete = platform_pm_complete,
+ 	.suspend = platform_pm_suspend,
+@@ -962,9 +937,9 @@ static const struct dev_pm_ops platform_
+ 	.thaw_noirq = platform_pm_thaw_noirq,
+ 	.poweroff_noirq = platform_pm_poweroff_noirq,
+ 	.restore_noirq = platform_pm_restore_noirq,
+-	.runtime_suspend = platform_pm_runtime_suspend,
+-	.runtime_resume = platform_pm_runtime_resume,
+-	.runtime_idle = platform_pm_runtime_idle,
++	SET_RUNTIME_PM_OPS(pm_generic_runtime_suspend,
++			   pm_generic_runtime_resume,
++			   pm_generic_runtime_idle)
+ };
+ 
+ struct bus_type platform_bus_type = {
+@@ -976,6 +951,16 @@ struct bus_type platform_bus_type = {
+ };
+ EXPORT_SYMBOL_GPL(platform_bus_type);
+ 
++void platform_set_runtime_pm_ops(int (*suspend)(struct device *dev),
++				 int (*resume)(struct device *dev),
++				 int (*idle)(struct device *dev))
++{
++	platform_dev_pm_ops.runtime_suspend = suspend;
++	platform_dev_pm_ops.runtime_resume = resume;
++	platform_dev_pm_ops.runtime_idle = idle;
++}
++EXPORT_SYMBOL_GPL(platform_set_runtime_pm_ops);
++
+ /**
+  * platform_bus_get_pm_ops() - return pointer to busses dev_pm_ops
+  *
+Index: linux-2.6/include/linux/platform_device.h
+===================================================================
+--- linux-2.6.orig/include/linux/platform_device.h
++++ linux-2.6/include/linux/platform_device.h
+@@ -200,4 +200,8 @@ static inline char *early_platform_drive
+ }
+ #endif /* MODULE */
+ 
++extern void platform_set_runtime_pm_ops(int (*suspend)(struct device *dev),
++					int (*resume)(struct device *dev),
++					int (*idle)(struct device *dev));
++
+ #endif /* _PLATFORM_DEVICE_H_ */
+Index: linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/pm_runtime.c
++++ linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
+@@ -163,6 +163,9 @@ static struct notifier_block platform_bu
+ 
+ static int __init sh_pm_runtime_init(void)
  {
- 	struct task_struct *task;
- 	char buffer[PROC_NUMBUF];
--	long oom_adjust;
-+	int oom_adjust;
- 	unsigned long flags;
- 	int err;
++	platform_set_runtime_pm_ops(platform_pm_runtime_suspend,
++				    platform_pm_runtime_resume,
++				    platform_pm_runtime_idle);
+ 	bus_register_notifier(&platform_bus_type, &platform_bus_notifier);
+ 	return 0;
+ }
+Index: linux-2.6/arch/sh/kernel/cpu/shmobile/pm_runtime.c
+===================================================================
+--- linux-2.6.orig/arch/sh/kernel/cpu/shmobile/pm_runtime.c
++++ linux-2.6/arch/sh/kernel/cpu/shmobile/pm_runtime.c
+@@ -302,6 +302,9 @@ static int __init sh_pm_runtime_init(voi
+ {
+ 	INIT_WORK(&hwblk_work, platform_pm_runtime_work);
  
-@@ -1071,7 +1071,7 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
- 		goto out;
- 	}
- 
--	err = strict_strtol(strstrip(buffer), 0, &oom_adjust);
-+	err = kstrtoint(strstrip(buffer), 0, &oom_adjust);
- 	if (err)
- 		goto out;
- 	if ((oom_adjust < OOM_ADJUST_MIN || oom_adjust > OOM_ADJUST_MAX) &&
-@@ -1168,7 +1168,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
- 	struct task_struct *task;
- 	char buffer[PROC_NUMBUF];
- 	unsigned long flags;
--	long oom_score_adj;
-+	int oom_score_adj;
- 	int err;
- 
- 	memset(buffer, 0, sizeof(buffer));
-@@ -1179,7 +1179,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
- 		goto out;
- 	}
- 
--	err = strict_strtol(strstrip(buffer), 0, &oom_score_adj);
-+	err = kstrtoint(strstrip(buffer), 0, &oom_score_adj);
- 	if (err)
- 		goto out;
- 	if (oom_score_adj < OOM_SCORE_ADJ_MIN ||
-@@ -1468,7 +1468,7 @@ sched_autogroup_write(struct file *file, const char __user *buf,
- 	struct inode *inode = file->f_path.dentry->d_inode;
- 	struct task_struct *p;
- 	char buffer[PROC_NUMBUF];
--	long nice;
-+	int nice;
- 	int err;
- 
- 	memset(buffer, 0, sizeof(buffer));
-@@ -1477,9 +1477,9 @@ sched_autogroup_write(struct file *file, const char __user *buf,
- 	if (copy_from_user(buffer, buf, count))
- 		return -EFAULT;
- 
--	err = strict_strtol(strstrip(buffer), 0, &nice);
--	if (err)
--		return -EINVAL;
-+	err = kstrtoint(strstrip(buffer), 0, &nice);
-+	if (err < 0)
-+		return err;
- 
- 	p = get_proc_task(inode);
- 	if (!p)
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -533,15 +533,17 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
- 	char buffer[PROC_NUMBUF];
- 	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
--	long type;
-+	int type;
-+	int rv;
- 
- 	memset(buffer, 0, sizeof(buffer));
- 	if (count > sizeof(buffer) - 1)
- 		count = sizeof(buffer) - 1;
- 	if (copy_from_user(buffer, buf, count))
- 		return -EFAULT;
--	if (strict_strtol(strstrip(buffer), 10, &type))
--		return -EINVAL;
-+	rv = kstrtoint(strstrip(buffer), 10, &type);
-+	if (rv < 0)
-+		return rv;
- 	if (type < CLEAR_REFS_ALL || type > CLEAR_REFS_MAPPED)
- 		return -EINVAL;
- 	task = get_proc_task(file->f_path.dentry->d_inode);
++	platform_set_runtime_pm_ops(platform_pm_runtime_suspend,
++				    platform_pm_runtime_resume,
++				    platform_pm_runtime_idle);
+ 	bus_register_notifier(&platform_bus_type, &platform_bus_notifier);
+ 	return 0;
+ }
