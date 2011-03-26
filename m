@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369Ab1CZALA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:11:00 -0400
-Received: from kroah.org ([198.145.64.141]:35880 "EHLO coco.kroah.org"
+	id S933389Ab1CZALS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:11:18 -0400
+Received: from kroah.org ([198.145.64.141]:35875 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933308Ab1CZAG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:06:29 -0400
+	id S933273Ab1CZAG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:06:28 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:57 2011
-Message-Id: <20110326000457.715454813@clark.kroah.org>
+Message-Id: <20110326000457.609510480@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 17:03:50 -0700
+Date: Fri, 25 Mar 2011 17:03:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Amir Goldstein <amir73il@users.sf.net>, Jan Kara <jack@suse.cz>
-Subject: [18/35] ext3: skip orphan cleanup on rocompat fs
+        Julien Tinnes <jln@google.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: [17/35] Prevent rt_sigqueueinfo and rt_tgsigqueueinfo from spoofing the signal code
 In-Reply-To: <20110326000509.GA29736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amir Goldstein <amir73il@gmail.com>
+From: Julien Tinnes <jln@google.com>
 
-commit ce654b37f87980d95f339080e4c3bdb2370bdf22 upstream.
+commit da48524eb20662618854bb3df2db01fc65f3070c upstream.
 
-Orphan cleanup is currently executed even if the file system has some
-number of unknown ROCOMPAT features, which deletes inodes and frees
-blocks, which could be very bad for some RO_COMPAT features.
+Userland should be able to trust the pid and uid of the sender of a
+signal if the si_code is SI_TKILL.
 
-This patch skips the orphan cleanup if it contains readonly compatible
-features not known by this ext3 implementation, which would prevent
-the fs from being mounted (or remounted) readwrite.
+Unfortunately, the kernel has historically allowed sigqueueinfo() to
+send any si_code at all (as long as it was negative - to distinguish it
+from kernel-generated signals like SIGILL etc), so it could spoof a
+SI_TKILL with incorrect siginfo values.
 
-Signed-off-by: Amir Goldstein <amir73il@users.sf.net>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Happily, it looks like glibc has always set si_code to the appropriate
+SI_QUEUE, so there are probably no actual user code that ever uses
+anything but the appropriate SI_QUEUE flag.
+
+So just tighten the check for si_code (we used to allow any negative
+value), and add a (one-time) warning in case there are binaries out
+there that might depend on using other si_code values.
+
+Signed-off-by: Julien Tinnes <jln@google.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext3/super.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ kernel/signal.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -1440,6 +1440,13 @@ static void ext3_orphan_cleanup (struct
- 		return;
- 	}
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2406,9 +2406,13 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t,
+ 		return -EFAULT;
  
-+	/* Check if feature set allows readwrite operations */
-+	if (EXT3_HAS_RO_COMPAT_FEATURE(sb, ~EXT3_FEATURE_RO_COMPAT_SUPP)) {
-+		ext3_msg(sb, KERN_INFO, "Skipping orphan cleanup due to "
-+			 "unknown ROCOMPAT features");
-+		return;
+ 	/* Not even root can pretend to send signals from the kernel.
+-	   Nor can they impersonate a kill(), which adds source info.  */
+-	if (info.si_code >= 0)
++	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
++	 */
++	if (info.si_code != SI_QUEUE) {
++		/* We used to allow any < 0 si_code */
++		WARN_ON_ONCE(info.si_code < 0);
+ 		return -EPERM;
 +	}
-+
- 	if (EXT3_SB(sb)->s_mount_state & EXT3_ERROR_FS) {
- 		if (es->s_last_orphan)
- 			jbd_debug(1, "Errors on filesystem, "
+ 	info.si_signo = sig;
+ 
+ 	/* POSIX.1b doesn't mention process groups.  */
+@@ -2422,9 +2426,13 @@ long do_rt_tgsigqueueinfo(pid_t tgid, pi
+ 		return -EINVAL;
+ 
+ 	/* Not even root can pretend to send signals from the kernel.
+-	   Nor can they impersonate a kill(), which adds source info.  */
+-	if (info->si_code >= 0)
++	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
++	 */
++	if (info->si_code != SI_QUEUE) {
++		/* We used to allow any < 0 si_code */
++		WARN_ON_ONCE(info->si_code < 0);
+ 		return -EPERM;
++	}
+ 	info->si_signo = sig;
+ 
+ 	return do_send_specific(tgid, pid, sig, info);
 
 
