@@ -1,85 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab1CZIst (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 04:48:49 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56730 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393Ab1CZIsq (ORCPT
+	id S1753788Ab1CZJUC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 05:20:02 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64710 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab1CZJT7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 04:48:46 -0400
+	Sat, 26 Mar 2011 05:19:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=aCGlsObvQhmxTT1SBGbyVC/AtZ6ULc2amhJ9MqdCiGkOSUr8NZQceIEJrp2ZJjYQti
-         b4HLD4shb4ePNco4GkFYbnluQd2kENcTh/c8FqSdzqfXDeAC6o6/A3whri1OSAWoacyK
-         ytHHwyBorQ2FYc95+noISxAMLsUS0iruYX+PY=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=x5Qkna2Z3p+CNEq6ZbIMcIp6IFQM5VwT2z8fc33x0D28tv/dfx+PEU1PtmWp2OLqHe
+         fETSXMMAIfMlGGiiD0nNjh0HHKQjSknBmekDNe6yyH0bnbOCjKGle1ZVn4IVU9nglZFQ
+         Lynsg5DgE+yvb/Fjm5ks18BMpf5Qqn9gABvwc=
 MIME-Version: 1.0
-In-Reply-To: <20110326023452.GA8140@google.com>
-References: <20110324182240.5fe56de2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110324105222.GA2625@barrios-desktop>
-	<20110325090411.56c5e5b2.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTi=f3gu7-8uNiT4qz6s=BOhto5s=7g@mail.gmail.com>
-	<20110325115453.82a9736d.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTim3fFe3VzvaWRwzaCT6aRd-yeyfiQ@mail.gmail.com>
-	<20110326023452.GA8140@google.com>
-Date: Sat, 26 Mar 2011 17:48:45 +0900
-Message-ID: <AANLkTi=ng9vwoMJ=tseWwTsXMf9XZkMKUexcpEmQ45M_@mail.gmail.com>
-Subject: Re: [PATCH 0/4] forkbomb killer
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>
+In-Reply-To: <m1k4fmxtyk.fsf@fess.ebiederm.org>
+References: <m1k4fmxtyk.fsf@fess.ebiederm.org>
+Date: Sat, 26 Mar 2011 02:19:58 -0700
+X-Google-Sender-Auth: lUBKKxGZF-87nf8YbVLuFcPWlcI
+Message-ID: <AANLkTikqDbY+W7cXRwFrQg5DSToZYgXn8xGVQK9g3D4R@mail.gmail.com>
+Subject: Re: [PATCH] x86_64: Fix page table building regression
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>, greg@kroah.com,
+        stable@kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/26 Michel Lespinasse <walken@google.com>:
-> On Fri, Mar 25, 2011 at 01:05:50PM +0900, Minchan Kim wrote:
->> Okay. Each approach has a pros and cons and at least, now anyone
->> doesn't provide any method and comments but I agree it is needed(ex,
->> careless and lazy admin could need it strongly). Let us wait a little
->> bit more. Maybe google guys or redhat/suse guys would have a opinion.
+On Fri, Mar 25, 2011 at 11:43 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
 >
-> I haven't heard of fork bombs being an issue for us (and it's not been
-> for me on my desktop, either).
+> Recently I had cause to enable PAGE_ALLOC_DEBUG and I discovered my
+> kdump kernel would not boot.  After some investigation it turns out that
+> in commit 80989ce064 "x86: clean up and and print out initial max_pfn_mapped"
+> that a limitation of the 32bit page table setup was unnecessarily
+> applied to the 64bit code.  The initial 64bit page table setup code is
+> careful to map in it's initial page table pages and unmap then when done
+> so they can live anywhere in memory, so we don't need to limit ourselves
+> to using pages that are already mapped into memory.
 >
-> Also, I want to point out that there is a classical userspace solution
-> for this, as implemented by killall5 for example. One can do
-> kill(-1, SIGSTOP) to stop all processes that they can send
-> signals to (except for init and itself). Target processes
-> can never catch or ignore the SIGSTOP. This stops the fork bomb
-> from causing further damage. Then, one can look at the process
-> tree and do whatever is appropriate - including killing by uid,
-> by cgroup or whatever policies one wants to implement in userspace.
-> Finally, the remaining processes can be restarted using SIGCONT.
->
+> In my case I hit this because the first 512M was not usable by the
+> kdump kernel.
 
-Can that solution work even under OOM situation without new login/commands ?
-Please show us your solution, how to avoid Andrey's Bomb  with your way.
-Then, we can add Documentation, at least. Or you can show us your tool.
+We have one completed fix in mainline already.
 
-Maybe it is....
-- running as a daemon. (because it has to lock its work memory before OOM.)
-- mlockall its own memory to work under OOM.
-- It can show process tree of users/admin or do all in automatic way
-with user's policy.
-- tell us which process is guilty.
-- wakes up automatically when OOM happens.....IOW, OOM should have some notifier
-  to userland.
-- never allocate any memory at running. (maybe it can't use libc.)
-- never be blocked by any locks, for example, some other task's mmap_sem.
-  One of typical mistakes of admins at OOM is typing 'ps' to see what
-happens.....
-- Can be used even with GUI system, which can't show console.
+We need that patch for 2.6.38 stable tree.
 
-Thanks,
--Kame
+that patch is supposed to be for 2.6.38, but is delayed to 2.6.39.
+
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=4b239f458c229de044d6905c2b0f9fe16ed9e01e
+
+x86-64, mm: Put early page table high
+
+While dubug kdump, found current kernel will have problem with crashkernel=512M.
+
+It turns out that initial mapping is to 512M, and later initial mapping to 4G
+(acutally is 2040M in my platform), will put page table near 512M.
+then initial mapping to 128g will be near 2g.
+
+before this patch:
+[    0.000000] initial memory mapped : 0 - 20000000
+[    0.000000] init_memory_mapping: [0x00000000000000-0x0000007f74ffff]
+[    0.000000]  0000000000 - 007f600000 page 2M
+[    0.000000]  007f600000 - 007f750000 page 4k
+[    0.000000] kernel direct mapping tables up to 7f750000 @
+[0x1fffc000-0x1fffffff]
+[    0.000000]     memblock_x86_reserve_range: [0x1fffc000-0x1fffdfff]
+         PGTABLE
+[    0.000000] init_memory_mapping: [0x00000100000000-0x0000207fffffff]
+[    0.000000]  0100000000 - 2080000000 page 2M
+[    0.000000] kernel direct mapping tables up to 2080000000 @
+[0x7bc01000-0x7bc83fff]
+[    0.000000]     memblock_x86_reserve_range: [0x7bc01000-0x7bc7efff]
+         PGTABLE
+[    0.000000] RAMDISK: 7bc84000 - 7f745000
+[    0.000000] crashkernel reservation failed - No suitable area found.
+
+after patch:
+[    0.000000] initial memory mapped : 0 - 20000000
+[    0.000000] init_memory_mapping: [0x00000000000000-0x0000007f74ffff]
+[    0.000000]  0000000000 - 007f600000 page 2M
+[    0.000000]  007f600000 - 007f750000 page 4k
+[    0.000000] kernel direct mapping tables up to 7f750000 @
+[0x7f74c000-0x7f74ffff]
+[    0.000000]     memblock_x86_reserve_range: [0x7f74c000-0x7f74dfff]
+         PGTABLE
+[    0.000000] init_memory_mapping: [0x00000100000000-0x0000207fffffff]
+[    0.000000]  0100000000 - 2080000000 page 2M
+[    0.000000] kernel direct mapping tables up to 2080000000 @
+[0x207ff7d000-0x207fffffff]
+[    0.000000]     memblock_x86_reserve_range:
+[0x207ff7d000-0x207fffafff]          PGTABLE
+[    0.000000] RAMDISK: 7bc84000 - 7f745000
+[    0.000000]     memblock_x86_reserve_range: [0x17000000-0x36ffffff]
+    CRASH KERNEL
+[    0.000000] Reserving 512MB of memory at 368MB for crashkernel
+(System RAM: 133120MB)
+
+It means with the patch, page table for [0, 2g) will need 2g, instead
+of under 512M,
+page table for [4g, 128g) will be near 128g, instead of under 2g.
+
+That would good, if we have lots of memory above 4g, like 1024g, or
+2048g or 16T, will not put
+related page table under 2g. that would be have chance to fill the
+under 2g if 1G or 2M page is
+not used.
+
+the code change will use add map_low_page() and update
+unmap_low_page() for 64bit, and use them
+to get access the corresponding high memory for page table setting.
+
+...
