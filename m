@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab1CZPyA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 11:54:00 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50187 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab1CZPx7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 11:53:59 -0400
-Subject: Re: [PATCH] ASoC: twl6040: Return -ENOMEM if
- create_singlethread_workqueue fails
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-In-Reply-To: <1301126038.7662.2.camel@phoenix>
-References: <1301126038.7662.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 26 Mar 2011 15:53:55 +0000
-Message-ID: <1301154835.3455.54.camel@odin>
+	id S1752716Ab1CZPy5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 11:54:57 -0400
+Received: from tex.lwn.net ([70.33.254.29]:57933 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752217Ab1CZPy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 11:54:56 -0400
+Date: Sat, 26 Mar 2011 09:54:54 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PULL] Documentation updates
+Message-ID: <20110326095454.0a35eb8b@bike.lwn.net>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.3; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-03-26 at 15:53 +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  sound/soc/codecs/twl6040.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
+Hi, Linus,
 
-Applied.
+I have a couple of documentation patches at:
 
-Thanks
+  git://git.lwn.net/linux-2.6.git docs-next
 
-Liam
+They are an update of the development process document to current times
+and a fix for a wrong function name in the dynamic debugging doc.
 
+Thanks,
+
+jon
+
+Jonathan Corbet (2):
+      docs: fix dev_debug() braino in dynamic-debug-howto.txt
+      docs: update the development process document
+
+ Documentation/development-process/1.Intro          |   18 +-
+ Documentation/development-process/2.Process        |  177 ++++++++++----------
+ Documentation/development-process/3.Early-stage    |   31 +++-
+ Documentation/development-process/4.Coding         |   21 ++-
+ Documentation/development-process/5.Posting        |   28 ++--
+ Documentation/development-process/6.Followthrough  |   16 +-
+ Documentation/development-process/7.AdvancedTopics |    4 +-
+ Documentation/dynamic-debug-howto.txt              |    4 +-
+ 8 files changed, 169 insertions(+), 130 deletions(-)
