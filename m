@@ -1,122 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab1CZRZe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 13:25:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56088 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab1CZRZd (ORCPT
+	id S1753410Ab1CZR3J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 13:29:09 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:57045 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753197Ab1CZR3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 13:25:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=jA8n4oTnqHdgkH22JuaIi7gjSthEYpyIpT3c8pPKSgxb0lVSorqqDcZjWWVABc6hkX
-         wpnutI5b2v4LGwvwMo+GipSzIubzEB+p2Z3SMSePJbwCmrVth4WWMRag11/VYYj1hyv1
-         57PpXgq1YWlBtMytR0gAJmCvU7MBieoJl4au0=
-MIME-Version: 1.0
-In-Reply-To: <20110324185115.GA12383@p183.telecom.by>
-References: <201103230200.p2N20nBv011302@hera.kernel.org>
-	<AANLkTi=JuHke7CMURU6fuBSVenD1prHfKRTqJucr0g9o@mail.gmail.com>
-	<20110324185115.GA12383@p183.telecom.by>
-Date: Sat, 26 Mar 2011 18:25:27 +0100
-X-Google-Sender-Auth: kDehSJqkm183t0yC27-aujAeeVA
-Message-ID: <AANLkTimfZVSRX02Ve9+qRCYo4gctgfiXu7_Z9bTK+x8E@mail.gmail.com>
-Subject: Re: [PATCH] kstrtox: fix compile warnings in test
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sat, 26 Mar 2011 13:29:07 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=WsjAr11fFTNUFRsLWXxYY2sv+vpy2q3XjQEbnzBYIXxJCIpDmXVCIi9KICNt+T7tdgDRDaBBjaZfhXdAfDVi5lJCEb6FxDmP6x+LHyeh8dQF8Px2YFNnYGz1dWvc8Tu3;
+Date: Sat, 26 Mar 2011 10:29:05 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Sylvestre Ledru <sylvestre.ledru@scilab.org>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix some minor typos: * informations => information *
+ there own => their own * an => and (bug #14973)
+Message-Id: <20110326102905.bae3c800.rdunlap@xenotime.net>
+In-Reply-To: <1301010464-22583-1-git-send-email-sylvestre.ledru@scilab.org>
+References: <1301010464-22583-1-git-send-email-sylvestre.ledru@scilab.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2QHPwPN001683
 
-On Thu, Mar 24, 2011 at 19:51, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> Fix the following warnings:
->
->  CC [M]  lib/test-kstrtox.o
-> lib/test-kstrtox.c: In function 'test_kstrtou64_ok':
-> lib/test-kstrtox.c:318: warning: this decimal constant is unsigned only in ISO C90
->        ...
->
-> Noticed by Geert Uytterhoeven <geert@linux-m68k.org>
->
-> Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+On Fri, 25 Mar 2011 00:47:44 +0100 Sylvestre Ledru wrote:
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Hi,
+This patch is mostly good, with a few exceptions as noted below.
+Please resend a complete corrected patch.
 
+
+> Signed-off-by: Sylvestre Ledru <sylvestre.ledru@scilab.org>
 > ---
->
->  lib/test-kstrtox.c |   32 ++++++++++++++++----------------
->  1 file changed, 16 insertions(+), 16 deletions(-)
->
-> --- a/lib/test-kstrtox.c
-> +++ b/lib/test-kstrtox.c
-> @@ -315,12 +315,12 @@ static void __init test_kstrtou64_ok(void)
->                {"65537",       10,     65537},
->                {"2147483646",  10,     2147483646},
->                {"2147483647",  10,     2147483647},
-> -               {"2147483648",  10,     2147483648},
-> -               {"2147483649",  10,     2147483649},
-> -               {"4294967294",  10,     4294967294},
-> -               {"4294967295",  10,     4294967295},
-> -               {"4294967296",  10,     4294967296},
-> -               {"4294967297",  10,     4294967297},
-> +               {"2147483648",  10,     2147483648ULL},
-> +               {"2147483649",  10,     2147483649ULL},
-> +               {"4294967294",  10,     4294967294ULL},
-> +               {"4294967295",  10,     4294967295ULL},
-> +               {"4294967296",  10,     4294967296ULL},
-> +               {"4294967297",  10,     4294967297ULL},
->                {"9223372036854775806", 10,     9223372036854775806ULL},
->                {"9223372036854775807", 10,     9223372036854775807ULL},
->                {"9223372036854775808", 10,     9223372036854775808ULL},
-> @@ -369,12 +369,12 @@ static void __init test_kstrtos64_ok(void)
->                {"65537",       10,     65537},
->                {"2147483646",  10,     2147483646},
->                {"2147483647",  10,     2147483647},
-> -               {"2147483648",  10,     2147483648},
-> -               {"2147483649",  10,     2147483649},
-> -               {"4294967294",  10,     4294967294},
-> -               {"4294967295",  10,     4294967295},
-> -               {"4294967296",  10,     4294967296},
-> -               {"4294967297",  10,     4294967297},
-> +               {"2147483648",  10,     2147483648LL},
-> +               {"2147483649",  10,     2147483649LL},
-> +               {"4294967294",  10,     4294967294LL},
-> +               {"4294967295",  10,     4294967295LL},
-> +               {"4294967296",  10,     4294967296LL},
-> +               {"4294967297",  10,     4294967297LL},
->                {"9223372036854775806", 10,     9223372036854775806LL},
->                {"9223372036854775807", 10,     9223372036854775807LL},
->        };
-> @@ -418,10 +418,10 @@ static void __init test_kstrtou32_ok(void)
->                {"65537",       10,     65537},
->                {"2147483646",  10,     2147483646},
->                {"2147483647",  10,     2147483647},
-> -               {"2147483648",  10,     2147483648},
-> -               {"2147483649",  10,     2147483649},
-> -               {"4294967294",  10,     4294967294},
-> -               {"4294967295",  10,     4294967295},
-> +               {"2147483648",  10,     2147483648U},
-> +               {"2147483649",  10,     2147483649U},
-> +               {"4294967294",  10,     4294967294U},
-> +               {"4294967295",  10,     4294967295U},
->        };
->        TEST_OK(kstrtou32, u32, "%u", test_u32_ok);
->  }
+>  .../ABI/testing/sysfs-driver-hid-roccat-kone       |    2 +-
+>  .../ABI/testing/sysfs-driver-hid-roccat-koneplus   |    8 ++++----
+>  .../ABI/testing/sysfs-driver-hid-roccat-kovaplus   |    8 ++++----
+>  .../ABI/testing/sysfs-driver-hid-roccat-pyra       |    8 ++++----
+>  .../ABI/testing/sysfs-platform-asus-laptop         |    2 +-
+>  Documentation/devicetree/booting-without-of.txt    |    6 +++---
+>  Documentation/dvb/udev.txt                         |    2 +-
+>  Documentation/edac.txt                             |    2 +-
+>  Documentation/kernel-parameters.txt                |    4 ++--
+>  Documentation/laptops/asus-laptop.txt              |    4 ++--
+>  Documentation/networking/batman-adv.txt            |    2 +-
+>  Documentation/s390/Debugging390.txt                |    2 +-
+>  Documentation/scsi/sym53c8xx_2.txt                 |    2 +-
+>  Documentation/sound/alsa/ALSA-Configuration.txt    |    2 +-
+>  Documentation/sound/oss/AudioExcelDSP16            |    6 +++---
+>  Documentation/sound/oss/README.ymfsb               |    2 +-
+>  Documentation/video4linux/bttv/Insmod-options      |    2 +-
+>  Documentation/video4linux/bttv/Sound-FAQ           |    2 +-
+>  Documentation/video4linux/et61x251.txt             |    4 ++--
+>  Documentation/video4linux/sn9c102.txt              |    4 ++--
+>  Documentation/video4linux/w9968cf.txt              |    2 +-
+>  Documentation/video4linux/zc0301.txt               |    6 +++---
+>  arch/powerpc/mm/tlb_low_64e.S                      |    2 +-
+>  arch/powerpc/platforms/Kconfig                     |    2 +-
+>  fs/notify/fanotify/Kconfig                         |    2 +-
+>  25 files changed, 44 insertions(+), 44 deletions(-)
 
-Gr{oetje,eeting}s,
 
-                        Geert
+> diff --git a/Documentation/ABI/testing/sysfs-platform-asus-laptop b/Documentation/ABI/testing/sysfs-platform-asus-laptop
+> index 41ff8ae..01160d8 100644
+> --- a/Documentation/ABI/testing/sysfs-platform-asus-laptop
+> +++ b/Documentation/ABI/testing/sysfs-platform-asus-laptop
+> @@ -27,7 +27,7 @@ KernelVersion:	2.6.20
+>  Contact:	"Corentin Chary" <corentincj@iksaif.net>
+>  Description:
+>  		Some models like the W1N have a LED display that can be
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+		                              an
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+> -		used to display several informations.
+> +		used to display several information.
+
+Either way is awkward.  Needs something more like:
+
+		used to display several items of information.
+
+
+>  		To control the LED display, use the following :
+>  		    echo 0x0T000DDD > /sys/devices/platform/asus_laptop/
+>  		where T control the 3 letters display, and DDD the 3 digits display.
+
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index d18a9e1..29ac507 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2463,8 +2463,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  	topology=	[S390]
+>  			Format: {off | on}
+>  			Specify if the kernel should make use of the cpu
+> -			topology informations if the hardware supports these.
+> -			The scheduler will make use of these informations and
+> +			topology information if the hardware supports these.
+
+s/these/this/ just as was done below.
+
+> +			The scheduler will make use of this information and
+>  			e.g. base its process migration decisions on it.
+>  			Default is on.
+>  
+> diff --git a/Documentation/laptops/asus-laptop.txt b/Documentation/laptops/asus-laptop.txt
+> index c1c5be8..90d8b86 100644
+> --- a/Documentation/laptops/asus-laptop.txt
+> +++ b/Documentation/laptops/asus-laptop.txt
+> @@ -178,7 +178,7 @@ LED display
+>  -----------
+>  
+>    Some models like the W1N have a LED display that can be used to display
+> -  several informations.
+> +  several information.
+
+Same comment as above.
+
+>  
+>    LED display works for the following models:
+>      W1000N
+
+> diff --git a/fs/notify/fanotify/Kconfig b/fs/notify/fanotify/Kconfig
+> index 7dceff0..30dc09c 100644
+> --- a/fs/notify/fanotify/Kconfig
+> +++ b/fs/notify/fanotify/Kconfig
+> @@ -6,7 +6,7 @@ config FANOTIFY
+>  	---help---
+>  	   Say Y here to enable fanotify suport.  fanotify is a file access
+>  	   notification system which differs from inotify in that it sends
+> -	   an open file descriptor to the userspace listener along with
+> +	   and opens file descriptor to the userspace listener along with
+
+Nope, "an open" is correct.
+
+>  	   the event.
+>  
+>  	   If unsure, say Y.
+> -- 
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
