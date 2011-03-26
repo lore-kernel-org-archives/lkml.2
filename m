@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933272Ab1CZAGW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:06:22 -0400
-Received: from kroah.org ([198.145.64.141]:35815 "EHLO coco.kroah.org"
+	id S933347Ab1CZAGb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:06:31 -0400
+Received: from kroah.org ([198.145.64.141]:35848 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932555Ab1CZAGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:06:17 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:56 2011
-Message-Id: <20110326000456.446632198@clark.kroah.org>
+	id S933271Ab1CZAGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:06:22 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:57 2011
+Message-Id: <20110326000456.974450742@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 17:03:38 -0700
+Date: Fri, 25 Mar 2011 17:03:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Milton Miller <miltonm@bga.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [06/35] powerpc: rtas_flash needs to use rtas_data_buf
+        Roland Dreier <roland@purestorage.com>
+Subject: [11/35] aio: wake all waiters when destroying ctx
 In-Reply-To: <20110326000509.GA29736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,143 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milton Miller <miltonm@us.ibm.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit bd2b64a12bf55bec0d1b949e3dca3f8863409646 upstream.
+commit e91f90bb0bb10be9cc8efd09a3cf4ecffcad0db1 upstream.
 
-When trying to flash a machine via the update_flash command, Anton received the
-following error:
+The test program below will hang because io_getevents() uses
+add_wait_queue_exclusive(), which means the wake_up() in io_destroy() only
+wakes up one of the threads.  Fix this by using wake_up_all() in the aio
+code paths where we want to make sure no one gets stuck.
 
-    Restarting system.
-    FLASH: kernel bug...flash list header addr above 4GB
+	// t.c -- compile with gcc -lpthread -laio t.c
 
-The code in question has a comment that the flash list should be in
-the kernel data and therefore under 4GB:
+	#include <libaio.h>
+	#include <pthread.h>
+	#include <stdio.h>
+	#include <unistd.h>
 
-        /* NOTE: the "first" block list is a global var with no data
-         * blocks in the kernel data segment.  We do this because
-         * we want to ensure this block_list addr is under 4GB.
-         */
+	static const int nthr = 2;
 
-Unfortunately the Kconfig option is marked tristate which means the variable
-may not be in the kernel data and could be above 4GB.
+	void *getev(void *ctx)
+	{
+		struct io_event ev;
+		io_getevents(ctx, 1, 1, &ev, NULL);
+		printf("io_getevents returned\n");
+		return NULL;
+	}
 
-Instead of relying on the data segment being below 4GB, use the static
-data buffer allocated by the kernel for use by rtas.  Since we don't
-use the header struct directly anymore, convert it to a simple pointer.
+	int main(int argc, char *argv[])
+	{
+		io_context_t ctx = 0;
+		pthread_t thread[nthr];
+		int i;
 
-Reported-By: Anton Blanchard <anton@samba.org>
-Signed-Off-By: Milton Miller <miltonm@bga.com>
-Tested-By: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+		io_setup(1024, &ctx);
+
+		for (i = 0; i < nthr; ++i)
+			pthread_create(&thread[i], NULL, getev, ctx);
+
+		sleep(1);
+
+		io_destroy(ctx);
+
+		for (i = 0; i < nthr; ++i)
+			pthread_join(thread[i], NULL);
+
+		return 0;
+	}
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/rtas_flash.c |   39 +++++++++++++++++++++------------------
- 1 file changed, 21 insertions(+), 18 deletions(-)
+ fs/aio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/rtas_flash.c
-+++ b/arch/powerpc/kernel/rtas_flash.c
-@@ -93,12 +93,8 @@ struct flash_block_list {
- 	struct flash_block_list *next;
- 	struct flash_block blocks[FLASH_BLOCKS_PER_NODE];
- };
--struct flash_block_list_header { /* just the header of flash_block_list */
--	unsigned long num_blocks;
--	struct flash_block_list *next;
--};
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -511,7 +511,7 @@ static inline void really_put_req(struct
+ 	ctx->reqs_active--;
  
--static struct flash_block_list_header rtas_firmware_flash_list = {0, NULL};
-+static struct flash_block_list *rtas_firmware_flash_list;
- 
- /* Use slab cache to guarantee 4k alignment */
- static struct kmem_cache *flash_block_cache = NULL;
-@@ -107,13 +103,14 @@ static struct kmem_cache *flash_block_ca
- 
- /* Local copy of the flash block list.
-  * We only allow one open of the flash proc file and create this
-- * list as we go.  This list will be put in the
-- * rtas_firmware_flash_list var once it is fully read.
-+ * list as we go.  The rtas_firmware_flash_list varable will be
-+ * set once the data is fully read.
-  *
-  * For convenience as we build the list we use virtual addrs,
-  * we do not fill in the version number, and the length field
-  * is treated as the number of entries currently in the block
-- * (i.e. not a byte count).  This is all fixed on release.
-+ * (i.e. not a byte count).  This is all fixed when calling
-+ * the flash routine.
-  */
- 
- /* Status int must be first member of struct */
-@@ -200,16 +197,16 @@ static int rtas_flash_release(struct ino
- 	if (uf->flist) {    
- 		/* File was opened in write mode for a new flash attempt */
- 		/* Clear saved list */
--		if (rtas_firmware_flash_list.next) {
--			free_flash_list(rtas_firmware_flash_list.next);
--			rtas_firmware_flash_list.next = NULL;
-+		if (rtas_firmware_flash_list) {
-+			free_flash_list(rtas_firmware_flash_list);
-+			rtas_firmware_flash_list = NULL;
- 		}
- 
- 		if (uf->status != FLASH_AUTH)  
- 			uf->status = flash_list_valid(uf->flist);
- 
- 		if (uf->status == FLASH_IMG_READY) 
--			rtas_firmware_flash_list.next = uf->flist;
-+			rtas_firmware_flash_list = uf->flist;
- 		else
- 			free_flash_list(uf->flist);
- 
-@@ -592,7 +589,7 @@ static void rtas_flash_firmware(int rebo
- 	unsigned long rtas_block_list;
- 	int i, status, update_token;
- 
--	if (rtas_firmware_flash_list.next == NULL)
-+	if (rtas_firmware_flash_list == NULL)
- 		return;		/* nothing to do */
- 
- 	if (reboot_type != SYS_RESTART) {
-@@ -609,20 +606,25 @@ static void rtas_flash_firmware(int rebo
- 		return;
- 	}
- 
--	/* NOTE: the "first" block list is a global var with no data
--	 * blocks in the kernel data segment.  We do this because
--	 * we want to ensure this block_list addr is under 4GB.
-+	/*
-+	 * NOTE: the "first" block must be under 4GB, so we create
-+	 * an entry with no data blocks in the reserved buffer in
-+	 * the kernel data segment.
- 	 */
--	rtas_firmware_flash_list.num_blocks = 0;
--	flist = (struct flash_block_list *)&rtas_firmware_flash_list;
-+	spin_lock(&rtas_data_buf_lock);
-+	flist = (struct flash_block_list *)&rtas_data_buf[0];
-+	flist->num_blocks = 0;
-+	flist->next = rtas_firmware_flash_list;
- 	rtas_block_list = virt_to_abs(flist);
- 	if (rtas_block_list >= 4UL*1024*1024*1024) {
- 		printk(KERN_ALERT "FLASH: kernel bug...flash list header addr above 4GB\n");
-+		spin_unlock(&rtas_data_buf_lock);
- 		return;
- 	}
- 
- 	printk(KERN_ALERT "FLASH: preparing saved firmware image for flash\n");
- 	/* Update the block_list in place. */
-+	rtas_firmware_flash_list = NULL; /* too hard to backout on error */
- 	image_size = 0;
- 	for (f = flist; f; f = next) {
- 		/* Translate data addrs to absolute */
-@@ -663,6 +665,7 @@ static void rtas_flash_firmware(int rebo
- 		printk(KERN_ALERT "FLASH: unknown flash return code %d\n", status);
- 		break;
- 	}
-+	spin_unlock(&rtas_data_buf_lock);
+ 	if (unlikely(!ctx->reqs_active && ctx->dead))
+-		wake_up(&ctx->wait);
++		wake_up_all(&ctx->wait);
  }
  
- static void remove_flash_pde(struct proc_dir_entry *dp)
+ static void aio_fput_routine(struct work_struct *data)
+@@ -1224,7 +1224,7 @@ static void io_destroy(struct kioctx *io
+ 	 * by other CPUs at this point.  Right now, we rely on the
+ 	 * locking done by the above calls to ensure this consistency.
+ 	 */
+-	wake_up(&ioctx->wait);
++	wake_up_all(&ioctx->wait);
+ 	put_ioctx(ioctx);	/* once for the lookup */
+ }
+ 
 
 
