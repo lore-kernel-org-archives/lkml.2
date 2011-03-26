@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933423Ab1CZAKk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:10:40 -0400
-Received: from kroah.org ([198.145.64.141]:35890 "EHLO coco.kroah.org"
+	id S933323Ab1CZAG3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:06:29 -0400
+Received: from kroah.org ([198.145.64.141]:35858 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932709Ab1CZAGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 20:06:33 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:58 2011
-Message-Id: <20110326000457.907954931@clark.kroah.org>
+	id S932555Ab1CZAGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:06:24 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:57 2011
+Message-Id: <20110326000457.186621859@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 17:03:52 -0700
+Date: Fri, 25 Mar 2011 17:03:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <kees.cook@canonical.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        David Howells <dhowells@redhat.com>, Eugene Teo <eugeneteo@kernel.sg>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Brad Spengler <spender@grsecurity.net>
-Subject: [20/35] proc: protect mm start_code/end_code in /proc/pid/stat
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [13/35] PCI hotplug: acpiphp: set current_state to D0 in register_slot
 In-Reply-To: <20110326000509.GA29736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,48 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <kees.cook@canonical.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 5883f57ca0008ffc93e09cbb9847a1928e50c6f3 upstream.
+commit 47e9037ac16637cd7f12b8790ea7ce6680e42168 upstream.
 
-While mm->start_stack was protected from cross-uid viewing (commit
-f83ce3e6b02d5 ("proc: avoid information leaks to non-privileged
-processes")), the start_code and end_code values were not.  This would
-allow the text location of a PIE binary to leak, defeating ASLR.
+If a device doesn't support power management (pm_cap == 0) but it is
+acpi_pci_power_manageable() because there is a _PS0 method declared for
+it and _EJ0 is also declared for the slot then nobody is going to set
+current_state = PCI_D0 for this device.  This is what I think it is
+happening:
 
-Note that the value "1" is used instead of "0" for a protected value since
-"ps", "killall", and likely other readers of /proc/pid/stat, take
-start_code of "0" to mean a kernel thread and will misbehave.  Thanks to
-Brad Spengler for pointing this out.
+pci_enable_device
+    |
+__pci_enable_device_flags
+/* here we do not set current_state because !pm_cap */
+    |
+do_pci_enable_device
+    |
+pci_set_power_state
+    |
+__pci_start_power_transition
+    |
+pci_platform_power_transition
+/* platform_pci_power_manageable() calls acpi_pci_power_manageable that
+ * returns true */
+    |
+platform_pci_set_power_state
+/* acpi_pci_set_power_state gets called and does nothing because the
+ * acpi device has _EJ0, see the comment "If the ACPI device has _EJ0,
+ * ignore the device" */
 
-Addresses CVE-2011-0726
+at this point if we refer to the commit message that introduced the
+comment above (10b3dcae0f275e2546e55303d64ddbb58cec7599), it is up to
+the hotplug driver to set the state to D0.
+However AFAICT the pci hotplug driver never does, in fact
+drivers/pci/hotplug/acpiphp_glue.c:register_slot sets the slot flags to
+(SLOT_ENABLED | SLOT_POWEREDON) but it does not set the pci device
+current state to PCI_D0.
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Eugene Teo <eugeneteo@kernel.sg>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+So my proposed fix is also to set current_state = PCI_D0 in
+register_slot.
+Comments are very welcome.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/array.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -488,8 +488,8 @@ static int do_task_stat(struct seq_file
- 		vsize,
- 		mm ? get_mm_rss(mm) : 0,
- 		rsslim,
--		mm ? mm->start_code : 0,
--		mm ? mm->end_code : 0,
-+		mm ? (permitted ? mm->start_code : 1) : 0,
-+		mm ? (permitted ? mm->end_code : 1) : 0,
- 		(permitted && mm) ? mm->start_stack : 0,
- 		esp,
- 		eip,
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -211,6 +211,7 @@ register_slot(acpi_handle handle, u32 lv
+ 
+ 	pdev = pci_get_slot(pbus, PCI_DEVFN(device, function));
+ 	if (pdev) {
++		pdev->current_state = PCI_D0;
+ 		slot->flags |= (SLOT_ENABLED | SLOT_POWEREDON);
+ 		pci_dev_put(pdev);
+ 	}
 
 
