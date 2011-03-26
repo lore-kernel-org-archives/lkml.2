@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab1CZIPk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 04:15:40 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64686 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283Ab1CZIPg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 04:15:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=fiVLjIGKzK8GHkpONVwqn1vvsc3EX0uWJrQz6F+k5MBSKYxPpu9420NdezvXH8HlIh
-         MwHWwMPukUP6ztPLeKcBBAJx+I8LuquyYnGBe2evxua35rISl5GxboSBFI/UvYC9tKEK
-         GFsm5wRo2qH/vLp5ywALz1pFSlgPEyy3gNgPc=
-Subject: Re: [PATCH RFC] x86: avoid atomic operation in
- test_and_set_bit_lock if possible
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-        Jan Beulich <JBeulich@novell.com>, Borislav Petkov <bp@amd64.org>,
-        Nick Piggin <npiggin@kernel.dk>, "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, tee@sgi.com,
-        Nikanth Karthikesan <knikanth@suse.de>,
+	id S1753000Ab1CZIZd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 04:25:33 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:58009 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751419Ab1CZIZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 04:25:30 -0400
+X-ASG-Debug-ID: 1301127929-03d6a52c5b00eb0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D8DA2F5.1050008@fusionio.com>
+Date: Sat, 26 Mar 2011 09:25:25 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <1301084980.2250.305.camel@laptop>
-References: <20110324085647.GI30812@elte.hu> <20110324145221.GC31194@aftab>
-	 <4D8B83DA02000078000381DE@vpn.id2.novell.com>
-	 <20110324173020.GA26761@sgi.com> <20110324200010.GB7957@elte.hu>
-	 <1300999682.2714.23.camel@edumazet-laptop> <20110324205422.GB2393@elte.hu>
-	 <1301000557.2714.33.camel@edumazet-laptop> <m2oc50kxg0.fsf@firstfloor.org>
-	 <AANLkTimib3TqemF9L=VNkcXT3uFam1gYmVtuA3wrAv1j@mail.gmail.com>
-	 <20110324235654.GM21838@one.firstfloor.org>
-	 <1301032040.2714.569.camel@edumazet-laptop>
-	 <1301045882.3268.2.camel@edumazet-laptop>
-	 <1301084980.2250.305.camel@laptop>
+        Chris Mason <chris.mason@oracle.com>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39
+References: <4D8B4A89.80608@fusionio.com>	<AANLkTi=zJbUpcT+vbLARyxhA34F1se8pYq9No799Zqzh@mail.gmail.com>	<4D8D87B0.3080107@fusionio.com> <AANLkTimy1QZiHtQGUrXLPMRGEy3iXNOB=34tFjgezhEu@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39
+In-Reply-To: <AANLkTimy1QZiHtQGUrXLPMRGEy3iXNOB=34tFjgezhEu@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 26 Mar 2011 09:15:27 +0100
-Message-ID: <1301127327.2979.54.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301127929
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59005
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 25 mars 2011 à 21:29 +0100, Peter Zijlstra a écrit :
-> On Fri, 2011-03-25 at 10:38 +0100, Eric Dumazet wrote:
-> > 
-> > BIOS :  Version: I27  Release Date: 09/30/2010
-> > 
-> > [    0.021849] CPU0: Intel(R) Xeon(R) CPU           E5640  @ 2.67GHz stepping 02
-> > [    0.123904] Performance Events: PEBS fmt1+, Westmere events, Broken BIOS detected, using software events only.
-> > [    0.124125] [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 38d is 330) 
+On 2011-03-26 08:21, Geert Uytterhoeven wrote:
+> On Sat, Mar 26, 2011 at 07:29, Jens Axboe <jaxboe@fusionio.com> wrote:
+>> On 2011-03-25 22:35, Geert Uytterhoeven wrote:
+>>> On Thu, Mar 24, 2011 at 14:43, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>>> Jens Axboe (20):
+>>>>      block: remove per-queue plugging
+>>>
+>>> This one (commit 7eaceaccab5f40bbfda044629a6298616aeaed50) breaks IDE
+>>> on Atari/m68k under ARAnyM. It hangs on:
+>>>
+>>> | ide: Falcon IDE controller
+>>> | Probing IDE interface ide0...
+>>> | hda: Sarge m68k, ATA DISK drive
+>>> | ide0 at 0xfff00000 on irq 15 (serialized)
+>>> | ide-gd driver 1.18
+>>> | hda: max request size: 128KiB
+>>> | hda: 2118816 sectors (1084 MB) w/256KiB Cache, CHS=2102/16/63
+>>>
+>>> The next expected line is the partition parsing:
+>>>
+>>> | hda: AHDI hda1 hda2
+>>
+>> Geert, does this work for you?
 > 
-> Do the below instructions yield a working system?:
-> 
-> > > On the BL460c G6/G7, one could perform the following steps:
-> > >
-> > > To configure BIOS low-latency options using RBSU
-> > > 1. Press F9 during POST to enter RBSU.
-> > > 2. Press CTRL-A to open the menu.
-> > > 3. Select Service Options.
-> > > 4. Disable either or both of the following options:
-> > > o Processor Power and Utilization Monitoring
-> > > o Memory Pre-Failure Notification
-> > > 
-> > > By doing the above the BIOS should release the performance counter, and the
-> > > kernel's "perf" should not encounter a conflict. 
-> > > 
-> > > The document that you are looking for is here: (please see page 8 and later):
-> > > http://h20000.www2.hp.com/bc/docs/support/SupportManual/c01804533/c01804533.pdf
-> 
-> 
-> 
+> Yep.Thanks!
 
-Thanks Peter !
+Great! I think we should place those blk_delay_queue() calls under the
+if (rq), that should workd to and be more optimal. Can I ask you to
+check that, too?
 
-I was not aware of the hidden "CTRL-A" feature on RBSU, so I never met
-these configuration settings ("Service Options" added in main menu)
+So:
 
-I already was in "Power regulator mode : Static High mode"
-QPI Link power management : Disabled
+if (rq) {
+        blk_requeue_request(q, rq);
+        blk_delay_queue(q, msecs_to_jiffies(3));
+}
 
-I have latest released I24 BIOS
-DMI: HP ProLiant BL460c G6, BIOS I24 01/29/2011
+in both locations.
 
-1) I disabled "Power and Utilization Monitoring" _and_ "Memory
-Pre-Failure Notification"
-
-Still I got the 'MSR 38d is 330' error
-
-2) I then disabled Intel Turbo boost
-
-Same error
-
-3) Minimum Processor idle Power state
-  From C1E-State --> No C-states
-
-Same error
-
-Tricky isnt it ?
-
-
+-- 
+Jens Axboe
 
