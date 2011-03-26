@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab1CZQ1S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 12:27:18 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51616 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab1CZQ1R (ORCPT
+	id S1753115Ab1CZQgA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 12:36:00 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46099 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab1CZQf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 12:27:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Xu9RB4IbgWmU6gwHEMRxzjr0HiFt4FFIttQqyl9N4UmIzV9RIJpGqiHvc27ubBhzm9
-         Ha6jT31/HsFJ7JOQNdkC1b1HzMu2jJri3pheNIu4mmTKagl5np+j7ohkh/NTh6OHJn+Y
-         Psz+MdFNC9J6nH1hvZ9NuA1tybXfrwfIdtiVo=
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, Wanlong Gao <wanlong.gao@gmail.com>
-Subject: [PATCH 2/2] Fixed the format that column is longer than 80 .
-Date: Sun, 27 Mar 2011 00:25:26 +0800
-Message-Id: <1301156726-23610-2-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1301156726-23610-1-git-send-email-wanlong.gao@gmail.com>
-References: <1301156726-23610-1-git-send-email-wanlong.gao@gmail.com>
+	Sat, 26 Mar 2011 12:35:59 -0400
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
+ value
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110326161346.GA18272@redhat.com>
+References: <20110324164436.GC1930@jolsa.brq.redhat.com>
+	 <1301153868.2250.359.camel@laptop>  <20110326161346.GA18272@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 26 Mar 2011 17:38:03 +0100
+Message-ID: <1301157483.2250.366.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- mm/memory.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
- mode change 100644 => 100755 mm/memory.c
+On Sat, 2011-03-26 at 17:13 +0100, Oleg Nesterov wrote:
+> 
+> I don't think this is right.
+> 
+> It is too late to clear ->task_ctx when the task exits. It is simply
+> wrong that cpuctx->task_ctx != NULL after context_switch(). And, once
+> again ->is_active is still true. 
 
-diff --git a/mm/memory.c b/mm/memory.c
-old mode 100644
-new mode 100755
-index 615be51..422cba6
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2196,7 +2196,8 @@ static inline int pte_unmap_same(struct mm_struct *mm, pmd_t *pmd,
- 	return same;
+Ah, indeed. Somehow I was thinking we did remove_from_context on
+close(), I thought about adding it to list_del_event() because that's
+the place we empty the context and I guess I should have done something
+like that.
+
+The problem with adding it to list_del_event() is that it isn't
+necessarily called on the correct cpu.
+
+/me ponders things for a bit ...
+
+The alternative seems to be to put it in event_sched_out(), right where
+we decrease ctx->nr_active. Again, I might have missed something quite
+trivial.. let me try and get that test-case running someplace.
+
+
+---
+ kernel/perf_event.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index c75925c..e9e4e35 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1073,6 +1073,8 @@ event_sched_out(struct perf_event *event,
+ 	if (!is_software_event(event))
+ 		cpuctx->active_oncpu--;
+ 	ctx->nr_active--;
++	if (!ctx->nr_active && cpuctx->task_ctx == ctx)
++		cpuctx->task_ctx = NULL;
+ 	if (event->attr.exclusive || !cpuctx->active_oncpu)
+ 		cpuctx->exclusive = 0;
  }
- 
--static inline void cow_user_page(struct page *dst, struct page *src, unsigned long va, struct vm_area_struct *vma)
-+static inline void cow_user_page(struct page *dst, struct page *src,
-+				unsigned long va, struct vm_area_struct *vma)
- {
- 	/*
- 	 * If the source page was a PFN mapping, we don't have
-@@ -2940,7 +2941,8 @@ out_release:
-  * except we must first make sure that 'address{-|+}PAGE_SIZE'
-  * doesn't hit another vma.
-  */
--static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned long address)
-+static inline int check_stack_guard_page(struct vm_area_struct *vma,
-+					unsigned long address)
- {
- 	address &= PAGE_MASK;
- 	if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
-@@ -3653,7 +3655,8 @@ int generic_access_phys(struct vm_area_struct *vma, unsigned long addr,
-  * Source/target buffer must be kernel space,
-  * Do not walk the page table directly, use get_user_pages
-  */
--int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write)
-+int access_process_vm(struct task_struct *tsk, unsigned long addr,
-+			void *buf, int len, int write)
- {
- 	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
--- 
-1.7.3
+
 
