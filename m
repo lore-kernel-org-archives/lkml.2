@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab1CZIeQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 04:34:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38240 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab1CZIeL convert rfc822-to-8bit (ORCPT
+	id S1753373Ab1CZIst (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 04:48:49 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56730 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393Ab1CZIsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 04:34:11 -0400
+	Sat, 26 Mar 2011 04:48:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=o4lYkYNYYgszxFGjyyqMhZHWEoZGRmKB9tdOD1/O3WsuzoE7irXUiCu2O8j4cmMFkV
-         6a0eImb5qT01760uS5meEtA5UKjyPOkFDjTubxzHNO+QD8ldaC83/oOyPHmY2/N6FVTc
-         aGVwQwTB4SGLkIYRAF6ZUat3uaEu8JyzdoLsM=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=aCGlsObvQhmxTT1SBGbyVC/AtZ6ULc2amhJ9MqdCiGkOSUr8NZQceIEJrp2ZJjYQti
+         b4HLD4shb4ePNco4GkFYbnluQd2kENcTh/c8FqSdzqfXDeAC6o6/A3whri1OSAWoacyK
+         ytHHwyBorQ2FYc95+noISxAMLsUS0iruYX+PY=
 MIME-Version: 1.0
-In-Reply-To: <4D8DA2F5.1050008@fusionio.com>
-References: <4D8B4A89.80608@fusionio.com>
-	<AANLkTi=zJbUpcT+vbLARyxhA34F1se8pYq9No799Zqzh@mail.gmail.com>
-	<4D8D87B0.3080107@fusionio.com>
-	<AANLkTimy1QZiHtQGUrXLPMRGEy3iXNOB=34tFjgezhEu@mail.gmail.com>
-	<4D8DA2F5.1050008@fusionio.com>
-Date: Sat, 26 Mar 2011 09:34:09 +0100
-X-Google-Sender-Auth: XRwJzGzq5B-XFQD_nedFf5gauIc
-Message-ID: <AANLkTinu4Piaz5SAb4BmMi-Yd6OjRAKYyKpcEWmD0THU@mail.gmail.com>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+In-Reply-To: <20110326023452.GA8140@google.com>
+References: <20110324182240.5fe56de2.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110324105222.GA2625@barrios-desktop>
+	<20110325090411.56c5e5b2.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTi=f3gu7-8uNiT4qz6s=BOhto5s=7g@mail.gmail.com>
+	<20110325115453.82a9736d.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTim3fFe3VzvaWRwzaCT6aRd-yeyfiQ@mail.gmail.com>
+	<20110326023452.GA8140@google.com>
+Date: Sat, 26 Mar 2011 17:48:45 +0900
+Message-ID: <AANLkTi=ng9vwoMJ=tseWwTsXMf9XZkMKUexcpEmQ45M_@mail.gmail.com>
+Subject: Re: [PATCH 0/4] forkbomb killer
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "rientjes@google.com" <rientjes@google.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 26, 2011 at 09:25, Jens Axboe <jaxboe@fusionio.com> wrote:
-> On 2011-03-26 08:21, Geert Uytterhoeven wrote:
->> On Sat, Mar 26, 2011 at 07:29, Jens Axboe <jaxboe@fusionio.com> wrote:
->>> On 2011-03-25 22:35, Geert Uytterhoeven wrote:
->>>> On Thu, Mar 24, 2011 at 14:43, Jens Axboe <jaxboe@fusionio.com> wrote:
->>>>> Jens Axboe (20):
->>>>>      block: remove per-queue plugging
->>>>
->>>> This one (commit 7eaceaccab5f40bbfda044629a6298616aeaed50) breaks IDE
->>>> on Atari/m68k under ARAnyM. It hangs on:
->>>>
->>>> | ide: Falcon IDE controller
->>>> | Probing IDE interface ide0...
->>>> | hda: Sarge m68k, ATA DISK drive
->>>> | ide0 at 0xfff00000 on irq 15 (serialized)
->>>> | ide-gd driver 1.18
->>>> | hda: max request size: 128KiB
->>>> | hda: 2118816 sectors (1084 MB) w/256KiB Cache, CHS=2102/16/63
->>>>
->>>> The next expected line is the partition parsing:
->>>>
->>>> | hda: AHDI hda1 hda2
->>>
->>> Geert, does this work for you?
->>
->> Yep.Thanks!
+2011/3/26 Michel Lespinasse <walken@google.com>:
+> On Fri, Mar 25, 2011 at 01:05:50PM +0900, Minchan Kim wrote:
+>> Okay. Each approach has a pros and cons and at least, now anyone
+>> doesn't provide any method and comments but I agree it is needed(ex,
+>> careless and lazy admin could need it strongly). Let us wait a little
+>> bit more. Maybe google guys or redhat/suse guys would have a opinion.
 >
-> Great! I think we should place those blk_delay_queue() calls under the
-> if (rq), that should workd to and be more optimal. Can I ask you to
-> check that, too?
+> I haven't heard of fork bombs being an issue for us (and it's not been
+> for me on my desktop, either).
 >
-> So:
+> Also, I want to point out that there is a classical userspace solution
+> for this, as implemented by killall5 for example. One can do
+> kill(-1, SIGSTOP) to stop all processes that they can send
+> signals to (except for init and itself). Target processes
+> can never catch or ignore the SIGSTOP. This stops the fork bomb
+> from causing further damage. Then, one can look at the process
+> tree and do whatever is appropriate - including killing by uid,
+> by cgroup or whatever policies one wants to implement in userspace.
+> Finally, the remaining processes can be restarted using SIGCONT.
 >
-> if (rq) {
->        blk_requeue_request(q, rq);
->        blk_delay_queue(q, msecs_to_jiffies(3));
-> }
->
-> in both locations.
 
-Works, too.
+Can that solution work even under OOM situation without new login/commands ?
+Please show us your solution, how to avoid Andrey's Bomb  with your way.
+Then, we can add Documentation, at least. Or you can show us your tool.
 
-Gr{oetje,eeting}s,
+Maybe it is....
+- running as a daemon. (because it has to lock its work memory before OOM.)
+- mlockall its own memory to work under OOM.
+- It can show process tree of users/admin or do all in automatic way
+with user's policy.
+- tell us which process is guilty.
+- wakes up automatically when OOM happens.....IOW, OOM should have some notifier
+  to userland.
+- never allocate any memory at running. (maybe it can't use libc.)
+- never be blocked by any locks, for example, some other task's mmap_sem.
+  One of typical mistakes of admins at OOM is typing 'ps' to see what
+happens.....
+- Can be used even with GUI system, which can't show console.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+-Kame
