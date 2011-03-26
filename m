@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab1CZBlA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 21:41:00 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:33493 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933155Ab1CZBkU (ORCPT
+	id S932844Ab1CZBnR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 21:43:17 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35630 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab1CZBnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 21:40:20 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19SXkEalPhS7sU3ntkMSn/jD8VKIPLWjVPA8Lfa0a
-	P3QE2s/KjIX1X+
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg KH <greg@kroah.com>
-Cc: Greg KH <gregkh@suse.de>, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, Harry Wei <jiaweiwei.xiyou@gmail.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 12/27] staging/lirc: Fix common spelling mistakes
-Date: Sat, 26 Mar 2011 02:39:21 +0100
-Message-Id: <1301103576-16109-12-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1301103576-16109-8-git-send-email-peterhuewe@gmx.de>
-References: <1301103576-16109-8-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	Fri, 25 Mar 2011 21:43:15 -0400
+Message-ID: <4D8D44A7.6060605@oracle.com>
+Date: Fri, 25 Mar 2011 18:43:03 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Mike Waychison <mikew@google.com>
+CC: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] watchdog: fix nv_tco section mismatch
+References: <20110324133244.acffd99a.randy.dunlap@oracle.com> <AANLkTikLSVpw73r_g++_oRs=nTjYf5WmH=XNjjp8o5uo@mail.gmail.com>
+In-Reply-To: <AANLkTikLSVpw73r_g++_oRs=nTjYf5WmH=XNjjp8o5uo@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D8D44AA.0066,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a very common spelling mistakes in
-drivers/staging/lirc.
+On 03/25/11 16:42, Mike Waychison wrote:
+> On Thu, Mar 24, 2011 at 1:32 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> Fix section mismatch warning:
+>> Mark the called nv_tco_getdevice() as __devinit, just like its caller.
+> 
+> This looks fine.
+> 
+> I can't seem to reproduce the warning on my end however, compiling
+> this as a built-in nor as a module.  How do I trigger a difference
+> between __init and __devinit?
 
-WRONG -> RIGHT
-recieve     -> receive
+I just used allmodconfig.  But why wouldn't you see a differnence between
+__init and __devinit?  They are defined differently in include/linux/init.h,
+but maybe on some $arch, those sections are treated differently?
 
-Kernel Version: staging/staging-next 20110325 (4bbba111)
+I dunno.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/lirc/lirc_ene0100.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/lirc/lirc_ene0100.h b/drivers/staging/lirc/lirc_ene0100.h
-index 776b693..ed39aa8 100644
---- a/drivers/staging/lirc/lirc_ene0100.h
-+++ b/drivers/staging/lirc/lirc_ene0100.h
-@@ -81,7 +81,7 @@
- 
- /* CIR block settings */
- #define ENE_CIR_CONF1		0xFEC0
--#define ENE_CIR_CONF1_ADC_ON	0x7	 /* reciever on gpio40 enabled */
-+#define ENE_CIR_CONF1_ADC_ON	0x7	 /* receiver on gpio40 enabled */
- #define ENE_CIR_CONF1_LEARN1	(1 << 3) /* enabled on learning mode */
- #define ENE_CIR_CONF1_TX_ON	0x30	 /* enabled on transmit */
- #define ENE_CIR_CONF1_TX_CARR	(1 << 7) /* send TX carrier or not */
 -- 
-1.7.3.4
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
