@@ -1,95 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab1CZWxS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 18:53:18 -0400
-Received: from wnohang.net ([178.79.154.173]:58297 "EHLO mail.wnohang.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab1CZWxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 18:53:17 -0400
-X-Greylist: delayed 541 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Mar 2011 18:53:16 EDT
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 4FA70249FB
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 1383F24905
-Date: Sun, 27 Mar 2011 04:14:08 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+	id S1752025Ab1CZXGX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 19:06:23 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50930 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab1CZXGW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 19:06:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=cbo1RZPxzI29kbr3BdgoV996Ac7732OqwCgF7pUyb2ZuF79yJ+P4pRKcFwjMvpllOY
+         ynG9wS025trbeI/ANF2ilWKsQoHb+i1lAm+vJn985S6xq+WQuMnTleIF3uqXdQvLTzmR
+         wh35ZQSMiBcAIG/tJqsymxU0+CzgXLRHyUkhA=
+Date: Sun, 27 Mar 2011 01:06:16 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Use the environment variable PYTHON if defined
-Message-ID: <20110326224408.GA1336@Xye>
+Subject: [PATCH] kstrtox: convert fs/proc/
+Message-ID: <20110326230616.GA6802@p183.telecom.by>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Operating-System: Arch linux x86_64 2.6.38-bldit-db-FAE
-X-Editor: VIM - Vi IMproved 7.3
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Convert fs/proc/ from strict_strto*() to kstrto*() functions.
 
---IS0zKkzwUGydFO0o
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On systems with python{2,3} installed, perf build can break which can be fi=
-xed by
-exporting PYTHON to the right value. Added support for PYTHON in the Makefi=
-le.
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
-  tools/perf/Makefile |    8 ++++++--
-  1 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 7141c42..d998221 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -149,6 +149,9 @@ endif
-  #
-  # Define NO_PERL if you do not want Perl scripts or libraries at all.
-  #
-+# Define PYTHON to point to python binary if it is not
-+# /usr/bin/python, it will be used/called as $PYTHON-config.
-+#
-  # Define INTERNAL_QSORT to use Git's implementation of qsort(), which
-  # is a simplified version of the merge sort used in glibc. This is
-  # recommended if Git triggers O(n^2) behavior in your platform's qsort().
-@@ -629,10 +632,11 @@ endif
-  ifdef NO_LIBPYTHON
-  	BASIC_CFLAGS +=3D -DNO_LIBPYTHON
-  else
--       PYTHON_EMBED_LDOPTS =3D $(shell python-config --ldflags 2>/dev/null)
-+       PYTHON ?=3D /usr/bin/python
-+       PYTHON_EMBED_LDOPTS =3D $(shell $(PYTHON)-config --ldflags 2>/dev/n=
-ull)
-         PYTHON_EMBED_LDFLAGS =3D $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
-         PYTHON_EMBED_LIBADD =3D $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
--	PYTHON_EMBED_CCOPTS =3D `python-config --cflags 2>/dev/null`
-+	PYTHON_EMBED_CCOPTS =3D ` $(PYTHON)-config --cflags 2>/dev/null`
-  	FLAGS_PYTHON_EMBED=3D$(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
-  	ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
-  		BASIC_CFLAGS +=3D -DNO_LIBPYTHON
---=20
-1.7.4.1
+ fs/proc/base.c     |   16 ++++++++--------
+ fs/proc/task_mmu.c |    8 +++++---
+ 2 files changed, 13 insertions(+), 11 deletions(-)
 
---------------------------
-Raghavendra Prabhu
-GPG ID:D72BE977
-
-
---IS0zKkzwUGydFO0o
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNjmw4AAoJEKYW3KHXK+l3RhkH/jcAQjMWZNq92tnq9ZbERqjV
-suxnVD0bYRuSLz0PIlG3DKBDSzGvjsKa0HeqWPYLwMgE6/h5J5GRKHDfU8AdUZpz
-3/vaIpb/xnjGxyW0F28DT9KXafSFrcw35XrEOum+4qiqT+IobHgToxqpFB+m9P2+
-GlB1UtLd1lrzZH6UA3fwOg+kve3d1AkqOmckq/RZPzijqnN1DQnFaiXz6A8RSbN6
-TD+dKE1AJnNfT9bHSO3ruqimpqJ77cRjSTkrxAD0+LQQ7YNrH59dgXUWH1LpzGJ6
-t86BT46/lFkO+W85m9yQnvPUyrfGtSQQUPHcVIclRBU/5hQ5Nb2oX89pkr9bU7M=
-=HCOg
------END PGP SIGNATURE-----
-
---IS0zKkzwUGydFO0o--
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1059,7 +1059,7 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
+ {
+ 	struct task_struct *task;
+ 	char buffer[PROC_NUMBUF];
+-	long oom_adjust;
++	int oom_adjust;
+ 	unsigned long flags;
+ 	int err;
+ 
+@@ -1071,7 +1071,7 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
+ 		goto out;
+ 	}
+ 
+-	err = strict_strtol(strstrip(buffer), 0, &oom_adjust);
++	err = kstrtoint(strstrip(buffer), 0, &oom_adjust);
+ 	if (err)
+ 		goto out;
+ 	if ((oom_adjust < OOM_ADJUST_MIN || oom_adjust > OOM_ADJUST_MAX) &&
+@@ -1168,7 +1168,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 	struct task_struct *task;
+ 	char buffer[PROC_NUMBUF];
+ 	unsigned long flags;
+-	long oom_score_adj;
++	int oom_score_adj;
+ 	int err;
+ 
+ 	memset(buffer, 0, sizeof(buffer));
+@@ -1179,7 +1179,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 		goto out;
+ 	}
+ 
+-	err = strict_strtol(strstrip(buffer), 0, &oom_score_adj);
++	err = kstrtoint(strstrip(buffer), 0, &oom_score_adj);
+ 	if (err)
+ 		goto out;
+ 	if (oom_score_adj < OOM_SCORE_ADJ_MIN ||
+@@ -1468,7 +1468,7 @@ sched_autogroup_write(struct file *file, const char __user *buf,
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+ 	struct task_struct *p;
+ 	char buffer[PROC_NUMBUF];
+-	long nice;
++	int nice;
+ 	int err;
+ 
+ 	memset(buffer, 0, sizeof(buffer));
+@@ -1477,9 +1477,9 @@ sched_autogroup_write(struct file *file, const char __user *buf,
+ 	if (copy_from_user(buffer, buf, count))
+ 		return -EFAULT;
+ 
+-	err = strict_strtol(strstrip(buffer), 0, &nice);
+-	if (err)
+-		return -EINVAL;
++	err = kstrtoint(strstrip(buffer), 0, &nice);
++	if (err < 0)
++		return err;
+ 
+ 	p = get_proc_task(inode);
+ 	if (!p)
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -533,15 +533,17 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 	char buffer[PROC_NUMBUF];
+ 	struct mm_struct *mm;
+ 	struct vm_area_struct *vma;
+-	long type;
++	int type;
++	int rv;
+ 
+ 	memset(buffer, 0, sizeof(buffer));
+ 	if (count > sizeof(buffer) - 1)
+ 		count = sizeof(buffer) - 1;
+ 	if (copy_from_user(buffer, buf, count))
+ 		return -EFAULT;
+-	if (strict_strtol(strstrip(buffer), 10, &type))
+-		return -EINVAL;
++	rv = kstrtoint(strstrip(buffer), 10, &type);
++	if (rv < 0)
++		return rv;
+ 	if (type < CLEAR_REFS_ALL || type > CLEAR_REFS_MAPPED)
+ 		return -EINVAL;
+ 	task = get_proc_task(file->f_path.dentry->d_inode);
