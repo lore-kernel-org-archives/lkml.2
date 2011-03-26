@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588Ab1CZMf6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 08:35:58 -0400
-Received: from mail.bisel.ru ([80.93.56.210]:34525 "EHLO mail.bisel.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076Ab1CZMf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 08:35:57 -0400
-X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Mar 2011 08:35:56 EDT
-X-Envelope-Recipient: jgarzik@pobox.com
-X-Envelope-Recipient: linux-kernel@vger.kernel.org
+	id S1751604Ab1CZMw5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 08:52:57 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63327 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab1CZMw4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 08:52:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=Vm9h+lmdwUt1HymeykwKWorS5CONj0x91qLVGDHQEIndJbiKVimpBBNP99brH3BUqY
+         /c2z4DmLXFbmDj1KkD6uKNQ00zFM2R6DZK47RqDMJgdfYaGo99t5CgMdt8lAC3J1Ugun
+         9hsQBDe2KQDfIrgAu2IRd3khMcBwbSCjtA//g=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sat, 26 Mar 2011 15:30:02 +0300
-From: igor@novg.net
-To: <jgarzik@pobox.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2.6.38.1] =?UTF-8?Q?pata=5Fit=38=32=31x=3A=20Add=20module?=
- =?UTF-8?Q?=20param=20to=20force=20UDMA=20on=20Vortex=38=36SX?=
-Message-ID: <89bf4e2c74a16f130208a485c6eafd77@novg.net>
-User-Agent: Roundcube Webmail/0.5.1
+Date: Sat, 26 Mar 2011 18:22:55 +0530
+Message-ID: <AANLkTikqHWid2Q93F5U5Qw5snJH8C5PXoa7J6=6hYO94@mail.gmail.com>
+Subject: [PATCH] sched: Replace NR_CPUS with num_online_cpus()
+From: Sisir Koppaka <sisir.koppaka@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- This patch adds parameter 'it8212_rdc11_force_udma' to 'pata_it821x' 
- module,
- which allows users to force UDMA mode on RDC11/Vortex86SX embedded 
- devices.
+The interval for checking scheduling domains if they are due to be
+balanced currently depends on boot state NR_CPUS, which may not
+accurately reflect the number of online CPUs at the time of check.
 
- ---
- UDMA is disabled by default due to some CRC errors, which i cannot 
- observe when
- using CompactFlash card with patched driver.
+Signed-off-by: Sisir Koppaka <sisir.koppaka@gmail.com>
+---
+ kernel/sched_fair.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
- May be there are errors with pure IDE devices or with older revisions 
- of Vortex86SX
- boards, i do no know. But for my device i have 2x improvement in I/O 
- speed when
- enabling UDMA/33 instead of MWDMA, so i think this parameter would be 
- useful.
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 3f7ec9e..c7ec5c8 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -22,6 +22,7 @@
 
- Also fix to initialize default value for parameter 'noraid'.
+ #include <linux/latencytop.h>
+ #include <linux/sched.h>
++#include <linux/cpumask.h>
 
- --- b/drivers/ata/pata_it821x.c 2011-03-23 23:04:47.000000000 +0300
- +++ a/drivers/ata/pata_it821x.c 2011-03-26 15:10:49.608952573 +0300
- @@ -111,7 +111,8 @@ struct it821x_dev
-   *     device.
-   */
+ /*
+  * Targeted preemption latency for CPU-bound tasks:
+@@ -3850,8 +3851,8 @@ static void rebalance_domains(int cpu, enum
+cpu_idle_type idle)
+ 		interval = msecs_to_jiffies(interval);
+ 		if (unlikely(!interval))
+ 			interval = 1;
+-		if (interval > HZ*NR_CPUS/10)
+-			interval = HZ*NR_CPUS/10;
++		if (interval > HZ*num_online_cpus()/10)
++			interval = HZ*num_online_cpus()/10;
 
- -static int it8212_noraid;
- +static int it8212_noraid = 0;
- +static int it8212_rdc11_force_udma = 0;
+ 		need_serialize = sd->flags & SD_SERIALIZE;
 
-  /**
-   *     it821x_program  -       program the PIO/MWDMA registers
- @@ -913,7 +914,7 @@ static int it821x_init_one(struct pci_de
+-- 
+1.7.0.4
 
-         if (pdev->vendor == PCI_VENDOR_ID_RDC) {
-                 /* Deal with Vortex86SX */
- -               if (pdev->revision == 0x11)
- +               if (pdev->revision == 0x11 && !it8212_rdc11_force_udma)
-                         ppi[0] = &info_rdc_11;
-                 else
-                         ppi[0] = &info_rdc;
- @@ -988,9 +989,12 @@ MODULE_LICENSE("GPL");
-  MODULE_DEVICE_TABLE(pci, it821x);
-  MODULE_VERSION(DRV_VERSION);
-
- -
-  module_param_named(noraid, it8212_noraid, int, S_IRUGO);
-  MODULE_PARM_DESC(noraid, "Force card into bypass mode");
-
- +module_param_named(rdc11_force_udma, it8212_rdc11_force_udma, int, 
- S_IRUGO|S_IWUSR);
- +MODULE_PARM_DESC(rdc11_force_udma, "Force enable UDMA mode 
- RDC11/Vortex86SX boards."
- +       " Use with caution");
- +
-  module_init(it821x_init);
-  module_exit(it821x_exit);
-
+Sisir
