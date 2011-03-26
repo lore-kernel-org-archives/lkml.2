@@ -1,99 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab1CZSfs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 14:35:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49402 "EHLO mx1.redhat.com"
+	id S1753747Ab1CZSsj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 14:48:39 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:50529 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753179Ab1CZSfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 14:35:46 -0400
-Date: Sat, 26 Mar 2011 19:25:54 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com
-Subject: Re: [PATCHSET] ptrace,signal: Improve ptrace and job control
-	interaction
-Message-ID: <20110326182554.GA24315@redhat.com>
-References: <1300874766-12941-1-git-send-email-tj@kernel.org> <20110323183837.GA27680@redhat.com> <20110325142630.GD1409@htj.dyndns.org>
+	id S1753702Ab1CZSsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 14:48:38 -0400
+X-ASG-Debug-ID: 1301165316-03d6a524ef01ae0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D8E3500.6090208@fusionio.com>
+Date: Sat, 26 Mar 2011 19:48:32 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110325142630.GD1409@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39
+References: <4D8B4A89.80608@fusionio.com> <AANLkTi=zJbUpcT+vbLARyxhA34F1se8pYq9No799Zqzh@mail.gmail.com> <4D8D87B0.3080107@fusionio.com> <AANLkTi=jcm8pLQCTwYPK_Ey1SbMYSqQhYD4fJmCNz7sS@mail.gmail.com> <4D8E1A1A.8010300@fusionio.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39
+In-Reply-To: <4D8E1A1A.8010300@fusionio.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301165316
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59045
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tejun,
+On 2011-03-26 17:53, Jens Axboe wrote:
+> On 2011-03-26 17:48, Linus Torvalds wrote:
+>> On Fri, Mar 25, 2011 at 11:29 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>> +
+>>> +       /* Use 3ms as that was the old plug delay */
+>>> +       blk_delay_queue(q, msecs_to_jiffies(3));
+>>
+>> That's bogus. blk_delay_queue() already takes msecs, not jiffies.
+> 
+> You are right, braino.
+> 
+>> Also, do we really need to delay every unplug like this? It seems sad.
+>> A 3ms delay is a long time these days - admittedly most people
+>> hopefully use ATA these days if they have an SSD or something, but
+>> still..
+> 
+> Depends on whether you want the 'call me back, I ran into busy this
+> time' or the 'recall me immediately'.
+> 
+> I'll take a look at the IDE case tonight and submit a real fix.
 
-On 03/25, Tejun Heo wrote:
->
-> Hello, Oleg.
->
-> On Wed, Mar 23, 2011 at 07:38:37PM +0100, Oleg Nesterov wrote:
-> > But of course we need more changes. In particular, there is still the
-> > small problem with the CLD_CONTINUED notification.
-> >
-> > __ptrace_unlink() does signal_wake_up() if it adds SIGNAL_STOP_STOPPED.
-> > This is correct, but it should also add TIF_SIGPENDING if
-> > (signal->flags & SIGNAL_CLD_MASK) != 0.
-> >
-> > Otherwise, if the stopped tracee was PTRACE_CONT'ed and then SIGCONT
-> > ends the group-stop, the real_parent won't be notified after detach.
->
-> Heh, that's an interesting one.  I don't think it has much to do with
-> __ptrace_unlink() tho.  Isn't the proper solution using something akin
-> to signal_wake_up() in SIGCONT generation path in prepare_signal()?
+It's not completely clear cut what the delays should be in the various
+old replug cases. Only for the drive sleeping can I make an educated
+guess since we now the timeout period.
 
-I am not sure... but please see below.
+So something like this. Retains the same recall delay as we had before.
+Someone who cares is free to go and optimize this, if the queue rerun
+delay should be shorter in some cases.
 
-> Explicit wake_up_state() without kick_process() is okay there because
-> if the code assumes that the tasks are guaranteed to pass through
-> signal delivery path whenever event worthy of notification happens
-> (either SIGNAL_STOP_STOPPED or group_stop_count is set).  PTRACE_CONT
-> breaks that as the tracee could be running in userland and thus the
-> solution is to add kick_process() as in signal_wake_up().
->
-> Am I making any sense?
-
-Perhaps. This depends on how we define/implement the new behaviour.
-
-It is not clear to me what the new trap should actually do. And how.
-Either way, prepare_signal(SIGCONT) should do something with the
-ptraced threads, and this is what we should care about. Probably
-we can set TIF_SIGPENDING if task_ptrace() is true.
-
-Anyway we should ensure SIGCONT can't race with detach.
-
-> > Unfortunately, this means that recalc_sigpending_tsk() has to check
-> > SIGNAL_CLD_MASK as well. Do you see another solution?
->
-> Hmmm... I think the above subtle breakage exists for !ptrace case too.
-> Please consider the following scenario.
->
-> * SIGSTOP is sent to a task and group stop is initiated.
->
-> * Before the task participates in group stop, SIGCONT is sent.
-
-In this case we are doing nothing intentionally, as if SIGSTOP wasn't
-sent.
-
-> * Before CLD_STOPPED notification for the incomplete-stop/cont
->   sequence can be made, recalc_sigpending() happens.
->
-> * CLD_STOPPED notification is pending but TIF_SIGPENDING isn't set and
->   the task isn't in signal delivery path and can continue execution.
-
-This doesn't matter, or I misunderstood.
-
-We only add "SIGNAL_CLD_* | SIGNAL_STOP_CONTINUED" if we know there
-is at least one thread in get_signal_to_deliver()->do_signal_stop()
-paths. In this case we do not rely on TIF_SIGPENDING at all.
+diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
+index f407784..0e406d73 100644
+--- a/drivers/ide/ide-io.c
++++ b/drivers/ide/ide-io.c
+@@ -440,6 +440,7 @@ void do_ide_request(struct request_queue *q)
+ 	struct ide_host *host = hwif->host;
+ 	struct request	*rq = NULL;
+ 	ide_startstop_t	startstop;
++	unsigned long queue_run_ms = 3; /* old plug delay */
+ 
+ 	spin_unlock_irq(q->queue_lock);
+ 
+@@ -459,6 +460,9 @@ repeat:
+ 		prev_port = hwif->host->cur_port;
+ 		if (drive->dev_flags & IDE_DFLAG_SLEEPING &&
+ 		    time_after(drive->sleep, jiffies)) {
++			unsigned long left = jiffies - drive->sleep;
++
++			queue_run_ms = jiffies_to_msecs(left + 1);
+ 			ide_unlock_port(hwif);
+ 			goto plug_device;
+ 		}
+@@ -547,8 +551,10 @@ plug_device:
+ plug_device_2:
+ 	spin_lock_irq(q->queue_lock);
+ 
+-	if (rq)
++	if (rq) {
+ 		blk_requeue_request(q, rq);
++		blk_delay_queue(q, queue_run_ms);
++	}
+ }
+ 
+ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
+@@ -562,6 +568,10 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
+ 		blk_requeue_request(q, rq);
+ 
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
++
++	/* Use 3ms as that was the old plug delay */
++	if (rq)
++		blk_delay_queue(q, 3);
+ }
+ 
+ static int drive_is_ready(ide_drive_t *drive)
 
 
-(just in case, I am ignoring the current problems with group-stop
- and PTRACE_CONT).
-
-Oleg.
+-- 
+Jens Axboe
 
