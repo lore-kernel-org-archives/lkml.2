@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab1CZR4L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 13:56:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50184 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab1CZR4A convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 13:56:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=XoDZEaph6TKoHZ4ZdiDnM3VF/Rxd6k1d5Rfwp5iK+4OFG+vnJENY+EhwTdOoruSXQd
-         Dw+1nj+kLtLUOQLp9a38TjZK2eR3V4NkAB7uA9xL96V27MhBC2fSPZAHp2JG0P0cYYHN
-         wUSMWL5Xfh6HL3rE0e6LoLKhBHcmop9j5rulg=
+	id S1753316Ab1CZR7B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 13:59:01 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54841 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750864Ab1CZR7A convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 13:59:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <201103261154.18619.arnd@arndb.de>
-References: <1300980071-24645-1-git-send-email-jamie@jamieiles.com>
- <20110326002159.GY3130@pulham.picochip.com> <AANLkTinYd+4vtSBmBGHJwbCgFiZttSTtgQaQ0txwoUxt@mail.gmail.com>
- <201103261154.18619.arnd@arndb.de>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Sat, 26 Mar 2011 13:55:39 -0400
-X-Google-Sender-Auth: 9G7ME7zPIUevh1wQO8mw4YlWyAU
-Message-ID: <AANLkTik7qzFC_WQPrJAMbV0b6-+CTNfP6CcQnK6BKiWn@mail.gmail.com>
-Subject: Re: [RFC PATCHv2 1/4] drivers/otp: add initial support for OTP memory
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110326112725.GA28612@elte.hu>
+References: <alpine.DEB.2.00.1103221635400.4521@tiger> <20110324142146.GA11682@elte.hu>
+ <alpine.DEB.2.00.1103240940570.32226@router.home> <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
+ <20110324172653.GA28507@elte.hu> <20110324185258.GA28370@elte.hu>
+ <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6>
+ <20110324192247.GA5477@elte.hu> <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com>
+ <20110326112725.GA28612@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 26 Mar 2011 10:58:37 -0700
+Message-ID: <AANLkTim+=nW820_QDBCabsY=UTxa1DAPnLqijDNicgB8@mail.gmail.com>
+Subject: Re: [boot crash #2] Re: [GIT PULL] SLAB changes for v2.6.39-rc1
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
+        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 26, 2011 at 06:54, Arnd Bergmann wrote:
-> On Saturday 26 March 2011 03:16:48 Mike Frysinger wrote:
->> On Fri, Mar 25, 2011 at 20:21, Jamie Iles wrote:
->> > For the actual ioctl() we should assume byte addressing rather than
->> > words though and do the conversion in the driver so we can cope with
->> > devices that don't have 64-bit words and do the locking on a looping
->> > word-by-word basis.
->> >
->> >        struct otp_lock_req {
->> >                __u32   start_addr;
->> >                __u32   byte_count;
->> >        };
+On Sat, Mar 26, 2011 at 4:27 AM, Ingo Molnar <mingo@elte.hu> wrote:
 >
-> Looks good to me.
+> ok, bad news - the bootcrash has come back - see the crashlog attached below.
+> Config attached as well.
 >
->> i would add an ABI field here too so if in the future we want to add
->> stuff, we can do so without adding new ioctls.  like "u16 version; u16
->> flags;".  then in the ioctl, if version isnt 0, we return ENOTSUP.  in
->> the future, we can add flags or bump the version.
+> I reproduced this on upstream 16c29dafcc86 - i.e. all the latest Slab fixes
+> applied.
 >
-> No, versioned APIs are just a pain to maintain, it's easier to add
-> new ioctl commands when necessary.
-> Note that the kernel would always have to support all versions of
-> the API anyway.
+> BUG: unable to handle kernel paging request at ffff87ffc1fdd020
+> IP: [<ffffffff812b50c2>] this_cpu_cmpxchg16b_emu+0x2/0x1c
+> ...
+> Code: 47 08 48 89 47 10 48 89 47 18 48 89 47 20 48 89 47 28 48 89 47 30 48 89 47 38 48 8d 7f 40 75 d9 90 c3 90 90 90 90 90 90 90 9c fa
+> �48 3b 06 75 14 65 48 3b 56 08 75 0d 65 48 89 1e 65 48 89 4e
 
-adding at least a flags field then should be fine
--mike
+Your "Code:" line is buggy, and is missing the first byte of the
+faulting instruction (which should have that "<>" around it). But from
+the offset, we know it's <65>, and it's the first read of %gs. In
+which case it all decodes to the right thing, ie
+
+   0:	9c                   	pushfq
+   1:	fa                   	cli
+   2:*	65 48 3b 06          	cmp    %gs     <-- trapping instruction:(%rsi),%rax
+   6:	75 14                	jne    0x1c
+   8:	65 48 3b 56 08       	cmp    %gs:0x8(%rsi),%rdx
+   d:	75 0d                	jne    0x1c
+   f:	65 48 89 1e          	mov    %rbx,%gs:(%rsi)
+
+(Heh, the "trapping instruction" points to the %gs override itself,
+which looks odd but is technically not incorrect).
+
+And quite frankly, I don't see how this can have anything to do with
+the emulated code. It's doing exactly the same thing as the cmpxchg16b
+instruction is, except for the fact that a real cmpxchg16b would have
+(a) not done this with interrupts disabled and (b) would have done the
+fault as a write-fault.
+
+But neither of those should make any difference what-so-ever. If this
+was rally about the vmalloc space, arch/x86/mm/fault.c should have
+fixed it up. That code is entirely happy fixing up stuff with
+interrupts disabled too, and is in fact designed to do so.
+
+So I don't see how this could be about the cmpxchg16b instruction
+emulation.  We should have gotten pretty much the exact same page
+fault even for a real cmpxchg16b instruction.
+
+I wonder if there is something wrong in the percpu allocation, and the
+whole new slub thing just ends up causing us to do those allocations
+earlier or in a different pattern. The percpu offset is fairly close
+to the beginning of a page (offset 0x20).
+
+Tejun, do you see anything suspicious/odd about the percpu allocations
+that alloc_kmem_cache_cpus() does?  In particular, should the slab
+init code use the reserved chunks so that we don't get some kind of
+crazy "slab wants to do percpu alloc to initialize, which wants to use
+slab to allocate the chunk"?
+
+                                   Linus
