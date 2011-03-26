@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab1CZBj3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 21:39:29 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:55725 "HELO
+	id S932459Ab1CZBju (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 21:39:50 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:32977 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751546Ab1CZBj1 convert rfc822-to-8bit (ORCPT
+	with SMTP id S932161Ab1CZBjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 21:39:27 -0400
+	Fri, 25 Mar 2011 21:39:48 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19KtGI5G+dKVEluFRmLtgeRjMQoAuuOsj2NOq57lv
-	zSBMH1pdCuXrfY
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Harry Wei <jiaweiwei.xiyou@gmail.com>
-Subject: Re: [PATCH] staging/trivial: Fix common spelling mistakes
-Date: Sat, 26 Mar 2011 02:39:23 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; x86_64; ; )
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org, trivial@kernel.org,
-        jkosina@suse.cz, joe@perches.com
-References: <alpine.LNX.2.00.1103141259500.19969@pobox.suse.cz> <1300139875-8688-1-git-send-email-peterhuewe@gmx.de> <20110315031418.GB3372@gmail.com>
-In-Reply-To: <20110315031418.GB3372@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103260239.23708.PeterHuewe@gmx.de>
+X-Provags-ID: V01U2FsdGVkX1+bEqAN9GGb3rxbny8A+AuZ/uqhFGjpV74Nywcid0
+	zEfRc0V8Jfl4bg
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg KH <greg@kroah.com>
+Cc: Greg KH <gregkh@suse.de>, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, Harry Wei <jiaweiwei.xiyou@gmail.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 08/27] staging/et131x: Fix common spelling mistakes
+Date: Sat, 26 Mar 2011 02:39:17 +0100
+Message-Id: <1301103576-16109-8-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag 15 März 2011, 04:14:20 schrieb Harry Wei:
-> > This patch fixes some very common spelling mistakes in drivers/staging
-> Hi peter,
->      I have sense that you should split this
-> patch for patches, which one patch just do
-> one spelling mistakes.
-> 
-> But there are so many spelling mistakes.
-> I wanna help you with this stuff. Would you
-> like to assign some to me. I am so pleasure
-> for this.
+This patch fixes some very common spelling mistakes in
+drivers/staging/brcm80211.
 
+WRONG -> RIGHT
+accomodate  -> accommodate
+occured     -> occurred
 
-Hi Harry,
+Kernel Version: staging/staging-next 20110325 (4bbba111)
 
-(sorry for my late reply)
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/et131x/et1310_rx.c  |    2 +-
+ drivers/staging/et131x/et131x_isr.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-thanks for you help and I really appreciate your offer.
-I've split up the patch for the staging directory into 27 patches, one for 
-each affected directory, since this was the easiest way to split my big old 
-patch ;)
-
-As you know there's still the big "fix common spelling mistakes" patch for the 
-trivial tree (i.e. everything but the staging directory) which is still 
-pending, and probably won't apply anymore ;)
-So it might be a good idea to split this one up as well, and for this your 
-help comes handy.
-
-If this is fine with Jiri I'd suggest this splitting:
-
-One patch each for:
-arch/
-crypto/
-fs/
-include/
-kernel/
-lib/
-mm/
-net/
-scripts/
-security/
-sound/
-
-And for drivers/ one patch for each subsystem/directory,
-with the exception of drivers/media/ - this one I'd split into 
-media/dvb/
-media/video/
-and the remaining media
-
-
-If you want to help me the easiest way would be that I update the patch to the 
-current trivial tree and then send it to you, you apply it with patch (not git 
-am) and then commit each subdirectory and write a nice commit message  and 
-send it to the list ;) 
-
-But I'd like to hear Jiri's opinion first.
-
-
-Thanks,
-Peter
+diff --git a/drivers/staging/et131x/et1310_rx.c b/drivers/staging/et131x/et1310_rx.c
+index 339136f..fc6bd43 100644
+--- a/drivers/staging/et131x/et1310_rx.c
++++ b/drivers/staging/et131x/et1310_rx.c
+@@ -122,7 +122,7 @@ int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+ 	 * number of entries in FBR1.
+ 	 *
+ 	 * FBR1 holds "large" frames, FBR0 holds "small" frames.  If FBR1
+-	 * entries are huge in order to accomodate a "jumbo" frame, then it
++	 * entries are huge in order to accommodate a "jumbo" frame, then it
+ 	 * will have less entries.  Conversely, FBR1 will now be relied upon
+ 	 * to carry more "normal" frames, thus it's entry size also increases
+ 	 * and the number of entries goes up too (since it now carries
+diff --git a/drivers/staging/et131x/et131x_isr.c b/drivers/staging/et131x/et131x_isr.c
+index ce4d930..f716e40 100644
+--- a/drivers/staging/et131x/et131x_isr.c
++++ b/drivers/staging/et131x/et131x_isr.c
+@@ -466,7 +466,7 @@ void et131x_isr_handler(struct work_struct *work)
+ 		/* Handle SLV Timeout Interrupt */
+ 		if (status & ET_INTR_SLV_TIMEOUT) {
+ 			/*
+-			 * This means a timeout has occured on a read or
++			 * This means a timeout has occurred on a read or
+ 			 * write request to one of the JAGCore registers. The
+ 			 * Global Resources block has terminated the request
+ 			 * and on a read request, returned a "fake" value.
+-- 
+1.7.3.4
 
