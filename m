@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab1CZTM1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 15:12:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42740 "EHLO linutronix.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752320Ab1CZTM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 15:12:26 -0400
-Date: Sat, 26 Mar 2011 20:12:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT pull] irq cleanups for .39
-In-Reply-To: <AANLkTimZRRwRQMHn7dtVW-JDqgCxxzLgbtJJUk4b41wW@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1103262010590.31464@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1103251747450.31464@localhost6.localdomain6> <20110325194010.GG22960@elte.hu> <AANLkTimZRRwRQMHn7dtVW-JDqgCxxzLgbtJJUk4b41wW@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753867Ab1CZTS0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 15:18:26 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:32819 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752827Ab1CZTSZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 15:18:25 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: JrmR10oVM1n_PvLSMtvWvhZ8T_y0kbOyxTst79753NAqRfT
+ Qp82A6xilsgPvMPCUTcpwiMaG2Os8jpy_3jmmelUC_JDO9Zg2jN_8gORvsa2
+ zgf1Iwe6Lm8yTQnff4_zoJ4QtZftF7r.iNMVcPlOtedqcx1_c8vjI49l4rCz
+ 22mTeO2Bko.erAHbjMfMxcOzEbPbkm6BW_e2BM2zO1mwnTiCItN3Exvo549u
+ xETKNIF0vKYy.R.5i5QjzdUxepe8MQC7.wRMqAlt1BPuweXxHz7F__S0cNIK
+ y8G8DpxVls1JKIjcaPx6g2a7p2BCFPaG2zs0E3vTWpziBh0ke
+X-Yahoo-Newman-Property: ymail-3
+Date: Sat, 26 Mar 2011 14:18:20 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, tj@kernel.org, npiggin@kernel.dk,
+        rientjes@google.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] slub: Disable the lockless allocator
+In-Reply-To: <1301161507.2979.105.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1103261406420.24195@router.home>
+References: <alpine.DEB.2.00.1103221635400.4521@tiger>  <20110324142146.GA11682@elte.hu>  <alpine.DEB.2.00.1103240940570.32226@router.home>  <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>  <20110324172653.GA28507@elte.hu> <20110324185258.GA28370@elte.hu>
+  <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6>  <20110324192247.GA5477@elte.hu>  <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com>  <20110326112725.GA28612@elte.hu>  <20110326114736.GA8251@elte.hu>
+ <1301161507.2979.105.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1066172291-1301166741=:31464"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sat, 26 Mar 2011, Eric Dumazet wrote:
 
----1463795968-1066172291-1301166741=:31464
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+> address : RSI = ffff88003ffc2020
+>
+> RSI is supposed to be a dynamic percpu addr
+> Yet this value seems pretty outside of pcpu pools
+>
+> CR2: ffff87ffc1fdd020
 
-On Sat, 26 Mar 2011, richard -rw- weinberger wrote:
-> On Fri, Mar 25, 2011 at 8:40 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> >> Linus,
-> >>
-> >> Please pull the latest irq-cleanup-for-linus git tree from:
-> >>
-> >>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-cleanup-for-linus
-> >>
-> >> This contains the irq/urgent bits which Ingo asked to pull earlier, so
-> >> whatever you pull first does not matter.
-> >>
-> >> The gpio patches have been acked by Grant.
-> >>
-> >> The avr, h8300, xtensa, m32r, um bits is stuff which got ignored by
-> >> the arch maintainers. Those archs seem to be orphaned.
-> >>
-> >> The cleanup is necessary as we really want to get rid of all the
-> >> deprecated and compat stuff asap.
-> >
-> > Note, while the architectures are orphaned, i've done cross-build testing for
-> > most of these architectures with your changes applies, so the ones that built
-> > before should still work now.
-> 
-> um really seems to be orphaned. Jeff has never responded to my emails.
-> As I'm a heavy user of User Mode Linux I keep it alive on my own.
-> 
-> Please send patches which require action on UML to me or CC
-> user-mode-linux-devel@lists.sourceforge.net so that I can pick up and test them.
-> I have a testbed for UML.
-
-Could you please send a patch which adds your mail address and the ML
-to the maintainers file ?
-
-Thanks,
-
-	tglx
+Right. RSI should be in the range of the values you printed.
+However, the determination RSI is independent of the emulation of the
+instruction. If RSI is set wrong then we should see these failures on
+machines that do not do the instruction emulation. A kvm run with Ingo's
+config should show the same issues. Will do that now.
 
 
----1463795968-1066172291-1301166741=:31464--
