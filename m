@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab1CZUpR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 16:45:17 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:45482 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985Ab1CZUpP (ORCPT
+	id S1754175Ab1CZUtN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 16:49:13 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36864 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754048Ab1CZUtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 16:45:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:in-reply-to:message-id:references:mime-version:
-	content-type; q=dns; s=newdream.net; b=IinDsH6J/godnoukeSYWNDVva
-	pXlyWLSVxAxqSG48atmamPH2uZJqk/2Im0bPEx4eR73w4t2xQtY3n2FeSNN6bIiH
-	botvHsOWI3qXN98S2Nsy8cPdF05lx92snf1VgMYUdKJvE+SEgim7V9TG0R+T0HHd
-	XeYAEkZ3jaIWQAeiS0=
-Date: Sat, 26 Mar 2011 13:48:05 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Mariusz Kozlowski <mk@lab.zgora.pl>
-cc: "David S. Miller" <davem@davemloft.net>, ceph-devel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ceph: fix possible NULL pointer dereference
-In-Reply-To: <1301164174-8597-1-git-send-email-mk@lab.zgora.pl>
-Message-ID: <Pine.LNX.4.64.1103261347580.17758@cobra.newdream.net>
-References: <1301164174-8597-1-git-send-email-mk@lab.zgora.pl>
+	Sat, 26 Mar 2011 16:49:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=MyIAx+HFRldY3WGZGDWxaZamMlL7iFS1geykWqPSDuBGHzz+r51q+AH2XWboAmSjGj
+         BFLhek9/8/Rc0i69dYy2g6l2+Zy7xOQizdFc4n9K3zMS5bb+w8KZjXc97jXwTBcZ/lVn
+         BjMf4g4HIXxri36HgKa/yT/KCIiOphJLJx29k=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1301062635.2250.212.camel@laptop>
+References: <1300851416.31224.58.camel@minggr.sh.intel.com>
+ <1301051277.2250.195.camel@laptop> <1301060121.2269.1.camel@localhost> <1301062635.2250.212.camel@laptop>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Sat, 26 Mar 2011 16:48:50 -0400
+Message-ID: <AANLkTiktD6pqxNsy+9gXfKKRfooNxd2goLOwCP5-GRD8@mail.gmail.com>
+Subject: Re: [RFC] perf: EBNF for event syntax
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Lin Ming <ming.m.lin@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Matt Fleming <matt@console-pimps.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied, thanks!
+On Fri, Mar 25, 2011 at 10:17, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> Right, and as said changing this would create some backward compat
+> problems so I'm not sure its the best proposal, just wanted to raise the
+> issue that such functionality would be nice.
 
-sage
-
-
-On Sat, 26 Mar 2011, Mariusz Kozlowski wrote:
-
-> This patch fixes 'event_work' dereference before it is checked for NULL.
-> 
-> Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
-> ---
->  net/ceph/osd_client.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-> index 02212ed..b6776cb 100644
-> --- a/net/ceph/osd_client.c
-> +++ b/net/ceph/osd_client.c
-> @@ -1602,11 +1602,11 @@ void handle_watch_notify(struct ceph_osd_client *osdc, struct ceph_msg *msg)
->  	     cookie, ver, event);
->  	if (event) {
->  		event_work = kmalloc(sizeof(*event_work), GFP_NOIO);
-> -		INIT_WORK(&event_work->work, do_event_work);
->  		if (!event_work) {
->  			dout("ERROR: could not allocate event_work\n");
->  			goto done_err;
->  		}
-> +		INIT_WORK(&event_work->work, do_event_work);
->  		event_work->event = event;
->  		event_work->ver = ver;
->  		event_work->notify_id = notify_id;
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+Not only nice, it's pretty much a requirement.  Most useful statistics
+come in the form of ratios.  Collecting the values for ratios much
+happen concurrently.  Currently perf isn't better than oprofile in
+this respect.  One has to start perf separately for each ratio.
