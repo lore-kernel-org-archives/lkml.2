@@ -1,95 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab1CZPfq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 11:35:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46958 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab1CZPfm (ORCPT
+	id S1752620Ab1CZPx3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 11:53:29 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:35851 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab1CZPx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 11:35:42 -0400
-Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
- value
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        oleg@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20110324164436.GC1930@jolsa.brq.redhat.com>
-References: <20110324164436.GC1930@jolsa.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 26 Mar 2011 16:37:48 +0100
-Message-ID: <1301153868.2250.359.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 26 Mar 2011 11:53:27 -0400
+Date: Sat, 26 Mar 2011 08:53:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: sedat.dilek@gmail.com
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: linux-next: Tree for March 25 (Call trace:
+ RCU|workqueues|block|VFS|ext4 related?)
+Message-ID: <20110326155316.GY2322@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <AANLkTimg-DVXUOrrRZCggZiaajSJWi=onWUxUrnnGXQB@mail.gmail.com>
+ <AANLkTima-bYDkHDfSSAGJFmeRedBQ-VyaAdE7gfhHb3J@mail.gmail.com>
+ <20110325155516.GA27484@feather>
+ <20110325164236.GP2322@linux.vnet.ibm.com>
+ <AANLkTim08Ff==7mY9fuU8tUJrTmEhZ+PrsJSQO5PKOH6@mail.gmail.com>
+ <AANLkTi=N6Z0bDg1YXVFkUbv7phM8XvQ5U3=vS6Ej8Af5@mail.gmail.com>
+ <20110325174855.GR2322@linux.vnet.ibm.com>
+ <AANLkTin9HxOTwavbtbsMd0quYsEvhDNmuO5kOpquqoF=@mail.gmail.com>
+ <20110326034210.GX2322@linux.vnet.ibm.com>
+ <AANLkTimnx27HCKKKv8Le5x7j096VzLgJ70bXM8Rki=9a@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimnx27HCKKKv8Le5x7j096VzLgJ70bXM8Rki=9a@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-24 at 17:44 +0100, Jiri Olsa wrote:
+On Sat, Mar 26, 2011 at 09:11:29AM +0100, Sedat Dilek wrote:
+> On Sat, Mar 26, 2011 at 4:42 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Fri, Mar 25, 2011 at 08:42:14PM +0100, Sedat Dilek wrote:
+> >> On Fri, Mar 25, 2011 at 6:48 PM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > On Fri, Mar 25, 2011 at 06:40:38PM +0100, Sedat Dilek wrote:
+> >> >> On Fri, Mar 25, 2011 at 5:51 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> >> >> > On Fri, Mar 25, 2011 at 5:42 PM, Paul E. McKenney
+> >> >> > <paulmck@linux.vnet.ibm.com> wrote:
+> >> >> >> On Fri, Mar 25, 2011 at 08:55:16AM -0700, Josh Triplett wrote:
+> >> >> >>> On Fri, Mar 25, 2011 at 02:05:33PM +0100, Sedat Dilek wrote:
+> >> >> >>> > On Fri, Mar 25, 2011 at 11:16 AM, Sedat Dilek
+> >> >> >>> > <sedat.dilek@googlemail.com> wrote:
+> >> >> >>> > > right after I have finished building a new linux-next kernel, booting
+> >> >> >>> > > into desktop and archiving my build-tree (ext4) as tarball to an
+> >> >> >>> > > external USB harddisk (partition there is ext3).
+> >> >> >>> > > ( Yesterday, I have seen similiar call-traces in my logs, but it was
+> >> >> >>> > > hard to reproduce [1]. )
+> >> >> >>> > > I am unsure from where the problem aroses, if you have a hint, let me know.
+> >> >> >>> > >
+> >> >> >>> > > Regards,
+> >> >> >>> > > - Sedat -
+> >> >> >>> > >
+> >> >> >>> > > [1] http://lkml.org/lkml/2011/3/24/268
+> >> >> >>> > >
+> >> >> >>> > > P.S.: Attached are the dmesg outputs and my kernel-config
+> >> >> >>> > >
+> >> >> >>> >
+> >> >> >>> > I turned off the notebook for about 2hrs to avoid thermal problems and
+> >> >> >>> > hoax reports.
+> >> >> >>> > Jumped into desktop and started an archive job as 1st job while doing daily job.
+> >> >> >>> > Yeah, it is reproducible.
+> >> >> >>> [...]
+> >> >> >>> > [  212.453822] EXT3-fs (sdb5): mounted filesystem with ordered data mode
+> >> >> >>> > [  273.224044] INFO: rcu_sched_state detected stall on CPU 0 (t=15000 jiffies)
+> >> >> >>>
+> >> >> >>> 15000 jiffies matches this 60-second gap, assuming you use HZ=250.
+> >> >> >>>
+> >> >> >>> > [  273.224059] sending NMI to all CPUs:
+> >> >> >>> > [  273.224074] NMI backtrace for cpu 0
+> >> >> >>> > [  273.224081] Modules linked in: ext3 jbd bnep rfcomm bluetooth aes_i586 aes_generic binfmt_misc ppdev acpi_cpufreq mperf cpufreq_powersave cpufreq_userspace lp cpufreq_stats cpufreq_conservative fuse snd_intel8x0 snd_intel8x0m snd_ac97_codec ac97_bus snd_pcm_oss snd_mixer_oss snd_pcm radeon thinkpad_acpi snd_seq_midi pcmcia ttm snd_rawmidi snd_seq_midi_event drm_kms_helper yenta_socket snd_seq pcmcia_rsrc drm pcmcia_core joydev snd_timer snd_seq_device snd i2c_algo_bit tpm_tis shpchp i2c_i801 tpm nsc_ircc irda snd_page_alloc soundcore pci_hotplug rng_core i2c_core tpm_bios psmouse crc_ccitt nvram parport_pc pcspkr parport evdev battery video ac processor power_supply serio_raw button arc4 ecb ath5k ath mac80211 cfg80211 rfkill autofs4 ext4 mbcache jbd2 crc16 dm_mod usbhid hid usb_storage uas sg sd_mod sr_mod crc_t10dif cdrom ata_generic ata_piix libata uhci_hcd ehci_hcd usbcore scsi_mod thermal e1000 thermal_sys floppy [last unloaded: scsi_wait_scan]
+> >> >> >>> > [  273.224367]
+> >> >> >>> > [  273.224377] Pid: 0, comm: swapper Not tainted 2.6.38-next20110325-2-686-iniza #1 IBM 2374SG6/2374SG6
+> >> >> >>> > [  273.224397] EIP: 0060:[<c11514f0>] EFLAGS: 00000807 CPU: 0
+> >> >> >>> > [  273.224414] EIP is at delay_tsc+0x16/0x5e
+> >> >> >>> > [  273.224424] EAX: 00090d42 EBX: 00002710 ECX: c133faf5 EDX: 00090d41
+> >> >> >>> > [  273.224435] ESI: 00000000 EDI: 00090d42 EBP: f5819e9c ESP: f5819e8c
+> >> >> >>> > [  273.224445]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> >> >> >>> > [  273.224458] Process swapper (pid: 0, ti=f5818000 task=c13e3fa0 task.ti=c13b6000)
+> >> >> >>> > [  273.224466] Stack:
+> >> >> >>> > [  273.224472]  00090d41 00002710 c13ee580 c13ee600 f5819ea4 c115149f f5819eac c11514bb
+> >> >> >>> > [  273.224497]  f5819eb8 c1016532 c13ee580 f5819ed4 c1078dc1 c134e61e c134e6c2 00000000
+> >> >> >>> > [  273.224520]  00003a98 f5c03488 f5819ee8 c1078e36 00000000 00000000 c13e3fa0 f5819ef4
+> >> >> >>> > [  273.224544] Call Trace:
+> >> >> >>> > [  273.224559]  [<c115149f>] __delay+0x9/0xb
+> >> >> >>> > [  273.224571]  [<c11514bb>] __const_udelay+0x1a/0x1c
+> >> >> >>> > [  273.224590]  [<c1016532>] arch_trigger_all_cpu_backtrace+0x50/0x62
+> >> >> >>> > [  273.224608]  [<c1078dc1>] check_cpu_stall+0x58/0xb8
+> >> >> >>> > [  273.224622]  [<c1078e36>] __rcu_pending+0x15/0xc4
+> >> >> >>> > [  273.224637]  [<c10791df>] rcu_check_callbacks+0x6d/0x93
+> >> >> >>> > [  273.224652]  [<c1039c6c>] update_process_times+0x2d/0x58
+> >> >> >>> > [  273.224666]  [<c10509e9>] tick_sched_timer+0x6b/0x9a
+> >> >> >>> > [  273.224682]  [<c1047196>] __run_hrtimer+0x9c/0x111
+> >> >> >>> > [  273.224694]  [<c105097e>] ? tick_sched_timer+0x0/0x9a
+> >> >> >>> > [  273.224708]  [<c1047b38>] hrtimer_interrupt+0xd6/0x1bb
+> >> >> >>> > [  273.224727]  [<c104fca1>] tick_do_broadcast.constprop.4+0x38/0x6a
+> >> >> >>> > [  273.224741]  [<c104fd80>] tick_handle_oneshot_broadcast+0xad/0xe1
+> >> >> >>> > [  273.224757]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
+> >> >> >>> > [  273.224772]  [<c1004215>] timer_interrupt+0x15/0x1c
+> >> >> >>> > [  273.224785]  [<c107536d>] handle_irq_event_percpu+0x4e/0x164
+> >> >> >>> > [  273.224799]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
+> >> >> >>> > [  273.224811]  [<c10754b9>] handle_irq_event+0x36/0x51
+> >> >> >>> > [  273.224824]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
+> >> >> >>> > [  273.224837]  [<c1076d0f>] handle_level_irq+0x4d/0x63
+> >> >> >>> > [  273.224845]  <IRQ>
+> >> >> >>> > [  273.224857]  [<c1003b8d>] ? do_IRQ+0x35/0x80
+> >> >> >>> > [  273.224871]  [<c12ac0f0>] ? common_interrupt+0x30/0x38
+> >> >> >>> > [  273.224886]  [<c10400d8>] ? destroy_worker+0x52/0x6c
+> >> >> >>> > [  273.224922]  [<f87b730f>] ? arch_local_irq_enable+0x5/0xb [processor]
+> >> >> >>> > [  273.224947]  [<f87b7ef5>] ? acpi_idle_enter_simple+0x100/0x138 [processor]
+> >> >> >>> > [  273.224964]  [<c11ebd92>] ? cpuidle_idle_call+0xc2/0x137
+> >> >> >>> > [  273.224978]  [<c1001da3>] ? cpu_idle+0x89/0xa3
+> >> >> >>> > [  273.224995]  [<c128c26c>] ? rest_init+0x58/0x5a
+> >> >> >>> > [  273.225008]  [<c1418722>] ? start_kernel+0x315/0x31a
+> >> >> >>> > [  273.225022]  [<c14180a2>] ? i386_start_kernel+0xa2/0xaa
+> >> >> >>> > [  273.225029] Code: e5 e8 d6 ff ff ff 5d c3 55 89 e5 8d 04 80 e8 c9 ff ff ff 5d c3 55 89 e5 57 89 c7 56 53 52 64 8b 35 04 20 47 c1 8d 76 00 0f ae e8 <e8> 6b ff ff ff 89 c3 8d 76 00 0f ae e8 e8 5e ff ff ff 89 c2 29
+> >> >> >>> > [  273.225154] Call Trace:
+> >> >> >>> > [  273.225166]  [<c115149f>] __delay+0x9/0xb
+> >> >> >>> > [  273.225178]  [<c11514bb>] __const_udelay+0x1a/0x1c
+> >> >> >>> > [  273.225192]  [<c1016532>] arch_trigger_all_cpu_backtrace+0x50/0x62
+> >> >> >>> > [  273.225207]  [<c1078dc1>] check_cpu_stall+0x58/0xb8
+> >> >> >>> > [  273.225220]  [<c1078e36>] __rcu_pending+0x15/0xc4
+> >> >> >>> > [  273.225234]  [<c10791df>] rcu_check_callbacks+0x6d/0x93
+> >> >> >>> > [  273.225247]  [<c1039c6c>] update_process_times+0x2d/0x58
+> >> >> >>> > [  273.225260]  [<c10509e9>] tick_sched_timer+0x6b/0x9a
+> >> >> >>> > [  273.225274]  [<c1047196>] __run_hrtimer+0x9c/0x111
+> >> >> >>> > [  273.225286]  [<c105097e>] ? tick_sched_timer+0x0/0x9a
+> >> >> >>> > [  273.225300]  [<c1047b38>] hrtimer_interrupt+0xd6/0x1bb
+> >> >> >>> > [  273.225316]  [<c104fca1>] tick_do_broadcast.constprop.4+0x38/0x6a
+> >> >> >>> > [  273.225330]  [<c104fd80>] tick_handle_oneshot_broadcast+0xad/0xe1
+> >> >> >>> > [  273.225345]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
+> >> >> >>> > [  273.225358]  [<c1004215>] timer_interrupt+0x15/0x1c
+> >> >> >>> > [  273.225370]  [<c107536d>] handle_irq_event_percpu+0x4e/0x164
+> >> >> >>> > [  273.225384]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
+> >> >> >>> > [  273.225396]  [<c10754b9>] handle_irq_event+0x36/0x51
+> >> >> >>> > [  273.225409]  [<c1076cc2>] ? handle_level_irq+0x0/0x63
+> >> >> >>> > [  273.225421]  [<c1076d0f>] handle_level_irq+0x4d/0x63
+> >> >> >>> > [  273.225429]  <IRQ>  [<c1003b8d>] ? do_IRQ+0x35/0x80
+> >> >> >>> > [  273.225450]  [<c12ac0f0>] ? common_interrupt+0x30/0x38
+> >> >> >>> > [  273.225464]  [<c10400d8>] ? destroy_worker+0x52/0x6c
+> >> >> >>> > [  273.225493]  [<f87b730f>] ? arch_local_irq_enable+0x5/0xb [processor]
+> >> >> >>> > [  273.225517]  [<f87b7ef5>] ? acpi_idle_enter_simple+0x100/0x138 [processor]
+> >> >> >>> > [  273.225532]  [<c11ebd92>] ? cpuidle_idle_call+0xc2/0x137
+> >> >> >>> > [  273.225545]  [<c1001da3>] ? cpu_idle+0x89/0xa3
+> >> >> >>> > [  273.225559]  [<c128c26c>] ? rest_init+0x58/0x5a
+> >> >> >>> > [  273.225571]  [<c1418722>] ? start_kernel+0x315/0x31a
+> >> >> >>> > [  273.225584]  [<c14180a2>] ? i386_start_kernel+0xa2/0xaa
+> >> >> >>>
+> >> >> >>> Interesting.  Looks like RCU detected a stall while the CPU sits in
+> >> >> >>> cpu_idle.  That *shouldn't* happen...
+> >> >> >>
+> >> >> >> There have been a few of these things recently that turned out to
+> >> >> >> be BIOS misconfigurations, though that would not be the first thing
+> >> >> >> I would suspect if the system had run other versions successfully.
+> >> >> >> Another possibility is that the CPU spent the full time in interrupt.
+> >> >> >> Get an interrupt from the idle loop, stay in interrupt for 60 seconds,
+> >> >> >> get an RCU CPU stall warning.
+> >> >> >>
+> >> >> >> Or I could have somehow inserted a bug in RCU.  But I am not seeing
+> >> >> >> this in my testing.
+> >> >> >>
+> >> >> >>                                                        Thanx, Paul
+> >> >> >>
+> >> >> >
+> >> >> > The problems started when I first saw CONFIG_RCU_CPU_STALL_TIMEOUT=60
+> >> >> > in my configs.
+> >> >> >
+> >> >> > This an old IBM T40p notebook with Pentium-M (Banias) UP processor.
+> >> >> > IIRC I have flashed the latest BIOS available for this notebook.
+> >> >> >
+> >> >> > [   11.786073] thinkpad_acpi: ThinkPad BIOS 1RETDRWW (3.23 ), EC 1RHT71WW-3.04
+> >> >> > [   11.786111] thinkpad_acpi: IBM ThinkPad T40p, model 2374SG6
+> >> >> >
+> >> >> > As I am still sitting in the dark, it would be very helpful to know if
+> >> >> > I can play with HZ or RCU kernel-config parameters.
+> >> >> > Can I change RCU behaviour from user-space?
+> >> >> >
+> >> >> > - Sedat -
+> >> >> >
+> >> >> > P.S.: Note to myself: Read Documentation/RCU/stallwarn.txt & check
+> >> >> > possible values in lib/Kconfig.debug
+> >> >> >
+> >> >>
+> >> >> OK, I had a deeper look at the RCU (STALL) kernel-configs.
+> >> >>
+> >> >> $ grep RCU /boot/config-2.6.38-next20110323-3-686-iniza | grep STALL
+> >> >> # CONFIG_RCU_CPU_STALL_DETECTOR is not set
+> >> >>
+> >> >> $ grep RCU /boot/config-2.6.38-next20110324-2-686-iniza | grep STALL
+> >> >> # CONFIG_RCU_CPU_STALL_DETECTOR is not set
+> >> >>
+> >> >> $ grep RCU /boot/config-2.6.38-next20110325-2-686-iniza | grep STALL
+> >> >> CONFIG_RCU_CPU_STALL_TIMEOUT=60
+> >> >
+> >> > Yep, you moved from a kernel version that had the stall detected disabled
+> >> > by default to one that enables it by default.
+> >> >
+> >> > But -next has had stall detection enabled by default for a good
+> >> > long time now.
+> >> >
+> >> >> With my todays (next-20110325) linux-next kernel I cannot work!
+> >> >> The yesterday call-traces could be indeed a different issue (I am
+> >> >> currently testing with the 2 patches from block-tree [1]).
+> >> >>
+> >> >> Now, I am building a new linux-next kernel with CONFIG_TREE_RCU=y as
+> >> >> recommended in Documentation/RCU/stallwarn.txt file.
+> >> >
+> >> > You had CONFIG_TREE_PREEMPT_RCU=y earlier?  Tiny RCU does not have
+> >> > a stall detector.
+> >> >
+> >> >                                                        Thanx, Paul
+> >> >
+> >> >> - Sedat -
+> >> >>
+> >> >> [1] http://lkml.org/lkml/2011/3/25/326
+> >> >
+> >>
+> >> No, and I have here SMP configured.
+> >> Yesterday's RCU and SMP kernel config settings:
+> >>
+> >> # egrep '_RCU|RCU_|_SMP' /boot/config-2.6.38-next20110324-2-686-iniza
+> >> CONFIG_X86_32_SMP=y
+> >> CONFIG_TREE_RCU=y
+> >> # CONFIG_PREEMPT_RCU is not set
+> >> # CONFIG_RCU_TRACE is not set
+> >> CONFIG_RCU_FANOUT=32
+> >> # CONFIG_RCU_FANOUT_EXACT is not set
+> >> CONFIG_RCU_FAST_NO_HZ=y
+> >> # CONFIG_TREE_RCU_TRACE is not set
+> >> CONFIG_USE_GENERIC_SMP_HELPERS=y
+> >> CONFIG_SMP=y
+> >> CONFIG_PM_SLEEP_SMP=y
+> >> CONFIG_HAVE_TEXT_POKE_SMP=y
+> >> CONFIG_SCSI_SAS_HOST_SMP=y
+> >> # CONFIG_SPARSE_RCU_POINTER is not set
+> >> # CONFIG_RCU_TORTURE_TEST is not set
+> >> # CONFIG_RCU_CPU_STALL_DETECTOR is not set
+> >>
+> >> IIRC Tiny RCU and SMP bite each other?
+> >> So, what do you recommend for an UP processor machine?
+> >
+> > If you want RCU stall warnings, or if you are building an SMP kernel, it
+> > has to be either TREE_RCU or TREE_PREEMPT_RCU.  If you are on UP and don't
+> > care about RCU stall warnings, then either TINY_RCU or TINY_PREEMPT_RCU
+> > will work fine.
+> >
+> > I just saw your "Now, I am building a new linux-next kernel with
+> > CONFIG_TREE_RCU=y" and thought that you were hinting that you had
+> > been running with something other than TREE_RCU.
+> >
 > 
-> Now here's what I think is happening..
+> I could suppress RCU STALL warning via sysfs, but the complete system
+> is just freaky.
+> With doing a simple tar (without compression!) job, I can't use my webbrowser.
+
+Then it does sound like the RCU stall warnings really are locating a
+legitimate problem, despite the strange stack trace.
+
+> Selecting TINY_RCU means no CONFIG_SMP!
+> (OK, I can hack the Kconfig dependency to change this.)
+
+Yes, TINY_RCU is designed to be UP-only.  Please do not try it in an
+SMP kernel.  It will break badly.
+
+> I am thinking of distributions, shall they offer another linux-kernel
+> binary especially for UP machines?
+> Somehow ridiculuous.
+
+No, they should continue to do what they are currently doing.  TINY_RCU
+is primarily for embedded systems.
+
+> I still haven't get some hints to play with the timeouts, so I tried
+> CONFIG_RCU_CPU_STALL_TIMEOUT=120 (default according to Kconfig entry
+> is 60).
+> Can this really help here. Why?
+> I had a closer look into my logs, there I saw a max jiffies of
+> t=780510 (six digits!)
+
+Yow!  That is a very long stall.
+
+> /var/log/syslog.1:Mar 25 18:09:15 tbox kernel: [ 3221.112034] INFO:
+> rcu_sched_state detected stall on CPU 0 (t=780510 jiffies)
+> And I asked for the common play between HZ and RCU values in
+> kernel-config parameters.
+> Currently, I have CONFIG_HZ_250=y.
+> Can you enlighten me. please.
+
+CONFIG_HZ_250 is entirely reasonable.
+
+> I have the impression that even I could disable "old"
+> CONFIG_RCU_CPU_STALL_DETECTOR value, this stalling here has other
+> reasons.
+
+The stall detector used to be disabled by default.  
+
+You were running something that worked -- what exactly was that?
+
+> BROKEN ACPI? Might be... But what about supporting such systems (with
+> quirks or whatever)?
+
+Or a messed up commit.
+
+							Thanx, Paul
+
+> - Sedat -
 > 
-> - once an event is created by sys_perf_event_open, task context
->   is created and it stays even if the event is closed, until the task
->   is finished ... thats what I see in code and I assume it's correct
-
-Correct, I recently spoke to someone interested in 'curing' that, but as
-it stands that's how it is.
-
-> - when the task opens event, perf_sched_events jump label is incremented
->   and following callbacks are started from scheduler
+> P.S.: I have attached all jiffies values from my today's and
+> yesterday's syslogs and my last used kernel-config.
 > 
->         __perf_event_task_sched_in
->         __perf_event_task_sched_out
-> 
->   These callback *in/out set/unset cpuctx->task_ctx value to the task
->   context.
+> >> - Sedat -
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> >
 
-*nod*
-
-> - close is called on event on CPU 0:
->         - the task is scheduled on CPU 0
->         - __perf_event_task_sched_in is called
->         - cpuctx->task_ctx is set
->         - perf_sched_events jump label is decremented and == 0
->         - __perf_event_task_sched_out is not called
->         - cpuctx->task_ctx on CPU 0 stays set
-> 
-> - exit is called on CPU 1:
->         - the task is scheduled on CPU 1
->         - perf_event_exit_task is called
->         - task_ctx_sched_out unsets cpuctx->task_ctx on CPU 1
->         - put_ctx destroys the context
-> 
-> - another call of perf_rotate_context on CPU 0 will use invalid
->   task_ctx pointer, and eventualy panic
-> 
-> 
-> The attached workaround makes sure that the task_ctx is not set
-> when the context is being removed.  As I said it's not ment to be
-> fix. 
-
-Still having somewhat of a cold, how does the below look?
-
-(completely untested so far, will have to bang on your testcase a bit to
-make it work).
-
----
- kernel/perf_event.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index c75925c..2a03cc4 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -1112,6 +1112,8 @@ static int __perf_remove_from_context(void *info)
- 	raw_spin_lock(&ctx->lock);
- 	event_sched_out(event, cpuctx, ctx);
- 	list_del_event(event, ctx);
-+	if (cpuctx->task_ctx == event->ctx && !event->ctx->nr_active)
-+		cpuctx->task_ctx = NULL;
- 	raw_spin_unlock(&ctx->lock);
- 
- 	return 0;
+> /var/log/syslog:Mar 26 00:36:55 tbox kernel: [  589.064031] INFO: rcu_sched_state detected stall on CPU 0 (t=120030 jiffies)
+> /var/log/syslog:Mar 26 00:42:55 tbox kernel: [  949.184032] INFO: rcu_sched_state detected stall on CPU 0 (t=210060 jiffies)
+> /var/log/syslog:Mar 26 00:48:55 tbox kernel: [ 1309.304033] INFO: rcu_sched_state detected stall on CPU 0 (t=300090 jiffies)
+> /var/log/syslog:Mar 26 01:11:09 tbox kernel: [  208.416034] INFO: rcu_sched_state detected stall on CPU 0 (t=30000 jiffies)
+> /var/log/syslog:Mar 26 01:16:30 tbox kernel: [  154.532013] INFO: rcu_sched_state detected stall on CPU 0 (t=30000 jiffies)
+> /var/log/syslog.1:Mar 25 10:57:04 tbox kernel: [  157.340021] INFO: rcu_sched_state detected stall on CPU 0 (t=15000 jiffies)
+> /var/log/syslog.1:Mar 25 11:00:04 tbox kernel: [  337.460033] INFO: rcu_sched_state detected stall on CPU 0 (t=60030 jiffies)
+> /var/log/syslog.1:Mar 25 11:03:05 tbox kernel: [  517.580032] INFO: rcu_sched_state detected stall on CPU 0 (t=105060 jiffies)
+> /var/log/syslog.1:Mar 25 11:06:05 tbox kernel: [  697.700033] INFO: rcu_sched_state detected stall on CPU 0 (t=150090 jiffies)
+> /var/log/syslog.1:Mar 25 11:09:05 tbox kernel: [  877.820034] INFO: rcu_sched_state detected stall on CPU 0 (t=195120 jiffies)
+> /var/log/syslog.1:Mar 25 11:12:05 tbox kernel: [ 1057.940032] INFO: rcu_sched_state detected stall on CPU 0 (t=240150 jiffies)
+> /var/log/syslog.1:Mar 25 11:15:05 tbox kernel: [ 1238.060029] INFO: rcu_sched_state detected stall on CPU 0 (t=285180 jiffies)
+> /var/log/syslog.1:Mar 25 11:18:05 tbox kernel: [ 1418.180033] INFO: rcu_sched_state detected stall on CPU 0 (t=330210 jiffies)
+> /var/log/syslog.1:Mar 25 11:21:05 tbox kernel: [ 1598.300034] INFO: rcu_sched_state detected stall on CPU 0 (t=375240 jiffies)
+> /var/log/syslog.1:Mar 25 11:24:05 tbox kernel: [ 1778.420018] INFO: rcu_sched_state detected stall on CPU 0 (t=420270 jiffies)
+> /var/log/syslog.1:Mar 25 11:27:06 tbox kernel: [ 1958.540024] INFO: rcu_sched_state detected stall on CPU 0 (t=465300 jiffies)
+> /var/log/syslog.1:Mar 25 11:30:06 tbox kernel: [ 2138.660008] INFO: rcu_sched_state detected stall on CPU 0 (t=510330 jiffies)
+> /var/log/syslog.1:Mar 25 11:33:06 tbox kernel: [ 2318.780033] INFO: rcu_sched_state detected stall on CPU 0 (t=555360 jiffies)
+> /var/log/syslog.1:Mar 25 13:54:55 tbox kernel: [  273.224044] INFO: rcu_sched_state detected stall on CPU 0 (t=15000 jiffies)
+> /var/log/syslog.1:Mar 25 13:57:56 tbox kernel: [  453.344036] INFO: rcu_sched_state detected stall on CPU 0 (t=60030 jiffies)
+> /var/log/syslog.1:Mar 25 14:00:56 tbox kernel: [  633.464043] INFO: rcu_sched_state detected stall on CPU 0 (t=105060 jiffies)
+> /var/log/syslog.1:Mar 25 14:03:56 tbox kernel: [  813.584031] INFO: rcu_sched_state detected stall on CPU 0 (t=150090 jiffies)
+> /var/log/syslog.1:Mar 25 14:06:56 tbox kernel: [  993.704031] INFO: rcu_sched_state detected stall on CPU 0 (t=195120 jiffies)
+> /var/log/syslog.1:Mar 25 14:09:56 tbox kernel: [ 1173.824042] INFO: rcu_sched_state detected stall on CPU 0 (t=240150 jiffies)
+> /var/log/syslog.1:Mar 25 14:12:56 tbox kernel: [ 1353.944020] INFO: rcu_sched_state detected stall on CPU 0 (t=285180 jiffies)
+> /var/log/syslog.1:Mar 25 14:15:56 tbox kernel: [ 1534.064033] INFO: rcu_sched_state detected stall on CPU 0 (t=330210 jiffies)
+> /var/log/syslog.1:Mar 25 14:18:56 tbox kernel: [ 1714.184033] INFO: rcu_sched_state detected stall on CPU 0 (t=375240 jiffies)
+> /var/log/syslog.1:Mar 25 14:21:56 tbox kernel: [ 1894.304038] INFO: rcu_sched_state detected stall on CPU 0 (t=420270 jiffies)
+> /var/log/syslog.1:Mar 25 14:24:57 tbox kernel: [ 2074.424033] INFO: rcu_sched_state detected stall on CPU 0 (t=465300 jiffies)
+> /var/log/syslog.1:Mar 25 17:18:13 tbox kernel: [  159.072032] INFO: rcu_sched_state detected stall on CPU 0 (t=15000 jiffies)
+> /var/log/syslog.1:Mar 25 17:21:13 tbox kernel: [  339.192034] INFO: rcu_sched_state detected stall on CPU 0 (t=60030 jiffies)
+> /var/log/syslog.1:Mar 25 17:24:13 tbox kernel: [  519.312032] INFO: rcu_sched_state detected stall on CPU 0 (t=105060 jiffies)
+> /var/log/syslog.1:Mar 25 17:27:13 tbox kernel: [  699.432033] INFO: rcu_sched_state detected stall on CPU 0 (t=150090 jiffies)
+> /var/log/syslog.1:Mar 25 17:30:14 tbox kernel: [  879.552031] INFO: rcu_sched_state detected stall on CPU 0 (t=195120 jiffies)
+> /var/log/syslog.1:Mar 25 17:33:14 tbox kernel: [ 1059.672035] INFO: rcu_sched_state detected stall on CPU 0 (t=240150 jiffies)
+> /var/log/syslog.1:Mar 25 17:36:14 tbox kernel: [ 1239.792026] INFO: rcu_sched_state detected stall on CPU 0 (t=285180 jiffies)
+> /var/log/syslog.1:Mar 25 17:39:14 tbox kernel: [ 1419.912036] INFO: rcu_sched_state detected stall on CPU 0 (t=330210 jiffies)
+> /var/log/syslog.1:Mar 25 17:42:14 tbox kernel: [ 1600.032035] INFO: rcu_sched_state detected stall on CPU 0 (t=375240 jiffies)
+> /var/log/syslog.1:Mar 25 17:45:14 tbox kernel: [ 1780.152033] INFO: rcu_sched_state detected stall on CPU 0 (t=420270 jiffies)
+> /var/log/syslog.1:Mar 25 17:48:14 tbox kernel: [ 1960.272034] INFO: rcu_sched_state detected stall on CPU 0 (t=465300 jiffies)
+> /var/log/syslog.1:Mar 25 17:51:14 tbox kernel: [ 2140.392012] INFO: rcu_sched_state detected stall on CPU 0 (t=510330 jiffies)
+> /var/log/syslog.1:Mar 25 17:54:15 tbox kernel: [ 2320.512031] INFO: rcu_sched_state detected stall on CPU 0 (t=555360 jiffies)
+> /var/log/syslog.1:Mar 25 17:57:15 tbox kernel: [ 2500.632036] INFO: rcu_sched_state detected stall on CPU 0 (t=600390 jiffies)
+> /var/log/syslog.1:Mar 25 18:00:15 tbox kernel: [ 2680.751704] INFO: rcu_sched_state detected stall on CPU 0 (t=645420 jiffies)
+> /var/log/syslog.1:Mar 25 18:03:15 tbox kernel: [ 2860.872032] INFO: rcu_sched_state detected stall on CPU 0 (t=690450 jiffies)
+> /var/log/syslog.1:Mar 25 18:06:15 tbox kernel: [ 3040.992034] INFO: rcu_sched_state detected stall on CPU 0 (t=735480 jiffies)
+> /var/log/syslog.1:Mar 25 18:09:15 tbox kernel: [ 3221.112034] INFO: rcu_sched_state detected stall on CPU 0 (t=780510 jiffies)
+> /var/log/syslog.1:Mar 25 20:37:17 tbox kernel: [  162.424039] INFO: rcu_sched_state detected stall on CPU 0 (t=15000 jiffies)
+> /var/log/syslog.1:Mar 25 20:40:17 tbox kernel: [  342.544034] INFO: rcu_sched_state detected stall on CPU 0 (t=60030 jiffies)
+> /var/log/syslog.1:Mar 25 20:43:17 tbox kernel: [  522.664036] INFO: rcu_sched_state detected stall on CPU 0 (t=105060 jiffies)
+> /var/log/syslog.1:Mar 25 20:46:17 tbox kernel: [  702.784032] INFO: rcu_sched_state detected stall on CPU 0 (t=150090 jiffies)
+> /var/log/syslog.1:Mar 25 20:49:17 tbox kernel: [  882.904036] INFO: rcu_sched_state detected stall on CPU 0 (t=195120 jiffies)
+> /var/log/syslog.1:Mar 25 20:52:17 tbox kernel: [ 1063.024052] INFO: rcu_sched_state detected stall on CPU 0 (t=240150 jiffies)
+> /var/log/syslog.1:Mar 25 20:55:17 tbox kernel: [ 1243.144034] INFO: rcu_sched_state detected stall on CPU 0 (t=285180 jiffies)
+> /var/log/syslog.1:Mar 25 20:58:17 tbox kernel: [ 1423.264034] INFO: rcu_sched_state detected stall on CPU 0 (t=330210 jiffies)
+> /var/log/syslog.1:Mar 25 21:01:18 tbox kernel: [ 1603.384032] INFO: rcu_sched_state detected stall on CPU 0 (t=375240 jiffies)
+> /var/log/syslog.1:Mar 25 21:04:18 tbox kernel: [ 1783.504018] INFO: rcu_sched_state detected stall on CPU 0 (t=420270 jiffies)
+> /var/log/syslog.1:Mar 25 21:07:18 tbox kernel: [ 1963.624034] INFO: rcu_sched_state detected stall on CPU 0 (t=465300 jiffies)
+> /var/log/syslog.1:Mar 25 21:10:19 tbox kernel: [ 2143.744028] INFO: rcu_sched_state detected stall on CPU 0 (t=510330 jiffies)
+> /var/log/syslog.1:Mar 26 00:30:55 tbox kernel: [  228.944029] INFO: rcu_sched_state detected stall on CPU 0 (t=30000 jiffies)
 
 
