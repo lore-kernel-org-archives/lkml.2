@@ -1,120 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab1CZJUC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 05:20:02 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64710 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1CZJT7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 05:19:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=x5Qkna2Z3p+CNEq6ZbIMcIp6IFQM5VwT2z8fc33x0D28tv/dfx+PEU1PtmWp2OLqHe
-         fETSXMMAIfMlGGiiD0nNjh0HHKQjSknBmekDNe6yyH0bnbOCjKGle1ZVn4IVU9nglZFQ
-         Lynsg5DgE+yvb/Fjm5ks18BMpf5Qqn9gABvwc=
+	id S1753857Ab1CZJ0d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 05:26:33 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:39780 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751727Ab1CZJ0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 05:26:31 -0400
+X-ASG-Debug-ID: 1301131589-01de284cf8c2210001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D8DB142.5090004@fusionio.com>
+Date: Sat, 26 Mar 2011 10:26:26 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <m1k4fmxtyk.fsf@fess.ebiederm.org>
-References: <m1k4fmxtyk.fsf@fess.ebiederm.org>
-Date: Sat, 26 Mar 2011 02:19:58 -0700
-X-Google-Sender-Auth: lUBKKxGZF-87nf8YbVLuFcPWlcI
-Message-ID: <AANLkTikqDbY+W7cXRwFrQg5DSToZYgXn8xGVQK9g3D4R@mail.gmail.com>
-Subject: Re: [PATCH] x86_64: Fix page table building regression
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>, greg@kroah.com,
-        stable@kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39
+References: <4D8B4A89.80608@fusionio.com>	<AANLkTi=zJbUpcT+vbLARyxhA34F1se8pYq9No799Zqzh@mail.gmail.com>	<4D8D87B0.3080107@fusionio.com>	<AANLkTimy1QZiHtQGUrXLPMRGEy3iXNOB=34tFjgezhEu@mail.gmail.com>	<4D8DA2F5.1050008@fusionio.com> <AANLkTinu4Piaz5SAb4BmMi-Yd6OjRAKYyKpcEWmD0THU@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39
+In-Reply-To: <AANLkTinu4Piaz5SAb4BmMi-Yd6OjRAKYyKpcEWmD0THU@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301131589
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59008
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 11:43 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
->
-> Recently I had cause to enable PAGE_ALLOC_DEBUG and I discovered my
-> kdump kernel would not boot.  After some investigation it turns out that
-> in commit 80989ce064 "x86: clean up and and print out initial max_pfn_mapped"
-> that a limitation of the 32bit page table setup was unnecessarily
-> applied to the 64bit code.  The initial 64bit page table setup code is
-> careful to map in it's initial page table pages and unmap then when done
-> so they can live anywhere in memory, so we don't need to limit ourselves
-> to using pages that are already mapped into memory.
->
-> In my case I hit this because the first 512M was not usable by the
-> kdump kernel.
+On 2011-03-26 09:34, Geert Uytterhoeven wrote:
+> On Sat, Mar 26, 2011 at 09:25, Jens Axboe <jaxboe@fusionio.com> wrote:
+>> On 2011-03-26 08:21, Geert Uytterhoeven wrote:
+>>> On Sat, Mar 26, 2011 at 07:29, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>>> On 2011-03-25 22:35, Geert Uytterhoeven wrote:
+>>>>> On Thu, Mar 24, 2011 at 14:43, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>>>>> Jens Axboe (20):
+>>>>>>      block: remove per-queue plugging
+>>>>>
+>>>>> This one (commit 7eaceaccab5f40bbfda044629a6298616aeaed50) breaks IDE
+>>>>> on Atari/m68k under ARAnyM. It hangs on:
+>>>>>
+>>>>> | ide: Falcon IDE controller
+>>>>> | Probing IDE interface ide0...
+>>>>> | hda: Sarge m68k, ATA DISK drive
+>>>>> | ide0 at 0xfff00000 on irq 15 (serialized)
+>>>>> | ide-gd driver 1.18
+>>>>> | hda: max request size: 128KiB
+>>>>> | hda: 2118816 sectors (1084 MB) w/256KiB Cache, CHS=2102/16/63
+>>>>>
+>>>>> The next expected line is the partition parsing:
+>>>>>
+>>>>> | hda: AHDI hda1 hda2
+>>>>
+>>>> Geert, does this work for you?
+>>>
+>>> Yep.Thanks!
+>>
+>> Great! I think we should place those blk_delay_queue() calls under the
+>> if (rq), that should workd to and be more optimal. Can I ask you to
+>> check that, too?
+>>
+>> So:
+>>
+>> if (rq) {
+>>        blk_requeue_request(q, rq);
+>>        blk_delay_queue(q, msecs_to_jiffies(3));
+>> }
+>>
+>> in both locations.
+> 
+> Works, too.
 
-We have one completed fix in mainline already.
+Great, thanks for testing! I'll queue this up and submit it so it makes
+2.6.39-rc1.
 
-We need that patch for 2.6.38 stable tree.
+-- 
+Jens Axboe
 
-that patch is supposed to be for 2.6.38, but is delayed to 2.6.39.
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=4b239f458c229de044d6905c2b0f9fe16ed9e01e
-
-x86-64, mm: Put early page table high
-
-While dubug kdump, found current kernel will have problem with crashkernel=512M.
-
-It turns out that initial mapping is to 512M, and later initial mapping to 4G
-(acutally is 2040M in my platform), will put page table near 512M.
-then initial mapping to 128g will be near 2g.
-
-before this patch:
-[    0.000000] initial memory mapped : 0 - 20000000
-[    0.000000] init_memory_mapping: [0x00000000000000-0x0000007f74ffff]
-[    0.000000]  0000000000 - 007f600000 page 2M
-[    0.000000]  007f600000 - 007f750000 page 4k
-[    0.000000] kernel direct mapping tables up to 7f750000 @
-[0x1fffc000-0x1fffffff]
-[    0.000000]     memblock_x86_reserve_range: [0x1fffc000-0x1fffdfff]
-         PGTABLE
-[    0.000000] init_memory_mapping: [0x00000100000000-0x0000207fffffff]
-[    0.000000]  0100000000 - 2080000000 page 2M
-[    0.000000] kernel direct mapping tables up to 2080000000 @
-[0x7bc01000-0x7bc83fff]
-[    0.000000]     memblock_x86_reserve_range: [0x7bc01000-0x7bc7efff]
-         PGTABLE
-[    0.000000] RAMDISK: 7bc84000 - 7f745000
-[    0.000000] crashkernel reservation failed - No suitable area found.
-
-after patch:
-[    0.000000] initial memory mapped : 0 - 20000000
-[    0.000000] init_memory_mapping: [0x00000000000000-0x0000007f74ffff]
-[    0.000000]  0000000000 - 007f600000 page 2M
-[    0.000000]  007f600000 - 007f750000 page 4k
-[    0.000000] kernel direct mapping tables up to 7f750000 @
-[0x7f74c000-0x7f74ffff]
-[    0.000000]     memblock_x86_reserve_range: [0x7f74c000-0x7f74dfff]
-         PGTABLE
-[    0.000000] init_memory_mapping: [0x00000100000000-0x0000207fffffff]
-[    0.000000]  0100000000 - 2080000000 page 2M
-[    0.000000] kernel direct mapping tables up to 2080000000 @
-[0x207ff7d000-0x207fffffff]
-[    0.000000]     memblock_x86_reserve_range:
-[0x207ff7d000-0x207fffafff]          PGTABLE
-[    0.000000] RAMDISK: 7bc84000 - 7f745000
-[    0.000000]     memblock_x86_reserve_range: [0x17000000-0x36ffffff]
-    CRASH KERNEL
-[    0.000000] Reserving 512MB of memory at 368MB for crashkernel
-(System RAM: 133120MB)
-
-It means with the patch, page table for [0, 2g) will need 2g, instead
-of under 512M,
-page table for [4g, 128g) will be near 128g, instead of under 2g.
-
-That would good, if we have lots of memory above 4g, like 1024g, or
-2048g or 16T, will not put
-related page table under 2g. that would be have chance to fill the
-under 2g if 1G or 2M page is
-not used.
-
-the code change will use add map_low_page() and update
-unmap_low_page() for 64bit, and use them
-to get access the corresponding high memory for page table setting.
-
-...
