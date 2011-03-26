@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab1CZQgA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 12:36:00 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46099 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab1CZQf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 12:35:59 -0400
-Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
- value
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110326161346.GA18272@redhat.com>
-References: <20110324164436.GC1930@jolsa.brq.redhat.com>
-	 <1301153868.2250.359.camel@laptop>  <20110326161346.GA18272@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 26 Mar 2011 17:38:03 +0100
-Message-ID: <1301157483.2250.366.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753133Ab1CZQtA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 12:49:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47779 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752575Ab1CZQs7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 12:48:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <4D8D87B0.3080107@fusionio.com>
+References: <4D8B4A89.80608@fusionio.com> <AANLkTi=zJbUpcT+vbLARyxhA34F1se8pYq9No799Zqzh@mail.gmail.com>
+ <4D8D87B0.3080107@fusionio.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 26 Mar 2011 09:48:37 -0700
+Message-ID: <AANLkTi=jcm8pLQCTwYPK_Ey1SbMYSqQhYD4fJmCNz7sS@mail.gmail.com>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-03-26 at 17:13 +0100, Oleg Nesterov wrote:
-> 
-> I don't think this is right.
-> 
-> It is too late to clear ->task_ctx when the task exits. It is simply
-> wrong that cpuctx->task_ctx != NULL after context_switch(). And, once
-> again ->is_active is still true. 
+On Fri, Mar 25, 2011 at 11:29 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> +
+> +       /* Use 3ms as that was the old plug delay */
+> +       blk_delay_queue(q, msecs_to_jiffies(3));
 
-Ah, indeed. Somehow I was thinking we did remove_from_context on
-close(), I thought about adding it to list_del_event() because that's
-the place we empty the context and I guess I should have done something
-like that.
+That's bogus. blk_delay_queue() already takes msecs, not jiffies.
 
-The problem with adding it to list_del_event() is that it isn't
-necessarily called on the correct cpu.
+Also, do we really need to delay every unplug like this? It seems sad.
+A 3ms delay is a long time these days - admittedly most people
+hopefully use ATA these days if they have an SSD or something, but
+still..
 
-/me ponders things for a bit ...
-
-The alternative seems to be to put it in event_sched_out(), right where
-we decrease ctx->nr_active. Again, I might have missed something quite
-trivial.. let me try and get that test-case running someplace.
-
-
----
- kernel/perf_event.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index c75925c..e9e4e35 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -1073,6 +1073,8 @@ event_sched_out(struct perf_event *event,
- 	if (!is_software_event(event))
- 		cpuctx->active_oncpu--;
- 	ctx->nr_active--;
-+	if (!ctx->nr_active && cpuctx->task_ctx == ctx)
-+		cpuctx->task_ctx = NULL;
- 	if (event->attr.exclusive || !cpuctx->active_oncpu)
- 		cpuctx->exclusive = 0;
- }
-
-
+                  Linus
