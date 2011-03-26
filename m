@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab1CZLr6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 07:47:58 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47247 "EHLO mx3.mail.elte.hu"
+	id S1752967Ab1CZL47 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 07:56:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49227 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab1CZLr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 07:47:57 -0400
-Date: Sat, 26 Mar 2011 12:47:36 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Christoph Lameter <cl@linux.com>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] slub: Disable the lockless allocator
-Message-ID: <20110326114736.GA8251@elte.hu>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger>
- <20110324142146.GA11682@elte.hu>
- <alpine.DEB.2.00.1103240940570.32226@router.home>
- <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
- <20110324172653.GA28507@elte.hu>
- <20110324185258.GA28370@elte.hu>
- <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6>
- <20110324192247.GA5477@elte.hu>
- <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com>
- <20110326112725.GA28612@elte.hu>
+	id S1750871Ab1CZL46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Mar 2011 07:56:58 -0400
+Message-ID: <4D8DD46B.1030903@redhat.com>
+Date: Sat, 26 Mar 2011 08:56:27 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110326112725.GA28612@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Tony Luck <tony.luck@intel.com>
+CC: Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly Report
+ Mechanism (HARM)
+References: <cover.1300996141.git.mchehab@redhat.com>	<20110324173257.36680b90@pedra>	<20110324223907.GA10498@liondog.tnic>	<4D8C6C80.8010600@redhat.com>	<20110325141322.GB28313@gere.osrc.amd.com>	<4D8D078C.1040201@redhat.com> <AANLkTi=jGB_nFO0nnWWZ60gqgdELAQjv5dpAZmz5zKSz@mail.gmail.com>
+In-Reply-To: <AANLkTi=jGB_nFO0nnWWZ60gqgdELAQjv5dpAZmz5zKSz@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em 25-03-2011 19:37, Tony Luck escreveu:
+> On Fri, Mar 25, 2011 at 2:22 PM, Mauro Carvalho Chehab
+> <mchehab@redhat.com> wrote:
+>> Em 25-03-2011 11:13, Borislav Petkov escreveu:
+>>> However, there's
+>>> another issue with fatal errors - you want to execute as less code as
+>>> possible in the wake of a fatal error.
+>>
+>> Yes. That's one of the reasons why it may make sense to have a separate event
+>> for fatal errors.
+> 
+> We have three categories (severities):
+> 1) Corrected - log these
+> 2) Uncorrected-but-not-immediately-fatal - log these too
+> 3) Fatal - all we can do with these is log to some persistent store (or
+>     to a serial console connected to a logging device). perf style event
+>     tracing doesn't help when all the userland daemons will never get a
+>     chance to run.
 
-The commit below solves this crash for me. Could we please apply this simple 
-patch, until the real bug has been found, to keep upstream debuggable? The 
-eventual fix can then re-enable the lockless allocator.
+Ok. Assuming that fatal errors will be stored on some persistent way, on a next
+boot, the daemon will be able to catch them. So, I think it would be a nice feature
+to have 3 different trace events, in order to allow users to filter between them.
+Alternatively, we may implement filtering capabilities on userspace, but as perf
+has this already, I'm in favor of using what's there.
 
-Thanks,
+>> It would be good to use some non-volatile ram for these. I was told that
+>> APEI spec defines a way for that, but I'm not sure if low end machines would
+>> be shipped with that.
+> 
+> You are talking about ERST - and you are right, this is generally not going
+> to be present on low-end machines.  drivers/acpi/apei/erst.c was accepted
+> in 2.6.35.  My /dev/pstore changes are in the current merge for 2.6.39 (but
+> currently only show dmesg traces to the user).
 
-	Ingo
+It makes sense to integrate it on perf, after we add there a way to recover
+persistent data when the daemon starts.
 
---------------->
->From bb764182707216faeb815c3bbdf6a9e9992a459a Mon Sep 17 00:00:00 2001
-From: Ingo Molnar <mingo@elte.hu>
-Date: Sat, 26 Mar 2011 12:40:30 +0100
-Subject: [PATCH] slub: Disable the lockless allocator
+>> Alternatively, edac could fill a translation table, and the decoding code at
+>> mce would be just a table retrieve routine (in order to speed-up translation,
+>> in the case of fatal errors.
+> 
+> Eventually the translation table should move above edac (to the drivers/ras/
+> area that Borislav suggested earlier?) so that both mce and edac can access.
+> I think we'll need this for some time as SMBIOS continues to disappoint
+> me with its inaccuracies.
 
-This boot crash:
+That makes sense to me. The translation table there is only for memories, currently.
 
-Inode-cache hash table entries: 65536 (order: 7, 524288 bytes)
-Memory: 1011352k/1048512k available (11595k kernel code, 452k absent, 36708k reserved, 6343k data, 1024k init)
-BUG: unable to handle kernel paging request at ffff87ffc1fdd020
-IP: [<ffffffff812b50c2>] this_cpu_cmpxchg16b_emu+0x2/0x1c
-PGD 0
-Oops: 0000 [#1]
-last sysfs file:
-CPU 0
-Pid: 0, comm: swapper Not tainted 2.6.38-08569-g16c29da #110593 System manufacturer System Product Name/A8N-E
-RIP: 0010:[<ffffffff812b50c2>]  [<ffffffff812b50c2>] this_cpu_cmpxchg16b_emu+0x2/0x1c
-RSP: 0000:ffffffff82003e78  EFLAGS: 00010086
-RAX: ffff88003f8020c0 RBX: ffff88003f802180 RCX: 0000000000000002
-RDX: 0000000000000001 RSI: ffff88003ffc2020 RDI: ffffffff8219be43
-RBP: ffffffff82003ed8 R08: 0000000000000000 R09: ffffea0000de40d0
-R10: ffffffff821666b0 R11: ffffffff821666b0 R12: ffff88003f8020c0
-R13: ffff88003f802000 R14: ffffffffffffffff R15: 0000000000000000
-FS:  0000000000000000(0000) GS:ffffffff8201b000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: ffff87ffc1fdd020 CR3: 000000000200b000 CR4: 00000000000006b0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper (pid: 0, threadinfo ffffffff82002000, task ffffffff82015300)
-Stack:
- 0000000000000086 ffffffff810dcd03 ffffffffffffffff 0000000000093e30
- ffffffff82003ef8 0000000000000000 00000000000000c0 0000000000000000
- ffff88003f800000 ffff88003f8000c0 ffffffffffffffff 0000000000093e30
-Call Trace:
- [<ffffffff810dcd03>] ? kmem_cache_alloc+0x53/0x130
- [<ffffffff8219be43>] kmem_cache_init+0xeb/0x2b0
- [<ffffffff821869eb>] start_kernel+0x1cb/0x322
- [<ffffffff82186338>] x86_64_start_reservations+0xfe/0x102
- [<ffffffff82186140>] ? early_idt_handlers+0x140/0x140
- [<ffffffff82186409>] x86_64_start_kernel+0xcd/0xdc
-Code: 47 08 48 89 47 10 48 89 47 18 48 89 47 20 48 89 47 28 48 89 47 30 48 89 47 38 48 8d 7f 40 75 d9 90 c3 90 90 90 90 90 90 90 9c fa
- 48 3b 06 75 14 65 48 3b 56 08 75 0d 65 48 89 1e 65 48 89 4e
-RIP  [<ffffffff812b50c2>] this_cpu_cmpxchg16b_emu+0x2/0x1c
- RSP <ffffffff82003e78>
-CR2: ffff87ffc1fdd020
----[ end trace a7919e7f17c0a725 ]---
+The /ras table needs to be generic enough to cover other types of translation, like
+for example, translating a cpu Kernel representation into a CPU socket label,
+and a PCI BUS ID into a PCI slot number.
 
-Occurs due to:
-
-  8a5ec0ba42c4: Lockless (and preemptless) fastpaths for slub
-
-Disable this code for now, it's not yet fully cooked.
-
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- mm/slub.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/mm/slub.c b/mm/slub.c
-index f881874..37ccf77 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -30,6 +30,7 @@
- 
- #include <trace/events/kmem.h>
- 
-+#undef CONFIG_CMPXCHG_LOCAL
- /*
-  * Lock order:
-  *   1. slab_lock(page)
+Mauro.
