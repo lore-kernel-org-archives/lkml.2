@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932999Ab1CZAGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Mar 2011 20:06:14 -0400
-Received: from kroah.org ([198.145.64.141]:41878 "EHLO coco.kroah.org"
+	id S933254Ab1CZAO0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Mar 2011 20:14:26 -0400
+Received: from kroah.org ([198.145.64.141]:35789 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932558Ab1CYXw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Mar 2011 19:52:59 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 16:45:12 2011
-Message-Id: <20110325234512.753540484@clark.kroah.org>
+	id S932840Ab1CZAGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Mar 2011 20:06:13 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 25 17:04:56 2011
+Message-Id: <20110326000456.027945661@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 25 Mar 2011 16:44:23 -0700
+Date: Fri, 25 Mar 2011 17:03:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [47/63] USB: cdc-acm: fix potential null-pointer dereference
-In-Reply-To: <20110325234526.GA18017@kroah.com>
+        Thomas Gleixner <tglx@linutronix.de>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [02/35] [PARISC] fix per-cpu flag problem in the cpu affinity checkers
+In-Reply-To: <20110326000509.GA29736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 15e5bee33ffc11d0e5c6f819a65e7881c5c407be upstream.
+commit 9804c9eaeacfe78651052c5ddff31099f60ef78c upstream.
 
-Must check return value of tty_port_tty_get.
+The CHECK_IRQ_PER_CPU is wrong, it should be checking
+irq_to_desc(irq)->status not just irq.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/parisc/kernel/irq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -533,6 +533,8 @@ static void acm_softint(struct work_stru
- 	if (!ACM_READY(acm))
- 		return;
- 	tty = tty_port_tty_get(&acm->port);
-+	if (!tty)
-+		return;
- 	tty_wakeup(tty);
- 	tty_kref_put(tty);
- }
+--- a/arch/parisc/kernel/irq.c
++++ b/arch/parisc/kernel/irq.c
+@@ -117,7 +117,7 @@ int cpu_check_affinity(unsigned int irq,
+ 	int cpu_dest;
+ 
+ 	/* timer and ipi have to always be received on all CPUs */
+-	if (CHECK_IRQ_PER_CPU(irq)) {
++	if (CHECK_IRQ_PER_CPU(irq_to_desc(irq)->status)) {
+ 		/* Bad linux design decision.  The mask has already
+ 		 * been set; we must reset it */
+ 		cpumask_setall(irq_desc[irq].affinity);
 
 
