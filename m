@@ -1,16 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1C0UrJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 16:47:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45873 "EHLO ogre.sisk.pl"
+	id S1752715Ab1C0UrM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 16:47:12 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45863 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752208Ab1C0UrF convert rfc822-to-8bit (ORCPT
+	id S1751932Ab1C0UrD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 16:47:05 -0400
+	Sun, 27 Mar 2011 16:47:03 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Chuck Ebbert" <cebbert@redhat.com>
+        "Alan Jenkins" <alan-jenkins@tuffmail.co.uk>,
+        "Henrique de Moraes Holschuh" <hmh@hmh.eng.br>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "=?utf-8?q?Old=C5=99ich=20Jedli=C4=8Dka?=" <oldium.pro@seznam.cz>
 References: <lDYNS4ATQ-N.A._aD.9m5jNB@chimera>
 In-Reply-To: <lDYNS4ATQ-N.A._aD.9m5jNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +21,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <40UNry85rJN.A.qAE.cn5jNB@chimera>
-Subject: [Bug #31012] WARNING: Perf: bad frame pointer = (null), 2.6.38-rc8
+Message-ID: <40UNry85rJN.A.7KE.fn5jNB@chimera>
+Subject: [Bug #31002] acer-wmi: rfkill and bluetooth enabling doesn't work as in 2.6.37
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 27 Mar 2011 22:27:40 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,11 +37,11 @@ from 2.6.37.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=31012
-Subject		: WARNING: Perf: bad frame pointer = (null), 2.6.38-rc8
-Submitter	: Chuck Ebbert <cebbert@redhat.com>
-Date		: 2011-03-12 19:08 (16 days old)
-Message-ID	: <20110312140851.52420149@katamari>
-References	: http://marc.info/?l=linux-kernel&m=129995721014931&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=31002
+Subject		: acer-wmi: rfkill and bluetooth enabling doesn't work as in 2.6.37
+Submitter	: Oldřich Jedlička <oldium.pro@seznam.cz>
+Date		: 2011-03-10 18:37 (18 days old)
+Message-ID	: <201103101937.01864.oldium.pro@seznam.cz>
+References	: http://marc.info/?l=linux-acpi&m=129978235612140&w=2
 
 
