@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab1C0Ltw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 07:49:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11772 "EHLO mx1.redhat.com"
+	id S1753392Ab1C0Luu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 07:50:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11820 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab1C0Ltv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 07:49:51 -0400
-Message-ID: <4D8F2455.2080205@redhat.com>
-Date: Sun, 27 Mar 2011 13:49:41 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1751730Ab1C0Lut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 07:50:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,250,1299484800"; 
+   d="scan'208";a="619514644"
+Date: Sun, 27 Mar 2011 07:50:47 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+Subject: Compiling virtualbox with Linux 2.6.38
+Message-ID: <20110327115047.GJ4183@linux.intel.com>
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39
-References: <4D8B4A89.80608@fusionio.com>
-In-Reply-To: <4D8B4A89.80608@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2011 03:43 PM, Jens Axboe wrote:
-> Hi Linus,
->
-> This is the main pull request for the block IO layer and friends for
-> 2.6.39.
->
-> There are two major things in this tree:
->
-> - The removal of the per-device plugging state for disks. On fast
->    devices, it ended up hammering the queue lock quite hard. The new
->    scheme puts the plugging state on the stack and allows an IO submitter
->    to finish his batch of IO before pushing it to the queue. Once that
->    push starts, we'll insert/merge with the existing queue.
->
->    A pointer to this plugging context is stored in the task structure. If
->    a task ends up blocking before it has submitted it's IO (usual cause
->    would be memory allocation of some sort), the plugged list is
->    auto-submitted before the task goes to sleep.
 
-This is the fourth "do something if preempted" hook (the other three are 
-kvm, cmwq, and perf).  Why not use sched notifiers for this?
+The Virtualbox developers have segregated themselves into a walled garden
+of their own choice (only subscribers may post to vbox-dev; you have to
+sign up to join their forums, etc, etc.).  So in the hopes of reaching
+anybody who cares, here is a patch to Virtualbox to handle the recent
+VFS change of replacing ->get_sb with ->mount.
 
--- 
-error compiling committee.c: too many arguments to function
+This isn't enough to get virtualbox to compile with a recent kernel.
+The DRM change that replaced pci_driver with kdriver seems harder to ifdef
+a solution to.  Maybe somebody else out there has already done this work
+and is similarly waiting for somebody else to do the VFS portion :-)
 
+Index: src/VBox/Additions/linux/sharedfolders/vfsmod.c
+===================================================================
+--- src/VBox/Additions/linux/sharedfolders/vfsmod.c	(revision 36443)
++++ src/VBox/Additions/linux/sharedfolders/vfsmod.c	(working copy)
+@@ -453,20 +453,31 @@
+     TRACE();
+     return get_sb_nodev(fs_type, flags, data, sf_read_super_26);
+ }
+-#else
++#elsif LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 37)
+ static int sf_get_sb(struct file_system_type *fs_type, int flags,
+                      const char *dev_name, void *data, struct vfsmount *mnt)
+ {
+     TRACE();
+     return get_sb_nodev(fs_type, flags, data, sf_read_super_26, mnt);
+ }
++#else
++static struct dentry *sf_mount(struct file_system_type *fs_type, int flags,
++                     const char *dev_name, void *data)
++{
++    TRACE();
++    return mount_nodev(fs_type, flags, data, sf_read_super_26);
++}
+ #endif
+ 
+ static struct file_system_type vboxsf_fs_type =
+ {
+     .owner   = THIS_MODULE,
+     .name    = "vboxsf",
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 37)
+     .get_sb  = sf_get_sb,
++#else
++    .mount   = sf_mount,
++#endif
+     .kill_sb = kill_anon_super
+ };
+ #endif
