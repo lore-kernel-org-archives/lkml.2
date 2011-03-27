@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab1C0ONB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 10:13:01 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52599 "EHLO
+	id S1753608Ab1C0Oby (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 10:31:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65421 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab1C0ONA (ORCPT
+	with ESMTP id S1753545Ab1C0Obx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 10:13:00 -0400
+	Sun, 27 Mar 2011 10:31:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:references:subject:message-id:x-mailer:mime-version
          :content-type:content-transfer-encoding;
-        b=rNEQX5/Ki4pLdN2OW6y6H+iKV04YXTMio9EAGERqbdmvTByNOUnpMwK2h4eszaPvEm
-         d64l7c8N48iH4dN4F1CNWm8gqrdSsH9Elo6WorZCWqBcGbRrNtgqiYySSt2qQLuJ0l1R
-         KQ5weEtea+b7UgXOAMK2DTjJYTK1SKLPv1clA=
-Date: Sun, 27 Mar 2011 22:12:53 +0800
+        b=fYvlU5icRKO1inKmSbUB0Vl2ojC/UNAwx8eX7B3B9BfAVo10klSX7rTP+/c0+iuITE
+         qtU84tqWF/LQJ8N7XDdiO4/2FEKIUs6XWzJlXe5RwydMsQGhmWKjGI6bBTOs9ZcZxqa1
+         W1Vzopr8MjpgkqJZG4UsNISvyqOlD50z3uHaA=
+Date: Sun, 27 Mar 2011 22:31:46 +0800
 From: "wanlong.gao" <wanlong.gao@gmail.com>
 To: "Alexey Dobriyan" <adobriyan@gmail.com>
 Cc: "greg" <greg@kroah.com>, "harryxiyou" <harryxiyou@gmail.com>,
@@ -22,7 +22,7 @@ Cc: "greg" <greg@kroah.com>, "harryxiyou" <harryxiyou@gmail.com>,
 References: <1301195244-4606-1-git-send-email-wanlong.gao@gmail.com>,
  <20110327125359.GA5816@p183.telecom.by>
 Subject: Re: Re: [PATCH] Fixed the format: lines over 80 characters .
-Message-ID: <201103272212485463946@gmail.com>
+Message-ID: <201103272231385006098@gmail.com>
 X-mailer: Foxmail 6, 15, 201, 23 [cn]
 Mime-Version: 1.0
 Content-Type: text/plain;
@@ -31,13 +31,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2REDSs3004266
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2REWMGh004309
 
-I see, thanks .
 
-------------------				 
-wanlong.gao
-2011-03-27
+
+But if you read the code in the 80 columns screen , isn't it less readable with the code over 80 characters ?
 
 -------------------------------------------------------------
 ·¢¼þÈË£ºAlexey Dobriyan
