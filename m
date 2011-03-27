@@ -1,155 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab1C0M0U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 08:26:20 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39706 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab1C0M0Q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 08:26:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=ZY/hV9tsrk/hT6r66dTltF7DPPl7Ei9w2nHFEP2r703AzCUUitvyiK19BrLRz5CTjd
-         cXNXHyGG2m3ivmGs+QlWx0i/IPT3EfqWSXf7gTcWeyTCCo+LYujswNp3hifFX4SsJ3CX
-         /+u2xMeq80syqkFyEeW2SAg9YaooLk2+lpTWM=
+	id S1753322Ab1C0NFw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 09:05:52 -0400
+Received: from msx.claflin.edu ([65.83.118.39]:1965 "EHLO msx.claflin.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752620Ab1C0NFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 09:05:51 -0400
+X-Greylist: delayed 309 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Mar 2011 09:05:50 EDT
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110327050720.GA31424@linux.vnet.ibm.com>
-References: <AANLkTi=N6Z0bDg1YXVFkUbv7phM8XvQ5U3=vS6Ej8Af5@mail.gmail.com>
-	<20110325174855.GR2322@linux.vnet.ibm.com>
-	<AANLkTin9HxOTwavbtbsMd0quYsEvhDNmuO5kOpquqoF=@mail.gmail.com>
-	<20110326034210.GX2322@linux.vnet.ibm.com>
-	<AANLkTi=zJZ26i14D-kyWQ1uqUPifrv+DN4So4+fC5V=d@mail.gmail.com>
-	<20110326160229.GZ2322@linux.vnet.ibm.com>
-	<AANLkTikzLm+ArYkG20F41JOgfNygfdhxC0+A4tV4ez-R@mail.gmail.com>
-	<20110327000900.GB2322@linux.vnet.ibm.com>
-	<AANLkTikpq2CiSTk9Br7DdkVt=E1p8OFGa+Ls2BzkkhcO@mail.gmail.com>
-	<20110327032529.GC2322@linux.vnet.ibm.com>
-	<20110327050720.GA31424@linux.vnet.ibm.com>
-Date: Sun, 27 Mar 2011 14:26:15 +0200
-Message-ID: <AANLkTimpbGGcxNJUDMjdg1wijYhvXQ3KySvRYnEsUYsy@mail.gmail.com>
-Subject: Re: linux-next: Tree for March 25 (Call trace: RCU|workqueues|block|VFS|ext4
- related?)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Nick Piggin <npiggin@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+From: "WealthMiners@gmail.com.com" <newsmanager@claflin.edu>
+To: linux-kernel@vger.kernel.org
+Date: Sun, 27 Mar 2011 09:00:39 -0400
+Subject: Article sent from Claflin News Manager
+Content-Type: text/plain; charset="utf-8"
+Message-ID: <a646af8c-dc91-483e-b87a-8b51ed15183f@CU-EXCHANGE.claflin.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2RD64S4004121
 
-On Sun, Mar 27, 2011 at 7:07 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Sat, Mar 26, 2011 at 08:25:29PM -0700, Paul E. McKenney wrote:
->> On Sun, Mar 27, 2011 at 03:30:34AM +0200, Sedat Dilek wrote:
->> > On Sun, Mar 27, 2011 at 1:09 AM, Paul E. McKenney
->> > <paulmck@linux.vnet.ibm.com> wrote:
->> > > On Sat, Mar 26, 2011 at 11:15:22PM +0100, Sedat Dilek wrote:
->
-> [ . . . ]
->
->> > >> But then came RCU :-(.
->> > >
->> > > Well, if it turns out to be a problem in RCU I will certainly apologize.
->> > >
->> >
->> > No, that's not so dramatic.
->> > Dealing with this RCU issue has nice side-effects: I remembered (and
->> > finally did) to use a reduced kernel-config set.
->> > The base for it I created with 'make localmodconfig' and did some
->> > manual fine-tuning afterwards (throw out media, rc, dvd, unneeded FSs,
->> > etc.).
->> > Also, I can use fresh gcc-4.6 (4.6.0-1) from the official Debian repos.
->> >
->> > So, I started building with
->> > "revert-rcu-patches/0001-Revert-rcu-introduce-kfree_rcu.patch".
->> > I will let you know.
->>
->> And please also check for tasks consuming all available CPU.
->
-> And I still cannot reproduce with the full RCU stack (but based off of
-> 2.6.38 rather than -next). Â Nevertheless, if you would like to try a
-> speculative patch, here you go.
->
+ 
+Hello Friend,
 
-You are right and my strategy on handling the (possible RCU?) issue is wrong.
-Surely, you tested your RCU stuff in your own repo and everything
-might be OK on top of stable 2.6.38.
-Linux-next gets daily updates from a lot of different trees, so there
-might be interferences with other stuff.
-Please, understand I am interested in finding out what is the cause
-for my issues, my aim is not to blame you.
+Your Wealth Miners Source Capital! You Can Earn While You Sleep!!!
 
-As I was wrong and want to be 99.9% sure it is RCU stuff, I reverted
-all (18) RCU patches from linux-next (next-20110325) by keeping the
-RCU|PREEMPT|HZ settings from last working next-20110323.
+How Could You Imagine To Send Your Ads To More Than 900 Million Everyday Just a Few 
+Click of Your Mouse Hurry This Limited Hot Business in 2011 First Come First Serve...
 
-$ egrep 'RCU|PREEMPT|_HZ' /boot/config-2.6.38-next20110325-7-686-iniza
-# RCU Subsystem
-CONFIG_TREE_RCU=y
-# CONFIG_PREEMPT_RCU is not set
-# CONFIG_RCU_TRACE is not set
-CONFIG_RCU_FANOUT=32
-# CONFIG_RCU_FANOUT_EXACT is not set
-CONFIG_RCU_FAST_NO_HZ=y
-# CONFIG_TREE_RCU_TRACE is not set
-CONFIG_PREEMPT_NOTIFIERS=y
-CONFIG_NO_HZ=y
-# CONFIG_PREEMPT_NONE is not set
-CONFIG_PREEMPT_VOLUNTARY=y
-# CONFIG_PREEMPT is not set
-# CONFIG_HZ_100 is not set
-CONFIG_HZ_250=y
-# CONFIG_HZ_300 is not set
-# CONFIG_HZ_1000 is not set
-CONFIG_HZ=250
-# CONFIG_SPARSE_RCU_POINTER is not set
-# CONFIG_RCU_TORTURE_TEST is not set
-# CONFIG_RCU_CPU_STALL_DETECTOR is not set
+Congratulations: Get Your Easy $800 Hot Commissions Now!!!
 
-I will work and stress this kernel before doing any step-by-step
-revert of RCU stuff.
+It's So Simple That Even A Ten Year Old Could Learn This In Under 1 Hour!""It Doesn't
+Matter Where In The World You Are If You Have An Internet Connection & A PC You 
+Can Earn The $800 For Just A Few Minutes Of Clicking A Mouse "
 
-Thanks for your patch, I applied it on top of "naked" next-20110325,
-but I still see call-traces.
+Imagine waking up at 10am in the morning, having a quick look at your PC and      
+finding  the exact information you need to collect a quick $300 by lunchtime. 
+You could take  the afternoon off, play some golf, go shopping or spend some  
+quality time with the family. Then do the same thing again in the evening, 
+What a wonderful concept and you could be doing it today. 
 
-- Sedat -
+Even during the boom years in any economy it's not possible to find a form 
+of free income, BUT THIS IS EXACTLY THAT! and it will make you free money for   
+the rest of your life.This Is Not Gambling.This Is Not Trading.This Is Not Even 
+Investing.Because It's Impossible That You Can Make A Loss,It Is A Mathematical 
+Certainty  That You Can Use To Make Free Money For The Rest Of Your Life.
+ 
+It's Easy To Make Money Everyday Even If You're Starting From Scratch With
+Zero Knowledge, Experience Or Budget!I'll Show You Exactly How.
+
+We've Start putting New 32 Members in YOUR TEAM for the March 24 th-31/ 2011
+weekly commission cycle...and GROWING everyday earn by $100 up to $200 or more.
+
+IMPORTANT:Advance Don't delay on March 31/ 2011,is the Cut-Off day to lock  
+in your position then faster you act the higher commission you  will earn!!!
+
+Go Here To Secure not less than $800 commission Now and it still growing as  
+many people joining under you. if you secure your position right away:The $800
+Commission will Arrive Through your Paypal or Credit Card on April/20/2011...Hurry  
+this limited time, only 3 Positions are available Now.
+
+Once your Membership are set up, you will be able to earn $800 in less than 
+2 hours a day.I will show you how we do that and then I will help you through 
+the process so that YOU SUCCEED! And Enjoy!!! 
+
+You will access your $800 in any ATM when you Join early our weekly cycle.
+
+Click Below!!!And Join Right Now..
+
+https://www.plimus.com/jsp/redirect.jsp?contractId=2757066&referrer=kimay
+
+>>>>> This Snapshots is Proven Earn When You Join Early <<<<<<<<
+
+TYPE   DATE & TIME ------- NEW MEMBERS -------------- COUNTRY
+
+P --- MARCH. 26 @ 2:38  AM-- Sarrah Grant------------ United States
+P --- MARCH. 26 @ 2:53  AM-- Andy William ----------- United Kingdom
+P --- MARCH. 26 @ 2:56  AM-- Jeffrey Jacobs---------- Germany
+M --- MARCH. 26 @ 4:19  AM-- Mayeth Thompson--------- Singapore
+P --- MARCH. 26 @ 4:28  AM-- Chandrena White--------- Italy
+P --- MARCH. 26 @ 2:38  AM-- Jinky Buffer------------ United States
+P --- MARCH. 26 @ 2:53  AM-- Ailaine Smith ---------- United Kingdom
+P --- MARCH. 25 @ 2:56  AM-- Mandene Jonhson--------- Germany
+M --- MARCH. 25 @ 4:19  AM-- Cristian Gatmaitan------ Singapore
+P --- MARCH. 25 @ 4:28  AM-- Jhon Carmalon----------- Italy
+M --- MARCH. 25 @ 6:01  AM-- lalaine Anderson-------- Australia
+P --- MARCH. 25 @ 7:11  AM-- Rebecca Underwood------- Hungary
+P --- MARCH. 25 @ 7:39  AM-- Jericho Jackson--------- Canada
+P --- MARCH. 25 @ 9:42  AM-- Thomas Silva ----------- Sri Lanka
+M --- MARCH. 25 @ 9:58  PM-- Grace Taylor------------ United States
+P --- MARCH. 25 @ 10:21 PM-- Gina Henry-------------- New Zealand
+P --- MARCH. 24 @ 11:24 PM-- Mohammed Ahmen --------- Romania
+M --- MARCH. 24 @ 11:33 PM-- Tracey Duncan----------- Puerto Rico
+P --- MARCH. 24 @ 11:41 PM-- Jane Stawrt------------- United States
+P --- MARCH. 24 @ 11:47 PM-- Janice Youngstown------- Taiwan
+P --- MARCH. 24 @ 11:53 PM-- Shirley Ong------------- China
+P --- MARCH. 24 @ 1:45  AM-- Ryann Lambert ---------- Europe
+M --- MARCH. 24 @ 12:34 AM-- Nick Gauci ------------- Calefornia
+M --- MARCH. 24 @ 10:24 AM-- Don Riley -------------- Netherland
+P --- MARCH. 24 @ 10:30 AM-- Lorne Whittaker -------- Swetzerland
+P --- MARCH. 24 @ 02:14 AM-- Ashwani Vohra ---------- Brazil
+M --- MARCH. 24 @ 2:34  AM-- Kevin Hunt ------------- United States
+P --- MARCH. 24 @ 1:54  AM-- Charles Brown----------- United States
+
+Therefore, you have a GUARANTEED $800 CommissionS  every month from now on!
+
+Earn $25Per Process!Each $25 x 32 = $800 Commission will be yours...
+
+Be Sure to Copy the link below & Paste into your browser and press enter:
+To Secure your $800 commission!
+
+You will access your $800 in any ATM when you Join early our weekly cycle.
+ 
+Click Below!!!And Join Right Now..
+
+https://www.plimus.com/jsp/redirect.jsp?contractId=2757066&referrer=kimay
+
+Just one simple payment of $25 and you could have earn $800 Remember no one else    
+Can give this kind of money every 20th of the month. Today its $800 For the   
+start of the month of March 2011 if goes up daily until the end of the month.
+
+You must UPGRADE right away or before others do....
+
+Business Manager Success, Karen Jackson
+WealthMiners@gmail.com.com 
+MAIN OFFICE, USA, UK, Australia, Asia, Europe
 
 
 
-> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> rcu: further lower priority in rcu_yield()
->
-> Although rcu_yield() dropped from real-time to normal priority, there
-> is always the possibility that the competing tasks have been niced.
-> So nice to 19 in rcu_yield() to help ensure that other tasks have a
-> better chance of running.
->
-> Â  Â Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 759f54b..5477764 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1492,6 +1492,7 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
-> Â  Â  Â  Â mod_timer(&yield_timer, jiffies + 2);
-> Â  Â  Â  Â sp.sched_priority = 0;
-> Â  Â  Â  Â sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
-> + Â  Â  Â  set_user_nice(current, 19);
-> Â  Â  Â  Â schedule();
-> Â  Â  Â  Â sp.sched_priority = RCU_KTHREAD_PRIO;
-> Â  Â  Â  Â sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
->
+
+
+http://www.claflin.edu/News/?a=956&z=1
+
+___________
+Visit us at :
+http://www.claflin.eduÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
