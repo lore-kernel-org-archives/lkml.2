@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563Ab1C0UqL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 16:46:11 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45821 "EHLO ogre.sisk.pl"
+	id S1752150Ab1C0UqT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 16:46:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45828 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750923Ab1C0UqI convert rfc822-to-8bit (ORCPT
+	id S1751612Ab1C0UqO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 16:46:08 -0400
+	Sun, 27 Mar 2011 16:46:14 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Dmitry Nezhevenko" <dion@inhex.net>
+        "De Ganseman Amaury" <amaury.deganseman@gmail.com>,
+        "Shaohua Li" <shaohua.li@intel.com>
 References: <lDYNS4ATQ-N.A._aD.9m5jNB@chimera>
 In-Reply-To: <lDYNS4ATQ-N.A._aD.9m5jNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +19,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <40UNry85rJN.A._QE.in5jNB@chimera>
-Subject: [Bug #30992] 2.6.38-rc7: Some strange soft-lockup
+Message-ID: <40UNry85rJN.A.orE.Do5jNB@chimera>
+Subject: [Bug #29992] boot hang 2.6.37.1 regression w/ intel_idle and CONFIG_NO_HZ=n - asus p7p55d le
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 27 Mar 2011 22:27:39 +0200 (CEST)
+Date: Sun, 27 Mar 2011 22:27:37 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,11 +35,9 @@ from 2.6.37.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=30992
-Subject		: 2.6.38-rc7: Some strange soft-lockup
-Submitter	: Dmitry Nezhevenko <dion@inhex.net>
-Date		: 2011-03-06 14:01 (22 days old)
-Message-ID	: <20110306140104.GA7700@laptop.local>
-References	: http://marc.info/?l=linux-kernel&m=129942161205739&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29992
+Subject		: boot hang 2.6.37.1 regression w/ intel_idle and CONFIG_NO_HZ=n - asus p7p55d le
+Submitter	: De Ganseman Amaury <amaury.deganseman@gmail.com>
+Date		: 2011-02-27 10:38 (29 days old)
 
 
