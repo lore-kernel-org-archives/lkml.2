@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab1C0PzG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 11:55:06 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:35709 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753816Ab1C0PzE convert rfc822-to-8bit (ORCPT
+	id S1753968Ab1C0Pzi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 11:55:38 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:46030 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753918Ab1C0PzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 11:55:04 -0400
-X-IronPort-AV: E=Sophos;i="4.63,251,1299484800"; 
-   d="scan'208";a="535155673"
-Subject: Re: strange put_rpccred() handling
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-In-Reply-To: <87ei5sppsx.fsf@devron.myhome.or.jp>
-References: <87ei5sppsx.fsf@devron.myhome.or.jp>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Sun, 27 Mar 2011 17:55:03 +0200
-Message-ID: <1301241303.22136.31.camel@lade.trondhjem.org>
+	Sun, 27 Mar 2011 11:55:21 -0400
+Date: Sun, 27 Mar 2011 17:48:53 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Jarod Wilson <jarod@wilsonet.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: crystalhd: remove unused typedef bc_bool_t
+Message-ID: <20110327174853.5e9ea61b@absol.kitzblitz>
+Organization: -
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
+ AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
+ T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
+ ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
+ BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
+X-Mailer: Claws Mail (Linux)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 27 Mar 2011 15:55:04.0192 (UTC) FILETIME=[56474800:01CBEC97]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-28 at 00:05 +0900, OGAWA Hirofumi wrote:
-> Hi,
-> 
-> BUG: atomic_dec_and_test(): -1: atomic counter underflow at:
-> Pid: 2827, comm: mount.nfs Not tainted 2.6.38 #1
-> Call Trace:
->  [<ffffffffa02223a0>] ? put_rpccred+0x44/0x14e [sunrpc]
->  [<ffffffffa021bbe9>] ? rpc_ping+0x4e/0x58 [sunrpc]
->  [<ffffffffa021c4a5>] ? rpc_create+0x481/0x4fc [sunrpc]
->  [<ffffffffa022298a>] ? rpcauth_lookup_credcache+0xab/0x22d [sunrpc]
->  [<ffffffffa028be8c>] ? nfs_create_rpc_client+0xa6/0xeb [nfs]
->  [<ffffffffa028c660>] ? nfs4_set_client+0xc2/0x1f9 [nfs]
->  [<ffffffffa028cd3c>] ? nfs4_create_server+0xf2/0x2a6 [nfs]
->  [<ffffffffa0295d07>] ? nfs4_remote_mount+0x4e/0x14a [nfs]
->  [<ffffffff810dd570>] ? vfs_kern_mount+0x6e/0x133
->  [<ffffffffa029605a>] ? nfs_do_root_mount+0x76/0x95 [nfs]
->  [<ffffffffa029643d>] ? nfs4_try_mount+0x56/0xaf [nfs]
->  [<ffffffffa0297434>] ? nfs_get_sb+0x435/0x73c [nfs]
->  [<ffffffff810dd59b>] ? vfs_kern_mount+0x99/0x133
->  [<ffffffff810dd693>] ? do_kern_mount+0x48/0xd8
->  [<ffffffff810f5b75>] ? do_mount+0x6da/0x741
->  [<ffffffff810f5c5f>] ? sys_mount+0x83/0xc0
->  [<ffffffff8100293b>] ? system_call_fastpath+0x16/0x1b
-> 
-> This is not oops, and debug code is not in vanilla. This debug code is
-> simple - detects atomic_dec_and_test() underflow.
-> 
-> Well, so, I think this is real bug of nfs codes somewhere. With some
-> review, the code
-> 
-> rpc_call_sync()
->     rpc_run_task
->         rpc_execute()
->             __rpc_execute()
->                 rpc_release_task()
->                     rpc_release_resources_task()
->                         put_rpccred()                <= release cred
->     rpc_put_task
->         rpc_do_put_task()
->             rpc_release_resources_task()
->                 put_rpccred()                        <= release cred again
-> 
-> seems to be release cred unintendedly.
-> 
-> static void rpc_release_resources_task(struct rpc_task *task)
-> {
-> 	if (task->tk_rqstp)
-> 		xprt_release(task);
-> 	if (task->tk_msg.rpc_cred) {
-> 		put_rpccred(task->tk_msg.rpc_cred);
-> 		task->tk_msg.rpc_cred = NULL;
-> 	}
-> 	rpc_task_release_client(task);
-> }
+Remove unused typedef bc_bool_t.
 
-May I add a signed-off-by from you, and just push the above fix to
-Linus?
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/staging/crystalhd/bc_dts_types.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Cheers
-  Trond
-
+diff --git a/drivers/staging/crystalhd/bc_dts_types.h b/drivers/staging/crystalhd/bc_dts_types.h
+index 6fd8089..d2131e7 100644
+--- a/drivers/staging/crystalhd/bc_dts_types.h
++++ b/drivers/staging/crystalhd/bc_dts_types.h
+@@ -65,7 +65,6 @@ typedef unsigned char	*PUCHAR;
+ #else
+ 
+ /* For Kernel usage.. */
+-typedef bool	bc_bool_t;
+ #endif
+ 
+ #else
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+1.7.3.4
