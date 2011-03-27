@@ -1,145 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab1C0LzK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 07:55:10 -0400
-Received: from relay.parallels.com ([195.214.232.42]:53492 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753295Ab1C0LzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 07:55:09 -0400
-Subject: [PATCH] initcall: add config option for compiling initcall_debug
-To: <linux-kernel@vger.kernel.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
-Date: Sun, 27 Mar 2011 15:55:06 +0400
-Message-ID: <20110327115506.14008.17733.stgit@localhost6>
-User-Agent: StGit/0.15
+	id S1753430Ab1C0MBN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 08:01:13 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:43201 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753218Ab1C0MBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 08:01:12 -0400
+X-ASG-Debug-ID: 1301227262-01de284cf8c4970001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D8F26F9.3000905@fusionio.com>
+Date: Sun, 27 Mar 2011 14:00:57 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Avi Kivity <avi@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [GIT PULL] Core block IO bits for 2.6.39
+References: <4D8B4A89.80608@fusionio.com> <4D8F2455.2080205@redhat.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39
+In-Reply-To: <4D8F2455.2080205@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301227262
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59112
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add bool config option CONFIG_INITCALL_DEBUG for compiling initcalls debuging,
-make it on by default to keep current behaviour.
+On 2011-03-27 13:49, Avi Kivity wrote:
+> On 03/24/2011 03:43 PM, Jens Axboe wrote:
+>> Hi Linus,
+>>
+>> This is the main pull request for the block IO layer and friends for
+>> 2.6.39.
+>>
+>> There are two major things in this tree:
+>>
+>> - The removal of the per-device plugging state for disks. On fast
+>>    devices, it ended up hammering the queue lock quite hard. The new
+>>    scheme puts the plugging state on the stack and allows an IO submitter
+>>    to finish his batch of IO before pushing it to the queue. Once that
+>>    push starts, we'll insert/merge with the existing queue.
+>>
+>>    A pointer to this plugging context is stored in the task structure. If
+>>    a task ends up blocking before it has submitted it's IO (usual cause
+>>    would be memory allocation of some sort), the plugged list is
+>>    auto-submitted before the task goes to sleep.
+> 
+> This is the fourth "do something if preempted" hook (the other three are 
+> kvm, cmwq, and perf).  Why not use sched notifiers for this?
 
-With CONFIG_INITCALL_DEBUG=n bloat-o-meter shows:
+It's a 'if preempted', it's 'if going to sleep'. Two issues with the
+preempt notifiers for this, I did look into it:
 
-add/remove: 0/7 grow/shrink: 3/10 up/down: 88/-1448 (-1360)
-function                                     old     new   delta
-device_resume                                350     404     +54
-__device_suspend                             331     363     +32
-device_resume_noirq                          230     232      +2
-kernel_init                                  355     354      -1
-initcall_debug                                 4       -      -4
-__param_str_initcall_debug                    15       -     -15
-dpm_suspend                                  431     415     -16
-syscore_suspend                              280     250     -30
-syscore_shutdown                             123      93     -30
-__param_initcall_debug                        32       -     -32
-syscore_resume                               215     173     -42
-static.initcall_debug_start                   71       -     -71
-static.initcall_debug_report                 102       -    -102
-legacy_resume                                129       -    -129
-async_synchronize_cookie_domain              286     152    -134
-legacy_suspend                               135       -    -135
-async_run_entry_fn                           348     188    -160
-do_one_initcall                              364     197    -167
-pm_op                                        536     366    -170
-pm_noirq_op                                  576     366    -210
+- Not unconditionally available. Not a big problem, we could just do
+  that.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- Documentation/kernel-parameters.txt |    2 +-
- include/linux/init.h                |    4 ++++
- init/main.c                         |    2 ++
- kernel/async.c                      |    4 +---
- lib/Kconfig.debug                   |    7 +++++++
- 5 files changed, 15 insertions(+), 4 deletions(-)
+- Sched out is called under the runqueue lock, and it's not safe to drop
+  it.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index c357a31..ea3843a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -970,7 +970,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 	initcall_debug	[KNL] Trace initcalls as they are executed.  Useful
- 			for working out where the kernel is dying during
--			startup.
-+			startup. This depend on CONFIG_INITCALL_DEBUG option.
- 
- 	initrd=		[BOOT] Specify the location of the initial ramdisk
- 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index 577671c..e2005ab 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -156,7 +156,11 @@ void prepare_namespace(void);
- 
- extern void (*late_time_init)(void);
- 
-+#ifdef CONFIG_INITCALL_DEBUG
- extern int initcall_debug;
-+#else
-+# define initcall_debug	0
-+#endif
- 
- #endif
-   
-diff --git a/init/main.c b/init/main.c
-index 4a9479e..0902999 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -636,8 +636,10 @@ static void __init do_ctors(void)
- #endif
- }
- 
-+#ifdef CONFIG_INITCALL_DEBUG
- int initcall_debug;
- core_param(initcall_debug, initcall_debug, bool, 0644);
-+#endif
- 
- static char msgbuf[64];
- 
-diff --git a/kernel/async.c b/kernel/async.c
-index 3d8220a..8801e1e 100644
---- a/kernel/async.c
-+++ b/kernel/async.c
-@@ -48,6 +48,7 @@ asynchronous and synchronous parts of the kernel.
- 
- */
- 
-+#include <linux/init.h>
- #include <linux/async.h>
- #include <linux/module.h>
- #include <linux/wait.h>
-@@ -77,9 +78,6 @@ static DECLARE_WAIT_QUEUE_HEAD(async_done);
- 
- static atomic_t entry_count;
- 
--extern int initcall_debug;
--
--
- /*
-  * MUST be called with the lock held!
-  */
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index df9234c..ebc1357 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -807,6 +807,13 @@ config DEBUG_CREDENTIALS
- 
- 	  If unsure, say N.
- 
-+config INITCALL_DEBUG
-+	bool "Debug kernel initcalls"
-+	default y
-+	help
-+	  This build option allow you trace initcalls after
-+	  adding "initcall_debug" to kernel command line.
-+
- #
- # Select this config option from the architecture Kconfig, if it
- # it is preferred to always offer frame pointers as a config
+But it's not a bad point, it would be nice if we could unify all these
+use cases and provide a notifier that works for all.
+
+-- 
+Jens Axboe
 
