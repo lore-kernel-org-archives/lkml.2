@@ -1,503 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab1C0QNU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 12:13:20 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40195 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab1C0QNS convert rfc822-to-8bit (ORCPT
+	id S1753992Ab1C0QPk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 12:15:40 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:43811 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab1C0QPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 12:13:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=vY3Av14yWzLW/gSJkk1KlLfIj92n+/aQu+e2d8eErKN/52p38YxSV9dORg7DJUxasx
-         yxhwbcHxXpI/Y0ejYQS6e5xsW33omEigNwp44oU/mM/hCZyuG90F9xT02USWdzuIfXRp
-         RvNGJy0kVcO0enlOUdbZpeuykgL4RQPt5FTHs=
-Subject: [PATCH] w1: Add DS2408 8-Channel Addressable Switch 1-wire slave support
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=iso-8859-1
-From: =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <jeff.dagenais@gmail.com>
-In-Reply-To: <1299879513-14884-1-git-send-email-dagenaisj@sonatest.com>
-Date: Sun, 27 Mar 2011 12:13:14 -0400
-Cc: johnpol@2ka.mipt.ru
-Content-Transfer-Encoding: 8BIT
-Message-Id: <70FF8279-693B-477C-8E50-D51E43C005C0@gmail.com>
-References: <1299879513-14884-1-git-send-email-dagenaisj@sonatest.com>
-To: linux-kernel@vger.kernel.org
-X-Mailer: Apple Mail (2.1082)
+	Sun, 27 Mar 2011 12:15:39 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: strange put_rpccred() handling
+References: <87ei5sppsx.fsf@devron.myhome.or.jp>
+	<1301241303.22136.31.camel@lade.trondhjem.org>
+Date: Mon, 28 Mar 2011 01:15:36 +0900
+In-Reply-To: <1301241303.22136.31.camel@lade.trondhjem.org> (Trond Myklebust's
+	message of "Sun, 27 Mar 2011 17:55:03 +0200")
+Message-ID: <8739m8pmjb.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from: Jean-François Dagenais <jeff.dagenais@gmail.com>
+Trond Myklebust <Trond.Myklebust@netapp.com> writes:
 
-This patch depends on patch "[PATCH] w1: Add 1-wire reset and resume API (0xA5)" This DS2408 w1 slave driver is not complete for all the
-features of the chip, but its sufficient if you use it as
-a simple IO expander.
+> On Mon, 2011-03-28 at 00:05 +0900, OGAWA Hirofumi wrote:
+>> Hi,
+>> 
+>> BUG: atomic_dec_and_test(): -1: atomic counter underflow at:
+>> Pid: 2827, comm: mount.nfs Not tainted 2.6.38 #1
+>> Call Trace:
+>>  [<ffffffffa02223a0>] ? put_rpccred+0x44/0x14e [sunrpc]
+>>  [<ffffffffa021bbe9>] ? rpc_ping+0x4e/0x58 [sunrpc]
+>>  [<ffffffffa021c4a5>] ? rpc_create+0x481/0x4fc [sunrpc]
+>>  [<ffffffffa022298a>] ? rpcauth_lookup_credcache+0xab/0x22d [sunrpc]
+>>  [<ffffffffa028be8c>] ? nfs_create_rpc_client+0xa6/0xeb [nfs]
+>>  [<ffffffffa028c660>] ? nfs4_set_client+0xc2/0x1f9 [nfs]
+>>  [<ffffffffa028cd3c>] ? nfs4_create_server+0xf2/0x2a6 [nfs]
+>>  [<ffffffffa0295d07>] ? nfs4_remote_mount+0x4e/0x14a [nfs]
+>>  [<ffffffff810dd570>] ? vfs_kern_mount+0x6e/0x133
+>>  [<ffffffffa029605a>] ? nfs_do_root_mount+0x76/0x95 [nfs]
+>>  [<ffffffffa029643d>] ? nfs4_try_mount+0x56/0xaf [nfs]
+>>  [<ffffffffa0297434>] ? nfs_get_sb+0x435/0x73c [nfs]
+>>  [<ffffffff810dd59b>] ? vfs_kern_mount+0x99/0x133
+>>  [<ffffffff810dd693>] ? do_kern_mount+0x48/0xd8
+>>  [<ffffffff810f5b75>] ? do_mount+0x6da/0x741
+>>  [<ffffffff810f5c5f>] ? sys_mount+0x83/0xc0
+>>  [<ffffffff8100293b>] ? system_call_fastpath+0x16/0x1b
+>> 
+>> This is not oops, and debug code is not in vanilla. This debug code is
+>> simple - detects atomic_dec_and_test() underflow.
+>> 
+>> Well, so, I think this is real bug of nfs codes somewhere. With some
+>> review, the code
+>> 
+>> rpc_call_sync()
+>>     rpc_run_task
+>>         rpc_execute()
+>>             __rpc_execute()
+>>                 rpc_release_task()
+>>                     rpc_release_resources_task()
+>>                         put_rpccred()                <= release cred
+>>     rpc_put_task
+>>         rpc_do_put_task()
+>>             rpc_release_resources_task()
+>>                 put_rpccred()                        <= release cred again
+>> 
+>> seems to be release cred unintendedly.
+>> 
+>> static void rpc_release_resources_task(struct rpc_task *task)
+>> {
+>> 	if (task->tk_rqstp)
+>> 		xprt_release(task);
+>> 	if (task->tk_msg.rpc_cred) {
+>> 		put_rpccred(task->tk_msg.rpc_cred);
+>> 		task->tk_msg.rpc_cred = NULL;
+>> 	}
+>> 	rpc_task_release_client(task);
+>> }
+>
+> May I add a signed-off-by from you, and just push the above fix to
+> Linus?
 
-Signed-off-by: Jean-François Dagenais <dagenaisj@sonatest.com>
----
-:100644 100644 f0c9096... cd1b724... M	drivers/w1/slaves/Kconfig
-:100644 100644 3c76350... 75e3913... M	drivers/w1/slaves/Makefile
-:000000 100644 0000000... 3547e80... A	drivers/w1/slaves/w1_ds2408.c
-:100644 100644 f3b636d... 7513759... M	drivers/w1/w1_family.h
-drivers/w1/slaves/Kconfig     |    7 +
-drivers/w1/slaves/Makefile    |    1 +
-drivers/w1/slaves/w1_ds2408.c |  402 +++++++++++++++++++++++++++++++++++++++++
-drivers/w1/w1_family.h        |    1 +
-4 files changed, 411 insertions(+), 0 deletions(-)
+Yes, of course.
 
-diff --git a/drivers/w1/slaves/Kconfig b/drivers/w1/slaves/Kconfig
-index f0c9096..cd1b724 100644
---- a/drivers/w1/slaves/Kconfig
-+++ b/drivers/w1/slaves/Kconfig
-@@ -16,6 +16,13 @@ config W1_SLAVE_SMEM
-	  Say Y here if you want to connect 1-wire
-	  simple 64bit memory rom(ds2401/ds2411/ds1990*) to your wire.
-
-+config W1_SLAVE_DS2408
-+        tristate "8-Channel Addressable Switch (IO Expander) 0x29 family support (DS2408)"
-+        help
-+          Say Y here if you want to use a 1-wire
-+
-+		  DS2408 8-Channel Addressable Switch device support
-+
-config W1_SLAVE_DS2423
-	tristate "Counter 1-wire device (DS2423)"
-	select CRC16
-diff --git a/drivers/w1/slaves/Makefile b/drivers/w1/slaves/Makefile
-index 3c76350..75e3913 100644
---- a/drivers/w1/slaves/Makefile
-+++ b/drivers/w1/slaves/Makefile
-@@ -4,6 +4,7 @@
-
-obj-$(CONFIG_W1_SLAVE_THERM)	+= w1_therm.o
-obj-$(CONFIG_W1_SLAVE_SMEM)	+= w1_smem.o
-+obj-$(CONFIG_W1_SLAVE_DS2408)   += w1_ds2408.o
-obj-$(CONFIG_W1_SLAVE_DS2423)	+= w1_ds2423.o
-obj-$(CONFIG_W1_SLAVE_DS2431)	+= w1_ds2431.o
-obj-$(CONFIG_W1_SLAVE_DS2433)	+= w1_ds2433.o
-diff --git a/drivers/w1/slaves/w1_ds2408.c b/drivers/w1/slaves/w1_ds2408.c
-new file mode 100644
-index 0000000..3547e80
---- /dev/null
-+++ b/drivers/w1/slaves/w1_ds2408.c
-@@ -0,0 +1,402 @@
-+/*
-+ *	w1_ds2408.c - w1 family 29 (DS2408) driver
-+ *
-+ * Copyright (c) 2010 Jean-Francois Dagenais <dagenaisj@sonatest.com>
-+ *
-+ * This source code is licensed under the GNU General Public License,
-+ * Version 2. See the file COPYING for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/device.h>
-+#include <linux/types.h>
-+#include <linux/delay.h>
-+#include <linux/slab.h>
-+
-+#include "../w1.h"
-+#include "../w1_int.h"
-+#include "../w1_family.h"
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Jean-Francois Dagenais <dagenaisj@sonatest.com>");
-+MODULE_DESCRIPTION("w1 family 29 driver for DS2408 8 Pin IO");
-+
-+
-+#define W1_F29_RETRIES		3
-+
-+#define W1_F29_REG_LOGIG_STATE             0x88 /* R */
-+#define W1_F29_REG_OUTPUT_LATCH_STATE      0x89 /* R */
-+#define W1_F29_REG_ACTIVITY_LATCH_STATE    0x8A /* R */
-+#define W1_F29_REG_COND_SEARCH_SELECT_MASK 0x8B /* RW */
-+#define W1_F29_REG_COND_SEARCH_POL_SELECT  0x8C /* RW */
-+#define W1_F29_REG_CONTROL_AND_STATUS      0x8D /* RW */
-+
-+#define W1_F29_FUNC_READ_PIO_REGS          0xF0
-+#define W1_F29_FUNC_CHANN_ACCESS_READ      0xF5
-+#define W1_F29_FUNC_CHANN_ACCESS_WRITE     0x5A
-+/* also used to write the control/status reg (0x8D): */
-+#define W1_F29_FUNC_WRITE_COND_SEARCH_REG  0xCC
-+#define W1_F29_FUNC_RESET_ACTIVITY_LATCHES 0xC3
-+
-+#define W1_F29_SUCCESS_CONFIRM_BYTE        0xAA
-+
-+static int _read_reg(struct w1_slave *sl, u8 address, unsigned char* buf)
-+{
-+	u8 wrbuf[3];
-+	dev_dbg(&sl->dev,
-+			"Reading with slave: %p, reg addr: %0#4x, buff addr: %p",
-+			sl, (unsigned int)address, buf);
-+
-+	if (!buf)
-+		return -EINVAL;
-+
-+	mutex_lock(&sl->master->mutex);
-+	dev_dbg(&sl->dev, "mutex locked");
-+
-+	if (w1_reset_select_slave(sl)) {
-+		mutex_unlock(&sl->master->mutex);
-+		return -EIO;
-+	}
-+
-+	wrbuf[0] = W1_F29_FUNC_READ_PIO_REGS;
-+	wrbuf[1] = address;
-+	wrbuf[2] = 0;
-+	w1_write_block(sl->master, wrbuf, 3);
-+	*buf = w1_read_8(sl->master);
-+
-+	mutex_unlock(&sl->master->mutex);
-+	dev_dbg(&sl->dev, "mutex unlocked");
-+	return 1;
-+}
-+
-+static ssize_t w1_f29_read_state(
-+	struct file *filp, struct kobject *kobj,
-+	struct bin_attribute *bin_attr,
-+	char *buf, loff_t off, size_t count)
-+{
-+	dev_dbg(&kobj_to_w1_slave(kobj)->dev,
-+		"Reading %s kobj: %p, off: %0#10x, count: %lu, buff addr: %p",
-+		bin_attr->attr.name, kobj, (unsigned int)off, count, buf);
-+	if (count != 1 || off != 0)
-+		return -EFAULT;
-+	return _read_reg(kobj_to_w1_slave(kobj), W1_F29_REG_LOGIG_STATE, buf);
-+}
-+
-+static ssize_t w1_f29_read_output(
-+	struct file *filp, struct kobject *kobj,
-+	struct bin_attribute *bin_attr,
-+	char *buf, loff_t off, size_t count)
-+{
-+	dev_dbg(&kobj_to_w1_slave(kobj)->dev,
-+		"Reading %s kobj: %p, off: %0#10x, count: %lu, buff addr: %p",
-+		bin_attr->attr.name, kobj, (unsigned int)off, count, buf);
-+	if (count != 1 || off != 0)
-+		return -EFAULT;
-+	return _read_reg(kobj_to_w1_slave(kobj),
-+					 W1_F29_REG_OUTPUT_LATCH_STATE, buf);
-+}
-+
-+static ssize_t w1_f29_read_activity(
-+	struct file *filp, struct kobject *kobj,
-+	struct bin_attribute *bin_attr,
-+	char *buf, loff_t off, size_t count)
-+{
-+	dev_dbg(&kobj_to_w1_slave(kobj)->dev,
-+		"Reading %s kobj: %p, off: %0#10x, count: %lu, buff addr: %p",
-+		bin_attr->attr.name, kobj, (unsigned int)off, count, buf);
-+	if (count != 1 || off != 0)
-+		return -EFAULT;
-+	return _read_reg(kobj_to_w1_slave(kobj),
-+					 W1_F29_REG_ACTIVITY_LATCH_STATE, buf);
-+}
-+
-+static ssize_t w1_f29_read_cond_search_mask(
-+	struct file *filp, struct kobject *kobj,
-+	struct bin_attribute *bin_attr,
-+	char *buf, loff_t off, size_t count)
-+{
-+	dev_dbg(&kobj_to_w1_slave(kobj)->dev,
-+		"Reading %s kobj: %p, off: %0#10x, count: %lu, buff addr: %p",
-+		bin_attr->attr.name, kobj, (unsigned int)off, count, buf);
-+	if (count != 1 || off != 0)
-+		return -EFAULT;
-+	return _read_reg(kobj_to_w1_slave(kobj),
-+		W1_F29_REG_COND_SEARCH_SELECT_MASK, buf);
-+}
-+
-+static ssize_t w1_f29_read_cond_search_polarity(
-+	struct file *filp, struct kobject *kobj,
-+	struct bin_attribute *bin_attr,
-+	char *buf, loff_t off, size_t count)
-+{
-+	if (count != 1 || off != 0)
-+		return -EFAULT;
-+	return _read_reg(kobj_to_w1_slave(kobj),
-+		W1_F29_REG_COND_SEARCH_POL_SELECT, buf);
-+}
-+
-+static ssize_t w1_f29_read_status_control(
-+	struct file *filp, struct kobject *kobj,
-+	struct bin_attribute *bin_attr,
-+	char *buf, loff_t off, size_t count)
-+{
-+	if (count != 1 || off != 0)
-+		return -EFAULT;
-+	return _read_reg(kobj_to_w1_slave(kobj),
-+		W1_F29_REG_CONTROL_AND_STATUS, buf);
-+}
-+
-+
-+
-+
-+static ssize_t w1_f29_write_output(
-+	struct file *filp, struct kobject *kobj,
-+	struct bin_attribute *bin_attr,
-+	char *buf, loff_t off, size_t count)
-+{
-+	struct w1_slave *sl = kobj_to_w1_slave(kobj);
-+	u8 w1_buf[3];
-+	u8 readBack;
-+	unsigned int retries = W1_F29_RETRIES;
-+
-+	if (count != 1 || off != 0)
-+		return -EFAULT;
-+
-+	dev_dbg(&sl->dev, "locking mutex for write_output");
-+	mutex_lock(&sl->master->mutex);
-+	dev_dbg(&sl->dev, "mutex locked");
-+
-+	if (w1_reset_select_slave(sl))
-+		goto error;
-+
-+	while (retries--) {
-+		w1_buf[0] = W1_F29_FUNC_CHANN_ACCESS_WRITE;
-+		w1_buf[1] = *buf;
-+		w1_buf[2] = ~(*buf);
-+		w1_write_block(sl->master, w1_buf, 3);
-+
-+		readBack = w1_read_8(sl->master);
-+		/* here the master could read another byte which
-+		   would be the PIO reg (the actual pin logic state)
-+		   since in this driver we don't know which pins are
-+		   in and outs, there's no value to read the state and
-+		   compare. with (*buf) so end this command abruptly: */
-+		if (w1_reset_resume_command(sl->master))
-+			goto error;
-+
-+		if (readBack != 0xAA) {
-+			/* try again, the slave is ready for a command */
-+			continue;
-+		}
-+
-+		/* go read back the output latches */
-+		/* (the direct effect of the write above) */
-+		w1_buf[0] = W1_F29_FUNC_READ_PIO_REGS;
-+		w1_buf[1] = W1_F29_REG_OUTPUT_LATCH_STATE;
-+		w1_buf[2] = 0;
-+		w1_write_block(sl->master, w1_buf, 3);
-+		/* read the result of the READ_PIO_REGS command */
-+		if (w1_read_8(sl->master) == *buf) {
-+			/* success! */
-+			mutex_unlock(&sl->master->mutex);
-+			dev_dbg(&sl->dev,
-+				"mutex unlocked, retries:%d", retries);
-+			return 1;
-+		}
-+	}
-+error:
-+	mutex_unlock(&sl->master->mutex);
-+	dev_dbg(&sl->dev, "mutex unlocked in error, retries:%d", retries);
-+
-+	return -EIO;
-+}
-+
-+
-+/**
-+ * Writing to the activity file resets the activity latches.
-+ */
-+static ssize_t w1_f29_write_activity(
-+	struct file *filp, struct kobject *kobj,
-+	struct bin_attribute *bin_attr,
-+	char *buf, loff_t off, size_t count)
-+{
-+	struct w1_slave *sl = kobj_to_w1_slave(kobj);
-+	unsigned int retries = W1_F29_RETRIES;
-+
-+	if (count != 1 || off != 0)
-+		return -EFAULT;
-+
-+	mutex_lock(&sl->master->mutex);
-+
-+	if (w1_reset_select_slave(sl))
-+		goto error;
-+
-+	while (retries--) {
-+		w1_write_8(sl->master, W1_F29_FUNC_RESET_ACTIVITY_LATCHES);
-+		if (w1_read_8(sl->master) == W1_F29_SUCCESS_CONFIRM_BYTE) {
-+			mutex_unlock(&sl->master->mutex);
-+			return 1;
-+		}
-+		if (w1_reset_resume_command(sl->master))
-+			goto error;
-+	}
-+
-+error:
-+	mutex_unlock(&sl->master->mutex);
-+	return -EIO;
-+}
-+
-+static ssize_t w1_f29_write_status_control(
-+	struct file *filp,
-+	struct kobject *kobj,
-+	struct bin_attribute *bin_attr,
-+	char *buf,
-+	loff_t off,
-+	size_t count)
-+{
-+	struct w1_slave *sl = kobj_to_w1_slave(kobj);
-+	u8 w1_buf[4];
-+	unsigned int retries = W1_F29_RETRIES;
-+
-+	if (count != 1 || off != 0)
-+		return -EFAULT;
-+
-+	mutex_lock(&sl->master->mutex);
-+
-+	if (w1_reset_select_slave(sl))
-+		goto error;
-+
-+	while (retries--) {
-+		w1_buf[0] = W1_F29_FUNC_WRITE_COND_SEARCH_REG;
-+		w1_buf[1] = W1_F29_REG_CONTROL_AND_STATUS;
-+		w1_buf[2] = 0;
-+		w1_buf[3] = *buf;
-+
-+		w1_write_block(sl->master, w1_buf, 4);
-+		if (w1_reset_resume_command(sl->master))
-+			goto error;
-+
-+		w1_buf[0] = W1_F29_FUNC_READ_PIO_REGS;
-+		w1_buf[1] = W1_F29_REG_CONTROL_AND_STATUS;
-+		w1_buf[2] = 0;
-+
-+		w1_write_block(sl->master, w1_buf, 3);
-+		if (w1_read_8(sl->master) == *buf) {
-+			/* success! */
-+			mutex_unlock(&sl->master->mutex);
-+			return 1;
-+		}
-+	}
-+error:
-+	mutex_unlock(&sl->master->mutex);
-+
-+	return -EIO;
-+}
-+
-+
-+
-+#define NB_SYSFS_BIN_FILES 6
-+static struct bin_attribute w1_f29_sysfs_bin_files[NB_SYSFS_BIN_FILES] = {
-+	{
-+		.attr =	{
-+			.name = "state",
-+			.mode = S_IRUGO,
-+		},
-+		.size = 1,
-+		.read = w1_f29_read_state,
-+	},
-+	{
-+		.attr =	{
-+			.name = "output",
-+			.mode = S_IRUGO | S_IWUSR | S_IWGRP,
-+		},
-+		.size = 1,
-+		.read = w1_f29_read_output,
-+		.write = w1_f29_write_output,
-+	},
-+	{
-+		.attr =	{
-+			.name = "activity",
-+			.mode = S_IRUGO,
-+		},
-+		.size = 1,
-+		.read = w1_f29_read_activity,
-+		.write = w1_f29_write_activity,
-+	},
-+	{
-+		.attr =	{
-+			.name = "cond_search_mask",
-+			.mode = S_IRUGO,
-+		},
-+		.size = 1,
-+		.read = w1_f29_read_cond_search_mask,
-+		.write = 0,
-+	},
-+	{
-+		.attr =	{
-+			.name = "cond_search_polarity",
-+			.mode = S_IRUGO,
-+		},
-+		.size = 1,
-+		.read = w1_f29_read_cond_search_polarity,
-+		.write = 0,
-+	},
-+	{
-+		.attr =	{
-+			.name = "status_control",
-+			.mode = S_IRUGO | S_IWUSR | S_IWGRP,
-+		},
-+		.size = 1,
-+		.read = w1_f29_read_status_control,
-+		.write = w1_f29_write_status_control,
-+	}
-+};
-+
-+static int w1_f29_add_slave(struct w1_slave *sl)
-+{
-+	int err = 0;
-+	int i;
-+
-+	for (i = 0; i < NB_SYSFS_BIN_FILES && !err; ++i)
-+		err = sysfs_create_bin_file(
-+			&sl->dev.kobj,
-+			&(w1_f29_sysfs_bin_files[i]));
-+	if (err)
-+		while (--i >= 0)
-+			sysfs_remove_bin_file(&sl->dev.kobj,
-+				&(w1_f29_sysfs_bin_files[i]));
-+	return err;
-+}
-+
-+static void w1_f29_remove_slave(struct w1_slave *sl)
-+{
-+	int i;
-+	for (i = NB_SYSFS_BIN_FILES; i <= 0; --i)
-+		sysfs_remove_bin_file(&sl->dev.kobj,
-+			&(w1_f29_sysfs_bin_files[i]));
-+}
-+
-+static struct w1_family_ops w1_f29_fops = {
-+	.add_slave      = w1_f29_add_slave,
-+	.remove_slave   = w1_f29_remove_slave,
-+};
-+
-+static struct w1_family w1_family_29 = {
-+	.fid = W1_FAMILY_DS2408,
-+	.fops = &w1_f29_fops,
-+};
-+
-+static int __init w1_f29_init(void)
-+{
-+	return w1_register_family(&w1_family_29);
-+}
-+
-+static void __exit w1_f29_exit(void)
-+{
-+	w1_unregister_family(&w1_family_29);
-+}
-+
-+module_init(w1_f29_init);
-+module_exit(w1_f29_exit);
-diff --git a/drivers/w1/w1_family.h b/drivers/w1/w1_family.h
-index f3b636d..7513759 100644
---- a/drivers/w1/w1_family.h
-+++ b/drivers/w1/w1_family.h
-@@ -34,6 +34,7 @@
-#define W1_THERM_DS1822  	0x22
-#define W1_EEPROM_DS2433  	0x23
-#define W1_THERM_DS18B20 	0x28
-+#define W1_FAMILY_DS2408	0x29
-#define W1_EEPROM_DS2431	0x2D
-#define W1_FAMILY_DS2760	0x30
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 
 -- 
-1.7.4.1
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
