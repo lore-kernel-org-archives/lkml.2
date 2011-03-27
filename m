@@ -1,48 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab1C0I2r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 04:28:47 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39094 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab1C0I2n (ORCPT
+	id S1752829Ab1C0Ip2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 04:45:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44274 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab1C0Ip0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 04:28:43 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
-Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [V9fs-developer] [PATCH 3/5] 9p: revert tsyncfs related changes
-In-Reply-To: <4D8D0704.7080106@linux.vnet.ibm.com>
-References: <1301052651-21440-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1301052651-21440-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4D8D0704.7080106@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Sun, 27 Mar 2011 13:58:33 +0530
-Message-ID: <877hbl0xxq.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 27 Mar 2011 04:45:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=CsB2PV48leDr6N3D8IUUs2YV54Hb4eYdbupFUddtdegztgsrNAqGuFk9PNSzXZFaTX
+         KuLNq3Hsd7t5nQvB/mZ/RsNyrbcYMr2smY+NuUxHaHYUe4dtW1v05e3JHP6zJzokeEMi
+         fruwdyqYXmxI13/xknvogjMzIJaROULsAGXpE=
+From: Maksym Planeta <mcsim.planeta@gmail.com>
+To: mingo@redhat.com
+Cc: kernel-janitors@vger.kernel.org, namhyung@gmail.com,
+        linux-kernel@vger.kernel.org, Maksym Planeta <mcsim.planeta@gmail.com>
+Subject: [PATCH v2] x86: page: get_order() optimization
+Date: Sun, 27 Mar 2011 11:45:56 +0300
+Message-Id: <1301215556-8898-1-git-send-email-mcsim.planeta@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Mar 2011 14:20:04 -0700, Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com> wrote:
-> On 03/25/2011 04:30 AM, Aneesh Kumar K.V wrote:
-> > Now that we use write_inode to flush server
-> > cache related to fid, we don't need tsyncfs.
-> > This help us to do a more efficient server flush
-> > for dotu protocol
-> Why are you singling out dotu only? won't it be applicable to dotl too?
-> 
+For x86 architecture get_order function can be optimized due to
+assembler instruction bsr.
 
-With dotl we can have new operations and so we added tsyncfs. The
-primary goal is to add an operation that can flush server cache. We
-hooked that to sync(2) on the client. With dotu we cannot add new
-operations so we always forced the write on the server in case of dotu
-to O_SYNC. That is much slower than doing an fsync on write_inode. But
-whether doing an fsync on write inode is better than doing tsyncfs on
-sync(2) on client is something i haven't yet measured. Stefan Hajnoczi wants to
-see some numbers before we push tsyncfs in the server(qemu). We also don't
-want a kernel release with 9p operation which we may remove later. So
-the plan now is to get write_inode changes upstream in this merge window
-and later get numbers against tsyncfs/write_inode -> fsync and add tsyncfs only
-if we see a benefit. BTW NFS use the write_inode approach.
+This is second version of patch where for constants gcc precompute the
+result.
 
--aneesh
+Signed-off-by: Maksym Planeta <mcsim.planeta@gmail.com>
+---
+ arch/x86/include/asm/getorder.h |   48 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/page.h     |    2 +-
+ 2 files changed, 49 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/include/asm/getorder.h
+
+diff --git a/arch/x86/include/asm/getorder.h b/arch/x86/include/asm/getorder.h
+new file mode 100644
+index 0000000..b0c6f57
+--- /dev/null
++++ b/arch/x86/include/asm/getorder.h
+@@ -0,0 +1,48 @@
++#ifndef __ASM_GENERIC_GETORDER_H
++#define __ASM_GENERIC_GETORDER_H
++
++#ifndef __ASSEMBLY__
++
++#include <linux/compiler.h>
++
++#ifdef CONFIG_X86_CMOV
++#define ASM_CMOVZ(op, dest) \
++		"cmovzl %" #op ",%" #dest ";\n\t"
++#else
++#define ASM_CMOVZ(op, dest) \
++		"jnz 1f;\n\t" \
++		"movl %" #op ", %" #dest ";\n\t" \
++		"1: "
++#endif
++
++static __always_inline int __get_order(unsigned long size)
++{
++	int order;
++
++	size = (size - 1) >> (PAGE_SHIFT - 1);
++	asm("bsr %1, %0\n\t"
++		ASM_CMOVZ(2, 0)
++		: "=&r" (order) : "rm" (size), "rm" (0));
++	return order;
++}
++
++/* Pure 2^n version of get_order */
++static inline __attribute_const__  int get_order(unsigned long size)
++{
++	int order;
++
++	if (__builtin_constant_p(size)) {
++		size = (size - 1) >> (PAGE_SHIFT - 1);
++		order = -1;
++		do {
++			size >>= 1;
++			order++;
++		} while (size);
++		return order;
++	}
++	return __get_order(size);
++}
++
++#endif	/* __ASSEMBLY__ */
++
++#endif	/* __ASM_GENERIC_GETORDER_H */
+diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
+index 8ca8283..10e4c45 100644
+--- a/arch/x86/include/asm/page.h
++++ b/arch/x86/include/asm/page.h
+@@ -63,7 +63,7 @@ extern bool __virt_addr_valid(unsigned long kaddr);
+ #endif	/* __ASSEMBLY__ */
+ 
+ #include <asm-generic/memory_model.h>
+-#include <asm-generic/getorder.h>
++#include <asm/getorder.h>
+ 
+ #define __HAVE_ARCH_GATE_AREA 1
+ 
+-- 
+1.7.2.3
+
