@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab1C0PEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 11:04:09 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64005 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab1C0PEH (ORCPT
+	id S1753785Ab1C0P2s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 11:28:48 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:58542 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab1C0P2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 11:04:07 -0400
-Message-ID: <4D8F5186.5030109@ru.mvista.com>
-Date: Sun, 27 Mar 2011 19:02:30 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Sun, 27 Mar 2011 11:28:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gNFLO1DvxkqntXPV+pCUwKTDSaHTqffSY4J9cnRNjo1LY6ofpZqTxEa3C0OSkgMnx8
+         isdflamlGhOBuq3COr+42scqxteEPx90dcZcWO7Kz15QNRpSUZ45kED279JnN7RgiSGu
+         19cO27TvqD3KrOy2Jzz4ZJ2iIlglAhhWxTP+I=
+Date: Sun, 27 Mar 2011 10:28:40 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Huber Andreas <hobrom@corax.at>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-dvb] cx88-blackbird broken (since 2.6.37)
+Message-ID: <20110327152810.GA32106@elie>
+References: <20110327150610.4029.95961.reportbug@xen.corax.at>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [patch 17/23] arm: at91: Cleanup irq chip
-References: <20110325131617.258789658@linutronix.de>	<20110325132048.996818347@linutronix.de> <alpine.LFD.2.00.1103252202440.31464@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1103252202440.31464@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110327150610.4029.95961.reportbug@xen.corax.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Andi,
 
-On 26-03-2011 0:03, Thomas Gleixner wrote:
+Huber Andreas wrote[1]:
 
->> Avoid the whole lazy disable dance in the demux handler by providing a
->> irq_disable() callback.
+> [Symptom]
+> Processes that try to open a cx88-blackbird driven MPEG device will hang up.
 
->> Use the proper accessor functions and tidy up gpio_irq_handler()
+Thanks for reporting.  Just cc-ing some relevant people.  Could you file a
+bug to track this at <http://bugzilla.kernel.org/>, product v4l-dvb,
+component cx88, and then send the bug number to 619827@bugs.debian.org ?
 
->> Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
-[...]
+Report follows.
 
->> Index: linux-2.6-tip/arch/arm/mach-at91/gpio.c
->> ===================================================================
->> --- linux-2.6-tip.orig/arch/arm/mach-at91/gpio.c
->> +++ linux-2.6-tip/arch/arm/mach-at91/gpio.c
-[...]
->> @@ -384,16 +385,14 @@ static struct irq_chip gpio_irqchip = {
->>   static void gpio_irq_handler(unsigned irq, struct irq_desc *desc)
->>   {
->>   	unsigned	pin;
->> -	struct irq_desc	*gpio;
->> -	struct at91_gpio_chip *at91_gpio;
->> -	void __iomem	*pio;
->> +	struct irq_data *idata = irq_desc_get_irq_data(desc);
->> +	struct irq_chip *chip = irq_data_get_chip(data);
->> +	struct at91_gpio_chip *at91_gpio = irq_data_get_chip_data(data);
+Jonathan
 
-> Sorry, needs to be
+[1] http://bugs.debian.org/619827
 
-> +	struct at91_gpio_chip *at91_gpio = irq_data_get_irq_chip_data(data);
-
-> Will fix and resend.
-
-    You also don't have 'data' defined anywhere, maybe you meant 'ídata'?
-
-WBR, Sergei
+> [Cause]
+> Nestet mutex_locks (which are not allowed) result in a deadlock.
+> 
+> [Details]
+> Source-File: drivers/media/video/cx88/cx88-blackbird.c
+> Function: int mpeg_open(struct file *file)
+> Problem: the calls to  drv->request_acquire(drv); and
+> drv->request_release(drv); will hang because they try to lock a
+> mutex that has already been locked by a previouse call to
+> mutex_lock(&dev->core->lock) ...
+> 
+> 1050 static int mpeg_open(struct file *file)
+> 1051 {
+> [...]
+> 1060         mutex_lock(&dev->core->lock);         // MUTEX LOCKED !!!!!!!!!!!!!!!!
+> 1061
+> 1062         /* Make sure we can acquire the hardware */
+> 1063         drv = cx8802_get_driver(dev, CX88_MPEG_BLACKBIRD);
+> 1064         if (drv) {
+> 1065                 err = drv->request_acquire(drv);  // HANGS !!!!!!!!!!!!!!!!!!!
+> 1066                 if(err != 0) {
+> 1067                         dprintk(1,"%s: Unable to acquire hardware, %d\n", __func__, err);
+> 1068                         mutex_unlock(&dev->core->lock);;
+> 1069                         return err;
+> 1070                 }
+> 1071         }
+> [...]
+> 
+> Here's the relevant kernel log extract (Linux version 2.6.38-1-amd64 (Debian 2.6.38-1)) ...
+> 
+> Mar 24 21:25:10 xen kernel: [  241.472067] INFO: task v4l_id:1000 blocked for more than 120 seconds.
+> Mar 24 21:25:10 xen kernel: [  241.478845] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Mar 24 21:25:10 xen kernel: [  241.482412] v4l_id          D ffff88006bcb6540     0  1000      1 0x00000000
+> Mar 24 21:25:10 xen kernel: [  241.486031]  ffff88006bcb6540 0000000000000086 ffff880000000001 ffff88006981c380
+> Mar 24 21:25:10 xen kernel: [  241.489694]  0000000000013700 ffff88006be5bfd8 ffff88006be5bfd8 0000000000013700
+> Mar 24 21:25:10 xen kernel: [  241.493301]  ffff88006bcb6540 ffff88006be5a010 ffff88006bcb6540 000000016be5a000
+> Mar 24 21:25:10 xen kernel: [  241.496766] Call Trace:
+> Mar 24 21:25:10 xen kernel: [  241.500145]  [<ffffffff81321c4a>] ? __mutex_lock_common+0x127/0x193
+> Mar 24 21:25:10 xen kernel: [  241.503630]  [<ffffffff81321d82>] ? mutex_lock+0x1a/0x33
+> Mar 24 21:25:10 xen kernel: [  241.507145]  [<ffffffffa09dd155>] ? cx8802_request_acquire+0x66/0xc6 [cx8802]
+> Mar 24 21:25:10 xen kernel: [  241.510699]  [<ffffffffa0aab7f2>] ? mpeg_open+0x7a/0x1fc [cx88_blackbird]
+> Mar 24 21:25:10 xen kernel: [  241.514279]  [<ffffffff8123bfb6>] ? kobj_lookup+0x139/0x173
+> Mar 24 21:25:10 xen kernel: [  241.517856]  [<ffffffffa062d5fd>] ? v4l2_open+0xb3/0xdf [videodev]
