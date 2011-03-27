@@ -1,52 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab1C0Lwt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 07:52:49 -0400
-Received: from wmsmtp2.cogeco.ca ([216.221.81.192]:57884 "EHLO
-	wmipb02.cogeco.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753299Ab1C0Lws convert rfc822-to-8bit (ORCPT
+	id S1753419Ab1C0LzK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 07:55:10 -0400
+Received: from relay.parallels.com ([195.214.232.42]:53492 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753295Ab1C0LzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 07:52:48 -0400
-X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Mar 2011 07:52:48 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EACQij03AqMjP/2dsb2JhbAClA1x3tzeJEIVpBIx3g26GAAE
-X-IronPort-AV: E=Sophos;i="4.63,250,1299474000"; 
-   d="scan'208";a="663927"
-X-SBRS: None
-From: System Administrator <accupdate00@w.cn>
-Reply-to: System Administrator <accupdate00@w.cn>
-Subject: Tisztelt Felhaszn=?ISO-8859-1?B?4WzzIQ==?=
-X-Mailer: Cogeco Webmail - complaints to abuse@cogeco.ca ( 175.100.83.29 - sshapton )
-X-Originating-IP: 175.100.83.29
-Date: Sun, 27 Mar 2011 00:43:02 -1100
-X-Priority: 3 (Normal)
-Message-id: <4d8f22c6.14f.567a.3048@cogeco.ca>
+	Sun, 27 Mar 2011 07:55:09 -0400
+Subject: [PATCH] initcall: add config option for compiling initcall_debug
+To: <linux-kernel@vger.kernel.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+Date: Sun, 27 Mar 2011 15:55:06 +0400
+Message-ID: <20110327115506.14008.17733.stgit@localhost6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tisztelt Felhasználó!
+Add bool config option CONFIG_INITCALL_DEBUG for compiling initcalls debuging,
+make it on by default to keep current behaviour.
 
-Az Ön postaláda mérete elérte a tárolási határérték, amely 20 GB-os által meghatározott a
-rendszergazda, akkor a jelenleg futó 20.9GB, lehet, hogy nem tudja fogadni néhány új e-mail, amíg újra
-érvényesíti a postafiók.
+With CONFIG_INITCALL_DEBUG=n bloat-o-meter shows:
 
-Ha újra érvényesíti a postafiók kérjük, kattintson az alábbi linkre:
+add/remove: 0/7 grow/shrink: 3/10 up/down: 88/-1448 (-1360)
+function                                     old     new   delta
+device_resume                                350     404     +54
+__device_suspend                             331     363     +32
+device_resume_noirq                          230     232      +2
+kernel_init                                  355     354      -1
+initcall_debug                                 4       -      -4
+__param_str_initcall_debug                    15       -     -15
+dpm_suspend                                  431     415     -16
+syscore_suspend                              280     250     -30
+syscore_shutdown                             123      93     -30
+__param_initcall_debug                        32       -     -32
+syscore_resume                               215     173     -42
+static.initcall_debug_start                   71       -     -71
+static.initcall_debug_report                 102       -    -102
+legacy_resume                                129       -    -129
+async_synchronize_cookie_domain              286     152    -134
+legacy_suspend                               135       -    -135
+async_run_entry_fn                           348     188    -160
+do_one_initcall                              364     197    -167
+pm_op                                        536     366    -170
+pm_noirq_op                                  576     366    -210
 
-http://systemupgrad.admin/mail
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ Documentation/kernel-parameters.txt |    2 +-
+ include/linux/init.h                |    4 ++++
+ init/main.c                         |    2 ++
+ kernel/async.c                      |    4 +---
+ lib/Kconfig.debug                   |    7 +++++++
+ 5 files changed, 15 insertions(+), 4 deletions(-)
 
-Megjegyzés: Ha a fenti link nem m&#369;ködik, kérjük küldje az alábbi információkat a rendszergazda
-e-mail cím: accupdate00@w.cn
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index c357a31..ea3843a 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -970,7 +970,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 	initcall_debug	[KNL] Trace initcalls as they are executed.  Useful
+ 			for working out where the kernel is dying during
+-			startup.
++			startup. This depend on CONFIG_INITCALL_DEBUG option.
+ 
+ 	initrd=		[BOOT] Specify the location of the initial ramdisk
+ 
+diff --git a/include/linux/init.h b/include/linux/init.h
+index 577671c..e2005ab 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -156,7 +156,11 @@ void prepare_namespace(void);
+ 
+ extern void (*late_time_init)(void);
+ 
++#ifdef CONFIG_INITCALL_DEBUG
+ extern int initcall_debug;
++#else
++# define initcall_debug	0
++#endif
+ 
+ #endif
+   
+diff --git a/init/main.c b/init/main.c
+index 4a9479e..0902999 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -636,8 +636,10 @@ static void __init do_ctors(void)
+ #endif
+ }
+ 
++#ifdef CONFIG_INITCALL_DEBUG
+ int initcall_debug;
+ core_param(initcall_debug, initcall_debug, bool, 0644);
++#endif
+ 
+ static char msgbuf[64];
+ 
+diff --git a/kernel/async.c b/kernel/async.c
+index 3d8220a..8801e1e 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -48,6 +48,7 @@ asynchronous and synchronous parts of the kernel.
+ 
+ */
+ 
++#include <linux/init.h>
+ #include <linux/async.h>
+ #include <linux/module.h>
+ #include <linux/wait.h>
+@@ -77,9 +78,6 @@ static DECLARE_WAIT_QUEUE_HEAD(async_done);
+ 
+ static atomic_t entry_count;
+ 
+-extern int initcall_debug;
+-
+-
+ /*
+  * MUST be called with the lock held!
+  */
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index df9234c..ebc1357 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -807,6 +807,13 @@ config DEBUG_CREDENTIALS
+ 
+ 	  If unsure, say N.
+ 
++config INITCALL_DEBUG
++	bool "Debug kernel initcalls"
++	default y
++	help
++	  This build option allow you trace initcalls after
++	  adding "initcall_debug" to kernel command line.
++
+ #
+ # Select this config option from the architecture Kconfig, if it
+ # it is preferred to always offer frame pointers as a config
 
-Utónév :..............
-Vezetéknév :...............
-E-mail :..................
-Felhasználói név :..............
-Jelszó :................
-
-Köszönöm
-Rendszergazda
