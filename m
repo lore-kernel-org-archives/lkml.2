@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab1C0XdA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 19:33:00 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46154 "EHLO ogre.sisk.pl"
+	id S1753193Ab1C0Xda (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 19:33:30 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46161 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752884Ab1C0Xc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 19:32:56 -0400
+	id S1752929Ab1C0Xc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 19:32:58 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/7] ARM / PXA: Use struct syscore_ops for "core" power management
-Date: Mon, 28 Mar 2011 01:29:13 +0200
+Subject: [PATCH 6/7] ARM / Samsung: Use struct syscore_ops for "core" power management
+Date: Mon, 28 Mar 2011 01:29:49 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
 Cc: Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
         Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
@@ -22,7 +22,7 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103280129.14023.rjw@sisk.pl>
+Message-Id: <201103280129.50192.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,1229 +30,1163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
 Replace sysdev classes and struct sys_device objects used for "core"
-power management by the PXA platform code with struct syscore_ops
-objects that are simpler.
+power management by Samsung platforms with struct syscore_ops objects
+that are simpler.
 
-This reduces the code size and the kernel memory footprint.  It also
-is necessary for removing sysdevs entirely from the kernel in the
-future.
+This generally reduces the code size and the kernel memory footprint.
+It also is necessary for removing sysdevs entirely from the kernel in
+the future.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/mach-pxa/balloon3.c              |    1 
- arch/arm/mach-pxa/clock-pxa2xx.c          |   18 ++----------
- arch/arm/mach-pxa/clock-pxa3xx.c          |   17 ++---------
- arch/arm/mach-pxa/clock.h                 |    7 ++--
- arch/arm/mach-pxa/cm-x270.c               |    1 
- arch/arm/mach-pxa/cm-x2xx.c               |   23 ++++------------
- arch/arm/mach-pxa/colibri-evalboard.c     |    1 
- arch/arm/mach-pxa/colibri-pxa270-income.c |    1 
- arch/arm/mach-pxa/colibri-pxa270.c        |    1 
- arch/arm/mach-pxa/generic.h               |    8 ++---
- arch/arm/mach-pxa/irq.c                   |   17 ++---------
- arch/arm/mach-pxa/lpd270.c                |   20 ++++---------
- arch/arm/mach-pxa/lubbock.c               |   21 ++++----------
- arch/arm/mach-pxa/mainstone.c             |   22 ++++-----------
- arch/arm/mach-pxa/mfp-pxa2xx.c            |   12 +++-----
- arch/arm/mach-pxa/mfp-pxa3xx.c            |   21 +++-----------
- arch/arm/mach-pxa/mioa701.c               |   43 +++++-------------------------
- arch/arm/mach-pxa/palmld.c                |    1 
- arch/arm/mach-pxa/palmtreo.c              |    1 
- arch/arm/mach-pxa/palmz72.c               |   24 +++++-----------
- arch/arm/mach-pxa/pxa25x.c                |   25 ++++-------------
- arch/arm/mach-pxa/pxa27x.c                |   25 ++++-------------
- arch/arm/mach-pxa/pxa3xx.c                |   25 ++++-------------
- arch/arm/mach-pxa/pxa95x.c                |   20 ++-----------
- arch/arm/mach-pxa/raumfeld.c              |    1 
- arch/arm/mach-pxa/smemc.c                 |   29 ++++----------------
- arch/arm/mach-pxa/trizeps4.c              |    1 
- arch/arm/mach-pxa/viper.c                 |   12 ++++----
- arch/arm/mach-pxa/vpac270.c               |    1 
- arch/arm/plat-pxa/gpio.c                  |   17 ++---------
- arch/arm/plat-pxa/mfp.c                   |    1 
- 31 files changed, 110 insertions(+), 307 deletions(-)
+ arch/arm/mach-exynos4/pm.c               |   45 ++++++++++++--------
+ arch/arm/mach-s3c2410/irq.c              |   30 -------------
+ arch/arm/mach-s3c2410/mach-bast.c        |   17 ++-----
+ arch/arm/mach-s3c2410/pm.c               |   13 ++---
+ arch/arm/mach-s3c2410/s3c2410.c          |    5 ++
+ arch/arm/mach-s3c2412/irq.c              |    2 
+ arch/arm/mach-s3c2412/mach-jive.c        |   19 ++------
+ arch/arm/mach-s3c2412/pm.c               |   27 ++++++------
+ arch/arm/mach-s3c2412/s3c2412.c          |    4 +
+ arch/arm/mach-s3c2416/irq.c              |    2 
+ arch/arm/mach-s3c2416/pm.c               |   27 +++++-------
+ arch/arm/mach-s3c2416/s3c2416.c          |    5 ++
+ arch/arm/mach-s3c2440/mach-osiris.c      |   18 ++------
+ arch/arm/mach-s3c2440/s3c2440.c          |    8 +++
+ arch/arm/mach-s3c2440/s3c2442.c          |    6 ++
+ arch/arm/mach-s3c2440/s3c244x-irq.c      |    4 -
+ arch/arm/mach-s3c2440/s3c244x.c          |   62 ++++++++++++++--------------
+ arch/arm/mach-s3c64xx/irq-pm.c           |   18 ++++----
+ arch/arm/mach-s5pv210/pm.c               |   25 +++++++----
+ arch/arm/plat-s3c24xx/dma.c              |   68 +++++++++++--------------------
+ arch/arm/plat-s3c24xx/irq-pm.c           |    7 ---
+ arch/arm/plat-s5p/irq-pm.c               |    7 ---
+ arch/arm/plat-samsung/include/plat/cpu.h |    6 ++
+ arch/arm/plat-samsung/include/plat/pm.h  |    6 +-
+ 24 files changed, 203 insertions(+), 228 deletions(-)
 
-Index: linux-2.6/arch/arm/plat-pxa/gpio.c
+Index: linux-2.6/arch/arm/plat-samsung/include/plat/pm.h
 ===================================================================
---- linux-2.6.orig/arch/arm/plat-pxa/gpio.c
-+++ linux-2.6/arch/arm/plat-pxa/gpio.c
-@@ -15,7 +15,7 @@
+--- linux-2.6.orig/arch/arm/plat-samsung/include/plat/pm.h
++++ linux-2.6/arch/arm/plat-samsung/include/plat/pm.h
+@@ -103,14 +103,16 @@ extern void s3c_pm_do_restore_core(struc
+ 
+ #ifdef CONFIG_PM
+ extern int s3c_irqext_wake(struct irq_data *data, unsigned int state);
+-extern int s3c24xx_irq_suspend(struct sys_device *dev, pm_message_t state);
+-extern int s3c24xx_irq_resume(struct sys_device *dev);
++extern int s3c24xx_irq_suspend(void);
++extern void s3c24xx_irq_resume(void);
+ #else
+ #define s3c_irqext_wake NULL
+ #define s3c24xx_irq_suspend NULL
+ #define s3c24xx_irq_resume  NULL
+ #endif
+ 
++extern struct syscore_ops s3c24xx_irq_syscore_ops;
++
+ /* PM debug functions */
+ 
+ #ifdef CONFIG_SAMSUNG_PM_DEBUG
+Index: linux-2.6/arch/arm/plat-s5p/irq-pm.c
+===================================================================
+--- linux-2.6.orig/arch/arm/plat-s5p/irq-pm.c
++++ linux-2.6/arch/arm/plat-s5p/irq-pm.c
+@@ -16,7 +16,6 @@
  #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
+-#include <linux/sysdev.h>
+ 
+ #include <plat/cpu.h>
+ #include <plat/irqs.h>
+@@ -77,17 +76,15 @@ static struct sleep_save eint_save[] = {
+ 	SAVE_ITEM(S5P_EINT_MASK(3)),
+ };
+ 
+-int s3c24xx_irq_suspend(struct sys_device *dev, pm_message_t state)
++int s3c24xx_irq_suspend(void)
+ {
+ 	s3c_pm_do_save(eint_save, ARRAY_SIZE(eint_save));
+ 
+ 	return 0;
+ }
+ 
+-int s3c24xx_irq_resume(struct sys_device *dev)
++void s3c24xx_irq_resume(void)
+ {
+ 	s3c_pm_do_restore(eint_save, ARRAY_SIZE(eint_save));
+-
+-	return 0;
+ }
+ 
+Index: linux-2.6/arch/arm/plat-s3c24xx/irq-pm.c
+===================================================================
+--- linux-2.6.orig/arch/arm/plat-s3c24xx/irq-pm.c
++++ linux-2.6/arch/arm/plat-s3c24xx/irq-pm.c
+@@ -14,7 +14,6 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
+-#include <linux/sysdev.h>
  #include <linux/irq.h>
+ 
+ #include <plat/cpu.h>
+@@ -65,7 +64,7 @@ static unsigned long save_extint[3];
+ static unsigned long save_eintflt[4];
+ static unsigned long save_eintmask;
+ 
+-int s3c24xx_irq_suspend(struct sys_device *dev, pm_message_t state)
++int s3c24xx_irq_suspend(void)
+ {
+ 	unsigned int i;
+ 
+@@ -81,7 +80,7 @@ int s3c24xx_irq_suspend(struct sys_devic
+ 	return 0;
+ }
+ 
+-int s3c24xx_irq_resume(struct sys_device *dev)
++void s3c24xx_irq_resume(void)
+ {
+ 	unsigned int i;
+ 
+@@ -93,6 +92,4 @@ int s3c24xx_irq_resume(struct sys_device
+ 
+ 	s3c_pm_do_restore(irq_save, ARRAY_SIZE(irq_save));
+ 	__raw_writel(save_eintmask, S3C24XX_EINTMASK);
+-
+-	return 0;
+ }
+Index: linux-2.6/arch/arm/mach-s3c2410/irq.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2410/irq.c
++++ linux-2.6/arch/arm/mach-s3c2410/irq.c
+@@ -23,38 +23,12 @@
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
+ #include <linux/ioport.h>
+-#include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ 
+ #include <plat/cpu.h>
+ #include <plat/pm.h>
+ 
+-static int s3c2410_irq_add(struct sys_device *sysdev)
+-{
+-	return 0;
+-}
+-
+-static struct sysdev_driver s3c2410_irq_driver = {
+-	.add		= s3c2410_irq_add,
++struct syscore_ops s3c24xx_irq_syscore_ops = {
+ 	.suspend	= s3c24xx_irq_suspend,
+ 	.resume		= s3c24xx_irq_resume,
+ };
+-
+-static int __init s3c2410_irq_init(void)
+-{
+-	return sysdev_driver_register(&s3c2410_sysclass, &s3c2410_irq_driver);
+-}
+-
+-arch_initcall(s3c2410_irq_init);
+-
+-static struct sysdev_driver s3c2410a_irq_driver = {
+-	.add		= s3c2410_irq_add,
+-	.suspend	= s3c24xx_irq_suspend,
+-	.resume		= s3c24xx_irq_resume,
+-};
+-
+-static int __init s3c2410a_irq_init(void)
+-{
+-	return sysdev_driver_register(&s3c2410a_sysclass, &s3c2410a_irq_driver);
+-}
+-
+-arch_initcall(s3c2410a_irq_init);
+Index: linux-2.6/arch/arm/mach-s3c2410/pm.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2410/pm.c
++++ linux-2.6/arch/arm/mach-s3c2410/pm.c
+@@ -25,6 +25,7 @@
+ #include <linux/errno.h>
+ #include <linux/time.h>
+ #include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/gpio.h>
  #include <linux/io.h>
+ 
+@@ -92,7 +93,7 @@ static void s3c2410_pm_prepare(void)
+ 	}
+ }
+ 
+-static int s3c2410_pm_resume(struct sys_device *dev)
++static void s3c2410_pm_resume(void)
+ {
+ 	unsigned long tmp;
+ 
+@@ -104,10 +105,12 @@ static int s3c2410_pm_resume(struct sys_
+ 
+ 	if ( machine_is_aml_m5900() )
+ 		s3c2410_gpio_setpin(S3C2410_GPF(2), 0);
+-
+-	return 0;
+ }
+ 
++struct syscore_ops s3c2410_pm_syscore_ops = {
++	.resume		= s3c2410_pm_resume,
++};
++
+ static int s3c2410_pm_add(struct sys_device *dev)
+ {
+ 	pm_cpu_prep = s3c2410_pm_prepare;
+@@ -119,7 +122,6 @@ static int s3c2410_pm_add(struct sys_dev
+ #if defined(CONFIG_CPU_S3C2410)
+ static struct sysdev_driver s3c2410_pm_driver = {
+ 	.add		= s3c2410_pm_add,
+-	.resume		= s3c2410_pm_resume,
+ };
+ 
+ /* register ourselves */
+@@ -133,7 +135,6 @@ arch_initcall(s3c2410_pm_drvinit);
+ 
+ static struct sysdev_driver s3c2410a_pm_driver = {
+ 	.add		= s3c2410_pm_add,
+-	.resume		= s3c2410_pm_resume,
+ };
+ 
+ static int __init s3c2410a_pm_drvinit(void)
+@@ -147,7 +148,6 @@ arch_initcall(s3c2410a_pm_drvinit);
+ #if defined(CONFIG_CPU_S3C2440)
+ static struct sysdev_driver s3c2440_pm_driver = {
+ 	.add		= s3c2410_pm_add,
+-	.resume		= s3c2410_pm_resume,
+ };
+ 
+ static int __init s3c2440_pm_drvinit(void)
+@@ -161,7 +161,6 @@ arch_initcall(s3c2440_pm_drvinit);
+ #if defined(CONFIG_CPU_S3C2442)
+ static struct sysdev_driver s3c2442_pm_driver = {
+ 	.add		= s3c2410_pm_add,
+-	.resume		= s3c2410_pm_resume,
+ };
+ 
+ static int __init s3c2442_pm_drvinit(void)
+Index: linux-2.6/arch/arm/plat-samsung/include/plat/cpu.h
+===================================================================
+--- linux-2.6.orig/arch/arm/plat-samsung/include/plat/cpu.h
++++ linux-2.6/arch/arm/plat-samsung/include/plat/cpu.h
+@@ -68,6 +68,12 @@ extern void s3c24xx_init_uartdevs(char *
+ struct sys_timer;
+ extern struct sys_timer s3c24xx_timer;
+ 
++extern struct syscore_ops s3c2410_pm_syscore_ops;
++extern struct syscore_ops s3c2412_pm_syscore_ops;
++extern struct syscore_ops s3c2416_pm_syscore_ops;
++extern struct syscore_ops s3c244x_pm_syscore_ops;
++extern struct syscore_ops s3c64xx_irq_syscore_ops;
++
+ /* system device classes */
+ 
+ extern struct sysdev_class s3c2410_sysclass;
+Index: linux-2.6/arch/arm/mach-s3c2410/s3c2410.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2410/s3c2410.c
++++ linux-2.6/arch/arm/mach-s3c2410/s3c2410.c
+@@ -19,6 +19,7 @@
+ #include <linux/gpio.h>
+ #include <linux/clk.h>
+ #include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/serial_core.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+@@ -40,6 +41,7 @@
+ #include <plat/devs.h>
+ #include <plat/clock.h>
+ #include <plat/pll.h>
++#include <plat/pm.h>
+ 
+ #include <plat/gpio-core.h>
+ #include <plat/gpio-cfg.h>
+@@ -168,6 +170,9 @@ int __init s3c2410_init(void)
+ {
+ 	printk("S3C2410: Initialising architecture\n");
+ 
++	register_syscore_ops(&s3c2410_pm_syscore_ops);
++	register_syscore_ops(&s3c24xx_irq_syscore_ops);
++
+ 	return sysdev_register(&s3c2410_sysdev);
+ }
+ 
+Index: linux-2.6/arch/arm/mach-s3c2412/irq.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2412/irq.c
++++ linux-2.6/arch/arm/mach-s3c2412/irq.c
+@@ -202,8 +202,6 @@ static int s3c2412_irq_add(struct sys_de
+ 
+ static struct sysdev_driver s3c2412_irq_driver = {
+ 	.add		= s3c2412_irq_add,
+-	.suspend	= s3c24xx_irq_suspend,
+-	.resume		= s3c24xx_irq_resume,
+ };
+ 
+ static int s3c2412_irq_init(void)
+Index: linux-2.6/arch/arm/mach-s3c2412/pm.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2412/pm.c
++++ linux-2.6/arch/arm/mach-s3c2412/pm.c
+@@ -17,6 +17,7 @@
+ #include <linux/timer.h>
+ #include <linux/init.h>
+ #include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ 
+@@ -86,13 +87,24 @@ static struct sleep_save s3c2412_sleep[]
+ 	SAVE_ITEM(S3C2413_GPJSLPCON),
+ };
+ 
+-static int s3c2412_pm_suspend(struct sys_device *dev, pm_message_t state)
++static struct sysdev_driver s3c2412_pm_driver = {
++	.add		= s3c2412_pm_add,
++};
++
++static __init int s3c2412_pm_init(void)
++{
++	return sysdev_driver_register(&s3c2412_sysclass, &s3c2412_pm_driver);
++}
++
++arch_initcall(s3c2412_pm_init);
++
++static int s3c2412_pm_suspend(void)
+ {
+ 	s3c_pm_do_save(s3c2412_sleep, ARRAY_SIZE(s3c2412_sleep));
+ 	return 0;
+ }
+ 
+-static int s3c2412_pm_resume(struct sys_device *dev)
++static void s3c2412_pm_resume(void)
+ {
+ 	unsigned long tmp;
+ 
+@@ -102,18 +114,9 @@ static int s3c2412_pm_resume(struct sys_
+ 	__raw_writel(tmp, S3C2412_PWRCFG);
+ 
+ 	s3c_pm_do_restore(s3c2412_sleep, ARRAY_SIZE(s3c2412_sleep));
+-	return 0;
+ }
+ 
+-static struct sysdev_driver s3c2412_pm_driver = {
+-	.add		= s3c2412_pm_add,
++struct syscore_ops s3c2412_pm_syscore_ops = {
+ 	.suspend	= s3c2412_pm_suspend,
+ 	.resume		= s3c2412_pm_resume,
+ };
+-
+-static __init int s3c2412_pm_init(void)
+-{
+-	return sysdev_driver_register(&s3c2412_sysclass, &s3c2412_pm_driver);
+-}
+-
+-arch_initcall(s3c2412_pm_init);
+Index: linux-2.6/arch/arm/mach-s3c2412/s3c2412.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2412/s3c2412.c
++++ linux-2.6/arch/arm/mach-s3c2412/s3c2412.c
+@@ -19,6 +19,7 @@
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/serial_core.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+@@ -244,5 +245,8 @@ int __init s3c2412_init(void)
+ {
+ 	printk("S3C2412: Initialising architecture\n");
+ 
++	register_syscore_ops(&s3c2412_pm_syscore_ops);
++	register_syscore_ops(&s3c24xx_irq_syscore_ops);
++
+ 	return sysdev_register(&s3c2412_sysdev);
+ }
+Index: linux-2.6/arch/arm/mach-s3c2416/irq.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2416/irq.c
++++ linux-2.6/arch/arm/mach-s3c2416/irq.c
+@@ -238,8 +238,6 @@ static int __init s3c2416_irq_add(struct
+ 
+ static struct sysdev_driver s3c2416_irq_driver = {
+ 	.add		= s3c2416_irq_add,
+-	.suspend	= s3c24xx_irq_suspend,
+-	.resume		= s3c24xx_irq_resume,
+ };
+ 
+ static int __init s3c2416_irq_init(void)
+Index: linux-2.6/arch/arm/mach-s3c2416/pm.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2416/pm.c
++++ linux-2.6/arch/arm/mach-s3c2416/pm.c
+@@ -11,6 +11,7 @@
+ */
+ 
+ #include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/io.h>
+ 
+ #include <asm/cacheflush.h>
+@@ -55,30 +56,26 @@ static int s3c2416_pm_add(struct sys_dev
+ 	return 0;
+ }
+ 
+-static int s3c2416_pm_suspend(struct sys_device *dev, pm_message_t state)
++static struct sysdev_driver s3c2416_pm_driver = {
++	.add		= s3c2416_pm_add,
++};
++
++static __init int s3c2416_pm_init(void)
+ {
+-	return 0;
++	return sysdev_driver_register(&s3c2416_sysclass, &s3c2416_pm_driver);
+ }
+ 
+-static int s3c2416_pm_resume(struct sys_device *dev)
++arch_initcall(s3c2416_pm_init);
++
++
++static void s3c2416_pm_resume(void)
+ {
+ 	/* unset the return-from-sleep amd inform flags */
+ 	__raw_writel(0x0, S3C2443_PWRMODE);
+ 	__raw_writel(0x0, S3C2412_INFORM0);
+ 	__raw_writel(0x0, S3C2412_INFORM1);
+-
+-	return 0;
+ }
+ 
+-static struct sysdev_driver s3c2416_pm_driver = {
+-	.add		= s3c2416_pm_add,
+-	.suspend	= s3c2416_pm_suspend,
++struct syscore_ops s3c2416_pm_syscore_ops = {
+ 	.resume		= s3c2416_pm_resume,
+ };
+-
+-static __init int s3c2416_pm_init(void)
+-{
+-	return sysdev_driver_register(&s3c2416_sysclass, &s3c2416_pm_driver);
+-}
+-
+-arch_initcall(s3c2416_pm_init);
+Index: linux-2.6/arch/arm/mach-s3c2416/s3c2416.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2416/s3c2416.c
++++ linux-2.6/arch/arm/mach-s3c2416/s3c2416.c
+@@ -32,6 +32,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/serial_core.h>
+ #include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ 
+@@ -54,6 +55,7 @@
+ #include <plat/devs.h>
+ #include <plat/cpu.h>
+ #include <plat/sdhci.h>
++#include <plat/pm.h>
+ 
+ #include <plat/iic-core.h>
+ #include <plat/fb-core.h>
+@@ -95,6 +97,9 @@ int __init s3c2416_init(void)
+ 
+ 	s3c_fb_setname("s3c2443-fb");
+ 
++	register_syscore_ops(&s3c2416_pm_syscore_ops);
++	register_syscore_ops(&s3c24xx_irq_syscore_ops);
++
+ 	return sysdev_register(&s3c2416_sysdev);
+ }
+ 
+Index: linux-2.6/arch/arm/mach-s3c2440/s3c244x-irq.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2440/s3c244x-irq.c
++++ linux-2.6/arch/arm/mach-s3c2440/s3c244x-irq.c
+@@ -116,8 +116,6 @@ static int s3c244x_irq_add(struct sys_de
+ 
+ static struct sysdev_driver s3c2440_irq_driver = {
+ 	.add		= s3c244x_irq_add,
+-	.suspend	= s3c24xx_irq_suspend,
+-	.resume		= s3c24xx_irq_resume,
+ };
+ 
+ static int s3c2440_irq_init(void)
+@@ -129,8 +127,6 @@ arch_initcall(s3c2440_irq_init);
+ 
+ static struct sysdev_driver s3c2442_irq_driver = {
+ 	.add		= s3c244x_irq_add,
+-	.suspend	= s3c24xx_irq_suspend,
+-	.resume		= s3c24xx_irq_resume,
+ };
+ 
+ 
+Index: linux-2.6/arch/arm/mach-s3c2440/s3c244x.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2440/s3c244x.c
++++ linux-2.6/arch/arm/mach-s3c2440/s3c244x.c
+@@ -19,6 +19,7 @@
+ #include <linux/serial_core.h>
+ #include <linux/platform_device.h>
+ #include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ 
+@@ -134,45 +135,14 @@ void __init s3c244x_init_clocks(int xtal
+ 	s3c2410_baseclk_add();
+ }
+ 
+-#ifdef CONFIG_PM
+-
+-static struct sleep_save s3c244x_sleep[] = {
+-	SAVE_ITEM(S3C2440_DSC0),
+-	SAVE_ITEM(S3C2440_DSC1),
+-	SAVE_ITEM(S3C2440_GPJDAT),
+-	SAVE_ITEM(S3C2440_GPJCON),
+-	SAVE_ITEM(S3C2440_GPJUP)
+-};
+-
+-static int s3c244x_suspend(struct sys_device *dev, pm_message_t state)
+-{
+-	s3c_pm_do_save(s3c244x_sleep, ARRAY_SIZE(s3c244x_sleep));
+-	return 0;
+-}
+-
+-static int s3c244x_resume(struct sys_device *dev)
+-{
+-	s3c_pm_do_restore(s3c244x_sleep, ARRAY_SIZE(s3c244x_sleep));
+-	return 0;
+-}
+-
+-#else
+-#define s3c244x_suspend NULL
+-#define s3c244x_resume  NULL
+-#endif
+-
+ /* Since the S3C2442 and S3C2440 share  items, put both sysclasses here */
+ 
+ struct sysdev_class s3c2440_sysclass = {
+ 	.name		= "s3c2440-core",
+-	.suspend	= s3c244x_suspend,
+-	.resume		= s3c244x_resume
+ };
+ 
+ struct sysdev_class s3c2442_sysclass = {
+ 	.name		= "s3c2442-core",
+-	.suspend	= s3c244x_suspend,
+-	.resume		= s3c244x_resume
+ };
+ 
+ /* need to register class before we actually register the device, and
+@@ -194,3 +164,33 @@ static int __init s3c2442_core_init(void
+ }
+ 
+ core_initcall(s3c2442_core_init);
++
++
++#ifdef CONFIG_PM
++static struct sleep_save s3c244x_sleep[] = {
++	SAVE_ITEM(S3C2440_DSC0),
++	SAVE_ITEM(S3C2440_DSC1),
++	SAVE_ITEM(S3C2440_GPJDAT),
++	SAVE_ITEM(S3C2440_GPJCON),
++	SAVE_ITEM(S3C2440_GPJUP)
++};
++
++static int s3c244x_suspend(void)
++{
++	s3c_pm_do_save(s3c244x_sleep, ARRAY_SIZE(s3c244x_sleep));
++	return 0;
++}
++
++static void s3c244x_resume(void)
++{
++	s3c_pm_do_restore(s3c244x_sleep, ARRAY_SIZE(s3c244x_sleep));
++}
++#else
++#define s3c244x_suspend NULL
++#define s3c244x_resume  NULL
++#endif
++
++struct syscore_ops s3c244x_pm_syscore_ops = {
++	.suspend	= s3c244x_suspend,
++	.resume		= s3c244x_resume,
++};
+Index: linux-2.6/arch/arm/mach-s3c2440/s3c2440.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2440/s3c2440.c
++++ linux-2.6/arch/arm/mach-s3c2440/s3c2440.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/serial_core.h>
+ #include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/gpio.h>
+ #include <linux/clk.h>
+ #include <linux/io.h>
+@@ -33,6 +34,7 @@
+ #include <plat/devs.h>
+ #include <plat/cpu.h>
+ #include <plat/s3c244x.h>
++#include <plat/pm.h>
+ 
+ #include <plat/gpio-core.h>
+ #include <plat/gpio-cfg.h>
+@@ -51,6 +53,12 @@ int __init s3c2440_init(void)
+ 	s3c_device_wdt.resource[1].start = IRQ_S3C2440_WDT;
+ 	s3c_device_wdt.resource[1].end   = IRQ_S3C2440_WDT;
+ 
++	/* register suspend/resume handlers */
++
++	register_syscore_ops(&s3c2410_pm_syscore_ops);
++	register_syscore_ops(&s3c244x_pm_syscore_ops);
++	register_syscore_ops(&s3c24xx_irq_syscore_ops);
++
+ 	/* register our system device for everything else */
+ 
+ 	return sysdev_register(&s3c2440_sysdev);
+Index: linux-2.6/arch/arm/mach-s3c2440/s3c2442.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2440/s3c2442.c
++++ linux-2.6/arch/arm/mach-s3c2440/s3c2442.c
+@@ -29,6 +29,7 @@
+ #include <linux/err.h>
+ #include <linux/device.h>
+ #include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/interrupt.h>
+ #include <linux/ioport.h>
+ #include <linux/mutex.h>
+@@ -45,6 +46,7 @@
+ #include <plat/clock.h>
+ #include <plat/cpu.h>
+ #include <plat/s3c244x.h>
++#include <plat/pm.h>
+ 
+ #include <plat/gpio-core.h>
+ #include <plat/gpio-cfg.h>
+@@ -167,6 +169,10 @@ int __init s3c2442_init(void)
+ {
+ 	printk("S3C2442: Initialising architecture\n");
+ 
++	register_syscore_ops(&s3c2410_pm_syscore_ops);
++	register_syscore_ops(&s3c244x_pm_syscore_ops);
++	register_syscore_ops(&s3c24xx_irq_syscore_ops);
++
+ 	return sysdev_register(&s3c2442_sysdev);
+ }
+ 
+Index: linux-2.6/arch/arm/mach-s3c64xx/irq-pm.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c64xx/irq-pm.c
++++ linux-2.6/arch/arm/mach-s3c64xx/irq-pm.c
+@@ -13,7 +13,7 @@
+  */
+ 
+ #include <linux/kernel.h>
+-#include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/interrupt.h>
+ #include <linux/serial_core.h>
+ #include <linux/irq.h>
+@@ -54,7 +54,7 @@ static struct irq_grp_save {
+ 
+ static u32 irq_uart_mask[CONFIG_SERIAL_SAMSUNG_UARTS];
+ 
+-static int s3c64xx_irq_pm_suspend(struct sys_device *dev, pm_message_t state)
++static int s3c64xx_irq_pm_suspend(void)
+ {
+ 	struct irq_grp_save *grp = eint_grp_save;
+ 	int i;
+@@ -75,7 +75,7 @@ static int s3c64xx_irq_pm_suspend(struct
+ 	return 0;
+ }
+ 
+-static int s3c64xx_irq_pm_resume(struct sys_device *dev)
++static void s3c64xx_irq_pm_resume(void)
+ {
+ 	struct irq_grp_save *grp = eint_grp_save;
+ 	int i;
+@@ -94,18 +94,18 @@ static int s3c64xx_irq_pm_resume(struct
+ 	}
+ 
+ 	S3C_PMDBG("%s: IRQ configuration restored\n", __func__);
+-	return 0;
+ }
+ 
+-static struct sysdev_driver s3c64xx_irq_driver = {
++struct syscore_ops s3c64xx_irq_syscore_ops = {
+ 	.suspend = s3c64xx_irq_pm_suspend,
+ 	.resume	 = s3c64xx_irq_pm_resume,
+ };
+ 
+-static int __init s3c64xx_irq_pm_init(void)
++static __init int s3c64xx_syscore_init(void)
+ {
+-	return sysdev_driver_register(&s3c64xx_sysclass, &s3c64xx_irq_driver);
+-}
++	register_syscore_ops(&s3c64xx_irq_syscore_ops);
+ 
+-arch_initcall(s3c64xx_irq_pm_init);
++	return 0;
++}
+ 
++core_initcall(s3c64xx_syscore_init);
+Index: linux-2.6/arch/arm/mach-s5pv210/pm.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s5pv210/pm.c
++++ linux-2.6/arch/arm/mach-s5pv210/pm.c
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/init.h>
+ #include <linux/suspend.h>
++#include <linux/syscore_ops.h>
+ #include <linux/io.h>
+ 
+ #include <plat/cpu.h>
+@@ -140,7 +141,17 @@ static int s5pv210_pm_add(struct sys_dev
+ 	return 0;
+ }
+ 
+-static int s5pv210_pm_resume(struct sys_device *dev)
++static struct sysdev_driver s5pv210_pm_driver = {
++	.add		= s5pv210_pm_add,
++};
++
++static __init int s5pv210_pm_drvinit(void)
++{
++	return sysdev_driver_register(&s5pv210_sysclass, &s5pv210_pm_driver);
++}
++arch_initcall(s5pv210_pm_drvinit);
++
++static void s5pv210_pm_resume(void)
+ {
+ 	u32 tmp;
+ 
+@@ -150,17 +161,15 @@ static int s5pv210_pm_resume(struct sys_
+ 	__raw_writel(tmp , S5P_OTHERS);
+ 
+ 	s3c_pm_do_restore_core(s5pv210_core_save, ARRAY_SIZE(s5pv210_core_save));
+-
+-	return 0;
+ }
+ 
+-static struct sysdev_driver s5pv210_pm_driver = {
+-	.add		= s5pv210_pm_add,
++static struct syscore_ops s5pv210_pm_syscore_ops = {
+ 	.resume		= s5pv210_pm_resume,
+ };
+ 
+-static __init int s5pv210_pm_drvinit(void)
++static __init int s5pv210_pm_syscore_init(void)
+ {
+-	return sysdev_driver_register(&s5pv210_sysclass, &s5pv210_pm_driver);
++	register_syscore_ops(&s5pv210_pm_syscore_ops);
++	return 0;
+ }
+-arch_initcall(s5pv210_pm_drvinit);
++arch_initcall(s5pv210_pm_syscore_init);
+Index: linux-2.6/arch/arm/mach-exynos4/pm.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-exynos4/pm.c
++++ linux-2.6/arch/arm/mach-exynos4/pm.c
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/init.h>
+ #include <linux/suspend.h>
++#include <linux/syscore_ops.h>
+ #include <linux/io.h>
+ 
+ #include <asm/cacheflush.h>
+@@ -372,7 +373,27 @@ void exynos4_scu_enable(void __iomem *sc
+ 	flush_cache_all();
+ }
+ 
+-static int exynos4_pm_resume(struct sys_device *dev)
++static struct sysdev_driver exynos4_pm_driver = {
++	.add		= exynos4_pm_add,
++};
++
++static __init int exynos4_pm_drvinit(void)
++{
++	unsigned int tmp;
++
++	s3c_pm_init();
++
++	/* All wakeup disable */
++
++	tmp = __raw_readl(S5P_WAKEUP_MASK);
++	tmp |= ((0xFF << 8) | (0x1F << 1));
++	__raw_writel(tmp, S5P_WAKEUP_MASK);
++
++	return sysdev_driver_register(&exynos4_sysclass, &exynos4_pm_driver);
++}
++arch_initcall(exynos4_pm_drvinit);
++
++static void exynos4_pm_resume(void)
+ {
+ 	/* For release retention */
+ 
+@@ -394,27 +415,15 @@ static int exynos4_pm_resume(struct sys_
+ 	/* enable L2X0*/
+ 	writel_relaxed(1, S5P_VA_L2CC + L2X0_CTRL);
+ #endif
+-
+-	return 0;
+ }
+ 
+-static struct sysdev_driver exynos4_pm_driver = {
+-	.add		= exynos4_pm_add,
++static struct syscore_ops exynos4_pm_syscore_ops = {
+ 	.resume		= exynos4_pm_resume,
+ };
+ 
+-static __init int exynos4_pm_drvinit(void)
++static __init int exynos4_pm_syscore_init(void)
+ {
+-	unsigned int tmp;
+-
+-	s3c_pm_init();
+-
+-	/* All wakeup disable */
+-
+-	tmp = __raw_readl(S5P_WAKEUP_MASK);
+-	tmp |= ((0xFF << 8) | (0x1F << 1));
+-	__raw_writel(tmp, S5P_WAKEUP_MASK);
+-
+-	return sysdev_driver_register(&exynos4_sysclass, &exynos4_pm_driver);
++	register_syscore_ops(&exynos4_pm_syscore_ops);
++	return 0;
+ }
+-arch_initcall(exynos4_pm_drvinit);
++arch_initcall(exynos4_pm_syscore_init);
+Index: linux-2.6/arch/arm/mach-s3c2410/mach-bast.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-s3c2410/mach-bast.c
++++ linux-2.6/arch/arm/mach-s3c2410/mach-bast.c
+@@ -17,7 +17,7 @@
+ #include <linux/timer.h>
+ #include <linux/init.h>
+ #include <linux/gpio.h>
+-#include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/serial_core.h>
+ #include <linux/platform_device.h>
+ #include <linux/dm9000.h>
+@@ -214,17 +214,16 @@ static struct s3c2410_uartcfg bast_uartc
+ /* NAND Flash on BAST board */
+ 
+ #ifdef CONFIG_PM
+-static int bast_pm_suspend(struct sys_device *sd, pm_message_t state)
++static int bast_pm_suspend(void)
+ {
+ 	/* ensure that an nRESET is not generated on resume. */
+ 	gpio_direction_output(S3C2410_GPA(21), 1);
+ 	return 0;
+ }
+ 
+-static int bast_pm_resume(struct sys_device *sd)
++static void bast_pm_resume(void)
+ {
+ 	s3c_gpio_cfgpin(S3C2410_GPA(21), S3C2410_GPA21_nRSTOUT);
+-	return 0;
+ }
+ 
+ #else
+@@ -232,16 +231,11 @@ static int bast_pm_resume(struct sys_dev
+ #define bast_pm_resume NULL
+ #endif
+ 
+-static struct sysdev_class bast_pm_sysclass = {
+-	.name		= "mach-bast",
++static struct syscore_ops bast_pm_syscore_ops = {
+ 	.suspend	= bast_pm_suspend,
+ 	.resume		= bast_pm_resume,
+ };
+ 
+-static struct sys_device bast_pm_sysdev = {
+-	.cls		= &bast_pm_sysclass,
+-};
+-
+ static int smartmedia_map[] = { 0 };
+ static int chip0_map[] = { 1 };
+ static int chip1_map[] = { 2 };
+@@ -642,8 +636,7 @@ static void __init bast_map_io(void)
+ 
+ static void __init bast_init(void)
+ {
+-	sysdev_class_register(&bast_pm_sysclass);
+-	sysdev_register(&bast_pm_sysdev);
++	register_syscore_ops(&bast_pm_syscore_ops);
+ 
+ 	s3c_i2c0_set_platdata(&bast_i2c_info);
+ 	s3c_nand_set_platdata(&bast_nand_info);
+Index: linux-2.6/arch/arm/plat-s3c24xx/dma.c
+===================================================================
+--- linux-2.6.orig/arch/arm/plat-s3c24xx/dma.c
++++ linux-2.6/arch/arm/plat-s3c24xx/dma.c
+@@ -22,7 +22,7 @@
+ #include <linux/sched.h>
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
 -#include <linux/sysdev.h>
 +#include <linux/syscore_ops.h>
  #include <linux/slab.h>
+ #include <linux/errno.h>
+ #include <linux/io.h>
+@@ -1195,19 +1195,12 @@ int s3c2410_dma_getposition(unsigned int
  
- #include <mach/gpio.h>
-@@ -295,7 +295,7 @@ void __init pxa_init_gpio(int mux_irq, i
- }
+ EXPORT_SYMBOL(s3c2410_dma_getposition);
+ 
+-static inline struct s3c2410_dma_chan *to_dma_chan(struct sys_device *dev)
+-{
+-	return container_of(dev, struct s3c2410_dma_chan, dev);
+-}
+-
+-/* system device class */
++/* system core operations */
  
  #ifdef CONFIG_PM
--static int pxa_gpio_suspend(struct sys_device *dev, pm_message_t state)
-+static int pxa_gpio_suspend(void)
- {
- 	struct pxa_gpio_chip *c;
- 	int gpio;
-@@ -312,7 +312,7 @@ static int pxa_gpio_suspend(struct sys_d
- 	return 0;
- }
  
--static int pxa_gpio_resume(struct sys_device *dev)
-+static void pxa_gpio_resume(void)
+-static int s3c2410_dma_suspend(struct sys_device *dev, pm_message_t state)
++static void s3c2410_dma_suspend_chan(s3c2410_dma_chan *cp)
  {
- 	struct pxa_gpio_chip *c;
- 	int gpio;
-@@ -326,22 +326,13 @@ static int pxa_gpio_resume(struct sys_de
- 		__raw_writel(c->saved_gfer, c->regbase + GFER_OFFSET);
- 		__raw_writel(c->saved_gpdr, c->regbase + GPDR_OFFSET);
+-	struct s3c2410_dma_chan *cp = to_dma_chan(dev);
+-
+ 	printk(KERN_DEBUG "suspending dma channel %d\n", cp->number);
+ 
+ 	if (dma_rdreg(cp, S3C2410_DMA_DMASKTRIG) & S3C2410_DMASKTRIG_ON) {
+@@ -1222,13 +1215,21 @@ static int s3c2410_dma_suspend(struct sy
+ 
+ 		s3c2410_dma_dostop(cp);
  	}
--	return 0;
- }
- #else
- #define pxa_gpio_suspend	NULL
- #define pxa_gpio_resume		NULL
- #endif
- 
--struct sysdev_class pxa_gpio_sysclass = {
--	.name		= "gpio",
-+struct syscore_ops pxa_gpio_syscore_ops = {
- 	.suspend	= pxa_gpio_suspend,
- 	.resume		= pxa_gpio_resume,
- };
--
--static int __init pxa_gpio_init(void)
--{
--	return sysdev_class_register(&pxa_gpio_sysclass);
--}
--
--core_initcall(pxa_gpio_init);
-Index: linux-2.6/arch/arm/mach-pxa/generic.h
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/generic.h
-+++ linux-2.6/arch/arm/mach-pxa/generic.h
-@@ -61,10 +61,10 @@ extern unsigned pxa3xx_get_clk_frequency
- #define pxa3xx_get_clk_frequency_khz(x)		(0)
- #endif
- 
--extern struct sysdev_class pxa_irq_sysclass;
--extern struct sysdev_class pxa_gpio_sysclass;
--extern struct sysdev_class pxa2xx_mfp_sysclass;
--extern struct sysdev_class pxa3xx_mfp_sysclass;
-+extern struct syscore_ops pxa_irq_syscore_ops;
-+extern struct syscore_ops pxa_gpio_syscore_ops;
-+extern struct syscore_ops pxa2xx_mfp_syscore_ops;
-+extern struct syscore_ops pxa3xx_mfp_syscore_ops;
- 
- void __init pxa_set_ffuart_info(void *info);
- void __init pxa_set_btuart_info(void *info);
-Index: linux-2.6/arch/arm/mach-pxa/pxa95x.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/pxa95x.c
-+++ linux-2.6/arch/arm/mach-pxa/pxa95x.c
-@@ -18,7 +18,7 @@
- #include <linux/i2c/pxa-i2c.h>
- #include <linux/irq.h>
- #include <linux/io.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- 
- #include <mach/hardware.h>
- #include <mach/gpio.h>
-@@ -260,16 +260,6 @@ static struct platform_device *devices[]
- 	&pxa27x_device_pwm1,
- };
- 
--static struct sys_device pxa95x_sysdev[] = {
--	{
--		.cls	= &pxa_irq_sysclass,
--	}, {
--		.cls	= &pxa_gpio_sysclass,
--	}, {
--		.cls	= &pxa3xx_clock_sysclass,
--	}
--};
--
- static int __init pxa95x_init(void)
- {
- 	int ret = 0, i;
-@@ -293,11 +283,9 @@ static int __init pxa95x_init(void)
- 		if ((ret = pxa_init_dma(IRQ_DMA, 32)))
- 			return ret;
- 
--		for (i = 0; i < ARRAY_SIZE(pxa95x_sysdev); i++) {
--			ret = sysdev_register(&pxa95x_sysdev[i]);
--			if (ret)
--				pr_err("failed to register sysdev[%d]\n", i);
--		}
-+		register_syscore_ops(&pxa_irq_syscore_ops);
-+		register_syscore_ops(&pxa_gpio_syscore_ops);
-+		register_syscore_ops(&pxa3xx_clock_syscore_ops);
- 
- 		ret = platform_add_devices(devices, ARRAY_SIZE(devices));
- 	}
-Index: linux-2.6/arch/arm/mach-pxa/clock-pxa3xx.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/clock-pxa3xx.c
-+++ linux-2.6/arch/arm/mach-pxa/clock-pxa3xx.c
-@@ -10,6 +10,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/io.h>
-+#include <linux/syscore_ops.h>
- 
- #include <mach/smemc.h>
- #include <mach/pxa3xx-regs.h>
-@@ -182,7 +183,7 @@ const struct clkops clk_pxa3xx_pout_ops
- static uint32_t cken[2];
- static uint32_t accr;
- 
--static int pxa3xx_clock_suspend(struct sys_device *d, pm_message_t state)
-+static int pxa3xx_clock_suspend(void)
- {
- 	cken[0] = CKENA;
- 	cken[1] = CKENB;
-@@ -190,28 +191,18 @@ static int pxa3xx_clock_suspend(struct s
- 	return 0;
- }
- 
--static int pxa3xx_clock_resume(struct sys_device *d)
-+static void pxa3xx_clock_resume(void)
- {
- 	ACCR = accr;
- 	CKENA = cken[0];
- 	CKENB = cken[1];
--	return 0;
- }
- #else
- #define pxa3xx_clock_suspend	NULL
- #define pxa3xx_clock_resume	NULL
- #endif
- 
--struct sysdev_class pxa3xx_clock_sysclass = {
--	.name		= "pxa3xx-clock",
-+struct syscore_ops pxa3xx_clock_syscore_ops = {
- 	.suspend	= pxa3xx_clock_suspend,
- 	.resume		= pxa3xx_clock_resume,
- };
--
--static int __init pxa3xx_clock_init(void)
--{
--	if (cpu_is_pxa3xx() || cpu_is_pxa95x())
--		return sysdev_class_register(&pxa3xx_clock_sysclass);
--	return 0;
--}
--postcore_initcall(pxa3xx_clock_init);
-Index: linux-2.6/arch/arm/mach-pxa/clock.h
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/clock.h
-+++ linux-2.6/arch/arm/mach-pxa/clock.h
-@@ -1,5 +1,5 @@
- #include <linux/clkdev.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- 
- struct clkops {
- 	void			(*enable)(struct clk *);
-@@ -54,7 +54,7 @@ extern const struct clkops clk_pxa2xx_ck
- void clk_pxa2xx_cken_enable(struct clk *clk);
- void clk_pxa2xx_cken_disable(struct clk *clk);
- 
--extern struct sysdev_class pxa2xx_clock_sysclass;
-+extern struct syscore_ops pxa2xx_clock_syscore_ops;
- 
- #if defined(CONFIG_PXA3xx) || defined(CONFIG_PXA95x)
- #define DEFINE_PXA3_CKEN(_name, _cken, _rate, _delay)	\
-@@ -74,5 +74,6 @@ extern const struct clkops clk_pxa3xx_sm
- extern void clk_pxa3xx_cken_enable(struct clk *);
- extern void clk_pxa3xx_cken_disable(struct clk *);
- 
--extern struct sysdev_class pxa3xx_clock_sysclass;
-+extern struct syscore_ops pxa3xx_clock_syscore_ops;
++}
 +
- #endif
-Index: linux-2.6/arch/arm/mach-pxa/irq.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/irq.c
-+++ linux-2.6/arch/arm/mach-pxa/irq.c
-@@ -15,7 +15,7 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/io.h>
- #include <linux/irq.h>
++static int s3c2410_dma_suspend(void)
++{
++	struct s3c2410_dma_chan *cp = s3c2410_chans;
++	int channel;
++
++	for (channel = 0; channel < dma_channels; cp++, channel++)
++		s3c2410_dma_suspend_chan(cp);
  
-@@ -183,7 +183,7 @@ void __init pxa_init_irq(int irq_nr, set
- static unsigned long saved_icmr[MAX_INTERNAL_IRQS/32];
- static unsigned long saved_ipr[MAX_INTERNAL_IRQS];
- 
--static int pxa_irq_suspend(struct sys_device *dev, pm_message_t state)
-+static int pxa_irq_suspend(void)
- {
- 	int i;
- 
-@@ -202,7 +202,7 @@ static int pxa_irq_suspend(struct sys_de
  	return 0;
  }
  
--static int pxa_irq_resume(struct sys_device *dev)
-+static void pxa_irq_resume(void)
+-static int s3c2410_dma_resume(struct sys_device *dev)
++static void s3c2410_dma_resume_chan(struct s3c2410_dma_chan *cp)
  {
- 	int i;
+-	struct s3c2410_dma_chan *cp = to_dma_chan(dev);
+ 	unsigned int no = cp->number | DMACH_LOW_LEVEL;
  
-@@ -218,22 +218,13 @@ static int pxa_irq_resume(struct sys_dev
- 			__raw_writel(saved_ipr[i], IRQ_BASE + IPR(i));
- 
- 	__raw_writel(1, IRQ_BASE + ICCR);
--	return 0;
- }
- #else
- #define pxa_irq_suspend		NULL
- #define pxa_irq_resume		NULL
- #endif
- 
--struct sysdev_class pxa_irq_sysclass = {
--	.name		= "irq",
-+struct syscore_ops pxa_irq_syscore_ops = {
- 	.suspend	= pxa_irq_suspend,
- 	.resume		= pxa_irq_resume,
- };
--
--static int __init pxa_irq_init(void)
--{
--	return sysdev_class_register(&pxa_irq_sysclass);
--}
--
--core_initcall(pxa_irq_init);
-Index: linux-2.6/arch/arm/mach-pxa/clock-pxa2xx.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/clock-pxa2xx.c
-+++ linux-2.6/arch/arm/mach-pxa/clock-pxa2xx.c
-@@ -9,7 +9,7 @@
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- 
- #include <mach/pxa2xx-regs.h>
- 
-@@ -33,32 +33,22 @@ const struct clkops clk_pxa2xx_cken_ops
- #ifdef CONFIG_PM
- static uint32_t saved_cken;
- 
--static int pxa2xx_clock_suspend(struct sys_device *d, pm_message_t state)
-+static int pxa2xx_clock_suspend(void)
- {
- 	saved_cken = CKEN;
+ 	/* restore channel's hardware configuration */
+@@ -1249,13 +1250,21 @@ static int s3c2410_dma_resume(struct sys
  	return 0;
  }
  
--static int pxa2xx_clock_resume(struct sys_device *d)
-+static void pxa2xx_clock_resume(void)
- {
- 	CKEN = saved_cken;
--	return 0;
- }
++static void s3c2410_dma_resume(void)
++{
++	struct s3c2410_dma_chan *cp = s3c2410_chans + dma_channels - 1;
++	int channel;
++
++	for (channel = dma_channels - 1; channel >= 0; cp++, channel--)
++		s3c2410_dma_resume_chan(cp);
++}
++
  #else
- #define pxa2xx_clock_suspend	NULL
- #define pxa2xx_clock_resume	NULL
- #endif
+ #define s3c2410_dma_suspend NULL
+ #define s3c2410_dma_resume  NULL
+ #endif /* CONFIG_PM */
  
--struct sysdev_class pxa2xx_clock_sysclass = {
--	.name		= "pxa2xx-clock",
-+struct syscore_ops pxa2xx_clock_syscore_ops = {
- 	.suspend	= pxa2xx_clock_suspend,
- 	.resume		= pxa2xx_clock_resume,
+-struct sysdev_class dma_sysclass = {
+-	.name		= "s3c24xx-dma",
++struct syscore_ops dma_syscore_ops = {
+ 	.suspend	= s3c2410_dma_suspend,
+ 	.resume		= s3c2410_dma_resume,
  };
+@@ -1269,39 +1278,14 @@ static void s3c2410_dma_cache_ctor(void
+ 
+ /* initialisation code */
+ 
+-static int __init s3c24xx_dma_sysclass_init(void)
++static int __init s3c24xx_dma_syscore_init(void)
+ {
+-	int ret = sysdev_class_register(&dma_sysclass);
 -
--static int __init pxa2xx_clock_init(void)
--{
--	if (cpu_is_pxa2xx())
--		return sysdev_class_register(&pxa2xx_clock_sysclass);
--	return 0;
+-	if (ret != 0)
+-		printk(KERN_ERR "dma sysclass registration failed\n");
+-
+-	return ret;
 -}
--postcore_initcall(pxa2xx_clock_init);
-Index: linux-2.6/arch/arm/mach-pxa/mfp-pxa3xx.c
+-
+-core_initcall(s3c24xx_dma_sysclass_init);
+-
+-static int __init s3c24xx_dma_sysdev_register(void)
+-{
+-	struct s3c2410_dma_chan *cp = s3c2410_chans;
+-	int channel, ret;
+-
+-	for (channel = 0; channel < dma_channels; cp++, channel++) {
+-		cp->dev.cls = &dma_sysclass;
+-		cp->dev.id  = channel;
+-		ret = sysdev_register(&cp->dev);
+-
+-		if (ret) {
+-			printk(KERN_ERR "error registering dev for dma %d\n",
+-			       channel);
+- 			return ret;
+-		}
+-	}
++	register_syscore_ops(&dma_syscore_ops);
+ 
+ 	return 0;
+ }
+ 
+-late_initcall(s3c24xx_dma_sysdev_register);
++late_initcall(s3c24xx_dma_syscore_init);
+ 
+ int __init s3c24xx_dma_init(unsigned int channels, unsigned int irq,
+ 			    unsigned int stride)
+Index: linux-2.6/arch/arm/mach-s3c2440/mach-osiris.c
 ===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/mfp-pxa3xx.c
-+++ linux-2.6/arch/arm/mach-pxa/mfp-pxa3xx.c
+--- linux-2.6.orig/arch/arm/mach-s3c2440/mach-osiris.c
++++ linux-2.6/arch/arm/mach-s3c2440/mach-osiris.c
 @@ -17,7 +17,7 @@
- #include <linux/kernel.h>
  #include <linux/init.h>
- #include <linux/io.h>
+ #include <linux/gpio.h>
+ #include <linux/device.h>
 -#include <linux/sysdev.h>
 +#include <linux/syscore_ops.h>
+ #include <linux/serial_core.h>
+ #include <linux/clk.h>
+ #include <linux/i2c.h>
+@@ -284,7 +284,7 @@ static struct platform_device osiris_pcm
+ #ifdef CONFIG_PM
+ static unsigned char pm_osiris_ctrl0;
  
- #include <mach/hardware.h>
- #include <mach/mfp-pxa3xx.h>
-@@ -31,13 +31,13 @@
-  * a pull-down mode if they're an active low chip select, and we're
-  * just entering standby.
-  */
--static int pxa3xx_mfp_suspend(struct sys_device *d, pm_message_t state)
-+static int pxa3xx_mfp_suspend(void)
+-static int osiris_pm_suspend(struct sys_device *sd, pm_message_t state)
++static int osiris_pm_suspend(void)
  {
- 	mfp_config_lpm();
+ 	unsigned int tmp;
+ 
+@@ -304,7 +304,7 @@ static int osiris_pm_suspend(struct sys_
  	return 0;
  }
  
--static int pxa3xx_mfp_resume(struct sys_device *d)
-+static void pxa3xx_mfp_resume(void)
+-static int osiris_pm_resume(struct sys_device *sd)
++static void osiris_pm_resume(void)
  {
- 	mfp_config_run();
+ 	if (pm_osiris_ctrl0 & OSIRIS_CTRL0_FIX8)
+ 		__raw_writeb(OSIRIS_CTRL1_FIX8, OSIRIS_VA_CTRL1);
+@@ -312,8 +312,6 @@ static int osiris_pm_resume(struct sys_d
+ 	__raw_writeb(pm_osiris_ctrl0, OSIRIS_VA_CTRL0);
  
-@@ -47,24 +47,13 @@ static int pxa3xx_mfp_resume(struct sys_
- 	 * preserve them here in case they will be referenced later
- 	 */
- 	ASCR &= ~(ASCR_RDH | ASCR_D1S | ASCR_D2S | ASCR_D3S);
+ 	s3c_gpio_cfgpin(S3C2410_GPA(21), S3C2410_GPA21_nRSTOUT);
+-
 -	return 0;
  }
+ 
  #else
- #define pxa3xx_mfp_suspend	NULL
- #define pxa3xx_mfp_resume	NULL
+@@ -321,16 +319,11 @@ static int osiris_pm_resume(struct sys_d
+ #define osiris_pm_resume NULL
  #endif
  
--struct sysdev_class pxa3xx_mfp_sysclass = {
--	.name		= "mfp",
-+struct syscore_ops pxa3xx_mfp_syscore_ops = {
- 	.suspend	= pxa3xx_mfp_suspend,
--	.resume 	= pxa3xx_mfp_resume,
-+	.resume		= pxa3xx_mfp_resume,
- };
--
--static int __init mfp_init_devicefs(void)
--{
--	if (cpu_is_pxa3xx())
--		return sysdev_class_register(&pxa3xx_mfp_sysclass);
--
--	return 0;
--}
--postcore_initcall(mfp_init_devicefs);
-Index: linux-2.6/arch/arm/mach-pxa/pxa3xx.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/pxa3xx.c
-+++ linux-2.6/arch/arm/mach-pxa/pxa3xx.c
-@@ -20,7 +20,7 @@
- #include <linux/platform_device.h>
- #include <linux/irq.h>
- #include <linux/io.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/i2c/pxa-i2c.h>
- 
- #include <asm/mach/map.h>
-@@ -427,21 +427,9 @@ static struct platform_device *devices[]
- 	&pxa27x_device_pwm1,
+-static struct sysdev_class osiris_pm_sysclass = {
+-	.name		= "mach-osiris",
++static struct syscore_ops osiris_pm_syscore_ops = {
+ 	.suspend	= osiris_pm_suspend,
+ 	.resume		= osiris_pm_resume,
  };
  
--static struct sys_device pxa3xx_sysdev[] = {
--	{
--		.cls	= &pxa_irq_sysclass,
--	}, {
--		.cls	= &pxa3xx_mfp_sysclass,
--	}, {
--		.cls	= &pxa_gpio_sysclass,
--	}, {
--		.cls	= &pxa3xx_clock_sysclass,
--	}
+-static struct sys_device osiris_pm_sysdev = {
+-	.cls		= &osiris_pm_sysclass,
 -};
 -
- static int __init pxa3xx_init(void)
+ /* Link for DVS driver to TPS65011 */
+ 
+ static void osiris_tps_release(struct device *dev)
+@@ -439,8 +432,7 @@ static void __init osiris_map_io(void)
+ 
+ static void __init osiris_init(void)
  {
--	int i, ret = 0;
-+	int ret = 0;
+-	sysdev_class_register(&osiris_pm_sysclass);
+-	sysdev_register(&osiris_pm_sysdev);
++	register_syscore_ops(&osiris_pm_syscore_ops);
  
- 	if (cpu_is_pxa3xx()) {
- 
-@@ -462,11 +450,10 @@ static int __init pxa3xx_init(void)
- 
- 		pxa3xx_init_pm();
- 
--		for (i = 0; i < ARRAY_SIZE(pxa3xx_sysdev); i++) {
--			ret = sysdev_register(&pxa3xx_sysdev[i]);
--			if (ret)
--				pr_err("failed to register sysdev[%d]\n", i);
--		}
-+		register_syscore_ops(&pxa_irq_syscore_ops);
-+		register_syscore_ops(&pxa3xx_mfp_syscore_ops);
-+		register_syscore_ops(&pxa_gpio_syscore_ops);
-+		register_syscore_ops(&pxa3xx_clock_syscore_ops);
- 
- 		ret = platform_add_devices(devices, ARRAY_SIZE(devices));
- 	}
-Index: linux-2.6/arch/arm/mach-pxa/mfp-pxa2xx.c
+ 	s3c_i2c0_set_platdata(NULL);
+ 	s3c_nand_set_platdata(&osiris_nand_info);
+Index: linux-2.6/arch/arm/mach-s3c2412/mach-jive.c
 ===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/mfp-pxa2xx.c
-+++ linux-2.6/arch/arm/mach-pxa/mfp-pxa2xx.c
-@@ -16,7 +16,7 @@
- #include <linux/module.h>
- #include <linux/kernel.h>
+--- linux-2.6.orig/arch/arm/mach-s3c2412/mach-jive.c
++++ linux-2.6/arch/arm/mach-s3c2412/mach-jive.c
+@@ -17,7 +17,7 @@
+ #include <linux/timer.h>
  #include <linux/init.h>
+ #include <linux/gpio.h>
 -#include <linux/sysdev.h>
 +#include <linux/syscore_ops.h>
+ #include <linux/serial_core.h>
+ #include <linux/platform_device.h>
+ #include <linux/i2c.h>
+@@ -486,7 +486,7 @@ static struct s3c2410_udc_mach_info jive
+ /* Jive power management device */
  
- #include <mach/gpio.h>
- #include <mach/pxa2xx-regs.h>
-@@ -338,7 +338,7 @@ static unsigned long saved_gafr[2][4];
- static unsigned long saved_gpdr[4];
- static unsigned long saved_pgsr[4];
- 
--static int pxa2xx_mfp_suspend(struct sys_device *d, pm_message_t state)
-+static int pxa2xx_mfp_suspend(void)
+ #ifdef CONFIG_PM
+-static int jive_pm_suspend(struct sys_device *sd, pm_message_t state)
++static int jive_pm_suspend(void)
  {
- 	int i;
- 
-@@ -365,7 +365,7 @@ static int pxa2xx_mfp_suspend(struct sys
+ 	/* Write the magic value u-boot uses to check for resume into
+ 	 * the INFORM0 register, and ensure INFORM1 is set to the
+@@ -498,10 +498,9 @@ static int jive_pm_suspend(struct sys_de
  	return 0;
  }
  
--static int pxa2xx_mfp_resume(struct sys_device *d)
-+static void pxa2xx_mfp_resume(void)
+-static int jive_pm_resume(struct sys_device *sd)
++static void jive_pm_resume(void)
  {
- 	int i;
- 
-@@ -376,15 +376,13 @@ static int pxa2xx_mfp_resume(struct sys_
- 		PGSR(i) = saved_pgsr[i];
- 	}
- 	PSSR = PSSR_RDH | PSSR_PH;
+ 	__raw_writel(0x0, S3C2412_INFORM0);
 -	return 0;
  }
+ 
  #else
- #define pxa2xx_mfp_suspend	NULL
- #define pxa2xx_mfp_resume	NULL
+@@ -509,16 +508,11 @@ static int jive_pm_resume(struct sys_dev
+ #define jive_pm_resume NULL
  #endif
  
--struct sysdev_class pxa2xx_mfp_sysclass = {
--	.name		= "mfp",
-+struct syscore_ops pxa2xx_mfp_syscore_ops = {
- 	.suspend	= pxa2xx_mfp_suspend,
- 	.resume		= pxa2xx_mfp_resume,
- };
-@@ -409,6 +407,6 @@ static int __init pxa2xx_mfp_init(void)
- 	for (i = 0; i <= gpio_to_bank(pxa_last_gpio); i++)
- 		gpdr_lpm[i] = GPDR(i * 32);
- 
--	return sysdev_class_register(&pxa2xx_mfp_sysclass);
-+	return 0;
- }
- postcore_initcall(pxa2xx_mfp_init);
-Index: linux-2.6/arch/arm/mach-pxa/pxa25x.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/pxa25x.c
-+++ linux-2.6/arch/arm/mach-pxa/pxa25x.c
-@@ -21,7 +21,7 @@
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/suspend.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/irq.h>
- 
- #include <asm/mach/map.h>
-@@ -350,21 +350,9 @@ static struct platform_device *pxa25x_de
- 	&pxa_device_asoc_platform,
+-static struct sysdev_class jive_pm_sysclass = {
+-	.name		= "jive-pm",
++static struct syscore_ops jive_pm_syscore_ops = {
+ 	.suspend	= jive_pm_suspend,
+ 	.resume		= jive_pm_resume,
  };
  
--static struct sys_device pxa25x_sysdev[] = {
--	{
--		.cls	= &pxa_irq_sysclass,
--	}, {
--		.cls	= &pxa2xx_mfp_sysclass,
--	}, {
--		.cls	= &pxa_gpio_sysclass,
--	}, {
--		.cls	= &pxa2xx_clock_sysclass,
--	}
+-static struct sys_device jive_pm_sysdev = {
+-	.cls		= &jive_pm_sysclass,
 -};
 -
- static int __init pxa25x_init(void)
+ static void __init jive_map_io(void)
  {
--	int i, ret = 0;
-+	int ret = 0;
+ 	s3c24xx_init_io(jive_iodesc, ARRAY_SIZE(jive_iodesc));
+@@ -536,10 +530,9 @@ static void jive_power_off(void)
  
- 	if (cpu_is_pxa25x()) {
- 
-@@ -377,11 +365,10 @@ static int __init pxa25x_init(void)
- 
- 		pxa25x_init_pm();
- 
--		for (i = 0; i < ARRAY_SIZE(pxa25x_sysdev); i++) {
--			ret = sysdev_register(&pxa25x_sysdev[i]);
--			if (ret)
--				pr_err("failed to register sysdev[%d]\n", i);
--		}
-+		register_syscore_ops(&pxa_irq_syscore_ops);
-+		register_syscore_ops(&pxa2xx_mfp_syscore_ops);
-+		register_syscore_ops(&pxa_gpio_syscore_ops);
-+		register_syscore_ops(&pxa2xx_clock_syscore_ops);
- 
- 		ret = platform_add_devices(pxa25x_devices,
- 					   ARRAY_SIZE(pxa25x_devices));
-Index: linux-2.6/arch/arm/mach-pxa/pxa27x.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/pxa27x.c
-+++ linux-2.6/arch/arm/mach-pxa/pxa27x.c
-@@ -16,7 +16,7 @@
- #include <linux/init.h>
- #include <linux/suspend.h>
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/i2c/pxa-i2c.h>
-@@ -428,21 +428,9 @@ static struct platform_device *devices[]
- 	&pxa27x_device_pwm1,
- };
- 
--static struct sys_device pxa27x_sysdev[] = {
--	{
--		.cls	= &pxa_irq_sysclass,
--	}, {
--		.cls	= &pxa2xx_mfp_sysclass,
--	}, {
--		.cls	= &pxa_gpio_sysclass,
--	}, {
--		.cls	= &pxa2xx_clock_sysclass,
--	}
--};
--
- static int __init pxa27x_init(void)
+ static void __init jive_machine_init(void)
  {
--	int i, ret = 0;
-+	int ret = 0;
- 
- 	if (cpu_is_pxa27x()) {
- 
-@@ -455,11 +443,10 @@ static int __init pxa27x_init(void)
- 
- 		pxa27x_init_pm();
- 
--		for (i = 0; i < ARRAY_SIZE(pxa27x_sysdev); i++) {
--			ret = sysdev_register(&pxa27x_sysdev[i]);
--			if (ret)
--				pr_err("failed to register sysdev[%d]\n", i);
--		}
-+		register_syscore_ops(&pxa_irq_syscore_ops);
-+		register_syscore_ops(&pxa2xx_mfp_syscore_ops);
-+		register_syscore_ops(&pxa_gpio_syscore_ops);
-+		register_syscore_ops(&pxa2xx_clock_syscore_ops);
- 
- 		ret = platform_add_devices(devices, ARRAY_SIZE(devices));
- 	}
-Index: linux-2.6/arch/arm/mach-pxa/mioa701.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/mioa701.c
-+++ linux-2.6/arch/arm/mach-pxa/mioa701.c
-@@ -22,7 +22,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/input.h>
- #include <linux/delay.h>
- #include <linux/gpio_keys.h>
-@@ -488,7 +488,7 @@ static void install_bootstrap(void)
- }
- 
- 
--static int mioa701_sys_suspend(struct sys_device *sysdev, pm_message_t state)
-+static int mioa701_sys_suspend(void)
- {
- 	int i = 0, is_bt_on;
- 	u32 *mem_resume_vector	= phys_to_virt(RESUME_VECTOR_ADDR);
-@@ -514,7 +514,7 @@ static int mioa701_sys_suspend(struct sy
- 	return 0;
- }
- 
--static int mioa701_sys_resume(struct sys_device *sysdev)
-+static void mioa701_sys_resume(void)
- {
- 	int i = 0;
- 	u32 *mem_resume_vector	= phys_to_virt(RESUME_VECTOR_ADDR);
-@@ -527,43 +527,18 @@ static int mioa701_sys_resume(struct sys
- 	*mem_resume_enabler = save_buffer[i++];
- 	*mem_resume_bt	    = save_buffer[i++];
- 	*mem_resume_unknown = save_buffer[i++];
--
--	return 0;
- }
- 
--static struct sysdev_class mioa701_sysclass = {
--	.name = "mioa701",
--};
--
--static struct sys_device sysdev_bootstrap = {
--	.cls		= &mioa701_sysclass,
--};
--
--static struct sysdev_driver driver_bootstrap = {
--	.suspend	= &mioa701_sys_suspend,
--	.resume		= &mioa701_sys_resume,
-+static struct syscore_ops mioa701_syscore_ops = {
-+	.suspend	= mioa701_sys_suspend,
-+	.resume		= mioa701_sys_resume,
- };
- 
- static int __init bootstrap_init(void)
- {
--	int rc;
- 	int save_size = mioa701_bootstrap_lg + (sizeof(u32) * 3);
- 
--	rc = sysdev_class_register(&mioa701_sysclass);
--	if (rc) {
--		printk(KERN_ERR "Failed registering mioa701 sys class\n");
--		return -ENODEV;
--	}
--	rc = sysdev_register(&sysdev_bootstrap);
--	if (rc) {
--		printk(KERN_ERR "Failed registering mioa701 sys device\n");
--		return -ENODEV;
--	}
--	rc = sysdev_driver_register(&mioa701_sysclass, &driver_bootstrap);
--	if (rc) {
--		printk(KERN_ERR "Failed registering PMU sys driver\n");
--		return -ENODEV;
--	}
-+	register_syscore_ops(&mioa701_syscore_ops);
- 
- 	save_buffer = kmalloc(save_size, GFP_KERNEL);
- 	if (!save_buffer)
-@@ -576,9 +551,7 @@ static int __init bootstrap_init(void)
- static void bootstrap_exit(void)
- {
- 	kfree(save_buffer);
--	sysdev_driver_unregister(&mioa701_sysclass, &driver_bootstrap);
--	sysdev_unregister(&sysdev_bootstrap);
--	sysdev_class_unregister(&mioa701_sysclass);
-+	unregister_syscore_ops(&mioa701_syscore_ops);
- 
- 	printk(KERN_CRIT "Unregistering mioa701 suspend will hang next"
- 	       "resume !!!\n");
-Index: linux-2.6/arch/arm/mach-pxa/mainstone.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/mainstone.c
-+++ linux-2.6/arch/arm/mach-pxa/mainstone.c
-@@ -15,7 +15,7 @@
- 
- #include <linux/init.h>
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/interrupt.h>
- #include <linux/sched.h>
- #include <linux/bitops.h>
-@@ -185,31 +185,21 @@ static void __init mainstone_init_irq(vo
- 
- #ifdef CONFIG_PM
- 
--static int mainstone_irq_resume(struct sys_device *dev)
-+static void mainstone_irq_resume(void)
- {
- 	MST_INTMSKENA = mainstone_irq_enabled;
--	return 0;
- }
- 
--static struct sysdev_class mainstone_irq_sysclass = {
--	.name = "cpld_irq",
-+static struct syscore_ops mainstone_irq_syscore_ops = {
- 	.resume = mainstone_irq_resume,
- };
- 
--static struct sys_device mainstone_irq_device = {
--	.cls = &mainstone_irq_sysclass,
--};
--
- static int __init mainstone_irq_device_init(void)
- {
--	int ret = -ENODEV;
-+	if (machine_is_mainstone())
-+		register_syscore_ops(&mainstone_irq_syscore_ops);
- 
--	if (machine_is_mainstone()) {
--		ret = sysdev_class_register(&mainstone_irq_sysclass);
--		if (ret == 0)
--			ret = sysdev_register(&mainstone_irq_device);
--	}
--	return ret;
-+	return 0;
- }
- 
- device_initcall(mainstone_irq_device_init);
-Index: linux-2.6/arch/arm/mach-pxa/cm-x2xx.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/cm-x2xx.c
-+++ linux-2.6/arch/arm/mach-pxa/cm-x2xx.c
-@@ -10,7 +10,7 @@
-  */
- 
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/irq.h>
- #include <linux/gpio.h>
- 
-@@ -388,7 +388,7 @@ static inline void cmx2xx_init_display(v
- #ifdef CONFIG_PM
- static unsigned long sleep_save_msc[10];
- 
--static int cmx2xx_suspend(struct sys_device *dev, pm_message_t state)
-+static int cmx2xx_suspend(void)
- {
- 	cmx2xx_pci_suspend();
- 
-@@ -412,7 +412,7 @@ static int cmx2xx_suspend(struct sys_dev
- 	return 0;
- }
- 
--static int cmx2xx_resume(struct sys_device *dev)
-+static void cmx2xx_resume(void)
- {
- 	cmx2xx_pci_resume();
- 
-@@ -420,27 +420,18 @@ static int cmx2xx_resume(struct sys_devi
- 	__raw_writel(sleep_save_msc[0], MSC0);
- 	__raw_writel(sleep_save_msc[1], MSC1);
- 	__raw_writel(sleep_save_msc[2], MSC2);
--
--	return 0;
- }
- 
--static struct sysdev_class cmx2xx_pm_sysclass = {
--	.name = "pm",
-+static struct syscore_ops cmx2xx_pm_syscore_ops = {
- 	.resume = cmx2xx_resume,
- 	.suspend = cmx2xx_suspend,
- };
- 
--static struct sys_device cmx2xx_pm_device = {
--	.cls = &cmx2xx_pm_sysclass,
--};
--
- static int __init cmx2xx_pm_init(void)
- {
--	int error;
--	error = sysdev_class_register(&cmx2xx_pm_sysclass);
--	if (error == 0)
--		error = sysdev_register(&cmx2xx_pm_device);
--	return error;
-+	register_syscore_ops(&cmx2xx_pm_syscore_ops);
-+
-+	return 0;
- }
- #else
- static int __init cmx2xx_pm_init(void) { return 0; }
-Index: linux-2.6/arch/arm/mach-pxa/lpd270.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/lpd270.c
-+++ linux-2.6/arch/arm/mach-pxa/lpd270.c
-@@ -15,7 +15,7 @@
- 
- #include <linux/init.h>
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/interrupt.h>
- #include <linux/sched.h>
- #include <linux/bitops.h>
-@@ -159,30 +159,22 @@ static void __init lpd270_init_irq(void)
- 
- 
- #ifdef CONFIG_PM
--static int lpd270_irq_resume(struct sys_device *dev)
-+static void lpd270_irq_resume(void)
- {
- 	__raw_writew(lpd270_irq_enabled, LPD270_INT_MASK);
--	return 0;
- }
- 
--static struct sysdev_class lpd270_irq_sysclass = {
--	.name = "cpld_irq",
-+static struct syscore_ops lpd270_irq_syscore_ops = {
- 	.resume = lpd270_irq_resume,
- };
- 
--static struct sys_device lpd270_irq_device = {
--	.cls = &lpd270_irq_sysclass,
--};
--
- static int __init lpd270_irq_device_init(void)
- {
--	int ret = -ENODEV;
- 	if (machine_is_logicpd_pxa270()) {
--		ret = sysdev_class_register(&lpd270_irq_sysclass);
--		if (ret == 0)
--			ret = sysdev_register(&lpd270_irq_device);
-+		register_syscore_ops(&lpd270_irq_syscore_ops);
-+		return 0;
- 	}
--	return ret;
-+	return -ENODEV;
- }
- 
- device_initcall(lpd270_irq_device_init);
-Index: linux-2.6/arch/arm/mach-pxa/lubbock.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/lubbock.c
-+++ linux-2.6/arch/arm/mach-pxa/lubbock.c
-@@ -15,7 +15,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/major.h>
- #include <linux/fb.h>
- #include <linux/interrupt.h>
-@@ -176,31 +176,22 @@ static void __init lubbock_init_irq(void
- 
- #ifdef CONFIG_PM
- 
--static int lubbock_irq_resume(struct sys_device *dev)
-+static void lubbock_irq_resume(void)
- {
- 	LUB_IRQ_MASK_EN = lubbock_irq_enabled;
--	return 0;
- }
- 
--static struct sysdev_class lubbock_irq_sysclass = {
--	.name = "cpld_irq",
-+static struct syscore_ops lubbock_irq_syscore_ops = {
- 	.resume = lubbock_irq_resume,
- };
- 
--static struct sys_device lubbock_irq_device = {
--	.cls = &lubbock_irq_sysclass,
--};
--
- static int __init lubbock_irq_device_init(void)
- {
--	int ret = -ENODEV;
--
- 	if (machine_is_lubbock()) {
--		ret = sysdev_class_register(&lubbock_irq_sysclass);
--		if (ret == 0)
--			ret = sysdev_register(&lubbock_irq_device);
-+		register_syscore_ops(&lubbock_irq_syscore_ops);
-+		return 0;
- 	}
--	return ret;
-+	return -ENODEV;
- }
- 
- device_initcall(lubbock_irq_device_init);
-Index: linux-2.6/arch/arm/mach-pxa/viper.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/viper.c
-+++ linux-2.6/arch/arm/mach-pxa/viper.c
-@@ -44,6 +44,7 @@
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/partitions.h>
- #include <linux/mtd/physmap.h>
-+#include <linux/syscore_ops.h>
- 
- #include <mach/pxa25x.h>
- #include <mach/audio.h>
-@@ -130,20 +131,19 @@ static u8 viper_hw_version(void)
- 	return v1;
- }
- 
--/* CPU sysdev */
--static int viper_cpu_suspend(struct sys_device *sysdev, pm_message_t state)
-+/* CPU system core operations. */
-+static int viper_cpu_suspend(void)
- {
- 	viper_icr_set_bit(VIPER_ICR_R_DIS);
- 	return 0;
- }
- 
--static int viper_cpu_resume(struct sys_device *sysdev)
-+static void viper_cpu_resume(void)
- {
- 	viper_icr_clear_bit(VIPER_ICR_R_DIS);
--	return 0;
- }
- 
--static struct sysdev_driver viper_cpu_sysdev_driver = {
-+static struct syscore_ops viper_cpu_syscore_ops = {
- 	.suspend	= viper_cpu_suspend,
- 	.resume		= viper_cpu_resume,
- };
-@@ -945,7 +945,7 @@ static void __init viper_init(void)
- 	viper_init_vcore_gpios();
- 	viper_init_cpufreq();
- 
--	sysdev_driver_register(&cpu_sysdev_class, &viper_cpu_sysdev_driver);
-+	register_syscore_ops(&viper_cpu_syscore_ops);
- 
- 	if (version) {
- 		pr_info("viper: hardware v%di%d detected. "
-Index: linux-2.6/arch/arm/mach-pxa/palmz72.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/palmz72.c
-+++ linux-2.6/arch/arm/mach-pxa/palmz72.c
-@@ -19,7 +19,7 @@
-  */
- 
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/delay.h>
- #include <linux/irq.h>
- #include <linux/gpio_keys.h>
-@@ -207,9 +207,9 @@ static struct palmz72_resume_info palmz7
- 
- static unsigned long store_ptr;
- 
--/* sys_device for Palm Zire 72 PM */
-+/* syscore_ops for Palm Zire 72 PM */
- 
--static int palmz72_pm_suspend(struct sys_device *dev, pm_message_t msg)
-+static int palmz72_pm_suspend(void)
- {
- 	/* setup the resume_info struct for the original bootloader */
- 	palmz72_resume_info.resume_addr = (u32) cpu_resume;
-@@ -223,31 +223,23 @@ static int palmz72_pm_suspend(struct sys
- 	return 0;
- }
- 
--static int palmz72_pm_resume(struct sys_device *dev)
-+static void palmz72_pm_resume(void)
- {
- 	*PALMZ72_SAVE_DWORD = store_ptr;
--	return 0;
- }
- 
--static struct sysdev_class palmz72_pm_sysclass = {
--	.name = "palmz72_pm",
-+static struct syscore_ops palmz72_pm_syscore_ops = {
- 	.suspend = palmz72_pm_suspend,
- 	.resume = palmz72_pm_resume,
- };
- 
--static struct sys_device palmz72_pm_device = {
--	.cls = &palmz72_pm_sysclass,
--};
--
- static int __init palmz72_pm_init(void)
- {
--	int ret = -ENODEV;
- 	if (machine_is_palmz72()) {
--		ret = sysdev_class_register(&palmz72_pm_sysclass);
--		if (ret == 0)
--			ret = sysdev_register(&palmz72_pm_device);
-+		register_syscore_ops(&palmz72_pm_syscore_ops);
-+		return 0;
- 	}
--	return ret;
-+	return -ENODEV;
- }
- 
- device_initcall(palmz72_pm_init);
-Index: linux-2.6/arch/arm/mach-pxa/smemc.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/smemc.c
-+++ linux-2.6/arch/arm/mach-pxa/smemc.c
-@@ -6,7 +6,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/io.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- 
- #include <mach/hardware.h>
- #include <mach/smemc.h>
-@@ -16,7 +16,7 @@ static unsigned long msc[2];
- static unsigned long sxcnfg, memclkcfg;
- static unsigned long csadrcfg[4];
- 
--static int pxa3xx_smemc_suspend(struct sys_device *dev, pm_message_t state)
-+static int pxa3xx_smemc_suspend(void)
- {
- 	msc[0] = __raw_readl(MSC0);
- 	msc[1] = __raw_readl(MSC1);
-@@ -30,7 +30,7 @@ static int pxa3xx_smemc_suspend(struct s
- 	return 0;
- }
- 
--static int pxa3xx_smemc_resume(struct sys_device *dev)
-+static void pxa3xx_smemc_resume(void)
- {
- 	__raw_writel(msc[0], MSC0);
- 	__raw_writel(msc[1], MSC1);
-@@ -40,34 +40,19 @@ static int pxa3xx_smemc_resume(struct sy
- 	__raw_writel(csadrcfg[1], CSADRCFG1);
- 	__raw_writel(csadrcfg[2], CSADRCFG2);
- 	__raw_writel(csadrcfg[3], CSADRCFG3);
--
--	return 0;
- }
- 
--static struct sysdev_class smemc_sysclass = {
--	.name		= "smemc",
-+static struct syscore_ops smemc_syscore_ops = {
- 	.suspend	= pxa3xx_smemc_suspend,
- 	.resume		= pxa3xx_smemc_resume,
- };
- 
--static struct sys_device smemc_sysdev = {
--	.id		= 0,
--	.cls		= &smemc_sysclass,
--};
--
- static int __init smemc_init(void)
- {
--	int ret = 0;
-+	if (cpu_is_pxa3xx())
-+		register_syscore_ops(&smemc_syscore_ops);
- 
--	if (cpu_is_pxa3xx()) {
--		ret = sysdev_class_register(&smemc_sysclass);
--		if (ret)
--			return ret;
--
--		ret = sysdev_register(&smemc_sysdev);
--	}
--
--	return ret;
-+	return 0;
- }
- subsys_initcall(smemc_init);
- #endif
-Index: linux-2.6/arch/arm/mach-pxa/palmtreo.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/palmtreo.c
-+++ linux-2.6/arch/arm/mach-pxa/palmtreo.c
-@@ -25,7 +25,6 @@
- #include <linux/pwm_backlight.h>
- #include <linux/gpio.h>
- #include <linux/power_supply.h>
--#include <linux/sysdev.h>
- #include <linux/w1-gpio.h>
- 
- #include <asm/mach-types.h>
-Index: linux-2.6/arch/arm/mach-pxa/palmld.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/palmld.c
-+++ linux-2.6/arch/arm/mach-pxa/palmld.c
-@@ -24,7 +24,6 @@
- #include <linux/gpio.h>
- #include <linux/wm97xx.h>
- #include <linux/power_supply.h>
--#include <linux/sysdev.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/partitions.h>
- #include <linux/mtd/physmap.h>
-Index: linux-2.6/arch/arm/mach-pxa/colibri-pxa270.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/colibri-pxa270.c
-+++ linux-2.6/arch/arm/mach-pxa/colibri-pxa270.c
-@@ -17,7 +17,6 @@
- #include <linux/mtd/partitions.h>
- #include <linux/mtd/physmap.h>
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
- #include <linux/ucb1400.h>
- 
- #include <asm/mach/arch.h>
-Index: linux-2.6/arch/arm/mach-pxa/raumfeld.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/raumfeld.c
-+++ linux-2.6/arch/arm/mach-pxa/raumfeld.c
-@@ -18,7 +18,6 @@
- 
- #include <linux/init.h>
- #include <linux/kernel.h>
--#include <linux/sysdev.h>
- #include <linux/platform_device.h>
- #include <linux/interrupt.h>
- #include <linux/gpio.h>
-Index: linux-2.6/arch/arm/mach-pxa/cm-x270.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/cm-x270.c
-+++ linux-2.6/arch/arm/mach-pxa/cm-x270.c
-@@ -10,7 +10,6 @@
-  */
- 
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
- #include <linux/irq.h>
- #include <linux/gpio.h>
- #include <linux/delay.h>
-Index: linux-2.6/arch/arm/mach-pxa/trizeps4.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/trizeps4.c
-+++ linux-2.6/arch/arm/mach-pxa/trizeps4.c
-@@ -15,7 +15,6 @@
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
- #include <linux/interrupt.h>
- #include <linux/sched.h>
- #include <linux/bitops.h>
-Index: linux-2.6/arch/arm/mach-pxa/colibri-evalboard.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/colibri-evalboard.c
-+++ linux-2.6/arch/arm/mach-pxa/colibri-evalboard.c
-@@ -13,7 +13,6 @@
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
- #include <linux/interrupt.h>
- #include <linux/gpio.h>
- #include <asm/mach-types.h>
-Index: linux-2.6/arch/arm/mach-pxa/vpac270.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/vpac270.c
-+++ linux-2.6/arch/arm/mach-pxa/vpac270.c
-@@ -16,7 +16,6 @@
- #include <linux/gpio_keys.h>
- #include <linux/input.h>
- #include <linux/gpio.h>
--#include <linux/sysdev.h>
- #include <linux/usb/gpio_vbus.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/partitions.h>
-Index: linux-2.6/arch/arm/mach-pxa/colibri-pxa270-income.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/colibri-pxa270-income.c
-+++ linux-2.6/arch/arm/mach-pxa/colibri-pxa270-income.c
-@@ -22,7 +22,6 @@
- #include <linux/platform_device.h>
- #include <linux/pwm_backlight.h>
- #include <linux/i2c/pxa-i2c.h>
--#include <linux/sysdev.h>
- 
- #include <asm/irq.h>
- #include <asm/mach-types.h>
-Index: linux-2.6/arch/arm/mach-pxa/balloon3.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-pxa/balloon3.c
-+++ linux-2.6/arch/arm/mach-pxa/balloon3.c
-@@ -15,7 +15,6 @@
- 
- #include <linux/init.h>
- #include <linux/platform_device.h>
--#include <linux/sysdev.h>
- #include <linux/interrupt.h>
- #include <linux/sched.h>
- #include <linux/bitops.h>
-Index: linux-2.6/arch/arm/plat-pxa/mfp.c
-===================================================================
---- linux-2.6.orig/arch/arm/plat-pxa/mfp.c
-+++ linux-2.6/arch/arm/plat-pxa/mfp.c
-@@ -17,7 +17,6 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/io.h>
--#include <linux/sysdev.h>
- 
- #include <plat/mfp.h>
- 
+-	/* register system devices for managing low level suspend */
++	/* register system core operations for managing low level suspend */
+ 
+-	sysdev_class_register(&jive_pm_sysclass);
+-	sysdev_register(&jive_pm_sysdev);
++	register_syscore_ops(&jive_pm_syscore_ops);
+ 
+ 	/* write our sleep configurations for the IO. Pull down all unused
+ 	 * IO, ensure that we have turned off all peripherals we do not
 
