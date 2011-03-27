@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab1C0PsA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 11:48:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43185 "EHLO linutronix.de"
+	id S1753910Ab1C0PzG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 11:55:06 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:35709 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753766Ab1C0Pr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 11:47:59 -0400
-Date: Sun, 27 Mar 2011 17:47:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [patch 17/23] arm: at91: Cleanup irq chip
-In-Reply-To: <4D8F5186.5030109@ru.mvista.com>
-Message-ID: <alpine.LFD.2.00.1103271747360.31464@localhost6.localdomain6>
-References: <20110325131617.258789658@linutronix.de> <20110325132048.996818347@linutronix.de> <alpine.LFD.2.00.1103252202440.31464@localhost6.localdomain6> <4D8F5186.5030109@ru.mvista.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-443207482-1301240877=:31464"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753816Ab1C0PzE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 11:55:04 -0400
+X-IronPort-AV: E=Sophos;i="4.63,251,1299484800"; 
+   d="scan'208";a="535155673"
+Subject: Re: strange put_rpccred() handling
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+In-Reply-To: <87ei5sppsx.fsf@devron.myhome.or.jp>
+References: <87ei5sppsx.fsf@devron.myhome.or.jp>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Sun, 27 Mar 2011 17:55:03 +0200
+Message-ID: <1301241303.22136.31.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 27 Mar 2011 15:55:04.0192 (UTC) FILETIME=[56474800:01CBEC97]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, 2011-03-28 at 00:05 +0900, OGAWA Hirofumi wrote:
+> Hi,
+> 
+> BUG: atomic_dec_and_test(): -1: atomic counter underflow at:
+> Pid: 2827, comm: mount.nfs Not tainted 2.6.38 #1
+> Call Trace:
+>  [<ffffffffa02223a0>] ? put_rpccred+0x44/0x14e [sunrpc]
+>  [<ffffffffa021bbe9>] ? rpc_ping+0x4e/0x58 [sunrpc]
+>  [<ffffffffa021c4a5>] ? rpc_create+0x481/0x4fc [sunrpc]
+>  [<ffffffffa022298a>] ? rpcauth_lookup_credcache+0xab/0x22d [sunrpc]
+>  [<ffffffffa028be8c>] ? nfs_create_rpc_client+0xa6/0xeb [nfs]
+>  [<ffffffffa028c660>] ? nfs4_set_client+0xc2/0x1f9 [nfs]
+>  [<ffffffffa028cd3c>] ? nfs4_create_server+0xf2/0x2a6 [nfs]
+>  [<ffffffffa0295d07>] ? nfs4_remote_mount+0x4e/0x14a [nfs]
+>  [<ffffffff810dd570>] ? vfs_kern_mount+0x6e/0x133
+>  [<ffffffffa029605a>] ? nfs_do_root_mount+0x76/0x95 [nfs]
+>  [<ffffffffa029643d>] ? nfs4_try_mount+0x56/0xaf [nfs]
+>  [<ffffffffa0297434>] ? nfs_get_sb+0x435/0x73c [nfs]
+>  [<ffffffff810dd59b>] ? vfs_kern_mount+0x99/0x133
+>  [<ffffffff810dd693>] ? do_kern_mount+0x48/0xd8
+>  [<ffffffff810f5b75>] ? do_mount+0x6da/0x741
+>  [<ffffffff810f5c5f>] ? sys_mount+0x83/0xc0
+>  [<ffffffff8100293b>] ? system_call_fastpath+0x16/0x1b
+> 
+> This is not oops, and debug code is not in vanilla. This debug code is
+> simple - detects atomic_dec_and_test() underflow.
+> 
+> Well, so, I think this is real bug of nfs codes somewhere. With some
+> review, the code
+> 
+> rpc_call_sync()
+>     rpc_run_task
+>         rpc_execute()
+>             __rpc_execute()
+>                 rpc_release_task()
+>                     rpc_release_resources_task()
+>                         put_rpccred()                <= release cred
+>     rpc_put_task
+>         rpc_do_put_task()
+>             rpc_release_resources_task()
+>                 put_rpccred()                        <= release cred again
+> 
+> seems to be release cred unintendedly.
+> 
+> static void rpc_release_resources_task(struct rpc_task *task)
+> {
+> 	if (task->tk_rqstp)
+> 		xprt_release(task);
+> 	if (task->tk_msg.rpc_cred) {
+> 		put_rpccred(task->tk_msg.rpc_cred);
+> 		task->tk_msg.rpc_cred = NULL;
+> 	}
+> 	rpc_task_release_client(task);
+> }
 
----1463795968-443207482-1301240877=:31464
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+May I add a signed-off-by from you, and just push the above fix to
+Linus?
 
-On Sun, 27 Mar 2011, Sergei Shtylyov wrote:
+Cheers
+  Trond
 
-> Hello.
-> 
-> On 26-03-2011 0:03, Thomas Gleixner wrote:
-> 
-> > > Avoid the whole lazy disable dance in the demux handler by providing a
-> > > irq_disable() callback.
-> 
-> > > Use the proper accessor functions and tidy up gpio_irq_handler()
-> 
-> > > Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
-> [...]
-> 
-> > > Index: linux-2.6-tip/arch/arm/mach-at91/gpio.c
-> > > ===================================================================
-> > > --- linux-2.6-tip.orig/arch/arm/mach-at91/gpio.c
-> > > +++ linux-2.6-tip/arch/arm/mach-at91/gpio.c
-> [...]
-> > > @@ -384,16 +385,14 @@ static struct irq_chip gpio_irqchip = {
-> > >   static void gpio_irq_handler(unsigned irq, struct irq_desc *desc)
-> > >   {
-> > >   	unsigned	pin;
-> > > -	struct irq_desc	*gpio;
-> > > -	struct at91_gpio_chip *at91_gpio;
-> > > -	void __iomem	*pio;
-> > > +	struct irq_data *idata = irq_desc_get_irq_data(desc);
-> > > +	struct irq_chip *chip = irq_data_get_chip(data);
-> > > +	struct at91_gpio_chip *at91_gpio = irq_data_get_chip_data(data);
-> 
-> > Sorry, needs to be
-> 
-> > +	struct at91_gpio_chip *at91_gpio = irq_data_get_irq_chip_data(data);
-> 
-> > Will fix and resend.
-> 
->    You also don't have 'data' defined anywhere, maybe you meant 'ídata'?
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-I know, the compiler already slapped me.
----1463795968-443207482-1301240877=:31464--
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
