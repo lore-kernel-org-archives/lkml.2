@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab1C0Xcp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 19:32:45 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46137 "EHLO ogre.sisk.pl"
+	id S1753142Ab1C0XdB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 19:33:01 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46158 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124Ab1C0Xcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 19:32:43 -0400
+	id S1752924Ab1C0Xc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 19:32:56 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/7] ARM / OMAP: Use struct syscore_ops for "core" power management
-Date: Mon, 28 Mar 2011 01:27:08 +0200
+Subject: [PATCH 7/7] ARM: Select CONFIG_ARCH_NO_SYSDEV_OPS
+Date: Mon, 28 Mar 2011 01:30:31 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
 Cc: Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
         Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
@@ -22,116 +22,32 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103280127.09110.rjw@sisk.pl>
+Message-Id: <201103280130.31353.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Replace the sysdev class and struct sys_device used for power
-management in the OMAP's GPIO code with a struct syscore_ops object
-which is simpler.
+Make the ARM architecture select CONFIG_ARCH_NO_SYSDEV_OPS to
+indicate that sysdevs are not used for power management any more on
+this architecture.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/plat-omap/gpio.c |   35 +++++++++--------------------------
- 1 file changed, 9 insertions(+), 26 deletions(-)
+ arch/arm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: linux-2.6/arch/arm/plat-omap/gpio.c
+Index: linux-2.6/arch/arm/Kconfig
 ===================================================================
---- linux-2.6.orig/arch/arm/plat-omap/gpio.c
-+++ linux-2.6/arch/arm/plat-omap/gpio.c
-@@ -17,7 +17,7 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/err.h>
- #include <linux/clk.h>
- #include <linux/io.h>
-@@ -1379,9 +1379,7 @@ static const struct dev_pm_ops omap_mpui
- 	.resume_noirq = omap_mpuio_resume_noirq,
- };
- 
--/* use platform_driver for this, now that there's no longer any
-- * point to sys_device (other than not disturbing old code).
-- */
-+/* use platform_driver for this. */
- static struct platform_driver omap_mpuio_driver = {
- 	.driver		= {
- 		.name	= "mpuio",
-@@ -1754,7 +1752,7 @@ static int __devinit omap_gpio_probe(str
- }
- 
- #if defined(CONFIG_ARCH_OMAP16XX) || defined(CONFIG_ARCH_OMAP2PLUS)
--static int omap_gpio_suspend(struct sys_device *dev, pm_message_t mesg)
-+static int omap_gpio_suspend(void)
- {
- 	int i;
- 
-@@ -1804,12 +1802,12 @@ static int omap_gpio_suspend(struct sys_
- 	return 0;
- }
- 
--static int omap_gpio_resume(struct sys_device *dev)
-+static void omap_gpio_resume(void)
- {
- 	int i;
- 
- 	if (!cpu_class_is_omap2() && !cpu_is_omap16xx())
--		return 0;
-+		return;
- 
- 	for (i = 0; i < gpio_bank_count; i++) {
- 		struct gpio_bank *bank = &gpio_bank[i];
-@@ -1845,21 +1843,13 @@ static int omap_gpio_resume(struct sys_d
- 		__raw_writel(bank->saved_wakeup, wake_set);
- 		spin_unlock_irqrestore(&bank->lock, flags);
- 	}
--
--	return 0;
- }
- 
--static struct sysdev_class omap_gpio_sysclass = {
--	.name		= "gpio",
-+static struct syscore_ops omap_gpio_syscore_ops = {
- 	.suspend	= omap_gpio_suspend,
- 	.resume		= omap_gpio_resume,
- };
- 
--static struct sys_device omap_gpio_device = {
--	.id		= 0,
--	.cls		= &omap_gpio_sysclass,
--};
--
- #endif
- 
- #ifdef CONFIG_ARCH_OMAP2PLUS
-@@ -2117,21 +2107,14 @@ postcore_initcall(omap_gpio_drv_reg);
- 
- static int __init omap_gpio_sysinit(void)
- {
--	int ret = 0;
--
- 	mpuio_init();
- 
- #if defined(CONFIG_ARCH_OMAP16XX) || defined(CONFIG_ARCH_OMAP2PLUS)
--	if (cpu_is_omap16xx() || cpu_class_is_omap2()) {
--		if (ret == 0) {
--			ret = sysdev_class_register(&omap_gpio_sysclass);
--			if (ret == 0)
--				ret = sysdev_register(&omap_gpio_device);
--		}
--	}
-+	if (cpu_is_omap16xx() || cpu_class_is_omap2())
-+		register_syscore_ops(&omap_gpio_syscore_ops);
- #endif
- 
--	return ret;
-+	return 0;
- }
- 
- arch_initcall(omap_gpio_sysinit);
+--- linux-2.6.orig/arch/arm/Kconfig
++++ linux-2.6/arch/arm/Kconfig
+@@ -28,6 +28,7 @@ config ARM
+ 	select HAVE_C_RECORDMCOUNT
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_SPARSE_IRQ
++	select ARCH_NO_SYSDEV_OPS
+ 	help
+ 	  The ARM series is a line of low-power-consumption RISC chip designs
+ 	  licensed by ARM Ltd and targeted at embedded applications and
 
