@@ -1,85 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751151Ab1C0B3V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Mar 2011 21:29:21 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:31347 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750835Ab1C0B3U (ORCPT
+	id S1751475Ab1C0Bah (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Mar 2011 21:30:37 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:61802 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab1C0Baf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Mar 2011 21:29:20 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: ONHbhsoVM1kytJXaA.ec5QdCpGoKC5IlEq8XfsGMV4Ie6zq
- EoKj5pZDcINKcWBzA6F6zuJKoHwG8QvDwQW1X2TiwRT.9Zwqjx8vFnj7bdQH
- RNoRy8i5IBNkqLwG_i42Iy7EXSfOCzAzoRiRI_0e4WuuZcl8U_LyjRUar2Dt
- .SA46wIcUC8MeQnXSNnptZc80M_XhiiDFRqtnJelGrfSHESfUkQ2mqVjTEVb
- ymVvHEvWhq6gQG4u.Q1dnknvsDJ1zHV8BLA763itBYtnaSZ1VklAbQF4vgqw
- tu8EG_1WoAz_vN2cCBIrDGPzN6FWLM3_QzBinF0ulW_hfD888
-X-Yahoo-Newman-Property: ymail-3
-Date: Sat, 26 Mar 2011 20:29:14 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] slub: Disable the lockless allocator
-In-Reply-To: <AANLkTinTzKQkRcE2JvP_BpR0YMj82gppAmNo7RqgftCG@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1103262028170.1004@router.home>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger> <20110324142146.GA11682@elte.hu> <alpine.DEB.2.00.1103240940570.32226@router.home> <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com> <20110324172653.GA28507@elte.hu> <20110324185258.GA28370@elte.hu>
- <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6> <20110324192247.GA5477@elte.hu> <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com> <20110326112725.GA28612@elte.hu> <20110326114736.GA8251@elte.hu> <1301161507.2979.105.camel@edumazet-laptop>
- <alpine.DEB.2.00.1103261406420.24195@router.home> <alpine.DEB.2.00.1103261428200.25375@router.home> <alpine.DEB.2.00.1103261440160.25375@router.home> <AANLkTinTzKQkRcE2JvP_BpR0YMj82gppAmNo7RqgftCG@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 26 Mar 2011 21:30:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=DD1MiHIIqhfysB/DS8Agzbpd4AWeZcHWjT+vRp/7Rn59wnwUg1VLZ2LOexDNlkIsAW
+         5K90rIuvx+lW2tlS5zzSUZLTeFXo8HW01bNtLjKZUroV6rnfz688QFq/b1UydvFXhFRj
+         7nx+3dYdD5icwwlJElU1XT56KZ6Y4ssyEIugA=
 MIME-Version: 1.0
-Content-Type: MULTIPART/Mixed; BOUNDARY=0015177407b69c6eb6049f6a184f
-Content-ID: <alpine.DEB.2.00.1103262028171.1004@router.home>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20110327000900.GB2322@linux.vnet.ibm.com>
+References: <20110325155516.GA27484@feather>
+	<20110325164236.GP2322@linux.vnet.ibm.com>
+	<AANLkTim08Ff==7mY9fuU8tUJrTmEhZ+PrsJSQO5PKOH6@mail.gmail.com>
+	<AANLkTi=N6Z0bDg1YXVFkUbv7phM8XvQ5U3=vS6Ej8Af5@mail.gmail.com>
+	<20110325174855.GR2322@linux.vnet.ibm.com>
+	<AANLkTin9HxOTwavbtbsMd0quYsEvhDNmuO5kOpquqoF=@mail.gmail.com>
+	<20110326034210.GX2322@linux.vnet.ibm.com>
+	<AANLkTi=zJZ26i14D-kyWQ1uqUPifrv+DN4So4+fC5V=d@mail.gmail.com>
+	<20110326160229.GZ2322@linux.vnet.ibm.com>
+	<AANLkTikzLm+ArYkG20F41JOgfNygfdhxC0+A4tV4ez-R@mail.gmail.com>
+	<20110327000900.GB2322@linux.vnet.ibm.com>
+Date: Sun, 27 Mar 2011 03:30:34 +0200
+Message-ID: <AANLkTikpq2CiSTk9Br7DdkVt=E1p8OFGa+Ls2BzkkhcO@mail.gmail.com>
+Subject: Re: linux-next: Tree for March 25 (Call trace: RCU|workqueues|block|VFS|ext4
+ related?)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Nick Piggin <npiggin@kernel.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sun, Mar 27, 2011 at 1:09 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Sat, Mar 26, 2011 at 11:15:22PM +0100, Sedat Dilek wrote:
+>> On Sat, Mar 26, 2011 at 5:02 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Sat, Mar 26, 2011 at 01:34:53PM +0100, Sedat Dilek wrote:
+>> [...]
+>> >> Just FYI: Changed to the following settings:
+>> >>
+>> >> - Enable Preemptible Kernel (Low-Latency Desktop)
+>> >> - Enable Preemptible tree-based hierarchical RCU
+>> >> - Enable RCU priority boosting
+>> >> - Reset RCU CPU stall timeout to default (60 seconds)
+>> >>
+>> >> So far I see no RCU stalls in the logs and my system runs as expected.
+>> >> ( I have noticed here some "stalling" in the webbrowser, but I can do
+>> >> my daily business. )
+>> >
+>> > OK, good to see some progress!
+>> >
+>>
+>> On 1st impression thing went fine, but after a while jobs like opening
+>> several tabs in firefox or doing a simple df command stalled the
+>> machine. No, my system even got frozen and required a brutal reset.
+>>
+>> >From the logs (more see file-attachment):
+>>
+>> Mar 26 19:58:40 tbox kernel: [ 1440.640060] INFO: task systemd:1
+>> blocked for more than 120 seconds.
+>> Mar 26 19:58:40 tbox kernel: [ 1440.640074] "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>>
+>> Following it -> NOPE
+>> $ echo 0 > /proc/sys/kernel/hung_task_timeout_secs
+>
+> These are tasks that are blocked, not tasks that are consuming CPU.
+>
+>> > Is there a runaway process consuming CPU?  The reason that I ask is that
+>> > an infinite loop in the kernel can result in a stall when PREEMPT=n
+>> > but is less likely to if PREEMPT=y.  Could you please check with "top",
+>> > "ps", or whatever?
+>>
+>> Unsure what you mean by this, as you can see from the logs, it's not
+>> only one special task "stalling".
+>> BTW, I have systemd here running.
+>
+> Right.  But I need to know if there are tasks consuming lots of CPU,
+> which is different than tasks that are stalled for a long time.  Look
+> at the message: it says "blocked for more than 120 seconds", not
+> "running for more than 120 seconds".
+>
+> For example, if one of the RCU kthreads is consuming lots of CPU, that
+> would tell me that I should look for an RCU bug (and yank the patches
+> from -next in the meantime).  On the other hand, if some other task is
+> consuming lots of CPU, then that would be a hint as to where to find
+> the bug.
+>
+>> >> I am not sure what the change to PREEMPT exactly mean in the end.
+>> >> ( Let's work with this new kernel and carefully check for possible
+>> >> side-effects. )
+>> >> For example CONFIG_RCU_FAST_NO_HZ=y is now dropped, where the Kconfig
+>> >> descriptive text says some words on better energy saving. For a
+>> >> notebook this is no good.
+>> >
+>> > CONFIG_RCU_FAST_NO_HZ is of no use on a uniprocessor system, so OK
+>> > to disable it.  But are you saying that CONFIG_RCU_FAST_NO_HZ=y
+>> > results in problems that are removed by CONFIG_RCU_FAST_NO_HZ=n?
+>> > That would be a surprise, and I need to know if this is the case.
+>>
+>> In my current setup (PREEMPT and TREE_PREEMPT_RCU)
+>> CONFIG_RCU_FAST_NO_HZ is not considered and set via Kconfig-system
+>> (see excerpt below).
+>> But when you say for UP it is of no use, I need no more info.
+>
+> OK, "of no use" is overstating things a bit.  But CONFIG_RCU_FAST_NO_HZ's
+> main purpose is to get the last CPU into dyntick-idle state
+> (CONFIG_NO_HZ), which is most useful if the system has several CPUs.
+>
+>> Might be good to add some recommended (and/or useless) kernel-config
+>> settings to RCU/UP.txt?
+>>
+>> [ init/Kconfig ]
+>> config RCU_FAST_NO_HZ
+>>         bool "Accelerate last non-dyntick-idle CPU's grace periods"
+>>         depends on TREE_RCU && NO_HZ && SMP
+>>         default n
+>
+> The "depends on TREE_RCU && NO_HZ && SMP" already excludes it from
+> UP kernel builds, so no need to document.
+>
+>> >> I have also questions to some Kconfig dependencies, for example why I
+>> >> can't select TREE_PREEMPT_RCU if CONFIG_PREEMPT_VOLUNTARY=y, etc.
+>> >> Intended?
+>> >
+>> > Yes.  There is no point in TREE_PREEMPT_RCU unless PREEMPT=y.
+>> >
+>>
+>> OK.
+>>
+>> >> Maybe I collect all my askings in a separate email to RCU folks and ML
+>> >> and do not disturb further people from other sub-trees.
+>> >>
+>> >> I enjoyed to read the numerous docs in Documentation/RCU/ (and noticed
+>> >> some typos as well).
+>> >> The RCU folk gave the word "FAQ" a new meaning: Frequenty Asked
+>> >> Questions & Q*uiz* :-).
+>> >>
+>> >> Thanks for the helpful hints and explanations from the RCU folks!
+>> >
+>> > Glad you liked them!  ;-)
+>> >
+>>
+>> Other sub-trees lack of no good or up2date docs.
+>>
+>> >> - Sedat -
+>> >>
+>> >> P.S.: Current RCU and HZ kernel-config settings
+>> >>
+>> >> # grep RCU /boot/config-$(uname -r)
+>> >> # RCU Subsystem
+>> >> CONFIG_TREE_PREEMPT_RCU=y
+>> >> CONFIG_PREEMPT_RCU=y
+>> >> CONFIG_RCU_TRACE=y
+>> >> CONFIG_RCU_FANOUT=32
+>> >> # CONFIG_RCU_FANOUT_EXACT is not set
+>> >> CONFIG_TREE_RCU_TRACE=y
+>> >> CONFIG_RCU_BOOST=y
+>> >> CONFIG_RCU_BOOST_PRIO=1
+>> >> CONFIG_RCU_BOOST_DELAY=500
+>> >> # CONFIG_SPARSE_RCU_POINTER is not set
+>> >> # CONFIG_RCU_TORTURE_TEST is not set
+>> >> CONFIG_RCU_CPU_STALL_TIMEOUT=60
+>> >> CONFIG_RCU_CPU_STALL_VERBOSE=y
+>> >>
+>> >> # grep _HZ /boot/config-$(uname -r)
+>> >> CONFIG_NO_HZ=y
+>> >> # CONFIG_HZ_100 is not set
+>> >> CONFIG_HZ_250=y
+>> >> # CONFIG_HZ_300 is not set
+>> >> # CONFIG_HZ_1000 is not set
+>> >> CONFIG_HZ=250
+>> >
+>> > OK, thank you for the info!
+>> >
+>>
+>> N.P.
+>>
+>> >                                                        Thanx, Paul
+>> >
+>>
+>> I guees I will revert step-by-step the RCU commits in linux-next and report.
+>> This weekend I wanted to enhance Debian's live-cd framework with
+>> overlayfs support and a customized kernel.
+>> But then came RCU :-(.
+>
+> Well, if it turns out to be a problem in RCU I will certainly apologize.
+>
 
---0015177407b69c6eb6049f6a184f
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
-Content-ID: <alpine.DEB.2.00.1103262028172.1004@router.home>
+No, that's not so dramatic.
+Dealing with this RCU issue has nice side-effects: I remembered (and
+finally did) to use a reduced kernel-config set.
+The base for it I created with 'make localmodconfig' and did some
+manual fine-tuning afterwards (throw out media, rc, dvd, unneeded FSs,
+etc.).
+Also, I can use fresh gcc-4.6 (4.6.0-1) from the official Debian repos.
 
-On Sat, 26 Mar 2011, Linus Torvalds wrote:
+So, I started building with
+"revert-rcu-patches/0001-Revert-rcu-introduce-kfree_rcu.patch".
+I will let you know.
 
-> Wouldn't something like the attached be better?
+- Sedat -
 
-On first glance I cannot find fault with it.
---0015177407b69c6eb6049f6a184f
-Content-Type: TEXT/X-PATCH; CHARSET=US-ASCII; NAME=patch.diff
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.00.1103262028173.1004@router.home>
-Content-Description: 
-Content-Disposition: ATTACHMENT; FILENAME=patch.diff
-
-IGFyY2gveDg2L2luY2x1ZGUvYXNtL3BlcmNwdS5oIHwgICAxMCArKysrKystLS0tCiAxIGZpbGVz
-IGNoYW5nZWQsIDYgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9h
-cmNoL3g4Ni9pbmNsdWRlL2FzbS9wZXJjcHUuaCBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL3BlcmNw
-dS5oCmluZGV4IGEwOWUxZjAuLmQ0NzViNDMgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2luY2x1ZGUv
-YXNtL3BlcmNwdS5oCisrKyBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL3BlcmNwdS5oCkBAIC00NSw3
-ICs0NSw3IEBACiAjaW5jbHVkZSA8bGludXgvc3RyaW5naWZ5Lmg+CiAKICNpZmRlZiBDT05GSUdf
-U01QCi0jZGVmaW5lIF9fcGVyY3B1X2FyZyh4KQkJIiUlIl9fc3RyaW5naWZ5KF9fcGVyY3B1X3Nl
-ZykiOiVQIiAjeAorI2RlZmluZSBfX3BlcmNwdV9wcmVmaXgJCSIlJSJfX3N0cmluZ2lmeShfX3Bl
-cmNwdV9zZWcpIjoiCiAjZGVmaW5lIF9fbXlfY3B1X29mZnNldAkJcGVyY3B1X3JlYWQodGhpc19j
-cHVfb2ZmKQogCiAvKgpAQCAtNjIsOSArNjIsMTEgQEAKIAkodHlwZW9mKCoocHRyKSkgX19rZXJu
-ZWwgX19mb3JjZSAqKXRjcF9wdHJfXzsJXAogfSkKICNlbHNlCi0jZGVmaW5lIF9fcGVyY3B1X2Fy
-Zyh4KQkJIiVQIiAjeAorI2RlZmluZSBfX3BlcmNwdV9wcmVmaXgJCSIiCiAjZW5kaWYKIAorI2Rl
-ZmluZSBfX3BlcmNwdV9hcmcoeCkJCV9fcGVyY3B1X3ByZWZpeCAiJVAiICN4CisKIC8qCiAgKiBJ
-bml0aWFsaXplZCBwb2ludGVycyB0byBwZXItY3B1IHZhcmlhYmxlcyBuZWVkZWQgZm9yIHRoZSBi
-b290CiAgKiBwcm9jZXNzb3IgbmVlZCB0byB1c2UgdGhlc2UgbWFjcm9zIHRvIGdldCB0aGUgcHJv
-cGVyIGFkZHJlc3MKQEAgLTUxNiwxMSArNTE4LDExIEBAIGRvIHsJCQkJCQkJCQlcCiAJdHlwZW9m
-KG8yKSBfX24yID0gbjI7CQkJCQkJXAogCXR5cGVvZihvMikgX19kdW1teTsJCQkJCQlcCiAJYWx0
-ZXJuYXRpdmVfaW8oImNhbGwgdGhpc19jcHVfY21weGNoZzE2Yl9lbXVcblx0IiBQNl9OT1A0LAlc
-Ci0JCSAgICAgICAiY21weGNoZzE2YiAlJWdzOiglJXJzaSlcblx0c2V0eiAlMFxuXHQiLAlcCisJ
-CSAgICAgICAiY21weGNoZzE2YiAiIF9fcGVyY3B1X3ByZWZpeCAiKCUlcnNpKVxuXHRzZXR6ICUw
-XG5cdCIsCVwKIAkJICAgICAgIFg4Nl9GRUFUVVJFX0NYMTYsCQkJCVwKIAkJICAgICAgIEFTTV9P
-VVRQVVQyKCI9YSIoX19yZXQpLCAiPWQiKF9fZHVtbXkpKSwJCVwKIAkJICAgICAgICJTIiAoJnBj
-cDEpLCAiYiIoX19uMSksICJjIihfX24yKSwJCVwKLQkJICAgICAgICJhIihfX28xKSwgImQiKF9f
-bzIpKTsJCQkJXAorCQkgICAgICAgImEiKF9fbzEpLCAiZCIoX19vMikgOiAibWVtb3J5Iik7CQlc
-CiAJX19yZXQ7CQkJCQkJCQlcCiB9KQogCg==
---0015177407b69c6eb6049f6a184f--
+>> Can you say some words to kfree_rcu.2011.03.25b (rcu/kfree_rcu) GIT branch(es)?
+>
+> These are just applying Lia Jiangshan's kfree_rcu() to a number of places
+> in the kernel.  You can safely ignore them.
+>
+>                                                                Thanx, Paul
+>
+>> - Sedat -
+>
