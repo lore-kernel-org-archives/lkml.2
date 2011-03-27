@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab1C0UqB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 16:46:01 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45800 "EHLO ogre.sisk.pl"
+	id S1752232Ab1C0UqU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 16:46:20 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45830 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab1C0Up6 convert rfc822-to-8bit (ORCPT
+	id S1751653Ab1C0UqR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 16:45:58 -0400
+	Sun, 27 Mar 2011 16:46:17 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Mehmet Giritli" <mehmet@giritli.eu>
+        "=?utf-8?q?Mathias=20Bur=C3=A9n?=" <mathias.buren@gmail.com>
 References: <lDYNS4ATQ-N.A._aD.9m5jNB@chimera>
 In-Reply-To: <lDYNS4ATQ-N.A._aD.9m5jNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <40UNry85rJN.A.1SE.ln5jNB@chimera>
-Subject: [Bug #30852] Seldom errors after suspend/resume causing problems
+Message-ID: <40UNry85rJN.A.QZE.un5jNB@chimera>
+Subject: [Bug #30612] 2.6.38-rc7, iwlagn crash
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 27 Mar 2011 22:27:39 +0200 (CEST)
+Date: Sun, 27 Mar 2011 22:27:38 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,9 +34,11 @@ from 2.6.37.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=30852
-Subject		: Seldom errors after suspend/resume causing problems
-Submitter	: Mehmet Giritli <mehmet@giritli.eu>
-Date		: 2011-03-10 10:53 (18 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=30612
+Subject		: 2.6.38-rc7, iwlagn crash
+Submitter	: Mathias Burén <mathias.buren@gmail.com>
+Date		: 2011-03-04 3:27 (24 days old)
+Message-ID	: <AANLkTin0PGOfHr3AvQk-BAhyMY7ihYMU1-wX4RJG=1YT@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=129920925514892&w=2
 
 
