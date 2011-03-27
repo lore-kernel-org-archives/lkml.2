@@ -1,152 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab1C0QUA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 12:20:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36157 "EHLO hera.kernel.org"
+	id S1754035Ab1C0QUt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 12:20:49 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36180 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753809Ab1C0QT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 12:19:58 -0400
-Date: Sun, 27 Mar 2011 16:19:49 GMT
+	id S1753970Ab1C0QUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 12:20:48 -0400
+Date: Sun, 27 Mar 2011 16:20:39 GMT
 From: tip-bot for David Daney <ddaney@caviumnetworks.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         ddaney@caviumnetworks.com, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         ddaney@caviumnetworks.com, tglx@linutronix.de
-In-Reply-To: <1301081931-11240-3-git-send-email-ddaney@caviumnetworks.com>
-References: <1301081931-11240-3-git-send-email-ddaney@caviumnetworks.com>
+In-Reply-To: <1301081931-11240-4-git-send-email-ddaney@caviumnetworks.com>
+References: <1301081931-11240-4-git-send-email-ddaney@caviumnetworks.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] genirq: Add chip hooks for taking CPUs on/off line.
-Message-ID: <tip-0fdb4b259ed3e91b687ac26848202f5e7c217e62@git.kernel.org>
-Git-Commit-ID: 0fdb4b259ed3e91b687ac26848202f5e7c217e62
+Subject: [tip:irq/urgent] genirq: Split irq_set_affinity() so it can be called with lock held.
+Message-ID: <tip-c2d0c555c22242c3a76e366074c4d83ef9fa3b8c@git.kernel.org>
+Git-Commit-ID: c2d0c555c22242c3a76e366074c4d83ef9fa3b8c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 27 Mar 2011 16:19:50 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 27 Mar 2011 16:20:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0fdb4b259ed3e91b687ac26848202f5e7c217e62
-Gitweb:     http://git.kernel.org/tip/0fdb4b259ed3e91b687ac26848202f5e7c217e62
+Commit-ID:  c2d0c555c22242c3a76e366074c4d83ef9fa3b8c
+Gitweb:     http://git.kernel.org/tip/c2d0c555c22242c3a76e366074c4d83ef9fa3b8c
 Author:     David Daney <ddaney@caviumnetworks.com>
-AuthorDate: Fri, 25 Mar 2011 12:38:49 -0700
+AuthorDate: Fri, 25 Mar 2011 12:38:50 -0700
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 27 Mar 2011 17:45:58 +0200
+CommitDate: Sun, 27 Mar 2011 17:45:59 +0200
 
-genirq: Add chip hooks for taking CPUs on/off line.
+genirq: Split irq_set_affinity() so it can be called with lock held.
 
-[ tglx: Removed the enabled argument as this is now available in
-irq_data ]
+The .irq_cpu_online() and .irq_cpu_offline() functions may need to
+adjust affinity, but they are called with the descriptor lock held.
+Create __irq_set_affinity_locked() which is called with the lock held.
+Make irq_set_affinity() just a wrapper that acquires the lock.
+
+[ tglx: Changed the argument to irq_data, added a !desc check and
+        moved the !irq_set_affinity check where it belongs ]
 
 Signed-off-by: David Daney <ddaney@caviumnetworks.com>
 Cc: linux-mips@linux-mips.org
 Cc: ralf@linux-mips.org
-LKML-Reference: <1301081931-11240-3-git-send-email-ddaney@caviumnetworks.com>
+LKML-Reference: <1301081931-11240-4-git-send-email-ddaney@caviumnetworks.com>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/irq.h |    8 +++++++
- kernel/irq/chip.c   |   58 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 66 insertions(+), 0 deletions(-)
+ include/linux/irq.h |    1 +
+ kernel/irq/manage.c |   48 ++++++++++++++++++++++++++++++------------------
+ 2 files changed, 31 insertions(+), 18 deletions(-)
 
 diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 8649b0f..c2a0c19 100644
+index 76e948f..a10717e 100644
 --- a/include/linux/irq.h
 +++ b/include/linux/irq.h
-@@ -279,6 +279,8 @@ static inline bool irqd_irq_disabled(struct irq_data *d)
-  * @irq_set_wake:	enable/disable power-management wake-on of an IRQ
-  * @irq_bus_lock:	function to lock access to slow bus (i2c) chips
-  * @irq_bus_sync_unlock:function to sync and unlock slow bus (i2c) chips
-+ * @irq_cpu_online:	configure an interrupt source for a secondary CPU
-+ * @irq_cpu_offline:	un-configure an interrupt source for a secondary CPU
-  * @irq_print_chip:	optional to print special chip info in show_interrupts
-  * @flags:		chip specific flags
-  *
-@@ -327,6 +329,9 @@ struct irq_chip {
- 	void		(*irq_bus_lock)(struct irq_data *data);
- 	void		(*irq_bus_sync_unlock)(struct irq_data *data);
+@@ -382,6 +382,7 @@ extern void remove_irq(unsigned int irq, struct irqaction *act);
  
-+	void		(*irq_cpu_online)(struct irq_data *data);
-+	void		(*irq_cpu_offline)(struct irq_data *data);
-+
- 	void		(*irq_print_chip)(struct irq_data *data, struct seq_file *p);
+ extern void irq_cpu_online(void);
+ extern void irq_cpu_offline(void);
++extern int __irq_set_affinity_locked(struct irq_data *data,  const struct cpumask *cpumask);
  
- 	unsigned long	flags;
-@@ -372,6 +377,9 @@ struct irqaction;
- extern int setup_irq(unsigned int irq, struct irqaction *new);
- extern void remove_irq(unsigned int irq, struct irqaction *act);
- 
-+extern void irq_cpu_online(void);
-+extern void irq_cpu_offline(void);
-+
  #ifdef CONFIG_GENERIC_HARDIRQS
  
- #if defined(CONFIG_SMP) && defined(CONFIG_GENERIC_PENDING_IRQ)
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 0a890bd..44b16a1 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -696,3 +696,61 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 0a2aa73..3d151fd 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -139,35 +139,26 @@ static inline void
+ irq_get_pending(struct cpumask *mask, struct irq_desc *desc) { }
+ #endif
  
- 	irq_put_desc_unlock(desc, flags);
+-/**
+- *	irq_set_affinity - Set the irq affinity of a given irq
+- *	@irq:		Interrupt to set affinity
+- *	@cpumask:	cpumask
+- *
+- */
+-int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
++int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ {
+-	struct irq_desc *desc = irq_to_desc(irq);
+-	struct irq_chip *chip = desc->irq_data.chip;
+-	unsigned long flags;
++	struct irq_chip *chip = irq_data_get_irq_chip(data);
++	struct irq_desc *desc = irq_data_to_desc(data);
+ 	int ret = 0;
+ 
+-	if (!chip->irq_set_affinity)
++	if (!chip || !chip->irq_set_affinity)
+ 		return -EINVAL;
+ 
+-	raw_spin_lock_irqsave(&desc->lock, flags);
+-
+-	if (irq_can_move_pcntxt(desc)) {
+-		ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
++	if (irqd_can_move_in_process_context(data)) {
++		ret = chip->irq_set_affinity(data, mask, false);
+ 		switch (ret) {
+ 		case IRQ_SET_MASK_OK:
+-			cpumask_copy(desc->irq_data.affinity, mask);
++			cpumask_copy(data->affinity, mask);
+ 		case IRQ_SET_MASK_OK_NOCOPY:
+ 			irq_set_thread_affinity(desc);
+ 			ret = 0;
+ 		}
+ 	} else {
+-		irqd_set_move_pending(&desc->irq_data);
++		irqd_set_move_pending(data);
+ 		irq_copy_pending(desc, mask);
+ 	}
+ 
+@@ -176,7 +167,28 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
+ 		schedule_work(&desc->affinity_notify->work);
+ 	}
+ 	irq_compat_set_affinity(desc);
+-	irqd_set(&desc->irq_data, IRQD_AFFINITY_SET);
++	irqd_set(data, IRQD_AFFINITY_SET);
++
++	return ret;
++}
++
++/**
++ *	irq_set_affinity - Set the irq affinity of a given irq
++ *	@irq:		Interrupt to set affinity
++ *	@cpumask:	cpumask
++ *
++ */
++int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	unsigned long flags;
++	int ret;
++
++	if (!desc)
++		return -EINVAL;
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++	ret =  __irq_set_affinity_locked(irq_desc_get_irq_data(desc), mask);
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	return ret;
  }
-+
-+/**
-+ *	irq_cpu_online - Invoke all irq_cpu_online functions.
-+ *
-+ *	Iterate through all irqs and invoke the chip.irq_cpu_online()
-+ *	for each.
-+ */
-+void irq_cpu_online(void)
-+{
-+	struct irq_desc *desc;
-+	struct irq_chip *chip;
-+	unsigned long flags;
-+	unsigned int irq;
-+
-+	for_each_active_irq(irq) {
-+		desc = irq_to_desc(irq);
-+		if (!desc)
-+			continue;
-+
-+		raw_spin_lock_irqsave(&desc->lock, flags);
-+
-+		chip = irq_data_get_irq_chip(&desc->irq_data);
-+
-+		if (chip && chip->irq_cpu_online)
-+			chip->irq_cpu_online(&desc->irq_data);
-+
-+		raw_spin_unlock_irqrestore(&desc->lock, flags);
-+	}
-+}
-+
-+/**
-+ *	irq_cpu_offline - Invoke all irq_cpu_offline functions.
-+ *
-+ *	Iterate through all irqs and invoke the chip.irq_cpu_offline()
-+ *	for each.
-+ */
-+void irq_cpu_offline(void)
-+{
-+	struct irq_desc *desc;
-+	struct irq_chip *chip;
-+	unsigned long flags;
-+	unsigned int irq;
-+
-+	for_each_active_irq(irq) {
-+		desc = irq_to_desc(irq);
-+		if (!desc)
-+			continue;
-+
-+		raw_spin_lock_irqsave(&desc->lock, flags);
-+
-+		chip = irq_data_get_irq_chip(&desc->irq_data);
-+
-+		if (chip && chip->irq_cpu_offline)
-+			chip->irq_cpu_offline(&desc->irq_data);
-+
-+		raw_spin_unlock_irqrestore(&desc->lock, flags);
-+	}
-+}
