@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab1C0Oby (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 10:31:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65421 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545Ab1C0Obx (ORCPT
+	id S1753715Ab1C0PEJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 11:04:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64005 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab1C0PEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 10:31:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:references:subject:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=fYvlU5icRKO1inKmSbUB0Vl2ojC/UNAwx8eX7B3B9BfAVo10klSX7rTP+/c0+iuITE
-         qtU84tqWF/LQJ8N7XDdiO4/2FEKIUs6XWzJlXe5RwydMsQGhmWKjGI6bBTOs9ZcZxqa1
-         W1Vzopr8MjpgkqJZG4UsNISvyqOlD50z3uHaA=
-Date: Sun, 27 Mar 2011 22:31:46 +0800
-From: "wanlong.gao" <wanlong.gao@gmail.com>
-To: "Alexey Dobriyan" <adobriyan@gmail.com>
-Cc: "greg" <greg@kroah.com>, "harryxiyou" <harryxiyou@gmail.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <1301195244-4606-1-git-send-email-wanlong.gao@gmail.com>,
- <20110327125359.GA5816@p183.telecom.by>
-Subject: Re: Re: [PATCH] Fixed the format: lines over 80 characters .
-Message-ID: <201103272231385006098@gmail.com>
-X-mailer: Foxmail 6, 15, 201, 23 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="gb2312"
+	Sun, 27 Mar 2011 11:04:07 -0400
+Message-ID: <4D8F5186.5030109@ru.mvista.com>
+Date: Sun, 27 Mar 2011 19:02:30 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: Re: [patch 17/23] arm: at91: Cleanup irq chip
+References: <20110325131617.258789658@linutronix.de>	<20110325132048.996818347@linutronix.de> <alpine.LFD.2.00.1103252202440.31464@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103252202440.31464@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2REWMGh004309
 
+Hello.
 
+On 26-03-2011 0:03, Thomas Gleixner wrote:
 
-But if you read the code in the 80 columns screen , isn't it less readable with the code over 80 characters ?
+>> Avoid the whole lazy disable dance in the demux handler by providing a
+>> irq_disable() callback.
 
--------------------------------------------------------------
-·¢¼þÈË£ºAlexey Dobriyan
-·¢ËÍÈÕÆÚ£º2011-03-27 21:54:05
-ÊÕ¼þÈË£ºwanlong.gao
-³­ËÍ£ºgreg; harryxiyou; linux-kernel
-Ö÷Ìâ£ºRe: [PATCH] Fixed the format: lines over 80 characters .
+>> Use the proper accessor functions and tidy up gpio_irq_handler()
 
-On Sun, Mar 27, 2011 at 11:07:24AM +0800, wanlong.gao@gmail.com wrote:
->     Lines over 80 characters
+>> Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
+[...]
 
->  static DEFINE_PCI_DEVICE_TABLE(cmodio_pci_ids) = {
-> -	{ PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_9030, PCI_VENDOR_ID_JANZ, 0x0101 },
-> -	{ PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_9050, PCI_VENDOR_ID_JANZ, 0x0100 },
-> +	{ PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_9030,
-> +			PCI_VENDOR_ID_JANZ, 0x0101 },
-> +	{ PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_9050,
-> +			PCI_VENDOR_ID_JANZ, 0x0100 },
+>> Index: linux-2.6-tip/arch/arm/mach-at91/gpio.c
+>> ===================================================================
+>> --- linux-2.6-tip.orig/arch/arm/mach-at91/gpio.c
+>> +++ linux-2.6-tip/arch/arm/mach-at91/gpio.c
+[...]
+>> @@ -384,16 +385,14 @@ static struct irq_chip gpio_irqchip = {
+>>   static void gpio_irq_handler(unsigned irq, struct irq_desc *desc)
+>>   {
+>>   	unsigned	pin;
+>> -	struct irq_desc	*gpio;
+>> -	struct at91_gpio_chip *at91_gpio;
+>> -	void __iomem	*pio;
+>> +	struct irq_data *idata = irq_desc_get_irq_data(desc);
+>> +	struct irq_chip *chip = irq_data_get_chip(data);
+>> +	struct at91_gpio_chip *at91_gpio = irq_data_get_chip_data(data);
 
-NAK, this is less readable.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Sorry, needs to be
+
+> +	struct at91_gpio_chip *at91_gpio = irq_data_get_irq_chip_data(data);
+
+> Will fix and resend.
+
+    You also don't have 'data' defined anywhere, maybe you meant 'ídata'?
+
+WBR, Sergei
