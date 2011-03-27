@@ -1,263 +1,650 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab1C0W77 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 18:59:59 -0400
-Received: from kroah.org ([198.145.64.141]:53019 "EHLO coco.kroah.org"
+	id S1752559Ab1C0XAg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 19:00:36 -0400
+Received: from kroah.org ([198.145.64.141]:53045 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751025Ab1C0W75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 18:59:57 -0400
-Date: Sun, 27 Mar 2011 15:57:54 -0700
+	id S1752086Ab1C0XAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 19:00:03 -0400
+Date: Sun, 27 Mar 2011 16:00:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org
-Cc: lwn@lwn.net
-Subject: Linux 2.6.38.2
-Message-ID: <20110327225754.GA23206@kroah.com>
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Subject: Re: Linux 2.6.32.36
+Message-ID: <20110327230040.GF23206@kroah.com>
+References: <20110327230025.GE23206@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110327230025.GE23206@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm announcing the release of the 2.6.38.2 kernel.
-
-All users of the 2.6.38 kernel series must upgrade.
-
-The updated 2.6.38.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.38.y.git
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.38.y.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
-
- Makefile                                   |    2 
- arch/arm/mach-s3c2440/mach-mini2440.c      |    7 +
- arch/sh/kernel/ptrace_32.c                 |    8 +
- arch/sh/kernel/ptrace_64.c                 |    6 +
- arch/x86/kernel/entry_32.S                 |    2 
- arch/x86/kernel/head64.c                   |    3 
- arch/x86/kernel/setup.c                    |    5 
- arch/x86/mm/init.c                         |   19 ---
- arch/x86/mm/init_64.c                      |   11 +-
- arch/x86/xen/mmu.c                         |   13 +-
- drivers/firmware/dcdbas.c                  |    4 
- drivers/gpu/drm/drm_crtc.c                 |   51 +++++++++
- drivers/gpu/drm/drm_gem.c                  |    5 
- drivers/gpu/drm/i915/i915_gem.c            |    6 -
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |   21 +++
- drivers/gpu/drm/radeon/atombios_crtc.c     |    6 -
- drivers/gpu/drm/radeon/radeon_combios.c    |   21 ++-
- drivers/gpu/drm/radeon/radeon_connectors.c |   30 +++++
- drivers/gpu/drm/radeon/radeon_mode.h       |    1 
- drivers/input/xen-kbdfront.c               |   44 ++++----
- drivers/media/video/uvc/uvc_driver.c       |    8 +
- drivers/media/video/uvc/uvc_video.c        |   14 +-
- drivers/pci/hotplug/acpiphp_glue.c         |    1 
- drivers/usb/class/cdc-acm.c                |    7 +
- drivers/usb/class/cdc-wdm.c                |    2 
- drivers/usb/core/devio.c                   |    2 
- drivers/usb/host/ehci-q.c                  |   12 --
- drivers/usb/misc/uss720.c                  |    7 -
- drivers/usb/musb/blackfin.c                |    6 -
- drivers/video/console/tileblit.c           |    2 
- fs/aio.c                                   |    4 
- fs/dcache.c                                |    3 
- fs/ext3/super.c                            |    7 +
- fs/ext4/super.c                            |    8 +
- fs/namespace.c                             |   16 --
- fs/nfs/write.c                             |   31 +++--
- fs/nfsd/nfs4proc.c                         |    4 
- fs/nfsd/nfs4state.c                        |  155 +++++++++++++++--------------
- fs/nfsd/nfs4xdr.c                          |    5 
- fs/proc/array.c                            |    4 
- fs/proc/task_mmu.c                         |    4 
- fs/super.c                                 |    2 
- fs/sync.c                                  |    4 
- include/linux/compaction.h                 |    9 -
- include/linux/ethtool.h                    |   34 ++++++
- include/linux/mm.h                         |   11 +-
- kernel/cgroup.c                            |   14 +-
- kernel/perf_event.c                        |   13 +-
- kernel/signal.c                            |   16 ++
- kernel/sysctl.c                            |   18 +++
- mm/backing-dev.c                           |    2 
- mm/compaction.c                            |   24 ----
- mm/oom_kill.c                              |   50 +++++----
- mm/page_alloc.c                            |    4 
- mm/shmem.c                                 |    1 
- mm/slab.c                                  |    8 -
- mm/swapfile.c                              |    7 +
- mm/vmscan.c                                |   18 ---
- net/socket.c                               |  114 ++++++++++++++++++++-
- net/sunrpc/xprtsock.c                      |    2 
- sound/pci/hda/patch_realtek.c              |   25 +++-
- sound/pci/hda/patch_sigmatel.c             |   18 +++
- sound/pci/hda/patch_via.c                  |   53 +++++++--
- sound/soc/codecs/uda134x.c                 |    3 
- sound/soc/samsung/s3c24xx_uda134x.c        |    3 
- 65 files changed, 688 insertions(+), 332 deletions(-)
-
-
-Aaro Koskinen (1):
-      procfs: fix /proc/<pid>/maps heap check
-
-Al Viro (1):
-      fix deadlock in pivot_root()
-
-Alan Stern (1):
-      ehci-hcd: Bug fix: don't set a QH's Halt bit
-
-Alex Deucher (2):
-      drm/radeon/kms: prefer legacy pll algo for tv-out
-      drm/radeon/kms: fix hardcoded EDID handling
-
-Amir Goldstein (2):
-      ext3: skip orphan cleanup on rocompat fs
-      ext4: skip orphan cleanup if fs has unknown ROCOMPAT features
-
-Andrea Arcangeli (2):
-      mm: compaction: prevent kswapd compacting memory to reduce CPU usage
-      mm: PageBuddy and mapcount robustness
-
-Andrey Vagin (1):
-      oom: skip zombies when iterating tasklist
-
-Ben Hutchings (1):
-      ethtool: Compat handling for struct ethtool_rxnfc
-
-Bob Liu (1):
-      usb: musb: blackfin: fix typo in new dev_pm_ops struct
-
-Chris Wilson (2):
-      drm/i915: Disable pagefaults along execbuffer relocation fast path
-      drm: Fix use-after-free in drm_gem_vm_close()
-
-Dave Airlie (1):
-      drm: check for modesetting on modeset ioctls
-
-David Engraf (1):
-      sh: Fix ptrace hw_breakpoint handling
-
-David Henningsson (2):
-      ALSA: HDA: Realtek: Avoid unnecessary volume control index on Surround/Side
-      ALSA: HDA: Fix internal mic on Dell E5420/E5520
-
-David Rientjes (2):
-      oom: prevent unnecessary oom kills or kernel panics
-      oom: avoid deferring oom killer if exiting task is being traced
-
-Greg Kroah-Hartman (1):
-      Linux 2.6.38.2
-
-Henry Nestler (1):
-      fbcon: Bugfix soft cursor detection in Tile Blitting
-
-Herton Ronaldo Krzesinski (1):
-      drm/i915: Prevent racy removal of request from client list
-
-Hugh Dickins (1):
-      shmem: let shared anonymous be nonlinear again
-
-J. Bruce Fields (2):
-      nfsd4: minor nfs4state.c reshuffling
-      nfsd4: fix struct file leak
-
-Jens Axboe (1):
-      fs: assign sb->s_bdi to default_backing_dev_info if the bdi is going away
-
-Johan Hovold (3):
-      USB: cdc-acm: fix memory corruption / panic
-      USB: cdc-acm: fix potential null-pointer dereference
-      USB: cdc-acm: fix potential null-pointer dereference on disconnect
-
-Josef Bacik (1):
-      fs: call security_d_instantiate in d_obtain_alias V2
-
-Julien Tinnes (1):
-      Prevent rt_sigqueueinfo and rt_tgsigqueueinfo from spoofing the signal code
-
-Kees Cook (1):
-      proc: protect mm start_code/end_code in /proc/pid/stat
-
-Laurent Pinchart (1):
-      uvcvideo: Fix descriptor parsing for video output devices
-
-Lydia Wang (6):
-      ALSA: hda - VIA: Fix stereo mixer recording no sound issue
-      ALSA: hda - VIA: Fix independent headphone no sound issue
-      ALSA: hda - VIA: Add missing support for VT1718S in A-A path
-      ALSA: hda - VIA: Fix invalid A-A path volume adjust issue
-      ALSA: hda - VIA: Fix codec type for VT1708BCE at the right timing
-      ALSA: hda - VIA: Fix VT1708 can't build up Headphone control issue
-
-Marek Belisko (1):
-      ASoC: mini2440: Fix uda134x codec problem.
-
-Mel Gorman (1):
-      mm: swap: unlock swapfile inode mutex before closing file on bad swapfiles
-
-Mi Jinlong (2):
-      nfsd41: modify the members value of nfsd4_op_flags
-      nfsd: wrong index used in inner loop
-
-Michal Sojka (1):
-      USB: Do not pass negative length to snoop_urb()
-
-Mike Frysinger (2):
-      usb: musb: blackfin: fix typo in platform driver name
-      usb: musb: blackfin: fix typo in new bfin_musb_vbus_status func
-
-Olaf Hering (1):
-      Input: xen-kbdfront - advertise either absolute or relative coordinates
-
-Pekka Enberg (1):
-      Revert "slab: Fix missing DEBUG_SLAB last user"
-
-Peter Holik (1):
-      USB: uss720 fixup refcount position
-
-Peter Zijlstra (1):
-      perf: Fix tear-down of inherited group events
-
-Phil Carmody (1):
-      cgroups: if you list_empty() a head then don't list_del() it
-
-Phil Edworthy (1):
-      sh: Fix ptrace fpu state initialisation
-
-Richard Weinberger (1):
-      sysctl: restrict write access to dmesg_restrict
-
-Robert Lukassen (1):
-      USB: Fix 'bad dma' problem on WDM device disconnect
-
-Roland Dreier (1):
-      aio: wake all waiters when destroying ctx
-
-Sedat Dilek (1):
-      x86: Fix binutils-2.21 symbol related build failures
-
-Stefano Stabellini (2):
-      PCI hotplug: acpiphp: set current_state to D0 in register_slot
-      xen: set max_pfn_mapped to the last pfn mapped
-
-Stephan Lachowsky (1):
-      uvcvideo: Fix uvc_fixup_video_ctrl() format search
-
-Stuart Hayes (1):
-      dcdbas: force SMI to happen when expected
-
-Trond Myklebust (2):
-      NFS: Fix a hang/infinite loop in nfs_wb_page()
-      SUNRPC: Never reuse the socket port after an xs_close()
-
-Yinghai Lu (1):
-      x86: Cleanup highmap after brk is concluded
-
+diff --git a/Makefile b/Makefile
+index 63fce32..ec428b7 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 32
+-EXTRAVERSION = .35
++EXTRAVERSION = .36
+ NAME = Man-Eating Seals of Antiquity
+ 
+ # *DOCUMENTATION*
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 0b06cd7..0b08160 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -76,9 +76,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 	/* Make NULL pointers segfault */
+ 	zap_identity_mappings();
+ 
+-	/* Cleanup the over mapped high alias */
+-	cleanup_highmap();
+-
+ 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+ #ifdef CONFIG_EARLY_PRINTK
+ 		set_intr_gate(i, &early_idt_handlers[i]);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 5449a26..76358ee 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -294,6 +294,9 @@ static void __init init_gbpages(void)
+ static inline void init_gbpages(void)
+ {
+ }
++static void __init cleanup_highmap(void)
++{
++}
+ #endif
+ 
+ static void __init reserve_brk(void)
+@@ -921,6 +924,8 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	reserve_brk();
+ 
++	cleanup_highmap();
++
+ 	init_gbpages();
+ 
+ 	/* max_pfn_mapped is updated here */
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 73ffd55..6bce215 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -287,25 +287,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	load_cr3(swapper_pg_dir);
+ #endif
+ 
+-#ifdef CONFIG_X86_64
+-	if (!after_bootmem && !start) {
+-		pud_t *pud;
+-		pmd_t *pmd;
+-
+-		mmu_cr4_features = read_cr4();
+-
+-		/*
+-		 * _brk_end cannot change anymore, but it and _end may be
+-		 * located on different 2M pages. cleanup_highmap(), however,
+-		 * can only consider _end when it runs, so destroy any
+-		 * mappings beyond _brk_end here.
+-		 */
+-		pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
+-		pmd = pmd_offset(pud, _brk_end - 1);
+-		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
+-			pmd_clear(pmd);
+-	}
+-#endif
+ 	__flush_tlb_all();
+ 
+ 	if (!after_bootmem && e820_table_end > e820_table_start)
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 7d095ad..1584023 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -49,6 +49,7 @@
+ #include <asm/numa.h>
+ #include <asm/cacheflush.h>
+ #include <asm/init.h>
++#include <asm/setup.h>
+ #include <linux/bootmem.h>
+ 
+ static unsigned long dma_reserve __initdata;
+@@ -257,18 +258,18 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+  * to the compile time generated pmds. This results in invalid pmds up
+  * to the point where we hit the physaddr 0 mapping.
+  *
+- * We limit the mappings to the region from _text to _end.  _end is
+- * rounded up to the 2MB boundary. This catches the invalid pmds as
++ * We limit the mappings to the region from _text to _brk_end.  _brk_end
++ * is rounded up to the 2MB boundary. This catches the invalid pmds as
+  * well, as they are located before _text:
+  */
+ void __init cleanup_highmap(void)
+ {
+ 	unsigned long vaddr = __START_KERNEL_map;
+-	unsigned long end = roundup((unsigned long)_end, PMD_SIZE) - 1;
++	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
++	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
+ 	pmd_t *pmd = level2_kernel_pgt;
+-	pmd_t *last_pmd = pmd + PTRS_PER_PMD;
+ 
+-	for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
++	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
+ 		if (pmd_none(*pmd))
+ 			continue;
+ 		if (vaddr < (unsigned long) _text || vaddr > end)
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 350a3de..6ec047d 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1658,9 +1658,6 @@ static __init void xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
+ 		for (pteidx = 0; pteidx < PTRS_PER_PTE; pteidx++, pfn++) {
+ 			pte_t pte;
+ 
+-			if (pfn > max_pfn_mapped)
+-				max_pfn_mapped = pfn;
+-
+ 			if (!pte_none(pte_page[pteidx]))
+ 				continue;
+ 
+@@ -1704,6 +1701,12 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+ 	pud_t *l3;
+ 	pmd_t *l2;
+ 
++	/* max_pfn_mapped is the last pfn mapped in the initial memory
++	 * mappings. Considering that on Xen after the kernel mappings we
++	 * have the mappings of some pages that don't exist in pfn space, we
++	 * set max_pfn_mapped to the last real pfn mapped. */
++	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
++
+ 	/* Zap identity mapping */
+ 	init_level4_pgt[0] = __pgd(0);
+ 
+@@ -1767,9 +1770,7 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+ {
+ 	pmd_t *kernel_pmd;
+ 
+-	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
+-				  xen_start_info->nr_pt_frames * PAGE_SIZE +
+-				  512*1024);
++	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
+ 
+ 	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
+ 	memcpy(level2_kernel_pgt, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
+diff --git a/drivers/firmware/dcdbas.c b/drivers/firmware/dcdbas.c
+index 18d65fb..3abb515 100644
+--- a/drivers/firmware/dcdbas.c
++++ b/drivers/firmware/dcdbas.c
+@@ -267,8 +267,10 @@ int dcdbas_smi_request(struct smi_cmd *smi_cmd)
+ 	}
+ 
+ 	/* generate SMI */
++	/* inb to force posted write through and make SMI happen now */
+ 	asm volatile (
+-		"outb %b0,%w1"
++		"outb %b0,%w1\n"
++		"inb %w1"
+ 		: /* no output args */
+ 		: "a" (smi_cmd->command_code),
+ 		  "d" (smi_cmd->command_address),
+diff --git a/drivers/input/xen-kbdfront.c b/drivers/input/xen-kbdfront.c
+index b115726..eb88f40 100644
+--- a/drivers/input/xen-kbdfront.c
++++ b/drivers/input/xen-kbdfront.c
+@@ -105,7 +105,7 @@ static irqreturn_t input_handler(int rq, void *dev_id)
+ static int __devinit xenkbd_probe(struct xenbus_device *dev,
+ 				  const struct xenbus_device_id *id)
+ {
+-	int ret, i;
++	int ret, i, abs;
+ 	struct xenkbd_info *info;
+ 	struct input_dev *kbd, *ptr;
+ 
+@@ -123,6 +123,11 @@ static int __devinit xenkbd_probe(struct xenbus_device *dev,
+ 	if (!info->page)
+ 		goto error_nomem;
+ 
++	if (xenbus_scanf(XBT_NIL, dev->otherend, "feature-abs-pointer", "%d", &abs) < 0)
++		abs = 0;
++	if (abs)
++		xenbus_printf(XBT_NIL, dev->nodename, "request-abs-pointer", "1");
++
+ 	/* keyboard */
+ 	kbd = input_allocate_device();
+ 	if (!kbd)
+@@ -132,11 +137,12 @@ static int __devinit xenkbd_probe(struct xenbus_device *dev,
+ 	kbd->id.bustype = BUS_PCI;
+ 	kbd->id.vendor = 0x5853;
+ 	kbd->id.product = 0xffff;
+-	kbd->evbit[0] = BIT(EV_KEY);
++
++	__set_bit(EV_KEY, kbd->evbit);
+ 	for (i = KEY_ESC; i < KEY_UNKNOWN; i++)
+-		set_bit(i, kbd->keybit);
++		__set_bit(i, kbd->keybit);
+ 	for (i = KEY_OK; i < KEY_MAX; i++)
+-		set_bit(i, kbd->keybit);
++		__set_bit(i, kbd->keybit);
+ 
+ 	ret = input_register_device(kbd);
+ 	if (ret) {
+@@ -155,12 +161,20 @@ static int __devinit xenkbd_probe(struct xenbus_device *dev,
+ 	ptr->id.bustype = BUS_PCI;
+ 	ptr->id.vendor = 0x5853;
+ 	ptr->id.product = 0xfffe;
+-	ptr->evbit[0] = BIT(EV_KEY) | BIT(EV_REL) | BIT(EV_ABS);
++
++	if (abs) {
++		__set_bit(EV_ABS, ptr->evbit);
++		input_set_abs_params(ptr, ABS_X, 0, XENFB_WIDTH, 0, 0);
++		input_set_abs_params(ptr, ABS_Y, 0, XENFB_HEIGHT, 0, 0);
++	} else {
++		input_set_capability(ptr, EV_REL, REL_X);
++		input_set_capability(ptr, EV_REL, REL_Y);
++	}
++	input_set_capability(ptr, EV_REL, REL_WHEEL);
++
++	__set_bit(EV_KEY, ptr->evbit);
+ 	for (i = BTN_LEFT; i <= BTN_TASK; i++)
+-		set_bit(i, ptr->keybit);
+-	ptr->relbit[0] = BIT(REL_X) | BIT(REL_Y) | BIT(REL_WHEEL);
+-	input_set_abs_params(ptr, ABS_X, 0, XENFB_WIDTH, 0, 0);
+-	input_set_abs_params(ptr, ABS_Y, 0, XENFB_HEIGHT, 0, 0);
++		__set_bit(i, ptr->keybit);
+ 
+ 	ret = input_register_device(ptr);
+ 	if (ret) {
+@@ -267,7 +281,7 @@ static void xenkbd_backend_changed(struct xenbus_device *dev,
+ 				   enum xenbus_state backend_state)
+ {
+ 	struct xenkbd_info *info = dev_get_drvdata(&dev->dev);
+-	int ret, val;
++	int val;
+ 
+ 	switch (backend_state) {
+ 	case XenbusStateInitialising:
+@@ -278,17 +292,6 @@ static void xenkbd_backend_changed(struct xenbus_device *dev,
+ 
+ 	case XenbusStateInitWait:
+ InitWait:
+-		ret = xenbus_scanf(XBT_NIL, info->xbdev->otherend,
+-				   "feature-abs-pointer", "%d", &val);
+-		if (ret < 0)
+-			val = 0;
+-		if (val) {
+-			ret = xenbus_printf(XBT_NIL, info->xbdev->nodename,
+-					    "request-abs-pointer", "1");
+-			if (ret)
+-				printk(KERN_WARNING
+-				       "xenkbd: can't request abs-pointer");
+-		}
+ 		xenbus_switch_state(dev, XenbusStateConnected);
+ 		break;
+ 
+diff --git a/drivers/media/video/uvc/uvc_video.c b/drivers/media/video/uvc/uvc_video.c
+index a6e41d1..688598a 100644
+--- a/drivers/media/video/uvc/uvc_video.c
++++ b/drivers/media/video/uvc/uvc_video.c
+@@ -64,15 +64,19 @@ int uvc_query_ctrl(struct uvc_device *dev, __u8 query, __u8 unit,
+ static void uvc_fixup_video_ctrl(struct uvc_streaming *stream,
+ 	struct uvc_streaming_control *ctrl)
+ {
+-	struct uvc_format *format;
++	struct uvc_format *format = NULL;
+ 	struct uvc_frame *frame = NULL;
+ 	unsigned int i;
+ 
+-	if (ctrl->bFormatIndex <= 0 ||
+-	    ctrl->bFormatIndex > stream->nformats)
+-		return;
++	for (i = 0; i < stream->nformats; ++i) {
++		if (stream->format[i].index == ctrl->bFormatIndex) {
++			format = &stream->format[i];
++			break;
++		}
++	}
+ 
+-	format = &stream->format[ctrl->bFormatIndex - 1];
++	if (format == NULL)
++		return;
+ 
+ 	for (i = 0; i < format->nframes; ++i) {
+ 		if (format->frame[i].bFrameIndex == ctrl->bFrameIndex) {
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 58d25a1..73e7d8e 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -213,6 +213,7 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 
+ 	pdev = pci_get_slot(pbus, PCI_DEVFN(device, function));
+ 	if (pdev) {
++		pdev->current_state = PCI_D0;
+ 		slot->flags |= (SLOT_ENABLED | SLOT_POWEREDON);
+ 		pci_dev_put(pdev);
+ 	}
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 0964b4c..8313311 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -939,7 +939,12 @@ static ssize_t reset_store(struct device *dev,
+ 
+ 	if (val != 1)
+ 		return -EINVAL;
+-	return pci_reset_function(pdev);
++
++	result = pci_reset_function(pdev);
++	if (result < 0)
++		return result;
++
++	return count;
+ }
+ 
+ static struct device_attribute reset_attr = __ATTR(reset, 0200, NULL, reset_store);
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 399dd67..4e32da6 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -297,6 +297,8 @@ static void acm_ctrl_irq(struct urb *urb)
+ 	if (!ACM_READY(acm))
+ 		goto exit;
+ 
++	usb_mark_last_busy(acm->dev);
++
+ 	data = (unsigned char *)(dr + 1);
+ 	switch (dr->bNotificationType) {
+ 	case USB_CDC_NOTIFY_NETWORK_CONNECTION:
+@@ -336,7 +338,6 @@ static void acm_ctrl_irq(struct urb *urb)
+ 		break;
+ 	}
+ exit:
+-	usb_mark_last_busy(acm->dev);
+ 	retval = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (retval)
+ 		dev_err(&urb->dev->dev, "%s - usb_submit_urb failed with "
+@@ -534,6 +535,8 @@ static void acm_softint(struct work_struct *work)
+ 	if (!ACM_READY(acm))
+ 		return;
+ 	tty = tty_port_tty_get(&acm->port);
++	if (!tty)
++		return;
+ 	tty_wakeup(tty);
+ 	tty_kref_put(tty);
+ }
+@@ -652,8 +655,10 @@ static void acm_port_down(struct acm *acm, int drain)
+ 		usb_kill_urb(acm->ctrlurb);
+ 		for (i = 0; i < ACM_NW; i++)
+ 			usb_kill_urb(acm->wb[i].urb);
++		tasklet_disable(&acm->urb_task);
+ 		for (i = 0; i < nr; i++)
+ 			usb_kill_urb(acm->ru[i].urb);
++		tasklet_enable(&acm->urb_task);
+ 		acm->control->needs_remote_wakeup = 0;
+ 		usb_autopm_put_interface(acm->control);
+ 	}
+diff --git a/drivers/usb/host/ehci-q.c b/drivers/usb/host/ehci-q.c
+index c0d4b39..d4bd6ef 100644
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -315,7 +315,6 @@ qh_completions (struct ehci_hcd *ehci, struct ehci_qh *qh)
+ 	int			stopped;
+ 	unsigned		count = 0;
+ 	u8			state;
+-	const __le32		halt = HALT_BIT(ehci);
+ 	struct ehci_qh_hw	*hw = qh->hw;
+ 
+ 	if (unlikely (list_empty (&qh->qtd_list)))
+@@ -422,7 +421,6 @@ qh_completions (struct ehci_hcd *ehci, struct ehci_qh *qh)
+ 					&& !(qtd->hw_alt_next
+ 						& EHCI_LIST_END(ehci))) {
+ 				stopped = 1;
+-				goto halt;
+ 			}
+ 
+ 		/* stop scanning when we reach qtds the hc is using */
+@@ -456,16 +454,6 @@ qh_completions (struct ehci_hcd *ehci, struct ehci_qh *qh)
+ 				 */
+ 				ehci_clear_tt_buffer(ehci, qh, urb, token);
+ 			}
+-
+-			/* force halt for unlinked or blocked qh, so we'll
+-			 * patch the qh later and so that completions can't
+-			 * activate it while we "know" it's stopped.
+-			 */
+-			if ((halt & hw->hw_token) == 0) {
+-halt:
+-				hw->hw_token |= halt;
+-				wmb ();
+-			}
+ 		}
+ 
+ 		/* unless we already know the urb's status, collect qtd status
+diff --git a/drivers/usb/misc/uss720.c b/drivers/usb/misc/uss720.c
+index 5a03b2e..56b1e73 100644
+--- a/drivers/usb/misc/uss720.c
++++ b/drivers/usb/misc/uss720.c
+@@ -176,12 +176,11 @@ static struct uss720_async_request *submit_async_request(struct parport_uss720_p
+ 	spin_lock_irqsave(&priv->asynclock, flags);
+ 	list_add_tail(&rq->asynclist, &priv->asynclist);
+ 	spin_unlock_irqrestore(&priv->asynclock, flags);
++	kref_get(&rq->ref_count);
+ 	ret = usb_submit_urb(rq->urb, mem_flags);
+-	if (!ret) {
+-		kref_get(&rq->ref_count);
++	if (!ret)
+ 		return rq;
+-	}
+-	kref_put(&rq->ref_count, destroy_async);
++	destroy_async(&rq->ref_count);
+ 	err("submit_async_request submit_urb failed with %d", ret);
+ 	return NULL;
+ }
+diff --git a/drivers/video/console/tileblit.c b/drivers/video/console/tileblit.c
+index 0056a41..15e8e1a 100644
+--- a/drivers/video/console/tileblit.c
++++ b/drivers/video/console/tileblit.c
+@@ -83,7 +83,7 @@ static void tile_cursor(struct vc_data *vc, struct fb_info *info, int mode,
+ 			int softback_lines, int fg, int bg)
+ {
+ 	struct fb_tilecursor cursor;
+-	int use_sw = (vc->vc_cursor_type & 0x01);
++	int use_sw = (vc->vc_cursor_type & 0x10);
+ 
+ 	cursor.sx = vc->vc_x;
+ 	cursor.sy = vc->vc_y;
+diff --git a/fs/aio.c b/fs/aio.c
+index b84a769..22a19ad 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -497,7 +497,7 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
+ 	ctx->reqs_active--;
+ 
+ 	if (unlikely(!ctx->reqs_active && ctx->dead))
+-		wake_up(&ctx->wait);
++		wake_up_all(&ctx->wait);
+ }
+ 
+ static void aio_fput_routine(struct work_struct *data)
+@@ -1219,7 +1219,7 @@ static void io_destroy(struct kioctx *ioctx)
+ 	 * by other CPUs at this point.  Right now, we rely on the
+ 	 * locking done by the above calls to ensure this consistency.
+ 	 */
+-	wake_up(&ioctx->wait);
++	wake_up_all(&ioctx->wait);
+ 	put_ioctx(ioctx);	/* once for the lookup */
+ }
+ 
+diff --git a/fs/dcache.c b/fs/dcache.c
+index a100fa3..44c0aea 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1175,9 +1175,12 @@ struct dentry *d_obtain_alias(struct inode *inode)
+ 	spin_unlock(&tmp->d_lock);
+ 
+ 	spin_unlock(&dcache_lock);
++	security_d_instantiate(tmp, inode);
+ 	return tmp;
+ 
+  out_iput:
++	if (res && !IS_ERR(res))
++		security_d_instantiate(res, inode);
+ 	iput(inode);
+ 	return res;
+ }
+diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+index ca3068f..9cfa28d 100644
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -1404,6 +1404,13 @@ static void ext3_orphan_cleanup (struct super_block * sb,
+ 		return;
+ 	}
+ 
++	/* Check if feature set allows readwrite operations */
++	if (EXT3_HAS_RO_COMPAT_FEATURE(sb, ~EXT3_FEATURE_RO_COMPAT_SUPP)) {
++		printk(KERN_INFO "EXT3-fs: %s: Skipping orphan cleanup due to "
++			 "unknown ROCOMPAT features\n", sb->s_id);
++		return;
++	}
++
+ 	if (EXT3_SB(sb)->s_mount_state & EXT3_ERROR_FS) {
+ 		if (es->s_last_orphan)
+ 			jbd_debug(1, "Errors on filesystem, "
+diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
+index bebc0c2..01d83a5 100644
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -964,8 +964,8 @@ typedef __be32(*nfsd4op_func)(struct svc_rqst *, struct nfsd4_compound_state *,
+ 			      void *);
+ enum nfsd4_op_flags {
+ 	ALLOWED_WITHOUT_FH = 1 << 0,	/* No current filehandle required */
+-	ALLOWED_ON_ABSENT_FS = 2 << 0,	/* ops processed on absent fs */
+-	ALLOWED_AS_FIRST_OP = 3 << 0,	/* ops reqired first in compound */
++	ALLOWED_ON_ABSENT_FS = 1 << 1,	/* ops processed on absent fs */
++	ALLOWED_AS_FIRST_OP = 1 << 2,	/* ops reqired first in compound */
+ };
+ 
+ struct nfsd4_operation {
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 4fde2c5..4a82a96 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1114,7 +1114,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+ 
+ 	u32 dummy;
+ 	char *machine_name;
+-	int i, j;
++	int i;
+ 	int nr_secflavs;
+ 
+ 	READ_BUF(16);
+@@ -1187,8 +1187,6 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy * 4);
+-			for (j = 0; j < dummy; ++j)
+-				READ32(dummy);
+ 			break;
+ 		case RPC_AUTH_GSS:
+ 			dprintk("RPC_AUTH_GSS callback secflavor "
+@@ -1204,7 +1202,6 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy);
+-			p += XDR_QUADLEN(dummy);
+ 			break;
+ 		default:
+ 			dprintk("Illegal callback secflavor\n");
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 2adedda..c5ef152 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -473,8 +473,8 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+ 		vsize,
+ 		mm ? get_mm_rss(mm) : 0,
+ 		rsslim,
+-		mm ? mm->start_code : 0,
+-		mm ? mm->end_code : 0,
++		mm ? (permitted ? mm->start_code : 1) : 0,
++		mm ? (permitted ? mm->end_code : 1) : 0,
+ 		(permitted && mm) ? mm->start_stack : 0,
+ 		esp,
+ 		eip,
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index e10ef04..3b7b82a 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -244,8 +244,8 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
+ 		const char *name = arch_vma_name(vma);
+ 		if (!name) {
+ 			if (mm) {
+-				if (vma->vm_start <= mm->start_brk &&
+-						vma->vm_end >= mm->brk) {
++				if (vma->vm_start <= mm->brk &&
++						vma->vm_end >= mm->start_brk) {
+ 					name = "[heap]";
+ 				} else if (vma->vm_start <= mm->start_stack &&
+ 					   vma->vm_end >= mm->start_stack) {
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 423655a..e26d423 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2351,9 +2351,13 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t, pid, int, sig,
+ 		return -EFAULT;
+ 
+ 	/* Not even root can pretend to send signals from the kernel.
+-	   Nor can they impersonate a kill(), which adds source info.  */
+-	if (info.si_code >= 0)
++	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
++	 */
++	if (info.si_code != SI_QUEUE) {
++		/* We used to allow any < 0 si_code */
++		WARN_ON_ONCE(info.si_code < 0);
+ 		return -EPERM;
++	}
+ 	info.si_signo = sig;
+ 
+ 	/* POSIX.1b doesn't mention process groups.  */
+@@ -2367,9 +2371,13 @@ long do_rt_tgsigqueueinfo(pid_t tgid, pid_t pid, int sig, siginfo_t *info)
+ 		return -EINVAL;
+ 
+ 	/* Not even root can pretend to send signals from the kernel.
+-	   Nor can they impersonate a kill(), which adds source info.  */
+-	if (info->si_code >= 0)
++	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
++	 */
++	if (info->si_code != SI_QUEUE) {
++		/* We used to allow any < 0 si_code */
++		WARN_ON_ONCE(info->si_code < 0);
+ 		return -EPERM;
++	}
+ 	info->si_signo = sig;
+ 
+ 	return do_send_specific(tgid, pid, sig, info);
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 356dd99..3e0005b 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2691,5 +2691,6 @@ int shmem_zero_setup(struct vm_area_struct *vma)
+ 		fput(vma->vm_file);
+ 	vma->vm_file = file;
+ 	vma->vm_ops = &shmem_vm_ops;
++	vma->vm_flags |= VM_CAN_NONLINEAR;
+ 	return 0;
+ }
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index b6fcf68..d270403 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -743,6 +743,8 @@ static void xs_reset_transport(struct sock_xprt *transport)
+ 	if (sk == NULL)
+ 		return;
+ 
++	transport->srcport = 0;
++
+ 	write_lock_bh(&sk->sk_callback_lock);
+ 	transport->inet = NULL;
+ 	transport->sock = NULL;
