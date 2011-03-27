@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab1C0IHe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 04:07:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51263 "EHLO linutronix.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab1C0IHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 04:07:24 -0400
-Date: Sun, 27 Mar 2011 10:07:15 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Colin Cross <ccross@android.com>
-cc: Varun Wadekar <vwadekar@nvidia.com>, LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [patch 02/23] arm: tegra: Remove unused function which fiddles
- with irq_desc
-In-Reply-To: <AANLkTi=y9JkpJVCq5G151G9k3d0rAcSH13gi6uGB_gDX@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1103271004560.31464@localhost6.localdomain6>
-References: <20110325131617.258789658@linutronix.de> <20110325132047.552074703@linutronix.de> <4D8E4897.5030705@nvidia.com> <alpine.LFD.2.00.1103262118010.31464@localhost6.localdomain6> <AANLkTi=y9JkpJVCq5G151G9k3d0rAcSH13gi6uGB_gDX@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752783Ab1C0I2r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 04:28:47 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39094 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab1C0I2n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 04:28:43 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
+Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V9fs-developer] [PATCH 3/5] 9p: revert tsyncfs related changes
+In-Reply-To: <4D8D0704.7080106@linux.vnet.ibm.com>
+References: <1301052651-21440-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1301052651-21440-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4D8D0704.7080106@linux.vnet.ibm.com>
+User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
+Date: Sun, 27 Mar 2011 13:58:33 +0530
+Message-ID: <877hbl0xxq.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-845400213-1301213237=:31464"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
----1463795968-845400213-1301213237=:31464
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Sat, 26 Mar 2011, Colin Cross wrote:
-
-> On Sat, Mar 26, 2011 at 1:24 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Sun, 27 Mar 2011, Varun Wadekar wrote:
-> >>
-> >> Thomas, then how do you think we should handle restoring of gpio states
-> >> across suspend-resume cycles?
-> >
-> > That code is unused. Period. No caller, nothing nada. So what does it
-> > handle?
+On Fri, 25 Mar 2011 14:20:04 -0700, Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com> wrote:
+> On 03/25/2011 04:30 AM, Aneesh Kumar K.V wrote:
+> > Now that we use write_inode to flush server
+> > cache related to fid, we don't need tsyncfs.
+> > This help us to do a more efficient server flush
+> > for dotu protocol
+> Why are you singling out dotu only? won't it be applicable to dotl too?
 > 
-> Tegra suspend support didn't make it into 2.6.39, but should get
-> merged in 2.6.40, and will call tegra_gpio_suspend/resume.
-> 
-> >> > -
-> >> > -   for (i = INT_GPIO_BASE; i < (INT_GPIO_BASE + TEGRA_NR_GPIOS); i++) {
-> >> > -           struct irq_desc *desc = irq_to_desc(i);
-> >> > -           if (!desc || (desc->status & IRQ_WAKEUP))
-> >> > -                   continue;
-> >> > -           enable_irq(i);
-> >> > -   }
-> >
-> > And this part is totally unacceptable and should have never been
-> > merged. Further it is in the way of cleanups to the core code and as
-> > there is no user I'm not willing to even think about what it does and
-> > why it is there.
-> >
-> > FYI, the core code deals with interrupt suspending/resuming
-> > already. So if there is a problem with that which does not cover your
-> > specific problem, then you better talk to me before hacking up such
-> > private workarounds and expecting that I tolerate them in unused code.
-> 
-> Yes, the existing code wrong, and unnecessary.  It was copied from
-> mach-tegra/irq.c, which I later fixed, but I missed this one.  I'll
-> take this patch for 2.6.39-rc1, which will prevent merge conflicts
-> between your tree and the tegra tree in 2.6.40.
 
-You can keep the functions if you need them anyway, but the irq
-fiddling needs to go now as it blocks core code cleanups.
+With dotl we can have new operations and so we added tsyncfs. The
+primary goal is to add an operation that can flush server cache. We
+hooked that to sync(2) on the client. With dotu we cannot add new
+operations so we always forced the write on the server in case of dotu
+to O_SYNC. That is much slower than doing an fsync on write_inode. But
+whether doing an fsync on write inode is better than doing tsyncfs on
+sync(2) on client is something i haven't yet measured. Stefan Hajnoczi wants to
+see some numbers before we push tsyncfs in the server(qemu). We also don't
+want a kernel release with 9p operation which we may remove later. So
+the plan now is to get write_inode changes upstream in this merge window
+and later get numbers against tsyncfs/write_inode -> fsync and add tsyncfs only
+if we see a benefit. BTW NFS use the write_inode approach.
 
-Thanks,
-
-	tglx
-
----1463795968-845400213-1301213237=:31464--
+-aneesh
