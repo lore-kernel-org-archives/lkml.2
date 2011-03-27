@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab1C0TQN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 15:16:13 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:28162 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754176Ab1C0TQM (ORCPT
+	id S1754302Ab1C0TRN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 15:17:13 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38406 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754228Ab1C0TRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 15:16:12 -0400
-Date: Sun, 27 Mar 2011 21:16:12 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Chris Snook <csnook@redhat.com>, Chris Snook <chris.snook@gmail.com>,
-        Chris Snook <chris.snook@gmail.com>, Jie Yang <jie.yang@atheros.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH] Atheros, atl2: Fix mem leaks in error paths of
- atl2_set_eeprom
-Message-ID: <alpine.LNX.2.00.1103272110050.6111@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 27 Mar 2011 15:17:12 -0400
+Subject: [GIT PULL] regulator updates for 2.6.39
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 27 Mar 2011 20:17:06 +0100
+Message-ID: <1301253427.3372.7.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We leak in some error paths of drivers/net/atlx/atl2.c:atl2_set_eeprom().
-The memory allocated to 'eeprom_buff' is not freed when we return -EIO. 
-This patch fixes that up and also removes a pointless explicit cast.
+Hi Linus,
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- atl2.c |   22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
+Please pull the following voltage regulator updates for 2.6.39. It's
+mostly new features for existing PMIC drivers this time and also some
+core improvements for resume handling.
 
- Compile tested only. I have no hardware to test.
+Thanks
 
-diff --git a/drivers/net/atlx/atl2.c b/drivers/net/atlx/atl2.c
-index e637e9f..937ef1a 100644
---- a/drivers/net/atlx/atl2.c
-+++ b/drivers/net/atlx/atl2.c
-@@ -1996,13 +1996,15 @@ static int atl2_set_eeprom(struct net_device *netdev,
- 	if (!eeprom_buff)
- 		return -ENOMEM;
- 
--	ptr = (u32 *)eeprom_buff;
-+	ptr = eeprom_buff;
- 
- 	if (eeprom->offset & 3) {
- 		/* need read/modify/write of first changed EEPROM word */
- 		/* only the second byte of the word is being modified */
--		if (!atl2_read_eeprom(hw, first_dword*4, &(eeprom_buff[0])))
--			return -EIO;
-+		if (!atl2_read_eeprom(hw, first_dword*4, &(eeprom_buff[0]))) {
-+			ret_val = -EIO;
-+			goto out;
-+		}
- 		ptr++;
- 	}
- 	if (((eeprom->offset + eeprom->len) & 3)) {
-@@ -2011,18 +2013,22 @@ static int atl2_set_eeprom(struct net_device *netdev,
- 		 * only the first byte of the word is being modified
- 		 */
- 		if (!atl2_read_eeprom(hw, last_dword * 4,
--			&(eeprom_buff[last_dword - first_dword])))
--			return -EIO;
-+					&(eeprom_buff[last_dword - first_dword]))) {
-+			ret_val = -EIO;
-+			goto out;
-+		}
- 	}
- 
- 	/* Device's eeprom is always little-endian, word addressable */
- 	memcpy(ptr, bytes, eeprom->len);
- 
- 	for (i = 0; i < last_dword - first_dword + 1; i++) {
--		if (!atl2_write_eeprom(hw, ((first_dword+i)*4), eeprom_buff[i]))
--			return -EIO;
-+		if (!atl2_write_eeprom(hw, ((first_dword+i)*4), eeprom_buff[i])) {
-+			ret_val = -EIO;
-+			goto out;
-+		}
- 	}
--
-+ out:
- 	kfree(eeprom_buff);
- 	return ret_val;
- }
+Liam
 
+---  
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+The following changes since commit 16c29dafcc86024048f1dbb8349d31cb22c7c55a:
+
+  Merge branch 'syscore' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6 (2011-03-25 21:07:59 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git for-linus
+
+Axel Lin (1):
+      regulator: Add MODULE_DEVICE_TABLE to max8997 and max8998
+
+Bengt Jonsson (2):
+      regulator: add support for USB voltage regulator
+      regulator: initialization for ab8500 regulators
+
+Igor Grinberg (1):
+      regulator: fix typo in Kconfig
+
+Linus Walleij (4):
+      regulator: switch the ab3100 to use enable_time()
+      regulator: add set_voltage_time_sel infrastructure
+      regulator: provide consumer interface for fall/rise time
+      regulator: add ab8500 enable and raise time delays
+
+Mark Brown (3):
+      regulator: If we fail when setting up a supply say which supply
+      regulator: Convert WM831x regulators to genirq
+      regulator: Remove more wm831x-specific IRQ operations
+
+MyungJoo Ham (1):
+      Regulator: add suspend-finish API for regulator core.
+
+Randy Dunlap (1):
+      regulator: fix tps6524x section mismatch
+
+ arch/arm/mach-ux500/board-mop500-regulators.h |    2 +
+ arch/arm/mach-ux500/board-mop500.c            |    1 +
+ drivers/regulator/Kconfig                     |    2 +-
+ drivers/regulator/ab3100.c                    |   51 +++--
+ drivers/regulator/ab8500.c                    |  270 ++++++++++++++++++++++++-
+ drivers/regulator/core.c                      |  116 +++++++++++-
+ drivers/regulator/max8997.c                   |    1 +
+ drivers/regulator/max8998.c                   |    1 +
+ drivers/regulator/tps6524x-regulator.c        |    2 +-
+ drivers/regulator/wm831x-dcdc.c               |   32 ++--
+ drivers/regulator/wm831x-isink.c              |    8 +-
+ drivers/regulator/wm831x-ldo.c                |   17 +-
+ include/linux/mfd/ab8500.h                    |    6 +
+ include/linux/regulator/ab8500.h              |   51 +++++-
+ include/linux/regulator/consumer.h            |    2 +
+ include/linux/regulator/driver.h              |   11 +-
+ include/linux/regulator/machine.h             |    1 +
+ 17 files changed, 509 insertions(+), 65 deletions(-)
+
 
