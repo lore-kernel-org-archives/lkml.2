@@ -1,128 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab1C3NwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 09:52:12 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:52719 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932157Ab1C3NwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 09:52:11 -0400
-Message-ID: <4D933584.5050005@parallels.com>
-Date: Wed, 30 Mar 2011 08:52:04 -0500
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Pete Clements <clem@clem.clem-digital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
-References: <201103291551.p2TFpDqZ001692@clem.clem-digital.net> <4D92C874.7040104@parallels.com> <4D931634.5030807@fusionio.com>
-In-Reply-To: <4D931634.5030807@fusionio.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S932526Ab1C3Nxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 09:53:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49532 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab1C3Nxc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 09:53:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=icRq1dytbCgGYWrO0dD9bQ0awwuzffPU3iajCm8aZ3azCzRuOVs437h4xdktrt6EQU
+         CAH3SkSfY266CgBSGJZC4RB3l3dfs0ojc7nPf9+g6E5VS+cUv66qNddiyyMyW/Bd0xX3
+         mfIUBjGEaICo3cbXYW5oLbM2fUmHcxC5BMu64=
+From: wanlong.gao@gmail.com
+To: dmitry.torokhov@gmail.com, w.sang@pengutronix.de, rpurdie@linux.intel.com,
+        broonie@opensource.wolfsonmicro.com, khali@linux-fr.org
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jiaweiwei.xiyou@gmail.com, Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH V2] Add the support of the touchscreen keypad of tsc2007 .
+Date: Sun, 27 Mar 2011 17:46:32 +0800
+Message-Id: <1301219192-5293-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2011 06:38 AM, Jens Axboe wrote:
-> On 2011-03-30 08:06, Rob Landley wrote:
->> On 03/29/2011 10:51 AM, Pete Clements wrote:
->>> Quoting Jens Axboe
->>>   > 
->>>   > On 2011-03-29 16:13, Rob Landley wrote:
->>>   > > On 03/29/2011 08:59 AM, Jens Axboe wrote:
->>>   > >> On 2011-03-29 10:52, Rob Landley wrote:
->>>   > >>> I'm booting all this under kvm or qemu, by the way:
->>>   > >>>
->>>   > >>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
->>>   > >>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
->>>   > >>>
->>>   > >>> Sometimes with init=/bin/bash in that last quoted bit.  The root
->>>   > >>> filesystem's debian sid but that's probably not relevant because it
->>>   > >>> worked fine with .38.
->>>   > >>
->>>   > >> Does this help?
->>>   > >>
->>>   > >> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
->>>   > >> index 0e406d73..ca27d30 100644
->>>   > >> --- a/drivers/ide/ide-io.c
->>>   > >> +++ b/drivers/ide/ide-io.c
->>>   > >> @@ -570,8 +570,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->>>   > >>  	spin_unlock_irqrestore(q->queue_lock, flags);
->>>   > >>  
->>>   > >>  	/* Use 3ms as that was the old plug delay */
->>>   > >> -	if (rq)
->>>   > >> -		blk_delay_queue(q, 3);
->>>   > >> +	blk_delay_queue(q, 3);
->>>   > >>  }
->>>   > >>  
->>>   > >>  static int drive_is_ready(ide_drive_t *drive)
->>>   > >>
->>>   > > 
->>>   > > Nope, still hung the same way.
->>>   > 
->>>   > Funky. I'll try and reproduce this tonight.
->>>   > 
->>>   > -- 
->>>   > Jens Axboe
->>>   > 
->>>
->>> I have had a similiar problem (reported earlier) unable to boot.
->>> With git15-18 hung with IDE drives (hda), git19-21 moved the hang down to
->>> the IDE CDROM (hdc). Applied the above patch and now booted into git21 without
->>> any hang and all appears ok.
->>
->> It may have made it better for me, it's hard to tell.
->>
->> I did a fresh pull, re-applied the patch, and tried again with
->> init=/bin/sh and it booted to the shell prompt... which then hung when I
->> did "ls -l /".
->>
->> If I let it boot normally, init announces itself, gives a spurious
->> warning about a fstab field (which it's been doing for a while, my fault
->> but harmless), then hangs.
->>
->>> This is i386, UP.
->>
->> I'm doing x86-64 SMP.
-> 
-> I think we have the same issue the other location. How about this, then:
-> 
-> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
-> index 0e406d73..4978ec3 100644
-> --- a/drivers/ide/ide-io.c
-> +++ b/drivers/ide/ide-io.c
-> @@ -549,12 +549,11 @@ plug_device:
->  	spin_unlock_irq(&hwif->lock);
->  	ide_unlock_host(host);
->  plug_device_2:
-> +	blk_delay_queue(q, queue_run_ms);
->  	spin_lock_irq(q->queue_lock);
->  
-> -	if (rq) {
-> +	if (rq)
->  		blk_requeue_request(q, rq);
-> -		blk_delay_queue(q, queue_run_ms);
-> -	}
->  }
->  
->  void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
-> @@ -570,8 +569,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->  	spin_unlock_irqrestore(q->queue_lock, flags);
->  
->  	/* Use 3ms as that was the old plug delay */
-> -	if (rq)
-> -		blk_delay_queue(q, 3);
-> +	blk_delay_queue(q, 3);
->  }
->  
->  static int drive_is_ready(ide_drive_t *drive)
-> 
+From: Wanlong Gao <wanlong.gao@gmail.com>
 
-Did a fresh pull and applied that patch.  (It conflicts with your
-previous one, but looks like it includes it.)
+Many touchscreens support touch-keypad .
+Open the definition of the TOUCHSCREEN_TSC2007_WITH_KEYPAD, you can
+open the support of the touchscreen's keypad .
+We can add the support of the touchscreen keypad in the driver.
+In this patch , add the ts_key_pos array to determine the position
+of the key's X. And the ts_key_sensitivity can use to detemine the
+key's sensitivity. You can modify the ts_key_pos array for you own
+touchscreen keys . And modify the ts_key_sensitivity for you own
+key's sensitivity .
+If you want to modify the ts_key_map, change the position of the
+keys ,too.
 
-Now it hangs after the "EXT3-fs: barriers not enabled" line, doesn't
-make it to init.
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+---
+ drivers/input/touchscreen/tsc2007.c |   48 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 48 insertions(+), 0 deletions(-)
 
-Rob
+diff --git a/drivers/input/touchscreen/tsc2007.c b/drivers/input/touchscreen/tsc2007.c
+index 80467f2..8f70fca 100644
+--- a/drivers/input/touchscreen/tsc2007.c
++++ b/drivers/input/touchscreen/tsc2007.c
+@@ -83,6 +83,51 @@ struct tsc2007 {
+ 	void			(*clear_penirq)(void);
+ };
+ 
++/*
++#define	TOUCHSCREEN_TSC2007_WITH_KEYPAD
++*/
++#ifndef	TOUCHSCREEN_TSC2007_WITH_KEYPAD
++static void ts_key_set_capacity(struct input_dev *input) {};
++static void ts_key_up(struct input_dev *input) {};
++static void ts_key_event(struct input_dev *input, u16 x, u16 y) {};
++#else
++static int ts_key_pos[] = {700, 1650, 2550, 3500};
++static int ts_key_map[] = {KEY_MENU, KEY_HOME, KEY_BACK, KEY_SEARCH};
++/* you can modify this value to change the touch_key's sensitivity */
++static int ts_key_sensitivity = 50;
++
++static void ts_key_set_capacity(struct input_dev *input)
++{
++	int i;
++	for (i = 0; i < ARRAY_SIZE(ts_key_map); i++) {
++		input_set_capability(input, EV_KEY, ts_key_map[i]);
++	}
++}
++
++/* you must have an input_sync() followed this func . */
++static void ts_key_up(struct input_dev *input)
++{
++	int i;
++	for (i = 0; i < ARRAY_SIZE(ts_key_map); i++) {
++		input_report_key(input, ts_key_map[i], 0);
++	}
++}
++
++static void ts_key_event(struct input_dev *input, u16 x, u16 y)
++{
++	int i;
++	if (y > MAX_12BIT) {
++		for (i = 0; i < ARRAY_SIZE(ts_key_pos); i++) {
++			if ((x > (ts_key_pos[i] - ts_key_sensitivity)) &&
++				(x < (ts_key_pos[i] + ts_key_sensitivity))) {
++				input_report_key(input, ts_key_map[i], 1);
++				input_sync(input);
++			}
++		}
++	}
++}
++#endif
++
+ static inline int tsc2007_xfer(struct tsc2007 *tsc, u8 cmd)
+ {
+ 	s32 data;
+@@ -149,6 +194,7 @@ static void tsc2007_send_up_event(struct tsc2007 *tsc)
+ 
+ 	input_report_key(input, BTN_TOUCH, 0);
+ 	input_report_abs(input, ABS_PRESSURE, 0);
++	ts_key_up(input);
+ 	input_sync(input);
+ }
+ 
+@@ -201,6 +247,7 @@ static void tsc2007_work(struct work_struct *work)
+ 		if (!ts->pendown) {
+ 			dev_dbg(&ts->client->dev, "DOWN\n");
+ 
++			ts_key_event(input, tc.x, tc.y);
+ 			input_report_key(input, BTN_TOUCH, 1);
+ 			ts->pendown = true;
+ 		}
+@@ -308,6 +355,7 @@ static int __devinit tsc2007_probe(struct i2c_client *client,
+ 	input_set_abs_params(input_dev, ABS_X, 0, MAX_12BIT, 0, 0);
+ 	input_set_abs_params(input_dev, ABS_Y, 0, MAX_12BIT, 0, 0);
+ 	input_set_abs_params(input_dev, ABS_PRESSURE, 0, MAX_12BIT, 0, 0);
++	ts_key_set_capacity(input_dev);
+ 
+ 	if (pdata->init_platform_hw)
+ 		pdata->init_platform_hw();
+-- 
+1.7.3
+
