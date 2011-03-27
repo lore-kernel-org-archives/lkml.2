@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab1C0QPk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 12:15:40 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:43811 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab1C0QPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 12:15:39 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: strange put_rpccred() handling
-References: <87ei5sppsx.fsf@devron.myhome.or.jp>
-	<1301241303.22136.31.camel@lade.trondhjem.org>
-Date: Mon, 28 Mar 2011 01:15:36 +0900
-In-Reply-To: <1301241303.22136.31.camel@lade.trondhjem.org> (Trond Myklebust's
-	message of "Sun, 27 Mar 2011 17:55:03 +0200")
-Message-ID: <8739m8pmjb.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	id S1754016Ab1C0QTK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 12:19:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51091 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753796Ab1C0QTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 12:19:08 -0400
+Date: Sun, 27 Mar 2011 16:18:56 GMT
+From: tip-bot for David Daney <ddaney@caviumnetworks.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        ddaney@caviumnetworks.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        ddaney@caviumnetworks.com, tglx@linutronix.de
+In-Reply-To: <1301081931-11240-2-git-send-email-ddaney@caviumnetworks.com>
+References: <1301081931-11240-2-git-send-email-ddaney@caviumnetworks.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] genirq: Reserve the irq when calling irq_set_chip()
+Message-ID: <tip-d72274e5895d11570a0a4a3214a1933c86d5ccb7@git.kernel.org>
+Git-Commit-ID: d72274e5895d11570a0a4a3214a1933c86d5ccb7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 27 Mar 2011 16:18:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trond Myklebust <Trond.Myklebust@netapp.com> writes:
+Commit-ID:  d72274e5895d11570a0a4a3214a1933c86d5ccb7
+Gitweb:     http://git.kernel.org/tip/d72274e5895d11570a0a4a3214a1933c86d5ccb7
+Author:     David Daney <ddaney@caviumnetworks.com>
+AuthorDate: Fri, 25 Mar 2011 12:38:48 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sun, 27 Mar 2011 17:45:58 +0200
 
-> On Mon, 2011-03-28 at 00:05 +0900, OGAWA Hirofumi wrote:
->> Hi,
->> 
->> BUG: atomic_dec_and_test(): -1: atomic counter underflow at:
->> Pid: 2827, comm: mount.nfs Not tainted 2.6.38 #1
->> Call Trace:
->>  [<ffffffffa02223a0>] ? put_rpccred+0x44/0x14e [sunrpc]
->>  [<ffffffffa021bbe9>] ? rpc_ping+0x4e/0x58 [sunrpc]
->>  [<ffffffffa021c4a5>] ? rpc_create+0x481/0x4fc [sunrpc]
->>  [<ffffffffa022298a>] ? rpcauth_lookup_credcache+0xab/0x22d [sunrpc]
->>  [<ffffffffa028be8c>] ? nfs_create_rpc_client+0xa6/0xeb [nfs]
->>  [<ffffffffa028c660>] ? nfs4_set_client+0xc2/0x1f9 [nfs]
->>  [<ffffffffa028cd3c>] ? nfs4_create_server+0xf2/0x2a6 [nfs]
->>  [<ffffffffa0295d07>] ? nfs4_remote_mount+0x4e/0x14a [nfs]
->>  [<ffffffff810dd570>] ? vfs_kern_mount+0x6e/0x133
->>  [<ffffffffa029605a>] ? nfs_do_root_mount+0x76/0x95 [nfs]
->>  [<ffffffffa029643d>] ? nfs4_try_mount+0x56/0xaf [nfs]
->>  [<ffffffffa0297434>] ? nfs_get_sb+0x435/0x73c [nfs]
->>  [<ffffffff810dd59b>] ? vfs_kern_mount+0x99/0x133
->>  [<ffffffff810dd693>] ? do_kern_mount+0x48/0xd8
->>  [<ffffffff810f5b75>] ? do_mount+0x6da/0x741
->>  [<ffffffff810f5c5f>] ? sys_mount+0x83/0xc0
->>  [<ffffffff8100293b>] ? system_call_fastpath+0x16/0x1b
->> 
->> This is not oops, and debug code is not in vanilla. This debug code is
->> simple - detects atomic_dec_and_test() underflow.
->> 
->> Well, so, I think this is real bug of nfs codes somewhere. With some
->> review, the code
->> 
->> rpc_call_sync()
->>     rpc_run_task
->>         rpc_execute()
->>             __rpc_execute()
->>                 rpc_release_task()
->>                     rpc_release_resources_task()
->>                         put_rpccred()                <= release cred
->>     rpc_put_task
->>         rpc_do_put_task()
->>             rpc_release_resources_task()
->>                 put_rpccred()                        <= release cred again
->> 
->> seems to be release cred unintendedly.
->> 
->> static void rpc_release_resources_task(struct rpc_task *task)
->> {
->> 	if (task->tk_rqstp)
->> 		xprt_release(task);
->> 	if (task->tk_msg.rpc_cred) {
->> 		put_rpccred(task->tk_msg.rpc_cred);
->> 		task->tk_msg.rpc_cred = NULL;
->> 	}
->> 	rpc_task_release_client(task);
->> }
->
-> May I add a signed-off-by from you, and just push the above fix to
-> Linus?
+genirq: Reserve the irq when calling irq_set_chip()
 
-Yes, of course.
+The helper macros and functions like for_each_active_irq() don't work
+unless the irq is in the allocated_irqs set.
 
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+In the case of !CONFIG_SPARSE_IRQ, instead of forcing all users of the
+irq infrastructure to explicitly call irq_reserve_irq(), do it for
+them.
 
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-mips@linux-mips.org
+Cc: ralf@linux-mips.org
+LKML-Reference: <1301081931-11240-2-git-send-email-ddaney@caviumnetworks.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/chip.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index c9c0601..c35d74c 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -37,6 +37,12 @@ int irq_set_chip(unsigned int irq, struct irq_chip *chip)
+ 	irq_chip_set_defaults(chip);
+ 	desc->irq_data.chip = chip;
+ 	irq_put_desc_unlock(desc, flags);
++	/*
++	 * For !CONFIG_SPARSE_IRQ make the irq show up in
++	 * allocated_irqs. For the CONFIG_SPARSE_IRQ case, it is
++	 * already marked, and this call is harmless.
++	 */
++	irq_reserve_irq(irq);
+ 	return 0;
+ }
+ EXPORT_SYMBOL(irq_set_chip);
