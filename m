@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab1C0L3r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 07:29:47 -0400
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:34788 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab1C0L3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 07:29:46 -0400
-Message-ID: <4D8F1F89.2010700@snapgear.com>
-Date: Sun, 27 Mar 2011 21:29:13 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1753365Ab1C0Lde (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 07:33:34 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44255 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753235Ab1C0Ldd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 07:33:33 -0400
+Date: Sun, 27 Mar 2011 13:33:23 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Maksym Planeta <mcsim.planeta@gmail.com>
+Cc: mingo@redhat.com, kernel-janitors@vger.kernel.org, namhyung@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] x86: page: get_order() optimization
+Message-ID: <20110327113323.GA27825@elte.hu>
+References: <1301215556-8898-1-git-send-email-mcsim.planeta@gmail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] MAINTAINERS: Update m68knommu patterns
-References: <1d67762792f7d409375f5a29c2159f39164ac166.1301178998.git.joe@perches.com>
-In-Reply-To: <1d67762792f7d409375f5a29c2159f39164ac166.1301178998.git.joe@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301215556-8898-1-git-send-email-mcsim.planeta@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/03/11 08:37, Joe Perches wrote:
-> Commit 66d857b08b ("m68k: merge m68k and m68knommu arch directories")
-> moved the files around.
->
-> cc: Greg Ungerer<gerg@uclinux.org>
 
-Acked-by: Greg Ungerer <gerg@uclinux.org>
+* Maksym Planeta <mcsim.planeta@gmail.com> wrote:
 
-Thanks Joe!
-
-
-> Signed-off-by: Joe Perches<joe@perches.com>
+> For x86 architecture get_order function can be optimized due to
+> assembler instruction bsr.
+> 
+> This is second version of patch where for constants gcc precompute the
+> result.
+> 
+> Signed-off-by: Maksym Planeta <mcsim.planeta@gmail.com>
 > ---
->   MAINTAINERS |    3 ++-
->   1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 4fb9017..735f124 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6274,7 +6274,8 @@ M:	Greg Ungerer<gerg@uclinux.org>
->   W:	http://www.uclinux.org/
->   L:	uclinux-dev@uclinux.org  (subscribers-only)
->   S:	Maintained
-> -F:	arch/m68knommu/
-> +F:	arch/m68k/*/*_no.*
-> +F:	arch/m68k/include/asm/*_no.*
->
->   UCLINUX FOR RENESAS H8/300 (H8300)
->   M:	Yoshinori Sato<ysato@users.sourceforge.jp>
+>  arch/x86/include/asm/getorder.h |   48 +++++++++++++++++++++++++++++++++++++++
+>  arch/x86/include/asm/page.h     |    2 +-
+>  2 files changed, 49 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/x86/include/asm/getorder.h
+> 
+> diff --git a/arch/x86/include/asm/getorder.h b/arch/x86/include/asm/getorder.h
+> new file mode 100644
+> index 0000000..b0c6f57
+> --- /dev/null
+> +++ b/arch/x86/include/asm/getorder.h
+> @@ -0,0 +1,48 @@
+> +#ifndef __ASM_GENERIC_GETORDER_H
+> +#define __ASM_GENERIC_GETORDER_H
+> +
+> +#ifndef __ASSEMBLY__
+> +
+> +#include <linux/compiler.h>
+> +
+> +#ifdef CONFIG_X86_CMOV
+> +#define ASM_CMOVZ(op, dest) \
+> +		"cmovzl %" #op ",%" #dest ";\n\t"
+> +#else
+> +#define ASM_CMOVZ(op, dest) \
+> +		"jnz 1f;\n\t" \
+> +		"movl %" #op ", %" #dest ";\n\t" \
+> +		"1: "
+> +#endif
+> +
+> +static __always_inline int __get_order(unsigned long size)
+> +{
+> +	int order;
+> +
+> +	size = (size - 1) >> (PAGE_SHIFT - 1);
+> +	asm("bsr %1, %0\n\t"
+> +		ASM_CMOVZ(2, 0)
+> +		: "=&r" (order) : "rm" (size), "rm" (0));
+> +	return order;
+> +}
+> +
+> +/* Pure 2^n version of get_order */
+> +static inline __attribute_const__  int get_order(unsigned long size)
+> +{
+> +	int order;
+> +
+> +	if (__builtin_constant_p(size)) {
+> +		size = (size - 1) >> (PAGE_SHIFT - 1);
+> +		order = -1;
+> +		do {
+> +			size >>= 1;
+> +			order++;
+> +		} while (size);
+> +		return order;
+> +	}
+> +	return __get_order(size);
+> +}
+> +
+> +#endif	/* __ASSEMBLY__ */
+> +
+> +#endif	/* __ASM_GENERIC_GETORDER_H */
+> diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
+> index 8ca8283..10e4c45 100644
+> --- a/arch/x86/include/asm/page.h
+> +++ b/arch/x86/include/asm/page.h
+> @@ -63,7 +63,7 @@ extern bool __virt_addr_valid(unsigned long kaddr);
+>  #endif	/* __ASSEMBLY__ */
+>  
+>  #include <asm-generic/memory_model.h>
+> -#include <asm-generic/getorder.h>
+> +#include <asm/getorder.h>
 
+Just wondering, what's the before/after 'size vmlinux' effect on a 'make 
+defconfig' x86 kernel? Does the optimization make the kernel smaller as well, 
+besides making it faster?
 
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Thanks,
+
+	Ingo
