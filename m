@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab1C0RNN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 13:13:13 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62900 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab1C0RNL (ORCPT
+	id S1754119Ab1C0RNq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 13:13:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37295 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754003Ab1C0RNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 13:13:11 -0400
+	Sun, 27 Mar 2011 13:13:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kY16hKnMem05ggOyiLBJwUItCwaKF7P8TZbQ5K7hE1O0hKctDew/Yf5itjZ+AzRaCm
-         PXVA9ZAv1X0cE5L3TgiQ91zdEAA1UXO1rg4yp/8/y/BUtX9KhYRdESMfGfer2f7onAV/
-         rsPaOhy4KaqAtaZpPjnHjvNIUOkyGV6phLdas=
-Date: Sun, 27 Mar 2011 10:13:05 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Corentin Chary <corentin.chary@gmail.com>,
-        Chris Bagwell <chris@cnpbagwell.com>, Matthew Garrett <mjg@redhat.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vojtech@suze.cz
-Subject: Re: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate
- key
-Message-ID: <20110327171304.GD30244@core.coreip.homeip.net>
-References: <20110324195720.GB31713@thinkpad-t410>
- <1300997035-14104-2-git-send-email-seth.forshee@canonical.com>
- <AANLkTimF2UR8BVQW-3YJaGFEz39q8ydESAiMOjmdM1X7@mail.gmail.com>
- <20110325135311.GA14328@thinkpad-t410>
- <AANLkTin3MDYdL6x1Qs8Q9oMMgDMfsoO2GjWMJO_65GAR@mail.gmail.com>
- <20110325161405.GC5099@core.coreip.homeip.net>
- <20110325162850.GD14328@thinkpad-t410>
- <20110325170333.GD5099@core.coreip.homeip.net>
- <20110325185824.GE14328@thinkpad-t410>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110325185824.GE14328@thinkpad-t410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WxI2DOXoD3k/ilUp7K1xgRvxab2zQ7sP0Hk9lpEwf6QfCvSyPRklHwJp04P1GwbSiD
+         V6AhXPEr6tkp4pLs6q052paT+GiPHdhS6f+0p4WeNiW9ZWugM/peK+j8gf8y3pdkL363
+         gRdVcqvBGQWglC4++T5baqS1L7FmJ3d8EZQJs=
+Subject: Re: [PATCH v2] x86: page: get_order() optimization
+From: Maksym Planeta <mcsim.planeta@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: mingo@redhat.com, kernel-janitors@vger.kernel.org, namhyung@gmail.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110327113323.GA27825@elte.hu>
+References: <1301215556-8898-1-git-send-email-mcsim.planeta@gmail.com>
+	 <20110327113323.GA27825@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 27 Mar 2011 20:15:36 +0300
+Message-ID: <1301246136.2291.49.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 01:58:24PM -0500, Seth Forshee wrote:
-> On Fri, Mar 25, 2011 at 10:03:33AM -0700, Dmitry Torokhov wrote:
-> > > So, would the following make sense (KEY_TBD is may abbreviation for "key
-> > > to be determinded"):
-> > > 
-> > >  - On press (0xe4), send KEY_TBD, value = 1
-> > >  - On hold (0xea), send KEY_TBD, value = 2
-> > >  - On release (0xe5), send KEY_TBD, value = 0
-> > 
-> > Yes.
-> 
-> There's a little problem with this. The driver uses sparse-keymap, which
-> calls input_report_key(), which is doing this:
-> 
-> 	input_event(dev, EV_KEY, code, !!value);
+On Sat, 27/03/2011 at 13:33 +0200, Ingo Molnar wrote:
+> Just wondering, what's the before/after 'size vmlinux' effect on a 'make 
+> defconfig' x86 kernel? Does the optimization make the kernel smaller as well, 
+> besides making it faster?
 
-Ah, right, it really did not have in mind passing on auto-repeating keys
-as is when it was written.
+Thank you for advice. I didn't really mentioned it. So without my patch:
 
-> 
-> I don't see the hold events in userspace, so they must be getting
-> dropped as duplicates as you suggested.
-> 
-> I'm not sure who is at fault here. Should input_report_key() not be
-> forcing value to 0 or 1? Or should sparse-keymap be calling
-> input_event() directly? Or is sparse-keymap the wrong tool for handling
-> keys this way?
+size vmlinux
+   text	   data	    bss	    dec	    hex	filename
+7915025	1253060	1122304	10290389	 9d04d5	vmlinux
 
-I do not thik we shoudl burden sparse-keymap with handling repeats. Just
-mark the device as auto-repeating (by setting EV_REP bit) and let input
-core autorepeat logic do it for you.
+And with it: 
 
-Thanks.
+size vmlinux
+   text	   data	    bss	    dec	    hex	filename
+7919150	1251364	1122304	10292818	 9d0e52	vmlinux
 
+Size increased. But I discovered that if I replace "inline" with
+"__always_inline" in get_order(), size will be following:
+
+size vmlinux
+   text	   data	    bss	    dec	    hex	filename
+7914481	1249252	1122304	10286037	 9cf3d5	vmlinux
+
+And this is less than with same modification in asm-general:
+
+size vmlinux
+   text	   data	    bss	    dec	    hex	filename
+7914713	1249268	1122304	10286285	 9cf4cd	vmlinux
+
+With my patch and "__always_inline" instead of just "inline" size will
+be the smallest.
+
+Signed-off-by: Maksym Planeta <mcsim.planeta@gmail.com>
+---
+ arch/x86/include/asm/getorder.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/getorder.h
+b/arch/x86/include/asm/getorder.h
+index b0c6f57..6220783 100644
+--- a/arch/x86/include/asm/getorder.h
++++ b/arch/x86/include/asm/getorder.h
+@@ -27,7 +27,7 @@ static __always_inline int __get_order(unsigned long
+size)
+ }
+ 
+ /* Pure 2^n version of get_order */
+-static inline __attribute_const__  int get_order(unsigned long size)
++static __always_inline __attribute_const__  int get_order(unsigned long
+size)
+ {
+	int order;
 -- 
-Dmitry
+Thanks,
+
+Maksym Planeta
+
