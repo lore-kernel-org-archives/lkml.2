@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1C0MBN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 08:01:13 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:43201 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753218Ab1C0MBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 08:01:12 -0400
-X-ASG-Debug-ID: 1301227262-01de284cf8c4970001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D8F26F9.3000905@fusionio.com>
-Date: Sun, 27 Mar 2011 14:00:57 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753463Ab1C0MSs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 08:18:48 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:34126 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab1C0MSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 08:18:46 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6297"; a="82328024"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: <balbi@ti.com>
+Cc: <gregkh@suse.de>, <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1300867372-20811-1-git-send-email-tlinder@codeaurora.org> <20110325134730.GO2609@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110325134730.GO2609@legolas.emea.dhcp.ti.com>
+Subject: RE: [PATCH 1/5 v8] usb: Adding SuperSpeed support to dummy_hcd
+Date: Sun, 27 Mar 2011 14:19:25 +0200
+Message-ID: <000201cbec79$3a7dc4f0$af794ed0$@org>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [GIT PULL] Core block IO bits for 2.6.39
-References: <4D8B4A89.80608@fusionio.com> <4D8F2455.2080205@redhat.com>
-X-ASG-Orig-Subj: Re: [GIT PULL] Core block IO bits for 2.6.39
-In-Reply-To: <4D8F2455.2080205@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1301227262
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59112
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Acvq8y4BC/tBOaOZQa6Ntjml0mol2wBgxJ7A
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-27 13:49, Avi Kivity wrote:
-> On 03/24/2011 03:43 PM, Jens Axboe wrote:
->> Hi Linus,
->>
->> This is the main pull request for the block IO layer and friends for
->> 2.6.39.
->>
->> There are two major things in this tree:
->>
->> - The removal of the per-device plugging state for disks. On fast
->>    devices, it ended up hammering the queue lock quite hard. The new
->>    scheme puts the plugging state on the stack and allows an IO submitter
->>    to finish his batch of IO before pushing it to the queue. Once that
->>    push starts, we'll insert/merge with the existing queue.
->>
->>    A pointer to this plugging context is stored in the task structure. If
->>    a task ends up blocking before it has submitted it's IO (usual cause
->>    would be memory allocation of some sort), the plugged list is
->>    auto-submitted before the task goes to sleep.
+Hi
+
+> >
+> >  MODULE_DESCRIPTION (DRIVER_DESC);
+> >  MODULE_AUTHOR ("David Brownell");
+> > @@ -220,6 +223,7 @@ static inline struct dummy *gadget_dev_to_dummy
+> (struct device *dev)
+> >  }
+> >
+> >  static struct dummy			*the_controller;
+> > +static struct dummy			*the_ss_controller;
 > 
-> This is the fourth "do something if preempted" hook (the other three are 
-> kvm, cmwq, and perf).  Why not use sched notifiers for this?
+> the only thing I don't like, is why you splitted the ss controller to a
+> separate controller. Why don't you use the same ? From SW perspective,
+> we can treat SS and HS/FS/LS controllers as one unit.
+> 
 
-It's a 'if preempted', it's 'if going to sleep'. Two issues with the
-preempt notifiers for this, I did look into it:
+Actually I'm not sure about that... Because SS controller handles things a
+bit differently than HS/FS/LS. For example look at set_ss_link_state(), the
+port status is reported differently than for HS/FS/LS devices.
+It could be done, I mean spare the the_ss_controller variable and use
+the_controller, and we did that at first, but later on we decided to go back
+to this implementation since the code got too complex. Since dummy_hcd.c is
+used for debugging purposes we decided that simplicity is the better
+approach here.
 
-- Not unconditionally available. Not a big problem, we could just do
-  that.
 
-- Sched out is called under the runqueue lock, and it's not safe to drop
-  it.
+Best regards,
+Tanya Brokhman
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
-But it's not a bad point, it would be nice if we could unify all these
-use cases and provide a notifier that works for all.
 
--- 
-Jens Axboe
+
 
