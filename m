@@ -1,90 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab1C1WQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 18:16:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8953 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754872Ab1C1WQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 18:16:41 -0400
-Date: Mon, 28 Mar 2011 23:16:37 +0100
-From: Steven Hardy <shardy@redhat.com>
-To: Greg KH <gregkh@suse.de>, Aristeu Rozanski <aris@redhat.com>
-Cc: mjg@redhat.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PATCH 2/3 (2nd draft)] Resend : Fix memory leak in qcserial
- driver
-Message-ID: <20110328221636.GA8195@shardy.csb>
-References: <1301321186.4397.13.camel@shardy.csb>
- <20110328142148.GA19521@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110328142148.GA19521@suse.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S932141Ab1C1WRv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 18:17:51 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56123 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754916Ab1C1WRu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 18:17:50 -0400
+Date: Mon, 28 Mar 2011 23:18:18 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Will Newton <will.newton@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: advice sought: practicality of SMP cache coherency implemented
+ in assembler (and a hardware detect line)
+Message-ID: <20110328231818.2297408f@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTin6kg84P50RHR7h6NG+P_nJK=N_Nefc1q4NxzY_@mail.gmail.com>
+References: <AANLkTi=de3yDfXxCDp082+e3T+g_1wRWKWjqS0n1vy0+@mail.gmail.com>
+	<AANLkTi=W0mW2o2muNgMnb1OQ6WaBeOmu1VBHr8Zf63r9@mail.gmail.com>
+	<20110326120847.71b6ae4d@lxorguk.ukuu.org.uk>
+	<20110328180655.GI2287@linux.vnet.ibm.com>
+	<AANLkTin6kg84P50RHR7h6NG+P_nJK=N_Nefc1q4NxzY_@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Second draft of patch #2, this addresses the review comments made by Aristeu Rozanski, now usb_set_serial_data() is only called when we are not returning -ENODEV
+>  ok - well, having thought about this a little bit (in a non-detailed
+> high-level way) i was sort-of hoping, as alan hinted at, to still do
+> SMP, even if it's slow, for userspace.   the primary thing to prevent
+> from happening is to have kernelspace data structures from
+> conflicting.
+> 
+>  i found kerrigan, btw, spoke to the people on it: louis agreed that
+> the whole idea was mad as hell and was therefore actually very
+> interesting to attempt :)
+> 
+>  as a first approximation i'm absolutely happy for existing pthreads
+> applications to be forced to run on the same core.
 
-Original description:
-Don't assign serial->private when doing the kzalloc or serial->private ends up pointing to freed memory in the event we return -ENODEV, instead call usb_set_serial_data(serial, data) at the end of the function, and only have one return-point.
+The underlying problem across a cluster of nodes can be handled
+transparently. MOSIX solved that problem a very long time ago using DSM
+(distributed shared memory). It's not pretty, it requires a lot of tuning
+to make it fly but they did it over comparatively slow interconnects.
 
-
-Signed-off-by: Steve Hardy <shardy@redhat.com>
-
-
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 6e3b933..b9b97ad 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -111,7 +111,7 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
- 	ifnum = intf->desc.bInterfaceNumber;
- 	dbg("This Interface = %d", ifnum);
- 
--	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private),
-+	data = kzalloc(sizeof(struct usb_wwan_intf_private),
- 					 GFP_KERNEL);
- 	if (!data)
- 		return -ENOMEM;
-@@ -134,8 +134,10 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
- 		    usb_endpoint_is_bulk_out(&intf->endpoint[1].desc)) {
- 			dbg("QDL port found");
- 
--			if (serial->interface->num_altsetting == 1)
--				return 0;
-+			if (serial->interface->num_altsetting == 1) {
-+				retval = 0; /* Success */
-+				break;
-+			}
- 
- 			retval = usb_set_interface(serial->dev, ifnum, 1);
- 			if (retval < 0) {
-@@ -145,7 +147,6 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
- 				retval = -ENODEV;
- 				kfree(data);
- 			}
--			return retval;
- 		}
- 		break;
- 
-@@ -177,7 +178,6 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
- 				retval = -ENODEV;
- 				kfree(data);
- 			}
--			return retval;
- 		} else if (ifnum==3) {
- 			/*
- 			 * NMEA (serial line 9600 8N1)
-@@ -199,9 +199,12 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
- 		dev_err(&serial->dev->dev,
- 			"unknown number of interfaces: %d\n", nintf);
- 		kfree(data);
--		return -ENODEV;
-+		retval = -ENODEV;
- 	}
- 
-+	/* Set serial->private if not returning -ENODEV */
-+	if ( retval != -ENODEV )
-+		usb_set_serial_data(serial, data);
- 	return retval;
- }
+Alan
