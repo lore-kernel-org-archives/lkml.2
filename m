@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab1C1Qab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:30:31 -0400
+	id S932129Ab1C1Qat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:30:49 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:39860 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184Ab1C1Qa2 (ORCPT
+	with ESMTP id S932103Ab1C1Qar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:30:28 -0400
+	Mon, 28 Mar 2011 12:30:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=g2OU/uC67Pqtz8Q+0yIdCS6XvzUkHohHVag9//WTj7pINM9S6TWlCA5uAevsL3cGpO
-         8CgysbX5lQZKZP8HbS3KyrNJ9/FbkzdYRVE2lFg3vZrERrTibGMzqYqpsYPDGh1+1AbP
-         1EiGmGy6mSNlGf5W0HiDXq+MUZuiXJ2AvJ+pc=
+        b=A4YnaHoYdhgFK+8lFR7w2CObKKDg7eV5RXqwXTTzGSVkf/mjJjrJIDgURsZjck9TEV
+         pOPDjio9iCkLxSOL6n4sMt8nsuaihkb8+JkEkJXfH/7t1nbKRXEyl5BDbXFF/jMtC4ur
+         Xozm9qIih98zRDJB9XIvl9ynve+NWLaZYcb/k=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 14/25]drivers:video Remove version.h since it is unused.
-Date: Mon, 28 Mar 2011 09:29:37 -0700
-Message-Id: <1301329788-3423-15-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 11/25]drivers:usb Remove version.h since it is unused.
+Date: Mon, 28 Mar 2011 09:29:34 -0700
+Message-Id: <1301329788-3423-12-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301329788-3423-1-git-send-email-justinmattock@gmail.com>
 References: <1301329788-3423-1-git-send-email-justinmattock@gmail.com>
@@ -33,61 +33,47 @@ in the kernel.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/video/backlight/adp8860_bl.c |    1 -
- drivers/video/matrox/matroxfb_base.c |    2 --
- drivers/video/pxa3xx-gcu.c           |    1 -
- drivers/video/xilinxfb.c             |    1 -
- 4 files changed, 0 insertions(+), 5 deletions(-)
+ drivers/usb/core/hcd.c           |    1 -
+ drivers/usb/gadget/uvc_v4l2.c    |    1 -
+ drivers/usb/storage/realtek_cr.c |    1 -
+ 3 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
-index d2a96a4..24a6dfd 100644
---- a/drivers/video/backlight/adp8860_bl.c
-+++ b/drivers/video/backlight/adp8860_bl.c
-@@ -7,7 +7,6 @@
-  */
- 
- #include <linux/module.h>
--#include <linux/version.h>
- #include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/pm.h>
-diff --git a/drivers/video/matrox/matroxfb_base.c b/drivers/video/matrox/matroxfb_base.c
-index 5ce6fa6..cd09b3f 100644
---- a/drivers/video/matrox/matroxfb_base.c
-+++ b/drivers/video/matrox/matroxfb_base.c
-@@ -99,8 +99,6 @@
-  *
-  */
- 
--#include <linux/version.h>
--
- #include "matroxfb_base.h"
- #include "matroxfb_misc.h"
- #include "matroxfb_accel.h"
-diff --git a/drivers/video/pxa3xx-gcu.c b/drivers/video/pxa3xx-gcu.c
-index cf4beb9..7c0521c 100644
---- a/drivers/video/pxa3xx-gcu.c
-+++ b/drivers/video/pxa3xx-gcu.c
-@@ -31,7 +31,6 @@
-  */
- 
- #include <linux/module.h>
--#include <linux/version.h>
- 
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
-diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index 77dea01..fcb6cd9 100644
---- a/drivers/video/xilinxfb.c
-+++ b/drivers/video/xilinxfb.c
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 02b4dbf..ede1fb4 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
 @@ -23,7 +23,6 @@
- #include <linux/device.h>
+  */
+ 
  #include <linux/module.h>
+-#include <linux/version.h>
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/completion.h>
+diff --git a/drivers/usb/gadget/uvc_v4l2.c b/drivers/usb/gadget/uvc_v4l2.c
+index 5e807f0..a715805 100644
+--- a/drivers/usb/gadget/uvc_v4l2.c
++++ b/drivers/usb/gadget/uvc_v4l2.c
+@@ -16,7 +16,6 @@
+ #include <linux/errno.h>
+ #include <linux/list.h>
+ #include <linux/mutex.h>
+-#include <linux/version.h>
+ #include <linux/videodev2.h>
+ #include <linux/vmalloc.h>
+ #include <linux/wait.h>
+diff --git a/drivers/usb/storage/realtek_cr.c b/drivers/usb/storage/realtek_cr.c
+index d509a4a..fe21104 100644
+--- a/drivers/usb/storage/realtek_cr.c
++++ b/drivers/usb/storage/realtek_cr.c
+@@ -26,7 +26,6 @@
+ #include <linux/sched.h>
+ #include <linux/workqueue.h>
  #include <linux/kernel.h>
 -#include <linux/version.h>
- #include <linux/errno.h>
- #include <linux/string.h>
- #include <linux/mm.h>
+ 
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_cmnd.h>
 -- 
 1.7.4.1
 
