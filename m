@@ -1,56 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab1C1I0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 04:26:50 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42101 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab1C1I0t convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 04:26:49 -0400
-Subject: Re: PROBLEM:a bug about pi-futex maybe let the program going to
- hang
-From: Peter Zijlstra <peterz@infradead.org>
-To: xby <scxby@163.com>
-Cc: linux-kernel@vger.kernel.org,
-        "xie.baoyou172958@zte.com.cn" <xie.baoyou172958@zte.com.cn>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>
-In-Reply-To: <9e22ba.d2d5.12efb5a3d8f.Coremail.scxby@163.com>
-References: <9e22ba.d2d5.12efb5a3d8f.Coremail.scxby@163.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 28 Mar 2011 10:26:22 +0200
-Message-ID: <1301300782.4859.7.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753299Ab1C1I3F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 04:29:05 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:50449 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751026Ab1C1I3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 04:29:03 -0400
+X-ASG-Debug-ID: 1301300941-03d6a569fb03110001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D9046C9.8080606@fusionio.com>
+Date: Mon, 28 Mar 2011 10:28:57 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [GIT PULL] drbd build fix
+Content-Type: text/plain; charset="ISO-8859-1"
+X-ASG-Orig-Subj: [GIT PULL] drbd build fix
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301300941
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59197
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-28 at 15:25 +0800, xby wrote:
-> hi, all.
+Hi Linus,
 
-Works better if you also CC people who actually work on that code.
+With the removal of the horribly named generic_* bitops functions, the
+merge with master broke drbd. Please pull this fix from Stephen,
+modified slightly by me to also kill the now redundant
+asm-generic/bitops/le.h header file include as well.
 
->   Maybe, there is a bug about pi-futex, it would let the program in user-space going to hang.
->  
->   We have a board: CPU is powerpc 8572, two core. after ran one month, the state of pi-futex in user-space got bad: mutex->__data.__lock is 0x8000023e, mutex->__data.__count is 0, mutex->__data.__owner is 0.
->  
->   then, I review file "kernel/funtex.c"(the version is linux 2.6.38), found a case:
->  
->   if there are 3 thread, named threadA, threadB, threadC。thread A hold mutexM, threadB and threadC is waiting mutexM. They run as fllow steps:
->  
->   1. threadB and threadC sleep at line 1984.
->   2. threadB receive a signal, then it will be wake up.
->   3. threadA unlock mutexM, and give mutexM to threadB. 
->   4. threadB call fixup_owner, try to give mutex to threadC.
->   5. at line 1580, threadB trigger a addr-fault, then goto handle_fault.
->   6. at line 1617, threadB release spinlock, then handle fault.
->   7. threadC got spinlock, and call fixup_owner, and got mutexM.
->   8. threadC give mutexM to threadB.
->   9. threadB re-got spinlock, it will found "pi_state->owner == oldowner" and retry to fixup.
->   10. threadB give mutexM to threadC, that's a bad thing.
->  
->   we have wrote a program, this program can prove all above.
+Please pull.
 
-It would have been ever so much more useful if you'd have included that.
+  git://git.kernel.dk/linux-2.6-block.git for-linus
+
+Stephen Rothwell (1):
+      drbd: update for bitop api changes
+
+ drivers/block/drbd/drbd_bitmap.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/block/drbd/drbd_bitmap.c b/drivers/block/drbd/drbd_bitmap.c
+index f0ae63d..76210ba 100644
+--- a/drivers/block/drbd/drbd_bitmap.c
++++ b/drivers/block/drbd/drbd_bitmap.c
+@@ -29,8 +29,6 @@
+ #include <linux/slab.h>
+ #include <asm/kmap_types.h>
+ 
+-#include <asm-generic/bitops/le.h>
+-
+ #include "drbd_int.h"
+ 
+ 
+@@ -1184,10 +1182,10 @@ static unsigned long __bm_find_next(struct drbd_conf *mdev, unsigned long bm_fo,
+ 			p_addr = __bm_map_pidx(b, bm_bit_to_page_idx(b, bm_fo), km);
+ 
+ 			if (find_zero_bit)
+-				i = generic_find_next_zero_le_bit(p_addr,
++				i = find_next_zero_bit_le(p_addr,
+ 						PAGE_SIZE*8, bm_fo & BITS_PER_PAGE_MASK);
+ 			else
+-				i = generic_find_next_le_bit(p_addr,
++				i = find_next_bit_le(p_addr,
+ 						PAGE_SIZE*8, bm_fo & BITS_PER_PAGE_MASK);
+ 
+ 			__bm_unmap(p_addr, km);
+@@ -1287,9 +1285,9 @@ static int __bm_change_bits_to(struct drbd_conf *mdev, const unsigned long s,
+ 			last_page_nr = page_nr;
+ 		}
+ 		if (val)
+-			c += (0 == generic___test_and_set_le_bit(bitnr & BITS_PER_PAGE_MASK, p_addr));
++			c += (0 == __test_and_set_bit_le(bitnr & BITS_PER_PAGE_MASK, p_addr));
+ 		else
+-			c -= (0 != generic___test_and_clear_le_bit(bitnr & BITS_PER_PAGE_MASK, p_addr));
++			c -= (0 != __test_and_clear_bit_le(bitnr & BITS_PER_PAGE_MASK, p_addr));
+ 	}
+ 	if (p_addr)
+ 		__bm_unmap(p_addr, km);
+@@ -1438,7 +1436,7 @@ int drbd_bm_test_bit(struct drbd_conf *mdev, const unsigned long bitnr)
+ 		bm_print_lock_info(mdev);
+ 	if (bitnr < b->bm_bits) {
+ 		p_addr = bm_map_pidx(b, bm_bit_to_page_idx(b, bitnr));
+-		i = generic_test_le_bit(bitnr & BITS_PER_PAGE_MASK, p_addr) ? 1 : 0;
++		i = test_bit_le(bitnr & BITS_PER_PAGE_MASK, p_addr) ? 1 : 0;
+ 		bm_unmap(p_addr);
+ 	} else if (bitnr == b->bm_bits) {
+ 		i = -1;
+@@ -1482,7 +1480,7 @@ int drbd_bm_count_bits(struct drbd_conf *mdev, const unsigned long s, const unsi
+ 		ERR_IF (bitnr >= b->bm_bits) {
+ 			dev_err(DEV, "bitnr=%lu bm_bits=%lu\n", bitnr, b->bm_bits);
+ 		} else {
+-			c += (0 != generic_test_le_bit(bitnr - (page_nr << (PAGE_SHIFT+3)), p_addr));
++			c += (0 != test_bit_le(bitnr - (page_nr << (PAGE_SHIFT+3)), p_addr));
+ 		}
+ 	}
+ 	if (p_addr)
+
+-- 
+Jens Axboe
+
