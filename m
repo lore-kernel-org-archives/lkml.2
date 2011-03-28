@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab1C1CpS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 22:45:18 -0400
-Received: from mga14.intel.com ([143.182.124.37]:61654 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282Ab1C1CpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 22:45:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,252,1299484800"; 
-   d="scan'208";a="409486102"
-Date: Mon, 28 Mar 2011 10:47:19 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: "Lu, Guanqun" <guanqun.lu@intel.com>,
-        "meego-kernel@lists.meego.com" <meego-kernel@lists.meego.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "Fu, Michael" <michael.fu@intel.com>,
-        "Wang, Xingchao" <xingchao.wang@intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>, "Kp, Jeeja" <jeeja.kp@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ingo Molnar" <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Feng Tang <feng.tang@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Jekyll Lai <jekyll_lai@wistron.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 1/2] mrst: export get_gpio_by_name() function
-Message-ID: <20110328104719.78740624@feng-i7>
-In-Reply-To: <4D8FF3AE.5060003@linux.intel.com>
-References: <1301279360-9839-1-git-send-email-guanqun.lu@intel.com>
-	<1301279360-9839-2-git-send-email-guanqun.lu@intel.com>
-	<4D8FF3AE.5060003@linux.intel.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
+	id S1753633Ab1C1CrQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 22:47:16 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40754 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752569Ab1C1CrP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 22:47:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <27521.1300989784@redhat.com>
+References: <27521.1300989784@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 27 Mar 2011 19:46:23 -0700
+Message-ID: <AANLkTiny-bKXdfnXsygeZ-RDqduYJNWMLXxcRT-cSy_g@mail.gmail.com>
+Subject: Re: [GIT PULL] NOMMU and FRV patches
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org, tglx@linutronix.de,
+        amwang@redhat.com, vapier@gentoo.org, lethal@linux-sh.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011 10:34:22 +0800
-Arjan van de Ven <arjan@linux.intel.com> wrote:
+On Thu, Mar 24, 2011 at 11:03 AM, David Howells <dhowells@redhat.com> wrote:
+>
+> Can you pull these patches please?
 
-> On 3/27/2011 7:29 PM, Lu Guanqun wrote:
-> > Export get_gpio_by_name() function and make its name more focused.
-> > We are doing this because currently get_gpio_by_name() is only used
-> > by the devices exported from SFI DEVS table, but it is also useful
-> > for other PCI devices which also use the GPIO lines, and have their
-> > gpio infos in the SFI GPIO table.
-> >
-> 
-> I can't say that I like the new name... at all.
-> 
-> what's "mid" ?
-> what is wrong with the original name????
-> 
-Hi Arjan,
+No.
 
-The original get_gpio_by_name() is static and only used in mrst.c as it's
-mrst/mfld specific. So if we call it from a PCI driver, that name sounds
-like a platform independent general API while it's actually mrst/mfld bound.
-So we would show this dependency from the function name.
+Because they are sh*t that have clearly never been tested, and have
+never been in -next.
 
-Thanks,
-Feng
+They don't even compile on anything but NOMMU, as far as I can tell.
+That new "vcoalesce()" helper is crap:
 
- 
+  drivers/base/firmware_class.c: In function ‘firmware_loading_store’:
+  drivers/base/firmware_class.c:251:29: error: expected expression
+before ‘...’ token
+  drivers/base/firmware_class.c:251:29: error: too few arguments to
+function ‘vmap’
+  include/linux/vmalloc.h:70:14: note: declared here
+
+please send it to me next merge-window, when it has actually sat in -next.
+
+                Linus
