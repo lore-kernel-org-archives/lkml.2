@@ -1,108 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab1C1Loe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 07:44:34 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55713 "EHLO mx1.suse.de"
+	id S1753397Ab1C1Lpt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 07:45:49 -0400
+Received: from novsite.com ([87.120.7.82]:53657 "EHLO novsite.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051Ab1C1Lod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 07:44:33 -0400
-Date: Mon, 28 Mar 2011 13:44:30 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/3] Implementation of cgroup isolation
-Message-ID: <20110328114430.GE5693@tiehlicka.suse.cz>
-References: <20110328093957.089007035@suse.cz>
- <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1750802Ab1C1Lps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 07:45:48 -0400
+X-Greylist: delayed 1361 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Mar 2011 07:45:48 EDT
+Content-Type: text/plain; charset=windows-1251; format=flowed; delsp=yes
+To: linux-kernel@vger.kernel.org
+Subject: reg
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+From: "Ivan Arabadzhiev" <intelrullz@stoar08.com>
+Organization: StoAr 08 Ltd
+Date: Mon, 28 Mar 2011 14:22:47 +0300
+Message-ID: <op.vs1wj9jxugfnb7@ls4f-d830>
+User-Agent: Opera Mail/11.01 (Win32)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 28-03-11 20:03:32, KAMEZAWA Hiroyuki wrote:
-> On Mon, 28 Mar 2011 11:39:57 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-[...]
-> 
-> Isn't it the same result with the case where no cgroup is used ?
+reg
 
-Yes and that is the point of the patchset. Memory cgroups will not give
-you anything else but the top limit wrt. to the global memory activity.
-
-> What is the problem ?
-
-That we cannot prevent from paging out memory of process(es), even though
-we have intentionaly isolated them in a group (read as we do not have
-any other possibility for the isolation), because of unrelated memory
-activity.
-
-> Why it's not a problem of configuration ?
-> IIUC, you can put all logins to some cgroup by using cgroupd/libgcgroup.
-
-Yes, but this still doesn't bring the isolation.
-
-> Maybe you just want "guarantee".
-> At 1st thought, this approarch has 3 problems. And memcg is desgined
-> never to prevent global vm scans,
-> 
-> 1. This cannot be used as "guarantee". Just a way for "don't steal from me!!!"
->    This just implements a "first come, first served" system.
->    I guess this can be used for server desgines.....only with very very careful play.
->    If an application exits and lose its memory, there is no guarantee anymore.
-
-Yes, but once it got the memory and it needs to have it or benefits from
-having it resindent what-ever happens around then there is no other
-solution than mlocking the memory which is not ideal solution all the
-time as I have described already.
-
-> 
-> 2. Even with isolation, a task in memcg can be killed by OOM-killer at
->    global memory shortage.
-
-Yes it can but I think this is a different problem. Once you are that
-short of memory you can hardly ask from any guarantees.
-There is no 100% guarantee about anything in the system.
-
-> 
-> 3. it seems this will add more page fragmentation if implemented poorly, IOW,
->    can this be work with compaction ?
-
-Why would it add any fragmentation. We are compacting memory based on
-the pfn range scanning rather than walking global LRU list, aren't we?
-
-> I think of other approaches.
-> 
-> 1. cpuset+nodehotplug enhances.
->    At boot, hide most of memory from the system by boot option.
->    You can rename node-id of "all unused memory" and create arbitrary nodes
->    if the kernel has an interface. You can add a virtual nodes and move
->    pages between nodes by renaming it.
-> 
->    This will allow you to create a safe box dynamically. 
-
-This sounds as it requires a completely new infrastructure for many
-parts of VM code. 
-
->    If you move pages in
->    the order of MAX_ORDER, you don't add any fragmentation.
->    (But with this way, you need to avoid tasks in root cgrou, too.)
-> 
-> 
-> 2. allow a mount option to link ROOT cgroup's LRU and add limit for
->    root cgroup. Then, softlimit will work well.
->    (If softlimit doesn't work, it's bug. That will be an enhancement point.)
-
-So you mean that the root cgroup would be a normal group like any other?
-
-Thanks
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Sanity is a sin!
+http://www.thevenusproject.com/images/stories/venusfaq.pdf
