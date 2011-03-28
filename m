@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab1C1Utu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 16:49:50 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:40069 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907Ab1C1Utt (ORCPT
+	id S1754328Ab1C1Uua (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 16:50:30 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:32932 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753245Ab1C1Uu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 16:49:49 -0400
-Message-ID: <4D90F468.7020309@linux.vnet.ibm.com>
-Date: Mon, 28 Mar 2011 13:49:44 -0700
-From: Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Mon, 28 Mar 2011 16:50:29 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjkEACnzkE15LK5JgWdsb2JhbAClQRUBARYmJcUkDYVcBJJ1
+Date: Tue, 29 Mar 2011 07:50:24 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.38.1: CPU#0 stuck for 67s! / xfs_ail_splice
+Message-ID: <20110328205024.GB3008@dastard>
+References: <alpine.DEB.2.02.1103260927500.21571@p34.internal.lan>
+ <20110327232543.GU26611@dastard>
+ <alpine.DEB.2.02.1103280406300.25113@p34.internal.lan>
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [V9fs-developer] [PATCH 1/5] fs/9p: Fix revalidate to return
- correct value
-References: <1301052651-21440-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4D8D0009.8030806@linux.vnet.ibm.com>
-In-Reply-To: <4D8D0009.8030806@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1103280406300.25113@p34.internal.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2011 01:50 PM, Venkateswararao Jujjuri wrote:
-> On 03/25/2011 04:30 AM, Aneesh Kumar K.V wrote:
->> revalidate should return>  0 on success.
->>
->> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
->
-> Reviewed-by: Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
->
->> ---
->>   fs/9p/vfs_dentry.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/9p/vfs_dentry.c b/fs/9p/vfs_dentry.c
->> index b6a3b9f..59c5ddc 100644
->> --- a/fs/9p/vfs_dentry.c
->> +++ b/fs/9p/vfs_dentry.c
->> @@ -126,7 +126,7 @@ static int v9fs_lookup_revalidate(struct dentry 
->> *dentry, struct nameidata *nd)
->>               retval = v9fs_refresh_inode_dotl(fid, inode);
->>           else
->>               retval = v9fs_refresh_inode(fid, inode);
->> -        if (retval<= 0)
->> +        if (retval<  0)
-This change is causing tuxera rename test failure with acls enabled.
+On Mon, Mar 28, 2011 at 04:10:11AM -0400, Justin Piszcz wrote:
+> 
+> 
+> On Mon, 28 Mar 2011, Dave Chinner wrote:
+> 
+> >On Sat, Mar 26, 2011 at 09:29:36AM -0400, Justin Piszcz wrote:
+> >>Hi,
+> >>
+> >>When I rm -rf a directory of a few hundred thousand
+> >>files/directories on XFS under 2.6.38.1, I see the following, is
+> >>this normal?
+> >
+> >No. What is you filesystem config (xfs_info) and your mount options?
+> >Is it repeatable? I? the system otherwise stalled or is it still
+> >operating normally? Does it recover and work normally after such a
+> >stall?
+> 
+> Hi Dave, default mkfs.xfs options:
+> 
+> >What is you filesystem config (xfs_info) and your mount options?
+> 
+> # xfs_info /dev/sda1
+> meta-data=/dev/sda1              isize=256    agcount=44, agsize=268435455 blks
+>          =                       sectsz=512   attr=2
+> data     =                       bsize=4096   blocks=11718704640, imaxpct=5
+>          =                       sunit=0      swidth=0 blks
+> naming   =version 2              bsize=4096   ascii-ci=0
+> log      =internal               bsize=4096   blocks=521728, version=2
+>          =                       sectsz=512   sunit=0 blks, lazy-count=1
+> realtime =none                   extsz=4096   blocks=0, rtextents=0
 
-/root/pjd-fstest-20080816/tests/rename/10.t  (Wstat: 0 Tests: 188 Failed: 6)
-   Failed tests:  65, 71, 74, 77, 79-80
-The comment in namei says:
-"  If d_revalidate returned 0 attempt to invalidate  the dentry 
-otherwise d_revalidate is asking us
-  to return a fail status." I guess we need to return 0 in the case of 
-rename.
-Need more closer look at this patch.
+A 44TB filesystem with a 2GB log, right?
 
-- JV
+> /dev/sda1 on /r1 type xfs (rw,noatime,nobarrier,logbufs=8,logbsize=262144,delaylog,inode64)
+> 
+> >Is it repeatable?
+> I've not tried to repeat it as is spews messages over all of my consoles but
+> it has happened more than once.
 
+OK.
 
+> >the system otherwise stalled or is it still operating normally?
+> The console/xterm/ssh etc that is performing the removal does lockup but
+> you are able to access the machine via a separate ssh connection.
+> 
+> >Does it recover and work normally after such a stall?
+> Yes, eventually, I believe I started seeing this problem when I added
+> 'delaylog' option to the mount options..
 
->>               return retval;
->>       }
->>   out_valid:
->
+OK, that is what I suspected.
 
+What it sounds like is that there is a checkpoint completing with an
+out-of-order log sequence number so the items in the checkpoint are
+not being inserted at the end of the AIL and that is where the CPU
+usage is coming from. Without delaylog, a single transaction being
+inserted out-of-order is unnoticeable as it's only a few items. A
+delaylog checkpoint can be tens of thousands of items which is where
+the CPU usage would come from.
+
+I'll have to reproduce this locally to confirm this theory (and test
+the fix).
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
