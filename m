@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab1C1Qkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:40:49 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:38414 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565Ab1C1Qkr (ORCPT
+	id S932072Ab1C1Qk4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:40:56 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:48680 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754935Ab1C1Qkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:40:47 -0400
+	Mon, 28 Mar 2011 12:40:51 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+Cc: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v4 08/11] evm: imbed evm_inode_post_setattr
-Date: Mon, 28 Mar 2011 12:39:39 -0400
-Message-Id: <1301330382-17745-9-git-send-email-zohar@linux.vnet.ibm.com>
+        David Safford <safford@watson.ibm.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH v4 11/11] evm: crypto hash replaced by shash
+Date: Mon, 28 Mar 2011 12:39:42 -0400
+Message-Id: <1301330382-17745-12-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1301330382-17745-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1301330382-17745-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -22,64 +23,245 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing the inode's metadata may require the 'security.evm' extended
-attribute to be re-calculated and updated.
+From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
 
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+Using shash is more efficient, because the algorithm is allocated only
+once. Only the descriptor to store the hash state needs to be allocated
+for every operation.
+
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- fs/attr.c           |    5 ++++-
- include/linux/evm.h |    6 ++++++
- 2 files changed, 10 insertions(+), 1 deletions(-)
+ security/integrity/evm/evm.h        |    2 +
+ security/integrity/evm/evm_crypto.c |   94 ++++++++++++++++++++---------------
+ security/integrity/evm/evm_main.c   |    6 +-
+ 3 files changed, 58 insertions(+), 44 deletions(-)
 
-diff --git a/fs/attr.c b/fs/attr.c
-index 7ca4181..fbc5a09 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -13,6 +13,7 @@
- #include <linux/fsnotify.h>
- #include <linux/fcntl.h>
- #include <linux/security.h>
-+#include <linux/evm.h>
+diff --git a/security/integrity/evm/evm.h b/security/integrity/evm/evm.h
+index 65ab9db..08b0a84 100644
+--- a/security/integrity/evm/evm.h
++++ b/security/integrity/evm/evm.h
+@@ -20,6 +20,8 @@ extern int evm_initialized;
+ extern char *evm_hmac;
+ extern int evm_hmac_size;
  
- /**
-  * inode_change_ok - check if attribute changes to an inode are allowed
-@@ -236,8 +237,10 @@ int notify_change(struct dentry * dentry, struct iattr * attr)
- 	if (ia_valid & ATTR_SIZE)
- 		up_write(&dentry->d_inode->i_alloc_sem);
++extern struct crypto_shash *hmac_tfm;
++
+ /* List of EVM protected security xattrs */
+ extern char *evm_config_xattrnames[];
  
--	if (!error)
-+	if (!error) {
- 		fsnotify_change(dentry, ia_valid);
-+		evm_inode_post_setattr(dentry, ia_valid);
+diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
+index e029a37..4b2d040 100644
+--- a/security/integrity/evm/evm_crypto.c
++++ b/security/integrity/evm/evm_crypto.c
+@@ -17,7 +17,7 @@
+ #include <linux/crypto.h>
+ #include <linux/xattr.h>
+ #include <keys/encrypted-type.h>
+-#include <linux/scatterlist.h>
++#include <crypto/hash.h>
+ #include "evm.h"
+ 
+ #define EVMKEY "evm-key"
+@@ -25,23 +25,41 @@
+ static unsigned char evmkey[MAX_KEY_SIZE];
+ static int evmkey_len = MAX_KEY_SIZE;
+ 
+-static int init_desc(struct hash_desc *desc)
++struct crypto_shash *hmac_tfm;
++
++static struct shash_desc *init_desc(void)
+ {
+ 	int rc;
++	struct shash_desc *desc;
++
++	if (hmac_tfm == NULL) {
++		hmac_tfm = crypto_alloc_shash(evm_hmac, 0, CRYPTO_ALG_ASYNC);
++		if (IS_ERR(hmac_tfm)) {
++			pr_err("Can not allocate %s (reason: %ld)\n",
++			       evm_hmac, PTR_ERR(hmac_tfm));
++			rc = PTR_ERR(hmac_tfm);
++			hmac_tfm = NULL;
++			return ERR_PTR(rc);
++		}
 +	}
++
++	desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(hmac_tfm),
++			GFP_KERNEL);
++	if (!desc)
++		return ERR_PTR(-ENOMEM);
++
++	desc->tfm = hmac_tfm;
++	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
++
++	crypto_shash_setkey(hmac_tfm, evmkey, evmkey_len);
  
+-	desc->tfm = crypto_alloc_hash(evm_hmac, 0, CRYPTO_ALG_ASYNC);
+-	if (IS_ERR(desc->tfm)) {
+-		pr_info("Can not allocate %s (reason: %ld)\n",
+-			evm_hmac, PTR_ERR(desc->tfm));
+-		rc = PTR_ERR(desc->tfm);
+-		return rc;
++	rc = crypto_shash_init(desc);
++	if (rc) {
++		kfree(desc);
++		return ERR_PTR(rc);
+ 	}
+-	desc->flags = 0;
+-	crypto_hash_setkey(desc->tfm, evmkey, evmkey_len);
+-	rc = crypto_hash_init(desc);
+-	if (rc)
+-		crypto_free_hash(desc->tfm);
+-	return rc;
++
++	return desc;
+ }
+ 
+ /* Protect against 'cutting & pasting' security.evm xattr, include inode
+@@ -50,7 +68,7 @@ static int init_desc(struct hash_desc *desc)
+  * (Additional directory/file metadata needs to be added for more complete
+  * protection.)
+  */
+-static void hmac_add_misc(struct hash_desc *desc, struct inode *inode,
++static void hmac_add_misc(struct shash_desc *desc, struct inode *inode,
+ 			  char *digest)
+ {
+ 	struct h_misc {
+@@ -60,7 +78,6 @@ static void hmac_add_misc(struct hash_desc *desc, struct inode *inode,
+ 		gid_t gid;
+ 		umode_t mode;
+ 	} hmac_misc;
+-	struct scatterlist sg[1];
+ 
+ 	memset(&hmac_misc, 0, sizeof hmac_misc);
+ 	hmac_misc.ino = inode->i_ino;
+@@ -68,9 +85,8 @@ static void hmac_add_misc(struct hash_desc *desc, struct inode *inode,
+ 	hmac_misc.uid = inode->i_uid;
+ 	hmac_misc.gid = inode->i_gid;
+ 	hmac_misc.mode = inode->i_mode;
+-	sg_init_one(sg, &hmac_misc, sizeof hmac_misc);
+-	crypto_hash_update(desc, sg, sizeof hmac_misc);
+-	crypto_hash_final(desc, digest);
++	crypto_shash_update(desc, (const u8 *)&hmac_misc, sizeof hmac_misc);
++	crypto_shash_final(desc, digest);
+ }
+ 
+ /*
+@@ -85,8 +101,7 @@ int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
+ 		  char *digest)
+ {
+ 	struct inode *inode = dentry->d_inode;
+-	struct hash_desc desc;
+-	struct scatterlist sg[1];
++	struct shash_desc *desc;
+ 	char **xattrname;
+ 	size_t xattr_size = 0;
+ 	char *xattr_value = NULL;
+@@ -95,17 +110,17 @@ int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
+ 
+ 	if (!inode->i_op || !inode->i_op->getxattr)
+ 		return -EOPNOTSUPP;
+-	error = init_desc(&desc);
+-	if (error)
+-		return error;
++	desc = init_desc();
++	if (IS_ERR(desc))
++		return PTR_ERR(desc);
+ 
+ 	error = -ENODATA;
+ 	for (xattrname = evm_config_xattrnames; *xattrname != NULL; xattrname++) {
+ 		if ((req_xattr_name && req_xattr_value)
+ 		    && !strcmp(*xattrname, req_xattr_name)) {
+ 			error = 0;
+-			sg_init_one(sg, req_xattr_value, req_xattr_value_len);
+-			crypto_hash_update(&desc, sg, req_xattr_value_len);
++			crypto_shash_update(desc, (const u8 *)req_xattr_value,
++					     req_xattr_value_len);
+ 			continue;
+ 		}
+ 		size = vfs_getxattr_alloc(dentry, *xattrname,
+@@ -119,13 +134,13 @@ int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
+ 
+ 		error = 0;
+ 		xattr_size = size;
+-		sg_init_one(sg, xattr_value, xattr_size);
+-		crypto_hash_update(&desc, sg, xattr_size);
++		crypto_shash_update(desc, (const u8 *)xattr_value, xattr_size);
+ 	}
+-	hmac_add_misc(&desc, inode, digest);
+-	kfree(xattr_value);
++	hmac_add_misc(desc, inode, digest);
++
+ out:
+-	crypto_free_hash(desc.tfm);
++	kfree(xattr_value);
++	kfree(desc);
  	return error;
  }
-diff --git a/include/linux/evm.h b/include/linux/evm.h
-index a730782..33a9247 100644
---- a/include/linux/evm.h
-+++ b/include/linux/evm.h
-@@ -15,6 +15,7 @@ extern enum integrity_status evm_verifyxattr(struct dentry *dentry,
- 					     const char *xattr_name,
- 					     void *xattr_value,
- 					     size_t xattr_value_len);
-+extern void evm_inode_post_setattr(struct dentry *dentry, int ia_valid);
- extern int evm_inode_setxattr(struct dentry *dentry, const char *name,
- 			      const void *value, size_t size);
- extern void evm_inode_post_setxattr(struct dentry *dentry,
-@@ -35,6 +36,11 @@ static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
- }
- #endif
  
-+static inline void evm_inode_post_setattr(struct dentry *dentry, int ia_valid)
-+{
-+	return;
-+}
-+
- static inline int evm_inode_setxattr(struct dentry *dentry, const char *name,
- 				     const void *value, size_t size)
+@@ -156,20 +171,17 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
+ int evm_init_hmac(struct inode *inode, const struct xattr *lsm_xattr,
+ 		  char *hmac_val)
  {
+-	struct hash_desc desc;
+-	struct scatterlist sg[1];
+-	int error;
++	struct shash_desc *desc;
+ 
+-	error = init_desc(&desc);
+-	if (error != 0) {
++	desc = init_desc();
++	if (IS_ERR(desc)) {
+ 		printk(KERN_INFO "init_desc failed\n");
+-		return error;
++		return PTR_ERR(desc);
+ 	}
+ 
+-	sg_init_one(sg, lsm_xattr->value, lsm_xattr->value_len);
+-	crypto_hash_update(&desc, sg, lsm_xattr->value_len);
+-	hmac_add_misc(&desc, inode, hmac_val);
+-	crypto_free_hash(desc.tfm);
++	crypto_shash_update(desc, lsm_xattr->value, lsm_xattr->value_len);
++	hmac_add_misc(desc, inode, hmac_val);
++	kfree(desc);
+ 	return 0;
+ }
+ 
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index 98941ab..af1bc6a 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -19,6 +19,7 @@
+ #include <linux/xattr.h>
+ #include <linux/integrity.h>
+ #include <linux/evm.h>
++#include <crypto/hash.h>
+ #include "evm.h"
+ 
+ int evm_initialized;
+@@ -283,12 +284,10 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(evm_inode_post_init_security);
+ 
+-static struct crypto_hash *tfm_hmac;	/* preload crypto alg */
+ static int __init init_evm(void)
+ {
+ 	int error;
+ 
+-	tfm_hmac = crypto_alloc_hash(evm_hmac, 0, CRYPTO_ALG_ASYNC);
+ 	error = evm_init_secfs();
+ 	if (error < 0) {
+ 		printk(KERN_INFO "EVM: Error registering secfs\n");
+@@ -301,7 +300,8 @@ err:
+ static void __exit cleanup_evm(void)
+ {
+ 	evm_cleanup_secfs();
+-	crypto_free_hash(tfm_hmac);
++	if (hmac_tfm)
++		crypto_free_shash(hmac_tfm);
+ }
+ 
+ /*
 -- 
 1.7.3.4
 
