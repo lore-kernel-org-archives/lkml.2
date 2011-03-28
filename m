@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab1C1JOE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 05:14:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33318 "EHLO linutronix.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750698Ab1C1JOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 05:14:03 -0400
-Date: Mon, 28 Mar 2011 11:13:56 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
-        Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Subject: Re: [PATCH v2 1/2] staging: Add ST-Ericsson CG2900 driver
-In-Reply-To: <1301302950-10628-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-Message-ID: <alpine.LFD.2.00.1103281110210.31464@localhost6.localdomain6>
-References: <1301302950-10628-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751587Ab1C1JOa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 05:14:30 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60466 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab1C1JO3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 05:14:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KTZRxN4ODybuVawaqI2Z3b0/80Md+wwa2O99KhBCqgs7aNiG21duDTRYRqGgHh9M7X
+         Ym5NM+57qV1V2hZHp53ib7vd1BtMLaJj6PbuWj6js2AWGz0BJxJcmDUVF19v/wIAF8ge
+         id5im7txmjzZc02OhjnKmgmaColrj92TRP4tM=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <AANLkTinp4=c9qmVyfocUk_ydJ3PV50b9UckNhJJNFsFm@mail.gmail.com>
+References: <201011181650.00152.roucaries.bastien@gmail.com>
+	<AANLkTik=+smaiGNwVw0pDBXexVd=trsz9aSawuqLZP6k@mail.gmail.com>
+	<20101223034229.GF1739@nowhere>
+	<201101300108.32383.roucaries.bastien@gmail.com>
+	<20110308141847.GB1837@nowhere>
+	<AANLkTinp4=c9qmVyfocUk_ydJ3PV50b9UckNhJJNFsFm@mail.gmail.com>
+Date: Mon, 28 Mar 2011 11:14:28 +0200
+Message-ID: <AANLkTimYiRYZVXtxLBNeGcG=KVJTTiaGn+XGYP2Y=XMo@mail.gmail.com>
+Subject: Re: Reiserfs deadlock in 2.6.36
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011, Par-Gunnar Hjalmdahl wrote:
+On Tue, Mar 8, 2011 at 4:22 PM, Bastien ROUCARIES
+<roucaries.bastien@gmail.com> wrote:
+> On Tue, Mar 8, 2011 at 3:18 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> On Sun, Jan 30, 2011 at 01:08:29AM +0100, Bastien ROUCARIES wrote:
+>>> Le jeudi 23 décembre 2010 04:42:33, Frederic Weisbecker a écrit :
+>>> Hi,
+>>>
+>>> I take me more than two days of testing to reporduce this bugs with trace enabled. My filesystem was quite slow and this bugs seems
+>>> to be timing related.
+>>>
 
-This wants to be split up for review.
+Any news of this bug? Could I do something to help ?
 
-> +/**
-> + * cts_interrupt() - Called to handle CTS interrupt.
-> + * @irq:	Interrupt that occurred.
-> + * @dev_id:	Device ID where interrupt occurred.
-> + *
-> + * The cts_interrupt() function is called if interrupt on CTS occurred.
-> + * It disables the interrupt and starts a new work thread to handle
-> + * the interrupt.
-> + */
-> +static irqreturn_t cts_interrupt(int irq, void *dev_id)
-> +{
-> +	struct uart_info *uart_info = dev_get_drvdata(dev_id);
-> +#ifdef CONFIG_PM
-> +	disable_irq_wake(irq);
-> +#endif
-> +	disable_irq_nosync(irq);
-> +
-> +	/* Create work and leave IRQ context. */
-> +	(void)create_work_item(uart_info, handle_cts_irq);
-> +
-> +	return IRQ_HANDLED;
-> +}
-
-Have you thought about using a threaded interrupt handler? That would
-make all this work cruft go away.
-
-Thanks,
-
-	tglx
+bastien
+>
+> Ok bastien
+>
