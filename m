@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab1C1FIw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 01:08:52 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37343 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788Ab1C1FIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 01:08:50 -0400
-Date: Mon, 28 Mar 2011 07:08:44 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Maksym Planeta <mcsim.planeta@gmail.com>
-Cc: mingo@redhat.com, kernel-janitors@vger.kernel.org, namhyung@gmail.com,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jan Beulich <JBeulich@novell.com>
-Subject: Re: [PATCH v2] x86: page: get_order() optimization
-Message-ID: <20110328050844.GC26322@elte.hu>
-References: <1301215556-8898-1-git-send-email-mcsim.planeta@gmail.com>
- <20110327113323.GA27825@elte.hu>
- <1301246136.2291.49.camel@debian>
+	id S1752623Ab1C1FJb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 01:09:31 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52318 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab1C1FJa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 01:09:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SAOfj6hQ7pL86P8/Ny6NFmSTtWLnZxlWQk4ufEVxslTpRgPzX+zgXRr5aV1Dq2RgyP
+         xrrjjaksGYPH1r6I674Ckb3+WPT8P2MZJ7ssWIVT9cxYjVbb0EuCNPDlg41SSChOrzwC
+         qoRIz3RwD9nQRJEvroIkwDElS0Lz3GrLlAZIM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301246136.2291.49.camel@debian>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110325141947.3236.83222.stgit@matisse.1015granger.net>
+References: <20110325141947.3236.83222.stgit@matisse.1015granger.net>
+Date: Mon, 28 Mar 2011 07:09:29 +0200
+Message-ID: <AANLkTikohEL9EVkOeX_hApVXQGB3c0V3Aqnfx3=tY0u6@mail.gmail.com>
+Subject: Re: [PATCH] NFS: Revert NFSROOT default mount options
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 25, 2011 at 3:23 PM, Chuck Lever <chuck.lever@oracle.com> wrote:
+> Marek Belisko <marek.belisko@gmail.com> reports that recent attempts
+> to fix regressions in NFSROOT have broken his configuration:
+>
+>> After update from 2.6.38-rc8 to 2.6.38 is mounting rootfs over nfs not possible.
+>> Log:
+>> VFS: Mounted root (nfs filesystem) on device 0:14.
+>> Freeing init memory: 132K
+>> nfs: server 10.146.1.21 not responding, still trying
+>> nfs: server 10.146.1.21 not responding, still trying
+>>
+>> This is never ending. I make short bisect (not too much commits
+>> between versions)
+>> and bad commit was reported: 53d4737580535e073963b91ce87d4216e434fab5
+>>
+>> NFS: NFSROOT should default to "proto=udp"
+>>
+>> I've tested on mini2440 board (DM9000, static IP).
+>> Is there some missing option or something else to be checked?
+>
+> An examination of a network trace captured during the failure shows
+> that the mount is actually succeeding, but that the client is not
+> seeing READ replies larger than 16KB.
+>
+> Last fall we removed the ad hoc mount option parser in fs/nfs/nfsroot.c
+> in favor of using the main parser in fs/nfs/super.c (see commit
+> 56463e50 "NFS: Use super.c for NFSROOT mount option parsing").  That
+> commit changed the default NFSROOT mount options to be the same as
+> those employed by user space mounts.  As it turns out, that change is
+> not tolerated by many embedded systems.
+>
+> Subsequently, commit 53d47375 introduced a clean way to specify
+> default mount options for NFSROOT, so we can restore the traditional
+> defaults for NFSROOT easily now:
+>
+>   vers=2,udp,rsize=4096,wsize=4096
+>
+> This should revert the changed default NFSROOT mount options
+> introduced with commit 56463e50.
+Work fine with below patch.
+You can add my Tested by: Marek Belisko <marek.belisko@open-nandra.com>
+>
+> Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+> ---
+>
+> Hi-
+>
+> Please test this, as I no longer have an NFSROOT rig here.
+>
+> Can some responsible maintainer type see that this gets into
+> linux-next quickly for broader testing?
+>
+>  fs/nfs/nfsroot.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
+> index c541093..c4744e1 100644
+> --- a/fs/nfs/nfsroot.c
+> +++ b/fs/nfs/nfsroot.c
+> @@ -87,7 +87,7 @@
+>  #define NFS_ROOT               "/tftpboot/%s"
+>
+>  /* Default NFSROOT mount options. */
+> -#define NFS_DEF_OPTIONS                "udp"
+> +#define NFS_DEF_OPTIONS                "vers=2,udp,rsize=4096,wsize=4096"
+>
+>  /* Parameters passed from the kernel command line */
+>  static char nfs_root_parms[256] __initdata = "";
+>
+>
 
-* Maksym Planeta <mcsim.planeta@gmail.com> wrote:
+regards,
 
-> On Sat, 27/03/2011 at 13:33 +0200, Ingo Molnar wrote:
-> > Just wondering, what's the before/after 'size vmlinux' effect on a 'make 
-> > defconfig' x86 kernel? Does the optimization make the kernel smaller as well, 
-> > besides making it faster?
-> 
-> Thank you for advice. I didn't really mentioned it. So without my patch:
-> 
-> size vmlinux
->    text	   data	    bss	    dec	    hex	filename
-> 7915025	1253060	1122304	10290389	 9d04d5	vmlinux
-> 
-> And with it: 
-> 
-> size vmlinux
->    text	   data	    bss	    dec	    hex	filename
-> 7919150	1251364	1122304	10292818	 9d0e52	vmlinux
-> 
-> Size increased. But I discovered that if I replace "inline" with
-> "__always_inline" in get_order(), size will be following:
-> 
-> size vmlinux
->    text	   data	    bss	    dec	    hex	filename
-> 7914481	1249252	1122304	10286037	 9cf3d5	vmlinux
-> 
-> And this is less than with same modification in asm-general:
-> 
-> size vmlinux
->    text	   data	    bss	    dec	    hex	filename
-> 7914713	1249268	1122304	10286285	 9cf4cd	vmlinux
-> 
-> With my patch and "__always_inline" instead of just "inline" size will
-> be the smallest.
+marek
 
-Weird, that's an unexpected resut.
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-Have you looked at the disassembly, why does the size increase? I'd expect such 
-a straight assembly optimization to result in smaller code: in the non-constant 
-case it should be the same size as before, in the constant case it should be 
-smaller, because BSR should be smaller than an open-coded search loop, right?
-
-One sidenote, defconfig turns these on:
-
- CONFIG_CC_OPTIMIZE_FOR_SIZE=y
- CONFIG_OPTIMIZE_INLINING=y
-
-And some versions of GCC arent very good with these.
-
-Thanks,
-
-	Ingo
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+icq: 290551086
+web: http://open-nandra.com
