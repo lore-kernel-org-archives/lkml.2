@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab1C1TWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 15:22:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49207 "EHLO ogre.sisk.pl"
+	id S932113Ab1C1TYD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 15:24:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49217 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752530Ab1C1TWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 15:22:08 -0400
+	id S1754080Ab1C1TYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 15:24:01 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] acpi: Remove sysfs_create_link from video driver
-Date: Mon, 28 Mar 2011 21:22:21 +0200
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [Bug #28842] 2.6.38-rc3 regression ipv6 TFTP download with curl failing in getpeername?
+Date: Mon, 28 Mar 2011 21:24:25 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jeff.chua.linux@gmail.com
-References: <1301316362-2955-1-git-send-email-mjg@redhat.com>
-In-Reply-To: <1301316362-2955-1-git-send-email-mjg@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <lDYNS4ATQ-N.A._aD.9m5jNB@chimera> <40UNry85rJN.A.BAF.6o5jNB@chimera> <m1zkofzdlc.fsf@fess.ebiederm.org>
+In-Reply-To: <m1zkofzdlc.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-2"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103282122.21175.rjw@sisk.pl>
+Message-Id: <201103282124.25529.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 28, 2011, Matthew Garrett wrote:
-> The acpi video driver attempts to explicitly create a sysfs link between
-> the acpi device and the associated PCI device. However, we're now also
-> doing this from the backlight core, which means that we get a backtrace
-> caused by a duplicate file. Remove the code and leave it up to the
-> backlight core.
+On Monday, March 28, 2011, Eric W. Biederman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
 > 
-> Reported-by: Jeff Chua <jeff.chua.linux@gmail.com>
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-> ---
->  drivers/acpi/video.c |    6 ------
->  1 files changed, 0 insertions(+), 6 deletions(-)
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> >
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.37.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> >
+> >
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28842
+> > Subject		: 2.6.38-rc3 regression ipv6 TFTP download with curl failing in getpeername?
+> > Submitter	: Eric W. Biederman <ebiederm@xmission.com>
+> > Date		: 2011-02-08 9:41 (48 days old)
+> > Message-ID	: <m1ei7iamnn.fsf@fess.ebiederm.org>
+> > References	: http://marc.info/?l=linux-kernel&m=129715811421534&w=2
 > 
-> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> index a18e497..31e9e10 100644
-> --- a/drivers/acpi/video.c
-> +++ b/drivers/acpi/video.c
-> @@ -824,11 +824,6 @@ static void acpi_video_device_find_cap(struct acpi_video_device *device)
->  		device->backlight->props.brightness =
->  				acpi_video_get_brightness(device->backlight);
->  
-> -		result = sysfs_create_link(&device->backlight->dev.kobj,
-> -					   &device->dev->dev.kobj, "device");
-> -		if (result)
-> -			printk(KERN_ERR PREFIX "Create sysfs link\n");
-> -
->  		device->cooling_dev = thermal_cooling_device_register("LCD",
->  					device->dev, &video_cooling_ops);
->  		if (IS_ERR(device->cooling_dev)) {
-> @@ -1381,7 +1376,6 @@ static int acpi_video_bus_put_one_device(struct acpi_video_device *device)
->  		       "Cant remove video notify handler\n");
->  	}
->  	if (device->backlight) {
-> -		sysfs_remove_link(&device->backlight->dev.kobj, "device");
->  		backlight_device_unregister(device->backlight);
->  		device->backlight = NULL;
->  	}
-> 
+> As of 2.6.38 I no longer have problems.
 
+Thanks, closing.
+
+Rafael
