@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab1C1NqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 09:46:15 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:31955 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754266Ab1C1NqL (ORCPT
+	id S1754344Ab1C1NqU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 09:46:20 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40051 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754266Ab1C1NqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 09:46:11 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 6FNEUdYVM1mbLGZWmsIdQwp1UGVftQW3pTkbmwR7.0reCEM
- 1Okv5.9Nb9AIEG9vt0VhVFkSwYxo3dLrvy3gbN7EXnHzCpwBFAcxboLetmLp
- DX2hbH6jUNAAwmo0w5A926jNUPlP7_Wo0G_fXjJJrhEPvDEqGhwJsqNKu5ws
- G4MTH2HwkuKY6SLkO27T.rZyzouzECe2Po7n4OjLgnzZ5g1F8mHgreyGVgo9
- wSlcadV3GYD8Fsw4dDW2Vui_jxRs4mLlCDpJMBgcqGKgEVXnGQqzn0ZNGn5N
- Hs_sXss9TlpzZT3H1kx7cC.FDDNx5N1jZIic.iyyf8Zmu6EMx7SK89YUaTDK
- VLITxM6QqndazObt1sAn3oGbiYOPk
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 28 Mar 2011 08:46:05 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] percpu: avoid extra NOP in percpu_cmpxchg16b_double
-In-Reply-To: <1301308335.3182.12.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1103280845480.7590@router.home>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger>  <20110324142146.GA11682@elte.hu>  <alpine.DEB.2.00.1103240940570.32226@router.home>  <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>  <20110324172653.GA28507@elte.hu> <20110324185258.GA28370@elte.hu>
-  <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6>  <20110324192247.GA5477@elte.hu>  <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com>  <20110326112725.GA28612@elte.hu> <20110326114736.GA8251@elte.hu>  <1301161507.2979.105.camel@edumazet-laptop>
-  <alpine.DEB.2.00.1103261406420.24195@router.home>  <alpine.DEB.2.00.1103261428200.25375@router.home>  <alpine.DEB.2.00.1103261440160.25375@router.home>  <AANLkTinTzKQkRcE2JvP_BpR0YMj82gppAmNo7RqgftCG@mail.gmail.com>  <alpine.DEB.2.00.1103262028170.1004@router.home>
-  <alpine.DEB.2.00.1103262054410.1373@router.home>  <1301212347.32248.1.camel@edumazet-laptop> <1301308335.3182.12.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 28 Mar 2011 09:46:17 -0400
+Date: Mon, 28 Mar 2011 08:46:06 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Corentin Chary <corentin.chary@gmail.com>
+Cc: Chris Bagwell <chris@cnpbagwell.com>, Matthew Garrett <mjg@redhat.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vojtech@suze.cz
+Subject: Re: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate
+ key
+Message-ID: <20110328134606.GA16374@thinkpad-t410>
+Mail-Followup-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Corentin Chary <corentin.chary@gmail.com>,
+	Chris Bagwell <chris@cnpbagwell.com>,
+	Matthew Garrett <mjg@redhat.com>,
+	acpi4asus-user@lists.sourceforge.net,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+	vojtech@suze.cz
+References: <AANLkTimF2UR8BVQW-3YJaGFEz39q8ydESAiMOjmdM1X7@mail.gmail.com>
+ <20110325135311.GA14328@thinkpad-t410>
+ <AANLkTin3MDYdL6x1Qs8Q9oMMgDMfsoO2GjWMJO_65GAR@mail.gmail.com>
+ <20110325161405.GC5099@core.coreip.homeip.net>
+ <20110325162850.GD14328@thinkpad-t410>
+ <20110325170333.GD5099@core.coreip.homeip.net>
+ <20110325185824.GE14328@thinkpad-t410>
+ <20110327171304.GD30244@core.coreip.homeip.net>
+ <AANLkTikBnAdXHR4iqzq9Zd6D-OYe4yp-zELPh6iLr6sj@mail.gmail.com>
+ <20110327191116.GB31692@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110327191116.GB31692@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011, Eric Dumazet wrote:
+On Sun, Mar 27, 2011 at 12:11:16PM -0700, Dmitry Torokhov wrote:
+> > If we do set up auto-repeat and increase REP_DELAY, I'm guessing this
+> > would enable auto-repeat for all other keys defined in driver?  That
+> > needs to have some thought on if could have negative impact (any other
+> > keys not using auto-release?).
+> 
+> Right. Right now there are 4 autoreprat options (in general):
+> 
+> - hardware autorepeat (if hardware supports it);
+> - input core software autorepeat (one delay and rate per input device);
+> - driver-implemented software autorepeat - in cases when different
+>   repeat rate is needed;
+> - userspace autorepeat (like X does nowadays);
+> 
+> Well, 4th option is not mutually exclusive with the other 3...
 
-> Therefore, NOPX should be :
->
-> P6_NOP3 on SMP
-> P6_NOP2 on !SMP
+Currently all the other keys are using autorelease, so the autorepeat
+setting shouldn't be affecting them at all. So the concern is whether
+enabling autorepeat could become a problem the next time some oddball
+key shows up on a machine.
 
-Acked-by: Christoph Lameter <cl@linux.com>
+Corentin, you were concerned about the loss of information to userspace,
+but it seems the only way to maintain the hardware events is to drop the
+use of sparse-keymap altogether. Do you have an opinion on how to
+proceed?
+
+I'm leaning towards using the input core autorepeat, since it seems to
+get the closest to typical key behavior.
+
+Seth
+
