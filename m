@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab1C1D3w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 23:29:52 -0400
-Received: from twtpemsw4.wistron.com.tw ([220.128.88.34]:3465 "EHLO
-	twtpemsw4.wistron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab1C1D3v convert rfc822-to-8bit (ORCPT
+	id S1754035Ab1C1DaW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 23:30:22 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:44591 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab1C1DaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 23:29:51 -0400
-X-Greylist: delayed 602 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Mar 2011 23:29:51 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Sun, 27 Mar 2011 23:30:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=lJzPZGzgAAQUE3DYh8G+rmrZinSmzBuy3D8mEPHCmN1tNex1gxQ4l1WgJ1fQ8Srf39
+         69VFzrq+mA210q8h3O9TirAVolYmB/cwIFfWipiQht74na45NXxjO2OvOTlRuUD6ojF1
+         YzPtCvPhy2mD2bnKzlrNdTeMpoizTEgEamL64=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH v9 2/2] sst: internal speaker needs setting a GPIO line
-Date: Mon, 28 Mar 2011 11:19:45 +0800
-Message-ID: <DF7A49853E29834B934025117433841F2BC81F@WHQBEMAIL3.whq.wistron>
-In-Reply-To: <20110328025313.GF12596@qtel.sh.intel.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH v9 2/2] sst: internal speaker needs setting a GPIO line
-Thread-Index: Acvs83+SWoOdig8ESuiVk1Sos9vczwAAl7Eg
-References: <1301279360-9839-1-git-send-email-guanqun.lu@intel.com> <1301279360-9839-3-git-send-email-guanqun.lu@intel.com> <4D8FF3F8.6000003@linux.intel.com> <20110328025313.GF12596@qtel.sh.intel.com>
-From: <Jeff_Cheng@wistron.com>
-To: <guanqun.lu@intel.com>, <arjan@linux.intel.com>
-Cc: <meego-kernel@lists.meego.com>, <alan@linux.intel.com>,
-        <fengguang.wu@intel.com>, <feng.tang@intel.com>,
-        <michael.fu@intel.com>, <xingchao.wang@intel.com>,
-        <vinod.koul@intel.com>, <jeeja.kp@intel.com>, <gregkh@suse.de>,
-        <ramesh.babu@intel.com>, <dharageswari.r@intel.com>,
-        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 28 Mar 2011 03:19:47.0021 (UTC) FILETIME=[FD8D7FD0:01CBECF6]
+Date: Mon, 28 Mar 2011 11:30:09 +0800
+Message-ID: <AANLkTikmmjPx=QUAx380gxg2dtiDeynsAUdYh3+_-JxY@mail.gmail.com>
+Subject: 8139too: del_timer_sync WARNING of in interrupt
+From: Dave Young <hidave.darkstar@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, yong.zhang0@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Dave Young <hidave.darkstar@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guanqun
-The msleep is to try disable pop noise. 
-If you have better way to disable pop noise, please fix it.
-Thanks.
+Hi,
 
------Original Message-----
-From: Lu Guanqun [mailto:guanqun.lu@intel.com] 
-Sent: Monday, March 28, 2011 10:53 AM
-To: Arjan van de Ven; Jeff Cheng/WHQ/Wistron
-Cc: meego-kernel@lists.meego.com; alan@linux.intel.com; Wu, Fengguang;
-Tang, Feng; Fu, Michael; Wang, Xingchao; Koul, Vinod; Kp, Jeeja; Greg
-Kroah-Hartman; Babu, Ramesh; R, Dharageswari;
-devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 2/2] sst: internal speaker needs setting a GPIO
-line
+I got a lot of warnings about del_timer_sync called in interrupt like following:
 
-On Mon, Mar 28, 2011 at 10:35:36AM +0800, Arjan van de Ven wrote:
-> On 3/27/2011 7:29 PM, Lu Guanqun wrote:
-> >
-> >   	pr_debug("sst: powering dn nc_power_down ....\n");
-> >
-> > +	if (snd_pmic_ops_nc.output_dev_id == MONO_EARPIECE ||
-> > +	    snd_pmic_ops_nc.output_dev_id == INTERNAL_SPKR) {
-> > +		msleep(30);
-> > +		nc_set_amp_power(0);
-> > +	}
-> >   	msleep(30);
-> 
-> this double msleep sounds rather harsh... why do we need two of these
-?
-> (heck... why do we need ONE ?)
-> 
+[237232.529021] ------------[ cut here ]------------
+[237232.529111] WARNING: at kernel/timer.c:1012 del_timer_sync+0xae/0xc6()
+[237232.529198] Hardware name: OptiPlex 780
+[237232.529286] Modules linked in: tun snd_pcm_oss snd_mixer_oss
+kvm_intel kvm snd_hda_codec_analog dell_wmi sparse_keymap
+snd_hda_intel snd_hda_codec snd_hwdep wmi 8139too snd_pcm snd_timer
+snd_page_alloc e1000e
+[237232.529557] Pid: 0, comm: kworker/0:0 Tainted: G        W
+2.6.38-04148-g054cfaa #149
+[237232.529712] Call Trace:
+[237232.529790]  <IRQ>  [<ffffffff810487ea>] ? del_timer_sync+0xae/0xc6
+[237232.529876]  [<ffffffff8103b478>] ? warn_slowpath_common+0x80/0x99
+[237232.529958]  [<ffffffff8103b4a6>] ? warn_slowpath_null+0x15/0x17
+[237232.530039]  [<ffffffff810487ea>] ? del_timer_sync+0xae/0xc6
+[237232.530120]  [<ffffffff8104873c>] ? del_timer_sync+0x0/0xc6
+[237232.530201]  [<ffffffff814bcf84>] ? linkwatch_schedule_work+0x81/0x9f
+[237232.530283]  [<ffffffff814bd06f>] ? linkwatch_fire_event+0xcd/0xd2
+[237232.530364]  [<ffffffff814c6ca1>] ? netif_carrier_on+0x2a/0x3e
+[237232.530446]  [<ffffffff81368f33>] ? mii_check_media+0x80/0x1a8
+[237232.530530]  [<ffffffffa006a175>] ? rtl8139_interrupt+0x234/0x511 [8139too]
+[237232.530612]  [<ffffffff81066b81>] ? trace_hardirqs_off+0xd/0xf
+[237232.530694]  [<ffffffff81099b5f>] ? handle_irq_event_percpu+0x5f/0x1ad
+[237232.530775]  [<ffffffff81099d14>] ? handle_irq_event+0x47/0x68
+[237232.530856]  [<ffffffff8109c02b>] ? handle_fasteoi_irq+0x82/0xab
+[237232.530939]  [<ffffffff81003b00>] ? handle_irq+0x86/0x8e
+[237232.531019]  [<ffffffff81003494>] ? do_IRQ+0x4b/0xb2
+[237232.531100]  [<ffffffff8157c3d3>] ? ret_from_intr+0x0/0x1a
+[237232.531180]  <EOI>  [<ffffffff810087c6>] ? mwait_idle+0xa4/0xeb
+[237232.531264]  [<ffffffff810087cf>] ? mwait_idle+0xad/0xeb
+[237232.531345]  [<ffffffff810087c6>] ? mwait_idle+0xa4/0xeb
+[237232.531426]  [<ffffffff81001e67>] ? cpu_idle+0x64/0x9a
+[237232.531507]  [<ffffffff81575ae0>] ? start_secondary+0x1f2/0x1f4
+[237232.531587] ---[ end trace c18fe5c80f501bd9 ]---
 
-This is legacy code from Jeff Cheng's patch.
-Jeff, could you provide some information on this line?
+The actual call path is:
+
+linkwatch_schedule_work
+  -->cancel_delayed_work
+    -->del_timer_sync
+
+A real bug?
 
 -- 
-guanqun
+Regards
+dave
