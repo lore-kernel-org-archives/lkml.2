@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab1C1Jgb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 05:36:31 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:47408 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1C1Jga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 05:36:30 -0400
-Date: Mon, 28 Mar 2011 11:35:59 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
-        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 4/4] xen/balloon: Move dec_totalhigh_pages() from __balloon_append() to balloon_append()
-Message-ID: <20110328093559.GI13826@router-fw-old.local.net-space.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
+	id S1752415Ab1C1JlG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 05:41:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51945 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347Ab1C1JlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 05:41:02 -0400
+X-Mailbox-Line: From mhocko@suse.cz Mon Mar 28 11:39:57 2011
+Message-Id: <20110328093957.602747084@suse.cz>
+User-Agent: quilt/0.48-1
+Date: Mon, 28 Mar 2011 11:40:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [RFC 3/3] Do not shrink isolated groups from the global reclaim
+References: <20110328093957.089007035@suse.cz>
+Content-Disposition: inline; filename=memcg-do_not_reclaim_isolated_groups.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-git commit 9be4d4575906af9698de660e477f949a076c87e1 (xen: add
-extra pages to balloon) splited balloon_append() into two functions
-(balloon_append() and __balloon_append()) and left decrementation
-of totalram_pages counter in __balloon_append(). In this situation
-if __balloon_append() is called on i386 with highmem page referenced
-then totalhigh_pages is decremented, however, it should not. This
-patch corrects that issue and moves dec_totalhigh_pages() from
-__balloon_append() to balloon_append(). Now totalram_pages and
-totalhigh_pages are decremented simultaneously only when
-balloon_append() is called.
+Pages charged for isolated mem cgroups are not placed on the global LRU
+lists so they are protected from the reclaim in general. This is still not
+enough as they still can get reclaimed during the soft hierarchical reclaim
 
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
+balance_pgdat
+	mem_cgroup_soft_limit_reclaim
+		mem_cgroup_hierarchical_reclaim
+			mem_cgroup_shrink_node_zone
+
+Let's prevent from soft reclaim if the group isolated and let's defer its
+balancing to try_to_free_mem_cgroup_pages called from charging paths. This
+will make allocations for the group more oom-prone probably but the group
+wanted to be isolated so we should give it as much of isolation as it gets
+and let the proper memory usage to the group user.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+
 ---
- drivers/xen/balloon.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ vmscan.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index a6d8e59..f54290b 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -114,7 +114,6 @@ static void __balloon_append(struct page *page)
- 	if (PageHighMem(page)) {
- 		list_add_tail(&page->lru, &ballooned_pages);
- 		balloon_stats.balloon_high++;
--		dec_totalhigh_pages();
- 	} else {
- 		list_add(&page->lru, &ballooned_pages);
- 		balloon_stats.balloon_low++;
-@@ -124,6 +123,8 @@ static void __balloon_append(struct page *page)
- static void balloon_append(struct page *page)
- {
- 	__balloon_append(page);
-+	if (PageHighMem(page))
-+		dec_totalhigh_pages();
- 	totalram_pages--;
- }
+Index: linux-2.6.38-rc8/mm/vmscan.c
+===================================================================
+--- linux-2.6.38-rc8.orig/mm/vmscan.c	2011-03-28 11:24:20.000000000 +0200
++++ linux-2.6.38-rc8/mm/vmscan.c	2011-03-28 11:24:38.000000000 +0200
+@@ -2170,14 +2170,16 @@ unsigned long mem_cgroup_shrink_node_zon
+ 						      sc.may_writepage,
+ 						      sc.gfp_mask);
  
-@@ -462,7 +463,7 @@ static int __init balloon_init(void)
- 	     pfn < extra_pfn_end;
- 	     pfn++) {
- 		page = pfn_to_page(pfn);
--		/* totalram_pages doesn't include the boot-time
-+		/* totalram_pages and totalhigh_pages do not include the boot-time
- 		   balloon extension, so don't subtract from it. */
- 		__balloon_append(page);
- 	}
--- 
-1.5.6.5
+-	/*
+-	 * NOTE: Although we can get the priority field, using it
+-	 * here is not a good idea, since it limits the pages we can scan.
+-	 * if we don't reclaim here, the shrink_zone from balance_pgdat
+-	 * will pick up pages from other mem cgroup's as well. We hack
+-	 * the priority and make it zero.
+-	 */
+-	shrink_zone(0, zone, &sc);
++	if (!is_mem_cgroup_isolated(mem)) {
++		/*
++		 * NOTE: Although we can get the priority field, using it
++		 * here is not a good idea, since it limits the pages we can scan.
++		 * if we don't reclaim here, the shrink_zone from balance_pgdat
++		 * will pick up pages from other mem cgroup's as well. We hack
++		 * the priority and make it zero.
++		 */
++		shrink_zone(0, zone, &sc);
++	}
+ 
+ 	trace_mm_vmscan_memcg_softlimit_reclaim_end(sc.nr_reclaimed);
+ 
+
+
