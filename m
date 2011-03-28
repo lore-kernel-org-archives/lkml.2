@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1C1RAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 13:00:01 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:4194 "EHLO
+	id S1754809Ab1C1RC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 13:02:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:20678 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab1C1Q76 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751750Ab1C1RC5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:59:58 -0400
+	Mon, 28 Mar 2011 13:02:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=xDQ8lZRzDJNG4ge/TuzjqJjijvM6ALauZH7C6Q7xO3OwC82RCEyTQnD6eG9WN3DiqV
-         oyr9at9+ZNLz55JlRntg==
+        b=rno+L2HFvCNwP2Su63m5r4dBOV5FMyHa5lOFZ2cgQCxV7Es1MUEOwJsifXT52yFuyT
+         4MuEq9+LwmrXu5yEe33g==
 MIME-Version: 1.0
-In-Reply-To: <20110328131503.GA7226@redhat.com>
+In-Reply-To: <20110328131705.GB7226@redhat.com>
 References: <1300756245-12380-1-git-send-email-ctalbott@google.com>
 	<20110322150905.GD3757@redhat.com>
 	<AANLkTinTiEAFG1F1df380BiDtVFVr=nCsSqhM9__XdQ4@mail.gmail.com>
@@ -24,9 +24,9 @@ References: <1300756245-12380-1-git-send-email-ctalbott@google.com>
 	<AANLkTi=-7gZhEU6qRAt+uGBkb2s2=bkXC81WNScDM6jA@mail.gmail.com>
 	<20110325213202.GB21593@redhat.com>
 	<AANLkTikTLCdHceaD98zxw90Qb=PuTvfALWELa=Yp6UAC@mail.gmail.com>
-	<20110328131503.GA7226@redhat.com>
-Date: Mon, 28 Mar 2011 09:59:54 -0700
-Message-ID: <AANLkTinwmTjD-Q19U5nCPvoqN2DYGwtLDgeR8h39uWCX@mail.gmail.com>
+	<20110328131705.GB7226@redhat.com>
+Date: Mon, 28 Mar 2011 10:02:53 -0700
+Message-ID: <AANLkTikptjDTP0Xd5B8tBy5UwqNYttJXCa36QpJUj1bt@mail.gmail.com>
 Subject: Re: [PATCH 0/3] cfq-iosched: Fair cross-group preemption
 From: Chad Talbott <ctalbott@google.com>
 To: Vivek Goyal <vgoyal@redhat.com>
@@ -39,18 +39,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 6:15 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+On Mon, Mar 28, 2011 at 6:17 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
 > On Fri, Mar 25, 2011 at 04:53:13PM -0700, Chad Talbott wrote:
->> Also, we'll soon be working to adopt the hierarchy series, and we'll
->> likely revisit using an RT service tree there.  It's difficult to
->> justify introducing RT service tree before those patches arrive.
+>> I prefer option a) - so much so that even with the older CFQ group
+>> implementation we did work to merge the RT and BE service trees to
+>> achieve that behavior.  But I see that using blkio.class is a poor
+>> choice of interface name.  I will rename the interface and resubmit
+>> the patch series (also with Gui's suggestion to keep the "_device"
+>> suffix for consistency).
 >
-> So once you move to hierachicy series, will be you using RT class and
-> use throttling and abandon this functionality?
+> Do you need this feature to be global or per device or both?
 
-I'll certainly investigate using RT class and throttling, but it's too
-early to know.  It's a known change in behavior, so it will need
-testing (as well as the user-space work to handle the different
-interface).
+Per-device.
 
 Chad
