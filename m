@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab1C1QxG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:53:06 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:60930
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	id S1755270Ab1C1QxE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:53:04 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60592
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754834Ab1C1QuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754819Ab1C1QuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Mar 2011 12:50:12 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 05/22] Staging: hv: Get rid of the forward declaration of blkvsc_init_rw()
-Date: Mon, 28 Mar 2011 10:00:36 -0700
-Message-Id: <1301331653-26265-5-git-send-email-kys@microsoft.com>
+Subject: [PATCH 08/22] Staging: hv: Get rid of the forward declaration of blkvsc_do_flush()
+Date: Mon, 28 Mar 2011 10:00:39 -0700
+Message-Id: <1301331653-26265-8-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301331653-26265-1-git-send-email-kys@microsoft.com>
 References: <1301331615-26226-1-git-send-email-kys@microsoft.com>
@@ -25,159 +25,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration of blkvsc_init_rw() by moving the
-code around.
+Get rid of the forward declaration of blkvsc_do_flush() by moving the code 
+around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |  117 ++++++++++++++++++++-------------------
- 1 files changed, 59 insertions(+), 58 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |   71 +++++++++++++++++++--------------------
+ 1 files changed, 35 insertions(+), 36 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index a0c1fe8..e9d45eb 100644
+index 8e575d9..f673337 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -353,6 +353,65 @@ static int blkvsc_getgeo(struct block_device *bd, struct hd_geometry *hg)
- 	return 0;
+@@ -462,6 +462,41 @@ static void blkvsc_cmd_completion(struct hv_storvsc_request *request)
+ 	complete(&blkvsc_req->request.wait_event);
  }
  
-+
-+static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
++static int blkvsc_do_flush(struct block_device_context *blkdev)
 +{
-+	/* ASSERT(blkvsc_req->req); */
-+	/* ASSERT(blkvsc_req->sector_count <=
-+	   (MAX_MULTIPAGE_BUFFER_COUNT*8)); */
++	struct blkvsc_request *blkvsc_req;
 +
-+	blkvsc_req->cmd_len = 16;
++	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_flush()\n");
 +
-+	if (blkvsc_req->sector_start > 0xffffffff) {
-+		if (rq_data_dir(blkvsc_req->req)) {
-+			blkvsc_req->write = 1;
-+			blkvsc_req->cmnd[0] = WRITE_16;
-+		} else {
-+			blkvsc_req->write = 0;
-+			blkvsc_req->cmnd[0] = READ_16;
-+		}
++	if (blkdev->device_type != HARDDISK_TYPE)
++		return 0;
 +
-+		blkvsc_req->cmnd[1] |=
-+			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
++	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
++	if (!blkvsc_req)
++		return -ENOMEM;
 +
-+		*(unsigned long long *)&blkvsc_req->cmnd[2] =
-+				cpu_to_be64(blkvsc_req->sector_start);
-+		*(unsigned int *)&blkvsc_req->cmnd[10] =
-+				cpu_to_be32(blkvsc_req->sector_count);
-+	} else if ((blkvsc_req->sector_count > 0xff) ||
-+		   (blkvsc_req->sector_start > 0x1fffff)) {
-+		if (rq_data_dir(blkvsc_req->req)) {
-+			blkvsc_req->write = 1;
-+			blkvsc_req->cmnd[0] = WRITE_10;
-+		} else {
-+			blkvsc_req->write = 0;
-+			blkvsc_req->cmnd[0] = READ_10;
-+		}
++	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
++	init_completion(&blkvsc_req->request.wait_event);
++	blkvsc_req->dev = blkdev;
++	blkvsc_req->req = NULL;
++	blkvsc_req->write = 0;
 +
-+		blkvsc_req->cmnd[1] |=
-+			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
++	blkvsc_req->request.data_buffer.pfn_array[0] = 0;
++	blkvsc_req->request.data_buffer.offset = 0;
++	blkvsc_req->request.data_buffer.len = 0;
 +
-+		*(unsigned int *)&blkvsc_req->cmnd[2] =
-+				cpu_to_be32(blkvsc_req->sector_start);
-+		*(unsigned short *)&blkvsc_req->cmnd[7] =
-+				cpu_to_be16(blkvsc_req->sector_count);
-+	} else {
-+		if (rq_data_dir(blkvsc_req->req)) {
-+			blkvsc_req->write = 1;
-+			blkvsc_req->cmnd[0] = WRITE_6;
-+		} else {
-+			blkvsc_req->write = 0;
-+			blkvsc_req->cmnd[0] = READ_6;
-+		}
++	blkvsc_req->cmnd[0] = SYNCHRONIZE_CACHE;
++	blkvsc_req->cmd_len = 10;
 +
-+		*(unsigned int *)&blkvsc_req->cmnd[1] =
-+				cpu_to_be32(blkvsc_req->sector_start) >> 8;
-+		blkvsc_req->cmnd[1] &= 0x1f;
-+		blkvsc_req->cmnd[4] = (unsigned char)blkvsc_req->sector_count;
-+	}
++	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
++
++	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
++
++	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
++
++	return 0;
 +}
 +
-+
+ 
  /* Static decl */
  static int blkvsc_probe(struct device *dev);
- static int blkvsc_remove(struct device *device);
-@@ -366,7 +425,6 @@ static void blkvsc_request(struct request_queue *queue);
- static void blkvsc_request_completion(struct hv_storvsc_request *request);
- static int blkvsc_do_request(struct block_device_context *blkdev,
- 			     struct request *req);
--static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req);
- static void blkvsc_cmd_completion(struct hv_storvsc_request *request);
+@@ -477,7 +512,6 @@ static int blkvsc_do_request(struct block_device_context *blkdev,
  static int blkvsc_do_inquiry(struct block_device_context *blkdev);
  static int blkvsc_do_read_capacity(struct block_device_context *blkdev);
-@@ -996,63 +1054,6 @@ static int blkvsc_remove(struct device *device)
- 	return ret;
+ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev);
+-static int blkvsc_do_flush(struct block_device_context *blkdev);
+ static int blkvsc_cancel_pending_reqs(struct block_device_context *blkdev);
+ static int blkvsc_do_pending_reqs(struct block_device_context *blkdev);
+ 
+@@ -767,41 +801,6 @@ static void blkvsc_shutdown(struct device *device)
+ 	spin_unlock_irqrestore(&blkdev->lock, flags);
  }
  
--static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
+-static int blkvsc_do_flush(struct block_device_context *blkdev)
 -{
--	/* ASSERT(blkvsc_req->req); */
--	/* ASSERT(blkvsc_req->sector_count <= (MAX_MULTIPAGE_BUFFER_COUNT*8)); */
+-	struct blkvsc_request *blkvsc_req;
 -
--	blkvsc_req->cmd_len = 16;
+-	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_flush()\n");
 -
--	if (blkvsc_req->sector_start > 0xffffffff) {
--		if (rq_data_dir(blkvsc_req->req)) {
--			blkvsc_req->write = 1;
--			blkvsc_req->cmnd[0] = WRITE_16;
--		} else {
--			blkvsc_req->write = 0;
--			blkvsc_req->cmnd[0] = READ_16;
--		}
+-	if (blkdev->device_type != HARDDISK_TYPE)
+-		return 0;
 -
--		blkvsc_req->cmnd[1] |=
--			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
+-	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
+-	if (!blkvsc_req)
+-		return -ENOMEM;
 -
--		*(unsigned long long *)&blkvsc_req->cmnd[2] =
--				cpu_to_be64(blkvsc_req->sector_start);
--		*(unsigned int *)&blkvsc_req->cmnd[10] =
--				cpu_to_be32(blkvsc_req->sector_count);
--	} else if ((blkvsc_req->sector_count > 0xff) ||
--		   (blkvsc_req->sector_start > 0x1fffff)) {
--		if (rq_data_dir(blkvsc_req->req)) {
--			blkvsc_req->write = 1;
--			blkvsc_req->cmnd[0] = WRITE_10;
--		} else {
--			blkvsc_req->write = 0;
--			blkvsc_req->cmnd[0] = READ_10;
--		}
+-	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
+-	init_completion(&blkvsc_req->request.wait_event);
+-	blkvsc_req->dev = blkdev;
+-	blkvsc_req->req = NULL;
+-	blkvsc_req->write = 0;
 -
--		blkvsc_req->cmnd[1] |=
--			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
+-	blkvsc_req->request.data_buffer.pfn_array[0] = 0;
+-	blkvsc_req->request.data_buffer.offset = 0;
+-	blkvsc_req->request.data_buffer.len = 0;
 -
--		*(unsigned int *)&blkvsc_req->cmnd[2] =
--				cpu_to_be32(blkvsc_req->sector_start);
--		*(unsigned short *)&blkvsc_req->cmnd[7] =
--				cpu_to_be16(blkvsc_req->sector_count);
--	} else {
--		if (rq_data_dir(blkvsc_req->req)) {
--			blkvsc_req->write = 1;
--			blkvsc_req->cmnd[0] = WRITE_6;
--		} else {
--			blkvsc_req->write = 0;
--			blkvsc_req->cmnd[0] = READ_6;
--		}
+-	blkvsc_req->cmnd[0] = SYNCHRONIZE_CACHE;
+-	blkvsc_req->cmd_len = 10;
 -
--		*(unsigned int *)&blkvsc_req->cmnd[1] =
--				cpu_to_be32(blkvsc_req->sector_start) >> 8;
--		blkvsc_req->cmnd[1] &= 0x1f;
--		blkvsc_req->cmnd[4] = (unsigned char)blkvsc_req->sector_count;
--	}
+-	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
+-
+-	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
+-
+-	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
+-
+-	return 0;
 -}
 -
--
- /*
-  * We break the request into 1 or more blkvsc_requests and submit
-  * them.  If we cant submit them all, we put them on the
+ /* Do a scsi INQUIRY cmd here to get the device type (ie disk or dvd) */
+ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
+ {
 -- 
 1.7.4.1
 
