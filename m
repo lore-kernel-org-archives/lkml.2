@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab1C1Cxu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 22:53:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57831 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753322Ab1C1Cxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 22:53:48 -0400
-Message-ID: <4D8FF8AD.5080607@cn.fujitsu.com>
-Date: Mon, 28 Mar 2011 10:55:41 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753796Ab1C1Cy0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 22:54:26 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:46950 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324Ab1C1CyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 22:54:25 -0400
+Date: Sun, 27 Mar 2011 20:54:23 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: viro@zeniv.linux.org.uk, dchinner@redhat.com, Trond.Myklebust@netapp.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [RFC PATCH 1/2] Add unlocked version of igrab.
+Message-ID: <20110328025423.GN13806@parisc-linux.org>
+References: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com> <1301277361-9453-2-git-send-email-ryan@bluewatersys.com>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Jan Beulich <jbeulich@novell.com>, David Howells <dhowells@redhat.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <clameter@sgi.com>, Sam Ravnborg <sam@ravnborg.org>
-Subject: [RFC PATCH 0/5] Add kernel-offset file and make rcu_read_[un]lock()
- included
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-28 10:52:09,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-28 10:52:11,
-	Serialize complete at 2011-03-28 10:52:11
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301277361-9453-2-git-send-email-ryan@bluewatersys.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 28, 2011 at 02:56:00PM +1300, Ryan Mallon wrote:
+> Commit 250df6ed274d767da844a5d9f05720b804240197 "fs: protect
+> inode->i_state with inode->i_lock" changes igrab to acquire inode->i_lock,
+> however some callees, notably nfs_inode_add_request, already hold the lock
+> when calling igrab.
+
+I think a better solution to your problem is to notice that this is
+called in the context of doing a write to an inode.  That means we
+must already have a reference count on this inode, so it can't possibly
+be in I_FREEING or I_WILL_FREE.  That means we can just call __iget()
+instead ... except that __iget isn't exported to modules.
+
+So we could just bump the refcount by hand ... or we could
+EXPORT_SYMBOL(__iget).
 
 
-__rcu_read_[un]lock() are so simple functions and called so
-frequent, it is not good that a function call overhead is
-required when use them. It would be better if we declare
-them inline and let the compiler do the choice.
+Or Al's going to swear a lot about what NFS is doing here and how it's
+utterly misdesigned.  Anyway, this patch could be part of the solution.
 
-We add kernel-offset.c for TASK_RCU_OFFSET, which enable we declare
-rcu_read_[un]lock() as inline function.
 
-Adding kernel-offset.c does not have any effect for the result
-compiled kernel, it just adds a small and fast step in the kbuid stage.
-
-Lai Jiangshan (5):
-  task_rcu_struct
-  kbuild_dedumplicated
-  add_kernel_offset
-  access task's task_rcu_struct without include sched.h
-  rcu inline
-
- Kbuild                    |   99 ++++++++++++++++---------------
- include/linux/init_task.h |   25 +--------
- include/linux/rcupdate.h  |  144 ++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/sched.h     |   39 +------------
- kernel/kernel-offsets.c   |   17 +++++
- kernel/rcutiny_plugin.h   |   58 ++++--------------
- kernel/rcutree_plugin.h   |   69 ++++++----------------
- 7 files changed, 243 insertions(+), 208 deletions(-)
- create mode 100644 kernel/kernel-offsets.c
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 85d7525..330cef3 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -390,7 +390,7 @@ static int nfs_inode_add_request(struct inode *inode, struct nfs_page *req)
+ 	error = radix_tree_insert(&nfsi->nfs_page_tree, req->wb_index, req);
+ 	BUG_ON(error);
+ 	if (!nfsi->npages) {
+-		igrab(inode);
++		__iget(inode);
+ 		if (nfs_have_delegation(inode, FMODE_WRITE))
+ 			nfsi->change_attr++;
+ 	}
 
 -- 
-1.7.4
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
