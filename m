@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab1C1QGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:06:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33057 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab1C1QGi (ORCPT
+	id S1754733Ab1C1QHL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:07:11 -0400
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:40183 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab1C1QHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:06:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FYW6ifbkJbw5XFXALE0HrV/pnJWPHn5jNxYlx4BMYucfme3PkpOm3gh4uXhH36whuO
-         BFzxhESsTsMsYv9kRogMlxp0ZAvJ6n+Mf08Hz7zTz0ZAWnBQhRqebZwnJVrOcPFVwwyh
-         ksnzWVEnhSCnYNSO5p4k5o0hCZjnVf1KMCDl0=
-Date: Mon, 28 Mar 2011 18:06:32 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
-        npiggin@kernel.dk, rientjes@google.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] percpu: avoid extra NOP in percpu_cmpxchg16b_double
-Message-ID: <20110328160632.GD6736@htj.dyndns.org>
-References: <1301161507.2979.105.camel@edumazet-laptop>
- <alpine.DEB.2.00.1103261406420.24195@router.home>
- <alpine.DEB.2.00.1103261428200.25375@router.home>
- <alpine.DEB.2.00.1103261440160.25375@router.home>
- <AANLkTinTzKQkRcE2JvP_BpR0YMj82gppAmNo7RqgftCG@mail.gmail.com>
- <alpine.DEB.2.00.1103262028170.1004@router.home>
- <alpine.DEB.2.00.1103262054410.1373@router.home>
- <1301212347.32248.1.camel@edumazet-laptop>
- <1301308335.3182.12.camel@edumazet-laptop>
- <alpine.DEB.2.00.1103280845480.7590@router.home>
+	Mon, 28 Mar 2011 12:07:08 -0400
+Message-ID: <4D90B222.1060302@linux.vnet.ibm.com>
+Date: Mon, 28 Mar 2011 13:06:58 -0300
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103280845480.7590@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Huewe <huewe.external.infineon@googlemail.com>
+CC: James Morris <jmorris@namei.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] TPM driver robustness fixes
+References: <4D81708D.5090607@linux.vnet.ibm.com> <alpine.LRH.2.00.1103220956350.14837@tundra.namei.org> <AANLkTimS1ss=977x3d-7Wcpj0wGthzW3_G+wqF1wQMc3@mail.gmail.com> <AANLkTi=uZME7Pr761VJkEiJYFp7L3iexjV3JeMmL63it@mail.gmail.com> <4D88A12D.60301@linux.vnet.ibm.com> <AANLkTi=+QFL5aMym68Dx=Vgomy9MQRV1AB1AreTua_mW@mail.gmail.com>
+In-Reply-To: <AANLkTi=+QFL5aMym68Dx=Vgomy9MQRV1AB1AreTua_mW@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11032816-8936-0000-0000-00000175606B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 08:46:05AM -0500, Christoph Lameter wrote:
-> On Mon, 28 Mar 2011, Eric Dumazet wrote:
+On 03/22/2011 01:08 PM, Peter Huewe wrote:
+> Or rather:
+> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+> index d184d75..2f2f65e 100644
+> --- a/drivers/char/tpm/tpm.c
+> +++ b/drivers/char/tpm/tpm.c
+> @@ -1052,6 +1052,7 @@ ssize_t tpm_read(struct file *file, char __user *buf,
+>  {
+>         struct tpm_chip *chip = file->private_data;
+>         ssize_t ret_size;
+> +       int rc;
 > 
-> > Therefore, NOPX should be :
-> >
-> > P6_NOP3 on SMP
-> > P6_NOP2 on !SMP
+>         del_singleshot_timer_sync(&chip->user_read_timer);
+>         flush_work_sync(&chip->work);
+> @@ -1062,8 +1063,11 @@ ssize_t tpm_read(struct file *file, char __user *buf,
+>                         ret_size = size;
 > 
-> Acked-by: Christoph Lameter <cl@linux.com>
+>                 mutex_lock(&chip->buffer_mutex);
+> -               if (copy_to_user(buf, chip->data_buffer, ret_size))
+> +               rc = copy_to_user(buf, chip->data_buffer, ret_size);
+> +               memset(chip->data_buffer, 0, ret_size);
+> +               if (rc)
+>                         ret_size = -EFAULT;
+> +
+>                 mutex_unlock(&chip->buffer_mutex);
+>         }
+> 
+> 
+> 
+> Thanks,
+> Peter
 
-Applied to percpu#fixes-2.6.39.
+This approach is definitely the best.
 
-Thanks.
+Thanks,
+Rajiv
+
 
 -- 
-tejun
+Thanks,
+Rajiv Andrade <srajiv@br.ibm.com>
+Security Development
+IBM Linux Technology Center
++55 19 81095527
+
