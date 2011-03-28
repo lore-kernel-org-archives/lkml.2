@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab1C1GhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 02:37:11 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60924 "EHLO mx2.mail.elte.hu"
+	id S1752602Ab1C1GoB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 02:44:01 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:46086 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752309Ab1C1GhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 02:37:10 -0400
-Date: Mon, 28 Mar 2011 08:36:56 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] slub: Disable the lockless allocator
-Message-ID: <20110328063656.GA29462@elte.hu>
-References: <1301161507.2979.105.camel@edumazet-laptop>
- <alpine.DEB.2.00.1103261406420.24195@router.home>
- <alpine.DEB.2.00.1103261428200.25375@router.home>
- <alpine.DEB.2.00.1103261440160.25375@router.home>
- <AANLkTinTzKQkRcE2JvP_BpR0YMj82gppAmNo7RqgftCG@mail.gmail.com>
- <alpine.DEB.2.00.1103262028170.1004@router.home>
- <alpine.DEB.2.00.1103262054410.1373@router.home>
- <4D9026C8.6060905@cs.helsinki.fi>
- <20110328061929.GA24328@elte.hu>
- <AANLkTinpCa6GBjP3+fdantvOdbktqW8m_D0fGkAnCXYk@mail.gmail.com>
+	id S1751140Ab1C1GoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 02:44:00 -0400
+X-ASG-Debug-ID: 1301294639-01de284cf8c6ca0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D902E2C.2010701@fusionio.com>
+Date: Mon, 28 Mar 2011 08:43:56 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinpCa6GBjP3+fdantvOdbktqW8m_D0fGkAnCXYk@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] block drivers for 2.6.39-rc
+References: <4D8E36CC.7080707@fusionio.com>	<20110328042311.GA15481@elte.hu>	<AANLkTik3GZ0b5S7p4ONQu4Hb8LoKewmMJ7_J5zvumYD-@mail.gmail.com> <20110328160812.b4d19eb5.sfr@canb.auug.org.au>
+X-ASG-Orig-Subj: Re: [GIT PULL] block drivers for 2.6.39-rc
+In-Reply-To: <20110328160812.b4d19eb5.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301294639
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.50
+X-Barracuda-Spam-Status: No, SCORE=0.50 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_RULE7568M
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59190
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.50 BSF_RULE7568M          Custom Rule 7568M
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Pekka Enberg <penberg@kernel.org> wrote:
-
-> On Mon, Mar 28, 2011 at 9:19 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >> Tejun, does this look good to you as well? I think it should go
-> >> through the percpu tree. It's needed to fix a boot crash with
-> >> lockless SLUB fastpaths enabled.
-> >
-> > AFAICS Linus applied it already:
-> >
-> > d7c3f8cee81f: percpu: Omit segment prefix in the UP case for cmpxchg_double
+On 2011-03-28 07:08, Stephen Rothwell wrote:
+> Hi Linus, Ingo,
 > 
-> Oh, I missed that. Did you test the patch, Ingo? It's missing attributions 
-> and reference to the LKML discussion unfortunately...
+> On Sun, 27 Mar 2011 21:37:50 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>
+>> On Sun, Mar 27, 2011 at 9:23 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>>>
+>>> This driver does not build at all:
+>>>
+>>>  drivers/block/drbd/drbd_bitmap.c:1187:5: error: implicit declaration of function ‘generic_find_next_zero_le_bit’ [-Werror=implicit-function-declaration]
+>>>  drivers/block/drbd/drbd_bitmap.c:1190:5: error: implicit declaration of function ‘generic_find_next_le_bit’ [-Werror=implicit-function-declaration]
+>>>  drivers/block/drbd/drbd_bitmap.c:1290:4: error: implicit declaration of function ‘generic___test_and_set_le_bit’ [-Werror=implicit-function-declaration]
+>>>  drivers/block/drbd/drbd_bitmap.c:1292:4: error: implicit declaration of function ‘generic___test_and_clear_le_bit’ [-Werror=implicit-function-declaration]
+>>>  drivers/block/drbd/drbd_bitmap.c:1441:3: error: implicit declaration of function ‘generic_test_le_bit’ [-Werror=implicit-function-declaration]
+>>>
+>>> Has this been build-tested? These APIs do not exist upstream.
+>>
+>> Actually, I think that's just a merge error - those horrible nasty
+>> crazy names did use to exist.
+>>
+>> Does this fix it? (Untested!)
+> 
+> You also need to remove the include of asm-generic/bitops/le.h from that
+> file now (the easiest way is to revert commit f0ff1357ce39 ("drbd: need
+> include for bitops functions declarations").
+> 
+> Jens was informed about these problems when they appeared in linux-next.
 
-I think we might still be missing the hunk below - or is it now not needed 
-anymore?
+Yes, and I merged your patch to fixup the build (on PPC, as I recall).
 
-Thanks,
+-- 
+Jens Axboe
 
-	Ingo
-
--------------->
->From 53c0eceb7bf64f2a89c59ae4f14a676fa4128462 Mon Sep 17 00:00:00 2001
-From: Christoph Lameter <cl@linux.com>
-Date: Sat, 26 Mar 2011 14:49:56 -0500
-Subject: [PATCH] per_cpu: Fix cmpxchg_double() for !SMP
-
-cmpxchg_double() should only be provided for SMP. In the UP case
-the GS register is not defined and the function will fail.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: torvalds@linux-foundation.org
-Cc: tj@kernel.org
-Cc: npiggin@kernel.dk
-Cc: rientjes@google.com
-Cc: linux-mm@kvack.org
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-LKML-Reference: <alpine.DEB.2.00.1103261440160.25375@router.home>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/percpu.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
-index a09e1f0..52330a4 100644
---- a/arch/x86/include/asm/percpu.h
-+++ b/arch/x86/include/asm/percpu.h
-@@ -507,6 +507,7 @@ do {									\
-  * it in software.  The address used in the cmpxchg16 instruction must be
-  * aligned to a 16 byte boundary.
-  */
-+#ifdef CONFIG_SMP
- #define percpu_cmpxchg16b_double(pcp1, o1, o2, n1, n2)			\
- ({									\
- 	char __ret;							\
-@@ -529,6 +530,7 @@ do {									\
- #define irqsafe_cpu_cmpxchg_double_8(pcp1, pcp2, o1, o2, n1, n2)	percpu_cmpxchg16b_double(pcp1, o1, o2, n1, n2)
- 
- #endif
-+#endif
- 
- /* This is not atomic against other CPUs -- CPU preemption needs to be off */
- #define x86_test_and_clear_bit_percpu(bit, var)				\
