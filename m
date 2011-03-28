@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab1C1UAf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 16:00:35 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49352 "EHLO ogre.sisk.pl"
+	id S1755442Ab1C1UHx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 16:07:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56196 "EHLO linutronix.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753517Ab1C1UAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 16:00:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1753911Ab1C1UHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 16:07:52 -0400
+Date: Mon, 28 Mar 2011 22:07:50 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Commit 9661e92c10a9775243c1ecb73373528ed8725a10: sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:02.0/backlight/acpi_video0/device'
-Date: Mon, 28 Mar 2011 22:00:39 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Alessandro Suardi <alessandro.suardi@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>, Zhang Rui <rui.zhang@intel.com>,
-        Len Brown <lenb@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Sedat Dilek <sedat.dilek@googlemail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <Pine.LNX.4.64.1103242007300.2677@boston.corp.fedex.com> <BANLkTinTbez8+AMF9KaAx+Y5NFW_RMP5ig@mail.gmail.com> <AANLkTin1e0kn8uS6Hmz3y4kbCOGGKYpB+LU-vS2qsfKK@mail.gmail.com>
-In-Reply-To: <AANLkTin1e0kn8uS6Hmz3y4kbCOGGKYpB+LU-vS2qsfKK@mail.gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [GIT pull] irq updates for .39
+In-Reply-To: <alpine.LFD.2.00.1103282050100.2774@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1103282206580.2774@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1103282050100.2774@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103282200.40099.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 28, 2011, Linus Torvalds wrote:
-> On Mon, Mar 28, 2011 at 10:25 AM, Alessandro Suardi
-> <alessandro.suardi@gmail.com> wrote:
-> >>
-> >> Sorry, yes - https://patchwork.kernel.org/patch/668351/
-> >
-> > Works on top of my -git18 + (unrelated) LVDS detection patch, thanks.
-> >
-> > Tested-by: Alessandro Suardi <alessandro.suardi@gmail.com>
-> 
-> Ok, which tree should this go through? I see from patchworks that it
-> was sent to linux-acpi and lkml, but the commit it fixes actually came
-> through Andrew.
-> 
-> Should I just take it directly?
+On Mon, 28 Mar 2011, Thomas Gleixner wrote:
 
-Formally, it's an ACPI patch, but I guess Len wouldn't mind if you took it.
-I've just acked it FWIW.
+> Linus,
+> 
+> Please pull the latest irq-fixes-for-linus git tree from:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-fixes-for-linus
 
-Rafael
+Can you please discard this pull request. We found a non x86 wreckage
+which needs to be investigated.
+
+Thanks,
+
+	tglx
