@@ -1,147 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab1C1WtH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 18:49:07 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36846 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752620Ab1C1WtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 18:49:04 -0400
-Date: Tue, 29 Mar 2011 09:48:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [PATCH] memstick: make enable_dma less generic in r592
-Message-Id: <20110329094856.3f61a0ce.sfr@canb.auug.org.au>
-In-Reply-To: <20110329092416.a4b1d98f.sfr@canb.auug.org.au>
-References: <20110328144458.efedbefc.sfr@canb.auug.org.au>
-	<20110329092416.a4b1d98f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__29_Mar_2011_09_48_56_+1100_j0YicqYxaV1Zizvs"
+	id S1755452Ab1C1WwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 18:52:18 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61613 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab1C1WwR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 18:52:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=X63h33+1y/LvVo5gnPO2TQU/kHAkwZ0eyOZsAj1CB7cl09zwRYebEqg3dF6UAK6rWF
+         3Dowvc3iwBBkgwh5LhJLky+AQGy3PdxOFYrm/TVBfmRnokeKdcGirJKhF3kD6ycgyWuW
+         IcR5IO7BgEa9+tw18NRrLECCl/GNUwVW+Vd8w=
+MIME-Version: 1.0
+In-Reply-To: <20110328215344.GC3008@dastard>
+References: <AANLkTinFqqmE+fTMTLVU-_CwPE+LQv7CpXSQ5+CdAKLK@mail.gmail.com>
+	<20110328215344.GC3008@dastard>
+Date: Tue, 29 Mar 2011 07:52:14 +0900
+Message-ID: <BANLkTimHPFMUOCFAruF5J4OMHSkZsMsAgA@mail.gmail.com>
+Subject: Re: Very aggressive memory reclaim
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: John Lepikhin <johnlepikhin@gmail.com>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__29_Mar_2011_09_48_56_+1100_j0YicqYxaV1Zizvs
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi all,
-
-ignore this ...  I will send a fixed version soon, sorry
-
-On Tue, 29 Mar 2011 09:24:16 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On Tue, Mar 29, 2011 at 6:53 AM, Dave Chinner <david@fromorbit.com> wrote:
+> [cc xfs and mm lists]
 >
-> On Mon, 28 Mar 2011 14:44:58 +1100 Stephen Rothwell <sfr@canb.auug.org.au=
-> wrote:
-> >
-> > Hi all,
-> >=20
-> > After merging the final tree, today's linux-next build (powerpc
-> > allyesconfig) failed like this:
-> >=20
-> > drivers/memstick/host/r592.c:26: error: 'enable_dma' redeclared as diff=
-erent kind of symbol
-> > arch/powerpc/include/asm/dma.h:189: note: previous definition of 'enabl=
-e_dma' was here
-> >=20
-> > Caused by commit 926341250102 ("memstick: add driver for Ricoh R5C592
-> > card reader").
-> >=20
-> > enable_dma() is also defined in a few other architectures including x86
-> > (presumably asm/dma.h does not get included there).
-> >=20
-> > I just reverted that commit for today.
->=20
-> I will, instead, apply this patch for today:
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 29 Mar 2011 09:12:53 +1100
-> Subject: [PATCH] memstick: make enable_dma less generic in r592
->=20
-> Fixes this build error:
->=20
-> drivers/memstick/host/r592.c:26: error: 'enable_dma' redeclared as differ=
-ent kind of symbol
-> arch/powerpc/include/asm/dma.h:189: note: previous definition of 'enable_=
-dma' was here
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> Cc: Alex Dubov <oakad@yahoo.com>
-> Cc: Maxim Levitsky <maximlevitsky@gmail.com>
-> ---
->  drivers/memstick/host/r592.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/memstick/host/r592.c b/drivers/memstick/host/r592.c
-> index 767406c..ecf3d7d 100644
-> --- a/drivers/memstick/host/r592.c
-> +++ b/drivers/memstick/host/r592.c
-> @@ -23,7 +23,7 @@
->  #include <linux/swab.h>
->  #include "r592.h"
-> =20
-> -static int enable_dma =3D 1;
-> +static int r592_enable_dma =3D 1;
->  static int debug;
-> =20
->  static const char *tpc_names[] =3D {
-> @@ -267,7 +267,7 @@ static void r592_stop_dma(struct r592_device *dev, in=
-t error)
->  /* Test if hardware supports DMA */
->  static void r592_check_dma(struct r592_device *dev)
->  {
-> -	dev->dma_capable =3D enable_dma &&
-> +	dev->dma_capable =3D r592_enable_dma &&
->  		(r592_read_reg(dev, R592_FIFO_DMA_SETTINGS) &
->  			R592_FIFO_DMA_SETTINGS_CAP);
->  }
-> @@ -898,7 +898,7 @@ static void __exit r592_module_exit(void)
->  module_init(r592_module_init);
->  module_exit(r592_module_exit);
-> =20
-> -module_param(enable_dma, bool, S_IRUGO);
-> +module_param_named(r592_enable_dma, enable_dma, bool, S_IRUGO);
->  MODULE_PARM_DESC(enable_dma, "Enable usage of the DMA (default)");
->  module_param(debug, int, S_IRUGO | S_IWUSR);
->  MODULE_PARM_DESC(debug, "Debug level (0-3)");
-> --=20
-> 1.7.4.1
->=20
->=20
-> --=20
+> On Mon, Mar 28, 2011 at 08:39:29PM +0400, John Lepikhin wrote:
+>> Hello,
+>>
+>> I use high-loaded machine with 10M+ inodes inside XFS, 50+ GB of
+>> memory, intensive HDD traffic and 20..50 forks per second. Vanilla
+>> kernel 2.6.37.4. The problem is that kernel frees memory very
+>> aggressively.
+>>
+>> For example:
+>>
+>> 25% of memory is used by processes
+>> 50% for page caches
+>> 7% for slabs, etc.
+>> 18% free.
+>>
+>> That's bad but works. After few hours:
+>>
+>> 25% of memory is used by processes
+>> 62% for page caches
+>> 7% for slabs, etc.
+>> 5% free.
+>>
+>> Most of files are cached, works perfectly. This is the moment when
+>> kernel decides to free some memory. After memory reclaim:
+>>
+>> 25% of memory is used by processes
+>> 25% for page caches(!)
+>> 7% for slabs, etc.
+>> 43% free(!)
+>>
+>> Page cache is dropped, server becomes too slow. This is the beginning
+>> of new cycle.
+>>
+>> I didn't found any huge mallocs at that moment. Looks like because of
+>> large number of small mallocs (forks) kernel have pessimistic forecast
+>> about future memory usage and frees too much memory. Is there any
+>> options of tuning this? Any other variants?
+>
+> First it would be useful to determine why the VM is reclaiming so
+> much memory. If it is somewhat predictable when the excessive
+> reclaim is going to happen, it might be worth capturing an event
+> trace from the VM so we can see more precisely what it is doiing
+> during this event. In that case, recording the kmem/* and vmscan/*
+> events is probably sufficient to tell us what memory allocations
+> triggered reclaim and how much reclaim was done on each event.
+>
 > Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
+>
 
+Recently, We had a similar issue.
+http://www.spinics.net/lists/linux-mm/msg12243.html
+But it seems to not merge. I don't know why since I didn't follow up the thread.
+Maybe Cced guys can help you.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Is it a sudden big cache drop at the moment or accumulated small cache
+drop for long time?
+What's your zones' size?
 
---Signature=_Tue__29_Mar_2011_09_48_56_+1100_j0YicqYxaV1Zizvs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNkRBYAAoJEDMEi1NhKgbsL88H/j0QA2CUUylxNX+ntUB2I2/V
-EgMYLYbxuoYJIZ1AaTxCxrQE5Oi3wfMi6S/2DDwQfKd6OQE3JrYlnAQC6mtCWP3w
-dEQQJW3AEhAmwfaG7nTiBpEfOumXaRc3ptVXnVcj9dVP1t1RRUaHYJ/IZDpHsy1L
-mJB5aC1bTDdu+PJHyYjShGqr9FjtGJzqSsedVtFlWqwX7gAxPkstcS9QR8VxrFv9
-rXYUwZv+c3NH1SzIeEuX+bA3YUFELjccK1toq1GZJ3GKFST6hFP1W3PBucF4ecX7
-qQ/0HyYSXT4uHPsXxry8fDg+sYB/mpIQi+4rdsh4WM8GaVXRwdcXztsaFpOGPgM=
-=nJBQ
------END PGP SIGNATURE-----
-
---Signature=_Tue__29_Mar_2011_09_48_56_+1100_j0YicqYxaV1Zizvs--
+Please attach the result of cat /proc/zoneinfo for others.
