@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab1C1Otl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 10:49:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61477 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab1C1Otj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 10:49:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vitaly Wool <vitalywool@gmail.com>
-Subject: Re: [PATCH v2 2/2] mach-ux500: Add CG2900 devices
-Date: Mon, 28 Mar 2011 16:49:24 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Par-Gunnar Hjalmdahl" <par-gunnar.p.hjalmdahl@stericsson.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-References: <1301302992-10671-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com> <AANLkTimhcFNDdq0FCP2rVdDJ5V_YP+E82+80OavsuAS=@mail.gmail.com>
-In-Reply-To: <AANLkTimhcFNDdq0FCP2rVdDJ5V_YP+E82+80OavsuAS=@mail.gmail.com>
+	id S1753210Ab1C1OwV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 10:52:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60740 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751516Ab1C1OwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 10:52:20 -0400
+Message-ID: <4D90A08D.707@zytor.com>
+Date: Mon, 28 Mar 2011 07:51:57 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        torvalds@linux-foundation.org, rostedt@goodmis.org,
+        srostedt@redhat.com, tglx@linutronix.de, adobriyan@gmail.com
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/urgent] WARN_ON_SMP(): Add comment to explain ({0;})
+References: <tip-ccd0d44fad38dc1bb4b26dcc7a30e9f2c3b36870@git.kernel.org>
+In-Reply-To: <tip-ccd0d44fad38dc1bb4b26dcc7a30e9f2c3b36870@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103281649.25140.arnd@arndb.de>
-X-Provags-ID: V02:K0:G0G8bOwfCL3JKKfCAktCxkl9JtF7HWRsBbrOU3zFIJE
- +GDTm4bNPMQtJba2dQoT3qI7kVt7GGCqWAfPqOLBZhU8y7CdaZ
- yCNLArmLTqPkYDrr/96g8ah9WgJ79XVrDLO/tl+f7PHo2N/0hN
- J9JdA08iXW9fMzKaGTnNSwW345W5BL7NrJc622jgRv6jAeNsvG
- jRikcWJaM2Q2iMQoyKzBQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 28 March 2011, Vitaly Wool wrote:
-> On Mon, Mar 28, 2011 at 11:03 AM, Par-Gunnar Hjalmdahl
-> <par-gunnar.p.hjalmdahl@stericsson.com> wrote:
-> >
-> > +/* Function located in drivers/staging/cg2900 */
-> > +extern void cg2900_init_board(void);
-> > +
+On 03/28/2011 07:45 AM, tip-bot for Steven Rostedt wrote:
 > 
-> I'm confused. Where in the drivers/staging is this function? Couldn't
-> find it in the previous patch.
+> WARN_ON_SMP(): Add comment to explain ({0;})
+> 
+> The define to use ({0;}) for the !CONFIG_SMP case of WARN_ON_SMP()
+> can be confusing. As the WARN_ON_SMP() needs to be a nop when
+> CONFIG_SMP is not set, including all its parameters must not be
+> evaluated, and that it must work as both a stand alone statement
+> and inside an if condition, we define it to a funky ({0;}).
+> 
+> A simple "0" will not work as it causes gcc to give the warning that
+> the statement has no effect.
+> 
+> As this strange definition has raised a few eyebrows from some
+> major kernel developers, it is wise to document why we create such
+> a work of art.
+> 
 
-It's in v2 of patch 2/2, in
+What the heck is wrong with the idiomatic and non-gcc-extension-using:
 
-drivers/staging/cg2900/board-mop500-cg2900.c
+	((void)0)
 
-	Arnd
+?
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
