@@ -1,98 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1C1NXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 09:23:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38073 "EHLO mx1.redhat.com"
+	id S1754150Ab1C1NY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 09:24:57 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:33745 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753768Ab1C1NXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 09:23:22 -0400
-Date: Mon, 28 Mar 2011 14:14:01 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com
-Subject: Re: [PATCHSET] ptrace,signal: Improve ptrace and job control
-	interaction
-Message-ID: <20110328121401.GA4099@redhat.com>
-References: <1300874766-12941-1-git-send-email-tj@kernel.org> <20110323183837.GA27680@redhat.com> <20110325142630.GD1409@htj.dyndns.org> <20110326182554.GA24315@redhat.com> <20110328085824.GE16530@htj.dyndns.org>
+	id S1752443Ab1C1NYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 09:24:55 -0400
+Date: Mon, 28 Mar 2011 06:24:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: sedat.dilek@gmail.com
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: linux-next: Tree for March 25 (Call trace:
+ RCU|workqueues|block|VFS|ext4 related?)
+Message-ID: <20110328132436.GL2322@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <AANLkTikzLm+ArYkG20F41JOgfNygfdhxC0+A4tV4ez-R@mail.gmail.com>
+ <20110327000900.GB2322@linux.vnet.ibm.com>
+ <AANLkTikpq2CiSTk9Br7DdkVt=E1p8OFGa+Ls2BzkkhcO@mail.gmail.com>
+ <20110327032529.GC2322@linux.vnet.ibm.com>
+ <20110327050720.GA31424@linux.vnet.ibm.com>
+ <AANLkTimpbGGcxNJUDMjdg1wijYhvXQ3KySvRYnEsUYsy@mail.gmail.com>
+ <20110327213220.GE2322@linux.vnet.ibm.com>
+ <AANLkTi=ti+PVC8N-3Bt2fzuHHQz6kuMdUPeb3Gudn7EU@mail.gmail.com>
+ <20110328040823.GG2322@linux.vnet.ibm.com>
+ <AANLkTinQiDSXLP1o-HfdedYOMKtnsbBrcOfuqw9sFf2X@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110328085824.GE16530@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinQiDSXLP1o-HfdedYOMKtnsbBrcOfuqw9sFf2X@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28, Tejun Heo wrote:
->
-> Hey,
->
-> On Sat, Mar 26, 2011 at 07:25:54PM +0100, Oleg Nesterov wrote:
-> > > Explicit wake_up_state() without kick_process() is okay there because
-> > > if the code assumes that the tasks are guaranteed to pass through
-> > > signal delivery path whenever event worthy of notification happens
-> > > (either SIGNAL_STOP_STOPPED or group_stop_count is set).  PTRACE_CONT
-> > > breaks that as the tracee could be running in userland and thus the
-> > > solution is to add kick_process() as in signal_wake_up().
-> > >
-> > > Am I making any sense?
+On Mon, Mar 28, 2011 at 02:33:36PM +0200, Sedat Dilek wrote:
+> On Mon, Mar 28, 2011 at 6:08 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Sun, Mar 27, 2011 at 11:48:30PM +0200, Sedat Dilek wrote:
+> >> On Sun, Mar 27, 2011 at 11:32 PM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > On Sun, Mar 27, 2011 at 02:26:15PM +0200, Sedat Dilek wrote:
+> >> >> On Sun, Mar 27, 2011 at 7:07 AM, Paul E. McKenney
+> >> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> >> > On Sat, Mar 26, 2011 at 08:25:29PM -0700, Paul E. McKenney wrote:
+> >> >> >> On Sun, Mar 27, 2011 at 03:30:34AM +0200, Sedat Dilek wrote:
+> >> >> >> > On Sun, Mar 27, 2011 at 1:09 AM, Paul E. McKenney
+> >> >> >> > <paulmck@linux.vnet.ibm.com> wrote:
+> >> >> >> > > On Sat, Mar 26, 2011 at 11:15:22PM +0100, Sedat Dilek wrote:
+> >> >> >
+> >> >> > [ . . . ]
+> >> >> >
+> >> >> >> > >> But then came RCU :-(.
+> >> >> >> > >
+> >> >> >> > > Well, if it turns out to be a problem in RCU I will certainly apologize.
+> >> >> >> > >
+> >> >> >> >
+> >> >> >> > No, that's not so dramatic.
+> >> >> >> > Dealing with this RCU issue has nice side-effects: I remembered (and
+> >> >> >> > finally did) to use a reduced kernel-config set.
+> >> >> >> > The base for it I created with 'make localmodconfig' and did some
+> >> >> >> > manual fine-tuning afterwards (throw out media, rc, dvd, unneeded FSs,
+> >> >> >> > etc.).
+> >> >> >> > Also, I can use fresh gcc-4.6 (4.6.0-1) from the official Debian repos.
+> >> >> >> >
+> >> >> >> > So, I started building with
+> >> >> >> > "revert-rcu-patches/0001-Revert-rcu-introduce-kfree_rcu.patch".
+> >> >> >> > I will let you know.
+> >> >> >>
+> >> >> >> And please also check for tasks consuming all available CPU.
+> >> >> >
+> >> >> > And I still cannot reproduce with the full RCU stack (but based off of
+> >> >> > 2.6.38 rather than -next).  Nevertheless, if you would like to try a
+> >> >> > speculative patch, here you go.
+> >> >>
+> >> >> You are right and my strategy on handling the (possible RCU?) issue is wrong.
+> >> >> Surely, you tested your RCU stuff in your own repo and everything
+> >> >> might be OK on top of stable 2.6.38.
+> >> >> Linux-next gets daily updates from a lot of different trees, so there
+> >> >> might be interferences with other stuff.
+> >> >> Please, understand I am interested in finding out what is the cause
+> >> >> for my issues, my aim is not to blame you.
+> >> >
+> >> > I am not worried about blame, but rather getting the bug fixed.  The
+> >> > bug might be in RCU, it might be elsewhere, or it might be a combination
+> >> > of problems in RCU and elsewhere.
+> >> >
+> >> > So the first priority is locating the bug.
+> >> >
+> >> > And that is why I have been asking you over and over to PLEASE take
+> >> > a look at what tasks are consuming CPU while the problem is occuring.
+> >> > The reason that I have been asking over and over is that the symptoms
+> >> > you describe are likely caused by a loop in some kernel code.  Yes,
+> >> > there might be other causes, but this is the most likely.  Given that
+> >> > TREE_PREEMPT_RCU behaves better than TREE_RCU, it is likely that this
+> >> > loop is in preemptible code with irqs enabled.  Therefore, the process
+> >> > accounting code is likely to be able to see the CPU consumption, and
+> >> > you should be able to see it via the "top" or "ps" commands -- or via
+> >> > any number of other tools.
+> >> >
+> >> > For example, if the problem is confined to RCU, you would likely see
+> >> > the "rcuc0" or "rcun0" tasks consuming lots of CPU.  This would narrow
+> >> > the problem down to a few tens of lines of code.  If the problem was
+> >> > in some other kthread, then identifying the kthread would very likely
+> >> > narrow things down as well.
+> >> >
+> >> > So, please do take a look to see what taks consuming CPU.
+> >> >
+> >> >> As I was wrong and want to be 99.9% sure it is RCU stuff, I reverted
+> >> >> all (18) RCU patches from linux-next (next-20110325) by keeping the
+> >> >> RCU|PREEMPT|HZ settings from last working next-20110323.
+> >> >
+> >> > Makes sense.
+> >> >
+> >> >> $ egrep 'RCU|PREEMPT|_HZ' /boot/config-2.6.38-next20110325-7-686-iniza
+> >> >> # RCU Subsystem
+> >> >> CONFIG_TREE_RCU=y
+> >> >> # CONFIG_PREEMPT_RCU is not set
+> >> >> # CONFIG_RCU_TRACE is not set
+> >> >> CONFIG_RCU_FANOUT=32
+> >> >> # CONFIG_RCU_FANOUT_EXACT is not set
+> >> >> CONFIG_RCU_FAST_NO_HZ=y
+> >> >> # CONFIG_TREE_RCU_TRACE is not set
+> >> >> CONFIG_PREEMPT_NOTIFIERS=y
+> >> >> CONFIG_NO_HZ=y
+> >> >> # CONFIG_PREEMPT_NONE is not set
+> >> >> CONFIG_PREEMPT_VOLUNTARY=y
+> >> >> # CONFIG_PREEMPT is not set
+> >> >> # CONFIG_HZ_100 is not set
+> >> >> CONFIG_HZ_250=y
+> >> >> # CONFIG_HZ_300 is not set
+> >> >> # CONFIG_HZ_1000 is not set
+> >> >> CONFIG_HZ=250
+> >> >> # CONFIG_SPARSE_RCU_POINTER is not set
+> >> >> # CONFIG_RCU_TORTURE_TEST is not set
+> >> >> # CONFIG_RCU_CPU_STALL_DETECTOR is not set
+> >> >>
+> >> >> I will work and stress this kernel before doing any step-by-step
+> >> >> revert of RCU stuff.
+> >> >>
+> >> >> Thanks for your patch, I applied it on top of "naked" next-20110325,
+> >> >> but I still see call-traces.
+> >> >
+> >> > Thank you very much for testing it!
+> >> >
+> >> > I intend to keep that patch, as it should increase robustness in other
+> >> > situations.
+> >> >
+> >> >                                                        Thanx, Paul
+> >> >
+> >> >> - Sedat -
+> >> >>
+> >> >>
+> >> >>
+> >> >> >                                                        Thanx, Paul
+> >> >> >
+> >> >> > ------------------------------------------------------------------------
+> >> >> >
+> >> >> > rcu: further lower priority in rcu_yield()
+> >> >> >
+> >> >> > Although rcu_yield() dropped from real-time to normal priority, there
+> >> >> > is always the possibility that the competing tasks have been niced.
+> >> >> > So nice to 19 in rcu_yield() to help ensure that other tasks have a
+> >> >> > better chance of running.
+> >> >> >
+> >> >> >    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >> >> >
+> >> >> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> >> >> > index 759f54b..5477764 100644
+> >> >> > --- a/kernel/rcutree.c
+> >> >> > +++ b/kernel/rcutree.c
+> >> >> > @@ -1492,6 +1492,7 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
+> >> >> >        mod_timer(&yield_timer, jiffies + 2);
+> >> >> >        sp.sched_priority = 0;
+> >> >> >        sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
+> >> >> > +       set_user_nice(current, 19);
+> >> >> >        schedule();
+> >> >> >        sp.sched_priority = RCU_KTHREAD_PRIO;
+> >> >> >        sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
+> >>
+> >> Sorry, my attempt was to identify and isolate the culprit commit.
+> >>
+> >> Reverting all RCU patches resulted in a stable system, the following 8
+> >> kernels with reduced k-config setup where all built using this kernel.
+> >>
+> >> All kernels used TREE_RCU (see above), I did not change it (no
+> >> mixing/switching to PREEMPT and TREE_PREEMPT_RCU).
+> >> ( I doubt that TREE_PREEMPT_RCU was some kind of more stable here. )
+> >>
+> >> The culprit commit is bc56163ebd4580199ac7e63f5e160bf139ba0dd6 (from
+> >> rcu/next GIT tree):
+> >> "rcu: move TREE_RCU from softirq to kthread"
 > >
-> > Perhaps. This depends on how we define/implement the new behaviour.
+> 
+> Hi Paul,
+> 
+> > OK, please accept my apologies for your lost weekend.  And thank you for
+> > testing this.
 > >
-> > It is not clear to me what the new trap should actually do. And how.
-> > Either way, prepare_signal(SIGCONT) should do something with the
-> > ptraced threads, and this is what we should care about. Probably
-> > we can set TIF_SIGPENDING if task_ptrace() is true.
+> 
+> No worries, it was mostly a rainy day.
+> The only thing I did @ 16:30 was to go to regional election (the new
+> (regional) prime minister will be the 1st from The German Green
+> party).
+
+;-)
+
+> But back to RCU :-):
+> The reduced kernel-config setup decreased the build-time from approx.
+> 2hrs (full, generic build) down to approx. 35mins.
+
+Very good!
+
+> >> I can do parallelly a tar job, open 20 tabs in firefox and run a flash
+> >> video in one of them (I did this several times).
 > >
-> > Anyway we should ensure SIGCONT can't race with detach.
->
-> Hmmm... setting TIF_SIGPENDING and kicking the task to enter signal
-> delivery path doesn't have any side effect when it's running in
-> userland,
+> > How many files in the tar job?  Is this creating a tar archive, expanding
+> > it, or both?
+> 
+> I am doing a simple tar (filesize: 1.6G for full and 1.0G for reduced build):
+> 
+> $ tar -cf $archivedir-on-external-usbhdd/$tarfile $kernel-build-dir
 
-Yes. We should avoid the spurious TIF_SIGPENDING, if possible. But in
-this case we don't care.
+OK, I was extracting a tarball and then removing the resulting source
+tree.  I will try this.  Though it does seem strange -- I can understand
+how removing a file tree would stress RCU, but not creating a tarball.
+Ah, well, if I fully understood it, there would not be a bug.
 
-But, unless the thread is ptraced, it can't be running in userland,
-why should we set TIF_SIGPENDING?
+> ...plus parallelly opening 20 tabs in firefox.
+> That's normally enough to get my system freaky and see RCU related
+> messages in the logs.
 
-> > > * Before CLD_STOPPED notification for the incomplete-stop/cont
-> > >   sequence can be made, recalc_sigpending() happens.
-> > >
-> > > * CLD_STOPPED notification is pending but TIF_SIGPENDING isn't set and
-> > >   the task isn't in signal delivery path and can continue execution.
+Hmmm...  My normal test systems don't have X -- I will need to set
+this up.
+
+> > Do you have a script for this?  Are all of these running at normal
+> > priority, or are some of them running at real-time priority?
 > >
-> > This doesn't matter, or I misunderstood.
+> 
+> Nothing special.
+
+OK.
+
+> >> [ setup.log ]
+> >> ...
+> >>   (+) OK   revert-rcu-patches/0001-Revert-rcu-introduce-kfree_rcu.patch
+> >>   (+) OK   revert-rcu-patches/0002-Revert-rcu-fix-spelling.patch
+> >>   (+) OK   revert-rcu-patches/0003-Revert-rcu-fix-rcu_cpu_kthread_task-synchronization.patch
+> >>   (+) OK   revert-rcu-patches/0004-Revert-rcu-call-__rcu_read_unlock-in-exit_rcu-for-tr.patch
+> >>   (+) OK   revert-rcu-patches/0005-Revert-rcu-Converge-TINY_RCU-expedited-and-normal-bo.patch
+> >>   (+) OK   revert-rcu-patches/0006-Revert-rcu-remove-useless-boosted_this_gp-field.patch
+> >>   (+) OK   revert-rcu-patches/0007-Revert-rcu-code-cleanups-in-TINY_RCU-priority-boosti.patch
+> >>   (+) OK   revert-rcu-patches/0008-Revert-rcu-Switch-to-this_cpu-primitives.patch
+> >>   (+) OK   revert-rcu-patches/0009-Revert-rcu-Use-WARN_ON_ONCE-for-DEBUG_OBJECTS_RCU_HE.patch
+> >>   (+) OK   revert-rcu-patches/0010-Revert-rcu-Enable-DEBUG_OBJECTS_RCU_HEAD-from-PREEMP.patch
+> >>   (+) OK   revert-rcu-patches/0011-Revert-rcu-Add-boosting-to-TREE_PREEMPT_RCU-tracing.patch
+> >>   (+) OK   revert-rcu-patches/0012-Revert-rcu-eliminate-unused-boosting-statistics.patch
+> >>   (+) OK   revert-rcu-patches/0013-Revert-rcu-priority-boosting-for-TREE_PREEMPT_RCU.patch
+> >>   (+) OK   revert-rcu-patches/0014-Revert-rcu-move-TREE_RCU-from-softirq-to-kthread.patch
+> >> ...
+> >>
+> >> Hope this helps to narrow down the problem.
+> >>
+> >> As I kept all kernels I can have a look at the tasks consuming high
+> >> CPU usage tomorrow.
 > >
-> > We only add "SIGNAL_CLD_* | SIGNAL_STOP_CONTINUED" if we know there
-> > is at least one thread in get_signal_to_deliver()->do_signal_stop()
-> > paths. In this case we do not rely on TIF_SIGPENDING at all.
->
-> We set SIGNAL_CLD_STOPPED if group_stop_count wasn't zero, ie. if
-> group stop has initiated, which will be delivered as soon as any task
-> enters signal delivery path.
+> > Could you please?
+> 
+> I recalled (as you say I requested over and over again from you :-)) I
+> looked with top, htop and 'ps axu', but there was nothing special.
+> Sometimes the system got frozen - at this point (or short before) I
+> did not see anything suspicious with top.
 
-Yes. And that task T has already called do_signal_stop() and it is
-TASK_STOPPED.
+OK, thank you for the info.
 
-> So, there's a path that we schedule a
-> notification and doesn't enforce the delivery until something happens
+> > Also, could you please mount debugfs and list out the files in the
+> > "rcu" directory?  The "ql=" value from the "rcu/rcudata" file is of
+> > particular interest.
+> >
+> 
+> Ah, before I forget...
+> 
+> I used TREE_RCU (was the default before noticing RCU issue) for
+> finding the culprit commit.
+> If it is from your POV more helpful to switch to PREEMPT + PREEMPT_RCU
+> + RCU_BOOST, please let me *now* know.
+> ( Both RCU setups freaks up the system. )
 
-prepare_signal(SIGCONT) wakes up all threads, including T. Once it
-returns from do_signal_stop() to get_signal_to_deliver(), it will
-check signal->flags.
+If TREE_RCU hits problems faster, it is probably best to stay with
+TREE_RCU.
 
-> and a task in the group gets called into signal delivery path somehow,
-> which is wrong.
+> I think top & Co. are not enough to track the problem down.
+> I have seen tracing and debugging facililities for RCU.
+> 
+> Some questions to debug and trace setup:
+> 
+> Case #1: TREE_RCU
+> 
+> CONFIG_RCU_TRACE=y
+> CONFIG_TREE_RCU_TRACE=y
 
-Afaics, no. No need to force any thread to enter into the signal
-delivery path. If group_stop_count != 0 (or SIGNAL_STOP_STOPPED is
-set) there must be at least one thread which should _return_ to
-get_signal_to_deliver() after wakeup.
+Yep.
 
-No?
+> Case #2: PREEMPT + PREEMPT_RCU + RCU_BOOST
+> 
+> CONFIG_RCU_TRACE=y
+> CONFIG_TREE_RCU_TRACE=y
+> CONFIG_DEBUG_PREEMPT=y <--- Helpful?
+> CONFIG_PREEMPT_TRACER=y <--- Helpful?
+> 
+> Any other recommends for useful/helpful trace and/or debug options?
+> 
+> Any other intructions for debugging/tracing?
 
-Oleg.
+Not at the moment.  I will be looking at diagnostics will going
+through the code, so might have something later.
 
+> BTW, today's linux-next (next-20110328) is still freaky, I applied the
+> revert-rcu-patches patchset and all is fine.
+
+I reverted back to the commit preceding the one you pointed out last night
+my time, so the upcoming -next should be less freaky.
+
+> - Sedat -
+> 
+> P.S.: Note to myself
+> 
+> # mount -t debugfs none /sys/kernel/debug/
+> # ln -s /sys/kernel/debug /debug
+> 
+> # find /debug -name rcu
+
+Or:
+
+# cd /debug/rcu
+
+then dump out everything except for the .csv file (which is the same
+as the non-.csv equivalent, but in spreadsheet format -- intended
+for systems with 100s or 1000s of CPUs).
+
+							Thanx, Paul
