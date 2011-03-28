@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab1C1Moy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 08:44:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52557 "EHLO mx2.suse.de"
+	id S1753868Ab1C1Mqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 08:46:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9026 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919Ab1C1Mow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 08:44:52 -0400
-Date: Mon, 28 Mar 2011 14:44:38 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>, linux-pm@lists.linux-foundation.org,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Ondrej Zary <linux@rainbow-software.org>
-Subject: Re: [PATCH] apm: orphan the driver
-In-Reply-To: <20110326172204.05e52c10.sfr@canb.auug.org.au>
-Message-ID: <alpine.LRH.2.00.1103281443240.8162@twin.jikos.cz>
-References: <20110326172204.05e52c10.sfr@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753098Ab1C1Mqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 08:46:49 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, jeff.chua.linux@gmail.com,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] acpi: Remove sysfs_create_link from video driver
+Date: Mon, 28 Mar 2011 08:46:02 -0400
+Message-Id: <1301316362-2955-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 78.105.22.187
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Mar 2011, Stephen Rothwell wrote:
+The acpi video driver attempts to explicitly create a sysfs link between
+the acpi device and the associated PCI device. However, we're now also
+doing this from the backlight core, which means that we get a backtrace
+caused by a duplicate file. Remove the code and leave it up to the
+backlight core.
 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  MAINTAINERS |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
-> 
-> I no longer have access to any hardware that uses APM and have not
-> provided real maintenance for several years.  Hopefully someone with the
-> hardware or energy will step forward if the driver is to be kept.
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 749f9cd..61f9948 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -548,10 +548,8 @@ S:	Maintained
->  F:	sound/aoa/
->  
->  APM DRIVER
-> -M:	Stephen Rothwell <sfr@canb.auug.org.au>
->  L:	linux-laptop@vger.kernel.org
-> -W:	http://www.canb.auug.org.au/~sfr/
-> -S:	Supported
-> +S:	Orphan
->  F:	arch/x86/kernel/apm_32.c
->  F:	include/linux/apm_bios.h
+Reported-by: Jeff Chua <jeff.chua.linux@gmail.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/acpi/video.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-I still have some hardware that uses APM and put a new 2.6 on it time to 
-time, so I can take this driver over if you want to. According to git log 
-it's really low effort anyway :)
-
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index a18e497..31e9e10 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -824,11 +824,6 @@ static void acpi_video_device_find_cap(struct acpi_video_device *device)
+ 		device->backlight->props.brightness =
+ 				acpi_video_get_brightness(device->backlight);
+ 
+-		result = sysfs_create_link(&device->backlight->dev.kobj,
+-					   &device->dev->dev.kobj, "device");
+-		if (result)
+-			printk(KERN_ERR PREFIX "Create sysfs link\n");
+-
+ 		device->cooling_dev = thermal_cooling_device_register("LCD",
+ 					device->dev, &video_cooling_ops);
+ 		if (IS_ERR(device->cooling_dev)) {
+@@ -1381,7 +1376,6 @@ static int acpi_video_bus_put_one_device(struct acpi_video_device *device)
+ 		       "Cant remove video notify handler\n");
+ 	}
+ 	if (device->backlight) {
+-		sysfs_remove_link(&device->backlight->dev.kobj, "device");
+ 		backlight_device_unregister(device->backlight);
+ 		device->backlight = NULL;
+ 	}
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+1.7.4.1
 
