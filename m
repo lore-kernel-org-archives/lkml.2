@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab1C1WSH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 18:18:07 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:48984 "EHLO e6.ny.us.ibm.com"
+	id S1755302Ab1C1WYY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 18:24:24 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35755 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755002Ab1C1WSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 18:18:05 -0400
-Date: Mon, 28 Mar 2011 15:17:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Jan Beulich <jbeulich@novell.com>, David Howells <dhowells@redhat.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <clameter@sgi.com>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [RFC PATCH 0/5] Add kernel-offset file and make
- rcu_read_[un]lock() included
-Message-ID: <20110328221755.GQ2287@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4D8FF8AD.5080607@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D8FF8AD.5080607@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1754956Ab1C1WYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 18:24:22 -0400
+Date: Tue, 29 Mar 2011 09:24:16 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH] memstick: make enable_dma less generic in r592
+Message-Id: <20110329092416.a4b1d98f.sfr@canb.auug.org.au>
+In-Reply-To: <20110328144458.efedbefc.sfr@canb.auug.org.au>
+References: <20110328144458.efedbefc.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 10:55:41AM +0800, Lai Jiangshan wrote:
+On Mon, 28 Mar 2011 14:44:58 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> Hi all,
 > 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
 > 
-> __rcu_read_[un]lock() are so simple functions and called so
-> frequent, it is not good that a function call overhead is
-> required when use them. It would be better if we declare
-> them inline and let the compiler do the choice.
+> drivers/memstick/host/r592.c:26: error: 'enable_dma' redeclared as different kind of symbol
+> arch/powerpc/include/asm/dma.h:189: note: previous definition of 'enable_dma' was here
 > 
-> We add kernel-offset.c for TASK_RCU_OFFSET, which enable we declare
-> rcu_read_[un]lock() as inline function.
+> Caused by commit 926341250102 ("memstick: add driver for Ricoh R5C592
+> card reader").
 > 
-> Adding kernel-offset.c does not have any effect for the result
-> compiled kernel, it just adds a small and fast step in the kbuid stage.
+> enable_dma() is also defined in a few other architectures including x86
+> (presumably asm/dma.h does not get included there).
+> 
+> I just reverted that commit for today.
 
-Good stuff, thank you!  It will be really cool to have inlined
-rcu_read_lock() and rcu_read_unlock() for TREE_PREEMPT_RCU!
+I will, instead, apply this patch for today:
 
-I will queue this up in a few days, currently chasing down a problem
-located in the upcoming TREE_RCU softirq-to-kthread commit.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 29 Mar 2011 09:12:53 +1100
+Subject: [PATCH] memstick: make enable_dma less generic in r592
 
-							Thanx, Paul
+Fixes this build error:
 
-> Lai Jiangshan (5):
->   task_rcu_struct
->   kbuild_dedumplicated
->   add_kernel_offset
->   access task's task_rcu_struct without include sched.h
->   rcu inline
-> 
->  Kbuild                    |   99 ++++++++++++++++---------------
->  include/linux/init_task.h |   25 +--------
->  include/linux/rcupdate.h  |  144 ++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/sched.h     |   39 +------------
->  kernel/kernel-offsets.c   |   17 +++++
->  kernel/rcutiny_plugin.h   |   58 ++++--------------
->  kernel/rcutree_plugin.h   |   69 ++++++----------------
->  7 files changed, 243 insertions(+), 208 deletions(-)
->  create mode 100644 kernel/kernel-offsets.c
-> 
-> -- 
-> 1.7.4
+drivers/memstick/host/r592.c:26: error: 'enable_dma' redeclared as different kind of symbol
+arch/powerpc/include/asm/dma.h:189: note: previous definition of 'enable_dma' was here
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Alex Dubov <oakad@yahoo.com>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+---
+ drivers/memstick/host/r592.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/memstick/host/r592.c b/drivers/memstick/host/r592.c
+index 767406c..ecf3d7d 100644
+--- a/drivers/memstick/host/r592.c
++++ b/drivers/memstick/host/r592.c
+@@ -23,7 +23,7 @@
+ #include <linux/swab.h>
+ #include "r592.h"
+ 
+-static int enable_dma = 1;
++static int r592_enable_dma = 1;
+ static int debug;
+ 
+ static const char *tpc_names[] = {
+@@ -267,7 +267,7 @@ static void r592_stop_dma(struct r592_device *dev, int error)
+ /* Test if hardware supports DMA */
+ static void r592_check_dma(struct r592_device *dev)
+ {
+-	dev->dma_capable = enable_dma &&
++	dev->dma_capable = r592_enable_dma &&
+ 		(r592_read_reg(dev, R592_FIFO_DMA_SETTINGS) &
+ 			R592_FIFO_DMA_SETTINGS_CAP);
+ }
+@@ -898,7 +898,7 @@ static void __exit r592_module_exit(void)
+ module_init(r592_module_init);
+ module_exit(r592_module_exit);
+ 
+-module_param(enable_dma, bool, S_IRUGO);
++module_param_named(r592_enable_dma, enable_dma, bool, S_IRUGO);
+ MODULE_PARM_DESC(enable_dma, "Enable usage of the DMA (default)");
+ module_param(debug, int, S_IRUGO | S_IWUSR);
+ MODULE_PARM_DESC(debug, "Debug level (0-3)");
+-- 
+1.7.4.1
+
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
