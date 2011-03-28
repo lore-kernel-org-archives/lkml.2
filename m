@@ -1,106 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab1C1PMg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 11:12:36 -0400
-Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:59561 "EHLO
-	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753819Ab1C1PMe (ORCPT
+	id S1754348Ab1C1PPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 11:15:19 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:41717
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751089Ab1C1PPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 11:12:34 -0400
-X-AuditID: 1209190c-b7b7aae0000047c7-02-4d90a439497c
-From: Andy Lutomirski <luto@MIT.EDU>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH 3/6] x86-64: Put vsyscall_gtod_data at a fixed virtual address
-Date: Mon, 28 Mar 2011 11:06:43 -0400
-Message-Id: <4fef5b568241665e1d2bca64f73a437bafb574c4.1301324270.git.luto@mit.edu>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <cover.1301324270.git.luto@mit.edu>
-References: <cover.1301324270.git.luto@mit.edu>
-In-Reply-To: <cover.1301324270.git.luto@mit.edu>
-References: <cover.1301324270.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsUixCmqrWu5ZIKvwfTF4hZ9V46yW7Sunc9u
-	cXnXHDaLzZumMlv82PCY1YHVY+esu+wem1Z1snm8O3eO3ePctT5mj8+b5AJYo7hsUlJzMstS
-	i/TtErgy/vwNLPjNV9G7fx9zA+MSni5GDg4JAROJ7q+KXYycQKaYxIV769m6GLk4hAT2MUpc
-	ePCQDSQhJLCBUaKjJwUi8YxJYv/qY0wgCTYBFYmOpQ+YQAaJCAhJLL1bB1LDLDCJUeLljF52
-	kBphAT+JRXOugdksAqoSe4+sYgSxeQWCJL6tnwpkswNtlpNoDgSJcgoYSHSevsoCMlFIQF/i
-	4zl7HMITGAUWMDKsYpRNya3SzU3MzClOTdYtTk7My0st0jXUy80s0UtNKd3ECA5HSZ4djG8O
-	Kh1iFOBgVOLhDYzq9xViTSwrrsw9xCjJwaQkyvts0QRfIb6k/JTKjMTijPii0pzU4kOMEhzM
-	SiK8hxqBcrwpiZVVqUX5MClpDhYlcd4Zkuq+QgLpiSWp2ampBalFMFkZDg4lCd6Fi4EaBYtS
-	01Mr0jJzShDSTBycIMN5gIYngdTwFhck5hZnpkPkTzEqSonzLgZJCIAkMkrz4Hph6eIVozjQ
-	K8K8k0CqeICpBq77FdBgJqDBgUpgg0sSEVJSDYwyljsirBa07f5keXui7N5gwV8Hk8+0Lzu/
-	Ysmiv7mvrokdETmWH6HPeXiO8MfeuZv2sy3L4tW4enf/Atdpv9wKVCxPdeq/nCmWKFnb8+WP
-	1syaMuPizcu7nZ1eyMz33Rntut80WUPj8l/5NA2XS+yC00La9nlWeCYtffRoxUS2t9JZnT7e
-	bXFKLMUZiYZazEXFiQCRvBfV8gIAAA==
+	Mon, 28 Mar 2011 11:15:18 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <arnaud.patard@rtp-net.org>, <ra5478@freescale.com>,
+        <xiao-lizhang@freescale.com>, <festevam@gmail.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv7] ARM: mx51: Add support for low power suspend on MX51
+Date: Mon, 28 Mar 2011 10:14:57 -0500
+Message-ID: <1301325297-24126-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This generates slightly better code because vclock_gettime doesn't
-need to load the address.
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Adds initial low power suspend functionality to MX51.
+Supports "mem" and "standby" modes.
+
+Tested on mx51-babbage.
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/x86/kernel/vmlinux.lds.S |   13 +++++++------
- arch/x86/vdso/vextern.h       |    9 ++++++++-
- 2 files changed, 15 insertions(+), 7 deletions(-)
+ arch/arm/mach-mx5/Makefile  |    1 +
+ arch/arm/mach-mx5/pm-imx5.c |   73 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 74 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-mx5/pm-imx5.c
 
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index bf47007..1f545ff 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -174,12 +174,6 @@ SECTIONS
- 		*(.vsyscall_fn)
- 	}
+diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+index 0b9338c..d646feb 100644
+--- a/arch/arm/mach-mx5/Makefile
++++ b/arch/arm/mach-mx5/Makefile
+@@ -6,6 +6,7 @@
+ obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o system.o
+ obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
  
--	. = ALIGN(L1_CACHE_BYTES);
--	.vsyscall_gtod_data : AT(VLOAD(.vsyscall_gtod_data)) {
--		*(.vsyscall_gtod_data)
--	}
--
--	vsyscall_gtod_data = VVIRT(.vsyscall_gtod_data);
- 	.vsyscall_clock : AT(VLOAD(.vsyscall_clock)) {
- 		*(.vsyscall_clock)
- 	}
-@@ -208,6 +202,13 @@ SECTIONS
- 		*(.vsyscall_3)
- 	}
- 
-+	 /* This address must be kept in sync with arch/x86/vdso/vextern.h */
-+	.vsyscall_gtod_data ADDR(.vsyscall_0) + 3072 + 256:
-+	                    AT(VLOAD(.vsyscall_gtod_data)) {
-+		*(.vsyscall_gtod_data)
++obj-$(CONFIG_PM) += pm-imx5.o
+ obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
+ obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+ obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
+diff --git a/arch/arm/mach-mx5/pm-imx5.c b/arch/arm/mach-mx5/pm-imx5.c
+new file mode 100644
+index 0000000..e4529af
+--- /dev/null
++++ b/arch/arm/mach-mx5/pm-imx5.c
+@@ -0,0 +1,73 @@
++/*
++ *  Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++#include <linux/suspend.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
++#include <mach/system.h>
++#include "crm_regs.h"
++
++static struct clk *gpc_dvfs_clk;
++
++static int mx5_suspend_enter(suspend_state_t state)
++{
++	clk_enable(gpc_dvfs_clk);
++	switch (state) {
++	case PM_SUSPEND_MEM:
++		mx5_cpu_lp_set(STOP_POWER_OFF);
++		break;
++	case PM_SUSPEND_STANDBY:
++		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
++		break;
++	default:
++		return -EINVAL;
 +	}
-+	vsyscall_gtod_data = VVIRT(.vsyscall_gtod_data);
 +
- 	. = __vsyscall_0 + PAGE_SIZE;
- 
- #undef VSYSCALL_ADDR
-diff --git a/arch/x86/vdso/vextern.h b/arch/x86/vdso/vextern.h
-index 1683ba2..5bfa77c 100644
---- a/arch/x86/vdso/vextern.h
-+++ b/arch/x86/vdso/vextern.h
-@@ -2,6 +2,11 @@
- #include <asm/vsyscall.h>
- #define VEXTERN(x) \
- 	extern typeof(x) *vdso_ ## x __attribute__((visibility("hidden")));
-+#define VEXTERN_FIXED(x, offset) \
-+	static typeof(x) * const vdso_ ## x = \
-+		(void *)(VSYSCALL_START + (offset));
-+#else
-+#define VEXTERN_FIXED(x, offset)
- #endif
- 
- #define VMAGIC 0xfeedbabeabcdefabUL
-@@ -13,4 +18,6 @@
- 
- VEXTERN(jiffies)
- VEXTERN(vgetcpu_mode)
--VEXTERN(vsyscall_gtod_data)
-+VEXTERN_FIXED(vsyscall_gtod_data, 3072 + 256)  /* Hard-coded in linker script */
++	if (state == PM_SUSPEND_MEM) {
++		local_flush_tlb_all();
++		flush_cache_all();
 +
-+#undef VEXTERN_FIXED
++		/*clear the EMPGC0/1 bits */
++		__raw_writel(0, MXC_SRPG_EMPGC0_SRPGCR);
++		__raw_writel(0, MXC_SRPG_EMPGC1_SRPGCR);
++	}
++	cpu_do_idle();
++	clk_disable(gpc_dvfs_clk);
++
++	return 0;
++}
++
++static int mx5_pm_valid(suspend_state_t state)
++{
++	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
++}
++
++static const struct platform_suspend_ops mx5_suspend_ops = {
++	.valid = mx5_pm_valid,
++	.enter = mx5_suspend_enter,
++};
++
++static int __init mx5_pm_init(void)
++{
++	if (gpc_dvfs_clk == NULL)
++		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
++
++	if (!IS_ERR(gpc_dvfs_clk)) {
++		if (cpu_is_mx51())
++			suspend_set_ops(&mx5_suspend_ops);
++	} else
++		return -EPERM;
++
++	return 0;
++}
++device_initcall(mx5_pm_init);
 -- 
-1.7.4
+1.6.0.4
+
 
