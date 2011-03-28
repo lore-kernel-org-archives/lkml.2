@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214Ab1C1Ug4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 16:36:56 -0400
-Received: from the.earth.li ([46.43.34.31]:41106 "EHLO the.earth.li"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753911Ab1C1Ugy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 16:36:54 -0400
-Date: Mon, 28 Mar 2011 13:36:53 -0700
-From: Jonathan McDowell <noodles@earth.li>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Re-add quirk for ServerWorks bridge secondary buses
-Message-ID: <20110328203653.GL4835@earth.li>
-References: <20110324043652.GA4835@earth.li>
- <AANLkTikiZ_JYUcobRF6T_=DMXCc=Em8f1U_eD_rQRSRu@mail.gmail.com>
- <20110324182751.GC4835@earth.li>
- <AANLkTimDV5m0Ug5H76HcdfFNrJaZcdGrChxVpCp9dMW6@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimDV5m0Ug5H76HcdfFNrJaZcdGrChxVpCp9dMW6@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755214Ab1C1Ukd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 16:40:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48622 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab1C1Ukb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 16:40:31 -0400
+Date: Mon, 28 Mar 2011 13:40:16 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>
+Subject: [PATCH] ubifs: fix kconfig dependency warning
+Message-Id: <20110328134016.deb5d0c8.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D90F233.0058,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 24, 2011 at 05:58:30PM -0700, Bjorn Helgaas wrote:
-> On Thu, Mar 24, 2011 at 11:27 AM, Jonathan McDowell
-> <noodles@earth.li>wrote:
-> 
-> > On Wed, Mar 23, 2011 at 10:50:20PM -0700, Bjorn Helgaas wrote:
->
-> > > I assume that since you don't have a standard BIOS, you don't have
-> > > ACPI?
-> >
-> > Nope. Nor DMI. As previously mentioned there is a custom ASIC, but
-> > it's hidden behind these bridges.
-> >
-> 
-> Thanks.   Looks like your box doesn't even have PCI BIOS, so
-> pcibios_last_bus == -1 until pci_fixup_serverworks() updates it, so we
-> only scan bus 00.
-> 
-> Another option would be to boot with "pci=lastbus=0xff".  If you just
-> have a box or two, that might be the easiest solution, but I guess I'm
-> not opposed to a quirk like this.  It's a firmware workaround, not a
-> hardware bug, and the message is irrelevant and possibly distracting
-> on machines with decent firmware, but it's not terrible.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-I've managed to get detection of the non-standard BIOS working, so I can
-actually quirk much more specifically now for my purposes. I don't
-believe there's any need to take this upstream if no one else is
-reporting problems.
+Fix another kconfig dependency warning, this time in ubifs.
 
-J.
+warning: (UBIFS_FS_DEBUG && LOCKDEP && LATENCYTOP) selects KALLSYMS_ALL which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
 
--- 
-"This sentence no verb." -- Robin Stevens, ox.talk
-This .sig brought to you by the letter T and the number 42
-Product of the Republic of HuggieTag
+Without this patch, we can have:
+# CONFIG_KALLSYMS is not set
+CONFIG_KALLSYMS_ALL=y
+which is useless (does nothing unless KALLSYMS is enabled).
+
+However, ubifs builds successfully with or without this patch,
+and it builds with this line completely deleted,
+so what was this 'select' for?  Just developer convenience?
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:      Artem Bityutskiy <dedekind1@gmail.com>
+Cc:      Adrian Hunter <adrian.hunter@nokia.com>
+Cc:      linux-mtd@lists.infradead.org
+---
+ fs/ubifs/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-2.6.38-git18.orig/fs/ubifs/Kconfig
++++ linux-2.6.38-git18/fs/ubifs/Kconfig
+@@ -47,7 +47,7 @@ config UBIFS_FS_DEBUG
+ 	bool "Enable debugging support"
+ 	depends on UBIFS_FS
+ 	select DEBUG_FS
+-	select KALLSYMS_ALL
++	select KALLSYMS_ALL if DEBUG_KERNEL && KALLSYMS
+ 	help
+ 	  This option enables UBIFS debugging support. It makes sure various
+ 	  assertions, self-checks, debugging messages and test modes are compiled
