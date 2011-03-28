@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587Ab1C1JOa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 05:14:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60466 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab1C1JO3 convert rfc822-to-8bit (ORCPT
+	id S1751977Ab1C1JOq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 05:14:46 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:31889 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab1C1JOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 05:14:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KTZRxN4ODybuVawaqI2Z3b0/80Md+wwa2O99KhBCqgs7aNiG21duDTRYRqGgHh9M7X
-         Ym5NM+57qV1V2hZHp53ib7vd1BtMLaJj6PbuWj6js2AWGz0BJxJcmDUVF19v/wIAF8ge
-         id5im7txmjzZc02OhjnKmgmaColrj92TRP4tM=
+	Mon, 28 Mar 2011 05:14:45 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6298"; a="82417215"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: <balbi@ti.com>
+Cc: <gregkh@suse.de>, <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1300867498-20997-1-git-send-email-tlinder@codeaurora.org> <20110325134101.GM2609@legolas.emea.dhcp.ti.com> <000501cbed24$8efd1f70$acf75e50$@org> <20110328085412.GJ2251@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110328085412.GJ2251@legolas.emea.dhcp.ti.com>
+Subject: RE: [PATCH 5/5 v5] usb:gadget: Add SuperSpeed support to the Gadget Framework
+Date: Mon, 28 Mar 2011 11:15:26 +0200
+Message-ID: <000601cbed28$aee4dc20$0cae9460$@org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinp4=c9qmVyfocUk_ydJ3PV50b9UckNhJJNFsFm@mail.gmail.com>
-References: <201011181650.00152.roucaries.bastien@gmail.com>
-	<AANLkTik=+smaiGNwVw0pDBXexVd=trsz9aSawuqLZP6k@mail.gmail.com>
-	<20101223034229.GF1739@nowhere>
-	<201101300108.32383.roucaries.bastien@gmail.com>
-	<20110308141847.GB1837@nowhere>
-	<AANLkTinp4=c9qmVyfocUk_ydJ3PV50b9UckNhJJNFsFm@mail.gmail.com>
-Date: Mon, 28 Mar 2011 11:14:28 +0200
-Message-ID: <AANLkTimYiRYZVXtxLBNeGcG=KVJTTiaGn+XGYP2Y=XMo@mail.gmail.com>
-Subject: Re: Reiserfs deadlock in 2.6.36
-From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcvtJbBxD0IiRZLpQGOXSycw6RyFjAAAi96g
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 4:22 PM, Bastien ROUCARIES
-<roucaries.bastien@gmail.com> wrote:
-> On Tue, Mar 8, 2011 at 3:18 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> On Sun, Jan 30, 2011 at 01:08:29AM +0100, Bastien ROUCARIES wrote:
->>> Le jeudi 23 décembre 2010 04:42:33, Frederic Weisbecker a écrit :
->>> Hi,
->>>
->>> I take me more than two days of testing to reporduce this bugs with trace enabled. My filesystem was quite slow and this bugs seems
->>> to be timing related.
->>>
+Hi
+ 
+> > I believe that in the future all gadget drivers will define their own
+> SS
+> > descriptors with values that are suitable for that gadget driver and
+> the
+> > create_ss_descriptors() will become obsolete. As I've already
+> mentioned this
+> > is just a way to allow all the existing drivers to operate in SS mode
+> with
+> > minimum changes to their code. So this patch doesn't contradict your
+> > approach, just extends it.
+> 
+> but that's not a good approach. You're adding bloat which will be
+> removed soon. Problem is that once it's there, we will have to support
+> it for a long long time as we won't know if there are any out of tree
+> gadget drivers depending on that, forcing us on publising of
+> Documentation/feature-removal-schedule.txt that we will remove that
+> layer in e.g. 4 major revisions. So, IMHO, better not to add it.
+> 
 
-Any news of this bug? Could I do something to help ?
+I see your point. I'll generate a different patch for this function
+(create_ss_descriptors()) so it will be easy to take it out of the patch
+series if we eventually decide against it. I think it's still useful to have
+this ability since it can help developers at the beginning even if not
+adding it to the formal kernel release and just have it in the mailing list
+archives.
 
-bastien
->
-> Ok bastien
->
+Best regards,
+Tanya Brokhman
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
+
+
+
+
