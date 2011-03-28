@@ -1,93 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab1C1QxD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:53:03 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:60957
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754851Ab1C1QuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:50:12 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 15/22] Staging: hv: Get rid of the forward declaration of blkvsc_revalidate_disk()
-Date: Mon, 28 Mar 2011 10:00:46 -0700
-Message-Id: <1301331653-26265-15-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1301331653-26265-1-git-send-email-kys@microsoft.com>
-References: <1301331615-26226-1-git-send-email-kys@microsoft.com>
- <1301331653-26265-1-git-send-email-kys@microsoft.com>
+	id S1754715Ab1C1Q5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:57:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52445 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752409Ab1C1Q5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 12:57:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,256,1299484800"; 
+   d="scan'208";a="619971564"
+From: Andi Kleen <andi@firstfloor.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH]mmap: add alignment for some variables
+References: <1301277536.3981.27.camel@sli10-conroe>
+Date: Mon, 28 Mar 2011 09:55:47 -0700
+In-Reply-To: <1301277536.3981.27.camel@sli10-conroe> (Shaohua Li's message of
+	"Mon, 28 Mar 2011 09:58:56 +0800")
+Message-ID: <m2oc4v18x8.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration of blkvsc_revalidate_disk() by moving
-the code around.
+Shaohua Li <shaohua.li@intel.com> writes:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/blkvsc_drv.c |   32 +++++++++++++++-----------------
- 1 files changed, 15 insertions(+), 17 deletions(-)
+> Make some variables have correct alignment.
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 86a7587..5079859 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -858,9 +858,23 @@ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
- 	return 0;
- }
- 
-+static int blkvsc_revalidate_disk(struct gendisk *gd)
-+{
-+	struct block_device_context *blkdev = gd->private_data;
-+
-+	DPRINT_DBG(BLKVSC_DRV, "- enter\n");
-+
-+	if (blkdev->device_type == DVD_TYPE) {
-+		blkvsc_do_read_capacity(blkdev);
-+		set_capacity(blkdev->gd, blkdev->capacity *
-+			    (blkdev->sector_size/512));
-+		blk_queue_logical_block_size(gd->queue, blkdev->sector_size);
-+	}
-+	return 0;
-+}
-+
- /* Static decl */
- static int blkvsc_probe(struct device *dev);
--static int blkvsc_revalidate_disk(struct gendisk *gd);
- static void blkvsc_request(struct request_queue *queue);
- static void blkvsc_request_completion(struct hv_storvsc_request *request);
- static int blkvsc_do_request(struct block_device_context *blkdev,
-@@ -1509,22 +1523,6 @@ static void blkvsc_request(struct request_queue *queue)
- 	}
- }
- 
--
--static int blkvsc_revalidate_disk(struct gendisk *gd)
--{
--	struct block_device_context *blkdev = gd->private_data;
--
--	DPRINT_DBG(BLKVSC_DRV, "- enter\n");
--
--	if (blkdev->device_type == DVD_TYPE) {
--		blkvsc_do_read_capacity(blkdev);
--		set_capacity(blkdev->gd, blkdev->capacity *
--			    (blkdev->sector_size/512));
--		blk_queue_logical_block_size(gd->queue, blkdev->sector_size);
--	}
--	return 0;
--}
--
- static int __init blkvsc_init(void)
- {
- 	int ret;
+Nit: __read_mostly doesn't change alignment, just the section.
+Please fix the description. Other than that it looks good.
+
+-Andi
+
 -- 
-1.7.4.1
-
+ak@linux.intel.com -- Speaking for myself only
