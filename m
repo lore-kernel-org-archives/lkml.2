@@ -1,125 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab1C1GMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 02:12:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52434 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545Ab1C1GMU (ORCPT
+	id S1752194Ab1C1GMk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 02:12:40 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:56303 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab1C1GM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 02:12:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=lmnZvaqzoP1q0jwARCWKDDBa1/RQ801kMFXQZ2jt5FvZnpZpLpkVBYrTm/Ne58u8Fu
-         rtaxHYz/cQjfwVcNBE/F6BGYCgrgWAvtavrxoqHVu8o/p2lyGB4rryZfMv5MRagMR8H/
-         y9OBifScd6Im5RyiQFdGE5gFP1ITB9rT2d5i4=
-Date: Sun, 27 Mar 2011 23:12:14 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jeffrey Brown <jeffbrown@android.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] input: evdev: only wake poll on EV_SYN
-Message-ID: <20110328061214.GD31692@core.coreip.homeip.net>
-References: <1300842244-42723-1-git-send-email-jeffbrown@android.com>
- <1300842244-42723-5-git-send-email-jeffbrown@android.com>
- <20110325074920.GF2590@core.coreip.homeip.net>
- <AANLkTikTOEimVER8eWT7yTUe7+4QS5epQWUAnoJD=B+=@mail.gmail.com>
+	Mon, 28 Mar 2011 02:12:26 -0400
+Message-ID: <4D9026C8.6060905@cs.helsinki.fi>
+Date: Mon, 28 Mar 2011 09:12:24 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikTOEimVER8eWT7yTUe7+4QS5epQWUAnoJD=B+=@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Lameter <cl@linux.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
+        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, tj@kernel.org
+Subject: Re: [PATCH] slub: Disable the lockless allocator
+References: <alpine.DEB.2.00.1103221635400.4521@tiger> <20110324142146.GA11682@elte.hu> <alpine.DEB.2.00.1103240940570.32226@router.home> <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com> <20110324172653.GA28507@elte.hu> <20110324185258.GA28370@elte.hu> <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6> <20110324192247.GA5477@elte.hu> <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com> <20110326112725.GA28612@elte.hu> <20110326114736.GA8251@elte.hu> <1301161507.2979.105.camel@edumazet-laptop> <alpine.DEB.2.00.1103261406420.24195@router.home> <alpine.DEB.2.00.1103261428200.25375@router.home> <alpine.DEB.2.00.1103261440160.25375@router.home> <AANLkTinTzKQkRcE2JvP_BpR0YMj82gppAmNo7RqgftCG@mail.gmail.com> <alpine.DEB.2.00.1103262028170.1004@router.home> <alpine.DEB.2.00.1103262054410.1373@router.home>
+In-Reply-To: <alpine.DEB.2.00.1103262054410.1373@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First of all - please do not top post.
+On 3/27/11 4:57 AM, Christoph Lameter wrote:
+> But then the same fix must also be used in the asm code or the fallback
+> (turns out that the fallback is always used in kmem_cache_init since
+> the instruction patching comes later).
+>
+> Patch boots fine both in UP and SMP mode
+>
+>
+>
+>
+> Subject: percpu: Omit segment prefix in the UP case for cmpxchg_double
+>
+> Omit the segment prefix in the UP case. GS is not used then
+> and we will generate segfaults if cmpxchg16b is used otherwise.
+>
+> Signed-off-by: Linus Torvalds<torvalds@linux-foundation.org>
+> Signed-off-by: Christoph Lameter<cl@linux.com>
+>
+>   arch/x86/include/asm/percpu.h |   10 ++++++----
+>   1 files changed, 6 insertions(+), 4 deletions(-)
+>
+> Index: linux-2.6/arch/x86/include/asm/percpu.h
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/include/asm/percpu.h	2011-03-26 20:43:03.994089001 -0500
+> +++ linux-2.6/arch/x86/include/asm/percpu.h	2011-03-26 20:43:22.414089004 -0500
+> @@ -45,7 +45,7 @@
+>   #include<linux/stringify.h>
+>
+>   #ifdef CONFIG_SMP
+> -#define __percpu_arg(x)		"%%"__stringify(__percpu_seg)":%P" #x
+> +#define __percpu_prefix		"%%"__stringify(__percpu_seg)":"
+>   #define __my_cpu_offset		percpu_read(this_cpu_off)
+>
+>   /*
+> @@ -62,9 +62,11 @@
+>   	(typeof(*(ptr)) __kernel __force *)tcp_ptr__;	\
+>   })
+>   #else
+> -#define __percpu_arg(x)		"%P" #x
+> +#define __percpu_prefix		""
+>   #endif
+>
+> +#define __percpu_arg(x)		__percpu_prefix "%P" #x
+> +
+>   /*
+>    * Initialized pointers to per-cpu variables needed for the boot
+>    * processor need to use these macros to get the proper address
+> @@ -516,11 +518,11 @@
+>   	typeof(o2) __n2 = n2;						\
+>   	typeof(o2) __dummy;						\
+>   	alternative_io("call this_cpu_cmpxchg16b_emu\n\t" P6_NOP4,	\
+> -		       "cmpxchg16b %%gs:(%%rsi)\n\tsetz %0\n\t",	\
+> +		       "cmpxchg16b " __percpu_prefix "(%%rsi)\n\tsetz %0\n\t",	\
+>   		       X86_FEATURE_CX16,				\
+>   		       ASM_OUTPUT2("=a"(__ret), "=d"(__dummy)),		\
+>   		       "S" (&pcp1), "b"(__n1), "c"(__n2),		\
+> -		       "a"(__o1), "d"(__o2));				\
+> +		       "a"(__o1), "d"(__o2) : "memory");		\
+>   	__ret;								\
+>   })
+>
+> Index: linux-2.6/arch/x86/lib/cmpxchg16b_emu.S
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/lib/cmpxchg16b_emu.S	2011-03-26 20:43:57.384089004 -0500
+> +++ linux-2.6/arch/x86/lib/cmpxchg16b_emu.S	2011-03-26 20:48:42.684088999 -0500
+> @@ -10,6 +10,12 @@
+>   #include<asm/frame.h>
+>   #include<asm/dwarf2.h>
+>
+> +#ifdef CONFIG_SMP
+> +#define SEG_PREFIX %gs:
+> +#else
+> +#define SEG_PREFIX
+> +#endif
+> +
+>   .text
+>
+>   /*
+> @@ -37,13 +43,13 @@
+>   	pushf
+>   	cli
+>
+> -	cmpq %gs:(%rsi), %rax
+> +	cmpq SEG_PREFIX(%rsi), %rax
+>   	jne not_same
+> -	cmpq %gs:8(%rsi), %rdx
+> +	cmpq SEG_PREFIX 8(%rsi), %rdx
+>   	jne not_same
+>
+> -	movq %rbx, %gs:(%rsi)
+> -	movq %rcx, %gs:8(%rsi)
+> +	movq %rbx, SEG_PREFIX(%rsi)
+> +	movq %rcx, SEG_PREFIX 8(%rsi)
+>
+>   	popf
+>   	mov $1, %al
 
-On Fri, Mar 25, 2011 at 04:03:18PM -0700, Jeffrey Brown wrote:
-> It helps with every packet.  I have seen situations where user space
-> somehow manages to read events faster than the driver enqueues them.
-> 
-> Pseudo-code basic processing loop:
-> 
-> struct input_event buffer[100];
-> for (;;) {
->     poll(...);
->     count = read(fd, buffer, sizeof(buffer) / sizeof(buffer[0]));
+Tejun, does this look good to you as well? I think it should go through 
+the percpu tree. It's needed to fix a boot crash with lockless SLUB 
+fastpaths enabled.
 
-I hope this is simply a typo in pseudo-code - read takes size in bytes,
-not in number of structures.
+                 Pekka
 
->     process(buffer, count / sizeof(buffer[0]));
-> }
-> 
-> I've seen cases on a dual-core ARM processor where instead of reading
-> a block of 71 events all at once, it ends up reading 1 event after
-> another 71 times.  CPU usage for the reading thread climbs to 35%
-> whereas it should be less than 5%.
-> 
-> The problem is that poll() wakes up after the first event becomes
-> available.  So the reader wakes up, promptly reads the event and goes
-> back to sleep waiting for the next one.  Of course nothing useful
-> happens until a SYN_REPORT arrives to complete the packet.
-
-Unfortunately your change fixes only first packet, like I mentioned.
-Consider the following scenario:
-
- - input core delivers events, we postpone waking up waiters
-   till we get EV_SYN/SYN_REPORT;
- - userspace is waken and consumes entire packet;
- - in the meantime input core delivered 3 more events;
- - userpsace executes poll;
- - kernel adds the process to poll waiters list (poll_wait() call in
-   evdev_poll();
- - evdev_poll() checks the condition, sees that there are events and
-   signals that the data is ready even though we did not accumulate
-   full event packet.
-
-Hence your fix did not reliably fix the issue you are seeing.
-
-> 
-> Adding a usleep(100) after the poll() is enough to allow the driver
-> time to finish writing the packet into the evdev ring buffer before
-> the reader tries to read it.  In that case, we mostly read complete 71
-> event packets although sometimes the 100us sleep isn't enough so we
-> end up reading half a packet instead of the whole thing, eg. 28 events
-> + 43 events.
-> 
-> Instead it would be better if the poll() didn't wake up until a
-> complete packet is available for reading all at once.
-
-Unfortunately poll() does not know the intent of userspace program -
-will it try to consume the whole event or will it work in poll/read one
-event/poll again mode. In this case you really do not want to delay
-reading till next EV_SYN comes along.
-
-We might entertain notion of not considering device readable unless
-there is a sync event that has not been consumed, but this is
-significant change in semantics and we need much more consideration.
-
-> 
-> Jeff.
-> 
-> On Fri, Mar 25, 2011 at 12:49 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > On Tue, Mar 22, 2011 at 06:04:04PM -0700, Jeff Brown wrote:
-> >> On SMP systems, it is possible for an evdev client blocked on poll()
-> >> to wake up and read events from the evdev ring buffer at the same
-> >> rate as they are enqueued.  This can result in high CPU usage,
-> >> particularly for MT devices, because the client ends up reading
-> >> events one at a time instead of reading complete packets.  This patch
-> >> ensures that the client only wakes from poll() when a complete packet
-> >> is ready to be read.
-> >
-> > Doesn't this only help with very first packet after a pause in event
-> > stream?
-> >
-> > --
-> > Dmitry
-> >
-
--- 
-Dmitry
