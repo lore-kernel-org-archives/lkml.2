@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab1C1SI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 14:08:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43283 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755296Ab1C1SI1 (ORCPT
+	id S1755366Ab1C1SIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 14:08:41 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:33630 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751556Ab1C1SIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 14:08:27 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andy Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [GIT PULL 0/1] perf/urgent fix
-Date: Mon, 28 Mar 2011 15:07:50 -0300
-Message-Id: <1301335671-22897-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 28 Mar 2011 14:08:38 -0400
+Subject: Re: [PATCH V13 4/4] ptp: Added a clock driver for the National
+ Semiconductor PHYTER.
+From: John Stultz <john.stultz@linaro.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <3ecd2d805a96324a04d3b231b16f21e2b5cda0e6.1301206090.git.richard.cochran@omicron.at>
+References: <cover.1301206090.git.richard.cochran@omicron.at>
+	 <3ecd2d805a96324a04d3b231b16f21e2b5cda0e6.1301206090.git.richard.cochran@omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Mar 2011 11:08:27 -0700
+Message-ID: <1301335707.21829.3.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Sun, 2011-03-27 at 08:39 +0200, Richard Cochran wrote:
+> This patch adds support for the PTP clock found on the DP83640.
+> The basic clock operations and one external time stamp have
+> been implemented.
+> 
+> Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
 
-        Please consider pulling from:
+Acked-by: John Stultz <john.stultz@linaro.org>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
 
-	I need to go over symbol.c to clean up the way the long name
-is set/freed, but Andrew's solves a real problem and thus I think it
-should go in now.
-
-Regards,
-
-- Arnaldo
-
-Andrew Lutomirski (1):
-  perf symbols: Fix vsyscall symbol lookup
-
- tools/perf/util/event.c  |    2 +-
- tools/perf/util/symbol.c |    3 +++
- 2 files changed, 4 insertions(+), 1 deletions(-)
 
