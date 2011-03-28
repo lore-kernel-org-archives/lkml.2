@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab1C1GoB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 02:44:01 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:46086 "EHLO mx2.fusionio.com"
+	id S1752643Ab1C1Go1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 02:44:27 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:36706 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140Ab1C1GoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 02:44:00 -0400
-X-ASG-Debug-ID: 1301294639-01de284cf8c6ca0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D902E2C.2010701@fusionio.com>
-Date: Mon, 28 Mar 2011 08:43:56 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1751140Ab1C1Go0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 02:44:26 -0400
+Date: Sun, 27 Mar 2011 23:43:33 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, J Keerthy <j-keerthy@ti.com>,
+        Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 3/3] hwmon: twl4030-madc-hwmon: add "platform:" prefix
+ for platform modalias
+Message-ID: <20110328064333.GA3890@ericsson.com>
+References: <1299466949.3879.0.camel@mola>
+ <1299467133.3879.5.camel@mola>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] block drivers for 2.6.39-rc
-References: <4D8E36CC.7080707@fusionio.com>	<20110328042311.GA15481@elte.hu>	<AANLkTik3GZ0b5S7p4ONQu4Hb8LoKewmMJ7_J5zvumYD-@mail.gmail.com> <20110328160812.b4d19eb5.sfr@canb.auug.org.au>
-X-ASG-Orig-Subj: Re: [GIT PULL] block drivers for 2.6.39-rc
-In-Reply-To: <20110328160812.b4d19eb5.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1301294639
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.50
-X-Barracuda-Spam-Status: No, SCORE=0.50 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_RULE7568M
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59190
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.50 BSF_RULE7568M          Custom Rule 7568M
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1299467133.3879.5.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-28 07:08, Stephen Rothwell wrote:
-> Hi Linus, Ingo,
+On Mon, Mar 07, 2011 at 11:05:33AM +0800, Axel Lin wrote:
+> Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
+> with "platform:"), the platform modalias is prefixed with "platform:".
 > 
-> On Sun, 27 Mar 2011 21:37:50 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
->>
->> On Sun, Mar 27, 2011 at 9:23 PM, Ingo Molnar <mingo@elte.hu> wrote:
->>>
->>> This driver does not build at all:
->>>
->>>  drivers/block/drbd/drbd_bitmap.c:1187:5: error: implicit declaration of function ‘generic_find_next_zero_le_bit’ [-Werror=implicit-function-declaration]
->>>  drivers/block/drbd/drbd_bitmap.c:1190:5: error: implicit declaration of function ‘generic_find_next_le_bit’ [-Werror=implicit-function-declaration]
->>>  drivers/block/drbd/drbd_bitmap.c:1290:4: error: implicit declaration of function ‘generic___test_and_set_le_bit’ [-Werror=implicit-function-declaration]
->>>  drivers/block/drbd/drbd_bitmap.c:1292:4: error: implicit declaration of function ‘generic___test_and_clear_le_bit’ [-Werror=implicit-function-declaration]
->>>  drivers/block/drbd/drbd_bitmap.c:1441:3: error: implicit declaration of function ‘generic_test_le_bit’ [-Werror=implicit-function-declaration]
->>>
->>> Has this been build-tested? These APIs do not exist upstream.
->>
->> Actually, I think that's just a merge error - those horrible nasty
->> crazy names did use to exist.
->>
->> Does this fix it? (Untested!)
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Cc: J Keerthy <j-keerthy@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+
+Looks like this fell through the cracks. Applied.
+
+Thanks,
+Guenter
+
+> ---
+>  drivers/hwmon/twl4030-madc-hwmon.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> You also need to remove the include of asm-generic/bitops/le.h from that
-> file now (the easiest way is to revert commit f0ff1357ce39 ("drbd: need
-> include for bitops functions declarations").
+> diff --git a/drivers/hwmon/twl4030-madc-hwmon.c b/drivers/hwmon/twl4030-madc-hwmon.c
+> index 97e22be..de58191 100644
+> --- a/drivers/hwmon/twl4030-madc-hwmon.c
+> +++ b/drivers/hwmon/twl4030-madc-hwmon.c
+> @@ -154,4 +154,4 @@ module_exit(twl4030_madc_hwmon_exit);
+>  MODULE_DESCRIPTION("TWL4030 ADC Hwmon driver");
+>  MODULE_LICENSE("GPL");
+>  MODULE_AUTHOR("J Keerthy");
+> -MODULE_ALIAS("twl4030_madc_hwmon");
+> +MODULE_ALIAS("platform:twl4030_madc_hwmon");
+> -- 
+> 1.7.2
 > 
-> Jens was informed about these problems when they appeared in linux-next.
-
-Yes, and I merged your patch to fixup the build (on PPC, as I recall).
-
--- 
-Jens Axboe
-
+> 
+> 
+> 
