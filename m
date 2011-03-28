@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab1C1C4J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 22:56:09 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51143 "EHLO song.cn.fujitsu.com"
+	id S1753877Ab1C1C4t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 22:56:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61172 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753271Ab1C1C4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 22:56:07 -0400
-Message-ID: <4D8FF93B.7010109@cn.fujitsu.com>
-Date: Mon, 28 Mar 2011 10:58:03 +0800
+	id S1753541Ab1C1C4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 22:56:48 -0400
+Message-ID: <4D8FF963.6080208@cn.fujitsu.com>
+Date: Mon, 28 Mar 2011 10:58:43 +0800
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
@@ -21,14 +21,14 @@ To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
         Christoph Lameter <clameter@sgi.com>, Sam Ravnborg <sam@ravnborg.org>
-Subject: [RFC PATCH 1/5] Move task's RCU code to rcupdate.h
+Subject: [RFC PATCH 2/5] kbuild: dedumplicated the generating code
 References: <4D8FF8AD.5080607@cn.fujitsu.com>
 In-Reply-To: <4D8FF8AD.5080607@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-28 10:54:31,
+ 2011-03-28 10:55:12,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-28 10:54:33,
-	Serialize complete at 2011-03-28 10:54:33
+ 2011-03-28 10:55:16,
+	Serialize complete at 2011-03-28 10:55:16
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,468 +37,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-Add struct task_rcu_struct to make code clearer and move
-them to rcupdate.h which help us for code maitainment.
-
-task_rcu_struct(), current_task_rcu_struct(), task_of_task_rcu() and
-rcu_copy_process() have to be implemented as MACRO,
-it is because we cann't access task's task_rcu_strut
-without linux/sched.h included. These MACROs can only
-be used with linux/sched.h included or used in some other
-MACROs which make this requirement propagate.
-
+cmd_bounds and cmd_offsets are almost the same, dedumplicated them.
+The definition of sed-y is also moved up the top of the file.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- include/linux/init_task.h |   25 +----------------
- include/linux/rcupdate.h  |   68 ++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/sched.h     |   39 +-------------------------
- kernel/rcutiny_plugin.h   |   26 +++++++++--------
- kernel/rcutree_plugin.h   |   37 ++++++++++++------------
- 5 files changed, 102 insertions(+), 93 deletions(-)
+ Kbuild |   60 +++++++++++++++++++++---------------------------------------
+ 1 files changed, 21 insertions(+), 39 deletions(-)
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index caa151f..1749002 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -90,29 +90,6 @@ extern struct group_info init_groups;
-  */
- # define CAP_INIT_BSET  CAP_FULL_SET
+diff --git a/Kbuild b/Kbuild
+index 2114113..5c2ee83 100644
+--- a/Kbuild
++++ b/Kbuild
+@@ -5,19 +5,19 @@
+ # 2) Generate asm-offsets.h (may need bounds.h)
+ # 3) Check for missing system calls
  
--#ifdef CONFIG_RCU_BOOST
--#define INIT_TASK_RCU_BOOST()						\
--	.rcu_boost_mutex = NULL,
--#else
--#define INIT_TASK_RCU_BOOST()
--#endif
--#ifdef CONFIG_TREE_PREEMPT_RCU
--#define INIT_TASK_RCU_TREE_PREEMPT()					\
--	.rcu_blocked_node = NULL,
--#else
--#define INIT_TASK_RCU_TREE_PREEMPT(tsk)
--#endif
--#ifdef CONFIG_PREEMPT_RCU
--#define INIT_TASK_RCU_PREEMPT(tsk)					\
--	.rcu_read_lock_nesting = 0,					\
--	.rcu_read_unlock_special = 0,					\
--	.rcu_node_entry = LIST_HEAD_INIT(tsk.rcu_node_entry),		\
--	INIT_TASK_RCU_TREE_PREEMPT()					\
--	INIT_TASK_RCU_BOOST()
--#else
--#define INIT_TASK_RCU_PREEMPT(tsk)
--#endif
+-#####
+-# 1) Generate bounds.h
 -
- extern struct cred init_cred;
- 
- #ifdef CONFIG_PERF_EVENTS
-@@ -191,7 +168,7 @@ extern struct cred init_cred;
- 	INIT_LOCKDEP							\
- 	INIT_FTRACE_GRAPH						\
- 	INIT_TRACE_RECURSION						\
--	INIT_TASK_RCU_PREEMPT(tsk)					\
-+	.task_rcu_struct = INIT_TASK_RCU_STRUCT(tsk.task_rcu_struct),	\
- }
- 
- 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 8037493..3500138 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -80,6 +80,72 @@ static inline void __rcu_read_unlock_bh(void)
- 	local_bh_enable();
- }
- 
-+/* Special flags for preemptible RCU */
-+#define RCU_READ_UNLOCK_BLOCKED (1 << 0) /* blocked while in RCU read-side. */
-+#define RCU_READ_UNLOCK_BOOSTED (1 << 1) /* boosted while in RCU read-side. */
-+#define RCU_READ_UNLOCK_NEED_QS (1 << 2) /* RCU core needs CPU response. */
-+
-+struct task_struct;
-+
-+struct task_rcu_struct {
-+#ifdef CONFIG_PREEMPT_RCU
-+	int rcu_read_lock_nesting;
-+	char rcu_read_unlock_special;
-+	struct list_head rcu_node_entry;
-+#ifdef CONFIG_TREE_PREEMPT_RCU
-+	struct rcu_node *rcu_blocked_node;
-+#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-+#ifdef CONFIG_RCU_BOOST
-+	struct rt_mutex *rcu_boost_mutex;
-+#endif /* #ifdef CONFIG_RCU_BOOST */
-+#endif /* #ifdef CONFIG_PREEMPT_RCU */
-+};
-+
-+#ifdef CONFIG_RCU_BOOST
-+#define INIT_TASK_RCU_BOOST()						\
-+	.rcu_boost_mutex = NULL,
-+#else
-+#define INIT_TASK_RCU_BOOST()
-+#endif
-+#ifdef CONFIG_TREE_PREEMPT_RCU
-+#define INIT_TASK_RCU_TREE_PREEMPT()					\
-+	.rcu_blocked_node = NULL,
-+#else
-+#define INIT_TASK_RCU_TREE_PREEMPT(tsk)
-+#endif
-+#ifdef CONFIG_PREEMPT_RCU
-+#define INIT_TASK_RCU_STRUCT(task_rcu) {				\
-+		.rcu_read_lock_nesting = 0,				\
-+		.rcu_read_unlock_special = 0,				\
-+		.rcu_node_entry = LIST_HEAD_INIT(task_rcu.rcu_node_entry),\
-+		INIT_TASK_RCU_TREE_PREEMPT()				\
-+		INIT_TASK_RCU_BOOST()					\
-+	}
-+#else
-+#define INIT_TASK_RCU_STRUCT(tsk)
-+#endif
-+
-+static inline void init_task_rcu_struct(struct task_rcu_struct *task_rcu)
-+{
-+#ifdef CONFIG_PREEMPT_RCU
-+	task_rcu->rcu_read_lock_nesting = 0;
-+	task_rcu->rcu_read_unlock_special = 0;
-+	INIT_LIST_HEAD(&task_rcu->rcu_node_entry);
-+#ifdef CONFIG_TREE_PREEMPT_RCU
-+	task_rcu->rcu_blocked_node = NULL;
-+#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-+#ifdef CONFIG_RCU_BOOST
-+	task_rcu->rcu_boost_mutex = NULL;
-+#endif /* #ifdef CONFIG_RCU_BOOST */
-+#endif
-+}
-+
-+#define task_rcu_struct(t) (&(t)->task_rcu_struct)
-+#define current_task_rcu_struct() task_rcu_struct(current)
-+#define task_of_task_rcu(task_rcu) container_of(task_rcu, struct task_struct,\
-+				   task_rcu_struct)
-+#define rcu_copy_process(tsk) init_task_rcu_struct(task_rcu_struct(tsk))
-+
- #ifdef CONFIG_PREEMPT_RCU
- 
- extern void __rcu_read_lock(void);
-@@ -92,7 +158,7 @@ void synchronize_rcu(void);
-  * nesting depth, but makes sense only if CONFIG_PREEMPT_RCU -- in other
-  * types of kernel builds, the rcu_read_lock() nesting depth is unknowable.
-  */
--#define rcu_preempt_depth() (current->rcu_read_lock_nesting)
-+#define rcu_preempt_depth() (current_task_rcu_struct()->rcu_read_lock_nesting)
- 
- #else /* #ifdef CONFIG_PREEMPT_RCU */
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 777d8a5..8b359f3 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1232,17 +1232,7 @@ struct task_struct {
- 	unsigned int policy;
- 	cpumask_t cpus_allowed;
- 
--#ifdef CONFIG_PREEMPT_RCU
--	int rcu_read_lock_nesting;
--	char rcu_read_unlock_special;
--	struct list_head rcu_node_entry;
--#endif /* #ifdef CONFIG_PREEMPT_RCU */
--#ifdef CONFIG_TREE_PREEMPT_RCU
--	struct rcu_node *rcu_blocked_node;
--#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
--#ifdef CONFIG_RCU_BOOST
--	struct rt_mutex *rcu_boost_mutex;
--#endif /* #ifdef CONFIG_RCU_BOOST */
-+	struct task_rcu_struct task_rcu_struct;
- 
- #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
- 	struct sched_info sched_info;
-@@ -1772,33 +1762,6 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
- #define used_math() tsk_used_math(current)
- 
--#ifdef CONFIG_PREEMPT_RCU
+-bounds-file := include/generated/bounds.h
 -
--#define RCU_READ_UNLOCK_BLOCKED (1 << 0) /* blocked while in RCU read-side. */
--#define RCU_READ_UNLOCK_BOOSTED (1 << 1) /* boosted while in RCU read-side. */
--#define RCU_READ_UNLOCK_NEED_QS (1 << 2) /* RCU core needs CPU response. */
--
--static inline void rcu_copy_process(struct task_struct *p)
--{
--	p->rcu_read_lock_nesting = 0;
--	p->rcu_read_unlock_special = 0;
--#ifdef CONFIG_TREE_PREEMPT_RCU
--	p->rcu_blocked_node = NULL;
--#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
--#ifdef CONFIG_RCU_BOOST
--	p->rcu_boost_mutex = NULL;
--#endif /* #ifdef CONFIG_RCU_BOOST */
--	INIT_LIST_HEAD(&p->rcu_node_entry);
--}
--
--#else
--
--static inline void rcu_copy_process(struct task_struct *p)
--{
--}
--
--#endif
--
- #ifdef CONFIG_SMP
- extern int set_cpus_allowed_ptr(struct task_struct *p,
- 				const struct cpumask *new_mask);
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index f259c67..425e892 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -150,7 +150,7 @@ static int rcu_cpu_blocking_cur_gp(void)
-  */
- static int rcu_preempt_running_reader(void)
- {
--	return current->rcu_read_lock_nesting;
-+	return current_task_rcu_struct()->rcu_read_lock_nesting;
- }
+-always  := $(bounds-file)
+-targets := $(bounds-file) kernel/bounds.s
++# Default sed regexp - multiline due to syntax constraints
++define sed-y
++	"/^->/{s:->#\(.*\):/* \1 */:; \
++	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
++	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
++	s:->::; p;}"
++endef
  
- /*
-@@ -192,7 +192,7 @@ static int rcu_preempt_gp_in_progress(void)
-  * Advance a ->blkd_tasks-list pointer to the next entry, instead
-  * returning NULL if at the end of the list.
-  */
--static struct list_head *rcu_next_node_entry(struct task_struct *t)
-+static struct list_head *rcu_next_node_entry(struct task_rcu_struct *t)
- {
- 	struct list_head *np;
+-quiet_cmd_bounds = GEN     $@
+-define cmd_bounds
++quiet_cmd_kbuild_gen = GEN     $@
++define cmd_kbuild_gen
+ 	(set -e; \
+-	 echo "#ifndef __LINUX_BOUNDS_H__"; \
+-	 echo "#define __LINUX_BOUNDS_H__"; \
++	 echo "#ifndef __$$(echo $@ | tr -- '-./a-z' '___A-Z')__"; \
++	 echo "#define __$$(echo $@ | tr -- '-./a-z' '___A-Z')__"; \
+ 	 echo "/*"; \
+ 	 echo " * DO NOT MODIFY."; \
+ 	 echo " *"; \
+@@ -30,6 +30,14 @@ define cmd_bounds
+ 	 echo "#endif" ) > $@
+ endef
  
-@@ -255,7 +255,7 @@ static int rcu_boost(void)
- {
- 	unsigned long flags;
- 	struct rt_mutex mtx;
--	struct task_struct *t;
-+	struct task_rcu_struct *t;
- 	struct list_head *tb;
- 
- 	if (rcu_preempt_ctrlblk.boost_tasks == NULL &&
-@@ -298,8 +298,8 @@ static int rcu_boost(void)
- 	 * simply acquiring this artificial rt_mutex will boost task
- 	 * t's priority.  (Thanks to tglx for suggesting this approach!)
- 	 */
--	t = container_of(tb, struct task_struct, rcu_node_entry);
--	rt_mutex_init_proxy_locked(&mtx, t);
-+	t = container_of(tb, struct task_rcu_struct, rcu_node_entry);
-+	rt_mutex_init_proxy_locked(&mtx, task_of_task_rcu(t));
- 	t->rcu_boost_mutex = &mtx;
- 	t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BOOSTED;
- 	raw_local_irq_restore(flags);
-@@ -402,9 +402,11 @@ static void rcu_preempt_boost_start_gp(void)
-  */
- static void rcu_preempt_cpu_qs(void)
- {
-+	struct task_rcu_struct *t = current_task_rcu_struct();
++#####
++# 1) Generate bounds.h
 +
- 	/* Record both CPU and task as having responded to current GP. */
- 	rcu_preempt_ctrlblk.gpcpu = rcu_preempt_ctrlblk.gpnum;
--	current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
-+	t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
++bounds-file := include/generated/bounds.h
++
++always  := $(bounds-file)
++targets := $(bounds-file) kernel/bounds.s
++
+ # We use internal kbuild rules to avoid the "is up to date" message from make
+ kernel/bounds.s: kernel/bounds.c FORCE
+ 	$(Q)mkdir -p $(dir $@)
+@@ -37,7 +45,7 @@ kernel/bounds.s: kernel/bounds.c FORCE
  
- 	/* If there is no GP then there is nothing more to do.  */
- 	if (!rcu_preempt_gp_in_progress())
-@@ -473,7 +475,7 @@ static void rcu_preempt_start_gp(void)
-  */
- void rcu_preempt_note_context_switch(void)
- {
--	struct task_struct *t = current;
-+	struct task_rcu_struct *t = current_task_rcu_struct();
- 	unsigned long flags;
+ $(obj)/$(bounds-file): kernel/bounds.s Kbuild
+ 	$(Q)mkdir -p $(dir $@)
+-	$(call cmd,bounds)
++	$(call cmd,kbuild_gen)
  
- 	local_irq_save(flags); /* must exclude scheduler_tick(). */
-@@ -518,7 +520,7 @@ void rcu_preempt_note_context_switch(void)
-  */
- void __rcu_read_lock(void)
- {
--	current->rcu_read_lock_nesting++;
-+	current_task_rcu_struct()->rcu_read_lock_nesting++;
- 	barrier();  /* needed if we ever invoke rcu_read_lock in rcutiny.c */
- }
- EXPORT_SYMBOL_GPL(__rcu_read_lock);
-@@ -528,7 +530,7 @@ EXPORT_SYMBOL_GPL(__rcu_read_lock);
-  * notify RCU core processing or task having blocked during the RCU
-  * read-side critical section.
-  */
--static void rcu_read_unlock_special(struct task_struct *t)
-+static void rcu_read_unlock_special(struct task_rcu_struct *t)
- {
- 	int empty;
- 	int empty_exp;
-@@ -617,7 +619,7 @@ static void rcu_read_unlock_special(struct task_struct *t)
-  */
- void __rcu_read_unlock(void)
- {
--	struct task_struct *t = current;
-+	struct task_rcu_struct *t = current_task_rcu_struct();
+ #####
+ # 2) Generate asm-offsets.h
+@@ -49,32 +57,6 @@ always  += $(offsets-file)
+ targets += $(offsets-file)
+ targets += arch/$(SRCARCH)/kernel/asm-offsets.s
  
- 	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutiny.c */
- 	--t->rcu_read_lock_nesting;
-@@ -640,7 +642,7 @@ EXPORT_SYMBOL_GPL(__rcu_read_unlock);
-  */
- static void rcu_preempt_check_callbacks(void)
- {
--	struct task_struct *t = current;
-+	struct task_rcu_struct *t = current_task_rcu_struct();
+-
+-# Default sed regexp - multiline due to syntax constraints
+-define sed-y
+-	"/^->/{s:->#\(.*\):/* \1 */:; \
+-	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
+-	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
+-	s:->::; p;}"
+-endef
+-
+-quiet_cmd_offsets = GEN     $@
+-define cmd_offsets
+-	(set -e; \
+-	 echo "#ifndef __ASM_OFFSETS_H__"; \
+-	 echo "#define __ASM_OFFSETS_H__"; \
+-	 echo "/*"; \
+-	 echo " * DO NOT MODIFY."; \
+-	 echo " *"; \
+-	 echo " * This file was generated by Kbuild"; \
+-	 echo " *"; \
+-	 echo " */"; \
+-	 echo ""; \
+-	 sed -ne $(sed-y) $<; \
+-	 echo ""; \
+-	 echo "#endif" ) > $@
+-endef
+-
+ # We use internal kbuild rules to avoid the "is up to date" message from make
+ arch/$(SRCARCH)/kernel/asm-offsets.s: arch/$(SRCARCH)/kernel/asm-offsets.c \
+                                       $(obj)/$(bounds-file) FORCE
+@@ -82,7 +64,7 @@ arch/$(SRCARCH)/kernel/asm-offsets.s: arch/$(SRCARCH)/kernel/asm-offsets.c \
+ 	$(call if_changed_dep,cc_s_c)
  
- 	if (rcu_preempt_gp_in_progress() &&
- 	    (!rcu_preempt_running_reader() ||
-@@ -841,7 +843,7 @@ int rcu_preempt_needs_cpu(void)
-  */
- void exit_rcu(void)
- {
--	struct task_struct *t = current;
-+	struct task_rcu_struct *t = current_task_rcu_struct();
+ $(obj)/$(offsets-file): arch/$(SRCARCH)/kernel/asm-offsets.s Kbuild
+-	$(call cmd,offsets)
++	$(call cmd,kbuild_gen)
  
- 	if (t->rcu_read_lock_nesting == 0)
- 		return;
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 6d6079c..88a12d4 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -120,11 +120,12 @@ EXPORT_SYMBOL_GPL(rcu_force_quiescent_state);
- static void rcu_preempt_qs(int cpu)
- {
- 	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
-+	struct task_rcu_struct *t = current_task_rcu_struct();
- 
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
--	current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
-+	t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
- }
- 
- /*
-@@ -142,7 +143,7 @@ static void rcu_preempt_qs(int cpu)
-  */
- static void rcu_preempt_note_context_switch(int cpu)
- {
--	struct task_struct *t = current;
-+	struct task_rcu_struct *t = current_task_rcu_struct();
- 	unsigned long flags;
- 	struct rcu_data *rdp;
- 	struct rcu_node *rnp;
-@@ -213,7 +214,7 @@ static void rcu_preempt_note_context_switch(int cpu)
-  */
- void __rcu_read_lock(void)
- {
--	current->rcu_read_lock_nesting++;
-+	current_task_rcu_struct()->rcu_read_lock_nesting++;
- 	barrier();  /* needed if we ever invoke rcu_read_lock in rcutree.c */
- }
- EXPORT_SYMBOL_GPL(__rcu_read_lock);
-@@ -268,7 +269,7 @@ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp, unsigned long flags)
-  * Advance a ->blkd_tasks-list pointer to the next entry, instead
-  * returning NULL if at the end of the list.
-  */
--static struct list_head *rcu_next_node_entry(struct task_struct *t,
-+static struct list_head *rcu_next_node_entry(struct task_rcu_struct *t,
- 					     struct rcu_node *rnp)
- {
- 	struct list_head *np;
-@@ -284,7 +285,7 @@ static struct list_head *rcu_next_node_entry(struct task_struct *t,
-  * notify RCU core processing or task having blocked during the RCU
-  * read-side critical section.
-  */
--static void rcu_read_unlock_special(struct task_struct *t)
-+static void rcu_read_unlock_special(struct task_rcu_struct *t)
- {
- 	int empty;
- 	int empty_exp;
-@@ -384,7 +385,7 @@ static void rcu_read_unlock_special(struct task_struct *t)
-  */
- void __rcu_read_unlock(void)
- {
--	struct task_struct *t = current;
-+	struct task_rcu_struct *t = current_task_rcu_struct();
- 
- 	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
- 	--t->rcu_read_lock_nesting;
-@@ -407,15 +408,15 @@ EXPORT_SYMBOL_GPL(__rcu_read_unlock);
- static void rcu_print_detail_task_stall_rnp(struct rcu_node *rnp)
- {
- 	unsigned long flags;
--	struct task_struct *t;
-+	struct task_rcu_struct *t;
- 
- 	if (!rcu_preempt_blocked_readers_cgp(rnp))
- 		return;
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
- 	t = list_entry(rnp->gp_tasks,
--		       struct task_struct, rcu_node_entry);
-+		       struct task_rcu_struct, rcu_node_entry);
- 	list_for_each_entry_continue(t, &rnp->blkd_tasks, rcu_node_entry)
--		sched_show_task(t);
-+		sched_show_task(task_of_task_rcu(t));
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
- }
- 
-@@ -446,14 +447,14 @@ static void rcu_print_detail_task_stall(struct rcu_state *rsp)
-  */
- static void rcu_print_task_stall(struct rcu_node *rnp)
- {
--	struct task_struct *t;
-+	struct task_rcu_struct *t;
- 
- 	if (!rcu_preempt_blocked_readers_cgp(rnp))
- 		return;
- 	t = list_entry(rnp->gp_tasks,
--		       struct task_struct, rcu_node_entry);
-+		       struct task_rcu_struct, rcu_node_entry);
- 	list_for_each_entry_continue(t, &rnp->blkd_tasks, rcu_node_entry)
--		printk(" P%d", t->pid);
-+		printk(" P%d", task_of_task_rcu(t)->pid);
- }
- 
- /*
-@@ -508,7 +509,7 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
- 	struct list_head *lp_root;
- 	int retval = 0;
- 	struct rcu_node *rnp_root = rcu_get_root(rsp);
--	struct task_struct *t;
-+	struct task_rcu_struct *t;
- 
- 	if (rnp == rnp_root) {
- 		WARN_ONCE(1, "Last CPU thought to be offlined?");
-@@ -581,7 +582,7 @@ static void rcu_preempt_offline_cpu(int cpu)
-  */
- static void rcu_preempt_check_callbacks(int cpu)
- {
--	struct task_struct *t = current;
-+	struct task_rcu_struct *t = current_task_rcu_struct();
- 
- 	if (t->rcu_read_lock_nesting == 0) {
- 		rcu_preempt_qs(cpu);
-@@ -851,7 +852,7 @@ static void __init __rcu_init_preempt(void)
-  */
- void exit_rcu(void)
- {
--	struct task_struct *t = current;
-+	struct task_rcu_struct *t = current_task_rcu_struct();
- 
- 	if (t->rcu_read_lock_nesting == 0)
- 		return;
-@@ -1110,7 +1111,7 @@ static int rcu_boost(struct rcu_node *rnp)
- {
- 	unsigned long flags;
- 	struct rt_mutex mtx;
--	struct task_struct *t;
-+	struct task_rcu_struct *t;
- 	struct list_head *tb;
- 
- 	if (rnp->exp_tasks == NULL && rnp->boost_tasks == NULL)
-@@ -1158,8 +1159,8 @@ static int rcu_boost(struct rcu_node *rnp)
- 	 * and task t's exiting its outermost RCU read-side critical
- 	 * section.
- 	 */
--	t = container_of(tb, struct task_struct, rcu_node_entry);
--	rt_mutex_init_proxy_locked(&mtx, t);
-+	t = container_of(tb, struct task_rcu_struct, rcu_node_entry);
-+	rt_mutex_init_proxy_locked(&mtx, task_of_task_rcu(t));
- 	t->rcu_boost_mutex = &mtx;
- 	t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BOOSTED;
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ #####
+ # 3) Check for missing system calls
 -- 
 1.7.4
-
