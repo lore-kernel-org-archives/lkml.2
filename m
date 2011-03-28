@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab1C1RWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 13:22:08 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:57106
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754889Ab1C1RVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 13:21:34 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 20/22] Staging: hv: Move some definitions/declarations to be earlier in the file
-Date: Mon, 28 Mar 2011 10:00:51 -0700
-Message-Id: <1301331653-26265-20-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1301331653-26265-1-git-send-email-kys@microsoft.com>
-References: <1301331615-26226-1-git-send-email-kys@microsoft.com>
- <1301331653-26265-1-git-send-email-kys@microsoft.com>
+	id S1754830Ab1C1RYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 13:24:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35775 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753192Ab1C1RYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 13:24:45 -0400
+Date: Mon, 28 Mar 2011 19:24:37 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>, linux-pm@lists.linux-foundation.org,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Ondrej Zary <linux@rainbow-software.org>
+Subject: Re: [PATCH] apm: orphan the driver
+In-Reply-To: <1301321667.30628.21.camel@Joe-Laptop>
+Message-ID: <alpine.LNX.2.00.1103281924010.26754@pobox.suse.cz>
+References: <20110326172204.05e52c10.sfr@canb.auug.org.au>  <alpine.LRH.2.00.1103281443240.8162@twin.jikos.cz>  <20110329004438.d9e755ef.sfr@canb.auug.org.au>  <alpine.LNX.2.00.1103281604040.26754@pobox.suse.cz> <1301321667.30628.21.camel@Joe-Laptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move some definitions/declarations to be earlier in the file.
+On Mon, 28 Mar 2011, Joe Perches wrote:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > > > I still have some hardware that uses APM and put a new 2.6 on it time 
+> > > > to time, so I can take this driver over if you want to. According to 
+> > > > git log it's really low effort anyway :)
+> > > If you want it, its yours :-)
+> > Not really fighting for maintaining it actively, but can certainly give it 
+> > some care when necessary.
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> []
+> > @@ -548,8 +548,9 @@ S:	Maintained
+> >  F:	sound/aoa/
+> >  
+> >  APM DRIVER
+> > -L:	linux-laptop@vger.kernel.org
+> > -S:	Orphan
+> > +M:	Jiri Kosina <jkosina@suse.cz>
+> > +L:	linux-kernel@vger.kernel.org
+> 
+> Please don't add L: LKML as it's the default
+> and it could confuse people that read the file
+> and see some sections with LKML and other without
+> and may think that LKML is somehow optional.
+> 
+> > +S:	Maintained
+> 
+> If you're not actively maintaining it, maybe
+> S:	Odd Fixes
+> instead?
+
+Whatever ...
+
+
+
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] APM: take over maintainership
+
+Commit 04a6553f076 ("apm: orphan the driver") Orphaned the APM
+driver as Stephen is not willing/able to maintain it any more.
+
+As I still have some hardware that is using APM and running 2.6,
+I can take it over.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- drivers/staging/hv/blkvsc_drv.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ MAINTAINERS |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index c45677b..95653da 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -124,6 +124,14 @@ static const struct hv_guid g_blk_device_type = {
-  */
- static void blkvsc_request_completion(struct hv_storvsc_request *request);
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8aa1cac..a8f2705 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -548,8 +548,8 @@ S:	Maintained
+ F:	sound/aoa/
  
-+static int blkvsc_ringbuffer_size = BLKVSC_RING_BUFFER_SIZE;
-+
-+/*
-+ * There is a circular dependency involving blkvsc_probe()
-+ * and block_ops.
-+ */
-+static int blkvsc_probe(struct device *dev);
-+
- static int blk_vsc_on_device_add(struct hv_device *device,
- 				void *additional_info)
- {
-@@ -1210,10 +1218,7 @@ static void blkvsc_request(struct request_queue *queue)
- 	}
- }
- 
--/* Static decl */
--static int blkvsc_probe(struct device *dev);
- 
--static int blkvsc_ringbuffer_size = BLKVSC_RING_BUFFER_SIZE;
- module_param(blkvsc_ringbuffer_size, int, S_IRUGO);
- MODULE_PARM_DESC(ring_size, "Ring buffer size (in bytes)");
+ APM DRIVER
+-L:	linux-laptop@vger.kernel.org
+-S:	Orphan
++M:	Jiri Kosina <jkosina@suse.cz>
++S:	Odd Fixes
+ F:	arch/x86/kernel/apm_32.c
+ F:	include/linux/apm_bios.h
  
 -- 
-1.7.4.1
+1.7.3.1
 
