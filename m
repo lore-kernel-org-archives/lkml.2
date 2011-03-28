@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab1C1QmH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:42:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1638 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932075Ab1C1QmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:42:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,256,1299484800"; 
-   d="scan'208";a="672443619"
-Date: Mon, 28 Mar 2011 17:18:49 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Lu Guanqun <guanqun.lu@intel.com>
-Cc: meego-kernel@lists.meego.com, arjan@linux.intel.com,
-        fengguang.wu@intel.com, feng.tang@intel.com, michael.fu@intel.com,
-        xingchao.wang@intel.com, vinod.koul@intel.com, jeeja.kp@intel.com,
-        Jeff Cheng <jeff_cheng@wistron.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Ramesh Babu K V <ramesh.babu@intel.com>,
-        Dharageswari R <dharageswari.r@intel.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 2/2] sst: internal speaker needs setting a GPIO line
-Message-ID: <20110328171849.76243726@bob.linux.org.uk>
-In-Reply-To: <1301279360-9839-3-git-send-email-guanqun.lu@intel.com>
-References: <1301279360-9839-1-git-send-email-guanqun.lu@intel.com>
-	<1301279360-9839-3-git-send-email-guanqun.lu@intel.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754744Ab1C1Qml (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:42:41 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:48642 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754790Ab1C1Qko (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 12:40:44 -0400
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH v4 07/11] evm: inode post removexattr
+Date: Mon, 28 Mar 2011 12:39:38 -0400
+Message-Id: <1301330382-17745-8-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1301330382-17745-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1301330382-17745-1-git-send-email-zohar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011 10:29:20 +0800
-Lu Guanqun <guanqun.lu@intel.com> wrote:
+When an EVM protected extended attribute is removed, update 'security.evm'.
 
-> This patch originates from Jeff Cheng's patch to enable the internal
-> speaker.
-> 
-> On Moorestown platform, internal speaker's power line is connected to
-> a GPIO line, this information is got from SFI GPIO table, so we need
-> set it to 1 to enable the internal speaker, or set it to 0 to disable
-> it.
-> 
-> When we set the output device, we power on or off the internal
-> speaker on demand.
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+---
+ fs/xattr.c          |    5 ++++-
+ include/linux/evm.h |    9 +++++++++
+ 2 files changed, 13 insertions(+), 1 deletions(-)
 
-This one looks fine to me - just need to figure out the right way to
-get the GPIO pin. Really for a PCI device it ought to be coming from
-the PCI space. I will talk to Arjan and co about it.
+diff --git a/fs/xattr.c b/fs/xattr.c
+index e1f6b8b..ad7cdc6 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -14,6 +14,7 @@
+ #include <linux/mount.h>
+ #include <linux/namei.h>
+ #include <linux/security.h>
++#include <linux/evm.h>
+ #include <linux/syscalls.h>
+ #include <linux/module.h>
+ #include <linux/fsnotify.h>
+@@ -294,8 +295,10 @@ vfs_removexattr(struct dentry *dentry, const char *name)
+ 	error = inode->i_op->removexattr(dentry, name);
+ 	mutex_unlock(&inode->i_mutex);
+ 
+-	if (!error)
++	if (!error) {
+ 		fsnotify_xattr(dentry);
++		evm_inode_post_removexattr(dentry, name);
++	}
+ 	return error;
+ }
+ EXPORT_SYMBOL_GPL(vfs_removexattr);
+diff --git a/include/linux/evm.h b/include/linux/evm.h
+index 8b4e9e3..a730782 100644
+--- a/include/linux/evm.h
++++ b/include/linux/evm.h
+@@ -22,6 +22,8 @@ extern void evm_inode_post_setxattr(struct dentry *dentry,
+ 				    const void *xattr_value,
+ 				    size_t xattr_value_len);
+ extern int evm_inode_removexattr(struct dentry *dentry, const char *xattr_name);
++extern void evm_inode_post_removexattr(struct dentry *dentry,
++				       const char *xattr_name);
+ #else
+ #ifdef CONFIG_INTEGRITY
+ static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
+@@ -52,5 +54,12 @@ static inline int evm_inode_removexattr(struct dentry *dentry,
+ {
+ 	return 0;
+ }
++
++static inline void evm_inode_post_removexattr(struct dentry *dentry,
++					      const char *xattr_name)
++{
++	return;
++}
++
+ #endif /* CONFIG_EVM_H */
+ #endif /* LINUX_EVM_H */
+-- 
+1.7.3.4
 
-Alan
