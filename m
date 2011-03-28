@@ -1,51 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab1C1Xxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 19:53:46 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:46135 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab1C1Xxp (ORCPT
+	id S1755630Ab1C1XyC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 19:54:02 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:1428 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab1C1Xx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 19:53:45 -0400
-Date: Mon, 28 Mar 2011 16:53:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Will Newton <will.newton@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: advice sought: practicality of SMP cache coherency implemented
- in assembler (and a hardware detect line)
-Message-ID: <20110328235338.GS2287@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTi=de3yDfXxCDp082+e3T+g_1wRWKWjqS0n1vy0+@mail.gmail.com>
- <AANLkTi=W0mW2o2muNgMnb1OQ6WaBeOmu1VBHr8Zf63r9@mail.gmail.com>
- <20110326120847.71b6ae4d@lxorguk.ukuu.org.uk>
- <20110328180655.GI2287@linux.vnet.ibm.com>
- <AANLkTin6kg84P50RHR7h6NG+P_nJK=N_Nefc1q4NxzY_@mail.gmail.com>
- <20110328231818.2297408f@lxorguk.ukuu.org.uk>
- <AANLkTimXztH_4f1=7-Ez6j-7UESroqwBvVuDNW7Fmewb@mail.gmail.com>
- <AANLkTinySus3129nXyDoWXnoi43FsBuxVptZ4mpf5hVJ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinySus3129nXyDoWXnoi43FsBuxVptZ4mpf5hVJ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 28 Mar 2011 19:53:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6299"; a="82383415"
+From: David Collins <collinsd@codeaurora.org>
+To: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm-owner@vger.kernel.org,
+        David Collins <collinsd@codeaurora.org>
+Subject: [PATCH v2 1/2] regulator: Remove possible deadlock from regulator_enable
+Date: Mon, 28 Mar 2011 16:53:51 -0700
+Message-Id: <1301356432-7586-1-git-send-email-collinsd@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <1301356355-7546-1-git-send-email-collinsd@codeaurora.org>
+References: <1301356355-7546-1-git-send-email-collinsd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 12:39:30AM +0100, Luke Kenneth Casson Leighton wrote:
-> On Tue, Mar 29, 2011 at 12:38 AM, Luke Kenneth Casson Leighton
-> <luke.leighton@gmail.com> wrote:
-> 
-> >  p.s. alan am not ignoring what you wrote, it's just that if this goes
-> 
->  alan? beh??  paul.  sorry :)
+Assume a regulator supply chain in which S1 supplies L2 (S1 --> L2).
+It is possible to achieve deadlock using two threads if one thread
+calls regulator_enable on a regulator L2 while the other thread calls
+regulator_disable on S1.  This happens because _regulator_enable(L2)
+holds a lock for L2 and then takes out a lock on S1.
+_regulator_disable(S1) on the other hand, is called with a lock taken
+for S1 and then it calls _notifier_call_chain which attempts to take a
+lock for L2.  Because these locks are taken in opposite orders, deadlock
+will result.
 
-;-)
+Change regulator_enable and _regulator_enable so that only one lock is
+held at a time to avoid this deadlock scenario.  Rename
+_regulator_enable to regulator_dev_enable to avoid confusion with other
+_* functions which assume that all locks are already taken.
 
-FWIW, I believe that the http://www.scalemp.com/ folks do something
-similar to what Alan suggests in order to glue multiple x86 systems into
-one SMP system from the viewpoint of user applications.
+Signed-off-by: David Collins <collinsd@codeaurora.org>
+---
+ drivers/regulator/core.c |   82 +++++++++++++++++++++++++++++++---------------
+ 1 files changed, 55 insertions(+), 27 deletions(-)
 
-							Thanx, Paul
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 9fa2095..05904be 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1279,38 +1279,54 @@ static int _regulator_can_change_status(struct regulator_dev *rdev)
+ 		return 0;
+ }
+ 
+-/* locks held by regulator_enable() */
+-static int _regulator_enable(struct regulator_dev *rdev)
++/* Locks are *not* held by regulator_enable(). */
++static int regulator_dev_enable(struct regulator_dev *rdev)
+ {
+-	int ret, delay;
++	struct regulator_dev *supply_rdev = NULL;
++	int ret = 0, delay;
+ 
++	mutex_lock(&rdev->mutex);
+ 	if (rdev->use_count == 0) {
++		/*
++		 * Incrementing here removes a race condition for simultaneous
++		 * regulator_enable calls with use_count == 0.
++		 */
++		rdev->use_count++;
++		mutex_unlock(&rdev->mutex);
++
+ 		/* do we need to enable the supply regulator first */
+ 		if (rdev->supply) {
+-			mutex_lock(&rdev->supply->mutex);
+-			ret = _regulator_enable(rdev->supply);
+-			mutex_unlock(&rdev->supply->mutex);
++			ret = regulator_dev_enable(rdev->supply);
+ 			if (ret < 0) {
+ 				rdev_err(rdev, "failed to enable: %d\n", ret);
++				mutex_lock(&rdev->mutex);
++				rdev->use_count--;
++				mutex_unlock(&rdev->mutex);
+ 				return ret;
+ 			}
++			supply_rdev = rdev->supply;
+ 		}
+-	}
+ 
+-	/* check voltage and requested load before enabling */
+-	if (rdev->constraints &&
+-	    (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_DRMS))
+-		drms_uA_update(rdev);
++		mutex_lock(&rdev->mutex);
++		rdev->use_count--;
++
++		/* check voltage and requested load before enabling */
++		if (rdev->constraints &&
++		    (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_DRMS))
++			drms_uA_update(rdev);
+ 
+-	if (rdev->use_count == 0) {
+-		/* The regulator may on if it's not switchable or left on */
++		/* The regulator may be on if it's not switchable or left on */
+ 		ret = _regulator_is_enabled(rdev);
+ 		if (ret == -EINVAL || ret == 0) {
+-			if (!_regulator_can_change_status(rdev))
+-				return -EPERM;
++			if (!_regulator_can_change_status(rdev)) {
++				ret = -EPERM;
++				goto out;
++			}
+ 
+-			if (!rdev->desc->ops->enable)
+-				return -EINVAL;
++			if (!rdev->desc->ops->enable) {
++				ret = -EINVAL;
++				goto out;
++			}
+ 
+ 			/* Query before enabling in case configuration
+ 			 * dependant.  */
+@@ -1330,7 +1346,7 @@ static int _regulator_enable(struct regulator_dev *rdev)
+ 			 * regulators can ramp together.  */
+ 			ret = rdev->desc->ops->enable(rdev);
+ 			if (ret < 0)
+-				return ret;
++				goto out;
+ 
+ 			trace_regulator_enable_delay(rdev_get_name(rdev));
+ 
+@@ -1345,14 +1361,32 @@ static int _regulator_enable(struct regulator_dev *rdev)
+ 
+ 		} else if (ret < 0) {
+ 			rdev_err(rdev, "is_enabled() failed: %d\n", ret);
+-			return ret;
++			goto out;
+ 		}
+ 		/* Fallthrough on positive return values - already enabled */
++	} else {
++		/* Check voltage and requested load. */
++		if (rdev->constraints &&
++		    (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_DRMS))
++			drms_uA_update(rdev);
+ 	}
+ 
+ 	rdev->use_count++;
++out:
++	mutex_unlock(&rdev->mutex);
+ 
+-	return 0;
++	if (ret < 0) {
++		/* Enable has failed, disable supplies if necessary. */
++		while (supply_rdev != NULL) {
++			rdev = supply_rdev;
++
++			mutex_lock(&rdev->mutex);
++			_regulator_disable(rdev, &supply_rdev);
++			mutex_unlock(&rdev->mutex);
++		}
++	}
++
++	return ret;
+ }
+ 
+ /**
+@@ -1368,13 +1402,7 @@ static int _regulator_enable(struct regulator_dev *rdev)
+  */
+ int regulator_enable(struct regulator *regulator)
+ {
+-	struct regulator_dev *rdev = regulator->rdev;
+-	int ret = 0;
+-
+-	mutex_lock(&rdev->mutex);
+-	ret = _regulator_enable(rdev);
+-	mutex_unlock(&rdev->mutex);
+-	return ret;
++	return regulator_dev_enable(regulator->rdev);
+ }
+ EXPORT_SYMBOL_GPL(regulator_enable);
+ 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
