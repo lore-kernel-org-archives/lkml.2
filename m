@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab1C1M4g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 08:56:36 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34356 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612Ab1C1M4d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 08:56:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=JietAoBC1Swc4PksgKgCAJlwl05rLZdRGC5rIQFLk6f7gaWak0UzXv9FfuXwt/yglh
-         O3WPVWOE3EasgcLVjyanVC+9cLCyp2U+efUHsBsYvd9rzCr34lispCE75FgZgUD6uAXY
-         od1M4KXKw4e0Rv5JV+V9KsvakO1FV1+l+Btps=
-From: Igor Plyatov <plyatov@gmail.com>
-To: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Igor Plyatov <plyatov@gmail.com>
-Subject: [PATCH v4 2/2] ata: pata_at91.c bugfix for high master clock
-Date: Mon, 28 Mar 2011 16:56:15 +0400
-Message-Id: <1301316975-27761-2-git-send-email-plyatov@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1301316975-27761-1-git-send-email-plyatov@gmail.com>
-References: <1301316975-27761-1-git-send-email-plyatov@gmail.com>
+	id S1753786Ab1C1M5u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 08:57:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33113 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753224Ab1C1M5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 08:57:49 -0400
+Message-ID: <4D90859D.70704@zytor.com>
+Date: Mon, 28 Mar 2011 05:57:01 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: Len Brown <lenb@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] x86 APM: delete Linux kernel APM support
+References: <alpine.LFD.2.02.1103232321070.3848@x980> <20110325113048.GC29521@elte.hu> <alpine.LFD.2.02.1103260036300.28928@x980> <201103272340.42748.linux@rainbow-software.org>
+In-Reply-To: <201103272340.42748.linux@rainbow-software.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AT91SAM9 microcontrollers with master clock higher then 105 MHz
-and PIO0, have overflow of the NCS_RD_PULSE value in the MSB. This
-lead to "NCS_RD_PULSE" pulse longer then "NRD_CYCLE" pulse and driver
-does not detect ATA device.
+On 03/27/2011 02:40 PM, Ondrej Zary wrote:
+> 
+> I just tested 2.6.38-rc4 on a desktop board and it works (power off at least). 
+> If using Grub2, linux16 command must be used instead of linux in grub.cfg 
+> (otherwise loading apm module will fail with "apm: BIOS not found").
+> 
 
-Signed-off-by: Igor Plyatov <plyatov@gmail.com>
----
- drivers/ata/pata_at91.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+This is just Yet Another Example of the Grub2 people doing things in the
+absolutely most idiotic way possible by default, and then blaming the user.
 
-diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
-index 0267d54..a5fdbdc 100644
---- a/drivers/ata/pata_at91.c
-+++ b/drivers/ata/pata_at91.c
-@@ -33,11 +33,12 @@
- 
- 
- #define DRV_NAME "pata_at91"
--#define DRV_VERSION "0.1"
-+#define DRV_VERSION "0.2"
- 
- #define CF_IDE_OFFSET	    0x00c00000
- #define CF_ALT_IDE_OFFSET   0x00e00000
- #define CF_IDE_RES_SIZE     0x08
-+#define NCS_RD_PULSE_LIMIT  0x3f /* maximal value for pulse bitfields */
- 
- struct at91_ide_info {
- 	unsigned long mode;
-@@ -119,6 +120,11 @@ static void set_smc_timing(struct device *dev,
- 	/* (CS0, CS1, DIR, OE) <= (CFCE1, CFCE2, CFRNW, NCSX) timings */
- 	ncs_read_setup = 1;
- 	ncs_read_pulse = read_cycle - 2;
-+	if (ncs_read_pulse > NCS_RD_PULSE_LIMIT) {
-+		ncs_read_pulse = NCS_RD_PULSE_LIMIT;
-+		dev_warn(dev, "ncs_read_pulse limited to maximal value %lu\n",
-+			ncs_read_pulse);
-+	}
- 
- 	/* Write timings same as read timings */
- 	write_cycle = read_cycle;
+	-hpa
+
 -- 
-1.7.1
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
