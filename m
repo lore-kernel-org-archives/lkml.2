@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab1C1SHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 14:07:06 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:53821 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab1C1SHD (ORCPT
+	id S1755299Ab1C1SHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 14:07:05 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:53657 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787Ab1C1SHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 14:07:03 -0400
-Date: Mon, 28 Mar 2011 11:06:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Will Newton <will.newton@gmail.com>,
-        Luke Kenneth Casson Leighton <luke.leighton@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: advice sought: practicality of SMP cache coherency implemented
- in assembler (and a hardware detect line)
-Message-ID: <20110328180655.GI2287@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTi=de3yDfXxCDp082+e3T+g_1wRWKWjqS0n1vy0+@mail.gmail.com>
- <AANLkTi=W0mW2o2muNgMnb1OQ6WaBeOmu1VBHr8Zf63r9@mail.gmail.com>
- <20110326120847.71b6ae4d@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110326120847.71b6ae4d@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 28 Mar 2011 14:07:02 -0400
+Subject: Re: [PATCH V13 1/4] ptp: Added a brand new class driver for ptp
+ clocks.
+From: John Stultz <john.stultz@linaro.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <86641738e4c84fbdb105d6f2eb6141d5d13c3190.1301206090.git.richard.cochran@omicron.at>
+References: <cover.1301206090.git.richard.cochran@omicron.at>
+	 <86641738e4c84fbdb105d6f2eb6141d5d13c3190.1301206090.git.richard.cochran@omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Mar 2011 11:06:35 -0700
+Message-ID: <1301335595.21829.0.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 26, 2011 at 12:08:47PM +0000, Alan Cox wrote:
-> > Probably not. Is it a virtual or physical indexed cache? Do you have a
-> > precise workload in mind? If you have a very precise workload and you
-> > don't expect to get many write conflicts then it could be made to
-> > work.
+On Sun, 2011-03-27 at 08:38 +0200, Richard Cochran wrote:
+> This patch adds an infrastructure for hardware clocks that implement
+> IEEE 1588, the Precision Time Protocol (PTP). A class driver offers a
+> registration method to particular hardware clock drivers. Each clock is
+> presented as a standard POSIX clock.
 > 
-> I'm unconvinced. The user space isn't the hard bit - little user memory
-> is shared writable, the kernel data structures on the other hand,
-> especially in the RCU realm are going to be interesting.
-
-Indeed.  One approach is to flush the caches on each rcu_dereference().
-Of course, this assumes that the updaters flush their caches on each
-smp_wmb().  You probably also need to make ACCESS_ONCE() flush caches
-(which would automatically take care of rcu_dereference()).  So might
-work, but won't be fast.
-
-You can of course expect a lot of odd bugs in taking this approach.
-The assumption of cache coherence is baked pretty deeply into most
-shared-memory parallel software.  As you might have heard in the 2005
-discussion.  ;-)
-
-> > There are a number of mature cores out there that can do this already
-> > and can be bought off the shelf, I wouldn't underestimate the
-> > difficulty of getting your cache coherency protocol right particularly
-> > on a limited time/resource budget.
+> The ancillary clock features are exposed in two different ways, via
+> the sysfs and by a character device.
 > 
-> Architecturally you may want to look at running one kernel per device
-> (remembering that you can share the non writable kernel pages between
-> different instances a bit if you are careful) - and in theory certain
-> remote mappings.
-> 
-> Basically it would become a cluster with a very very fast "page transfer"
-> operation for moving data between nodes.
+> Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
 
-This works for applications coded specially for this platform, but unless
-I am missing something, not for existing pthreads applications.  Might
-be able to handle things like Erlang that do parallelism without shared
-memory.
+Acked-by: John Stultz <john.stultz@linaro.org>
 
-							Thanx, Paul
+thanks
+-john
+
+
