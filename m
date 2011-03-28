@@ -1,123 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab1C1WOy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 18:14:54 -0400
-Received: from bamccaig1.svc.tomasu.net ([64.85.170.232]:56422 "EHLO
-	mail.tomasu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab1C1WOx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 18:14:53 -0400
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: linux-kernel@vger.kernel.org
-Subject: File copy to USB stick causes high cpu use (Was Re: BUG: unable to handle kernel NULL pointer dereference)
-Date: Mon, 28 Mar 2011 16:14:36 -0600
-User-Agent: KMail/1.13.5 (Linux/2.6.38.2; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
-References: <201103260513.52916.tfjellstrom@strangesoft.net> <201103260857.16238.thomas@fjellstrom.ca> <201103260909.29179.thomas@fjellstrom.ca>
-In-Reply-To: <201103260909.29179.thomas@fjellstrom.ca>
+	id S1755038Ab1C1WQD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 18:16:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34565 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753838Ab1C1WQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 18:16:01 -0400
+Date: Mon, 28 Mar 2011 18:15:47 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH] block: eliminate ELEVATOR_INSERT_REQUEUE (was: Re: elevator
+ private data for REQ_FLUSH)
+Message-ID: <20110328221547.GA1118@redhat.com>
+References: <20110325151530.GA4414@swordfish.minsk.epam.com>
+ <20110325152228.GA1707@gentoo.trippels.de>
+ <20110325154024.GA16029@redhat.com>
+ <4D8CB9C9.5010208@kernel.dk>
+ <20110325185455.GA2969@redhat.com>
+ <4D8CF202.9010809@kernel.dk>
+ <20110326042156.GB28458@redhat.com>
+ <20110328082321.GC16530@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103281614.37189.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110328082321.GC16530@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On March 26, 2011, Thomas Fjellstrom wrote:
-> On March 26, 2011, Thomas Fjellstrom wrote:
-> > On March 26, 2011, Thomas Fjellstrom wrote:
-> > > I was unable to capture the full OOPS/panic message as it was a full
-> > > panic. The kernel switched to a vt first so I could at least take a
-> > > picture, which I've attached.
-> > > 
-> > > This is with 2.6.37.2. A brief snippet from the image is as follows:
-> > > 
-> > > IP: [<ffffffff8110f3a7>] __mark_inode_dirty+0xca/0x1ac
-> > > PGD 9fe96067 PUD 30e34067 PMD 0
-> > > Oops: 0000 [#1] SMP
-> > > ...
-> > > 
-> > > Call Trace:
-> > >  ? touch_atime+0x111/0x13a
-> > >  ? filldir+0x0/0xc3
-> > >  ? vfs_readdir+0x84/0xaa
-> > >  ? sys_getdents+0x7d/0xcd
-> > >  ? page_fault+0x25/0x30
-> > >  ? system_call_fastpath+0x16/0x1b
-> > > 
-> > > This has only happened once so far, and a little while before this OOPS
-> > > happened, X crashed and was restarted.
+On Mon, Mar 28 2011 at  4:23am -0400,
+Tejun Heo <tj@kernel.org> wrote:
+
+> On Sat, Mar 26, 2011 at 12:21:56AM -0400, Mike Snitzer wrote:
+> > Should blk_kick_flush() process the flush request without calling
+> > elv_insert() -- like is done with open coded list_add() in
+> > blk_insert_flush()?
 > > 
-> > And here's another possible related problem:
-> > 
-> > [13082.904110] INFO: task updatedb.mlocat:6215 blocked for more than 120
-> > seconds.
-> > [13082.904113] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-> > disables this message.
-> > [13082.904116] updatedb.mloc D ffff88002adf3600     0  6215   6208
-> > 0x00000000 [13082.904120]  ffff88002adf3600 0000000000000082
-> > ffff880100000000 ffffffff8160b020 [13082.904124]  00000000000136c0
-> > ffff88002a091fd8 00000000000136c0 00000000000136c0
-> > [13082.904127]  ffff88002adf38d8 ffff88002adf38e0 ffff88002adf3600
-> > 00000000000136c0 [13082.904130] Call Trace:
-> > [13082.904137]  [<ffffffff8111513b>] ? sync_buffer+0x0/0x3f
-> > [13082.904141]  [<ffffffff8131d6f3>] ? io_schedule+0x68/0xa7
-> > [13082.904144]  [<ffffffff81115176>] ? sync_buffer+0x3b/0x3f
-> > [13082.904146]  [<ffffffff8131db3f>] ? __wait_on_bit_lock+0x3c/0x85
-> > [13082.904149]  [<ffffffff8131dbf6>] ?
-> > out_of_line_wait_on_bit_lock+0x6e/0x77 [13082.904151]
-> > [<ffffffff8111513b>] ? sync_buffer+0x0/0x3f
-> > [13082.904155]  [<ffffffff810605ab>] ? wake_bit_function+0x0/0x2e
-> > [13082.904164]  [<ffffffff81116033>] ? lock_buffer+0xe/0x2c
-> > [13082.904166]  [<ffffffff811168e5>] ? __bread+0x1d/0x62
-> > [13082.904171]  [<ffffffffa04639b2>] ? fat_get_entry+0x189/0x1ef [fat]
-> > [13082.904175]  [<ffffffffa0463a59>] ? fat_get_short_entry+0x41/0x53
-> > [fat] [13082.904178]  [<ffffffffa0464b19>] ? fat_subdirs+0x57/0x74 [fat]
-> > [13082.904181]  [<ffffffffa0468e18>] ? fat_build_inode+0x1af/0x402 [fat]
-> > [13082.904184]  [<ffffffff81202020>] ? startup_pirq+0x3a/0x139
-> > [13082.904188]  [<ffffffffa02184cc>] ? vfat_lookup+0x57/0x16f [vfat]
-> > [13082.904191]  [<ffffffff810fbc19>] ? d_alloc_and_lookup+0x4a/0x67
-> > [13082.904193]  [<ffffffff810fbd26>] ? do_lookup+0xaa/0x100
-> > [13082.904196]  [<ffffffff81103590>] ? dput+0x2c/0x12f
-> > [13082.904198]  [<ffffffff810fdb69>] ? link_path_walk+0x2a1/0x3fb
-> > [13082.904201]  [<ffffffff810fddb2>] ? path_walk+0x63/0xd6
-> > [13082.904203]  [<ffffffff810fd406>] ? path_init+0x9a/0x16e
-> > [13082.904205]  [<ffffffff810fdf1b>] ? do_path_lookup+0x20/0x85
-> > [13082.904207]  [<ffffffff810fe9a9>] ? user_path_at+0x46/0x78
-> > [13082.904210]  [<ffffffff810f70dc>] ? cp_new_stat+0xe6/0xfa
-> > [13082.904213]  [<ffffffff810f7183>] ? vfs_fstatat+0x2e/0x5b
-> > [13082.904215]  [<ffffffff810f7208>] ? sys_newlstat+0x11/0x2d
-> > [13082.904218]  [<ffffffff810f2c00>] ? sys_fchdir+0x67/0x6e
-> > [13082.904221]  [<ffffffff81009a12>] ? system_call_fastpath+0x16/0x1b
-> > 
-> > theres 5-10 of those in dmesg, which started after I started copying some
-> > files to a new 16GB usb flash drive. The copies them selves have been
-> > going for hours now, waay too long, and both my CPU cores are pegged in
-> > iowait, and anything that tries to do too much with /any/ disk seems to
-> > hang up, including chromium and plain old 'ls'. according to iostat, io
-> > is going at about 8-40KB/s to the flash drive, and much less to my root
-> > drive.
+> > Or should blk_insert_flush() use elv_insert() with
+> > ELEVATOR_INSERT_REQUEUE too? 
 > 
-> I just noticed, that not all commands hang, but it seems that anything that
-> tries to access my nfs share hangs up (like a 'ls ~/' since theres a couple
-> links in ~ pointing to dirs on the nfs share). The nfs server is up though,
-> and neither side lists any problems relating to nfs in dmesg.
-> 
-> Things have started working again just now as I'm writing this, but I
-> killed the file copies about 10-20 minutes ago or so, that might have
-> something to do with it. Also the light on the flash drive is still
-> flashing, as if its still being written to.
+> Hmmm... I would prefer the latter.  Given that INSERT_REQUEUE and
+> FRONT are no longer different, it would probably be better to use
+> FRONT tho.  The only reason REQUEUE is used there is to avoid kicking
+> the queue from elv_insert(), which is gone now.
 
-I've now tested with debian's 2.6.38 and 2.6.38.2 from git, and the results 
-are in, debian's kernels are bad. I changed the config a bit for 2.6.38.2 
-though, I set the preemption mode to Preemtible Kernel, while the debian 
-configs use Voluntary Preemption. Other than that, I haven't changed much 
-besides disabling a few drivers.
+OK, I came up with the following patch.
 
-That said, there is still a lot of cpu iowait use, just not as much as with a 
-debian kernel. Instead of pegging both cores, it just pegs one.
+Jens, this is just a natural cleanup given the code that resulted from
+the flush-merge and onstack plugging changes coming together.
 
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+
+From: Mike Snitzer <snitzer@redhat.com>
+Subject: block: eliminate ELEVATOR_INSERT_REQUEUE
+
+elv_insert() no longer has a need to differentiate between
+ELEVATOR_INSERT_REQUEUE and ELEVATOR_INSERT_FRONT.  The onstack plugging
+changes eliminated the need to avoid unplugging the queue (via
+ELEVATOR_INSERT_REQUEUE).
+
+Also, in blk_insert_flush(), use elv_insert() with ELEVATOR_INSERT_FRONT
+rather than open-coding the equivalent.
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+---
+ block/blk-flush.c        |    4 ++--
+ block/elevator.c         |    3 +--
+ include/linux/elevator.h |    5 ++---
+ 3 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 93d5fd8..2c43044 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -261,7 +261,7 @@ static bool blk_kick_flush(struct request_queue *q)
+ 	q->flush_rq.end_io = flush_end_io;
+ 
+ 	q->flush_pending_idx ^= 1;
+-	elv_insert(q, &q->flush_rq, ELEVATOR_INSERT_REQUEUE);
++	elv_insert(q, &q->flush_rq, ELEVATOR_INSERT_FRONT);
+ 	return true;
+ }
+ 
+@@ -312,7 +312,7 @@ void blk_insert_flush(struct request *rq)
+ 	 */
+ 	if ((policy & REQ_FSEQ_DATA) &&
+ 	    !(policy & (REQ_FSEQ_PREFLUSH | REQ_FSEQ_POSTFLUSH))) {
+-		list_add(&rq->queuelist, &q->queue_head);
++		elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
+ 		return;
+ 	}
+ 
+diff --git a/block/elevator.c b/block/elevator.c
+index c387d31..df7c4ba 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -610,7 +610,7 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
+ 
+ 	rq->cmd_flags &= ~REQ_STARTED;
+ 
+-	elv_insert(q, rq, ELEVATOR_INSERT_REQUEUE);
++	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
+ }
+ 
+ void elv_drain_elevator(struct request_queue *q)
+@@ -662,7 +662,6 @@ void elv_insert(struct request_queue *q, struct request *rq, int where)
+ 	rq->q = q;
+ 
+ 	switch (where) {
+-	case ELEVATOR_INSERT_REQUEUE:
+ 	case ELEVATOR_INSERT_FRONT:
+ 		rq->cmd_flags |= REQ_SOFTBARRIER;
+ 		list_add(&rq->queuelist, &q->queue_head);
+diff --git a/include/linux/elevator.h b/include/linux/elevator.h
+index d93efcc445..0b4a354 100644
+--- a/include/linux/elevator.h
++++ b/include/linux/elevator.h
+@@ -164,9 +164,8 @@ extern struct request *elv_rb_find(struct rb_root *, sector_t);
+ #define ELEVATOR_INSERT_FRONT	1
+ #define ELEVATOR_INSERT_BACK	2
+ #define ELEVATOR_INSERT_SORT	3
+-#define ELEVATOR_INSERT_REQUEUE	4
+-#define ELEVATOR_INSERT_FLUSH	5
+-#define ELEVATOR_INSERT_SORT_MERGE	6
++#define ELEVATOR_INSERT_FLUSH	4
++#define ELEVATOR_INSERT_SORT_MERGE	5
+ 
+ /*
+  * return values from elevator_may_queue_fn
+
