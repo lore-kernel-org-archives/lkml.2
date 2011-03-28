@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab1C1N5V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 09:57:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46640 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470Ab1C1N5T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 09:57:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=v0vsgrwrkfrhDsYbP3ABBZFBTQCLnnS23DPDS8ezsgrif+TcpXRpD5oD57Rg2NdGtL
-         AG+Sqqt2uTrDCf30LRHLY3irgF8ESbuwa+m8fXqBR3gl/Adrjyd9cNuuz/R4lOEw0NH8
-         3WPJoDrSzkwGLgSY2GbD24RjW8a2z4SmqjUyk=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Mundt <lethal@linux-sh.org>, David Howells <dhowells@redhat.com>,
-        Greg Ungerer <gerg@snapgear.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] nommu: fix a potential memory leak in do_mmap_private()
-Date: Mon, 28 Mar 2011 22:56:46 +0900
-Message-Id: <1301320607-7259-6-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1301320607-7259-1-git-send-email-namhyung@gmail.com>
-References: <1301320607-7259-1-git-send-email-namhyung@gmail.com>
+	id S1754460Ab1C1OFU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 10:05:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55934 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754418Ab1C1OFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 10:05:19 -0400
+Date: Mon, 28 Mar 2011 16:05:14 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>, linux-pm@lists.linux-foundation.org,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Ondrej Zary <linux@rainbow-software.org>
+Subject: Re: [PATCH] apm: orphan the driver
+In-Reply-To: <20110329004438.d9e755ef.sfr@canb.auug.org.au>
+Message-ID: <alpine.LNX.2.00.1103281604040.26754@pobox.suse.cz>
+References: <20110326172204.05e52c10.sfr@canb.auug.org.au> <alpine.LRH.2.00.1103281443240.8162@twin.jikos.cz> <20110329004438.d9e755ef.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If f_op->read() fails and sysctl_nr_trim_pages > 1, there could be a
-memory leak between @region->vm_end and @region->vm_top.
+On Tue, 29 Mar 2011, Stephen Rothwell wrote:
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> > I still have some hardware that uses APM and put a new 2.6 on it time 
+> > to time, so I can take this driver over if you want to. According to 
+> > git log it's really low effort anyway :)
+> 
+> If you want it, its yours :-)
+
+Not really fighting for maintaining it actively, but can certainly give it 
+some care when necessary.
+
+
+
+
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] APM: take over maintainership
+
+Commit 04a6553f076 ("apm: orphan the driver") Orphaned the APM
+driver as Stephen is not willing/able to maintain it any more.
+
+As I still have some hardware that is using APM and running 2.6,
+I can take it over.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- mm/nommu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ MAINTAINERS |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 33f5d23c6d44..662fd46449a6 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -1241,7 +1241,7 @@ static int do_mmap_private(struct vm_area_struct *vma,
- 	return 0;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8aa1cac..758a690 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -548,8 +548,9 @@ S:	Maintained
+ F:	sound/aoa/
  
- error_free:
--	free_page_series(region->vm_start, region->vm_end);
-+	free_page_series(region->vm_start, region->vm_top);
- 	region->vm_start = vma->vm_start = 0;
- 	region->vm_end   = vma->vm_end = 0;
- 	region->vm_top   = 0;
+ APM DRIVER
+-L:	linux-laptop@vger.kernel.org
+-S:	Orphan
++M:	Jiri Kosina <jkosina@suse.cz>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
+ F:	arch/x86/kernel/apm_32.c
+ F:	include/linux/apm_bios.h
+ 
 -- 
-1.7.4
-
+1.7.3.1
