@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab1C1B4R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 21:56:17 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:5132 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753357Ab1C1Bzr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 21:55:47 -0400
-From: Ryan Mallon <ryan@bluewatersys.com>
-To: viro@zeniv.linux.org.uk, dchinner@redhat.com, Trond.Myklebust@netapp.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Ryan Mallon <ryan@bluewatersys.com>
-Subject: [RFC PATCH 0/2] Introduce unlocked version of igrab 
-Date: Mon, 28 Mar 2011 14:55:59 +1300
-Message-Id: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com>
-X-Mailer: git-send-email 1.5.5.1
+	id S1753431Ab1C1CDn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 22:03:43 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22968 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753282Ab1C1CDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 22:03:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,252,1299484800"; 
+   d="scan'208";a="409474650"
+Subject: [PATCH]mmap: not merge cloned VMA
+From: Shaohua Li <shaohua.li@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Mar 2011 09:58:54 +0800
+Message-ID: <1301277534.3981.26.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 250df6ed274d767da844a5d9f05720b804240197 "fs: protect 
-inode->i_state with inode->i_lock" introduces a change to igrab to acquire
-inode->i_lock. 
+Avoid merging a VMA with another VMA which is cloned from parent process. The
+cloned VMA shares lock with parent process's VMA. If we do the merge, more vma
+area (even the new range is only for current process) uses perent process's
+anon_vma lock, so introduces scalability issues.
+find_mergeable_anon_vma already considers this.
 
-This change causes a panic on boot on my ARM EP93xx board when the rootfs
-uses NFS. The problem occurs because nfs_inode_add_request acquires
-inode->i_lock and then calls igrab, resulting in the following panic:
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-BUG: spinlock recursion on CPU#0, getty/262
- lock: cc421cb4, .magic: dead4ead, .owner: getty/262, .owner_cpu: 0
-[<c0031b0c>] (unwind_backtrace+0x0/0xe4) from [<c015f16c>] (do_raw_spin_lock+0x40/0x13c)
-[<c015f16c>] (do_raw_spin_lock+0x40/0x13c) from [<c00a938c>] (igrab+0x14/0x48)
-[<c00a938c>] (igrab+0x14/0x48) from [<c01186bc>] (nfs_updatepage+0x2e0/0x524)
-[<c01186bc>] (nfs_updatepage+0x2e0/0x524) from [<c010b19c>] (nfs_write_end+0x23c/0x270)
-[<c010b19c>] (nfs_write_end+0x23c/0x270) from [<c006b484>] (generic_file_buffered_write+0x180/0x248)
-[<c006b484>] (generic_file_buffered_write+0x180/0x248) from [<c006d060>] (__generic_file_aio_write+0x3b8/0x3f4)
-[<c006d060>] (__generic_file_aio_write+0x3b8/0x3f4) from [<c006d108>] (generic_file_aio_write+0x6c/0xdc)
-[<c006d108>] (generic_file_aio_write+0x6c/0xdc) from [<c010bce0>] (nfs_file_write+0xec/0x178)
-[<c010bce0>] (nfs_file_write+0xec/0x178) from [<c00956ac>] (do_sync_write+0xa4/0xe4)
-[<c00956ac>] (do_sync_write+0xa4/0xe4) from [<c00960c8>] (vfs_write+0xb4/0x12c)
-[<c00960c8>] (vfs_write+0xb4/0x12c) from [<c00961f0>] (sys_write+0x3c/0x68)
-[<c00961f0>] (sys_write+0x3c/0x68) from [<c002c8e0>] (ret_fast_syscall+0x0/0x2c)
+---
+ mm/mmap.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-This series introduces a new function called __igrab, which is an unlocked
-version of igrab and modifies nfs_inode_add_request to use the unlocked
-version.
+Index: linux/mm/mmap.c
+===================================================================
+--- linux.orig/mm/mmap.c	2011-03-24 09:37:28.000000000 +0800
++++ linux/mm/mmap.c	2011-03-24 09:48:37.000000000 +0800
+@@ -699,9 +699,13 @@ static inline int is_mergeable_vma(struc
+ }
+ 
+ static inline int is_mergeable_anon_vma(struct anon_vma *anon_vma1,
+-					struct anon_vma *anon_vma2)
++					struct anon_vma *anon_vma2,
++					struct vm_area_struct *vma)
+ {
+-	return !anon_vma1 || !anon_vma2 || (anon_vma1 == anon_vma2);
++	if ((!anon_vma1 || !anon_vma2) && (!vma ||
++		list_is_singular(&vma->anon_vma_chain)))
++		return 1;
++	return anon_vma1 == anon_vma2;
+ }
+ 
+ /*
+@@ -720,7 +724,7 @@ can_vma_merge_before(struct vm_area_stru
+ 	struct anon_vma *anon_vma, struct file *file, pgoff_t vm_pgoff)
+ {
+ 	if (is_mergeable_vma(vma, file, vm_flags) &&
+-	    is_mergeable_anon_vma(anon_vma, vma->anon_vma)) {
++	    is_mergeable_anon_vma(anon_vma, vma->anon_vma, vma)) {
+ 		if (vma->vm_pgoff == vm_pgoff)
+ 			return 1;
+ 	}
+@@ -739,7 +743,7 @@ can_vma_merge_after(struct vm_area_struc
+ 	struct anon_vma *anon_vma, struct file *file, pgoff_t vm_pgoff)
+ {
+ 	if (is_mergeable_vma(vma, file, vm_flags) &&
+-	    is_mergeable_anon_vma(anon_vma, vma->anon_vma)) {
++	    is_mergeable_anon_vma(anon_vma, vma->anon_vma, vma)) {
+ 		pgoff_t vm_pglen;
+ 		vm_pglen = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ 		if (vma->vm_pgoff + vm_pglen == vm_pgoff)
+@@ -817,7 +821,7 @@ struct vm_area_struct *vma_merge(struct
+ 				can_vma_merge_before(next, vm_flags,
+ 					anon_vma, file, pgoff+pglen) &&
+ 				is_mergeable_anon_vma(prev->anon_vma,
+-						      next->anon_vma)) {
++						      next->anon_vma, NULL)) {
+ 							/* cases 1, 6 */
+ 			err = vma_adjust(prev, prev->vm_start,
+ 				next->vm_end, prev->vm_pgoff, NULL);
 
-Ryan Mallon (2):
-  Add unlocked version of igrab.
-  Use __igrab instead of igrab in nfs_inode_add_request
-
- fs/inode.c         |   16 ++++++++++++----
- fs/nfs/write.c     |    2 +-
- include/linux/fs.h |    1 +
- 3 files changed, 14 insertions(+), 5 deletions(-)
 
