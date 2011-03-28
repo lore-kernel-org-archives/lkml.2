@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab1C1XHs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 19:07:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46447 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752402Ab1C1XHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 19:07:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <4D8E36CC.7080707@fusionio.com>
-References: <4D8E36CC.7080707@fusionio.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 28 Mar 2011 16:06:57 -0700
-Message-ID: <AANLkTinpjfyrN0mCRZi8zPqd2=+=WGRRToFhc+MqBDSB@mail.gmail.com>
-Subject: Re: [GIT PULL] block drivers for 2.6.39-rc
-To: Jens Axboe <jaxboe@fusionio.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0015177407b643c385049f9301f0
+	id S1755510Ab1C1XKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 19:10:31 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48113 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752402Ab1C1XK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 19:10:29 -0400
+Date: Tue, 29 Mar 2011 10:10:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH v2] memstick: make enable_dma less generic in r592
+Message-Id: <20110329101025.434e6d95.sfr@canb.auug.org.au>
+In-Reply-To: <20110329094856.3f61a0ce.sfr@canb.auug.org.au>
+References: <20110328144458.efedbefc.sfr@canb.auug.org.au>
+	<20110329092416.a4b1d98f.sfr@canb.auug.org.au>
+	<20110329094856.3f61a0ce.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015177407b643c385049f9301f0
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+Fixes this build error:
 
-On Sat, Mar 26, 2011 at 11:56 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
-> Hi Linus,
->
-> This is the pull request for the block driver updates for 2.6.39. Two
-> things here:
->
-> - Big drbd update, as per usual...
-> - cciss update.
+drivers/memstick/host/r592.c:26: error: 'enable_dma' redeclared as different kind of symbol
+arch/powerpc/include/asm/dma.h:189: note: previous definition of 'enable_dma' was here
 
-Btw, that cciss thing causes a very annoying compiler warning:
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Alex Dubov <oakad@yahoo.com>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+---
+ drivers/memstick/host/r592.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-  drivers/block/cciss.c: In function =91dev_show_unique_id=92:
-  drivers/block/cciss.c:617:7: warning: =91sn[0]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[1]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[2]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[3]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[4]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[5]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[6]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[7]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[8]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[9]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[10]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[11]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[12]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[13]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[14]=92 may be used
-uninitialized in this function
-  drivers/block/cciss.c:617:7: warning: =91sn[15]=92 may be used
-uninitialized in this function
+v2: get the arguments to module_param_named() in the right order (blush :-))
 
-which is because the compiler doesn't really notice that those things
-are only used if the error return isn't being set.
+This has been applied to linux-next today.
 
-So it's a compiler mis-feature, but the thing is, the warning could
-easily be avoided by just writing the code more prettily.
+diff --git a/drivers/memstick/host/r592.c b/drivers/memstick/host/r592.c
+index 767406c..700d420 100644
+--- a/drivers/memstick/host/r592.c
++++ b/drivers/memstick/host/r592.c
+@@ -23,7 +23,7 @@
+ #include <linux/swab.h>
+ #include "r592.h"
+ 
+-static int enable_dma = 1;
++static int r592_enable_dma = 1;
+ static int debug;
+ 
+ static const char *tpc_names[] = {
+@@ -267,7 +267,7 @@ static void r592_stop_dma(struct r592_device *dev, int error)
+ /* Test if hardware supports DMA */
+ static void r592_check_dma(struct r592_device *dev)
+ {
+-	dev->dma_capable = enable_dma &&
++	dev->dma_capable = r592_enable_dma &&
+ 		(r592_read_reg(dev, R592_FIFO_DMA_SETTINGS) &
+ 			R592_FIFO_DMA_SETTINGS_CAP);
+ }
+@@ -898,7 +898,7 @@ static void __exit r592_module_exit(void)
+ module_init(r592_module_init);
+ module_exit(r592_module_exit);
+ 
+-module_param(enable_dma, bool, S_IRUGO);
++module_param_named(enable_dma, r592_enable_dma, bool, S_IRUGO);
+ MODULE_PARM_DESC(enable_dma, "Enable usage of the DMA (default)");
+ module_param(debug, int, S_IRUGO | S_IWUSR);
+ MODULE_PARM_DESC(debug, "Debug level (0-3)");
+-- 
+1.7.4.1
 
-Just do the memcpy() unconditionally: we know that 'drv' is a valid
-pointer (we just loaded 'h' off it), and we're talking about a nice
-constant 16-byte copy.
-
-IOW, a patch something like the attached.
-
-Untested, but it looks really obvious. Hmm?
-
-                            Linus
-
---0015177407b643c385049f9301f0
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_glu0akie0
-
-IGRyaXZlcnMvYmxvY2svY2Npc3MuYyB8ICAgMTkgKysrKysrKysrLS0tLS0tLS0tLQogMSBmaWxl
-cyBjaGFuZ2VkLCA5IGluc2VydGlvbnMoKyksIDEwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBh
-L2RyaXZlcnMvYmxvY2svY2Npc3MuYyBiL2RyaXZlcnMvYmxvY2svY2Npc3MuYwppbmRleCA5YmYx
-Mzk4Li5lYzY5ZjBjIDEwMDY0NAotLS0gYS9kcml2ZXJzL2Jsb2NrL2NjaXNzLmMKKysrIGIvZHJp
-dmVycy9ibG9jay9jY2lzcy5jCkBAIC02MTksMjIgKzYxOSwyMSBAQCBzdGF0aWMgc3NpemVfdCBk
-ZXZfc2hvd191bmlxdWVfaWQoc3RydWN0IGRldmljZSAqZGV2LAogCWludCByZXQgPSAwOwogCiAJ
-c3Bpbl9sb2NrX2lycXNhdmUoJmgtPmxvY2ssIGZsYWdzKTsKKwltZW1jcHkoc24sIGRydi0+c2Vy
-aWFsX25vLCBzaXplb2Yoc24pKTsKIAlpZiAoaC0+YnVzeV9jb25maWd1cmluZykKIAkJcmV0ID0g
-LUVCVVNZOwotCWVsc2UKLQkJbWVtY3B5KHNuLCBkcnYtPnNlcmlhbF9ubywgc2l6ZW9mKHNuKSk7
-CiAJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmaC0+bG9jaywgZmxhZ3MpOwogCiAJaWYgKHJldCkK
-IAkJcmV0dXJuIHJldDsKLQllbHNlCi0JCXJldHVybiBzbnByaW50ZihidWYsIDE2ICogMiArIDIs
-Ci0JCQkJIiUwMlglMDJYJTAyWCUwMlglMDJYJTAyWCUwMlglMDJYIgotCQkJCSIlMDJYJTAyWCUw
-MlglMDJYJTAyWCUwMlglMDJYJTAyWFxuIiwKLQkJCQlzblswXSwgc25bMV0sIHNuWzJdLCBzblsz
-XSwKLQkJCQlzbls0XSwgc25bNV0sIHNuWzZdLCBzbls3XSwKLQkJCQlzbls4XSwgc25bOV0sIHNu
-WzEwXSwgc25bMTFdLAotCQkJCXNuWzEyXSwgc25bMTNdLCBzblsxNF0sIHNuWzE1XSk7CisKKwly
-ZXR1cm4gc25wcmludGYoYnVmLCAxNiAqIDIgKyAyLAorCQkJIiUwMlglMDJYJTAyWCUwMlglMDJY
-JTAyWCUwMlglMDJYIgorCQkJIiUwMlglMDJYJTAyWCUwMlglMDJYJTAyWCUwMlglMDJYXG4iLAor
-CQkJc25bMF0sIHNuWzFdLCBzblsyXSwgc25bM10sCisJCQlzbls0XSwgc25bNV0sIHNuWzZdLCBz
-bls3XSwKKwkJCXNuWzhdLCBzbls5XSwgc25bMTBdLCBzblsxMV0sCisJCQlzblsxMl0sIHNuWzEz
-XSwgc25bMTRdLCBzblsxNV0pOwogfQogc3RhdGljIERFVklDRV9BVFRSKHVuaXF1ZV9pZCwgU19J
-UlVHTywgZGV2X3Nob3dfdW5pcXVlX2lkLCBOVUxMKTsKIAo=
---0015177407b643c385049f9301f0--
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
