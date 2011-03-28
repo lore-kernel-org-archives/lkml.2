@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab1C1NCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 09:02:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51806 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978Ab1C1NC2 (ORCPT
+	id S1754025Ab1C1NEh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 09:04:37 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40779 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab1C1NEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 09:02:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lukasz.Rymanowski@tieto.com
-Subject: Re: [PATCH v2 1/2] staging: Add ST-Ericsson CG2900 driver
-Date: Mon, 28 Mar 2011 15:02:05 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: tglx@linutronix.de, par-gunnar.p.hjalmdahl@stericsson.com, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        pavan_savoy@sify.com, vitalywool@gmail.com, alan@lxorguk.ukuu.org.uk,
-        marcel@holtmann.org, linus.walleij@stericsson.com, pghatwork@gmail.com,
-        lee.jones@linaro.org, mathieu.poirier@linaro.org
-References: <1301302950-10628-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com> <alpine.LFD.2.00.1103281110210.31464@localhost6.localdomain6> <7D7F2FD3846CF6429ACEBDFB5A2DD86F07E35E5F89@EXMB01.eu.tieto.com>
-In-Reply-To: <7D7F2FD3846CF6429ACEBDFB5A2DD86F07E35E5F89@EXMB01.eu.tieto.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 28 Mar 2011 09:04:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=F8C3hUpSwKw2BgbRa2xZXhnmFmZCcxuEAqtNXA0BZY94gC8c/uGvOVbSsKCl/noT5H
+         hQG5ehAY8ii5IzbmyfMZgAtSqVvl7OTFqGP6qKRtB3f3HAbBl8jH6TZOrdS6GbYuAumX
+         uxsq0qqZbxE2T7DooTvWS9izLb0+tSFgx6V8A=
+Subject: Re: [PATCH v3] ata: pata_at91.c bugfix for high master clock
+From: Igor Plyatov <plyatov@gmail.com>
+Reply-To: plyatov@gmail.com
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1301313595-23156-1-git-send-email-plyatov@gmail.com>
+References: <1301313595-23156-1-git-send-email-plyatov@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Mar 2011 17:04:29 +0400
+Message-ID: <1301317469.29670.5.camel@homepc>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103281502.05203.arnd@arndb.de>
-X-Provags-ID: V02:K0:HLW2vEwOVysldH7U59H32cg5AK4+sRgo2Fcr6vv5cGV
- 2xhCxCP4m142KnrO6gRc51AqM6f6ZQIHOxsiAzf2qjc109mZ89
- dblNRl5vkiqbGgDP7yeXho3rC8lBojcVa3+qW7b7h6LPZzPCZe
- Wls+bRhwMoKoP5AMcdvzOozTdXcC2d17GyHNjNKMN0ObqjetI2
- Uxs4RYuflRIyZaaNHrVQg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 28 March 2011, Lukasz.Rymanowski@tieto.com wrote:
-> >Have you thought about using a threaded interrupt handler?
-> >That would make all this work cruft go away.
+Hi!
+
+Please abandon this patch and use its new version 4 with subjects:
+* "[PATCH v4 1/2] ata: pata_at91.c bugfix for initial_timing
+initialisation"
+* "[PATCH v4 2/2] ata: pata_at91.c bugfix for high master clock"
+
+Best regards!
+--
+Igor Plyatov
+
+> The AT91SAM9 microcontrollers with master clock higher then 105 MHz
+> and PIO0, have overflow of the NCS_RD_PULSE value in the MSB. This
+> lead to "NCS_RD_PULSE" pulse longer then "NRD_CYCLE" pulse and driver
+> does not detect ATA device.
 > 
-> Good point.
-> To be honest we did think about it but in the time we where we were busy with other issues.
-> Anyway, shall we resend patches now or we can push patch for it once driver gets in the tree ?
+> Signed-off-by: Igor Plyatov <plyatov@gmail.com>
+> ---
+>  drivers/ata/pata_at91.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
+> index d1aaeb5..3c2bf86 100644
+> --- a/drivers/ata/pata_at91.c
+> +++ b/drivers/ata/pata_at91.c
+> @@ -33,11 +33,12 @@
+>  
+> 
+>  #define DRV_NAME "pata_at91"
+> -#define DRV_VERSION "0.1"
+> +#define DRV_VERSION "0.2"
+>  
+>  #define CF_IDE_OFFSET	    0x00c00000
+>  #define CF_ALT_IDE_OFFSET   0x00e00000
+>  #define CF_IDE_RES_SIZE     0x08
+> +#define NCS_RD_PULSE_LIMIT  0x3f /* maximal value for pulse bitfields */
+>  
+>  struct at91_ide_info {
+>  	unsigned long mode;
+> @@ -110,6 +111,11 @@ static void set_smc_timing(struct device *dev,
+>  	/* (CS0, CS1, DIR, OE) <= (CFCE1, CFCE2, CFRNW, NCSX) timings */
+>  	ncs_read_setup = 1;
+>  	ncs_read_pulse = read_cycle - 2;
+> +	if (ncs_read_pulse > NCS_RD_PULSE_LIMIT) {
+> +		ncs_read_pulse = NCS_RD_PULSE_LIMIT;
+> +		dev_warn(dev, "ncs_read_pulse limited to maximal value %lu\n",
+> +			ncs_read_pulse);
+> +	}
+>  
+>  	/* Write timings same as read timings */
+>  	write_cycle = read_cycle;
 
-No need to hold up merging because of this. Either patch it
-once the code is in staging, or add a TODO file item.
 
-	Arnd
