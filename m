@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab1C1QWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:22:24 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59382 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751750Ab1C1QWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:22:23 -0400
-Date: Mon, 28 Mar 2011 18:22:13 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: Remove dma32_reserve_bootmem
-Message-ID: <20110328162213.GA20191@elte.hu>
-References: <4D8AD6E0.10307@kernel.org>
- <20110324080326.GA30812@elte.hu>
- <20110328091946.7ab9165f@jbarnes-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110328091946.7ab9165f@jbarnes-desktop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754884Ab1C1QXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:23:14 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:47400
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754338Ab1C1QXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 12:23:02 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 03/20] Staging: hv: Get rid of request_ext_size from struct storvsc_driver_object
+Date: Mon, 28 Mar 2011 09:33:28 -0700
+Message-Id: <1301330025-25542-3-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1301330025-25542-1-git-send-email-kys@microsoft.com>
+References: <1301329950-25490-1-git-send-email-kys@microsoft.com>
+ <1301330025-25542-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now that struct storvsc_request_extension is part of struct hv_storvsc_request
+get rid of the field request_ext_size from struct storvsc_driver_object.
 
-* Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+---
+ drivers/staging/hv/blkvsc_drv.c  |    5 +----
+ drivers/staging/hv/storvsc_api.h |    3 ---
+ drivers/staging/hv/storvsc_drv.c |   11 +++--------
+ 3 files changed, 4 insertions(+), 15 deletions(-)
 
-> On Thu, 24 Mar 2011 09:03:26 +0100
-> Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > 
-> > * Yinghai Lu <yinghai@kernel.org> wrote:
-> > 
-> > > 
-> > > That is workaround for holding dma32 buf when early bootmem could use up
-> > > those range on system that have lots of RAM.
-> > > 
-> > > Now x86 is using memblock, and even nobootmem wrapper do top-down allocation.
-> > > 
-> > > So We could remove those not needed code now.
-> > > 
-> > > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> > > 
-> > > ---
-> > >  arch/x86/include/asm/pci.h |    2 -
-> > >  arch/x86/kernel/pci-dma.c  |   64 ---------------------------------------------
-> > >  arch/x86/kernel/setup.c    |    1
-> > >  3 files changed, 67 deletions(-)
-> > 
-> > Cc:-ing Jesse - i suspect this should be handled by the PCI tree.
-> 
-> Please re-send, sounds good in theory but I'd like to see the patch.
+diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+index 9ceaa99..3672e15 100644
+--- a/drivers/staging/hv/blkvsc_drv.c
++++ b/drivers/staging/hv/blkvsc_drv.c
+@@ -162,8 +162,6 @@ static int blk_vsc_initialize(struct hv_driver *driver)
+ 	driver->name = g_blk_driver_name;
+ 	memcpy(&driver->dev_type, &g_blk_device_type, sizeof(struct hv_guid));
+ 
+-	stor_driver->request_ext_size =
+-	sizeof(struct storvsc_request_extension);
+ 
+ 	/*
+ 	 * Divide the ring buffer data size (which is 1 page less than the ring
+@@ -346,8 +344,7 @@ static int blkvsc_probe(struct device *device)
+ 	/* 	sizeof(struct blkvsc_request)); */
+ 
+ 	blkdev->request_pool = kmem_cache_create(dev_name(&device_obj->device),
+-					sizeof(struct blkvsc_request) +
+-					storvsc_drv_obj->request_ext_size, 0,
++					sizeof(struct blkvsc_request), 0,
+ 					SLAB_HWCACHE_ALIGN, NULL);
+ 	if (!blkdev->request_pool) {
+ 		ret = -ENOMEM;
+diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
+index e41b68b..eeaeaef 100644
+--- a/drivers/staging/hv/storvsc_api.h
++++ b/drivers/staging/hv/storvsc_api.h
+@@ -97,9 +97,6 @@ struct storvsc_driver_object {
+ 	/* Set by caller (in bytes) */
+ 	u32 ring_buffer_size;
+ 
+-	/* Allocate this much private extension for each I/O request */
+-	u32 request_ext_size;
+-
+ 	/* Maximum # of requests in flight per channel/device */
+ 	u32 max_outstanding_req_per_channel;
+ 
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 58d12e0..1d13f1b 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -96,8 +96,6 @@ static int stor_vsc_initialize(struct hv_driver *driver)
+ 	memcpy(&driver->dev_type, &gStorVscDeviceType,
+ 	       sizeof(struct hv_guid));
+ 
+-	stor_driver->request_ext_size =
+-			sizeof(struct storvsc_request_extension);
+ 
+ 	/*
+ 	 * Divide the ring buffer data size (which is 1 page less
+@@ -203,8 +201,7 @@ static int storvsc_drv_init(void)
+ 	drv->priv = storvsc_drv_obj;
+ 
+ 	DPRINT_INFO(STORVSC_DRV,
+-		    "request extension size %u, max outstanding reqs %u",
+-		    storvsc_drv_obj->request_ext_size,
++		    "max outstanding reqs %u",
+ 		    storvsc_drv_obj->max_outstanding_req_per_channel);
+ 
+ 	if (storvsc_drv_obj->max_outstanding_req_per_channel <
+@@ -359,8 +356,7 @@ static int storvsc_probe(struct device *device)
+ 
+ 	host_device_ctx->request_pool =
+ 				kmem_cache_create(dev_name(&device_obj->device),
+-					sizeof(struct storvsc_cmd_request) +
+-					storvsc_drv_obj->request_ext_size, 0,
++					sizeof(struct storvsc_cmd_request), 0,
+ 					SLAB_HWCACHE_ALIGN, NULL);
+ 
+ 	if (!host_device_ctx->request_pool) {
+@@ -759,8 +755,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 
+ 	request = &cmd_request->request;
+ 
+-	DPRINT_DBG(STORVSC_DRV, "req %p size %d ext %d", request, request_size,
+-		   storvsc_drv_obj->request_ext_size);
++	DPRINT_DBG(STORVSC_DRV, "req %p size %d", request, request_size);
+ 
+ 	/* Build the SRB */
+ 	switch (scmnd->sc_data_direction) {
+-- 
+1.7.4.1
 
-It should be in your lkml folder, the first mail in this thread has the patch.
-
-Thanks,
-
-	Ingo
