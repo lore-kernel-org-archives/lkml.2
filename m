@@ -1,97 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab1C1Uua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 16:50:30 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:32932 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753245Ab1C1Uu3 (ORCPT
+	id S1754471Ab1C1Uwb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 16:52:31 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16751 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab1C1Uw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 16:50:29 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjkEACnzkE15LK5JgWdsb2JhbAClQRUBARYmJcUkDYVcBJJ1
-Date: Tue, 29 Mar 2011 07:50:24 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 2.6.38.1: CPU#0 stuck for 67s! / xfs_ail_splice
-Message-ID: <20110328205024.GB3008@dastard>
-References: <alpine.DEB.2.02.1103260927500.21571@p34.internal.lan>
- <20110327232543.GU26611@dastard>
- <alpine.DEB.2.02.1103280406300.25113@p34.internal.lan>
+	Mon, 28 Mar 2011 16:52:29 -0400
+Date: Mon, 28 Mar 2011 22:52:30 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Alex Williamson <alex.williamson@redhat.com>
+cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        iommu@lists.linux-foundation.org,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] Intel IOMMU: get_domain_for_dev() leaks a bit of mem if
+ dmar_find_matched_drhd_unit() fails.
+In-Reply-To: <alpine.LNX.2.00.1102101914440.26035@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1103282251510.23292@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1102062102390.13593@swampdragon.chaosbits.net> <1297357174.2963.4.camel@x201> <alpine.LNX.2.00.1102101914440.26035@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1103280406300.25113@p34.internal.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 04:10:11AM -0400, Justin Piszcz wrote:
+
+PING
+
+Any chance we could merge the updated patch below?
+
+/Jesper
+
+
+On Thu, 10 Feb 2011, Jesper Juhl wrote:
+
+> On Thu, 10 Feb 2011, Alex Williamson wrote:
+> 
+> > On Sun, 2011-02-06 at 21:11 +0100, Jesper Juhl wrote:
+> > > I believe that there's a small memory leak in 
+> > > drivers/pci/intel-iommu.c:get_domain_for_dev().
+> > > 
+> > > If the call to alloc_domain() succeeds but the subsequent call to 
+> > > dmar_find_matched_drhd_unit() fails, then the current code will return 
+> > > NULL without calling domain_exit(domain) which will leak the memory that 
+> > > alloc_domain() allocated.
+> > > 
+> > > The easy fix for that is to simply move the call to alloc_domain() below 
+> > > the call to dmar_find_matched_drhd_unit() since the latter does not depend 
+> > > on the former.
+> > > 
+> > > I also made the change of moving the assignment to local variable 'iommu' 
+> > > below both calls since there is no point in doing that work if either of 
+> > > those those calls fail.
+> > > 
+> > > I also changed the 'return NULL' in the dmar_find_matched_drhd_unit() 
+> > > failure case to a 'goto error' since I figured that if rechecking 
+> > > 'find_domain(pdev)' makes sense after a alloc_domain() failure then it 
+> > > would also make sense after a dmar_find_matched_drhd_unit() failure.
+> > 
+> > I don't think this change buys us anything.  The goto error here seems
+> > to be a hope that another cpu may have beat us and succeeded at
+> > something we failed.  In the case of matching the pci device to a drhd,
+> > this should be deterministic (unless maybe we're racing a hot added
+> > drhd).  The rest seems fine to me.  Thanks,
+> > 
+> > Alex
+> > 
+> 
+> Ok. Updated patch below that leaves out the 'goto error' bit for 
+> dmar_find_matched_drhd_unit() failures.
 > 
 > 
-> On Mon, 28 Mar 2011, Dave Chinner wrote:
 > 
-> >On Sat, Mar 26, 2011 at 09:29:36AM -0400, Justin Piszcz wrote:
-> >>Hi,
-> >>
-> >>When I rm -rf a directory of a few hundred thousand
-> >>files/directories on XFS under 2.6.38.1, I see the following, is
-> >>this normal?
-> >
-> >No. What is you filesystem config (xfs_info) and your mount options?
-> >Is it repeatable? I? the system otherwise stalled or is it still
-> >operating normally? Does it recover and work normally after such a
-> >stall?
+> There is a small memory leak in 
+> drivers/pci/intel-iommu.c:get_domain_for_dev().
 > 
-> Hi Dave, default mkfs.xfs options:
+> If the call to alloc_domain() succeeds but the subsequent call to 
+> dmar_find_matched_drhd_unit() fails, then the current code will return 
+> NULL without calling domain_exit(domain) which will leak the memory that 
+> alloc_domain() allocated.
 > 
-> >What is you filesystem config (xfs_info) and your mount options?
+> The easy fix for that is to simply move the call to alloc_domain() below 
+> the call to dmar_find_matched_drhd_unit() since the latter does not depend 
+> on the former.
 > 
-> # xfs_info /dev/sda1
-> meta-data=/dev/sda1              isize=256    agcount=44, agsize=268435455 blks
->          =                       sectsz=512   attr=2
-> data     =                       bsize=4096   blocks=11718704640, imaxpct=5
->          =                       sunit=0      swidth=0 blks
-> naming   =version 2              bsize=4096   ascii-ci=0
-> log      =internal               bsize=4096   blocks=521728, version=2
->          =                       sectsz=512   sunit=0 blks, lazy-count=1
-> realtime =none                   extsz=4096   blocks=0, rtextents=0
-
-A 44TB filesystem with a 2GB log, right?
-
-> /dev/sda1 on /r1 type xfs (rw,noatime,nobarrier,logbufs=8,logbsize=262144,delaylog,inode64)
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  intel-iommu.c |    9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
 > 
-> >Is it repeatable?
-> I've not tried to repeat it as is spews messages over all of my consoles but
-> it has happened more than once.
-
-OK.
-
-> >the system otherwise stalled or is it still operating normally?
-> The console/xterm/ssh etc that is performing the removal does lockup but
-> you are able to access the machine via a separate ssh connection.
+> diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+> index 4789f8e..3cfb021 100644
+> --- a/drivers/pci/intel-iommu.c
+> +++ b/drivers/pci/intel-iommu.c
+> @@ -1820,10 +1820,6 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
+>  		}
+>  	}
+>  
+> -	domain = alloc_domain();
+> -	if (!domain)
+> -		goto error;
+> -
+>  	/* Allocate new domain for the device */
+>  	drhd = dmar_find_matched_drhd_unit(pdev);
+>  	if (!drhd) {
+> @@ -1831,8 +1827,11 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
+>  			pci_name(pdev));
+>  		return NULL;
+>  	}
+> -	iommu = drhd->iommu;
+> +	domain = alloc_domain();
+> +	if (!domain)
+> +		goto error;
+>  
+> +	iommu = drhd->iommu;
+>  	ret = iommu_attach_domain(domain, iommu);
+>  	if (ret) {
+>  		domain_exit(domain);
 > 
-> >Does it recover and work normally after such a stall?
-> Yes, eventually, I believe I started seeing this problem when I added
-> 'delaylog' option to the mount options..
+> 
+> 
 
-OK, that is what I suspected.
-
-What it sounds like is that there is a checkpoint completing with an
-out-of-order log sequence number so the items in the checkpoint are
-not being inserted at the end of the AIL and that is where the CPU
-usage is coming from. Without delaylog, a single transaction being
-inserted out-of-order is unnoticeable as it's only a few items. A
-delaylog checkpoint can be tens of thousands of items which is where
-the CPU usage would come from.
-
-I'll have to reproduce this locally to confirm this theory (and test
-the fix).
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
