@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab1C1O62 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 10:58:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54460 "EHLO mail.zytor.com"
+	id S1754053Ab1C1O67 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 10:58:59 -0400
+Received: from mx5.twosigma.com ([208.77.212.35]:59492 "EHLO mx5.twosigma.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753543Ab1C1O60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 10:58:26 -0400
-Message-ID: <4D90A1FE.4000405@zytor.com>
-Date: Mon, 28 Mar 2011 07:58:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752206Ab1C1O66 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 10:58:58 -0400
+From: Sean Noonan <Sean.Noonan@twosigma.com>
+To: "'Michel Lespinasse'" <walken@google.com>,
+        Christoph Hellwig <hch@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Martin Bligh <Martin.Bligh@twosigma.com>,
+        Trammell Hudson <Trammell.Hudson@twosigma.com>,
+        Christos Zoulas <Christos.Zoulas@twosigma.com>,
+        "linux-xfs@oss.sgi.com" <linux-xfs@oss.sgi.com>,
+        Stephen Degler <Stephen.Degler@twosigma.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Mon, 28 Mar 2011 10:58:53 -0400
+Subject: RE: XFS memory allocation deadlock in 2.6.38
+Thread-Topic: XFS memory allocation deadlock in 2.6.38
+Thread-Index: AcvqfZivehhF+3ElQ0WLyr/42LSzHwC2ut6w
+Message-ID: <081DDE43F61F3D43929A181B477DCA95639B5349@MSXAOA6.twosigma.com>
+References: <081DDE43F61F3D43929A181B477DCA95639B52FD@MSXAOA6.twosigma.com>
+	<081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
+	<20110324174311.GA31576@infradead.org>
+ <AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
+In-Reply-To: <AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com,
-        torvalds@linux-foundation.org, rostedt@goodmis.org,
-        srostedt@redhat.com, tglx@linutronix.de, adobriyan@gmail.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/urgent] WARN_ON_SMP(): Add comment to explain ({0;})
-References: <tip-ccd0d44fad38dc1bb4b26dcc7a30e9f2c3b36870@git.kernel.org>	<4D90A08D.707@zytor.com> <AANLkTinh6nraZND1mQJ4ofPbABOtJNEnGYYEkqs92RQM@mail.gmail.com>
-In-Reply-To: <AANLkTinh6nraZND1mQJ4ofPbABOtJNEnGYYEkqs92RQM@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2011 07:56 AM, richard -rw- weinberger wrote:
->>
->> What the heck is wrong with the idiomatic and non-gcc-extension-using:
->>
->>        ((void)0)
->>
->> ?
-> 
-> AFAIK you cannot use it within an if-statement.
-> 
+> Regarding the deadlock: I am curious to see if it could be made to
+> happen before 5ecfda041e4b4bd858d25bbf5a16c2a6c06d7272. Could you test
+> what happens if you remove the MAP_POPULATE flag from your mmap call,
+> and instead read all pages from userspace right after the mmap ? I
+> expect you would then be able to trigger the deadlock before
+> 5ecfda041e4b4bd858d25bbf5a16c2a6c06d7272.
 
-OK, fair enough.
+I still see the deadlock without MAP_POPULATE
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Sean
