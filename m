@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab1C1Qwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:52:42 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:60948
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	id S932238Ab1C1Qwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:52:41 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60610
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754853Ab1C1QuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754879Ab1C1QuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Mar 2011 12:50:12 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 12/22] Staging: hv:  Get rid of the forward declaration for blkvsc_release()
-Date: Mon, 28 Mar 2011 10:00:43 -0700
-Message-Id: <1301331653-26265-12-git-send-email-kys@microsoft.com>
+Subject: [PATCH 14/22] Staging: hv: Get rid of the forward declaration of blkvsc_do_read_capacity16()
+Date: Mon, 28 Mar 2011 10:00:45 -0700
+Message-Id: <1301331653-26265-14-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301331653-26265-1-git-send-email-kys@microsoft.com>
 References: <1301331615-26226-1-git-send-email-kys@microsoft.com>
@@ -25,82 +25,210 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration for blkvsc_release() by moving the code
-around.
+Get rid of the forward declaration of blkvsc_do_read_capacity16() by moving
+the code around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |   45 +++++++++++++++++++--------------------
- 1 files changed, 22 insertions(+), 23 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |  168 +++++++++++++++++++-------------------
+ 1 files changed, 84 insertions(+), 84 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 1b05369..720d54b 100644
+index b93c8b7..86a7587 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -676,9 +676,30 @@ static void blkvsc_shutdown(struct device *device)
- 	spin_unlock_irqrestore(&blkdev->lock, flags);
+@@ -774,6 +774,90 @@ static int blkvsc_do_read_capacity(struct block_device_context *blkdev)
+ 	return 0;
  }
  
-+static int blkvsc_release(struct gendisk *disk, fmode_t mode)
++
++static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
 +{
-+	struct block_device_context *blkdev = disk->private_data;
++	struct blkvsc_request *blkvsc_req;
++	struct page *page_buf;
++	unsigned char *buf;
++	struct scsi_sense_hdr sense_hdr;
++	struct vmscsi_request *vm_srb;
 +
-+	DPRINT_DBG(BLKVSC_DRV, "- users %d disk %s\n", blkdev->users,
-+		   blkdev->gd->disk_name);
++	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_read_capacity16()\n");
 +
-+	mutex_lock(&blkvsc_mutex);
-+	spin_lock(&blkdev->lock);
-+	if (blkdev->users == 1) {
-+		spin_unlock(&blkdev->lock);
-+		blkvsc_do_flush(blkdev);
-+		spin_lock(&blkdev->lock);
++	blkdev->sector_size = 0;
++	blkdev->capacity = 0;
++	blkdev->media_not_present = 0; /* assume a disk is present */
++
++	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
++	if (!blkvsc_req)
++		return -ENOMEM;
++
++	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
++	vm_srb = &blkvsc_req->request.vstor_packet.vm_srb;
++	page_buf = alloc_page(GFP_KERNEL);
++	if (!page_buf) {
++		kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
++		return -ENOMEM;
 +	}
 +
-+	blkdev->users--;
++	init_completion(&blkvsc_req->request.wait_event);
++	blkvsc_req->dev = blkdev;
++	blkvsc_req->req = NULL;
++	blkvsc_req->write = 0;
 +
-+	spin_unlock(&blkdev->lock);
-+	mutex_unlock(&blkvsc_mutex);
++	blkvsc_req->request.data_buffer.pfn_array[0] =
++	page_to_pfn(page_buf);
++	blkvsc_req->request.data_buffer.offset = 0;
++	blkvsc_req->request.data_buffer.len = 12;
++
++	blkvsc_req->cmnd[0] = 0x9E; /* READ_CAPACITY16; */
++	blkvsc_req->cmd_len = 16;
++
++	/*
++	 * Set this here since the completion routine may be invoked
++	 * and completed before we return
++	 */
++
++	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
++
++	DPRINT_DBG(BLKVSC_DRV, "waiting %p to complete\n",
++		   blkvsc_req);
++
++	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
++
++	/* check error */
++	if (vm_srb->scsi_status) {
++		scsi_normalize_sense(blkvsc_req->sense_buffer,
++				     SCSI_SENSE_BUFFERSIZE, &sense_hdr);
++		if (sense_hdr.asc == 0x3A) {
++			/* Medium not present */
++			blkdev->media_not_present = 1;
++		}
++		return 0;
++	}
++	buf = kmap(page_buf);
++
++	/* be to le */
++	blkdev->capacity = be64_to_cpu(*(unsigned long long *) &buf[0]) + 1;
++	blkdev->sector_size = be32_to_cpu(*(unsigned int *)&buf[8]);
++
++#if 0
++	blkdev->capacity = ((buf[0] << 24) | (buf[1] << 16) |
++			    (buf[2] << 8) | buf[3]) + 1;
++	blkdev->sector_size = (buf[4] << 24) | (buf[5] << 16) |
++			      (buf[6] << 8) | buf[7];
++#endif
++
++	kunmap(page_buf);
++
++	__free_page(page_buf);
++
++	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
++
 +	return 0;
 +}
 +
  /* Static decl */
  static int blkvsc_probe(struct device *dev);
--static int blkvsc_release(struct gendisk *disk, fmode_t mode);
  static int blkvsc_revalidate_disk(struct gendisk *gd);
- static void blkvsc_request(struct request_queue *queue);
- static void blkvsc_request_completion(struct hv_storvsc_request *request);
-@@ -1488,28 +1509,6 @@ static void blkvsc_request(struct request_queue *queue)
- 	}
+@@ -782,7 +866,6 @@ static void blkvsc_request_completion(struct hv_storvsc_request *request);
+ static int blkvsc_do_request(struct block_device_context *blkdev,
+ 			     struct request *req);
+ static int blkvsc_do_inquiry(struct block_device_context *blkdev);
+-static int blkvsc_do_read_capacity16(struct block_device_context *blkdev);
+ static int blkvsc_do_pending_reqs(struct block_device_context *blkdev);
+ 
+ static int blkvsc_ringbuffer_size = BLKVSC_RING_BUFFER_SIZE;
+@@ -1115,89 +1198,6 @@ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
+ 	return 0;
  }
  
--static int blkvsc_release(struct gendisk *disk, fmode_t mode)
+-static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
 -{
--	struct block_device_context *blkdev = disk->private_data;
+-	struct blkvsc_request *blkvsc_req;
+-	struct page *page_buf;
+-	unsigned char *buf;
+-	struct scsi_sense_hdr sense_hdr;
+-	struct vmscsi_request *vm_srb;
 -
--	DPRINT_DBG(BLKVSC_DRV, "- users %d disk %s\n", blkdev->users,
--		   blkdev->gd->disk_name);
+-	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_read_capacity16()\n");
 -
--	mutex_lock(&blkvsc_mutex);
--	spin_lock(&blkdev->lock);
--	if (blkdev->users == 1) {
--		spin_unlock(&blkdev->lock);
--		blkvsc_do_flush(blkdev);
--		spin_lock(&blkdev->lock);
+-	blkdev->sector_size = 0;
+-	blkdev->capacity = 0;
+-	blkdev->media_not_present = 0; /* assume a disk is present */
+-
+-	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
+-	if (!blkvsc_req)
+-		return -ENOMEM;
+-
+-	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
+-	vm_srb = &blkvsc_req->request.vstor_packet.vm_srb;
+-	page_buf = alloc_page(GFP_KERNEL);
+-	if (!page_buf) {
+-		kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
+-		return -ENOMEM;
 -	}
 -
--	blkdev->users--;
+-	init_completion(&blkvsc_req->request.wait_event);
+-	blkvsc_req->dev = blkdev;
+-	blkvsc_req->req = NULL;
+-	blkvsc_req->write = 0;
 -
--	spin_unlock(&blkdev->lock);
--	mutex_unlock(&blkvsc_mutex);
+-	blkvsc_req->request.data_buffer.pfn_array[0] =
+-	page_to_pfn(page_buf);
+-	blkvsc_req->request.data_buffer.offset = 0;
+-	blkvsc_req->request.data_buffer.len = 12;
+-
+-	blkvsc_req->cmnd[0] = 0x9E; /* READ_CAPACITY16; */
+-	blkvsc_req->cmd_len = 16;
+-
+-	/*
+-	 * Set this here since the completion routine may be invoked
+-	 * and completed before we return
+-	 */
+-
+-	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
+-
+-	DPRINT_DBG(BLKVSC_DRV, "waiting %p to complete\n",
+-		   blkvsc_req);
+-
+-	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
+-
+-	/* check error */
+-	if (vm_srb->scsi_status) {
+-		scsi_normalize_sense(blkvsc_req->sense_buffer,
+-				     SCSI_SENSE_BUFFERSIZE, &sense_hdr);
+-		if (sense_hdr.asc == 0x3A) {
+-			/* Medium not present */
+-			blkdev->media_not_present = 1;
+-		}
+-		return 0;
+-	}
+-	buf = kmap(page_buf);
+-
+-	/* be to le */
+-	blkdev->capacity = be64_to_cpu(*(unsigned long long *) &buf[0]) + 1;
+-	blkdev->sector_size = be32_to_cpu(*(unsigned int *)&buf[8]);
+-
+-#if 0
+-	blkdev->capacity = ((buf[0] << 24) | (buf[1] << 16) |
+-			    (buf[2] << 8) | buf[3]) + 1;
+-	blkdev->sector_size = (buf[4] << 24) | (buf[5] << 16) |
+-			      (buf[6] << 8) | buf[7];
+-#endif
+-
+-	kunmap(page_buf);
+-
+-	__free_page(page_buf);
+-
+-	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
+-
 -	return 0;
 -}
 -
- 
- static int blkvsc_revalidate_disk(struct gendisk *gd)
- {
+ /*
+  * We break the request into 1 or more blkvsc_requests and submit
+  * them.  If we cant submit them all, we put them on the
 -- 
 1.7.4.1
 
