@@ -1,68 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab1C1QM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:12:57 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:48814 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751016Ab1C1QMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:12:55 -0400
-Date: Mon, 28 Mar 2011 09:12:52 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers: make device_type const
-Message-ID: <20110328091252.75a22583@nehalam>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754661Ab1C1QNM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:13:12 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51937 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543Ab1C1QNE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 12:13:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=d33MpN/zE2de8yREJigcTyk/yrjHN3ozJvlRnr/XnD8u4CalYg348bJ0EeJbtWMeIC
+         r8D/WI83rfyonsICd9BKtduKOJeOabduw6vXF8m78rWB/Nxe7EOjHT1uJwtgZY0YtRgp
+         12r2zngqPKOgakZisizld+rGrvCtm4f2InhW0=
+MIME-Version: 1.0
+In-Reply-To: <20101119214412.633136072@clark.site>
+References: <20101119214439.GA26350@kroah.com>
+	<20101119214412.633136072@clark.site>
+Date: Mon, 28 Mar 2011 18:13:03 +0200
+Message-ID: <BANLkTi=ey_dGo2W6SG4su_VaNP56nC8s3w@mail.gmail.com>
+Subject: Re: [39/45] OHCI: work around for nVidia shutdown problem
+From: "Andre \"Osku\" Schmidt" <andre.osku.schmidt@googlemail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <david-b@pacbell.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device_type structure does not contain data that changes
-during usage and should be const. This allows devices to declare
-the struct const.
+On Fri, Nov 19, 2010 at 10:43 PM, Greg KH <gregkh@suse.de> wrote:
+> 2.6.32-stable review patch. †If anyone has any objections, please let us know.
+>
+> ------------------
+>
+> From: Alan Stern <stern@rowland.harvard.edu>
+>
+> commit 3df7169e73fc1d71a39cffeacc969f6840cdf52b upstream.
+>
+> This patch (as1417) fixes a problem affecting some (or all) nVidia
+> chipsets. †When the computer is shut down, the OHCI controllers
+> continue to power the USB buses and evidently they drive a Reset
+> signal out all their ports. †This prevents attached devices from going
+> to low power. †Mouse LEDs stay on, for example, which is disconcerting
+> for users and a drain on laptop batteries.
+>
+> The fix involves leaving each OHCI controller in the OPERATIONAL state
+> during system shutdown rather than putting it in the RESET state.
+> Although this nominally means the controller is running, in fact it's
+> not doing very much since all the schedules are all disabled. †However
+> there is ongoing DMA to the Host Controller Communications Area, so
+> the patch also disables the bus-master capability of all PCI USB
+> controllers after the shutdown routine runs.
+>
+> The fix is applied only to nVidia-based PCI OHCI controllers, so it
+> shouldn't cause problems on systems using other hardware. †As an added
+> safety measure, in case the kernel encounters one of these running
+> controllers during boot, the patch changes quirk_usb_handoff_ohci()
+> (which runs early on during PCI discovery) to reset the controller
+> before anything bad can happen.
+>
+> Reported-by: Pali Roh√°r <pali.rohar@gmail.com>
+> Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+> CC: David Brownell <david-b@pacbell.net>
+> Tested-by: Pali Roh√°r <pali.rohar@gmail.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>
+> ---
+> †drivers/usb/core/hcd-pci.c † †| † †4 +++-
+> †drivers/usb/host/ohci-hcd.c † | † †9 ++++++++-
+> †drivers/usb/host/ohci-pci.c † | † 18 ++++++++++++++++++
+> †drivers/usb/host/ohci.h † † † | † †1 +
+> †drivers/usb/host/pci-quirks.c | † 18 +++++++++++-------
+> †5 files changed, 41 insertions(+), 9 deletions(-)
+>
+> --- a/drivers/usb/core/hcd-pci.c
+> +++ b/drivers/usb/core/hcd-pci.c
+> @@ -197,8 +197,10 @@ void usb_hcd_pci_shutdown(struct pci_dev
+> † † † †if (!hcd)
+> † † † † † † † †return;
+>
+> - † † † if (hcd->driver->shutdown)
+> + † † † if (hcd->driver->shutdown) {
+> † † † † † † † †hcd->driver->shutdown(hcd);
+> + † † † † † † † pci_disable_device(dev);
+> + † † † }
+> †}
+> †EXPORT_SYMBOL_GPL(usb_hcd_pci_shutdown);
+>
+> --- a/drivers/usb/host/ohci-hcd.c
+> +++ b/drivers/usb/host/ohci-hcd.c
+> @@ -398,7 +398,14 @@ ohci_shutdown (struct usb_hcd *hcd)
+>
+> † † † †ohci = hcd_to_ohci (hcd);
+> † † † †ohci_writel (ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
+> - † † † ohci_usb_reset (ohci);
+> + † † † ohci->hc_control = ohci_readl(ohci, &ohci->regs->control);
+> +
+> + † † † /* If the SHUTDOWN quirk is set, don't put the controller in RESET */
+> + † † † ohci->hc_control &= (ohci->flags & OHCI_QUIRK_SHUTDOWN ?
+> + † † † † † † † † † † † OHCI_CTRL_RWC | OHCI_CTRL_HCFS :
+> + † † † † † † † † † † † OHCI_CTRL_RWC);
+> + † † † ohci_writel(ohci, ohci->hc_control, &ohci->regs->control);
+> +
+> † † † †/* flush the writes */
+> † † † †(void) ohci_readl (ohci, &ohci->regs->control);
+> †}
+> --- a/drivers/usb/host/ohci-pci.c
+> +++ b/drivers/usb/host/ohci-pci.c
+> @@ -201,6 +201,20 @@ static int ohci_quirk_amd700(struct usb_
+> † † † †return 0;
+> †}
+>
+> +/* nVidia controllers continue to drive Reset signalling on the bus
+> + * even after system shutdown, wasting power. †This flag tells the
+> + * shutdown routine to leave the controller OPERATIONAL instead of RESET.
+> + */
+> +static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
+> +{
+> + † † † struct ohci_hcd *ohci = hcd_to_ohci(hcd);
+> +
+> + † † † ohci->flags |= OHCI_QUIRK_SHUTDOWN;
+> + † † † ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
+> +
+> + † † † return 0;
+> +}
+> +
+> †/*
+> †* The hardware normally enables the A-link power management feature, which
+> †* lets the system lower the power consumption in idle states.
+> @@ -332,6 +346,10 @@ static const struct pci_device_id ohci_p
+> † † † † † † † †PCI_DEVICE(PCI_VENDOR_ID_ATI, 0x4399),
+> † † † † † † † †.driver_data = (unsigned long)ohci_quirk_amd700,
+> † † † †},
+> + † † † {
+> + † † † † † † † PCI_DEVICE(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID),
+> + † † † † † † † .driver_data = (unsigned long) ohci_quirk_nvidia_shutdown,
+> + † † † },
+>
+> † † † †/* FIXME for some of the early AMD 760 southbridges, OHCI
+> † † † † * won't work at all. †blacklist them.
+> --- a/drivers/usb/host/ohci.h
+> +++ b/drivers/usb/host/ohci.h
+> @@ -403,6 +403,7 @@ struct ohci_hcd {
+> †#define † † † †OHCI_QUIRK_HUB_POWER † †0x100 † † † † † † † † † /* distrust firmware power/oc setup */
+> †#define † † † †OHCI_QUIRK_AMD_ISO † † †0x200 † † † † † † † † † /* ISO transfers*/
+> †#define † † † †OHCI_QUIRK_AMD_PREFETCH 0x400 † † † † † † † † † /* pre-fetch for ISO transfer */
+> +#define † † † †OHCI_QUIRK_SHUTDOWN † † 0x800 † † † † † † † † † /* nVidia power bug */
+> † † † †// there are also chip quirks/bugs in init logic
+>
+> † † † †struct work_struct † † †nec_work; † † † /* Worker for NEC quirk */
+> --- a/drivers/usb/host/pci-quirks.c
+> +++ b/drivers/usb/host/pci-quirks.c
+> @@ -169,6 +169,7 @@ static int __devinit mmio_resource_enabl
+> †static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
+> †{
+> † † † †void __iomem *base;
+> + † † † u32 control;
+>
+> † † † †if (!mmio_resource_enabled(pdev, 0))
+> † † † † † † † †return;
+> @@ -177,10 +178,14 @@ static void __devinit quirk_usb_handoff_
+> † † † †if (base == NULL)
+> † † † † † † † †return;
+>
+> + † † † control = readl(base + OHCI_CONTROL);
+> +
+> †/* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
+> -#ifndef __hppa__
+> -{
+> - † † † u32 control = readl(base + OHCI_CONTROL);
+> +#ifdef __hppa__
+> +#define † † † †OHCI_CTRL_MASK † † † † †(OHCI_CTRL_RWC | OHCI_CTRL_IR)
+> +#else
+> +#define † † † †OHCI_CTRL_MASK † † † † †OHCI_CTRL_RWC
+> +
+> † † † †if (control & OHCI_CTRL_IR) {
+> † † † † † † † †int wait_time = 500; /* arbitrary; 5 seconds */
+> † † † † † † † †writel(OHCI_INTR_OC, base + OHCI_INTRENABLE);
+> @@ -194,13 +199,12 @@ static void __devinit quirk_usb_handoff_
+> † † † † † † † † † † † †dev_warn(&pdev->dev, "OHCI: BIOS handoff failed"
+> † † † † † † † † † † † † † † † † † † † †" (BIOS bug?) %08x\n",
+> † † † † † † † † † † † † † † † † † † † †readl(base + OHCI_CONTROL));
+> -
+> - † † † † † † † /* reset controller, preserving RWC */
+> - † † † † † † † writel(control & OHCI_CTRL_RWC, base + OHCI_CONTROL);
+> † † † †}
+> -}
+> †#endif
+>
+> + † † † /* reset controller, preserving RWC (and possibly IR) */
+> + † † † writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
+> +
+> † † † †/*
+> † † † † * disable interrupts
+> † † † † */
+>
+>
 
-I have patches to change all the subsystems, but need the infra
-structure change first.
+Hello,
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+i think it was back when my distro got linux 2.6.37 that i noticed the
+usb devices are not powered off anymore during shutdown. i was(/am)
+lazy and didn't bother to investigate, until today. i found
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/42149 which
+mentioned this patch (and that it was supposedly added in 2.6.37).
 
----
- drivers/base/core.c    |    4 ++--
- include/linux/device.h |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+i boldly reversed this part for my current kernel (2.6.38.1) and build it*:
 
---- a/drivers/base/core.c	2011-03-28 08:48:43.380836767 -0700
-+++ b/drivers/base/core.c	2011-03-28 08:48:46.228868558 -0700
-@@ -400,7 +400,7 @@ static void device_remove_groups(struct
- static int device_add_attrs(struct device *dev)
- {
- 	struct class *class = dev->class;
--	struct device_type *type = dev->type;
-+	const struct device_type *type = dev->type;
- 	int error;
- 
- 	if (class) {
-@@ -440,7 +440,7 @@ static int device_add_attrs(struct devic
- static void device_remove_attrs(struct device *dev)
- {
- 	struct class *class = dev->class;
--	struct device_type *type = dev->type;
-+	const struct device_type *type = dev->type;
- 
- 	device_remove_groups(dev, dev->groups);
- 
---- a/include/linux/device.h	2011-03-28 08:48:43.392836902 -0700
-+++ b/include/linux/device.h	2011-03-28 08:48:46.228868558 -0700
-@@ -408,7 +408,7 @@ struct device {
- 
- 	struct kobject kobj;
- 	const char		*init_name; /* initial name of the device */
--	struct device_type	*type;
-+	const struct device_type *type;
- 
- 	struct mutex		mutex;	/* mutex to synchronize calls to
- 					 * its driver.
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -398,7 +398,14 @@ ohci_shutdown (struct usb_hcd *hcd)
+
+ 	ohci = hcd_to_ohci (hcd);
+ 	ohci_writel (ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
+-	ohci_usb_reset (ohci);
++	ohci->hc_control = ohci_readl(ohci, &ohci->regs->control);
++
++	/* If the SHUTDOWN quirk is set, don't put the controller in RESET */
++	ohci->hc_control &= (ohci->flags & OHCI_QUIRK_SHUTDOWN ?
++			OHCI_CTRL_RWC | OHCI_CTRL_HCFS :
++			OHCI_CTRL_RWC);
++	ohci_writel(ohci, ohci->hc_control, &ohci->regs->control);
++
+ 	/* flush the writes */
+ 	(void) ohci_readl (ohci, &ohci->regs->control);
+ }
+
+lo and behold, my usb devices are now powered off again at shutdown.
+
+this was my first ever hack on the linux code, and i have no real idea
+what i'm doing here...
+but if theres anything i can do to help to solve this problem, please
+let me know!
+
+lspci -v | grep USB
+
+00:0b.0 USB Controller: nVidia Corporation MCP51 USB Controller (rev
+a3) (prog-if 10 [OHCI])
+00:0b.1 USB Controller: nVidia Corporation MCP51 USB Controller (rev
+a3) (prog-if 20 [EHCI])
+
+cheers
+.andre
+
+* by following this method
+https://wiki.archlinux.org/index.php/Kernel_Compilation
