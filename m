@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1C1STF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 14:19:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55260 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158Ab1C1STD (ORCPT
+	id S1755162Ab1C1SV0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 14:21:26 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:47606 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab1C1SVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 14:19:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=v0pWAr9A+eZmysyxs2epuyG16EtSfkJYfBQ7PiMXIMmvy+d6GyS0GhrBg5pxcdZpzr
-         6b7PMviOR5xyyl64X2BqJt0apj1cUZyTZVOVp0vIPv+CSC9iiYRBILP9NLbbQvSA8PLD
-         N2EeuVujrXDgriVoQrSw1nCuYfCgu7GRN0f+c=
-Date: Mon, 28 Mar 2011 21:18:56 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-kernel@vger.kernel.org, mingo@redhat.com,
-        torvalds@linux-foundation.org, srostedt@redhat.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/urgent] WARN_ON_SMP(): Add comment to explain ({0;})
-Message-ID: <20110328181855.GA6146@p183.telecom.by>
-References: <tip-ccd0d44fad38dc1bb4b26dcc7a30e9f2c3b36870@git.kernel.org>
- <4D90A08D.707@zytor.com>
- <AANLkTinh6nraZND1mQJ4ofPbABOtJNEnGYYEkqs92RQM@mail.gmail.com>
- <4D90A1FE.4000405@zytor.com>
- <1301324940.14261.232.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
+	Mon, 28 Mar 2011 14:21:24 -0400
+Date: Mon, 28 Mar 2011 20:21:23 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Jiri Kosina <jkosina@suse.cz>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>, linux-pm@lists.linux-foundation.org,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Ondrej Zary <linux@rainbow-software.org>
+Subject: Re: [PATCH] apm: orphan the driver
+Message-ID: <20110328182123.GX21838@one.firstfloor.org>
+References: <20110326172204.05e52c10.sfr@canb.auug.org.au> <alpine.LRH.2.00.1103281443240.8162@twin.jikos.cz> <20110329004438.d9e755ef.sfr@canb.auug.org.au> <alpine.LNX.2.00.1103281604040.26754@pobox.suse.cz> <20110328174542.GW21838@one.firstfloor.org> <4D90CC0B.8070105@zytor.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301324940.14261.232.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D90CC0B.8070105@zytor.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 11:09:00AM -0400, Steven Rostedt wrote:
-> Geeze, I never expected such a fuss over a simple change ;)
+> Or we phase out the APM effort by only supporting it for poweroff, for
+> example.
 
-And it's still broken ;-)
+Phasing out APM idle at least would be reasonable.  resumably even if the old 
+laptops still work they are likely on AC because their batteries have
+long died. So using a bit more power in idle shouldn't be a big
+issue.
 
-	[spoiler space]
+Not sure about suspend, screen saver etc. I suppose those could
+be kept as frozen legacy features. At least until someone else
+wants to redesign those parts too.
 
+-Andi
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-WARN_ON_SMP(x) should expand to x, not 0.
+-- 
+ak@linux.intel.com -- Speaking for myself only.
