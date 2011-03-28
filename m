@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab1C1RlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 13:41:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59107 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab1C1RlG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 13:41:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=b+8EhzwR6H/swUumKGmGTwMP7Uds6CLX3U3FJbNpvcopP4KiMzLQ5G/JyXOMWekpZf
-         Z0sDDTEaQEaBvIihsDWDRxAjRtVEU76Xz+RshO16jr/Y0feMDzBVBaJZHupCQpJA87n8
-         s0He9efiZOKiYANAUSHP+2HopWUANBcOi5Zw8=
+	id S932097Ab1C1RlY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 13:41:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40547 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755106Ab1C1RlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 13:41:23 -0400
+Date: Mon, 28 Mar 2011 18:41:19 +0100
+From: Steven Hardy <shardy@redhat.com>
+To: Greg KH <gregkh@suse.de>
+Cc: mjg@redhat.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PATCH 3/3] Resend : Fix memory leak in qcserial driver
+Message-ID: <20110328174119.GC7030@shardy.csb>
+References: <1301321186.4397.13.camel@shardy.csb>
+ <20110328142148.GA19521@suse.de>
 MIME-Version: 1.0
-Date: Mon, 28 Mar 2011 23:09:53 +0530
-Message-ID: <AANLkTikVjknc32PiZ2O4jb+JUgwffhULyxRxFUCOS+bv@mail.gmail.com>
-Subject: [PATCH] block: Replace NR_CPUS with num_online_cpus()
-From: Sisir Koppaka <sisir.koppaka@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110328142148.GA19521@suse.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NR_CPUS is a boot state and hence, not indicative of the actual number
-of online CPUs. This is a known checkpatch warning.
+Patch 3 of 3, this simply adds a couple of missing free's in the error path:
 
-Signed-off-by: Sisir Koppaka <sisir.koppaka@gmail.com>
-CC: Jens Axboe <jaxboe@fusionio.com>
-CC: Tejun Heo <tj@kernel.org>
----
- block/blk.h |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Original description:
+2 - Ensure that the serial->private data is freed in the event of the probe failing and returning -ENODEV.  This error-path leak is less likely but still possible, it was discussed previously but not actually fixed AFAICS: http://kerneltrap.org/mailarchive/linux-kernel/2010/6/14/4582980/thread, http://lkml.org/lkml/2010/6/20/234
 
-diff --git a/block/blk.h b/block/blk.h
-index c8db371..9a55515 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -1,3 +1,4 @@
-+#include <linux/cpumask.h>
- #ifndef BLK_INTERNAL_H
- #define BLK_INTERNAL_H
 
-@@ -136,7 +137,7 @@ static inline int
-queue_congestion_off_threshold(struct request_queue *q)
+Signed-off-by: Steve Hardy <shardy@redhat.com>
 
- static inline int blk_cpu_to_group(int cpu)
- {
--	int group = NR_CPUS;
-+	int group = num_online_cpus();
- #ifdef CONFIG_SCHED_MC
- 	const struct cpumask *mask = cpu_coregroup_mask(cpu);
- 	group = cpumask_first(mask);
-@@ -145,7 +146,7 @@ static inline int blk_cpu_to_group(int cpu)
- #else
- 	return cpu;
- #endif
--	if (likely(group < NR_CPUS))
-+	if (likely(group < num_online_cpus()))
- 		return group;
- 	return cpu;
- }
--- 
-1.7.0.4
 
-                sk
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 0463dab..6219fce 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -167,6 +167,7 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+ 					"Could not set interface, error %d\n",
+ 					retval);
+ 				retval = -ENODEV;
++				kfree(data);
+ 			}
+ 		} else if (ifnum == 2) {
+ 			dbg("Modem port found");
+@@ -191,6 +192,7 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+ 					"Could not set interface, error %d\n",
+ 					retval);
+ 				retval = -ENODEV;
++				kfree(data);
+ 			}
+ 		}
+ 		break;
