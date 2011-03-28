@@ -1,181 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab1C1Uc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 16:32:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42404 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309Ab1C1Uc5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 16:32:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OGjn/cPqoz0f0Z7cxJlS3PmY9DlB7bqkhvg1hUGfO5hU2wfA/JrE13isf05N71aTv3
-         ULqmQpAvEK+r6HqZgcQw8Caw2nnNMFzEE76dJzuAG831aJUFo120tBRbRKo/tJOCHLEq
-         l5GtCz5zFvTbI1jj7WHHsp3wT9K9uWmpjvHpY=
+	id S932254Ab1C1UdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 16:33:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41959 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753257Ab1C1UdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 16:33:19 -0400
+Date: Mon, 28 Mar 2011 13:32:07 -0700
+From: Greg KH <gregkh@suse.de>
+To: Wolfgang Walter <wolfgang.walter@stwm.de>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org,
+        Rick Koshi <nfs-bug-report@more-right-rudder.com>,
+        Ivo =?utf-8?Q?P=C5=99ikryl?= <prikryl@eurosat.cz>
+Subject: Re: 2.6.38.2: regression from 2.6.38: kernel BUG at
+ fs/nfsd/nfs4state.c:380!
+Message-ID: <20110328203207.GA17493@suse.de>
+References: <201103282223.06191.wolfgang.walter@stwm.de>
 MIME-Version: 1.0
-In-Reply-To: <20110328161659.12e10df0@tlielax.poochiereds.net>
-References: <20110328100846.0ba2e039@tlielax.poochiereds.net>
-	<4D90C472.3090908@linux.vnet.ibm.com>
-	<20110328141241.06a435f8@tlielax.poochiereds.net>
-	<20110328154543.1bb979fd@tlielax.poochiereds.net>
-	<AANLkTi=89x8P3m2gUhu1N=UAqa55JwhMB8TLvCvp1gwO@mail.gmail.com>
-	<20110328161659.12e10df0@tlielax.poochiereds.net>
-Date: Tue, 29 Mar 2011 02:02:54 +0530
-Message-ID: <AANLkTi=6WC=TAT1dCbs4j1SgYjpvXTHyysHNW5=qe1Lq@mail.gmail.com>
-Subject: Re: TPM chip prevents machine from suspending
-From: Sisir Koppaka <sisir.koppaka@gmail.com>
-To: Jeff Layton <jlayton@poochiereds.net>
-Cc: Stefan Berger <stefanb@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201103282223.06191.wolfgang.walter@stwm.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 1:46 AM, Jeff Layton <jlayton@poochiereds.net> wrote:
-> On Tue, 29 Mar 2011 01:27:05 +0530
-> Sisir Koppaka <sisir.koppaka@gmail.com> wrote:
->
->> On Tue, Mar 29, 2011 at 1:15 AM, Jeff Layton <jlayton@poochiereds.net> wrote:
->> > On Mon, 28 Mar 2011 14:12:41 -0400
->> > Jeff Layton <jlayton@poochiereds.net> wrote:
->> >
->> >> On Mon, 28 Mar 2011 13:25:06 -0400
->> >> Stefan Berger <stefanb@linux.vnet.ibm.com> wrote:
->> >>
->> >> > On 03/28/2011 10:08 AM, Jeff Layton wrote:
->> >> > > My wife's machine apparently has a TPM chip in it. Since I upgraded it
->> >> > > to Fedora 14, it fails to suspend consistently. On the first attempt to
->> >> > > suspend it, it works fine. Once it has woken back up however, it will
->> >> > > not suspend again. Here's the dmesg log from such an attempt:
->> >> > >
->> >> > > [  202.460967] PM: Syncing filesystems ... done.
->> >> > > [  202.464818] PM: Preparing system for mem sleep
->> >> > > [  202.485968] Freezing user space processes ... (elapsed 0.01 seconds) done.
->> >> > > [  202.497079] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
->> >> > > [  202.508067] PM: Entering mem sleep
->> >> > > [  202.508086] Suspending console(s) (use no_console_suspend to debug)
->> >> > > [  202.508451] sd 3:0:0:0: [sdb] Synchronizing SCSI cache
->> >> > > [  202.508562] sd 2:0:0:0: [sda] Synchronizing SCSI cache
->> >> > > [  202.508616] sd 3:0:0:0: [sdb] Stopping disk
->> >> > > [  202.511956] parport_pc 00:0b: disabled
->> >> > > [  202.512127] serial 00:09: disabled
->> >> > > [  202.512134] serial 00:09: wake-up capability disabled by ACPI
->> >> > > [  202.536058] legacy_suspend(): pnp_bus_suspend+0x0/0x82 returns 38
->> >> > > [  202.536061] PM: Device 00:02 failed to suspend: error 38
->> >> > > [  202.997517] sd 2:0:0:0: [sda] Stopping disk
->> >> > > [  202.997806] PM: Some devices failed to suspend
->> >> > > [  202.998085] sd 2:0:0:0: [sda] Starting disk
->> >> > > [  202.998144] sd 3:0:0:0: [sdb] Starting disk
->> >> > > [  202.998614] serial 00:09: activated
->> >> > > [  202.999158] parport_pc 00:0b: activated
->> >> > > [  204.543094] PM: resume of devices complete after 1545.282 msecs
->> >> > > [  204.543268] PM: Finishing wakeup.
->> >> > > [  204.543270] Restarting tasks ... done.
->> >> > >
->> >> > > ...error 38 is ENOSYS, and the 00:02 is this:
->> >> > >
->> >> > > # cat /sys/bus/pnp/devices/00\:02/id
->> >> > > IFX0102
->> >> > > PNP0c31
->> >> > Also the tpm_tis driver handles both of these. Can you confirm which
->> >> > module that laptop was using  (tpm_tis or tpm_infineon) and try whether
->> >> > one of them works better than the other one? Please do a reboot between
->> >> > trying one and then the other.
->> >> >
->> >>
->> >> It's using tpm_tis:
->> >>
->> >> lrwxrwxrwx. 1 root root 0 Mar 28 13:40 /sys/bus/pnp/devices/00:02/driver -> ../../../bus/pnp/drivers/tpm_tis
->> >>
->> >> FWIW, the fedora kernels have this:
->> >>
->> >> CONFIG_TCG_TPM=y
->> >> CONFIG_TCG_TIS=y
->> >> CONFIG_TCG_NSC=m
->> >> CONFIG_TCG_ATMEL=m
->> >> CONFIG_TCG_INFINEON=m
->> >>
->> >> When I boot, tpm_infineon is also plugged in, but I can remove that
->> >> module and nothing seems to change (not sure what's plugging it in).
->> >>
->> >> I can try using tpm_infineon, but I'm not sure how to disable tpm_tis
->> >> with it compiled in like this -- is that possible?
->> >>
->> >> > Try the following before and after a suspend/resume:
->> >> >
->> >> > cd /sys
->> >> > find . | grep caps$ | xargs cat
->> >> >
->> >> > It should display manufacturer data.
->> >> >
->> >>
->> >> There's only one "caps" file. Here's the before (after a fresh reboot):
->> >>
->> >> # cat ./devices/pnp0/00:02/caps
->> >> Manufacturer: 0x49465800
->> >> TCG version: 1.2
->> >> Firmware version: 1.0
->> >>
->> >> ...after a successful suspend/resume cycle:
->> >>
->> >> # cat ./devices/pnp0/00:02/caps
->> >>
->> >> ...it gives no output at all. Guess that lends some weight to the
->> >> theory of it not being reset properly on resume?
->> >>
->> >> Thanks for the help so far...
->> >
->> > FWIW, I turned up dynamic debugging on the tpm files and got this in
->> > the ring buffer when I tried to read from "caps":
->> >
->> > [ 6880.495071] tpm_tis 00:02: A TPM error (38) occurred attempting to determine the manufacturer
->> >
->> > I don't see any obvious places that return ENOSYS in the tpm code, so
->> > I'm not clear on where that's coming from...
->> >
->>
->> From drivers/char/tpm/tpm.c,
->>
->> static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
->>                             int len, const char *desc)
->> {
->>         int err;
->>
->>         len = tpm_transmit(chip,(u8 *) cmd, len);
->>         if (len <  0)
->>                 return len;
->>         if (len == TPM_ERROR_SIZE) {
->>                 err = be32_to_cpu(cmd->header.out.return_code);
->>                 dev_dbg(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
->>                 return err;
->>         }
->>         return 0;
->> }
->>
->> Where, desc comes from rc = tpm_getcap(dev, TPM_CAP_PROP_MANUFACTURER,
->> &cap, "attempting to determine the manufacturer");
->>
->> TPM_ERROR_SIZE is 10, looks like it satisfies that condition.
->>
->
-> Ahh yeah, I misread the code...
->
-> I guess then this error comes from the chip itself? Interesting that it
-> uses posix errors. Still though, it does seem like it's coming back
-> from resume in a bad state...
->
+On Mon, Mar 28, 2011 at 10:23:05PM +0200, Wolfgang Walter wrote:
+> Upgraded from 2.6.38 to 2.6.38.2: Got immediately:
+> 
+> Mar 28 21:35:08 au kernel: [  312.778443] ------------[ cut here ]------------
+> Mar 28 21:35:08 au kernel: [  312.778629] kernel BUG at fs/nfsd/nfs4state.c:380!
+> Mar 28 21:35:08 au kernel: [  312.778746] invalid opcode: 0000 [#1] SMP 
+> Mar 28 21:35:08 au kernel: [  312.778949] last sysfs file: /sys/devices/virtual/vc/vcsa6/uevent
+> Mar 28 21:35:08 au kernel: [  312.779068] CPU 3 
+> Mar 28 21:35:08 au kernel: [  312.779115] Modules linked in: i2c_i801 i5k_amb
+> Mar 28 21:35:08 au kernel: [  312.779469] 
+> Mar 28 21:35:08 au kernel: [  312.779581] Pid: 12850, comm: nfsd Not tainted 2.6.38.2-bigintel64a+1.17 #1 Supermicro X7DB8/X7DB8
+> Mar 28 21:35:08 au kernel: [  312.779970] RIP: 0010:[<ffffffff81281c8a>]  [<ffffffff81281c8a>] free_generic_stateid+0x3a/0xf0
+> Mar 28 21:35:08 au kernel: [  312.779970] RSP: 0018:ffff8803bd563b50  EFLAGS: 00010297
+> Mar 28 21:35:08 au kernel: [  312.779970] RAX: 00000000ffffffff RBX: ffff88040e726d58 RCX: ffff88040e726d78
+> Mar 28 21:35:08 au kernel: [  312.779970] RDX: 0000000000000004 RSI: 0000000000000000 RDI: ffff8803bd563b5c
+> Mar 28 21:35:08 au kernel: [  312.779970] RBP: ffff8803bd563b70 R08: dead000000200200 R09: dead000000100100
+> Mar 28 21:35:08 au kernel: [  312.779970] R10: dead000000200200 R11: dead000000100100 R12: ffff88040e726d58
+> Mar 28 21:35:08 au kernel: [  312.779970] R13: ffff88040b588dd0 R14: ffff88040b588d98 R15: ffff8803bd4421a0
+> Mar 28 21:35:08 au kernel: [  312.779970] FS:  0000000000000000(0000) GS:ffff8800cfd80000(0000) knlGS:0000000000000000
+> Mar 28 21:35:08 au kernel: [  312.779970] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> Mar 28 21:35:08 au kernel: [  312.779970] CR2: 00007ffe6063a530 CR3: 000000040dae3000 CR4: 00000000000006e0
+> Mar 28 21:35:08 au kernel: [  312.779970] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Mar 28 21:35:08 au kernel: [  312.779970] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Mar 28 21:35:08 au kernel: [  312.779970] Process nfsd (pid: 12850, threadinfo ffff8803bd562000, task ffff8803bd447290)
+> Mar 28 21:35:08 au kernel: [  312.779970] Stack:
+> Mar 28 21:35:08 au kernel: [  312.779970]  00000000000000d0 0000000000000202 ffff88040e726d58 ffff88040b588d98
+> Mar 28 21:35:08 au kernel: [  312.779970]  ffff8803bd563ba0 ffffffff81281df9 0000000000000011 0000000000000011
+> Mar 28 21:35:08 au kernel: [  312.779970]  0000000000000001 000000001d270000 ffff8803bd563dc0 ffffffff81286b4c
+> Mar 28 21:35:08 au kernel: [  312.779970] Call Trace:
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff81281df9>] release_lockowner+0xb9/0x1a0
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff81286b4c>] nfsd4_lock+0x50c/0x8d0
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff8126fd07>] ? nfsd_setuser+0x137/0x300
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff81268522>] ? nfsd_setuser_and_check_port+0x72/0x80
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff812686a5>] ? fh_verify+0x175/0x6d0
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff8174cb51>] ? unix_gid_lookup+0x61/0x70
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff8127737d>] nfsd4_proc_compound+0x33d/0x4a0
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff81264bfb>] nfsd_dispatch+0xbb/0x260
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff817489a2>] svc_process+0x4b2/0x840
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff812652a0>] ? nfsd+0x0/0x160
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff81265375>] nfsd+0xd5/0x160
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff81093b96>] kthread+0x96/0xb0
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff81032a54>] kernel_thread_helper+0x4/0x10
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff81093b00>] ? kthread+0x0/0xb0
+> Mar 28 21:35:08 au kernel: [  312.779970]  [<ffffffff81032a50>] ? kernel_thread_helper+0x0/0x10
+> Mar 28 21:35:08 au kernel: [  312.779970] Code: 8b 77 60 48 8d 7d ec e8 d5 fc ff ff 8b 45 ec 83 e0 03 83 f8 02 0f 84 b6 00 00 00 83 f8 03 0f 84 9d 00 00 00 ff c8 0f 1f 00 74 0e 
+> <0f> 0b 0f 1f 40 00 eb fa 66 0f 1f 44 00 00 31 f6 49 8b 7c 24 48 
+> Mar 28 21:35:08 au kernel: [  312.779970] RIP  [<ffffffff81281c8a>] free_generic_stateid+0x3a/0xf0
+> Mar 28 21:35:08 au kernel: [  312.779970]  RSP <ffff8803bd563b50>
+> Mar 28 21:35:08 au kernel: [  312.788300] ---[ end trace 0eb789063a9e575d ]---
+> 
+> 
+> Reverting
+> 
+> 	nfsd4: fix struct file leak
+> 
+> seems to "fix" it.
 
-Yup, it looks like the chip is at fault. The chip isn't supplying an
-appropriate value for the capability TPM_CAP_PROP_MANUFACTURER (See
-page 2 of [1], and compare with drivers/tpm/tpm.c). What is not clear
-is whether the fault in the chip's response is due to the driver
-code(maybe due to a firmware update etc.) or due to actual hardware
-corruption.
+Ick.
 
-http://www.trustedcomputinggroup.org/files/resource_files/137A54A3-1A4B-B294-D088F24684D141E1/Vendor%20ID%20Registry_0.1.pdf
+Bruce, should I revert this, or is something else needed to be able to
+have this patch applied?
 
-                sk
+thanks,
+
+greg k-h
