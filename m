@@ -1,51 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab1C1QRn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:17:43 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:50904 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751754Ab1C1QRl (ORCPT
+	id S1754597Ab1C1QSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:18:35 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:36713 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752051Ab1C1QSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:17:41 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=PFJyhvgD05hrjxS5rGc/3t2DCB2SQ7Zf70ozFMV5t7JjzjgIlM7oWoSr6NmMs5zbg3wtq/9E967s4uq3rIbpwve6+/Bf7WPxK3kgalk+tpxOAO1yr6X+6QNGcvW1Jnj1;
-Date: Mon, 28 Mar 2011 09:17:32 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Narendra_K@Dell.com,
-        viro@zeniv.linux.org.uk, sfr@canb.auug.org.au,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Shyam_Iyer@Dell.com, Matt_Domsch@Dell.com, Charles_Rose@Dell.com,
-        Jordan_Hargrave@Dell.com
-Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
- allmodconfig
-Message-ID: <20110328091732.12e7d850@jbarnes-desktop>
-In-Reply-To: <20110328080220.1390d28e.randy.dunlap@oracle.com>
-References: <20110223131536.GA16707@fedora14-r610.blr.amer.dell.com>
-	<20110223131734.GA6275@srcf.ucam.org>
-	<20110304101509.7eef7475@jbarnes-desktop>
-	<20110328080220.1390d28e.randy.dunlap@oracle.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Mon, 28 Mar 2011 12:18:34 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@suse.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [PATCH 2/7] ARM / OMAP: Use struct syscore_ops for "core" power management
+Organization: Texas Instruments, Inc.
+References: <201103280125.11750.rjw@sisk.pl> <201103280127.09110.rjw@sisk.pl>
+Date: Mon, 28 Mar 2011 09:18:28 -0700
+In-Reply-To: <201103280127.09110.rjw@sisk.pl> (Rafael J. Wysocki's message of
+	"Mon, 28 Mar 2011 01:27:08 +0200")
+Message-ID: <87ipv3kyln.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011 08:02:20 -0700
-Randy Dunlap <randy.dunlap@oracle.com> wrote:
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
-> This driver still has build failures in linux-next 20110328.
-> 
-> pci-label.c:(.text+0x9a40): undefined reference to `utf16s_to_utf8s'
-> 
-> CONFIG_NLS=m
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+> Replace the sysdev class and struct sys_device used for power
+> management in the OMAP's GPIO code with a struct syscore_ops object
+> which is simpler.
+>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Narenda, please send a fix asap.
+Acked-by: Kevin Hilman <khilman@ti.com>
 
-Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Looks fine to me.  We're in the process of converting this driver to
+runtime PM.  When that happens the syscore ops will be removed as well,
+but I'm fine with this patch until we finish the runtime PM conversion.
+
+Kevin
+
+> ---
+>  arch/arm/plat-omap/gpio.c |   35 +++++++++--------------------------
+>  1 file changed, 9 insertions(+), 26 deletions(-)
+>
+> Index: linux-2.6/arch/arm/plat-omap/gpio.c
+> ===================================================================
+> --- linux-2.6.orig/arch/arm/plat-omap/gpio.c
+> +++ linux-2.6/arch/arm/plat-omap/gpio.c
+> @@ -17,7 +17,7 @@
+>  #include <linux/init.h>
+>  #include <linux/module.h>
+>  #include <linux/interrupt.h>
+> -#include <linux/sysdev.h>
+> +#include <linux/syscore_ops.h>
+>  #include <linux/err.h>
+>  #include <linux/clk.h>
+>  #include <linux/io.h>
+> @@ -1379,9 +1379,7 @@ static const struct dev_pm_ops omap_mpui
+>  	.resume_noirq = omap_mpuio_resume_noirq,
+>  };
+>  
+> -/* use platform_driver for this, now that there's no longer any
+> - * point to sys_device (other than not disturbing old code).
+> - */
+> +/* use platform_driver for this. */
+>  static struct platform_driver omap_mpuio_driver = {
+>  	.driver		= {
+>  		.name	= "mpuio",
+> @@ -1754,7 +1752,7 @@ static int __devinit omap_gpio_probe(str
+>  }
+>  
+>  #if defined(CONFIG_ARCH_OMAP16XX) || defined(CONFIG_ARCH_OMAP2PLUS)
+> -static int omap_gpio_suspend(struct sys_device *dev, pm_message_t mesg)
+> +static int omap_gpio_suspend(void)
+>  {
+>  	int i;
+>  
+> @@ -1804,12 +1802,12 @@ static int omap_gpio_suspend(struct sys_
+>  	return 0;
+>  }
+>  
+> -static int omap_gpio_resume(struct sys_device *dev)
+> +static void omap_gpio_resume(void)
+>  {
+>  	int i;
+>  
+>  	if (!cpu_class_is_omap2() && !cpu_is_omap16xx())
+> -		return 0;
+> +		return;
+>  
+>  	for (i = 0; i < gpio_bank_count; i++) {
+>  		struct gpio_bank *bank = &gpio_bank[i];
+> @@ -1845,21 +1843,13 @@ static int omap_gpio_resume(struct sys_d
+>  		__raw_writel(bank->saved_wakeup, wake_set);
+>  		spin_unlock_irqrestore(&bank->lock, flags);
+>  	}
+> -
+> -	return 0;
+>  }
+>  
+> -static struct sysdev_class omap_gpio_sysclass = {
+> -	.name		= "gpio",
+> +static struct syscore_ops omap_gpio_syscore_ops = {
+>  	.suspend	= omap_gpio_suspend,
+>  	.resume		= omap_gpio_resume,
+>  };
+>  
+> -static struct sys_device omap_gpio_device = {
+> -	.id		= 0,
+> -	.cls		= &omap_gpio_sysclass,
+> -};
+> -
+>  #endif
+>  
+>  #ifdef CONFIG_ARCH_OMAP2PLUS
+> @@ -2117,21 +2107,14 @@ postcore_initcall(omap_gpio_drv_reg);
+>  
+>  static int __init omap_gpio_sysinit(void)
+>  {
+> -	int ret = 0;
+> -
+>  	mpuio_init();
+>  
+>  #if defined(CONFIG_ARCH_OMAP16XX) || defined(CONFIG_ARCH_OMAP2PLUS)
+> -	if (cpu_is_omap16xx() || cpu_class_is_omap2()) {
+> -		if (ret == 0) {
+> -			ret = sysdev_class_register(&omap_gpio_sysclass);
+> -			if (ret == 0)
+> -				ret = sysdev_register(&omap_gpio_device);
+> -		}
+> -	}
+> +	if (cpu_is_omap16xx() || cpu_class_is_omap2())
+> +		register_syscore_ops(&omap_gpio_syscore_ops);
+>  #endif
+>  
+> -	return ret;
+> +	return 0;
+>  }
+>  
+>  arch_initcall(omap_gpio_sysinit);
