@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab1C1CKe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 22:10:34 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51424 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753251Ab1C1CKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 22:10:33 -0400
-Date: Mon, 28 Mar 2011 13:10:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: linux-next: build failure after merge of the mmc tree
-Message-Id: <20110328131018.96742ebb.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__28_Mar_2011_13_10_18_+1100_qi=OX9N35.Lf57Fu"
+	id S1753468Ab1C1C2b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 22:28:31 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:42345 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753271Ab1C1C23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 22:28:29 -0400
+Date: Sun, 27 Mar 2011 22:28:28 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Chuck Ebbert <cebbert@redhat.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, Ed Tomlinson <edt@aei.ca>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [Bug #28562] [BUG] usb problems in .38-rc3+
+In-Reply-To: <20110327205727.3abd06b5@katamari>
+Message-ID: <Pine.LNX.4.44L0.1103272226260.10807-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_Mar_2011_13_10_18_+1100_qi=OX9N35.Lf57Fu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 27 Mar 2011, Chuck Ebbert wrote:
 
-Hi Chris,
+> On Sun, 27 Mar 2011 22:27:34 +0200 (CEST)
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28562
+> > Subject		: [BUG] usb problems in .38-rc3+
+> > Submitter	: Ed Tomlinson <edt@aei.ca>
+> > Date		: 2011-02-05 19:17 (51 days old)
+> > Message-ID	: <201102051417.58953.edt@aei.ca>
+> > References	: http://marc.info/?l=linux-kernel&m=129693391417607&w=2
+> > 
+> 
+> From the original report:
+> 
+> [108495.369056] usb 5-1: new full speed USB device using ohci_hcd and address 3
+> [108495.573077] usb 5-1: New USB device found, idVendor=0a12, idProduct=0001
+> [108495.580099] usb 5-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+> [108652.971977] usb 5-1: USB disconnect, address 3
+> [108652.972718] btusb_bulk_complete: hci0 urb ffff8800684e99c0 failed to resubmit (19)
+> [108652.973725] btusb_bulk_complete: hci0 urb ffff8800684e9c00 failed to resubmit (19)
+> [108652.974707] btusb_intr_complete: hci0 urb ffff8800684e9840 failed to resubmit (19)
+> [108653.001690] btusb_send_frame: hci0 urb ffff8800bb42a240 submission failed
+> [108657.007541] usb 2-4.7: new full speed USB device using ehci_hcd and address 8
+> [108657.147736] usb 2-4.7: New USB device found, idVendor=0a12, idProduct=0001
+> [108657.154954] usb 2-4.7: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+> 
+> I just noticed this: the device is claimed by OHCI, then ~150 seconds later(!)
+> it disconnects and then gets claimed by EHCI, presumably while it's in use.
 
-After merging the mmc tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+Probably what happened is that Ed unplugged the device after 150
+seconds of non-operation, and then four seconds later plugged it into
+an external high-speed hub.
 
-drivers/mmc/host/tmio_mmc_pio.c: In function 'sd_ctrl_read16_rep':
-drivers/mmc/host/tmio_mmc_pio.c:56: error: implicit declaration of function=
- 'readsw'
-drivers/mmc/host/tmio_mmc_pio.c: In function 'sd_ctrl_write16_rep':
-drivers/mmc/host/tmio_mmc_pio.c:73: error: implicit declaration of function=
- 'writesw'
+Alan Stern
 
-Presumably caused by commit b6147490e6aa ("mmc: tmio: split core
-functionality, DMA and MFD glue").
-
-I have used the mmc tree from next-20110325 for tdoay.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__28_Mar_2011_13_10_18_+1100_qi=OX9N35.Lf57Fu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNj+4KAAoJEDMEi1NhKgbsdO8H/077H8NhTQkSwLv3sBV/GAV2
-3ffyZxYZDu9YhdiZ1LyQ8C3YTG+TOGn4+rOY2whqcaTx7yZN9utmip81KrIlsrFl
-DchOCCiHWgm5JpEh36Fs/wQZTwp89wbH1hwWQbW/wT16LwMF5KpkiG5tc4UD+tIc
-q2RN6Vf8/ZW3FAboGBLZburcgr+7xw6D2jcarI9kWl/Jiz3ebEA/fKMF9th62Et2
-r8GygCkjNfPJOtdVpGXCWH3pQ9ttZxIpYluj08ifFt2lHjFMQZmdeFiiS2sjeJ1S
-9f3Bdr4He7uJFg1osJyKNzuHnmSWnrdkks7vZwXw86nSr4ySeRyw2UJvASf8jlM=
-=RZrO
------END PGP SIGNATURE-----
-
---Signature=_Mon__28_Mar_2011_13_10_18_+1100_qi=OX9N35.Lf57Fu--
