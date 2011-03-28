@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab1C1QcB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:32:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40102 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab1C1Qb6 (ORCPT
+	id S932209Ab1C1Qcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:32:31 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48024 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab1C1Qap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:31:58 -0400
+	Mon, 28 Mar 2011 12:30:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=UZ9feEGznib/co95jGArRlk+nEHpAAJHmHsGLQaK6VH9D4CuirJKljwwwqBg5cLpOn
-         gAdUSRyTGsr6y/aFOFsXb4maKHUoHk34e4mzv8TDoyeOL4fveRsbv5xfQeUFB0JbVc2l
-         hVjMNgWkNxM9eI/Fx5kcr+GrIlMR9eBMLk3Y4=
-Subject: Re: [PATCH v4 1/2] ata: pata_at91.c bugfix for initial_timing
- initialisation
-From: Igor Plyatov <plyatov@gmail.com>
-Reply-To: plyatov@gmail.com
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4D90B3ED.8080608@ru.mvista.com>
-References: <1301316975-27761-1-git-send-email-plyatov@gmail.com>
-	 <4D90B3ED.8080608@ru.mvista.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Mar 2011 20:31:51 +0400
-Message-ID: <1301329911.2668.3.camel@homepc>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=tRI5iOFZNxAvWW9NAIudlCYRLzdOzxeX1a7VyTLSpNvj3dgLPfBY6DMTr0n2IC32JC
+         /BP/csnGGk2j8/WEbYxsEFRTJ6a0tA+iVRZ10sg/ORK1gSPWRfXGDt3aO3CosQlAeTyF
+         s+clcTJJYQm89MiIKK/RWjP2lca7ZTebiHZfM=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 20/25]include:linux Remove version.h since it is unused.
+Date: Mon, 28 Mar 2011 09:29:43 -0700
+Message-Id: <1301329788-3423-21-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1301329788-3423-1-git-send-email-justinmattock@gmail.com>
+References: <1301329788-3423-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sergei!
+The patch below removes <linux/version.h> since it is nolonger
+in the kernel.
 
-> Hello.
-> 
-> Igor Plyatov wrote:
-> 
-> > The "struct ata_timing" must contain 10 members, but ".dmack_hold" member was
-> > forgotten for "initial_timing" initialisation. This patch fixes such a problem.
-> 
-> > Signed-off-by: Igor Plyatov <plyatov@gmail.com>
-> > ---
-> >  drivers/ata/pata_at91.c |   14 ++++++++++++--
-> >  1 files changed, 12 insertions(+), 2 deletions(-)
-> 
-> > diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
-> > index 0da0dcc..0267d54 100644
-> > --- a/drivers/ata/pata_at91.c
-> > +++ b/drivers/ata/pata_at91.c
-> > @@ -49,8 +49,18 @@ struct at91_ide_info {
-> >  	void __iomem *alt_addr;
-> >  };
-> >  
-> > -static const struct ata_timing initial_timing =
-> > -	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 600, 0};
-> > +static const struct ata_timing initial_timing = {
-> > +	.mode		= XFER_PIO_0,
-> > +	.setup		= 70,
-> > +	.act8b		= 290,
-> > +	.rec8b		= 240,
-> > +	.cyc8b		= 600,
-> > +	.active		= 165,
-> > +	.recover	= 150,
-> > +	.dmack_hold	= 0,
-> > +	.cycle		= 600,
-> > +	.udma		= 0
-> > +};
-> 
->    There's no need to explicitly initialize to 0.
-> 
-> MBR, Sergei
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-It's much better to explicitly initialise, then use old wrong code,
-where .dmack_hold member was equal to 600.
+---
+ include/linux/ceph/messenger.h |    1 -
+ include/linux/media.h          |    1 -
+ include/media/pwc-ioctl.h      |    1 -
+ 3 files changed, 0 insertions(+), 3 deletions(-)
 
-Best regards!
---
-Igor Plyatov
-
+diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
+index 31d91a6..291aa6e 100644
+--- a/include/linux/ceph/messenger.h
++++ b/include/linux/ceph/messenger.h
+@@ -6,7 +6,6 @@
+ #include <linux/net.h>
+ #include <linux/radix-tree.h>
+ #include <linux/uio.h>
+-#include <linux/version.h>
+ #include <linux/workqueue.h>
+ 
+ #include "types.h"
+diff --git a/include/linux/media.h b/include/linux/media.h
+index 0ef8833..92641e2 100644
+--- a/include/linux/media.h
++++ b/include/linux/media.h
+@@ -25,7 +25,6 @@
+ 
+ #include <linux/ioctl.h>
+ #include <linux/types.h>
+-#include <linux/version.h>
+ 
+ #define MEDIA_API_VERSION	KERNEL_VERSION(0, 1, 0)
+ 
+diff --git a/include/media/pwc-ioctl.h b/include/media/pwc-ioctl.h
+index 0f19779..1ed1e61 100644
+--- a/include/media/pwc-ioctl.h
++++ b/include/media/pwc-ioctl.h
+@@ -53,7 +53,6 @@
+  */
+ 
+ #include <linux/types.h>
+-#include <linux/version.h>
+ 
+ /* Enumeration of image sizes */
+ #define PSZ_SQCIF	0x00
+-- 
+1.7.4.1
 
