@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab1C1Bh7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 21:37:59 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51291
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753280Ab1C1Bh6 (ORCPT
+	id S1753452Ab1C1Bzs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 21:55:48 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:64386 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753251Ab1C1Bzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 21:37:58 -0400
-Date: Sun, 27 Mar 2011 18:37:19 -0700 (PDT)
-Message-Id: <20110327.183719.242146299.davem@davemloft.net>
-To: cesarb@cesarb.net
-Cc: netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        eric.dumazet@gmail.com, Tristram.Ha@micrel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: use CHECKSUM_NONE instead of magic number
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1301152230-4897-1-git-send-email-cesarb@cesarb.net>
-References: <1301152230-4897-1-git-send-email-cesarb@cesarb.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 27 Mar 2011 21:55:46 -0400
+From: Ryan Mallon <ryan@bluewatersys.com>
+To: viro@zeniv.linux.org.uk, dchinner@redhat.com, Trond.Myklebust@netapp.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Ryan Mallon <ryan@bluewatersys.com>
+Subject: [RFC PATCH 2/2] Use __igrab instead of igrab in nfs_inode_add_request
+Date: Mon, 28 Mar 2011 14:56:01 +1300
+Message-Id: <1301277361-9453-3-git-send-email-ryan@bluewatersys.com>
+X-Mailer: git-send-email 1.5.5.1
+In-Reply-To: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com>
+References: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-Date: Sat, 26 Mar 2011 12:10:30 -0300
+nfs_inode_add_request already holds inode->i_lock, so call the unlocked
+__igrab instead of igrab.
 
-> Two places in the kernel were doing skb->ip_summed = 0.
-> 
-> Change both to skb->ip_summed = CHECKSUM_NONE, which is more readable.
-> 
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
+---
+ fs/nfs/write.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Applied, thank you.
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 85d7525..b161642 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -390,7 +390,7 @@ static int nfs_inode_add_request(struct inode *inode, struct nfs_page *req)
+ 	error = radix_tree_insert(&nfsi->nfs_page_tree, req->wb_index, req);
+ 	BUG_ON(error);
+ 	if (!nfsi->npages) {
+-		igrab(inode);
++		__igrab(inode);
+ 		if (nfs_have_delegation(inode, FMODE_WRITE))
+ 			nfsi->change_attr++;
+ 	}
+-- 
+1.7.0.4
+
