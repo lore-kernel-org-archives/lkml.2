@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab1C1FDO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 01:03:14 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:42067 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab1C1FDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 01:03:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Bzb3iRGZGNsIw1oFFf5Oes9XAv8MLuLMkLjL2o8D2zaTkwJ0tnZmvhPhAJ4RgxbTgh
-         QEttoaf+oba1PGQXaa15OnE2B/WRV1iNfBdRojUWcU0wrjuVV4nZBRcWMR/jpekeMaC3
-         FDLMRKuM+vMr3rS3tULj2179vHHBp4g81vK+w=
-Date: Mon, 28 Mar 2011 13:02:58 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: wanlong.gao@gmail.com
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: Re: [PATCH] Fixed the format error for unnecessary spaces or
- required spaces.
-Message-ID: <20110328050256.GB2158@gmail.com>
-Mail-Followup-To: wanlong.gao@gmail.com, linux-kernel@vger.kernel.org,
-	greg@kroah.com
-References: <1301193920-4515-1-git-send-email-wanlong.gao@gmail.com>
+	id S1751984Ab1C1FDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 01:03:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5191 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776Ab1C1FDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 01:03:32 -0400
+Message-ID: <4D90167F.5080308@redhat.com>
+Date: Mon, 28 Mar 2011 13:02:55 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301193920-4515-1-git-send-email-wanlong.gao@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric B Munson <emunson@mgebm.net>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [Patch] proc: check error pointer returned by m_start()
+References: <20110327175203.GA15862@fibrous.localdomain> <1301284006-18808-1-git-send-email-amwang@redhat.com> <AANLkTi=mqKF=xeMYbj9LZgPfSLHSkO1JRXsNTW3LyHqu@mail.gmail.com>
+In-Reply-To: <AANLkTi=mqKF=xeMYbj9LZgPfSLHSkO1JRXsNTW3LyHqu@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 27, 2011 at 10:45:20AM +0800, wanlong.gao@gmail.com wrote:
-> From: Wanlong Gao <wanlong.gao@gmail.com>
-> 
-> Better has no spaces at the start of a line
-> 	FILE: ab3100-core.c:372
-> 
-> Better has no space before tabs
-> 	FILE: adp5520.c:361
-> 
-> Space required after that ','
-> 	FILE: dm355evm_msp.c:97
-> 
-> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
-Acked-by: Harry Wei <harryxiyou@gmail.com>
-> ---
->  drivers/mfd/ab3100-core.c  |    2 +-
->  drivers/mfd/adp5520.c      |    2 +-
->  drivers/mfd/dm355evm_msp.c |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-> index 4193af5..010b358 100644
-> --- a/drivers/mfd/ab3100-core.c
-> +++ b/drivers/mfd/ab3100-core.c
-> @@ -369,7 +369,7 @@ EXPORT_SYMBOL(ab3100_event_register);
->  int ab3100_event_unregister(struct ab3100 *ab3100,
->  			    struct notifier_block *nb)
->  {
-> -  return blocking_notifier_chain_unregister(&ab3100->event_subscribers,
-> +	return blocking_notifier_chain_unregister(&ab3100->event_subscribers,
->  					    nb);
->  }
->  EXPORT_SYMBOL(ab3100_event_unregister);
-> diff --git a/drivers/mfd/adp5520.c b/drivers/mfd/adp5520.c
-> index 3122139..ccf6dc3 100644
-> --- a/drivers/mfd/adp5520.c
-> +++ b/drivers/mfd/adp5520.c
-> @@ -358,7 +358,7 @@ static struct i2c_driver adp5520_driver = {
->  	.remove		= __devexit_p(adp5520_remove),
->  	.suspend	= adp5520_suspend,
->  	.resume		= adp5520_resume,
-> -	.id_table 	= adp5520_id,
-> +	.id_table	= adp5520_id,
->  };
->  
->  static int __init adp5520_init(void)
-> diff --git a/drivers/mfd/dm355evm_msp.c b/drivers/mfd/dm355evm_msp.c
-> index 3d4a861..7ebe68b 100644
-> --- a/drivers/mfd/dm355evm_msp.c
-> +++ b/drivers/mfd/dm355evm_msp.c
-> @@ -94,7 +94,7 @@ EXPORT_SYMBOL(dm355evm_msp_read);
->   * Many of the msp430 pins are just used as fixed-direction GPIOs.
->   * We could export a few more of them this way, if we wanted.
->   */
-> -#define MSP_GPIO(bit,reg)	((DM355EVM_MSP_ ## reg) << 3 | (bit))
-> +#define MSP_GPIO(bit, reg)	((DM355EVM_MSP_ ## reg) << 3 | (bit))
->  
->  static const u8 msp_gpios[] = {
->  	/* eight leds */
-> -- 
-> 1.7.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+于 2011年03月28日 11:58, Linus Torvalds 写道:
+> On Sun, Mar 27, 2011 at 8:46 PM, Amerigo Wang<amwang@redhat.com>  wrote:
+>>
+>> This is true, that commit changed the return value of m_start(),
+>> which will return an error pointer on failure, but Al forgot
+>> to check the error pointer in m_stop() which will be called
+>> when m_start() fails. This patches fixes it.
+>
+> I did this slightly differently, and put the check in m_stop()
+> instead, because I felt that matched the logic of m_start, while
+> vma_stop() is more of an internal helper thing.
+>
+
+Ok, I am fine with this, will send an updated patch.
+
+> I dunno. I don't think it matters. But one thing I reacted to was that
+> when I was walking through the logic, I really wanted to say "seq_file
+> is wrong to call m_stop if m_start returned an error code". I really
+> felt like "hwy, if ->start fails, we damn well shouldn't have called
+> ->stop".
+
+
+This is a good point and makes prefect sense.
+
+>
+> But I guess we're stuck with that particular semantic for seq_files by now.
+>
+
+Yup, I guess there are some seq_file users still rely on this behavior,
+we can fix them all later.
+
+Thanks.
