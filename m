@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab1C1IOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 04:14:35 -0400
+	id S1753378Ab1C1IOq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 04:14:46 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:60308 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab1C1IOd (ORCPT
+	with ESMTP id S1751026Ab1C1IOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 04:14:33 -0400
+	Mon, 28 Mar 2011 04:14:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:organization:to:subject:date:user-agent:cc:references
          :in-reply-to:mime-version:content-type:content-transfer-encoding
          :message-id;
-        b=B4XkvIF/SxfK7I4hGi0Y5RfrOSPce07Il0O/H+NWfv/gHM6lQwxEvqcGKPYqALl+O0
-         hdvL+mzNOsMoWin2tWCrzIAnhV38j1Lq7liPaDJH0W+107c+GelCdYx4H9cHazCTL7kE
-         djCSzLUtCYvNfCHYkxIQOC+HuFLpfLimMY0pc=
+        b=tIW1dWJeP3kZ32o0ao00JzwZYZ/OoRD2o+sCnWvYfMdOePmyTCHKDh3QUSVzzaxwUT
+         qUyJAYB6ywtjeo6ekClSGIjjHOmSCEPnTjj7CZ8jdUqGw4T/GdJsjaJ0d3/S1sY32yqP
+         JnvYuJu6TVtezg4fhEzA+rmPcq7/VNfPWD5fw=
 From: Florian Fainelli <florian@openwrt.org>
 Organization: OpenWrt
 To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] vlynq: Convert irq functions
-Date: Mon, 28 Mar 2011 10:15:02 +0200
+Subject: Re: [PATCH v2] vlynq: Convert irq functions
+Date: Mon, 28 Mar 2011 10:15:15 +0200
 User-Agent: KMail/1.13.5 (Linux/2.6.35-25-server; KDE/4.5.1; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-References: <alpine.LFD.2.00.1103251223240.31464@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1103251223240.31464@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1103251223240.31464@localhost6.localdomain6> <alpine.LFD.2.00.1103252150180.31464@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103252150180.31464@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103281015.02968.florian@openwrt.org>
+Message-Id: <201103281015.15706.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 25 March 2011 12:28:27 Thomas Gleixner wrote:
+On Friday 25 March 2011 21:56:37 Thomas Gleixner wrote:
 > Convert to the new irq_chip functions and the new namespace.
 > 
 > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
@@ -42,6 +42,9 @@ On Friday 25 March 2011 12:28:27 Thomas Gleixner wrote:
 Acked-by: Florian Fainelli <florian@openwrt.org>
 
 > ---
+> [ Sorry, a bug in my coccinelle script went unnoticed due to other local
+>   changes }
+> 
 >  drivers/vlynq/vlynq.c |   64
 > ++++++++++++++++++++++++-------------------------- 1 file changed, 31
 > insertions(+), 33 deletions(-)
@@ -59,7 +62,7 @@ Acked-by: Florian Fainelli <florian@openwrt.org>
 >  {
 > -	u32 val;
 > -	struct vlynq_device *dev = get_irq_chip_data(irq);
-> +	struct vlynq_device *dev = irq_data_get_chip_data(d);
+> +	struct vlynq_device *dev = irq_data_get_irq_chip_data(d);
 >  	int virq;
 > +	u32 val;
 > 
@@ -76,7 +79,7 @@ Acked-by: Florian Fainelli <florian@openwrt.org>
 >  {
 > -	u32 val;
 > -	struct vlynq_device *dev = get_irq_chip_data(irq);
-> +	struct vlynq_device *dev = irq_data_get_chip_data(d);
+> +	struct vlynq_device *dev = irq_data_get_irq_chip_data(d);
 >  	int virq;
 > +	u32 val;
 > 
@@ -93,7 +96,7 @@ Acked-by: Florian Fainelli <florian@openwrt.org>
 >  {
 > -	u32 val;
 > -	struct vlynq_device *dev = get_irq_chip_data(irq);
-> +	struct vlynq_device *dev = irq_data_get_chip_data(d);
+> +	struct vlynq_device *dev = irq_data_get_irq_chip_data(d);
 >  	int virq;
 > +	u32 val;
 > 
@@ -112,7 +115,7 @@ Acked-by: Florian Fainelli <florian@openwrt.org>
 >  {
 > -	struct vlynq_device *dev = get_irq_chip_data(irq);
 > -
-> +	struct vlynq_device *dev = irq_data_get_chip_data(d);
+> +	struct vlynq_device *dev = irq_data_get_irq_chip_data(d);
 >  	u32 status = readl(&dev->local->status);
 > 
 >  	pr_debug("%s: local status: 0x%08x\n",
@@ -125,7 +128,7 @@ Acked-by: Florian Fainelli <florian@openwrt.org>
 >  {
 > -	struct vlynq_device *dev = get_irq_chip_data(irq);
 > -
-> +	struct vlynq_device *dev = irq_data_get_chip_data(d);
+> +	struct vlynq_device *dev = irq_data_get_irq_chip_data(d);
 >  	u32 status = readl(&dev->remote->status);
 > 
 >  	pr_debug("%s: remote status: 0x%08x\n",
@@ -186,8 +189,3 @@ Acked-by: Florian Fainelli <florian@openwrt.org>
 >  			writel(0, &dev->remote->int_device[virq >> 2]);
 >  		}
 >  	}
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
