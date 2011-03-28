@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab1C1QXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:23:09 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:55153
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754077Ab1C1QXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:23:01 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 12/20] Staging: hv: Get rid of cdb from struct hv_storvsc_request
-Date: Mon, 28 Mar 2011 09:33:37 -0700
-Message-Id: <1301330025-25542-12-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1301330025-25542-1-git-send-email-kys@microsoft.com>
-References: <1301329950-25490-1-git-send-email-kys@microsoft.com>
- <1301330025-25542-1-git-send-email-kys@microsoft.com>
+	id S1754945Ab1C1QYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:24:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab1C1QYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 12:24:19 -0400
+Date: Mon, 28 Mar 2011 17:15:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
+	value
+Message-ID: <20110328151511.GA3608@redhat.com>
+References: <20110324164436.GC1930@jolsa.brq.redhat.com> <1301153868.2250.359.camel@laptop> <20110326161346.GA18272@redhat.com> <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com> <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop> <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301324275.4859.25.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for consolidating all I/O request state, get rid of the
-cdb field from struct hv_storvsc_request and instead
-directly copy the command into struct vmscsi_request.
+On 03/28, Peter Zijlstra wrote:
+>
+> --- linux-2.6.orig/kernel/perf_event.c
+> +++ linux-2.6/kernel/perf_event.c
+> @@ -1767,7 +1767,6 @@ static void ctx_sched_out(struct perf_ev
+>  	struct perf_event *event;
+>
+>  	raw_spin_lock(&ctx->lock);
+> -	perf_pmu_disable(ctx->pmu);
+>  	ctx->is_active = 0;
+>  	if (likely(!ctx->nr_events))
+>  		goto out;
+> @@ -1777,6 +1776,7 @@ static void ctx_sched_out(struct perf_ev
+>  	if (!ctx->nr_active)
+>  		goto out;
+>
+> +	perf_pmu_disable(ctx->pmu);
+>  	if (event_type & EVENT_PINNED) {
+>  		list_for_each_entry(event, &ctx->pinned_groups, group_entry)
+>  			group_sched_out(event, cpuctx, ctx);
+> @@ -1786,8 +1786,8 @@ static void ctx_sched_out(struct perf_ev
+>  		list_for_each_entry(event, &ctx->flexible_groups, group_entry)
+>  			group_sched_out(event, cpuctx, ctx);
+>  	}
+> -out:
+>  	perf_pmu_enable(ctx->pmu);
+> +out:
+>  	raw_spin_unlock(&ctx->lock);
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/blkvsc_drv.c  |    3 ++-
- drivers/staging/hv/storvsc.c     |    6 ++----
- drivers/staging/hv/storvsc_api.h |    1 -
- drivers/staging/hv/storvsc_drv.c |    3 ++-
- 4 files changed, 6 insertions(+), 7 deletions(-)
+Yes, thanks.
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 3db622d..a156930 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -947,7 +947,8 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
- 	vm_srb->lun = 0;	 /* this is not really used at all */
- 
- 	vm_srb->cdb_length = blkvsc_req->cmd_len;
--	storvsc_req->cdb = blkvsc_req->cmnd;
-+
-+	memcpy(vm_srb->cdb, blkvsc_req->cmnd, vm_srb->cdb_length);
- 
- 	storvsc_req->sense_buffer = blkvsc_req->sense_buffer;
- 	storvsc_req->sense_buffer_size = SCSI_SENSE_BUFFERSIZE;
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 5a5065c..ca41c05 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -301,7 +301,8 @@ static void stor_vsc_on_io_completion(struct hv_device *device,
- 	if (request->status != 0 || vstor_packet->vm_srb.srb_status != 1) {
- 		DPRINT_WARN(STORVSC,
- 			    "cmd 0x%x scsi status 0x%x srb status 0x%x\n",
--			    request->cdb[0], vstor_packet->vm_srb.scsi_status,
-+			    vstor_packet->vm_srb.cdb[0],
-+			    vstor_packet->vm_srb.scsi_status,
- 			    vstor_packet->vm_srb.srb_status);
- 	}
- 
-@@ -551,9 +552,6 @@ int stor_vsc_on_io_request(struct hv_device *device,
- 
- 	vstor_packet->vm_srb.sense_info_length = SENSE_BUFFER_SIZE;
- 
--	/* Copy over the scsi command descriptor block */
--	memcpy(&vstor_packet->vm_srb.cdb, request->cdb,
--		 vstor_packet->vm_srb.cdb_length);
- 
- 	vstor_packet->vm_srb.data_transfer_length = request->data_buffer.len;
- 
-diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
-index fd3af2b..55c5cc6 100644
---- a/drivers/staging/hv/storvsc_api.h
-+++ b/drivers/staging/hv/storvsc_api.h
-@@ -66,7 +66,6 @@ struct storvsc_request_extension {
- };
- 
- struct hv_storvsc_request {
--	u8 *cdb;
- 	u32 status;
- 	u32 bytes_xfer;
- 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index c0ccae2..08c2df4 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -781,7 +781,8 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
- 
- 	/* ASSERT(scmnd->cmd_len <= 16); */
- 	vm_srb->cdb_length = scmnd->cmd_len;
--	request->cdb = scmnd->cmnd;
-+
-+	memcpy(vm_srb->cdb, scmnd->cmnd, vm_srb->cdb_length);
- 
- 	request->sense_buffer = scmnd->sense_buffer;
- 	request->sense_buffer_size = SCSI_SENSE_BUFFERSIZE;
--- 
-1.7.4.1
+Probably this doesn't matter from the perfomance pov, but imho this
+makes the code more understandable. This is important for occasional
+readers like me ;)
+
+
+Could you answer another question? It is not immediately clear why
+ctx_sched_in() does not check nr_active != 0 before doing
+ctx_XXX_sched_in(). I guess, the only reason is perf_rotate_context()
+and the similar logic in perf_event_context_sched_in(). If we are
+doing, say, cpu_ctx_sched_out(FLEXIBLE) + cpu_ctx_sched_in(FLEXIBLE)
+then ->nr_active can be zero after cpu_ctx_sched_out().
+
+Is my understanding correct? Or is there another reason?
+
+Oleg.
 
