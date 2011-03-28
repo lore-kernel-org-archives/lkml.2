@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab1C1HI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 03:08:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29125 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752500Ab1C1HI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 03:08:27 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, Amerigo Wang <amwang@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric B Munson <emunson@mgebm.net>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 2/2] proc: do cleanup in m_start() rather than m_stop()
-Date: Mon, 28 Mar 2011 15:07:32 +0800
-Message-Id: <1301296053-23589-2-git-send-email-amwang@redhat.com>
-In-Reply-To: <1301296053-23589-1-git-send-email-amwang@redhat.com>
-References: <4D90206E.1090307@redhat.com>
- <1301296053-23589-1-git-send-email-amwang@redhat.com>
+	id S1752500Ab1C1HNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 03:13:31 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:52175 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab1C1HNa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 03:13:30 -0400
+Date: Mon, 28 Mar 2011 15:13:22 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Crypto Fixes for 2.6.39
+Message-ID: <20110328071322.GA6569@gondor.apana.org.au>
+References: <20100201195204.GA6953@gondor.apana.org.au> <20100305071043.GA3548@gondor.apana.org.au> <20100427135547.GA4008@gondor.apana.org.au> <20100603100550.GA30681@gondor.apana.org.au> <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au> <20101215115035.GA25248@gondor.apana.org.au> <20110216053911.GA10999@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110216053911.GA10999@gondor.apana.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the future, we will not call ->stop() anymore when ->start() fails,
-so ->start() is responsible to do cleanups within itself.
+Hi Linus:
 
-Signed-off-by: Amerigo Wang <amwang@redhat.com>
----
- fs/proc/task_mmu.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+This push fixes a bug in the aesni-intel driver that may cause
+incorrect results for certain input sizes.
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 3c06570..9ebbe20 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -124,8 +124,10 @@ static void *m_start(struct seq_file *m, loff_t *pos)
- 		return ERR_PTR(-ESRCH);
- 
- 	mm = mm_for_maps(priv->task);
--	if (IS_ERR_OR_NULL(mm))
-+	if (IS_ERR_OR_NULL(mm)) {
-+		put_task_struct(priv->task);
- 		return mm;
-+	}
- 	down_read(&mm->mmap_sem);
- 
- 	tail_vma = get_gate_vma(priv->task->mm);
-@@ -182,8 +184,9 @@ static void m_stop(struct seq_file *m, void *v)
- 	struct proc_maps_private *priv = m->private;
- 	struct vm_area_struct *vma = v;
- 
--	if (!IS_ERR_OR_NULL(vma))
--		vma_stop(priv, vma);
-+	if (IS_ERR_OR_NULL(vma))
-+		return;
-+	vma_stop(priv, vma);
- 	if (priv->task)
- 		put_task_struct(priv->task);
- }
+Please pull from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+or
+
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+Tadeusz Struk (1):
+      crypto: aesni-intel - fixed problem with packets that are not multiple of 64bytes
+
+ arch/x86/crypto/aesni-intel_asm.S  |    5 ++++-
+ arch/x86/crypto/aesni-intel_glue.c |   14 ++++++++++++--
+ 2 files changed, 16 insertions(+), 3 deletions(-)
+
+Thanks,
 -- 
-1.7.4
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
