@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593Ab1C1HDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 03:03:35 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:51085 "EHLO smtp.gentoo.org"
+	id S1752102Ab1C1HEn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 03:04:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57220 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776Ab1C1HDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 03:03:34 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: uclinux-dev@uclinux.org, David Howells <dhowells@redhat.com>,
-        Greg Ungerer <gerg@uclinux.org>, Paul Mundt <lethal@linux-sh.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2 v2] NOMMU: new vcoalesce helper function
-Date: Mon, 28 Mar 2011 02:04:44 -0400
-Message-Id: <1301292284-8523-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1750987Ab1C1HEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 03:04:42 -0400
+Date: Mon, 28 Mar 2011 18:04:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] block drivers for 2.6.39-rc
+Message-Id: <20110328180434.d24e4465.sfr@canb.auug.org.au>
+In-Reply-To: <4D902E2C.2010701@fusionio.com>
+References: <4D8E36CC.7080707@fusionio.com>
+	<20110328042311.GA15481@elte.hu>
+	<AANLkTik3GZ0b5S7p4ONQu4Hb8LoKewmMJ7_J5zvumYD-@mail.gmail.com>
+	<20110328160812.b4d19eb5.sfr@canb.auug.org.au>
+	<4D902E2C.2010701@fusionio.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__28_Mar_2011_18_04_34_+1100_3Mv0ARUP2HKItBwY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can't support vmap on NOMMU systems, so add a new vcoalesce function
-which combines maps via kmalloc.  A bit more overhead, but at least it
-works.  For MMU systems, vcoalesce simply redirects to vmap.
+--Signature=_Mon__28_Mar_2011_18_04_34_+1100_3Mv0ARUP2HKItBwY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
-v2
-	- fix MMU version of vcoalesce
+Hi Jens,
 
- include/linux/vmalloc.h |    3 +++
- mm/nommu.c              |   22 +++++++++++++++++++++-
- 2 files changed, 24 insertions(+), 1 deletions(-)
+On Mon, 28 Mar 2011 08:43:56 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
+>
+> Yes, and I merged your patch to fixup the build (on PPC, as I recall).
 
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 4ed6fcd..6b3480c 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -44,10 +44,13 @@ extern void vm_unmap_aliases(void);
- 
- #ifdef CONFIG_MMU
- extern void __init vmalloc_init(void);
-+#define vcoalesce(...) vmap(__VA_ARGS__)
- #else
- static inline void vmalloc_init(void)
- {
- }
-+extern void *vcoalesce(struct page **pages, unsigned int count,
-+			unsigned long flags, pgprot_t prot);
- #endif
- 
- extern void *vmalloc(unsigned long size);
-diff --git a/mm/nommu.c b/mm/nommu.c
-index cb86e7d..7812938 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -404,6 +404,26 @@ void *vmalloc_32_user(unsigned long size)
- }
- EXPORT_SYMBOL(vmalloc_32_user);
- 
-+void *vcoalesce(struct page **pages, unsigned int count,
-+	unsigned long flags, pgprot_t prot)
-+{
-+	unsigned int i;
-+	void *new_map, *page_data;
-+
-+	new_map = kmalloc(count << PAGE_SHIFT, GFP_KERNEL);
-+	if (!new_map)
-+		return NULL;
-+
-+	for (i = 0; i < count; ++i) {
-+		page_data = kmap(pages[i]);
-+		memcpy(new_map + (i << PAGE_SHIFT), page_data, PAGE_SIZE);
-+		kunmap(page_data);
-+	}
-+
-+	return new_map;
-+}
-+EXPORT_SYMBOL(vcoalesce);
-+
- void *vmap(struct page **pages, unsigned int count, unsigned long flags, pgprot_t prot)
- {
- 	BUG();
-@@ -413,7 +433,7 @@ EXPORT_SYMBOL(vmap);
- 
- void vunmap(const void *addr)
- {
--	BUG();
-+	kfree(addr);
- }
- EXPORT_SYMBOL(vunmap);
- 
--- 
-1.7.4.1
+That was an earlier build problem.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Mon__28_Mar_2011_18_04_34_+1100_3Mv0ARUP2HKItBwY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNkDMCAAoJEDMEi1NhKgbsNvQIAJwhpfHvJC8h0ITlgiQud0b4
+RfUFlx3uRnCITdqfi6Dx+LU8lKjGPy13rQnWSKIthdevAu19Wyb1uCj33uF1on6l
+VUSM6wVe7GmPkCFm86xE+6uxY6bycDPu+KX46o83PaMGiCArKgGw/o7GB4rkb6Pr
+LnyLTM7l0mnHwM/oGDUxHoHtk3C5LhS34EggUqD9PP77/7yhenlaxdDoNAaqtq7s
+Ur56ZSp0dZHlVjYHCwyh1Pu5ZdvDN4wct6PeoaEzAGKCOdm9+zQA6X+wdxkdbV5S
+iis+4fR8CJh52ESBUnTdqSXByj8QpcnN+0XEJ07jP8RXWVIrOKyqZlx8tCBJwpo=
+=DCa6
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_Mar_2011_18_04_34_+1100_3Mv0ARUP2HKItBwY--
