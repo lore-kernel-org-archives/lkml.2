@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab1C1QXr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:23:47 -0400
-Received: from na3sys010aog108.obsmtp.com ([74.125.245.84]:36298 "HELO
-	na3sys010aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754913Ab1C1QXp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:23:45 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Lars Ellenberg <drbd-dev@lists.linbit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: drbd: Fix build after bitop renames
-Date: Mon, 28 Mar 2011 09:23:27 -0700
-Message-Id: <1301329407-12493-1-git-send-email-roland@kernel.org>
+	id S1754855Ab1C1QXK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:23:10 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:55161
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754691Ab1C1QXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 12:23:02 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 14/20] Staging: hv: Move sense_buffer field
+Date: Mon, 28 Mar 2011 09:33:39 -0700
+Message-Id: <1301330025-25542-14-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1301330025-25542-1-git-send-email-kys@microsoft.com>
+References: <1301329950-25490-1-git-send-email-kys@microsoft.com>
+ <1301330025-25542-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Dreier <roland@purestorage.com>
+In preparation for consolidating all I/O request state,
+move sense_buffer field from struct hv_storvsc_request
+to struct storvsc_request_extension.
 
-From: Roland Dreier <roland@purestorage.com>
-
-Commit c4945b9ed472 ("asm-generic: rename generic little-endian bitops
-functions") got rid of the "generic_" prefix from various bitop
-functions.  Fix drbd up so it matches (and compiles).
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/block/drbd/drbd_bitmap.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c  |    2 +-
+ drivers/staging/hv/storvsc.c     |    2 +-
+ drivers/staging/hv/storvsc_api.h |    4 ++--
+ drivers/staging/hv/storvsc_drv.c |    2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_bitmap.c b/drivers/block/drbd/drbd_bitmap.c
-index f0ae63d..eb925fa 100644
---- a/drivers/block/drbd/drbd_bitmap.c
-+++ b/drivers/block/drbd/drbd_bitmap.c
-@@ -1184,10 +1184,10 @@ static unsigned long __bm_find_next(struct drbd_conf *mdev, unsigned long bm_fo,
- 			p_addr = __bm_map_pidx(b, bm_bit_to_page_idx(b, bm_fo), km);
+diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+index 04117be..be7fae5 100644
+--- a/drivers/staging/hv/blkvsc_drv.c
++++ b/drivers/staging/hv/blkvsc_drv.c
+@@ -950,7 +950,7 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
  
- 			if (find_zero_bit)
--				i = generic_find_next_zero_le_bit(p_addr,
-+				i = find_next_zero_bit_le(p_addr,
- 						PAGE_SIZE*8, bm_fo & BITS_PER_PAGE_MASK);
- 			else
--				i = generic_find_next_le_bit(p_addr,
-+				i = find_next_bit_le(p_addr,
- 						PAGE_SIZE*8, bm_fo & BITS_PER_PAGE_MASK);
+ 	memcpy(vm_srb->cdb, blkvsc_req->cmnd, vm_srb->cdb_length);
  
- 			__bm_unmap(p_addr, km);
-@@ -1287,9 +1287,9 @@ static int __bm_change_bits_to(struct drbd_conf *mdev, const unsigned long s,
- 			last_page_nr = page_nr;
- 		}
- 		if (val)
--			c += (0 == generic___test_and_set_le_bit(bitnr & BITS_PER_PAGE_MASK, p_addr));
-+			c += (0 == __test_and_set_bit_le(bitnr & BITS_PER_PAGE_MASK, p_addr));
- 		else
--			c -= (0 != generic___test_and_clear_le_bit(bitnr & BITS_PER_PAGE_MASK, p_addr));
-+			c -= (0 != __test_and_clear_bit_le(bitnr & BITS_PER_PAGE_MASK, p_addr));
- 	}
- 	if (p_addr)
- 		__bm_unmap(p_addr, km);
-@@ -1438,7 +1438,7 @@ int drbd_bm_test_bit(struct drbd_conf *mdev, const unsigned long bitnr)
- 		bm_print_lock_info(mdev);
- 	if (bitnr < b->bm_bits) {
- 		p_addr = bm_map_pidx(b, bm_bit_to_page_idx(b, bitnr));
--		i = generic_test_le_bit(bitnr & BITS_PER_PAGE_MASK, p_addr) ? 1 : 0;
-+		i = test_bit_le(bitnr & BITS_PER_PAGE_MASK, p_addr) ? 1 : 0;
- 		bm_unmap(p_addr);
- 	} else if (bitnr == b->bm_bits) {
- 		i = -1;
-@@ -1482,7 +1482,7 @@ int drbd_bm_count_bits(struct drbd_conf *mdev, const unsigned long s, const unsi
- 		ERR_IF (bitnr >= b->bm_bits) {
- 			dev_err(DEV, "bitnr=%lu bm_bits=%lu\n", bitnr, b->bm_bits);
- 		} else {
--			c += (0 != generic_test_le_bit(bitnr - (page_nr << (PAGE_SHIFT+3)), p_addr));
-+			c += (0 != test_bit_le(bitnr - (page_nr << (PAGE_SHIFT+3)), p_addr));
- 		}
- 	}
- 	if (p_addr)
+-	storvsc_req->sense_buffer = blkvsc_req->sense_buffer;
++	storvsc_req->extension.sense_buffer = blkvsc_req->sense_buffer;
+ 
+ 	ret = storvsc_drv_obj->on_io_request(blkdev->device_ctx,
+ 					   &blkvsc_req->request);
+diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
+index b322f86..33943ed 100644
+--- a/drivers/staging/hv/storvsc.c
++++ b/drivers/staging/hv/storvsc.c
+@@ -314,7 +314,7 @@ static void stor_vsc_on_io_completion(struct hv_device *device,
+ 				    "valid - len %d\n", request_ext,
+ 				    vstor_packet->vm_srb.sense_info_length);
+ 
+-			memcpy(request->sense_buffer,
++			memcpy(request->extension.sense_buffer,
+ 			       vstor_packet->vm_srb.sense_data,
+ 			       vstor_packet->vm_srb.sense_info_length);
+ 
+diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
+index 3eccc27..fd9165f 100644
+--- a/drivers/staging/hv/storvsc_api.h
++++ b/drivers/staging/hv/storvsc_api.h
+@@ -62,6 +62,8 @@ struct storvsc_request_extension {
+ 	/* Synchronize the request/response if needed */
+ 	struct completion wait_event;
+ 
++	unsigned char *sense_buffer;
++
+ 	struct vstor_packet vstor_packet;
+ };
+ 
+@@ -69,8 +71,6 @@ struct hv_storvsc_request {
+ 	u32 status;
+ 	u32 bytes_xfer;
+ 
+-	unsigned char *sense_buffer;
+-
+ 	void *context;
+ 
+ 	void (*on_io_completion)(struct hv_storvsc_request *request);
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index bc435d6..3a999d0 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -784,7 +784,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 
+ 	memcpy(vm_srb->cdb, scmnd->cmnd, vm_srb->cdb_length);
+ 
+-	request->sense_buffer = scmnd->sense_buffer;
++	request->extension.sense_buffer = scmnd->sense_buffer;
+ 
+ 
+ 	request->data_buffer.len = scsi_bufflen(scmnd);
+-- 
+1.7.4.1
+
