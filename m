@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab1C1H05 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 03:26:57 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65393 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab1C1H04 (ORCPT
+	id S1752894Ab1C1H10 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 03:27:26 -0400
+Received: from mswedge2.sunplus.com ([124.219.29.227]:54039 "EHLO
+	mswedge2.sunplus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab1C1H1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 03:26:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=EPJpoick4lUOOxH+38jrQech9NuT8WHgxAIn+UxfEI/pProF7XVp+i9u3zeFGb87+J
-         Sz9PUAIxDGRigqSZiQQEo/D65eiy3EQAux5qZr7nCv/oGATOdOg3mwpi6955rhnDTNgR
-         tNrryuWIGptj4MRXHescYeeqgQVzFbfVnOR6E=
-Subject: Re: [PATCH] slub: Disable the lockless allocator
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Pekka Enberg <penberg@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20110328063656.GA29462@elte.hu>
-References: <1301161507.2979.105.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1103261406420.24195@router.home>
-	 <alpine.DEB.2.00.1103261428200.25375@router.home>
-	 <alpine.DEB.2.00.1103261440160.25375@router.home>
-	 <AANLkTinTzKQkRcE2JvP_BpR0YMj82gppAmNo7RqgftCG@mail.gmail.com>
-	 <alpine.DEB.2.00.1103262028170.1004@router.home>
-	 <alpine.DEB.2.00.1103262054410.1373@router.home>
-	 <4D9026C8.6060905@cs.helsinki.fi> <20110328061929.GA24328@elte.hu>
-	 <AANLkTinpCa6GBjP3+fdantvOdbktqW8m_D0fGkAnCXYk@mail.gmail.com>
-	 <20110328063656.GA29462@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Mar 2011 09:26:50 +0200
-Message-ID: <1301297210.32248.6.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 28 Mar 2011 03:27:25 -0400
+X-Greylist: delayed 937 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Mar 2011 03:27:24 EDT
+In-Reply-To: <20110325141528.825456671@linutronix.de>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+MIME-Version: 1.0
+Subject: [GIT PULL] score arch fixes for 2.6.39
+X-KeepSent: FB188476:85B76899-48257861:00264A49;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 7.0.3 September 26, 2007
+Message-ID: <OFFB188476.85B76899-ON48257861.00264A49-48257861.002784C6@sunplusct.com>
+From: liqin.chen@sunplusct.com
+Date: Mon, 28 Mar 2011 15:11:39 +0800
+X-MIMETrack: Serialize by Router on ctmail01/SunplusCT(Release 8.5.1|September 28, 2009) at 2011/03/28 ?? 03:11:39,
+	Serialize complete at 2011/03/28 ?? 03:11:39
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 28 mars 2011 à 08:36 +0200, Ingo Molnar a écrit :
+Hi Linus,
 
-> I think we might still be missing the hunk below - or is it now not needed 
-> anymore?
+Please pull score arch fixes for Linux 2.6.39.
+It's include some fixed for score irq files.
 
+Thanks
+--liqin
 
-Its not needed anymore, once cmpxchg16b implementation works correctly
-on !SMP build. (It does now with current linux-2.6 tree)
+------
 
+The following changes since commit 
+16c29dafcc86024048f1dbb8349d31cb22c7c55a:
+  Linus Torvalds (1):
+        Merge branch 'syscore' of 
+git://git.kernel.org/.../rafael/suspend-2.6
 
+are available in the git repository at:
+
+  git://gitserver.sunplusct.com/linux-2.6-score.git for-linus
+
+Chen Liqin (1):
+      score: lost a semicolon in asm/irqflags.h
+
+Thomas Gleixner (4):
+      score: Convert irq_chip to new functions
+      score: Select GENERIC_HARDIRQS_NO_DEPRECATED
+      score: Convert to new irq function names
+      score: Use generic show_interrupts()
+
+ arch/score/Kconfig                |    2 +
+ arch/score/include/asm/irqflags.h |    2 +-
+ arch/score/kernel/irq.c           |   53 
++++++-------------------------------
+ 3 files changed, 11 insertions(+), 46 deletions(-)
 
