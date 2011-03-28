@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab1C1KBq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 06:01:46 -0400
-Received: from m13-7.163.com ([220.181.13.7]:45759 "EHLO m13-7.163.com"
+	id S1752695Ab1C1KFl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 06:05:41 -0400
+Received: from ebb06.tieto.com ([131.207.168.38]:63989 "EHLO ebb06.tieto.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752483Ab1C1KBp convert rfc822-to-8bit (ORCPT
+	id S1750802Ab1C1KFk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 06:01:45 -0400
-X-Greylist: delayed 984 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Mar 2011 06:01:45 EDT
-Date: Mon, 28 Mar 2011 17:43:49 +0800 (CST)
-From: xby <scxby@163.com>
-To: "Peter Zijlstra" <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        "xie.baoyou172958@zte.com.cn" <xie.baoyou172958@zte.com.cn>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Darren Hart" <dvhart@linux.intel.com>
-Message-ID: <1d77e02c.13c15.12efbd90f7e.Coremail.scxby@163.com>
-In-Reply-To: <1301300782.4859.7.camel@twins>
-References: <1301300782.4859.7.camel@twins>
- <9e22ba.d2d5.12efb5a3d8f.Coremail.scxby@163.com>
-Subject: Re:Re: PROBLEM:a bug about pi-futex maybe let the program going to
- hang
-MIME-Version: 1.0
-Content-Type: text/plain; charset=GBK
+	Mon, 28 Mar 2011 06:05:40 -0400
+X-AuditID: 83cfa826-b7c19ae000000a2e-ff-4d905d72ea52
+From: <Lukasz.Rymanowski@tieto.com>
+To: <tglx@linutronix.de>, <par-gunnar.p.hjalmdahl@stericsson.com>
+CC: <gregkh@suse.de>, <devel@driverdev.osuosl.org>, <linus.walleij@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <linux-bluetooth@vger.kernel.org>,
+        <pavan_savoy@sify.com>, <vitalywool@gmail.com>,
+        <alan@lxorguk.ukuu.org.uk>, <arnd@arndb.de>, <marcel@holtmann.org>,
+        <linus.walleij@stericsson.com>, <pghatwork@gmail.com>,
+        <lee.jones@linaro.org>, <mathieu.poirier@linaro.org>
+Date: Mon, 28 Mar 2011 13:05:35 +0300
+Subject: RE: [PATCH v2 1/2] staging: Add ST-Ericsson CG2900 driver
+Thread-Topic: [PATCH v2 1/2] staging: Add ST-Ericsson CG2900 driver
+Thread-Index: AcvtKH2OE49clRIQSaC16kTmNUwA/QABAygw
+Message-ID: <7D7F2FD3846CF6429ACEBDFB5A2DD86F07E35E5F89@EXMB01.eu.tieto.com>
+References: <1301302950-10628-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+ <alpine.LFD.2.00.1103281110210.31464@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103281110210.31464@localhost6.localdomain6>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [222.210.215.128]
-X-Priority: 3
-X-Mailer: Coremail Webmail Server Version SP_ntes V3.5 build
- 110215(12912.3637.3636) Copyright (c) 2002-2011 www.mailtech.cn 163com
-X-CM-TRANSID: B8GowKCbcsVWWJBNa38GAA--.7590W
-X-CM-SenderInfo: xvf0u5i6rwjhhfrp/1tbiRQ8Qk0iSkaarmQACsU
-X-Coremail-Antispam: 1U5529EdanIXcx71UUUUU7vcSsGvfC2KfnxnUU==
+MIME-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>> +/**
+>> + * cts_interrupt() - Called to handle CTS interrupt.
+>> + * @irq:	Interrupt that occurred.
+>> + * @dev_id:	Device ID where interrupt occurred.
+>> + *
+>> + * The cts_interrupt() function is called if interrupt on CTS occurred.
+>> + * It disables the interrupt and starts a new work thread to handle
+>> + * the interrupt.
+>> + */
+>> +static irqreturn_t cts_interrupt(int irq, void *dev_id) {
+>> +	struct uart_info *uart_info = dev_get_drvdata(dev_id); #ifdef 
+>> +CONFIG_PM
+>> +	disable_irq_wake(irq);
+>> +#endif
+>> +	disable_irq_nosync(irq);
+>> +
+>> +	/* Create work and leave IRQ context. */
+>> +	(void)create_work_item(uart_info, handle_cts_irq);
+>> +
+>> +	return IRQ_HANDLED;
+>> +}
 
-At 2011-03-28 16:26:22£¬"Peter Zijlstra" <peterz@infradead.org> wrote:
+>Have you thought about using a threaded interrupt handler? That would make all this work cruft go away.
 
->On Mon, 2011-03-28 at 15:25 +0800, xby wrote:
->> hi, all.
->
->Works better if you also CC people who actually work on that code.
->
->>   Maybe, there is a bug about pi-futex, it would let the program in user-space going to hang.
->>  
->>   We have a board: CPU is powerpc 8572, two core. after ran one month, the state of pi-futex in user-space got bad: mutex->__data.__lock is 0x8000023e, mutex->__data.__count is 0, mutex->__data.__owner is 0.
->>  
->>   then, I review file "kernel/funtex.c"(the version is linux 2.6.38), found a case:
->>  
->>   if there are 3 thread, named threadA, threadB, threadC¡£thread A hold mutexM, threadB and threadC is waiting mutexM. They run as fllow steps:
->>  
->>   1. threadB and threadC sleep at line 1984.
->>   2. threadB receive a signal, then it will be wake up.
->>   3. threadA unlock mutexM, and give mutexM to threadB. 
->>   4. threadB call fixup_owner, try to give mutex to threadC.
->>   5. at line 1580, threadB trigger a addr-fault, then goto handle_fault.
->>   6. at line 1617, threadB release spinlock, then handle fault.
->>   7. threadC got spinlock, and call fixup_owner, and got mutexM.
->>   8. threadC give mutexM to threadB.
->>   9. threadB re-got spinlock, it will found "pi_state->owner == oldowner" and retry to fixup.
->>   10. threadB give mutexM to threadC, that's a bad thing.
->>  
->>   we have wrote a program, this program can prove all above.
->
->It would have been ever so much more useful if you'd have included that.
+Good point.
+To be honest we did think about it but in the time we where we were busy with other issues.
+Anyway, shall we resend patches now or we can push patch for it once driver gets in the tree ?
 
-sorry, the code lies at office, and can't mail to all. I'm at home now ^-^
+/Lukasz
 
+>Thanks,
+
+>	tglx
