@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab1C1RZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 13:25:45 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49795 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754521Ab1C1RZn convert rfc822-to-8bit (ORCPT
+	id S1754943Ab1C1R0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 13:26:41 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:56382 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab1C1R0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 13:25:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fHIf9mxMnbfvszlzxiyVyupnkJlkLqg/I0y5R7JqQbgJvT+6W39cAzrfI3o+v1Gqi0
-         OAnK+bEi9Ssf7tCtWn78bFehFzZv2M+MVirm1gOOtNCX5sEtt9J5jBHpzCpPoREP/Tnf
-         pxd/HG5szxvWtdDNkIPAHyyxdGbQR4o0fH9o4=
+	Mon, 28 Mar 2011 13:26:40 -0400
+X-IronPort-AV: E=Sophos;i="4.63,256,1299456000"; 
+   d="scan'208";a="5012129"
+Date: Mon, 28 Mar 2011 18:26:41 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Yinghai Lu <yinghai@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: another pagetable initialization crash on xen
+Message-ID: <alpine.DEB.2.00.1103281729190.5516@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110328160241.GA20992@srcf.ucam.org>
-References: <Pine.LNX.4.64.1103242007300.2677@boston.corp.fedex.com>
-	<20110324122409.GA1564@srcf.ucam.org>
-	<AANLkTinKrG-N8O4_qf4SWuZ+W6VvFhyyLEw2ht0PFKSo@mail.gmail.com>
-	<BANLkTimPvW0Y5yqaW7WngOghhZGafVZS6w@mail.gmail.com>
-	<20110328125319.GA28847@srcf.ucam.org>
-	<AANLkTik0Zt=ecj-p6GBSWwQMopE7GvmFV7b7jRv=y7yJ@mail.gmail.com>
-	<20110328160241.GA20992@srcf.ucam.org>
-Date: Mon, 28 Mar 2011 19:25:42 +0200
-Message-ID: <BANLkTinTbez8+AMF9KaAx+Y5NFW_RMP5ig@mail.gmail.com>
-Subject: Re: Commit 9661e92c10a9775243c1ecb73373528ed8725a10: sysfs: cannot
- create duplicate filename '/devices/pci0000:00/0000:00:02.0/backlight/acpi_video0/device'
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>, Zhang Rui <rui.zhang@intel.com>,
-        Len Brown <lenb@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Sedat Dilek <sedat.dilek@googlemail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 6:02 PM, Matthew Garrett <mjg@redhat.com> wrote:
-> On Mon, Mar 28, 2011 at 08:22:05AM -0700, Linus Torvalds wrote:
->> On Mon, Mar 28, 2011 at 5:53 AM, Matthew Garrett <mjg@redhat.com> wrote:
->> >
->> > I just sent a patch to fix this.
->>
->> Grr. Any more details, please? Who to? What's the fix? Actual patch
->> for reporters to validate?
->
-> Sorry, yes - https://patchwork.kernel.org/patch/668351/
+Hi Yinghai,
+unfortunately I found another pagetable initialization bug on xen
+affecting linux 2.6.39-rc0.
+The problem is that on xen we need to make sure that all the pagetable pages
+are mapped read-only, in fact in xen_set_pte we have this check:
 
-Works on top of my -git18 + (unrelated) LVDS detection patch, thanks.
+if (pfn >= pgt_buf_start && pfn < pgt_buf_end)
+    /* make the pte read-only */
 
-Tested-by: Alessandro Suardi <alessandro.suardi@gmail.com>
+however pgt_buf_end is where the kernel pagetable *currently* ends, so
+some kernel pagetable pages allocated after pgt_buf_end might be marked
+read-write by mistake.  A simple way to fix the issue would be to use
+pgt_buf_top instead:
 
---alessandro
+if (pfn >= pgt_buf_start && pfn < pgt_buf_top)
+    /* make the pte read-only */
 
- "There's always a siren singing you to shipwreck"
+however after building the kernel pagetable in init_memory_mapping we
+only reserve memory between pgt_buf_start and pgt_buf_end:
 
-   (Radiohead, "There There")
+if (!after_bootmem && pgt_buf_end > pgt_buf_start)
+        memblock_x86_reserve_range(pgt_buf_start << PAGE_SHIFT,
+                 pgt_buf_end << PAGE_SHIFT, "PGTABLE");
+
+so feature allocations might use memory between the final value of
+pgt_buf_end and pgt_buf_top that has been marked read-only in the xen
+specific code, causing a crash.
+The only way I could find to fix the crash is to reserve also the memory
+region between pgt_buf_start and pgt_buf_top on xen, but that would
+require an ugly if(xen_domain()) at the of init_memory_mapping or
+the introduction of a new pvop function to reserve the pagetable memory.
+I don't like the idea, but I couldn't find anything better.
+Yinghai, do you have any better suggestions?
+
+Thanks,
+
+Stefano
