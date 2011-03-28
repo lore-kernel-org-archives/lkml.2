@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab1C1XCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 19:02:53 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:51535 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752333Ab1C1XCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 19:02:52 -0400
-Message-ID: <4D9113AA.20404@bluewatersys.com>
-Date: Tue, 29 Mar 2011 12:03:06 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1755497Ab1C1XD1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 19:03:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45545 "EHLO linutronix.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752330Ab1C1XD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 19:03:26 -0400
+Date: Tue, 29 Mar 2011 01:03:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Snitzer <snizer@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [Regression] Please revert a91a2785b20
+In-Reply-To: <yq1hbamkgoe.fsf@sermon.lab.mkp.net>
+Message-ID: <alpine.LFD.2.00.1103290049330.2774@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1103290006070.2774@localhost6.localdomain6> <yq1hbamkgoe.fsf@sermon.lab.mkp.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        hartleys <hartleys@visionengravers.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH] EP93xx: Remove ep93xx_gpio_dbg_show function
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hartley pointed out that the patch I posted to remove the irq internals
-fiddling from ep93xx_gpio_dbg_show does not function as expected. It
-will print [interrupt] beside all pins which are capable of being
-interrupts, not just those which are currently configured as interrupts.
+On Mon, 28 Mar 2011, Martin K. Petersen wrote:
+> >>>>> "Thomas" == Thomas Gleixner <tglx@linutronix.de> writes:
+> 
+> Thomas,
+> 
+> Thomas> But the changelog does not give the courtesy of explaining these
+> Thomas> changes. Also there is no fcking reason why the kernel cannot
+> Thomas> deal with the missing integrity capabilities of a drive just by
+> Thomas> emitting a warning msg and dealing gracefully with the outcome.
+> 
+> My mistake. I was made aware of it earlier today and I'm working on a
 
-The best solution is just to remove the custom ep93xx gpio debugfs
-function all together. The generic gpiolib one is good enough.
+Why didn't you send a revert to Linus right away?
 
-Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
----
+Darn. I sent a pull request earlier today, which I immediately
+revoked, when I noticed that it had a late reported testing
+failure. It did not hit Linus public tree fortunately. I could have
+said "I'm working on a fix" as well. But that's the wrong thing to do.
 
-diff --git a/arch/arm/mach-ep93xx/gpio.c b/arch/arm/mach-ep93xx/gpio.c
-index 34e071d..c74adf9 100644
---- a/arch/arm/mach-ep93xx/gpio.c
-+++ b/arch/arm/mach-ep93xx/gpio.c
-@@ -348,29 +348,6 @@ static int ep93xx_gpio_set_debounce(struct gpio_chip *chip,
- 	return 0;
- }
- 
--static void ep93xx_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
--{
--	struct ep93xx_gpio_chip *ep93xx_chip = to_ep93xx_gpio_chip(chip);
--	u8 data_reg, data_dir_reg;
--	int gpio, i;
--
--	data_reg = __raw_readb(ep93xx_chip->data_reg);
--	data_dir_reg = __raw_readb(ep93xx_chip->data_dir_reg);
--
--	gpio = ep93xx_chip->chip.base;
--	for (i = 0; i < chip->ngpio; i++, gpio++) {
--		int is_out = data_dir_reg & (1 << i);
--		int irq = gpio_to_irq(gpio);
--
--		seq_printf(s, " %s%d gpio-%-3d (%-12s) %s %s %s\n",
--				chip->label, i, gpio,
--				gpiochip_is_requested(chip, i) ? : "",
--				is_out ? "out" : "in ",
--				(data_reg & (1<<  i)) ? "hi" : "lo",
--				(!is_out && irq>= 0) ? "(interrupt)" : "");
--	}
--}
--
- #define EP93XX_GPIO_BANK(name, dr, ddr, base_gpio)			\
- 	{								\
- 		.chip = {						\
-@@ -379,7 +356,6 @@ static void ep93xx_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- 			.direction_output = ep93xx_gpio_direction_output, \
- 			.get		  = ep93xx_gpio_get,		\
- 			.set		  = ep93xx_gpio_set,		\
--			.dbg_show	  = ep93xx_gpio_dbg_show,	\
- 			.base		  = base_gpio,			\
- 			.ngpio		  = 8,				\
- 		},							\
+So for your thing, it was already in Linus tree. Though if you get
+aware of it and it's revertable w/o creating lots of mess, then it's
+the right thing to revert it immediately. Do not drag out regressions
+longer than necessary, please.
 
+> Surprised we didn't see any reports of this in -next. It's been
+> in there for a while.
+
+next does unfortunately get not the full exposure and it's neither a
+replacement for common sense nor an excuse for not testing the common
+case (i.e. non enterprise hardware with default distro configs)
+
+Thanks,
+
+	tglx
