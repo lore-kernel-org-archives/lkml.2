@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab1C1Iqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 04:46:32 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:58621 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752553Ab1C1Iqb (ORCPT
+	id S1753415Ab1C1IvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 04:51:17 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35449 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab1C1IvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 04:46:31 -0400
-Date: Mon, 28 Mar 2011 11:46:25 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: balbi@ti.com, gregkh@suse.de, linux-arm-msm@vger.kernel.org,
-        ablay@codeaurora.org,
-        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5 v6] usb: Add usb_endpoint_descriptor to be part of
- the struct usb_ep
-Message-ID: <20110328084624.GI2251@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1300867420-20864-1-git-send-email-tlinder@codeaurora.org>
- <20110325134248.GN2609@legolas.emea.dhcp.ti.com>
- <000301cbec7a$3ff5cdf0$bfe169d0$@org>
+	Mon, 28 Mar 2011 04:51:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=RwozV3g67F5XGwtiJFRDWkZBHveZdVwNgABfnmqtpPyZtgBQPn/5piwvW53FxeJzGh
+         MX7ZSAZfaba2Espi49rH0DkqUY5C2/m0nppLnnrzSjJ7vUrL++snSrEQl5Z17aE32scd
+         wqCf8UW50hsCEB3J8l6qgkvK1XSrNaDqPsurs=
+Date: Mon, 28 Mar 2011 11:50:48 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: serge@hallyn.com, "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch -next] ipcns: use after free in free_ipc_ns()
+Message-ID: <20110328085048.GI1885@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>, serge@hallyn.com,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	David Howells <dhowells@redhat.com>,
+	Daniel Lezcano <daniel.lezcano@free.fr>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000301cbec7a$3ff5cdf0$bfe169d0$@org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 27, 2011 at 02:26:48PM +0200, Tanya Brokhman wrote:
-> > 
-> > On Wed, Mar 23, 2011 at 10:03:38AM +0200, Tatyana Brokhman wrote:
-> > > Change usb_ep_enable() prototype to use endpoint descriptor from
-> > usb_ep.
-> > > This optimization spares the FDs from saving the endpoint chosen
-> > > descriptor. This optimization is not full though. To fully exploit
-> > this
-> > > change one needs to update all the UDCs as well since in the current
-> > > implementation each of them saves the endpoint descriptor in it's
-> > > internal (and extended) endpoint structure.
-> > 
-> > I'm not sure this is such a good patch. But I don't have strong
-> > arguments against it either.
-> > 
-> 
-> Could you please share you concerns? Even if they are not strong arguments
-> :).
-> Our pros for this change were that it seems more accurate that the EP
-> descriptor will be handled by the composite layer and not the FDs. Thus we
-> tried to spare the FD from saving the chosen EP descriptor and passing it to
-> different functions.
-> This change is needed for our algorithm of SS implementation in the later
-> patches in this series. 
+We dereference "ns" after it has been freed.  This was introduced in
+b515498f5bb5 "userns: add a user namespace owner of ipc ns".
 
-Yes, I understood that much, but it's useful for UDCs to access the EP
-descriptor (ok, we can still access it by dereferencing ep) since we can
-(actually we need to) use that to let the HW know about max packet
-sizes, endpoint types, etc etc.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Also, I'm not sure composite.c should know the details about the
-endpoint. That's just a thin layer implementing the more generic part
-(standard usb requests, handling, helpers for finding endpoints, etc),
-but the one who should look into endpoint descriptors is the underlying
-controller code for the reasons I listed above.
-
-That's my feeling...
-
--- 
-balbi
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index 3c3e522..8054c8e 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -104,7 +104,6 @@ static void free_ipc_ns(struct ipc_namespace *ns)
+ 	sem_exit_ns(ns);
+ 	msg_exit_ns(ns);
+ 	shm_exit_ns(ns);
+-	kfree(ns);
+ 	atomic_dec(&nr_ipc_ns);
+ 
+ 	/*
+@@ -113,6 +112,7 @@ static void free_ipc_ns(struct ipc_namespace *ns)
+ 	 */
+ 	ipcns_notify(IPCNS_REMOVED);
+ 	put_user_ns(ns->user_ns);
++	kfree(ns);
+ }
+ 
+ /*
