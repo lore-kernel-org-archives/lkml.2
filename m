@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab1C1IX2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 04:23:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64354 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab1C1IX1 (ORCPT
+	id S1753080Ab1C1I0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 04:26:50 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42101 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab1C1I0t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 04:23:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=SfbW/3axkk40UKEBzwpDng29a9bxNGAj51ei1Q5ghpGQvitOXjZg7G2Khw0LnabN3r
-         oPz7t6EZFNVszUHvSnTBhGaZ6k/sFnWVTT3OT/M2jQfps87sHRbdfcrzRJNe9nG1CR41
-         K7FhqaJD6FxxaU18cgvjjMfejfrktgaLIBdRo=
-Date: Mon, 28 Mar 2011 10:23:21 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: elevator private data for REQ_FLUSH
-Message-ID: <20110328082321.GC16530@htj.dyndns.org>
-References: <20110325151530.GA4414@swordfish.minsk.epam.com>
- <20110325152228.GA1707@gentoo.trippels.de>
- <20110325154024.GA16029@redhat.com>
- <4D8CB9C9.5010208@kernel.dk>
- <20110325185455.GA2969@redhat.com>
- <4D8CF202.9010809@kernel.dk>
- <20110326042156.GB28458@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110326042156.GB28458@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 28 Mar 2011 04:26:49 -0400
+Subject: Re: PROBLEM:a bug about pi-futex maybe let the program going to
+ hang
+From: Peter Zijlstra <peterz@infradead.org>
+To: xby <scxby@163.com>
+Cc: linux-kernel@vger.kernel.org,
+        "xie.baoyou172958@zte.com.cn" <xie.baoyou172958@zte.com.cn>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>
+In-Reply-To: <9e22ba.d2d5.12efb5a3d8f.Coremail.scxby@163.com>
+References: <9e22ba.d2d5.12efb5a3d8f.Coremail.scxby@163.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Mar 2011 10:26:22 +0200
+Message-ID: <1301300782.4859.7.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Mon, 2011-03-28 at 15:25 +0800, xby wrote:
+> hi, all.
 
-On Sat, Mar 26, 2011 at 12:21:56AM -0400, Mike Snitzer wrote:
-> > Yes, I was thinking about something like that. I consider the patch
-> > merged an immediate stop gap, we need to improve this situation. It's
-> > not exactly pretty to have this sort of condition in both
-> > __make_request() and flush_plug_list(). Clearly it should be handled
-> > further down.
-> 
-> OK, and btw my patch was too restrictive.  blk_kick_flush()
-> elv_insert()s a flush request with ELEVATOR_INSERT_REQUEUE.
-> 
-> Should blk_kick_flush() process the flush request without calling
-> elv_insert() -- like is done with open coded list_add() in
-> blk_insert_flush()?
-> 
-> Or should blk_insert_flush() use elv_insert() with
-> ELEVATOR_INSERT_REQUEUE too? 
+Works better if you also CC people who actually work on that code.
 
-Hmmm... I would prefer the latter.  Given that INSERT_REQUEUE and
-FRONT are no longer different, it would probably be better to use
-FRONT tho.  The only reason REQUEUE is used there is to avoid kicking
-the queue from elv_insert(), which is gone now.
+>   Maybe, there is a bug about pi-futex, it would let the program in user-space going to hang.
+>  
+>   We have a board: CPU is powerpc 8572, two core. after ran one month, the state of pi-futex in user-space got bad: mutex->__data.__lock is 0x8000023e, mutex->__data.__count is 0, mutex->__data.__owner is 0.
+>  
+>   then, I review file "kernel/funtex.c"(the version is linux 2.6.38), found a case:
+>  
+>   if there are 3 thread, named threadA, threadB, threadC。thread A hold mutexM, threadB and threadC is waiting mutexM. They run as fllow steps:
+>  
+>   1. threadB and threadC sleep at line 1984.
+>   2. threadB receive a signal, then it will be wake up.
+>   3. threadA unlock mutexM, and give mutexM to threadB. 
+>   4. threadB call fixup_owner, try to give mutex to threadC.
+>   5. at line 1580, threadB trigger a addr-fault, then goto handle_fault.
+>   6. at line 1617, threadB release spinlock, then handle fault.
+>   7. threadC got spinlock, and call fixup_owner, and got mutexM.
+>   8. threadC give mutexM to threadB.
+>   9. threadB re-got spinlock, it will found "pi_state->owner == oldowner" and retry to fixup.
+>   10. threadB give mutexM to threadC, that's a bad thing.
+>  
+>   we have wrote a program, this program can prove all above.
 
-Thanks.
-
--- 
-tejun
+It would have been ever so much more useful if you'd have included that.
