@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab1C1JqM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 05:46:12 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58052 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751111Ab1C1JqL (ORCPT
+	id S1752472Ab1C1JsT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 05:48:19 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35066 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab1C1JsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 05:46:11 -0400
-Date: Mon, 28 Mar 2011 10:46:15 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Feng Tang <feng.tang@intel.com>, Feng Tang <feng.tang@linux.intel.com>,
-        "x86@kernel.org" <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "Kp, Jeeja" <jeeja.kp@intel.com>,
-        "Fu, Michael" <michael.fu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "meego-kernel@lists.meego.com" <meego-kernel@lists.meego.com>
-Subject: Re: [Meego-kernel] [PATCH v9 1/2] mrst: export get_gpio_by_name()
- function
-Message-ID: <20110328104615.52c6c03c@lxorguk.ukuu.org.uk>
-In-Reply-To: <4D8FF9E5.8000502@linux.intel.com>
-References: <1301279360-9839-1-git-send-email-guanqun.lu@intel.com>
-	<1301279360-9839-2-git-send-email-guanqun.lu@intel.com>
-	<4D8FF3AE.5060003@linux.intel.com>
-	<20110328104719.78740624@feng-i7>
-	<4D8FF6BB.6030005@linux.intel.com>
-	<20110328110053.5355badb@feng-i7>
-	<4D8FF9E5.8000502@linux.intel.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 28 Mar 2011 05:48:18 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 2/5] Revert "oom: give the dying task a higher priority"
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20110324152757.GC1938@barrios-desktop>
+References: <20110322200657.B064.A69D9226@jp.fujitsu.com> <20110324152757.GC1938@barrios-desktop>
+Message-Id: <20110328184856.F078.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Mon, 28 Mar 2011 18:48:13 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Medfield and MRST are targeting phones. MIDs don't exist... not in this 
-> decade.
+Hi
 
-Well you can take that up with everyone else somewhere offlist, but the
-standard naming being used for these devices as a group is mid_xxx, and
-has been in the kernel several releases.
+> @@ -434,9 +452,17 @@ static int oom_kill_task(struct task_struct *p)
+>                 K(get_mm_counter(p->mm, MM_FILEPAGES)));
+>         task_unlock(p);
+>  
+> -       p->rt.time_slice = HZ; <<---- THIS
+> +
+>         set_tsk_thread_flag(p, TIF_MEMDIE);
+>         force_sig(SIGKILL, p);
+> +
+> +       /*
+> +        * We give our sacrificial lamb high priority and access to
+> +        * all the memory it needs. That way it should be able to
+> +        * exit() and clear out its resources quickly...
+> +        */
+> +       boost_dying_task_prio(p, mem);
+> +
+>         return 0;
+>  }
+> 
+> At that time, I thought that routine is meaningless in non-RT scheduler.
+> So I Cced Peter but don't get the answer.
+> I just want to confirm it.
+> 
+> Do you still think it's meaningless? 
 
-> if it was renamed to sfi_get_gpio_by_name() it might make SOME sense, 
-> but even then it's a
-> gratuitous rename for a function that's already in the upstream kernel.
+In short, yes.
 
-1. It needs a name that won't clash with anything else or confuse people
 
-2. It shouldn't be exported in the first place but appearing in the PCI
-data for the device.
+> so you remove it when you revert 93b43fa5508?
+> Then, this isn't just revert patch but revert + killing meaningless code patch.
 
-If it must be exported then it definitely needs a rename.
+If you want, I'd like to rename a patch title. That said, we can't revert
+93b43fa5508 simple cleanly, several patches depend on it. therefore I
+reverted it manualy. and at that time, I don't want to resurrect
+meaningless logic. anyway it's no matter. Luis is preparing new patches.
+therefore we will get the same end result. :)
+
+
+
