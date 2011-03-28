@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab1C1Qv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:51:29 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60618
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S932183Ab1C1Qvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:51:50 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:60938
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754889Ab1C1QuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754886Ab1C1QuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Mar 2011 12:50:13 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 21/22] Staging: hv: Move module parameter to earlier in the file
-Date: Mon, 28 Mar 2011 10:00:52 -0700
-Message-Id: <1301331653-26265-21-git-send-email-kys@microsoft.com>
+Subject: [PATCH 11/22] Staging: hv: Get rid of the forward declaration of blkvsc_shutdown()
+Date: Mon, 28 Mar 2011 10:00:42 -0700
+Message-Id: <1301331653-26265-11-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301331653-26265-1-git-send-email-kys@microsoft.com>
 References: <1301331615-26226-1-git-send-email-kys@microsoft.com>
@@ -25,40 +25,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move module parameter to be earlier in the file.
+Get rid of the forward declaration of blkvsc_shutdown() by moving the
+code around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |   70 +++++++++++++++++++--------------------
+ 1 files changed, 34 insertions(+), 36 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 95653da..14cc2ed 100644
+index f67d983..1b05369 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -126,6 +126,9 @@ static void blkvsc_request_completion(struct hv_storvsc_request *request);
- 
- static int blkvsc_ringbuffer_size = BLKVSC_RING_BUFFER_SIZE;
- 
-+module_param(blkvsc_ringbuffer_size, int, S_IRUGO);
-+MODULE_PARM_DESC(ring_size, "Ring buffer size (in bytes)");
-+
- /*
-  * There is a circular dependency involving blkvsc_probe()
-  * and block_ops.
-@@ -1219,9 +1222,6 @@ static void blkvsc_request(struct request_queue *queue)
+@@ -642,10 +642,42 @@ static int blkvsc_remove(struct device *device)
+ 	return ret;
  }
  
- 
--module_param(blkvsc_ringbuffer_size, int, S_IRUGO);
--MODULE_PARM_DESC(ring_size, "Ring buffer size (in bytes)");
++static void blkvsc_shutdown(struct device *device)
++{
++	struct block_device_context *blkdev = dev_get_drvdata(device);
++	unsigned long flags;
++
++	if (!blkdev)
++		return;
++
++	DPRINT_DBG(BLKVSC_DRV, "blkvsc_shutdown - users %d disk %s\n",
++		   blkdev->users, blkdev->gd->disk_name);
++
++	spin_lock_irqsave(&blkdev->lock, flags);
++
++	blkdev->shutting_down = 1;
++
++	blk_stop_queue(blkdev->gd->queue);
++
++	spin_unlock_irqrestore(&blkdev->lock, flags);
++
++	while (blkdev->num_outstanding_reqs) {
++		DPRINT_INFO(STORVSC, "waiting for %d requests to complete...",
++			    blkdev->num_outstanding_reqs);
++		udelay(100);
++	}
++
++	blkvsc_do_flush(blkdev);
++
++	spin_lock_irqsave(&blkdev->lock, flags);
++
++	blkvsc_cancel_pending_reqs(blkdev);
++
++	spin_unlock_irqrestore(&blkdev->lock, flags);
++}
++
+ /* Static decl */
+ static int blkvsc_probe(struct device *dev);
+-static void blkvsc_shutdown(struct device *device);
 -
- /* The one and only one */
- static  struct storvsc_driver_object g_blkvsc_drv;
+ static int blkvsc_release(struct gendisk *disk, fmode_t mode);
+ static int blkvsc_revalidate_disk(struct gendisk *gd);
+ static void blkvsc_request(struct request_queue *queue);
+@@ -909,40 +941,6 @@ Cleanup:
+ 	return ret;
+ }
  
+-static void blkvsc_shutdown(struct device *device)
+-{
+-	struct block_device_context *blkdev = dev_get_drvdata(device);
+-	unsigned long flags;
+-
+-	if (!blkdev)
+-		return;
+-
+-	DPRINT_DBG(BLKVSC_DRV, "blkvsc_shutdown - users %d disk %s\n",
+-		   blkdev->users, blkdev->gd->disk_name);
+-
+-	spin_lock_irqsave(&blkdev->lock, flags);
+-
+-	blkdev->shutting_down = 1;
+-
+-	blk_stop_queue(blkdev->gd->queue);
+-
+-	spin_unlock_irqrestore(&blkdev->lock, flags);
+-
+-	while (blkdev->num_outstanding_reqs) {
+-		DPRINT_INFO(STORVSC, "waiting for %d requests to complete...",
+-			    blkdev->num_outstanding_reqs);
+-		udelay(100);
+-	}
+-
+-	blkvsc_do_flush(blkdev);
+-
+-	spin_lock_irqsave(&blkdev->lock, flags);
+-
+-	blkvsc_cancel_pending_reqs(blkdev);
+-
+-	spin_unlock_irqrestore(&blkdev->lock, flags);
+-}
+-
+ /* Do a scsi INQUIRY cmd here to get the device type (ie disk or dvd) */
+ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
+ {
 -- 
 1.7.4.1
 
