@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab1C1QM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:12:56 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:56993 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab1C1QMz (ORCPT
+	id S1753674Ab1C1QQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:16:28 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46103 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab1C1QQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:12:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=YPx04tVUiN2fg4J2pjH/3IPz8zS4+ScMhmAf7h91dugyHNq2ctgskvkSr6rChpEsN0
-         CaKZVqTqqaj549+Q0MPDl1egOD8Ts485JKph2lXjqeL8xXoIn+cyZGmDyfDRQBDZDFHK
-         0L7hNk8Ot7vX3E+bZiBOeLrnu4dBDd6NE4Gd0=
+	Mon, 28 Mar 2011 12:16:26 -0400
+Message-ID: <4D90B3ED.8080608@ru.mvista.com>
+Date: Mon, 28 Mar 2011 20:14:37 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-In-Reply-To: <20110120074503.GD30522@core.coreip.homeip.net>
-References: <AANLkTi=fjL0yxXWrDddafdBs7biJ326sXjaagTseVEVg@mail.gmail.com>
-	<20110117190849.GB27245@core.coreip.homeip.net>
-	<AANLkTindwH2X79vZTBHU04oomxqV=RchRVEwrDEcntVX@mail.gmail.com>
-	<20110120074503.GD30522@core.coreip.homeip.net>
-Date: Mon, 28 Mar 2011 09:12:54 -0700
-Message-ID: <AANLkTi=zCbRx-gTxPAUfSXJV4bRV8-bk3TqV=etybu7y@mail.gmail.com>
-Subject: Re: [PATCH] toshiba_acpi: Additional TOS1900 devices support
-From: Azael Avalos <coproscefalo@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Igor Plyatov <plyatov@gmail.com>
+CC: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/2] ata: pata_at91.c bugfix for initial_timing initialisation
+References: <1301316975-27761-1-git-send-email-plyatov@gmail.com>
+In-Reply-To: <1301316975-27761-1-git-send-email-plyatov@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+Hello.
 
-Any updates on this patch?
-I just saw a git-pull request, but I haven't seen this patch merged (yet).
+Igor Plyatov wrote:
 
-I have a slightly updated patch (with suspend/resume functions added
-to workaround some issues on some Toshiba Netbooks) with some
-testing done by Seth Forshee, just in case that I need to resend.
+> The "struct ata_timing" must contain 10 members, but ".dmack_hold" member was
+> forgotten for "initial_timing" initialisation. This patch fixes such a problem.
 
+> Signed-off-by: Igor Plyatov <plyatov@gmail.com>
+> ---
+>  drivers/ata/pata_at91.c |   14 ++++++++++++--
+>  1 files changed, 12 insertions(+), 2 deletions(-)
 
-Saludos
-Azael
+> diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
+> index 0da0dcc..0267d54 100644
+> --- a/drivers/ata/pata_at91.c
+> +++ b/drivers/ata/pata_at91.c
+> @@ -49,8 +49,18 @@ struct at91_ide_info {
+>  	void __iomem *alt_addr;
+>  };
+>  
+> -static const struct ata_timing initial_timing =
+> -	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 600, 0};
+> +static const struct ata_timing initial_timing = {
+> +	.mode		= XFER_PIO_0,
+> +	.setup		= 70,
+> +	.act8b		= 290,
+> +	.rec8b		= 240,
+> +	.cyc8b		= 600,
+> +	.active		= 165,
+> +	.recover	= 150,
+> +	.dmack_hold	= 0,
+> +	.cycle		= 600,
+> +	.udma		= 0
+> +};
 
+   There's no need to explicitly initialize to 0.
 
--- 
--- El mundo apesta y vosotros apestais tambien --
+MBR, Sergei
+
