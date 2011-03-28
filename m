@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab1C1B4O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 21:56:14 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:30054 "EHLO
+	id S1753556Ab1C1B4R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 21:56:17 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:5132 "EHLO
 	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753295Ab1C1Bzq (ORCPT
+	with ESMTP id S1753357Ab1C1Bzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 21:55:46 -0400
+	Sun, 27 Mar 2011 21:55:47 -0400
 From: Ryan Mallon <ryan@bluewatersys.com>
 To: viro@zeniv.linux.org.uk, dchinner@redhat.com, Trond.Myklebust@netapp.com
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, Ryan Mallon <ryan@bluewatersys.com>
-Subject: [RFC PATCH 1/2] Add unlocked version of igrab.
-Date: Mon, 28 Mar 2011 14:56:00 +1300
-Message-Id: <1301277361-9453-2-git-send-email-ryan@bluewatersys.com>
+Subject: [RFC PATCH 0/2] Introduce unlocked version of igrab 
+Date: Mon, 28 Mar 2011 14:55:59 +1300
+Message-Id: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com>
 X-Mailer: git-send-email 1.5.5.1
-In-Reply-To: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com>
-References: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 250df6ed274d767da844a5d9f05720b804240197 "fs: protect
-inode->i_state with inode->i_lock" changes igrab to acquire inode->i_lock,
-however some callees, notably nfs_inode_add_request, already hold the lock
-when calling igrab.
+Commit 250df6ed274d767da844a5d9f05720b804240197 "fs: protect 
+inode->i_state with inode->i_lock" introduces a change to igrab to acquire
+inode->i_lock. 
 
-Introduce an unlocked version of igrab called __igrab which can be
-called when inode->i_lock is already held.
+This change causes a panic on boot on my ARM EP93xx board when the rootfs
+uses NFS. The problem occurs because nfs_inode_add_request acquires
+inode->i_lock and then calls igrab, resulting in the following panic:
 
-Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
----
+BUG: spinlock recursion on CPU#0, getty/262
+ lock: cc421cb4, .magic: dead4ead, .owner: getty/262, .owner_cpu: 0
+[<c0031b0c>] (unwind_backtrace+0x0/0xe4) from [<c015f16c>] (do_raw_spin_lock+0x40/0x13c)
+[<c015f16c>] (do_raw_spin_lock+0x40/0x13c) from [<c00a938c>] (igrab+0x14/0x48)
+[<c00a938c>] (igrab+0x14/0x48) from [<c01186bc>] (nfs_updatepage+0x2e0/0x524)
+[<c01186bc>] (nfs_updatepage+0x2e0/0x524) from [<c010b19c>] (nfs_write_end+0x23c/0x270)
+[<c010b19c>] (nfs_write_end+0x23c/0x270) from [<c006b484>] (generic_file_buffered_write+0x180/0x248)
+[<c006b484>] (generic_file_buffered_write+0x180/0x248) from [<c006d060>] (__generic_file_aio_write+0x3b8/0x3f4)
+[<c006d060>] (__generic_file_aio_write+0x3b8/0x3f4) from [<c006d108>] (generic_file_aio_write+0x6c/0xdc)
+[<c006d108>] (generic_file_aio_write+0x6c/0xdc) from [<c010bce0>] (nfs_file_write+0xec/0x178)
+[<c010bce0>] (nfs_file_write+0xec/0x178) from [<c00956ac>] (do_sync_write+0xa4/0xe4)
+[<c00956ac>] (do_sync_write+0xa4/0xe4) from [<c00960c8>] (vfs_write+0xb4/0x12c)
+[<c00960c8>] (vfs_write+0xb4/0x12c) from [<c00961f0>] (sys_write+0x3c/0x68)
+[<c00961f0>] (sys_write+0x3c/0x68) from [<c002c8e0>] (ret_fast_syscall+0x0/0x2c)
+
+This series introduces a new function called __igrab, which is an unlocked
+version of igrab and modifies nfs_inode_add_request to use the unlocked
+version.
+
+Ryan Mallon (2):
+  Add unlocked version of igrab.
+  Use __igrab instead of igrab in nfs_inode_add_request
+
  fs/inode.c         |   16 ++++++++++++----
+ fs/nfs/write.c     |    2 +-
  include/linux/fs.h |    1 +
- 2 files changed, 13 insertions(+), 4 deletions(-)
-
-diff --git a/fs/inode.c b/fs/inode.c
-index 05a1f75..bdcfbba 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1134,14 +1134,11 @@ ino_t iunique(struct super_block *sb, ino_t max_reserved)
- }
- EXPORT_SYMBOL(iunique);
- 
--struct inode *igrab(struct inode *inode)
-+struct inode *__igrab(struct inode *inode)
- {
--	spin_lock(&inode->i_lock);
- 	if (!(inode->i_state & (I_FREEING|I_WILL_FREE))) {
- 		__iget(inode);
--		spin_unlock(&inode->i_lock);
- 	} else {
--		spin_unlock(&inode->i_lock);
- 		/*
- 		 * Handle the case where s_op->clear_inode is not been
- 		 * called yet, and somebody is calling igrab
-@@ -1149,6 +1146,17 @@ struct inode *igrab(struct inode *inode)
- 		 */
- 		inode = NULL;
- 	}
-+
-+	return inode;
-+}
-+EXPORT_SYMBOL(__igrab);
-+
-+struct inode *igrab(struct inode *inode)
-+{
-+	spin_lock(&inode->i_lock);
-+	inode = __igrab(inode);
-+	spin_unlock(&inode->i_lock);
-+
- 	return inode;
- }
- EXPORT_SYMBOL(igrab);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b677bd7..32c4bc5 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2240,6 +2240,7 @@ extern void inode_init_once(struct inode *);
- extern void address_space_init_once(struct address_space *mapping);
- extern void ihold(struct inode * inode);
- extern void iput(struct inode *);
-+extern struct inode *__igrab(struct inode *inode);
- extern struct inode * igrab(struct inode *);
- extern ino_t iunique(struct super_block *, ino_t);
- extern int inode_needs_sync(struct inode *inode);
--- 
-1.7.0.4
+ 3 files changed, 14 insertions(+), 5 deletions(-)
 
