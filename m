@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab1C1QuT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:50:19 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:60917
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S932163Ab1C1QuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:50:21 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:58671
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754721Ab1C1QuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754723Ab1C1QuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Mar 2011 12:50:11 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 04/22] Staging: hv: Get rid of the forward declaration of blkvsc_getgeo()
-Date: Mon, 28 Mar 2011 10:00:35 -0700
-Message-Id: <1301331653-26265-4-git-send-email-kys@microsoft.com>
+Subject: [PATCH 09/22] Staging: hv: Get rid of the forward declaration of blkvsc_cancel_pending_reqs()
+Date: Mon, 28 Mar 2011 10:00:40 -0700
+Message-Id: <1301331653-26265-9-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301331653-26265-1-git-send-email-kys@microsoft.com>
 References: <1301331615-26226-1-git-send-email-kys@microsoft.com>
@@ -25,203 +25,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration of blkvsc_getgeo() by moving the code around.
+Get rid of the forward declaration of blkvsc_cancel_pending_reqs() by moving
+the code around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |  162 +++++++++++++++++++-------------------
- 1 files changed, 81 insertions(+), 81 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |  159 +++++++++++++++++++--------------------
+ 1 files changed, 79 insertions(+), 80 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index cd3a019..a0c1fe8 100644
+index f673337..c1e673b 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -272,6 +272,87 @@ static int blkvsc_open(struct block_device *bdev, fmode_t mode)
- 	return 0;
+@@ -498,6 +498,85 @@ static int blkvsc_do_flush(struct block_device_context *blkdev)
  }
  
-+
-+static int blkvsc_getgeo(struct block_device *bd, struct hd_geometry *hg)
+ 
++static int blkvsc_cancel_pending_reqs(struct block_device_context *blkdev)
 +{
-+	sector_t total_sectors = get_capacity(bd->bd_disk);
-+	sector_t cylinder_times_heads = 0;
-+	sector_t temp = 0;
++	struct blkvsc_request *pend_req, *tmp;
++	struct blkvsc_request *comp_req, *tmp2;
++	struct vmscsi_request *vm_srb;
 +
-+	int sectors_per_track = 0;
-+	int heads = 0;
-+	int cylinders = 0;
-+	int rem = 0;
++	int ret = 0;
 +
-+	if (total_sectors > (65535 * 16 * 255))
-+		total_sectors = (65535 * 16 * 255);
++	DPRINT_DBG(BLKVSC_DRV, "blkvsc_cancel_pending_reqs()");
 +
-+	if (total_sectors >= (65535 * 16 * 63)) {
-+		sectors_per_track = 255;
-+		heads = 16;
++	/* Flush the pending list first */
++	list_for_each_entry_safe(pend_req, tmp, &blkdev->pending_list,
++				 pend_entry) {
++		/*
++		 * The pend_req could be part of a partially completed
++		 * request. If so, complete those req first until we
++		 * hit the pend_req
++		 */
++		list_for_each_entry_safe(comp_req, tmp2,
++					 &pend_req->group->blkvsc_req_list,
++					 req_entry) {
++			DPRINT_DBG(BLKVSC_DRV, "completing blkvsc_req %p "
++				   "sect_start %lu sect_count %ld\n",
++				   comp_req,
++				   (unsigned long) comp_req->sector_start,
++				   comp_req->sector_count);
 +
-+		cylinder_times_heads = total_sectors;
-+		/* sector_div stores the quotient in cylinder_times_heads */
-+		rem = sector_div(cylinder_times_heads, sectors_per_track);
-+	} else {
-+		sectors_per_track = 17;
++			if (comp_req == pend_req)
++				break;
 +
-+		cylinder_times_heads = total_sectors;
-+		/* sector_div stores the quotient in cylinder_times_heads */
-+		rem = sector_div(cylinder_times_heads, sectors_per_track);
++			list_del(&comp_req->req_entry);
 +
-+		temp = cylinder_times_heads + 1023;
-+		/* sector_div stores the quotient in temp */
-+		rem = sector_div(temp, 1024);
++			if (comp_req->req) {
++				vm_srb =
++				&comp_req->request.vstor_packet.
++				vm_srb;
++				ret = __blk_end_request(comp_req->req,
++					(!vm_srb->scsi_status ? 0 : -EIO),
++					comp_req->sector_count *
++					blkdev->sector_size);
 +
-+		heads = temp;
++				/* FIXME: shouldn't this do more than return? */
++				if (ret)
++					goto out;
++			}
 +
-+		if (heads < 4)
-+			heads = 4;
-+
-+
-+		if (cylinder_times_heads >= (heads * 1024) || (heads > 16)) {
-+			sectors_per_track = 31;
-+			heads = 16;
-+
-+			cylinder_times_heads = total_sectors;
-+			/*
-+			 * sector_div stores the quotient in
-+			 * cylinder_times_heads
-+			 */
-+			rem = sector_div(cylinder_times_heads,
-+					 sectors_per_track);
++			kmem_cache_free(blkdev->request_pool, comp_req);
 +		}
 +
-+		if (cylinder_times_heads >= (heads * 1024)) {
-+			sectors_per_track = 63;
-+			heads = 16;
++		DPRINT_DBG(BLKVSC_DRV, "cancelling pending request - %p\n",
++			   pend_req);
 +
-+			cylinder_times_heads = total_sectors;
-+			/*
-+			 * sector_div stores the quotient in
-+			 * cylinder_times_heads
-+			 */
-+			rem = sector_div(cylinder_times_heads,
-+					 sectors_per_track);
++		list_del(&pend_req->pend_entry);
++
++		list_del(&pend_req->req_entry);
++
++		if (comp_req->req) {
++			if (!__blk_end_request(pend_req->req, -EIO,
++					       pend_req->sector_count *
++					       blkdev->sector_size)) {
++				/*
++				 * All the sectors have been xferred ie the
++				 * request is done
++				 */
++				DPRINT_DBG(BLKVSC_DRV,
++					   "blkvsc_cancel_pending_reqs() - "
++					   "req %p COMPLETED\n", pend_req->req);
++				kmem_cache_free(blkdev->request_pool,
++						pend_req->group);
++			}
 +		}
++
++		kmem_cache_free(blkdev->request_pool, pend_req);
 +	}
 +
-+	temp = cylinder_times_heads;
-+	/* sector_div stores the quotient in temp */
-+	rem = sector_div(temp, heads);
-+	cylinders = temp;
-+
-+	hg->heads = heads;
-+	hg->sectors = sectors_per_track;
-+	hg->cylinders = cylinders;
-+
-+	DPRINT_INFO(BLKVSC_DRV, "CHS (%d, %d, %d)", cylinders, heads,
-+		    sectors_per_track);
-+
-+	return 0;
++out:
++	return ret;
 +}
 +
  /* Static decl */
  static int blkvsc_probe(struct device *dev);
  static int blkvsc_remove(struct device *device);
-@@ -279,7 +360,6 @@ static void blkvsc_shutdown(struct device *device);
+@@ -512,7 +591,6 @@ static int blkvsc_do_request(struct block_device_context *blkdev,
+ static int blkvsc_do_inquiry(struct block_device_context *blkdev);
+ static int blkvsc_do_read_capacity(struct block_device_context *blkdev);
+ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev);
+-static int blkvsc_cancel_pending_reqs(struct block_device_context *blkdev);
+ static int blkvsc_do_pending_reqs(struct block_device_context *blkdev);
  
- static int blkvsc_release(struct gendisk *disk, fmode_t mode);
- static int blkvsc_revalidate_disk(struct gendisk *gd);
--static int blkvsc_getgeo(struct block_device *bd, struct hd_geometry *hg);
- static int blkvsc_ioctl(struct block_device *bd, fmode_t mode,
- 			unsigned cmd, unsigned long argument);
- static void blkvsc_request(struct request_queue *queue);
-@@ -1424,86 +1504,6 @@ static int blkvsc_revalidate_disk(struct gendisk *gd)
- 	return 0;
+ static int blkvsc_ringbuffer_size = BLKVSC_RING_BUFFER_SIZE;
+@@ -1348,85 +1426,6 @@ static void blkvsc_request_completion(struct hv_storvsc_request *request)
+ 	spin_unlock_irqrestore(&blkdev->lock, flags);
  }
  
--static int blkvsc_getgeo(struct block_device *bd, struct hd_geometry *hg)
+-static int blkvsc_cancel_pending_reqs(struct block_device_context *blkdev)
 -{
--	sector_t total_sectors = get_capacity(bd->bd_disk);
--	sector_t cylinder_times_heads = 0;
--	sector_t temp = 0;
+-	struct blkvsc_request *pend_req, *tmp;
+-	struct blkvsc_request *comp_req, *tmp2;
+-	struct vmscsi_request *vm_srb;
 -
--	int sectors_per_track = 0;
--	int heads = 0;
--	int cylinders = 0;
--	int rem = 0;
+-	int ret = 0;
 -
--	if (total_sectors > (65535 * 16 * 255))
--		total_sectors = (65535 * 16 * 255);
+-	DPRINT_DBG(BLKVSC_DRV, "blkvsc_cancel_pending_reqs()");
 -
--	if (total_sectors >= (65535 * 16 * 63)) {
--		sectors_per_track = 255;
--		heads = 16;
+-	/* Flush the pending list first */
+-	list_for_each_entry_safe(pend_req, tmp, &blkdev->pending_list,
+-				 pend_entry) {
+-		/*
+-		 * The pend_req could be part of a partially completed
+-		 * request. If so, complete those req first until we
+-		 * hit the pend_req
+-		 */
+-		list_for_each_entry_safe(comp_req, tmp2,
+-					 &pend_req->group->blkvsc_req_list,
+-					 req_entry) {
+-			DPRINT_DBG(BLKVSC_DRV, "completing blkvsc_req %p "
+-				   "sect_start %lu sect_count %ld\n",
+-				   comp_req,
+-				   (unsigned long) comp_req->sector_start,
+-				   comp_req->sector_count);
 -
--		cylinder_times_heads = total_sectors;
--		/* sector_div stores the quotient in cylinder_times_heads */
--		rem = sector_div(cylinder_times_heads, sectors_per_track);
--	} else {
--		sectors_per_track = 17;
+-			if (comp_req == pend_req)
+-				break;
 -
--		cylinder_times_heads = total_sectors;
--		/* sector_div stores the quotient in cylinder_times_heads */
--		rem = sector_div(cylinder_times_heads, sectors_per_track);
+-			list_del(&comp_req->req_entry);
 -
--		temp = cylinder_times_heads + 1023;
--		/* sector_div stores the quotient in temp */
--		rem = sector_div(temp, 1024);
+-			if (comp_req->req) {
+-				vm_srb =
+-				&comp_req->request.vstor_packet.
+-				vm_srb;
+-				ret = __blk_end_request(comp_req->req,
+-					(!vm_srb->scsi_status ? 0 : -EIO),
+-					comp_req->sector_count *
+-					blkdev->sector_size);
 -
--		heads = temp;
+-				/* FIXME: shouldn't this do more than return? */
+-				if (ret)
+-					goto out;
+-			}
 -
--		if (heads < 4)
--			heads = 4;
--
--
--		if (cylinder_times_heads >= (heads * 1024) || (heads > 16)) {
--			sectors_per_track = 31;
--			heads = 16;
--
--			cylinder_times_heads = total_sectors;
--			/*
--			 * sector_div stores the quotient in
--			 * cylinder_times_heads
--			 */
--			rem = sector_div(cylinder_times_heads,
--					 sectors_per_track);
+-			kmem_cache_free(blkdev->request_pool, comp_req);
 -		}
 -
--		if (cylinder_times_heads >= (heads * 1024)) {
--			sectors_per_track = 63;
--			heads = 16;
+-		DPRINT_DBG(BLKVSC_DRV, "cancelling pending request - %p\n",
+-			   pend_req);
 -
--			cylinder_times_heads = total_sectors;
--			/*
--			 * sector_div stores the quotient in
--			 * cylinder_times_heads
--			 */
--			rem = sector_div(cylinder_times_heads,
--					 sectors_per_track);
+-		list_del(&pend_req->pend_entry);
+-
+-		list_del(&pend_req->req_entry);
+-
+-		if (comp_req->req) {
+-			if (!__blk_end_request(pend_req->req, -EIO,
+-					       pend_req->sector_count *
+-					       blkdev->sector_size)) {
+-				/*
+-				 * All the sectors have been xferred ie the
+-				 * request is done
+-				 */
+-				DPRINT_DBG(BLKVSC_DRV,
+-					   "blkvsc_cancel_pending_reqs() - "
+-					   "req %p COMPLETED\n", pend_req->req);
+-				kmem_cache_free(blkdev->request_pool,
+-						pend_req->group);
+-			}
 -		}
+-
+-		kmem_cache_free(blkdev->request_pool, pend_req);
 -	}
 -
--	temp = cylinder_times_heads;
--	/* sector_div stores the quotient in temp */
--	rem = sector_div(temp, heads);
--	cylinders = temp;
--
--	hg->heads = heads;
--	hg->sectors = sectors_per_track;
--	hg->cylinders = cylinders;
--
--	DPRINT_INFO(BLKVSC_DRV, "CHS (%d, %d, %d)", cylinders, heads,
--		    sectors_per_track);
--
--    return 0;
+-out:
+-	return ret;
 -}
 -
- static int blkvsc_ioctl(struct block_device *bd, fmode_t mode,
- 			unsigned cmd, unsigned long argument)
+ static int blkvsc_do_pending_reqs(struct block_device_context *blkdev)
  {
+ 	struct blkvsc_request *pend_req, *tmp;
 -- 
 1.7.4.1
 
