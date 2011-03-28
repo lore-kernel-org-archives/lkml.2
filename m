@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab1C1RlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 13:41:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40547 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755106Ab1C1RlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 13:41:23 -0400
-Date: Mon, 28 Mar 2011 18:41:19 +0100
-From: Steven Hardy <shardy@redhat.com>
-To: Greg KH <gregkh@suse.de>
-Cc: mjg@redhat.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PATCH 3/3] Resend : Fix memory leak in qcserial driver
-Message-ID: <20110328174119.GC7030@shardy.csb>
-References: <1301321186.4397.13.camel@shardy.csb>
- <20110328142148.GA19521@suse.de>
+	id S1755256Ab1C1Rmx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 13:42:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:55657 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045Ab1C1Rmv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 13:42:51 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=XYJHFtupD_QA:10 a=-AZnrn_YvKEA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=3E0ccD1kAm_z4OvWgVUA:9 a=l83yh_PPMTJZ-RIQV8QA:7 a=l1OEByQpYqq7Kgb0zgZriW6KWD8A:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Mon, 28 Mar 2011 13:42:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John Lepikhin <johnlepikhin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: Very aggressive memory reclaim
+Message-ID: <20110328174250.GE8529@home.goodmis.org>
+References: <AANLkTinFqqmE+fTMTLVU-_CwPE+LQv7CpXSQ5+CdAKLK@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110328142148.GA19521@suse.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <AANLkTinFqqmE+fTMTLVU-_CwPE+LQv7CpXSQ5+CdAKLK@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 3 of 3, this simply adds a couple of missing free's in the error path:
+[ Add Cc's of those that may help you ]
 
-Original description:
-2 - Ensure that the serial->private data is freed in the event of the probe failing and returning -ENODEV.  This error-path leak is less likely but still possible, it was discussed previously but not actually fixed AFAICS: http://kerneltrap.org/mailarchive/linux-kernel/2010/6/14/4582980/thread, http://lkml.org/lkml/2010/6/20/234
+-- Steve
 
-
-Signed-off-by: Steve Hardy <shardy@redhat.com>
-
-
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 0463dab..6219fce 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -167,6 +167,7 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
- 					"Could not set interface, error %d\n",
- 					retval);
- 				retval = -ENODEV;
-+				kfree(data);
- 			}
- 		} else if (ifnum == 2) {
- 			dbg("Modem port found");
-@@ -191,6 +192,7 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
- 					"Could not set interface, error %d\n",
- 					retval);
- 				retval = -ENODEV;
-+				kfree(data);
- 			}
- 		}
- 		break;
+On Mon, Mar 28, 2011 at 08:39:29PM +0400, John Lepikhin wrote:
+> Hello,
+> 
+> I use high-loaded machine with 10M+ inodes inside XFS, 50+ GB of
+> memory, intensive HDD traffic and 20..50 forks per second. Vanilla
+> kernel 2.6.37.4. The problem is that kernel frees memory very
+> aggressively.
+> 
+> For example:
+> 
+> 25% of memory is used by processes
+> 50% for page caches
+> 7% for slabs, etc.
+> 18% free.
+> 
+> That's bad but works. After few hours:
+> 
+> 25% of memory is used by processes
+> 62% for page caches
+> 7% for slabs, etc.
+> 5% free.
+> 
+> Most of files are cached, works perfectly. This is the moment when
+> kernel decides to free some memory. After memory reclaim:
+> 
+> 25% of memory is used by processes
+> 25% for page caches(!)
+> 7% for slabs, etc.
+> 43% free(!)
+> 
+> Page cache is dropped, server becomes too slow. This is the beginning
+> of new cycle.
+> 
+> I didn't found any huge mallocs at that moment. Looks like because of
+> large number of small mallocs (forks) kernel have pessimistic forecast
+> about future memory usage and frees too much memory. Is there any
+> options of tuning this? Any other variants?
+> 
+> Thanks!
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
