@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab1C1Plt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 11:41:49 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:54888 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754588Ab1C1Pls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 11:41:48 -0400
-Subject: Re: [PATCH 2/3] mm: Add SECTION_ALIGN_UP() and
- SECTION_ALIGN_DOWN() macro
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Daniel Kiper <dkiper@net-space.pl>
-Cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, wdauchy@gmail.com,
-        rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20110328092412.GC13826@router-fw-old.local.net-space.pl>
-References: <20110328092412.GC13826@router-fw-old.local.net-space.pl>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 28 Mar 2011 08:41:24 -0700
-Message-ID: <1301326884.31700.8321.camel@nimitz>
+	id S1754395Ab1C1PtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 11:49:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60293 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab1C1PtG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 11:49:06 -0400
+Date: Mon, 28 Mar 2011 08:48:45 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        lud <linux-usb@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Sebastian Siewior <bigeasy@linutronix.de>
+Subject: [PATCH -next RESEND] usb: fix isp1760-hcd printk format warning
+Message-Id: <20110328084845.2384a368.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4D90ADE2.00FF,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-28 at 11:24 +0200, Daniel Kiper wrote:
-> Add SECTION_ALIGN_UP() and SECTION_ALIGN_DOWN() macro which aligns
-> given pfn to upper section and lower section boundary accordingly.
-> 
-> Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
-> ---
->  include/linux/mmzone.h |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 02ecb01..d342820 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -931,6 +931,9 @@ static inline unsigned long early_pfn_to_nid(unsigned long pfn)
->  #define pfn_to_section_nr(pfn) ((pfn) >> PFN_SECTION_SHIFT)
->  #define section_nr_to_pfn(sec) ((sec) << PFN_SECTION_SHIFT)
-> 
-> +#define SECTION_ALIGN_UP(pfn)	(((pfn) + PAGES_PER_SECTION - 1) & PAGE_SECTION_MASK)
-> +#define SECTION_ALIGN_DOWN(pfn)	((pfn) & PAGE_SECTION_MASK)
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-There are certainly a lot of different ways to do this, including using
-the existing ALIGN() macro, but you won't be the first to open-code
-it. :)
+Fix printk format build warning and grammar typo on same line.
 
-Acked-by: Dave Hansen <dave@linux.vnet.ibm.com>
+drivers/usb/host/isp1760-hcd.c:300: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'size_t'
 
--- Dave
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/usb/host/isp1760-hcd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+--- linux-next-20110315.orig/drivers/usb/host/isp1760-hcd.c
++++ linux-next-20110315/drivers/usb/host/isp1760-hcd.c
+@@ -295,7 +295,7 @@ static void alloc_mem(struct usb_hcd *hc
+ 	}
+ 
+ 	dev_err(hcd->self.controller,
+-				"%s: Can not allocate %lu bytes of memory\n"
++				"%s: Cannot allocate %zu bytes of memory\n"
+ 				"Current memory map:\n",
+ 				__func__, qtd->length);
+ 	for (i = 0; i < BLOCKS; i++) {
+--
