@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab1C1FJb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 01:09:31 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52318 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab1C1FJa convert rfc822-to-8bit (ORCPT
+	id S1752379Ab1C1FSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 01:18:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39109 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab1C1FSg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 01:09:30 -0400
+	Mon, 28 Mar 2011 01:18:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=SAOfj6hQ7pL86P8/Ny6NFmSTtWLnZxlWQk4ufEVxslTpRgPzX+zgXRr5aV1Dq2RgyP
-         xrrjjaksGYPH1r6I674Ckb3+WPT8P2MZJ7ssWIVT9cxYjVbb0EuCNPDlg41SSChOrzwC
-         qoRIz3RwD9nQRJEvroIkwDElS0Lz3GrLlAZIM=
+        d=googlemail.com; s=gamma;
+        h=sender:from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=VQr0djfm+8byBxT55n9Lzi4eWdq7au4QVjRNKxJtqZ9gjA11Jq+dG8xFdxJ0T+aXw7
+         kGhgKQhVtYv4DQstYteH++ABkDDwucfRAgJzHNo+m3T1QePkYCD1m0gHpzoVyqmiHaGx
+         p6H9povCTMA/ZNP8pqhUUyIxiMW8Sw8U9jRHc=
+From: =?utf-8?q?Old=C5=99ich_Jedli=C4=8Dka?= <oldium.pro@seznam.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bug #31002] acer-wmi: rfkill and bluetooth enabling doesn't work as in 2.6.37
+Date: Mon, 28 Mar 2011 07:18:30 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-drm+; KDE/4.6.1; i686; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "John W. Linville" <linville@tuxdriver.com>
+References: <lDYNS4ATQ-N.A._aD.9m5jNB@chimera> <40UNry85rJN.A.7KE.fn5jNB@chimera>
+In-Reply-To: <40UNry85rJN.A.7KE.fn5jNB@chimera>
 MIME-Version: 1.0
-In-Reply-To: <20110325141947.3236.83222.stgit@matisse.1015granger.net>
-References: <20110325141947.3236.83222.stgit@matisse.1015granger.net>
-Date: Mon, 28 Mar 2011 07:09:29 +0200
-Message-ID: <AANLkTikohEL9EVkOeX_hApVXQGB3c0V3Aqnfx3=tY0u6@mail.gmail.com>
-Subject: Re: [PATCH] NFS: Revert NFSROOT default mount options
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201103280718.30633.oldium.pro@seznam.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 3:23 PM, Chuck Lever <chuck.lever@oracle.com> wrote:
-> Marek Belisko <marek.belisko@gmail.com> reports that recent attempts
-> to fix regressions in NFSROOT have broken his configuration:
->
->> After update from 2.6.38-rc8 to 2.6.38 is mounting rootfs over nfs not possible.
->> Log:
->> VFS: Mounted root (nfs filesystem) on device 0:14.
->> Freeing init memory: 132K
->> nfs: server 10.146.1.21 not responding, still trying
->> nfs: server 10.146.1.21 not responding, still trying
->>
->> This is never ending. I make short bisect (not too much commits
->> between versions)
->> and bad commit was reported: 53d4737580535e073963b91ce87d4216e434fab5
->>
->> NFS: NFSROOT should default to "proto=udp"
->>
->> I've tested on mini2440 board (DM9000, static IP).
->> Is there some missing option or something else to be checked?
->
-> An examination of a network trace captured during the failure shows
-> that the mount is actually succeeding, but that the client is not
-> seeing READ replies larger than 16KB.
->
-> Last fall we removed the ad hoc mount option parser in fs/nfs/nfsroot.c
-> in favor of using the main parser in fs/nfs/super.c (see commit
-> 56463e50 "NFS: Use super.c for NFSROOT mount option parsing").  That
-> commit changed the default NFSROOT mount options to be the same as
-> those employed by user space mounts.  As it turns out, that change is
-> not tolerated by many embedded systems.
->
-> Subsequently, commit 53d47375 introduced a clean way to specify
-> default mount options for NFSROOT, so we can restore the traditional
-> defaults for NFSROOT easily now:
->
->   vers=2,udp,rsize=4096,wsize=4096
->
-> This should revert the changed default NFSROOT mount options
-> introduced with commit 56463e50.
-Work fine with below patch.
-You can add my Tested by: Marek Belisko <marek.belisko@open-nandra.com>
->
-> Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-> ---
->
-> Hi-
->
-> Please test this, as I no longer have an NFSROOT rig here.
->
-> Can some responsible maintainer type see that this gets into
-> linux-next quickly for broader testing?
->
->  fs/nfs/nfsroot.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
-> index c541093..c4744e1 100644
-> --- a/fs/nfs/nfsroot.c
-> +++ b/fs/nfs/nfsroot.c
-> @@ -87,7 +87,7 @@
->  #define NFS_ROOT               "/tftpboot/%s"
->
->  /* Default NFSROOT mount options. */
-> -#define NFS_DEF_OPTIONS                "udp"
-> +#define NFS_DEF_OPTIONS                "vers=2,udp,rsize=4096,wsize=4096"
->
->  /* Parameters passed from the kernel command line */
->  static char nfs_root_parms[256] __initdata = "";
->
->
+Hi,
 
-regards,
+On Sunday 27 March 2011 22:27:40 Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+> 
+> The following bug entry is on the current list of known regressions
+> from 2.6.37.  Please verify if it still should be listed and let the
+> tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=31002
+> Subject		: acer-wmi: rfkill and bluetooth enabling doesn't work as in
+> 2.6.37 Submitter	: Oldřich Jedlička <oldium.pro@seznam.cz>
+> Date		: 2011-03-10 18:37 (18 days old)
+> Message-ID	: <201103101937.01864.oldium.pro@seznam.cz>
+> References	: http://marc.info/?l=linux-acpi&m=129978235612140&w=2
 
-marek
+The bug is still being actively investigated.
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+Regards,
+Oldřich.
