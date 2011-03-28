@@ -1,49 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab1C1SZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 14:25:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42779 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab1C1SZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 14:25:51 -0400
-Message-ID: <4D90D255.4060008@zytor.com>
-Date: Mon, 28 Mar 2011 11:24:21 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Jiri Kosina <jkosina@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>, linux-pm@lists.linux-foundation.org,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Ondrej Zary <linux@rainbow-software.org>
-Subject: Re: [PATCH] apm: orphan the driver
-References: <20110326172204.05e52c10.sfr@canb.auug.org.au> <alpine.LRH.2.00.1103281443240.8162@twin.jikos.cz> <20110329004438.d9e755ef.sfr@canb.auug.org.au> <alpine.LNX.2.00.1103281604040.26754@pobox.suse.cz> <20110328174542.GW21838@one.firstfloor.org> <4D90CC0B.8070105@zytor.com> <20110328182123.GX21838@one.firstfloor.org>
-In-Reply-To: <20110328182123.GX21838@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755381Ab1C1Sd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 14:33:59 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:46284 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754726Ab1C1Sd4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 14:33:56 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Chris Bagwell <chris@cnpbagwell.com>, Matthew Garrett <mjg@redhat.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/3] asus-wmi: Add callback for hotkey filtering
+Date: Mon, 28 Mar 2011 13:33:42 -0500
+Message-Id: <1301337224-3293-2-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1301337224-3293-1-git-send-email-seth.forshee@canonical.com>
+References: <AANLkTi=U2Qkqv7FKfe18f0a=8Xg0QwRX_cxFj-j7ZPC=@mail.gmail.com>
+ <1301337224-3293-1-git-send-email-seth.forshee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2011 11:21 AM, Andi Kleen wrote:
->> Or we phase out the APM effort by only supporting it for poweroff, for
->> example.
-> 
-> Phasing out APM idle at least would be reasonable.  resumably even if the old 
-> laptops still work they are likely on AC because their batteries have
-> long died. So using a bit more power in idle shouldn't be a big
-> issue.
-> 
-> Not sure about suspend, screen saver etc. I suppose those could
-> be kept as frozen legacy features. At least until someone else
-> wants to redesign those parts too.
-> 
+This is required for the T101MT home key, which behaves differently
+than other hotkeys.
 
-Since poweroff applies even to stationary systems, it's probably the
-most important bit.  Suspend/resume the second most important.
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/platform/x86/asus-wmi.c |   12 +++++++++++-
+ drivers/platform/x86/asus-wmi.h |    6 ++++++
+ 2 files changed, 17 insertions(+), 1 deletions(-)
 
-	-hpa
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index 5b779a9..b14d992 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -1058,6 +1058,8 @@ static void asus_wmi_notify(u32 value, void *context)
+ 	acpi_status status;
+ 	int code;
+ 	int orig_code;
++	unsigned int key_value = 1;
++	bool autorelease = 1;
+ 
+ 	status = wmi_get_event_data(value, &response);
+ 	if (status != AE_OK) {
+@@ -1073,6 +1075,13 @@ static void asus_wmi_notify(u32 value, void *context)
+ 	code = obj->integer.value;
+ 	orig_code = code;
+ 
++	if (asus->driver->key_filter) {
++		asus->driver->key_filter(asus->driver, &code, &key_value,
++					 &autorelease);
++		if (code == ASUS_WMI_KEY_IGNORE)
++			goto exit;
++	}
++
+ 	if (code >= NOTIFY_BRNUP_MIN && code <= NOTIFY_BRNUP_MAX)
+ 		code = NOTIFY_BRNUP_MIN;
+ 	else if (code >= NOTIFY_BRNDOWN_MIN &&
+@@ -1082,7 +1091,8 @@ static void asus_wmi_notify(u32 value, void *context)
+ 	if (code == NOTIFY_BRNUP_MIN || code == NOTIFY_BRNDOWN_MIN) {
+ 		if (!acpi_video_backlight_support())
+ 			asus_wmi_backlight_notify(asus, orig_code);
+-	} else if (!sparse_keymap_report_event(asus->inputdev, code, 1, true))
++	} else if (!sparse_keymap_report_event(asus->inputdev, code,
++					       key_value, autorelease))
+ 		pr_info("Unknown key %x pressed\n", code);
+ 
+ exit:
+diff --git a/drivers/platform/x86/asus-wmi.h b/drivers/platform/x86/asus-wmi.h
+index c044522..4da6103 100644
+--- a/drivers/platform/x86/asus-wmi.h
++++ b/drivers/platform/x86/asus-wmi.h
+@@ -29,6 +29,8 @@
+ 
+ #include <linux/platform_device.h>
+ 
++#define ASUS_WMI_KEY_IGNORE (-1)
++
+ struct module;
+ struct key_entry;
+ struct asus_wmi;
+@@ -44,6 +46,10 @@ struct asus_wmi_driver {
+ 	const struct key_entry	*keymap;
+ 	const char		*input_name;
+ 	const char		*input_phys;
++	/* Returns new code, value, and autorelease values in arguments.
++	 * Return ASUS_WMI_KEY_IGNORE in code if event should be ignored. */
++	void (*key_filter) (struct asus_wmi_driver *driver, int *code,
++			    unsigned int *value, bool *autorelease);
+ 
+ 	int (*probe) (struct platform_device *device);
+ 	void (*quirks) (struct asus_wmi_driver *driver);
+-- 
+1.7.4.1
+
