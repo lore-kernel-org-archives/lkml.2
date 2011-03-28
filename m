@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab1C1HVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 03:21:49 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:46222 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751857Ab1C1HVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 03:21:47 -0400
-X-ASG-Debug-ID: 1301296906-01de284cf8c6e50001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D903708.1070800@fusionio.com>
-Date: Mon, 28 Mar 2011 09:21:44 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] block drivers for 2.6.39-rc
-References: <4D8E36CC.7080707@fusionio.com>	<20110328042311.GA15481@elte.hu>	<AANLkTik3GZ0b5S7p4ONQu4Hb8LoKewmMJ7_J5zvumYD-@mail.gmail.com>	<20110328160812.b4d19eb5.sfr@canb.auug.org.au>	<4D902E2C.2010701@fusionio.com> <20110328180434.d24e4465.sfr@canb.auug.org.au>
-X-ASG-Orig-Subj: Re: [GIT PULL] block drivers for 2.6.39-rc
-In-Reply-To: <20110328180434.d24e4465.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1301296906
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59192
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1752697Ab1C1H05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 03:26:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65393 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab1C1H04 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 03:26:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=EPJpoick4lUOOxH+38jrQech9NuT8WHgxAIn+UxfEI/pProF7XVp+i9u3zeFGb87+J
+         Sz9PUAIxDGRigqSZiQQEo/D65eiy3EQAux5qZr7nCv/oGATOdOg3mwpi6955rhnDTNgR
+         tNrryuWIGptj4MRXHescYeeqgQVzFbfVnOR6E=
+Subject: Re: [PATCH] slub: Disable the lockless allocator
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
+        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20110328063656.GA29462@elte.hu>
+References: <1301161507.2979.105.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1103261406420.24195@router.home>
+	 <alpine.DEB.2.00.1103261428200.25375@router.home>
+	 <alpine.DEB.2.00.1103261440160.25375@router.home>
+	 <AANLkTinTzKQkRcE2JvP_BpR0YMj82gppAmNo7RqgftCG@mail.gmail.com>
+	 <alpine.DEB.2.00.1103262028170.1004@router.home>
+	 <alpine.DEB.2.00.1103262054410.1373@router.home>
+	 <4D9026C8.6060905@cs.helsinki.fi> <20110328061929.GA24328@elte.hu>
+	 <AANLkTinpCa6GBjP3+fdantvOdbktqW8m_D0fGkAnCXYk@mail.gmail.com>
+	 <20110328063656.GA29462@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Mar 2011 09:26:50 +0200
+Message-ID: <1301297210.32248.6.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-28 09:04, Stephen Rothwell wrote:
-> Hi Jens,
-> 
-> On Mon, 28 Mar 2011 08:43:56 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
->>
->> Yes, and I merged your patch to fixup the build (on PPC, as I recall).
-> 
-> That was an earlier build problem.
+Le lundi 28 mars 2011 à 08:36 +0200, Ingo Molnar a écrit :
 
-Seems I missed the last iteration of this.
+> I think we might still be missing the hunk below - or is it now not needed 
+> anymore?
 
--- 
-Jens Axboe
+
+Its not needed anymore, once cmpxchg16b implementation works correctly
+on !SMP build. (It does now with current linux-2.6 tree)
+
+
 
