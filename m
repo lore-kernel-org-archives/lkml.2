@@ -1,108 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab1C1KcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 06:32:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53977 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab1C1KcV (ORCPT
+	id S1752496Ab1C1Kep (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 06:34:45 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:26011 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab1C1Keo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 06:32:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=YHg6iFMaBjD/UoaJvDNy69ulnNiGc2gpgpQmFLjZq2R9UCORZyqj94NaDBpkcnGdYm
-         vKQmJchuA0/yCjBkP9ue51Oj9TUdZz7TmNVxaucnKsbU8ZnkPV1wv8A7xMjLILBfPYI9
-         hdplQBiom/khKntp6v34S+Yiyg8X3nyvYbkq4=
-Subject: [PATCH] percpu: avoid extra NOP in percpu_cmpxchg16b_double
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
-        tj@kernel.org, npiggin@kernel.dk, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <1301212347.32248.1.camel@edumazet-laptop>
-References: <alpine.DEB.2.00.1103221635400.4521@tiger>
-	 <20110324142146.GA11682@elte.hu>
-	 <alpine.DEB.2.00.1103240940570.32226@router.home>
-	 <AANLkTikb8rtSX5hQG6MQF4quymFUuh5Tw97TcpB0YfwS@mail.gmail.com>
-	 <20110324172653.GA28507@elte.hu> <20110324185258.GA28370@elte.hu>
-	 <alpine.LFD.2.00.1103242005530.31464@localhost6.localdomain6>
-	 <20110324192247.GA5477@elte.hu>
-	 <AANLkTinBwM9egao496WnaNLAPUxhMyJmkusmxt+ARtnV@mail.gmail.com>
-	 <20110326112725.GA28612@elte.hu> <20110326114736.GA8251@elte.hu>
-	 <1301161507.2979.105.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1103261406420.24195@router.home>
-	 <alpine.DEB.2.00.1103261428200.25375@router.home>
-	 <alpine.DEB.2.00.1103261440160.25375@router.home>
-	 <AANLkTinTzKQkRcE2JvP_BpR0YMj82gppAmNo7RqgftCG@mail.gmail.com>
-	 <alpine.DEB.2.00.1103262028170.1004@router.home>
-	 <alpine.DEB.2.00.1103262054410.1373@router.home>
-	 <1301212347.32248.1.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Mar 2011 12:32:15 +0200
-Message-ID: <1301308335.3182.12.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Mar 2011 06:34:44 -0400
+Date: Mon, 28 Mar 2011 19:34:31 +0900
+From: Kyungmin Park <kmpark@infradead.org>
+Subject: [PATCH v6] fat: Batched discard support for fat
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
+Message-id: <20110328103431.GA22323@july>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-OriginalArrivalTime: 28 Mar 2011 10:34:40.0784 (UTC)
+ FILETIME=[BEA5C100:01CBED33]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-percpu_cmpxchg16b_double() uses alternative_io() and looks like :
+From: Kyungmin Park <kyungmin.park@samsung.com>
 
-e8 .. .. .. ..  call this_cpu_cmpxchg16b_emu
-X bytes		NOPX
+FAT supports batched discard as ext4.
 
-or, once patched (if cpu supports native instruction) on SMP build :
+Cited from Lukas words.
+"The current solution is not ideal because of its bad performance impact.
+So basic idea to improve things is to avoid discarding every time some
+blocks are freed. and instead batching is together into bigger trims,
+which tends to be more effective."
 
-65 48 0f c7 0e  cmpxchg16b %gs:(%rsi)
-0f 94 c0        sete %al
+You can find an information in detail at following URLs.
+http://lwn.net/Articles/397538/
+http://lwn.net/Articles/383933/
 
-on !SMP build :
+Clearify the meaning of "len" (Cited form Lukas mail)
 
-48 0f c7 0e     cmpxchg16b (%rsi)
-0f 94 c0        sete %al
+Let the "O" be free (bytes, blocks, whatever), and "=" be used.
+Now, we have a filesystem like this.
 
-Therefore, NOPX should be :
+  OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+  ^                                      ^
+  0                                      40
 
-P6_NOP3 on SMP
-P6_NOP2 on !SMP
+This is how it supposed to wotk if you have called FITIRM with parameters:
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
+start = 0
+minlen = 2
+len = 20
+
+So you will go through (blocks, bytes...) 0 -> 20
+
+  OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+  ^                   ^
+  0                   20
+
+So, you will call discard on extents:
+
+0-3
+You'll skip 6 because is smaller than minlen
+10-11
+15-19
+
+instead of 
+
+0-3
+10-11
+15-19
+30-36
+
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/x86/include/asm/percpu.h |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletion(-)
+Changelog v6:
+	Check the user input tightly
+	Fix cyclic trim routine from OGAWA
 
-diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
-index d475b43..d68fca6 100644
---- a/arch/x86/include/asm/percpu.h
-+++ b/arch/x86/include/asm/percpu.h
-@@ -509,6 +509,11 @@ do {									\
-  * it in software.  The address used in the cmpxchg16 instruction must be
-  * aligned to a 16 byte boundary.
+Changelog v5:
+	Exit when start cluster is grater than max cluster
+
+Changelog v4:
+	Simplify the exit condition
+
+Changelog v3:
+	Adjust the minlen from queue discard_granularity
+	Use the corrent len usage
+Changelog v2:
+	Use the given start and len as Lukas comments
+	Check the queue supports discard feature
+---
+diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+index f504089..08b53e1 100644
+--- a/fs/fat/fat.h
++++ b/fs/fat/fat.h
+@@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
+ 			      int nr_cluster);
+ extern int fat_free_clusters(struct inode *inode, int cluster);
+ extern int fat_count_free_clusters(struct super_block *sb);
++extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
+ 
+ /* fat/file.c */
+ extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
+diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
+index b47d2c9..81efef2 100644
+--- a/fs/fat/fatent.c
++++ b/fs/fat/fatent.c
+@@ -1,6 +1,8 @@
+ /*
+  * Copyright (C) 2004, OGAWA Hirofumi
+  * Released under GPL v2.
++ *
++ * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
   */
-+#ifdef CONFIG_SMP
-+#define CMPXCHG16B_EMU_CALL "call this_cpu_cmpxchg16b_emu\n\t" P6_NOP3
-+#else
-+#define CMPXCHG16B_EMU_CALL "call this_cpu_cmpxchg16b_emu\n\t" P6_NOP2
-+#endif
- #define percpu_cmpxchg16b_double(pcp1, o1, o2, n1, n2)			\
- ({									\
- 	char __ret;							\
-@@ -517,7 +522,7 @@ do {									\
- 	typeof(o2) __o2 = o2;						\
- 	typeof(o2) __n2 = n2;						\
- 	typeof(o2) __dummy;						\
--	alternative_io("call this_cpu_cmpxchg16b_emu\n\t" P6_NOP4,	\
-+	alternative_io(CMPXCHG16B_EMU_CALL,				\
- 		       "cmpxchg16b " __percpu_prefix "(%%rsi)\n\tsetz %0\n\t",	\
- 		       X86_FEATURE_CX16,				\
- 		       ASM_OUTPUT2("=a"(__ret), "=d"(__dummy)),		\
-
-
+ 
+ #include <linux/module.h>
+@@ -541,6 +543,16 @@ out:
+ 	return err;
+ }
+ 
++static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
++{
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
++	sector_t block, nr_blocks;
++
++	block = fat_clus_to_blknr(sbi, cluster);
++	nr_blocks = nr_clus * sbi->sec_per_clus;
++	return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
++}
++
+ int fat_free_clusters(struct inode *inode, int cluster)
+ {
+ 	struct super_block *sb = inode->i_sb;
+@@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
+ 			if (cluster != fatent.entry + 1) {
+ 				int nr_clus = fatent.entry - first_cl + 1;
+ 
+-				sb_issue_discard(sb,
+-					fat_clus_to_blknr(sbi, first_cl),
+-					nr_clus * sbi->sec_per_clus,
+-					GFP_NOFS, 0);
+-
++				fat_issue_discard(sb, first_cl, nr_clus);
+ 				first_cl = cluster;
+ 			}
+ 		}
+@@ -683,3 +691,80 @@ out:
+ 	unlock_fat(sbi);
+ 	return err;
+ }
++
++int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
++{
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
++	struct fatent_operations *ops = sbi->fatent_ops;
++	struct fat_entry fatent;
++	unsigned long reada_blocks, reada_mask, cur_block;
++	int err, free, count, entry;
++	int start, len, minlen, trimmed;
++
++	start = range->start >> sb->s_blocksize_bits;
++	len = range->len >> sb->s_blocksize_bits;
++	len = round_down(start + len, sbi->sec_per_clus);
++	start = round_up(start, sbi->sec_per_clus);
++	minlen = range->minlen >> sb->s_blocksize_bits;
++	minlen = round_up(minlen, sbi->sec_per_clus);
++	trimmed = 0;
++	count = 0;
++	err = -EINVAL;
++
++	if (start >= sbi->max_cluster)
++		goto out;
++
++	len = (len > sbi->max_cluster) ? sbi->max_cluster : len;
++
++	lock_fat(sbi);
++
++	reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
++	reada_mask = reada_blocks - 1;
++	cur_block = 0;
++	entry = 0;
++	free = 0;
++	fatent_init(&fatent);
++
++	if (start < FAT_START_ENT)
++		start = FAT_START_ENT;
++
++	fatent_set_entry(&fatent, start);
++
++	for (count = start; count <= len; count++) {
++		/* readahead of fat blocks */
++		if ((cur_block & reada_mask) == 0) {
++			unsigned long rest = sbi->fat_length - cur_block;
++			fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
++		}
++		cur_block++;
++
++		err = fat_ent_read_block(sb, &fatent);
++		if (err)
++			goto out;
++
++		do {
++			if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
++				free++;
++				if (!entry)
++					entry = fatent.entry;
++			} else if (entry) {
++				if (free >= minlen) {
++					fat_issue_discard(sb, entry, free);
++					trimmed += free;
++				}
++				free = 0;
++				entry = 0;
++			}
++		} while (fat_ent_next(sbi, &fatent));
++	}
++
++	if (free >= minlen) {
++		fat_issue_discard(sb, entry, free);
++		trimmed += free;
++	}
++	range->len = (u64)(trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
++	fatent_brelse(&fatent);
++out:
++	unlock_fat(sbi);
++	return err;
++}
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index 7257752..8d7901f 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -125,6 +125,36 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		return fat_ioctl_get_attributes(inode, user_attr);
+ 	case FAT_IOCTL_SET_ATTRIBUTES:
+ 		return fat_ioctl_set_attributes(filp, user_attr);
++	case FITRIM:
++	{
++		struct super_block *sb = inode->i_sb;
++		struct request_queue *q = bdev_get_queue(sb->s_bdev);
++		struct fstrim_range range;
++		int ret = 0;
++
++		if (!capable(CAP_SYS_ADMIN))
++			return -EPERM;
++
++		if (!blk_queue_discard(q))
++			return -EOPNOTSUPP;
++
++		if (copy_from_user(&range, (struct fstrim_range __user *)arg,
++					sizeof(range)))
++			return -EFAULT;
++
++		range.minlen = max_t(unsigned int, range.minlen,
++					q->limits.discard_granularity);
++		ret = fat_trim_fs(sb, &range);
++		if (ret < 0)
++			return ret;
++
++		if (copy_to_user((struct fstrim_range __user *)arg, &range,
++					sizeof(range)))
++			return -EFAULT;
++
++		return 0;
++	}
++
+ 	default:
+ 		return -ENOTTY;	/* Inappropriate ioctl for device */
+ 	}
