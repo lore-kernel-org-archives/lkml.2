@@ -1,56 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab1C1Iw2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 04:52:28 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:56463 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753014Ab1C1Iw0 (ORCPT
+	id S1753576Ab1C1IyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 04:54:21 -0400
+Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:34484 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752746Ab1C1IyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 04:52:26 -0400
-Date: Mon, 28 Mar 2011 09:52:23 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Lin Ming <ming.m.lin@intel.com>, mingo@elte.hu,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-Subject: Re: [RFC] perf: EBNF for event syntax
-Message-ID: <20110328095223.76e4debe@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1301299090.4859.6.camel@twins>
-References: <1300851416.31224.58.camel@minggr.sh.intel.com>
-	<1301051277.2250.195.camel@laptop>
-	<4D901F58.4060902@hitachi.com>
-	<1301299090.4859.6.camel@twins>
-X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Mar 2011 04:54:19 -0400
+Date: Mon, 28 Mar 2011 11:54:13 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: balbi@ti.com, gregkh@suse.de, linux-arm-msm@vger.kernel.org,
+        ablay@codeaurora.org,
+        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5 v5] usb:gadget: Add SuperSpeed support to the
+ Gadget Framework
+Message-ID: <20110328085412.GJ2251@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1300867498-20997-1-git-send-email-tlinder@codeaurora.org>
+ <20110325134101.GM2609@legolas.emea.dhcp.ti.com>
+ <000501cbed24$8efd1f70$acf75e50$@org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000501cbed24$8efd1f70$acf75e50$@org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011 09:58:10 +0200
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+On Mon, Mar 28, 2011 at 10:45:54AM +0200, Tanya Brokhman wrote:
+> Hi
+> 
+> > 
+> > On Wed, Mar 23, 2011 at 10:04:57AM +0200, Tatyana Brokhman wrote:
+> > > This patch adds the SuperSpeed functionality to the gadget framework.
+> > > In order not to force all the gadget drivers to supply SuperSpeed
+> > > descriptors when operating in SuperSpeed mode the following approach
+> > was
+> > > taken:
+> > > If we're operating in SuperSpeed mode and the gadget driver didn't
+> > supply
+> > > SuperSpeed descriptors, the composite layer will automatically create
+> > > SuperSpeed descriptors with default values.
+> > > Support for new SuperSpeed BOS descriptor was added.
+> > > Support for SET_FEATURE and GET_STATUS requests in SuperSpeed mode
+> > was
+> > > added.
+> > 
+> > IMHO, this patch tries to do too much in one huge patch. It needs major
+> > splitting.
+> > 
+> > Also, I don't get why you decided to go the path of letting composite.c
+> > generate the super speed descriptors instead of expecting gadget
+> > drivers
+> > to pass those should they support super speed.
+> > 
+> > I would like the other way much better: first, it's what we already do
+> > for full/low speed and high speed. Second, we can easily see the
+> > descriptors by opening the gadget driver's code.
+> > 
+> 
+> Our goal was to provide a generic solution that will enable existing gadget
+> drivers to operate in SS mode with minimum changes to their code. If a
+> certain gadget driver wishes to operate in SS mode and the values in the
+> descriptors are important to it, this FD should define its own SS
+> descriptors as already done for HS/LS and those (SS) descriptors will be
+> chosen. 
 
-> Groups are most useful in measuring events on another base, which is
-> basically mandatory if your primary event doesn't have sampling
-> support itself.
+and then we have two paths for achieving the same thing. And most
+likely, what'll happen is that you're gonna one or two uses of the
+composite.c layer for generating the descriptors and all the others will
+prefer to provide their own descriptors.
 
-Just FYI...
+I mean, depending on the function driver, we're gonna different
+requirements WRT bandwidth, endpoints, etc. So, since you're gonna
+little use of the generic solution, it's better not to have it. It won't
+benefit many users.
 
-When I was looking at group event support for SH (because the hardware
-doesn't have sampling support) I was trying to avoid the user being
-required to setup the groups on the command-line, e.g. I wrote it so
-that the group event creation was all done "behind the scenes".
+> Please note that a gadget driver can also choose not to have SS descriptors
+> generated for it all, even if it didn't provide any of its own and thus
+> choosing not to operate in SS mode.
 
-For those architectures/platforms that are missing sampling support I
-still think that group event creation should be as invisible as
-possible.
+that's not what we want with the Linux gadget drivers. We want them to
+be example (and productable) implementations working on all speeds. It's
+like that because we want to, both, showcase the framework while also
+letting those drivers be configurable enough so manufacturers can simply
+re-use them.
+
+Check nokia.c, that's a good example of a manufacturer re-using the open
+source function drivers to provide a vendor specific solution :-)
+
+> If you look at our implementation of the UAS gadget driver you'll see that
+> we define the SS descriptors just as is done for HS/LS and those descriptors
+> are chosen in enumeration.
+
+then again, why do you need this Generic Solution ?
+
+> I believe that in the future all gadget drivers will define their own SS
+> descriptors with values that are suitable for that gadget driver and the
+> create_ss_descriptors() will become obsolete. As I've already mentioned this
+> is just a way to allow all the existing drivers to operate in SS mode with
+> minimum changes to their code. So this patch doesn't contradict your
+> approach, just extends it. 
+
+but that's not a good approach. You're adding bloat which will be
+removed soon. Problem is that once it's there, we will have to support
+it for a long long time as we won't know if there are any out of tree
+gadget drivers depending on that, forcing us on publising of
+Documentation/feature-removal-schedule.txt that we will remove that
+layer in e.g. 4 major revisions. So, IMHO, better not to add it.
+
+> > There are a few more comments below, but this patch needs major, major
+> > splitting.
+> 
+> I'll address your comments and split it up in the next version. I would like
+> to give Greg and others a chance to comment as well before uploading another
+> version.
+
+Sure, makes sense :-)
+
+-- 
+balbi
