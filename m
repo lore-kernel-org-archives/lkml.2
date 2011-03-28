@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab1C1SLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 14:11:37 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:38221
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751754Ab1C1SLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 14:11:36 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 00/22] Staging: hv: Cleanup-storage-drivers-phase-III 
-Date: Mon, 28 Mar 2011 10:00:15 -0700
-Message-Id: <1301331615-26226-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755351Ab1C1SLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 14:11:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47332 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754697Ab1C1SLp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 14:11:45 -0400
+Date: Mon, 28 Mar 2011 19:11:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Collins <collinsd@codeaurora.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm-owner@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: Remove possible deadlock from
+ regulator_enable
+Message-ID: <20110328181151.GB28494@opensource.wolfsonmicro.com>
+References: <1301326482-6547-1-git-send-email-collinsd@codeaurora.org>
+ <1301326482-6547-2-git-send-email-collinsd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301326482-6547-2-git-send-email-collinsd@codeaurora.org>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set deals with some of the style isues in blkvsc_drv.c. We also
-get rid most of the "dead code" in this file:
+On Mon, Mar 28, 2011 at 08:34:41AM -0700, David Collins wrote:
 
-	1) Get rid of most of the forward declarations in this file.
-	   The only remaining forward declarations are to deal with 
-	   circular dependencies.
+Review curtailed by me having to dash off but one comment...
 
-	2) Get rid of most of the dead code in the file. Some of
-	   the functions in this file are place holders - they are not
-	   fuly implementedi yet (blkvsc_ioctl(), blkvsc_media_changed(). 
-	   We have retained some comments/dead code, to help us in the
-	   final implementation.
+> -/* locks held by regulator_enable() */
+> +/* Locks are *not* held by regulator_enable(). */
+>  static int _regulator_enable(struct regulator_dev *rdev)
+>  {
+> -	int ret, delay;
+> +	struct regulator_dev *supply_rdev = NULL;
+> +	int ret = 0, delay;
+>  
+> +	mutex_lock(&rdev->mutex);
 
-Regads,
-
-K. Y 
-
-
+This is going to be terribly confusing - the _ versions of the functions
+all by convention rely on their callers taking the mutex, allowing them
+to be safely used from internal APIs.  
