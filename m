@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab1C1RY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 13:24:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27653 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754878Ab1C1RYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 13:24:55 -0400
-Date: Mon, 28 Mar 2011 13:24:47 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Chad Talbott <ctalbott@google.com>
-Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, jaxboe@fusionio.com,
-        linux-kernel@vger.kernel.org, mrubin@google.com, teravest@google.com
-Subject: Re: [PATCH 0/3] cfq-iosched: Fair cross-group preemption
-Message-ID: <20110328172447.GE7226@redhat.com>
-References: <20110322150905.GD3757@redhat.com>
- <AANLkTinTiEAFG1F1df380BiDtVFVr=nCsSqhM9__XdQ4@mail.gmail.com>
- <20110322181231.GJ3757@redhat.com>
- <AANLkTi=uB_Wv08xu4SzpjCJ_9isvDPsN=ojTH=wAaDoS@mail.gmail.com>
- <20110323204146.GK13315@redhat.com>
- <AANLkTi=-7gZhEU6qRAt+uGBkb2s2=bkXC81WNScDM6jA@mail.gmail.com>
- <20110325213202.GB21593@redhat.com>
- <AANLkTikTLCdHceaD98zxw90Qb=PuTvfALWELa=Yp6UAC@mail.gmail.com>
- <20110328131503.GA7226@redhat.com>
- <AANLkTinwmTjD-Q19U5nCPvoqN2DYGwtLDgeR8h39uWCX@mail.gmail.com>
+	id S1755136Ab1C1RZN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 13:25:13 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:51119 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755066Ab1C1RZL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 13:25:11 -0400
+Message-ID: <4D90C472.3090908@linux.vnet.ibm.com>
+Date: Mon, 28 Mar 2011 13:25:06 -0400
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinwmTjD-Q19U5nCPvoqN2DYGwtLDgeR8h39uWCX@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Layton <jlayton@poochiereds.net>
+CC: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
+Subject: Re: TPM chip prevents machine from suspending
+References: <20110328100846.0ba2e039@tlielax.poochiereds.net>
+In-Reply-To: <20110328100846.0ba2e039@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 09:59:54AM -0700, Chad Talbott wrote:
-> On Mon, Mar 28, 2011 at 6:15 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Fri, Mar 25, 2011 at 04:53:13PM -0700, Chad Talbott wrote:
-> >> Also, we'll soon be working to adopt the hierarchy series, and we'll
-> >> likely revisit using an RT service tree there.  It's difficult to
-> >> justify introducing RT service tree before those patches arrive.
-> >
-> > So once you move to hierachicy series, will be you using RT class and
-> > use throttling and abandon this functionality?
-> 
-> I'll certainly investigate using RT class and throttling, but it's too
-> early to know.  It's a known change in behavior, so it will need
-> testing (as well as the user-space work to handle the different
-> interface).
+On 03/28/2011 10:08 AM, Jeff Layton wrote:
+> My wife's machine apparently has a TPM chip in it. Since I upgraded it
+> to Fedora 14, it fails to suspend consistently. On the first attempt to
+> suspend it, it works fine. Once it has woken back up however, it will
+> not suspend again. Here's the dmesg log from such an attempt:
+>
+> [  202.460967] PM: Syncing filesystems ... done.
+> [  202.464818] PM: Preparing system for mem sleep
+> [  202.485968] Freezing user space processes ... (elapsed 0.01 seconds) done.
+> [  202.497079] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+> [  202.508067] PM: Entering mem sleep
+> [  202.508086] Suspending console(s) (use no_console_suspend to debug)
+> [  202.508451] sd 3:0:0:0: [sdb] Synchronizing SCSI cache
+> [  202.508562] sd 2:0:0:0: [sda] Synchronizing SCSI cache
+> [  202.508616] sd 3:0:0:0: [sdb] Stopping disk
+> [  202.511956] parport_pc 00:0b: disabled
+> [  202.512127] serial 00:09: disabled
+> [  202.512134] serial 00:09: wake-up capability disabled by ACPI
+> [  202.536058] legacy_suspend(): pnp_bus_suspend+0x0/0x82 returns 38
+> [  202.536061] PM: Device 00:02 failed to suspend: error 38
+> [  202.997517] sd 2:0:0:0: [sda] Stopping disk
+> [  202.997806] PM: Some devices failed to suspend
+> [  202.998085] sd 2:0:0:0: [sda] Starting disk
+> [  202.998144] sd 3:0:0:0: [sdb] Starting disk
+> [  202.998614] serial 00:09: activated
+> [  202.999158] parport_pc 00:0b: activated
+> [  204.543094] PM: resume of devices complete after 1545.282 msecs
+> [  204.543268] PM: Finishing wakeup.
+> [  204.543270] Restarting tasks ... done.
+>
+> ...error 38 is ENOSYS, and the 00:02 is this:
+>
+> # cat /sys/bus/pnp/devices/00\:02/id
+> IFX0102
+> PNP0c31
+Also the tpm_tis driver handles both of these. Can you confirm which 
+module that laptop was using  (tpm_tis or tpm_infineon) and try whether 
+one of them works better than the other one? Please do a reboot between 
+trying one and then the other.
 
-So why not assess that now and then go for the one which meets your
-requirements in long term. If we introduce this patch now, this 
-introduces a new user visible interface and we can't get rid of it
-later. If two releases down the line you implement RT group functionality
-and move to that, then we have this dead interface not being used.
+Try the following before and after a suspend/resume:
 
-So why not implement RT groups internally (It should be a huge patch) now
-and test and see how well is it working with throttling logic and whether
-it meets your needs or not.
+cd /sys
+find . | grep caps$ | xargs cat
 
-Thanks
-Vivek
+It should display manufacturer data.
+
+     Stefan
+
+
