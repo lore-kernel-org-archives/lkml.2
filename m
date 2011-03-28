@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab1C1Ei5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 00:38:57 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:21920 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750788Ab1C1Ei4 (ORCPT
+	id S1751649Ab1C1Enw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 00:43:52 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:20436 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751164Ab1C1Ent (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 00:38:56 -0400
-Message-ID: <4D9010F1.1040909@bluewatersys.com>
-Date: Mon, 28 Mar 2011 17:39:13 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Matthew Wilcox <matthew@wil.cx>
-CC: viro@zeniv.linux.org.uk, dchinner@redhat.com, Trond.Myklebust@netapp.com,
+	Mon, 28 Mar 2011 00:43:49 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: As8DALUOkE15LK5JgWdsb2JhbAClTBUBARYmJcEuDYVcBA
+Date: Mon, 28 Mar 2011 15:43:34 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: viro@zeniv.linux.org.uk, dchinner@redhat.com, Trond.Myklebust@netapp.com,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org
-Subject: Re: [RFC PATCH 1/2] Add unlocked version of igrab.
-References: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com> <1301277361-9453-2-git-send-email-ryan@bluewatersys.com> <20110328025423.GN13806@parisc-linux.org>
-In-Reply-To: <20110328025423.GN13806@parisc-linux.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [RFC PATCH 0/2] Introduce unlocked version of igrab
+Message-ID: <20110328044334.GA1022@dastard>
+References: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2011 03:54 PM, Matthew Wilcox wrote:
-> On Mon, Mar 28, 2011 at 02:56:00PM +1300, Ryan Mallon wrote:
->> Commit 250df6ed274d767da844a5d9f05720b804240197 "fs: protect
->> inode->i_state with inode->i_lock" changes igrab to acquire inode->i_lock,
->> however some callees, notably nfs_inode_add_request, already hold the lock
->> when calling igrab.
+On Mon, Mar 28, 2011 at 02:55:59PM +1300, Ryan Mallon wrote:
+> Commit 250df6ed274d767da844a5d9f05720b804240197 "fs: protect 
+> inode->i_state with inode->i_lock" introduces a change to igrab to acquire
+> inode->i_lock. 
 > 
-> I think a better solution to your problem is to notice that this is
-> called in the context of doing a write to an inode.  That means we
-> must already have a reference count on this inode, so it can't possibly
-> be in I_FREEING or I_WILL_FREE.  That means we can just call __iget()
-> instead ... except that __iget isn't exported to modules.
+> This change causes a panic on boot on my ARM EP93xx board when the rootfs
+> uses NFS. The problem occurs because nfs_inode_add_request acquires
+> inode->i_lock and then calls igrab, resulting in the following panic:
+> 
+> BUG: spinlock recursion on CPU#0, getty/262
+>  lock: cc421cb4, .magic: dead4ead, .owner: getty/262, .owner_cpu: 0
+> [<c0031b0c>] (unwind_backtrace+0x0/0xe4) from [<c015f16c>] (do_raw_spin_lock+0x40/0x13c)
+> [<c015f16c>] (do_raw_spin_lock+0x40/0x13c) from [<c00a938c>] (igrab+0x14/0x48)
+> [<c00a938c>] (igrab+0x14/0x48) from [<c01186bc>] (nfs_updatepage+0x2e0/0x524)
+> [<c01186bc>] (nfs_updatepage+0x2e0/0x524) from [<c010b19c>] (nfs_write_end+0x23c/0x270)
+> [<c010b19c>] (nfs_write_end+0x23c/0x270) from [<c006b484>] (generic_file_buffered_write+0x180/0x248)
+> [<c006b484>] (generic_file_buffered_write+0x180/0x248) from [<c006d060>] (__generic_file_aio_write+0x3b8/0x3f4)
+> [<c006d060>] (__generic_file_aio_write+0x3b8/0x3f4) from [<c006d108>] (generic_file_aio_write+0x6c/0xdc)
+> [<c006d108>] (generic_file_aio_write+0x6c/0xdc) from [<c010bce0>] (nfs_file_write+0xec/0x178)
+> [<c010bce0>] (nfs_file_write+0xec/0x178) from [<c00956ac>] (do_sync_write+0xa4/0xe4)
+> [<c00956ac>] (do_sync_write+0xa4/0xe4) from [<c00960c8>] (vfs_write+0xb4/0x12c)
+> [<c00960c8>] (vfs_write+0xb4/0x12c) from [<c00961f0>] (sys_write+0x3c/0x68)
+> [<c00961f0>] (sys_write+0x3c/0x68) from [<c002c8e0>] (ret_fast_syscall+0x0/0x2c)
+> 
+> This series introduces a new function called __igrab, which is an unlocked
+> version of igrab and modifies nfs_inode_add_request to use the unlocked
+> version.
 
-Ah, okay. Thanks for the hint.
+It's called ihold() and already exists.
 
-A few other locations that I can see that call igrab with inode->i_lock
-held are:
+As it is, I thought I posted a igrab->ihold fix to lkml a couple of
+days ago when this first came up. Trond then posted a better fix by
+removingthe igrab() altoegther in the same thread.
 
-  fs/ceph/snap.c::ceph_queue_cap_snap
-  fs/ceph/addr.c::ceph_set_page_dirty
-  fs/nfs/nfs4state.c::nfs4_get_open_state
+Turns out, someone removed LKML from the cc list on the thread half
+way through so neither of those patches made it to lkml.
 
-There may be some more cases where the locking is less obvious. I don't
-know enough about the filesystem code to say whether each of those can
-skip the (I_FREEING | I_WILL_FREE) check, or whether the correct
-approach is to modify the filesystems themselves so that they do not
-hold i_lock when calling igrab (i.e. rework to use a different outer lock)?
+Trond, can you push your fix for this (NFS: Fix a hang in the
+writeback path) to Linus?
 
-If the correct approach is to use __iget or __igrab then I can prepare a
-patch for this. In the case of __iget, should it just be marked
-EXPORT_SYMBOL and added to include/linux/fs.h?
+Cheers,
 
-~Ryan
-
+Dave.
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
-
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+Dave Chinner
+david@fromorbit.com
