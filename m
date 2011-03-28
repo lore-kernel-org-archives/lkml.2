@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab1C1SGD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 14:06:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57447 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932122Ab1C1SGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 14:06:01 -0400
-Date: Mon, 28 Mar 2011 18:56:48 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
-	value
-Message-ID: <20110328165648.GA9304@redhat.com>
-References: <20110324164436.GC1930@jolsa.brq.redhat.com> <1301153868.2250.359.camel@laptop> <20110326161346.GA18272@redhat.com> <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com> <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop> <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins> <1301327368.4859.28.camel@twins>
+	id S932226Ab1C1SGL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 14:06:11 -0400
+Received: from na3sys010aog109.obsmtp.com ([74.125.245.86]:59236 "HELO
+	na3sys010aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932195Ab1C1SGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 14:06:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301327368.4859.28.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D90C2C1.70309@df1tl.local.here>
+References: <4D90C2C1.70309@df1tl.local.here>
+From: Roland Dreier <roland@purestorage.com>
+Date: Mon, 28 Mar 2011 11:05:45 -0700
+Message-ID: <AANLkTimZ7ODhKwgtodZXOVK-J6Smf1CzFNQCjeY3d5ey@mail.gmail.com>
+Subject: Re: 2.6.37.6 2.6.38.2 tst-aio4.c
+To: Klaus Dittrich <kladit@arcor.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28, Peter Zijlstra wrote:
+On Mon, Mar 28, 2011 at 10:17 AM, Klaus Dittrich <kladit@arcor.de> wrote:
+> With both kernels, 2.6.37.6 and 2.6.38.2 tst-aio4.c of glibc fails.
 >
-> Another fun race, suppose we do properly remove task_ctx and is_active,
-> but then the task gets scheduled back in before free_event() gets around
-> to disabling the jump_label..
+> It successfully completes with 2.6.37.5 and 2.6.38.1 and before.
+>
+> I appended the code for convinice.
 
-Yes, this too...
+I took a quick look at this, and indeed the program succeeds on 2.6.38
+but fails on the latest tip of Linus's tree.  I'm pretty sure that the obvious
+place to look, my patch "aio: wake all waiters when destroying ctx" is not
+to blame, both because the patch is obviously correct :) and also because
+this test is using the glibc aio implementation, which doesn't use the
+kernel's aio code at all.
 
-Well, ignoring the HAVE_JUMP_LABEL case... perhaps we can split
-perf_sched_events into 2 counters? I mean,
+Indeed, an strace of the program shows that on old kernels, the child thread
+does
 
-	atomic_t perf_sched_events_in, perf_sched_events_out;
+rt_sigqueueinfo(16143, SIGRT_17, {si_signo=SIGRT_17,
+si_code=SI_ASYNCIO, si_pid=16143, si_uid=1000, si_value={int=0,
+ptr=0}}) = 0
 
-	static inline void perf_event_task_sched_in(struct task_struct *task)
-	{
-		COND_STMT(&perf_sched_events_in, __perf_event_task_sched_in(task));
-	}
+while on the new kernel, it gets EPERM:
 
-	static inline
-	void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next)
-	{
-		perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, 1, NULL, 0);
+rt_sigqueueinfo(17198, SIGRT_17, {si_signo=SIGRT_17,
+si_code=SI_ASYNCIO, si_pid=17198, si_uid=1000, si_value={int=0,
+ptr=0}}) = -1 EPERM (Operation not permitted)
 
-		COND_STMT(&perf_sched_events_out, __perf_event_task_sched_out(task, next));
-	}
+I'll take a look to see which -stable patch might be to blame.
 
-	void perf_sched_events_inc(void)
-	{
-		atomic_inc(&perf_sched_events_out);
-		smp_mb__after_atomic_inc();
-		atomic_inc(&perf_sched_events_in);
-	}
-
-	void perf_sched_events_dec(void)
-	{
-		if (atomic_dec_and_test(&perf_sched_events_in))
-			synchronize_sched();
-		atomic_dec(&perf_sched_events_out);
-	}
-
-The last 2 helpers should be used instead of jump_label_inc/dec.
-
-
-
-Or we can remove COND_STMT() from perf_event_task_sched_out(). Say,
-__perf_event_task_sched_in() can set PF_PERF_XXX or something, then
-perf_event_task_sched_out() can check this bit.
-
-
-As for HAVE_JUMP_LABEL, I still can't understand why this test-case
-triggers the problem. But jump_label_inc/dec logic looks obviously
-racy.
-
-jump_label_dec:
-
-	if (atomic_dec_and_test(key))
-		jump_label_disable(key);
-
-Another thread can create the PERF_ATTACH_TASK event in between
-and call jump_label_update(JUMP_LABEL_ENABLE) first. Looks like,
-jump_label_update() should ensure that "type" matches the state
-of the "*key" under jump_label_lock().
-
-But perhaps I misread this code completely.
-
-Oleg.
-
+ - R.
