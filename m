@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab1C1Qk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:40:29 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51683 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab1C1Qk1 (ORCPT
+	id S1754644Ab1C1Qkf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:40:35 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:50696 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab1C1Qkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:40:27 -0400
+	Mon, 28 Mar 2011 12:40:32 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+Cc: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
         David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v4 06/11] security: imbed evm calls in security hooks
-Date: Mon, 28 Mar 2011 12:39:37 -0400
-Message-Id: <1301330382-17745-7-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v4 04/11] evm: add support for different security.evm data types
+Date: Mon, 28 Mar 2011 12:39:35 -0400
+Message-Id: <1301330382-17745-5-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1301330382-17745-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1301330382-17745-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -22,152 +22,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Imbed the evm calls evm_inode_setxattr(), evm_inode_post_setxattr(),
-evm_inode_removexattr() in the security hooks.  evm_inode_setxattr()
-protects security.evm xattr.  evm_inode_post_setxattr() and
-evm_inode_removexattr() updates the hmac associated with an inode.
+From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
 
-(Assumes an LSM module protects the setting/removing of xattr.)
+EVM protects a file's security extended attributes(xattrs) against integrity
+attacks. The current patchset maintains an HMAC-sha1 value across the security
+xattrs, storing the value as the extended attribute 'security.evm'. We
+anticipate other methods for protecting the security extended attributes.
+This patch reserves the first byte of 'security.evm' as a place holder for
+the type of method.
 
-Changelog:
-  - Don't define evm_verifyxattr(), unless CONFIG_INTEGRITY is enabled.
-  - xattr_name is a 'const', value is 'void *'
-
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
 ---
- include/linux/evm.h               |   56 +++++++++++++++++++++++++++++++++++++
- security/integrity/evm/evm_main.c |    1 +
- security/security.c               |   16 +++++++++-
- 3 files changed, 71 insertions(+), 2 deletions(-)
- create mode 100644 include/linux/evm.h
+ include/linux/integrity.h           |    6 ++++++
+ security/integrity/evm/evm_crypto.c |   10 ++++++----
+ security/integrity/evm/evm_main.c   |    5 +++--
+ 3 files changed, 15 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/evm.h b/include/linux/evm.h
-new file mode 100644
-index 0000000..8b4e9e3
---- /dev/null
-+++ b/include/linux/evm.h
-@@ -0,0 +1,56 @@
-+/*
-+ * evm.h
-+ *
-+ * Copyright (c) 2009 IBM Corporation
-+ * Author: Mimi Zohar <zohar@us.ibm.com>
-+ */
+diff --git a/include/linux/integrity.h b/include/linux/integrity.h
+index e715a2a..6659757 100644
+--- a/include/linux/integrity.h
++++ b/include/linux/integrity.h
+@@ -19,6 +19,12 @@ enum integrity_status {
+ 	INTEGRITY_UNKNOWN,
+ };
+ 
++enum evm_ima_xattr_type {
++	IMA_XATTR_DIGEST = 0x01,
++	EVM_XATTR_HMAC,
++	EVM_IMA_XATTR_DIGSIG,
++};
 +
-+#ifndef _LINUX_EVM_H
-+#define _LINUX_EVM_H
-+
-+#include <linux/integrity.h>
-+
-+#ifdef CONFIG_EVM
-+extern enum integrity_status evm_verifyxattr(struct dentry *dentry,
-+					     const char *xattr_name,
-+					     void *xattr_value,
-+					     size_t xattr_value_len);
-+extern int evm_inode_setxattr(struct dentry *dentry, const char *name,
-+			      const void *value, size_t size);
-+extern void evm_inode_post_setxattr(struct dentry *dentry,
-+				    const char *xattr_name,
-+				    const void *xattr_value,
-+				    size_t xattr_value_len);
-+extern int evm_inode_removexattr(struct dentry *dentry, const char *xattr_name);
-+#else
-+#ifdef CONFIG_INTEGRITY
-+static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
-+						    const char *xattr_name,
-+						    void *xattr_value,
-+						    size_t xattr_value_len)
-+{
-+	return INTEGRITY_UNKNOWN;
-+}
-+#endif
-+
-+static inline int evm_inode_setxattr(struct dentry *dentry, const char *name,
-+				     const void *value, size_t size)
-+{
-+	return 0;
-+}
-+
-+static inline void evm_inode_post_setxattr(struct dentry *dentry,
-+					   const char *xattr_name,
-+					   const void *xattr_value,
-+					   size_t xattr_value_len)
-+{
-+	return;
-+}
-+
-+static inline int evm_inode_removexattr(struct dentry *dentry,
-+					const char *xattr_name)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_EVM_H */
-+#endif /* LINUX_EVM_H */
+ #ifdef CONFIG_INTEGRITY
+ extern int integrity_inode_alloc(struct inode *inode);
+ extern void integrity_inode_free(struct inode *inode);
+diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
+index c43be5a..644df7e 100644
+--- a/security/integrity/evm/evm_crypto.c
++++ b/security/integrity/evm/evm_crypto.c
+@@ -138,14 +138,16 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
+ 			const char *xattr_value, size_t xattr_value_len)
+ {
+ 	struct inode *inode = dentry->d_inode;
+-	u8 hmac[MAX_DIGEST_SIZE];
++	u8 hmac[MAX_DIGEST_SIZE + 1];
+ 	int rc = 0;
+ 
+ 	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
+-			   xattr_value_len, hmac);
+-	if (rc == 0)
++			   xattr_value_len, hmac + 1);
++	if (rc == 0) {
++		hmac[0] = EVM_XATTR_HMAC;
+ 		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
+-					   hmac, evm_hmac_size, 0);
++					   hmac, evm_hmac_size + 1, 0);
++	}
+ 	else if (rc == -ENODATA)
+ 		rc = inode->i_op->removexattr(dentry, XATTR_NAME_EVM);
+ 	return rc;
 diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index 42c792f..e89ceb1 100644
+index 66d7544..42c792f 100644
 --- a/security/integrity/evm/evm_main.c
 +++ b/security/integrity/evm/evm_main.c
-@@ -18,6 +18,7 @@
- #include <linux/crypto.h>
- #include <linux/xattr.h>
- #include <linux/integrity.h>
-+#include <linux/evm.h>
- #include "evm.h"
- 
- int evm_initialized;
-diff --git a/security/security.c b/security/security.c
-index 9c34793..7271ed3 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -18,6 +18,7 @@
- #include <linux/security.h>
- #include <linux/integrity.h>
- #include <linux/ima.h>
-+#include <linux/evm.h>
- 
- /* Boot-time LSM user choice */
- static __initdata char chosen_lsm[SECURITY_NAME_MAX + 1] =
-@@ -545,9 +546,14 @@ int security_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
- int security_inode_setxattr(struct dentry *dentry, const char *name,
- 			    const void *value, size_t size, int flags)
+@@ -52,7 +52,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 					     size_t xattr_value_len,
+ 					     struct integrity_iint_cache *iint)
  {
-+	int ret;
-+
- 	if (unlikely(IS_PRIVATE(dentry->d_inode)))
- 		return 0;
--	return security_ops->inode_setxattr(dentry, name, value, size, flags);
-+	ret = security_ops->inode_setxattr(dentry, name, value, size, flags);
-+	if (ret)
-+		return ret;
-+	return evm_inode_setxattr(dentry, name, value, size);
- }
+-	char hmac_val[MAX_DIGEST_SIZE];
++	char hmac_val[MAX_DIGEST_SIZE + 1];
+ 	int rc;
  
- void security_inode_post_setxattr(struct dentry *dentry, const char *name,
-@@ -556,6 +562,7 @@ void security_inode_post_setxattr(struct dentry *dentry, const char *name,
- 	if (unlikely(IS_PRIVATE(dentry->d_inode)))
- 		return;
- 	security_ops->inode_post_setxattr(dentry, name, value, size, flags);
-+	evm_inode_post_setxattr(dentry, name, value, size);
- }
+ 	if (iint->hmac_status != INTEGRITY_UNKNOWN)
+@@ -60,10 +60,11 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
  
- int security_inode_getxattr(struct dentry *dentry, const char *name)
-@@ -574,9 +581,14 @@ int security_inode_listxattr(struct dentry *dentry)
+ 	memset(hmac_val, 0, sizeof hmac_val);
+ 	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
+-			   xattr_value_len, hmac_val);
++			   xattr_value_len, hmac_val + 1);
+ 	if (rc < 0)
+ 		return INTEGRITY_UNKNOWN;
  
- int security_inode_removexattr(struct dentry *dentry, const char *name)
- {
-+	int ret;
-+
- 	if (unlikely(IS_PRIVATE(dentry->d_inode)))
- 		return 0;
--	return security_ops->inode_removexattr(dentry, name);
-+	ret = security_ops->inode_removexattr(dentry, name);
-+	if (ret)
-+		return ret;
-+	return evm_inode_removexattr(dentry, name);
- }
- 
- int security_inode_need_killpriv(struct dentry *dentry)
++	hmac_val[0] = EVM_XATTR_HMAC;
+ 	rc = vfs_xattr_cmp(dentry, XATTR_NAME_EVM, hmac_val, sizeof hmac_val,
+ 			   GFP_NOFS);
+ 	if (rc < 0)
 -- 
 1.7.3.4
 
