@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab1C1OVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 10:21:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56672 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754487Ab1C1OU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 10:20:58 -0400
-Date: Mon, 28 Mar 2011 16:20:57 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: [regression v2.6.38] Re: [PATCH v2] brk: fix min_brk lower bound
- computation for COMPAT_BRK
-In-Reply-To: <AANLkTi=g5z+GYkbOGbdLQcLaQkpY6yQ6tjGRjjk1H59R@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1103281619320.26754@pobox.suse.cz>
-References: <alpine.LNX.2.00.1101030002390.26685@pobox.suse.cz> <alpine.LNX.2.00.1101031237210.26685@pobox.suse.cz> <alpine.LNX.2.00.1101031421470.26685@pobox.suse.cz> <AANLkTinK-TYnY70Wst_FTbEtn7Dwm8wEQoWMewsYM8dh@mail.gmail.com>
- <alpine.LNX.2.00.1103251119120.26754@pobox.suse.cz> <AANLkTi=g5z+GYkbOGbdLQcLaQkpY6yQ6tjGRjjk1H59R@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754194Ab1C1Obc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 10:31:32 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:37110 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab1C1Obb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 10:31:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=G395PHwAJqN5xEwfDJOeEf+pK/+FoVIfP17oCcJUboP6FDExhyR1bvnYKS7RC5TN+x
+         xuaIwQIuchIWBeJ7yhc/TxsOnDFr52HiChLa4cKTr69J0HD0m3YjwF7Rr4+7nDV/ywxY
+         2HgvjaogMMFOdcdXfgjqpt+A8OOyyq3sTH/h0=
+Message-ID: <4D909BBB.5020500@gmail.com>
+Date: Mon, 28 Mar 2011 08:31:23 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+CC: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
+References: <20110324113137.20235.42265.stgit@localhost6.localdomain6> <20110324113209.20235.61900.stgit@localhost6.localdomain6> <4D8B79E6.2050603@gmail.com> <4D8C6B1B.70409@hitachi.com> <4D8CAE74.9080805@gmail.com> <4D906450.1040809@hitachi.com>
+In-Reply-To: <4D906450.1040809@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Mar 2011, Geert Uytterhoeven wrote:
+On 03/28/11 04:34, Akihiro Nagai wrote:
+>> from is sample->ip? to is sample->addr? In the above example
+>> 0x39d3015260 is the value from sample->addr, 1526f is sample->ip which
+>> resolves to _dl_next_ld_env_entry from /lib64/ld-2.13.so.
+> Yes.
+> In this example, resolved address is only sample->ip (branch from).
+> We need the resolved address of sample->addr (branch to) too, because
+> both of them are addresses of execution code.
 
-> >> | RAMDISK: gzip image found at block 0
-> >> | VFS: Mounted root (ext2 filesystem) readonly on device 1:0.
-> >> | warning: process `update' used the obsolete bdflush system call
-> >> | Fix your initscripts?
-> >> | init: cannot open inittab
-> >> | Kernel panic - not syncing: Attempted to kill init!
-> >>
-> >> Sorry for not noticing earlier, I usually boot full Debians under ARAnyM,
-> >> instead of booting old ramdisks with libc5-based binaries that once were
-> >> considered new.
-> >
-> > Oh well, one has to love the libc5-based binaries indeed.
-> 
-> Yeah, binaries from 1996 ;-)
-> 
-> > Is the patch below fixing the issue you are seeing on your Amiga/m68k?
-> > Thanks.
-> >
-> >
-> > diff --git a/mm/mmap.c b/mm/mmap.c
-> > index 2ec8eb5..0a02531 100644
-> > --- a/mm/mmap.c
-> > +++ b/mm/mmap.c
-> > @@ -262,7 +262,7 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
-> >        if (mm->start_brk > PAGE_ALIGN(mm->end_data))
-> >                min_brk = mm->start_brk;
-> >        else
-> > -               min_brk = mm->end_data;
-> > +               min_brk = mm->end_code;
-> >  #else
-> >        min_brk = mm->start_brk;
-> >  #endif
-> 
-> Unfortunately not...
-> 
-> I added some printk()s:
-> 
-> mm->start_brk = 0x8000a000, PAGE_ALIGN(mm->end_data = 0x8000a000)
-> mm->start_brk = 0x8000a000, PAGE_ALIGN(mm->end_data = 0x8000a000)
-> mm->start_brk = 0x8000a000, PAGE_ALIGN(mm->end_data = 0x8000a000)
-> mm->start_brk = 0x8000a000, PAGE_ALIGN(mm->end_data = 0x8000a000)
-> mm->start_brk = 0x80006000, PAGE_ALIGN(mm->end_data = 0x80004000)
-> 
-> I.e. just before the failure, "mm->start_brk > PAGE_ALIGN(mm->end_data)"
-> became true.
+Ok, now I understand. In that case add conversion of sample->addr to
+symbols to perf-script.
 
-Hmm, I think we'd need some refresh on what the ancient libc5-based 
-binaries are actually doing.
+>>
+>>>
+>>> Can perf-script do it by writing scripts?
+>>
+>> If you are pulling the data from a perf sample then you can accomplish
+>> the same goal within perf-script.
+> It seems that perf-script doesn't have the interface of converting
+> sample->addr to symbol, pid, comm and others. Of course, we can add
+> the interface to perf-script, and it could be another way to implement
+> this function using perf-script.
+> However, since BTS output usually becomes huge, it would be very slow
+> to convert all the data by python/perl.
 
-Could you please send me strace of this application (restricting it to 
-brk()/mmap() calls should be enough).
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Custom fields are not run through python/perl; they are generated from
+C-code. Take a look at tools/perf/builtin-script.c
