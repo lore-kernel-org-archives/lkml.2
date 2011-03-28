@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab1C1HP3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 03:15:29 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43321 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab1C1HP1 (ORCPT
+	id S1752824Ab1C1HQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 03:16:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61737 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab1C1HQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 03:15:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=Y/9rOr93d4RezyY12FoaFkA63MgIFd5Uuwt2ELw9pSRYdAjv6bhGrC8sOSY9IjWMSt
-         CgUVCH0LiXuz6HnjOigNmHcCZboKkfVN21pbNm9qGdap9n04ztCI550juoosVF2GQGTH
-         sTlzTpEURZ5hM15PnPTlqTHdqrhmYq1kb8rtE=
+	Mon, 28 Mar 2011 03:16:47 -0400
+Date: Mon, 28 Mar 2011 09:16:33 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Chris Ball <cjb@laptop.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH] mmc: SDHI should depend on SUPERH || ARCH_SHMOBILE
+In-Reply-To: <20110328131018.96742ebb.sfr@canb.auug.org.au>
+Message-ID: <Pine.LNX.4.64.1103280913170.6625@axis700.grange>
+References: <20110328131018.96742ebb.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1301296053-23589-1-git-send-email-amwang@redhat.com>
-References: <4D90206E.1090307@redhat.com> <1301296053-23589-1-git-send-email-amwang@redhat.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 28 Mar 2011 03:15:07 -0400
-X-Google-Sender-Auth: Kg4eemkcZy8rz2WVuFrV7-zpaYs
-Message-ID: <AANLkTim12OG_fB5vTL47jtyqdfBr61hO_=wUeyR2BG=0@mail.gmail.com>
-Subject: Re: [PATCH 1/2] proc: Use IS_ERR_OR_NULL() helper
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric B Munson <emunson@mgebm.net>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        David Howells <dhowells@redhat.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:upSGzvfBre9wBu7ciGpnwwlxAJZHcNUOXENTmRoQcyi
+ rIw5+8VhrEgB1UPst/vHnX7Fg5To26oWrt1oppUH+j0iBeY3hE
+ +KpfAzvKOtn3AWvZ4QRprPQh7CVdYZB+LnRaBnf4tuWxvCa+h+
+ s/gL+AAhevbxBsnzaC4Y5U8O3P6/e2gR/k4pveWoQ/3QSRrCdW
+ 1r+3vUUcKaiqhtDRcG7vJ6nWlmxweEGRvAnAZc8Fwk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 3:07 AM, Amerigo Wang wrote:
-> Use IS_ERR_OR_NULL() helper
+Fix build breakage on platforms, not providing readsw and writesw
+functions, e.g., on x86(_64).
 
-copying & pasting the summary as the only changelog is kind of useless
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+---
 
-as for the patch, looks pretty straight forward to me
--mike
+Subject: Re: linux-next: build failure after merge of the mmc tree
+
+On Mon, 28 Mar 2011, Stephen Rothwell wrote:
+
+> Hi Chris,
+> 
+> After merging the mmc tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/mmc/host/tmio_mmc_pio.c: In function 'sd_ctrl_read16_rep':
+> drivers/mmc/host/tmio_mmc_pio.c:56: error: implicit declaration of function 'readsw'
+> drivers/mmc/host/tmio_mmc_pio.c: In function 'sd_ctrl_write16_rep':
+> drivers/mmc/host/tmio_mmc_pio.c:73: error: implicit declaration of function 'writesw'
+> 
+> Presumably caused by commit b6147490e6aa ("mmc: tmio: split core
+> functionality, DMA and MFD glue").
+> 
+> I have used the mmc tree from next-20110325 for tdoay.
+
+Stephen, please verify, that this fixes your problem.
+
+ drivers/mmc/host/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 0b03cee..94df405 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -452,6 +452,7 @@ config MMC_TMIO
+ 
+ config MMC_SDHI
+ 	tristate "SH-Mobile SDHI SD/SDIO controller support"
++	depends on SUPERH || ARCH_SHMOBILE
+ 	select MMC_TMIO_CORE
+ 	help
+ 	  This provides support for the SDHI SD/SDIO controller found in
+-- 
+1.7.2.5
+
