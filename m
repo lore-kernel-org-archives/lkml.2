@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab1C1QaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:30:04 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39860 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab1C1QaD (ORCPT
+	id S1755032Ab1C1Qgc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:36:32 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:36196 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab1C1Qga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:30:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=jHcgz8tXV1kGytT19659GwoHZSfOBBQ4/LxLxLlyPO7QcktJBXy7ElkDeMOtRVll4S
-         10kiTCiB6hz3SchoEQIOSOP6Y2utyn8KoNDT1RL0nn+WK7C5OGddd61cM8OG2JutTIou
-         PNiWqxX/uwfx8u8HzbWn1jXPQ1BlLf9TNAepY=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 02/25]arch:arm Remove version.h since it is unused.
-Date: Mon, 28 Mar 2011 09:29:25 -0700
-Message-Id: <1301329788-3423-3-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1301329788-3423-1-git-send-email-justinmattock@gmail.com>
-References: <1301329788-3423-1-git-send-email-justinmattock@gmail.com>
+	Mon, 28 Mar 2011 12:36:30 -0400
+Date: Mon, 28 Mar 2011 11:36:27 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Azael Avalos <coproscefalo@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] toshiba_acpi: Additional TOS1900 devices support
+Message-ID: <20110328163627.GB24926@thinkpad-t410>
+Mail-Followup-To: Azael Avalos <coproscefalo@gmail.com>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Matthew Garrett <mjg@redhat.com>
+References: <AANLkTi=fjL0yxXWrDddafdBs7biJ326sXjaagTseVEVg@mail.gmail.com>
+ <20110117190849.GB27245@core.coreip.homeip.net>
+ <AANLkTindwH2X79vZTBHU04oomxqV=RchRVEwrDEcntVX@mail.gmail.com>
+ <20110120074503.GD30522@core.coreip.homeip.net>
+ <AANLkTi=zCbRx-gTxPAUfSXJV4bRV8-bk3TqV=etybu7y@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=zCbRx-gTxPAUfSXJV4bRV8-bk3TqV=etybu7y@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below removes <linux/version.h> since it is nolonger
-in the kernel.
+On Mon, Mar 28, 2011 at 09:12:54AM -0700, Azael Avalos wrote:
+> Hi there,
+> 
+> Any updates on this patch?
+> I just saw a git-pull request, but I haven't seen this patch merged (yet).
+> 
+> I have a slightly updated patch (with suspend/resume functions added
+> to workaround some issues on some Toshiba Netbooks) with some
+> testing done by Seth Forshee, just in case that I need to resend.
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Since the updates include a bugfix for hotkeys not working on the NB305
+after suspend, I'd vote in favor of submitting the updated version.
 
----
- arch/arm/include/asm/stackprotector.h |    1 -
- arch/arm/mach-bcmring/irq.c           |    1 -
- arch/arm/mach-bcmring/timer.c         |    1 -
- 3 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/include/asm/stackprotector.h b/arch/arm/include/asm/stackprotector.h
-index de00332..14c9eb5 100644
---- a/arch/arm/include/asm/stackprotector.h
-+++ b/arch/arm/include/asm/stackprotector.h
-@@ -13,7 +13,6 @@
- #define _ASM_STACKPROTECTOR_H 1
- 
- #include <linux/random.h>
--#include <linux/version.h>
- 
- extern unsigned long __stack_chk_guard;
- 
-diff --git a/arch/arm/mach-bcmring/irq.c b/arch/arm/mach-bcmring/irq.c
-index 84dcda0..f2d9af8 100644
---- a/arch/arm/mach-bcmring/irq.c
-+++ b/arch/arm/mach-bcmring/irq.c
-@@ -20,7 +20,6 @@
- #include <linux/stddef.h>
- #include <linux/list.h>
- #include <linux/timer.h>
--#include <linux/version.h>
- #include <linux/io.h>
- 
- #include <mach/hardware.h>
-diff --git a/arch/arm/mach-bcmring/timer.c b/arch/arm/mach-bcmring/timer.c
-index 2d415d2..af9c3d7 100644
---- a/arch/arm/mach-bcmring/timer.c
-+++ b/arch/arm/mach-bcmring/timer.c
-@@ -12,7 +12,6 @@
- * consent.
- *****************************************************************************/
- 
--#include <linux/version.h>
- #include <linux/types.h>
- #include <linux/module.h>
- #include <csp/tmrHw.h>
--- 
-1.7.4.1
-
+Cheers,
+Seth
