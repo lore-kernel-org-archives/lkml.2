@@ -1,379 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab1C1OR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 10:17:58 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62973 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab1C1OR5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 10:17:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:organization:to:subject:date:user-agent:cc
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=tZH7Tct1j8G5JVA+Pgj0KxyoY4Gzgi3nNUcPB2gb1EBxCe2xN43/Afnj6LF8/Pr/yB
-         OG/aePTbJS2CcuraLFc4kr/evGx5kpoOmAXAKKe5XPvhNuFgtRIYG1fC5VgUfkgW6cll
-         UubW8uzxdc4AlhZhXc6Q9pgQEf55IrDElcQ5M=
-From: Nai Xia <nai.xia@gmail.com>
-Reply-To: nai.xia@gmail.com
-Organization: Nanjing University
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] ksm: take dirty bit as reference to avoid volatile pages
-Date: Mon, 28 Mar 2011 22:17:44 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.38.1; KDE/4.5.5; i686; ; )
-Cc: Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        "linux-mm" <linux-mm@kvack.org>
+	id S1754404Ab1C1OUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 10:20:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56639 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753229Ab1C1OUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 10:20:31 -0400
+Date: Mon, 28 Mar 2011 07:11:06 -0700
+From: Greg KH <gregkh@suse.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Lukasz.Rymanowski@tieto.com, par-gunnar.p.hjalmdahl@stericsson.com,
+        devel@driverdev.osuosl.org, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        pavan_savoy@sify.com, vitalywool@gmail.com, alan@lxorguk.ukuu.org.uk,
+        arnd@arndb.de, marcel@holtmann.org, linus.walleij@stericsson.com,
+        pghatwork@gmail.com, lee.jones@linaro.org, mathieu.poirier@linaro.org
+Subject: Re: [PATCH v2 1/2] staging: Add ST-Ericsson CG2900 driver
+Message-ID: <20110328141106.GA19350@suse.de>
+References: <1301302950-10628-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+ <alpine.LFD.2.00.1103281110210.31464@localhost6.localdomain6>
+ <7D7F2FD3846CF6429ACEBDFB5A2DD86F07E35E5F89@EXMB01.eu.tieto.com>
+ <alpine.LFD.2.00.1103281221250.31464@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103282217.44713.nai.xia@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1103281221250.31464@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduced ksm_page_changed() to reference the dirty bit of a pte. We clear 
-the dirty bit for each pte scanned but don't flush the tlb. For a huge page, 
-if one of the subpage has changed, we try to skip the whole huge page 
-assuming(this is true by now) that ksmd linearly scans the address space.
+On Mon, Mar 28, 2011 at 12:21:53PM +0200, Thomas Gleixner wrote:
+> On Mon, 28 Mar 2011, Lukasz.Rymanowski@tieto.com wrote:
+> 
+> > >> +/**
+> > >> + * cts_interrupt() - Called to handle CTS interrupt.
+> > >> + * @irq:	Interrupt that occurred.
+> > >> + * @dev_id:	Device ID where interrupt occurred.
+> > >> + *
+> > >> + * The cts_interrupt() function is called if interrupt on CTS occurred.
+> > >> + * It disables the interrupt and starts a new work thread to handle
+> > >> + * the interrupt.
+> > >> + */
+> > >> +static irqreturn_t cts_interrupt(int irq, void *dev_id) {
+> > >> +	struct uart_info *uart_info = dev_get_drvdata(dev_id); #ifdef 
+> > >> +CONFIG_PM
+> > >> +	disable_irq_wake(irq);
+> > >> +#endif
+> > >> +	disable_irq_nosync(irq);
+> > >> +
+> > >> +	/* Create work and leave IRQ context. */
+> > >> +	(void)create_work_item(uart_info, handle_cts_irq);
+> > >> +
+> > >> +	return IRQ_HANDLED;
+> > >> +}
+> > 
+> > >Have you thought about using a threaded interrupt handler? That would make all this work cruft go away.
+> > 
+> > Good point.
+> > To be honest we did think about it but in the time we where we were busy with other issues.
+> > Anyway, shall we resend patches now or we can push patch for it once driver gets in the tree ?
+> 
+> Up to Greg.
 
-A NEW_FLAG is also introduced as a status of rmap_item to make ksmd scan
-more aggressively for new VMAs - only skip the pages considered to be volatile
-by the dirty bits.
+Just send patches after it's in the linux-next tree.  Give it a week or
+so before that happens due to .39-rc1 issues at the moment and vacation
+schedules...
 
-Suggested-by: Izik Eidus <izik.eidus@ravellosystems.com>
-Signed-off-by: Nai Xia <nai.xia@gmail.com>
+thanks,
 
----
-diff --git a/mm/ksm.c b/mm/ksm.c
-index c2b2a94..2350cc6 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -107,6 +107,7 @@ struct ksm_scan {
- 	unsigned long address;
- 	struct rmap_item **rmap_list;
- 	unsigned long seqnr;
-+	unsigned long huge_skip; /* if a huge pte is dirty skip page */
- };
- 
- /**
-@@ -150,6 +151,7 @@ struct rmap_item {
- #define SEQNR_MASK	0x0ff	/* low bits of unstable tree seqnr */
- #define UNSTABLE_FLAG	0x100	/* is a node of the unstable tree */
- #define STABLE_FLAG	0x200	/* is listed from the stable tree */
-+#define NEW_FLAG	0x400	/* this rmap_item is new */
- 
- /* The stable and unstable tree heads */
- static struct rb_root root_stable_tree = RB_ROOT;
-@@ -301,6 +303,11 @@ static inline int in_stable_tree(struct rmap_item *rmap_item)
- 	return rmap_item->address & STABLE_FLAG;
- }
- 
-+static inline unsigned long get_address(struct rmap_item *rmap_item)
-+{
-+	return rmap_item->address & PAGE_MASK;
-+}
-+
- static void hold_anon_vma(struct rmap_item *rmap_item,
- 			  struct anon_vma *anon_vma)
- {
-@@ -390,7 +397,7 @@ static int break_ksm(struct vm_area_struct *vma, unsigned long addr)
- static void break_cow(struct rmap_item *rmap_item)
- {
- 	struct mm_struct *mm = rmap_item->mm;
--	unsigned long addr = rmap_item->address;
-+	unsigned long addr = get_address(rmap_item);
- 	struct vm_area_struct *vma;
- 
- 	/*
-@@ -429,7 +436,7 @@ static struct page *page_trans_compound_anon(struct page *page)
- static struct page *get_mergeable_page(struct rmap_item *rmap_item)
- {
- 	struct mm_struct *mm = rmap_item->mm;
--	unsigned long addr = rmap_item->address;
-+	unsigned long addr = get_address(rmap_item);
- 	struct vm_area_struct *vma;
- 	struct page *page;
- 
-@@ -467,7 +474,7 @@ static void remove_node_from_stable_tree(struct stable_node *stable_node)
- 		else
- 			ksm_pages_shared--;
- 		ksm_drop_anon_vma(rmap_item);
--		rmap_item->address &= PAGE_MASK;
-+		rmap_item->address &= ~STABLE_FLAG;
- 		cond_resched();
- 	}
- 
-@@ -555,8 +562,7 @@ static void remove_rmap_item_from_tree(struct rmap_item *rmap_item)
- 			ksm_pages_shared--;
- 
- 		ksm_drop_anon_vma(rmap_item);
--		rmap_item->address &= PAGE_MASK;
--
-+		rmap_item->address &= ~STABLE_FLAG;
- 	} else if (rmap_item->address & UNSTABLE_FLAG) {
- 		unsigned char age;
- 		/*
-@@ -568,11 +574,13 @@ static void remove_rmap_item_from_tree(struct rmap_item *rmap_item)
- 		 */
- 		age = (unsigned char)(ksm_scan.seqnr - rmap_item->address);
- 		BUG_ON(age > 1);
-+
- 		if (!age)
- 			rb_erase(&rmap_item->node, &root_unstable_tree);
- 
- 		ksm_pages_unshared--;
--		rmap_item->address &= PAGE_MASK;
-+		rmap_item->address &= ~UNSTABLE_FLAG;
-+		rmap_item->address &= ~SEQNR_MASK;
- 	}
- out:
- 	cond_resched();		/* we're called from many long loops */
-@@ -682,15 +690,6 @@ error:
- }
- #endif /* CONFIG_SYSFS */
- 
--static u32 calc_checksum(struct page *page)
--{
--	u32 checksum;
--	void *addr = kmap_atomic(page, KM_USER0);
--	checksum = jhash2(addr, PAGE_SIZE / 4, 17);
--	kunmap_atomic(addr, KM_USER0);
--	return checksum;
--}
--
- static int memcmp_pages(struct page *page1, struct page *page2)
- {
- 	char *addr1, *addr2;
-@@ -718,13 +717,14 @@ static int write_protect_page(struct vm_area_struct *vma, struct page *page,
- 	spinlock_t *ptl;
- 	int swapped;
- 	int err = -EFAULT;
-+	int need_pte_unmap;
- 
- 	addr = page_address_in_vma(page, vma);
- 	if (addr == -EFAULT)
- 		goto out;
- 
- 	BUG_ON(PageTransCompound(page));
--	ptep = page_check_address(page, mm, addr, &ptl, 0);
-+	ptep = page_check_address(page, mm, addr, &ptl, 0, &need_pte_unmap);
- 	if (!ptep)
- 		goto out;
- 
-@@ -760,7 +760,7 @@ static int write_protect_page(struct vm_area_struct *vma, struct page *page,
- 	err = 0;
- 
- out_unlock:
--	pte_unmap_unlock(ptep, ptl);
-+	page_check_address_unmap_unlock(ptl, ptep, need_pte_unmap);
- out:
- 	return err;
- }
-@@ -936,12 +936,13 @@ static int try_to_merge_with_ksm_page(struct rmap_item *rmap_item,
- 	struct mm_struct *mm = rmap_item->mm;
- 	struct vm_area_struct *vma;
- 	int err = -EFAULT;
-+	unsigned long address = get_address(rmap_item);
- 
- 	down_read(&mm->mmap_sem);
- 	if (ksm_test_exit(mm))
- 		goto out;
--	vma = find_vma(mm, rmap_item->address);
--	if (!vma || vma->vm_start > rmap_item->address)
-+	vma = find_vma(mm, address);
-+	if (!vma || vma->vm_start > address)
- 		goto out;
- 
- 	err = try_to_merge_one_page(vma, page, kpage);
-@@ -1171,6 +1172,62 @@ static void stable_tree_append(struct rmap_item *rmap_item,
- 		ksm_pages_shared++;
- }
- 
-+static inline unsigned long get_huge_end_addr(unsigned long address)
-+{
-+	return (address & HPAGE_PMD_MASK) + HPAGE_SIZE;
-+}
-+
-+/*
-+ * ksm_page_changed - take the dirty bit of the pte as a hint for volatile
-+ * pages. We clear the dirty bit for each pte scanned but don't flush the
-+ * tlb. For huge pages, if one of the subpage has changed, we try to skip
-+ * the whole huge page.
-+ */
-+static int ksm_page_changed(struct page *page, struct rmap_item *rmap_item)
-+{
-+	int ret = 1;
-+	unsigned long address = get_address(rmap_item);
-+	struct mm_struct *mm = rmap_item->mm;
-+	pte_t *ptep, entry;
-+	spinlock_t *ptl;
-+	int need_pte_unmap;
-+
-+	if (ksm_scan.huge_skip) {
-+		/* in process of skipping a huge page */
-+		if (ksm_scan.mm_slot->mm == rmap_item->mm &&
-+		    PageTail(page) && address < ksm_scan.huge_skip) {
-+			ret = 1;
-+			goto out;
-+		} else {
-+			ksm_scan.huge_skip = 0;
-+		}
-+	}
-+
-+	ptep = page_check_address(page, mm, address, &ptl, 0, &need_pte_unmap);
-+	if (!ptep)
-+		goto out;
-+
-+	entry = *ptep;
-+	if (!pte_dirty(entry)) {
-+		ret = 0;
-+	} else {
-+		set_page_dirty(page);
-+		entry = pte_mkclean(entry);
-+		set_pte_at(mm, address, ptep, entry);
-+		if (PageTransCompound(page))
-+			ksm_scan.huge_skip = get_huge_end_addr(address);
-+	}
-+
-+	if (rmap_item->address & NEW_FLAG) {
-+		rmap_item->address &= ~NEW_FLAG;
-+		ret = 0;
-+	}
-+
-+	page_check_address_unmap_unlock(ptl, ptep, need_pte_unmap);
-+out:
-+	return ret;
-+}
-+
- /*
-  * cmp_and_merge_page - first see if page can be merged into the stable tree;
-  * if not, compare checksum to previous and if it's the same, see if page can
-@@ -1186,7 +1243,6 @@ static void cmp_and_merge_page(struct page *page, struct rmap_item *rmap_item)
- 	struct page *tree_page = NULL;
- 	struct stable_node *stable_node;
- 	struct page *kpage;
--	unsigned int checksum;
- 	int err;
- 
- 	remove_rmap_item_from_tree(rmap_item);
-@@ -1208,17 +1264,8 @@ static void cmp_and_merge_page(struct page *page, struct rmap_item *rmap_item)
- 		return;
- 	}
- 
--	/*
--	 * If the hash value of the page has changed from the last time
--	 * we calculated it, this page is changing frequently: therefore we
--	 * don't want to insert it in the unstable tree, and we don't want
--	 * to waste our time searching for something identical to it there.
--	 */
--	checksum = calc_checksum(page);
--	if (rmap_item->oldchecksum != checksum) {
--		rmap_item->oldchecksum = checksum;
-+	if (ksm_page_changed(page, rmap_item))
- 		return;
--	}
- 
- 	tree_rmap_item =
- 		unstable_tree_search_insert(rmap_item, page, &tree_page);
-@@ -1264,9 +1311,9 @@ static struct rmap_item *get_next_rmap_item(struct mm_slot *mm_slot,
- 
- 	while (*rmap_list) {
- 		rmap_item = *rmap_list;
--		if ((rmap_item->address & PAGE_MASK) == addr)
-+		if (get_address(rmap_item) == addr)
- 			return rmap_item;
--		if (rmap_item->address > addr)
-+		if (get_address(rmap_item) > addr)
- 			break;
- 		*rmap_list = rmap_item->rmap_list;
- 		remove_rmap_item_from_tree(rmap_item);
-@@ -1278,6 +1325,7 @@ static struct rmap_item *get_next_rmap_item(struct mm_slot *mm_slot,
- 		/* It has already been zeroed */
- 		rmap_item->mm = mm_slot->mm;
- 		rmap_item->address = addr;
-+		rmap_item->address |= NEW_FLAG;
- 		rmap_item->rmap_list = *rmap_list;
- 		*rmap_list = rmap_item;
- 	}
-@@ -1614,12 +1662,12 @@ again:
- 		struct anon_vma *anon_vma = rmap_item->anon_vma;
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
-+		unsigned long address = get_address(rmap_item);
- 
- 		anon_vma_lock(anon_vma);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
--			if (rmap_item->address < vma->vm_start ||
--			    rmap_item->address >= vma->vm_end)
-+			if (address < vma->vm_start || address >= vma->vm_end)
- 				continue;
- 			/*
- 			 * Initially we examine only the vma which covers this
-@@ -1633,8 +1681,8 @@ again:
- 			if (memcg && !mm_match_cgroup(vma->vm_mm, memcg))
- 				continue;
- 
--			referenced += page_referenced_one(page, vma,
--				rmap_item->address, &mapcount, vm_flags);
-+			referenced += page_referenced_one(page, vma, address,
-+						&mapcount, vm_flags);
- 			if (!search_new_forks || !mapcount)
- 				break;
- 		}
-@@ -1667,12 +1715,12 @@ again:
- 		struct anon_vma *anon_vma = rmap_item->anon_vma;
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
-+		unsigned long address = get_address(rmap_item);
- 
- 		anon_vma_lock(anon_vma);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
--			if (rmap_item->address < vma->vm_start ||
--			    rmap_item->address >= vma->vm_end)
-+			if (address < vma->vm_start || address >= vma->vm_end)
- 				continue;
- 			/*
- 			 * Initially we examine only the vma which covers this
-@@ -1683,8 +1731,7 @@ again:
- 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
- 				continue;
- 
--			ret = try_to_unmap_one(page, vma,
--					rmap_item->address, flags);
-+			ret = try_to_unmap_one(page, vma, address, flags);
- 			if (ret != SWAP_AGAIN || !page_mapped(page)) {
- 				anon_vma_unlock(anon_vma);
- 				goto out;
-@@ -1719,12 +1766,12 @@ again:
- 		struct anon_vma *anon_vma = rmap_item->anon_vma;
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
-+		unsigned long address = get_address(rmap_item);
- 
- 		anon_vma_lock(anon_vma);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
--			if (rmap_item->address < vma->vm_start ||
--			    rmap_item->address >= vma->vm_end)
-+			if (address < vma->vm_start || address >= vma->vm_end)
- 				continue;
- 			/*
- 			 * Initially we examine only the vma which covers this
-@@ -1735,7 +1782,7 @@ again:
- 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
- 				continue;
- 
--			ret = rmap_one(page, vma, rmap_item->address, arg);
-+			ret = rmap_one(page, vma, address, arg);
- 			if (ret != SWAP_AGAIN) {
- 				anon_vma_unlock(anon_vma);
- 				goto out;
-
----
+greg k-h
