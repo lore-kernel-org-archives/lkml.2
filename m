@@ -1,53 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab1C1IaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 04:30:13 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:37162 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751755Ab1C1IaM (ORCPT
-	<rfc822;groupwise-jlee@novell.com:3:1>);
-	Mon, 28 Mar 2011 04:30:12 -0400
-Message-Id: <4D90E1C0020000230002A7D2@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Mon, 28 Mar 2011 02:30:08 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <axel.lin@gmail.com>
-Cc: <airlied@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpu: poulsbo: Use PCI_VDEVICE macro
+	id S1753438Ab1C1IaU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 04:30:20 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:37101 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab1C1IaP convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:13:1>);
+	Mon, 28 Mar 2011 04:30:15 -0400
+Message-Id: <4D90636902000078000389B8@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 28 Mar 2011 09:31:05 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Lai Jiangshan" <laijs@cn.fujitsu.com>
+Cc: "Ingo Molnar" <mingo@elte.hu>,
+        "Alexander van Heukelum" <heukelum@fastmail.fm>,
+        "Dipankar Sarma" <dipankar@in.ibm.com>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Sam Ravnborg" <sam@ravnborg.org>,
+        "David Howells" <dhowells@redhat.com>,
+        "Oleg Nesterov" <oleg@redhat.com>,
+        "Roland McGrath" <roland@redhat.com>,
+        "Christoph Lameter" <clameter@sgi.com>,
+        "Serge Hallyn" <serue@us.ibm.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/5] kbuild: dedumplicated the generating code
+References: <4D8FF8AD.5080607@cn.fujitsu.com>
+ <4D8FF963.6080208@cn.fujitsu.com>
+In-Reply-To: <4D8FF963.6080208@cn.fujitsu.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 四，2011-03-24 於 12:40 +0800，Axel Lin 提到：
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/gpu/stub/poulsbo.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>>> On 28.03.11 at 04:58, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+
 > 
-> diff --git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c
-> index 7edfd27..c7dfba9 100644
-> --- a/drivers/gpu/stub/poulsbo.c
-> +++ b/drivers/gpu/stub/poulsbo.c
-> @@ -22,8 +22,8 @@ enum {
->  };
+> cmd_bounds and cmd_offsets are almost the same, dedumplicated them.
+> The definition of sed-y is also moved up the top of the file.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  Kbuild |   60 +++++++++++++++++++++---------------------------------------
+>  1 files changed, 21 insertions(+), 39 deletions(-)
+> 
+> diff --git a/Kbuild b/Kbuild
+> index 2114113..5c2ee83 100644
+> --- a/Kbuild
+> +++ b/Kbuild
+> @@ -5,19 +5,19 @@
+>  # 2) Generate asm-offsets.h (may need bounds.h)
+>  # 3) Check for missing system calls
 >  
->  static DEFINE_PCI_DEVICE_TABLE(pciidlist) = {
-> -	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
-> -	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
-> +	{PCI_VDEVICE(INTEL, 0x8108), CHIP_PSB_8108}, \
-> +	{PCI_VDEVICE(INTEL, 0x8109), CHIP_PSB_8109}, \
->  	{0, 0, 0}
->  };
+> -#####
+> -# 1) Generate bounds.h
+> -
+> -bounds-file := include/generated/bounds.h
+> -
+> -always  := $(bounds-file)
+> -targets := $(bounds-file) kernel/bounds.s
+> +# Default sed regexp - multiline due to syntax constraints
+> +define sed-y
+> +	"/^->/{s:->#\(.*\):/* \1 */:; \
+> +	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
+> +	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
+
+Having to touch (move) this code would imo be a very good
+opportunity to simplify it again: The replacement string is the
+same for those two lines, and the second match expression is
+a super set of the first one. That is, the first one can be
+dropped, and hence the whole thing changed back to its
+pre-3234282f33b29d349bcada40204fc7c8fda7fe72 form.
+
+Jan
+
+> +	s:->::; p;}"
+> +endef
 >  
+> -quiet_cmd_bounds = GEN     $@
+> -define cmd_bounds
+> +quiet_cmd_kbuild_gen = GEN     $@
+> +define cmd_kbuild_gen
+>  	(set -e; \
+> -	 echo "#ifndef __LINUX_BOUNDS_H__"; \
+> -	 echo "#define __LINUX_BOUNDS_H__"; \
+> +	 echo "#ifndef __$$(echo $@ | tr -- '-./a-z' '___A-Z')__"; \
+> +	 echo "#define __$$(echo $@ | tr -- '-./a-z' '___A-Z')__"; \
+>  	 echo "/*"; \
+>  	 echo " * DO NOT MODIFY."; \
+>  	 echo " *"; \
+> @@ -30,6 +30,14 @@ define cmd_bounds
+>  	 echo "#endif" ) > $@
+>  endef
+>  
+> +#####
+> +# 1) Generate bounds.h
+> +
+> +bounds-file := include/generated/bounds.h
+> +
+> +always  := $(bounds-file)
+> +targets := $(bounds-file) kernel/bounds.s
+> +
+>  # We use internal kbuild rules to avoid the "is up to date" message from 
+> make
+>  kernel/bounds.s: kernel/bounds.c FORCE
+>  	$(Q)mkdir -p $(dir $@)
+> @@ -37,7 +45,7 @@ kernel/bounds.s: kernel/bounds.c FORCE
+>  
+>  $(obj)/$(bounds-file): kernel/bounds.s Kbuild
+>  	$(Q)mkdir -p $(dir $@)
+> -	$(call cmd,bounds)
+> +	$(call cmd,kbuild_gen)
+>  
+>  #####
+>  # 2) Generate asm-offsets.h
+> @@ -49,32 +57,6 @@ always  += $(offsets-file)
+>  targets += $(offsets-file)
+>  targets += arch/$(SRCARCH)/kernel/asm-offsets.s
+>  
+> -
+> -# Default sed regexp - multiline due to syntax constraints
+> -define sed-y
+> -	"/^->/{s:->#\(.*\):/* \1 */:; \
+> -	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
+> -	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
+> -	s:->::; p;}"
+> -endef
+> -
+> -quiet_cmd_offsets = GEN     $@
+> -define cmd_offsets
+> -	(set -e; \
+> -	 echo "#ifndef __ASM_OFFSETS_H__"; \
+> -	 echo "#define __ASM_OFFSETS_H__"; \
+> -	 echo "/*"; \
+> -	 echo " * DO NOT MODIFY."; \
+> -	 echo " *"; \
+> -	 echo " * This file was generated by Kbuild"; \
+> -	 echo " *"; \
+> -	 echo " */"; \
+> -	 echo ""; \
+> -	 sed -ne $(sed-y) $<; \
+> -	 echo ""; \
+> -	 echo "#endif" ) > $@
+> -endef
+> -
+>  # We use internal kbuild rules to avoid the "is up to date" message from 
+> make
+>  arch/$(SRCARCH)/kernel/asm-offsets.s: arch/$(SRCARCH)/kernel/asm-offsets.c 
+> \
+>                                        $(obj)/$(bounds-file) FORCE
+> @@ -82,7 +64,7 @@ arch/$(SRCARCH)/kernel/asm-offsets.s: 
+> arch/$(SRCARCH)/kernel/asm-offsets.c \
+>  	$(call if_changed_dep,cc_s_c)
+>  
+>  $(obj)/$(offsets-file): arch/$(SRCARCH)/kernel/asm-offsets.s Kbuild
+> -	$(call cmd,offsets)
+> +	$(call cmd,kbuild_gen)
+>  
+>  #####
+>  # 3) Check for missing system calls
+> -- 
+> 1.7.4
 
-Acked-by: Lee, Chun-Yi <jlee@novell.com>
 
-
-Good to me, thank's
-
-Joey Lee
 
