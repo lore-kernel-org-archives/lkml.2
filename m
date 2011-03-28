@@ -1,47 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab1C1Lbc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 07:31:32 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:57967 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523Ab1C1Lbb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 07:31:31 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@zeniv.linux.org.uk
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] VFS: trivial: fix comment on s_maxbytes value warning check
-Date: Mon, 28 Mar 2011 07:31:25 -0400
-Message-Id: <1301311885-19259-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.4
+	id S1753389Ab1C1Loe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 07:44:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55713 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751051Ab1C1Lod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 07:44:33 -0400
+Date: Mon, 28 Mar 2011 13:44:30 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/3] Implementation of cgroup isolation
+Message-ID: <20110328114430.GE5693@tiehlicka.suse.cz>
+References: <20110328093957.089007035@suse.cz>
+ <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I originally intended to remove this warning in 2.6.34, but it's not in
-a high performance codepath and might help us to catch bugs later. Let's
-keep it, but fix the comment to allay confusion about its removal.
+On Mon 28-03-11 20:03:32, KAMEZAWA Hiroyuki wrote:
+> On Mon, 28 Mar 2011 11:39:57 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+[...]
+> 
+> Isn't it the same result with the case where no cgroup is used ?
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/super.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Yes and that is the point of the patchset. Memory cgroups will not give
+you anything else but the top limit wrt. to the global memory activity.
 
-diff --git a/fs/super.c b/fs/super.c
-index 7e9dd4c..92f38a3 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -1013,8 +1013,7 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
- 	 * filesystems should never set s_maxbytes larger than MAX_LFS_FILESIZE
- 	 * but s_maxbytes was an unsigned long long for many releases. Throw
- 	 * this warning for a little while to try and catch filesystems that
--	 * violate this rule. This warning should be either removed or
--	 * converted to a BUG() in 2.6.34.
-+	 * violate this rule.
- 	 */
- 	WARN((mnt->mnt_sb->s_maxbytes < 0), "%s set sb->s_maxbytes to "
- 		"negative value (%lld)\n", type->name, mnt->mnt_sb->s_maxbytes);
+> What is the problem ?
+
+That we cannot prevent from paging out memory of process(es), even though
+we have intentionaly isolated them in a group (read as we do not have
+any other possibility for the isolation), because of unrelated memory
+activity.
+
+> Why it's not a problem of configuration ?
+> IIUC, you can put all logins to some cgroup by using cgroupd/libgcgroup.
+
+Yes, but this still doesn't bring the isolation.
+
+> Maybe you just want "guarantee".
+> At 1st thought, this approarch has 3 problems. And memcg is desgined
+> never to prevent global vm scans,
+> 
+> 1. This cannot be used as "guarantee". Just a way for "don't steal from me!!!"
+>    This just implements a "first come, first served" system.
+>    I guess this can be used for server desgines.....only with very very careful play.
+>    If an application exits and lose its memory, there is no guarantee anymore.
+
+Yes, but once it got the memory and it needs to have it or benefits from
+having it resindent what-ever happens around then there is no other
+solution than mlocking the memory which is not ideal solution all the
+time as I have described already.
+
+> 
+> 2. Even with isolation, a task in memcg can be killed by OOM-killer at
+>    global memory shortage.
+
+Yes it can but I think this is a different problem. Once you are that
+short of memory you can hardly ask from any guarantees.
+There is no 100% guarantee about anything in the system.
+
+> 
+> 3. it seems this will add more page fragmentation if implemented poorly, IOW,
+>    can this be work with compaction ?
+
+Why would it add any fragmentation. We are compacting memory based on
+the pfn range scanning rather than walking global LRU list, aren't we?
+
+> I think of other approaches.
+> 
+> 1. cpuset+nodehotplug enhances.
+>    At boot, hide most of memory from the system by boot option.
+>    You can rename node-id of "all unused memory" and create arbitrary nodes
+>    if the kernel has an interface. You can add a virtual nodes and move
+>    pages between nodes by renaming it.
+> 
+>    This will allow you to create a safe box dynamically. 
+
+This sounds as it requires a completely new infrastructure for many
+parts of VM code. 
+
+>    If you move pages in
+>    the order of MAX_ORDER, you don't add any fragmentation.
+>    (But with this way, you need to avoid tasks in root cgrou, too.)
+> 
+> 
+> 2. allow a mount option to link ROOT cgroup's LRU and add limit for
+>    root cgroup. Then, softlimit will work well.
+>    (If softlimit doesn't work, it's bug. That will be an enhancement point.)
+
+So you mean that the root cgroup would be a normal group like any other?
+
+Thanks
 -- 
-1.7.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
