@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab1C1KV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 06:21:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50578 "EHLO linutronix.de"
+	id S1752200Ab1C1KZD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 06:25:03 -0400
+Received: from mga03.intel.com ([143.182.124.21]:6649 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab1C1KV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 06:21:58 -0400
-Date: Mon, 28 Mar 2011 12:21:53 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Lukasz.Rymanowski@tieto.com
-cc: par-gunnar.p.hjalmdahl@stericsson.com, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        pavan_savoy@sify.com, vitalywool@gmail.com, alan@lxorguk.ukuu.org.uk,
-        arnd@arndb.de, marcel@holtmann.org, linus.walleij@stericsson.com,
-        pghatwork@gmail.com, lee.jones@linaro.org, mathieu.poirier@linaro.org
-Subject: RE: [PATCH v2 1/2] staging: Add ST-Ericsson CG2900 driver
-In-Reply-To: <7D7F2FD3846CF6429ACEBDFB5A2DD86F07E35E5F89@EXMB01.eu.tieto.com>
-Message-ID: <alpine.LFD.2.00.1103281221250.31464@localhost6.localdomain6>
-References: <1301302950-10628-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com> <alpine.LFD.2.00.1103281110210.31464@localhost6.localdomain6> <7D7F2FD3846CF6429ACEBDFB5A2DD86F07E35E5F89@EXMB01.eu.tieto.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751556Ab1C1KZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 06:25:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,253,1299484800"; 
+   d="scan'208";a="409641782"
+Date: Mon, 28 Mar 2011 12:24:58 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andres Salomon <dilinger@queued.net>
+Subject: [GIT] [2.6.39] MFD fix
+Message-ID: <20110328102457.GB2809@sortiz-mobl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011, Lukasz.Rymanowski@tieto.com wrote:
+Hi Linus,
 
-> >> +/**
-> >> + * cts_interrupt() - Called to handle CTS interrupt.
-> >> + * @irq:	Interrupt that occurred.
-> >> + * @dev_id:	Device ID where interrupt occurred.
-> >> + *
-> >> + * The cts_interrupt() function is called if interrupt on CTS occurred.
-> >> + * It disables the interrupt and starts a new work thread to handle
-> >> + * the interrupt.
-> >> + */
-> >> +static irqreturn_t cts_interrupt(int irq, void *dev_id) {
-> >> +	struct uart_info *uart_info = dev_get_drvdata(dev_id); #ifdef 
-> >> +CONFIG_PM
-> >> +	disable_irq_wake(irq);
-> >> +#endif
-> >> +	disable_irq_nosync(irq);
-> >> +
-> >> +	/* Create work and leave IRQ context. */
-> >> +	(void)create_work_item(uart_info, handle_cts_irq);
-> >> +
-> >> +	return IRQ_HANDLED;
-> >> +}
-> 
-> >Have you thought about using a threaded interrupt handler? That would make all this work cruft go away.
-> 
-> Good point.
-> To be honest we did think about it but in the time we where we were busy with other issues.
-> Anyway, shall we resend patches now or we can push patch for it once driver gets in the tree ?
+This is a compilation fix for the cs5535 MFD driver on non x86 architectures,
+sorry about that.
+Stephen already asked for taking this fix [1], and this is a pull request for
+the same patch.
 
-Up to Greg.
+Thanks for pulling this one:
 
-Thanks,
+The following changes since commit 18bcd0c8cb7d85a9063b88ec810dc1cdc0974518:
 
-	tglx
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6 (2011-03-27 20:37:50 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git for-next
+
+Andres Salomon (1):
+      mfd: Allow cs5535-mfd to build on X86 only
+
+ drivers/mfd/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+
+[1] https://lkml.org/lkml/2011/3/28/23
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
