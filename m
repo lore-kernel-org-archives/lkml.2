@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab1C1MEJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 08:04:09 -0400
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:35459 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab1C1MEH (ORCPT
+	id S1753681Ab1C1MJg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 08:09:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34565 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab1C1MJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 08:04:07 -0400
-Message-ID: <4D9078C1.2050207@snapgear.com>
-Date: Mon, 28 Mar 2011 22:02:09 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>
-Subject: Re: m68knommu: Convert to new irq function names
-References: <alpine.LFD.2.00.1103251443180.31464@localhost6.localdomain6> <4D8FD892.3040200@snapgear.com> <alpine.LFD.2.00.1103281151450.31464@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1103281151450.31464@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Mar 2011 08:09:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=VYYJZsXF6vIkctnb8CpIt5SHxSNlMv286HCSSrX1xovMUtJfXB7In9D96c0Q5/MLA9
+         cUlcGEdiT4RaDwvUSLy8ThvlakyDy98Mc17cxbh7XMtJtL89jvQ/ALEVgkz9mcmwrQZu
+         ZyuxN/BI/jr6ObkVLCDu1QvO3gosM2RfDPeDk=
+Subject: Re: [PATCH] ata: pata_at91.c bugfix for initial_timing
+ initialisation
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Igor Plyatov <plyatov@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1301313545-22730-1-git-send-email-plyatov@gmail.com>
+References: <1301313545-22730-1-git-send-email-plyatov@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Mar 2011 14:09:30 +0200
+Message-ID: <1301314170.3182.15.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le lundi 28 mars 2011 à 15:59 +0400, Igor Plyatov a écrit :
+> The "struct ata_timing" must contain 10 members, but ".dmack_hold" member was
+> forgotten for "initial_timing" initialisation. This patch fixes such a problem.
+> 
+> Signed-off-by: Igor Plyatov <plyatov@gmail.com>
+> ---
+>  drivers/ata/pata_at91.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
+> index 0da0dcc..d1aaeb5 100644
+> --- a/drivers/ata/pata_at91.c
+> +++ b/drivers/ata/pata_at91.c
+> @@ -49,8 +49,9 @@ struct at91_ide_info {
+>  	void __iomem *alt_addr;
+>  };
+>  
+> -static const struct ata_timing initial_timing =
+> -	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 600, 0};
+> +static const struct ata_timing initial_timing = {
+> +	XFER_PIO_0, 70, 290, 240, 600, 165, 150, 600, 0
 
-Hi Thomas,
+Oh well.
 
-On 28/03/11 19:53, Thomas Gleixner wrote:
-> On Mon, 28 Mar 2011, Greg Ungerer wrote:
->> On 25/03/11 23:44, Thomas Gleixner wrote:
->>> Scripted conversion with coccinelle.
->>>
->>> Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
->>
->> Looks good, and works fine after reworking for the m68k/m68knommu
->> merge. Do you want me to carry it for 2.6.40?
->
-> That wants to go into .39 so we can get rid of all the compat cruft in
-> the core code. I really want that to go away, otherwise I play the
-> same cleanup game over and over.
+	XFER_PIO_0, 70, 290, 240, 600, 165, 150, 0, 600, 0
 
-Ok, no problem. I can send to Linus for 39.
-
-Thanks
-Greg
+Or even better, use C99 initializer ?
 
 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
