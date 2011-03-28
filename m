@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab1C1VT0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 17:19:26 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50546 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064Ab1C1VTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 17:19:25 -0400
-Date: Mon, 28 Mar 2011 23:19:16 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>, linux-pm@lists.linux-foundation.org,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Ondrej Zary <linux@rainbow-software.org>
-Subject: Re: [PATCH] apm: orphan the driver
-In-Reply-To: <AANLkTimqE2YZCH5GonnqeHGGBwzggTymauS1KYuTsqOX@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1103282309290.26754@pobox.suse.cz>
-References: <20110326172204.05e52c10.sfr@canb.auug.org.au> <alpine.LRH.2.00.1103281443240.8162@twin.jikos.cz> <20110329004438.d9e755ef.sfr@canb.auug.org.au> <alpine.LNX.2.00.1103281604040.26754@pobox.suse.cz> <20110328174542.GW21838@one.firstfloor.org>
- <4D90CC0B.8070105@zytor.com> <20110328182123.GX21838@one.firstfloor.org> <AANLkTimqE2YZCH5GonnqeHGGBwzggTymauS1KYuTsqOX@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754160Ab1C1VZE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 17:25:04 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:63394 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160Ab1C1VZB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 17:25:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=P2G1VrCf2zp/vEgRf08V2KrV4/NtForlmxh5CVpYuRICycvvvP2zP+3TrUIuUK5zC7
+         KL79hxN5V810/KXGMpUw==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1301346815-6755-1-git-send-email-roland@kernel.org>
+References: <1301346815-6755-1-git-send-email-roland@kernel.org>
+Date: Mon, 28 Mar 2011 14:24:57 -0700
+Message-ID: <BANLkTikB7nz_HKUWOZfGERmh+xSy9Uh0mg@mail.gmail.com>
+Subject: Re: [PATCH v2] Relax si_code check in rt_sigqueueinfo and rt_tgsigqueueinfo
+From: Julien Tinnes <jln@google.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Klaus Dittrich <kladit@arcor.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011, Linus Torvalds wrote:
+Ohh, good catch!
 
-> > Phasing out APM idle at least would be reasonable.  resumably even if the old
-> > laptops still work they are likely on AC because their batteries have
-> > long died. So using a bit more power in idle shouldn't be a big
-> > issue.
-> 
-> Agreed. Especially since I'm not at all convinced that APM CPU idling
-> ever really worked in the first place.
-> 
-> And as you say, it's not a catastrophic failure even if we were to
-> remove it, and even if it were to have mattered on those old laptops
-> years ago. I think we can happily say "not worth worrying about" when
-> it comes to APM_CPU_IDLE.
-> 
-> And shutdown, suspend and screensaver should all be much easier to
-> continue to support - they shouldn't have any serious infrastructure
-> issues.
+It's not ideal that we have to relax this check, but as long as kernel
+codes, SI_USER and SI_TKILL are not spoofable, I think we're in ok
+shape.
 
-APM_CPU_IDLE removal doesn't really sound as a disaster, yes. I doubt 
-anyone would even notice.
+Thanks,
 
-So deprecating it altogether with planned Len's code reshuffling seems 
-like reasonable aproach to me.
+Julien
 
-_SUSPEND, poweroff and probably _STANDBY are the parts I would care much 
-more about.
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+On Mon, Mar 28, 2011 at 2:13 PM, Roland Dreier <roland@kernel.org> wrote:
+> From: Roland Dreier <roland@purestorage.com>
+>
+> Commit da48524eb206 ("Prevent rt_sigqueueinfo and rt_tgsigqueueinfo
+> from spoofing the signal code") made the check on si_code too strict.
+> There are several legitimate places where glibc wants to queue a
+> negative si_code different from SI_QUEUE:
+>
+>  - This was first noticed with glibc's aio implementation, which wants
+>   to queue a signal with si_code SI_ASYNCIO; the current kernel
+>   causes glibc's tst-aio4 test to fail because rt_sigqueueinfo()
+>   fails with EPERM.
+>
+>  - Further examination of the glibc source shows that getaddrinfo_a()
+>   wants to use SI_ASYNCNL (which the kernel does not even define).
+>   The timer_create() fallback code wants to queue signals with SI_TIMER.
+>
+> As suggested by Oleg Nesterov <oleg@redhat.com>, loosen the check to
+> forbid only the problematic SI_TKILL case.
+>
+> Reported-by: Klaus Dittrich <kladit@arcor.de>
+> Cc: <stable@kernel.org>
+> Signed-off-by: Roland Dreier <roland@purestorage.com>
+> ---
+>  kernel/signal.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/signal.c b/kernel/signal.c
+> index 324eff5..b2bfa3a 100644
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -2437,7 +2437,7 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t, pid, int, sig,
+>        /* Not even root can pretend to send signals from the kernel.
+>         * Nor can they impersonate a kill()/tgkill(), which adds source info.
+>         */
+> -       if (info.si_code != SI_QUEUE) {
+> +       if (info.si_code >= 0 || info.si_code == SI_TKILL) {
+>                /* We used to allow any < 0 si_code */
+>                WARN_ON_ONCE(info.si_code < 0);
+>                return -EPERM;
+> @@ -2457,7 +2457,7 @@ long do_rt_tgsigqueueinfo(pid_t tgid, pid_t pid, int sig, siginfo_t *info)
+>        /* Not even root can pretend to send signals from the kernel.
+>         * Nor can they impersonate a kill()/tgkill(), which adds source info.
+>         */
+> -       if (info->si_code != SI_QUEUE) {
+> +       if (info->si_code >= 0 || info->si_code == SI_TKILL) {
+>                /* We used to allow any < 0 si_code */
+>                WARN_ON_ONCE(info->si_code < 0);
+>                return -EPERM;
+>
