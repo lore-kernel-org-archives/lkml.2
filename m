@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab1C1WAQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 18:00:16 -0400
-Received: from mx3.twosigma.com ([208.77.213.34]:61105 "EHLO mx3.twosigma.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283Ab1C1WAO convert rfc822-to-8bit (ORCPT
+	id S1754794Ab1C1WCA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 18:02:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58003 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753026Ab1C1WB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 18:00:14 -0400
-X-Greylist: delayed 1562 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Mar 2011 18:00:14 EDT
-From: Sean Noonan <Sean.Noonan@twosigma.com>
-To: "'Michel Lespinasse'" <walken@google.com>
-CC: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Martin Bligh <Martin.Bligh@twosigma.com>,
-        Trammell Hudson <Trammell.Hudson@twosigma.com>,
-        Christos Zoulas <Christos.Zoulas@twosigma.com>,
-        "linux-xfs@oss.sgi.com" <linux-xfs@oss.sgi.com>,
-        Stephen Degler <Stephen.Degler@twosigma.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Mon, 28 Mar 2011 17:34:09 -0400
-Subject: RE: XFS memory allocation deadlock in 2.6.38
-Thread-Topic: XFS memory allocation deadlock in 2.6.38
-Thread-Index: AcvtjAU49kGOL4scQ4KHhTRnHL+diAAAO36w
-Message-ID: <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
-References: <081DDE43F61F3D43929A181B477DCA95639B52FD@MSXAOA6.twosigma.com>
-	<081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
-	<20110324174311.GA31576@infradead.org>
-	<AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
-	<081DDE43F61F3D43929A181B477DCA95639B5349@MSXAOA6.twosigma.com>
- <BANLkTin0jJevStg5P2hqsLbqMzo3o30sYg@mail.gmail.com>
-In-Reply-To: <BANLkTin0jJevStg5P2hqsLbqMzo3o30sYg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 28 Mar 2011 18:01:59 -0400
+Date: Mon, 28 Mar 2011 15:01:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mundt <lethal@linux-sh.org>, David Howells <dhowells@redhat.com>,
+        Greg Ungerer <gerg@snapgear.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/RFT 0/6] nommu: improve the vma list handling
+Message-Id: <20110328150102.11bcfca8.akpm@linux-foundation.org>
+In-Reply-To: <1301320607-7259-1-git-send-email-namhyung@gmail.com>
+References: <1301320607-7259-1-git-send-email-namhyung@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Could you test if you see the deadlock before
-> 5ecfda041e4b4bd858d25bbf5a16c2a6c06d7272 without MAP_POPULATE ?
+On Mon, 28 Mar 2011 22:56:41 +0900
+Namhyung Kim <namhyung@gmail.com> wrote:
 
-Built and tested 72ddc8f72270758951ccefb7d190f364d20215ab.
-Confirmed that the original bug does not present in this version.
-Confirmed that removing MAP_POPULATE does cause the deadlock to occur.
+> When I was reading nommu code, I found that it handles the vma list/tree in
+> an unusual way. IIUC, because there can be more than one identical/overrapped
+> vmas in the list/tree, it sorts the tree more strictly and does a linear
+> search on the tree. But it doesn't applied to the list (i.e. the list could
+> be constructed in a different order than the tree so that we can't use the
+> list when finding the first vma in that order).
+> 
+> Since inserting/sorting a vma in the tree and link is done at the same time,
+> we can easily construct both of them in the same order. And linear searching
+> on the tree could be more costly than doing it on the list, it can be
+> converted to use the list.
+> 
+> Also, after the commit 297c5eee3724 ("mm: make the vma list be doubly linked")
+> made the list be doubly linked, there were a couple of code need to be fixed
+> to construct the list properly.
+> 
+> Patch 1/6 is a preparation. It maintains the list sorted same as the tree and
+> construct doubly-linked list properly. Patch 2/6 is a simple optimization for
+> the vma deletion. Patch 3/6 and 4/6 convert tree traversal to list traversal
+> and the rest are simple fixes and cleanups.
+> 
+> Note that I don't have a system to test on, so these are *totally untested*
+> patches. There could be some basic errors in the code. In that case, please
+> kindly let me know. :)
+> 
+> Anyway, I just compiled them on my x86_64 desktop using this command:
+> 
+>   make mm/nommu.o
+> 
+> (Of course this required few of dirty-fixes to proceed)
+> 
+> Also note that these are on top of v2.6.38.
+> 
+> Any comments are welcome.
 
-Here is the stack of the test:
-# cat /proc/3846/stack
-[<ffffffff812e8a64>] call_rwsem_down_read_failed+0x14/0x30
-[<ffffffff81271c1d>] xfs_ilock+0x9d/0x110
-[<ffffffff81271cae>] xfs_ilock_map_shared+0x1e/0x50
-[<ffffffff81294985>] __xfs_get_blocks+0xc5/0x4e0
-[<ffffffff81294dcc>] xfs_get_blocks+0xc/0x10
-[<ffffffff811322c2>] do_mpage_readpage+0x462/0x660
-[<ffffffff8113250a>] mpage_readpage+0x4a/0x60
-[<ffffffff81295433>] xfs_vm_readpage+0x13/0x20
-[<ffffffff810bb850>] filemap_fault+0x2d0/0x4e0
-[<ffffffff810d8680>] __do_fault+0x50/0x510
-[<ffffffff810da542>] handle_mm_fault+0x1a2/0xe60
-[<ffffffff8102a466>] do_page_fault+0x146/0x440
-[<ffffffff8164e6cf>] page_fault+0x1f/0x30
-[<ffffffffffffffff>] 0xffffffffffffffff
+That seems like a nice set of changes.  There isn't much I can do with
+them at this tims - hopefully some of the nommu people will be able to
+find time to review and test the patches.  
 
-xfssyncd is stuck in D state.
-# cat /proc/2484/stack
-[<ffffffff8106ee1c>] down+0x3c/0x50
-[<ffffffff81297802>] xfs_buf_lock+0x72/0x170
-[<ffffffff8128762d>] xfs_getsb+0x1d/0x50
-[<ffffffff8128e6af>] xfs_trans_getsb+0x5f/0x150
-[<ffffffff8128821e>] xfs_mod_sb+0x4e/0xe0
-[<ffffffff8126e4ea>] xfs_fs_log_dummy+0x5a/0xb0
-[<ffffffff812a2a13>] xfs_sync_worker+0x83/0x90
-[<ffffffff812a28e2>] xfssyncd+0x172/0x220
-[<ffffffff81069576>] kthread+0x96/0xa0
-[<ffffffff81003354>] kernel_thread_helper+0x4/0x10
-[<ffffffffffffffff>] 0xffffffffffffffff
+(Is there a way in which one can run a nommu kernel on a regular PC?  Under
+an emulator?)
 
-Sean
