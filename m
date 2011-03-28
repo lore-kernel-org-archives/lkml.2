@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab1C1RZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 13:25:13 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:51119 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755066Ab1C1RZL (ORCPT
+	id S1755176Ab1C1RZp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 13:25:45 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49795 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754521Ab1C1RZn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 13:25:11 -0400
-Message-ID: <4D90C472.3090908@linux.vnet.ibm.com>
-Date: Mon, 28 Mar 2011 13:25:06 -0400
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	Mon, 28 Mar 2011 13:25:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fHIf9mxMnbfvszlzxiyVyupnkJlkLqg/I0y5R7JqQbgJvT+6W39cAzrfI3o+v1Gqi0
+         OAnK+bEi9Ssf7tCtWn78bFehFzZv2M+MVirm1gOOtNCX5sEtt9J5jBHpzCpPoREP/Tnf
+         pxd/HG5szxvWtdDNkIPAHyyxdGbQR4o0fH9o4=
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@poochiereds.net>
-CC: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Subject: Re: TPM chip prevents machine from suspending
-References: <20110328100846.0ba2e039@tlielax.poochiereds.net>
-In-Reply-To: <20110328100846.0ba2e039@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110328160241.GA20992@srcf.ucam.org>
+References: <Pine.LNX.4.64.1103242007300.2677@boston.corp.fedex.com>
+	<20110324122409.GA1564@srcf.ucam.org>
+	<AANLkTinKrG-N8O4_qf4SWuZ+W6VvFhyyLEw2ht0PFKSo@mail.gmail.com>
+	<BANLkTimPvW0Y5yqaW7WngOghhZGafVZS6w@mail.gmail.com>
+	<20110328125319.GA28847@srcf.ucam.org>
+	<AANLkTik0Zt=ecj-p6GBSWwQMopE7GvmFV7b7jRv=y7yJ@mail.gmail.com>
+	<20110328160241.GA20992@srcf.ucam.org>
+Date: Mon, 28 Mar 2011 19:25:42 +0200
+Message-ID: <BANLkTinTbez8+AMF9KaAx+Y5NFW_RMP5ig@mail.gmail.com>
+Subject: Re: Commit 9661e92c10a9775243c1ecb73373528ed8725a10: sysfs: cannot
+ create duplicate filename '/devices/pci0000:00/0000:00:02.0/backlight/acpi_video0/device'
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>, Zhang Rui <rui.zhang@intel.com>,
+        Len Brown <lenb@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Sedat Dilek <sedat.dilek@googlemail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2011 10:08 AM, Jeff Layton wrote:
-> My wife's machine apparently has a TPM chip in it. Since I upgraded it
-> to Fedora 14, it fails to suspend consistently. On the first attempt to
-> suspend it, it works fine. Once it has woken back up however, it will
-> not suspend again. Here's the dmesg log from such an attempt:
+On Mon, Mar 28, 2011 at 6:02 PM, Matthew Garrett <mjg@redhat.com> wrote:
+> On Mon, Mar 28, 2011 at 08:22:05AM -0700, Linus Torvalds wrote:
+>> On Mon, Mar 28, 2011 at 5:53 AM, Matthew Garrett <mjg@redhat.com> wrote:
+>> >
+>> > I just sent a patch to fix this.
+>>
+>> Grr. Any more details, please? Who to? What's the fix? Actual patch
+>> for reporters to validate?
 >
-> [  202.460967] PM: Syncing filesystems ... done.
-> [  202.464818] PM: Preparing system for mem sleep
-> [  202.485968] Freezing user space processes ... (elapsed 0.01 seconds) done.
-> [  202.497079] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> [  202.508067] PM: Entering mem sleep
-> [  202.508086] Suspending console(s) (use no_console_suspend to debug)
-> [  202.508451] sd 3:0:0:0: [sdb] Synchronizing SCSI cache
-> [  202.508562] sd 2:0:0:0: [sda] Synchronizing SCSI cache
-> [  202.508616] sd 3:0:0:0: [sdb] Stopping disk
-> [  202.511956] parport_pc 00:0b: disabled
-> [  202.512127] serial 00:09: disabled
-> [  202.512134] serial 00:09: wake-up capability disabled by ACPI
-> [  202.536058] legacy_suspend(): pnp_bus_suspend+0x0/0x82 returns 38
-> [  202.536061] PM: Device 00:02 failed to suspend: error 38
-> [  202.997517] sd 2:0:0:0: [sda] Stopping disk
-> [  202.997806] PM: Some devices failed to suspend
-> [  202.998085] sd 2:0:0:0: [sda] Starting disk
-> [  202.998144] sd 3:0:0:0: [sdb] Starting disk
-> [  202.998614] serial 00:09: activated
-> [  202.999158] parport_pc 00:0b: activated
-> [  204.543094] PM: resume of devices complete after 1545.282 msecs
-> [  204.543268] PM: Finishing wakeup.
-> [  204.543270] Restarting tasks ... done.
->
-> ...error 38 is ENOSYS, and the 00:02 is this:
->
-> # cat /sys/bus/pnp/devices/00\:02/id
-> IFX0102
-> PNP0c31
-Also the tpm_tis driver handles both of these. Can you confirm which 
-module that laptop was using  (tpm_tis or tpm_infineon) and try whether 
-one of them works better than the other one? Please do a reboot between 
-trying one and then the other.
+> Sorry, yes - https://patchwork.kernel.org/patch/668351/
 
-Try the following before and after a suspend/resume:
+Works on top of my -git18 + (unrelated) LVDS detection patch, thanks.
 
-cd /sys
-find . | grep caps$ | xargs cat
+Tested-by: Alessandro Suardi <alessandro.suardi@gmail.com>
 
-It should display manufacturer data.
+--alessandro
 
-     Stefan
+ "There's always a siren singing you to shipwreck"
 
-
+   (Radiohead, "There There")
