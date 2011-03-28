@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab1C1HGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 03:06:39 -0400
-Received: from ch-smtp05.sth.basefarm.net ([80.76.153.6]:53121 "EHLO
-	ch-smtp05.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752517Ab1C1HGi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 03:06:38 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 28 Mar 2011 09:10:16 +0200
-To: Jeffrey Brown <jeffbrown@android.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] input: Set default events per packet.
-Message-ID: <20110328071016.GA6863@polaris.bitmath.org>
-References: <1300842244-42723-1-git-send-email-jeffbrown@android.com>
- <1300842244-42723-2-git-send-email-jeffbrown@android.com>
- <20110325082030.GB5664@polaris.bitmath.org>
- <AANLkTi=KotXd4TyyUrhMdKn3mEq+pz2ac3Vnraa5udFh@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=KotXd4TyyUrhMdKn3mEq+pz2ac3Vnraa5udFh@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1Q46WU-0000fT-JB.
-X-Scan-Signature: ch-smtp05.sth.basefarm.net 1Q46WU-0000fT-JB 149721222d5f6dea895cb66c06f1bc8f
+	id S1752376Ab1C1HIY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 03:08:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30786 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751331Ab1C1HIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 03:08:23 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, Amerigo Wang <amwang@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric B Munson <emunson@mgebm.net>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        Mike Frysinger <vapier@gentoo.org>,
+        David Howells <dhowells@redhat.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 1/2] proc: Use IS_ERR_OR_NULL() helper
+Date: Mon, 28 Mar 2011 15:07:31 +0800
+Message-Id: <1301296053-23589-1-git-send-email-amwang@redhat.com>
+In-Reply-To: <4D90206E.1090307@redhat.com>
+References: <4D90206E.1090307@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Originally, I set an arbitrary maximum bound of 20 slots.  In the
-> interests of keeping it simple, I decided to remove that bound when I
-> submitted the patch for review here.
-> 
-> How about:
-> 
-> mt_slots = min(MAX_MT_SLOTS_TO_INFER_FROM_TRACKING_ID_RANGE,
->    dev->absinfo[ABS_MT_TRACKING_ID].maximum -
-> dev->absinfo[ABS_MT_TRACKING_ID].minimum + 1);
-> 
-> Where MAX_MT_SLOTS_TO_INFER_FROM_TRACKING_ID_RANGE is set to 32 or something.
+Use IS_ERR_OR_NULL() helper
 
-Sure, 32 works for me.
+Signed-off-by: Amerigo Wang <amwang@redhat.com>
+---
+ fs/proc/task_mmu.c   |   10 ++++++----
+ fs/proc/task_nommu.c |    2 +-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-> There's also the question of how many slots we should infer when
-> neither ABS_MT_SLOT or ABS_MT_TRACKING_ID is available.  The drivers
-> I've seen that don't provide tracking ids, are very basic and tend to
-> only support 2 touch points.
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 2e7addf..3c06570 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -124,7 +124,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+ 		return ERR_PTR(-ESRCH);
+ 
+ 	mm = mm_for_maps(priv->task);
+-	if (!mm || IS_ERR(mm))
++	if (IS_ERR_OR_NULL(mm))
+ 		return mm;
+ 	down_read(&mm->mmap_sem);
+ 
+@@ -182,7 +182,7 @@ static void m_stop(struct seq_file *m, void *v)
+ 	struct proc_maps_private *priv = m->private;
+ 	struct vm_area_struct *vma = v;
+ 
+-	if (!IS_ERR(vma))
++	if (!IS_ERR_OR_NULL(vma))
+ 		vma_stop(priv, vma);
+ 	if (priv->task)
+ 		put_task_struct(priv->task);
+@@ -768,9 +768,11 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+ 		goto out;
+ 
+ 	mm = mm_for_maps(task);
+-	ret = PTR_ERR(mm);
+-	if (!mm || IS_ERR(mm))
++	if (IS_ERR_OR_NULL(mm)) {
++		if (mm)
++			ret = PTR_ERR(mm);
+ 		goto out_task;
++	}
+ 
+ 	ret = -EINVAL;
+ 	/* file position must be aligned */
+diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+index 980de54..35e8b2a 100644
+--- a/fs/proc/task_nommu.c
++++ b/fs/proc/task_nommu.c
+@@ -202,7 +202,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+ 		return ERR_PTR(-ESRCH);
+ 
+ 	mm = mm_for_maps(priv->task);
+-	if (!mm || IS_ERR(mm)) {
++	if (IS_ERR_OR_NULL(mm)) {
+ 		put_task_struct(priv->task);
+ 		priv->task = NULL;
+ 		return mm;
+-- 
+1.7.4
 
-There is the bcm5974 driver, but it sets its own limit, so 2 is fine.
-
-> I guess we could add a DEFAULT_NUMBER_OF_MT_SLOTS constant to handle that case.
-> 
-> Please feel free to suggest better names for these constants.
-
-With the same interest of keeping it simple in mind, inserting the
-actual values is fine. We do not expect to duplicate the decisions
-made in this function anywhere else.
-
-Thanks,
-Henrik
