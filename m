@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab1C1Qvu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:51:50 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:60938
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S932231Ab1C1QwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:52:10 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60602
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754886Ab1C1QuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 12:50:13 -0400
+	id S1754880Ab1C1QuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 12:50:12 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 11/22] Staging: hv: Get rid of the forward declaration of blkvsc_shutdown()
-Date: Mon, 28 Mar 2011 10:00:42 -0700
-Message-Id: <1301331653-26265-11-git-send-email-kys@microsoft.com>
+Subject: [PATCH 13/22] Staging: hv: Get rid of the forward declaration for blkvsc_do_read_capacity()
+Date: Mon, 28 Mar 2011 10:00:44 -0700
+Message-Id: <1301331653-26265-13-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301331653-26265-1-git-send-email-kys@microsoft.com>
 References: <1301331615-26226-1-git-send-email-kys@microsoft.com>
@@ -25,107 +25,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration of blkvsc_shutdown() by moving the
-code around.
+Get rid of the forward declaration for blkvsc_do_read_capacity() by moving
+the code around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |   70 +++++++++++++++++++--------------------
- 1 files changed, 34 insertions(+), 36 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |  152 +++++++++++++++++++-------------------
+ 1 files changed, 76 insertions(+), 76 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index f67d983..1b05369 100644
+index 720d54b..b93c8b7 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -642,10 +642,42 @@ static int blkvsc_remove(struct device *device)
- 	return ret;
+@@ -698,6 +698,82 @@ static int blkvsc_release(struct gendisk *disk, fmode_t mode)
+ 	return 0;
  }
  
-+static void blkvsc_shutdown(struct device *device)
++
++/* Do a scsi READ_CAPACITY cmd here to get the size of the disk */
++static int blkvsc_do_read_capacity(struct block_device_context *blkdev)
 +{
-+	struct block_device_context *blkdev = dev_get_drvdata(device);
-+	unsigned long flags;
++	struct blkvsc_request *blkvsc_req;
++	struct page *page_buf;
++	unsigned char *buf;
++	struct scsi_sense_hdr sense_hdr;
++	struct vmscsi_request *vm_srb;
 +
-+	if (!blkdev)
-+		return;
++	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_read_capacity()\n");
 +
-+	DPRINT_DBG(BLKVSC_DRV, "blkvsc_shutdown - users %d disk %s\n",
-+		   blkdev->users, blkdev->gd->disk_name);
++	blkdev->sector_size = 0;
++	blkdev->capacity = 0;
++	blkdev->media_not_present = 0; /* assume a disk is present */
 +
-+	spin_lock_irqsave(&blkdev->lock, flags);
++	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
++	if (!blkvsc_req)
++		return -ENOMEM;
 +
-+	blkdev->shutting_down = 1;
-+
-+	blk_stop_queue(blkdev->gd->queue);
-+
-+	spin_unlock_irqrestore(&blkdev->lock, flags);
-+
-+	while (blkdev->num_outstanding_reqs) {
-+		DPRINT_INFO(STORVSC, "waiting for %d requests to complete...",
-+			    blkdev->num_outstanding_reqs);
-+		udelay(100);
++	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
++	page_buf = alloc_page(GFP_KERNEL);
++	if (!page_buf) {
++		kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
++		return -ENOMEM;
 +	}
 +
-+	blkvsc_do_flush(blkdev);
++	vm_srb = &blkvsc_req->request.vstor_packet.vm_srb;
++	init_completion(&blkvsc_req->request.wait_event);
++	blkvsc_req->dev = blkdev;
++	blkvsc_req->req = NULL;
++	blkvsc_req->write = 0;
 +
-+	spin_lock_irqsave(&blkdev->lock, flags);
++	blkvsc_req->request.data_buffer.pfn_array[0] =
++	page_to_pfn(page_buf);
++	blkvsc_req->request.data_buffer.offset = 0;
++	blkvsc_req->request.data_buffer.len = 8;
 +
-+	blkvsc_cancel_pending_reqs(blkdev);
++	blkvsc_req->cmnd[0] = READ_CAPACITY;
++	blkvsc_req->cmd_len = 16;
 +
-+	spin_unlock_irqrestore(&blkdev->lock, flags);
++	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
++
++	DPRINT_DBG(BLKVSC_DRV, "waiting %p to complete\n",
++		   blkvsc_req);
++
++	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
++
++	/* check error */
++	if (vm_srb->scsi_status) {
++		scsi_normalize_sense(blkvsc_req->sense_buffer,
++				     SCSI_SENSE_BUFFERSIZE, &sense_hdr);
++
++		if (sense_hdr.asc == 0x3A) {
++			/* Medium not present */
++			blkdev->media_not_present = 1;
++		}
++		return 0;
++	}
++	buf = kmap(page_buf);
++
++	/* be to le */
++	blkdev->capacity = ((buf[0] << 24) | (buf[1] << 16) |
++			    (buf[2] << 8) | buf[3]) + 1;
++	blkdev->sector_size = (buf[4] << 24) | (buf[5] << 16) |
++			      (buf[6] << 8) | buf[7];
++
++	kunmap(page_buf);
++
++	__free_page(page_buf);
++
++	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
++
++	return 0;
 +}
 +
  /* Static decl */
  static int blkvsc_probe(struct device *dev);
--static void blkvsc_shutdown(struct device *device);
--
- static int blkvsc_release(struct gendisk *disk, fmode_t mode);
  static int blkvsc_revalidate_disk(struct gendisk *gd);
- static void blkvsc_request(struct request_queue *queue);
-@@ -909,40 +941,6 @@ Cleanup:
- 	return ret;
+@@ -706,7 +782,6 @@ static void blkvsc_request_completion(struct hv_storvsc_request *request);
+ static int blkvsc_do_request(struct block_device_context *blkdev,
+ 			     struct request *req);
+ static int blkvsc_do_inquiry(struct block_device_context *blkdev);
+-static int blkvsc_do_read_capacity(struct block_device_context *blkdev);
+ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev);
+ static int blkvsc_do_pending_reqs(struct block_device_context *blkdev);
+ 
+@@ -1040,81 +1115,6 @@ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
+ 	return 0;
  }
  
--static void blkvsc_shutdown(struct device *device)
+-/* Do a scsi READ_CAPACITY cmd here to get the size of the disk */
+-static int blkvsc_do_read_capacity(struct block_device_context *blkdev)
 -{
--	struct block_device_context *blkdev = dev_get_drvdata(device);
--	unsigned long flags;
+-	struct blkvsc_request *blkvsc_req;
+-	struct page *page_buf;
+-	unsigned char *buf;
+-	struct scsi_sense_hdr sense_hdr;
+-	struct vmscsi_request *vm_srb;
 -
--	if (!blkdev)
--		return;
+-	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_read_capacity()\n");
 -
--	DPRINT_DBG(BLKVSC_DRV, "blkvsc_shutdown - users %d disk %s\n",
--		   blkdev->users, blkdev->gd->disk_name);
+-	blkdev->sector_size = 0;
+-	blkdev->capacity = 0;
+-	blkdev->media_not_present = 0; /* assume a disk is present */
 -
--	spin_lock_irqsave(&blkdev->lock, flags);
+-	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
+-	if (!blkvsc_req)
+-		return -ENOMEM;
 -
--	blkdev->shutting_down = 1;
--
--	blk_stop_queue(blkdev->gd->queue);
--
--	spin_unlock_irqrestore(&blkdev->lock, flags);
--
--	while (blkdev->num_outstanding_reqs) {
--		DPRINT_INFO(STORVSC, "waiting for %d requests to complete...",
--			    blkdev->num_outstanding_reqs);
--		udelay(100);
+-	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
+-	page_buf = alloc_page(GFP_KERNEL);
+-	if (!page_buf) {
+-		kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
+-		return -ENOMEM;
 -	}
 -
--	blkvsc_do_flush(blkdev);
+-	vm_srb = &blkvsc_req->request.vstor_packet.vm_srb;
+-	init_completion(&blkvsc_req->request.wait_event);
+-	blkvsc_req->dev = blkdev;
+-	blkvsc_req->req = NULL;
+-	blkvsc_req->write = 0;
 -
--	spin_lock_irqsave(&blkdev->lock, flags);
+-	blkvsc_req->request.data_buffer.pfn_array[0] =
+-	page_to_pfn(page_buf);
+-	blkvsc_req->request.data_buffer.offset = 0;
+-	blkvsc_req->request.data_buffer.len = 8;
 -
--	blkvsc_cancel_pending_reqs(blkdev);
+-	blkvsc_req->cmnd[0] = READ_CAPACITY;
+-	blkvsc_req->cmd_len = 16;
 -
--	spin_unlock_irqrestore(&blkdev->lock, flags);
+-	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
+-
+-	DPRINT_DBG(BLKVSC_DRV, "waiting %p to complete\n",
+-		   blkvsc_req);
+-
+-	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
+-
+-	/* check error */
+-	if (vm_srb->scsi_status) {
+-		scsi_normalize_sense(blkvsc_req->sense_buffer,
+-				     SCSI_SENSE_BUFFERSIZE, &sense_hdr);
+-
+-		if (sense_hdr.asc == 0x3A) {
+-			/* Medium not present */
+-			blkdev->media_not_present = 1;
+-		}
+-		return 0;
+-	}
+-	buf = kmap(page_buf);
+-
+-	/* be to le */
+-	blkdev->capacity = ((buf[0] << 24) | (buf[1] << 16) |
+-			    (buf[2] << 8) | buf[3]) + 1;
+-	blkdev->sector_size = (buf[4] << 24) | (buf[5] << 16) |
+-			      (buf[6] << 8) | buf[7];
+-
+-	kunmap(page_buf);
+-
+-	__free_page(page_buf);
+-
+-	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
+-
+-	return 0;
 -}
 -
- /* Do a scsi INQUIRY cmd here to get the device type (ie disk or dvd) */
- static int blkvsc_do_inquiry(struct block_device_context *blkdev)
+ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
  {
+ 	struct blkvsc_request *blkvsc_req;
 -- 
 1.7.4.1
 
