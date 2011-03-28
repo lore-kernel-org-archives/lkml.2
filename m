@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1C1Tae (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 15:30:34 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33940 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932164Ab1C1Tad (ORCPT
+	id S932249Ab1C1Tby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 15:31:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44239 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754721Ab1C1Tbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 15:30:33 -0400
+	Mon, 28 Mar 2011 15:31:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=NZlgXX+0vvKqG/z7DAZCH1EVXJjzmCMqgcLoQ+Vn2vvFX+g5nYovTUD/xiNRH/wgoZ
-         0M08Kw+sRCBU5PFY/N1sSxorn+5oQ9qCtmQlpBqRD57kOZBab+mImkaRXT+mAlKxnRRv
-         wDfLw66y2m1yFHRQXo2vRQdaNqVI7L3XZEdTU=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: simon@mungewell.org
-Subject: Re: 2.6.38 Regression: Nvidia GeForce8400 + i915 = Crash on Boot
-Date: Mon, 28 Mar 2011 21:30:26 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <fe471c05897776b7c26b9fd2603e3b76.squirrel@host171.canaca.com>
-In-Reply-To: <fe471c05897776b7c26b9fd2603e3b76.squirrel@host171.canaca.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=brMicJM23uGt8vNmvs/OlJGC652nYZJgMwdbvGlCAJtQHMLe5Z047pa2aQByKg03k2
+         wuQtP40qnP/Z+DMlulWlIJnzLMv8280Cy1O2Lh6CDDI1+XZkK0knrqse16NNzCpAtmPt
+         D//APm/+jG6AK7KUxEg4/+8u+b/NerZjcF/ag=
+Subject: Re: [PATCH v2] x86: page: get_order() optimization
+From: Maksym Planeta <mcsim.planeta@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: mingo@redhat.com, kernel-janitors@vger.kernel.org, namhyung@gmail.com,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jan Beulich <JBeulich@novell.com>
+In-Reply-To: <20110328050844.GC26322@elte.hu>
+References: <1301215556-8898-1-git-send-email-mcsim.planeta@gmail.com>
+	 <20110327113323.GA27825@elte.hu> <1301246136.2291.49.camel@debian>
+	 <20110328050844.GC26322@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Mar 2011 22:33:42 +0300
+Message-ID: <1301340822.6302.90.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103282130.27079.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=32072
-for your bug report, please add your address to the CC list in there, thanks!
+On Mon, 28/03/2011 at 07:08 +0200, Ingo Molnar wrote:
+> Have you looked at the disassembly, why does the size increase? I'd expect such 
+> a straight assembly optimization to result in smaller code: in the non-constant 
+> case it should be the same size as before, in the constant case it should be 
+> smaller, because BSR should be smaller than an open-coded search loop, right?
 
-On czwartek, 24 marca 2011 o 16:20:19 simon@mungewell.org wrote:
-> Quick summary is that I have a GeForce8400 installed in a Thinkcenter with
-> on-board i915 graphics. 2.6.38 fails to boot, 2.6.37rcX is OK.
-> 
-> There appears to be some interaction between the nouveau and i915 drivers,
-> disabling the i915 enables system to boot. I am unable to disable on board
-> graphics in the BIOS (IBM special).
-> 
-> Full details/logs here:
-> https://bugs.launchpad.net/ubuntu/+bug/741434
-> 
-> Let me know if there is any further testing I can do to help,
-> Simon.
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+Here is disassembly of patched get_order() with "inline" from
+"kernel/kexec.c":
+
+     a6c:       48 8b 5d c8             mov    -0x38(%rbp),%rbx
+     a70:       e8 0b fd ff ff          callq  780 <get_order.clone.7>
+
+0000000000000780 <get_order.clone.7>:
+     780:       55                      push   %rbp
+     781:       b8 01 00 00 00          mov    $0x1,%eax
+     786:       48 89 e5                mov    %rsp,%rbp
+     789:       c9                      leaveq 
+     78a:       c3                      retq   
+
+My version of gcc is gcc (Debian 4.5.2-4) 4.5.2, probably I should
+upgrade my gcc version for better inline expansions.
 
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Thanks,
+
+Maksym Planeta
+
