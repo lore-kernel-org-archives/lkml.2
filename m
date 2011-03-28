@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab1C1Qwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:52:41 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60610
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S932267Ab1C1QxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:53:06 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:60930
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754879Ab1C1QuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754834Ab1C1QuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Mar 2011 12:50:12 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 14/22] Staging: hv: Get rid of the forward declaration of blkvsc_do_read_capacity16()
-Date: Mon, 28 Mar 2011 10:00:45 -0700
-Message-Id: <1301331653-26265-14-git-send-email-kys@microsoft.com>
+Subject: [PATCH 05/22] Staging: hv: Get rid of the forward declaration of blkvsc_init_rw()
+Date: Mon, 28 Mar 2011 10:00:36 -0700
+Message-Id: <1301331653-26265-5-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301331653-26265-1-git-send-email-kys@microsoft.com>
 References: <1301331615-26226-1-git-send-email-kys@microsoft.com>
@@ -25,206 +25,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration of blkvsc_do_read_capacity16() by moving
-the code around.
+Get rid of the forward declaration of blkvsc_init_rw() by moving the
+code around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |  168 +++++++++++++++++++-------------------
- 1 files changed, 84 insertions(+), 84 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |  117 ++++++++++++++++++++-------------------
+ 1 files changed, 59 insertions(+), 58 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index b93c8b7..86a7587 100644
+index a0c1fe8..e9d45eb 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -774,6 +774,90 @@ static int blkvsc_do_read_capacity(struct block_device_context *blkdev)
+@@ -353,6 +353,65 @@ static int blkvsc_getgeo(struct block_device *bd, struct hd_geometry *hg)
  	return 0;
  }
  
 +
-+static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
++static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
 +{
-+	struct blkvsc_request *blkvsc_req;
-+	struct page *page_buf;
-+	unsigned char *buf;
-+	struct scsi_sense_hdr sense_hdr;
-+	struct vmscsi_request *vm_srb;
++	/* ASSERT(blkvsc_req->req); */
++	/* ASSERT(blkvsc_req->sector_count <=
++	   (MAX_MULTIPAGE_BUFFER_COUNT*8)); */
 +
-+	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_read_capacity16()\n");
-+
-+	blkdev->sector_size = 0;
-+	blkdev->capacity = 0;
-+	blkdev->media_not_present = 0; /* assume a disk is present */
-+
-+	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
-+	if (!blkvsc_req)
-+		return -ENOMEM;
-+
-+	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
-+	vm_srb = &blkvsc_req->request.vstor_packet.vm_srb;
-+	page_buf = alloc_page(GFP_KERNEL);
-+	if (!page_buf) {
-+		kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
-+		return -ENOMEM;
-+	}
-+
-+	init_completion(&blkvsc_req->request.wait_event);
-+	blkvsc_req->dev = blkdev;
-+	blkvsc_req->req = NULL;
-+	blkvsc_req->write = 0;
-+
-+	blkvsc_req->request.data_buffer.pfn_array[0] =
-+	page_to_pfn(page_buf);
-+	blkvsc_req->request.data_buffer.offset = 0;
-+	blkvsc_req->request.data_buffer.len = 12;
-+
-+	blkvsc_req->cmnd[0] = 0x9E; /* READ_CAPACITY16; */
 +	blkvsc_req->cmd_len = 16;
 +
-+	/*
-+	 * Set this here since the completion routine may be invoked
-+	 * and completed before we return
-+	 */
-+
-+	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
-+
-+	DPRINT_DBG(BLKVSC_DRV, "waiting %p to complete\n",
-+		   blkvsc_req);
-+
-+	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
-+
-+	/* check error */
-+	if (vm_srb->scsi_status) {
-+		scsi_normalize_sense(blkvsc_req->sense_buffer,
-+				     SCSI_SENSE_BUFFERSIZE, &sense_hdr);
-+		if (sense_hdr.asc == 0x3A) {
-+			/* Medium not present */
-+			blkdev->media_not_present = 1;
++	if (blkvsc_req->sector_start > 0xffffffff) {
++		if (rq_data_dir(blkvsc_req->req)) {
++			blkvsc_req->write = 1;
++			blkvsc_req->cmnd[0] = WRITE_16;
++		} else {
++			blkvsc_req->write = 0;
++			blkvsc_req->cmnd[0] = READ_16;
 +		}
-+		return 0;
++
++		blkvsc_req->cmnd[1] |=
++			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
++
++		*(unsigned long long *)&blkvsc_req->cmnd[2] =
++				cpu_to_be64(blkvsc_req->sector_start);
++		*(unsigned int *)&blkvsc_req->cmnd[10] =
++				cpu_to_be32(blkvsc_req->sector_count);
++	} else if ((blkvsc_req->sector_count > 0xff) ||
++		   (blkvsc_req->sector_start > 0x1fffff)) {
++		if (rq_data_dir(blkvsc_req->req)) {
++			blkvsc_req->write = 1;
++			blkvsc_req->cmnd[0] = WRITE_10;
++		} else {
++			blkvsc_req->write = 0;
++			blkvsc_req->cmnd[0] = READ_10;
++		}
++
++		blkvsc_req->cmnd[1] |=
++			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
++
++		*(unsigned int *)&blkvsc_req->cmnd[2] =
++				cpu_to_be32(blkvsc_req->sector_start);
++		*(unsigned short *)&blkvsc_req->cmnd[7] =
++				cpu_to_be16(blkvsc_req->sector_count);
++	} else {
++		if (rq_data_dir(blkvsc_req->req)) {
++			blkvsc_req->write = 1;
++			blkvsc_req->cmnd[0] = WRITE_6;
++		} else {
++			blkvsc_req->write = 0;
++			blkvsc_req->cmnd[0] = READ_6;
++		}
++
++		*(unsigned int *)&blkvsc_req->cmnd[1] =
++				cpu_to_be32(blkvsc_req->sector_start) >> 8;
++		blkvsc_req->cmnd[1] &= 0x1f;
++		blkvsc_req->cmnd[4] = (unsigned char)blkvsc_req->sector_count;
 +	}
-+	buf = kmap(page_buf);
-+
-+	/* be to le */
-+	blkdev->capacity = be64_to_cpu(*(unsigned long long *) &buf[0]) + 1;
-+	blkdev->sector_size = be32_to_cpu(*(unsigned int *)&buf[8]);
-+
-+#if 0
-+	blkdev->capacity = ((buf[0] << 24) | (buf[1] << 16) |
-+			    (buf[2] << 8) | buf[3]) + 1;
-+	blkdev->sector_size = (buf[4] << 24) | (buf[5] << 16) |
-+			      (buf[6] << 8) | buf[7];
-+#endif
-+
-+	kunmap(page_buf);
-+
-+	__free_page(page_buf);
-+
-+	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
-+
-+	return 0;
 +}
++
 +
  /* Static decl */
  static int blkvsc_probe(struct device *dev);
- static int blkvsc_revalidate_disk(struct gendisk *gd);
-@@ -782,7 +866,6 @@ static void blkvsc_request_completion(struct hv_storvsc_request *request);
+ static int blkvsc_remove(struct device *device);
+@@ -366,7 +425,6 @@ static void blkvsc_request(struct request_queue *queue);
+ static void blkvsc_request_completion(struct hv_storvsc_request *request);
  static int blkvsc_do_request(struct block_device_context *blkdev,
  			     struct request *req);
+-static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req);
+ static void blkvsc_cmd_completion(struct hv_storvsc_request *request);
  static int blkvsc_do_inquiry(struct block_device_context *blkdev);
--static int blkvsc_do_read_capacity16(struct block_device_context *blkdev);
- static int blkvsc_do_pending_reqs(struct block_device_context *blkdev);
- 
- static int blkvsc_ringbuffer_size = BLKVSC_RING_BUFFER_SIZE;
-@@ -1115,89 +1198,6 @@ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
- 	return 0;
+ static int blkvsc_do_read_capacity(struct block_device_context *blkdev);
+@@ -996,63 +1054,6 @@ static int blkvsc_remove(struct device *device)
+ 	return ret;
  }
  
--static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
+-static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
 -{
--	struct blkvsc_request *blkvsc_req;
--	struct page *page_buf;
--	unsigned char *buf;
--	struct scsi_sense_hdr sense_hdr;
--	struct vmscsi_request *vm_srb;
+-	/* ASSERT(blkvsc_req->req); */
+-	/* ASSERT(blkvsc_req->sector_count <= (MAX_MULTIPAGE_BUFFER_COUNT*8)); */
 -
--	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_read_capacity16()\n");
--
--	blkdev->sector_size = 0;
--	blkdev->capacity = 0;
--	blkdev->media_not_present = 0; /* assume a disk is present */
--
--	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
--	if (!blkvsc_req)
--		return -ENOMEM;
--
--	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
--	vm_srb = &blkvsc_req->request.vstor_packet.vm_srb;
--	page_buf = alloc_page(GFP_KERNEL);
--	if (!page_buf) {
--		kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
--		return -ENOMEM;
--	}
--
--	init_completion(&blkvsc_req->request.wait_event);
--	blkvsc_req->dev = blkdev;
--	blkvsc_req->req = NULL;
--	blkvsc_req->write = 0;
--
--	blkvsc_req->request.data_buffer.pfn_array[0] =
--	page_to_pfn(page_buf);
--	blkvsc_req->request.data_buffer.offset = 0;
--	blkvsc_req->request.data_buffer.len = 12;
--
--	blkvsc_req->cmnd[0] = 0x9E; /* READ_CAPACITY16; */
 -	blkvsc_req->cmd_len = 16;
 -
--	/*
--	 * Set this here since the completion routine may be invoked
--	 * and completed before we return
--	 */
--
--	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
--
--	DPRINT_DBG(BLKVSC_DRV, "waiting %p to complete\n",
--		   blkvsc_req);
--
--	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
--
--	/* check error */
--	if (vm_srb->scsi_status) {
--		scsi_normalize_sense(blkvsc_req->sense_buffer,
--				     SCSI_SENSE_BUFFERSIZE, &sense_hdr);
--		if (sense_hdr.asc == 0x3A) {
--			/* Medium not present */
--			blkdev->media_not_present = 1;
+-	if (blkvsc_req->sector_start > 0xffffffff) {
+-		if (rq_data_dir(blkvsc_req->req)) {
+-			blkvsc_req->write = 1;
+-			blkvsc_req->cmnd[0] = WRITE_16;
+-		} else {
+-			blkvsc_req->write = 0;
+-			blkvsc_req->cmnd[0] = READ_16;
 -		}
--		return 0;
+-
+-		blkvsc_req->cmnd[1] |=
+-			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
+-
+-		*(unsigned long long *)&blkvsc_req->cmnd[2] =
+-				cpu_to_be64(blkvsc_req->sector_start);
+-		*(unsigned int *)&blkvsc_req->cmnd[10] =
+-				cpu_to_be32(blkvsc_req->sector_count);
+-	} else if ((blkvsc_req->sector_count > 0xff) ||
+-		   (blkvsc_req->sector_start > 0x1fffff)) {
+-		if (rq_data_dir(blkvsc_req->req)) {
+-			blkvsc_req->write = 1;
+-			blkvsc_req->cmnd[0] = WRITE_10;
+-		} else {
+-			blkvsc_req->write = 0;
+-			blkvsc_req->cmnd[0] = READ_10;
+-		}
+-
+-		blkvsc_req->cmnd[1] |=
+-			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
+-
+-		*(unsigned int *)&blkvsc_req->cmnd[2] =
+-				cpu_to_be32(blkvsc_req->sector_start);
+-		*(unsigned short *)&blkvsc_req->cmnd[7] =
+-				cpu_to_be16(blkvsc_req->sector_count);
+-	} else {
+-		if (rq_data_dir(blkvsc_req->req)) {
+-			blkvsc_req->write = 1;
+-			blkvsc_req->cmnd[0] = WRITE_6;
+-		} else {
+-			blkvsc_req->write = 0;
+-			blkvsc_req->cmnd[0] = READ_6;
+-		}
+-
+-		*(unsigned int *)&blkvsc_req->cmnd[1] =
+-				cpu_to_be32(blkvsc_req->sector_start) >> 8;
+-		blkvsc_req->cmnd[1] &= 0x1f;
+-		blkvsc_req->cmnd[4] = (unsigned char)blkvsc_req->sector_count;
 -	}
--	buf = kmap(page_buf);
--
--	/* be to le */
--	blkdev->capacity = be64_to_cpu(*(unsigned long long *) &buf[0]) + 1;
--	blkdev->sector_size = be32_to_cpu(*(unsigned int *)&buf[8]);
--
--#if 0
--	blkdev->capacity = ((buf[0] << 24) | (buf[1] << 16) |
--			    (buf[2] << 8) | buf[3]) + 1;
--	blkdev->sector_size = (buf[4] << 24) | (buf[5] << 16) |
--			      (buf[6] << 8) | buf[7];
--#endif
--
--	kunmap(page_buf);
--
--	__free_page(page_buf);
--
--	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
--
--	return 0;
 -}
+-
 -
  /*
   * We break the request into 1 or more blkvsc_requests and submit
