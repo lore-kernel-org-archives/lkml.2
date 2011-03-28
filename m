@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab1C1FDl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 01:03:41 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:9400 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752051Ab1C1FDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 01:03:39 -0400
-Message-ID: <4D9016B7.1080505@bluewatersys.com>
-Date: Mon, 28 Mar 2011 18:03:51 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>, sage@newdream.net
-CC: viro@zeniv.linux.org.uk, dchinner@redhat.com, Trond.Myklebust@netapp.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] Introduce unlocked version of igrab
-References: <1301277361-9453-1-git-send-email-ryan@bluewatersys.com> <20110328044334.GA1022@dastard> <4D9012C5.8070401@bluewatersys.com>
-In-Reply-To: <4D9012C5.8070401@bluewatersys.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752091Ab1C1FIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 01:08:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39413 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788Ab1C1FIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 01:08:21 -0400
+Date: Mon, 28 Mar 2011 16:08:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] block drivers for 2.6.39-rc
+Message-Id: <20110328160812.b4d19eb5.sfr@canb.auug.org.au>
+In-Reply-To: <AANLkTik3GZ0b5S7p4ONQu4Hb8LoKewmMJ7_J5zvumYD-@mail.gmail.com>
+References: <4D8E36CC.7080707@fusionio.com>
+	<20110328042311.GA15481@elte.hu>
+	<AANLkTik3GZ0b5S7p4ONQu4Hb8LoKewmMJ7_J5zvumYD-@mail.gmail.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__28_Mar_2011_16_08_12_+1100_q0llRY.trVWmGemw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2011 05:47 PM, Ryan Mallon wrote:
-> On 03/28/2011 05:43 PM, Dave Chinner wrote:
->> On Mon, Mar 28, 2011 at 02:55:59PM +1300, Ryan Mallon wrote:
->>> Commit 250df6ed274d767da844a5d9f05720b804240197 "fs: protect 
->>> inode->i_state with inode->i_lock" introduces a change to igrab to acquire
->>> inode->i_lock. 
->>>
->>> This change causes a panic on boot on my ARM EP93xx board when the rootfs
->>> uses NFS. The problem occurs because nfs_inode_add_request acquires
->>> inode->i_lock and then calls igrab, resulting in the following panic:
->>>
->>> BUG: spinlock recursion on CPU#0, getty/262
->>>  lock: cc421cb4, .magic: dead4ead, .owner: getty/262, .owner_cpu: 0
->>> [<c0031b0c>] (unwind_backtrace+0x0/0xe4) from [<c015f16c>] (do_raw_spin_lock+0x40/0x13c)
->>> [<c015f16c>] (do_raw_spin_lock+0x40/0x13c) from [<c00a938c>] (igrab+0x14/0x48)
->>> [<c00a938c>] (igrab+0x14/0x48) from [<c01186bc>] (nfs_updatepage+0x2e0/0x524)
->>> [<c01186bc>] (nfs_updatepage+0x2e0/0x524) from [<c010b19c>] (nfs_write_end+0x23c/0x270)
->>> [<c010b19c>] (nfs_write_end+0x23c/0x270) from [<c006b484>] (generic_file_buffered_write+0x180/0x248)
->>> [<c006b484>] (generic_file_buffered_write+0x180/0x248) from [<c006d060>] (__generic_file_aio_write+0x3b8/0x3f4)
->>> [<c006d060>] (__generic_file_aio_write+0x3b8/0x3f4) from [<c006d108>] (generic_file_aio_write+0x6c/0xdc)
->>> [<c006d108>] (generic_file_aio_write+0x6c/0xdc) from [<c010bce0>] (nfs_file_write+0xec/0x178)
->>> [<c010bce0>] (nfs_file_write+0xec/0x178) from [<c00956ac>] (do_sync_write+0xa4/0xe4)
->>> [<c00956ac>] (do_sync_write+0xa4/0xe4) from [<c00960c8>] (vfs_write+0xb4/0x12c)
->>> [<c00960c8>] (vfs_write+0xb4/0x12c) from [<c00961f0>] (sys_write+0x3c/0x68)
->>> [<c00961f0>] (sys_write+0x3c/0x68) from [<c002c8e0>] (ret_fast_syscall+0x0/0x2c)
->>>
->>> This series introduces a new function called __igrab, which is an unlocked
->>> version of igrab and modifies nfs_inode_add_request to use the unlocked
->>> version.
->> It's called ihold() and already exists.
-> Thanks. Missed that one.
+--Signature=_Mon__28_Mar_2011_16_08_12_+1100_q0llRY.trVWmGemw
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Linus, Ingo,
+
+On Sun, 27 Mar 2011 21:37:50 -0700 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
 >
-> Is ihold the correct replacement for the fs/ceph cases I mentioned in my
-> other email?
->
-> ~Ryan
->
+> On Sun, Mar 27, 2011 at 9:23 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > This driver does not build at all:
+> >
+> > =C2=A0drivers/block/drbd/drbd_bitmap.c:1187:5: error: implicit declarat=
+ion of function =E2=80=98generic_find_next_zero_le_bit=E2=80=99 [-Werror=3D=
+implicit-function-declaration]
+> > =C2=A0drivers/block/drbd/drbd_bitmap.c:1190:5: error: implicit declarat=
+ion of function =E2=80=98generic_find_next_le_bit=E2=80=99 [-Werror=3Dimpli=
+cit-function-declaration]
+> > =C2=A0drivers/block/drbd/drbd_bitmap.c:1290:4: error: implicit declarat=
+ion of function =E2=80=98generic___test_and_set_le_bit=E2=80=99 [-Werror=3D=
+implicit-function-declaration]
+> > =C2=A0drivers/block/drbd/drbd_bitmap.c:1292:4: error: implicit declarat=
+ion of function =E2=80=98generic___test_and_clear_le_bit=E2=80=99 [-Werror=
+=3Dimplicit-function-declaration]
+> > =C2=A0drivers/block/drbd/drbd_bitmap.c:1441:3: error: implicit declarat=
+ion of function =E2=80=98generic_test_le_bit=E2=80=99 [-Werror=3Dimplicit-f=
+unction-declaration]
+> >
+> > Has this been build-tested? These APIs do not exist upstream.
+>=20
+> Actually, I think that's just a merge error - those horrible nasty
+> crazy names did use to exist.
+>=20
+> Does this fix it? (Untested!)
 
-i.e. this:
----
+You also need to remove the include of asm-generic/bitops/le.h from that
+file now (the easiest way is to revert commit f0ff1357ce39 ("drbd: need
+include for bitops functions declarations").
 
-fs/ceph: Use ihold instead of igrab when i_lock is already held
+Jens was informed about these problems when they appeared in linux-next.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
----
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index 561438b..37368ba 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -92,7 +92,7 @@ static int ceph_set_page_dirty(struct page *page)
- 		ci->i_head_snapc = ceph_get_snap_context(snapc);
- 	++ci->i_wrbuffer_ref_head;
- 	if (ci->i_wrbuffer_ref == 0)
--		igrab(inode);
-+		ihold(inode);
- 	++ci->i_wrbuffer_ref;
- 	dout("%p set_page_dirty %p idx %lu head %d/%d -> %d/%d "
- 	     "snapc %p seq %lld (%d snaps)\n",
-diff --git a/fs/ceph/snap.c b/fs/ceph/snap.c
-index f40b913..03afa8e 100644
---- a/fs/ceph/snap.c
-+++ b/fs/ceph/snap.c
-@@ -463,7 +463,7 @@ void ceph_queue_cap_snap(struct ceph_inode_info *ci)
- 
- 		dout("queue_cap_snap %p cap_snap %p queuing under %p\n", inode,
- 		     capsnap, snapc);
--		igrab(inode);
-+		ihold(inode);
- 		
- 		atomic_set(&capsnap->nref, 1);
- 		capsnap->ci = ci;
+--Signature=_Mon__28_Mar_2011_16_08_12_+1100_q0llRY.trVWmGemw
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJNkBe8AAoJEDMEi1NhKgbs9yEH/RNq4PNwuVwUd5ulcah8cDda
+eQyUxjrf86m7ERny+Pgp7mzObK5VTamzgtruKDhG/CfBabj3B1a/4asjB8zUudiu
+WAGpIQAbfWxOibjqazx84sGkS7p1q4UaBNMUiqGql4jqaX8Zml6F3BA8tFef7h+l
+axN1X8hY3U2vMCjC5IZcBOkMf80G6kFAPFIzhv1ieKNxBRruxtZH0xXDjLox6BwH
+j5p5Bj8wDMD61Upl2/NGUkmybJdV/9ViDD73JWT2+rIyJmYqNKSsbiqEsE9MW5+9
+s0aJz/S/6+nE+ehsjUWMCbfEUKqRx+uRIUOXGUJyYR30/VPyRuhiKf4ejQTgGxY=
+=q1ZA
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_Mar_2011_16_08_12_+1100_q0llRY.trVWmGemw--
