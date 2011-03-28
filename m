@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab1C1QZs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 12:25:48 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:47403
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1755009Ab1C1QZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 12:25:47 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:55170
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754728Ab1C1QXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754777Ab1C1QXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Mar 2011 12:23:03 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 05/20] Staging: hv: Use struct completion in struct storvsc_request_extension
-Date: Mon, 28 Mar 2011 09:33:30 -0700
-Message-Id: <1301330025-25542-5-git-send-email-kys@microsoft.com>
+Subject: [PATCH 18/20] Staging: hv: Move the data_buffer field from struct hv_storvsc_request
+Date: Mon, 28 Mar 2011 09:33:43 -0700
+Message-Id: <1301330025-25542-18-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301330025-25542-1-git-send-email-kys@microsoft.com>
 References: <1301329950-25490-1-git-send-email-kys@microsoft.com>
@@ -25,198 +25,232 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the wait_queue mechanism for synchronization in
-struct storvsc_request_extension and instead use completion
-mechanism.
+In preparation of consolidating all I/O request state,
+move the data_buffer field from struct hv_storvsc_request
+struct storvsc_request_extension.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc.c     |   34 ++++++++++++----------------------
- drivers/staging/hv/storvsc_api.h |    3 +--
- drivers/staging/hv/storvsc_drv.c |   10 ++++------
- 3 files changed, 17 insertions(+), 30 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c  |   46 ++++++++++++++++++++-----------------
+ drivers/staging/hv/storvsc.c     |   10 +++++---
+ drivers/staging/hv/storvsc_api.h |    2 +-
+ drivers/staging/hv/storvsc_drv.c |   13 +++++-----
+ 4 files changed, 39 insertions(+), 32 deletions(-)
 
+diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+index c05a242..782441d 100644
+--- a/drivers/staging/hv/blkvsc_drv.c
++++ b/drivers/staging/hv/blkvsc_drv.c
+@@ -520,9 +520,9 @@ static int blkvsc_do_flush(struct block_device_context *blkdev)
+ 	blkvsc_req->req = NULL;
+ 	blkvsc_req->write = 0;
+ 
+-	blkvsc_req->request.data_buffer.pfn_array[0] = 0;
+-	blkvsc_req->request.data_buffer.offset = 0;
+-	blkvsc_req->request.data_buffer.len = 0;
++	blkvsc_req->request.extension.data_buffer.pfn_array[0] = 0;
++	blkvsc_req->request.extension.data_buffer.offset = 0;
++	blkvsc_req->request.extension.data_buffer.len = 0;
+ 
+ 	blkvsc_req->cmnd[0] = SYNCHRONIZE_CACHE;
+ 	blkvsc_req->cmd_len = 10;
+@@ -567,9 +567,10 @@ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
+ 	blkvsc_req->req = NULL;
+ 	blkvsc_req->write = 0;
+ 
+-	blkvsc_req->request.data_buffer.pfn_array[0] = page_to_pfn(page_buf);
+-	blkvsc_req->request.data_buffer.offset = 0;
+-	blkvsc_req->request.data_buffer.len = 64;
++	blkvsc_req->request.extension.data_buffer.pfn_array[0] =
++	page_to_pfn(page_buf);
++	blkvsc_req->request.extension.data_buffer.offset = 0;
++	blkvsc_req->request.extension.data_buffer.len = 64;
+ 
+ 	blkvsc_req->cmnd[0] = INQUIRY;
+ 	blkvsc_req->cmnd[1] = 0x1;		/* Get product data */
+@@ -656,9 +657,10 @@ static int blkvsc_do_read_capacity(struct block_device_context *blkdev)
+ 	blkvsc_req->req = NULL;
+ 	blkvsc_req->write = 0;
+ 
+-	blkvsc_req->request.data_buffer.pfn_array[0] = page_to_pfn(page_buf);
+-	blkvsc_req->request.data_buffer.offset = 0;
+-	blkvsc_req->request.data_buffer.len = 8;
++	blkvsc_req->request.extension.data_buffer.pfn_array[0] =
++	page_to_pfn(page_buf);
++	blkvsc_req->request.extension.data_buffer.offset = 0;
++	blkvsc_req->request.extension.data_buffer.len = 8;
+ 
+ 	blkvsc_req->cmnd[0] = READ_CAPACITY;
+ 	blkvsc_req->cmd_len = 16;
+@@ -735,9 +737,10 @@ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
+ 	blkvsc_req->req = NULL;
+ 	blkvsc_req->write = 0;
+ 
+-	blkvsc_req->request.data_buffer.pfn_array[0] = page_to_pfn(page_buf);
+-	blkvsc_req->request.data_buffer.offset = 0;
+-	blkvsc_req->request.data_buffer.len = 12;
++	blkvsc_req->request.extension.data_buffer.pfn_array[0] =
++	page_to_pfn(page_buf);
++	blkvsc_req->request.extension.data_buffer.offset = 0;
++	blkvsc_req->request.extension.data_buffer.len = 12;
+ 
+ 	blkvsc_req->cmnd[0] = 0x9E; /* READ_CAPACITY16; */
+ 	blkvsc_req->cmd_len = 16;
+@@ -926,8 +929,8 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
+ 		   (blkvsc_req->write) ? "WRITE" : "READ",
+ 		   (unsigned long) blkvsc_req->sector_start,
+ 		   blkvsc_req->sector_count,
+-		   blkvsc_req->request.data_buffer.offset,
+-		   blkvsc_req->request.data_buffer.len);
++		   blkvsc_req->request.extension.data_buffer.offset,
++		   blkvsc_req->request.extension.data_buffer.len);
+ #if 0
+ 	for (i = 0; i < (blkvsc_req->request.data_buffer.len >> 12); i++) {
+ 		DPRINT_DBG(BLKVSC_DRV, "blkvsc_submit_request() - "
+@@ -1054,10 +1057,11 @@ static int blkvsc_do_request(struct block_device_context *blkdev,
+ 
+ 					blkvsc_req->dev = blkdev;
+ 					blkvsc_req->req = req;
+-					blkvsc_req->request.data_buffer.offset
+-						= bvec->bv_offset;
+-					blkvsc_req->request.data_buffer.len
+-						= 0;
++					blkvsc_req->request.extension.
++					data_buffer.offset
++					= bvec->bv_offset;
++					blkvsc_req->request.extension.
++					data_buffer.len = 0;
+ 
+ 					/* Add to the group */
+ 					blkvsc_req->group = group;
+@@ -1071,10 +1075,10 @@ static int blkvsc_do_request(struct block_device_context *blkdev,
+ 				}
+ 
+ 				/* Add the curr bvec/segment to the curr blkvsc_req */
+-				blkvsc_req->request.data_buffer.
++				blkvsc_req->request.extension.data_buffer.
+ 					pfn_array[databuf_idx]
+ 						= page_to_pfn(bvec->bv_page);
+-				blkvsc_req->request.data_buffer.len
++				blkvsc_req->request.extension.data_buffer.len
+ 					+= bvec->bv_len;
+ 
+ 				prev_bvec = bvec;
+@@ -1180,7 +1184,7 @@ static void blkvsc_request_completion(struct hv_storvsc_request *request)
+ 		   (blkvsc_req->write) ? "WRITE" : "READ",
+ 		   (unsigned long)blkvsc_req->sector_start,
+ 		   blkvsc_req->sector_count,
+-		   blkvsc_req->request.data_buffer.len,
++		   blkvsc_req->request.extension.data_buffer.len,
+ 		   blkvsc_req->group->outstanding,
+ 		   blkdev->num_outstanding_reqs);
+ 
 diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 5cea331..8dc17b9 100644
+index 6a45d57..0fdbd34 100644
 --- a/drivers/staging/hv/storvsc.c
 +++ b/drivers/staging/hv/storvsc.c
-@@ -20,7 +20,7 @@
-  */
- #include <linux/kernel.h>
- #include <linux/sched.h>
--#include <linux/wait.h>
-+#include <linux/completion.h>
- #include <linux/string.h>
- #include <linux/slab.h>
- #include <linux/mm.h>
-@@ -107,7 +107,7 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 	struct storvsc_device *stor_device;
- 	struct storvsc_request_extension *request;
- 	struct vstor_packet *vstor_packet;
--	int ret;
-+	int ret, t;
+@@ -529,7 +529,7 @@ int stor_vsc_on_io_request(struct hv_device *device,
+ 		   request_extension);
  
- 	stor_device = get_stor_device(device);
+ 	DPRINT_DBG(STORVSC, "req %p len %d",
+-		   request, request->data_buffer.len);
++		   request, request->extension.data_buffer.len);
+ 
  	if (!stor_device) {
-@@ -124,13 +124,12 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 	 * channel
- 	 */
- 	memset(request, 0, sizeof(struct storvsc_request_extension));
--	init_waitqueue_head(&request->wait_event);
-+	init_completion(&request->wait_event);
- 	vstor_packet->operation = VSTOR_OPERATION_BEGIN_INITIALIZATION;
- 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
+ 		DPRINT_ERR(STORVSC, "unable to get stor device..."
+@@ -549,7 +549,8 @@ int stor_vsc_on_io_request(struct hv_device *device,
+ 	vstor_packet->vm_srb.sense_info_length = SENSE_BUFFER_SIZE;
  
- 	DPRINT_INFO(STORVSC, "BEGIN_INITIALIZATION_OPERATION...");
  
--	request->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
- 			       sizeof(struct vstor_packet),
- 			       (unsigned long)request,
-@@ -142,14 +141,12 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 		goto cleanup;
- 	}
+-	vstor_packet->vm_srb.data_transfer_length = request->data_buffer.len;
++	vstor_packet->vm_srb.data_transfer_length =
++	request->extension.data_buffer.len;
  
--	wait_event_timeout(request->wait_event, request->wait_condition,
--			msecs_to_jiffies(1000));
--	if (request->wait_condition == 0) {
-+	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
+ 	vstor_packet->operation = VSTOR_OPERATION_EXECUTE_SRB;
  
--
- 	if (vstor_packet->operation != VSTOR_OPERATION_COMPLETE_IO ||
- 	    vstor_packet->status != 0) {
- 		DPRINT_ERR(STORVSC, "BEGIN_INITIALIZATION_OPERATION failed "
-@@ -168,7 +165,6 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 	vstor_packet->version.major_minor = VMSTOR_PROTOCOL_VERSION_CURRENT;
- 	FILL_VMSTOR_REVISION(vstor_packet->version.revision);
+@@ -563,9 +564,10 @@ int stor_vsc_on_io_request(struct hv_device *device,
+ 		   vstor_packet->vm_srb.sense_info_length,
+ 		   vstor_packet->vm_srb.cdb_length);
  
--	request->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
- 			       sizeof(struct vstor_packet),
- 			       (unsigned long)request,
-@@ -180,9 +176,8 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	wait_event_timeout(request->wait_event, request->wait_condition,
--			msecs_to_jiffies(1000));
--	if (request->wait_condition == 0) {
-+	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
-@@ -205,7 +200,6 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 	vstor_packet->storage_channel_properties.port_number =
- 					stor_device->port_number;
- 
--	request->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
- 			       sizeof(struct vstor_packet),
- 			       (unsigned long)request,
-@@ -218,9 +212,8 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	wait_event_timeout(request->wait_event, request->wait_condition,
--			msecs_to_jiffies(1000));
--	if (request->wait_condition == 0) {
-+	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
-@@ -248,7 +241,6 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 	vstor_packet->operation = VSTOR_OPERATION_END_INITIALIZATION;
- 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
- 
--	request->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
- 			       sizeof(struct vstor_packet),
- 			       (unsigned long)request,
-@@ -261,9 +253,8 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	wait_event_timeout(request->wait_event, request->wait_condition,
--			msecs_to_jiffies(1000));
--	if (request->wait_condition == 0) {
-+	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
-@@ -397,8 +388,7 @@ static void stor_vsc_on_channel_callback(void *context)
- 
- 				memcpy(&request->vstor_packet, packet,
- 				       sizeof(struct vstor_packet));
--				request->wait_condition = 1;
--				wake_up(&request->wait_event);
-+				complete(&request->wait_event);
- 			} else {
- 				stor_vsc_on_receive(device,
- 						(struct vstor_packet *)packet,
+-	if (request_extension->request->data_buffer.len) {
++	if (request_extension->request->extension.data_buffer.len) {
+ 		ret = vmbus_sendpacket_multipagebuffer(device->channel,
+-				&request_extension->request->data_buffer,
++				&request_extension->request->extension.
++				data_buffer,
+ 				vstor_packet,
+ 				sizeof(struct vstor_packet),
+ 				(unsigned long)request_extension);
 diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
-index 5c80cdb..cdef1c7 100644
+index 1705b9f..f4b7031 100644
 --- a/drivers/staging/hv/storvsc_api.h
 +++ b/drivers/staging/hv/storvsc_api.h
-@@ -60,8 +60,7 @@ struct storvsc_request_extension {
- 	struct hv_device *device;
- 
- 	/* Synchronize the request/response if needed */
--	int wait_condition;
--	wait_queue_head_t wait_event;
-+	struct completion wait_event;
+@@ -65,6 +65,7 @@ struct storvsc_request_extension {
+ 	unsigned char *sense_buffer;
+ 	void *context;
+ 	void (*on_io_completion)(struct hv_storvsc_request *request);
++	struct hv_multipage_buffer data_buffer;
  
  	struct vstor_packet vstor_packet;
  };
+@@ -73,7 +74,6 @@ struct hv_storvsc_request {
+ 
+ 	struct storvsc_request_extension extension;
+ 
+-	struct hv_multipage_buffer data_buffer;
+ };
+ 
+ /* Represents the block vsc driver */
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 268c607..c2a3a5b 100644
+index a2faaef..54be899 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -231,7 +231,7 @@ static int stor_vsc_on_host_reset(struct hv_device *device)
- 	struct storvsc_device *stor_device;
- 	struct storvsc_request_extension *request;
- 	struct vstor_packet *vstor_packet;
--	int ret;
-+	int ret, t;
+@@ -485,7 +485,8 @@ static void storvsc_commmand_completion(struct hv_storvsc_request *request)
  
- 	DPRINT_INFO(STORVSC, "resetting host adapter...");
+ 	/* ASSERT(request->BytesXfer <= request->data_buffer.Length); */
+ 	scsi_set_resid(scmnd,
+-		request->data_buffer.len - vm_srb->data_transfer_length);
++		request->extension.data_buffer.len -
++		vm_srb->data_transfer_length);
  
-@@ -245,13 +245,12 @@ static int stor_vsc_on_host_reset(struct hv_device *device)
- 	request = &stor_device->reset_request;
- 	vstor_packet = &request->vstor_packet;
+ 	scsi_done_fn = scmnd->scsi_done;
  
--	init_waitqueue_head(&request->wait_event);
-+	init_completion(&request->wait_event);
+@@ -789,7 +790,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 	request->extension.sense_buffer = scmnd->sense_buffer;
  
- 	vstor_packet->operation = VSTOR_OPERATION_RESET_BUS;
- 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
- 	vstor_packet->vm_srb.path_id = stor_device->path_id;
  
--	request->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
- 			       sizeof(struct vstor_packet),
- 			       (unsigned long)&stor_device->reset_request,
-@@ -263,9 +262,8 @@ static int stor_vsc_on_host_reset(struct hv_device *device)
- 		goto cleanup;
+-	request->data_buffer.len = scsi_bufflen(scmnd);
++	request->extension.data_buffer.len = scsi_bufflen(scmnd);
+ 	if (scsi_sg_count(scmnd)) {
+ 		sgl = (struct scatterlist *)scsi_sglist(scmnd);
+ 		sg_count = scsi_sg_count(scmnd);
+@@ -830,19 +831,19 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 			sg_count = cmd_request->bounce_sgl_count;
+ 		}
+ 
+-		request->data_buffer.offset = sgl[0].offset;
++		request->extension.data_buffer.offset = sgl[0].offset;
+ 
+ 		for (i = 0; i < sg_count; i++) {
+ 			DPRINT_DBG(STORVSC_DRV, "sgl[%d] len %d offset %d\n",
+ 				   i, sgl[i].length, sgl[i].offset);
+-			request->data_buffer.pfn_array[i] =
++			request->extension.data_buffer.pfn_array[i] =
+ 				page_to_pfn(sg_page((&sgl[i])));
+ 		}
+ 	} else if (scsi_sglist(scmnd)) {
+ 		/* ASSERT(scsi_bufflen(scmnd) <= PAGE_SIZE); */
+-		request->data_buffer.offset =
++		request->extension.data_buffer.offset =
+ 			virt_to_phys(scsi_sglist(scmnd)) & (PAGE_SIZE-1);
+-		request->data_buffer.pfn_array[0] =
++		request->extension.data_buffer.pfn_array[0] =
+ 			virt_to_phys(scsi_sglist(scmnd)) >> PAGE_SHIFT;
  	}
  
--	wait_event_timeout(request->wait_event, request->wait_condition,
--			msecs_to_jiffies(1000));
--	if (request->wait_condition == 0) {
-+	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
 -- 
 1.7.4.1
 
