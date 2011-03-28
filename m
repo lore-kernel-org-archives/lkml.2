@@ -1,78 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab1C1O5E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 10:57:04 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44080 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab1C1O5C convert rfc822-to-8bit (ORCPT
+	id S1753538Ab1C1O6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 10:58:24 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45173 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab1C1O6X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 10:57:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kYSG2zMJMN54bbqoVcAFFec5Gv35jY/jDrk+ZdEzcaaFT6rPU0+ZHnPQmatCxS7mLD
-         h0digzNJgJ+d+M+pTgD+4mryrZx7awqk67ytYH4/Vl3djDMinvXKnp20jt9KyZ2dfCm1
-         /sdNSdw7EPRUAJk81YR/ASTrWITCgxT4CIwtU=
-MIME-Version: 1.0
-In-Reply-To: <4D90A08D.707@zytor.com>
-References: <tip-ccd0d44fad38dc1bb4b26dcc7a30e9f2c3b36870@git.kernel.org>
-	<4D90A08D.707@zytor.com>
-Date: Mon, 28 Mar 2011 16:56:59 +0200
-Message-ID: <AANLkTinh6nraZND1mQJ4ofPbABOtJNEnGYYEkqs92RQM@mail.gmail.com>
-Subject: Re: [tip:core/urgent] WARN_ON_SMP(): Add comment to explain ({0;})
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com,
-        torvalds@linux-foundation.org, rostedt@goodmis.org,
-        srostedt@redhat.com, tglx@linutronix.de, adobriyan@gmail.com,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 28 Mar 2011 10:58:23 -0400
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
+ value
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110328133033.GA8254@redhat.com>
+References: <20110324164436.GC1930@jolsa.brq.redhat.com>
+	 <1301153868.2250.359.camel@laptop> <20110326161346.GA18272@redhat.com>
+	 <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com>
+	 <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop>
+	 <20110328133033.GA8254@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Mar 2011 16:57:55 +0200
+Message-ID: <1301324275.4859.25.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 4:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 03/28/2011 07:45 AM, tip-bot for Steven Rostedt wrote:
->>
->> WARN_ON_SMP(): Add comment to explain ({0;})
->>
->> The define to use ({0;}) for the !CONFIG_SMP case of WARN_ON_SMP()
->> can be confusing. As the WARN_ON_SMP() needs to be a nop when
->> CONFIG_SMP is not set, including all its parameters must not be
->> evaluated, and that it must work as both a stand alone statement
->> and inside an if condition, we define it to a funky ({0;}).
->>
->> A simple "0" will not work as it causes gcc to give the warning that
->> the statement has no effect.
->>
->> As this strange definition has raised a few eyebrows from some
->> major kernel developers, it is wise to document why we create such
->> a work of art.
->>
->
-> What the heck is wrong with the idiomatic and non-gcc-extension-using:
->
->        ((void)0)
->
-> ?
+On Mon, 2011-03-28 at 15:30 +0200, Oleg Nesterov wrote:
+> On 03/26, Peter Zijlstra wrote:
+> >
+> > On Sat, 2011-03-26 at 18:35 +0100, Oleg Nesterov wrote:
+> > > On 03/26, Oleg Nesterov wrote:
+> > > >
+> > > > On 03/26, Peter Zijlstra wrote:
+> > > > >
+> > > > > diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> > > > > index c75925c..e9e4e35 100644
+> > > > > --- a/kernel/perf_event.c
+> > > > > +++ b/kernel/perf_event.c
+> > > > > @@ -1073,6 +1073,8 @@ event_sched_out(struct perf_event *event,
+> > > > >  	if (!is_software_event(event))
+> > > > >  		cpuctx->active_oncpu--;
+> > > > >  	ctx->nr_active--;
+> > > > > +	if (!ctx->nr_active && cpuctx->task_ctx == ctx)
+> > > > > +		cpuctx->task_ctx = NULL;
+> > > >
+> > > > If we clear cpuctx->task_ctx, we should also clear ctx->is_active.
+> >
+> > Right.
+> 
+> Wait... Yes, we have to clear ctx->is_active, otherwise we break, say,
+> perf_install_in_context().
+> 
+> But if we clear ->is_active we break perf_event_enable(). Suppose we
+> are doing ioctl(PERF_EVENT_IOC_DISABLE) + ioctl(PERF_EVENT_IOC_ENABLE).
+> PERF_EVENT_IOC_DISABLE can sched_out the last event, but _IOC_ENABLE
+> treats ctx->is_active == F as "it is not running".
 
-AFAIK you cannot use it within an if-statement.
+Right, same for the tick, if say we can only schedule 1 event at a time
+and we close the 1 event that is active, the tick will not rotate a new
+event in.
 
->        -hpa
->
-> --
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+/me goes ponder things..
 
--- 
-Thanks,
-//richard
+> Btw, why ctx_sched_out() checks nr_events under perf_pmu_disable() ?
+
+hysterical-raisins or somesuch, how about the below:
+
+---
+Subject: perf: Optimize ctx_sched_out
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon Mar 28 16:55:36 CEST 2011
+
+Oleg noted that ctx_sched_out() disables the PMU even though it might
+not actually do something, avoid needless PMU-disabling.
+
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+---
+ kernel/perf_event.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -1767,7 +1767,6 @@ static void ctx_sched_out(struct perf_ev
+ 	struct perf_event *event;
+ 
+ 	raw_spin_lock(&ctx->lock);
+-	perf_pmu_disable(ctx->pmu);
+ 	ctx->is_active = 0;
+ 	if (likely(!ctx->nr_events))
+ 		goto out;
+@@ -1777,6 +1776,7 @@ static void ctx_sched_out(struct perf_ev
+ 	if (!ctx->nr_active)
+ 		goto out;
+ 
++	perf_pmu_disable(ctx->pmu);
+ 	if (event_type & EVENT_PINNED) {
+ 		list_for_each_entry(event, &ctx->pinned_groups, group_entry)
+ 			group_sched_out(event, cpuctx, ctx);
+@@ -1786,8 +1786,8 @@ static void ctx_sched_out(struct perf_ev
+ 		list_for_each_entry(event, &ctx->flexible_groups, group_entry)
+ 			group_sched_out(event, cpuctx, ctx);
+ 	}
+-out:
+ 	perf_pmu_enable(ctx->pmu);
++out:
+ 	raw_spin_unlock(&ctx->lock);
+ }
+ 
+
