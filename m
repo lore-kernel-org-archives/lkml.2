@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab1C1NSq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 09:18:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53687 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229Ab1C1NSo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 09:18:44 -0400
-Subject: Re: [PATCH 2/5] Revert "oom: give the dying task a higher priority"
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110328131029.GN19007@uudg.org>
-References: <20110315153801.3526.A69D9226@jp.fujitsu.com>
-	 <20110322194721.B05E.A69D9226@jp.fujitsu.com>
-	 <20110322200657.B064.A69D9226@jp.fujitsu.com>
-	 <20110324152757.GC1938@barrios-desktop> <1301305896.4859.8.camel@twins>
-	 <20110328122125.GA1892@barrios-desktop> <1301315307.4859.13.camel@twins>
-	 <20110328124025.GC1892@barrios-desktop>  <20110328131029.GN19007@uudg.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 28 Mar 2011 15:18:13 +0200
-Message-ID: <1301318293.4859.19.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754138Ab1C1NXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 09:23:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38073 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753768Ab1C1NXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 09:23:22 -0400
+Date: Mon, 28 Mar 2011 14:14:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com
+Subject: Re: [PATCHSET] ptrace,signal: Improve ptrace and job control
+	interaction
+Message-ID: <20110328121401.GA4099@redhat.com>
+References: <1300874766-12941-1-git-send-email-tj@kernel.org> <20110323183837.GA27680@redhat.com> <20110325142630.GD1409@htj.dyndns.org> <20110326182554.GA24315@redhat.com> <20110328085824.GE16530@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110328085824.GE16530@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-28 at 10:10 -0300, Luis Claudio R. Goncalves wrote:
-> | There was meaningless code in there. I guess it was in there from CFS.
-> | Thanks for the explanation, Peter.
-> 
-> Yes, it was CFS related:
-> 
->         p = find_lock_task_mm(p);
->         ...
->         p->rt.time_slice = HZ; <<---- THIS
+On 03/28, Tejun Heo wrote:
+>
+> Hey,
+>
+> On Sat, Mar 26, 2011 at 07:25:54PM +0100, Oleg Nesterov wrote:
+> > > Explicit wake_up_state() without kick_process() is okay there because
+> > > if the code assumes that the tasks are guaranteed to pass through
+> > > signal delivery path whenever event worthy of notification happens
+> > > (either SIGNAL_STOP_STOPPED or group_stop_count is set).  PTRACE_CONT
+> > > breaks that as the tracee could be running in userland and thus the
+> > > solution is to add kick_process() as in signal_wake_up().
+> > >
+> > > Am I making any sense?
+> >
+> > Perhaps. This depends on how we define/implement the new behaviour.
+> >
+> > It is not clear to me what the new trap should actually do. And how.
+> > Either way, prepare_signal(SIGCONT) should do something with the
+> > ptraced threads, and this is what we should care about. Probably
+> > we can set TIF_SIGPENDING if task_ptrace() is true.
+> >
+> > Anyway we should ensure SIGCONT can't race with detach.
+>
+> Hmmm... setting TIF_SIGPENDING and kicking the task to enter signal
+> delivery path doesn't have any side effect when it's running in
+> userland,
 
-CFS has never used rt.time_slice, that's always been a pure SCHED_RR
-thing.
+Yes. We should avoid the spurious TIF_SIGPENDING, if possible. But in
+this case we don't care.
 
-> Peter, would that be effective to boost the priority of the dying task?
+But, unless the thread is ptraced, it can't be running in userland,
+why should we set TIF_SIGPENDING?
 
-The thing you're currently doing, making it SCHED_FIFO ?
+> > > * Before CLD_STOPPED notification for the incomplete-stop/cont
+> > >   sequence can be made, recalc_sigpending() happens.
+> > >
+> > > * CLD_STOPPED notification is pending but TIF_SIGPENDING isn't set and
+> > >   the task isn't in signal delivery path and can continue execution.
+> >
+> > This doesn't matter, or I misunderstood.
+> >
+> > We only add "SIGNAL_CLD_* | SIGNAL_STOP_CONTINUED" if we know there
+> > is at least one thread in get_signal_to_deliver()->do_signal_stop()
+> > paths. In this case we do not rely on TIF_SIGPENDING at all.
+>
+> We set SIGNAL_CLD_STOPPED if group_stop_count wasn't zero, ie. if
+> group stop has initiated, which will be delivered as soon as any task
+> enters signal delivery path.
 
-> I mean, in the context of SCHED_OTHER tasks would it really help the dying
-> task to be scheduled sooner to release its resources? 
+Yes. And that task T has already called do_signal_stop() and it is
+TASK_STOPPED.
 
-That very much depends on how all this stuff works, I guess if everybody
-serializes on OOM and only the first will actually kill a task and all
-the waiting tasks will try to allocate a page again before also doing
-the OOM thing, and the pending tasks are woken after the OOM target task
-has completed dying.. then I don't see much point in boosting things,
-since everybody interested in memory will block and eventually only the
-dying task will be left running.
+> So, there's a path that we schedule a
+> notification and doesn't enforce the delivery until something happens
 
-Its been a very long while since I stared at the OOM code..
+prepare_signal(SIGCONT) wakes up all threads, including T. Once it
+returns from do_signal_stop() to get_signal_to_deliver(), it will
+check signal->flags.
 
-> If so, as we remove
-> the code in commit 93b43fa5508 we should re-add that old code. 
+> and a task in the group gets called into signal delivery path somehow,
+> which is wrong.
 
-It doesn't make any sense to fiddle with rt.time_slice afaict.
+Afaics, no. No need to force any thread to enter into the signal
+delivery path. If group_stop_count != 0 (or SIGNAL_STOP_STOPPED is
+set) there must be at least one thread which should _return_ to
+get_signal_to_deliver() after wakeup.
+
+No?
+
+Oleg.
+
