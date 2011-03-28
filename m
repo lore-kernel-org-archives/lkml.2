@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab1C1Drh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Mar 2011 23:47:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30969 "EHLO mx1.redhat.com"
+	id S1754004Ab1C1DwT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Mar 2011 23:52:19 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48601 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab1C1Drg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Mar 2011 23:47:36 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric B Munson <emunson@mgebm.net>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [Patch] proc: check error pointer returned by m_start()
-Date: Mon, 28 Mar 2011 11:46:38 +0800
-Message-Id: <1301284006-18808-1-git-send-email-amwang@redhat.com>
-In-Reply-To: <20110327175203.GA15862@fibrous.localdomain>
-References: <20110327175203.GA15862@fibrous.localdomain>
+	id S1753464Ab1C1DwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Mar 2011 23:52:18 -0400
+Date: Mon, 28 Mar 2011 14:52:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andres Salomon <dilinger@queued.net>
+Subject: linux-next: build failure after merge of the final tree (mfd tree
+ related)
+Message-Id: <20110328145212.8ed636e8.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__28_Mar_2011_14_52_12_+1100_biVcqco_t+k276D4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anca reported a bug:
+--Signature=_Mon__28_Mar_2011_14_52_12_+1100_biVcqco_t+k276D4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[15117.080119] BUG: unable to handle kernel paging request at fffffffffffffff3
-[15117.080152] IP: [<ffffffff811b4989>] vma_stop+0x19/0x40
+Hi all,
 
-Linus did the initial analysis, and found this was caused
-by commit ec6fd8a4355c ("report errors in /proc/*/*map*
-sanely"), which replaces NULL with various ERR_PTR() cases.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-This is true, that commit changed the return value of m_start(),
-which will return an error pointer on failure, but Al forgot
-to check the error pointer in m_stop() which will be called
-when m_start() fails. This patches fixes it.
+drivers/mfd/cs5535-mfd.c:30:22: error: asm/olpc.h: No such file or directory
 
-Reported-by: Anca Emanuel <anca.emanuel@gmail.com>
-Tested-by: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+Caused by commit fa1df691688f ("mfd: Add mfd_clone_cell(), convert
+cs5535-mfd/olpc-xo1 to it").
 
----
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 7c708a4..6b82632 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -90,7 +90,7 @@ static void pad_len_spaces(struct seq_file *m, int len)
- 
- static void vma_stop(struct proc_maps_private *priv, struct vm_area_struct *vma)
- {
--	if (vma && vma != priv->tail_vma) {
-+	if (vma && !IS_ERR(vma) && vma != priv->tail_vma) {
- 		struct mm_struct *mm = vma->vm_mm;
- 		up_read(&mm->mmap_sem);
- 		mmput(mm);
+I have reverted that commit (and commit adfa4bd4a8bf "mfd: OLPC: Clean up
+names to match what OLPC actually uses" that conflicted with the revert).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__28_Mar_2011_14_52_12_+1100_biVcqco_t+k276D4
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNkAXsAAoJEDMEi1NhKgbsOagH/21jBsx9KmhQBAfWIuCcqcL/
+X3CDJBkazCBA+TVU2s8VtrZ4IwTQvTk9LwHEHUKFKw6h4McPoNgSJtAvuhQdIsPK
+TKDTklyvF5MdOO/3AC8gJlNwGvjqgR162QAFy03Othe+fUtCMwtzwbvOJkOzRByw
+5PfZ0a4RUpyOn5KGTslqSh64p0zKyR2UHWOy24R1IxM+nP5ylNgFEF2OGrPf4VRV
+r3kOsL9QkO+CUzOlK7gsH2rMjeWOdDdumFgy1bejUYbeccc7lg3IbChrq8BHKeob
+aR6w+x86/zCRQWFR6d51luA4PFAf0uGus+4D3AQxJGV25UvaNdpRbYAaliWCfoI=
+=BK8X
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_Mar_2011_14_52_12_+1100_biVcqco_t+k276D4--
