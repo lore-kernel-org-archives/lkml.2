@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab1C1JsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 05:48:19 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35066 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab1C1JsS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 05:48:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 2/5] Revert "oom: give the dying task a higher priority"
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <20110324152757.GC1938@barrios-desktop>
-References: <20110322200657.B064.A69D9226@jp.fujitsu.com> <20110324152757.GC1938@barrios-desktop>
-Message-Id: <20110328184856.F078.A69D9226@jp.fujitsu.com>
+	id S1752787Ab1C1JsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 05:48:25 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52146 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752551Ab1C1JsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 05:48:23 -0400
+Date: Mon, 28 Mar 2011 11:48:20 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg: update documentation to describe usage_in_bytes
+Message-ID: <20110328094820.GC5693@tiehlicka.suse.cz>
+References: <20110321102420.GB26047@tiehlicka.suse.cz>
+ <20110322091014.27677ab3.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110322104723.fd81dddc.nishimura@mxp.nes.nec.co.jp>
+ <20110322073150.GA12940@tiehlicka.suse.cz>
+ <20110323092708.021d555d.nishimura@mxp.nes.nec.co.jp>
+ <20110323133517.de33d624.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110328085508.c236e929.nishimura@mxp.nes.nec.co.jp>
+ <20110328132550.08be4389.nishimura@mxp.nes.nec.co.jp>
+ <20110328074341.GA5693@tiehlicka.suse.cz>
+ <20110328181127.b8a2a1c5.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon, 28 Mar 2011 18:48:13 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110328181127.b8a2a1c5.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-> @@ -434,9 +452,17 @@ static int oom_kill_task(struct task_struct *p)
->                 K(get_mm_counter(p->mm, MM_FILEPAGES)));
->         task_unlock(p);
->  
-> -       p->rt.time_slice = HZ; <<---- THIS
-> +
->         set_tsk_thread_flag(p, TIF_MEMDIE);
->         force_sig(SIGKILL, p);
-> +
-> +       /*
-> +        * We give our sacrificial lamb high priority and access to
-> +        * all the memory it needs. That way it should be able to
-> +        * exit() and clear out its resources quickly...
-> +        */
-> +       boost_dying_task_prio(p, mem);
-> +
->         return 0;
->  }
+On Mon 28-03-11 18:11:27, KAMEZAWA Hiroyuki wrote:
+> On Mon, 28 Mar 2011 09:43:42 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> At that time, I thought that routine is meaningless in non-RT scheduler.
-> So I Cced Peter but don't get the answer.
-> I just want to confirm it.
+> > On Mon 28-03-11 13:25:50, Daisuke Nishimura wrote:
+> > > From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+[...]
+> > > +5.5 usage_in_bytes
+> > > +
+> > > +As described in 2.1, memory cgroup uses res_counter for tracking and limiting
+> > > +the memory usage. memory.usage_in_bytes shows the current res_counter usage for
+> > > +memory, and DOESN'T show a actual usage of RSS and Cache. It is usually bigger
+> > > +than the actual usage for a performance improvement reason. 
+> > 
+> > Isn't an explicit mention about caching charges better?
+> > 
 > 
-> Do you still think it's meaningless? 
+> It's difficult to distinguish which is spec. and which is implemnation details...
 
-In short, yes.
+Sure. At least commit log should contain the implementation details IMO,
+though.
 
+> 
+> My one here ;)
+> ==
+> 5.5 usage_in_bytes
+> 
+> For efficiency, as other kernel components, memory cgroup uses some optimization to
+> avoid unnecessary cacheline false sharing. usage_in_bytes is affected by the
+> method and doesn't show 'exact' value of usage, it's an fuzz value for efficient
+> access. (Of course, when necessary, it's synchronized.)
+> In usual, the value (RSS+CACHE) in memory.stat shows more exact value. IOW,
 
-> so you remove it when you revert 93b43fa5508?
-> Then, this isn't just revert patch but revert + killing meaningless code patch.
+- In usual, the value (RSS+CACHE) in memory.stat shows more exact value. IOW,
++ (RSS+CACHE) value from memory.stat shows more exact value and should be used
++ by userspace. IOW,
 
-If you want, I'd like to rename a patch title. That said, we can't revert
-93b43fa5508 simple cleanly, several patches depend on it. therefore I
-reverted it manualy. and at that time, I don't want to resurrect
-meaningless logic. anyway it's no matter. Luis is preparing new patches.
-therefore we will get the same end result. :)
+?
 
+> usage_in_bytes is less exact than memory.stat. The error will be larger on the larger
+> hardwares which have many cpus and tasks.
+> ==
+> 
+> Hmm ?
 
+Looks much better.
 
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
