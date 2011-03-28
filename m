@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab1C1IvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 04:51:17 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35449 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab1C1IvP (ORCPT
+	id S1753533Ab1C1Iw2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 04:52:28 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:56463 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753014Ab1C1Iw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 04:51:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=RwozV3g67F5XGwtiJFRDWkZBHveZdVwNgABfnmqtpPyZtgBQPn/5piwvW53FxeJzGh
-         MX7ZSAZfaba2Espi49rH0DkqUY5C2/m0nppLnnrzSjJ7vUrL++snSrEQl5Z17aE32scd
-         wqCf8UW50hsCEB3J8l6qgkvK1XSrNaDqPsurs=
-Date: Mon, 28 Mar 2011 11:50:48 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: serge@hallyn.com, "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch -next] ipcns: use after free in free_ipc_ns()
-Message-ID: <20110328085048.GI1885@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>, serge@hallyn.com,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	David Howells <dhowells@redhat.com>,
-	Daniel Lezcano <daniel.lezcano@free.fr>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 28 Mar 2011 04:52:26 -0400
+Date: Mon, 28 Mar 2011 09:52:23 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Lin Ming <ming.m.lin@intel.com>, mingo@elte.hu,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        "2nddept-manager@sdl.hitachi.co.jp" 
+	<2nddept-manager@sdl.hitachi.co.jp>
+Subject: Re: [RFC] perf: EBNF for event syntax
+Message-ID: <20110328095223.76e4debe@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1301299090.4859.6.camel@twins>
+References: <1300851416.31224.58.camel@minggr.sh.intel.com>
+	<1301051277.2250.195.camel@laptop>
+	<4D901F58.4060902@hitachi.com>
+	<1301299090.4859.6.camel@twins>
+X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We dereference "ns" after it has been freed.  This was introduced in
-b515498f5bb5 "userns: add a user namespace owner of ipc ns".
+On Mon, 28 Mar 2011 09:58:10 +0200
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+> Groups are most useful in measuring events on another base, which is
+> basically mandatory if your primary event doesn't have sampling
+> support itself.
 
-diff --git a/ipc/namespace.c b/ipc/namespace.c
-index 3c3e522..8054c8e 100644
---- a/ipc/namespace.c
-+++ b/ipc/namespace.c
-@@ -104,7 +104,6 @@ static void free_ipc_ns(struct ipc_namespace *ns)
- 	sem_exit_ns(ns);
- 	msg_exit_ns(ns);
- 	shm_exit_ns(ns);
--	kfree(ns);
- 	atomic_dec(&nr_ipc_ns);
- 
- 	/*
-@@ -113,6 +112,7 @@ static void free_ipc_ns(struct ipc_namespace *ns)
- 	 */
- 	ipcns_notify(IPCNS_REMOVED);
- 	put_user_ns(ns->user_ns);
-+	kfree(ns);
- }
- 
- /*
+Just FYI...
+
+When I was looking at group event support for SH (because the hardware
+doesn't have sampling support) I was trying to avoid the user being
+required to setup the groups on the command-line, e.g. I wrote it so
+that the group event creation was all done "behind the scenes".
+
+For those architectures/platforms that are missing sampling support I
+still think that group event creation should be as invisible as
+possible.
