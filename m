@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1C1MVl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 08:21:41 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54364 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305Ab1C1MVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 08:21:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ViWXjq3AUf3xnaSbAahRIHiLXynD9/a36/2Z9geaNsrKV59UeM6lkByzDReKPJSOkn
-         tj88S/wNnjwAjnagf6qAihwVYGK51FG4rcbTBqiq2LNnL7U1S56dQkaSBeTC8xyUtQPN
-         sOFz6kf2KU/DhabqVhI5YxhpPf/lRKnlvIAAg=
-Date: Mon, 28 Mar 2011 21:21:25 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-mm <linux-mm@kvack.org>, Andrey Vagin <avagin@openvz.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-Subject: Re: [PATCH 2/5] Revert "oom: give the dying task a higher priority"
-Message-ID: <20110328122125.GA1892@barrios-desktop>
-References: <20110315153801.3526.A69D9226@jp.fujitsu.com>
- <20110322194721.B05E.A69D9226@jp.fujitsu.com>
- <20110322200657.B064.A69D9226@jp.fujitsu.com>
- <20110324152757.GC1938@barrios-desktop>
- <1301305896.4859.8.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301305896.4859.8.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753314Ab1C1M1a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 08:27:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38822 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751919Ab1C1M13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 08:27:29 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] x86: Remove spurious EFI error message
+Date: Mon, 28 Mar 2011 08:27:13 -0400
+Message-Id: <1301315233-2720-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 78.105.22.187
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+The EFI memory descriptor services can return a descriptor that is larger
+than the specification, and right now we give a warning message in that
+situation. This behaviour is permitted by the specification, so we should
+just drop the warning.
 
-On Mon, Mar 28, 2011 at 11:51:36AM +0200, Peter Zijlstra wrote:
-> On Fri, 2011-03-25 at 00:27 +0900, Minchan Kim wrote:
-> > 
-> > At that time, I thought that routine is meaningless in non-RT scheduler.
-> > So I Cced Peter but don't get the answer.
-> > I just want to confirm it. 
-> 
-> Probably lost somewhere in the mess that is my inbox :/, what is the
-> full question?
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ arch/x86/platform/efi/efi.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-The question is we had a routine which change rt.time_slice with HZ to 
-accelarate task exit. But when we applied 93b43fa5508, we found it isn't effective
-any more about normal task. So we removed it. Is it right?
-
-And Kosaki is about to revert 93b43fa5508 to find out the problem of this thread
-and Luis said he has a another solution to replace 93b43fa5508. 
-If rt.time_slice handleing is effective, we should restore it until Luis's patch
-will be merged.
-
-
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 0fe27d7..a902448 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -448,10 +448,6 @@ void __init efi_init(void)
+ 		printk(KERN_ERR "Could not map the EFI memory map!\n");
+ 	memmap.map_end = memmap.map + (memmap.nr_map * memmap.desc_size);
+ 
+-	if (memmap.desc_size != sizeof(efi_memory_desc_t))
+-		printk(KERN_WARNING
+-		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
+-
+ 	if (add_efi_memmap)
+ 		do_add_efi_memmap();
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.4.1
+
