@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab1C1SSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 14:18:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:65276 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab1C1SSH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 14:18:07 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6299"; a="82526075"
-Message-ID: <4D90D0DE.7050709@codeaurora.org>
-Date: Mon, 28 Mar 2011 11:18:06 -0700
-From: David Collins <collinsd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1755336Ab1C1STD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 14:19:03 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42900 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754309Ab1C1STB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 14:19:01 -0400
+Date: Mon, 28 Mar 2011 18:18:49 GMT
+From: tip-bot for Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, randy.dunlap@oracle.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, randy.dunlap@oracle.com
+In-Reply-To: <20110318093356.b939558d.randy.dunlap@oracle.com>
+References: <20110318093356.b939558d.randy.dunlap@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] genirq: Fix new kernel-doc warnings
+Message-ID: <tip-30398bf6c684a77274dbdabf7efc1f24e4a99028@git.kernel.org>
+Git-Commit-ID: 30398bf6c684a77274dbdabf7efc1f24e4a99028
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm-owner@vger.kernel.org
-Subject: Re: [PATCH 2/2] regulator: Propagate uA_load requirements up supply
- chain
-References: <1301326482-6547-1-git-send-email-collinsd@codeaurora.org> <1301326482-6547-3-git-send-email-collinsd@codeaurora.org> <20110328180255.GA28494@opensource.wolfsonmicro.com>
-In-Reply-To: <20110328180255.GA28494@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Mar 2011 18:18:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2011 11:02 AM, Mark Brown wrote:
-> On Mon, Mar 28, 2011 at 08:34:42AM -0700, David Collins wrote:
->> regulator_set_optimum_mode currently only determines the load
->> on the specified regulator.  Physically however, this current
->> must be provided by regulators further up the supply chain.
->> Add code to handle uA_load propagation up through the regulator
->> supply chain.
-> 
-> We can't do this - current doesn't map 1:1 through a regulator, the
-> power consumption will map through but obviously there's a voltage
-> change involved and the regulators will not be 100% efficient so there
-> will also be some overhead from the chipld regulator.  The child
-> regulator needs to do the mapping in a regulator specific fashion.
+Commit-ID:  30398bf6c684a77274dbdabf7efc1f24e4a99028
+Gitweb:     http://git.kernel.org/tip/30398bf6c684a77274dbdabf7efc1f24e4a99028
+Author:     Randy Dunlap <randy.dunlap@oracle.com>
+AuthorDate: Fri, 18 Mar 2011 09:33:56 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 28 Mar 2011 20:13:57 +0200
 
-I am aware that input current of a regulator will not simply be the sum of
-the output current loads required by consumers.  I have accounted for this
-by adding a new callback function in struct regulator_ops (from the patch):
+genirq: Fix new kernel-doc warnings
 
-+	/* get supply current required for load */
-+	int (*get_current_required) (struct regulator_dev *, int input_uV,
-+				     int output_uV, int load_uA);
+Fix new irq-related kernel-doc warnings in 2.6.38:
 
-The intention is that all hardware specific characteristics of a given
-regulator can captured with this callback function.  The two simple cases
-would be a linear regulator:
+Warning(kernel/irq/manage.c:149): No description found for parameter 'mask'
+Warning(kernel/irq/manage.c:149): Excess function parameter 'cpumask' description in 'irq_set_affinity'
+Warning(include/linux/irq.h:161): No description found for parameter 'state_use_accessors'
+Warning(include/linux/irq.h:161): Excess struct/union/enum/typedef member 'state_use_accessor' description in 'irq_data'
 
-current_required = load_uA / efficiency + ground_current;
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+LKML-Reference: <20110318093356.b939558d.randy.dunlap@oracle.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/irq.h |    2 +-
+ kernel/irq/manage.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-and a switching regulator:
-
-current_required = load_uA * output_uV / (input_uV * efficiency)
-
-I have set up the usage of this callback in the core such that if it is
-not defined for regulators in a system, then the overall system operation
-is identical to how it would be without the current propagation patch.
-
-Can you look through the patch to see if the new API is reasonable?
-
-Thanks,
-David
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 34b954e..b3741c8 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -135,7 +135,7 @@ struct msi_desc;
+  * struct irq_data - per irq and irq chip data passed down to chip functions
+  * @irq:		interrupt number
+  * @node:		node index useful for balancing
+- * @state_use_accessor: status information for irq chip functions.
++ * @state_use_accessors: status information for irq chip functions.
+  *			Use accessor functions to deal with it
+  * @chip:		low level interrupt hardware access
+  * @handler_data:	per-IRQ data for the irq_chip methods
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 6e8acb7..805c6a0 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -175,7 +175,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ /**
+  *	irq_set_affinity - Set the irq affinity of a given irq
+  *	@irq:		Interrupt to set affinity
+- *	@cpumask:	cpumask
++ *	@mask:		cpumask
+  *
+  */
+ int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
