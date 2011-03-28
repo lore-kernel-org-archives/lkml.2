@@ -1,88 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1C1I6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 04:58:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37949 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab1C1I62 (ORCPT
+	id S1753821Ab1C1JDc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 05:03:32 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:39140 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753485Ab1C1JDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 04:58:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Z9BIA2nVvvRQQYMtdcG1C79UifaiAFsTL5+0viTKzHn3Y5NQg/1fvTbHV4VNVb/fso
-         2K6K0I7bM+qwlzgQyw9mavUIoO20bsHU/Db6loQckv9G+3XC9GH3/Pnt5cG/XSwQRInj
-         ZC9aRVjs8ai4kTFgMEo/JStceHiGTax9yxDaU=
-Date: Mon, 28 Mar 2011 10:58:24 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com
-Subject: Re: [PATCHSET] ptrace,signal: Improve ptrace and job control
- interaction
-Message-ID: <20110328085824.GE16530@htj.dyndns.org>
-References: <1300874766-12941-1-git-send-email-tj@kernel.org>
- <20110323183837.GA27680@redhat.com>
- <20110325142630.GD1409@htj.dyndns.org>
- <20110326182554.GA24315@redhat.com>
+	Mon, 28 Mar 2011 05:03:30 -0400
+From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, <devel@driverdev.osuosl.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-bluetooth@vger.kernel.org>,
+        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+Subject: [PATCH v2 0/2] Add ST-Ericsson CG2900 driver
+Date: Mon, 28 Mar 2011 11:01:55 +0200
+Message-ID: <1301302915-10592-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110326182554.GA24315@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+This patch set adds a driver for the ST-Ericsson CG2900 connectivity
+controller.
+It has earlier been tried to add this driver to the mfd and bluetooth
+areas, but due to continued discussions the driver is placed into
+staging for the moment.
 
-On Sat, Mar 26, 2011 at 07:25:54PM +0100, Oleg Nesterov wrote:
-> > Explicit wake_up_state() without kick_process() is okay there because
-> > if the code assumes that the tasks are guaranteed to pass through
-> > signal delivery path whenever event worthy of notification happens
-> > (either SIGNAL_STOP_STOPPED or group_stop_count is set).  PTRACE_CONT
-> > breaks that as the tracee could be running in userland and thus the
-> > solution is to add kick_process() as in signal_wake_up().
-> >
-> > Am I making any sense?
-> 
-> Perhaps. This depends on how we define/implement the new behaviour.
-> 
-> It is not clear to me what the new trap should actually do. And how.
-> Either way, prepare_signal(SIGCONT) should do something with the
-> ptraced threads, and this is what we should care about. Probably
-> we can set TIF_SIGPENDING if task_ptrace() is true.
-> 
-> Anyway we should ensure SIGCONT can't race with detach.
+The patch set contains 2 patches:
+ - The first patch adds the driver to the staging directory. It also
+  includes modified versions of some files from the Bluetooth UART
+  drivers.
+ - The second patch contains the device setup for the mach-ux500
+  boards such as U8500.
 
-Hmmm... setting TIF_SIGPENDING and kicking the task to enter signal
-delivery path doesn't have any side effect when it's running in
-userland, which is the problematic case here anyway.  Is there any
-reason we should be careful about this?
+Compared to v1 this patch set has the following updates:
+ - Corrected TODO file
+ - Moved devices-cg2900 and board-mop500 (CG2900 parts) to staging
+   folder
+ - Corrected all checkpatch warnings and errors
 
-> > * Before CLD_STOPPED notification for the incomplete-stop/cont
-> >   sequence can be made, recalc_sigpending() happens.
-> >
-> > * CLD_STOPPED notification is pending but TIF_SIGPENDING isn't set and
-> >   the task isn't in signal delivery path and can continue execution.
-> 
-> This doesn't matter, or I misunderstood.
-> 
-> We only add "SIGNAL_CLD_* | SIGNAL_STOP_CONTINUED" if we know there
-> is at least one thread in get_signal_to_deliver()->do_signal_stop()
-> paths. In this case we do not rely on TIF_SIGPENDING at all.
+Par-Gunnar Hjalmdahl (2):
+  staging: Add ST-Ericsson CG2900 driver
+  mach-ux500: Add CG2900 devices
 
-We set SIGNAL_CLD_STOPPED if group_stop_count wasn't zero, ie. if
-group stop has initiated, which will be delivered as soon as any task
-enters signal delivery path.  So, there's a path that we schedule a
-notification and doesn't enforce the delivery until something happens
-and a task in the group gets called into signal delivery path somehow,
-which is wrong.  We need to call them into the delivery path on the
-generation of the notification regardless of ptrace.
-
-Thanks.
+ arch/arm/mach-ux500/board-mop500.c               |    2 +
+ arch/arm/mach-ux500/board-mop500.h               |    3 +
+ drivers/staging/Kconfig                          |    2 +
+ drivers/staging/Makefile                         |    1 +
+ drivers/staging/cg2900/Kconfig                   |   72 +
+ drivers/staging/cg2900/Makefile                  |   18 +
+ drivers/staging/cg2900/TODO                      |   23 +
+ drivers/staging/cg2900/bluetooth/Makefile        |    9 +
+ drivers/staging/cg2900/bluetooth/btcg2900.c      | 1203 ++++++++
+ drivers/staging/cg2900/bluetooth/cg2900_uart.c   | 2074 +++++++++++++
+ drivers/staging/cg2900/bluetooth/hci_ldisc.c     |  657 ++++
+ drivers/staging/cg2900/bluetooth/hci_uart.h      |  105 +
+ drivers/staging/cg2900/board-mop500-cg2900.c     |  157 +
+ drivers/staging/cg2900/board-mop500-nocg2900.c   |   16 +
+ drivers/staging/cg2900/devices-cg2900.c          |  342 +++
+ drivers/staging/cg2900/devices-cg2900.h          |   31 +
+ drivers/staging/cg2900/include/cg2900.h          |  278 ++
+ drivers/staging/cg2900/include/cg2900_audio.h    |  473 +++
+ drivers/staging/cg2900/include/cg2900_hci.h      |   19 +
+ drivers/staging/cg2900/mfd/Makefile              |   18 +
+ drivers/staging/cg2900/mfd/cg2900_audio.c        | 3462 ++++++++++++++++++++++
+ drivers/staging/cg2900/mfd/cg2900_char_devices.c |  701 +++++
+ drivers/staging/cg2900/mfd/cg2900_chip.c         | 3415 +++++++++++++++++++++
+ drivers/staging/cg2900/mfd/cg2900_chip.h         |  613 ++++
+ drivers/staging/cg2900/mfd/cg2900_core.c         |  713 +++++
+ drivers/staging/cg2900/mfd/cg2900_core.h         |   51 +
+ drivers/staging/cg2900/mfd/cg2900_lib.c          |  281 ++
+ drivers/staging/cg2900/mfd/cg2900_lib.h          |   61 +
+ drivers/staging/cg2900/mfd/cg2900_test.c         |  402 +++
+ drivers/staging/cg2900/mfd/stlc2690_chip.c       | 1653 +++++++++++
+ drivers/staging/cg2900/mfd/stlc2690_chip.h       |   47 +
+ 31 files changed, 16902 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/cg2900/Kconfig
+ create mode 100644 drivers/staging/cg2900/Makefile
+ create mode 100644 drivers/staging/cg2900/TODO
+ create mode 100644 drivers/staging/cg2900/bluetooth/Makefile
+ create mode 100644 drivers/staging/cg2900/bluetooth/btcg2900.c
+ create mode 100644 drivers/staging/cg2900/bluetooth/cg2900_uart.c
+ create mode 100644 drivers/staging/cg2900/bluetooth/hci_ldisc.c
+ create mode 100644 drivers/staging/cg2900/bluetooth/hci_uart.h
+ create mode 100644 drivers/staging/cg2900/board-mop500-cg2900.c
+ create mode 100644 drivers/staging/cg2900/board-mop500-nocg2900.c
+ create mode 100644 drivers/staging/cg2900/devices-cg2900.c
+ create mode 100644 drivers/staging/cg2900/devices-cg2900.h
+ create mode 100644 drivers/staging/cg2900/include/cg2900.h
+ create mode 100644 drivers/staging/cg2900/include/cg2900_audio.h
+ create mode 100644 drivers/staging/cg2900/include/cg2900_hci.h
+ create mode 100644 drivers/staging/cg2900/mfd/Makefile
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_audio.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_char_devices.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_chip.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_chip.h
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_core.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_core.h
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_lib.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_lib.h
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_test.c
+ create mode 100644 drivers/staging/cg2900/mfd/stlc2690_chip.c
+ create mode 100644 drivers/staging/cg2900/mfd/stlc2690_chip.h
 
 -- 
-tejun
+1.7.4.1
+
