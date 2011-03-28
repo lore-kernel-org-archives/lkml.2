@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab1C1Vx7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 17:53:59 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:39193 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752543Ab1C1Vx6 (ORCPT
+	id S1754817Ab1C1V6E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 17:58:04 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63681 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab1C1V6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 17:53:58 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjkEADYBkU15LK5JgWdsb2JhbAClQxUBARYmJcVxDYVcBA
-Date: Tue, 29 Mar 2011 08:53:44 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: John Lepikhin <johnlepikhin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, linux-mm@kvack.org
-Subject: Re: Very aggressive memory reclaim
-Message-ID: <20110328215344.GC3008@dastard>
-References: <AANLkTinFqqmE+fTMTLVU-_CwPE+LQv7CpXSQ5+CdAKLK@mail.gmail.com>
-MIME-Version: 1.0
+	Mon, 28 Mar 2011 17:58:03 -0400
+X-Nat-Received: from [202.181.97.72]:64045 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1301349461.16350
+To: rostedt@goodmis.org
+Cc: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] seqlock,lockdep: Add lock primitives to read_seqbegin().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201103261312.AEJ01293.OVFJFSLtHOFOMQ@I-love.SAKURA.ne.jp>
+	<20110328171217.GA8529@home.goodmis.org>
+In-Reply-To: <20110328171217.GA8529@home.goodmis.org>
+Message-Id: <201103290657.JEG17111.VOtOFJFLSQFMOH@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 29 Mar 2011 06:57:41 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinFqqmE+fTMTLVU-_CwPE+LQv7CpXSQ5+CdAKLK@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 28032011 #5158815, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc xfs and mm lists]
+Steven Rostedt wrote:
+> This is where you confused me. Why would a pattern that was previously
+> checked, suddenly break?  If we found A->B and then come across B->A,
+> lockdep should surely catch it.
 
-On Mon, Mar 28, 2011 at 08:39:29PM +0400, John Lepikhin wrote:
-> Hello,
-> 
-> I use high-loaded machine with 10M+ inodes inside XFS, 50+ GB of
-> memory, intensive HDD traffic and 20..50 forks per second. Vanilla
-> kernel 2.6.37.4. The problem is that kernel frees memory very
-> aggressively.
-> 
-> For example:
-> 
-> 25% of memory is used by processes
-> 50% for page caches
-> 7% for slabs, etc.
-> 18% free.
-> 
-> That's bad but works. After few hours:
-> 
-> 25% of memory is used by processes
-> 62% for page caches
-> 7% for slabs, etc.
-> 5% free.
-> 
-> Most of files are cached, works perfectly. This is the moment when
-> kernel decides to free some memory. After memory reclaim:
-> 
-> 25% of memory is used by processes
-> 25% for page caches(!)
-> 7% for slabs, etc.
-> 43% free(!)
-> 
-> Page cache is dropped, server becomes too slow. This is the beginning
-> of new cycle.
-> 
-> I didn't found any huge mallocs at that moment. Looks like because of
-> large number of small mallocs (forks) kernel have pessimistic forecast
-> about future memory usage and frees too much memory. Is there any
-> options of tuning this? Any other variants?
+I don't know. This bug can be triggered by simply running
 
-First it would be useful to determine why the VM is reclaiming so
-much memory. If it is somewhat predictable when the excessive
-reclaim is going to happen, it might be worth capturing an event
-trace from the VM so we can see more precisely what it is doiing
-during this event. In that case, recording the kmem/* and vmscan/*
-events is probably sufficient to tell us what memory allocations
-triggered reclaim and how much reclaim was done on each event.
+  while :; do newns /sbin/pivot_root /proc/ /proc/sys/; done
 
-Cheers,
+and
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+  while :; do /bin/ls -l /proc/*/exe; done
+
+in parallel. However, lockdep can't catch it even after applying
+
+--- linux-2.6.38.1.orig/include/linux/seqlock.h
++++ linux-2.6.38.1/include/linux/seqlock.h
+@@ -86,6 +86,11 @@ static inline int write_tryseqlock(seqlo
+ static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
+ {
+ 	unsigned ret;
++#ifdef CONFIG_PROVE_LOCKING
++	unsigned long flags;
++	spin_lock_irqsave(&((seqlock_t *) sl)->lock, flags);
++	spin_unlock_irqrestore(&((seqlock_t *) sl)->lock, flags);
++#endif
+ 
+ repeat:
+ 	ret = sl->sequence;
+
+. Maybe usage of spin_lock_irqsave()/spin_unlock_irqrestore() is bad.
+
+> Maybe I don't understand exactly whay you are trying to say.
+
+Just apply the patch and run the 2 loops above in parallel using 2.6.38.1
+will show you. Source code for newns is shown below.
+
+---------- newns.c start ----------
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sched.h>
+#include <errno.h>
+#include <stdlib.h>
+
+static int child(void *arg)
+{
+	char **argv = (char **) arg;
+	argv++;
+	execvp(argv[0], argv);
+	_exit(1);
+}
+
+int main(int argc, char *argv[])
+{
+	char c = 0;
+	char *stack = malloc(8192);
+	const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS,
+				(void *) argv);
+	while (waitpid(pid, NULL, __WALL) == EOF && errno == EINTR)
+		c++; /* Dummy. */
+	return 0;
+}
+---------- newns.c end ----------
+
+Regards.
