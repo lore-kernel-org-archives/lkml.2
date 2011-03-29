@@ -1,119 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab1C2Ord (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 10:47:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:38705 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab1C2Orb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 10:47:31 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=P8oO77IduGQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=D19gQVrFAAAA:8 a=6R9DKKSKLBkKaQNQ5BsA:9 a=ESjLVuH9CJ7c8qP-RXgA:7 a=8BWC6-MDkCRaCE_h_5pLY8yGCLwA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [tip:core/urgent] WARN_ON_SMP(): Add comment to explain ({0;})
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Alexey Dobriyan <adobriyan@gmail.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-kernel@vger.kernel.org, mingo@redhat.com,
-        torvalds@linux-foundation.org, srostedt@redhat.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-In-Reply-To: <8fa65ade-2b9f-4f05-9b52-dfd770326f44@email.android.com>
-References: <tip-ccd0d44fad38dc1bb4b26dcc7a30e9f2c3b36870@git.kernel.org>
-	 <4D90A08D.707@zytor.com>
-	 <AANLkTinh6nraZND1mQJ4ofPbABOtJNEnGYYEkqs92RQM@mail.gmail.com>
-	 <4D90A1FE.4000405@zytor.com>
-	 <1301324940.14261.232.camel@gandalf.stny.rr.com>
-	 <20110328181855.GA6146@p183.telecom.by> <20110329073037.GK27398@elte.hu>
-	 <8fa65ade-2b9f-4f05-9b52-dfd770326f44@email.android.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 29 Mar 2011 10:47:28 -0400
-Message-ID: <1301410048.14261.279.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753475Ab1C2Ou2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 10:50:28 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:59587 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991Ab1C2Ou1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 10:50:27 -0400
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: <a.zummo@towertech.it>, "john stultz" <johnstul@us.ibm.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        <rtc-linux@googlegroups.com>
+References: 
+In-Reply-To: 
+Subject: RE: [PATCH] unicore32 rtc driver fix: cleanup irq_set_freq and irq_set_state
+Date: Tue, 29 Mar 2011 22:49:12 +0800
+Message-ID: <019901cbee20$78c93ed0$6a5bbc70$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AcvuH0Ye8MupKhvVQsiNdfhYLTAWSAAAG7vA
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 07:32 -0700, H. Peter Anvin wrote:
-> I think the question is what are the expected semantics if WARN_ON_SMP
-> is used in an if... especially for UP.
+While modifying my code, I found something error to the modification for drivers/rtc/rtc-s3c.c.
+When cleanup irq_set_state,  s3c_rtc_setpie() is removed.
+However, the function is still used inside the file.
 
-Well, actually this whole patchset was created because we added the
-semantic if (WARN_ON_SMP(x)).
+Guan Xuetao
 
-This patch: https://lkml.org/lkml/2011/3/11/463
-
-
-Added the following code:
-
-
-+static void __unqueue_futex(struct futex_q *q)
-+{
-+	struct futex_hash_bucket *hb;
-+
-+	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
-+			|| plist_node_empty(&q->list)))
-+		return;
-+
-+	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
-+	plist_del(&q->list, &hb->chain);
-+}
-
-
-Which on !CONFIG_SMP broke, because that "|| !spin_is_locked()" always
-return true and we trigger the WARN_ON() as well as returning early,
-breaking the code, and triggering bugs, as we never do the
-"plist_del()".
-
-To fix this, I added: https://lkml.org/lkml/2011/3/17/312
-
-Which does this change:
-
-@@ -785,8 +785,8 @@ static void __unqueue_futex(struct futex_q *q)
- {
- 	struct futex_hash_bucket *hb;
- 
--	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
--			|| plist_node_empty(&q->list)))
-+	if (WARN_ON_SMP(!q->lock_ptr || !spin_is_locked(q->lock_ptr))
-+	    || WARN_ON(plist_node_empty(&q->list)))
- 		return;
- 
- 	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
-
-
-But as WARN_ON_SMP() currently had no if () context, I needed to first
-make the change of: https://lkml.org/lkml/2011/3/17/313
-
-#ifdef CONFIG_SMP
- # define WARN_ON_SMP(x)			WARN_ON(x)
- #else
--# define WARN_ON_SMP(x)			do { } while (0)
-+# define WARN_ON_SMP(x)			({0;})
- #endif
-
-But if this is such a problem, we can revert all this and do:
-
-@@ -785,8 +785,11 @@ static void __unqueue_futex(struct futex_q *q)
- {
- 	struct futex_hash_bucket *hb;
- 
--	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
--			|| plist_node_empty(&q->list)))
-+#ifdef CONFIG_SMP
-+	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr))
-+		return;
-+#endif
-+	if (WARN_ON(plist_node_empty(&q->list)))
- 		return;
- 
- 	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
-
-
-And leave the WARN_ON_SMP() alone.
-
--- Steve
+> -----Original Message-----
+> From: Guan Xuetao [mailto:gxt@mprc.pku.edu.cn]
+> Sent: Tuesday, March 29, 2011 10:44 PM
+> To: 'a.zummo@towertech.it'; john stultz (johnstul@us.ibm.com); Thomas Gleixner (tglx@linutronix.de)
+> Cc: Arnd Bergmann (arnd@arndb.de); 'Guan Xuetao' (gxt@mprc.pku.edu.cn); 'linux-kernel@vger.kernel.org'; 'rtc-
+> linux@googlegroups.com'
+> Subject: [PATCH] unicore32 rtc driver fix: cleanup irq_set_freq and irq_set_state
+> 
+> 
+> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> ---
+>  arch/unicore32/kernel/rtc.c |    9 ---------
+>  1 files changed, 0 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/unicore32/kernel/rtc.c b/arch/unicore32/kernel/rtc.c
+> index c5f0682..8cad70b 100644
+> --- a/arch/unicore32/kernel/rtc.c
+> +++ b/arch/unicore32/kernel/rtc.c
+> @@ -88,11 +88,6 @@ static int puv3_rtc_setpie(struct device *dev, int enabled)
+>  	return 0;
+>  }
+> 
+> -static int puv3_rtc_setfreq(struct device *dev, int freq)
+> -{
+> -	return 0;
+> -}
+> -
+>  /* Time read/write */
+> 
+>  static int puv3_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
+> @@ -214,8 +209,6 @@ static const struct rtc_class_ops puv3_rtcops = {
+>  	.set_time	= puv3_rtc_settime,
+>  	.read_alarm	= puv3_rtc_getalarm,
+>  	.set_alarm	= puv3_rtc_setalarm,
+> -	.irq_set_freq	= puv3_rtc_setfreq,
+> -	.irq_set_state	= puv3_rtc_setpie,
+>  	.proc	        = puv3_rtc_proc,
+>  };
+> 
+> @@ -294,8 +287,6 @@ static int puv3_rtc_probe(struct platform_device *pdev)
+> 
+>  	puv3_rtc_enable(pdev, 1);
+> 
+> -	puv3_rtc_setfreq(&pdev->dev, 1);
+> -
+>  	/* register RTC and exit */
+> 
+>  	rtc = rtc_device_register("pkunity", &pdev->dev, &puv3_rtcops,
+> --
+> 1.6.2.2
 
 
