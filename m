@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab1C2Nhg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 09:37:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46110 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab1C2Nhf (ORCPT
+	id S1752883Ab1C2Njz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 09:39:55 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58183 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab1C2Njy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 09:37:35 -0400
-Subject: Re: [RFC] seqlock,lockdep: Add lock primitives to read_seqbegin().
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: rostedt@goodmis.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <201103290430.p2T4UhLA081016@www262.sakura.ne.jp>
-References: <201103261312.AEJ01293.OVFJFSLtHOFOMQ@I-love.SAKURA.ne.jp>
-	 <20110328171217.GA8529@home.goodmis.org>
-	 <201103290430.p2T4UhLA081016@www262.sakura.ne.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Mar 2011 15:39:44 +0200
-Message-ID: <1301405984.2250.402.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Mar 2011 09:39:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=i9v862MRI8lI2X+70F2BI2DTRhzhXJMmw7DN4jdHauXzMHZTOq33hTy0mnzZT+nOpo
+         tIh/NAxuD7eQOKpQJXVKyF4ac3fKNZHIlbSowcm+88Xr1Ap+iGrWRqzfqmWmKFpmN041
+         mU05FKLJbnAkvQsA0fNzUOuKBon2pI4VFF62E=
+MIME-Version: 1.0
+In-Reply-To: <1bdc18$k1kc9s@fmsmga002.fm.intel.com>
+References: <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
+	<1301401385-8935-1-git-send-email-chris@chris-wilson.co.uk>
+	<AANLkTin0bicOYyY2WCaBxN276t5RV-Q9UZVr=WQ6NmQe@mail.gmail.com>
+	<1bdc18$k1kc9s@fmsmga002.fm.intel.com>
+Date: Tue, 29 Mar 2011 16:39:53 +0300
+X-Google-Sender-Auth: h5BU6Swmb0ZKZRH3Y1bx9ufvc3Y
+Message-ID: <AANLkTi=Adq8i_qoiHhLB9K-CkUbT8uHZeg-H8Z3_Kgrw@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: Move the irq wait queue initialisation into the
+ ring init
+From: Pekka Enberg <penberg@kernel.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 13:30 +0900, Tetsuo Handa wrote:
+On Tue, Mar 29, 2011 at 4:22 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Tue, 29 Mar 2011 16:05:35 +0300, Pekka Enberg <penberg@kernel.org> wrote:
+>> On Tue, Mar 29, 2011 at 3:23 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> > Required so that we don't obliterate the queue if initialising the
+>> > rings after the global IRQ handler is installed.
+>> >
+>> > Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+>>
+>> I applied both of the patches on top of yesterdays git HEAD and I just
+>> get a blank screen after GRUB. No serial or net console here. Do you
+>> want me to try just one of the patches or turn on some debugging
+>> options?
+>
+> That was the unspoken side-effect: if we fail to load the i915 module after
+> disabling the outputs, then we would be left with a blank screen.
+>
+> If you can ssh in and retrieve the dmesg, then it should at least give a
+> reason...
 
-> static int locktest_open1(struct inode *inode, struct file *file)
-> {
-> 	write_seqlock(&seqlock1);
-> 	msleep(1000); /* Open /proc/locktest2 while sleeping here. */
-> 	br_read_lock(brlock1);
-> 	br_read_unlock(brlock1);
-> 	write_sequnlock(&seqlock1);
-> 	return -EINVAL;
-> }
-> 
-> static int locktest_open2(struct inode *inode, struct file *file)
-> {
-> 	br_write_lock(brlock1);
-> 	read_seqbegin2(&seqlock1);
-> 	br_write_unlock(brlock1);
-> 	return -EINVAL;
-> }
-> 
-> static int locktest_open3(struct inode *inode, struct file *file)
-> {
-> 	static DEFINE_MUTEX(mutex1);
-> 	mutex_lock(&mutex1);
-> 	locktest_open1(inode, file);
-> 	mutex_unlock(&mutex1);
-> 	return -EINVAL;
-> }
+I have
 
+CONFIG_DRM_I915=y
 
-That's quite horrid as far as test-cases go, why bother with the
-userspace part at all?
-
-In order to hit your inversion you need to do something like:
-
-cat /proc/locktest1 & cat /proc/locktest2
-
-if you do them serialized you'll never hit that inversion.
-
-
-That said, there are some out-standing issues with rw_locks and lockdep,
-Gautham and I worked on that for a while but we never persevered and
-finished it..
-
-  http://lkml.org/lkml/2009/5/11/203
-
-And I think you're hitting that case.
-
+so there are no modules involved. I'll see if I can ssh to the box.
