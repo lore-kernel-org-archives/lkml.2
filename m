@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510Ab1C2IBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 04:01:21 -0400
-Received: from ebb05.tieto.com ([131.207.168.36]:49809 "EHLO ebb05.tieto.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788Ab1C2IBU convert rfc822-to-8bit (ORCPT
+	id S1751786Ab1C2ICO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 04:02:14 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:41486 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751022Ab1C2ICM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 04:01:20 -0400
-X-AuditID: 83cfa824-b7c05ae0000063da-a6-4d9191ce8251
-From: <Waldemar.Rymarkiewicz@tieto.com>
-To: <sameo@linux.intel.com>, <arnd@arndb.de>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hthebaud@insidefr.com>, <matti.j.aaltonen@nokia.com>,
-        <alan@lxorguk.ukuu.org.uk>
-Date: Tue, 29 Mar 2011 11:00:59 +0300
-Subject: RE: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Thread-Topic: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Thread-Index: Acvq+LBFXfZeQmOsQeSYsQVhTbupEAC7jlrw
-Message-ID: <99B09243E1A5DA4898CDD8B7001114481085E2375D@EXMB04.eu.tieto.com>
-References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
- <1300444824-13713-2-git-send-email-waldemar.rymarkiewicz@tieto.com>
- <201103181319.54191.arnd@arndb.de> <20110325142648.GC3879@sortiz-mobl>
-In-Reply-To: <20110325142648.GC3879@sortiz-mobl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 29 Mar 2011 04:02:12 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18okHlX32EosGhCfGgJ4KS48hMMC3i7Gx0aSBnytx
+	+kL41nO8r4jyjv
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: /proc/sys/vm/dirty_writeback_centisecs value changed unexpectedly
+Date: Tue, 29 Mar 2011 10:01:59 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38.2; KDE/4.6.1; i686; ; )
 MIME-Version: 1.0
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103291002.02252.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Yes, NFC seems to be a good fit for a new socket family. 
->Especially if we ever want to have a proper NFC p2p support 
->from the kernel.
->Sending HCI commands should be done through a dedicated 
->netlink socket too.
->
->I am currently strting to work on such solution, and I hope to 
->be able to come up with a basic prototype for it in a few weeks.
+I'm wondering why the content of that file is changed from 1500 to 60000 after 
+I s2ram'ed the ThinkPad yesterday (docked) and waked it up today.
 
-What about common drivers interface in this case.  Should we go for common /dev/nfcX interface as well?
+I've a Gentoo system with kernel 2.6.38.2 and use /etc/conf.d/local.start to 
+set this value at boot to 1500.
 
-Waldek
+I think this is a regression althought it might be that this happened in 
+2.6.37 too. I cannot remember such a behaviour under 2.6.36.
+
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
