@@ -1,391 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457Ab1C2Jcl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 05:32:41 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10434 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934Ab1C2Jck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 05:32:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,260,1299484800"; 
-   d="scan'208";a="903009577"
-Subject: [RFC PATCH] perf report: add sort by file lines
-From: Lin Ming <ming.m.lin@intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Mar 2011 17:32:16 +0800
-Message-ID: <1301391136.14111.98.camel@minggr.sh.intel.com>
+	id S1751573Ab1C2Jdb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 05:33:31 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34864 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751022Ab1C2Jd3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 05:33:29 -0400
+Date: Tue, 29 Mar 2011 10:33:35 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Uwe =?ISO-8859-14?B?S2xlaW5lLUv2bmln?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-serial@vger.kernel.org,
+        torvalds@linux-foundation.org, kernel@pengutronix.de
+Subject: Re: Wrong GIT author ? also bugs: serial: Add uart driver for
+ i.MX23/28
+Message-ID: <20110329103335.7a5ff37d@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110329091456.GI30938@pengutronix.de>
+References: <201103180302.p2I326tA020159@hera.kernel.org>
+	<20110318112920.07148450@lxorguk.ukuu.org.uk>
+	<20110329091456.GI30938@pengutronix.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all
+> I don't understand how to do this and didn't find something like that in
+> other drivers. (I checked amba-pl011.c and imx.c.) Also
+> Documentation/serial/driver doesn't describe this. (It is also silent
+> about CMSPAR and doesn't even advise to clear unsupported bits.)
+> Can you be a bit more verbose here?
 
-This patch adds sort by file lines using dwarf debug info.
+8250.c is the best place to look.
 
-In order to add perf tool support for my load latency patches,
-I asked a question about data variable symbols.
-http://marc.info/?l=linux-kernel&m=129736540309559&w=2 
+Basically on return from your routine the _hardware_ bits of the termios
+struct should be the ones set.
 
-Peter suggested to reverse map the reported IP (PEBS + fixup)
-to a data access using dwarf info.
-So I wrote this patch to see if the direction is right.
+So eg if you only supported 8bit characters you'd wipe the CSx bits and
+set CS8.
 
-On Fri, Feb 11, 2011 at 3:17 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> Another way is to reverse map the reported IP (PEBS + fixup) to a data
-> access using the dwarf info. That would also work for dynamically
-> allocated data structures.
->
-> (clearly you'd loose variable things like which entry in an array, but
-> you should still be able to identify the structure members)
->
+For the speed there is a helper so you probably want
 
-$ ./perf report --stdio -k ~/vmlinux -s comm,dso,symbol,line
+        /* Don't rewrite B0 */
+        if (tty_termios_baud_rate(termios))
+                tty_termios_encode_baud_rate(termios, baud, baud);
 
-# Overhead      Command      Shared Object            Symbol                                           Line
-# ........  ...........  ..................  ...............  ..............................................
+> @@ -286,6 +283,9 @@ static void mxs_auart_settermios(struct uart_port *u,
+>  {
+>  	u32 bm, ctrl, ctrl2, div;
+>  	unsigned int cflag, baud;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&u->lock, flags);
 
-     0.99%          cc1  [kernel.kallsyms]   [k] check_bytes  /opt/linux-2.6/mm/slub.c:511                         
-     0.84%       fixdep  [kernel.kallsyms]   [k] check_bytes  /opt/linux-2.6/mm/slub.c:510                         
-     0.79%       fixdep  [kernel.kallsyms]   [k] check_bytes  /opt/linux-2.6/mm/slub.c:511                         
-     0.74%          cc1  [kernel.kallsyms]   [k] check_bytes  /opt/linux-2.6/mm/slub.c:513                         
-     0.71%       fixdep  [kernel.kallsyms]   [k] check_bytes  /opt/linux-2.6/mm/slub.c:513                         
-     0.71%          cc1  [kernel.kallsyms]   [k] page_fault   /opt/linux-2.6/arch/x86/kernel/entry_64.S:1336       
-     0.69%          cc1  cc1                 [.] 0x5ec3a3     0x5ec3a3                                             
-     0.67%          cc1  [kernel.kallsyms]   [k] clear_page_c /opt/linux-2.6/arch/x86/lib/clear_page_64.S:12  
+Termios you don't need the lock - just the IRQ handler and you still
+really want the tty_port_tty_get()/tty_kref_put() if that wasn't already
+dealt with.
 
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- tools/perf/util/hist.c   |   71 ++++++++++++++++++++++++++++++++++++++-------
- tools/perf/util/hist.h   |    4 ++
- tools/perf/util/sort.c   |   44 ++++++++++++++++++++++++++--
- tools/perf/util/sort.h   |    3 ++
- tools/perf/util/symbol.c |    4 ++
- tools/perf/util/symbol.h |    2 +
- 6 files changed, 114 insertions(+), 14 deletions(-)
-
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 627a02e..c1e95e4 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -17,6 +17,38 @@ struct callchain_param	callchain_param = {
- 	.min_percent = 0.5
- };
- 
-+static Dwarf_Line *hists__dwarf_line(struct map *map, u64 rip)
-+{
-+	Dwarf_Die cudie;
-+	Dwarf_Line *line = NULL;
-+	u64 ip;
-+
-+	if (!map || !map->dso || !map->dso->dwarf)
-+		return NULL;
-+
-+	ip = map->unmap_ip(map, rip);
-+	if (dwarf_addrdie(map->dso->dwarf, (Dwarf_Addr)ip, &cudie))
-+		line = dwarf_getsrc_die(&cudie, (Dwarf_Addr)ip);
-+
-+	return line;
-+}
-+
-+int hists__line(Dwarf_Line *line, char *buf, int len)
-+{
-+	int ret;
-+	const char *file;
-+	int lineno;
-+
-+	if (!line || !buf)
-+		return 0;
-+
-+	file = dwarf_linesrc(line, NULL, NULL);   
-+	dwarf_lineno(line, &lineno);
-+	ret = snprintf(buf, len, "%s:%d", file, lineno);
-+
-+	return ret;
-+}
-+
- u16 hists__col_len(struct hists *self, enum hist_column col)
- {
- 	return self->col_len[col];
-@@ -44,21 +76,25 @@ static void hists__reset_col_len(struct hists *self)
- 		hists__set_col_len(self, col, 0);
- }
- 
-+static void hists__set_unresolved_col_len(struct hists *self, enum hist_column col)
-+{
-+	const unsigned int unresolved_col_width = BITS_PER_LONG / 4 + 2;
-+
-+	if (hists__col_len(self, col) < unresolved_col_width &&
-+	    !symbol_conf.col_width_list_str && !symbol_conf.field_sep &&
-+	    !symbol_conf.dso_list)
-+		hists__set_col_len(self, col,
-+				   unresolved_col_width);
-+}
-+
- static void hists__calc_col_len(struct hists *self, struct hist_entry *h)
- {
- 	u16 len;
- 
- 	if (h->ms.sym)
--		hists__new_col_len(self, HISTC_SYMBOL, h->ms.sym->namelen);
--	else {
--		const unsigned int unresolved_col_width = BITS_PER_LONG / 4;
--
--		if (hists__col_len(self, HISTC_DSO) < unresolved_col_width &&
--		    !symbol_conf.col_width_list_str && !symbol_conf.field_sep &&
--		    !symbol_conf.dso_list)
--			hists__set_col_len(self, HISTC_DSO,
--					   unresolved_col_width);
--	}
-+		hists__new_col_len(self, HISTC_SYMBOL, h->ms.sym->namelen + 4);
-+	else
-+		hists__set_unresolved_col_len(self, HISTC_DSO);
- 
- 	len = thread__comm_len(h->thread);
- 	if (hists__new_col_len(self, HISTC_COMM, len))
-@@ -68,6 +104,15 @@ static void hists__calc_col_len(struct hists *self, struct hist_entry *h)
- 		len = dso__name_len(h->ms.map->dso);
- 		hists__new_col_len(self, HISTC_DSO, len);
- 	}
-+
-+	if (!h->line)
-+		hists__set_unresolved_col_len(self, HISTC_LINE);
-+	else {
-+		char tmp[BUFSIZ];
-+
-+		len = hists__line(h->line, tmp, BUFSIZ);
-+		hists__new_col_len(self, HISTC_LINE, len);
-+	}
- }
- 
- static void hist_entry__add_cpumode_period(struct hist_entry *self,
-@@ -103,8 +148,11 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 	if (self != NULL) {
- 		*self = *template;
- 		self->nr_events = 1;
--		if (self->ms.map)
-+		if (self->ms.map) {
- 			self->ms.map->referenced = true;
-+
-+			self->line = hists__dwarf_line(self->ms.map, self->ip); 
-+		}
- 		if (symbol_conf.use_callchain)
- 			callchain_init(self->callchain);
- 	}
-@@ -142,6 +190,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
- 		},
- 		.cpu	= al->cpu,
- 		.ip	= al->addr,
-+		.line	= hists__dwarf_line(al->map, al->addr),
- 		.level	= al->level,
- 		.period	= period,
- 		.parent = sym_parent,
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 3beb97c..07e0f04 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/types.h>
- #include "callchain.h"
-+#include <elfutils/libdw.h>
- 
- extern struct callchain_param callchain_param;
- 
-@@ -39,6 +40,7 @@ enum hist_column {
- 	HISTC_COMM,
- 	HISTC_PARENT,
- 	HISTC_CPU,
-+	HISTC_LINE,
- 	HISTC_NR_COLS, /* Last entry */
- };
- 
-@@ -85,6 +87,8 @@ u16 hists__col_len(struct hists *self, enum hist_column col);
- void hists__set_col_len(struct hists *self, enum hist_column col, u16 len);
- bool hists__new_col_len(struct hists *self, enum hist_column col, u16 len);
- 
-+int hists__line(Dwarf_Line *line, char *buf, int len);
-+
- struct perf_evlist;
- 
- #ifdef NO_NEWT_SUPPORT
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index f44fa54..cfbdb6c 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -27,6 +27,9 @@ static int hist_entry__parent_snprintf(struct hist_entry *self, char *bf,
- 				       size_t size, unsigned int width);
- static int hist_entry__cpu_snprintf(struct hist_entry *self, char *bf,
- 				    size_t size, unsigned int width);
-+static int hist_entry__line_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width);
-+
- 
- struct sort_entry sort_thread = {
- 	.se_header	= "Command:  Pid",
-@@ -71,6 +74,13 @@ struct sort_entry sort_cpu = {
- 	.se_width_idx	= HISTC_CPU,
- };
- 
-+struct sort_entry sort_line = {
-+	.se_header      = "Line",
-+	.se_cmp	        = sort__line_cmp,
-+	.se_snprintf    = hist_entry__line_snprintf,
-+	.se_width_idx	= HISTC_LINE,
-+};
-+
- struct sort_dimension {
- 	const char		*name;
- 	struct sort_entry	*entry;
-@@ -84,6 +94,7 @@ static struct sort_dimension sort_dimensions[] = {
- 	{ .name = "symbol",	.entry = &sort_sym,	},
- 	{ .name = "parent",	.entry = &sort_parent,	},
- 	{ .name = "cpu",	.entry = &sort_cpu,	},
-+	{ .name = "line",	.entry = &sort_line,	},
- };
- 
- int64_t cmp_null(void *l, void *r)
-@@ -190,7 +201,7 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
- }
- 
- static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
--				    size_t size, unsigned int width __used)
-+				    size_t size, unsigned int width)
- {
- 	size_t ret = 0;
- 
-@@ -202,11 +213,11 @@ static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
- 
- 	ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", self->level);
- 	if (self->ms.sym)
--		ret += repsep_snprintf(bf + ret, size - ret, "%s",
-+		ret += repsep_snprintf(bf + ret, size - ret, "%-*s", width - 4,
- 				       self->ms.sym->name);
- 	else
- 		ret += repsep_snprintf(bf + ret, size - ret, "%-#*llx",
--				       BITS_PER_LONG / 4, self->ip);
-+				       width - 4, self->ip);
- 
- 	return ret;
- }
-@@ -266,6 +277,31 @@ static int hist_entry__cpu_snprintf(struct hist_entry *self, char *bf,
- 	return repsep_snprintf(bf, size, "%-*d", width, self->cpu);
- }
- 
-+
-+/* --sort line */
-+
-+int64_t
-+sort__line_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	if (!left->line || !right->line)
-+		return (int64_t)(left->ip - right->ip);
-+
-+	return (unsigned long)left->line - (unsigned long)right->line;
-+}
-+
-+static int hist_entry__line_snprintf(struct hist_entry *self, char *bf,
-+				       size_t size, unsigned int width)
-+{
-+	char buf[BUFSIZ];
-+
-+	if (!self->line)
-+		return repsep_snprintf(bf, size, "%-#*llx", width, self->ip);
-+
-+	hists__line(self->line, buf, BUFSIZ);
-+
-+	return repsep_snprintf(bf, size, "%-*s", width, buf);
-+}
-+
- int sort_dimension__add(const char *tok)
- {
- 	unsigned int i;
-@@ -307,6 +343,8 @@ int sort_dimension__add(const char *tok)
- 				sort__first_dimension = SORT_PARENT;
- 			else if (!strcmp(sd->name, "cpu"))
- 				sort__first_dimension = SORT_CPU;
-+			else if (!strcmp(sd->name, "line"))
-+				sort__first_dimension = SORT_LINE;
- 		}
- 
- 		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 0b91053..d2a4424 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -53,6 +53,7 @@ struct hist_entry {
- 	u64			period_guest_us;
- 	struct map_symbol	ms;
- 	struct thread		*thread;
-+	Dwarf_Line		*line;
- 	u64			ip;
- 	s32			cpu;
- 	u32			nr_events;
-@@ -80,6 +81,7 @@ enum sort_type {
- 	SORT_SYM,
- 	SORT_PARENT,
- 	SORT_CPU,
-+	SORT_LINE,
- };
- 
- /*
-@@ -116,6 +118,7 @@ extern int64_t sort__dso_cmp(struct hist_entry *, struct hist_entry *);
- extern int64_t sort__sym_cmp(struct hist_entry *, struct hist_entry *);
- extern int64_t sort__parent_cmp(struct hist_entry *, struct hist_entry *);
- int64_t sort__cpu_cmp(struct hist_entry *left, struct hist_entry *right);
-+int64_t sort__line_cmp(struct hist_entry *left, struct hist_entry *right);
- extern size_t sort__parent_print(FILE *, struct hist_entry *, unsigned int);
- extern int sort_dimension__add(const char *);
- void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 17df793..ddaf396 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -240,6 +240,8 @@ void dso__delete(struct dso *self)
- 		free((char *)self->short_name);
- 	if (self->lname_alloc)
- 		free(self->long_name);
-+	if (self->dwarf)
-+		dwarf_end(self->dwarf);
- 	free(self);
- }
- 
-@@ -1052,6 +1054,8 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 	int nr = 0;
- 	size_t opdidx = 0;
- 
-+	self->dwarf = dwarf_begin(fd, DWARF_C_READ);
-+
- 	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
- 	if (elf == NULL) {
- 		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 713b0b4..e07b907 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -8,6 +8,7 @@
- #include <linux/list.h>
- #include <linux/rbtree.h>
- #include <stdio.h>
-+#include <elfutils/libdw.h>
- 
- #ifdef HAVE_CPLUS_DEMANGLE
- extern char *cplus_demangle(const char *, int);
-@@ -135,6 +136,7 @@ struct dso {
- 	struct list_head node;
- 	struct rb_root	 symbols[MAP__NR_TYPES];
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
-+	Dwarf		 *dwarf;
- 	enum dso_kernel_type	kernel;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
-
-
+(You may not need it but its easier to put in than prove with the serial
+layer at the moment)
