@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab1C2XgI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 19:36:08 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:49718 "EHLO relay.sgi.com"
+	id S1754774Ab1C2XgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 19:36:07 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:49714 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752112Ab1C2XgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751746Ab1C2XgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Mar 2011 19:36:04 -0400
-Message-Id: <20110329233602.735667875@gulag1.americas.sgi.com>
+Message-Id: <20110329233602.439245439@gulag1.americas.sgi.com>
 References: <20110329233602.272459647@gulag1.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Tue, 29 Mar 2011 18:36:05 -0500
+Date: Tue, 29 Mar 2011 18:36:03 -0500
 From: Mike Travis <travis@sgi.com>
 To: David Woodhouse <dwmw2@infradead.org>,
         Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Mike Habeck <habeck@sgi.com>, iommu@lists.linux-foundation.org,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] Intel pci: Limit dmar_init_reserved_ranges
-Content-Disposition: inline; filename=limit-dmar_init_reserved_ranges
+Subject: [PATCH 1/4] Intel pci: Remove Host Bridge devices from identity mapping
+Content-Disposition: inline; filename=intel-iommu-pass-thru-fix
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    dmar_init_reserved_ranges() reserves the card's MMIO ranges to
-    prevent handing out a DMA map that would overlap with the MMIO range.
-    The problem while the Nvidia GPU has 64bit BARs, it's capable of
-    receiving > 40bit PIOs, but can't generate > 40bit DMAs.
+    When the IOMMU is being used, each request for a DMA mapping requires
+    the intel_iommu code to look for some space in the DMA mapping table.
+    For most drivers this occurs for each transfer.
 
-    So when the iommu code reserves these MMIO ranges a > 40bit
-    entry ends up getting in the rbtree.  On a UV test system with
-    the Nvidia cards, the BARs are:
+    When there are many outstanding DMA mappings [as seems to be the case
+    with the 10GigE driver], the table grows large and the search for
+    space becomes increasingly time consuming.  Performance for the
+    10GigE driver drops to about 10% of it's capacity on a UV system
+    when the CPU count is large.
 
-      0001:36:00.0 VGA compatible controller: nVidia Corporation GT200GL 
-	  Region 0: Memory at 92000000 (32-bit, non-prefetchable) [size=16M]
-	  Region 1: Memory at f8200000000 (64-bit, prefetchable) [size=256M]
-	  Region 3: Memory at 90000000 (64-bit, non-prefetchable) [size=32M]
+    The workaround is to specify the iommu=pt option which sets up a 1:1
+    identity map for those devices that support enough DMA address bits to
+    cover the physical system memory.  This is the "pass through" option.
 
-    So this 44bit MMIO address 0xf8200000000 ends up in the rbtree.  As DMA
-    maps get added and deleted from the rbtree we can end up getting a cached
-    entry to this 0xf8200000000 entry... this is what results in the code
-    handing out the invalid DMA map of 0xf81fffff000:
+    But this can only be accomplished by those devices that pass their
+    DMA data through the IOMMU (VTd).  But Host Bridge Devices connected
+    to System Sockets do not pass their data through the VTd, thus the
+    following error occurs:
 
-	    [ 0xf8200000000-1 >> PAGE_SIZE << PAGE_SIZE ]
+    IOMMU: hardware identity mapping for device 1000:3e:00.0
+    Failed to setup IOMMU pass-through
+    BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
 
-    The IOVA code needs to better honor the "limit_pfn" when allocating
-    these maps.
+    This patch fixes that problem but removing Host Bridge devices from
+    being identity mapped, given that they do not generate DMA ops anyways.
 
 Signed-off-by: Mike Travis <travis@sgi.com>
 Reviewed-by: Mike Habeck <habeck@sgi.com>
 ---
- drivers/pci/intel-iommu.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/pci/intel-iommu.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
 --- linux.orig/drivers/pci/intel-iommu.c
 +++ linux/drivers/pci/intel-iommu.c
-@@ -1323,7 +1323,8 @@ static void dmar_init_reserved_ranges(vo
+@@ -46,6 +46,7 @@
+ #define ROOT_SIZE		VTD_PAGE_SIZE
+ #define CONTEXT_SIZE		VTD_PAGE_SIZE
  
- 		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
- 			r = &pdev->resource[i];
--			if (!r->flags || !(r->flags & IORESOURCE_MEM))
-+			if (!r->flags || !(r->flags & IORESOURCE_MEM) ||
-+			    r->start > pdev->dma_mask)
- 				continue;
- 			iova = reserve_iova(&reserved_iova_list,
- 					    IOVA_PFN(r->start),
++#define IS_HOSTBRIDGE_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_HOST)
+ #define IS_GFX_DEVICE(pdev) ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
+ #define IS_ISA_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_ISA)
+ #define IS_AZALIA(pdev) ((pdev)->vendor == 0x8086 && (pdev)->device == 0x3a3e)
+@@ -2183,7 +2184,7 @@ static int iommu_should_identity_map(str
+ 	 * take them out of the 1:1 domain later.
+ 	 */
+ 	if (!startup)
+-		return pdev->dma_mask > DMA_BIT_MASK(32);
++		return pdev->dma_mask == DMA_BIT_MASK(64);
+ 
+ 	return 1;
+ }
+@@ -2198,6 +2199,9 @@ static int __init iommu_prepare_static_i
+ 		return -EFAULT;
+ 
+ 	for_each_pci_dev(pdev) {
++		/* Skip PCI Host Bridge devices */
++		if (IS_HOSTBRIDGE_DEVICE(pdev))
++			continue;
+ 		if (iommu_should_identity_map(pdev, 1)) {
+ 			printk(KERN_INFO "IOMMU: %s identity mapping for device %s\n",
+ 			       hw ? "hardware" : "software", pci_name(pdev));
 
 -- 
