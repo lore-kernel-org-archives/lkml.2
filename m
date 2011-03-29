@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab1C2TJy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 15:09:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58892 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab1C2TJx (ORCPT
+	id S1753082Ab1C2TQC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 15:16:02 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64570 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab1C2TQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 15:09:53 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=QQXixWDqseIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=yf7tFXOqs6SvTWheinQA:9 a=YAE0QbMEHybjuxntPRrWHfnHCoEA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH] lockdep: Print a nice description of an irq
- locking issue
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <20110329182154.GA18913@elte.hu>
-References: <1301418845.14261.284.camel@gandalf.stny.rr.com>
-	 <20110329182131.GB16244@elte.hu>  <20110329182154.GA18913@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 29 Mar 2011 15:09:50 -0400
-Message-ID: <1301425790.14261.290.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Mar 2011 15:16:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=pEGydfD67ospQWWUl2eiFpWb9xHCwzg+NfOMmcc2ZiTJFUXC0AdVcdFf3pht28Gn3u
+         t44h4xMmhxGVk8NqKNaETd15cH+Y2jDb5c2EFM+QRfYWqf3TlKiCVBADznqR4r6W+Ffm
+         Z2/OtSaWXbF+RoyocdJxq9FuZJc/o4GUjma3c=
+MIME-Version: 1.0
+In-Reply-To: <20110329181524.GA5140@Xye>
+References: <20110326224408.GA1336@Xye> <20110328144721.GB17872@ghostprotocols.net>
+ <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com> <20110329181524.GA5140@Xye>
+From: Michael Witten <mfwitten@gmail.com>
+Date: Tue, 29 Mar 2011 14:15:30 -0500
+Message-ID: <AANLkTi=3Wq3Xt-QFR-FLRQ1kBjpWjaBZNFpOiE_T15WH@mail.gmail.com>
+Subject: Re: [PATCH] Use the environment variable PYTHON if defined
+To: Raghavendra D Prabhu <rprabhu@wnohang.net>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 20:21 +0200, Ingo Molnar wrote:
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > * Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > After having to explain lockdep interrupt locking inversions a few
-> > > times, I decided to have lockdep spit out the scenario that it is
-> > > complaining about.
-> > 
-> > Looks very useful!
-> > 
-> > Would you be interested in extending this to other lockdep splats as well? 
+On Tue, Mar 29, 2011 at 13:15, Raghavendra D Prabhu <rprabhu@wnohang.net> wrote:
+> the patch submitted by Michael seems to be taking care of far
+> more cases than mine, so that is much better.
 
-Sure, that should not be a problem.
-
-> 
-> In separate patches, of course.
-
-Of course ;)
-
--- Steve
-
-
+One major issue with my current patch is that I opted to stop the
+build with an error message even when using the default python command
+names; is this undesirable? Is it better to fail silently as before
+(via the somewhat cryptic Python.h message), or is it better to force
+the user to specify that no python support should be built?
