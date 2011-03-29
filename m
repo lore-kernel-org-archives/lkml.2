@@ -1,194 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab1C2Kql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 06:46:41 -0400
-Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:53228
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752453Ab1C2Kqj (ORCPT
+	id S1752736Ab1C2Krk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 06:47:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51143 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab1C2Krj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 06:46:39 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: intel-gfx@lists.freedesktop.org
-Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH] drm/i915: Disable all outputs early, before KMS takeover
-Date: Tue, 29 Mar 2011 11:46:29 +0100
-Message-Id: <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <AANLkTi=VqkYjdiDLJvM-OfmBSGx-EkRkt=4XCDEnvZsU@mail.gmail.com>
-References: <AANLkTi=VqkYjdiDLJvM-OfmBSGx-EkRkt=4XCDEnvZsU@mail.gmail.com>
-X-Originating-IP: 78.156.66.37
+	Tue, 29 Mar 2011 06:47:39 -0400
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
+ value
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <1301387532.4859.54.camel@twins>
+References: <20110324164436.GC1930@jolsa.brq.redhat.com>
+	 <1301153868.2250.359.camel@laptop> <20110326161346.GA18272@redhat.com>
+	 <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com>
+	 <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop>
+	 <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins>
+	 <1301327368.4859.28.camel@twins>  <20110328165648.GA9304@redhat.com>
+	 <1301387532.4859.54.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Mar 2011 12:49:49 +0200
+Message-ID: <1301395789.2250.376.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the outputs are active and continuing to access the GATT when we
-teardown the PTEs, then there is a potential for us to hang the GPU.
-The hang tends to be a PGTBL_ER with either an invalid host access or
-an invalid display plane fetch.
+On Tue, 2011-03-29 at 10:32 +0200, Peter Zijlstra wrote:
+> @@ -2922,15 +2926,40 @@ static void free_event(struct perf_event
+>         call_rcu(&event->rcu_head, free_event_rcu);
+>  }
+>  
+> -int perf_event_release_kernel(struct perf_event *event)
+> +static int __perf_event_release(void *info)
+>  {
+> +       struct perf_event *event = info;
+>         struct perf_event_context *ctx = event->ctx;
+> +       struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
+> +       int ret;
+>  
+>         /*
+> -        * Remove from the PMU, can't get re-enabled since we got
+> -        * here because the last ref went.
+> +        * Disable the event if its still running, we're shutting down.
+>          */
+> -       perf_event_disable(event);
+> +       ret = __perf_event_disable(info);
+> +       if (ret)
+> +               return ret;
+> +
+> +       raw_spin_lock_irq(&ctx->lock);
+> +       perf_group_detach(event);
+> +       list_del_event(event, ctx);
+> +       /*
+> +        * In case we removed the last event from an active task_ctx
+> +        * deactivate the task_ctx because this event being freed might
+> +        * lead to the perf_sched_events jump_label being disabled
+> +        * which avoids the task sched-out hook from being called.
+> +        */
+> +       if (!ctx->nr_events && cpuctx->task_ctx == ctx) {
+> +               ctx->is_active = 0;
+> +               cpuctx->task_ctx = NULL;
+> +       }
+> +       raw_spin_unlock_irq(&ctx->lock);
+> +}
+> +
+> +int perf_event_release_kernel(struct perf_event *event)
+> +{
+> +       struct perf_event_context *ctx = event->ctx;
+> +       struct task_struct *task = ctx->task;
+>  
+>         WARN_ON_ONCE(ctx->parent_ctx);
+>         /*
+> @@ -2946,10 +2975,28 @@ int perf_event_release_kernel(struct per
+>          *     to trigger the AB-BA case.
+>          */
+>         mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
+> +       if (!task) {
+> +               cpu_function_call(event->cpu, __perf_event_release, event);
+> +               goto unlock;
+> +       }
+> +
+> +retry:
+> +       if (!task_function_call(task, __perf_event_release, event))
+> +               goto unlock;
+> +
+>         raw_spin_lock_irq(&ctx->lock);
+> +       if (ctx->is_active) {
+> +               raw_spin_unlock_irq(&ctx->lock);
+> +               goto retry;
+> +       }
+> +
+> +       WARN_ON_ONCE(event->state == PERF_EVENT_STATE_ACTIVE);
+> +
+>         perf_group_detach(event);
+>         list_del_event(event, ctx);
+>         raw_spin_unlock_irq(&ctx->lock);
+> +
+> +unlock:
+>         mutex_unlock(&ctx->mutex);
+>  
+>         free_event(event);
 
-Reported-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
----
- drivers/gpu/drm/i915/i915_dma.c      |   31 ++++++++++++++++++++++---------
- drivers/gpu/drm/i915/i915_drv.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |   17 +++++++++++------
- 3 files changed, 34 insertions(+), 15 deletions(-)
+we can simplify that and use perf_remove_from_context(), except that
+changes the close() semantics slightly for grouped events, the current
+code will I think deschedule the complete group when you close the
+leader, when using pref_remote_from_context() we'll promote the siblings
+to individual events and let them run when you close the leader.
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 7273037..65d5adf 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1176,11 +1176,11 @@ static bool i915_switcheroo_can_switch(struct pci_dev *pdev)
- 	return can_switch;
- }
- 
--static int i915_load_modeset_init(struct drm_device *dev)
-+static int i915_load_gem_init(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	unsigned long prealloc_size, gtt_size, mappable_size;
--	int ret = 0;
-+	int ret;
- 
- 	prealloc_size = dev_priv->mm.gtt->stolen_size;
- 	gtt_size = dev_priv->mm.gtt->gtt_total_entries << PAGE_SHIFT;
-@@ -1204,7 +1204,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 	ret = i915_gem_init_ringbuffer(dev);
- 	mutex_unlock(&dev->struct_mutex);
- 	if (ret)
--		goto out;
-+		return ret;
- 
- 	/* Try to set up FBC with a reasonable compressed buffer size */
- 	if (I915_HAS_FBC(dev) && i915_powersave) {
-@@ -1222,6 +1222,13 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 
- 	/* Allow hardware batchbuffers unless told otherwise. */
- 	dev_priv->allow_batchbuffer = 1;
-+	return 0;
-+}
-+
-+static int i915_load_modeset_init(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	int ret;
- 
- 	ret = intel_parse_bios(dev);
- 	if (ret)
-@@ -1236,7 +1243,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 	 */
- 	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
- 	if (ret && ret != -ENODEV)
--		goto cleanup_ringbuffer;
-+		goto out;
- 
- 	intel_register_dsm_handler();
- 
-@@ -1257,13 +1264,19 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 	if (ret)
- 		goto cleanup_vga_switcheroo;
- 
-+	ret = i915_load_gem_init(dev);
-+	if (ret)
-+		goto cleanup_irq;
-+
-+	intel_modeset_gem_init(dev);
-+
- 	/* Always safe in the mode setting case. */
- 	/* FIXME: do pre/post-mode set stuff in core KMS code */
- 	dev->vblank_disable_allowed = 1;
- 
- 	ret = intel_fbdev_init(dev);
- 	if (ret)
--		goto cleanup_irq;
-+		goto cleanup_gem;
- 
- 	drm_kms_helper_poll_init(dev);
- 
-@@ -1272,16 +1285,16 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 
- 	return 0;
- 
-+cleanup_gem:
-+	mutex_lock(&dev->struct_mutex);
-+	i915_gem_cleanup_ringbuffer(dev);
-+	mutex_unlock(&dev->struct_mutex);
- cleanup_irq:
- 	drm_irq_uninstall(dev);
- cleanup_vga_switcheroo:
- 	vga_switcheroo_unregister_client(dev->pdev);
- cleanup_vga_client:
- 	vga_client_register(dev->pdev, NULL, NULL, NULL);
--cleanup_ringbuffer:
--	mutex_lock(&dev->struct_mutex);
--	i915_gem_cleanup_ringbuffer(dev);
--	mutex_unlock(&dev->struct_mutex);
- out:
- 	return ret;
- }
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 359ddce..60ebd79 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1268,6 +1268,7 @@ static inline void intel_unregister_dsm_handler(void) { return; }
- 
- /* modesetting */
- extern void intel_modeset_init(struct drm_device *dev);
-+extern void intel_modeset_gem_init(struct drm_device *dev);
- extern void intel_modeset_cleanup(struct drm_device *dev);
- extern int intel_modeset_vga_set_state(struct drm_device *dev, bool state);
- extern void i8xx_disable_fbc(struct drm_device *dev);
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 432fc04..5c7385b 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6497,6 +6497,9 @@ static void intel_setup_outputs(struct drm_device *dev)
- 	}
- 
- 	intel_panel_setup_backlight(dev);
-+
-+	/* disable all the possible outputs/crtcs before entering KMS mode */
-+	drm_helper_disable_unused_functions(dev);
- }
- 
- static void intel_user_framebuffer_destroy(struct drm_framebuffer *fb)
-@@ -7432,13 +7435,12 @@ void intel_modeset_init(struct drm_device *dev)
- 		intel_crtc_init(dev, i);
- 	}
- 
-+	/* Just disable it once at startup */
-+	i915_disable_vga(dev);
- 	intel_setup_outputs(dev);
- 
- 	intel_enable_clock_gating(dev);
- 
--	/* Just disable it once at startup */
--	i915_disable_vga(dev);
--
- 	if (IS_IRONLAKE_M(dev)) {
- 		ironlake_enable_drps(dev);
- 		intel_init_emon(dev);
-@@ -7447,12 +7449,15 @@ void intel_modeset_init(struct drm_device *dev)
- 	if (IS_GEN6(dev))
- 		gen6_enable_rps(dev_priv);
- 
--	if (IS_IRONLAKE_M(dev))
--		ironlake_enable_rc6(dev);
--
- 	INIT_WORK(&dev_priv->idle_work, intel_idle_update);
- 	setup_timer(&dev_priv->idle_timer, intel_gpu_idle_timer,
- 		    (unsigned long)dev);
-+}
-+
-+void intel_modeset_gem_init(struct drm_device *dev)
-+{
-+	if (IS_IRONLAKE_M(dev))
-+		ironlake_enable_rc6(dev);
- 
- 	intel_setup_overlay(dev);
- }
--- 
-1.7.4.1
+I'm fairly sure no-one _should_ rely on that, but they _might_..
 
