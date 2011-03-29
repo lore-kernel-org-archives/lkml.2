@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab1C2XjD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 19:39:03 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42590 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751683Ab1C2XjC (ORCPT
+	id S1754733Ab1C2XkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 19:40:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34906 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751683Ab1C2XkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 19:39:02 -0400
-Date: Wed, 30 Mar 2011 08:39:10 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: David Collins <collinsd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] regulator: When constraining modes fall back to higher
- power modes
-Message-ID: <20110329233909.GN30482@opensource.wolfsonmicro.com>
-References: <1301434152-16393-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1301441364.3402.41.camel@odin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301441364.3402.41.camel@odin>
-X-Cookie: You are standing on my toes.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 Mar 2011 19:40:18 -0400
+Date: Tue, 29 Mar 2011 16:39:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Paul Menage <menage@google.com>
+Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, ebiederm@xmission.com,
+        lizf@cn.fujitsu.com, matthltc@us.ibm.com, oleg@redhat.com,
+        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
+Subject: Re: [PATCH v8.5 3/3] cgroups: make procs file writable
+Message-Id: <20110329163917.6b5d4149.akpm@linux-foundation.org>
+In-Reply-To: <BANLkTikMgd5HvMyC1BTGzAtj_=Jk=wZm+A@mail.gmail.com>
+References: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>
+	<20110208013950.GF31569@ghc17.ghc.andrew.cmu.edu>
+	<AANLkTinEnNsu8=PEktXL_EECzGYqsgdf+uogGxe7k4W+@mail.gmail.com>
+	<20110310061831.GA23736@ghc17.ghc.andrew.cmu.edu>
+	<AANLkTikkmfwk0nV0p=omz2ddrw+ZqWF1Lx3EfO6dTjEQ@mail.gmail.com>
+	<20110315211353.GA9992@ghc17.ghc.andrew.cmu.edu>
+	<AANLkTim4z_x_UQE__f5t73Dimja8PTTXTKKgj2phv6FY@mail.gmail.com>
+	<20110322051841.GA12055@ghc17.ghc.andrew.cmu.edu>
+	<BANLkTikMgd5HvMyC1BTGzAtj_=Jk=wZm+A@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 12:29:24AM +0100, Liam Girdwood wrote:
+On Tue, 29 Mar 2011 16:27:19 -0700
+Paul Menage <menage@google.com> wrote:
 
-> It's late and I'm wondering if it's cleaner here just to :-
+> On Mon, Mar 21, 2011 at 10:18 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
+> > Makes procs file writable to move all threads by tgid at once
+> >
+> > From: Ben Blum <bblum@andrew.cmu.edu>
+> >
+> > This patch adds functionality that enables users to move all threads in a
+> > threadgroup at once to a cgroup by writing the tgid to the 'cgroup.procs'
+> > file. This current implementation makes use of a per-threadgroup rwsem that's
+> > taken for reading in the fork() path to prevent newly forking threads within
+> > the threadgroup from "escaping" while the move is in progress.
+> >
+> > Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
 > 
-> if (mask & *mode)
-> 	return 0;
+> Reviewed-by: Paul Menage <menage@google.com>
+> 
+> OK, I guess this is ready to go in :-)
 
-> *mode = fls(mask);
-> if (*mode)
-> 	return 0;
-
-This will end up selecting the highest mode in mask, even if it's lower
-than the one asked for, you'd need to recheck against the original mask.
-There's a few ways I can think of to do that but they're none of them
-exceptionally pretty.
+It all needs a refresh, retest and resend please.
