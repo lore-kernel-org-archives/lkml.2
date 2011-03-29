@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab1C2ONU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 10:13:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36535 "EHLO mx1.redhat.com"
+	id S1753736Ab1C2ONp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 10:13:45 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:37943 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753463Ab1C2ONU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 10:13:20 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] block: eliminate ELEVATOR_INSERT_REQUEUE (was: Re: elevator private data for REQ_FLUSH)
-References: <20110325151530.GA4414@swordfish.minsk.epam.com>
-	<20110325152228.GA1707@gentoo.trippels.de>
-	<20110325154024.GA16029@redhat.com> <4D8CB9C9.5010208@kernel.dk>
-	<20110325185455.GA2969@redhat.com> <4D8CF202.9010809@kernel.dk>
-	<20110326042156.GB28458@redhat.com>
-	<20110328082321.GC16530@htj.dyndns.org>
-	<20110328221547.GA1118@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 29 Mar 2011 10:13:05 -0400
-In-Reply-To: <20110328221547.GA1118@redhat.com> (Mike Snitzer's message of
-	"Mon, 28 Mar 2011 18:15:47 -0400")
-Message-ID: <x49y63yvwum.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753463Ab1C2ONn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 10:13:43 -0400
+Message-ID: <4D91E912.7060307@parallels.com>
+Date: Tue, 29 Mar 2011 09:13:38 -0500
+From: Rob Landley <rlandley@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
+References: <4D9179EE.9040707@parallels.com> <4D917DB1.9030300@fusionio.com> <4D919DE5.1010509@parallels.com> <4D91E5CE.1080803@fusionio.com>
+In-Reply-To: <4D91E5CE.1080803@fusionio.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Snitzer <snitzer@redhat.com> writes:
+On 03/29/2011 08:59 AM, Jens Axboe wrote:
+> On 2011-03-29 10:52, Rob Landley wrote:
+>> I'm booting all this under kvm or qemu, by the way:
+>>
+>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
+>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
+>>
+>> Sometimes with init=/bin/bash in that last quoted bit.  The root
+>> filesystem's debian sid but that's probably not relevant because it
+>> worked fine with .38.
+> 
+> Does this help?
+> 
+> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
+> index 0e406d73..ca27d30 100644
+> --- a/drivers/ide/ide-io.c
+> +++ b/drivers/ide/ide-io.c
+> @@ -570,8 +570,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
+>  	spin_unlock_irqrestore(q->queue_lock, flags);
+>  
+>  	/* Use 3ms as that was the old plug delay */
+> -	if (rq)
+> -		blk_delay_queue(q, 3);
+> +	blk_delay_queue(q, 3);
+>  }
+>  
+>  static int drive_is_ready(ide_drive_t *drive)
+> 
 
-> OK, I came up with the following patch.
->
-> Jens, this is just a natural cleanup given the code that resulted from
-> the flush-merge and onstack plugging changes coming together.
->
->
-> From: Mike Snitzer <snitzer@redhat.com>
-> Subject: block: eliminate ELEVATOR_INSERT_REQUEUE
->
-> elv_insert() no longer has a need to differentiate between
-> ELEVATOR_INSERT_REQUEUE and ELEVATOR_INSERT_FRONT.  The onstack plugging
-> changes eliminated the need to avoid unplugging the queue (via
-> ELEVATOR_INSERT_REQUEUE).
->
-> Also, in blk_insert_flush(), use elv_insert() with ELEVATOR_INSERT_FRONT
-> rather than open-coding the equivalent.
+Nope, still hung the same way.
 
-What you change by doing the call to elv_insert is that now the request
-will have REQ_SOFTBARRIER set.  I don't think that affects anything,
-though (I checked).  The rest looks pretty straight-forward.
-
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Rob
