@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab1C2MEq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 08:04:46 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49873 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab1C2MEo (ORCPT
+	id S1753291Ab1C2MIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 08:08:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50341 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab1C2MIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 08:04:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Date: Tue, 29 Mar 2011 14:04:38 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Waldemar.Rymarkiewicz@tieto.com, sameo@linux.intel.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hthebaud@insidefr.com, matti.j.aaltonen@nokia.com
-References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com> <201103291305.02293.arnd@arndb.de> <20110329125931.21a69776@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110329125931.21a69776@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103291404.39023.arnd@arndb.de>
-X-Provags-ID: V02:K0:n5WCYJlYjdMz39V1TodaMjAfqCODg33hSGvpYRAz2c6
- 8aWZP+wMsP3N8YKg7zgFsREGNf7rRPpnP8TZoY+h1VreSPDfmi
- jg9roqSvWJ5EDX394lN+LDZxlpysieLMBq2zUrEp/OAYU9Dgt4
- eZsksap3M4p/xqJEZzBbPpIsEwJ5wzmzgCt9NELWBhOuehQzeD
- ZU1qVJT5jPSv0jAVNjIdg==
+	Tue, 29 Mar 2011 08:08:09 -0400
+From: Jamie Iles <jamie@jamieiles.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@suse.de, vapier@gentoo.org, arnd@arndb.de,
+        Jamie Iles <jamie@jamieiles.com>
+Subject: [RFC PATCHv4 0/4] Support for OTP memory
+Date: Tue, 29 Mar 2011 13:07:57 +0100
+Message-Id: <1301400481-11645-1-git-send-email-jamie@jamieiles.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 29 March 2011, Alan Cox wrote:
-> > The difference between the two is where you keep the common
-> > NFC logic:
-> 
-> I think I'd disagree on that
-> > 
-> > If you have a character device, it will be like a serial port
-> > connecting to a modem. Any higher-level protocols live in the
-> > user space and are limited to a single application then, which
-> > is required to have appropriate priviledges to open the device.
-> 
-> A socket is just an API just as a file, you can put the stack in either
-> place in either case.
+Hi all,
 
-Fair enough. Obviously the character device that we've been talking
-about here does not include the stack, but that would be another option.
+This series of the OTP memory support has been updated since v3 with the
+following main changes:
 
-As you say, using a socket with a dumb interface is also possible,
-but that sounds to me like a combination of all the disadvantages.
+	- The device specific ioctl() has now been eliminated and an
+	OTP_LOCK_AREA ioctl() has been added that uses the new lock_word()
+	operation to perform locking of OTP.
+	- The read_word/write_word operations are now per-device operations
+	rather than per-region.
+	- A word_size attribute has been added so that users can get the OTP
+	word size (useful for the area locking).
+	- Regions can have labels (a bit like partition names).
+	- The sysfs show/store functions now take a backend module reference
+	before accessing the operations to prevent a possible invalid
+	reference when the backend module is unloaded.
 
-> > character device is its simplicity, so that would be preferred
-> > if you only expect a very small set of possible applications
-> > for this.
-> 
-> NFC is not particularly performance dependant so having a lot of the
-> stack in a daemon isn't really going to hurt anything too much on a
-> client embedded device/phone.
-> 
-> The bigger question is probably what it needs to look like the other end
-> - ie the server side embedded devices doing transactions.
+Thanks,
 
-I was under the impression that NFC was peer-to-peer, so the driver
-would already be handling both sides potentially.
+Jamie Iles (4):
+  drivers/otp: add initial support for OTP memory
+  drivers/otp: add support for Picoxcell PC3X3 OTP
+  Blackfin: add the OTP device as a platform device
+  drivers/otp: convert bfin otp to generic OTP
 
-	Arnd
+ Documentation/ABI/testing/sysfs-bus-otp      |   93 +++
+ Documentation/ioctl/ioctl-number.txt         |    1 +
+ arch/blackfin/mach-bf518/boards/ezbrd.c      |   10 +
+ arch/blackfin/mach-bf518/boards/tcm-bf518.c  |   10 +
+ arch/blackfin/mach-bf527/boards/ad7160eval.c |   10 +
+ arch/blackfin/mach-bf527/boards/cm_bf527.c   |   10 +
+ arch/blackfin/mach-bf527/boards/ezbrd.c      |   10 +
+ arch/blackfin/mach-bf527/boards/ezkit.c      |   10 +
+ arch/blackfin/mach-bf527/boards/tll6527m.c   |   10 +
+ arch/blackfin/mach-bf548/boards/cm_bf548.c   |    9 +
+ arch/blackfin/mach-bf548/boards/ezkit.c      |   10 +
+ drivers/Kconfig                              |    2 +
+ drivers/Makefile                             |    1 +
+ drivers/char/Kconfig                         |   28 -
+ drivers/char/Makefile                        |    1 -
+ drivers/otp/Kconfig                          |   51 ++
+ drivers/otp/Makefile                         |    3 +
+ drivers/{char => otp}/bfin-otp.c             |  261 +++----
+ drivers/otp/otp.c                            | 1051 ++++++++++++++++++++++++
+ drivers/otp/otp_pc3x3.c                      | 1102 ++++++++++++++++++++++++++
+ include/linux/otp.h                          |  305 +++++++
+ 21 files changed, 2819 insertions(+), 169 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-otp
+ create mode 100644 drivers/otp/Kconfig
+ create mode 100644 drivers/otp/Makefile
+ rename drivers/{char => otp}/bfin-otp.c (44%)
+ create mode 100644 drivers/otp/otp.c
+ create mode 100644 drivers/otp/otp_pc3x3.c
+ create mode 100644 include/linux/otp.h
+
+-- 
+1.7.4
+
