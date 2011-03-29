@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab1C2Slc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 14:41:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37984 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab1C2Slb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 14:41:31 -0400
-Date: Tue, 29 Mar 2011 19:40:59 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, gregkh@suse.de,
-        linux-wireless@vger.kernel.org, devel@linuxdriverproject.org
-Subject: Re: [PATCH 0/1] new module for amba axi on-chip interconnect
-Message-ID: <20110329184059.GB18134@flint.arm.linux.org.uk>
-References: <1301391619-4499-1-git-send-email-arend@broadcom.com>
+	id S1752444Ab1C2S4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 14:56:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57331 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751911Ab1C2S4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 14:56:24 -0400
+Message-ID: <4D922B35.9050107@kernel.org>
+Date: Tue, 29 Mar 2011 11:55:49 -0700
+From: "H. Peter Anvin" <hpa@kernel.org>
+Organization: Linux Kernel Organization, Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301391619-4499-1-git-send-email-arend@broadcom.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Florian Fainelli <florian@openwrt.org>, x86@kernel.org
+Subject: Re: [GIT pull] irq cleanups for .39
+References: <alpine.LFD.2.00.1103282048370.2774@localhost6.localdomain6> <AANLkTintrwhwbyZGxX1Eecg9ZXo+NgRzTwyyMyzt1JGR@mail.gmail.com> <alpine.LFD.2.00.1103282210590.2774@localhost6.localdomain6> <alpine.LFD.2.00.1103282227510.2774@localhost6.localdomain6> <AANLkTin7Uc=LzZdD4Waj8GF24Nzi2ccUL+RLtk+fBc=g@mail.gmail.com>
+In-Reply-To: <AANLkTin7Uc=LzZdD4Waj8GF24Nzi2ccUL+RLtk+fBc=g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 11:40:18AM +0200, Arend van Spriel wrote:
-> GUIDANCE NEEDED:
-> This patch puts the module at proposed location. Please provide your
-> guidance if there is a better location within the linux tree for this
-> module.
+On 03/28/2011 03:05 PM, Linus Torvalds wrote:
+> On Mon, Mar 28, 2011 at 1:29 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> On Mon, 28 Mar 2011, Thomas Gleixner wrote:
+>>> 2) msg ids are unique and can ge grepped for. also there are archives
+>>>    which allow searching for them.
+>>>
+>>>    http://marc.info?i=alpine.LFD.2.00.1103252150180.31464@localhost6.localdomain6
+>>>
+>>>    http://mid.gmane.org/alpine.LFD.2.00.1103252150180.31464@localhost6.localdomain6
+>>
+>> So perhaps we should add one of those into the LKML-Reference and let
+>> the commit bot extract the thread reference from there.
 > 
-> This module has been isolated from the brcm80211 driver currently
-> located in staging and provided to other drivers for chipsets using
-> the AMBA AXI on-chip interconnect with ARM Device Management Plugin
-> (DMP) silicon IP, which provides system discovery (chip being the
-> system) and basic core function (disable, reset, etc.).
+> Yes. That would make it something usable to normal users.
+> 
 
-Second point is this series has not been copied to the ARM mailing
-lists, so almost no one there has any clue that this is being proposed.
-Please post it to the ARM kernel mailing list so that all interested
-parties can review it, along with an explaination about why the existing
-AMBA primecell support can't be augmented to provide whatever functionality
-you require.
+My concern with that is that indexing services come and go (and which
+ones that offer indexing by message-id, which is the *only* permanent
+identifier, are even more subject to change), but things that go into
+the git history stays forever.  In IETF terms, the message-id is the
+"resource name" (as in URN), as opposed to the "resource locator" (as in
+URL).
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+There is of course the option of running a bounce service on kernel.org,
+as long as the Message-ID is included.
+
+	-hpa
