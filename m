@@ -1,211 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab1C2ROK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 13:14:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38133 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab1C2ROJ (ORCPT
+	id S1754003Ab1C2RQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 13:16:34 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63375 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab1C2RQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 13:14:09 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=5sUF0BzJmhYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=3e0vvKDXR4-HhYoyZOsA:9 a=EH2UUSZobN5mJm-4Qy0A:7 a=uCAxkAtdzaBzov6I4obqdFy1m98A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [RFC][PATCH] lockdep: Print a nice description of an irq locking
- issue
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Tue, 29 Mar 2011 13:16:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SKheVs1UJtA3JGrc4aCgjE6BDya+dnIUEWuD0EQ7syF5NGcQ8d8Lq52nnMNr9RSjBJ
+         wvelWHDgryHXKpSuizEnHWEBgwdBiQ2vDFWnJWwg94OcWtLnZe7obd8pHx0EiQJBBB15
+         qXhu7X8l2zQsUi2nbEyKNtk8WWB/CncKxF9cY=
+Date: Tue, 29 Mar 2011 19:09:49 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 29 Mar 2011 13:14:05 -0400
-Message-ID: <1301418845.14261.284.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
+Message-ID: <20110329170949.GF29865@htj.dyndns.org>
+References: <20110323153727.GB12003@htj.dyndns.org>
+ <20110324094119.GD12038@htj.dyndns.org>
+ <20110324094151.GE12038@htj.dyndns.org>
+ <20110325101238.GC1409@htj.dyndns.org>
+ <20110329163702.GE29865@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110329163702.GE29865@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After having to explain lockdep interrupt locking inversions a few
-times, I decided to have lockdep spit out the scenario that it is
-complaining about.
+Here's the combined patch I was planning on testing but didn't get to
+(yet).  It implements two things - hard limit on spin duration and
+early break if the owner also is spinning on a mutex.
 
--- Steve
+Thanks.
 
-
-The following patch is in:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-
-    branch: tip/lockdep/devel
-
-
-Steven Rostedt (1):
-      lockdep: Print a nice description of an irq locking issue
-
-----
- kernel/lockdep.c |   66 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 66 insertions(+), 0 deletions(-)
----------------------------
-commit 3429984fca737d0028c57d8d5c6a6b94ac3e90de
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Tue Mar 29 12:55:14 2011 -0400
-
-    lockdep: Print a nice description of an irq locking issue
-    
-    Locking order inversion due to interrupts is a subtle problem.
-    When a locking inversion due to interrupts is discovered by lockdep,
-    it currently reports something like this:
-    
-    [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-    
-    And then writes the locks that are involved as well as back traces.
-    But several developers are confused by what a HARDIRQ->safe to unsafe
-    issue is all about, and sometimes even blow it off as a bug in lockdep.
-    As it is not obvious when lockdep describes this about a lock that
-    is never taken in interrupt context.
-    
-    After explaining the problems that lockdep is reporting, I decided
-    to add a description of the problem in visual form. Now the following
-    is shown:
-    
-     ---
-    other info that might help us debug this:
-    
-     Possible interrupt unsafe locking scenario:
-    
-           CPU0                    CPU1
-           ----                    ----
-      lock(lockA);
-                                   local_irq_disable();
-                                   lock(&rq->lock);
-                                   lock(lockA);
-      <Interrupt>
-        lock(&rq->lock)
-    
-     *** DEADLOCK ***
-    
-     ---
-    
-    The above is the case when the unsafe lock is taken while holding
-    a lock taken in irq context. But when a lock is taken that also
-    grabs a unsafe lock, the call chain is shown:
-    
-     ---
-    other info that might help us debug this:
-    
-    Chain exists of:
-      &rq->lock --> lockA --> lockC
-    
-     Possible interrupt unsafe locking scenario:
-    
-           CPU0                    CPU1
-           ----                    ----
-      lock(lockC);
-                                   local_irq_disable();
-                                   lock(&rq->lock);
-                                   lock(lockA);
-      <Interrupt>
-        lock(&rq->lock)
-    
-     *** DEADLOCK ***
-    
-     ---
-    
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 0d2058d..cc5fb5b 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -490,6 +490,18 @@ void get_usage_chars(struct lock_class *class, char usage[LOCK_USAGE_CHARS])
- 	usage[i] = '\0';
- }
+Index: work1/include/linux/sched.h
+===================================================================
+--- work1.orig/include/linux/sched.h
++++ work1/include/linux/sched.h
+@@ -359,7 +359,7 @@ extern signed long schedule_timeout_inte
+ extern signed long schedule_timeout_killable(signed long timeout);
+ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
+-extern int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner);
++extern bool mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner);
  
-+static int __print_lock_name(struct lock_class *class)
-+{
-+	char str[KSYM_NAME_LEN];
-+	const char *name;
+ struct nsproxy;
+ struct user_namespace;
+Index: work1/kernel/sched.c
+===================================================================
+--- work1.orig/kernel/sched.c
++++ work1/kernel/sched.c
+@@ -536,6 +536,10 @@ struct rq {
+ 	struct hrtimer hrtick_timer;
+ #endif
+ 
++#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
++	bool spinning_on_mutex;
++#endif
 +
-+	name = class->name;
-+	if (!name) {
-+		name = __get_key_name(class->key, str);
-+	}
-+	return printk("%s", name);
-+}
+ #ifdef CONFIG_SCHEDSTATS
+ 	/* latency stats */
+ 	struct sched_info rq_sched_info;
+@@ -4021,16 +4025,44 @@ EXPORT_SYMBOL(schedule);
+ 
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+ /*
+- * Look out! "owner" is an entirely speculative pointer
+- * access and not reliable.
++ * Maximum mutex owner spin duration in nsecs.  Don't spin more then
++ * DEF_TIMESLICE.
++ */
++#define MAX_MUTEX_SPIN_NS	(DEF_TIMESLICE * 1000000000LLU / HZ)
 +
- static void print_lock_name(struct lock_class *class)
++/**
++ * mutex_spin_on_owner - optimistic adaptive spinning on locked mutex
++ * @lock: the mutex to spin on
++ * @owner: the current owner (speculative pointer)
++ *
++ * The caller is trying to acquire @lock held by @owner.  If @owner is
++ * currently running, it might get unlocked soon and spinning on it can
++ * save the overhead of sleeping and waking up.
++ *
++ * Note that @owner is completely speculative and may be completely
++ * invalid.  It should be accessed very carefully.
++ *
++ * Forward progress is guaranteed regardless of locking ordering by never
++ * spinning longer than MAX_MUTEX_SPIN_NS.  This is necessary because
++ * mutex_trylock(), which doesn't have to follow the usual locking
++ * ordering, also uses this function.
++ *
++ * CONTEXT:
++ * Preemption disabled.
++ *
++ * RETURNS:
++ * %true if the lock was released and the caller should retry locking.
++ * %false if the caller better go sleeping.
+  */
+-int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
++bool mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
  {
- 	char str[KSYM_NAME_LEN], usage[LOCK_USAGE_CHARS];
-@@ -1325,6 +1337,58 @@ print_shortest_lock_dependencies(struct lock_list *leaf,
- 	return;
++	unsigned long start;
+ 	unsigned int cpu;
+ 	struct rq *rq;
++	bool ret = true;
+ 
+ 	if (!sched_feat(OWNER_SPIN))
+-		return 0;
++		return false;
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+ 	/*
+@@ -4039,7 +4071,7 @@ int mutex_spin_on_owner(struct mutex *lo
+ 	 * the mutex owner just released it and exited.
+ 	 */
+ 	if (probe_kernel_address(&owner->cpu, cpu))
+-		return 0;
++		return false;
+ #else
+ 	cpu = owner->cpu;
+ #endif
+@@ -4049,15 +4081,17 @@ int mutex_spin_on_owner(struct mutex *lo
+ 	 * the cpu field may no longer be valid.
+ 	 */
+ 	if (cpu >= nr_cpumask_bits)
+-		return 0;
++		return false;
+ 
+ 	/*
+ 	 * We need to validate that we can do a
+ 	 * get_cpu() and that we have the percpu area.
+ 	 */
+ 	if (!cpu_online(cpu))
+-		return 0;
++		return false;
+ 
++	this_rq()->spinning_on_mutex = true;
++	start = local_clock();
+ 	rq = cpu_rq(cpu);
+ 
+ 	for (;;) {
+@@ -4070,21 +4104,30 @@ int mutex_spin_on_owner(struct mutex *lo
+ 			 * we likely have heavy contention. Return 0 to quit
+ 			 * optimistic spinning and not contend further:
+ 			 */
+-			if (lock->owner)
+-				return 0;
++			ret = !lock->owner;
+ 			break;
+ 		}
+ 
+ 		/*
+-		 * Is that owner really running on that cpu?
++		 * Quit spinning if any of the followings is true.
++		 *
++		 * - The owner isn't running on that cpu.
++		 * - The owner also is spinning on a mutex.
++		 * - Someone else wants to use this cpu.
++		 * - We've been spinning for too long.
+ 		 */
+-		if (task_thread_info(rq->curr) != owner || need_resched())
+-			return 0;
++		if (task_thread_info(rq->curr) != owner ||
++		    rq->spinning_on_mutex || need_resched() ||
++		    local_clock() > start + MAX_MUTEX_SPIN_NS) {
++			ret = false;
++			break;
++		}
+ 
+ 		arch_mutex_cpu_relax();
+ 	}
+ 
+-	return 1;
++	this_rq()->spinning_on_mutex = false;
++	return ret;
  }
+ #endif
  
-+static void
-+print_irq_lock_scenario(struct lock_list *backwards_entry,
-+			struct lock_list *forwards_entry,
-+			struct held_lock *next)
-+{
-+	struct lock_class *safe_class = backwards_entry->class;
-+	struct lock_class *unsafe_class = forwards_entry->class;
-+	struct lock_class *middle_class = hlock_class(next);
-+
-+	/*
-+	 * A direct locking problem where unsafe_class lock is taken
-+	 * directly by safe_class lock, then all we need to show
-+	 * is the deadlock scenario, as it is obvious that the
-+	 * unsafe lock is taken under the safe lock.
-+	 *
-+	 * But if there is a chain instead, where the safe lock takes
-+	 * an intermediate lock (middle_class) where this lock is
-+	 * not the same as the safe lock, then the lock chain is
-+	 * used to describe the problem. Otherwise we would need
-+	 * to show a different CPU case for each link in the chain
-+	 * from the safe_class lock to the unsafe_class lock.
-+	 */
-+	if (middle_class != unsafe_class) {
-+		printk("Chain exists of:\n  ");
-+		__print_lock_name(safe_class);
-+		printk(" --> ");
-+		__print_lock_name(middle_class);
-+		printk(" --> ");
-+		__print_lock_name(unsafe_class);
-+		printk("\n\n");
-+	}
-+
-+	printk(" Possible interrupt unsafe locking scenario:\n\n");
-+	printk("       CPU0                    CPU1\n");
-+	printk("       ----                    ----\n");
-+	printk("  lock(");
-+	__print_lock_name(unsafe_class);
-+	printk(");\n");
-+	printk("                               local_irq_disable();\n");
-+	printk("                               lock(");
-+	__print_lock_name(safe_class);
-+	printk(");\n");
-+	printk("                               lock(");
-+	__print_lock_name(middle_class);
-+	printk(");\n");
-+	printk("  <Interrupt>\n");
-+	printk("    lock(");
-+	__print_lock_name(safe_class);
-+	printk(")\n");
-+	printk("\n *** DEADLOCK ***\n\n");
-+}
-+
- static int
- print_bad_irq_dependency(struct task_struct *curr,
- 			 struct lock_list *prev_root,
-@@ -1376,6 +1440,8 @@ print_bad_irq_dependency(struct task_struct *curr,
- 	print_stack_trace(forwards_entry->class->usage_traces + bit2, 1);
- 
- 	printk("\nother info that might help us debug this:\n\n");
-+	print_irq_lock_scenario(backwards_entry, forwards_entry, next);
-+
- 	lockdep_print_held_locks(curr);
- 
- 	printk("\nthe dependencies between %s-irq-safe lock", irqclass);
-
-
