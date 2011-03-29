@@ -1,41 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab1C2TQC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 15:16:02 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:64570 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab1C2TQB (ORCPT
+	id S1754138Ab1C2TQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 15:16:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44686 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753242Ab1C2TQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 15:16:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=pEGydfD67ospQWWUl2eiFpWb9xHCwzg+NfOMmcc2ZiTJFUXC0AdVcdFf3pht28Gn3u
-         t44h4xMmhxGVk8NqKNaETd15cH+Y2jDb5c2EFM+QRfYWqf3TlKiCVBADznqR4r6W+Ffm
-         Z2/OtSaWXbF+RoyocdJxq9FuZJc/o4GUjma3c=
-MIME-Version: 1.0
-In-Reply-To: <20110329181524.GA5140@Xye>
-References: <20110326224408.GA1336@Xye> <20110328144721.GB17872@ghostprotocols.net>
- <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com> <20110329181524.GA5140@Xye>
-From: Michael Witten <mfwitten@gmail.com>
-Date: Tue, 29 Mar 2011 14:15:30 -0500
-Message-ID: <AANLkTi=3Wq3Xt-QFR-FLRQ1kBjpWjaBZNFpOiE_T15WH@mail.gmail.com>
-Subject: Re: [PATCH] Use the environment variable PYTHON if defined
-To: Raghavendra D Prabhu <rprabhu@wnohang.net>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 29 Mar 2011 15:16:18 -0400
+Date: Tue, 29 Mar 2011 12:15:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: ian.campbell@citrix.com, andi.kleen@intel.com, haicheng.li@linux.intel.com,
+        fengguang.wu@intel.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
+        dave@linux.vnet.ibm.com, wdauchy@gmail.com, rientjes@google.com,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] mm: Extend memory hotplug API to allow memory
+ hotplug in virtual machines
+Message-Id: <20110329121541.d9a27c2e.akpm@linux-foundation.org>
+In-Reply-To: <20110329185913.GF30387@router-fw-old.local.net-space.pl>
+References: <20110328092507.GD13826@router-fw-old.local.net-space.pl>
+	<20110328153735.d797c5b3.akpm@linux-foundation.org>
+	<20110329185913.GF30387@router-fw-old.local.net-space.pl>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 13:15, Raghavendra D Prabhu <rprabhu@wnohang.net> wrote:
-> the patch submitted by Michael seems to be taking care of far
-> more cases than mine, so that is much better.
+On Tue, 29 Mar 2011 20:59:13 +0200
+Daniel Kiper <dkiper@net-space.pl> wrote:
 
-One major issue with my current patch is that I opted to stop the
-build with an error message even when using the default python command
-names; is this undesirable? Is it better to fail silently as before
-(via the somewhat cryptic Python.h message), or is it better to force
-the user to specify that no python support should be built?
+> > This is a bit strange.  Normally we'll use a notifier chain to tell
+> > listeners "hey, X just happened".  But this code is different - it
+> > instead uses a notifier chain to tell handlers "hey, do X".  Where in
+> > this case, X is "free a page".
+> >
+> > And this (ab)use of notifiers is not a good fit!  Because we have the
+> > obvious problem that if there are three registered noftifiers, we don't
+> > want to be freeing the page three times.  Hence the tricks with
+> > notifier callout return values.
+> >
+> > If there are multiple independent notifier handlers, how do we manage
+> > their priorities?  And what are the effects of the ordering of the
+> > registration calls?
+> >
+> > And when one callback overrides an existing one, is there any point in
+> > leaving the original one installed at all?
+> >
+> > I dunno, it's all a bit confusing and strange.  Perhaps it would help
+> > if you were to explain exactly what behaviour you want here, and we can
+> > look to see if there is a more idiomatic way of doing it.
+> 
+> OK. I am looking for simple generic mechanism which allow runtime
+> registration/unregistration of generic or module specific (in that
+> case Xen) page onlining function. Dave Hansen sugested compile time
+> solution (https://lkml.org/lkml/2011/2/8/235), however, it does not
+> fit well in my new project on which I am working on (I am going post
+> details at the end of April).
+
+Well, without a complete description of what you're trying to do and
+without any indication of what "does not fit well" means, I'm at a bit
+of a loss to suggest anything.
+
+If we are assured that only one callback will ever be registered at a
+time then a simple
+
+typdef void (*callback_t)(struct page *);
+
+static callback_t g_callback;
+
+int register_callback(callback_t callback)
+{
+	int ret = -EINVAL;
+
+	lock(some_lock);
+	if (g_callback == NULL) {
+		g_callback = callback;
+		ret = 0;
+	}
+	unlock(some_lock)
+	return ret;
+}
+
+would suffice.  That's rather nasty because calls to (*g_callback)
+require some_lock.  Use RCU.
+
+> > Also...  I don't think we need (the undocumented)
+> > OP_DO_NOT_INCREMENT_TOTAL_COUNTERS and OP_INCREMENT_TOTAL_COUNTERS.
+> > Just do
+> >
+> > void __online_page_increment_counters(struct page *page,
+> > 					bool inc_total_counters);
+> >
+> > and pass it "true" or false".
+> 
+> What do you think about __online_page_increment_counters()
+> (totalram_pages and totalhigh_pages) and
+> __online_page_set_limits() (num_physpages and max_mapnr) ???
+
+I don't understand the proposal.
