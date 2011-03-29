@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab1C2SWG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 14:22:06 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33776 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751911Ab1C2SWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 14:22:04 -0400
-Date: Tue, 29 Mar 2011 20:21:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC][PATCH] lockdep: Print a nice description of an irq locking
- issue
-Message-ID: <20110329182154.GA18913@elte.hu>
-References: <1301418845.14261.284.camel@gandalf.stny.rr.com>
- <20110329182131.GB16244@elte.hu>
+	id S1753006Ab1C2S0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 14:26:08 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55235 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab1C2S0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 14:26:06 -0400
+Date: Tue, 29 Mar 2011 14:25:55 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Mike Snitzer <snitzer@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH] block: eliminate ELEVATOR_INSERT_REQUEUE
+Message-ID: <20110329182555.GA22898@infradead.org>
+References: <20110325151530.GA4414@swordfish.minsk.epam.com>
+ <20110325152228.GA1707@gentoo.trippels.de>
+ <20110325154024.GA16029@redhat.com>
+ <4D8CB9C9.5010208@kernel.dk>
+ <20110325185455.GA2969@redhat.com>
+ <4D8CF202.9010809@kernel.dk>
+ <20110326042156.GB28458@redhat.com>
+ <20110328082321.GC16530@htj.dyndns.org>
+ <20110328221547.GA1118@redhat.com>
+ <4D91C8E7.5070205@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110329182131.GB16244@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4D91C8E7.5070205@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Btw, is there any need to actually keep the elv_insert interface?
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Itw has two callers in current mainline, two of them hardcode
+ELEVATOR_INSERT_REQUEUE as the reason and could opencode it, and
+the other cases could be merged into __elv_add_request.
 
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > After having to explain lockdep interrupt locking inversions a few
-> > times, I decided to have lockdep spit out the scenario that it is
-> > complaining about.
-> 
-> Looks very useful!
-> 
-> Would you be interested in extending this to other lockdep splats as well? 
-
-In separate patches, of course.
-
-Thanks,
-
-	Ingo
