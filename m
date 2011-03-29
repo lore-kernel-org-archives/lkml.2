@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab1C2TDu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 15:03:50 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:56395 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab1C2TDt (ORCPT
+	id S1754053Ab1C2TG5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 15:06:57 -0400
+Received: from mx5.twosigma.com ([208.77.212.35]:50205 "EHLO mx5.twosigma.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752309Ab1C2TG4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 15:03:49 -0400
-Date: Tue, 29 Mar 2011 21:03:40 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Fainelli <florian@openwrt.org>, x86@kernel.org
-Subject: Re: [GIT pull] irq cleanups for .39
-Message-ID: <20110329190340.GA29565@gere.osrc.amd.com>
-References: <alpine.LFD.2.00.1103282048370.2774@localhost6.localdomain6>
- <AANLkTintrwhwbyZGxX1Eecg9ZXo+NgRzTwyyMyzt1JGR@mail.gmail.com>
- <alpine.LFD.2.00.1103282210590.2774@localhost6.localdomain6>
- <alpine.LFD.2.00.1103282227510.2774@localhost6.localdomain6>
- <AANLkTin7Uc=LzZdD4Waj8GF24Nzi2ccUL+RLtk+fBc=g@mail.gmail.com>
- <4D922B35.9050107@kernel.org>
+	Tue, 29 Mar 2011 15:06:56 -0400
+From: Sean Noonan <Sean.Noonan@twosigma.com>
+To: Sean Noonan <Sean.Noonan@twosigma.com>,
+        "'Michel Lespinasse'" <walken@google.com>
+CC: "'Christoph Hellwig'" <hch@infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Martin Bligh <Martin.Bligh@twosigma.com>,
+        Trammell Hudson <Trammell.Hudson@twosigma.com>,
+        Christos Zoulas <Christos.Zoulas@twosigma.com>,
+        "'linux-xfs@oss.sgi.com'" <linux-xfs@oss.sgi.com>,
+        Stephen Degler <Stephen.Degler@twosigma.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>
+Date: Tue, 29 Mar 2011 15:05:28 -0400
+Subject: RE: XFS memory allocation deadlock in 2.6.38
+Thread-Topic: XFS memory allocation deadlock in 2.6.38
+Thread-Index: AcvtjAU49kGOL4scQ4KHhTRnHL+diAAAO36wAAHX7ZA=
+Message-ID: <081DDE43F61F3D43929A181B477DCA95639B5359@MSXAOA6.twosigma.com>
+References: <081DDE43F61F3D43929A181B477DCA95639B52FD@MSXAOA6.twosigma.com>
+	<081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
+	<20110324174311.GA31576@infradead.org>
+	<AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
+	<081DDE43F61F3D43929A181B477DCA95639B5349@MSXAOA6.twosigma.com>
+ <BANLkTin0jJevStg5P2hqsLbqMzo3o30sYg@mail.gmail.com>
+ <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
+In-Reply-To: <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D922B35.9050107@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 11:55:49AM -0700, H. Peter Anvin wrote:
-> On 03/28/2011 03:05 PM, Linus Torvalds wrote:
-> > On Mon, Mar 28, 2011 at 1:29 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> On Mon, 28 Mar 2011, Thomas Gleixner wrote:
-> >>> 2) msg ids are unique and can ge grepped for. also there are archives
-> >>>    which allow searching for them.
-> >>>
-> >>>    http://marc.info?i=alpine.LFD.2.00.1103252150180.31464@localhost6.localdomain6
-> >>>
-> >>>    http://mid.gmane.org/alpine.LFD.2.00.1103252150180.31464@localhost6.localdomain6
-> >>
-> >> So perhaps we should add one of those into the LKML-Reference and let
-> >> the commit bot extract the thread reference from there.
-> > 
-> > Yes. That would make it something usable to normal users.
-> > 
-> 
-> My concern with that is that indexing services come and go (and which
-> ones that offer indexing by message-id, which is the *only* permanent
-> identifier, are even more subject to change), but things that go into
-> the git history stays forever.  In IETF terms, the message-id is the
-> "resource name" (as in URN), as opposed to the "resource locator" (as in
-> URL).
-> 
-> There is of course the option of running a bounce service on kernel.org,
-> as long as the Message-ID is included.
+>> Could you test if you see the deadlock before
+>> 5ecfda041e4b4bd858d25bbf5a16c2a6c06d7272 without MAP_POPULATE ?
 
-Yes, this would be very useful. For example, marc.info can do something
-like that; you simply go and do
+> Built and tested 72ddc8f72270758951ccefb7d190f364d20215ab.
+> Confirmed that the original bug does not present in this version.
+> Confirmed that removing MAP_POPULATE does cause the deadlock to occur.
 
-http://marc.info/?i=<message-id>
+git bisect leads to this:
 
-and it finds you the mail messages with that id it has indexed. You can
-then browse the whole thread from there.
+bdfb04301fa5fdd95f219539a9a5b9663b1e5fc2 is the first bad commit
+commit bdfb04301fa5fdd95f219539a9a5b9663b1e5fc2
+Author: Christoph Hellwig <hch@infradead.org>
+Date:   Wed Jan 20 21:55:30 2010 +0000
 
--- 
-Regards/Gruss,
-Boris.
+    xfs: replace KM_LARGE with explicit vmalloc use
+    
+    We use the KM_LARGE flag to make kmem_alloc and friends use vmalloc
+    if necessary.  As we only need this for a few boot/mount time
+    allocations just switch to explicit vmalloc calls there.
+    
+    Signed-off-by: Christoph Hellwig <hch@lst.de>
+    Signed-off-by: Alex Elder <aelder@sgi.com>
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+:040000 040000 1eed68ced17d8794fa842396c01c3b9677c6e709 d462932a318f8c823fa2a73156e980a688968cb2 M	fs
