@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab1C2VFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 17:05:03 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55154 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167Ab1C2VFA (ORCPT
+	id S1754508Ab1C2VH5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 17:07:57 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60098 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751285Ab1C2VH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 17:05:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=qyoY3wejvPDQ6HVR2S8NgU8rVV0WH32kWQZ8lRDei2c5bEj/kJpHp3H+AqTzOggERq
-         Jez/MV9duRunbpOEz1Sf2c4dUzbUYv88xtcXGJhTEJvX3AxeK0vuGx+I6T0rlVDNAri1
-         EH9ORytX7nXQuBTp9oPV064+A+666B0C4mVQo=
+	Tue, 29 Mar 2011 17:07:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110329202608.GA3454@viiv.ffwll.ch>
-References: <1301310995.5615.92.camel@wangqingchuan>
-	<1301336010.2217.20.camel@workstation>
-	<AANLkTikMJszEyv8-SMMjD-MeykSwmsKf=gmezcMgySoP@mail.gmail.com>
-	<1301409864.5615.98.camel@wangqingchuan>
-	<AANLkTi=fcWBpmQ66a3+vQwgFOXn=0rJAviNzR4a0mfcJ@mail.gmail.com>
-	<1301421664.2151.12.camel@Portable-Work>
-	<AANLkTin_v5h==E0i5mQgK2AEdaZhwViykr3acbz4CW0k@mail.gmail.com>
-	<20110329202608.GA3454@viiv.ffwll.ch>
-Date: Tue, 29 Mar 2011 17:04:59 -0400
-Message-ID: <AANLkTim2AyGPrun8MNq0=TyXpJ+b8i=eyHhLz01F+f2P@mail.gmail.com>
-Subject: Re: GEM-related desktop sluggishness due to linear-time arch_get_unmapped_area_topdown()
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Jerome Glisse <j.glisse@gmail.com>, Lucas Stach <dev@lynxeye.de>,
-        r6144 <rainy6144@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Cc: Daniel Vetter <daniel@ffwll.ch>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 29 Mar 2011 14:07:35 -0700
+Message-ID: <AANLkTikwbY5mm10ZWg7B6XeSBkZXFqKcYVZfJCi2QGx_@mail.gmail.com>
+Subject: Merge window closed - 2.6.39-rc1 out
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 4:26 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Tue, Mar 29, 2011 at 03:45:34PM -0400, Jerome Glisse wrote:
->> Short lived & small bo would definitly doesn't work well for this kind
->> of API, it would all be a function of the ioctl cost. But i am not
->> sure the drawback would be that big, intel tested with pread/pwrite
->> and gived up don't remember why. For the vbo case you describe the
->> scheme i was thinking would be : allocate bo and on buffer data call
->> upload to the allocated bo using the bind user page feature that would
->> mean zero extra copy operation. For the fire forget case of vbo,
->> likely somekind of transient buffer would be more appropriate.
->
-> Just to clarify: Uploads to linear buffers are all done with pwrite (due
-> to an api foobar, it's not so great for 2d/tiled stuff). It's amazing how
-> much faster that is: Switching vbo's from mmpa to pwrite has given a few
-> percent more fps in openarena in i915g! As long as the chunk you're gonna
-> write fits into L1 cache, it's probably a net win.
-> -Daniel
+So 2.6.39-rc1 is out there, and the merge window is closed. I still
+have to look over the cleancache pull request (which I got in plenty
+of time, but decided that I want to review after the merge window
+craziness is over), but other than that, we're done.
 
-What i had in mind was something little bit more advance that pwrite,
-somethings that would take width,height,pitch of userpage and would be
-able to perform proper blit. But yes pwrite in intel is kind of
-limited.
+What to say about the merge window? It _feels_ like it was all
+drivers, filesystems and irq cleanups. The dirstat backs up the
+drivers part (65%), but claims that we had way more arch updates than
+filesystem stuff (and the bulk of that is ARM, and while _some_ of
+that was the irq conversions, most of it is just the normal board
+churn). On the arch side, the first steps of unifying m68k and
+m68knommu is a nice sign, let's see how that all pans out in the long
+run. Oh, and there's the new unicore32 architecture.
 
-Cheers,
-Jerome
+Elsewhere, we had a fair amount of VFS cleanup, and also introduced
+the "filehandle" interfaces (along with open(..,O_PATH)). Although
+most people won't care.
+
+Perhaps a bit more interesting to a larger part of the kernel
+community is the new block device plugging model - it makes plugging a
+per-thread thing and cleaned up the code considerably. It also avoids
+lots of locking in a very hot path, and should generally be a really
+good idea. That said, it also at one point ate XFS filesystems for
+breakfast, but that's fixed and it's hopefully all good now.
+
+Anything else? I'm sure I've forgotten something really exciting. But
+on the whole I think this should be one of those "solid, boring
+progress" releases.
+
+Knock wood. I like boring.
+
+                    Linus
