@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab1C2VY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 17:24:58 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:52263
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752287Ab1C2VYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 17:24:48 -0400
-From: Hank Janssen <hjanssen@microsoft.com>
-To: hjanssen@microsoft.com, haiyangz@microsoft.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 07/07] Replaced printk with pr_info in hv_timesource
-Date: Tue, 29 Mar 2011 13:58:50 -0700
-Message-Id: <1301432330-1705-8-git-send-email-hjanssen@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1301432330-1705-1-git-send-email-hjanssen@microsoft.com>
-References: <1301432330-1705-1-git-send-email-hjanssen@microsoft.com>
+	id S1754174Ab1C2V1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 17:27:46 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:57908 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab1C2V1p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 17:27:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=dlTBeTGCvl+XIk1tXtaly6EGyawUl4r0eNFIEZa3Ei9Eh8KTst5CZgvCPTlM+Zh8KC
+         aMYTOooSp17Si0s5cPxV85MXluHWrQAEOwYnPDCjfNIoIe+evZorhsNC1Ymmkr/3XkAe
+         bgCtNAD4fF5hnwJ1R1YCZGGPE0xK1B0BGeQ3Q=
+MIME-Version: 1.0
+In-Reply-To: <20110304173528.60c04f76.randy.dunlap@oracle.com>
+References: <20110304180027.20deb6c4.sfr@canb.auug.org.au>
+	<20110304173528.60c04f76.randy.dunlap@oracle.com>
+Date: Wed, 30 Mar 2011 01:27:44 +0400
+Message-ID: <AANLkTinhKKtPS7-tFcoU8JE=zsgikEn979DemyXX8q_z@mail.gmail.com>
+Subject: Re: [PATCH -next] staging: altera-jtag needs delay.h
+From: Alexander Beregalov <a.beregalov@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "Igor M. Liplianin" <liplianin@netup.ru>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced printk in hv_timesource with pr_ calls
+On 5 March 2011 04:35, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+>
+> altera-jtag.c needs to include <linux/delay.h> to fix a build error:
+>
+> drivers/staging/altera-stapl/altera-jtag.c:398: error: implicit declaration of function 'udelay'
+>
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: Igor M. Liplianin <liplianin@netup.ru>
 
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-
----
- drivers/staging/hv/hv_timesource.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/hv/hv_timesource.c b/drivers/staging/hv/hv_timesource.c
-index a7ee533..0efb049 100644
---- a/drivers/staging/hv/hv_timesource.c
-+++ b/drivers/staging/hv/hv_timesource.c
-@@ -20,6 +20,7 @@
-  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-  *
-  */
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/version.h>
- #include <linux/clocksource.h>
-@@ -91,7 +92,7 @@ static int __init init_hv_clocksource(void)
- 	if (!dmi_check_system(hv_timesource_dmi_table))
- 		return -ENODEV;
- 
--	printk(KERN_INFO "Registering HyperV clock source\n");
-+	pr_info("Registering HyperV clock source\n");
- 	return clocksource_register(&hyperv_cs);
- }
- 
--- 
-1.6.0.2
-
+Mauro, Greg. 2.6.39 still needs this fix.
