@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab1C2PX0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 11:23:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40440 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab1C2PXZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 11:23:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=oGg5ER3qxKDD4xexotR2nSvnDehOMIQEEFezOU4F3pBWzKB7uuX+W+vsIWDL8J2rFs
-         qwpMlLjiktQ2z+Rsn6diloD/kRVzG9NUO8b7vvuzGrH5rNUy/J8Sv4YoCPEkMGAWhRak
-         zUsy0he53RVVl5OLB8mF+tMdLQuFk9nvCU3RQ=
+	id S1752580Ab1C2P2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 11:28:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39389 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301Ab1C2P2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 11:28:16 -0400
+Message-ID: <4D91FA76.1010908@zytor.com>
+Date: Tue, 29 Mar 2011 08:27:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1301409864.5615.98.camel@wangqingchuan>
-References: <1301310995.5615.92.camel@wangqingchuan>
-	<1301336010.2217.20.camel@workstation>
-	<AANLkTikMJszEyv8-SMMjD-MeykSwmsKf=gmezcMgySoP@mail.gmail.com>
-	<1301409864.5615.98.camel@wangqingchuan>
-Date: Tue, 29 Mar 2011 11:23:23 -0400
-Message-ID: <AANLkTi=fcWBpmQ66a3+vQwgFOXn=0rJAviNzR4a0mfcJ@mail.gmail.com>
-Subject: Re: GEM-related desktop sluggishness due to linear-time arch_get_unmapped_area_topdown()
-From: Jerome Glisse <j.glisse@gmail.com>
-To: r6144 <rainy6144@gmail.com>
-Cc: Lucas Stach <dev@lynxeye.de>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+To: Hans Rosenfeld <hans.rosenfeld@amd.com>
+CC: Brian Gerst <brgerst@gmail.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
+        "eranian@google.com" <eranian@google.com>,
+        "Richter, Robert" <robert.richter@amd.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: [RFC v2 8/8] x86, xsave: remove lazy allocation of xstate area
+References: <1299698102-972771-9-git-send-email-hans.rosenfeld@amd.com> <1300894067-604408-9-git-send-email-hans.rosenfeld@amd.com> <AANLkTin6XrHKR6ARwC0v4b1URaB=08MD7fUoPap+9Dfb@mail.gmail.com> <20110329141712.GM13@escobedo.osrc.amd.com>
+In-Reply-To: <20110329141712.GM13@escobedo.osrc.amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/29 r6144 <rainy6144@gmail.com>:
-> 在 2011-03-29二的 10:22 -0400，Jerome Glisse写道：
->
->> Killer solution would be to have no mapping and a decent
->> upload/download ioctl that can take userpage.
->
-> Doesn't this sound like GEM's read/write interface implemented by e.g.
-> the i915 driver?  But if I understand correctly, a mmap-like interface
-> should still be necessary if we want to implement e.g. glMapBuffer()
-> without extra copying.
->
-> r6144
->
->
-glMapBuffer should not be use, it's really not a good way to do stuff.
-Anyway the extra copy might be unavoidable given that sometime the
-front/back might either be in unmappable vram or either have memory
-layout that is not the one specify at buffer creation (this is very
-common when using tiling for instance). So even considering MapBuffer
-or a like function i believe it's a lot better to not allow buffer
-mapping in userspace but provide upload/download hooks that can use
-userpage to avoid as much as possible extra copy.
+On 03/29/2011 07:17 AM, Hans Rosenfeld wrote:
+>>
+>> I'm not sure I like this.  I did a quick test on 64-bit, and found
+>> that while most if not all user processes allocated the fpu save area
+>> (probably because of glibc blindly initializing the fpu), kernel
+>> threads did not.  This patch would force kernel threads to allocate
+>> memory they would never use.
+> 
+> Yes, up to a few kilobytes would be wasted by kernel threads. The
+> related code gets much simpler. I think that is a good thing.
+> 
 
-Cheers,
-Jerome
+This is silly.  It shouldn't be very hard to allocate this for user
+threads while avoiding the allocation for kernel threads.  The only
+excuse for allocating it for user threads is if it becomes part of the
+kernel stack allocation.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
