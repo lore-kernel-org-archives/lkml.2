@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab1C2N4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 09:56:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51091 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab1C2Nz7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 09:55:59 -0400
-Date: Tue, 29 Mar 2011 15:55:56 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: "vooon341@gmail.com" <vooon341@gmail.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mmc: Add MPC512x SDHC driver.
-Message-ID: <20110329135556.GF18155@pengutronix.de>
-References: <AANLkTi=cMzOj-NEc0uksDDBiBvyaKQWta9T9jtO12Gxr@mail.gmail.com>
- <20110329104231.GB18155@pengutronix.de>
- <AANLkTinZ25gT+Y=YJMh=bFeZdRE-fZ45wDt8=tDWVScd@mail.gmail.com>
+	id S1753162Ab1C2N6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 09:58:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1032 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751290Ab1C2N6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 09:58:43 -0400
+Date: Tue, 29 Mar 2011 09:58:00 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <jaxboe@fusionio.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Need to refactor DM's integrity profile support a bit (was: Re:
+ Please revert a91a2785b20)
+Message-ID: <20110329135800.GB23508@redhat.com>
+References: <alpine.LFD.2.00.1103290006070.2774@localhost6.localdomain6>
+ <alpine.LFD.2.00.1103290040300.2774@localhost6.localdomain6>
+ <20110328230319.GA12790@redhat.com>
+ <4D918347.7050500@fusionio.com>
+ <20110329132032.GA22921@redhat.com>
+ <yq1lizyhwlr.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hUH5gZbnpyIv7Mn4"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinZ25gT+Y=YJMh=bFeZdRE-fZ45wDt8=tDWVScd@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <yq1lizyhwlr.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 29 2011 at  9:42am -0400,
+Martin K. Petersen <martin.petersen@oracle.com> wrote:
 
---hUH5gZbnpyIv7Mn4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> >>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
+> 
+> Mike,
+> 
+> Mike> But I think we have a related issue that needs discussion, given
+> Mike> that an integrity profile mismatch will cause MD's assemble to
+> Mike> fail (rather than warn and continue to assemble without integrity
+> Mike> support).
+> 
+> Mike> DM doesn't fail to load a DM device due to a integrity profile
+> Mike> mismatch; it just emits a warning and continues.
+> 
+> Mike> In contrast, MD will now disallow adding a normal disk (without
+> Mike> integrity support) to an array that has historically had a
+> Mike> symmetric integrity profile across all members.
+> 
+> You would invalidate all your existing integrity metadata, tagging,
+> etc. on existing metadevice members. That seems to be a policy decision,
+> so if we go down that path it would have to be keyed off a force
+> assembly option passed down from userland tooling. Turning off features
+> and/or losing metadata really should not be done without the user's
+> explicit consent.
+> 
+> Also, let's assume you run an integrity-aware app on a DM device and you
+> add a non-integrity drive. The DM device is then no longer capable of
+> carrying integrity metadata out to storage. What happens to the app?
+> What about outstanding writes with metadata attached?
+> 
+> Good discussion topic for next week, methinks...
 
-> I'll try to add abstraction.
+Sure, I'm just trying to reconcile the difference in behavior between MD
+and DM.  Seems DM missed out on the integrity profile error propagation
+treatment that MD just received.
 
-Great, thanks.
+Easily resolved (though there are some dragons lying in wait relative to
+where this inconsistency is detected by DM, hint: must be during DM
+table load).  Current hook, dm_table_set_integrity, disables the
+integrity support of the DM device well beyond the point of no return
+(when resuming a DM device that was allowed to have a new table loaded).
 
-> But I can return to this only after our hardware will done (around one mo=
-nth).
+I welcome discussing this in a bit more detail in the hallway track at
+LSF ;)
 
-Okay, just set me to cc.
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---hUH5gZbnpyIv7Mn4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk2R5OwACgkQD27XaX1/VRs/LACgtS+OcEqez4v5c1a0NtZmzepO
-WfQAnRXcma+com4z/v5RkUOLz25Vd4qM
-=7OnP
------END PGP SIGNATURE-----
-
---hUH5gZbnpyIv7Mn4--
+Thanks,
+Mike
