@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab1C2RzO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 13:55:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52004 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751782Ab1C2RzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 13:55:13 -0400
-Date: Tue, 29 Mar 2011 13:54:58 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH] block: eliminate ELEVATOR_INSERT_REQUEUE (was: Re:
- elevator private data for REQ_FLUSH)
-Message-ID: <20110329175458.GE24485@redhat.com>
-References: <20110325151530.GA4414@swordfish.minsk.epam.com>
- <20110325152228.GA1707@gentoo.trippels.de>
- <20110325154024.GA16029@redhat.com>
- <4D8CB9C9.5010208@kernel.dk>
- <20110325185455.GA2969@redhat.com>
- <4D8CF202.9010809@kernel.dk>
- <20110326042156.GB28458@redhat.com>
- <20110328082321.GC16530@htj.dyndns.org>
- <20110328221547.GA1118@redhat.com>
- <x49y63yvwum.fsf@segfault.boston.devel.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49y63yvwum.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753694Ab1C2SBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 14:01:08 -0400
+Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:48531 "EHLO
+	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751782Ab1C2SBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 14:01:07 -0400
+Subject: Re: GEM-related desktop sluggishness due to linear-time
+ arch_get_unmapped_area_topdown()
+From: Lucas Stach <dev@lynxeye.de>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: r6144 <rainy6144@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+In-Reply-To: <AANLkTi=fcWBpmQ66a3+vQwgFOXn=0rJAviNzR4a0mfcJ@mail.gmail.com>
+References: <1301310995.5615.92.camel@wangqingchuan>
+	 <1301336010.2217.20.camel@workstation>
+	 <AANLkTikMJszEyv8-SMMjD-MeykSwmsKf=gmezcMgySoP@mail.gmail.com>
+	 <1301409864.5615.98.camel@wangqingchuan>
+	 <AANLkTi=fcWBpmQ66a3+vQwgFOXn=0rJAviNzR4a0mfcJ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Mar 2011 20:01:04 +0200
+Message-ID: <1301421664.2151.12.camel@Portable-Work>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 10:13:05AM -0400, Jeff Moyer wrote:
-> Mike Snitzer <snitzer@redhat.com> writes:
+Am Dienstag, den 29.03.2011, 11:23 -0400 schrieb Jerome Glisse:
+> 2011/3/29 r6144 <rainy6144@gmail.com>:
+> > 在 2011-03-29二的 10:22 -0400，Jerome Glisse写道：
+> >
+> >> Killer solution would be to have no mapping and a decent
+> >> upload/download ioctl that can take userpage.
+> >
+> > Doesn't this sound like GEM's read/write interface implemented by e.g.
+> > the i915 driver?  But if I understand correctly, a mmap-like interface
+> > should still be necessary if we want to implement e.g. glMapBuffer()
+> > without extra copying.
+> >
+> > r6144
+> >
+> >
+> glMapBuffer should not be use, it's really not a good way to do stuff.
+> Anyway the extra copy might be unavoidable given that sometime the
+> front/back might either be in unmappable vram or either have memory
+> layout that is not the one specify at buffer creation (this is very
+> common when using tiling for instance). So even considering MapBuffer
+> or a like function i believe it's a lot better to not allow buffer
+> mapping in userspace but provide upload/download hooks that can use
+> userpage to avoid as much as possible extra copy.
 > 
-> > OK, I came up with the following patch.
-> >
-> > Jens, this is just a natural cleanup given the code that resulted from
-> > the flush-merge and onstack plugging changes coming together.
-> >
-> >
-> > From: Mike Snitzer <snitzer@redhat.com>
-> > Subject: block: eliminate ELEVATOR_INSERT_REQUEUE
-> >
-> > elv_insert() no longer has a need to differentiate between
-> > ELEVATOR_INSERT_REQUEUE and ELEVATOR_INSERT_FRONT.  The onstack plugging
-> > changes eliminated the need to avoid unplugging the queue (via
-> > ELEVATOR_INSERT_REQUEUE).
-> >
-> > Also, in blk_insert_flush(), use elv_insert() with ELEVATOR_INSERT_FRONT
-> > rather than open-coding the equivalent.
+> Cheers,
+> Jerome
 > 
-> What you change by doing the call to elv_insert is that now the request
-> will have REQ_SOFTBARRIER set.  I don't think that affects anything,
-> though (I checked).  The rest looks pretty straight-forward.
 
-What is the significance of REQ_SOFTBARRIER? Why it should be set for all
-INSERT_FRONT and requeue requests.
+Wouldn't this give us a performance penalty for short lived resources
+like vbo's which are located in GART memory? Mmap allows us to write
+directly to this drm controlled portion of sysram. With a copy based
+implementation we would have to allocate the buffer in sysram just to
+copy it over to another portion of sysram which seems a little insane to
+me, but I'm not an expert here.
 
-With flush logic we got rid of all hardbarriers and hence there is no
-notion of ordering as such. One has to wait for request to finish to
-enforce ordering.
+-- Lucas
 
-Should we get rid of softbarriers too?
 
-Thanks
-Vivek
