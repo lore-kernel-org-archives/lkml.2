@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab1C2XgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 19:36:07 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:49714 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751746Ab1C2XgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 19:36:04 -0400
-Message-Id: <20110329233602.439245439@gulag1.americas.sgi.com>
+	id S1754935Ab1C2Xgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 19:36:45 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:44447 "HELO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754111Ab1C2XgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 19:36:06 -0400
+Message-Id: <20110329233602.935998468@gulag1.americas.sgi.com>
 References: <20110329233602.272459647@gulag1.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Tue, 29 Mar 2011 18:36:03 -0500
+Date: Tue, 29 Mar 2011 18:36:06 -0500
 From: Mike Travis <travis@sgi.com>
 To: David Woodhouse <dwmw2@infradead.org>,
         Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Mike Habeck <habeck@sgi.com>, iommu@lists.linux-foundation.org,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] Intel pci: Remove Host Bridge devices from identity mapping
-Content-Disposition: inline; filename=intel-iommu-pass-thru-fix
+Subject: [PATCH 4/4] Intel pci: Use coherent DMA mask when requested
+Content-Disposition: inline; filename=use-coherent-dma-mask
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    When the IOMMU is being used, each request for a DMA mapping requires
-    the intel_iommu code to look for some space in the DMA mapping table.
-    For most drivers this occurs for each transfer.
-
-    When there are many outstanding DMA mappings [as seems to be the case
-    with the 10GigE driver], the table grows large and the search for
-    space becomes increasingly time consuming.  Performance for the
-    10GigE driver drops to about 10% of it's capacity on a UV system
-    when the CPU count is large.
-
-    The workaround is to specify the iommu=pt option which sets up a 1:1
-    identity map for those devices that support enough DMA address bits to
-    cover the physical system memory.  This is the "pass through" option.
-
-    But this can only be accomplished by those devices that pass their
-    DMA data through the IOMMU (VTd).  But Host Bridge Devices connected
-    to System Sockets do not pass their data through the VTd, thus the
-    following error occurs:
-
-    IOMMU: hardware identity mapping for device 1000:3e:00.0
-    Failed to setup IOMMU pass-through
-    BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
-
-    This patch fixes that problem but removing Host Bridge devices from
-    being identity mapped, given that they do not generate DMA ops anyways.
+    The __intel_map_single function is not honoring the passed in
+    DMA mask.  This results in not using the coherent DMA mask when
+    called from intel_alloc_coherent().
 
 Signed-off-by: Mike Travis <travis@sgi.com>
 Reviewed-by: Mike Habeck <habeck@sgi.com>
 ---
- drivers/pci/intel-iommu.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/pci/intel-iommu.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 --- linux.orig/drivers/pci/intel-iommu.c
 +++ linux/drivers/pci/intel-iommu.c
-@@ -46,6 +46,7 @@
- #define ROOT_SIZE		VTD_PAGE_SIZE
- #define CONTEXT_SIZE		VTD_PAGE_SIZE
+@@ -2582,8 +2582,7 @@ static dma_addr_t __intel_map_single(str
+ 	iommu = domain_get_iommu(domain);
+ 	size = aligned_nrpages(paddr, size);
  
-+#define IS_HOSTBRIDGE_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_HOST)
- #define IS_GFX_DEVICE(pdev) ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
- #define IS_ISA_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_ISA)
- #define IS_AZALIA(pdev) ((pdev)->vendor == 0x8086 && (pdev)->device == 0x3a3e)
-@@ -2183,7 +2184,7 @@ static int iommu_should_identity_map(str
- 	 * take them out of the 1:1 domain later.
- 	 */
- 	if (!startup)
--		return pdev->dma_mask > DMA_BIT_MASK(32);
-+		return pdev->dma_mask == DMA_BIT_MASK(64);
+-	iova = intel_alloc_iova(hwdev, domain, dma_to_mm_pfn(size),
+-				pdev->dma_mask);
++	iova = intel_alloc_iova(hwdev, domain, dma_to_mm_pfn(size), dma_mask);
+ 	if (!iova)
+ 		goto error;
  
- 	return 1;
- }
-@@ -2198,6 +2199,9 @@ static int __init iommu_prepare_static_i
- 		return -EFAULT;
- 
- 	for_each_pci_dev(pdev) {
-+		/* Skip PCI Host Bridge devices */
-+		if (IS_HOSTBRIDGE_DEVICE(pdev))
-+			continue;
- 		if (iommu_should_identity_map(pdev, 1)) {
- 			printk(KERN_INFO "IOMMU: %s identity mapping for device %s\n",
- 			       hw ? "hardware" : "software", pci_name(pdev));
 
 -- 
