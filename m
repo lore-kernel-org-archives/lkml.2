@@ -1,84 +1,562 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab1C2MJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 08:09:05 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:44416 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957Ab1C2MJB (ORCPT
+	id S1753313Ab1C2MOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 08:14:17 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:1633 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752763Ab1C2MOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 08:09:01 -0400
-Date: Tue, 29 Mar 2011 08:08:56 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Subject: Re: TPM chip prevents machine from suspending
-Message-ID: <20110329080856.1726dfaa@tlielax.poochiereds.net>
-In-Reply-To: <4D91157F.2020502@linux.vnet.ibm.com>
-References: <20110328100846.0ba2e039@tlielax.poochiereds.net>
-	<4D90C472.3090908@linux.vnet.ibm.com>
-	<20110328141241.06a435f8@tlielax.poochiereds.net>
-	<20110328154543.1bb979fd@tlielax.poochiereds.net>
-	<4D91157F.2020502@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.3; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Mar 2011 08:14:15 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAKvMkU1R8B/l/2dsb2JhbAClRHjFKw2FXQSUAQ
+Date: Tue, 29 Mar 2011 14:14:09 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Anithra P Janakiraman <anithra@linux.vnet.ibm.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Yinghai Lu <yinghai@kernel.org>, Julia Lawall <julia@diku.dk>,
+        stable <stable@kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
+Subject: [GIT PULL REQUEST] watchdog - v2.6.39-rc1
+Message-ID: <20110329121409.GG3974@infomag.iguana.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011 19:10:55 -0400
-Stefan Berger <stefanb@linux.vnet.ibm.com> wrote:
+Hi Linus,
 
-> Ok, so this error code means TPM_INVALID_POSTINIT  (not a posix code) 
-> and means that this command was received in the wrong sequence relative 
-> to a TPM_Startup command. Well, what's supposed to be happening is this:
-> 
-> When the machines (S3) suspends then the OS needs to send a 
-> TPM_SaveState() to the TPM. This is done by the Linux driver. Once the 
-> VM resumes, the BIOS is supposed to send a TPM_Startup(ST_STATE) to the TPM.
-> 
-> Now the fun starts when a BIOS isn't doing that (even though the spec 
-> says it's supposed to), which could very well be the case in your case 
-> (don't know what broken BIOSes are out there...  Did it ever work before 
-> with the TPM driver in the kernel ?). I could try to send you a small 
-> tool that you would have to run from user space upon resume so that we 
-> can see that this error goes away. If that's verified we could 
-> subsequently write a patch for the TPM driver to also send the 
-> TPM_Startup(ST_STATE) to the TPM, which then in the case of most BIOSes 
-> would be the 2nd time that the TPM receives such a command. I think TPMs 
-> should be able to digest this 2nd TPM_Startup() well, but I'd have to 
-> check -- but really we would ill-fix it just because of one (possibly) 
-> buggy BIOS.
-> 
-> The failure of the 2nd suspend then likely stems from the TPM not 
-> accepting the TPM_SaveState() anymore since it hasn't seen the 
-> TPM_Startup(ST_STATE) that we expected the BIOS to send.
-> 
+Please pull from 'master' branch of
+	git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
+or if master.kernel.org hasn't synced up yet:
+	master.kernel.org:/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
 
-Yep. That program fixed the problem. When I run it after a resume, I
-can then cat the caps file and get output from it, and the machine will
-successfully suspend again.
+This will update the following files:
 
-> Another possibility would be for you to check for BIOS updates from the 
-> laptop manufacturer...
-> 
+ drivers/watchdog/davinci_wdt.c |   22 ++++++++++------------
+ drivers/watchdog/max63xx_wdt.c |   20 ++++++++------------
+ drivers/watchdog/nv_tco.c      |    2 +-
+ drivers/watchdog/pnx4008_wdt.c |   28 +++++++++++++---------------
+ drivers/watchdog/s3c2410_wdt.c |   19 ++++++++-----------
+ drivers/watchdog/softdog.c     |   16 +++++++++++++---
+ drivers/watchdog/sp5100_tco.c  |   16 ++++++++++++++--
+ 7 files changed, 67 insertions(+), 56 deletions(-)
 
-This is actually a desktop machine and the BIOS for the motherboard is
-at the latest version, though it is quite old -- 2007/09/01. For the
-record this is a:
+with these Changes:
 
-     Foxconn 6150BK8MC
+Author: Anithra P Janakiraman <anithra@linux.vnet.ibm.com>
+Date:   Mon Mar 28 14:29:19 2011 -0700
 
-I'm actually not using the TPM in this thing at all. I'd be just as
-happy if there were some way to disable it. Unfortunately, the option
-in the BIOS to do this doesn't seem to actually work. When I set "TPM
-Control" in the BIOS to "Disable" it always ends up reset back to "No
-Change". I'd report both problems to the mfr, but this thing is long
-out of warranty and I'm pretty sure they won't care.
+    watchdog: softdog.c: enhancement to optionally invoke panic instead of reboot on timer expiry
+    
+    This is needed for determining the reason for failure when a softdog
+    timeout occurs.
+    
+    We use softdog to watch for critical application failures and at the
+    minimum a snapshot of the system would help to determine the cause.  In
+    such a scenario the application could fail but there isn't a softlockup as
+    such, hence the detect softlockup feature does not help.
+    
+    The patch adds a module parameter soft_panic which when set to 1 causes
+    softdog to invoke panic instead of reboot when the softdog timer expires.
+    By invoking panic we execute kdump if it is configured and the vmcore
+    generated by kdump should provide atleast a minimal idea of the reason for
+    failure.
+    
+    Based on an original patch by Ken Sugawara <sugaken.r3@gmail.com>
+    Signed-off-by: Anithra P J <anithra@linux.vnet.ibm.com>
+    Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+    Acked-by: Alan Cox <alan@linux.intel.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-Is there some way short of recompiling with CONFIG_TCG_* turned off
-to disable the TPM driver at boot time?
+Author: Randy Dunlap <randy.dunlap@oracle.com>
+Date:   Thu Mar 24 13:32:44 2011 -0700
 
--- 
-Jeff Layton <jlayton@poochiereds.net>
+    watchdog: fix nv_tco section mismatch
+    
+    Fix section mismatch warning:
+    Mark the called nv_tco_getdevice() as __devinit, just like its caller.
+    
+    WARNING: drivers/watchdog/nv_tco.o(.devinit.text+0x16): Section mismatch in reference from the function nv_tco_init() to the function .init.text:nv_tco_getdevice()
+    The function __devinit nv_tco_init() references
+    a function __init nv_tco_getdevice().
+    If nv_tco_getdevice is only used by nv_tco_init then
+    annotate nv_tco_getdevice with a matching annotation.
+    
+    Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+Author: Yinghai Lu <yinghai@kernel.org>
+Date:   Wed Mar 16 20:01:07 2011 -0700
+
+    watchdog: sp5100_tco.c: Check if firmware has set correct value in tcobase.
+    
+    Stefano found SP5100 TCO watchdog driver using wrong address.
+    
+    [    9.148536] SP5100 TCO timer: SP5100 TCO WatchDog Timer Driver v0.01
+    [    9.148628] DEBUG __ioremap_caller WARNING address=b8fe00 size=8 valid=1 reserved=1
+    
+    and e820 said that range is RAM.
+    
+    We should check if we can use that reading out. BIOS could just program wrong address there.
+    
+    Reported-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+    Signed-off-by:Yinghai Lu <yinghai@kernel.org>
+    Acked-by: Mike Waychison <mikew@google.com>
+    Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+    Cc: stable <stable@kernel.org>
+
+Author: Julia Lawall <julia@diku.dk>
+Date:   Sat Feb 26 17:34:39 2011 +0100
+
+    watchdog: Convert release_resource to release_region/release_mem_region
+    
+    Request_mem_region should be used with release_mem_region, not
+    release_resource.
+    
+    In pnx4008_wdt.c, a missing clk_put is added as well.
+    
+    The semantic match that finds the first problem is as follows:
+    (http://coccinelle.lip6.fr/)
+    
+    // <smpl>
+    @@
+    expression x,E;
+    @@
+    *x = request_mem_region(...)
+    ... when != release_mem_region(x)
+        when != x = E
+    * release_resource(x);
+    // </smpl>
+    
+    Signed-off-by: Julia Lawall <julia@diku.dk>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+    Cc: stable <stable@kernel.org>
+
+Author: Julia Lawall <julia@diku.dk>
+Date:   Sat Feb 26 17:34:38 2011 +0100
+
+    watchdog: s3c2410_wdt.c: Convert release_resource to release_region/release_mem_region
+    
+    Request_mem_region should be used with release_mem_region, not
+    release_resource.
+    
+    The semantic match that finds this problem is as follows:
+    (http://coccinelle.lip6.fr/)
+    
+    // <smpl>
+    @@
+    expression x,E;
+    @@
+    *x = request_mem_region(...)
+    ... when != release_mem_region(x)
+        when != x = E
+    * release_resource(x);
+    // </smpl>
+    
+    Signed-off-by: Julia Lawall <julia@diku.dk>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+    Cc: stable <stable@kernel.org>
+
+The Changes can also be looked at on:
+	http://www.kernel.org/git/?p=linux/kernel/git/wim/linux-2.6-watchdog.git;a=summary
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+index 596ba60..51b5551 100644
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -202,7 +202,6 @@ static struct miscdevice davinci_wdt_miscdev = {
+ static int __devinit davinci_wdt_probe(struct platform_device *pdev)
+ {
+ 	int ret = 0, size;
+-	struct resource *res;
+ 	struct device *dev = &pdev->dev;
+ 
+ 	wdt_clk = clk_get(dev, NULL);
+@@ -216,31 +215,31 @@ static int __devinit davinci_wdt_probe(struct platform_device *pdev)
+ 
+ 	dev_info(dev, "heartbeat %d sec\n", heartbeat);
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
++	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (wdt_mem == NULL) {
+ 		dev_err(dev, "failed to get memory region resource\n");
+ 		return -ENOENT;
+ 	}
+ 
+-	size = resource_size(res);
+-	wdt_mem = request_mem_region(res->start, size, pdev->name);
+-
+-	if (wdt_mem == NULL) {
++	size = resource_size(wdt_mem);
++	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
+ 		dev_err(dev, "failed to get memory region\n");
+ 		return -ENOENT;
+ 	}
+ 
+-	wdt_base = ioremap(res->start, size);
++	wdt_base = ioremap(wdt_mem->start, size);
+ 	if (!wdt_base) {
+ 		dev_err(dev, "failed to map memory region\n");
++		release_mem_region(wdt_mem->start, size);
++		wdt_mem = NULL;
+ 		return -ENOMEM;
+ 	}
+ 
+ 	ret = misc_register(&davinci_wdt_miscdev);
+ 	if (ret < 0) {
+ 		dev_err(dev, "cannot register misc device\n");
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, size);
++		wdt_mem = NULL;
+ 	} else {
+ 		set_bit(WDT_DEVICE_INITED, &wdt_status);
+ 	}
+@@ -253,8 +252,7 @@ static int __devexit davinci_wdt_remove(struct platform_device *pdev)
+ {
+ 	misc_deregister(&davinci_wdt_miscdev);
+ 	if (wdt_mem) {
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
+ 		wdt_mem = NULL;
+ 	}
+ 
+diff --git a/drivers/watchdog/max63xx_wdt.c b/drivers/watchdog/max63xx_wdt.c
+index 7a82ce5..73ba2fd 100644
+--- a/drivers/watchdog/max63xx_wdt.c
++++ b/drivers/watchdog/max63xx_wdt.c
+@@ -270,7 +270,6 @@ static int __devinit max63xx_wdt_probe(struct platform_device *pdev)
+ {
+ 	int ret = 0;
+ 	int size;
+-	struct resource *res;
+ 	struct device *dev = &pdev->dev;
+ 	struct max63xx_timeout *table;
+ 
+@@ -294,21 +293,19 @@ static int __devinit max63xx_wdt_probe(struct platform_device *pdev)
+ 
+ 	max63xx_pdev = pdev;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
++	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (wdt_mem == NULL) {
+ 		dev_err(dev, "failed to get memory region resource\n");
+ 		return -ENOENT;
+ 	}
+ 
+-	size = resource_size(res);
+-	wdt_mem = request_mem_region(res->start, size, pdev->name);
+-
+-	if (wdt_mem == NULL) {
++	size = resource_size(wdt_mem);
++	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
+ 		dev_err(dev, "failed to get memory region\n");
+ 		return -ENOENT;
+ 	}
+ 
+-	wdt_base = ioremap(res->start, size);
++	wdt_base = ioremap(wdt_mem->start, size);
+ 	if (!wdt_base) {
+ 		dev_err(dev, "failed to map memory region\n");
+ 		ret = -ENOMEM;
+@@ -326,8 +323,8 @@ static int __devinit max63xx_wdt_probe(struct platform_device *pdev)
+ out_unmap:
+ 	iounmap(wdt_base);
+ out_request:
+-	release_resource(wdt_mem);
+-	kfree(wdt_mem);
++	release_mem_region(wdt_mem->start, size);
++	wdt_mem = NULL;
+ 
+ 	return ret;
+ }
+@@ -336,8 +333,7 @@ static int __devexit max63xx_wdt_remove(struct platform_device *pdev)
+ {
+ 	misc_deregister(&max63xx_wdt_miscdev);
+ 	if (wdt_mem) {
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
+ 		wdt_mem = NULL;
+ 	}
+ 
+diff --git a/drivers/watchdog/nv_tco.c b/drivers/watchdog/nv_tco.c
+index 267377a..afa78a5 100644
+--- a/drivers/watchdog/nv_tco.c
++++ b/drivers/watchdog/nv_tco.c
+@@ -302,7 +302,7 @@ MODULE_DEVICE_TABLE(pci, tco_pci_tbl);
+  *	Init & exit routines
+  */
+ 
+-static unsigned char __init nv_tco_getdevice(void)
++static unsigned char __devinit nv_tco_getdevice(void)
+ {
+ 	struct pci_dev *dev = NULL;
+ 	u32 val;
+diff --git a/drivers/watchdog/pnx4008_wdt.c b/drivers/watchdog/pnx4008_wdt.c
+index c7cf4cb..6149332 100644
+--- a/drivers/watchdog/pnx4008_wdt.c
++++ b/drivers/watchdog/pnx4008_wdt.c
+@@ -254,7 +254,6 @@ static struct miscdevice pnx4008_wdt_miscdev = {
+ static int __devinit pnx4008_wdt_probe(struct platform_device *pdev)
+ {
+ 	int ret = 0, size;
+-	struct resource *res;
+ 
+ 	if (heartbeat < 1 || heartbeat > MAX_HEARTBEAT)
+ 		heartbeat = DEFAULT_HEARTBEAT;
+@@ -262,42 +261,42 @@ static int __devinit pnx4008_wdt_probe(struct platform_device *pdev)
+ 	printk(KERN_INFO MODULE_NAME
+ 		"PNX4008 Watchdog Timer: heartbeat %d sec\n", heartbeat);
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
++	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (wdt_mem == NULL) {
+ 		printk(KERN_INFO MODULE_NAME
+ 			"failed to get memory region resouce\n");
+ 		return -ENOENT;
+ 	}
+ 
+-	size = resource_size(res);
+-	wdt_mem = request_mem_region(res->start, size, pdev->name);
++	size = resource_size(wdt_mem);
+ 
+-	if (wdt_mem == NULL) {
++	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
+ 		printk(KERN_INFO MODULE_NAME "failed to get memory region\n");
+ 		return -ENOENT;
+ 	}
+-	wdt_base = (void __iomem *)IO_ADDRESS(res->start);
++	wdt_base = (void __iomem *)IO_ADDRESS(wdt_mem->start);
+ 
+ 	wdt_clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(wdt_clk)) {
+ 		ret = PTR_ERR(wdt_clk);
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, size);
++		wdt_mem = NULL;
+ 		goto out;
+ 	}
+ 
+ 	ret = clk_enable(wdt_clk);
+ 	if (ret) {
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, size);
++		wdt_mem = NULL;
++		clk_put(wdt_clk);
+ 		goto out;
+ 	}
+ 
+ 	ret = misc_register(&pnx4008_wdt_miscdev);
+ 	if (ret < 0) {
+ 		printk(KERN_ERR MODULE_NAME "cannot register misc device\n");
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, size);
++		wdt_mem = NULL;
+ 		clk_disable(wdt_clk);
+ 		clk_put(wdt_clk);
+ 	} else {
+@@ -320,8 +319,7 @@ static int __devexit pnx4008_wdt_remove(struct platform_device *pdev)
+ 	clk_put(wdt_clk);
+ 
+ 	if (wdt_mem) {
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
+ 		wdt_mem = NULL;
+ 	}
+ 	return 0;
+diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
+index 25b39bf..f7f5aa0 100644
+--- a/drivers/watchdog/s3c2410_wdt.c
++++ b/drivers/watchdog/s3c2410_wdt.c
+@@ -402,7 +402,6 @@ static inline void s3c2410wdt_cpufreq_deregister(void)
+ 
+ static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
+ {
+-	struct resource *res;
+ 	struct device *dev;
+ 	unsigned int wtcon;
+ 	int started = 0;
+@@ -416,20 +415,19 @@ static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
+ 
+ 	/* get the memory region for the watchdog timer */
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
++	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (wdt_mem == NULL) {
+ 		dev_err(dev, "no memory resource specified\n");
+ 		return -ENOENT;
+ 	}
+ 
+-	size = resource_size(res);
+-	wdt_mem = request_mem_region(res->start, size, pdev->name);
+-	if (wdt_mem == NULL) {
++	size = resource_size(wdt_mem);
++	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
+ 		dev_err(dev, "failed to get memory region\n");
+ 		return -EBUSY;
+ 	}
+ 
+-	wdt_base = ioremap(res->start, size);
++	wdt_base = ioremap(wdt_mem->start, size);
+ 	if (wdt_base == NULL) {
+ 		dev_err(dev, "failed to ioremap() region\n");
+ 		ret = -EINVAL;
+@@ -524,8 +522,8 @@ static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
+ 	iounmap(wdt_base);
+ 
+  err_req:
+-	release_resource(wdt_mem);
+-	kfree(wdt_mem);
++	release_mem_region(wdt_mem->start, size);
++	wdt_mem = NULL;
+ 
+ 	return ret;
+ }
+@@ -545,8 +543,7 @@ static int __devexit s3c2410wdt_remove(struct platform_device *dev)
+ 
+ 	iounmap(wdt_base);
+ 
+-	release_resource(wdt_mem);
+-	kfree(wdt_mem);
++	release_mem_region(wdt_mem->start, resource_size(wdt_mem));
+ 	wdt_mem = NULL;
+ 	return 0;
+ }
+diff --git a/drivers/watchdog/softdog.c b/drivers/watchdog/softdog.c
+index 100b114..bf16ffb 100644
+--- a/drivers/watchdog/softdog.c
++++ b/drivers/watchdog/softdog.c
+@@ -48,6 +48,7 @@
+ #include <linux/init.h>
+ #include <linux/jiffies.h>
+ #include <linux/uaccess.h>
++#include <linux/kernel.h>
+ 
+ #define PFX "SoftDog: "
+ 
+@@ -75,6 +76,11 @@ MODULE_PARM_DESC(soft_noboot,
+ 	"Softdog action, set to 1 to ignore reboots, 0 to reboot "
+ 					"(default depends on ONLY_TESTING)");
+ 
++static int soft_panic;
++module_param(soft_panic, int, 0);
++MODULE_PARM_DESC(soft_panic,
++	"Softdog action, set to 1 to panic, 0 to reboot (default=0)");
++
+ /*
+  *	Our timer
+  */
+@@ -98,7 +104,10 @@ static void watchdog_fire(unsigned long data)
+ 
+ 	if (soft_noboot)
+ 		printk(KERN_CRIT PFX "Triggered - Reboot ignored.\n");
+-	else {
++	else if (soft_panic) {
++		printk(KERN_CRIT PFX "Initiating panic.\n");
++		panic("Software Watchdog Timer expired.");
++	} else {
+ 		printk(KERN_CRIT PFX "Initiating system reboot.\n");
+ 		emergency_restart();
+ 		printk(KERN_CRIT PFX "Reboot didn't ?????\n");
+@@ -267,7 +276,8 @@ static struct notifier_block softdog_notifier = {
+ };
+ 
+ static char banner[] __initdata = KERN_INFO "Software Watchdog Timer: 0.07 "
+-	"initialized. soft_noboot=%d soft_margin=%d sec (nowayout= %d)\n";
++	"initialized. soft_noboot=%d soft_margin=%d sec soft_panic=%d "
++	"(nowayout= %d)\n";
+ 
+ static int __init watchdog_init(void)
+ {
+@@ -298,7 +308,7 @@ static int __init watchdog_init(void)
+ 		return ret;
+ 	}
+ 
+-	printk(banner, soft_noboot, soft_margin, nowayout);
++	printk(banner, soft_noboot, soft_margin, soft_panic, nowayout);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/watchdog/sp5100_tco.c b/drivers/watchdog/sp5100_tco.c
+index 1bc4938..87e0527 100644
+--- a/drivers/watchdog/sp5100_tco.c
++++ b/drivers/watchdog/sp5100_tco.c
+@@ -42,6 +42,7 @@
+ #define PFX TCO_MODULE_NAME ": "
+ 
+ /* internal variables */
++static u32 tcobase_phys;
+ static void __iomem *tcobase;
+ static unsigned int pm_iobase;
+ static DEFINE_SPINLOCK(tco_lock);	/* Guards the hardware */
+@@ -305,10 +306,18 @@ static unsigned char __devinit sp5100_tco_setupdevice(void)
+ 	/* Low three bits of BASE0 are reserved. */
+ 	val = val << 8 | (inb(SP5100_IO_PM_DATA_REG) & 0xf8);
+ 
++	if (!request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE,
++								"SP5100 TCO")) {
++		printk(KERN_ERR PFX "mmio address 0x%04x already in use\n",
++			val);
++		goto unreg_region;
++	}
++	tcobase_phys = val;
++
+ 	tcobase = ioremap(val, SP5100_WDT_MEM_MAP_SIZE);
+ 	if (tcobase == 0) {
+ 		printk(KERN_ERR PFX "failed to get tcobase address\n");
+-		goto unreg_region;
++		goto unreg_mem_region;
+ 	}
+ 
+ 	/* Enable watchdog decode bit */
+@@ -346,7 +355,8 @@ static unsigned char __devinit sp5100_tco_setupdevice(void)
+ 	/* Done */
+ 	return 1;
+ 
+-	iounmap(tcobase);
++unreg_mem_region:
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+ unreg_region:
+ 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+ exit:
+@@ -401,6 +411,7 @@ static int __devinit sp5100_tco_init(struct platform_device *dev)
+ 
+ exit:
+ 	iounmap(tcobase);
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+ 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+ 	return ret;
+ }
+@@ -414,6 +425,7 @@ static void __devexit sp5100_tco_cleanup(void)
+ 	/* Deregister */
+ 	misc_deregister(&sp5100_tco_miscdev);
+ 	iounmap(tcobase);
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+ 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+ }
+ 
