@@ -1,98 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab1C2T0H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 15:26:07 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:45965 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752309Ab1C2T0F (ORCPT
+	id S1753552Ab1C2TgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 15:36:05 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56918 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab1C2TgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 15:26:05 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [RFC PATCH 1/3] tea575x-tuner: various improvements
-Date: Tue, 29 Mar 2011 21:25:55 +0200
-User-Agent: KMail/1.9.10
-Cc: "Takashi Iwai" <tiwai@suse.de>, jirislaby@gmail.com,
-        alsa-devel@alsa-project.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>,
-        linux-media@vger.kernel.org
-References: <201103121919.05657.linux@rainbow-software.org> <201103252240.16051.linux@rainbow-software.org> <201103261119.31897.hverkuil@xs4all.nl>
-In-Reply-To: <201103261119.31897.hverkuil@xs4all.nl>
+	Tue, 29 Mar 2011 15:36:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=N0s4X31iFKD3tF0DNg9dL7AIDJX/zSvGXauEadchQyhvQIUnGdDAs53M9Iqw3cB2Xv
+         20CyJ+pwEcP+wtMVmTrl0vglvYrPGugxUs6ZvUnVdTGfHF0Hmx6taVSUqd1TkEmzLgAF
+         biGHxYBumz2RxHHym5uvtpStDRm6QKzjsLpI0=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201103292125.58561.linux@rainbow-software.org>
+In-Reply-To: <AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
+References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
+	<AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
+	<1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
+	<1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
+	<1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
+Date: Tue, 29 Mar 2011 22:36:02 +0300
+Message-ID: <AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
+Subject: Re: kmemleak for MIPS
+From: Maxin John <maxin.john@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Daniel Baluta <dbaluta@ixiacom.com>, naveen yadav <yad.naveen@gmail.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 26 March 2011 11:19:31 Hans Verkuil wrote:
-> On Friday, March 25, 2011 22:40:12 Ondrej Zary wrote:
-> > On Tuesday 22 March 2011 20:02:30 Hans Verkuil wrote:
-> > > BTW, can you run the v4l2-compliance utility for the two boards that
-> > > use this radio tuner?
-> > >
-> > > This utility is part of the v4l-utils repository
-> > > (http://git.linuxtv.org/v4l-utils.git).
-> > >
-> > > Run as 'v4l2-compliance -r /dev/radioX -v2'.
-> > >
-> > > I'm sure there will be some errors/warnings (warnings regarding
-> > > G/S_PRIORITY are to be expected). But I can use it to make a patch for
-> > > 2.6.40 that fixes any issues.
-> >
-> > The output is the same for both fm801 and es1968 (see below). Seems that
-> > there are 4 errors:
-> >  1. multiple-open does not work
-> >  2. something bad with s_frequency
-> >  3. input functions are present
-> >  4. no extended controls
->
-> Thanks for testing! Some comments are below...
->
-> > Running on 2.6.38
-> >
-> > Driver Info:
-> > 	Driver name   : tea575x-tuner
-> > 	Card type     : TEA5757
-> > 	Bus info      : PCI
-> > 	Driver version: 0.0.2
-> > 	Capabilities  : 0x00050000
-> > 		Tuner
-> > 		Radio
-> >
-> > Compliance test for device /dev/radio0 (not using libv4l2):
-> >
-> > Required ioctls:
-> > 	test VIDIOC_QUERYCAP: OK
-> >
-> > Allow for multiple opens:
-> > 	test second radio open: FAIL
->
-> I will fix this. Once 2.6.39-rc1 is released I can make a patch fixing
-> this.
->
-> > Debug ioctls:
-> > 	test VIDIOC_DBG_G_CHIP_IDENT: Not Supported
-> > 	test VIDIOC_DBG_G/S_REGISTER: Not Supported
-> > 	test VIDIOC_LOG_STATUS: Not Supported
-> >
-> > Input ioctls:
-> > 	test VIDIOC_G/S_TUNER: OK
-> > 		fail: set rangehigh+1 frequency did not return EINVAL
-> > 	test VIDIOC_G/S_FREQUENCY: FAIL
->
-> Hmm, S_FREQUENCY apparently fails to check for valid frequency values.
-> Can you take a quick look at the code?
+Hi,
 
-The driver code is OK. But there is a bug in v4l2-test-input-output.cpp at 
-line 214:
-if (ret)
-	return fail("set rangehigh+1 frequency did not return EINVAL\n");
+I have prepared the combined patch for kmemleak porting to MIPS. After
+applying the patch and enabling the kmemleak in Kernel, I can see one
+kernel memleak reported during booting itself:
+..
+..
 
-There should be "if (ret != EINVAL)" instead of "if (ret)".
+TCP cubic registered
+NET: Registered protocol family 17
+NET: Registered protocol family 15
+kmemleak: Kernel memory leak detector initialized
+rtc_cmos rtc_cmos: setting system clock to 2011-03-29 18:20:41 UTC (1301422841)
+kmemleak: Automatic memory scanning thread started
+EXT3-fs: barriers not enabled
+kjournald starting.  Commit interval 5 seconds
+EXT3-fs (hda1): mounted filesystem with ordered data mode
+VFS: Mounted root (ext3 filesystem) readonly on device 3:1.
+Freeing prom memory: 956k freed
+Freeing unused kernel memory: 244k freed
+modprobe: FATAL: Could not load
+/lib/modules/2.6.38-08826-g1788c20-dirty/modules.dep: No such file or
+directory
 
--- 
-Ondrej Zary
+INIT: version 2.86 booting
+Starting the hotplug events dispatcher: udevdudevd (863):
+/proc/863/oom_adj is deprecated, please use /proc/863/oom_score_adj
+instead.
+.
+Synthesizing the initial hotplug events...done.
+Waiting for /dev to be fully populated...kmemleak: 1 new suspected
+memory leaks (see /sys/kernel/debug/kmemleak)
+....
+....
+
+debian-mips:~#
+debian-mips:~# mount -t debugfs nodev /sys/kernel/debug/
+debian-mips:~#  cat /sys/kernel/debug/kmemleak
+unreferenced object 0x8f90d000 (size 4096):
+  comm "swapper", pid 1, jiffies 4294937330 (age 815.000s)
+  hex dump (first 32 bytes):
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<80529644>] alloc_large_system_hash+0x2f8/0x410
+    [<805383b4>] udp_table_init+0x4c/0x158
+    [<805384dc>] udp_init+0x1c/0x94
+    [<8053889c>] inet_init+0x184/0x2a0
+    [<80100584>] do_one_initcall+0x174/0x1e0
+    [<8051f348>] kernel_init+0xe4/0x174
+    [<80103d4c>] kernel_thread_helper+0x10/0x18
+
+
+The standard kmemleak test case is behaving as expected. Based on
+this, I think, we can say that the kmemleak support for MIPS is
+working.
+
+Please let me know your comments.
+
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+---
+diff --git a/arch/mips/include/asm/cache.h b/arch/mips/include/asm/cache.h
+index 650ac9b..b4db69f 100644
+--- a/arch/mips/include/asm/cache.h
++++ b/arch/mips/include/asm/cache.h
+@@ -17,6 +17,6 @@
+ #define SMP_CACHE_SHIFT                L1_CACHE_SHIFT
+ #define SMP_CACHE_BYTES                L1_CACHE_BYTES
+
+-#define __read_mostly __attribute__((__section__(".data.read_mostly")))
++#define __read_mostly __attribute__((__section__(".data..read_mostly")))
+
+ #endif /* _ASM_CACHE_H */
+diff --git a/arch/mips/kernel/vmlinux.lds.S b/arch/mips/kernel/vmlinux.lds.S
+index 832afbb..501204d 100644
+--- a/arch/mips/kernel/vmlinux.lds.S
++++ b/arch/mips/kernel/vmlinux.lds.S
+@@ -68,12 +68,14 @@ SECTIONS
+        RODATA
+
+        /* writeable */
++        _sdata = .;                  /* Start of data section */
+        .data : {       /* Data */
+                . = . + DATAOFFSET;             /* for CONFIG_MAPPED_KERNEL */
+
+                INIT_TASK_DATA(PAGE_SIZE)
+                NOSAVE_DATA
+                CACHELINE_ALIGNED_DATA(1 << CONFIG_MIPS_L1_CACHE_SHIFT)
++               READ_MOSTLY_DATA(1 << CONFIG_MIPS_L1_CACHE_SHIFT)
+                DATA_DATA
+                CONSTRUCTORS
+        }
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index df9234c..5042421 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -398,7 +398,7 @@ config SLUB_STATS
+ config DEBUG_KMEMLEAK
+        bool "Kernel memory leak detector"
+        depends on DEBUG_KERNEL && EXPERIMENTAL && !MEMORY_HOTPLUG && \
+-               (X86 || ARM || PPC || S390 || SPARC64 || SUPERH ||
+MICROBLAZE || TILE)
++               (X86 || ARM || PPC || MIPS || S390 || SPARC64 ||
+SUPERH || MICROBLAZE || TILE)
+
+        select DEBUG_FS if SYSFS
+        select STACKTRACE if STACKTRACE_SUPPORT
