@@ -1,139 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab1C2Vyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 17:54:40 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:53624 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab1C2Vyj (ORCPT
+	id S1754400Ab1C2V5v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 17:57:51 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:32917 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184Ab1C2V5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 17:54:39 -0400
-Date: Tue, 29 Mar 2011 23:53:51 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        andi.kleen@intel.com, haicheng.li@linux.intel.com,
-        fengguang.wu@intel.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
-        dave@linux.vnet.ibm.com, wdauchy@gmail.com, rientjes@google.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] mm: Extend memory hotplug API to allow memory hotplug in virtual machines
-Message-ID: <20110329215351.GH30387@router-fw-old.local.net-space.pl>
-References: <20110328092507.GD13826@router-fw-old.local.net-space.pl> <20110328153735.d797c5b3.akpm@linux-foundation.org> <20110329185913.GF30387@router-fw-old.local.net-space.pl> <20110329121541.d9a27c2e.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110329121541.d9a27c2e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.3.28i
+	Tue, 29 Mar 2011 17:57:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=cE0UUTd5qvalWIUSeWjuD2vyyd0PkvEKgB/pQ8CJkMJSLgH/GQcSJRq3gs8x+VECpu
+         fxkOKhr3uZaW4HQSvZJXYdfbKEeTZktsSUR7nPaHxnpxlpW6yUBxg66FtfOYoOfEMGZ8
+         cJhU6tdFvKHyb64hPt9qO3nqyigYTl/+pRL5s=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTim2AyGPrun8MNq0=TyXpJ+b8i=eyHhLz01F+f2P@mail.gmail.com>
+References: <1301310995.5615.92.camel@wangqingchuan>
+	<1301336010.2217.20.camel@workstation>
+	<AANLkTikMJszEyv8-SMMjD-MeykSwmsKf=gmezcMgySoP@mail.gmail.com>
+	<1301409864.5615.98.camel@wangqingchuan>
+	<AANLkTi=fcWBpmQ66a3+vQwgFOXn=0rJAviNzR4a0mfcJ@mail.gmail.com>
+	<1301421664.2151.12.camel@Portable-Work>
+	<AANLkTin_v5h==E0i5mQgK2AEdaZhwViykr3acbz4CW0k@mail.gmail.com>
+	<20110329202608.GA3454@viiv.ffwll.ch>
+	<AANLkTim2AyGPrun8MNq0=TyXpJ+b8i=eyHhLz01F+f2P@mail.gmail.com>
+Date: Wed, 30 Mar 2011 07:57:49 +1000
+Message-ID: <AANLkTi=vFwoKCOsvyGBQA9w01QX_TwGu_GF6mA0grr2o@mail.gmail.com>
+Subject: Re: GEM-related desktop sluggishness due to linear-time arch_get_unmapped_area_topdown()
+From: Dave Airlie <airlied@gmail.com>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Lucas Stach <dev@lynxeye.de>, r6144 <rainy6144@gmail.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Daniel Vetter <daniel@ffwll.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 12:15:41PM -0700, Andrew Morton wrote:
-> On Tue, 29 Mar 2011 20:59:13 +0200
-> Daniel Kiper <dkiper@net-space.pl> wrote:
+On Wed, Mar 30, 2011 at 7:04 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+> On Tue, Mar 29, 2011 at 4:26 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+>> On Tue, Mar 29, 2011 at 03:45:34PM -0400, Jerome Glisse wrote:
+>>> Short lived & small bo would definitly doesn't work well for this kind
+>>> of API, it would all be a function of the ioctl cost. But i am not
+>>> sure the drawback would be that big, intel tested with pread/pwrite
+>>> and gived up don't remember why. For the vbo case you describe the
+>>> scheme i was thinking would be : allocate bo and on buffer data call
+>>> upload to the allocated bo using the bind user page feature that would
+>>> mean zero extra copy operation. For the fire forget case of vbo,
+>>> likely somekind of transient buffer would be more appropriate.
+>>
+>> Just to clarify: Uploads to linear buffers are all done with pwrite (due
+>> to an api foobar, it's not so great for 2d/tiled stuff). It's amazing how
+>> much faster that is: Switching vbo's from mmpa to pwrite has given a few
+>> percent more fps in openarena in i915g! As long as the chunk you're gonna
+>> write fits into L1 cache, it's probably a net win.
+>> -Daniel
 >
-> > > This is a bit strange.  Normally we'll use a notifier chain to tell
-> > > listeners "hey, X just happened".  But this code is different - it
-> > > instead uses a notifier chain to tell handlers "hey, do X".  Where in
-> > > this case, X is "free a page".
-> > >
-> > > And this (ab)use of notifiers is not a good fit!  Because we have the
-> > > obvious problem that if there are three registered noftifiers, we don't
-> > > want to be freeing the page three times.  Hence the tricks with
-> > > notifier callout return values.
-> > >
-> > > If there are multiple independent notifier handlers, how do we manage
-> > > their priorities?  And what are the effects of the ordering of the
-> > > registration calls?
-> > >
-> > > And when one callback overrides an existing one, is there any point in
-> > > leaving the original one installed at all?
-> > >
-> > > I dunno, it's all a bit confusing and strange.  Perhaps it would help
-> > > if you were to explain exactly what behaviour you want here, and we can
-> > > look to see if there is a more idiomatic way of doing it.
-> >
-> > OK. I am looking for simple generic mechanism which allow runtime
-> > registration/unregistration of generic or module specific (in that
-> > case Xen) page onlining function. Dave Hansen sugested compile time
-> > solution (https://lkml.org/lkml/2011/2/8/235), however, it does not
-> > fit well in my new project on which I am working on (I am going post
-> > details at the end of April).
->
-> Well, without a complete description of what you're trying to do and
-> without any indication of what "does not fit well" means, I'm at a bit
-> of a loss to suggest anything.
+> What i had in mind was something little bit more advance that pwrite,
+> somethings that would take width,height,pitch of userpage and would be
+> able to perform proper blit. But yes pwrite in intel is kind of
+> limited.
 
-The most important thing for me is runtime registration/unregistration.
-It will be good if it is possible to register more than one callback
-at a time (e.g. for counting), however, it is not required now. It
-appears that your proposal fits quite well my requirements. I will check
-that. Thank you.
+TTM has support for userpage binding we just don't use it.
 
-> If we are assured that only one callback will ever be registered at a
-> time then a simple
->
-> typdef void (*callback_t)(struct page *);
->
-> static callback_t g_callback;
->
-> int register_callback(callback_t callback)
-> {
-> 	int ret = -EINVAL;
->
-> 	lock(some_lock);
-> 	if (g_callback == NULL) {
-> 		g_callback = callback;
-> 		ret = 0;
-> 	}
-> 	unlock(some_lock)
-> 	return ret;
-> }
->
-> would suffice.  That's rather nasty because calls to (*g_callback)
-> require some_lock.  Use RCU.
-
-I think that in this case lock_memory_hotplug()/unlock_memory_hotplug()
-is much better because it is used for locking during memory hotplug
-operation. That means they protect against callback changes during
-memory hotplug. It appears sufficient here.
-
-> > > Also...  I don't think we need (the undocumented)
-> > > OP_DO_NOT_INCREMENT_TOTAL_COUNTERS and OP_INCREMENT_TOTAL_COUNTERS.
-> > > Just do
-> > >
-> > > void __online_page_increment_counters(struct page *page,
-> > > 					bool inc_total_counters);
-> > >
-> > > and pass it "true" or false".
-> >
-> > What do you think about __online_page_increment_counters()
-> > (totalram_pages and totalhigh_pages) and
-> > __online_page_set_limits() (num_physpages and max_mapnr) ???
->
-> I don't understand the proposal.
-
-void __online_page_increment_counters(struct page *page)
-{
-  totalram_pages++;
-
-#ifdef CONFIG_HIGHMEM
-  if (PageHighMem(page))
-    totalhigh_pages++;
-#endif
-}
-
-void __online_page_set_limits(struct page *page)
-{
-  unsigned long pfn = page_to_pfn(page);
-
-  if (pfn >= num_physpages)
-    num_physpages = pfn + 1;
-
-#ifdef CONFIG_FLATMEM
-  max_mapnr = max(pfn, max_mapnr);
-#endif
-}
-
-Daniel
+Dave.
