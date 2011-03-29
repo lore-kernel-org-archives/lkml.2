@@ -1,51 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab1C2JuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 05:50:22 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:42432 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab1C2JuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 05:50:21 -0400
-Message-ID: <4D91AB5C.8030203@kernel.dk>
-Date: Tue, 29 Mar 2011 11:50:20 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Bug at for-2.6.39/core
-References: <4D91AAB9.2000800@cn.fujitsu.com>
-In-Reply-To: <4D91AAB9.2000800@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752293Ab1C2JxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 05:53:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58534 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab1C2JxP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 05:53:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=PxftqeC5ubZlzCggb/Y7h5a+THFxq+pnNe40sXC5zkuKshGdU8c6m3oi6exlE06XeB
+         lyLDT4hTdlpSMUaFZeGbHzt0dcNC117tIm9p6O2bnFgPp+bcPUNkmhtiuGs6A8lgskuA
+         QIniVHBo2fkX4VriB4kQ4dowW29N8ScJyRU+k=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: ben-linux@fluff.org, linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH] s3c2440: mini2440: Use leds-gpio driver for board leds handling.
+Date: Tue, 29 Mar 2011 11:53:00 +0200
+Message-Id: <1301392380-9022-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <AANLkTi=RW0o=+hXcO0Y04nq10QEd=hWY0Nzc0enJ=Tr7@mail.gmail.com>
+References: <AANLkTi=RW0o=+hXcO0Y04nq10QEd=hWY0Nzc0enJ=Tr7@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-29 11:47, Gui Jianfeng wrote:
-> Hi Jens,
-> 
-> I trigger an OOPS when testing, the following script can reproduce
-> this bug on my box.
-> 
-> #!/bin/sh
-> 
-> mkdir /mnt/blkio
-> mount -t cgroup -o blkio blkio /mnt/blkio/
-> mkdir /mnt/blkio/test1 /mnt/blkio/test2
-> echo noop > /sys/block/sdb/queue/scheduler
-> dd iflag=direct if=/dev/sdb of=/dev/null bs=4k &
-> echo $! > /mnt/blkio/test1/tasks
-> dd iflag=direct if=/dev/sdb of=/dev/null bs=4k &
-> echo $! > /mnt/blkio/test2/tasks
-> sleep 3
-> echo cfq > /sys/block/sdb/queue/scheduler
-> 
-> ----
-> eBUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-> IP: [<ffffffff812200e8>] cfq_completed_request+0x38/0x7f0
+Intention of this patch is convert existing usage of leds-s3c24xx driver
+to use generic gpio-leds driver. Leds are separated to 2 devices.
+First device handle 4 available leds. Second device is used to drive
+LCD backlight. Backlight can be controlled via parameter b so we need
+separate device which is registered or not depending on parameter.
 
-This is a known bug, update to Linus' current -git and it's fixed.
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+---
+ arch/arm/mach-s3c2440/mach-mini2440.c |  121 +++++++++++++++------------------
+ 1 files changed, 54 insertions(+), 67 deletions(-)
 
+diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c b/arch/arm/mach-s3c2440/mach-mini2440.c
+index 163d318..28ef6eb 100644
+--- a/arch/arm/mach-s3c2440/mach-mini2440.c
++++ b/arch/arm/mach-s3c2440/mach-mini2440.c
+@@ -419,81 +419,71 @@ static struct platform_device mini2440_button_device = {
+ };
+ 
+ /* LEDS */
+-
+-static struct s3c24xx_led_platdata mini2440_led1_pdata = {
+-	.name		= "led1",
+-	.gpio		= S3C2410_GPB(5),
+-	.flags		= S3C24XX_LEDF_ACTLOW | S3C24XX_LEDF_TRISTATE,
+-	.def_trigger	= "heartbeat",
+-};
+-
+-static struct s3c24xx_led_platdata mini2440_led2_pdata = {
+-	.name		= "led2",
+-	.gpio		= S3C2410_GPB(6),
+-	.flags		= S3C24XX_LEDF_ACTLOW | S3C24XX_LEDF_TRISTATE,
+-	.def_trigger	= "nand-disk",
+-};
+-
+-static struct s3c24xx_led_platdata mini2440_led3_pdata = {
+-	.name		= "led3",
+-	.gpio		= S3C2410_GPB(7),
+-	.flags		= S3C24XX_LEDF_ACTLOW | S3C24XX_LEDF_TRISTATE,
+-	.def_trigger	= "mmc0",
+-};
+-
+-static struct s3c24xx_led_platdata mini2440_led4_pdata = {
+-	.name		= "led4",
+-	.gpio		= S3C2410_GPB(8),
+-	.flags		= S3C24XX_LEDF_ACTLOW | S3C24XX_LEDF_TRISTATE,
+-	.def_trigger	= "",
+-};
+-
+-static struct s3c24xx_led_platdata mini2440_led_backlight_pdata = {
+-	.name		= "backlight",
+-	.gpio		= S3C2410_GPG(4),
+-	.def_trigger	= "backlight",
++static struct gpio_led gpio_leds[] = {
++	{
++		.name			= "led1",
++		.gpio			= S3C2410_GPB(5),
++		.active_low		= 1,
++		.default_trigger	= "heartbeat",
++	},
++	{
++		.name			= "led2",
++		.gpio			= S3C2410_GPB(6),
++		.active_low		= 1,
++		.default_trigger	= "nand-disk",
++		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
++	},
++	{
++		.name			= "led3",
++		.gpio			= S3C2410_GPB(7),
++		.active_low		= 1,
++		.default_trigger	= "mmc0",
++		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
++	},
++	{
++		.name			= "led4",
++		.gpio			= S3C2410_GPB(8),
++		.active_low		= 1,
++		.default_trigger	= "none",
++		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
++	}
+ };
+ 
+-static struct platform_device mini2440_led1 = {
+-	.name		= "s3c24xx_led",
+-	.id		= 1,
+-	.dev		= {
+-		.platform_data	= &mini2440_led1_pdata,
+-	},
++static struct gpio_led backlight_led[] = {
++	{
++		.name			= "backlight",
++		.gpio			= S3C2410_GPG(4),
++		.active_low		= 0,
++		.default_trigger	= "backlight",
++		.default_state		= LEDS_GPIO_DEFSTATE_ON,
++	}
+ };
+ 
+-static struct platform_device mini2440_led2 = {
+-	.name		= "s3c24xx_led",
+-	.id		= 2,
+-	.dev		= {
+-		.platform_data	= &mini2440_led2_pdata,
+-	},
++static struct gpio_led_platform_data gpio_led_info = {
++	.leds		= gpio_leds,
++	.num_leds	= ARRAY_SIZE(gpio_leds),
+ };
+ 
+-static struct platform_device mini2440_led3 = {
+-	.name		= "s3c24xx_led",
+-	.id		= 3,
+-	.dev		= {
+-		.platform_data	= &mini2440_led3_pdata,
+-	},
++static struct gpio_led_platform_data backlight_info = {
++	.leds		= backlight_led,
++	.num_leds	= ARRAY_SIZE(backlight_led),
+ };
+ 
+-static struct platform_device mini2440_led4 = {
+-	.name		= "s3c24xx_led",
+-	.id		= 4,
+-	.dev		= {
+-		.platform_data	= &mini2440_led4_pdata,
+-	},
++static struct platform_device mini2440_leds = {
++	.name	= "leds-gpio",
++	.id	= 0,
++	.dev	= {
++		.platform_data	= &gpio_led_info,
++	}
+ };
+ 
+ static struct platform_device mini2440_led_backlight = {
+-	.name		= "s3c24xx_led",
+-	.id		= 5,
+-	.dev		= {
+-		.platform_data	= &mini2440_led_backlight_pdata,
+-	},
++	.name	= "leds-gpio",
++	.id	= 1,
++	.dev	= {
++		.platform_data	= &backlight_info,
++	}
+ };
+-
+ /* AUDIO */
+ 
+ static struct s3c24xx_uda134x_platform_data mini2440_audio_pins = {
+@@ -543,10 +533,7 @@ static struct platform_device *mini2440_devices[] __initdata = {
+ 	&s3c_device_rtc,
+ 	&s3c_device_usbgadget,
+ 	&mini2440_device_eth,
+-	&mini2440_led1,
+-	&mini2440_led2,
+-	&mini2440_led3,
+-	&mini2440_led4,
++	&mini2440_leds,
+ 	&mini2440_button_device,
+ 	&s3c_device_nand,
+ 	&s3c_device_sdi,
 -- 
-Jens Axboe
+1.7.1
 
