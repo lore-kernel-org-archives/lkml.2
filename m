@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab1C2V3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 17:29:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56155 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754025Ab1C2V3N (ORCPT
+	id S1754445Ab1C2VbA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 17:31:00 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:40884 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab1C2Va7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 17:29:13 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>,
-        David Collins <collinsd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: When constraining modes fall back to higher power modes
-Date: Wed, 30 Mar 2011 06:29:12 +0900
-Message-Id: <1301434152-16393-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 29 Mar 2011 17:30:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:message-id:mime-version:content-type; q=dns; s=
+	newdream.net; b=ICDePaRKEecBmItyN2xfhi0R582PAhkpATGJuxPI9BK0SCL/
+	DzlVH6qEwoYWR1eCrNINWRzptg96nKLd2+8pipeNVR7aZeD63cA4IzxqRcxM5qP2
+	E0wPYfbPwrImdpRUkdbU38Y0Xl0XllH2pccbOzLMbeKdWlgl8mUE7gEjYYM=
+Date: Tue, 29 Mar 2011 14:33:56 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph updates pt 2
+Message-ID: <Pine.LNX.4.64.1103291426070.22956@cobra.newdream.net>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a mode requested by a consumer is not allowed by constraints
-automatically fall back to a higher power mode if possible. This
-ensures that consumers get at least the output they requested while
-allowing machine drivers to transparently limit lower power modes
-if required.
+Hi Linus,
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+Please pull this second set of Ceph updates/fixes from
 
-I've not actually had a chance to test this but throwing it out there
-for comment and testing now; someone with an OMAP board can probably
-test fairly quickly as the OMAP HSMMC driver is using set_mode().
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git master
 
- drivers/regulator/core.c |   24 +++++++++++++++---------
- 1 files changed, 15 insertions(+), 9 deletions(-)
+The main thing is a patchset to use the keys api to pass the security key 
+from mount.ceph to the client.  There are also a few bug fixes that have 
+come in over the past week.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 3ffc697..a634946 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -197,9 +197,9 @@ static int regulator_check_current_limit(struct regulator_dev *rdev,
- }
- 
- /* operating mode constraint check */
--static int regulator_check_mode(struct regulator_dev *rdev, int mode)
-+static int regulator_mode_constrain(struct regulator_dev *rdev, int *mode)
- {
--	switch (mode) {
-+	switch (*mode) {
- 	case REGULATOR_MODE_FAST:
- 	case REGULATOR_MODE_NORMAL:
- 	case REGULATOR_MODE_IDLE:
-@@ -217,11 +217,17 @@ static int regulator_check_mode(struct regulator_dev *rdev, int mode)
- 		rdev_err(rdev, "operation not allowed\n");
- 		return -EPERM;
- 	}
--	if (!(rdev->constraints->valid_modes_mask & mode)) {
--		rdev_err(rdev, "invalid mode %x\n", mode);
--		return -EINVAL;
-+
-+	/* The modes are bitmasks, the most power hungry modes having
-+	 * the lowest values. If the requested mode isn't supported
-+	 * try higher modes. */
-+	while (*mode) {
-+		if (rdev->constraints->valid_modes_mask & *mode)
-+			return 0;
-+		*mode /= 2;
- 	}
--	return 0;
-+
-+	return -EINVAL;
- }
- 
- /* dynamic regulator mode switching constraint check */
-@@ -612,7 +618,7 @@ static void drms_uA_update(struct regulator_dev *rdev)
- 						  output_uV, current_uA);
- 
- 	/* check the new mode is allowed */
--	err = regulator_check_mode(rdev, mode);
-+	err = regulator_mode_constrain(rdev, &mode);
- 	if (err == 0)
- 		rdev->desc->ops->set_mode(rdev, mode);
- }
-@@ -2005,7 +2011,7 @@ int regulator_set_mode(struct regulator *regulator, unsigned int mode)
- 	}
- 
- 	/* constraints check */
--	ret = regulator_check_mode(rdev, mode);
-+	ret = regulator_mode_constrain(rdev, mode);
- 	if (ret < 0)
- 		goto out;
- 
-@@ -2116,7 +2122,7 @@ int regulator_set_optimum_mode(struct regulator *regulator, int uA_load)
- 	mode = rdev->desc->ops->get_optimum_mode(rdev,
- 						 input_uV, output_uV,
- 						 total_uA_load);
--	ret = regulator_check_mode(rdev, mode);
-+	ret = regulator_mode_constrain(rdev, &mode);
- 	if (ret < 0) {
- 		rdev_err(rdev, "failed to get optimum mode @ %d uA %d -> %d uV\n",
- 			 total_uA_load, input_uV, output_uV);
--- 
-1.7.4.1
+Thanks!
+sage
 
+
+Dan Carpenter (1):
+      ceph: unlock on error in ceph_osdc_start_request()
+
+Mariusz Kozlowski (1):
+      ceph: fix possible NULL pointer dereference
+
+Sage Weil (2):
+      ceph: flush msgr_wq during mds_client shutdown
+      libceph: fix null dereference when unregistering linger requests
+
+Tommi Virtanen (3):
+      ceph: Move secret key parsing earlier.
+      libceph: Get secret from the kernel keys api when mounting with key=NAME.
+      libceph: Create a new key type "ceph".
+
+ fs/ceph/mds_client.c         |    6 ++
+ fs/ceph/super.c              |    2 +-
+ include/keys/ceph-type.h     |    8 +++
+ include/linux/ceph/auth.h    |    4 +-
+ include/linux/ceph/libceph.h |    2 +-
+ net/ceph/Kconfig             |    1 +
+ net/ceph/auth.c              |    8 ++--
+ net/ceph/auth_x.c            |    8 ++-
+ net/ceph/ceph_common.c       |  112 ++++++++++++++++++++++++++++++++++++++----
+ net/ceph/crypto.c            |   73 +++++++++++++++++++++++++++
+ net/ceph/crypto.h            |    4 ++
+ net/ceph/mon_client.c        |    2 +-
+ net/ceph/osd_client.c        |   12 +++--
+ 13 files changed, 215 insertions(+), 27 deletions(-)
+ create mode 100644 include/keys/ceph-type.h
