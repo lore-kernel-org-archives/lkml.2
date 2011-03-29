@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab1C2Wfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 18:35:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35904 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751683Ab1C2Wfa (ORCPT
+	id S1752551Ab1C2WiS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 18:38:18 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:31254 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751360Ab1C2WiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 18:35:30 -0400
-Date: Tue, 29 Mar 2011 15:35:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Shaohua Li <shaohua.li@intel.com>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH]mmap: avoid unnecessary anon_vma lock
-Message-Id: <20110329153517.3b87842f.akpm@linux-foundation.org>
-In-Reply-To: <m2fwq718u4.fsf@firstfloor.org>
-References: <1301277532.3981.25.camel@sli10-conroe>
-	<m2fwq718u4.fsf@firstfloor.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Mar 2011 18:38:17 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: geuAgLMVM1kMWvjbKRVpG.xUPQbJh7iChyxhqcmwZSJzRnC
+ DL7KGSFLkT3JS01ajJmroj8g4p_WxQRxlFMJr1PG6HpRvokDzRx.OfU1En8B
+ _Lohh9prsbeIgmcghCTKpVqFcn2xVnSzacQ8CwxC5xL_WapMNVKhnXV.bUZY
+ k2..LHLXUZrKeuE7QzEMx6L17lcSMJ_9fzubvMiLW_4eIYHHhXHp.fe9ai4L
+ W6Jtp047PAa8fDxOLcbQLAobkYgJPrsiP.tPtxcKAG7grh1GCtekvvJb_LMw
+ d6v2lyzRJTG0h4P_vj7vEYEAY0y8TfC5XkxlGilo0PLKzS_YIr4dkO3Yti8_
+ 5E2wI3CPDKeCjGBdB6wHdgJat
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 29 Mar 2011 17:38:13 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Shaohua Li <shaohua.li@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH]mmap: add alignment for some variables
+In-Reply-To: <20110329152434.d662706f.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1103291734001.11817@router.home>
+References: <1301277536.3981.27.camel@sli10-conroe> <m2oc4v18x8.fsf@firstfloor.org> <1301360054.3981.31.camel@sli10-conroe> <20110329152434.d662706f.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011 09:57:39 -0700
-Andi Kleen <andi@firstfloor.org> wrote:
+On Tue, 29 Mar 2011, Andrew Morton wrote:
 
-> Shaohua Li <shaohua.li@intel.com> writes:
-> 
-> > If we only change vma->vm_end, we can avoid taking anon_vma lock even 'insert'
-> > isn't NULL, which is the case of split_vma.
-> > From my understanding, we need the lock before because rmap must get the
-> > 'insert' VMA when we adjust old VMA's vm_end (the 'insert' VMA is linked to
-> > anon_vma list in __insert_vm_struct before).
-> > But now this isn't true any more. The 'insert' VMA is already linked to
-> > anon_vma list in __split_vma(with anon_vma_clone()) instead of
-> > __insert_vm_struct. There is no race rmap can't get required VMAs.
-> > So the anon_vma lock is unnecessary, and this can reduce one locking in brk
-> > case and improve scalability.
-> 
-> Looks good to me.
+> > -struct percpu_counter vm_committed_as;
+> > +struct percpu_counter vm_committed_as ____cacheline_internodealigned_in_smp;
+>
+> Why ____cacheline_internodealigned_in_smp?  That's pretty aggressive.
+>
+> afacit the main benefit from this will occur if the read-only
+> vm_committed_as.counters lands in the same cacheline as some
+> write-frequently storage.
+>
+> But that's a complete mad guess and I'd prefer not to have to guess.
 
-Looks way too tricky to me.
+It would  be useful to have some functionality that allows us to give
+hints as to which variables are accessed together and therefore would be
+useful to put in the same cacheline. Thus avoiding things like the
+readmostly segment and the above aberration.
 
-Please review this code for maintainability.  Have we documented what
-we're doing as completely and as clearly as we are able?
+Andi had a special pda area in earlier version before the merger of 32 and
+64 bit code for x86 that resulted in placement of the most performance
+critical variables near one another. I am afraid now they are all spread
+out.
 
-This comment:
+So maybe something that allows us to define multiple pdas? Or just structs
+that are cacheline aligned?
 
-		/*
-		 * split_vma has split insert from vma, and needs
-		 * us to insert it before dropping the locks
-		 * (it may either follow vma or precede it).
-		 */
-
-is now at least misleading.  It doesn't explain which "locks" it means,
-and with this patch we only drop a single lock.
-
-
-And this comment:
-
-	/*
-	 * When changing only vma->vm_end, we don't really need anon_vma
-	 * lock. This is a fairly rare case by itself, but the anon_vma
-	 * lock may be shared between many sibling processes.  Skipping
-	 * the lock for brk adjustments makes a difference sometimes.
-	 */
-
-fails to explain _why_ the anon_vma lock isn't needed in this case, and
-didn't tell readers why it is safe to alter vma->vm_pgoff without
-anon_vma_lock().
