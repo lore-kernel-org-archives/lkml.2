@@ -1,232 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab1C2NQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 09:16:21 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44258 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab1C2NQU convert rfc822-to-8bit (ORCPT
+	id S1753526Ab1C2NS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 09:18:27 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:47023 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab1C2NS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 09:16:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=ObN8KMFW0k9HAwDK68myZESgWbxZJtRF5A1wxG70CNchSsDkG0nYkxls+DuBkgWQeU
-         O/afLtx2Gv6/m3s9n4MPh47z6qCu/alQn6fQyIF8Gxuhr6X2re1htL/e8LVhkuD5k1xV
-         TNKDB7+xeQfgDSyS1ZUpzXMyNtQXEpL+6dIvM=
-MIME-Version: 1.0
-In-Reply-To: <20110329111858.GF30671@tiehlicka.suse.cz>
-References: <20110328093957.089007035@suse.cz> <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
- <20110328114430.GE5693@tiehlicka.suse.cz> <20110329090924.6a565ef3.kamezawa.hiroyu@jp.fujitsu.com>
- <20110329073232.GB30671@tiehlicka.suse.cz> <20110329165117.179d87f9.kamezawa.hiroyu@jp.fujitsu.com>
- <20110329085942.GD30671@tiehlicka.suse.cz> <20110329184119.219f7d7b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110329111858.GF30671@tiehlicka.suse.cz>
-From: Zhu Yanhai <zhu.yanhai@gmail.com>
-Date: Tue, 29 Mar 2011 21:15:59 +0800
-Message-ID: <AANLkTi=1WA-oF1kraTMMcSgwqvaXqrEiROVGeDfejO45@mail.gmail.com>
-Subject: Re: [RFC 0/3] Implementation of cgroup isolation
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 29 Mar 2011 09:18:26 -0400
+Date: Tue, 29 Mar 2011 08:18:24 -0500
+From: scameron@beardog.cce.hp.com
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        scameron@beardog.cce.hp.com
+Subject: Re: [GIT PULL] block drivers for 2.6.39-rc
+Message-ID: <20110329131824.GH12760@beardog.cce.hp.com>
+References: <4D8E36CC.7080707@fusionio.com> <AANLkTinpjfyrN0mCRZi8zPqd2=+=WGRRToFhc+MqBDSB@mail.gmail.com> <4D917D5A.5040502@fusionio.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D917D5A.5040502@fusionio.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal,
-Maybe what we need here is some kind of trade-off?
-Let's say a new configuable parameter reserve_limit, for the cgroups
-which want to
-have some guarantee in the memory resource, we have:
+On Tue, Mar 29, 2011 at 08:34:02AM +0200, Jens Axboe wrote:
+> On 2011-03-29 01:06, Linus Torvalds wrote:
+> > On Sat, Mar 26, 2011 at 11:56 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> >> Hi Linus,
+> >>
+> >> This is the pull request for the block driver updates for 2.6.39. Two
+> >> things here:
+> >>
+> >> - Big drbd update, as per usual...
+> >> - cciss update.
+> > 
+> > Btw, that cciss thing causes a very annoying compiler warning:
+> > 
+> >   drivers/block/cciss.c: In function ‘dev_show_unique_id’:
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[0]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[1]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[2]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[3]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[4]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[5]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[6]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[7]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[8]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[9]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[10]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[11]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[12]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[13]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[14]’ may be used
+> > uninitialized in this function
+> >   drivers/block/cciss.c:617:7: warning: ‘sn[15]’ may be used
+> > uninitialized in this function
+> > 
+> > which is because the compiler doesn't really notice that those things
+> > are only used if the error return isn't being set.
+> > 
+> > So it's a compiler mis-feature, but the thing is, the warning could
+> > easily be avoided by just writing the code more prettily.
+> > 
+> > Just do the memcpy() unconditionally: we know that 'drv' is a valid
+> > pointer (we just loaded 'h' off it), and we're talking about a nice
+> > constant 16-byte copy.
+> > 
+> > IOW, a patch something like the attached.
+> > 
+> > Untested, but it looks really obvious. Hmm?
+> 
+> Looks good to me. I'm curious, you get a warning in dev_show_unique_id()
+> but not in dev_show_vendor() or any of the other following 4-5 functions
+> written in the same style?
+> 
+> My gcc here does not warn for any of them. But it is very convoluted for
+> what it does
 
-limit_in_bytes > soft_limit > reserve_limit
+Looks ok to me.
 
-MEM[limit_in_bytes..soft_limit] are the bytes that I'm willing to contribute
-to the others if they are short of memory.
+FWIW, I've also not seen warnings for any of those from gcc on several
+distros (rhel5, rhel6, sles10, sles11).
 
-MEM[soft_limit..reserve_limit] are the bytes that I can afford if the others
-are still eager for memory after I gave them MEM[limit_in_bytes..soft_limit].
+The convolutedness was probably just me trying to be overly economical
+though that "else" after the return and just before the snprintf is
+kinda nuts.
 
-MEM[reserve_limit..0] are the bytes which is a must for me to guarantee QoS.
-Nobody is allowed to steal them.
-
-And reserve_limit is 0 by default for the cgroups who don't care about Qos.
-
-Then the reclaim path also needs some changes, i.e, balance_pgdat():
-1) call mem_cgroup_soft_limit_reclaim(), if nr_reclaimed is meet, goto finish.
-2) shrink the global LRU list, and skip the pages which belong to the cgroup
-who have set a reserve_limit. if nr_reclaimed is meet, goto finish.
-3) shrink the cgroups who have set a reserve_limit, and leave them with only
-the reserve_limit bytes they need. if nr_reclaimed is meet, goto finish.
-4) OOM
-
-Does it make sense?
-
-Thanks,
-Zhu Yanhai
-
-
-2011/3/29 Michal Hocko <mhocko@suse.cz>:
-> On Tue 29-03-11 18:41:19, KAMEZAWA Hiroyuki wrote:
->> On Tue, 29 Mar 2011 10:59:43 +0200
->> Michal Hocko <mhocko@suse.cz> wrote:
->>
->> > On Tue 29-03-11 16:51:17, KAMEZAWA Hiroyuki wrote:
-> [...]
->> > > My opinions is to enhance softlimit is better.
->> >
->> > I will look how softlimit can be enhanced to match the expectations but
->> > I'm kind of suspicious it can handle workloads where heuristics simply
->> > cannot guess that the resident memory is important even though it wasn't
->> > touched for a long time.
->> >
->>
->> I think we recommend mlock() or hugepagefs to pin application's work area
->> in usual. And mm guyes have did hardwork to work mm better even without
->> memory cgroup under realisitic workloads.
->
-> Agreed. Whenever this approach is possible we recomend the same thing.
->
->> If your worload is realistic but _important_ anonymous memory is swapped out,
->> it's problem of global VM rather than memcg.
->
-> I would disagree with you on that. The important thing is that it can be
-> defined from many perspectives. One is the kernel which considers long
-> unused memory as not _that_ important. And it makes a perfect sense for
-> most workloads.
-> An important memory for an application can be something that would
-> considerably increase the latency just because the memory got paged out
-> (be it swap or the storage) because it contains pre-computed
-> data that have a big initial costs.
-> As you can see there is no mention about the time from the application
-> POV because it can depend on the incoming requests which you cannot
-> control.
->
->> If you add 'isolate' per process, okay, I'll agree to add isolate per memcg.
->
-> What do you mean by isolate per process?
->
-> [...]
->> > > > OK, I have tried to explain that in one of the (2nd) patch description.
->> > > > If I move all task from the root group to other group(s) and keep the
->> > > > primary application in the root group I would achieve some isolation as
->> > > > well. That is very much true.
->> > >
->> > > Okay, then, current works well.
->> > >
->> > > > But then there is only one such a group.
->> > >
->> > > I can't catch what you mean. you can create limitless cgroup, anywhere.
->> > > Can't you ?
->> >
->> > This is not about limits. This is about global vs. per-cgroup reclaim
->> > and how much they interact together.
->> >
->> > The everything-in-groups approach with the "primary" service in the root
->> > group (or call it unlimited) works just because all the memory activity
->> > (but the primary service) is caped with the limits so the rest of the
->> > memory can be used by the service. Moreover, in order this to work the
->> > limit for other groups would be smaller then the working set of the
->> > primary service.
->> >
->> > Even if you created a limitless group for other important service they
->> > would still interact together and if one goes wild the other would
->> > suffer from that.
->> >
->>
->> .........I can't understad what is the problem when global reclaim
->> runs just because an application wasn't limited ...or memory are
->> overcomitted.
->
-> I am not sure I understand but what I see as a problem is when unrelated
-> memory activity triggers reclaim and it pushes out the memory of a
-> process group just because the heuristics done by the reclaim algorithm
-> do not pick up the right memory - and honestly, no heuristic will fit
-> all requirements. Isolation can protect from an unrelated activity
-> without new heuristics.
->
-> [...]
->> If softlimit (after some improvement) isn't enough, please add some other.
->>
->> What I think of is
->>
->> 1. need to "guarantee" memory usages in future.
->>    "first come, first served" is not good for admins.
->
-> this is not in scope of these patchsets but I agree that it would be
-> nice to have this guarantee
->
->> 2. need to handle zone memory shortage. Using memory migration
->>    between zones will be necessary to avoid pageout.
->
-> I am not sure I understand.
->
->>
->> 3. need a knob to say "please reclaim from my own cgroup rather than
->>    affecting others (if usage > some(soft)limit)."
->
-> Isn't this handled already and enhanced by the per-cgroup background
-> reclaim patches?
->
->>
->> > [...]
->> > > > > I think you should put tasks in root cgroup to somewhere. It works perfect
->> > > > > against OOM. And if memory are hidden by isolation, OOM will happen easier.
->> > > >
->> > > > Why do you think that it would happen easier? Isn't it similar (from OOM
->> > > > POV) as if somebody mlocked that memory?
->> > > >
->> > >
->> > > if global lru scan cannot find victim memory, oom happens.
->> >
->> > Yes, but this will happen with mlocked memory as well, right?
->> >
->> Yes, of course.
->>
->> Anyway, I'll Nack to simple "first come, first served" isolation.
->> Please implement garantee, which is reliable and admin can use safely.
->
-> Isolation is not about future guarantee. It is rather after you have it
-> you can rely it will stay in unless in-group activity pushes it out.
->
->> mlock() has similar problem, So, I recommend hugetlbfs to customers,
->> admin can schedule it at boot time.
->> (the number of users of hugetlbfs is tend to be one app. (oracle))
->
-> What if we decide that hugetlbfs won't be pinned into memory in future?
->
->>
->> I'll be absent, tomorrow.
->>
->> I think you'll come LSF/MM summit and from the schedule, you'll have
->> a joint session with Ying as "Memcg LRU management and isolation".
->
-> I didn't have plans to do a session actively, but I can certainly join
-> to talk and will be happy to discuss this topic.
->
->>
->> IIUC, "LRU management" is a google's performance improvement topic.
->>
->> It's ok for me to talk only about 'isolation'  1st in earlier session.
->> If you want, please ask James to move session and overlay 1st memory
->> cgroup session. (I think you saw e-mail from James.)
->
-> Yeah, I can do that.
->
-> Thanks
-> --
-> Michal Hocko
-> SUSE Labs
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9
-> Czech Republic
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+-- steve
