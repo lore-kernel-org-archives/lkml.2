@@ -1,195 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab1C2JPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 05:15:05 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53052 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab1C2JPC (ORCPT
+	id S1752382Ab1C2JQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 05:16:09 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47243 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751324Ab1C2JQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 05:15:02 -0400
-Date: Tue, 29 Mar 2011 11:14:56 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-serial@vger.kernel.org,
-        torvalds@linux-foundation.org, kernel@pengutronix.de
-Subject: Re: Wrong GIT author ? also bugs: serial: Add uart driver for
- i.MX23/28
-Message-ID: <20110329091456.GI30938@pengutronix.de>
-References: <201103180302.p2I326tA020159@hera.kernel.org>
- <20110318112920.07148450@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110318112920.07148450@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 29 Mar 2011 05:16:08 -0400
+Date: Tue, 29 Mar 2011 10:16:30 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Will Newton <will.newton@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: advice sought: practicality of SMP cache coherency implemented
+ in assembler (and a hardware detect line)
+Message-ID: <20110329101630.1f1f0364@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTimXztH_4f1=7-Ez6j-7UESroqwBvVuDNW7Fmewb@mail.gmail.com>
+References: <AANLkTi=de3yDfXxCDp082+e3T+g_1wRWKWjqS0n1vy0+@mail.gmail.com>
+	<AANLkTi=W0mW2o2muNgMnb1OQ6WaBeOmu1VBHr8Zf63r9@mail.gmail.com>
+	<20110326120847.71b6ae4d@lxorguk.ukuu.org.uk>
+	<20110328180655.GI2287@linux.vnet.ibm.com>
+	<AANLkTin6kg84P50RHR7h6NG+P_nJK=N_Nefc1q4NxzY_@mail.gmail.com>
+	<20110328231818.2297408f@lxorguk.ukuu.org.uk>
+	<AANLkTimXztH_4f1=7-Ez6j-7UESroqwBvVuDNW7Fmewb@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+>  hmmm, the question is, therefore: would the MOSIX DSM solution be
+> preferable, which i presume assumes that memory cannot be shared at
+> all, to a situation where you *could* at least get cache coherency in
+> userspace, if you're happy to tolerate a software interrupt handler
+> flushing the cache line manually?
 
-On Fri, Mar 18, 2011 at 11:29:20AM +0000, Alan Cox wrote:
-> >     serial: Add auart driver for i.MX23/28
-> >     
-> >     Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> 
-> You have a few things that need fixing, one of which is quite nasty
-I'm going to address these as Sascha is currently busy doing other
-stuff.
+In theory DSM goes further than this. One way to think about DSM is cache
+coherency in software with a page size granularity. So you could imagine
+a hypothetical example where the physical MMU of each node and a memory
+manager layer comnunicating between them implemented a virtualised
+machine on top which was cache coherent.
 
-> > + * Freescale STMP37XX/STMP378X Application UART driver
-> > + *
-> > + * Author: dmitry pervushin <dimka@embeddedalley.com>
-> 
-> So its signed off by one person and without a signature from the author ?
-> Is that intentional
-The base for the driver was taken from a vendor BSP and polished to be
-(nearly :-) ready for mainline. I don't know if Sascha tried to contact
-Dimtry (I guess not) but keeping the original author listed is IMHO OK
-as is using GIT_AUTHOR=Sascha when the polishing was non-trivial.
+The detail (and devil no doubt) is in the performance.
 
-So maybe make this read:
+Basically however providing your MMU can trap both reads and writes you
+can implement a MESI cache in software. Mosix just took this to an
+extreme as part of a distributed Unix (originally V7 based).
 
-	Based on a driver by dmitry pervushin <dimka@embeddedalley.com>
-	and modified for mainline by Sascha Hauer <...>
+So you've got
 
-?
-> > +static void mxs_auart_rx_chars(struct mxs_auart_port *s)
-> > +{
-> > +	struct tty_struct *tty = s->port.state->port.tty;
-> > +	u32 stat = 0;
-> 
-> tty may be NULL at this point, in which case your code will try and push
-> bits through a NULL pointer and crash
-> 
-> A user can seek to make tty NULL at the right moment by judicious use of
-> vhangup, and a remote device can use carrier signals and bit timing to
-> mount an attack. See tty_port_tty_get() and/or hold the port lock over
-> the IRQ as other drivers do. For the uart stuff I'd hold the port lock as
-> the rest of the code in the uart layer sort of assumes that
-OK
+Modified: page on one node, MMU set to fault on any other so you can
+	  fix it up
 
-> > +static void mxs_auart_settermios(struct uart_port *u,
-> > +				 struct ktermios *termios,
-> > +				 struct ktermios *old)
-> 
-> Minor things here
-> - You need to set the termios bits to reflect the mode you actually set.
->   So as you don't seem to support mark/space you need to clear the bit,
->   ditto h/w flow control if not supported
-> 
-> - You also need to report back the actual baud rate
-I don't understand how to do this and didn't find something like that in
-other drivers. (I checked amba-pl011.c and imx.c.) Also
-Documentation/serial/driver doesn't describe this. (It is also silent
-about CMSPAR and doesn't even advise to clear unsupported bits.)
-Can you be a bit more verbose here?
- 
-> > +static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
-> > +{
-> > +	u32 istatus, istat;
-> > +	struct mxs_auart_port *s = context;
-> > +	u32 stat = readl(s->port.membase + AUART_STAT);
-> 
-> Your IRQ handler either needs to take the port lock or have the
-> underlying methods do that or their own full locking, you aren't doing
-> that.
-OK, below you can find my current wip patch (yet untested on real hardware).
-(If/when this looks OK for you and the above issue is addressed I will
-create a proper patch.)
+Exclusive: page on one node, MMU set to fault on any other or on writes
+	   by self (latter taking you to modified so you know to write
+	   back)
 
-Best regards
-Uwe
- 
-diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
-index 7e02c9c..3b4c96a 100644
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -1,17 +1,14 @@
- /*
-  * Freescale STMP37XX/STMP378X Application UART driver
-  *
-- * Author: dmitry pervushin <dimka@embeddedalley.com>
-+ * Based on a driver by dmitry pervushin <dimka@embeddedalley.com>
-+ * and modified for mainline by Sascha Hauer <s.hauer@pengutronix.de>
-  *
-  * Copyright 2008-2010 Freescale Semiconductor, Inc.
-  * Copyright 2008 Embedded Alley Solutions, Inc All Rights Reserved.
-  *
-  * The code contained herein is licensed under the GNU General Public
-- * License. You may obtain a copy of the GNU General Public License
-- * Version 2 or later at the following locations:
-- *
-- * http://www.opensource.org/licenses/gpl-license.html
-- * http://www.gnu.org/copyleft/gpl.html
-+ * License; version 2 or later.
-  */
- 
- #include <linux/kernel.h>
-@@ -286,6 +283,9 @@ static void mxs_auart_settermios(struct uart_port *u,
- {
- 	u32 bm, ctrl, ctrl2, div;
- 	unsigned int cflag, baud;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&u->lock, flags);
- 
- 	cflag = termios->c_cflag;
- 
-@@ -303,11 +303,9 @@ static void mxs_auart_settermios(struct uart_port *u,
- 	case CS7:
- 		bm = 2;
- 		break;
--	case CS8:
-+	default: /* CS8 */
- 		bm = 3;
- 		break;
--	default:
--		return;
- 	}
- 
- 	ctrl |= AUART_LINECTRL_WLEN(bm);
-@@ -368,13 +366,23 @@ static void mxs_auart_settermios(struct uart_port *u,
- 
- 	writel(ctrl, u->membase + AUART_LINECTRL);
- 	writel(ctrl2, u->membase + AUART_CTRL2);
-+
-+	/* clear unsupported flags */
-+	termios->c_cflag &= ~CMSPAR;
-+
-+	spin_unlock_irqrestore(&u->lock, flags);
- }
- 
- static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
- {
- 	u32 istatus, istat;
- 	struct mxs_auart_port *s = context;
--	u32 stat = readl(s->port.membase + AUART_STAT);
-+	unsigned long flags;
-+	u32 stat;
-+       
-+	spin_lock_irqsave(&s->port.lock, flags);
-+
-+	stat = readl(s->port.membase + AUART_STAT);
- 
- 	istatus = istat = readl(s->port.membase + AUART_INTR);
- 
-@@ -401,6 +409,8 @@ static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
- 		| AUART_INTR_CTSMIS),
- 			s->port.membase + AUART_INTR_CLR);
- 
-+	spin_unlock_irqrestore(&s->port.lock, flags);
-+
- 	return IRQ_HANDLED;
- }
- 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Shared:    any write set to be caught by the MMU, the fun bit then is
+	   handling invalidating across other nodes with the page in
+	   cache. (and the fact multiple nodes may fault the page at once)
+
+Invalid:   our copy is invalid (its M or E elsewhere probably), MMU set so
+	   we fault on any access. For shared this is also relevant so
+	   you can track for faster invalidates
+
+and the rest is a software problem.
