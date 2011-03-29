@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147Ab1C2TIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 15:08:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56517 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752549Ab1C2TIf (ORCPT
+	id S1754127Ab1C2TJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 15:09:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58892 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab1C2TJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 15:08:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <4D922B35.9050107@kernel.org>
-References: <alpine.LFD.2.00.1103282048370.2774@localhost6.localdomain6>
- <AANLkTintrwhwbyZGxX1Eecg9ZXo+NgRzTwyyMyzt1JGR@mail.gmail.com>
- <alpine.LFD.2.00.1103282210590.2774@localhost6.localdomain6>
- <alpine.LFD.2.00.1103282227510.2774@localhost6.localdomain6>
- <AANLkTin7Uc=LzZdD4Waj8GF24Nzi2ccUL+RLtk+fBc=g@mail.gmail.com> <4D922B35.9050107@kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 29 Mar 2011 12:08:13 -0700
-Message-ID: <AANLkTikRGYPJdyxXCJjxNXHgddSjSZ-FQKKjAA=nDzDj@mail.gmail.com>
-Subject: Re: [GIT pull] irq cleanups for .39
-To: "H. Peter Anvin" <hpa@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
+	Tue, 29 Mar 2011 15:09:53 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=QQXixWDqseIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=yf7tFXOqs6SvTWheinQA:9 a=YAE0QbMEHybjuxntPRrWHfnHCoEA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH] lockdep: Print a nice description of an irq
+ locking issue
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Fainelli <florian@openwrt.org>, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <20110329182154.GA18913@elte.hu>
+References: <1301418845.14261.284.camel@gandalf.stny.rr.com>
+	 <20110329182131.GB16244@elte.hu>  <20110329182154.GA18913@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 29 Mar 2011 15:09:50 -0400
+Message-ID: <1301425790.14261.290.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 11:55 AM, H. Peter Anvin <hpa@kernel.org> wrote:
->
-> My concern with that is that indexing services come and go [..]
+On Tue, 2011-03-29 at 20:21 +0200, Ingo Molnar wrote:
+> * Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > * Steven Rostedt <rostedt@goodmis.org> wrote:
+> > 
+> > > After having to explain lockdep interrupt locking inversions a few
+> > > times, I decided to have lockdep spit out the scenario that it is
+> > > complaining about.
+> > 
+> > Looks very useful!
+> > 
+> > Would you be interested in extending this to other lockdep splats as well? 
 
-I understand the _theoretical_ argument.
+Sure, that should not be a problem.
 
-But when theory and practice clash, theory is worth sh*t.
+> 
+> In separate patches, of course.
 
-And in practice, those message-ID's are worthless. Nobody is going to
-take the time to look them up.
+Of course ;)
 
-If you want real permanence and ease of access, JUST QUOTE THE THING
-YOU POINTED TO.
+-- Steve
 
-And if it's not important enough to quote, make it at least be useful,
-obvious, and simple: make it a real web link.
 
-Don't do the idiotic useless message-ID thing. Pick one of the two
-options above, not the crazy good-for-nothing one.
-
-                   Linus
