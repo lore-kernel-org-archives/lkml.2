@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab1C2Jyp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 05:54:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39947 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab1C2Jyo convert rfc822-to-8bit (ORCPT
+	id S1752559Ab1C2JzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 05:55:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43739 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab1C2JzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 05:54:44 -0400
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1301391136.14111.98.camel@minggr.sh.intel.com>
-References: <1301391136.14111.98.camel@minggr.sh.intel.com>
+	Tue, 29 Mar 2011 05:55:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=MfzCxAyG2LYp3ok0KuW6GLdLsTXESOgI/zHYUjNpxp0u3VzzREeO10A0H2xYKDuo+w
+         JiRgXOv1tWP/GMRM6gxUtCD+tJ8ht51aIGX5fnECo0MyPM20gRskwjlrM4DaVK4/t43z
+         Kgqki+noSHRdMBmXQGTsTxnMnXz4yaIotjyGw=
+Subject: [PATCH v2] regulator: Add missing platform_set_drvdata in
+ tps6105x_regulator_probe
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 29 Mar 2011 11:54:17 +0200
-Message-ID: <1301392457.4859.74.camel@twins>
+Date: Tue, 29 Mar 2011 17:54:58 +0800
+Message-ID: <1301392498.2253.1.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 17:32 +0800, Lin Ming wrote:
-> 
-> Peter suggested to reverse map the reported IP (PEBS + fixup)
-> to a data access using dwarf info.
-> So I wrote this patch to see if the direction is right. 
+Otherwise, calling platform_get_drvdata in tps6105x_regulator_remove
+returns NULL.
 
-I'm not sure this is quite the same thing, I'm not arguing this might
-not be useful, but this is not about data access.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+v2: update commit log
 
-Suppose you have a line like:
+ drivers/regulator/tps6105x-regulator.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-  foo->bar->fubar = tmp->blah;
+diff --git a/drivers/regulator/tps6105x-regulator.c b/drivers/regulator/tps6105x-regulator.c
+index 1661499..5f975c2 100644
+--- a/drivers/regulator/tps6105x-regulator.c
++++ b/drivers/regulator/tps6105x-regulator.c
+@@ -158,6 +158,7 @@ static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
+ 			"failed to register regulator\n");
+ 		return ret;
+ 	}
++	platform_set_drvdata(pdev, tps6105x);
+ 
+ 	return 0;
+ }
+-- 
+1.7.1
 
-There's 3 indirections there, a line number doesn't even get you close
-to knowing what data access triggered the event.
-
-struct bar {
-        int poekoe[5];
-        int fubar;
-};
-
-struct foo {
-        long poekoe[3];
-        struct bar *bar;
-};
-
-struct tmp {
-        long poekoe[4];
-        int blah;
-};
-
-void foo(struct foo *foo, struct tmp *tmp)
-{
-        foo->bar->fubar = tmp->blah;
-}
-
-Which gives (somewhat simplified):
-
-foo:
-	.cfi_startproc
-	pushq	%rbp
-	.cfi_def_cfa_offset 16
-	movq	%rsp, %rbp
-	.cfi_offset 6, -16
-	.cfi_def_cfa_register 6
-	movq	%rdi, -8(%rbp)
-	movq	%rsi, -16(%rbp)
-	movq	-8(%rbp), %rax    /* load foo arg from stack */
-	movq	24(%rax), %rax    /* load foo->bar */
-	movq	-16(%rbp), %rdx   /* load tmp arg from stack */
-	movl	32(%rdx), %edx    /* load tmp->blah */
-	movl	%edx, 20(%rax)    /* store bar->fubar */
-	leave
-	ret
-	.cfi_endproc
-
-where I annotated the various moves with C comments.
-
-Now depending on what exact IP you get using PEBS+fixup you could using
-DWARF bits generate similar deductions from the code as I did in those
-comments and thus know exactly what data member was accessed and how
-(read/write).
-
-With that data you could then borrow some pahole code and annotate the
-various data structures to illustrate read/write distributions, which
-can then be used as input for data-reorder.
 
 
