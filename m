@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab1C2QhK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 12:37:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35737 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab1C2QhI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 12:37:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gvOqYG1fLKtCxHP+2j9wBPTUgcqgnBuxXdGC+HXTMWXssTyh/dkD+1zjgHh3AxC+b5
-         PsuZPJqtrroj1v570PhsVzsWyAn16edHAqTK8DpGaXIyi8BCxddAgkI+4gCxLEtIDmK0
-         YO8M5Sr3kTIb2MsIjPM1ISB3wOyxeXpilTKUU=
-Date: Tue, 29 Mar 2011 18:37:02 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
-Message-ID: <20110329163702.GE29865@htj.dyndns.org>
-References: <20110323153727.GB12003@htj.dyndns.org>
- <20110324094119.GD12038@htj.dyndns.org>
- <20110324094151.GE12038@htj.dyndns.org>
- <20110325101238.GC1409@htj.dyndns.org>
+	id S1753989Ab1C2Qi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 12:38:59 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:49762 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753751Ab1C2Qi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 12:38:58 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] fix msecs_to_jiffies() to not return values greater than MAX_JIFFY_OFFSET
+Date: Tue, 29 Mar 2011 18:38:46 +0200
+Message-Id: <2120287.WTetKHanc4@donald.sf-tec.de>
+User-Agent: KMail/4.6 beta4 (Linux/2.6.37-12-desktop; KDE/4.6.1; i686; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110325101238.GC1409@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+The documentation of msecs_to_jiffies() says:
 
-I've been running dbench 50 for a few days now and the result is,
-well, I don't know how to call it.
+ * - negative values mean 'infinite timeout' (MAX_JIFFY_OFFSET)
+ *
+ * - 'too large' values [that would result in larger than
+ *   MAX_JIFFY_OFFSET values] mean 'infinite timeout' too.
 
-The problem was that the original patch didn't do anything because x86
-fastpath code didn't call into the generic slowpath at all.
+But when you pass in e.g. MAX_JIFFY_OFFSET + 1000 for HZ = 1000 it will not
+return MAX_JIFFY_OFFSET, but the bigger value. This makes sure that the value
+returned from this function can never be bigger than MAX_JIFFY_OFFSET. Also
+use DIV_ROUND_UP() in one place where that is open coded.
 
-  static inline int __mutex_fastpath_trylock(atomic_t *count,
-					     int (*fail_fn)(atomic_t *))
-  {
-	  if (likely(atomic_cmpxchg(count, 1, 0) == 1))
-		  return 1;
-	  else
-		  return 0;
-  }												
+Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
+---
+ kernel/time.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-So, I thought that I probably was doing unconscious data selection
-while I was running the test before sending out the patches.  Maybe I
-was seeing what I wanted to see, so I ran tests in larger scale more
-methodologically.
-
-I first started with ten consecutive runs and then doubled it with
-intervening reboot and then basically ended up doing that twice for
-four configuration (I didn't do two runs of simple and refactor but
-just averaged the two).
-
-The hardware is mostly the same except that I switched to a hard drive
-instead of SSD as hard drives tend to be slower but more consistent in
-performance numbers.  On each run, the filesystem is recreated and the
-system was rebooted after every ten runs.  The numbers are the
-reported throughput in MiB/s at the end of each run.
-
-  https://spreadsheets.google.com/ccc?key=0AsbaQh2SFt66dDdxOGZWVVlIbEdIOWRQLURVVUNYSXc&hl=en
-
-Here are the descriptions of the eight columns.
-
-  simple	only with patch to make btrfs use mutex
-  refactor	mutex_spin() factored out
-  spin		mutex_spin() applied to the unused trylock slowpath
-  spin-1	ditto
-  spin-fixed	x86 trylock fastpath updated to use generic slowpath
-  spin-fixed-1	ditto
-  code-layout	refactor + dummy function added to mutex.c
-  code-layout-1	ditto
-
-After running the simple, refactor and spin ones, I was convinced that
-there definitely was something which was causing the difference.  The
-averages were apart by more than 1.5 sigma, but I couldn't explain
-what could have caused such difference.
-
-The code-layout runs were my desparate attempts to find explanation on
-what's going on.  Addition of mutex_spin to the unused trylock generic
-path makes gcc arrange functions differently.  Without it, trylock
-functions end up inbetween lock and unlock funcitons; with it, they
-are located at the end.  I commented out the unused trylock slowpath
-function and added a dummy function at the end to make gcc generate
-similar assembly layout.
-
-At this point, the only conclusions I can draw are,
-
-* Using adaptive spinning on mutex_trylock() doesn't seem to buy
-  anything according to btrfs dbench 50 runs.
-
-and much more importantly,
-
-* btrfs dbench 50 runs are probably not good for measuring subtle
-  mutex performance differences.  Maybe it's too macro and there are
-  larger scale tendencies which skew the result unless the number of
-  runs are vastly increased (but 40 runs are already over eight
-  hours).
-
-If anyone can provide an explanation on what's going on, I'll be super
-happy.  Otherwise, for now, I'll just leave it alone.  :-(
-
-Thanks.
-
+diff --git a/kernel/time.c b/kernel/time.c
+index 8e8dc6d..1ccec53 100644
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -433,6 +433,7 @@ EXPORT_SYMBOL(ns_to_timeval);
+  */
+ unsigned long msecs_to_jiffies(const unsigned int m)
+ {
++	unsigned long r;
+ 	/*
+ 	 * Negative value, means infinite timeout:
+ 	 */
+@@ -445,7 +446,7 @@ unsigned long msecs_to_jiffies(const unsigned int m)
+ 	 * round multiple of HZ, divide with the factor between them,
+ 	 * but round upwards:
+ 	 */
+-	return (m + (MSEC_PER_SEC / HZ) - 1) / (MSEC_PER_SEC / HZ);
++	r = DIV_ROUND_UP(m, MSEC_PER_SEC / HZ);
+ #elif HZ > MSEC_PER_SEC && !(HZ % MSEC_PER_SEC)
+ 	/*
+ 	 * HZ is larger than 1000, and HZ is a nice round multiple of
+@@ -457,7 +458,7 @@ unsigned long msecs_to_jiffies(const unsigned int m)
+ 	if (m > jiffies_to_msecs(MAX_JIFFY_OFFSET))
+ 		return MAX_JIFFY_OFFSET;
+ 
+-	return m * (HZ / MSEC_PER_SEC);
++	r = m * (HZ / MSEC_PER_SEC);
+ #else
+ 	/*
+ 	 * Generic case - multiply, round and divide. But first
+@@ -467,9 +468,10 @@ unsigned long msecs_to_jiffies(const unsigned int m)
+ 	if (HZ > MSEC_PER_SEC && m > jiffies_to_msecs(MAX_JIFFY_OFFSET))
+ 		return MAX_JIFFY_OFFSET;
+ 
+-	return (MSEC_TO_HZ_MUL32 * m + MSEC_TO_HZ_ADJ32)
++	r = (MSEC_TO_HZ_MUL32 * m + MSEC_TO_HZ_ADJ32)
+ 		>> MSEC_TO_HZ_SHR32;
+ #endif
++	return min_t(unsigned long, r, MAX_JIFFY_OFFSET);
+ }
+ EXPORT_SYMBOL(msecs_to_jiffies);
+ 
 -- 
-tejun
+1.7.3.2
+
+
