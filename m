@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab1C2Iox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 04:44:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54716 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751202Ab1C2Iov (ORCPT
+	id S1751940Ab1C2Ivo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 04:51:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54858 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab1C2Ivn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 04:44:51 -0400
-Date: Tue, 29 Mar 2011 17:44:59 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Collins <collinsd@codeaurora.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm-owner@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] regulator: Propagate uA_load requirements up
- supply chain
-Message-ID: <20110329084458.GD29330@opensource.wolfsonmicro.com>
-References: <1301356355-7546-1-git-send-email-collinsd@codeaurora.org>
- <1301356432-7586-2-git-send-email-collinsd@codeaurora.org>
+	Tue, 29 Mar 2011 04:51:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=W/gisu26WrKYbo7J7Jz4pIa8xjxNX7M89/SN+YFy0PjQ0NfDkOElcMTqa6tu22Hi36
+         qQm64/NbT3dzqN2reQ7oYTudBTuFefM5BdGk0BqKX8/pGMvRZ5/kpYy342ZUX8YRYk/v
+         I2U39JnYtx/1jMEKz6ATdWmyT3ybOjMpnRUs8=
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] s3c2440: mini2440: Enable the backlight LED earlier at boot time.
+Date: Tue, 29 Mar 2011 11:50:31 +0300
+User-Agent: KMail/1.13.6 (Linux/2.6.38-gentoo-anarsoul; KDE/4.6.1; i686; ; )
+Cc: Marek Belisko <marek.belisko@open-nandra.com>, ben-linux@fluff.org,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        rpurdie@rpsys.net, buserror@gmail.com, esta1ien@gmail.com
+References: <1301380363-3282-1-git-send-email-marek.belisko@open-nandra.com> <1301380363-3282-5-git-send-email-marek.belisko@open-nandra.com>
+In-Reply-To: <1301380363-3282-5-git-send-email-marek.belisko@open-nandra.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301356432-7586-2-git-send-email-collinsd@codeaurora.org>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103291150.32097.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 04:53:52PM -0700, David Collins wrote:
-> regulator_set_optimum_mode currently only determines the load
-> on the specified regulator.  Physically however, this current
-> must be provided by regulators further up the supply chain.
+On Tuesday 29 March 2011 09:32:43 Marek Belisko wrote:
+> Code overtaken from:
+> http://repo.or.cz/w/linux-2.6/mini2440.git
+> 
+> Use flag that allows s3c24xx LED to start in the "on" state.
+> This is necesary to enable LCD backlight during early boot stage.
 
-This isn't actually true - it's very common for the system to be
-designed such that all the regulators are supplied from a single
-unregulated system power rail, especially with modern PMICs.
+Why are you still using leds-s3c24xx driver? mini2440 should work OK with 
+leds-gpio. Anyway, looks like patch should be splitted into 2 patches: first 
+adds flag to leds-s3c24xx driver, second enables this flag for mini2440.
 
-> Add code to handle uA_load propagation up through the regulator
-> supply chain in both regulator_set_optimum_mode and drms_uA_update.
+Regards
+Vasily
 
-So, my main concern here is essentially the same thing I said with
-regard to your original posting about the locking - this all seems
-like it's the wrong approach and if we just treated supplies the same as
-other consumers life would get a lot simpler.  This is adding a lot more
-special cases for supplies which feels like it's making the code more
-complicated.  Supplied regulators are essentially just consumers and
-this is adding more code that diverges the two and makes it hard to
-follow what's going on - ideally when dealing with the parent regulator
-you shouldn't have to worry about child regulators at all, they should
-just look like all the other consumers.
-
-> Add a new regulator operation callback function named
-> get_current_required to struct regulator_ops to assist in this
-> propagation.  get_current_required will return the input current
-> required for a given regulator based on input voltage, output
-> voltage, and output current.  It should be able to capture all
-> hardware specific current characteristics of a regulator.
-> The input current required for a typical linear and switching
-> regulator would be simple to describe in this callback.
-
-The other issue here is that I'm concerned about the direction this
-appears to be heading given that it seems like in order for this to do
-something useful we'd need to start supplying current drain information
-from consumers.  We're not doing that at the minute and I'm not terribly
-optimistic that we'd ever get enough useful information to make it
-generally worthwhile.
-
-Besides, the interesting stuff tends to be around response to sudden
-changes in load and that's basically all been pushed down into hardware
-as there's no way for software to propagate the information fast enough.
-For software you tend to have to assume the worst case load but that
-will usually be a massive overestimate, and of course transients will be
-absorbed by the passives to a certain extent which complicates matters
-further.
-
-Perhaps if you could explain your use case for this things might become
-clearer?
+> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+> Signed-off-by: Michel Pollet <buserror@gmail.com>
+> ---
+>  arch/arm/mach-s3c2410/include/mach/leds-gpio.h |    1 +
+>  arch/arm/mach-s3c2440/mach-mini2440.c          |    1 +
+>  drivers/leds/leds-s3c24xx.c                    |    6 +++++-
+>  3 files changed, 7 insertions(+), 1 deletions(-)
