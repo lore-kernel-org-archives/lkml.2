@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1C2Axe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 20:53:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:53647 "EHLO mga11.intel.com"
+	id S1753928Ab1C2AyT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 20:54:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3252 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257Ab1C2Axd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 20:53:33 -0400
+	id S1753257Ab1C2AyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 20:54:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,258,1299484800"; 
-   d="scan'208";a="902869301"
-Subject: Re: [PATCH]mmap: not merge cloned VMA
+   d="scan'208";a="726254430"
+Subject: Re: [PATCH]mmap: add alignment for some variables
 From: Shaohua Li <shaohua.li@intel.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
         lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
         Hugh Dickins <hughd@google.com>
-In-Reply-To: <m2k4fj18v1.fsf@firstfloor.org>
-References: <1301277534.3981.26.camel@sli10-conroe>
-	 <m2k4fj18v1.fsf@firstfloor.org>
+In-Reply-To: <m2oc4v18x8.fsf@firstfloor.org>
+References: <1301277536.3981.27.camel@sli10-conroe>
+	 <m2oc4v18x8.fsf@firstfloor.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Mar 2011 08:53:31 +0800
-Message-ID: <1301360011.3981.30.camel@sli10-conroe>
+Date: Tue, 29 Mar 2011 08:54:14 +0800
+Message-ID: <1301360054.3981.31.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -28,93 +28,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 00:57 +0800, Andi Kleen wrote:
+On Tue, 2011-03-29 at 00:55 +0800, Andi Kleen wrote:
 > Shaohua Li <shaohua.li@intel.com> writes:
 > 
-> > Avoid merging a VMA with another VMA which is cloned from parent process. The
-> > cloned VMA shares lock with parent process's VMA. If we do the merge, more vma
-> > area (even the new range is only for current process) uses perent process's
-> > anon_vma lock, so introduces scalability issues.
-> > find_mergeable_anon_vma already considers this.
-> In theory this could prevent quite some VMA merging, but I guess the 
-> tradeoff is worth it and that should be unlikely to hit anyways.
-I'd expect there aren't too many VMAs cloned from parents.
-
-> >  static inline int is_mergeable_anon_vma(struct anon_vma *anon_vma1,
-> > -					struct anon_vma *anon_vma2)
-> > +					struct anon_vma *anon_vma2,
-> > +					struct vm_area_struct *vma)
-> >  {
-> > -	return !anon_vma1 || !anon_vma2 || (anon_vma1 == anon_vma2);
-> > +	if ((!anon_vma1 || !anon_vma2) && (!vma ||
-> > +		list_is_singular(&vma->anon_vma_chain)))
-> > +		return 1;
+> > Make some variables have correct alignment.
 > 
-> I think this if () needs a comment.
-ok, updated the patch.
+> Nit: __read_mostly doesn't change alignment, just the section.
+> Please fix the description. Other than that it looks good.
+sure.
 
-Avoid merging a VMA with another VMA which is cloned from parent process. The
-cloned VMA shares lock with parent process's VMA. If we do the merge, more vma
-area (even the new range is only for current process) uses perent process's
-anon_vma lock, so introduces scalability issues.
-find_mergeable_anon_vma already considers this.
+Make some variables have correct alignment/section to avoid cache issue.
+In a workload which heavily does mmap/munmap, the variables will be used
+frequently.
 
 Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-
 ---
- mm/mmap.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ mm/mmap.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 Index: linux/mm/mmap.c
 ===================================================================
---- linux.orig/mm/mmap.c	2011-03-29 08:22:01.000000000 +0800
-+++ linux/mm/mmap.c	2011-03-29 08:30:12.000000000 +0800
-@@ -699,9 +699,17 @@ static inline int is_mergeable_vma(struc
+--- linux.orig/mm/mmap.c	2011-03-29 08:30:12.000000000 +0800
++++ linux/mm/mmap.c	2011-03-29 08:30:54.000000000 +0800
+@@ -84,10 +84,10 @@ pgprot_t vm_get_page_prot(unsigned long
  }
+ EXPORT_SYMBOL(vm_get_page_prot);
  
- static inline int is_mergeable_anon_vma(struct anon_vma *anon_vma1,
--					struct anon_vma *anon_vma2)
-+					struct anon_vma *anon_vma2,
-+					struct vm_area_struct *vma)
- {
--	return !anon_vma1 || !anon_vma2 || (anon_vma1 == anon_vma2);
-+	/*
-+	 * The list_is_singular() test is to avoid merging VMA cloned from
-+	 * parents. This can improve scalability caused by anon_vma lock.
-+	 */
-+	if ((!anon_vma1 || !anon_vma2) && (!vma ||
-+		list_is_singular(&vma->anon_vma_chain)))
-+		return 1;
-+	return anon_vma1 == anon_vma2;
- }
+-int sysctl_overcommit_memory = OVERCOMMIT_GUESS;  /* heuristic overcommit */
+-int sysctl_overcommit_ratio = 50;	/* default is 50% */
++int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
++int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
+ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
+-struct percpu_counter vm_committed_as;
++struct percpu_counter vm_committed_as ____cacheline_internodealigned_in_smp;
  
  /*
-@@ -720,7 +728,7 @@ can_vma_merge_before(struct vm_area_stru
- 	struct anon_vma *anon_vma, struct file *file, pgoff_t vm_pgoff)
- {
- 	if (is_mergeable_vma(vma, file, vm_flags) &&
--	    is_mergeable_anon_vma(anon_vma, vma->anon_vma)) {
-+	    is_mergeable_anon_vma(anon_vma, vma->anon_vma, vma)) {
- 		if (vma->vm_pgoff == vm_pgoff)
- 			return 1;
- 	}
-@@ -739,7 +747,7 @@ can_vma_merge_after(struct vm_area_struc
- 	struct anon_vma *anon_vma, struct file *file, pgoff_t vm_pgoff)
- {
- 	if (is_mergeable_vma(vma, file, vm_flags) &&
--	    is_mergeable_anon_vma(anon_vma, vma->anon_vma)) {
-+	    is_mergeable_anon_vma(anon_vma, vma->anon_vma, vma)) {
- 		pgoff_t vm_pglen;
- 		vm_pglen = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
- 		if (vma->vm_pgoff + vm_pglen == vm_pgoff)
-@@ -817,7 +825,7 @@ struct vm_area_struct *vma_merge(struct
- 				can_vma_merge_before(next, vm_flags,
- 					anon_vma, file, pgoff+pglen) &&
- 				is_mergeable_anon_vma(prev->anon_vma,
--						      next->anon_vma)) {
-+						      next->anon_vma, NULL)) {
- 							/* cases 1, 6 */
- 			err = vma_adjust(prev, prev->vm_start,
- 				next->vm_end, prev->vm_pgoff, NULL);
+  * Check that a process has enough memory to allocate a new virtual
 
 
