@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab1C2NUi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 09:20:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40071 "EHLO mx2.suse.de"
+	id S1753630Ab1C2NUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 09:20:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40075 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752231Ab1C2NUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 09:20:37 -0400
-Date: Tue, 29 Mar 2011 06:12:19 -0700
+	id S1753576Ab1C2NUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 09:20:41 -0400
+Date: Tue, 29 Mar 2011 06:14:53 -0700
 From: Greg KH <gregkh@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Julian Anastasov <ja@ssi.bg>, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 1/6] TTY: unify tty_init_dev fail path handling
-Message-ID: <20110329131219.GA17294@suse.de>
-References: <1300873717-27941-1-git-send-email-jslaby@suse.cz>
- <alpine.LFD.2.00.1103232250160.1634@ja.ssi.bg>
- <4D91CDE6.9060006@suse.cz>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        rmk+kernel@arm.linux.org.uk, linux-wireless@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH 0/1] new module for amba axi on-chip interconnect
+Message-ID: <20110329131453.GA17302@suse.de>
+References: <1301391619-4499-1-git-send-email-arend@broadcom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D91CDE6.9060006@suse.cz>
+In-Reply-To: <1301391619-4499-1-git-send-email-arend@broadcom.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 02:17:42PM +0200, Jiri Slaby wrote:
-> On 03/23/2011 09:53 PM, Julian Anastasov wrote:
-> > 
-> >     Hello,
-> > 
-> > On Wed, 23 Mar 2011, Jiri Slaby wrote:
-> > 
-> >> Change it so that we call the deinit functions at one place at the end
-> >> of the function (by gotos). And while at it use some sane label names.
-> >>
-> >> This is a preparation for the deinitialization of tty in the next
-> >> patch.
-> >>
-> >> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> >> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> >> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> >> Cc: Julian Anastasov <ja@ssi.bg>
-> >> ---
-> >>
-> >> This is not tested yet, I'm building a kernel to test it a bit, but it
-> >> will take some time. If you could too to check if your problem
-> >> dissapears, it would be great.
-> > 
-> >     Thanks! Patches 1-5 work for me, I backported them
-> > to 2.6.33.8 for the test.
+On Tue, Mar 29, 2011 at 11:40:18AM +0200, Arend van Spriel wrote:
+> GUIDANCE NEEDED:
+> This patch puts the module at proposed location. Please provide your
+> guidance if there is a better location within the linux tree for this
+> module.
 > 
-> Thanks for testing. I see no regressions either.
+> This module has been isolated from the brcm80211 driver currently
+> located in staging and provided to other drivers for chipsets using
+> the AMBA AXI on-chip interconnect with ARM Device Management Plugin
+> (DMP) silicon IP, which provides system discovery (chip being the
+> system) and basic core function (disable, reset, etc.).
 > 
-> Greg, will you take it?
+> The module has previously been posted on the linux-wireless list and
+> comments by Randy Dunlap have been taken in. Also the SubmitChecklist
+> has been followed.
+> 
+> Arend van Spriel (1):
+>   drivers: brcmaxi: provide amba axi functionality in separate module
+> 
+>  drivers/Kconfig            |    2 +
+>  drivers/Makefile           |    1 +
+>  drivers/brcmaxi/Kconfig    |   23 ++
 
-Yes I will queue it up in a week or so, thanks.
+I thought this was going under drivers/staging/  What changed your mind?
+What other drivers are going to use this, I thought the current broadcom
+drivers in drivers/net/wireless were not going to need this.
+
+thanks,
 
 greg k-h
