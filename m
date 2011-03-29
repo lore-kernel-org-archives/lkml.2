@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab1C2POf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 11:14:35 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:50227 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab1C2POf (ORCPT
+	id S1753593Ab1C2PQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 11:16:53 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51799 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab1C2PQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 11:14:35 -0400
-Message-ID: <4D91F754.6010503@linux.vnet.ibm.com>
-Date: Tue, 29 Mar 2011 11:14:28 -0400
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	Tue, 29 Mar 2011 11:16:51 -0400
+Date: Tue, 29 Mar 2011 17:16:43 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/30] amd64_edac: Cleanup chipselect handling
+Message-ID: <20110329151643.GA22419@aftab>
+References: <1297358133-14320-1-git-send-email-bp@amd64.org>
+ <1297358133-14320-6-git-send-email-bp@amd64.org>
+ <4D91F31A.7040600@redhat.com>
 MIME-Version: 1.0
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-CC: debora@linux.vnet.ibm.com, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com, preining@logic.at
-Subject: Re: [patch 2/8] tpm_tis: Re-enable interrupts upon (S3) resume
-References: <20110315111307.895085413@linux.vnet.ibm.com> <20110315111425.977309317@linux.vnet.ibm.com> <4D91EE8D.1010305@linux.vnet.ibm.com>
-In-Reply-To: <4D91EE8D.1010305@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D91F31A.7040600@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2011 10:37 AM, Rajiv Andrade wrote:
-> On 03/15/2011 08:13 AM, Stefan Berger wrote:
->> v2:
->>    - the patch was adapted to also work with a machine with a Intel iTPM
->>
-> This is also a separated fix, which this time I can't also identify
-> in the patch, can you submit it as another patch, that applies
-> on top of the original 2/8?
-There are two types of drivers in the tpm_tis driver, the pnp one and 
-the 'platform' driver. The initial patch did not provide support for 
-both of them, so maybe the comment above is misleading. I'll fix the 
-comment, but don't think it makes sense tearing the patch into two pieces.
+On Tue, Mar 29, 2011 at 10:56:26AM -0400, Mauro Carvalho Chehab wrote:
+> Em 10-02-2011 15:15, Borislav Petkov escreveu:
+> > From: Borislav Petkov <borislav.petkov@amd.com>
+> > 
+> > Add a struct representing the DRAM chip select base/limit register
+> > pairs. Concentrate all CS handling in a single function. Also, add CS
+> > looping macros for cleaner, more readable code. While at it, adjust code
+> > to F15h. Finally, do smaller macro names cleanups (remove family names
+> > from register macros) and debug messages clarification.
+> > 
+> > No functional change.
+> > 
+> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> Hi Borislav,
+> 
+> > --- a/drivers/edac/amd64_edac.h
+> > +++ b/drivers/edac/amd64_edac.h
+> > @@ -160,6 +160,14 @@
+> >  #define OFF false
+> >  
+> >  /*
+> > + * Create a contiguous bitmask starting at bit position @lo and ending at
+> > + * position @hi. For example
+> > + *
+> > + * GENMASK(21, 39) gives us the 64bit vector 0x000000ffffe00000.
+> > + */
+> > +#define GENMASK(lo, hi)			(((1ULL << ((hi) - (lo) + 1)) - 1) << (lo))
+> > +
+> 
+> This is a nice macro that could be useful outside amd64. It is probably a good
+> idea to move it to include/linux/bitops.h.
 
-    Stefan
+I'd suggest rather <drivers/edac/edac_core.h> if you want to use it in
+EDAC. But if we have more users, I don't have a problem with putting
+it there (or somewhere else generic enough if people have a better
+suggestion).
 
-> Rajiv
+-- 
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
