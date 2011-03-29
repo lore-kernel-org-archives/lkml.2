@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab1C2RqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 13:46:09 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40797 "EHLO
+	id S1753412Ab1C2RsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 13:48:24 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41154 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab1C2RqH (ORCPT
+	with ESMTP id S1751212Ab1C2RsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 13:46:07 -0400
-Date: Tue, 29 Mar 2011 14:45:56 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lin Ming <ming.m.lin@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-Message-ID: <20110329174556.GC24129@ghostprotocols.net>
-References: <1301391136.14111.98.camel@minggr.sh.intel.com> <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost> <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop> <1301418533.2250.419.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301418533.2250.419.camel@laptop>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 29 Mar 2011 13:48:23 -0400
+Subject: Re: [RFC] seqlock,lockdep: Add lock primitives to read_seqbegin().
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: rostedt@goodmis.org, mingo@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1301405984.2250.402.camel@laptop>
+References: <201103261312.AEJ01293.OVFJFSLtHOFOMQ@I-love.SAKURA.ne.jp>
+	 <20110328171217.GA8529@home.goodmis.org>
+	 <201103290430.p2T4UhLA081016@www262.sakura.ne.jp>
+	 <1301405984.2250.402.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Mar 2011 19:50:32 +0200
+Message-ID: <1301421032.2250.432.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Mar 29, 2011 at 07:08:53PM +0200, Peter Zijlstra escreveu:
-> On Tue, 2011-03-29 at 19:06 +0200, Peter Zijlstra wrote:
-> > On Tue, 2011-03-29 at 19:03 +0200, Peter Zijlstra wrote:
-> > > > Is it an unwind of the call frame stack to find out what data member was
-> > > > accessed?
+On Tue, 2011-03-29 at 15:39 +0200, Peter Zijlstra wrote:
+> 
+> That said, there are some out-standing issues with rw_locks and lockdep,
+> Gautham and I worked on that for a while but we never persevered and
+> finished it..
+> 
+>   http://lkml.org/lkml/2009/5/11/203 
 
-> > > No need to unwind stacks, DWARF should have information on function
-> > > local stack. It should be able to tell you the type of things like -8(%
-> > > rbp). 
+I just did a quick rebase onto tip/master (compile tested only):
 
-> > That is, we don't even have a life stack to unwind, so we simply cannot
-> > unwind at all, but the debug information should be able to tell you the
-> > type of whatever would live at a certain stack position if we were to
-> > have a stack.
+  http://programming.kicks-ass.net/sekrit/patches-lockdep.tar.bz2
 
-> Furthermore, I've now completely exhausted my knowledge of debuginfo and
-> hope Masami and Arnaldo will help with further details ;-)
+That series needs testing and a few patches to extend the
+lib/locking-selftest* bits to cover the new functionality.
 
-:-)
-
-I think the place to look is 'perf probe', look for the way one
-variable is translated to an expression passed to the kprobe_tracer, I
-think you'll need the reverse operation.
-
-Look at tools/perf/util/probe-finder.c, function find_variable() and
-convert_variable_location().
-
-Understanding how those functions use the dwarf_ prefixed routines from
-libdw should be a good start.
-
-- Arnaldo
