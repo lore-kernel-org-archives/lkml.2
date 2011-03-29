@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab1C2Nm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 09:42:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40868 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753191Ab1C2NmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 09:42:25 -0400
-Date: Tue, 29 Mar 2011 15:42:23 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Zhu Yanhai <zhu.yanhai@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/3] Implementation of cgroup isolation
-Message-ID: <20110329134223.GB3361@tiehlicka.suse.cz>
-References: <20110328093957.089007035@suse.cz>
- <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
- <20110328114430.GE5693@tiehlicka.suse.cz>
- <20110329090924.6a565ef3.kamezawa.hiroyu@jp.fujitsu.com>
- <20110329073232.GB30671@tiehlicka.suse.cz>
- <20110329165117.179d87f9.kamezawa.hiroyu@jp.fujitsu.com>
- <20110329085942.GD30671@tiehlicka.suse.cz>
- <20110329184119.219f7d7b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110329111858.GF30671@tiehlicka.suse.cz>
- <AANLkTi=1WA-oF1kraTMMcSgwqvaXqrEiROVGeDfejO45@mail.gmail.com>
+	id S1753451Ab1C2Nmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 09:42:52 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58040 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191Ab1C2Nmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 09:42:50 -0400
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
+        dm-devel@redhat.com, neilb@suse.de
+Subject: Re: Please revert a91a2785b20
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <alpine.LFD.2.00.1103290006070.2774@localhost6.localdomain6>
+	<alpine.LFD.2.00.1103290040300.2774@localhost6.localdomain6>
+	<20110328230319.GA12790@redhat.com> <4D918347.7050500@fusionio.com>
+	<20110329132032.GA22921@redhat.com>
+Date: Tue, 29 Mar 2011 09:42:08 -0400
+In-Reply-To: <20110329132032.GA22921@redhat.com> (Mike Snitzer's message of
+	"Tue, 29 Mar 2011 09:20:32 -0400")
+Message-ID: <yq1lizyhwlr.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.110013 (No Gnus v0.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=1WA-oF1kraTMMcSgwqvaXqrEiROVGeDfejO45@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4D91E1B6.007B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 29-03-11 21:15:59, Zhu Yanhai wrote:
-> Michal,
+>>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
 
-Hi,
+Mike,
 
-> Maybe what we need here is some kind of trade-off?
-> Let's say a new configuable parameter reserve_limit, for the cgroups
-> which want to
-> have some guarantee in the memory resource, we have:
-> 
-> limit_in_bytes > soft_limit > reserve_limit
-> 
-> MEM[limit_in_bytes..soft_limit] are the bytes that I'm willing to contribute
-> to the others if they are short of memory.
-> 
-> MEM[soft_limit..reserve_limit] are the bytes that I can afford if the others
-> are still eager for memory after I gave them MEM[limit_in_bytes..soft_limit].
-> 
-> MEM[reserve_limit..0] are the bytes which is a must for me to guarantee QoS.
-> Nobody is allowed to steal them.
-> 
-> And reserve_limit is 0 by default for the cgroups who don't care about Qos.
-> 
-> Then the reclaim path also needs some changes, i.e, balance_pgdat():
-> 1) call mem_cgroup_soft_limit_reclaim(), if nr_reclaimed is meet, goto finish.
-> 2) shrink the global LRU list, and skip the pages which belong to the cgroup
-> who have set a reserve_limit. if nr_reclaimed is meet, goto finish.
+Mike> But I think we have a related issue that needs discussion, given
+Mike> that an integrity profile mismatch will cause MD's assemble to
+Mike> fail (rather than warn and continue to assemble without integrity
+Mike> support).
 
-Isn't this an overhead that would slow the whole thing down. Consider
-that you would need to lookup page_cgroup for every page and touch
-mem_cgroup to get the limit.
-The point of the isolation is to not touch the global reclaim path at
-all.
+Mike> DM doesn't fail to load a DM device due to a integrity profile
+Mike> mismatch; it just emits a warning and continues.
 
-> 3) shrink the cgroups who have set a reserve_limit, and leave them with only
-> the reserve_limit bytes they need. if nr_reclaimed is meet, goto finish.
-> 4) OOM
-> 
-> Does it make sense?
+Mike> In contrast, MD will now disallow adding a normal disk (without
+Mike> integrity support) to an array that has historically had a
+Mike> symmetric integrity profile across all members.
 
-It sounds like a good thing - in that regard it is more generic than
-a simple flag - but I am afraid that the implementation wouldn't be
-that easy to preserve the performance and keep the balance between
-groups. But maybe it can be done without too much cost.
+You would invalidate all your existing integrity metadata, tagging,
+etc. on existing metadevice members. That seems to be a policy decision,
+so if we go down that path it would have to be keyed off a force
+assembly option passed down from userland tooling. Turning off features
+and/or losing metadata really should not be done without the user's
+explicit consent.
 
-Thanks
+Also, let's assume you run an integrity-aware app on a DM device and you
+add a non-integrity drive. The DM device is then no longer capable of
+carrying integrity metadata out to storage. What happens to the app?
+What about outstanding writes with metadata attached?
+
+Good discussion topic for next week, methinks...
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Martin K. Petersen	Oracle Linux Engineering
