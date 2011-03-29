@@ -1,144 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab1C2Qfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 12:35:55 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57451 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab1C2Qfy (ORCPT
+	id S1753947Ab1C2QhG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 12:37:06 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:56791 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab1C2QhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 12:35:54 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Cc: Milton Miller <miltonm@bga.com>, Jens Axboe <axboe@kernel.dk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Vivek Goyal <vgoyal@redhat.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH v2] generic-ipi: Initialize call_single_queue before enabling interrupt
-Date: Tue, 29 Mar 2011 12:35:04 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Mailer: HidemaruMail 5.38 (WinNT,501)
-Message-Id: <D6CBEE2F420741indou.takao@jp.fujitsu.com>
-X-Antivirus: avast! (VPS 110329-0, 2011/03/29), Outbound message
-X-Antivirus-Status: Clean
+	Tue, 29 Mar 2011 12:37:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=qI6xEgjwRNryznFG33LAIJ3C874C9LKV2i/HklP9oDaw+85c5RM72wFrRZxT6fAIbp
+         C1s2UDLLNGANfhXB+/pfCmOElwcKVOdSqxwlrk/mXSDN2ndvYRfJfidpgsqrtvqieypl
+         aATKJ9FIFtbpVXnGgGofZ7311IcJgK5Um05DY=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]arch:Kconfig.locks Remove unused config option.
+Date: Tue, 29 Mar 2011 09:36:51 -0700
+Message-Id: <1301416611-3651-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+using a cleanup script I found this, could be real/fake not sure
+I grepped the whole kernel and only found this. If/when you have
+time let me know..
 
-This patch renames init_call_single_data() to call_function_init() and
-calls it in start_kernel() so that call_single_queue can be initialized
-before enabling interrupt.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-There is a problem that kdump(2nd kernel) sometimes hangs up due to
-pending IPI from 1st kernel. Kernel panic occurs because IPI comes
-before call_single_queue is initialized. The details are as follows.
-(1) 2nd kernel boot up
-(2) A pending IPI from 1st kernel comes when irqs are first enabled
-    in start_kernel().
-(3) Kernel tries to handle the interrupt, but call_single_queue is not
-    initialized yet at this point. As a result, in the
-    generic_smp_call_function_single_interrupt(), NULL pointer
-    dereference occurs when list_replace_init() tries to access
-    &q->list.next.
-Therefore this patch changes the name of init_call_single_data() to
-call_function_init() and calls it before local_irq_enable() in
-start_kernel().
-
-v2:
-- Rename init_call_single_data() to call_function_init() and calls it in
-  start_kernel()
-- Change insert position in start_kernel().
-- Adjust for CONFIG_SMP/CONFIG_USE_GENERIC_SMP_HELPERS options
-- Rebased to Linus's latest tree
-
-v1:
-https://lkml.org/lkml/2011/3/25/317
-- Divide init_call_single_data() into two functions,
-   o init_call_single_data: initialize call_single_queue
-   o init_hotplug_cfd: initialize hotplug_cfd_notifier
-  And call init_call_single_data before local_irq_enable() in
-  start_kernel().
-
-v0:
-https://lkml.org/lkml/2011/3/23/417
-- In generic_smp_call_function_single_interrupt(), check if
-  call_single_queue was initialized or not, and just return if not
-  initialized.
-
-Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
 ---
- include/linux/smp.h |    5 ++++-
- init/main.c         |    1 +
- kernel/smp.c        |    5 +----
- 3 files changed, 6 insertions(+), 5 deletions(-)
+ arch/Kconfig         |    3 ---
+ kernel/Kconfig.locks |    2 +-
+ 2 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 74243c8..4fb3eac 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -85,12 +85,15 @@ int smp_call_function_any(const struct cpumask *mask,
-  * Generic and arch helpers
-  */
- #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
-+void __init call_function_init(void);
- void generic_smp_call_function_single_interrupt(void);
- void generic_smp_call_function_interrupt(void);
- void ipi_call_lock(void);
- void ipi_call_unlock(void);
- void ipi_call_lock_irq(void);
- void ipi_call_unlock_irq(void);
-+#else
-+static inline void call_function_init(void) { }
- #endif
+diff --git a/arch/Kconfig b/arch/Kconfig
+index f78c2be..8d24bac 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -144,9 +144,6 @@ config HAVE_CLK
+ config HAVE_DMA_API_DEBUG
+ 	bool
  
- /*
-@@ -144,7 +147,7 @@ static inline void smp_send_reschedule(int cpu) { }
- #define smp_prepare_boot_cpu()			do {} while (0)
- #define smp_call_function_many(mask, func, info, wait) \
- 			(up_smp_call_function(func, info))
--static inline void init_call_single_data(void) { }
-+static inline void call_function_init(void) { }
- 
- static inline int
- smp_call_function_any(const struct cpumask *mask, smp_call_func_t func,
-diff --git a/init/main.c b/init/main.c
-index 4a9479e..12821d1 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -539,6 +539,7 @@ asmlinkage void __init start_kernel(void)
- 	timekeeping_init();
- 	time_init();
- 	profile_init();
-+	call_function_init();
- 	if (!irqs_disabled())
- 		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
- 				 "enabled early\n");
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 73a1951..fb67dfa 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -74,7 +74,7 @@ static struct notifier_block __cpuinitdata hotplug_cfd_notifier = {
- 	.notifier_call		= hotplug_cfd,
- };
- 
--static int __cpuinit init_call_single_data(void)
-+void __init call_function_init(void)
- {
- 	void *cpu = (void *)(long)smp_processor_id();
- 	int i;
-@@ -88,10 +88,7 @@ static int __cpuinit init_call_single_data(void)
- 
- 	hotplug_cfd(&hotplug_cfd_notifier, CPU_UP_PREPARE, cpu);
- 	register_cpu_notifier(&hotplug_cfd_notifier);
+-config HAVE_DEFAULT_NO_SPIN_MUTEXES
+-	bool
 -
--	return 0;
- }
--early_initcall(init_call_single_data);
+ config HAVE_HW_BREAKPOINT
+ 	bool
+ 	depends on PERF_EVENTS
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 88c92fb..5e62baf 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -199,4 +199,4 @@ config INLINE_WRITE_UNLOCK_IRQRESTORE
+ 	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
  
- /*
-  * csd_lock/csd_unlock used to serialize access to per-cpu csd resources
+ config MUTEX_SPIN_ON_OWNER
+-	def_bool SMP && !DEBUG_MUTEXES && !HAVE_DEFAULT_NO_SPIN_MUTEXES
++	def_bool SMP && !DEBUG_MUTEXES 
+-- 
+1.7.4.1
+
