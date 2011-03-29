@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1C2AyT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 20:54:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3252 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257Ab1C2AyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 20:54:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,258,1299484800"; 
-   d="scan'208";a="726254430"
-Subject: Re: [PATCH]mmap: add alignment for some variables
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-In-Reply-To: <m2oc4v18x8.fsf@firstfloor.org>
-References: <1301277536.3981.27.camel@sli10-conroe>
-	 <m2oc4v18x8.fsf@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Mar 2011 08:54:14 +0800
-Message-ID: <1301360054.3981.31.camel@sli10-conroe>
+	id S1754262Ab1C2Ay3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 20:54:29 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40017 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998Ab1C2Ay0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 20:54:26 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 29 Mar 2011 09:47:56 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Ying Han <yinghan@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [RFC 0/3] Implementation of cgroup isolation
+Message-Id: <20110329094756.49af153d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <BANLkTin4J5kiysPdQD2aTC52U4-dy04C1g@mail.gmail.com>
+References: <20110328093957.089007035@suse.cz>
+	<AANLkTi=CPMxOg3juDiD-_hnBsXKdZ+at+i9c1YYM=vv1@mail.gmail.com>
+	<20110329091254.20c7cfcb.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTin4J5kiysPdQD2aTC52U4-dy04C1g@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 00:55 +0800, Andi Kleen wrote:
-> Shaohua Li <shaohua.li@intel.com> writes:
+On Mon, 28 Mar 2011 17:37:02 -0700
+Ying Han <yinghan@google.com> wrote:
+
+> On Mon, Mar 28, 2011 at 5:12 PM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Mon, 28 Mar 2011 11:01:18 -0700
+> > Ying Han <yinghan@google.com> wrote:
+> >
+> >> On Mon, Mar 28, 2011 at 2:39 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> >> > Hi all,
+> >> >
+> >> > Memory cgroups can be currently used to throttle memory usage of a group of
+> >> > processes. It, however, cannot be used for an isolation of processes from
+> >> > the rest of the system because all the pages that belong to the group are
+> >> > also placed on the global LRU lists and so they are eligible for the global
+> >> > memory reclaim.
+> >> >
+> >> > This patchset aims at providing an opt-in memory cgroup isolation. This
+> >> > means that a cgroup can be configured to be isolated from the rest of the
+> >> > system by means of cgroup virtual filesystem (/dev/memctl/group/memory.isolated).
+> >>
+> >> Thank you Hugh pointing me to the thread. We are working on similar
+> >> problem in memcg currently
+> >>
+> >> Here is the problem we see:
+> >> 1. In memcg, a page is both on per-memcg-per-zone lru and global-lru.
+> >> 2. Global memory reclaim will throw page away regardless of cgroup.
+> >> 3. The zone->lru_lock is shared between per-memcg-per-zone lru and global-lru.
+> >>
+> >> And we know:
+> >> 1. We shouldn't do global reclaim since it breaks memory isolation.
+> >> 2. There is no need for a page to be on both LRU list, especially
+> >> after having per-memcg background reclaim.
+> >>
+> >> So our approach is to take off page from global lru after it is
+> >> charged to a memcg. Only pages allocated at root cgroup remains in
+> >> global LRU, and each memcg reclaims pages on its isolated LRU.
+> >>
+> >
+> > Why you don't use cpuset and virtual nodes ? It's what you want.
 > 
-> > Make some variables have correct alignment.
+> We've been running cpuset + fakenuma nodes configuration in google to
+> provide memory isolation. The configuration of having the virtual box
+> is complex which user needs to know great details of the which node to
+> assign to which cgroup. That is one of the motivations for us moving
+> towards to memory controller which simply do memory accounting no
+> matter where pages are allocated.
 > 
-> Nit: __read_mostly doesn't change alignment, just the section.
-> Please fix the description. Other than that it looks good.
-sure.
 
-Make some variables have correct alignment/section to avoid cache issue.
-In a workload which heavily does mmap/munmap, the variables will be used
-frequently.
+I think current fake-numa is not useful because it works only at boot time.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
----
- mm/mmap.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> By saying that, memcg simplified the memory accounting per-cgroup but
+> the memory isolation is broken. This is one of examples where pages
+> are shared between global LRU and per-memcg LRU. It is easy to get
+> cgroup-A's page evicted by adding memory pressure to cgroup-B.
+> 
+If you overcommit....Right ?
 
-Index: linux/mm/mmap.c
-===================================================================
---- linux.orig/mm/mmap.c	2011-03-29 08:30:12.000000000 +0800
-+++ linux/mm/mmap.c	2011-03-29 08:30:54.000000000 +0800
-@@ -84,10 +84,10 @@ pgprot_t vm_get_page_prot(unsigned long
- }
- EXPORT_SYMBOL(vm_get_page_prot);
- 
--int sysctl_overcommit_memory = OVERCOMMIT_GUESS;  /* heuristic overcommit */
--int sysctl_overcommit_ratio = 50;	/* default is 50% */
-+int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
-+int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
- int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
--struct percpu_counter vm_committed_as;
-+struct percpu_counter vm_committed_as ____cacheline_internodealigned_in_smp;
- 
- /*
-  * Check that a process has enough memory to allocate a new virtual
+
+> The approach we are thinking to make the page->lru exclusive solve the
+> problem. and also we should be able to break the zone->lru_lock
+> sharing.
+> 
+Is zone->lru_lock is a problem even with the help of pagevecs ?
+
+If LRU management guys acks you to isolate LRUs and to make kswapd etc..
+more complex, okay, we'll go that way. This will _change_ the whole
+memcg design and concepts Maybe memcg should have some kind of balloon driver to
+work happy with isolated lru.
+
+But my current standing position is "never bad effects global reclaim".
+So, I'm not very happy with the solution.
+
+If we go that way, I guess we'll think we should have pseudo nodes/zones, which
+was proposed in early days of resource controls.(not cgroup).
+
+Thanks,
+-Kame
+
+
+
+
+
+
 
 
