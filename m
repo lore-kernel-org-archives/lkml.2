@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab1C2S2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 14:28:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5540 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836Ab1C2S2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 14:28:48 -0400
-Date: Tue, 29 Mar 2011 20:27:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com
-Subject: Re: [PATCH 1/3] signal: Make signal_wake_up() take @sig_type
-	instead of @resume
-Message-ID: <20110329182741.GA9927@redhat.com>
-References: <20110329144603.GA29865@htj.dyndns.org>
+	id S1754022Ab1C2SaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 14:30:12 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55263 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab1C2SaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 14:30:11 -0400
+Date: Tue, 29 Mar 2011 14:30:10 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        rmk+kernel@arm.linux.org.uk, gregkh@suse.de,
+        linux-wireless@vger.kernel.org, devel@linuxdriverproject.org
+Subject: Re: [PATCH 0/1] new module for amba axi on-chip interconnect
+Message-ID: <20110329183010.GB22898@infradead.org>
+References: <1301391619-4499-1-git-send-email-arend@broadcom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110329144603.GA29865@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1301391619-4499-1-git-send-email-arend@broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29, Tejun Heo wrote:
->
-> -void signal_wake_up(struct task_struct *t, int resume)
-> +void signal_wake_up(struct task_struct *t, int sig_type)
->  {
-> -	unsigned int mask;
-> +	unsigned int uninitialized_var(mask);
->
->  	set_tsk_thread_flag(t, TIF_SIGPENDING);
+On Tue, Mar 29, 2011 at 11:40:18AM +0200, Arend van Spriel wrote:
+> GUIDANCE NEEDED:
+> This patch puts the module at proposed location. Please provide your
+> guidance if there is a better location within the linux tree for this
+> module.
 > 
-> -	/*
-> -	 * For SIGKILL, we want to wake it up in the stopped/traced/killable
-> -	 * case. We don't check t->state here because there is a race with it
-> -	 * executing another processor and just now entering stopped state.
-> -	 * By using wake_up_state, we ensure the process will wake up and
-> -	 * handle its death signal.
-> -	 */
-> -	mask = TASK_INTERRUPTIBLE;
-> -	if (resume)
-> -		mask |= TASK_WAKEKILL;
-> +	switch (sig_type) {
-> +	case 0:
-> +		mask = TASK_INTERRUPTIBLE;
-> +		break;
-> +
-> +	case SIGKILL:
-> +		/*
-> +		 * For SIGKILL, we want to wake it up in the stopped /
-> +		 * traced / killable case.  We don't check t->state here
-> +		 * because there is a race with it executing another
-> +		 * processor and just now entering stopped state.  By using
-> +		 * wake_up_state, we ensure the process will wake up and
-> +		 * handle its death signal.
-> +		 */
-> +		mask |= TASK_INTERRUPTIBLE | TASK_WAKEKILL;
-> +		break;
+> This module has been isolated from the brcm80211 driver currently
+> located in staging and provided to other drivers for chipsets using
+> the AMBA AXI on-chip interconnect with ARM Device Management Plugin
+> (DMP) silicon IP, which provides system discovery (chip being the
+> system) and basic core function (disable, reset, etc.).
 
-Interesting... Yes, I was thinking about changing signal_wake_up()
-too, my intent was to pass TASK_* mask directly.
-
-But your approach looks more clean. So, to me 1-2 look as the nice
-cleanups in any case.
-
-But let me think more about 3/3. I still think we do not want this.
-But I need the fresh head to undestand what I actually have in mind.
-Perhaps nothing, just the wrong feeling.
-
-Oleg.
+Any reason this is not integrated with drivers/amba?
 
