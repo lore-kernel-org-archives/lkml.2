@@ -1,131 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab1C2RfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 13:35:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60312 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab1C2RfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 13:35:24 -0400
-Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-In-Reply-To: <20110329170949.GF29865@htj.dyndns.org>
-References: <20110323153727.GB12003@htj.dyndns.org>
-	 <20110324094119.GD12038@htj.dyndns.org>
-	 <20110324094151.GE12038@htj.dyndns.org>
-	 <20110325101238.GC1409@htj.dyndns.org>
-	 <20110329163702.GE29865@htj.dyndns.org>
-	 <20110329170949.GF29865@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Mar 2011 19:37:33 +0200
-Message-ID: <1301420253.2250.430.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754014Ab1C2RiZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 13:38:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40866 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752615Ab1C2RiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 13:38:24 -0400
+Date: Tue, 29 Mar 2011 18:28:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
+	value
+Message-ID: <20110329162851.GA6317@redhat.com>
+References: <20110326161346.GA18272@redhat.com> <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com> <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop> <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins> <1301327368.4859.28.camel@twins> <20110328165648.GA9304@redhat.com> <1301387532.4859.54.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301387532.4859.54.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 19:09 +0200, Tejun Heo wrote:
-> Here's the combined patch I was planning on testing but didn't get to
-> (yet).  It implements two things - hard limit on spin duration and
-> early break if the owner also is spinning on a mutex.
+On 03/29, Peter Zijlstra wrote:
+>
+> On Mon, 2011-03-28 at 18:56 +0200, Oleg Nesterov wrote:
+> >
+> > jump_label_dec:
+> >
+> > 	if (atomic_dec_and_test(key))
+> > 		jump_label_disable(key);
+> >
+> > Another thread can create the PERF_ATTACH_TASK event in between
+> > and call jump_label_update(JUMP_LABEL_ENABLE) first. Looks like,
+> > jump_label_update() should ensure that "type" matches the state
+> > of the "*key" under jump_label_lock().
+>
+> No I think you're right, and I think we fixed that but it looks like
+> Ingo still didn't merge the new jump-label patches :/
 
-This is going to give massive conflicts with
+OK. To remind, we have another problem, perf_install can race with exit.
+But lets ignore this for now...
 
- https://lkml.org/lkml/2011/3/2/286
- https://lkml.org/lkml/2011/3/2/282
+You know, I honestly tried to convince myself I can understand your
+patch. All I can say, I'll try to read it again ;) But the main idea
+is clear, we give more respect to ->nr_events and once it is zero
+task_ctx must not be active.
 
-which I was planning to stuff into .40
+> @@ -2114,8 +2107,19 @@ static void perf_event_context_sched_in(
+>  	struct perf_cpu_context *cpuctx;
+>
+>  	cpuctx = __get_cpu_context(ctx);
+> -	if (cpuctx->task_ctx == ctx)
+> +	raw_spin_lock(&ctx->lock);
+> +	/*
+> +	 * Serialize against perf_install_in_context(), the interesting case
+> +	 * is where perf_install_in_context() finds the context inactive and
+> +	 * another cpu is just about to schedule the task in. In that case
+> +	 * we need to avoid observing a stale ctx->nr_events.
 
+I don't understand the comment... We can't race __perf_install_in_context,
+it can only run on the same CPU but we are called with irqs disabled.
 
-> @@ -4021,16 +4025,44 @@ EXPORT_SYMBOL(schedule);
->  
->  #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
->  /*
-> + * Maximum mutex owner spin duration in nsecs.  Don't spin more then
-> + * DEF_TIMESLICE.
-> + */
-> +#define MAX_MUTEX_SPIN_NS	(DEF_TIMESLICE * 1000000000LLU / HZ)
+> +	ctx->is_active = 1;
+> +	if (cpuctx->task_ctx == ctx || !ctx->nr_events) {
+> +		raw_spin_lock(&ctx->lock);
+>  		return;
 
-DEF_TIMESLICE is SCHED_RR only, so its use here is dubious at best, also
-I bet we have something like NSEC_PER_SEC to avoid counting '0's.
+I guess you meant _unlock.
 
+But now I don't understand what ->is_active means. We make it true,
+but doesn't set cpuctx->task_ctx = ctx. Why __perf_event_release()
+clears ->is_active then?
+
+This looks wrong at first glance. Suppose we have the same problem,
+this task misses perf_event_context_sched_out() after that. OK,
+->task_ctx == NULL.
+
+But, suppose that after that this task sleeps "forever" and we create
+another counter and call perf_install_in_context() again. Now we hang
+in "retry" loop.
+
+It seems to me, instead we should change ctx_sched_in() to check
+nr_events and do nothing if it is zero.
+
+> +	}
+> +	raw_spin_lock(&ctx->lock);
+
+Again, s/lock/unlock/
+
+> +	cpuctx->task_ctx = ctx;
 > +
-> +/**
-> + * mutex_spin_on_owner - optimistic adaptive spinning on locked mutex
-> + * @lock: the mutex to spin on
-> + * @owner: the current owner (speculative pointer)
-> + *
-> + * The caller is trying to acquire @lock held by @owner.  If @owner is
-> + * currently running, it might get unlocked soon and spinning on it can
-> + * save the overhead of sleeping and waking up.
-> + *
-> + * Note that @owner is completely speculative and may be completely
-> + * invalid.  It should be accessed very carefully.
-> + *
-> + * Forward progress is guaranteed regardless of locking ordering by never
-> + * spinning longer than MAX_MUTEX_SPIN_NS.  This is necessary because
-> + * mutex_trylock(), which doesn't have to follow the usual locking
-> + * ordering, also uses this function.
+>  	ctx_sched_in(ctx, cpuctx, EVENT_PINNED, task);
 
-While that puts a limit on things it'll still waste time. I'd much
-rather pass an trylock argument to mutex_spin_on_owner() and then bail
-on owner also spinning.
+But we already dropped ctx->lock, __perf_event_release() can remove
+the last event before ctx_sched_in() takes it again.
 
-> + * CONTEXT:
-> + * Preemption disabled.
-> + *
-> + * RETURNS:
-> + * %true if the lock was released and the caller should retry locking.
-> + * %false if the caller better go sleeping.
->   */
-> -int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
-> +bool mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
->  {
+This should be moved into ctx_sched_in() afaics, but this is not simple.
 
-> @@ -4070,21 +4104,30 @@ int mutex_spin_on_owner(struct mutex *lo
->  			 * we likely have heavy contention. Return 0 to quit
->  			 * optimistic spinning and not contend further:
->  			 */
-> +			ret = !lock->owner;
->  			break;
->  		}
->  
->  		/*
-> -		 * Is that owner really running on that cpu?
-> +		 * Quit spinning if any of the followings is true.
-> +		 *
-> +		 * - The owner isn't running on that cpu.
-> +		 * - The owner also is spinning on a mutex.
-> +		 * - Someone else wants to use this cpu.
-> +		 * - We've been spinning for too long.
->  		 */
-> +		if (task_thread_info(rq->curr) != owner ||
-> +		    rq->spinning_on_mutex || need_resched() ||
-> +		    local_clock() > start + MAX_MUTEX_SPIN_NS) {
+So, perhaps we can take ctx->lock and check nr_events after the 2nd
+ctx_sched_in(). If it is zero, we should clear task_ctx/is_active.
 
-While we did our best with making local_clock() cheap, I'm still fairly
-uncomfortable with putting it in such a tight loop.
+Perhaps. Right now I got lost.
 
-> +			ret = false;
-> +			break;
-> +		}
->  
->  		arch_mutex_cpu_relax();
->  	}
->  
-> +	this_rq()->spinning_on_mutex = false;
-> +	return ret;
->  }
->  #endif
->  
-
-
+Oleg.
 
