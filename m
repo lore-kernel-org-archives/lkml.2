@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406Ab1C2Kc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 06:32:57 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:33728 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751786Ab1C2Kc4 (ORCPT
+	id S1752559Ab1C2Kfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 06:35:50 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:57140 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751854Ab1C2Kft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 06:32:56 -0400
+	Tue, 29 Mar 2011 06:35:49 -0400
 From: Keshava Munegowda <keshava_mgowda@ti.com>
 References: <1301393275.2253.7.camel@phoenix>
 MIME-Version: 1.0
 X-Mailer: Microsoft Office Outlook 11
 In-Reply-To: <1301393275.2253.7.camel@phoenix>
-Thread-Index: Acvt+TThtydqsPdXSzqXD0Nd/PyXFAAAxrWw
+Thread-Index: Acvt+TThtydqsPdXSzqXD0Nd/PyXFAAA6GSQ
 X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
-Date: Tue, 29 Mar 2011 16:02:45 +0530
-Message-ID: <4dcd9b59488fe6eba7b2683a5f240b46@mail.gmail.com>
+Date: Tue, 29 Mar 2011 16:05:40 +0530
+Message-ID: <50616adee81e0719b7b35884bfa194eb@mail.gmail.com>
 Subject: RE: [PATCH] mfd: Fix usbhs_enable error handling
-To: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+To: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org
 Cc: Samuel Ortiz <sameo@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
@@ -77,8 +78,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 >  }
 > --
 > 1.7.1
->
->
-Thanks Axel!
 
+Thanks Axel!
 Acked-by: Keshava Munegowda < keshava_mgowda@ti.com>
+
+>
