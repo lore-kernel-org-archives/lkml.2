@@ -1,32 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab1C2F7M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 01:59:12 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16799 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab1C2F7L (ORCPT
+	id S1753651Ab1C2GEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 02:04:23 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14327 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab1C2GEW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 01:59:11 -0400
+	Tue, 29 Mar 2011 02:04:22 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 28 Mar 2011 22:59:10 -0700
-Message-ID: <4D917516.8060009@nvidia.com>
-Date: Tue, 29 Mar 2011 11:28:46 +0530
-From: Varun Wadekar <vwadekar@nvidia.com>
-Organization: NVIDIA Corporation
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Wei Ni <wni@nvidia.com>
+	by hqnvupgp08.nvidia.com on Mon, 28 Mar 2011 23:04:20 -0700
+From: Wei Ni <wni@nvidia.com>
+To: Varun Wadekar <vwadekar@nvidia.com>
 CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "ccross@android.com" <ccross@android.com>
-Subject: Re: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
+Date: Tue, 29 Mar 2011 14:04:19 +0800
+Subject: RE: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
+Thread-Topic: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
+Thread-Index: Acvt1m3kuaU/fYIqSgKnXgnm83TuQgAAJn1A
+Message-ID: <6B4D417B830BC44B8026029FD256F7F1C2CB3DD495@HKMAIL01.nvidia.com>
 References: <1301377915-27112-1-git-send-email-wni@nvidia.com>
-In-Reply-To: <1301377915-27112-1-git-send-email-wni@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+ <4D917516.8060009@nvidia.com>
+In-Reply-To: <4D917516.8060009@nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Oh, sorry, it's my mistake.
+I will create a new patch.
+
+Thanks
+Wei.
+
+-----Original Message-----
+From: Varun Wadekar [mailto:vwadekar@nvidia.com] 
+Sent: Tuesday, March 29, 2011 1:59 PM
+To: Wei Ni
+Cc: sameo@linux.intel.com; linux-kernel@vger.kernel.org; ccross@android.com
+Subject: Re: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
 
 +static int tps6586x_suspend(struct i2c_client *client, pm_message_t mesg)
 +{
