@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab1C2PAs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 11:00:48 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53974 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab1C2PAq (ORCPT
+	id S1753698Ab1C2PBT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 11:01:19 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53989 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab1C2PBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 11:00:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=dLXmIK7EbQlxPNzjHK2eqLa1+GJD6DDBKzaEBEPCMLQqXjNcKLJI70pd7zJ0jaJaNs
-         u8ZeyweZBcyzlRwlDaFfoCDEpjmvK/FAWvnaSkwzClbWYB97oeSOXvWVe1vLHkdcBFpm
-         dhrxwsEapAI+aneNmagibhc0fg4jp7pFHh7kI=
-Subject: Re: ping when network down BUG: unable to handle kernel NULL
- pointer dereference at 000000000000001b
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-In-Reply-To: <AANLkTinthHDRYpfNrXSiOz9t_y5HyVMpjP-dLm_bn0es@mail.gmail.com>
-References: <AANLkTinthHDRYpfNrXSiOz9t_y5HyVMpjP-dLm_bn0es@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Mar 2011 16:59:24 +0200
-Message-ID: <1301410764.3161.156.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 29 Mar 2011 11:01:18 -0400
+Message-ID: <4D91F432.2070406@oracle.com>
+Date: Tue, 29 Mar 2011 08:01:06 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: lkml <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
+        Adrian Hunter <adrian.hunter@nokia.com>
+Subject: Re: [PATCH] ubifs: fix kconfig dependency warning
+References: <20110328134016.deb5d0c8.randy.dunlap@oracle.com> <1301382178.2816.69.camel@localhost>
+In-Reply-To: <1301382178.2816.69.camel@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D91F435.008A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 29 mars 2011 à 22:54 +0800, Jeff Chua a écrit :
-> I don't know when this started happening as my network was always up.
-> Just down, I shutdown my network, and ping a known host and
-> encountered this BUG.
+On 03/29/11 00:02, Artem Bityutskiy wrote:
+> On Mon, 2011-03-28 at 13:40 -0700, Randy Dunlap wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> Fix another kconfig dependency warning, this time in ubifs.
+>>
+>> warning: (UBIFS_FS_DEBUG && LOCKDEP && LATENCYTOP) selects KALLSYMS_ALL which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
+>>
+>> Without this patch, we can have:
+>> # CONFIG_KALLSYMS is not set
+>> CONFIG_KALLSYMS_ALL=y
+>> which is useless (does nothing unless KALLSYMS is enabled).
+>>
+>> However, ubifs builds successfully with or without this patch,
+>> and it builds with this line completely deleted,
+>> so what was this 'select' for?  Just developer convenience?
 > 
-> # ifconfig eth0 down
-> # ping knowngoodhost
+> Well, here is the idea. You can compile UBIFS with debugging and without
+> debugging. Without debugging the resulting ubifs.ko is much smaller, so
+> some embedded people prefer it this way.
 > 
-> Pid: 2144, comm: ping Not tainted 2.6.38 #34 LENOVO 5413FGA/5413FGA
-> RIP: 0010:[<ffffffff81421047>]  [<ffffffff81421047>] dst_release+0x11/0x57
-> RSP: 0018:ffff880231975c28  EFLAGS: 00010286
-> RAX: ffffffffffffff9b RBX: ffffffffffffff9b RCX: 00000000fffffffd
-> RDX: 0000000000000000 RSI: 00000000000000fd RDI: ffffffffffffff9b
-> RBP: 00000000ffffffff R08: ffff880231975bc8 R09: ffff88023bd8e1c8
-> R10: 0000000000000001 R11: ffff880231975a08 R12: 0000000000000040
-> R13: 00000000bcc8a19b R14: 00000000ffffff9b R15: 0000000000000000
-> FS:  00007fa75ba60700(0000) GS:ffff88023bc00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 000000000000001b CR3: 000000022f886000 CR4: 00000000000006f0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process ping (pid: 2144, threadinfo ffff880231974000, task ffff8802330e2d00)
-> Stack:
->  ffff880231889b00 ffff880231889b00 ffff880231975ee8 ffffffff81464f97
->  ffffffff0100007f 0000000000000202 ffffffff818385b0 0000000000000002
->  0000000000000000 0401000000000000 bcc8a19b00000000 0000000800000000
-> Call Trace:
->  [<ffffffff81464f97>] ? raw_sendmsg+0x66c/0x6c1
->  [<ffffffff8140b0be>] ? sock_sendmsg+0xab/0xc3
->  [<ffffffff8109cf03>] ? alloc_pages_vma+0x150/0x1fa
->  [<ffffffff8104bde6>] ? up+0xe/0x36
->  [<ffffffff81032cd8>] ? console_unlock+0x160/0x187
->  [<ffffffff8104bde6>] ? up+0xe/0x36
->  [<ffffffff810484b0>] ? remove_wait_queue+0x11/0x4a
->  [<ffffffff8140b12d>] ? sockfd_lookup_light+0x1a/0x52
->  [<ffffffff8140ab12>] ? move_addr_to_kernel+0x26/0x37
->  [<ffffffff8140b7e7>] ? sys_sendto+0x114/0x148
->  [<ffffffff8103d5e1>] ? do_sigaction+0x160/0x178
->  [<ffffffff814b7d12>] ? system_call_fastpath+0x16/0x1b
-> Code: 00 48 c7 c7 70 4c 72 81 e8 41 37 c2 ff 48 c7 c7 50 4c 72 81 5b
-> e9 90 60 09 00 55 53 48 89 fb 48 83 ec 08 48 85 ff 74 45 83 cd ff <f0>
-> 0f c1 af 80 00 00 00 ff cd 79 11 be 16 01 00 00 48 c7 c7 84
-> RIP  [<ffffffff81421047>] dst_release+0x11/0x57
->  RSP <ffff880231975c28>
-> CR2: 000000000000001b
-> ---[ end trace 4b75e8b1559e0b81 ]---
-> --
+> If you select debugging support, then we'll compile it a lot of
+> assertions, self-checks, test-modes, extra error messages with detailed
+> dumps. And we want to see stackdumps when errors or problems happen,
+> this is why we select KALLSYMS_ALL.
+> 
+> So I guess instead we should do:
+> 
+> select KALLSYMS
+> select KALLSYMS_ALL
 
-Hello Jeff.
+Yes, that should do it.  Thanks for the explanation.
 
-Known problem, should be fixed by 
-
-http://git2.kernel.org/?p=linux/kernel/git/davem/net-2.6.git;a=commit;h=4910ac6c526d2868adcb5893e0c428473de862b5
-
-Thanks
-
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
