@@ -1,226 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab1C2ATF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 20:19:05 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:39706 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab1C2ATD (ORCPT
+	id S932292Ab1C2AT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 20:19:26 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39853 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab1C2ATY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 20:19:03 -0400
-Message-ID: <4D912574.4000503@linux.vnet.ibm.com>
-Date: Mon, 28 Mar 2011 20:19:00 -0400
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jeff Layton <jlayton@poochiereds.net>
-CC: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Subject: Re: TPM chip prevents machine from suspending
-References: <20110328100846.0ba2e039@tlielax.poochiereds.net> <4D90C472.3090908@linux.vnet.ibm.com> <20110328141241.06a435f8@tlielax.poochiereds.net> <20110328154543.1bb979fd@tlielax.poochiereds.net> <4D91157F.2020502@linux.vnet.ibm.com>
-In-Reply-To: <4D91157F.2020502@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 28 Mar 2011 20:19:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 29 Mar 2011 09:12:54 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Ying Han <yinghan@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [RFC 0/3] Implementation of cgroup isolation
+Message-Id: <20110329091254.20c7cfcb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTi=CPMxOg3juDiD-_hnBsXKdZ+at+i9c1YYM=vv1@mail.gmail.com>
+References: <20110328093957.089007035@suse.cz>
+	<AANLkTi=CPMxOg3juDiD-_hnBsXKdZ+at+i9c1YYM=vv1@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2011 07:10 PM, Stefan Berger wrote:
-> On 03/28/2011 03:45 PM, Jeff Layton wrote:
->> On Mon, 28 Mar 2011 14:12:41 -0400
->> Jeff Layton<jlayton@poochiereds.net>  wrote:
->>
->>> On Mon, 28 Mar 2011 13:25:06 -0400
->>> Stefan Berger<stefanb@linux.vnet.ibm.com>  wrote:
->>>
->>>> On 03/28/2011 10:08 AM, Jeff Layton wrote:
->>>>> My wife's machine apparently has a TPM chip in it. Since I 
->>>>> upgraded it
->>>>> to Fedora 14, it fails to suspend consistently. On the first 
->>>>> attempt to
->>>>> suspend it, it works fine. Once it has woken back up however, it will
->>>>> not suspend again. Here's the dmesg log from such an attempt:
->>>>>
->>>>> [  202.460967] PM: Syncing filesystems ... done.
->>>>> [  202.464818] PM: Preparing system for mem sleep
->>>>> [  202.485968] Freezing user space processes ... (elapsed 0.01 
->>>>> seconds) done.
->>>>> [  202.497079] Freezing remaining freezable tasks ... (elapsed 
->>>>> 0.01 seconds) done.
->>>>> [  202.508067] PM: Entering mem sleep
->>>>> [  202.508086] Suspending console(s) (use no_console_suspend to 
->>>>> debug)
->>>>> [  202.508451] sd 3:0:0:0: [sdb] Synchronizing SCSI cache
->>>>> [  202.508562] sd 2:0:0:0: [sda] Synchronizing SCSI cache
->>>>> [  202.508616] sd 3:0:0:0: [sdb] Stopping disk
->>>>> [  202.511956] parport_pc 00:0b: disabled
->>>>> [  202.512127] serial 00:09: disabled
->>>>> [  202.512134] serial 00:09: wake-up capability disabled by ACPI
->>>>> [  202.536058] legacy_suspend(): pnp_bus_suspend+0x0/0x82 returns 38
->>>>> [  202.536061] PM: Device 00:02 failed to suspend: error 38
->>>>> [  202.997517] sd 2:0:0:0: [sda] Stopping disk
->>>>> [  202.997806] PM: Some devices failed to suspend
->>>>> [  202.998085] sd 2:0:0:0: [sda] Starting disk
->>>>> [  202.998144] sd 3:0:0:0: [sdb] Starting disk
->>>>> [  202.998614] serial 00:09: activated
->>>>> [  202.999158] parport_pc 00:0b: activated
->>>>> [  204.543094] PM: resume of devices complete after 1545.282 msecs
->>>>> [  204.543268] PM: Finishing wakeup.
->>>>> [  204.543270] Restarting tasks ... done.
->>>>>
->>>>> ...error 38 is ENOSYS, and the 00:02 is this:
->>>>>
->>>>> # cat /sys/bus/pnp/devices/00\:02/id
->>>>> IFX0102
->>>>> PNP0c31
->>>> Also the tpm_tis driver handles both of these. Can you confirm which
->>>> module that laptop was using  (tpm_tis or tpm_infineon) and try 
->>>> whether
->>>> one of them works better than the other one? Please do a reboot 
->>>> between
->>>> trying one and then the other.
->>>>
->>> It's using tpm_tis:
->>>
->>> lrwxrwxrwx. 1 root root 0 Mar 28 13:40 
->>> /sys/bus/pnp/devices/00:02/driver ->  ../../../bus/pnp/drivers/tpm_tis
->>>
->>> FWIW, the fedora kernels have this:
->>>
->>> CONFIG_TCG_TPM=y
->>> CONFIG_TCG_TIS=y
->>> CONFIG_TCG_NSC=m
->>> CONFIG_TCG_ATMEL=m
->>> CONFIG_TCG_INFINEON=m
->>>
->>> When I boot, tpm_infineon is also plugged in, but I can remove that
->>> module and nothing seems to change (not sure what's plugging it in).
->>>
->>> I can try using tpm_infineon, but I'm not sure how to disable tpm_tis
->>> with it compiled in like this -- is that possible?
->>>
->>>> Try the following before and after a suspend/resume:
->>>>
->>>> cd /sys
->>>> find . | grep caps$ | xargs cat
->>>>
->>>> It should display manufacturer data.
->>>>
->>> There's only one "caps" file. Here's the before (after a fresh reboot):
->>>
->>> # cat ./devices/pnp0/00:02/caps
->>> Manufacturer: 0x49465800
->>> TCG version: 1.2
->>> Firmware version: 1.0
->>>
->>> ...after a successful suspend/resume cycle:
->>>
->>> # cat ./devices/pnp0/00:02/caps
->>>
->>> ...it gives no output at all. Guess that lends some weight to the
->>> theory of it not being reset properly on resume?
->>>
->>> Thanks for the help so far...
->> FWIW, I turned up dynamic debugging on the tpm files and got this in
->> the ring buffer when I tried to read from "caps":
->>
->> [ 6880.495071] tpm_tis 00:02: A TPM error (38) occurred attempting to 
->> determine the manufacturer
->>
->> I don't see any obvious places that return ENOSYS in the tpm code, so
->> I'm not clear on where that's coming from...
->>
-> Ok, so this error code means TPM_INVALID_POSTINIT  (not a posix code) 
-> and means that this command was received in the wrong sequence 
-> relative to a TPM_Startup command. Well, what's supposed to be 
-> happening is this:
->
-> When the machines (S3) suspends then the OS needs to send a 
-> TPM_SaveState() to the TPM. This is done by the Linux driver. Once the 
-> VM resumes, the BIOS is supposed to send a TPM_Startup(ST_STATE) to 
-> the TPM.
->
-> Now the fun starts when a BIOS isn't doing that (even though the spec 
-> says it's supposed to), which could very well be the case in your case 
-> (don't know what broken BIOSes are out there...  Did it ever work 
-> before with the TPM driver in the kernel ?). I could try to send you a 
-> small tool that you would have to run from user space upon resume so 
-> that we can see that this error goes away. If that's verified we could 
-> subsequently write a patch for the TPM driver to also send the 
-> TPM_Startup(ST_STATE) to the TPM, which then in the case of most 
-> BIOSes would be the 2nd time that the TPM receives such a command. I 
-> think TPMs should be able to digest this 2nd TPM_Startup() well, but 
-> I'd have to check -- but really we would ill-fix it just because of 
-> one (possibly) buggy BIOS.
->
-> The failure of the 2nd suspend then likely stems from the TPM not 
-> accepting the TPM_SaveState() anymore since it hasn't seen the 
-> TPM_Startup(ST_STATE) that we expected the BIOS to send.
->
-> Another possibility would be for you to check for BIOS updates from 
-> the laptop manufacturer...
->
-So here is this tool:
+On Mon, 28 Mar 2011 11:01:18 -0700
+Ying Han <yinghan@google.com> wrote:
 
-#include <stdio.h>
-#include <stdint.h>
-#include <fcntl.h>
-#include <unistd.h>
+> On Mon, Mar 28, 2011 at 2:39 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > Hi all,
+> >
+> > Memory cgroups can be currently used to throttle memory usage of a group of
+> > processes. It, however, cannot be used for an isolation of processes from
+> > the rest of the system because all the pages that belong to the group are
+> > also placed on the global LRU lists and so they are eligible for the global
+> > memory reclaim.
+> >
+> > This patchset aims at providing an opt-in memory cgroup isolation. This
+> > means that a cgroup can be configured to be isolated from the rest of the
+> > system by means of cgroup virtual filesystem (/dev/memctl/group/memory.isolated).
+> 
+> Thank you Hugh pointing me to the thread. We are working on similar
+> problem in memcg currently
+> 
+> Here is the problem we see:
+> 1. In memcg, a page is both on per-memcg-per-zone lru and global-lru.
+> 2. Global memory reclaim will throw page away regardless of cgroup.
+> 3. The zone->lru_lock is shared between per-memcg-per-zone lru and global-lru.
+> 
+> And we know:
+> 1. We shouldn't do global reclaim since it breaks memory isolation.
+> 2. There is no need for a page to be on both LRU list, especially
+> after having per-memcg background reclaim.
+> 
+> So our approach is to take off page from global lru after it is
+> charged to a memcg. Only pages allocated at root cgroup remains in
+> global LRU, and each memcg reclaims pages on its isolated LRU.
+> 
 
-int main(void) {
-     const uint8_t startup_st_state[] = {
-         0x00, 0xc1,
-         0x00, 0x00, 0x00, 0x0c,
-         0x00, 0x00, 0x00, 0x99,
-         0x00, 0x02
-     };
-     uint8_t buf[10];
-     int fd = open("/dev/tpm0", O_RDWR);
-     int len;
-     uint32_t err;
+Why you don't use cpuset and virtual nodes ? It's what you want.
 
-     if (fd < 0) {
-         printf("Could not open /dev/tpm0\n");
-         return 1;
-     }
-
-     len = write(fd, startup_st_state, sizeof(startup_st_state));
-
-     if (len != sizeof(startup_st_state)) {
-         printf("Write failed.\n");
-         goto err_exit;
-     }
-
-     len = read(fd, buf, sizeof(buf));
-
-     if (len != sizeof(buf)) {
-         printf("Expected %d bytes bot got %d\n", (int)sizeof(buf), len);
-         goto err_exit;
-     }
-
-     if (buf[1] != 0xc4) {
-         printf("Response tag is bad.\n");
-         goto err_exit;
-     }
-
-     if (buf[5] != sizeof(buf)) {
-         printf("Response length is bad: %d\n", buf[5]);
-         goto err_exit;
-     }
-
-     err = buf[6] << 24 | buf[7] << 16 | buf[8] << 8 | buf[9];
-     if (err) {
-         printf("Got an error code in response: %u\n", err);
-     } else {
-         printf("Success!\n");
-     }
-
-err_exit:
-     close(fd);
-     return 0;
-}
-
-gcc startup.c -o startup
-
-Run it as 'root' after a resume and if that works do the 'cat ...' again.
-
-    Stefan
+Thanks,
+-Kame
 
