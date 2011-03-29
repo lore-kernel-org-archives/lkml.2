@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab1C2Bzo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 21:55:44 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:39392 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab1C2Bzm (ORCPT
+	id S1755141Ab1C2B5c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 21:57:32 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:47740 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754550Ab1C2B5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 21:55:42 -0400
-X-Greylist: delayed 1343 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Mar 2011 21:55:42 EDT
-From: Jon Masters <jonathan@jonmasters.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation Of Broken Dreams
-Date: Mon, 28 Mar 2011 21:35:09 -0400
-Message-ID: <1301362509.3774.9111.camel@constitution.bos.jonmasters.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: PNP ID list
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+	Mon, 28 Mar 2011 21:57:31 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjMEAJY5kU15LK5JgWdsb2JhbAClSBUBARYmJcUjDYVdBA
+Date: Tue, 29 Mar 2011 12:57:27 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: John Lepikhin <johnlepikhin@gmail.com>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, linux-mm@kvack.org
+Subject: Re: Very aggressive memory reclaim
+Message-ID: <20110329015727.GE3008@dastard>
+References: <AANLkTinFqqmE+fTMTLVU-_CwPE+LQv7CpXSQ5+CdAKLK@mail.gmail.com>
+ <20110328215344.GC3008@dastard>
+ <m2bp0u23wl.fsf@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m2bp0u23wl.fsf@firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Mar 28, 2011 at 04:58:50PM -0700, Andi Kleen wrote:
+> Dave Chinner <david@fromorbit.com> writes:
+> >
+> > First it would be useful to determine why the VM is reclaiming so
+> > much memory. If it is somewhat predictable when the excessive
+> > reclaim is going to happen, it might be worth capturing an event
+> 
+> Often it's to get pages of a higher order. Just tracing alloc_pages
+> should tell you that.
 
-There are various PNP IDs available, from the original ISA PNP days,
-through bits supplied in the ACPI SPEC, and from Microsoft, etc. These
-are the entries you'll see for example in the _HID "EisaId" and so forth
-in ACPI and elsewhere, the glue that helps with device association.
+Yes, the kmem/mm_page_alloc tracepoint gives us that. But in case
+that is not the cause, grabbing all the trace points I suggested is
+more likely to indicate where the problem is. I'd prefer to get more
+data than needed the first time around than have to do multiple
+round trips because a single trace point doesn't tell us the cause...
 
-What I would like is a link to a full list of all known PNP IDs? Does
-such a compendium of information exist in *one* place?
+Cheers,
 
-Jon.
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
