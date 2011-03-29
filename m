@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab1C2Aw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 20:52:29 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:59635 "EHLO lunge.queued.net"
+	id S1753812Ab1C2Axe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 20:53:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:53647 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753192Ab1C2Aw2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 20:52:28 -0400
-Date: Mon, 28 Mar 2011 17:52:23 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Amit Kucheria <amit.kucheria@canonical.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH resend] ARM: mx51_efika: fix build error due to new mfd
- changes
-Message-ID: <20110328175223.52c86c0f@queued.net>
-In-Reply-To: <AANLkTikLK+jbVhnrNVinhLDXZoozH-6VsjwjYLNwTdxU@mail.gmail.com>
-References: <20110328172230.01756522@queued.net>
-	<AANLkTikLK+jbVhnrNVinhLDXZoozH-6VsjwjYLNwTdxU@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753257Ab1C2Axd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 20:53:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,258,1299484800"; 
+   d="scan'208";a="902869301"
+Subject: Re: [PATCH]mmap: not merge cloned VMA
+From: Shaohua Li <shaohua.li@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+In-Reply-To: <m2k4fj18v1.fsf@firstfloor.org>
+References: <1301277534.3981.26.camel@sli10-conroe>
+	 <m2k4fj18v1.fsf@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Mar 2011 08:53:31 +0800
+Message-ID: <1301360011.3981.30.camel@sli10-conroe>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011 21:47:58 -0300
-Fabio Estevam <festevam@gmail.com> wrote:
+On Tue, 2011-03-29 at 00:57 +0800, Andi Kleen wrote:
+> Shaohua Li <shaohua.li@intel.com> writes:
+> 
+> > Avoid merging a VMA with another VMA which is cloned from parent process. The
+> > cloned VMA shares lock with parent process's VMA. If we do the merge, more vma
+> > area (even the new range is only for current process) uses perent process's
+> > anon_vma lock, so introduces scalability issues.
+> > find_mergeable_anon_vma already considers this.
+> In theory this could prevent quite some VMA merging, but I guess the 
+> tradeoff is worth it and that should be unlikely to hit anyways.
+I'd expect there aren't too many VMAs cloned from parents.
 
-> Andres,
+> >  static inline int is_mergeable_anon_vma(struct anon_vma *anon_vma1,
+> > -					struct anon_vma *anon_vma2)
+> > +					struct anon_vma *anon_vma2,
+> > +					struct vm_area_struct *vma)
+> >  {
+> > -	return !anon_vma1 || !anon_vma2 || (anon_vma1 == anon_vma2);
+> > +	if ((!anon_vma1 || !anon_vma2) && (!vma ||
+> > +		list_is_singular(&vma->anon_vma_chain)))
+> > +		return 1;
 > 
-> On Mon, Mar 28, 2011 at 9:22 PM, Andres Salomon <dilinger@queued.net>
-> wrote:
-> >
-> > MFD changes in 4ec1b54c ('mfd: mfd_cell is now implicitly available
-> > to mc13xxx drivers') changed the mc13xxx_platform_data struct
-> > layout. At the time all users were changed, but this driver was
-> > introduced in another tree at the same time.  This updates the
-> > mc13xxx_platform_data user, fixing a build error.
-> >
-> > Signed-off-by: Andres Salomon <dilinger@queued.net>
-> > ---
-> >  arch/arm/mach-mx5/mx51_efika.c |    6 ++++--
-> >  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> Your patch is in Sascha´s tree now:
-> http://git.pengutronix.de/?p=imx/linux-2.6.git;a=commitdiff;h=251290a6078cb88382344b3ee535ae8c6254c1b5
-> 
-> Regards,
-> 
-> Fabio Estevam
+> I think this if () needs a comment.
+ok, updated the patch.
 
-Ah, thanks, I hadn't heard anything about it.  Linus, feel free to
-ignore my patch.
+Avoid merging a VMA with another VMA which is cloned from parent process. The
+cloned VMA shares lock with parent process's VMA. If we do the merge, more vma
+area (even the new range is only for current process) uses perent process's
+anon_vma lock, so introduces scalability issues.
+find_mergeable_anon_vma already considers this.
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+
+---
+ mm/mmap.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+Index: linux/mm/mmap.c
+===================================================================
+--- linux.orig/mm/mmap.c	2011-03-29 08:22:01.000000000 +0800
++++ linux/mm/mmap.c	2011-03-29 08:30:12.000000000 +0800
+@@ -699,9 +699,17 @@ static inline int is_mergeable_vma(struc
+ }
+ 
+ static inline int is_mergeable_anon_vma(struct anon_vma *anon_vma1,
+-					struct anon_vma *anon_vma2)
++					struct anon_vma *anon_vma2,
++					struct vm_area_struct *vma)
+ {
+-	return !anon_vma1 || !anon_vma2 || (anon_vma1 == anon_vma2);
++	/*
++	 * The list_is_singular() test is to avoid merging VMA cloned from
++	 * parents. This can improve scalability caused by anon_vma lock.
++	 */
++	if ((!anon_vma1 || !anon_vma2) && (!vma ||
++		list_is_singular(&vma->anon_vma_chain)))
++		return 1;
++	return anon_vma1 == anon_vma2;
+ }
+ 
+ /*
+@@ -720,7 +728,7 @@ can_vma_merge_before(struct vm_area_stru
+ 	struct anon_vma *anon_vma, struct file *file, pgoff_t vm_pgoff)
+ {
+ 	if (is_mergeable_vma(vma, file, vm_flags) &&
+-	    is_mergeable_anon_vma(anon_vma, vma->anon_vma)) {
++	    is_mergeable_anon_vma(anon_vma, vma->anon_vma, vma)) {
+ 		if (vma->vm_pgoff == vm_pgoff)
+ 			return 1;
+ 	}
+@@ -739,7 +747,7 @@ can_vma_merge_after(struct vm_area_struc
+ 	struct anon_vma *anon_vma, struct file *file, pgoff_t vm_pgoff)
+ {
+ 	if (is_mergeable_vma(vma, file, vm_flags) &&
+-	    is_mergeable_anon_vma(anon_vma, vma->anon_vma)) {
++	    is_mergeable_anon_vma(anon_vma, vma->anon_vma, vma)) {
+ 		pgoff_t vm_pglen;
+ 		vm_pglen = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ 		if (vma->vm_pgoff + vm_pglen == vm_pgoff)
+@@ -817,7 +825,7 @@ struct vm_area_struct *vma_merge(struct
+ 				can_vma_merge_before(next, vm_flags,
+ 					anon_vma, file, pgoff+pglen) &&
+ 				is_mergeable_anon_vma(prev->anon_vma,
+-						      next->anon_vma)) {
++						      next->anon_vma, NULL)) {
+ 							/* cases 1, 6 */
+ 			err = vma_adjust(prev, prev->vm_start,
+ 				next->vm_end, prev->vm_pgoff, NULL);
+
+
