@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab1C2W0R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 18:26:17 -0400
-Received: from mail.perches.com ([173.55.12.10]:4364 "EHLO mail.perches.com"
+	id S1754639Ab1C2WWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 18:22:18 -0400
+Received: from mail.perches.com ([173.55.12.10]:4349 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754758Ab1C2WWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 18:22:25 -0400
+	id S1750821Ab1C2WWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 18:22:14 -0400
 From: Joe Perches <joe@perches.com>
 To: Matthew Garrett <mjg@redhat.com>,
-        Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+        Carlos Corbacho <carlos@strangeworlds.co.uk>
 Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 08/23] fujitsu-laptop: Convert printks to pr_<level>
-Date: Tue, 29 Mar 2011 15:21:39 -0700
-Message-Id: <20baaa2f09235d33f2cf751eaf6ad6f1bbb24d64.1301436234.git.joe@perches.com>
+Subject: [PATCH 03/23] acer-wmi: pr_<level> cleanups
+Date: Tue, 29 Mar 2011 15:21:34 -0700
+Message-Id: <4c2d34198b3331f0df654f2e75e4e85d6d1b50cb.1301436234.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6.dirty
 In-Reply-To: <cover.1301436234.git.joe@perches.com>
 References: <cover.1301436234.git.joe@perches.com>
@@ -20,147 +20,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added pr_fmt, converted printks and removed
-hard coded prefixes.
+Convert pr_warning to pr_warn.
+Add some missing newlines to pr_<level> uses.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/platform/x86/fujitsu-laptop.c |   39 ++++++++++++++++-----------------
- 1 files changed, 19 insertions(+), 20 deletions(-)
+ drivers/platform/x86/acer-wmi.c |   32 ++++++++++++++++----------------
+ 1 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
-index 493054c..6b26666 100644
---- a/drivers/platform/x86/fujitsu-laptop.c
-+++ b/drivers/platform/x86/fujitsu-laptop.c
-@@ -56,6 +56,8 @@
-  *
-  */
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index 5ea6c34..0b23b75 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -1081,7 +1081,7 @@ static acpi_status wmid3_get_device_status(u32 *value, u16 device)
+ 		return AE_ERROR;
+ 	}
+ 	if (obj->buffer.length != 8) {
+-		pr_warning("Unknown buffer length %d\n", obj->buffer.length);
++		pr_warn("Unknown buffer length %d\n", obj->buffer.length);
+ 		kfree(obj);
+ 		return AE_ERROR;
+ 	}
+@@ -1090,8 +1090,8 @@ static acpi_status wmid3_get_device_status(u32 *value, u16 device)
+ 	kfree(obj);
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
-@@ -585,8 +587,7 @@ static struct platform_driver fujitsupf_driver = {
- static void dmi_check_cb_common(const struct dmi_system_id *id)
- {
- 	acpi_handle handle;
--	printk(KERN_INFO "fujitsu-laptop: Identified laptop model '%s'.\n",
--	       id->ident);
-+	pr_info("Identified laptop model '%s'\n", id->ident);
- 	if (use_alt_lcd_levels == -1) {
- 		if (ACPI_SUCCESS(acpi_get_handle(NULL,
- 				"\\_SB.PCI0.LPCB.FJEX.SBL2", &handle)))
-@@ -691,11 +692,11 @@ static int acpi_fujitsu_add(struct acpi_device *device)
+ 	if (return_value.error_code || return_value.ec_return_value)
+-		pr_warning("Get Device Status failed: "
+-			"0x%x - 0x%x\n", return_value.error_code,
++		pr_warn("Get Device Status failed: 0x%x - 0x%x\n",
++			return_value.error_code,
+ 			return_value.ec_return_value);
+ 	else
+ 		*value = !!(return_value.devices & device);
+@@ -1317,7 +1317,7 @@ static void acer_wmi_notify(u32 value, void *context)
  
- 	result = acpi_bus_update_power(fujitsu->acpi_handle, &state);
- 	if (result) {
--		printk(KERN_ERR "Error reading power state\n");
-+		pr_err("Error reading power state\n");
- 		goto err_unregister_input_dev;
+ 	status = wmi_get_event_data(value, &response);
+ 	if (status != AE_OK) {
+-		pr_warning("bad event status 0x%x\n", status);
++		pr_warn("bad event status 0x%x\n", status);
+ 		return;
  	}
  
--	printk(KERN_INFO "ACPI: %s [%s] (%s)\n",
-+	pr_info("ACPI: %s [%s] (%s)\n",
- 	       acpi_device_name(device), acpi_device_bid(device),
- 	       !device->power.state ? "on" : "off");
- 
-@@ -707,7 +708,7 @@ static int acpi_fujitsu_add(struct acpi_device *device)
- 		if (ACPI_FAILURE
- 		    (acpi_evaluate_object
- 		     (device->handle, METHOD_NAME__INI, NULL, NULL)))
--			printk(KERN_ERR "_INI Method failed\n");
-+			pr_err("_INI Method failed\n");
+@@ -1326,12 +1326,12 @@ static void acer_wmi_notify(u32 value, void *context)
+ 	if (!obj)
+ 		return;
+ 	if (obj->type != ACPI_TYPE_BUFFER) {
+-		pr_warning("Unknown response received %d\n", obj->type);
++		pr_warn("Unknown response received %d\n", obj->type);
+ 		kfree(obj);
+ 		return;
  	}
- 
- 	/* do config (detect defaults) */
-@@ -827,7 +828,7 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
- 	error = kfifo_alloc(&fujitsu_hotkey->fifo, RINGBUFFERSIZE * sizeof(int),
- 			GFP_KERNEL);
- 	if (error) {
--		printk(KERN_ERR "kfifo_alloc failed\n");
-+		pr_err("kfifo_alloc failed\n");
- 		goto err_stop;
+ 	if (obj->buffer.length != 8) {
+-		pr_warning("Unknown buffer length %d\n", obj->buffer.length);
++		pr_warn("Unknown buffer length %d\n", obj->buffer.length);
+ 		kfree(obj);
+ 		return;
  	}
- 
-@@ -859,13 +860,13 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
- 
- 	result = acpi_bus_update_power(fujitsu_hotkey->acpi_handle, &state);
- 	if (result) {
--		printk(KERN_ERR "Error reading power state\n");
-+		pr_err("Error reading power state\n");
- 		goto err_unregister_input_dev;
- 	}
- 
--	printk(KERN_INFO "ACPI: %s [%s] (%s)\n",
--	       acpi_device_name(device), acpi_device_bid(device),
--	       !device->power.state ? "on" : "off");
-+	pr_info("ACPI: %s [%s] (%s)\n",
-+		acpi_device_name(device), acpi_device_bid(device),
-+		!device->power.state ? "on" : "off");
- 
- 	fujitsu_hotkey->dev = device;
- 
-@@ -875,7 +876,7 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
- 		if (ACPI_FAILURE
- 		    (acpi_evaluate_object
- 		     (device->handle, METHOD_NAME__INI, NULL, NULL)))
--			printk(KERN_ERR "_INI Method failed\n");
-+			pr_err("_INI Method failed\n");
- 	}
- 
- 	i = 0;
-@@ -897,8 +898,7 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
- 			call_fext_func(FUNC_RFKILL, 0x4, 0x0, 0x0);
- 
- 	/* Suspect this is a keymap of the application panel, print it */
--	printk(KERN_INFO "fujitsu-laptop: BTNI: [0x%x]\n",
--		call_fext_func(FUNC_BUTTONS, 0x0, 0x0, 0x0));
-+	pr_info("BTNI: [0x%x]\n", call_fext_func(FUNC_BUTTONS, 0x0, 0x0, 0x0));
- 
- #if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
- 	if (call_fext_func(FUNC_LEDS, 0x0, 0x0, 0x0) & LOGOLAMP_POWERON) {
-@@ -907,8 +907,8 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
- 		if (result == 0) {
- 			fujitsu_hotkey->logolamp_registered = 1;
- 		} else {
--			printk(KERN_ERR "fujitsu-laptop: Could not register "
--			"LED handler for logo lamp, error %i\n", result);
-+			pr_err("Could not register LED handler for logo lamp, error %i\n",
-+			       result);
+@@ -1356,11 +1356,11 @@ static void acer_wmi_notify(u32 value, void *context)
  		}
+ 		if (!sparse_keymap_report_event(acer_wmi_input_dev,
+ 				return_value.key_num, 1, true))
+-			pr_warning("Unknown key number - 0x%x\n",
++			pr_warn("Unknown key number - 0x%x\n",
+ 				return_value.key_num);
+ 		break;
+ 	default:
+-		pr_warning("Unknown function number - %d - %d\n",
++		pr_warn("Unknown function number - %d - %d\n",
+ 			return_value.function, return_value.key_num);
+ 		break;
  	}
- 
-@@ -919,8 +919,8 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
- 		if (result == 0) {
- 			fujitsu_hotkey->kblamps_registered = 1;
- 		} else {
--			printk(KERN_ERR "fujitsu-laptop: Could not register "
--			"LED handler for keyboard lamps, error %i\n", result);
-+			pr_err("Could not register LED handler for keyboard lamps, error %i\n",
-+			       result);
- 		}
+@@ -1389,7 +1389,7 @@ wmid3_set_lm_mode(struct lm_input_params *params,
+ 		return AE_ERROR;
  	}
- #endif
-@@ -1169,8 +1169,7 @@ static int __init fujitsu_init(void)
- 			fujitsu->bl_device->props.power = 0;
+ 	if (obj->buffer.length != 4) {
+-		pr_warning("Unknown buffer length %d\n", obj->buffer.length);
++		pr_warn("Unknown buffer length %d\n", obj->buffer.length);
+ 		kfree(obj);
+ 		return AE_ERROR;
  	}
+@@ -1414,11 +1414,11 @@ static int acer_wmi_enable_ec_raw(void)
+ 	status = wmid3_set_lm_mode(&params, &return_value);
  
--	printk(KERN_INFO "fujitsu-laptop: driver " FUJITSU_DRIVER_VERSION
--	       " successfully loaded.\n");
-+	pr_info("driver " FUJITSU_DRIVER_VERSION " successfully loaded\n");
+ 	if (return_value.error_code || return_value.ec_return_value)
+-		pr_warning("Enabling EC raw mode failed: "
+-		       "0x%x - 0x%x\n", return_value.error_code,
+-		       return_value.ec_return_value);
++		pr_warn("Enabling EC raw mode failed: 0x%x - 0x%x\n",
++			return_value.error_code,
++			return_value.ec_return_value);
+ 	else
+-		pr_info("Enabled EC raw mode");
++		pr_info("Enabled EC raw mode\n");
  
- 	return 0;
- 
-@@ -1216,7 +1215,7 @@ static void __exit fujitsu_cleanup(void)
- 
- 	kfree(fujitsu);
- 
--	printk(KERN_INFO "fujitsu-laptop: driver unloaded.\n");
-+	pr_info("driver unloaded\n");
+ 	return status;
  }
+@@ -1437,9 +1437,9 @@ static int acer_wmi_enable_lm(void)
+ 	status = wmid3_set_lm_mode(&params, &return_value);
  
- module_init(fujitsu_init);
+ 	if (return_value.error_code || return_value.ec_return_value)
+-		pr_warning("Enabling Launch Manager failed: "
+-		       "0x%x - 0x%x\n", return_value.error_code,
+-		       return_value.ec_return_value);
++		pr_warn("Enabling Launch Manager failed: 0x%x - 0x%x\n",
++			return_value.error_code,
++			return_value.ec_return_value);
+ 
+ 	return status;
+ }
 -- 
 1.7.4.2.g597a6.dirty
 
