@@ -1,113 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1C2Qp5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 12:45:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12203 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753279Ab1C2Qp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 12:45:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,263,1299484800"; 
-   d="scan'208";a="726549061"
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1301392457.4859.74.camel@twins>
-References: <1301391136.14111.98.camel@minggr.sh.intel.com>
-	 <1301392457.4859.74.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Mar 2011 00:45:55 +0800
-Message-Id: <1301417155.3620.8.camel@localhost>
+	id S1753970Ab1C2Qqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 12:46:43 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:57115 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460Ab1C2Qql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 12:46:41 -0400
+Date: Tue, 29 Mar 2011 09:45:57 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Shyam_Iyer@Dell.com, jbarnes@virtuousgeek.org, mjg59@srcf.ucam.org,
+        Narendra_K@Dell.com, viro@zeniv.linux.org.uk, sfr@canb.auug.org.au,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Matt_Domsch@Dell.com, Charles_Rose@Dell.com, Jordan_Hargrave@Dell.com
+Subject: [PATCH] pci-label: Fix build failure when CONFIG_NLS is set to 'm'
+ by allmodconfig
+Message-Id: <20110329094557.17cd57a1.randy.dunlap@oracle.com>
+In-Reply-To: <8739m5519p.fsf@devron.myhome.or.jp>
+References: <20110223131536.GA16707@fedora14-r610.blr.amer.dell.com>
+	<20110223131734.GA6275@srcf.ucam.org>
+	<20110304101509.7eef7475@jbarnes-desktop>
+	<20110328080220.1390d28e.randy.dunlap@oracle.com>
+	<DBFB1B45AF80394ABD1C807E9F28D15702659CFB3D@BLRX7MCDC203.AMER.DELL.COM>
+	<4D90EDE8.9070306@oracle.com>
+	<87oc4u4rn4.fsf@devron.myhome.or.jp>
+	<4D92063C.8040202@oracle.com>
+	<8739m5519p.fsf@devron.myhome.or.jp>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4D920CCA.0145,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 17:54 +0800, Peter Zijlstra wrote:
-> On Tue, 2011-03-29 at 17:32 +0800, Lin Ming wrote:
-> > 
-> > Peter suggested to reverse map the reported IP (PEBS + fixup)
-> > to a data access using dwarf info.
-> > So I wrote this patch to see if the direction is right. 
-> 
-> I'm not sure this is quite the same thing, I'm not arguing this might
-> not be useful, but this is not about data access.
-> 
-> Suppose you have a line like:
-> 
->   foo->bar->fubar = tmp->blah;
-> 
-> There's 3 indirections there, a line number doesn't even get you close
-> to knowing what data access triggered the event.
-> 
-> struct bar {
->         int poekoe[5];
->         int fubar;
-> };
-> 
-> struct foo {
->         long poekoe[3];
->         struct bar *bar;
-> };
-> 
-> struct tmp {
->         long poekoe[4];
->         int blah;
-> };
-> 
-> void foo(struct foo *foo, struct tmp *tmp)
-> {
->         foo->bar->fubar = tmp->blah;
-> }
-> 
-> Which gives (somewhat simplified):
-> 
-> foo:
-> 	.cfi_startproc
-> 	pushq	%rbp
-> 	.cfi_def_cfa_offset 16
-> 	movq	%rsp, %rbp
-> 	.cfi_offset 6, -16
-> 	.cfi_def_cfa_register 6
-> 	movq	%rdi, -8(%rbp)
-> 	movq	%rsi, -16(%rbp)
-> 	movq	-8(%rbp), %rax    /* load foo arg from stack */
-> 	movq	24(%rax), %rax    /* load foo->bar */
-> 	movq	-16(%rbp), %rdx   /* load tmp arg from stack */
-> 	movl	32(%rdx), %edx    /* load tmp->blah */
-> 	movl	%edx, 20(%rax)    /* store bar->fubar */
-> 	leave
-> 	ret
-> 	.cfi_endproc
+On Wed, 30 Mar 2011 01:39:46 +0900 OGAWA Hirofumi wrote:
 
-I need to have a close look at how dwarf cfi thing works.
-
+> Randy Dunlap <randy.dunlap@oracle.com> writes:
 > 
-> where I annotated the various moves with C comments.
+> >> config PCI_LABEL
+> >> 	bool
+> >>         select NLS
+> >>         depends on (DMI || ACPI)
+> >
+> > What sets/enables it then?
+> > or did you mean:
+> > 	def_bool y
+> > and in that case, should it be a user-visible & user-changeable kconfig option?
 > 
-> Now depending on what exact IP you get using PEBS+fixup you could using
-> DWARF bits generate similar deductions from the code as I did in those
-> comments and thus know exactly what data member was accessed and how
-> (read/write).
-
-Is it an unwind of the call frame stack to find out what data member was
-accessed?
-How to know the access type(read or write)?
-
+> Whoops, last line was missed by copy&paste. It meant
 > 
-> With that data you could then borrow some pahole code and annotate the
-> various data structures to illustrate read/write distributions, which
-> can then be used as input for data-reorder.
-
-Could you explain a bit more about this?
-
-Thanks,
-Lin Ming
+> config PCI_LABEL
+> 	bool
+> 	select NLS
+> 	depends on (DMI || ACPI)
+>         default y
+> 
+> And no, it shouldn't be user-changeable (it would be better to
+> invisible in .config. At make *config, already invisible.). Because
+> PCI_LABEL is not user config and not used in Makefile.
+> 
+> And yeah, if you like def_bool
+> 
+> config PCI_LABEL
+> 	def_bool y if (DMI || ACPI)
+> 	select NLS
+> 
+> I guess it would work (it should be just syntax sugar and equivalent).
 
 
+This patch seems to work for me.  Thanks.
+
+---
+From: Randy Dunlap <randy.dunlap@oracle.com>
+
+Create a kconfig option symbol for PCI_LABEL and enable it
+when DMI || ACPI are enabled.
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/pci/Kconfig  |    4 +++-
+ drivers/pci/Makefile |    4 ++--
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+--- linux-next-20110328.orig/drivers/pci/Kconfig
++++ linux-next-20110328/drivers/pci/Kconfig
+@@ -88,4 +88,6 @@ config PCI_IOAPIC
+ 	depends on HOTPLUG
+ 	default y
+ 
+-select NLS if (DMI || ACPI)
++config PCI_LABEL
++	def_bool y if (DMI || ACPI)
++	select NLS
+--- linux-next-20110328.orig/drivers/pci/Makefile
++++ linux-next-20110328/drivers/pci/Makefile
+@@ -56,10 +56,10 @@ obj-$(CONFIG_TILE) += setup-bus.o setup-
+ # ACPI Related PCI FW Functions
+ # ACPI _DSM provided firmware instance and string name
+ #
+-obj-$(CONFIG_ACPI)    += pci-acpi.o pci-label.o
++obj-$(CONFIG_ACPI)    += pci-acpi.o
+ 
+ # SMBIOS provided firmware instance and labels
+-obj-$(CONFIG_DMI)    += pci-label.o
++obj-$(CONFIG_PCI_LABEL) += pci-label.o
+ 
+ # Cardbus & CompactPCI use setup-bus
+ obj-$(CONFIG_HOTPLUG) += setup-bus.o
