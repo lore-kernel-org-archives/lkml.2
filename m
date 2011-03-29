@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab1C2W6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 18:58:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49401 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751197Ab1C2W6J (ORCPT
+	id S1753249Ab1C2XFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 19:05:11 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:45590 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1C2XFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 18:58:09 -0400
-Date: Tue, 29 Mar 2011 15:57:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH v2 typo-fixed] initcall: add config option for compiling
- initcall_debug
-Message-Id: <20110329155751.e7ba346a.akpm@linux-foundation.org>
-In-Reply-To: <20110328075131.25063.93957.stgit@localhost6>
-References: <20110327115506.14008.17733.stgit@localhost6>
-	<20110328075131.25063.93957.stgit@localhost6>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Mar 2011 19:05:10 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6300"; a="82812993"
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: davidb@codeaurora.org, bryanh@codeaurora.org, linux@arm.linux.org.uk,
+        dwalker@fifo99.com
+Cc: dima@android.com, Rohit Vaswani <rvaswani@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH] msm: gpio: Mark the msm_gpiomux_config strucutres as static
+Date: Tue, 29 Mar 2011 16:04:28 -0700
+Message-Id: <1301439868-22295-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011 11:51:31 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+The msm_gpiomux_config structures are now part of the board file
+and can be marked as static
 
-> This patch adds bool config option CONFIG_INITCALL_DEBUG for
-> compiling initcalls debuging, it on by default to keep current behaviour.
-> 
-> With CONFIG_INITCALL_DEBUG=n bloat-o-meter shows:
-> 
-> add/remove: 0/7 grow/shrink: 3/10 up/down: 88/-1448 (-1360)
-> function                                     old     new   delta
-> device_resume                                350     404     +54
-> __device_suspend                             331     363     +32
-> device_resume_noirq                          230     232      +2
-> kernel_init                                  355     354      -1
-> initcall_debug                                 4       -      -4
-> __param_str_initcall_debug                    15       -     -15
-> dpm_suspend                                  431     415     -16
-> syscore_suspend                              280     250     -30
-> syscore_shutdown                             123      93     -30
-> __param_initcall_debug                        32       -     -32
-> syscore_resume                               215     173     -42
-> static.initcall_debug_start                   71       -     -71
-> static.initcall_debug_report                 102       -    -102
-> legacy_resume                                129       -    -129
-> async_synchronize_cookie_domain              286     152    -134
-> legacy_suspend                               135       -    -135
-> async_run_entry_fn                           348     188    -160
-> do_one_initcall                              364     197    -167
-> pm_op                                        536     366    -170
-> pm_noirq_op                                  576     366    -210
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+---
+ arch/arm/mach-msm/board-msm7x27.c |    2 +-
+ arch/arm/mach-msm/board-msm7x30.c |    2 +-
+ arch/arm/mach-msm/board-msm8x60.c |    2 +-
+ arch/arm/mach-msm/board-qsd8x50.c |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-Well.  One hopes that most things which use initcall_debug are
-marked __init or __initdata.
-
-I see that async and pm have borrowed inticall_debug for reasonably
-appropriate reasons, but I wonder if all that is permanent code, or if
-it will later get removed.  Because if it gets removed, this patch
-becomes rather pointless.
-
-And the async code didn't try very hard anyway - it has a bunch of code
-wired into .text which is only used at boot time.
+diff --git a/arch/arm/mach-msm/board-msm7x27.c b/arch/arm/mach-msm/board-msm7x27.c
+index 10affe5..c008323 100644
+--- a/arch/arm/mach-msm/board-msm7x27.c
++++ b/arch/arm/mach-msm/board-msm7x27.c
+@@ -45,7 +45,7 @@
+ #include "socinfo.h"
+ #include "clock.h"
+ 
+-struct msm_gpiomux_config msm7x27_gpiomux_configs[NR_GPIO_IRQS] __initdata = {};
++static struct msm_gpiomux_config msm7x27_gpiomux_configs[NR_GPIO_IRQS] = {};
+ 
+ static struct resource smc91x_resources[] = {
+ 	[0] = {
+diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
+index 2cd8e9a..2b4457a 100644
+--- a/arch/arm/mach-msm/board-msm7x30.c
++++ b/arch/arm/mach-msm/board-msm7x30.c
+@@ -60,7 +60,7 @@ static struct msm_otg_platform_data msm_otg_pdata = {
+ 	.otg_control		= OTG_PHY_CONTROL,
+ };
+ 
+-struct msm_gpiomux_config msm7x30_uart2_configs[] __initdata = {
++static struct msm_gpiomux_config msm7x30_uart2_configs[] = {
+ 	{
+ 		.gpio = 49, /* UART2 RFR */
+ 		.settings = {
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index de4d8d1..56d7470 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -29,7 +29,7 @@
+ #include <mach/msm_iomap.h>
+ #include "gpiomux.h"
+ 
+-struct msm_gpiomux_config msm8x60_gpiomux_configs[NR_GPIO_IRQS] __initdata = {};
++static struct msm_gpiomux_config msm8x60_gpiomux_configs[NR_GPIO_IRQS] = {};
+ 
+ static int __init gpiomux_init(void)
+ {
+diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
+index 83ccc0f..d65a676 100644
+--- a/arch/arm/mach-msm/board-qsd8x50.c
++++ b/arch/arm/mach-msm/board-qsd8x50.c
+@@ -47,7 +47,7 @@ static struct gpiomux_setting uart3_suspended = {
+ 
+ extern struct sys_timer msm_timer;
+ 
+-struct msm_gpiomux_config qsd8x50_uart3_configs[] = {
++static struct msm_gpiomux_config qsd8x50_uart3_configs[] = {
+ 	{
+ 		.gpio = 86, /* UART3 RX */
+ 		.settings = {
+-- 
+Sent by an employee of the Qualcomm Innovation Center,Inc
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
