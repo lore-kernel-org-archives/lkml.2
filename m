@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab1C2UTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 16:19:08 -0400
-Received: from submit01.uniweb.no ([91.207.158.19]:42891 "EHLO
-	submit01.uniweb.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab1C2UTH (ORCPT
+	id S1754348Ab1C2UXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 16:23:08 -0400
+Received: from mx3.twosigma.com ([208.77.213.34]:53301 "EHLO mx3.twosigma.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459Ab1C2UXG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 16:19:07 -0400
-X-Greylist: delayed 1089 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Mar 2011 16:19:07 EDT
-Message-ID: <06A6C9C3854A43CFAE176906A801DCD8@SigrLen110226>
-From: <datanerden2011@flowerpowertomoon.myteaspoon.net>
-To: <linux-kernel@vger.kernel.org>
-References: <B0CCB4E1-802C-4BA0-9EA6-22C87606240A@flowerpowertomoon.myteaspoon.net>
-In-Reply-To: <B0CCB4E1-802C-4BA0-9EA6-22C87606240A@flowerpowertomoon.myteaspoon.net>
-Subject: Re: Don't pass the authorisation process
-Date: Tue, 29 Mar 2011 22:00:44 +0200
+	Tue, 29 Mar 2011 16:23:06 -0400
+From: Sean Noonan <Sean.Noonan@twosigma.com>
+To: "'Christoph Hellwig'" <hch@infradead.org>
+CC: "'Michel Lespinasse'" <walken@google.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Martin Bligh <Martin.Bligh@twosigma.com>,
+        Trammell Hudson <Trammell.Hudson@twosigma.com>,
+        Christos Zoulas <Christos.Zoulas@twosigma.com>,
+        "'linux-xfs@oss.sgi.com'" <linux-xfs@oss.sgi.com>,
+        Stephen Degler <Stephen.Degler@twosigma.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>
+Date: Tue, 29 Mar 2011 16:23:03 -0400
+Subject: RE: XFS memory allocation deadlock in 2.6.38
+Thread-Topic: XFS memory allocation deadlock in 2.6.38
+Thread-Index: AcvuTFfY9wPeIe+4SRyshHnJafIpsQAAqwdg
+Message-ID: <081DDE43F61F3D43929A181B477DCA95639B535E@MSXAOA6.twosigma.com>
+References: <081DDE43F61F3D43929A181B477DCA95639B52FD@MSXAOA6.twosigma.com>
+ <081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
+ <20110324174311.GA31576@infradead.org>
+ <AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
+ <081DDE43F61F3D43929A181B477DCA95639B5349@MSXAOA6.twosigma.com>
+ <BANLkTin0jJevStg5P2hqsLbqMzo3o30sYg@mail.gmail.com>
+ <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
+ <081DDE43F61F3D43929A181B477DCA95639B5359@MSXAOA6.twosigma.com>
+ <20110329192434.GA10536@infradead.org>
+ <081DDE43F61F3D43929A181B477DCA95639B535C@MSXAOA6.twosigma.com>
+ <20110329200256.GA6019@infradead.org>
+In-Reply-To: <20110329200256.GA6019@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 15.4.3508.1109
-X-MimeOLE: Produced By Microsoft MimeOLE V15.4.3508.1109
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey
+> mind either, so to narrow this down does reverting the patch on
+> 2.6.38 also fix it?  The revert isn't quite trivial due to changes
+> since then, so here's the patch I came up with:
 
-I don't pass the authorization process getting on your list. When I send 
-"auth <code> subscribe linux-kernel", I get response that "another request 
-must be sent in with an authorization key, whis has been sent to" my 
-address. There is no information about this in this email. Can you help me?
-
-Svenn Ivar 
-
+This patch does fix the problem.
