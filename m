@@ -1,60 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab1C2WkX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 18:40:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51114 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab1C2WkW (ORCPT
+	id S1752815Ab1C2Wmh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 18:42:37 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:41869 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751319Ab1C2Wmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 18:40:22 -0400
-Date: Tue, 29 Mar 2011 23:40:18 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Collins <collinsd@codeaurora.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm-owner@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] regulator: Propagate uA_load requirements up
-	supply chain
-Message-ID: <20110329224017.GB15535@sirena.org.uk>
-References: <1301356355-7546-1-git-send-email-collinsd@codeaurora.org> <1301356432-7586-2-git-send-email-collinsd@codeaurora.org>
+	Tue, 29 Mar 2011 18:42:36 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkkGAIFdkk15LK5JTmdsb2JhbAClUAsBASADIyWIebNoDYJzgmoE
+Date: Wed, 30 Mar 2011 09:42:30 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "'Christoph Hellwig'" <hch@infradead.org>
+Cc: Sean Noonan <Sean.Noonan@twosigma.com>,
+        Trammell Hudson <Trammell.Hudson@twosigma.com>,
+        Christos Zoulas <Christos.Zoulas@twosigma.com>,
+        Martin Bligh <Martin.Bligh@twosigma.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Stephen Degler <Stephen.Degler@twosigma.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-xfs@oss.sgi.com'" <linux-xfs@oss.sgi.com>,
+        "'Michel Lespinasse'" <walken@google.com>
+Subject: Re: XFS memory allocation deadlock in 2.6.38
+Message-ID: <20110329224230.GH3008@dastard>
+References: <081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
+ <20110324174311.GA31576@infradead.org>
+ <AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
+ <081DDE43F61F3D43929A181B477DCA95639B5349@MSXAOA6.twosigma.com>
+ <BANLkTin0jJevStg5P2hqsLbqMzo3o30sYg@mail.gmail.com>
+ <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
+ <081DDE43F61F3D43929A181B477DCA95639B5359@MSXAOA6.twosigma.com>
+ <20110329192434.GA10536@infradead.org>
+ <081DDE43F61F3D43929A181B477DCA95639B535C@MSXAOA6.twosigma.com>
+ <20110329200256.GA6019@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301356432-7586-2-git-send-email-collinsd@codeaurora.org>
-X-Cookie: Is there life before breakfast?
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20110329200256.GA6019@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 04:53:52PM -0700, David Collins wrote:
+On Tue, Mar 29, 2011 at 04:02:56PM -0400, 'Christoph Hellwig' wrote:
+> On Tue, Mar 29, 2011 at 03:46:21PM -0400, Sean Noonan wrote:
+> > > Can you check if the brute force patch below helps?
+> > 
+> > No such luck.
+> 
+> Actually thinking about it - we never do the vmalloc under any fs lock,
+> so this can't be the reason.  But nothing else in the patch spring to
+> mind either, so to narrow this down does reverting the patch on
+> 2.6.38 also fix it?  The revert isn't quite trivial due to changes
+> since then, so here's the patch I came up with:
+> 
+> 
+> Index: xfs/fs/xfs/linux-2.6/kmem.c
+> ===================================================================
+> --- xfs.orig/fs/xfs/linux-2.6/kmem.c	2011-03-29 21:55:12.871726512 +0200
+> +++ xfs/fs/xfs/linux-2.6/kmem.c	2011-03-29 21:55:31.648723706 +0200
+> @@ -16,6 +16,7 @@
+>   * Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+>   */
+>  #include <linux/mm.h>
+> +#include <linux/vmalloc.h>
+>  #include <linux/highmem.h>
+>  #include <linux/slab.h>
+>  #include <linux/swap.h>
+> @@ -25,25 +26,8 @@
+>  #include "kmem.h"
+>  #include "xfs_message.h"
+>  
+> -/*
+> - * Greedy allocation.  May fail and may return vmalloced memory.
+> - *
+> - * Must be freed using kmem_free_large.
+> - */
+> -void *
+> -kmem_zalloc_greedy(size_t *size, size_t minsize, size_t maxsize)
+> -{
+> -	void		*ptr;
+> -	size_t		kmsize = maxsize;
+> -
+> -	while (!(ptr = kmem_zalloc_large(kmsize))) {
+> -		if ((kmsize >>= 1) <= minsize)
+> -			kmsize = minsize;
+> -	}
+> -	if (ptr)
+> -		*size = kmsize;
+> -	return ptr;
+> -}
+> +#define MAX_VMALLOCS	6
+> +#define MAX_SLAB_SIZE	0x20000
 
-Some more specific comments on the code:
+Why those values for the magic numbers?
 
-> +	if (rdev->desc->ops->get_current_required) {
-> +		err = rdev->desc->ops->get_current_required(rdev, input_uV,
-> +							output_uV, current_uA);
-> +		if (err < 0)
-> +			return;
-> +		rdev->uA_load = err;
-> +	}
+....
 
-I think we need something to handle misssing data here if there is a
-supply connected, otherwise we'll end up failing silently.  Off the top
-of my head we could either just complain loudly if there's no operation
-and there should be one or make a pessimistic assumption about
-efficiency by default.
+> Index: xfs/fs/xfs/quota/xfs_qm.c
+> ===================================================================
+> --- xfs.orig/fs/xfs/quota/xfs_qm.c	2011-03-29 21:55:12.859726589 +0200
+> +++ xfs/fs/xfs/quota/xfs_qm.c	2011-03-29 21:55:41.387278609 +0200
+> @@ -110,11 +110,12 @@ xfs_Gqm_init(void)
+>  	 */
+>  	udqhash = kmem_zalloc_greedy(&hsize,
+>  				     XFS_QM_HASHSIZE_LOW * sizeof(xfs_dqhash_t),
+> -				     XFS_QM_HASHSIZE_HIGH * sizeof(xfs_dqhash_t));
+> +				     XFS_QM_HASHSIZE_HIGH * sizeof(xfs_dqhash_t),
+> +				     KM_SLEEP | KM_MAYFAIL | KM_LARGE);
+>  	if (!udqhash)
+>  		goto out;
+>  
+> -	gdqhash = kmem_zalloc_large(hsize);
+> +	gdqhash = kmem_zalloc(hsize, KM_SLEEP | KM_LARGE);
 
-> +	/* get supply current required for load */
-> +	int (*get_current_required) (struct regulator_dev *, int input_uV,
-> +				     int output_uV, int load_uA);
-> +
+Needs a KM_MAYFAIL as well?
 
-I like the interface for the driver but possibly call it something like
-get_supply_current() or something to make it a little clearer which
-current is being requested?  Also needs to have kerneldoc added for the
-new function - ideally the documentation would say this is for sustained
-rather than peak load.
+>  	if (!gdqhash)
+>  		goto out_free_udqhash;
+>  
+....
+> Index: xfs/fs/xfs/xfs_itable.c
+> ===================================================================
+> --- xfs.orig/fs/xfs/xfs_itable.c	2011-03-29 21:55:12.851725366 +0200
+> +++ xfs/fs/xfs/xfs_itable.c	2011-03-29 21:55:31.660724287 +0200
+> @@ -259,10 +259,8 @@ xfs_bulkstat(
+>  		(XFS_INODE_CLUSTER_SIZE(mp) >> mp->m_sb.sb_inodelog);
+>  	nimask = ~(nicluster - 1);
+>  	nbcluster = nicluster >> mp->m_sb.sb_inopblog;
+> -	irbuf = kmem_zalloc_greedy(&irbsize, PAGE_SIZE, PAGE_SIZE * 4);
+> -	if (!irbuf)
+> -		return ENOMEM;
+> -
+> +	irbuf = kmem_zalloc_greedy(&irbsize, PAGE_SIZE, PAGE_SIZE * 4,
+> +				   KM_SLEEP | KM_MAYFAIL | KM_LARGE);
+>  	nirbuf = irbsize / sizeof(*irbuf);
+
+Need to keep the if (!irbuf) check as KM_MAYFAIL is passed.
+
+Cheers,
+
+Dave
+-- 
+Dave Chinner
+david@fromorbit.com
