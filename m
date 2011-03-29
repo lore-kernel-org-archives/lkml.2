@@ -1,19 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab1C2Wmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 18:42:37 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:41869 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751319Ab1C2Wmg (ORCPT
+	id S1754344Ab1C2WpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 18:45:21 -0400
+Received: from mx5.twosigma.com ([208.77.212.35]:56971 "EHLO mx5.twosigma.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751319Ab1C2WpU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 18:42:36 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkkGAIFdkk15LK5JTmdsb2JhbAClUAsBASADIyWIebNoDYJzgmoE
-Date: Wed, 30 Mar 2011 09:42:30 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "'Christoph Hellwig'" <hch@infradead.org>
-Cc: Sean Noonan <Sean.Noonan@twosigma.com>,
-        Trammell Hudson <Trammell.Hudson@twosigma.com>,
+	Tue, 29 Mar 2011 18:45:20 -0400
+From: Sean Noonan <Sean.Noonan@twosigma.com>
+To: "'Dave Chinner'" <david@fromorbit.com>,
+        "'Christoph Hellwig'" <hch@infradead.org>
+CC: Trammell Hudson <Trammell.Hudson@twosigma.com>,
         Christos Zoulas <Christos.Zoulas@twosigma.com>,
         Martin Bligh <Martin.Bligh@twosigma.com>,
         "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
@@ -21,8 +18,11 @@ Cc: Sean Noonan <Sean.Noonan@twosigma.com>,
         "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
         "'linux-xfs@oss.sgi.com'" <linux-xfs@oss.sgi.com>,
         "'Michel Lespinasse'" <walken@google.com>
-Subject: Re: XFS memory allocation deadlock in 2.6.38
-Message-ID: <20110329224230.GH3008@dastard>
+Date: Tue, 29 Mar 2011 18:45:15 -0400
+Subject: RE: XFS memory allocation deadlock in 2.6.38
+Thread-Topic: XFS memory allocation deadlock in 2.6.38
+Thread-Index: AcvuYpz7hovhsA6oREKqH6av+QvnaAAADQxQ
+Message-ID: <081DDE43F61F3D43929A181B477DCA95639B5361@MSXAOA6.twosigma.com>
 References: <081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
  <20110324174311.GA31576@infradead.org>
  <AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
@@ -32,115 +32,22 @@ References: <081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
  <081DDE43F61F3D43929A181B477DCA95639B5359@MSXAOA6.twosigma.com>
  <20110329192434.GA10536@infradead.org>
  <081DDE43F61F3D43929A181B477DCA95639B535C@MSXAOA6.twosigma.com>
- <20110329200256.GA6019@infradead.org>
+ <20110329200256.GA6019@infradead.org> <20110329224230.GH3008@dastard>
+In-Reply-To: <20110329224230.GH3008@dastard>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110329200256.GA6019@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 04:02:56PM -0400, 'Christoph Hellwig' wrote:
-> On Tue, Mar 29, 2011 at 03:46:21PM -0400, Sean Noonan wrote:
-> > > Can you check if the brute force patch below helps?
-> > 
-> > No such luck.
-> 
-> Actually thinking about it - we never do the vmalloc under any fs lock,
-> so this can't be the reason.  But nothing else in the patch spring to
-> mind either, so to narrow this down does reverting the patch on
-> 2.6.38 also fix it?  The revert isn't quite trivial due to changes
-> since then, so here's the patch I came up with:
-> 
-> 
-> Index: xfs/fs/xfs/linux-2.6/kmem.c
-> ===================================================================
-> --- xfs.orig/fs/xfs/linux-2.6/kmem.c	2011-03-29 21:55:12.871726512 +0200
-> +++ xfs/fs/xfs/linux-2.6/kmem.c	2011-03-29 21:55:31.648723706 +0200
-> @@ -16,6 +16,7 @@
->   * Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
->   */
->  #include <linux/mm.h>
-> +#include <linux/vmalloc.h>
->  #include <linux/highmem.h>
->  #include <linux/slab.h>
->  #include <linux/swap.h>
-> @@ -25,25 +26,8 @@
->  #include "kmem.h"
->  #include "xfs_message.h"
->  
-> -/*
-> - * Greedy allocation.  May fail and may return vmalloced memory.
-> - *
-> - * Must be freed using kmem_free_large.
-> - */
-> -void *
-> -kmem_zalloc_greedy(size_t *size, size_t minsize, size_t maxsize)
-> -{
-> -	void		*ptr;
-> -	size_t		kmsize = maxsize;
-> -
-> -	while (!(ptr = kmem_zalloc_large(kmsize))) {
-> -		if ((kmsize >>= 1) <= minsize)
-> -			kmsize = minsize;
-> -	}
-> -	if (ptr)
-> -		*size = kmsize;
-> -	return ptr;
-> -}
-> +#define MAX_VMALLOCS	6
-> +#define MAX_SLAB_SIZE	0x20000
+> Need to keep the if (!irbuf) check as KM_MAYFAIL is passed.
 
-Why those values for the magic numbers?
+It wasn't in before the bug presented, so leaving it in wouldn't be a true test as to whether the bug has been tracked to the correct place.  I'll test again with the if (!irbuf).
 
-....
-
-> Index: xfs/fs/xfs/quota/xfs_qm.c
-> ===================================================================
-> --- xfs.orig/fs/xfs/quota/xfs_qm.c	2011-03-29 21:55:12.859726589 +0200
-> +++ xfs/fs/xfs/quota/xfs_qm.c	2011-03-29 21:55:41.387278609 +0200
-> @@ -110,11 +110,12 @@ xfs_Gqm_init(void)
->  	 */
->  	udqhash = kmem_zalloc_greedy(&hsize,
->  				     XFS_QM_HASHSIZE_LOW * sizeof(xfs_dqhash_t),
-> -				     XFS_QM_HASHSIZE_HIGH * sizeof(xfs_dqhash_t));
-> +				     XFS_QM_HASHSIZE_HIGH * sizeof(xfs_dqhash_t),
-> +				     KM_SLEEP | KM_MAYFAIL | KM_LARGE);
->  	if (!udqhash)
->  		goto out;
->  
-> -	gdqhash = kmem_zalloc_large(hsize);
-> +	gdqhash = kmem_zalloc(hsize, KM_SLEEP | KM_LARGE);
-
-Needs a KM_MAYFAIL as well?
-
->  	if (!gdqhash)
->  		goto out_free_udqhash;
->  
-....
-> Index: xfs/fs/xfs/xfs_itable.c
-> ===================================================================
-> --- xfs.orig/fs/xfs/xfs_itable.c	2011-03-29 21:55:12.851725366 +0200
-> +++ xfs/fs/xfs/xfs_itable.c	2011-03-29 21:55:31.660724287 +0200
-> @@ -259,10 +259,8 @@ xfs_bulkstat(
->  		(XFS_INODE_CLUSTER_SIZE(mp) >> mp->m_sb.sb_inodelog);
->  	nimask = ~(nicluster - 1);
->  	nbcluster = nicluster >> mp->m_sb.sb_inopblog;
-> -	irbuf = kmem_zalloc_greedy(&irbsize, PAGE_SIZE, PAGE_SIZE * 4);
-> -	if (!irbuf)
-> -		return ENOMEM;
-> -
-> +	irbuf = kmem_zalloc_greedy(&irbsize, PAGE_SIZE, PAGE_SIZE * 4,
-> +				   KM_SLEEP | KM_MAYFAIL | KM_LARGE);
->  	nirbuf = irbsize / sizeof(*irbuf);
-
-Need to keep the if (!irbuf) check as KM_MAYFAIL is passed.
-
-Cheers,
-
-Dave
--- 
-Dave Chinner
-david@fromorbit.com
+Sean
