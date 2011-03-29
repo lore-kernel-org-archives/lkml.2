@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab1C2UsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 16:48:16 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:54078
+	id S1754386Ab1C2UsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 16:48:15 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:54091
 	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754039Ab1C2UsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753937Ab1C2UsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Mar 2011 16:48:09 -0400
 From: Hank Janssen <hjanssen@microsoft.com>
 To: hjanssen@microsoft.com, haiyangz@microsoft.com, gregkh@suse.de,
         linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 02/07] Remove all unneeded DPRINT from hv_netvsc
-Date: Tue, 29 Mar 2011 13:58:45 -0700
-Message-Id: <1301432330-1705-3-git-send-email-hjanssen@microsoft.com>
+Subject: [PATCH 04/07] Replace DPRINT with natives in hv_vmbus
+Date: Tue, 29 Mar 2011 13:58:47 -0700
+Message-Id: <1301432330-1705-5-git-send-email-hjanssen@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301432330-1705-1-git-send-email-hjanssen@microsoft.com>
 References: <1301432330-1705-1-git-send-email-hjanssen@microsoft.com>
@@ -22,402 +22,368 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove all un-needed DPRINT calls from hv_netvsc.
-
-This patch deals with hv_netvsc only.
+Replace all remaining DPRINT calls (excluding the ringbuffer debug
+which is going to be done in a next set of patches) with their
+native pr_ calls. And also changed some of the printouts to be more
+useful.
 
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
 ---
- drivers/staging/hv/netvsc.c       |  102 ++-----------------------------------
- drivers/staging/hv/netvsc_drv.c   |   10 ----
- drivers/staging/hv/rndis_filter.c |   13 -----
- 3 files changed, 4 insertions(+), 121 deletions(-)
+ drivers/staging/hv/channel.c      |    9 +++++--
+ drivers/staging/hv/channel_mgmt.c |   25 ++++++++++-----------
+ drivers/staging/hv/connection.c   |   12 ++++++----
+ drivers/staging/hv/hv.c           |   10 ++++----
+ drivers/staging/hv/ring_buffer.c  |    1 +
+ drivers/staging/hv/vmbus_drv.c    |   43 +++++++++++++++---------------------
+ 6 files changed, 49 insertions(+), 51 deletions(-)
 
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 20b1597..be572b4 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -178,13 +178,6 @@ int netvsc_initialize(struct hv_driver *drv)
- {
- 	struct netvsc_driver *driver = (struct netvsc_driver *)drv;
- 
--	DPRINT_DBG(NETVSC, "sizeof(struct hv_netvsc_packet)=%zd, "
--		   "sizeof(struct nvsp_message)=%zd, "
--		   "sizeof(struct vmtransfer_page_packet_header)=%zd",
--		   sizeof(struct hv_netvsc_packet),
--		   sizeof(struct nvsp_message),
--		   sizeof(struct vmtransfer_page_packet_header));
--
- 	drv->name = driver_name;
- 	memcpy(&drv->dev_type, &netvsc_device_type, sizeof(struct hv_guid));
- 
-@@ -223,8 +216,6 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	DPRINT_INFO(NETVSC, "Establishing receive buffer's GPADL...");
--
- 	/*
- 	 * Establish the gpadl handle for this buffer on this
- 	 * channel.  Note: This call uses the vmbus connection rather
-@@ -241,8 +232,6 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 
- 
- 	/* Notify the NetVsp of the gpadl handle */
--	DPRINT_INFO(NETVSC, "Sending NvspMessage1TypeSendReceiveBuffer...");
--
- 	init_packet = &net_device->channel_init_pkt;
- 
- 	memset(init_packet, 0, sizeof(struct nvsp_message));
-@@ -301,14 +290,6 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 		net_device->recv_section_cnt *
- 	       sizeof(struct nvsp_1_receive_buffer_section));
- 
--	DPRINT_INFO(NETVSC, "Receive sections info (count %d, offset %d, "
--		    "endoffset %d, suballoc size %d, num suballocs %d)",
--		    net_device->recv_section_cnt,
--		    net_device->recv_section[0].offset,
--		    net_device->recv_section[0].end_offset,
--		    net_device->recv_section[0].sub_alloc_size,
--		    net_device->recv_section[0].num_sub_allocs);
--
- 	/*
- 	 * For 1st release, there should only be 1 section that represents the
- 	 * entire receive buffer
-@@ -356,8 +337,6 @@ static int netvsc_init_send_buf(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	DPRINT_INFO(NETVSC, "Establishing send buffer's GPADL...");
--
- 	/*
- 	 * Establish the gpadl handle for this buffer on this
- 	 * channel.  Note: This call uses the vmbus connection rather
-@@ -372,8 +351,6 @@ static int netvsc_init_send_buf(struct hv_device *device)
- 	}
- 
- 	/* Notify the NetVsp of the gpadl handle */
--	DPRINT_INFO(NETVSC, "Sending NvspMessage1TypeSendSendBuffer...");
--
- 	init_packet = &net_device->channel_init_pkt;
- 
- 	memset(init_packet, 0, sizeof(struct nvsp_message));
-@@ -438,9 +415,6 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- 	 * to send a revoke msg here
- 	 */
- 	if (net_device->recv_section_cnt) {
--		DPRINT_INFO(NETVSC,
--			    "Sending NvspMessage1TypeRevokeReceiveBuffer...");
--
- 		/* Send the revoke receive buffer */
- 		revoke_packet = &net_device->revoke_packet;
- 		memset(revoke_packet, 0, sizeof(struct nvsp_message));
-@@ -468,8 +442,6 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- 
- 	/* Teardown the gpadl on the vsp end */
- 	if (net_device->recv_buf_gpadl_handle) {
--		DPRINT_INFO(NETVSC, "Tearing down receive buffer's GPADL...");
--
- 		ret = vmbus_teardown_gpadl(net_device->dev->channel,
- 			   net_device->recv_buf_gpadl_handle);
- 
-@@ -483,8 +455,6 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- 	}
- 
- 	if (net_device->recv_buf) {
--		DPRINT_INFO(NETVSC, "Freeing up receive buffer...");
--
- 		/* Free up the receive buffer */
- 		free_pages((unsigned long)net_device->recv_buf,
- 			get_order(net_device->recv_buf_size));
-@@ -512,9 +482,6 @@ static int netvsc_destroy_send_buf(struct netvsc_device *net_device)
- 	 *  to send a revoke msg here
- 	 */
- 	if (net_device->send_section_size) {
--		DPRINT_INFO(NETVSC,
--			    "Sending NvspMessage1TypeRevokeSendBuffer...");
--
- 		/* Send the revoke send buffer */
- 		revoke_packet = &net_device->revoke_packet;
- 		memset(revoke_packet, 0, sizeof(struct nvsp_message));
-@@ -542,7 +509,6 @@ static int netvsc_destroy_send_buf(struct netvsc_device *net_device)
- 
- 	/* Teardown the gpadl on the vsp end */
- 	if (net_device->send_buf_gpadl_handle) {
--		DPRINT_INFO(NETVSC, "Tearing down send buffer's GPADL...");
- 		ret = vmbus_teardown_gpadl(net_device->dev->channel,
- 					   net_device->send_buf_gpadl_handle);
- 
-@@ -559,8 +525,6 @@ static int netvsc_destroy_send_buf(struct netvsc_device *net_device)
- 	}
- 
- 	if (net_device->send_buf) {
--		DPRINT_INFO(NETVSC, "Freeing up send buffer...");
--
- 		/* Free up the receive buffer */
- 		free_pages((unsigned long)net_device->send_buf,
- 				get_order(net_device->send_buf_size));
-@@ -594,8 +558,6 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 	init_packet->msg.init_msg.init.max_protocol_ver =
- 		NVSP_MAX_PROTOCOL_VERSION;
- 
--	DPRINT_INFO(NETVSC, "Sending NvspMessageTypeInit...");
--
- 	/* Send the init request */
- 	net_device->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, init_packet,
-@@ -604,10 +566,8 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 			       VM_PKT_DATA_INBAND,
- 			       VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
- 
--	if (ret != 0) {
--		DPRINT_ERR(NETVSC, "unable to send NvspMessageTypeInit");
-+	if (ret != 0)
- 		goto cleanup;
--	}
- 
- 	wait_event_timeout(net_device->channel_init_wait,
- 			net_device->wait_condition,
-@@ -617,31 +577,17 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	DPRINT_INFO(NETVSC, "NvspMessageTypeInit status(%d) max mdl chain (%d)",
--		init_packet->msg.init_msg.init_complete.status,
--		init_packet->msg.init_msg.
--		    init_complete.max_mdl_chain_len);
--
--	if (init_packet->msg.init_msg.init_complete.status !=
-+	if (init_packet->msg.init_msg.init_complete.status !=
- 	    NVSP_STAT_SUCCESS) {
--		DPRINT_ERR(NETVSC,
--			"unable to initialize with netvsp (status 0x%x)",
--			init_packet->msg.init_msg.init_complete.status);
- 		ret = -1;
- 		goto cleanup;
- 	}
- 
- 	if (init_packet->msg.init_msg.init_complete.
- 	    negotiated_protocol_ver != NVSP_PROTOCOL_VERSION_1) {
--		DPRINT_ERR(NETVSC, "unable to initialize with netvsp "
--			   "(version expected 1 got %d)",
--			   init_packet->msg.init_msg.
--			   init_complete.negotiated_protocol_ver);
- 		ret = -1;
- 		goto cleanup;
- 	}
--	DPRINT_INFO(NETVSC, "Sending NvspMessage1TypeSendNdisVersion...");
--
- 	/* Send the ndis version */
- 	memset(init_packet, 0, sizeof(struct nvsp_message));
- 
-@@ -661,8 +607,6 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 				(unsigned long)init_packet,
- 				VM_PKT_DATA_INBAND, 0);
- 	if (ret != 0) {
--		DPRINT_ERR(NETVSC,
--			   "unable to send NvspMessage1TypeSendNdisVersion");
- 		ret = -1;
- 		goto cleanup;
- 	}
-@@ -702,8 +646,6 @@ static int netvsc_device_add(struct hv_device *device, void *additional_info)
- 		goto cleanup;
- 	}
- 
--	DPRINT_DBG(NETVSC, "netvsc channel object allocated - %p", net_device);
--
- 	/* Initialize the NetVSC channel extension */
- 	net_device->recv_buf_size = NETVSC_RECEIVE_BUFFER_SIZE;
- 	spin_lock_init(&net_device->recv_pkt_list_lock);
-@@ -716,12 +658,9 @@ static int netvsc_device_add(struct hv_device *device, void *additional_info)
- 		packet = kzalloc(sizeof(struct hv_netvsc_packet) +
- 				 (NETVSC_RECEIVE_SG_COUNT *
- 				  sizeof(struct hv_page_buffer)), GFP_KERNEL);
--		if (!packet) {
--			DPRINT_DBG(NETVSC, "unable to allocate netvsc pkts "
--				   "for receive pool (wanted %d got %d)",
--				   NETVSC_RECEIVE_PACKETLIST_COUNT, i);
-+		if (!packet)
- 			break;
--		}
+diff --git a/drivers/staging/hv/channel.c b/drivers/staging/hv/channel.c
+index c90dbaf..ddadd6e 100644
+--- a/drivers/staging/hv/channel.c
++++ b/drivers/staging/hv/channel.c
+@@ -18,6 +18,8 @@
+  *   Haiyang Zhang <haiyangz@microsoft.com>
+  *   Hank Janssen  <hjanssen@microsoft.com>
+  */
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
- 		list_add_tail(&packet->list_ent,
- 			      &net_device->recv_pkt_list);
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/wait.h>
+@@ -898,7 +900,7 @@ int vmbus_recvpacket(struct vmbus_channel *channel, void *buffer,
+ 	if (userlen > bufferlen) {
+ 		spin_unlock_irqrestore(&channel->inbound_lock, flags);
+ 
+-		DPRINT_ERR(VMBUS, "buffer too small - got %d needs %d",
++		pr_err("Buffer too small - got %d needs %d\n",
+ 			   bufferlen, userlen);
+ 		return -1;
  	}
-@@ -749,9 +688,6 @@ static int netvsc_device_add(struct hv_device *device, void *additional_info)
- 		goto close;
- 	}
+@@ -950,8 +952,9 @@ int vmbus_recvpacket_raw(struct vmbus_channel *channel, void *buffer,
+ 	if (packetlen > bufferlen) {
+ 		spin_unlock_irqrestore(&channel->inbound_lock, flags);
  
--	DPRINT_INFO(NETVSC, "*** NetVSC channel handshake result - %d ***",
--		    ret);
--
- 	return ret;
- 
- close:
-@@ -785,9 +721,6 @@ static int netvsc_device_remove(struct hv_device *device)
- 	struct netvsc_device *net_device;
- 	struct hv_netvsc_packet *netvsc_packet, *pos;
- 
--	DPRINT_INFO(NETVSC, "Disabling outbound traffic on net device (%p)...",
--		    device->ext);
--
- 	/* Stop outbound traffic ie sends and receives completions */
- 	net_device = release_outbound_net_device(device);
- 	if (!net_device) {
-@@ -802,13 +735,8 @@ static int netvsc_device_remove(struct hv_device *device)
- 		udelay(100);
+-		DPRINT_ERR(VMBUS, "buffer too small - needed %d bytes but "
+-			   "got space for only %d bytes", packetlen, bufferlen);
++		pr_err("Buffer too small - needed %d bytes but "
++			"got space for only %d bytes\n",
++			packetlen, bufferlen);
+ 		return -2;
  	}
  
--	DPRINT_INFO(NETVSC, "Disconnecting from netvsp...");
--
- 	NetVscDisconnectFromVsp(net_device);
+diff --git a/drivers/staging/hv/channel_mgmt.c b/drivers/staging/hv/channel_mgmt.c
+index ebdd9d8..a75a1ae 100644
+--- a/drivers/staging/hv/channel_mgmt.c
++++ b/drivers/staging/hv/channel_mgmt.c
+@@ -18,6 +18,8 @@
+  *   Haiyang Zhang <haiyangz@microsoft.com>
+  *   Hank Janssen  <hjanssen@microsoft.com>
+  */
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/wait.h>
+@@ -403,8 +405,7 @@ static void vmbus_process_offer(struct work_struct *work)
+ 	 */
+ 	ret = vmbus_child_device_register(newchannel->device_obj);
+ 	if (ret != 0) {
+-		DPRINT_ERR(VMBUS,
+-			   "unable to add child device object (relid %d)",
++		pr_err("unable to add child device object (relid %d)\n",
+ 			   newchannel->offermsg.child_relid);
  
--	DPRINT_INFO(NETVSC, "Disabling inbound traffic on net device (%p)...",
--		    device->ext);
--
- 	/* Stop inbound traffic ie receives and sends completions */
- 	net_device = release_inbound_net_device(device);
- 
-@@ -853,9 +781,6 @@ static void netvsc_send_completion(struct hv_device *device,
- 	nvsp_packet = (struct nvsp_message *)((unsigned long)packet +
- 			(packet->offset8 << 3));
- 
--	DPRINT_DBG(NETVSC, "send completion packet - type %d",
--		   nvsp_packet->hdr.msg_type);
--
- 	if ((nvsp_packet->hdr.msg_type == NVSP_MSG_TYPE_INIT_COMPLETE) ||
- 	    (nvsp_packet->hdr.msg_type ==
- 	     NVSP_MSG1_TYPE_SEND_RECV_BUF_COMPLETE) ||
-@@ -985,9 +910,6 @@ static void netvsc_receive(struct hv_device *device,
- 		return;
- 	}
- 
--	DPRINT_DBG(NETVSC, "NVSP packet received - type %d",
--		   nvsp_packet->hdr.msg_type);
--
- 	vmxferpage_packet = (struct vmtransfer_page_packet_header *)packet;
- 
- 	if (vmxferpage_packet->xfer_pageset_id != NETVSC_RECEIVE_BUFFER_ID) {
-@@ -998,9 +920,6 @@ static void netvsc_receive(struct hv_device *device,
- 		return;
- 	}
- 
--	DPRINT_DBG(NETVSC, "xfer page - range count %d",
--		   vmxferpage_packet->range_cnt);
--
- 	/*
- 	 * Grab free packets (range count + 1) to represent this xfer
- 	 * page packet. +1 to represent the xfer page packet itself.
-@@ -1117,13 +1036,6 @@ static void netvsc_receive(struct hv_device *device,
- 					break;
+ 		spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
+@@ -430,8 +431,9 @@ static void vmbus_process_offer(struct work_struct *work)
+ 						 hv_cb_utils[cnt].callback,
+ 						 newchannel) == 0) {
+ 				hv_cb_utils[cnt].channel = newchannel;
+-				DPRINT_INFO(VMBUS, "%s",
+-						hv_cb_utils[cnt].log_msg);
++
++				pr_info("%s\n", hv_cb_utils[cnt].log_msg);
++
+ 				count_hv_channel();
  			}
  		}
--		DPRINT_DBG(NETVSC, "[%d] - (abs offset %u len %u) => "
--			   "(pfn %llx, offset %u, len %u)", i,
--			   vmxferpage_packet->ranges[i].byte_offset,
--			   vmxferpage_packet->ranges[i].byte_count,
--			   netvsc_packet->page_buf[0].pfn,
--			   netvsc_packet->page_buf[0].offset,
--			   netvsc_packet->page_buf[0].len);
+@@ -472,7 +474,7 @@ static void vmbus_onoffer(struct vmbus_channel_message_header *hdr)
+ 	/* Allocate the channel object and save this offer. */
+ 	newchannel = alloc_channel();
+ 	if (!newchannel) {
+-		DPRINT_ERR(VMBUS, "unable to allocate channel object");
++		pr_err("Unable to allocate channel object\n");
+ 		return;
+ 	}
  
- 		/* Pass it to the upper layer */
- 		((struct netvsc_driver *)device->drv)->
-@@ -1143,9 +1055,6 @@ static void netvsc_send_recv_completion(struct hv_device *device,
- 	int retries = 0;
- 	int ret;
+@@ -730,8 +732,7 @@ void vmbus_onmessage(void *context)
+ 	size = msg->header.payload_size;
  
--	DPRINT_DBG(NETVSC, "Sending receive completion pkt - %llx",
--		   transaction_id);
--
- 	recvcompMessage.hdr.msg_type =
- 				NVSP_MSG1_TYPE_SEND_RNDIS_PKT_COMPLETE;
- 
-@@ -1261,9 +1170,6 @@ static void netvsc_channel_cb(void *context)
- 					   &bytes_recvd, &request_id);
- 		if (ret == 0) {
- 			if (bytes_recvd > 0) {
--				DPRINT_DBG(NETVSC, "receive %d bytes, tid %llx",
--					   bytes_recvd, request_id);
--
- 				desc = (struct vmpacket_descriptor *)buffer;
- 				switch (desc->type) {
- 				case VM_PKT_COMP:
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 2d40f5f..1772a19 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -136,9 +136,6 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	int ret;
- 	unsigned int i, num_pages;
- 
--	DPRINT_DBG(NETVSC_DRV, "xmit packet - len %d data_len %d",
--		   skb->len, skb->data_len);
--
- 	/* Add 1 for skb->data and additional one for RNDIS */
- 	num_pages = skb_shinfo(skb)->nr_frags + 1 + 1;
- 	if (num_pages > net_device_ctx->avail)
-@@ -196,10 +193,6 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 		net->stats.tx_bytes += skb->len;
- 		net->stats.tx_packets++;
- 
--		DPRINT_DBG(NETVSC_DRV, "# of xmits %lu total size %lu",
--			   net->stats.tx_packets,
--			   net->stats.tx_bytes);
--
- 		net_device_ctx->avail -= num_pages;
- 		if (net_device_ctx->avail < PACKET_PAGES_LOWATER)
- 			netif_stop_queue(net);
-@@ -297,9 +290,6 @@ static int netvsc_recv_callback(struct hv_device *device_obj,
- 	 */
- 	netif_rx(skb);
- 
--	DPRINT_DBG(NETVSC_DRV, "# of recvs %lu total size %lu",
--		   net->stats.rx_packets, net->stats.rx_bytes);
--
- 	return 0;
+ 	if (hdr->msgtype >= CHANNELMSG_COUNT) {
+-		DPRINT_ERR(VMBUS,
+-			   "Received invalid channel message type %d size %d",
++		pr_err("Received invalid channel message type %d size %d\n",
+ 			   hdr->msgtype, size);
+ 		print_hex_dump_bytes("", DUMP_PREFIX_NONE,
+ 				     (unsigned char *)msg->u.payload, size);
+@@ -741,8 +742,7 @@ void vmbus_onmessage(void *context)
+ 	if (gChannelMessageTable[hdr->msgtype].messageHandler)
+ 		gChannelMessageTable[hdr->msgtype].messageHandler(hdr);
+ 	else
+-		DPRINT_ERR(VMBUS, "Unhandled channel message type %d",
+-			   hdr->msgtype);
++		pr_err("Unhandled channel message type %d\n", hdr->msgtype);
  }
  
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-index e7189cd..d1b13dc 100644
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -283,14 +283,6 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
+ /*
+@@ -770,7 +770,7 @@ int vmbus_request_offers(void)
+ 	ret = vmbus_post_msg(msg,
+ 			       sizeof(struct vmbus_channel_message_header));
+ 	if (ret != 0) {
+-		DPRINT_ERR(VMBUS, "Unable to request offers - %d", ret);
++		pr_err("Unable to request offers - %d\n", ret);
+ 
+ 		goto cleanup;
+ 	}
+@@ -810,9 +810,8 @@ void vmbus_release_unattached_channels(void)
+ 
+ 		if (!channel->device_obj->drv) {
+ 			list_del(&channel->listentry);
+-			DPRINT_INFO(VMBUS,
+-				    "Releasing unattached device object %p",
+-				    channel->device_obj);
++
++			pr_err("Releasing unattached device object\n");
+ 
+ 			vmbus_child_device_unregister(channel->device_obj);
+ 			free_channel(channel);
+diff --git a/drivers/staging/hv/connection.c b/drivers/staging/hv/connection.c
+index ed2a7a8..7de0780 100644
+--- a/drivers/staging/hv/connection.c
++++ b/drivers/staging/hv/connection.c
+@@ -20,6 +20,8 @@
+  *   Hank Janssen  <hjanssen@microsoft.com>
+  *
+  */
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/wait.h>
+@@ -153,9 +155,9 @@ int vmbus_connect(void)
+ 	if (msginfo->response.version_response.version_supported) {
+ 		vmbus_connection.conn_state = CONNECTED;
+ 	} else {
+-		DPRINT_ERR(VMBUS, "Vmbus connection failed!!..."
+-			   "current version (%d) not supported",
+-			   VMBUS_REVISION_NUMBER);
++		pr_err("Unable to connect, "
++			"Version %d not supported by Hyper-V\n",
++			VMBUS_REVISION_NUMBER);
+ 		ret = -1;
+ 		goto Cleanup;
+ 	}
+@@ -216,7 +218,7 @@ int vmbus_disconnect(void)
+ 
+ 	vmbus_connection.conn_state = DISCONNECTED;
+ 
+-	DPRINT_INFO(VMBUS, "Vmbus disconnected!!");
++	pr_info("hv_vmbus disconnected\n");
+ 
+ Cleanup:
+ 	kfree(msg);
+@@ -269,7 +271,7 @@ static void process_chn_event(void *context)
+ 		 *			  (void*)channel);
  		 */
- 		if (request->request_msg.msg.init_req.req_id
- 		    == resp->msg.init_complete.req_id) {
--			DPRINT_DBG(NETVSC, "found rndis request for "
--				"this response (id 0x%x req type 0x%x res "
--				"type 0x%x)",
--				request->request_msg.msg.
--				   init_req.req_id,
--				request->request_msg.ndis_msg_type,
--				resp->ndis_msg_type);
--
- 			found = true;
- 			break;
+ 	} else {
+-		DPRINT_ERR(VMBUS, "channel not found for relid - %d.", relid);
++		pr_err("channel not found for relid - %d\n", relid);
+ 	}
+ }
+ 
+diff --git a/drivers/staging/hv/hv.c b/drivers/staging/hv/hv.c
+index d627a83..8898d7f 100644
+--- a/drivers/staging/hv/hv.c
++++ b/drivers/staging/hv/hv.c
+@@ -19,6 +19,8 @@
+  *   Hank Janssen  <hjanssen@microsoft.com>
+  *
+  */
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/slab.h>
+@@ -116,7 +118,7 @@ static int query_hypervisor_info(void)
+ 		edx = 0;
+ 		op = HVCPUID_VERSION;
+ 		cpuid(op, &eax, &ebx, &ecx, &edx);
+-		DPRINT_INFO(VMBUS, "OS Build:%d-%d.%d-%d-%d.%d",\
++		pr_info("Hyper-V Host OS Build:%d-%d.%d-%d-%d.%d\n",
+ 			    eax,
+ 			    ebx >> 16,
+ 			    ebx & 0xFFFF,
+@@ -369,8 +371,7 @@ void hv_synic_init(void *irqarg)
+ 		(void *)get_zeroed_page(GFP_ATOMIC);
+ 
+ 	if (hv_context.synic_message_page[cpu] == NULL) {
+-		DPRINT_ERR(VMBUS,
+-			   "unable to allocate SYNIC message page!!");
++		pr_err("Unable to allocate SYNIC message page\n");
+ 		goto Cleanup;
+ 	}
+ 
+@@ -378,8 +379,7 @@ void hv_synic_init(void *irqarg)
+ 		(void *)get_zeroed_page(GFP_ATOMIC);
+ 
+ 	if (hv_context.synic_event_page[cpu] == NULL) {
+-		DPRINT_ERR(VMBUS,
+-			   "unable to allocate SYNIC event page!!");
++		pr_err("Unable to allocate SYNIC event page\n");
+ 		goto Cleanup;
+ 	}
+ 
+diff --git a/drivers/staging/hv/ring_buffer.c b/drivers/staging/hv/ring_buffer.c
+index 9bd5218..66e1b3f 100644
+--- a/drivers/staging/hv/ring_buffer.c
++++ b/drivers/staging/hv/ring_buffer.c
+@@ -20,6 +20,7 @@
+  *   Hank Janssen  <hjanssen@microsoft.com>
+  *
+  */
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+index b320f71..cb6dbc0 100644
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@ -20,6 +20,8 @@
+  *
+  * 3/9/2011: K. Y. Srinivasan	- Significant restructuring and cleanup
+  */
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
+@@ -350,18 +352,16 @@ static int vmbus_probe(struct device *child_device)
+ 		ret = dev->probe_error =
+ 		drv->driver.probe(child_device);
+ 		if (ret != 0) {
+-			DPRINT_ERR(VMBUS_DRV, "probe() failed for device %s "
+-				   "(%p) on driver %s (%d)...",
+-				   dev_name(child_device), child_device,
+-				   child_device->driver->name, ret);
++			pr_err("probe failed for device %s (%d)\n",
++			       dev_name(child_device), ret);
+ 
+ 			INIT_WORK(&dev->probe_failed_work_item,
+ 				  vmbus_probe_failed_cb);
+ 			schedule_work(&dev->probe_failed_work_item);
  		}
-@@ -605,9 +597,6 @@ Exit:
+ 	} else {
+-		DPRINT_ERR(VMBUS_DRV, "probe() method not set for driver - %s",
+-			   child_device->driver->name);
++		pr_err("probe not set for driver %s\n",
++		       dev_name(child_device));
+ 		ret = -1;
+ 	}
+ 	return ret;
+@@ -386,9 +386,8 @@ static int vmbus_remove(struct device *child_device)
+ 		if (drv->driver.remove) {
+ 			ret = drv->driver.remove(child_device);
+ 		} else {
+-			DPRINT_ERR(VMBUS_DRV,
+-				   "remove() method not set for driver - %s",
+-				   child_device->driver->name);
++			pr_err("remove not set for driver %s\n",
++				dev_name(child_device));
+ 			ret = -1;
+ 		}
+ 	}
+@@ -572,12 +571,10 @@ static int vmbus_bus_init(struct pci_dev *pdev)
+ 	/* Hypervisor initialization...setup hypercall page..etc */
+ 	ret = hv_init();
+ 	if (ret != 0) {
+-		DPRINT_ERR(VMBUS, "Unable to initialize the hypervisor - 0x%x",
+-				ret);
++		pr_err("Unable to initialize the hypervisor - 0x%x\n", ret);
+ 		goto cleanup;
+ 	}
  
- int rndis_filter_init(struct netvsc_driver *drv)
+-
+ 	hv_bus.bus.name = driver_name;
+ 
+ 	/* Initialize the bus context */
+@@ -599,7 +596,7 @@ static int vmbus_bus_init(struct pci_dev *pdev)
+ 			  driver_name, pdev);
+ 
+ 	if (ret != 0) {
+-		DPRINT_ERR(VMBUS_DRV, "ERROR - Unable to request IRQ %d",
++		pr_err("Unable to request IRQ %d\n",
+ 			   pdev->irq);
+ 
+ 		bus_unregister(&hv_bus.bus);
+@@ -669,8 +666,7 @@ int vmbus_child_driver_register(struct device_driver *drv)
  {
--	DPRINT_DBG(NETVSC, "sizeof(struct rndis_filter_packet) == %zd",
--		   sizeof(struct rndis_filter_packet));
--
- 	drv->req_ext_size = sizeof(struct rndis_filter_packet);
+ 	int ret;
  
- 	/* Driver->Context = rndisDriver; */
-@@ -765,8 +754,6 @@ static int rndis_filte_device_add(struct hv_device *dev,
- 	if (!rndisDevice)
- 		return -1;
+-	DPRINT_INFO(VMBUS_DRV, "child driver (%p) registering - name %s",
+-		    drv, drv->name);
++	pr_info("child driver registering - name %s\n", drv->name);
  
--	DPRINT_DBG(NETVSC, "rndis device object allocated - %p", rndisDevice);
--
- 	/*
- 	 * Let the inner driver handle this first to create the netvsc channel
- 	 * NOTE! Once the channel is created, we may get a receive callback
+ 	/* The child driver on this vmbus */
+ 	drv->bus = &hv_bus.bus;
+@@ -695,8 +691,7 @@ EXPORT_SYMBOL(vmbus_child_driver_register);
+  */
+ void vmbus_child_driver_unregister(struct device_driver *drv)
+ {
+-	DPRINT_INFO(VMBUS_DRV, "child driver (%p) unregistering - name %s",
+-		    drv, drv->name);
++	pr_info("child driver unregistering - name %s\n", drv->name);
+ 
+ 	driver_unregister(drv);
+ 
+@@ -717,8 +712,7 @@ struct hv_device *vmbus_child_device_create(struct hv_guid *type,
+ 	/* Allocate the new child device */
+ 	child_device_obj = kzalloc(sizeof(struct hv_device), GFP_KERNEL);
+ 	if (!child_device_obj) {
+-		DPRINT_ERR(VMBUS_DRV,
+-			"unable to allocate device_context for child device");
++		pr_err("Unable to allocate device object for child device\n");
+ 		return NULL;
+ 	}
+ 
+@@ -759,11 +753,10 @@ int vmbus_child_device_register(struct hv_device *child_device_obj)
+ 	ret = child_device_obj->probe_error;
+ 
+ 	if (ret)
+-		DPRINT_ERR(VMBUS_DRV, "unable to register child device (%p)",
+-			   &child_device_obj->device);
++		pr_err("Unable to register child device\n");
+ 	else
+-		DPRINT_INFO(VMBUS_DRV, "child device (%p) registered",
+-			    &child_device_obj->device);
++		pr_info("child device %s registered\n",
++			dev_name(&child_device_obj->device));
+ 
+ 	return ret;
+ }
+@@ -780,8 +773,8 @@ void vmbus_child_device_unregister(struct hv_device *device_obj)
+ 	 */
+ 	device_unregister(&device_obj->device);
+ 
+-	DPRINT_INFO(VMBUS_DRV, "child device (%p) unregistered",
+-		    &device_obj->device);
++	pr_info("child device %s unregistered\n",
++		dev_name(&device_obj->device));
+ }
+ 
+ 
 -- 
 1.6.0.2
 
