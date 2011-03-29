@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab1C2VbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 17:31:00 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:40884 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab1C2Va7 (ORCPT
+	id S1754597Ab1C2Vbv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 17:31:51 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:37514 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab1C2Vbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 17:30:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:message-id:mime-version:content-type; q=dns; s=
-	newdream.net; b=ICDePaRKEecBmItyN2xfhi0R582PAhkpATGJuxPI9BK0SCL/
-	DzlVH6qEwoYWR1eCrNINWRzptg96nKLd2+8pipeNVR7aZeD63cA4IzxqRcxM5qP2
-	E0wPYfbPwrImdpRUkdbU38Y0Xl0XllH2pccbOzLMbeKdWlgl8mUE7gEjYYM=
-Date: Tue, 29 Mar 2011 14:33:56 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates pt 2
-Message-ID: <Pine.LNX.4.64.1103291426070.22956@cobra.newdream.net>
+	Tue, 29 Mar 2011 17:31:50 -0400
+Date: Tue, 29 Mar 2011 14:31:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Jan Beulich <JBeulich@novell.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+Message-ID: <20110329213130.GK2261@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D8FF8AD.5080607@cn.fujitsu.com>
+ <4D8FF9BC.7050609@cn.fujitsu.com>
+ <4D90647902000078000389CB@vpn.id2.novell.com>
+ <4D924BAF.1020906@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D924BAF.1020906@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Mar 29, 2011 at 02:14:23PM -0700, H. Peter Anvin wrote:
+> On 03/28/2011 01:35 AM, Jan Beulich wrote:
+> >>>> On 28.03.11 at 05:00, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> >>
+> >> We can not include linux/sched.h in linux/rcupdate.h.
+> >> If we access task's task_rcu_strut without linux/sched.h included,
+> >> We will failed with compiling error.
+> >>
+> >> So we add TASK_RCU_OFFSET, which help us access
+> >> task's task_rcu_strut without linux/sched.h included.
+> >> Now, task_rcu_struct(), current_task_rcu_struct(), task_of_task_rcu() and
+> >> rcu_copy_process() can be used anywhere without linux/sched.h included.
+> > 
+> > Aren't the offsets-generation methods meant for assembly
+> > consumption only? Header dependency problems normally can
+> > be solved by splitting headers into a type declaration one and
+> > a second one carrying inline function implementations. Is that
+> > indeed completely impossible here?
+> 
+> I have to say that if we have to use hardcoded offsets in C then we have
+> bigger problems.
 
-Please pull this second set of Ceph updates/fixes from
+In this case, the offsets are mechanically generated from the structure
+definitions.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git master
+Or am I missing your point?
 
-The main thing is a patchset to use the keys api to pass the security key 
-from mount.ceph to the client.  There are also a few bug fixes that have 
-come in over the past week.
-
-Thanks!
-sage
-
-
-Dan Carpenter (1):
-      ceph: unlock on error in ceph_osdc_start_request()
-
-Mariusz Kozlowski (1):
-      ceph: fix possible NULL pointer dereference
-
-Sage Weil (2):
-      ceph: flush msgr_wq during mds_client shutdown
-      libceph: fix null dereference when unregistering linger requests
-
-Tommi Virtanen (3):
-      ceph: Move secret key parsing earlier.
-      libceph: Get secret from the kernel keys api when mounting with key=NAME.
-      libceph: Create a new key type "ceph".
-
- fs/ceph/mds_client.c         |    6 ++
- fs/ceph/super.c              |    2 +-
- include/keys/ceph-type.h     |    8 +++
- include/linux/ceph/auth.h    |    4 +-
- include/linux/ceph/libceph.h |    2 +-
- net/ceph/Kconfig             |    1 +
- net/ceph/auth.c              |    8 ++--
- net/ceph/auth_x.c            |    8 ++-
- net/ceph/ceph_common.c       |  112 ++++++++++++++++++++++++++++++++++++++----
- net/ceph/crypto.c            |   73 +++++++++++++++++++++++++++
- net/ceph/crypto.h            |    4 ++
- net/ceph/mon_client.c        |    2 +-
- net/ceph/osd_client.c        |   12 +++--
- 13 files changed, 215 insertions(+), 27 deletions(-)
- create mode 100644 include/keys/ceph-type.h
+							Thanx, Paul
