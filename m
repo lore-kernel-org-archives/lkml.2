@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab1C2AMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 20:12:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52889 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798Ab1C2AM3 (ORCPT
+	id S932282Ab1C2AMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 20:12:51 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35960 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755603Ab1C2AMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 20:12:29 -0400
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
-        Giacomo Catenazzi <cate@cateee.net>
-Subject: Re: [Regression] Please revert a91a2785b20
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <alpine.LFD.2.00.1103290006070.2774@localhost6.localdomain6>
-	<yq1hbamkgoe.fsf@sermon.lab.mkp.net>
-	<alpine.LFD.2.00.1103290049330.2774@localhost6.localdomain6>
-	<yq1d3lakct3.fsf@sermon.lab.mkp.net>
-Date: Mon, 28 Mar 2011 20:11:55 -0400
-In-Reply-To: <yq1d3lakct3.fsf@sermon.lab.mkp.net> (Martin K. Petersen's
-	message of "Mon, 28 Mar 2011 20:09:12 -0400")
-Message-ID: <yq18vvykcok.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110013 (No Gnus v0.13) Emacs/23.2 (gnu/linux)
+	Mon, 28 Mar 2011 20:12:49 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [Q] PGPGIN underflow?
+Cc: kosaki.motohiro@jp.fujitsu.com, Randy Dunlap <randy.dunlap@oracle.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D8C4953.8020808@kernel.dk>
+References: <20110324095735.61bfa370.randy.dunlap@oracle.com> <4D8C4953.8020808@kernel.dk>
+Message-Id: <20110329091252.C07A.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsmt357.oracle.com [141.146.40.157]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D9123CE.0004,ss=1,fgs=0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 29 Mar 2011 09:12:46 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Martin" == Martin K Petersen <martin.petersen@oracle.com> writes:
+> On 2011-03-24 17:57, Randy Dunlap wrote:
+> > On Thu, 24 Mar 2011 10:52:54 +0900 (JST) KOSAKI Motohiro wrote:
+> > 
+> >> Hi all,
+> >>
+> >> Recently, vmstast show crazy big "bi" value even though the system has
+> >> no stress. Is this known issue?
+> >>
+> >> Thanks.
+> > 
+> > underflow?  also looks like -3 or -ESRCH.
+> > 
+> > Adding Jens in case he has any idea about it.
+> 
+> First question, what does 'recently' mean? In other words, in what
+> kernel did you first notice this behaviour?
 
-Forgot to add:
+Thans, Randy, Jens.
+I dagged awhile and I've found this is -mm specific and known issue.
+It was fixed by Hannes. (ref Message-ID: <20110324125316.GA2310@cmpxchg.org>)
 
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+
