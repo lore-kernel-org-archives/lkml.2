@@ -1,72 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab1C2I6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 04:58:37 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55365 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab1C2I6g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 04:58:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nsDN6idnpRnCiZNT2Xma7uh93Ez7hsG1doLnHauK29Q+dVqz0ex4c+KvM9y9NyTC+Z
-         An+tp6kTRalcqJK544Fiy0ATfHqtXSeHJkhYLBHqyOFxxElgU1SPTUveJLU2FAtK09T1
-         7RqLOGH8aD2KwVPcZX1ebvbK9wS8VaGLn62zw=
+	id S1752058Ab1C2I7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 04:59:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38229 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237Ab1C2I7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 04:59:45 -0400
+Date: Tue, 29 Mar 2011 10:59:43 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/3] Implementation of cgroup isolation
+Message-ID: <20110329085942.GD30671@tiehlicka.suse.cz>
+References: <20110328093957.089007035@suse.cz>
+ <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110328114430.GE5693@tiehlicka.suse.cz>
+ <20110329090924.6a565ef3.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110329073232.GB30671@tiehlicka.suse.cz>
+ <20110329165117.179d87f9.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20110329055434.GA10227@verge.net.au>
-References: <1301085148-14860-1-git-send-email-vapier@gentoo.org>
-	<20110329055434.GA10227@verge.net.au>
-Date: Tue, 29 Mar 2011 16:58:34 +0800
-Message-ID: <AANLkTimX2yxx5QaDnXeF9vPRLSGW0-oNocj2c3ST-OQG@mail.gmail.com>
-Subject: Re: [PATCH] NOMMU: implement access_remote_vm
-From: Wan ZongShun <mcuos.com@gmail.com>
-To: Simon Horman <horms@verge.net.au>
-Cc: Mike Frysinger <vapier@gentoo.org>, uclinux-dev@uclinux.org,
-        David Howells <dhowells@redhat.com>, Greg Ungerer <gerg@uclinux.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110329165117.179d87f9.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/29 Simon Horman <horms@verge.net.au>:
-> On Fri, Mar 25, 2011 at 04:32:28PM -0400, Mike Frysinger wrote:
->> Recent vm changes brought in a new function which the core procfs code
->> utilizes.  So implement it for nommu systems too to avoid link failures.
->>
->> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
->
-> This resolves a build problem that I observed this afternoon.
+On Tue 29-03-11 16:51:17, KAMEZAWA Hiroyuki wrote:
+> On Tue, 29 Mar 2011 09:32:32 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Tue 29-03-11 09:09:24, KAMEZAWA Hiroyuki wrote:
+> > > On Mon, 28 Mar 2011 13:44:30 +0200
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > 
+> > > > On Mon 28-03-11 20:03:32, KAMEZAWA Hiroyuki wrote:
+> > > > > On Mon, 28 Mar 2011 11:39:57 +0200
+> > > > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > > [...]
+> > > > > 
+> > > > > Isn't it the same result with the case where no cgroup is used ?
+> > > > 
+> > > > Yes and that is the point of the patchset. Memory cgroups will not give
+> > > > you anything else but the top limit wrt. to the global memory activity.
+> > > > 
+> > > > > What is the problem ?
+> > > > 
+> > > > That we cannot prevent from paging out memory of process(es), even though
+> > > > we have intentionaly isolated them in a group (read as we do not have
+> > > > any other possibility for the isolation), because of unrelated memory
+> > > > activity.
+> > > > 
+> > > Because the design of memory cgroup is not for "defending" but for 
+> > > "never attack some other guys".
+> > 
+> > Yes, I am aware of the current state of implementation. But as the
+> > patchset show there is not quite trivial to implement also the other
+> > (defending) part.
+> > 
+> 
+> My opinions is to enhance softlimit is better.
 
-oh, I just find this build error about access_remote_vm, this patch
-will fix my issue.
+I will look how softlimit can be enhanced to match the expectations but
+I'm kind of suspicious it can handle workloads where heuristics simply
+cannot guess that the resident memory is important even though it wasn't
+touched for a long time.
 
-thanks!
+> > > > > Why it's not a problem of configuration ?
+> > > > > IIUC, you can put all logins to some cgroup by using cgroupd/libgcgroup.
+> > > > 
+> > > > Yes, but this still doesn't bring the isolation.
+> > > > 
+> > > 
+> > > Please explain this more.
+> > > Why don't you move all tasks under /root/default <- this has some limit ?
+> > 
+> > OK, I have tried to explain that in one of the (2nd) patch description.
+> > If I move all task from the root group to other group(s) and keep the
+> > primary application in the root group I would achieve some isolation as
+> > well. That is very much true. 
+> 
+> Okay, then, current works well.
+> 
+> > But then there is only one such a group.
+> 
+> I can't catch what you mean. you can create limitless cgroup, anywhere.
+> Can't you ?
 
->
-> Drive-by Tested-by: Simon Horman <horms@verge.net.au>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+This is not about limits. This is about global vs. per-cgroup reclaim
+and how much they interact together. 
+
+The everything-in-groups approach with the "primary" service in the root
+group (or call it unlimited) works just because all the memory activity
+(but the primary service) is caped with the limits so the rest of the
+memory can be used by the service. Moreover, in order this to work the
+limit for other groups would be smaller then the working set of the
+primary service.
+
+Even if you created a limitless group for other important service they
+would still interact together and if one goes wild the other would
+suffer from that.
+
+But, well, I might be wrong at this, I will play with it so see how it
+works.
+
+[...]
+> > > Yes, then, almost all mm guys answer has been "please use mlock".
+> > 
+> > Yes. As I already tried to explain, mlock is not the remedy all the
+> > time. It gets very tricky when you balance on the edge of the limit of
+> > the available memory resp. cgroup limit. Sometimes you rather want to
+> > have something swapped out than being killed (or fail due to ENOMEM).
+> > The important thing about swapped out above is that with the isolation
+> > it is only per-cgroup.
+> > 
+> 
+> IMHO, doing isolation by hiding is not good idea. 
+
+It depends on what you want to guarantee.
+
+> Because we're kernel engineer, we should do isolation by
+> scheduling. The kernel is art of shceduling, not separation.
+
+Well, I would disagree with this statement (to some extend of course).
+Cgroups are quite often used for separation (e.g. cpusets basically
+hide tasks from CPUs that are not configured for them).
+
+You are certainly right that the memory management is about proper
+scheduling and balancing needs vs. demands. And it turned out to be
+working fine in many (maybe even most of) workloads (modulo bugs
+which are fixed over time). But if an application has more specific
+requirements for its memory usage then it is quite limited in ways how
+it can achieve them (mlock is one way how to pin the memory but there
+are cases where it is not appropriate).
+Kernel will simply never know the complete picture and have to rely on
+heuristics which will never fit in with everybody.
 
 
+> I think we should start from some scheduling as softlimit. Then,
+> as an extreme case of scheduling, 'complete isolation' should be
+> archived. If it seems impossible after trial of making softlimit
+> better, okay, we should consider some.
+
+As I already tried to point out what-ever will scheduling do it has no
+way to guess that somebody needs to be isolated unless he says that to
+kernel.
+Anyway, I will have a look whether softlimit can be used and how helpful
+it would be.
+
+[...]
+> > > I think you should put tasks in root cgroup to somewhere. It works perfect
+> > > against OOM. And if memory are hidden by isolation, OOM will happen easier.
+> > 
+> > Why do you think that it would happen easier? Isn't it similar (from OOM
+> > POV) as if somebody mlocked that memory?
+> > 
+> 
+> if global lru scan cannot find victim memory, oom happens.
+
+Yes, but this will happen with mlocked memory as well, right?
 
 -- 
-*linux-arm-kernel mailing list
-mail addr:linux-arm-kernel@lists.infradead.org
-you can subscribe by:
-http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-* linux-arm-NUC900 mailing list
-mail addr:NUC900@googlegroups.com
-main web: https://groups.google.com/group/NUC900
-you can subscribe it by sending me mail:
-mcuos.com@gmail.com
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
