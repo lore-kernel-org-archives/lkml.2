@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab1C2OCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 10:02:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49162 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab1C2OCn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 10:02:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=AdWeO7LXVM4xt2XundBiISJ1SYKbicrSJK5ABg/F6YSQAr6ECkDhbfN/dkl65KARJU
-         IiVw3baaT/c/ASnSobDMBbZvcdGm7ICuS6aSYSEH8RgZSuri1cA1B9u7a/c1D4vwsoGk
-         NLAfcIYFm8YGuNg9lTEaiLZ28+Ltsya5XKrkE=
-MIME-Version: 1.0
-In-Reply-To: <20110329134223.GB3361@tiehlicka.suse.cz>
-References: <20110328093957.089007035@suse.cz> <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
- <20110328114430.GE5693@tiehlicka.suse.cz> <20110329090924.6a565ef3.kamezawa.hiroyu@jp.fujitsu.com>
- <20110329073232.GB30671@tiehlicka.suse.cz> <20110329165117.179d87f9.kamezawa.hiroyu@jp.fujitsu.com>
- <20110329085942.GD30671@tiehlicka.suse.cz> <20110329184119.219f7d7b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110329111858.GF30671@tiehlicka.suse.cz> <AANLkTi=1WA-oF1kraTMMcSgwqvaXqrEiROVGeDfejO45@mail.gmail.com>
- <20110329134223.GB3361@tiehlicka.suse.cz>
-From: Zhu Yanhai <zhu.yanhai@gmail.com>
-Date: Tue, 29 Mar 2011 22:02:23 +0800
-Message-ID: <AANLkTimMLieDT2dePRvtUFDvasz1rk=ZgTdeei0BL9P5@mail.gmail.com>
-Subject: Re: [RFC 0/3] Implementation of cgroup isolation
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1753475Ab1C2OD0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 10:03:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54623 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751653Ab1C2ODZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 10:03:25 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@osdl.org
+cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-mm@vger.kernel.org, tglx@linutronix.de, amwang@redhat.com,
+        vapier@gentoo.org, lethal@linux-sh.org
+Subject: [GIT PULL] NOMMU and FRV patches [ver #2]
+Date: Tue, 29 Mar 2011 15:02:38 +0100
+Message-ID: <1090.1301407358@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Linus,
 
-2011/3/29 Michal Hocko <mhocko@suse.cz>:
-> Isn't this an overhead that would slow the whole thing down. Consider
-> that you would need to lookup page_cgroup for every page and touch
-> mem_cgroup to get the limit.
+Can you pull these patches please?
 
-Current almost has did such things, say the direct reclaim path:
-shrink_inactive_list()
-   ->isolate_pages_global()
-      ->isolate_lru_pages()
-         ->mem_cgroup_del_lru(for each page it wants to isolate)
-            and in mem_cgroup_del_lru() we have:
-[code]
-	pc = lookup_page_cgroup(page);
-	/*
-	 * Used bit is set without atomic ops but after smp_wmb().
-	 * For making pc->mem_cgroup visible, insert smp_rmb() here.
-	 */
-	smp_rmb();
-	/* unused or root page is not rotated. */
-	if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
-		return;
-[/code]
-By calling mem_cgroup_is_root(pc->mem_cgroup) we already brought the
-struct mem_cgroup into cache.
-So probably things won't get worse at least.
+There are a number of fixes for NOMMU: fixes to deal with breakage due to
+MMU-mode changes.  I've dropped the vcoalesce() patches for the moment.
 
-Thanks,
-Zhu Yanhai
+There are a number of fixes for FRV: a missing argument and a set of IRQ
+patches from Thomas Gleixner.
 
-> The point of the isolation is to not touch the global reclaim path at
-> all.
->
->> 3) shrink the cgroups who have set a reserve_limit, and leave them with only
->> the reserve_limit bytes they need. if nr_reclaimed is meet, goto finish.
->> 4) OOM
->>
->> Does it make sense?
->
-> It sounds like a good thing - in that regard it is more generic than
-> a simple flag - but I am afraid that the implementation wouldn't be
-> that easy to preserve the performance and keep the balance between
-> groups. But maybe it can be done without too much cost.
->
-> Thanks
-> --
-> Michal Hocko
-> SUSE Labs
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9
-> Czech Republic
->
+The patches compile and run on FRV (NOMMU) and x86_64.
+
+David
+---
+The following changes since commit 16c29dafcc86024048f1dbb8349d31cb22c7c55a:
+
+  Merge branch 'syscore' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6 (2011-03-25 21:07:59 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-2.6-frv.git frv
+
+Amerigo Wang (1):
+      FRV: Do some cleanups
+
+David Howells (2):
+      NOMMU: percpu should use is_vmalloc_addr().
+      FRV: Missing node arg in alloc_thread_info_node() macro
+
+Graf Yang (1):
+      NOMMU: support SMP dynamic percpu_alloc
+
+Mike Frysinger (1):
+      NOMMU: implement access_remote_vm
+
+Thomas Gleixner (9):
+      frv: Remove stale irq_chip.end
+      frv: Fix typo from __do_IRQ overhaul
+      frv: Convert mb93091 irq_chip to new functions
+      frv: Convert mb93093 irq_chip to new function
+      frv: Convert mb93493 irq_chip to new functions
+      frv: Convert cpu irq_chip to new functions
+      frv: Select GENERIC_HARDIRQS_NO_DEPRECATED
+      FRV: Convert genirq namespace
+      FRV: Use generic show_interrupts()
+
+ arch/frv/Kconfig                   |    3 +-
+ arch/frv/include/asm/system.h      |    9 ----
+ arch/frv/include/asm/thread_info.h |    4 +-
+ arch/frv/kernel/irq-mb93091.c      |   30 +++++++-------
+ arch/frv/kernel/irq-mb93093.c      |   31 +++++++-------
+ arch/frv/kernel/irq-mb93493.c      |   25 ++++++-----
+ arch/frv/kernel/irq.c              |   80 ++++++++----------------------------
+ include/linux/vmalloc.h            |   32 ++++++++++++++
+ mm/nommu.c                         |   52 +++++++++++++++++------
+ mm/percpu.c                        |    3 +-
+ 10 files changed, 138 insertions(+), 131 deletions(-)
