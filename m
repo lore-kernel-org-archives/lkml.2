@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1C2L7O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 07:59:14 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53006 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752249Ab1C2L7N (ORCPT
+	id S1753175Ab1C2L7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 07:59:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55265 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752249Ab1C2L7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 07:59:13 -0400
-Date: Tue, 29 Mar 2011 12:59:31 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Waldemar.Rymarkiewicz@tieto.com, sameo@linux.intel.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hthebaud@insidefr.com, matti.j.aaltonen@nokia.com
-Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Message-ID: <20110329125931.21a69776@lxorguk.ukuu.org.uk>
-In-Reply-To: <201103291305.02293.arnd@arndb.de>
-References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
-	<20110325142648.GC3879@sortiz-mobl>
-	<99B09243E1A5DA4898CDD8B7001114481085E2375D@EXMB04.eu.tieto.com>
-	<201103291305.02293.arnd@arndb.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 29 Mar 2011 07:59:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+Subject: Re: Warning with asm-generic/div64.h
+Date: Tue, 29 Mar 2011 13:58:56 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        "'Len Brown'" <len.brown@intel.com>, "'Pavel Machek'" <pavel@ucw.cz>,
+        "'Rafael J. Wysocki'" <rjw@sisk.pl>,
+        linux-pm@lists.linux-foundation.org
+References: <007801cbead6$1984b6e0$4c8e24a0$@mprc.pku.edu.cn> <201103251439.53568.arnd@arndb.de> <018a01cbee06$534730a0$f9d591e0$@mprc.pku.edu.cn>
+In-Reply-To: <018a01cbee06$534730a0$f9d591e0$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103291358.56758.arnd@arndb.de>
+X-Provags-ID: V02:K0:Ailn47InBciZ+kxUKMSc07DJu4NShKuY8KxCO5yMwXY
+ 1QJHFi3qTEsbVtUnM1gWUWmqlcnx2MwMkdthH7NMYW0kLyq9BC
+ mLP3tvZLf6nBgETowVJm2xi0oPBAsG0AVbCNK9biKdop7wR23S
+ 6TmvXqHPOlDu6G+sePzO9YN4KaSlCondy0FpKIT2eXdP88yuRu
+ ard+a2nF6JvJUlP57dCAQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The difference between the two is where you keep the common
-> NFC logic:
-
-I think I'd disagree on that
+On Tuesday 29 March 2011, Guan Xuetao wrote:
+> > The macro doesn't work for signed input or for 32 bit input. I'd suggest
+> > fixing the caller to use an unsigned type.
 > 
-> If you have a character device, it will be like a serial port
-> connecting to a modem. Any higher-level protocols live in the
-> user space and are limited to a single application then, which
-> is required to have appropriate priviledges to open the device.
+> Then,
+> Cc: Len Brown <len.brown@intel.com> (supporter:SUSPEND TO RAM)
+> Cc: Pavel Machek <pavel@ucw.cz> (supporter:SUSPEND TO RAM)
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl> (supporter:SUSPEND TO RAM)
+> Cc: linux-pm@lists.linux-foundation.org (open list:SUSPEND TO RAM)
 
-A socket is just an API just as a file, you can put the stack in either
-place in either case.
+Yes, that sounds right.
 
-> character device is its simplicity, so that would be preferred
-> if you only expect a very small set of possible applications
-> for this.
-
-NFC is not particularly performance dependant so having a lot of the
-stack in a daemon isn't really going to hurt anything too much on a
-client embedded device/phone.
-
-The bigger question is probably what it needs to look like the other end
-- ie the server side embedded devices doing transactions.
+	Arnd
