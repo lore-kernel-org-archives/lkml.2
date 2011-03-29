@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab1C2RkB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 13:40:01 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:52573 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab1C2RkA (ORCPT
+	id S1752277Ab1C2RqJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 13:46:09 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40797 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab1C2RqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 13:40:00 -0400
-Date: Tue, 29 Mar 2011 19:39:31 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, wdauchy@gmail.com,
-        rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] mm: Add SECTION_ALIGN_UP() and SECTION_ALIGN_DOWN() macro
-Message-ID: <20110329173931.GC30387@router-fw-old.local.net-space.pl>
-References: <20110328092412.GC13826@router-fw-old.local.net-space.pl> <1301326884.31700.8321.camel@nimitz>
-Mime-Version: 1.0
+	Tue, 29 Mar 2011 13:46:07 -0400
+Date: Tue, 29 Mar 2011 14:45:56 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lin Ming <ming.m.lin@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] perf report: add sort by file lines
+Message-ID: <20110329174556.GC24129@ghostprotocols.net>
+References: <1301391136.14111.98.camel@minggr.sh.intel.com> <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost> <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop> <1301418533.2250.419.camel@laptop>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301326884.31700.8321.camel@nimitz>
-User-Agent: Mutt/1.3.28i
+In-Reply-To: <1301418533.2250.419.camel@laptop>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 08:41:24AM -0700, Dave Hansen wrote:
-> On Mon, 2011-03-28 at 11:24 +0200, Daniel Kiper wrote:
-> > Add SECTION_ALIGN_UP() and SECTION_ALIGN_DOWN() macro which aligns
-> > given pfn to upper section and lower section boundary accordingly.
-> >
-> > Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
-> > ---
-> >  include/linux/mmzone.h |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> > index 02ecb01..d342820 100644
-> > --- a/include/linux/mmzone.h
-> > +++ b/include/linux/mmzone.h
-> > @@ -931,6 +931,9 @@ static inline unsigned long early_pfn_to_nid(unsigned long pfn)
-> >  #define pfn_to_section_nr(pfn) ((pfn) >> PFN_SECTION_SHIFT)
-> >  #define section_nr_to_pfn(sec) ((sec) << PFN_SECTION_SHIFT)
-> >
-> > +#define SECTION_ALIGN_UP(pfn)	(((pfn) + PAGES_PER_SECTION - 1) & PAGE_SECTION_MASK)
-> > +#define SECTION_ALIGN_DOWN(pfn)	((pfn) & PAGE_SECTION_MASK)
->
-> There are certainly a lot of different ways to do this, including using
-> the existing ALIGN() macro, but you won't be the first to open-code
-> it. :)
+Em Tue, Mar 29, 2011 at 07:08:53PM +0200, Peter Zijlstra escreveu:
+> On Tue, 2011-03-29 at 19:06 +0200, Peter Zijlstra wrote:
+> > On Tue, 2011-03-29 at 19:03 +0200, Peter Zijlstra wrote:
+> > > > Is it an unwind of the call frame stack to find out what data member was
+> > > > accessed?
 
-Sorry, I forgot about ALIGN(). However, there is only up version available.
-That is why I prefer open-code version here. It is clearer in both
-cases what is going on.
+> > > No need to unwind stacks, DWARF should have information on function
+> > > local stack. It should be able to tell you the type of things like -8(%
+> > > rbp). 
 
-Daniel
+> > That is, we don't even have a life stack to unwind, so we simply cannot
+> > unwind at all, but the debug information should be able to tell you the
+> > type of whatever would live at a certain stack position if we were to
+> > have a stack.
+
+> Furthermore, I've now completely exhausted my knowledge of debuginfo and
+> hope Masami and Arnaldo will help with further details ;-)
+
+:-)
+
+I think the place to look is 'perf probe', look for the way one
+variable is translated to an expression passed to the kprobe_tracer, I
+think you'll need the reverse operation.
+
+Look at tools/perf/util/probe-finder.c, function find_variable() and
+convert_variable_location().
+
+Understanding how those functions use the dwarf_ prefixed routines from
+libdw should be a good start.
+
+- Arnaldo
