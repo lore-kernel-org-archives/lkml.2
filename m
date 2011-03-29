@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab1C2A72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 20:59:28 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40718
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752542Ab1C2A71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 20:59:27 -0400
-Date: Mon, 28 Mar 2011 17:58:49 -0700 (PDT)
-Message-Id: <20110328.175849.112593455.davem@davemloft.net>
-To: a.p.zijlstra@chello.nl
-Cc: paulus@samba.org, mingo@elte.hu, acme@ghostprotocols.net,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] perf: Properly align symbol_conf.priv_size
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754199Ab1C2BJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 21:09:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61457 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752617Ab1C2BJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 21:09:46 -0400
+Message-ID: <4D9131FA.8080209@cn.fujitsu.com>
+Date: Tue, 29 Mar 2011 09:12:26 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: David Sterba <dave@jikos.cz>
+CC: Chris Mason <chris.mason@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs updates for 2.6.39
+References: <1301312919-sup-1222@think> <20110328132527.GM17108@twin.jikos.cz>
+In-Reply-To: <20110328132527.GM17108@twin.jikos.cz>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-29 09:08:13,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-29 09:08:14,
+	Serialize complete at 2011-03-29 09:08:14
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+David Sterba wrote:
+> Hi,
+> 
+> Chris, you did not add my sign-of on the unaligned fix I've posted, nor
+> the tested-by or reported-by. Looking again into the mail, it seems like
+> some automated-misprocessing picked the first part of the mail altough
+> there was properly formated patch after '--' marker (and I've verified
+> this is correct before sending the mail).
+> 
+> Can you please fix that?
+> Patch reference: https://patchwork.kernel.org/patch/645671/
+> 
 
-If symbol_conf.priv_size is not a multiple of "sizeof(u64)" we'll bus
-error on sparc64 in symbol__new because the "struct symbol *" pointer
-is computed by adding symbol_conf.priv_size to the memory allocated.
-
-We cannot isloate the fix to symbol__new and symbol__delete since the
-private area is computed by subtracting the priv_size value from a
-"struct symbol" pointer, so then the private area can still be
-potentially unaligned.
-
-So, simply align the symbol_conf.priv_size value in symbol__init()
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 17df793..76c09099 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -2403,6 +2403,8 @@ int symbol__init(void)
- 	if (symbol_conf.initialized)
- 		return 0;
- 
-+	symbol_conf.priv_size = ALIGN(symbol_conf.priv_size, sizeof(u64));
-+
- 	elf_version(EV_CURRENT);
- 	if (symbol_conf.sort_by_name)
- 		symbol_conf.priv_size += (sizeof(struct symbol_name_rb_node) -
+It can't be fixed as Linus has pulled the tree. Fortunetely it's not a
+big deal, and you are still recorded as the author of that patch. ;)
