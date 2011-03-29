@@ -1,268 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab1C2SPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 14:15:35 -0400
-Received: from wnohang.net ([178.79.154.173]:47737 "EHLO mail.wnohang.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754030Ab1C2SPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 14:15:34 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 14DD924A0F
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net C880724906
-Date: Tue, 29 Mar 2011 23:45:24 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Michael Witten <mfwitten@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Use the environment variable PYTHON if defined
-Message-ID: <20110329181524.GA5140@Xye>
-References: <20110326224408.GA1336@Xye>
- <20110328144721.GB17872@ghostprotocols.net>
- <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com>
+	id S1754111Ab1C2SQQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 14:16:16 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60305 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab1C2SQP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 14:16:15 -0400
+Message-ID: <4D9221DA.90900@kernel.org>
+Date: Tue, 29 Mar 2011 11:15:54 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
-Content-Disposition: inline
-In-Reply-To: <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com>
-X-Operating-System: Arch linux x86_64 2.6.38.2-bldit-db-FAE
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: another pagetable initialization crash on xen
+References: <alpine.DEB.2.00.1103281729190.5516@kaball-desktop> <alpine.DEB.2.00.1103281929390.5516@kaball-desktop> <alpine.DEB.2.00.1103291620560.16492@kaball-desktop>
+In-Reply-To: <alpine.DEB.2.00.1103291620560.16492@kaball-desktop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D9221EA.0114,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/29/2011 10:25 AM, Stefano Stabellini wrote:
+> I kept working on refactoring this code, and I think I was able to come
+> up with a slightly better patch.
+> Do you think this is acceptable?
+>
+>
+>
+> commit c576ff205060e92b36224e80a989492b245e806d
+> Author: Stefano Stabellini<stefano.stabellini@eu.citrix.com>
+> Date:   Tue Mar 29 10:59:02 2011 +0000
+>
+>      x86: introduce kernel_pagetable hooks
+>
+>      Introduce two new pvop hooks:
+>
+>      - kernel_pagetable_alloc is used to allocate the initial kernel
+>      pagetable pages;
+>
+>      - kernel_pagetable_reserve is used to reserved the kernel pagetable
+>      memory range;
+>
+>      Signed-off-by: Stefano Stabellini<stefano.stabellini@eu.citrix.com>
+>
+> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+> index 7db7723..a3ab967 100644
+> --- a/arch/x86/include/asm/pgtable_types.h
+> +++ b/arch/x86/include/asm/pgtable_types.h
+> @@ -299,6 +299,12 @@ int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
+>   /* Install a pte for a particular vaddr in kernel space. */
+>   void set_pte_vaddr(unsigned long vaddr, pte_t pte);
+>
+> +struct map_range;
+> +void native_kernel_pagetable_alloc(struct map_range *mr,
+> +		unsigned long *pgt_start,
+> +		unsigned long *pgt_top);
+> +void native_kernel_pagetable_reserve(unsigned long pgt_start,
+> +		unsigned long pgt_end);
+>   #ifdef CONFIG_X86_32
+>   extern void native_pagetable_setup_start(pgd_t *base);
+>   extern void native_pagetable_setup_done(pgd_t *base);
+> diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+> index 643ebf2..984ce6f 100644
+> --- a/arch/x86/include/asm/x86_init.h
+> +++ b/arch/x86/include/asm/x86_init.h
+> @@ -69,10 +69,26 @@ struct x86_init_oem {
+>
+>   /**
+>    * struct x86_init_paging - platform specific paging functions
+> + * @kernel_pagetable_alloc:	platform specific kernel pagetable
+> + *                                      allocation function
+> + * @kernel_pagetable_reserve:	platform specific kernel pagetable
+> + *                                      reserve memory function
+>    * @pagetable_setup_start:	platform specific pre paging_init() call
+>    * @pagetable_setup_done:	platform specific post paging_init() call
+>    */
+>   struct x86_init_paging {
+> +	/* @mr:     (in) memory range to map
+> +	 * @pgt_start - @pgt_top:  (out) memory allocated for the kernel
+> +	 *								pagetable pages
+> +	 */
+> +	void (*kernel_pagetable_alloc)(struct map_range *mr,
+> +		unsigned long *pgt_start,
+> +		unsigned long *pgt_top);
+> +	/* @pgt_start - @pgt_end: memory region used for the kernel
+> +	 *							pagetable pages
+> +	 */
+> +	void (*kernel_pagetable_reserve)(unsigned long pgt_start,
+> +			unsigned long pgt_end);
+>   	void (*pagetable_setup_start)(pgd_t *base);
+>   	void (*pagetable_setup_done)(pgd_t *base);
+>   };
+> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+> index c11514e..1048a3d 100644
+> --- a/arch/x86/kernel/x86_init.c
+> +++ b/arch/x86/kernel/x86_init.c
+> @@ -62,6 +62,8 @@ struct x86_init_ops x86_init __initdata = {
+>   	},
+>
+>   	.paging = {
+> +		.kernel_pagetable_alloc = native_kernel_pagetable_alloc,
+> +		.kernel_pagetable_reserve = native_kernel_pagetable_reserve,
+>   		.pagetable_setup_start	= native_pagetable_setup_start,
+>   		.pagetable_setup_done	= native_pagetable_setup_done,
+>   	},
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index 286d289..67d0792 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -30,11 +30,21 @@ int direct_gbpages
+>   #endif
+>   ;
+>
+> -static void __init find_early_table_space(unsigned long end, int use_pse,
+> -					  int use_gbpages)
+> +struct map_range {
+> +	unsigned long start;
+> +	unsigned long end;
+> +	unsigned page_size_mask;
+> +};
+> +
+> +void __init native_kernel_pagetable_alloc(struct map_range *mr,
+> +		unsigned long *pgt_start,
+> +		unsigned long *pgt_top)
+>   {
+> -	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
+> +	unsigned long puds, pmds, ptes, tables, start = 0,
+> +	end = mr->end, good_end = end;
+>   	phys_addr_t base;
+> +	int use_pse = mr->page_size_mask&  PG_LEVEL_2M;
+> +	int use_gbpages = mr->page_size_mask&  PG_LEVEL_1G;
+>
+>   	puds = (end + PUD_SIZE - 1)>>  PUD_SHIFT;
+>   	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
+> @@ -73,19 +83,20 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
+>   	if (base == MEMBLOCK_ERROR)
+>   		panic("Cannot find space for the kernel page tables");
+>
+> -	pgt_buf_start = base>>  PAGE_SHIFT;
+> -	pgt_buf_end = pgt_buf_start;
+> -	pgt_buf_top = pgt_buf_start + (tables>>  PAGE_SHIFT);
+> +	*pgt_start = base>>  PAGE_SHIFT;
+> +	*pgt_top = *pgt_start + (tables>>  PAGE_SHIFT);
+>
+>   	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
+> -		end, pgt_buf_start<<  PAGE_SHIFT, pgt_buf_top<<  PAGE_SHIFT);
+> +		end, *pgt_start<<  PAGE_SHIFT, *pgt_top<<  PAGE_SHIFT);
+>   }
+>
+> -struct map_range {
+> -	unsigned long start;
+> -	unsigned long end;
+> -	unsigned page_size_mask;
+> -};
+> +void __init native_kernel_pagetable_reserve(unsigned long pgt_start,
+> +		unsigned long pgt_end)
+> +{
+> +	if (pgt_start>  pgt_end)
+> +		memblock_x86_reserve_range(pgt_start<<  PAGE_SHIFT,
+> +				pgt_end<<  PAGE_SHIFT, "PGTABLE");
+> +}
+>
+>   #ifdef CONFIG_X86_32
+>   #define NR_RANGE_MR 3
+> @@ -257,9 +268,15 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+>   	 * memory mapped. Unfortunately this is done currently before the
+>   	 * nodes are discovered.
+>   	 */
+> -	if (!after_bootmem)
+> -		find_early_table_space(end, use_pse, use_gbpages);
+> -
+> +	if (!after_bootmem) {
+> +		struct map_range map;
+> +		map.start = start;
+> +		map.end = end;
+> +		map.page_size_mask = page_size_mask;
+> +		x86_init.paging.kernel_pagetable_alloc(&map,&pgt_buf_start,&pgt_buf_top);
+> +		pgt_buf_end = pgt_buf_start;
+> +	}
+> +		
+>   	for (i = 0; i<  nr_range; i++)
+>   		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
+>   						   mr[i].page_size_mask);
+> @@ -272,9 +289,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+>
+>   	__flush_tlb_all();
+>
+> -	if (!after_bootmem&&  pgt_buf_end>  pgt_buf_start)
+> -		memblock_x86_reserve_range(pgt_buf_start<<  PAGE_SHIFT,
+> -				 pgt_buf_end<<  PAGE_SHIFT, "PGTABLE");
+> +	if (!after_bootmem)
+> +		x86_init.paging.kernel_pagetable_reserve(pgt_buf_start, pgt_buf_end);
+>
+>   	if (!after_bootmem)
+>   		early_memtest(start, end);
 
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+1. x86_init.paging is the right place for those two functions?
+2. native_kernel_pagetable_alloc... should be function that do FIND + RESERVE.
+    or We just have one function : free_not_used with (pgt_buf_end, pgt_buf_top) ?
 
-* On Mon, Mar 28, 2011 at 10:36:02PM +0000, Michael Witten <mfwitten@gmail.=
-com> wrote:
->On Sat, Mar 26, 2011 at 17:44, Raghavendra D Prabhu <rprabhu@wnohang.net> =
-wrote:
->> On systems with python{2,3} installed, perf build can break
->> which can be fixed by exporting PYTHON to the right value.
->> Added support for PYTHON in the Makefile.
->
->Yes, I too have run into this problem; my distribution, Arch Linux,
->installs python3 as the main python:
->
->  /usr/bin/python{,-config}
->
->and python2 as an ancillary, versioned python:
->
->  /usr/bin/python2{,-config}
->
->The real problem here is not so much that perf's Makefile
->hardcodes the program names `python' and `python-config';
->rather, the problem is that perf's python code (both .c
->and probably .py) is incompatible with python3, thereby
->causing the build to break.
->
->The Correct Solution (for the most part) is to make perf's
->python code compatible with both versions of python
->(I was hoping somebody who knows these things better would
->do it, which is why I never submitted a patch for
->changing the hardcoded values).
->
->In any case, Raghavendra's patch is a pretty darn good
->bandage that will allow people to keep working; however,
->$(PYTHON) can be used in a few other places, and the
->assignment of its value can be error-checked more thoroughly.
->
->The following is a patch that does a bit more; you can save
->this email to `path/to/email' and then apply the patch
->by running:
->
->  git am --scissors path/to/email
->
->8<--------8<--------8<--------8<--------8<--------8<--------8<
->Subject: [PATCH] perf tools: Makefile: PYTHON{,_CONFIG} to bandage python3=
- incompatibility
->Currently, python3 is not supported by perf's code; this
->can cause the build to fail for systems that have python3
->installed as the default python:
->
->  python{,-config}
->
->The Correct Solution is to write compatibility code so that
->python3 works out-of-the-box.
->
->However, users often have an ancillary python2 installed:
->
->  python2{,-config}
->
->Therefore, a quick fix is to allow the user to specify those
->ancillary paths as the python binaries that Makefile should
->use, thereby avoiding python3 altogether.
->
->This commit adds the ability to set PYTHON and/or PYTHON_CONFIG
->either as environment variables or as make variables on the
->command line; the paths may be relative, and usually only
->PYTHON is necessary in order for PYTHON_CONFIG to be defined
->implicitly.
->
->Thanks to:
->
->  Raghavendra D Prabhu <rprabhu@wnohang.net>
->
->for motivating this patch.
->
->See:
->
->  Message-ID: <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com>
->
->Signed-off-by: Michael Witten <mfwitten@gmail.com>
->---
-> tools/perf/Makefile          |   22 +++++++++++++++++---
-> tools/perf/feature-tests.mak |   44 +++++++++++++++++++++++++++++++++++++=
-+++++
-> 2 files changed, 62 insertions(+), 4 deletions(-)
->
->diff --git a/tools/perf/Makefile b/tools/perf/Makefile
->index 158c30e..b468383 100644
->--- a/tools/perf/Makefile
->+++ b/tools/perf/Makefile
->@@ -13,6 +13,12 @@ endif
->
-> # Define V to have a more verbose compile.
+Thanks
 
->+# Define PYTHON to point to the python binary if the default
->+# `python' is not correct; for example: PYTHON=3Dpython2
->+#
->+# Define PYTHON_CONFIG to point to the python-config binary if
->+# the default `$(PYTHON)-config' is not correct.
->+#
-> # Define ASCIIDOC8 if you want to format documentation with AsciiDoc 8
-
-> # Define DOCBOOK_XSL_172 if you want to format man pages with DocBook XSL=
- v1.72.
->@@ -165,7 +171,7 @@ grep-libs =3D $(filter -l%,$(1))
-> strip-libs =3D $(filter-out -l%,$(1))
->
-> $(OUTPUT)python/perf.so: $(PYRF_OBJS)
->-	$(QUIET_GEN)python util/setup.py --quiet  build_ext --build-lib=3D'$(OUT=
-PUT)python' \
->+	$(QUIET_GEN)$(PYTHON) util/setup.py --quiet  build_ext --build-lib=3D'$(=
-OUTPUT)python' \
-> 						--build-temp=3D'$(OUTPUT)python/temp'
-
-> # No Perl scripts right now:
->@@ -474,10 +480,18 @@ endif
-> ifdef NO_LIBPYTHON
-> 	BASIC_CFLAGS +=3D -DNO_LIBPYTHON
-> else
->+        override PYTHON :=3D \
->+            $(or $(call get-supplied-or-default-executable,$(PYTHON),pyth=
-on),\
->+                 $(error Please set PYTHON appropriately))
->+
->+        override PYTHON_CONFIG :=3D \
->+            $(or $(call get-supplied-or-default-executable,$(PYTHON_CONFI=
-G),$(PYTHON)-config),\
->+                 $(error Please set PYTHON_CONFIG appropriately))
->+
->-       PYTHON_EMBED_LDOPTS =3D $(shell python-config --ldflags 2>/dev/nul=
-l)
->+       PYTHON_EMBED_LDOPTS =3D $(shell $(PYTHON_CONFIG) --ldflags 2>/dev/=
-null)
->        PYTHON_EMBED_LDFLAGS =3D $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
->        PYTHON_EMBED_LIBADD =3D $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
->-	PYTHON_EMBED_CCOPTS =3D `python-config --cflags 2>/dev/null`
->+	PYTHON_EMBED_CCOPTS =3D $(shell $(PYTHON_CONFIG) --cflags 2>/dev/null)
-> 	FLAGS_PYTHON_EMBED=3D$(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
-> 	ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
-> 		msg :=3D $(warning No Python.h found, install python-dev[el] to have py=
-thon support in 'perf script' and to build the python bindings)
->@@ -829,7 +843,7 @@ clean:
-> 	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tag=
-s cscope*
-> 	$(MAKE) -C Documentation/ clean
-> 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
->-	@python util/setup.py clean --build-lib=3D'$(OUTPUT)python' \
->+	@$(PYTHON) util/setup.py clean --build-lib=3D'$(OUTPUT)python' \
-> 				   --build-temp=3D'$(OUTPUT)python/temp'
->
-> .PHONY: all install clean strip
->diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
->index b041ca6..8d677f4 100644
->--- a/tools/perf/feature-tests.mak
->+++ b/tools/perf/feature-tests.mak
->@@ -128,3 +128,47 @@ try-cc =3D $(shell sh -c						  \
-> 	 echo "$(1)" |						  \
-> 	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
-> 	 rm -f "$$TMP"')
->+
->+# is-absolute
->+# Usage: bool-value =3D $(call is-absolute,path)
->+#
->+define is-absolute
->+$(shell sh -c "echo '$(1)' | grep ^/")
->+endef
->+
->+# lookup
->+# Usage: absolute-executable-path-or-empty =3D $(call lookup,path)
->+#
->+define lookup
->+$(shell sh -c "command -v '$(1)'")
->+endef
->+
->+# is-executable
->+# Usage: bool-value =3D $(call is-executable,path)
->+#
->+define is-executable
->+$(shell sh -c "test -f '$(1)' -a -x '$(1)' && echo y")
->+endef
->+
->+# get-executable
->+# Usage: absolute-executable-path-or-empty =3D $(call get-executable,path)
->+#
->+# The goal is to get an absolute path for an executable;
->+# the `command -v' is defined by POSIX, but it's not
->+# necessarily very portable, so it's only used if
->+# relative path resolution is requested, as determined
->+# by the presence of a leading `/'.
->+#
->+define get-executable
->+$(if $(1),$(if $(call is-absolute,$(1)),$(if $(call is-executable,$(1)),$=
-(1)),$(call lookup,$(1))))
->+endef
->+
->+# get-supplied-or-default-executable
->+# Usage: absolute-executable-path-or-empty =3D $(call get-supplied-or-def=
-ault-executable,path,default)
->+#
->+define get-supplied-or-default-executable
->+$(if $(1),$(call _attempt,$(1)),$(call _attempt,$(2)))
->+endef
->+define _attempt
->+$(or $(call get-executable,$(1)),$(warning The path '$(1)' is not executa=
-ble.))
->+endef
-Hi,=20
-
-@Michael, yeah, I use Arch linux too and noticed this issue when
-building it. Thanks.
-
-@Arnaldo, the patch submitted by Michael seems to be taking care of far
-more cases than mine, so that is much better. I will check my encoding
-and/or the signed-off issue next time I submit anything (I had created
-it with git format-patch --stdout followed by mutt -H <file>, not sure
-whether this messed it up, or Vim did it). Thanks again.
-
---FCuugMFkClbJLl1L
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNkiG8AAoJEKYW3KHXK+l3WwQH/jjmuuFZZOE7PZ9gUBx/prfX
-sCgRrjFQgQvWFwDiN+KtKw1G0YxfXQQrSfqR7uG6vxeHrAlWtcEYF90nBCFIybgT
-AcbGxXTQOXDFKA5Uv6jFQ3xgfpnfr6wOgzyVe8Iir4+fTTOT1AOXb0ZLy6tvqDq0
-JrPQopOO7ZwbLnLLFzy9dD/7myPOR6Cwi+aBDFrcYCqwZLxx+YDFRkzuQdGLMOEG
-qhS1+d0lh67D6llrNgzlLF+l6RNdDzJrZC+RNHizX/Sz3a6fgEimIQ59BQYU7tiH
-T7B8yUQV/yhPMLEWFI7fbF/nONijQ9kh1eLblmhCJZGpZXL/3srLy8nOEWvEJ2c=
-=jqJB
------END PGP SIGNATURE-----
-
---FCuugMFkClbJLl1L--
+Yinghai
