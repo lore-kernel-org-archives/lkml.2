@@ -1,49 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab1C2VOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 17:14:46 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:61414 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab1C2VOp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 17:14:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=xQPwVMSMny4kcRMtkEIBnFFY8UyIXQcyQlkwJpDU0l3G8LdvOW8NexEz4a85Zozrzw
-         41zaAE7dF0Dj6NNsA9G55uEbIWw6G5QsxF8tjuSGef5jGDpPr0cl9K8oM8+hyYoDCvji
-         KNIPsgdLAZuJ++mtK18gCoKKKOT15qBt5BMfU=
-Date: Tue, 29 Mar 2011 18:14:37 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Michael Witten <mfwitten@gmail.com>
-Cc: Raghavendra D Prabhu <rprabhu@wnohang.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Use the environment variable PYTHON if defined
-Message-ID: <20110329211437.GB20824@ghostprotocols.net>
-References: <20110326224408.GA1336@Xye>
- <20110328144721.GB17872@ghostprotocols.net>
- <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com>
- <20110329181524.GA5140@Xye>
- <AANLkTi=3Wq3Xt-QFR-FLRQ1kBjpWjaBZNFpOiE_T15WH@mail.gmail.com>
- <20110329204024.GA20824@ghostprotocols.net>
- <AANLkTinmXdmNX+iCB4svo3QqR6AcwGrasziFJPeu0J=M@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinmXdmNX+iCB4svo3QqR6AcwGrasziFJPeu0J=M@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754626Ab1C2VTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 17:19:38 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43422 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754486Ab1C2VTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 17:19:37 -0400
+Subject: Re: [PATCH V2] POWER: perf_event: Skip updating kernel counters if
+ register value shrinks
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, anton@samba.org, stable@kernel.org
+In-Reply-To: <1301410302-7270-1-git-send-email-emunson@mgebm.net>
+References: <1301410302-7270-1-git-send-email-emunson@mgebm.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Mar 2011 08:14:57 +1100
+Message-ID: <1301433297.2402.691.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Mar 29, 2011 at 04:02:07PM -0500, Michael Witten escreveu:
-> On Tue, Mar 29, 2011 at 15:40, Arnaldo Carvalho de Melo
-> <acme@ghostprotocols.net> wrote:
-> > I think that the best course of action is to emit a warning and go
-> 
-> Good.
-> 
-> I'll make it so!
+\
+> diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+> index 97e0ae4..0a5178f 100644
+> --- a/arch/powerpc/kernel/perf_event.c
+> +++ b/arch/powerpc/kernel/perf_event.c
+> @@ -416,6 +416,15 @@ static void power_pmu_read(struct perf_event *event)
+>  		prev = local64_read(&event->hw.prev_count);
+>  		barrier();
+>  		val = read_pmc(event->hw.idx);
+> +		/*
+> +		 * POWER7 can roll back counter values, if the new value is
+> +		 * smaller than the previous value it will cause the delta
+> +		 * and the counter to have bogus values.  If this is the
+> +		 * case skip updating anything until the counter grows again.
+> +		 * This can lead to a small lack of precision in the counters.
+> +		 */
+> +		if (val < prev)
+> +			return;
+>  	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
 
-Thanks.
+So if the counters can rollover, the above is still wrong... prev could
+be ffffffff and val could be 1 ... for example. In this case you really
+need to substract and get the sign of the result I'd think...
+
+Cheers,
+Ben.
+
+>  	/* The counters are only 32 bits wide */
+> @@ -439,7 +448,8 @@ static void freeze_limited_counters(struct cpu_hw_events *cpuhw,
+>  				    unsigned long pmc5, unsigned long pmc6)
+>  {
+>  	struct perf_event *event;
+> -	u64 val, prev, delta;
+> +	u64 val, prev;
+> +	s32 delta;
+>  	int i;
+>  
+>  	for (i = 0; i < cpuhw->n_limited; ++i) {
+> @@ -449,8 +459,13 @@ static void freeze_limited_counters(struct cpu_hw_events *cpuhw,
+>  		val = (event->hw.idx == 5) ? pmc5 : pmc6;
+>  		prev = local64_read(&event->hw.prev_count);
+>  		event->hw.idx = 0;
+> -		delta = (val - prev) & 0xfffffffful;
+> -		local64_add(delta, &event->count);
+> +		/*
+> +		 * The PerfMon registers are only 32 bits wide so the
+> +		 * delta should not overflow.
+> +		 */
+> +		delta = val - prev;
+> +		if (delta > 0)
+> +			local64_add(delta, &event->count);
+>  	}
+>  }
+>  
+> @@ -458,14 +473,16 @@ static void thaw_limited_counters(struct cpu_hw_events *cpuhw,
+>  				  unsigned long pmc5, unsigned long pmc6)
+>  {
+>  	struct perf_event *event;
+> -	u64 val;
+> +	u64 val, prev;
+>  	int i;
+>  
+>  	for (i = 0; i < cpuhw->n_limited; ++i) {
+>  		event = cpuhw->limited_counter[i];
+>  		event->hw.idx = cpuhw->limited_hwidx[i];
+>  		val = (event->hw.idx == 5) ? pmc5 : pmc6;
+> -		local64_set(&event->hw.prev_count, val);
+> +		prev = local64_read(&event->hw.prev_count);
+> +		if (val > prev)
+> +			local64_set(&event->hw.prev_count, val);
+>  		perf_event_update_userpage(event);
+>  	}
+>  }
+> @@ -1187,7 +1204,8 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+>  			       struct pt_regs *regs, int nmi)
+>  {
+>  	u64 period = event->hw.sample_period;
+> -	s64 prev, delta, left;
+> +	s64 prev, left;
+> +	s32 delta;
+>  	int record = 0;
+>  
+>  	if (event->hw.state & PERF_HES_STOPPED) {
+> @@ -1197,7 +1215,9 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+>  
+>  	/* we don't have to worry about interrupts here */
+>  	prev = local64_read(&event->hw.prev_count);
+> -	delta = (val - prev) & 0xfffffffful;
+> +	delta = val - prev;
+> +	if (delta < 0)
+> +		delta = 0;
+>  	local64_add(delta, &event->count);
+>  
+>  	/*
+
+
