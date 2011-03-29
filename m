@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab1C2PTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 11:19:41 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:10492 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab1C2PTk (ORCPT
+	id S1753783Ab1C2PVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 11:21:52 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:32971 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab1C2PVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 11:19:40 -0400
-X-IronPort-AV: E=Sophos;i="4.63,262,1299456000"; 
-   d="scan'208";a="5029830"
-Date: Tue, 29 Mar 2011 16:19:50 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jan Beulich <JBeulich@novell.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: do not clear and mask evtchns in 
- __xen_evtchn_do_upcall
-In-Reply-To: <4D9213210200007800038E2D@vpn.id2.novell.com>
-Message-ID: <alpine.DEB.2.00.1103291615280.16492@kaball-desktop>
-References: <alpine.DEB.2.00.1103291505090.16492@kaball-desktop> <4D9213210200007800038E2D@vpn.id2.novell.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 29 Mar 2011 11:21:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=HPot23+dgyLcbHA9T4EG/kX3pp0Vxz92+ptR2Rtlh1yptQpkWImk/8a0hGP1X+FNSA
+         aKrKzu+tuOSpJC2VaJW51UNs3GR57Lk2EVx+VdGqHABTJfkhX2cbE4VRoa3lbF2wieN/
+         AUS4pIT0R6Ooc85/zQRympqXKMD4xapNSCMh0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <849307$c7c8q8@azsmga001.ch.intel.com>
+References: <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
+	<1301401385-8935-1-git-send-email-chris@chris-wilson.co.uk>
+	<AANLkTin0bicOYyY2WCaBxN276t5RV-Q9UZVr=WQ6NmQe@mail.gmail.com>
+	<1bdc18$k1kc9s@fmsmga002.fm.intel.com>
+	<AANLkTi=Adq8i_qoiHhLB9K-CkUbT8uHZeg-H8Z3_Kgrw@mail.gmail.com>
+	<AANLkTi=ejDZYxyHYWXZiLXG+L1o8BqvQp8CQVhsUf570@mail.gmail.com>
+	<849307$c7c8q8@azsmga001.ch.intel.com>
+Date: Tue, 29 Mar 2011 18:21:50 +0300
+X-Google-Sender-Auth: 3I-TCE4vfFjAMrEhV-59XyldvGU
+Message-ID: <AANLkTikwbVBfqBd+ARo2Y3Hm4MYn=VtQy8gn1Rpc17rr@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: Move the irq wait queue initialisation into the
+ ring init
+From: Pekka Enberg <penberg@kernel.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Mar 2011, Jan Beulich wrote:
-> >>> On 29.03.11 at 16:15, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> > xen: do not clear and mask evtchns in __xen_evtchn_do_upcall
-> > 
-> > Switch virqs and pirqs that don't need EOI (in Xen acktype ==
-> > ACKTYPE_NONE, that means the machine irq is actually edge)
-> > to handle_edge_irq.
-> > 
-> > Use handle_fasteoi_irq for pirqs that need eoi (they generally
-> > correspond to level triggered irqs), no risk in loosing interrupts
-> > because we have to EOI the irq anyway.
-> > 
-> > This change has the following benefits:
-> > 
-> > - it uses the very same handlers that Linux would use on native for the
-> > same irqs;
-> 
-> For IO-APIC IRQs this is true, but I don't think it is for MSI.
+On Tue, Mar 29, 2011 at 5:32 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Tue, 29 Mar 2011 17:22:13 +0300, Pekka Enberg <penberg@kernel.org> wrote:
+>> No ssh - the box seems to be dead.
+>
+> But now you have a machine with which to listen out for the netconsole
+> scream of anguish...
 
-Yes it is:
+OK, this gets interesting. With
 
-static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
-        int irq)
-...
-    irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
+  netconsole=... loglevel=7
 
+I am not able to reproduce the bug. With
 
-> > - it uses these handlers in the same way Linux would use them: it let
-> > Linux mask\unmask and ack the irq when Linux want to mask\unmask and ack
-> > the irq;
-> 
-> Same here, plus with this you give the change the appearance as
-> if Linux now suddenly had control over when the ACK happens,
-> which I don't think is the case (and would be wrong in the DomU
-> case at least).
+  netconsole=... loglevel=6
 
->From the evtchn perspective, the ack is clearing the pending bit in the
-shared_info page, so I think we are giving Linux control on when the ack
-happen.
->From the pirq perspective, we are giving Linux control on when the eoi
-happen.
+I am able to reproduce but nothing is printed to netconsole. I guess
+the kernel dies before it's able to set it up.
+
+                        Pekka
