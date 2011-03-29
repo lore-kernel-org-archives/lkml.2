@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab1C2Uho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 16:37:44 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:60199 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab1C2Uhn (ORCPT
+	id S1754234Ab1C2Uke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 16:40:34 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42158 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab1C2Ukc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 16:37:43 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "Linux\/m68k" <linux-m68k@vger.kernel.org>
-Subject: Re: [regression v2.6.38] Re: [PATCH v2] brk: fix min_brk lower bound computation for COMPAT_BRK
-References: <alpine.LNX.2.00.1101030002390.26685@pobox.suse.cz>
-	<alpine.LNX.2.00.1101031237210.26685@pobox.suse.cz>
-	<alpine.LNX.2.00.1101031421470.26685@pobox.suse.cz>
-	<AANLkTinK-TYnY70Wst_FTbEtn7Dwm8wEQoWMewsYM8dh@mail.gmail.com>
-	<alpine.LNX.2.00.1103251119120.26754@pobox.suse.cz>
-	<AANLkTi=g5z+GYkbOGbdLQcLaQkpY6yQ6tjGRjjk1H59R@mail.gmail.com>
-	<alpine.LNX.2.00.1103281619320.26754@pobox.suse.cz>
-	<AANLkTi=pNxVY8NZjRhT_aJMQNiTpfkmECqc-ZnTD7ynW@mail.gmail.com>
-X-Yow: Uh-oh!!  I'm having TOO MUCH FUN!!
-Date: Tue, 29 Mar 2011 22:37:38 +0200
-In-Reply-To: <AANLkTi=pNxVY8NZjRhT_aJMQNiTpfkmECqc-ZnTD7ynW@mail.gmail.com>
-	(Geert Uytterhoeven's message of "Tue, 29 Mar 2011 22:24:21 +0200")
-Message-ID: <m262r1hdd9.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 29 Mar 2011 16:40:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=xoegenyi9IM6eJUFLAJUJdC8oPOtCb097bX5GUQ2D9MZOd8Jjod8Q0THx54boUKlll
+         jksrT8IcAE9ywjYTKmgmAxw6W8lxjcpkOVtUvTGH1/pahBUVL2ZApsVhM2Z1xrML8M7b
+         0hZyR8mXVPSXhFR0dRGKCM0Kt51jfb1GwuavE=
+Date: Tue, 29 Mar 2011 17:40:25 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Michael Witten <mfwitten@gmail.com>
+Cc: Raghavendra D Prabhu <rprabhu@wnohang.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Use the environment variable PYTHON if defined
+Message-ID: <20110329204024.GA20824@ghostprotocols.net>
+References: <20110326224408.GA1336@Xye>
+ <20110328144721.GB17872@ghostprotocols.net>
+ <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com>
+ <20110329181524.GA5140@Xye>
+ <AANLkTi=3Wq3Xt-QFR-FLRQ1kBjpWjaBZNFpOiE_T15WH@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=3Wq3Xt-QFR-FLRQ1kBjpWjaBZNFpOiE_T15WH@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+Em Tue, Mar 29, 2011 at 02:15:30PM -0500, Michael Witten escreveu:
+> On Tue, Mar 29, 2011 at 13:15, Raghavendra D Prabhu <rprabhu@wnohang.net> wrote:
+> > the patch submitted by Michael seems to be taking care of far
+> > more cases than mine, so that is much better.
+> 
+> One major issue with my current patch is that I opted to stop the
+> build with an error message even when using the default python command
+> names; is this undesirable? Is it better to fail silently as before
+> (via the somewhat cryptic Python.h message), or is it better to force
+> the user to specify that no python support should be built?
 
-> Seems like the binary doesn't like brk() rounding up the requested
-> value to the next page...
+I think that the best course of action is to emit a warning and go, i.e.
+we don't have to make it harder for people that don't want $FOO support
+to make that clear.
 
->From libc-5.4.46/libc/sysdeps/linux/m68k/__sbrk.c:
+Just not having python-dev{el} installed should be enough to disable the
+feature. For people that want the feature the warning is enough to tell
+them to install the missing package.
 
-void *
-__sbrk(ptrdiff_t increment)
-{
-    if (__init_brk () == 0)
-    {
-	register void * tmp asm ("%d1") = ___brk_addr+increment;
-	__asm__ volatile ("movel %1,%/d0\n\t"
-			  "trap  #0\n\t"
-			  "movel %/d0,%0"
-		:"=g" (___brk_addr)
-		:"i" (SYS_brk),"g" (tmp) : "%d0");
-	if (___brk_addr == tmp)
-		return tmp-increment;
-	errno = ENOMEM;
-    }
-    return ((void *) -1);
-}
-
-Andreas.
-
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+- Arnaldo
