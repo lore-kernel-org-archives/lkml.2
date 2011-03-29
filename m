@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab1C2PBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 11:01:19 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53989 "EHLO
+	id S1753821Ab1C2PBh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 11:01:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55109 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab1C2PBS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 11:01:18 -0400
-Message-ID: <4D91F432.2070406@oracle.com>
-Date: Tue, 29 Mar 2011 08:01:06 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	with ESMTP id S1752079Ab1C2PBg (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 29 Mar 2011 11:01:36 -0400
+Date: Tue, 29 Mar 2011 11:00:30 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        randy.dunlap@oracle.com, error27@gmail.com, dgdegra@tycho.nsa.gov
+Subject: [GIT PULL] (xen) bug fixes for 2.6.39 .. rc1-soonish?
+ (stable/bug-fixes-rc1).
+Message-ID: <20110329150030.GA7368@dumpdata.com>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: lkml <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
-        Adrian Hunter <adrian.hunter@nokia.com>
-Subject: Re: [PATCH] ubifs: fix kconfig dependency warning
-References: <20110328134016.deb5d0c8.randy.dunlap@oracle.com> <1301382178.2816.69.camel@localhost>
-In-Reply-To: <1301382178.2816.69.camel@localhost>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 X-Source-IP: acsmt357.oracle.com [141.146.40.157]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4D91F435.008A,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4D91F40D.0093,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/11 00:02, Artem Bityutskiy wrote:
-> On Mon, 2011-03-28 at 13:40 -0700, Randy Dunlap wrote:
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> Fix another kconfig dependency warning, this time in ubifs.
->>
->> warning: (UBIFS_FS_DEBUG && LOCKDEP && LATENCYTOP) selects KALLSYMS_ALL which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
->>
->> Without this patch, we can have:
->> # CONFIG_KALLSYMS is not set
->> CONFIG_KALLSYMS_ALL=y
->> which is useless (does nothing unless KALLSYMS is enabled).
->>
->> However, ubifs builds successfully with or without this patch,
->> and it builds with this line completely deleted,
->> so what was this 'select' for?  Just developer convenience?
-> 
-> Well, here is the idea. You can compile UBIFS with debugging and without
-> debugging. Without debugging the resulting ubifs.ko is much smaller, so
-> some embedded people prefer it this way.
-> 
-> If you select debugging support, then we'll compile it a lot of
-> assertions, self-checks, test-modes, extra error messages with detailed
-> dumps. And we want to see stackdumps when errors or problems happen,
-> this is why we select KALLSYMS_ALL.
-> 
-> So I guess instead we should do:
-> 
-> select KALLSYMS
-> select KALLSYMS_ALL
+Hey Linus,
 
-Yes, that should do it.  Thanks for the explanation.
+Please pull this branch:
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug-fixes-rc1
+
+which has patches since the git commit 804f18536984939622ddca60ab6b25743e0ec68d:
+
+Linus Torvalds (1):
+
+    Merge branch 'stable/xen.pm.bug-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen
+
+The fixes include cleanups done by Thomas, and as well some fixes on the
+exit patchs found in the gntdev by Dan Carpenter. Compile warnings and one
+serious bug that causes the machine to oops when using the gntdev,gntalloc along
+with memory hotplug. Sorry about the name of the branch - I was thinking that ther
+c1 would be out by now.
+
+
+Dan Carpenter (2):
+      xen-gntdev: return -EFAULT on copy_to_user failure
+      xen-gntdev: unlock on error path in gntdev_mmap()
+
+Daniel De Graaf (1):
+      xen/p2m: Allocate p2m tracking pages on override
+
+Randy Dunlap (1):
+      xen: fix p2m section mismatches
+
+Thomas Gleixner (2):
+      xen: Convert genirq namespace
+      xen: Use new irq_move functions
+
+ arch/x86/xen/p2m.c   |   10 ++++++----
+ drivers/xen/events.c |   26 +++++++++++++-------------
+ drivers/xen/gntdev.c |    6 ++++--
+ 3 files changed, 23 insertions(+), 19 deletions(-)
