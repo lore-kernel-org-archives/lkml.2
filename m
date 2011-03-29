@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab1C2NXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 09:23:46 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55938 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab1C2NXp (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 29 Mar 2011 09:23:45 -0400
-Date: Tue, 29 Mar 2011 09:23:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        andi.kleen@intel.com, haicheng.li@linux.intel.com,
-        fengguang.wu@intel.com, jeremy@goop.org, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
-        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] mm: Extend memory hotplug API to allow memory
- hotplug in virtual machines
-Message-ID: <20110329132311.GA28815@dumpdata.com>
-References: <20110328092507.GD13826@router-fw-old.local.net-space.pl>
- <20110328153735.d797c5b3.akpm@linux-foundation.org>
+	id S1752296Ab1C2N2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 09:28:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20150 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301Ab1C2N2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 09:28:47 -0400
+Date: Tue, 29 Mar 2011 14:19:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Julien Tinnes <jln@google.com>,
+        Klaus Dittrich <kladit@arcor.de>, Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH v2] Relax si_code check in rt_sigqueueinfo and
+	rt_tgsigqueueinfo
+Message-ID: <20110329121937.GA27497@redhat.com>
+References: <1301346815-6755-1-git-send-email-roland@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110328153735.d797c5b3.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt357.oracle.com [141.146.40.157]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4D91DD41.0148,ss=1,fgs=0
+In-Reply-To: <1301346815-6755-1-git-send-email-roland@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I merged your patch 1/3.
-> 
-> I skipped your patch 2/3, as the new macros appear to have no callers
-> in this patchset.
-> 
-> I suggest that once we're happy with them, your patches 2 and 3 be
-> merged up via whichever tree merges the Xen balloon driver changes. 
-> That might be my tree, I forget :) Was anyone else thinking of grabbing
-> them?
+On 03/28, Roland Dreier wrote:
+>
+> diff --git a/kernel/signal.c b/kernel/signal.c
+> index 324eff5..b2bfa3a 100644
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -2437,7 +2437,7 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t, pid, int, sig,
+>  	/* Not even root can pretend to send signals from the kernel.
+>  	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
+>  	 */
+> -	if (info.si_code != SI_QUEUE) {
+> +	if (info.si_code >= 0 || info.si_code == SI_TKILL) {
+>  		/* We used to allow any < 0 si_code */
+>  		WARN_ON_ONCE(info.si_code < 0);
 
-That would be. I can carry that pathces if this is easier for you.
-Would need the Ack-by at some point from mm maintainers when the patches are
-to everybody's satisfaction.
+This is equivalent to WARN_ON_ONCE(SI_TKILL)... doesn't matter, please ignore.
+
+Thanks, I think -stable needs this patch asap. It turns out 2.6.32.36, 2.6.33.9,
+2.6.37.6 and 2.6.38.2 pulled da48524eb20662618854bb3df2db01fc65f3070c.
+
+If this change breaks something too, we can make even more conservative check.
+
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 
