@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab1C2G1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 02:27:14 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49513 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab1C2G1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 02:27:13 -0400
-Date: Tue, 29 Mar 2011 08:27:06 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andy Lutomirski <luto@mit.edu>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/6] x86-64: Micro-optimize vclock_gettime
-Message-ID: <20110329062706.GE27398@elte.hu>
-References: <cover.1301324270.git.luto@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1301324270.git.luto@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753239Ab1C2Gc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 02:32:59 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42041 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab1C2Gc6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 02:32:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=vA/c68OdQ+JP2GYD1ELxCSUn6maua04MkbqfYp20+pqnmLk5MW4XtAwn+HQ6HP7qKO
+         jrdPET+7VGZZXTMAReSJULJRnWcWfTUZWiCoe0/THHkbg43c4IveL5BDrJzQyS++EsXR
+         6Gb6lSXEDKjWw3iWKAWW5UOjnNi5zYShTj3i8=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: ben-linux@fluff.org
+Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, rpurdie@rpsys.net, esta1ien@gmail.com,
+        buserror@gmail.com, Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH 0/4] s3c2440: mini2440: Add missing code parts to be fully working with latest kernel.
+Date: Tue, 29 Mar 2011 08:32:39 +0200
+Message-Id: <1301380363-3282-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Patch add new LCD panels with which was board produced. Also add touchscreen
+support. Enabling LCD backlight during early booting stage also added.
 
-* Andy Lutomirski <luto@mit.edu> wrote:
+Some code parts are collected or inspired from other code (authors are in CC).
 
-> This series speeds up vclock_gettime(CLOCK_MONOTONIC) on by almost 30%
-> (tested on Sandy Bridge).  They're ordered in roughly decreasing order
-> of improvement.
-> 
-> These are meant for 2.6.40, but if anyone wants to take some of them
-> for 2.6.39 I won't object.
-> 
-> The changes and timings (fastest of 20 trials of 100M iters on Sandy
-> Bridge) are:
-> 
-> Unpatched:
-> 
-> CLOCK_MONOTONIC: 22.09ns
-> CLOCK_REALTIME_COARSE: 4.23ns
-> CLOCK_MONOTONIC_COARSE: 5.65ns
+Marek Belisko (4):
+  s3c2440: mini2440: Add support for new LCD panels.
+  s3c2440: mini2440: Add touchscreen support for mini2440.
+  s3c2440: mini2440: Select touchscreen by default.
+  s3c2440: mini2440: Enable the backlight LED earlier at boot time.
 
-  [ Patched: ]
+ arch/arm/mach-s3c2410/include/mach/leds-gpio.h |    1 +
+ arch/arm/mach-s3c2440/Kconfig                  |    1 +
+ arch/arm/mach-s3c2440/mach-mini2440.c          |   55 +++++++++++++++++++++++-
+ drivers/leds/leds-s3c24xx.c                    |    6 ++-
+ 4 files changed, 60 insertions(+), 3 deletions(-)
 
-> CLOCK_MONOTONIC: 15.66ns
-> CLOCK_REALTIME_COARSE: 3.44ns
-> CLOCK_MONOTONIC_COARSE: 4.23ns
-
-That looks like a nice speedup, and speedups are definitely welcome. Many of 
-your speedup patches were framed in an unclean or hard to maintain fashion 
-though - so those have to be improved for this series to become palatable.
-
-Thanks,
-
-	Ingo
