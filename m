@@ -1,62 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab1C2WiS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 18:38:18 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:31254 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751360Ab1C2WiR (ORCPT
+	id S1754309Ab1C2Wib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 18:38:31 -0400
+Received: from gabe.freedesktop.org ([131.252.210.177]:40034 "EHLO
+	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab1C2Wi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 18:38:17 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: geuAgLMVM1kMWvjbKRVpG.xUPQbJh7iChyxhqcmwZSJzRnC
- DL7KGSFLkT3JS01ajJmroj8g4p_WxQRxlFMJr1PG6HpRvokDzRx.OfU1En8B
- _Lohh9prsbeIgmcghCTKpVqFcn2xVnSzacQ8CwxC5xL_WapMNVKhnXV.bUZY
- k2..LHLXUZrKeuE7QzEMx6L17lcSMJ_9fzubvMiLW_4eIYHHhXHp.fe9ai4L
- W6Jtp047PAa8fDxOLcbQLAobkYgJPrsiP.tPtxcKAG7grh1GCtekvvJb_LMw
- d6v2lyzRJTG0h4P_vj7vEYEAY0y8TfC5XkxlGilo0PLKzS_YIr4dkO3Yti8_
- 5E2wI3CPDKeCjGBdB6wHdgJat
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 29 Mar 2011 17:38:13 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Shaohua Li <shaohua.li@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH]mmap: add alignment for some variables
-In-Reply-To: <20110329152434.d662706f.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1103291734001.11817@router.home>
-References: <1301277536.3981.27.camel@sli10-conroe> <m2oc4v18x8.fsf@firstfloor.org> <1301360054.3981.31.camel@sli10-conroe> <20110329152434.d662706f.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 Mar 2011 18:38:29 -0400
+From: Eric Anholt <eric@anholt.net>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Eric Anholt <eric@anholt.net>
+Subject: [PATCH resend] x86, mtrr, pat: fix one cpu getting out of sync during resume
+Date: Tue, 29 Mar 2011 15:38:12 -0700
+Message-Id: <1301438292-28370-1-git-send-email-eric@anholt.net>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Mar 2011, Andrew Morton wrote:
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-> > -struct percpu_counter vm_committed_as;
-> > +struct percpu_counter vm_committed_as ____cacheline_internodealigned_in_smp;
->
-> Why ____cacheline_internodealigned_in_smp?  That's pretty aggressive.
->
-> afacit the main benefit from this will occur if the read-only
-> vm_committed_as.counters lands in the same cacheline as some
-> write-frequently storage.
->
-> But that's a complete mad guess and I'd prefer not to have to guess.
+On laptops with core i5/i7, there were reports that after resume
+graphics workloads were performing poorly on a specific AP, while
+the other cpu's were ok. This was observed on a 32bit kernel
+specifically.
 
-It would  be useful to have some functionality that allows us to give
-hints as to which variables are accessed together and therefore would be
-useful to put in the same cacheline. Thus avoiding things like the
-readmostly segment and the above aberration.
+Debug showed that the PAT init was not happening on that AP
+during resume and hence it contributing to the poor workload
+performance on that cpu.
 
-Andi had a special pda area in earlier version before the merger of 32 and
-64 bit code for x86 that resulted in placement of the most performance
-critical variables near one another. I am afraid now they are all spread
-out.
+On this system, resume flow looked like this:
 
-So maybe something that allows us to define multiple pdas? Or just structs
-that are cacheline aligned?
+1. BP starts the resume sequence and we reinit BP's MTRR's/PAT
+   early on using mtrr_bp_restore()
+
+2. Resume sequence brings all AP's online
+
+3. Resume sequence now kicks off the MTRR reinit on all the AP's.
+
+4. For some reason, between point 2 and 3, we moved from BP
+   to one of the AP's. My guess is that printk() during resume
+   sequence is contributing to this. We don't see similar
+   behavior with the 64bit kernel but there is no guarantee that
+   at this point the remaining resume sequence (after AP's bringup)
+   has to happen on BP.
+
+5. set_mtrr() was assuming that we are still on BP and skipped the
+   MTRR/PAT init on that cpu (because of 1 above)
+
+6. But we were on an AP and this led to not reprogramming PAT
+   on this cpu leading to bad performance.
+
+Fix this by doing unconditional mtrr_if->set_all() in set_mtrr()
+during MTRR/PAT init. This might be unnecessary if we are still
+running on BP. But it is of no harm and will guarantee that after
+resume, all the cpu's will be in sync with respect to the
+MTRR/PAT registers.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
+Tested-by: Keith Packard <keithp@keithp.com>
+Cc: stable@kernel.org	[v2.6.32+]
+---
+
+Failed to cc maintainers with this the first time, hopefully it gets
+picked up now.  Impact of the patch is fixing a 100x graphics
+performance regression after resume when a process ends up on the
+unlucky CPU.
+
+ arch/x86/kernel/cpu/mtrr/main.c |   20 +++++++++++++++-----
+ 1 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
+index 307dfbb..929739a 100644
+--- a/arch/x86/kernel/cpu/mtrr/main.c
++++ b/arch/x86/kernel/cpu/mtrr/main.c
+@@ -293,14 +293,24 @@ set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type typ
+ 
+ 	/*
+ 	 * HACK!
+-	 * We use this same function to initialize the mtrrs on boot.
+-	 * The state of the boot cpu's mtrrs has been saved, and we want
+-	 * to replicate across all the APs.
+-	 * If we're doing that @reg is set to something special...
++	 *
++	 * We use this same function to initialize the mtrrs during boot,
++	 * resume, runtime cpu online and on an explicit request to set a
++	 * specific MTRR.
++	 *
++	 * During boot or suspend, the state of the boot cpu's mtrrs has been
++	 * saved, and we want to replicate that across all the cpus that come
++	 * online (either at the end of boot or resume or during a runtime cpu
++	 * online). If we're doing that, @reg is set to something special and on
++	 * this cpu we still do mtrr_if->set_all(). During boot/resume, this
++	 * is unnecessary if at this point we are still on the cpu that started
++	 * the boot/resume sequence. But there is no guarantee that we are still
++	 * on the same cpu. So we do mtrr_if->set_all() on this cpu aswell to be
++	 * sure that we are in sync with everyone else.
+ 	 */
+ 	if (reg != ~0U)
+ 		mtrr_if->set(reg, base, size, type);
+-	else if (!mtrr_aps_delayed_init)
++	else
+ 		mtrr_if->set_all();
+ 
+ 	/* Wait for the others */
+-- 
+1.7.4.1
 
