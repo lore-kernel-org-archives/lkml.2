@@ -1,19 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab1C2BNL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 21:13:11 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:43603 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752027Ab1C2BNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 21:13:09 -0400
-Date: Mon, 28 Mar 2011 18:13:06 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: netdev@vger.kernel.org, bridge@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] bridge-utils 1.5
-Message-ID: <20110328181306.2b1a117e@nehalam>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	id S1754696Ab1C2BSG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 21:18:06 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:35099 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab1C2BSF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 21:18:05 -0400
+Date: Tue, 29 Mar 2011 10:15:11 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: [PATCH v2] memcg: update documentation to describe usage_in_bytes
+Message-Id: <20110329101511.d30f3518.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20110328193108.07965b4a.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110321102420.GB26047@tiehlicka.suse.cz>
+	<20110322091014.27677ab3.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110322104723.fd81dddc.nishimura@mxp.nes.nec.co.jp>
+	<20110322073150.GA12940@tiehlicka.suse.cz>
+	<20110323092708.021d555d.nishimura@mxp.nes.nec.co.jp>
+	<20110323133517.de33d624.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110328085508.c236e929.nishimura@mxp.nes.nec.co.jp>
+	<20110328132550.08be4389.nishimura@mxp.nes.nec.co.jp>
+	<20110328074341.GA5693@tiehlicka.suse.cz>
+	<20110328181127.b8a2a1c5.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110328094820.GC5693@tiehlicka.suse.cz>
+	<20110328193108.07965b4a.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -21,39 +37,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Bridge Utilities haven't been re-released in a very long time.
-The only new feature is the introduction of hairpin mode.
+On Mon, 28 Mar 2011 19:31:08 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Note: this is probably the last release of these utilities because
-I am actively working on intergrating bridge utility into iproute2
-using netlink.
+> On Mon, 28 Mar 2011 11:48:20 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Mon 28-03-11 18:11:27, KAMEZAWA Hiroyuki wrote:
+> > > On Mon, 28 Mar 2011 09:43:42 +0200
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > 
+> > > > On Mon 28-03-11 13:25:50, Daisuke Nishimura wrote:
+> > > > > From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> > [...]
+> > > > > +5.5 usage_in_bytes
+> > > > > +
+> > > > > +As described in 2.1, memory cgroup uses res_counter for tracking and limiting
+> > > > > +the memory usage. memory.usage_in_bytes shows the current res_counter usage for
+> > > > > +memory, and DOESN'T show a actual usage of RSS and Cache. It is usually bigger
+> > > > > +than the actual usage for a performance improvement reason. 
+> > > > 
+> > > > Isn't an explicit mention about caching charges better?
+> > > > 
+> > > 
+> > > It's difficult to distinguish which is spec. and which is implemnation details...
+> > 
+> > Sure. At least commit log should contain the implementation details IMO,
+> > though.
+> > 
+> > > 
+> > > My one here ;)
+> > > ==
+> > > 5.5 usage_in_bytes
+> > > 
+> > > For efficiency, as other kernel components, memory cgroup uses some optimization to
+> > > avoid unnecessary cacheline false sharing. usage_in_bytes is affected by the
+> > > method and doesn't show 'exact' value of usage, it's an fuzz value for efficient
+> > > access. (Of course, when necessary, it's synchronized.)
+> > > In usual, the value (RSS+CACHE) in memory.stat shows more exact value. IOW,
+> > 
+> > - In usual, the value (RSS+CACHE) in memory.stat shows more exact value. IOW,
+> > + (RSS+CACHE) value from memory.stat shows more exact value and should be used
+> > + by userspace. IOW,
+> > 
+> > ?
+> > 
+> 
+> seems good. Nishimura-san, could you update ?
+> 
+> Thanks,
+> -Kame
+> 
+Thank you very much for your comments. This is the updated one.
 
-Package download:
-   http://sourceforge.net/projects/bridge/files/bridge/bridge-utils-1.5.tar.gz/download
+===
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-Repository:
-   git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/bridge-utils.git
+Since 569b846d(memcg: coalesce uncharge during unmap/truncate), we do batched
+(delayed) uncharge at truncation/unmap. And since cdec2e42(memcg: coalesce
+charging via percpu storage), we have percpu cache for res_counter.
 
-Information:
-   http://www.linuxfoundation.org/collaborate/workgroups/networking/bridge
+These changes improved performance of memory cgroup very much, but made
+res_counter->usage usually have a bigger value than the actual value of memory usage.
+So, *.usage_in_bytes, which show res_counter->usage, are not desirable for precise
+values of memory(and swap) usage anymore.
 
-Report problems (or enhancements) to the netdev@vger.kernel.org mailing list.
+Instead of removing these files completely(because we cannot know res_counter->usage
+without them), this patch updates the meaning of those files.
 
-Changelog:
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+---
+ Documentation/cgroups/memory.txt |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
 
-Anton Danilov (1):
-      show selected bridge
-
-Fischer, Anna (1):
-      bridge-utils: Add 'hairpin' port forwarding mode
-
-Stephen Hemminger (8):
-      don't install libbridge.a
-      use proper version of install in doc/Makefile
-      Check for fopen() failing
-      Skip . and .. in foreach_bridge test
-      Handle unknown attributes more gracefully
-      bridge-utils 1.5
-      update mailing address
-      Update URL of git repository
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 7781857..4f49d91 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -52,8 +52,10 @@ Brief summary of control files.
+  tasks				 # attach a task(thread) and show list of threads
+  cgroup.procs			 # show list of processes
+  cgroup.event_control		 # an interface for event_fd()
+- memory.usage_in_bytes		 # show current memory(RSS+Cache) usage.
+- memory.memsw.usage_in_bytes	 # show current memory+Swap usage
++ memory.usage_in_bytes		 # show current res_counter usage for memory
++				 (See 5.5 for details)
++ memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
++				 (See 5.5 for details)
+  memory.limit_in_bytes		 # set/show limit of memory usage
+  memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
+  memory.failcnt			 # show the number of memory usage hits limits
+@@ -453,6 +455,15 @@ memory under it will be reclaimed.
+ You can reset failcnt by writing 0 to failcnt file.
+ # echo 0 > .../memory.failcnt
+ 
++5.5 usage_in_bytes
++
++For efficiency, as other kernel components, memory cgroup uses some optimization
++to avoid unnecessary cacheline false sharing. usage_in_bytes is affected by the
++method and doesn't show 'exact' value of memory(and swap) usage, it's an fuzz
++value for efficient access. (Of course, when necessary, it's synchronized.)
++If you want to know more exact memory usage, you should use RSS+CACHE(+SWAP)
++value in memory.stat(see 5.2).
++
+ 6. Hierarchy support
+ 
+ The memory controller supports a deep hierarchy and hierarchical accounting.
+-- 
+1.7.1
 
