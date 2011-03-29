@@ -1,195 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293Ab1C2JxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 05:53:17 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58534 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab1C2JxP (ORCPT
+	id S1752415Ab1C2Jyp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 05:54:45 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:39947 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab1C2Jyo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 05:53:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=PxftqeC5ubZlzCggb/Y7h5a+THFxq+pnNe40sXC5zkuKshGdU8c6m3oi6exlE06XeB
-         lyLDT4hTdlpSMUaFZeGbHzt0dcNC117tIm9p6O2bnFgPp+bcPUNkmhtiuGs6A8lgskuA
-         QIniVHBo2fkX4VriB4kQ4dowW29N8ScJyRU+k=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: ben-linux@fluff.org, linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH] s3c2440: mini2440: Use leds-gpio driver for board leds handling.
-Date: Tue, 29 Mar 2011 11:53:00 +0200
-Message-Id: <1301392380-9022-1-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <AANLkTi=RW0o=+hXcO0Y04nq10QEd=hWY0Nzc0enJ=Tr7@mail.gmail.com>
-References: <AANLkTi=RW0o=+hXcO0Y04nq10QEd=hWY0Nzc0enJ=Tr7@mail.gmail.com>
+	Tue, 29 Mar 2011 05:54:44 -0400
+Subject: Re: [RFC PATCH] perf report: add sort by file lines
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1301391136.14111.98.camel@minggr.sh.intel.com>
+References: <1301391136.14111.98.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 29 Mar 2011 11:54:17 +0200
+Message-ID: <1301392457.4859.74.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intention of this patch is convert existing usage of leds-s3c24xx driver
-to use generic gpio-leds driver. Leds are separated to 2 devices.
-First device handle 4 available leds. Second device is used to drive
-LCD backlight. Backlight can be controlled via parameter b so we need
-separate device which is registered or not depending on parameter.
+On Tue, 2011-03-29 at 17:32 +0800, Lin Ming wrote:
+> 
+> Peter suggested to reverse map the reported IP (PEBS + fixup)
+> to a data access using dwarf info.
+> So I wrote this patch to see if the direction is right. 
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- arch/arm/mach-s3c2440/mach-mini2440.c |  121 +++++++++++++++------------------
- 1 files changed, 54 insertions(+), 67 deletions(-)
+I'm not sure this is quite the same thing, I'm not arguing this might
+not be useful, but this is not about data access.
 
-diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c b/arch/arm/mach-s3c2440/mach-mini2440.c
-index 163d318..28ef6eb 100644
---- a/arch/arm/mach-s3c2440/mach-mini2440.c
-+++ b/arch/arm/mach-s3c2440/mach-mini2440.c
-@@ -419,81 +419,71 @@ static struct platform_device mini2440_button_device = {
- };
- 
- /* LEDS */
--
--static struct s3c24xx_led_platdata mini2440_led1_pdata = {
--	.name		= "led1",
--	.gpio		= S3C2410_GPB(5),
--	.flags		= S3C24XX_LEDF_ACTLOW | S3C24XX_LEDF_TRISTATE,
--	.def_trigger	= "heartbeat",
--};
--
--static struct s3c24xx_led_platdata mini2440_led2_pdata = {
--	.name		= "led2",
--	.gpio		= S3C2410_GPB(6),
--	.flags		= S3C24XX_LEDF_ACTLOW | S3C24XX_LEDF_TRISTATE,
--	.def_trigger	= "nand-disk",
--};
--
--static struct s3c24xx_led_platdata mini2440_led3_pdata = {
--	.name		= "led3",
--	.gpio		= S3C2410_GPB(7),
--	.flags		= S3C24XX_LEDF_ACTLOW | S3C24XX_LEDF_TRISTATE,
--	.def_trigger	= "mmc0",
--};
--
--static struct s3c24xx_led_platdata mini2440_led4_pdata = {
--	.name		= "led4",
--	.gpio		= S3C2410_GPB(8),
--	.flags		= S3C24XX_LEDF_ACTLOW | S3C24XX_LEDF_TRISTATE,
--	.def_trigger	= "",
--};
--
--static struct s3c24xx_led_platdata mini2440_led_backlight_pdata = {
--	.name		= "backlight",
--	.gpio		= S3C2410_GPG(4),
--	.def_trigger	= "backlight",
-+static struct gpio_led gpio_leds[] = {
-+	{
-+		.name			= "led1",
-+		.gpio			= S3C2410_GPB(5),
-+		.active_low		= 1,
-+		.default_trigger	= "heartbeat",
-+	},
-+	{
-+		.name			= "led2",
-+		.gpio			= S3C2410_GPB(6),
-+		.active_low		= 1,
-+		.default_trigger	= "nand-disk",
-+		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+	},
-+	{
-+		.name			= "led3",
-+		.gpio			= S3C2410_GPB(7),
-+		.active_low		= 1,
-+		.default_trigger	= "mmc0",
-+		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+	},
-+	{
-+		.name			= "led4",
-+		.gpio			= S3C2410_GPB(8),
-+		.active_low		= 1,
-+		.default_trigger	= "none",
-+		.default_state		= LEDS_GPIO_DEFSTATE_OFF,
-+	}
- };
- 
--static struct platform_device mini2440_led1 = {
--	.name		= "s3c24xx_led",
--	.id		= 1,
--	.dev		= {
--		.platform_data	= &mini2440_led1_pdata,
--	},
-+static struct gpio_led backlight_led[] = {
-+	{
-+		.name			= "backlight",
-+		.gpio			= S3C2410_GPG(4),
-+		.active_low		= 0,
-+		.default_trigger	= "backlight",
-+		.default_state		= LEDS_GPIO_DEFSTATE_ON,
-+	}
- };
- 
--static struct platform_device mini2440_led2 = {
--	.name		= "s3c24xx_led",
--	.id		= 2,
--	.dev		= {
--		.platform_data	= &mini2440_led2_pdata,
--	},
-+static struct gpio_led_platform_data gpio_led_info = {
-+	.leds		= gpio_leds,
-+	.num_leds	= ARRAY_SIZE(gpio_leds),
- };
- 
--static struct platform_device mini2440_led3 = {
--	.name		= "s3c24xx_led",
--	.id		= 3,
--	.dev		= {
--		.platform_data	= &mini2440_led3_pdata,
--	},
-+static struct gpio_led_platform_data backlight_info = {
-+	.leds		= backlight_led,
-+	.num_leds	= ARRAY_SIZE(backlight_led),
- };
- 
--static struct platform_device mini2440_led4 = {
--	.name		= "s3c24xx_led",
--	.id		= 4,
--	.dev		= {
--		.platform_data	= &mini2440_led4_pdata,
--	},
-+static struct platform_device mini2440_leds = {
-+	.name	= "leds-gpio",
-+	.id	= 0,
-+	.dev	= {
-+		.platform_data	= &gpio_led_info,
-+	}
- };
- 
- static struct platform_device mini2440_led_backlight = {
--	.name		= "s3c24xx_led",
--	.id		= 5,
--	.dev		= {
--		.platform_data	= &mini2440_led_backlight_pdata,
--	},
-+	.name	= "leds-gpio",
-+	.id	= 1,
-+	.dev	= {
-+		.platform_data	= &backlight_info,
-+	}
- };
--
- /* AUDIO */
- 
- static struct s3c24xx_uda134x_platform_data mini2440_audio_pins = {
-@@ -543,10 +533,7 @@ static struct platform_device *mini2440_devices[] __initdata = {
- 	&s3c_device_rtc,
- 	&s3c_device_usbgadget,
- 	&mini2440_device_eth,
--	&mini2440_led1,
--	&mini2440_led2,
--	&mini2440_led3,
--	&mini2440_led4,
-+	&mini2440_leds,
- 	&mini2440_button_device,
- 	&s3c_device_nand,
- 	&s3c_device_sdi,
--- 
-1.7.1
+Suppose you have a line like:
+
+  foo->bar->fubar = tmp->blah;
+
+There's 3 indirections there, a line number doesn't even get you close
+to knowing what data access triggered the event.
+
+struct bar {
+        int poekoe[5];
+        int fubar;
+};
+
+struct foo {
+        long poekoe[3];
+        struct bar *bar;
+};
+
+struct tmp {
+        long poekoe[4];
+        int blah;
+};
+
+void foo(struct foo *foo, struct tmp *tmp)
+{
+        foo->bar->fubar = tmp->blah;
+}
+
+Which gives (somewhat simplified):
+
+foo:
+	.cfi_startproc
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	movq	%rsp, %rbp
+	.cfi_offset 6, -16
+	.cfi_def_cfa_register 6
+	movq	%rdi, -8(%rbp)
+	movq	%rsi, -16(%rbp)
+	movq	-8(%rbp), %rax    /* load foo arg from stack */
+	movq	24(%rax), %rax    /* load foo->bar */
+	movq	-16(%rbp), %rdx   /* load tmp arg from stack */
+	movl	32(%rdx), %edx    /* load tmp->blah */
+	movl	%edx, 20(%rax)    /* store bar->fubar */
+	leave
+	ret
+	.cfi_endproc
+
+where I annotated the various moves with C comments.
+
+Now depending on what exact IP you get using PEBS+fixup you could using
+DWARF bits generate similar deductions from the code as I did in those
+comments and thus know exactly what data member was accessed and how
+(read/write).
+
+With that data you could then borrow some pahole code and annotate the
+various data structures to illustrate read/write distributions, which
+can then be used as input for data-reorder.
+
 
