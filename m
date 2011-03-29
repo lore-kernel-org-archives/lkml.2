@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab1C2H0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 03:26:04 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58963 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab1C2H0B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 03:26:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=dV6gE48SVMJeJU0XtWJTF4VrI03R+UgnuyFeilT3eLtqNLN5iZnE2V390Uja8+T8up
-         HccEcycvBck4L2v/D1si1/99hecg+638CdwclbHsyZgwXXI6DLnpipEoYrSpOwaKu+8i
-         UsTlxAYzT6vd8eJeOxDM5moMCFrOYkXRWT1H8=
+	id S1754142Ab1C2H1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 03:27:15 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59319 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120Ab1C2H1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 03:27:13 -0400
+Date: Tue, 29 Mar 2011 09:27:01 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Maksym Planeta <mcsim.planeta@gmail.com>, mingo@redhat.com,
+        kernel-janitors@vger.kernel.org, namhyung@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] x86: page: get_order() optimization
+Message-ID: <20110329072701.GJ27398@elte.hu>
+References: <1301215556-8898-1-git-send-email-mcsim.planeta@gmail.com>
+ <4D90E5ED.3080604@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <20110328215344.GC3008@dastard>
-References: <AANLkTinFqqmE+fTMTLVU-_CwPE+LQv7CpXSQ5+CdAKLK@mail.gmail.com>
-	<20110328215344.GC3008@dastard>
-Date: Tue, 29 Mar 2011 11:26:00 +0400
-Message-ID: <AANLkTi==vw7Dy-oK31PxHadwUaDRUUk+TM0ECSZ=chfv@mail.gmail.com>
-Subject: Re: Very aggressive memory reclaim
-From: John Lepikhin <johnlepikhin@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D90E5ED.3080604@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/29 Dave Chinner <david@fromorbit.com>:
 
-> First it would be useful to determine why the VM is reclaiming so
-> much memory. If it is somewhat predictable when the excessive
-> reclaim is going to happen, it might be worth capturing an event
-> trace from the VM so we can see more precisely what it is doiing
-> during this event. In that case, recording the kmem/* and vmscan/*
-> events is probably sufficient to tell us what memory allocations
-> triggered reclaim and how much reclaim was done on each event.
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-Do you mean I must add some debug to mm functions? I don't know any
-other way to catch such events.
+> On 03/27/2011 01:45 AM, Maksym Planeta wrote:
+> > For x86 architecture get_order function can be optimized due to
+> > assembler instruction bsr.
+> > 
+> > This is second version of patch where for constants gcc precompute the
+> > result.
+> > 
+> > Signed-off-by: Maksym Planeta <mcsim.planeta@gmail.com>
+> 
+> gcc 4.x has an intrinsic, __builtin_clz(), which does the opposite of
+> the bsr instruction; specifically:
+> 
+> 	__builtin_clz(x) ^ 31
+> 
+> ... generates a bsrl instruction if x is variable.  This tends to
+> generate much better code than any assembly hacks.
+
+Indeed, that should work better and should be tried - and it can probably 
+propagate the flags result sensibly (which GCC's asm() cannot, unfortunately).
+
+Thanks,
+
+	Ingo
