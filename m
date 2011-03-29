@@ -1,272 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab1C2S5I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 14:57:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51975 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751580Ab1C2S5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 14:57:05 -0400
-From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH] tmpfs: implement xattr support for the entire security
-	namespace
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, hughd@google.com
-Cc: eparis@redhat.com, akpm@linux-foundation.org, davej@redhat.com,
-        hch@infradead.org, jmorris@namei.org
-Date: Tue, 29 Mar 2011 14:56:49 -0400
-Message-ID: <20110329185648.3549.51631.stgit@paris.rdu.redhat.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1753006Ab1C2S7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 14:59:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35092 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab1C2S7r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 14:59:47 -0400
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
+ value
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110329162851.GA6317@redhat.com>
+References: <20110326161346.GA18272@redhat.com>
+	 <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com>
+	 <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop>
+	 <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins>
+	 <1301327368.4859.28.camel@twins> <20110328165648.GA9304@redhat.com>
+	 <1301387532.4859.54.camel@twins>  <20110329162851.GA6317@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Mar 2011 21:01:58 +0200
+Message-ID: <1301425318.2250.485.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements security namespace xattrs for tmpfs filesystems.  The
-feodra project, while trying to replace suid apps with file capabilities,
-realized that tmpfs, which is used on the build systems, does not support file
-capabilities and thus cannot be used to build packages which use file
-capabilities.
+On Tue, 2011-03-29 at 18:28 +0200, Oleg Nesterov wrote:
+> On 03/29, Peter Zijlstra wrote:
+> >
+> > On Mon, 2011-03-28 at 18:56 +0200, Oleg Nesterov wrote:
+> > >
+> > > jump_label_dec:
+> > >
+> > > 	if (atomic_dec_and_test(key))
+> > > 		jump_label_disable(key);
+> > >
+> > > Another thread can create the PERF_ATTACH_TASK event in between
+> > > and call jump_label_update(JUMP_LABEL_ENABLE) first. Looks like,
+> > > jump_label_update() should ensure that "type" matches the state
+> > > of the "*key" under jump_label_lock().
+> >
+> > No I think you're right, and I think we fixed that but it looks like
+> > Ingo still didn't merge the new jump-label patches :/
+> 
+> OK. To remind, we have another problem, perf_install can race with exit.
+> But lets ignore this for now...
 
-The xattr interface is a bit, odd.  If a filesystem does not implement any
-{get,set,list}xattr functions the VFS will call into some random LSM hooks and
-the running LSM can then implement some method for handling xattrs.  SELinux
-for example provides a method to support security.selinux but no other
-security.* xattrs.
+Yay! ;-)
 
-As it stands today when one enables CONFIG_TMPFS_POSIX_ACL tmpfs will have
-xattr handler routines specifically to handle acls.  Because of this tmpfs
-would loose the VFS/LSM helpers to support the running LSM.  To make up for
-that tmpfs had stub functions that did nothing but call into the LSM hooks
-which implement the helpers.
+> 
+> You know, I honestly tried to convince myself I can understand your
+> patch. All I can say, I'll try to read it again ;) But the main idea
+> is clear, we give more respect to ->nr_events and once it is zero
+> task_ctx must not be active.
 
-This new patch does not use the LSM fallback functions and instead just
-implements a native get/set/list xattr feature for the full security.*
-namespace like a normal filesystem.  This means that tmpfs can now support
-both security.selinux and security.capability, which was not previously
-possible.
+Right, except I'm leaking an ->is_active and was seriously considering
+your clever idea of splitting the sched_in and sched_out jump-labels.
 
-The basic implementation is that I attach a:
+> > @@ -2114,8 +2107,19 @@ static void perf_event_context_sched_in(
+> >  	struct perf_cpu_context *cpuctx;
+> >
+> >  	cpuctx = __get_cpu_context(ctx);
+> > -	if (cpuctx->task_ctx == ctx)
+> > +	raw_spin_lock(&ctx->lock);
+> > +	/*
+> > +	 * Serialize against perf_install_in_context(), the interesting case
+> > +	 * is where perf_install_in_context() finds the context inactive and
+> > +	 * another cpu is just about to schedule the task in. In that case
+> > +	 * we need to avoid observing a stale ctx->nr_events.
+> 
+> I don't understand the comment... We can't race __perf_install_in_context,
+> it can only run on the same CPU but we are called with irqs disabled.
 
-struct shmem_xattr {
-	struct list_head list; /* anchored by shmem_inode_info->xattr_list */
-	char *name;
-	size_t size;
-	char value[0];
-};
+Ah, I meant a race with perf_install_in_context() where task_function()
+fails because !task_curr(), in that case we'll attempt
+add_event_to_ctx() from the remote cpu. If we race wrong with sched_in
+nobody might schedule the event.
 
-Into the struct shmem_inode_info for each xattr that is set.  This
-implementation could easily be turned into 2d array with one dimention being
-the xattr prefix and one the xattr suffix.  That could result in an easy
-implementation for user.* if we ever want it.  As it stands today though I
-assume the prefix is always security.
+> > +	ctx->is_active = 1;
+> > +	if (cpuctx->task_ctx == ctx || !ctx->nr_events) {
+> > +		raw_spin_lock(&ctx->lock);
+> >  		return;
+> 
+> I guess you meant _unlock.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
+Yeah, utter fail day today :/
 
- fs/Kconfig               |    4 ++
- include/linux/shmem_fs.h |    1 
- mm/shmem.c               |  116 ++++++++++++++++++++++++++++++++++++++++++----
- 3 files changed, 111 insertions(+), 10 deletions(-)
+> But now I don't understand what ->is_active means. We make it true,
+> but doesn't set cpuctx->task_ctx = ctx. Why __perf_event_release()
+> clears ->is_active then?
 
-diff --git a/fs/Kconfig b/fs/Kconfig
-index f3aa9b0..5e2bfc4 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -132,6 +132,10 @@ config TMPFS_POSIX_ACL
- 	  To learn more about Access Control Lists, visit the POSIX ACLs for
- 	  Linux website <http://acl.bestbits.at/>.
- 
-+	  Enablings this option will also enable support for the entire
-+	  security.* xattr namespace.  This is to make up for support lost
-+	  from the VFS/LSM when a filesystem has any xattr handler.
-+
- 	  If you don't know what Access Control Lists are, say N.
- 
- config HUGETLBFS
-diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
-index 399be5a..20912d1 100644
---- a/include/linux/shmem_fs.h
-+++ b/include/linux/shmem_fs.h
-@@ -19,6 +19,7 @@ struct shmem_inode_info {
- 	struct page		*i_indirect;	/* top indirect blocks page */
- 	swp_entry_t		i_direct[SHMEM_NR_DIRECT]; /* first blocks */
- 	struct list_head	swaplist;	/* chain of maybes on swap */
-+	struct list_head	xattr_list;	/* list of shmem_xattr */
- 	struct inode		vfs_inode;
- };
- 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 58da7c1..c77634f 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -99,6 +99,13 @@ static struct vfsmount *shm_mnt;
- /* Pretend that each entry is of this size in directory's i_size */
- #define BOGO_DIRENT_SIZE 20
- 
-+struct shmem_xattr {
-+	struct list_head list;	/* anchored by shmem_inode_info->xattr_list */
-+	char *name;		/* xattr suffix */
-+	size_t size;
-+	char value[0];
-+};
-+
- /* Flag allocation requirements to shmem_getpage and shmem_swp_alloc */
- enum sgp_type {
- 	SGP_READ,	/* don't exceed i_size, don't allocate page */
-@@ -821,6 +828,7 @@ static int shmem_notify_change(struct dentry *dentry, struct iattr *attr)
- static void shmem_evict_inode(struct inode *inode)
- {
- 	struct shmem_inode_info *info = SHMEM_I(inode);
-+	struct shmem_xattr *xattr, *nxattr;
- 
- 	if (inode->i_mapping->a_ops == &shmem_aops) {
- 		truncate_inode_pages(inode->i_mapping, 0);
-@@ -833,6 +841,11 @@ static void shmem_evict_inode(struct inode *inode)
- 			mutex_unlock(&shmem_swaplist_mutex);
- 		}
- 	}
-+
-+	list_for_each_entry_safe(xattr, nxattr, &info->xattr_list, list) {
-+		kfree(xattr->name);
-+		kfree(xattr);
-+	}
- 	BUG_ON(inode->i_blocks);
- 	shmem_free_inode(inode->i_sb);
- 	end_writeback(inode);
-@@ -1595,6 +1608,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
- 		spin_lock_init(&info->lock);
- 		info->flags = flags & VM_NORESERVE;
- 		INIT_LIST_HEAD(&info->swaplist);
-+		INIT_LIST_HEAD(&info->xattr_list);
- 		cache_no_acl(inode);
- 
- 		switch (mode & S_IFMT) {
-@@ -2059,8 +2073,8 @@ static const struct inode_operations shmem_symlink_inode_operations = {
- 
- #ifdef CONFIG_TMPFS_POSIX_ACL
- /*
-- * Superblocks without xattr inode operations will get security.* xattr
-- * support from the VFS "for free". As soon as we have any other xattrs
-+ * Superblocks without xattr inode operations may get some security.* xattr
-+ * support from the LSM "for free". As soon as we have any other xattrs
-  * like ACLs, we also need to implement the security.* handlers at
-  * filesystem level, though.
-  */
-@@ -2069,24 +2083,106 @@ static size_t shmem_xattr_security_list(struct dentry *dentry, char *list,
- 					size_t list_len, const char *name,
- 					size_t name_len, int handler_flags)
- {
--	return security_inode_listsecurity(dentry->d_inode, list, list_len);
-+	struct shmem_xattr *xattr;
-+	struct shmem_inode_info *info;
-+	size_t used = 0;
-+
-+	info = SHMEM_I(dentry->d_inode);
-+
-+	spin_lock(&dentry->d_inode->i_lock);
-+	list_for_each_entry(xattr, &info->xattr_list, list) {
-+		used += XATTR_SECURITY_PREFIX_LEN;
-+		used += strlen(xattr->name) + 1;
-+
-+		if (list) {
-+			if (list_len < used) {
-+				used = -ERANGE;
-+				break;
-+			}
-+			strncpy(list, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN);
-+			list += XATTR_SECURITY_PREFIX_LEN;
-+			strncpy(list, xattr->name, strlen(xattr->name) + 1);
-+			list += strlen(xattr->name) + 1;
-+		}
-+	}
-+	spin_unlock(&dentry->d_inode->i_lock);
-+
-+	return used;
- }
- 
- static int shmem_xattr_security_get(struct dentry *dentry, const char *name,
- 		void *buffer, size_t size, int handler_flags)
- {
--	if (strcmp(name, "") == 0)
--		return -EINVAL;
--	return xattr_getsecurity(dentry->d_inode, name, buffer, size);
-+	struct shmem_inode_info *info;
-+	struct shmem_xattr *xattr;
-+	int ret = -ENODATA;
-+
-+	info = SHMEM_I(dentry->d_inode);
-+
-+	spin_lock(&dentry->d_inode->i_lock);
-+	list_for_each_entry(xattr, &info->xattr_list, list) {
-+		if (strcmp(name, xattr->name))
-+			continue;
-+
-+		ret = xattr->size;
-+		if (buffer) {
-+			if (size < xattr->size)
-+				ret = -ERANGE;
-+			else
-+				memcpy(buffer, xattr->value, xattr->size);
-+		}
-+		break;
-+	}
-+	spin_unlock(&dentry->d_inode->i_lock);
-+	return ret;
- }
- 
-+/*
-+ * We only handle security.* but we could potentially store the prefix
-+ * as well as the suffix in struct shmem_xattr and support *.*
-+ */
- static int shmem_xattr_security_set(struct dentry *dentry, const char *name,
- 		const void *value, size_t size, int flags, int handler_flags)
- {
--	if (strcmp(name, "") == 0)
--		return -EINVAL;
--	return security_inode_setsecurity(dentry->d_inode, name, value,
--					  size, flags);
-+	struct inode *inode = dentry->d_inode;
-+	struct shmem_inode_info *info = SHMEM_I(inode);
-+	struct shmem_xattr *xattr;
-+	struct shmem_xattr *new_xattr;
-+	size_t len;
-+
-+	/* wrap around? */
-+	len = sizeof(*new_xattr) + size;
-+	if (len <= sizeof(*new_xattr))
-+		return -ENOMEM;
-+
-+	new_xattr = kmalloc(len, GFP_NOFS);
-+	if (!new_xattr)
-+		return -ENOMEM;
-+
-+	new_xattr->name = kstrdup(name, GFP_NOFS);
-+	if (!new_xattr->name) {
-+		kfree(new_xattr);
-+		return -ENOMEM;
-+	}
-+
-+	new_xattr->size = size;
-+	memcpy(new_xattr->value, value, size);
-+
-+	spin_lock(&inode->i_lock);
-+	list_for_each_entry(xattr, &info->xattr_list, list) {
-+		if (!strcmp(name, xattr->name)) {
-+			list_replace(&xattr->list, &new_xattr->list);
-+			goto out;
-+		}
-+	}
-+	list_add(&new_xattr->list, &info->xattr_list);
-+	xattr = NULL;
-+out:
-+	spin_unlock(&inode->i_lock);
-+	if (xattr)
-+		kfree(xattr->name);
-+	kfree(xattr);
-+	return 0;
- }
- 
- static const struct xattr_handler shmem_xattr_security_handler = {
+Yeha, that's the big problem I have with this.
+
+> It seems to me, instead we should change ctx_sched_in() to check
+> nr_events and do nothing if it is zero.
+
+you mean, not set ->is_active?
+
+> > +	cpuctx->task_ctx = ctx;
+> > +
+> >  	ctx_sched_in(ctx, cpuctx, EVENT_PINNED, task);
+> 
+> But we already dropped ctx->lock, __perf_event_release() can remove
+> the last event before ctx_sched_in() takes it again.
+> 
+> This should be moved into ctx_sched_in() afaics, but this is not simple.
+> 
+> So, perhaps we can take ctx->lock and check nr_events after the 2nd
+> ctx_sched_in(). If it is zero, we should clear task_ctx/is_active.
+> 
+> Perhaps. Right now I got lost.
+
+Yeah, you and me both.. I went to look at something else because I
+simply confused myself more. Hopefully tomorrow will bring some sanity.
+
 
