@@ -1,109 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab1C2Bvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 21:51:43 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:43307 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753040Ab1C2Bvm (ORCPT
+	id S1755029Ab1C2Bzh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 21:55:37 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:41156 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab1C2Bzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 21:51:42 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjMEAJY5kU15LK5JgWdsb2JhbAClSBUBARYmJYh2vC0NgnKCawQ
-Date: Tue, 29 Mar 2011 12:51:37 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Sean Noonan <Sean.Noonan@twosigma.com>
-Cc: "'Michel Lespinasse'" <walken@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Martin Bligh <Martin.Bligh@twosigma.com>,
-        Trammell Hudson <Trammell.Hudson@twosigma.com>,
-        Christos Zoulas <Christos.Zoulas@twosigma.com>,
-        "linux-xfs@oss.sgi.com" <linux-xfs@oss.sgi.com>,
-        Stephen Degler <Stephen.Degler@twosigma.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: XFS memory allocation deadlock in 2.6.38
-Message-ID: <20110329015137.GD3008@dastard>
-References: <081DDE43F61F3D43929A181B477DCA95639B52FD@MSXAOA6.twosigma.com>
- <081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
- <20110324174311.GA31576@infradead.org>
- <AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
- <081DDE43F61F3D43929A181B477DCA95639B5349@MSXAOA6.twosigma.com>
- <BANLkTin0jJevStg5P2hqsLbqMzo3o30sYg@mail.gmail.com>
- <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
+	Mon, 28 Mar 2011 21:55:36 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Shyam_Iyer@Dell.com, jbarnes@virtuousgeek.org, mjg59@srcf.ucam.org,
+        Narendra_K@Dell.com, viro@zeniv.linux.org.uk, sfr@canb.auug.org.au,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Matt_Domsch@Dell.com, Charles_Rose@Dell.com, Jordan_Hargrave@Dell.com
+Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
+References: <20110223131536.GA16707@fedora14-r610.blr.amer.dell.com>
+	<20110223131734.GA6275@srcf.ucam.org>
+	<20110304101509.7eef7475@jbarnes-desktop>
+	<20110328080220.1390d28e.randy.dunlap@oracle.com>
+	<DBFB1B45AF80394ABD1C807E9F28D15702659CFB3D@BLRX7MCDC203.AMER.DELL.COM>
+	<4D90EDE8.9070306@oracle.com>
+Date: Tue, 29 Mar 2011 10:55:27 +0900
+In-Reply-To: <4D90EDE8.9070306@oracle.com> (Randy Dunlap's message of "Mon, 28
+	Mar 2011 13:22:00 -0700")
+Message-ID: <87oc4u4rn4.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 05:34:09PM -0400, Sean Noonan wrote:
-> > Could you test if you see the deadlock before
-> > 5ecfda041e4b4bd858d25bbf5a16c2a6c06d7272 without MAP_POPULATE ?
-> 
-> Built and tested 72ddc8f72270758951ccefb7d190f364d20215ab.
-> Confirmed that the original bug does not present in this version.
-> Confirmed that removing MAP_POPULATE does cause the deadlock to occur.
-> 
-> Here is the stack of the test:
-> # cat /proc/3846/stack
-> [<ffffffff812e8a64>] call_rwsem_down_read_failed+0x14/0x30
-> [<ffffffff81271c1d>] xfs_ilock+0x9d/0x110
-> [<ffffffff81271cae>] xfs_ilock_map_shared+0x1e/0x50
-> [<ffffffff81294985>] __xfs_get_blocks+0xc5/0x4e0
-> [<ffffffff81294dcc>] xfs_get_blocks+0xc/0x10
-> [<ffffffff811322c2>] do_mpage_readpage+0x462/0x660
-> [<ffffffff8113250a>] mpage_readpage+0x4a/0x60
-> [<ffffffff81295433>] xfs_vm_readpage+0x13/0x20
-> [<ffffffff810bb850>] filemap_fault+0x2d0/0x4e0
-> [<ffffffff810d8680>] __do_fault+0x50/0x510
-> [<ffffffff810da542>] handle_mm_fault+0x1a2/0xe60
-> [<ffffffff8102a466>] do_page_fault+0x146/0x440
-> [<ffffffff8164e6cf>] page_fault+0x1f/0x30
-> [<ffffffffffffffff>] 0xffffffffffffffff
+Randy Dunlap <randy.dunlap@oracle.com> writes:
 
-Something else is holding the inode locked here.
+>> I don't get this.. you should not be getting CONFIG_NLS=m unless you
+>> have stripped you config files really.. :-) Is it possible to get
+>> your .config to hit this issue.
+>
+> I haven't stripped any config files -- but they are randconfig files.
+> Two (2) config files that cause build failures are attached.
 
-> xfssyncd is stuck in D state.
-> # cat /proc/2484/stack
-> [<ffffffff8106ee1c>] down+0x3c/0x50
-> [<ffffffff81297802>] xfs_buf_lock+0x72/0x170
-> [<ffffffff8128762d>] xfs_getsb+0x1d/0x50
-> [<ffffffff8128e6af>] xfs_trans_getsb+0x5f/0x150
-> [<ffffffff8128821e>] xfs_mod_sb+0x4e/0xe0
-> [<ffffffff8126e4ea>] xfs_fs_log_dummy+0x5a/0xb0
-> [<ffffffff812a2a13>] xfs_sync_worker+0x83/0x90
-> [<ffffffff812a28e2>] xfssyncd+0x172/0x220
-> [<ffffffff81069576>] kthread+0x96/0xa0
-> [<ffffffff81003354>] kernel_thread_helper+0x4/0x10
-> [<ffffffffffffffff>] 0xffffffffffffffff
+config PCI_IOAPIC
+	bool
+	depends on PCI
+	depends on ACPI
+	depends on HOTPLUG
+	default y
 
-And this is indicating that something else is holding the superblock
-locked here. IOWs, whatever thread is having trouble with memory
-allocation is causing these threads to block and so they can be
-ignored. What's the stack trace of the thread that is throwing the
-"I can't allocating a page" errors?
+select NLS if (DMI || ACPI)
 
-As it is, the question I'd really like answered is how a machine with
-48GB RAM can possibly be short of memory when running mmap() on a
-16GB file.  The error that XFS is throwing indicates that the
-machine cannot allocate a single page of memory, so where has all
-your memory gone, and why hasn't the OOM killer been let off the
-leash?  What is consuming the other 32GB of RAM or preventing it
-from being allocated? 
+I guess this is simply wrong. It will be parsed as
 
-Also, I was unable to reproduce this at all on a machine with only
-2GB of RAM, regardless of the kernel version and/or MAP_POPULATE, so
-I'm left to wonder what is special about your test system...
+config PCI_IOAPIC
+	bool
+	depends on PCI
+	depends on ACPI
+	depends on HOTPLUG
+	default y
+	select NLS if (DMI || ACPI)
 
-Perhaps the output of xfs_bmap -vvp <file> after a successful vs
-deadlocked run would be instructive....
+How about something like the following?
 
-Cheers,
-
-Dave.
+config PCI_LABEL
+	bool
+        select NLS
+        depends on (DMI || ACPI)
 -- 
-Dave Chinner
-david@fromorbit.com
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
