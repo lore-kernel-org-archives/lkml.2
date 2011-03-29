@@ -1,105 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1C2TQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 15:16:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44686 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753242Ab1C2TQS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 15:16:18 -0400
-Date: Tue, 29 Mar 2011 12:15:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Kiper <dkiper@net-space.pl>
-Cc: ian.campbell@citrix.com, andi.kleen@intel.com, haicheng.li@linux.intel.com,
-        fengguang.wu@intel.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
-        dave@linux.vnet.ibm.com, wdauchy@gmail.com, rientjes@google.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] mm: Extend memory hotplug API to allow memory
- hotplug in virtual machines
-Message-Id: <20110329121541.d9a27c2e.akpm@linux-foundation.org>
-In-Reply-To: <20110329185913.GF30387@router-fw-old.local.net-space.pl>
-References: <20110328092507.GD13826@router-fw-old.local.net-space.pl>
-	<20110328153735.d797c5b3.akpm@linux-foundation.org>
-	<20110329185913.GF30387@router-fw-old.local.net-space.pl>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1753242Ab1C2TWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 15:22:49 -0400
+Received: from fifo99.com ([67.223.236.141]:50541 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751836Ab1C2TWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 15:22:48 -0400
+Subject: Re: [PATCH] msm: watchdog: support watchdog on 8x60 and 8960
+From: Daniel Walker <dwalker@fifo99.com>
+To: Jeff Ohlstein <johlstei@codeaurora.org>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Gregory Bean <gbean@codeaurora.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+In-Reply-To: <1301105894-22835-1-git-send-email-johlstei@codeaurora.org>
+References: <1301105894-22835-1-git-send-email-johlstei@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Mar 2011 12:22:40 -0700
+Message-ID: <1301426560.4049.0.camel@m0nster>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Mar 2011 20:59:13 +0200
-Daniel Kiper <dkiper@net-space.pl> wrote:
+On Fri, 2011-03-25 at 19:18 -0700, Jeff Ohlstein wrote:
+> The msm watchdog driver is present in kernel only. It does not use the
+> built-in Linux watchdog api. This is because the primary function of
+> our watchdog is detecting bus lockups and interrupts being turned off
+> for long periods of time. We wanted this functionality to be present
+> regardless of the userspace the kernel is running beneath. Userspace
+> is
+> free to have its own watchdog implemented in software. 
 
-> > This is a bit strange.  Normally we'll use a notifier chain to tell
-> > listeners "hey, X just happened".  But this code is different - it
-> > instead uses a notifier chain to tell handlers "hey, do X".  Where in
-> > this case, X is "free a page".
-> >
-> > And this (ab)use of notifiers is not a good fit!  Because we have the
-> > obvious problem that if there are three registered noftifiers, we don't
-> > want to be freeing the page three times.  Hence the tricks with
-> > notifier callout return values.
-> >
-> > If there are multiple independent notifier handlers, how do we manage
-> > their priorities?  And what are the effects of the ordering of the
-> > registration calls?
-> >
-> > And when one callback overrides an existing one, is there any point in
-> > leaving the original one installed at all?
-> >
-> > I dunno, it's all a bit confusing and strange.  Perhaps it would help
-> > if you were to explain exactly what behaviour you want here, and we can
-> > look to see if there is a more idiomatic way of doing it.
-> 
-> OK. I am looking for simple generic mechanism which allow runtime
-> registration/unregistration of generic or module specific (in that
-> case Xen) page onlining function. Dave Hansen sugested compile time
-> solution (https://lkml.org/lkml/2011/2/8/235), however, it does not
-> fit well in my new project on which I am working on (I am going post
-> details at the end of April).
+Are you saying this is mostly a debugging facility ? The interrupts off
+thing I can see as just debugging, but I don't understand the bus
+lockups part.
 
-Well, without a complete description of what you're trying to do and
-without any indication of what "does not fit well" means, I'm at a bit
-of a loss to suggest anything.
+Daniel
 
-If we are assured that only one callback will ever be registered at a
-time then a simple
-
-typdef void (*callback_t)(struct page *);
-
-static callback_t g_callback;
-
-int register_callback(callback_t callback)
-{
-	int ret = -EINVAL;
-
-	lock(some_lock);
-	if (g_callback == NULL) {
-		g_callback = callback;
-		ret = 0;
-	}
-	unlock(some_lock)
-	return ret;
-}
-
-would suffice.  That's rather nasty because calls to (*g_callback)
-require some_lock.  Use RCU.
-
-> > Also...  I don't think we need (the undocumented)
-> > OP_DO_NOT_INCREMENT_TOTAL_COUNTERS and OP_INCREMENT_TOTAL_COUNTERS.
-> > Just do
-> >
-> > void __online_page_increment_counters(struct page *page,
-> > 					bool inc_total_counters);
-> >
-> > and pass it "true" or false".
-> 
-> What do you think about __online_page_increment_counters()
-> (totalram_pages and totalhigh_pages) and
-> __online_page_set_limits() (num_physpages and max_mapnr) ???
-
-I don't understand the proposal.
