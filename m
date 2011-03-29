@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab1C2M7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 08:59:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44348 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab1C2M7c (ORCPT
+	id S1753291Ab1C2NFP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 09:05:15 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61612 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab1C2NFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 08:59:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=lSLVGAZEx8BER67L5OnowbQa482wJbVwkMFK90IY8UDatlLFGOWf2MAyzsavd+GCDq
-         SIow8gyTFqM8gdnx06ddoSvcRzUWu2SXk1MNXamuW9FTCPFJIOqxz8q0rnBi2oZji907
-         B+fo/oFRHJ+h2097ANSPKLIfQk/fYSETdtjuA=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] s3c2440: mini2440: Use leds-gpio driver for board leds handling.
-Date: Tue, 29 Mar 2011 15:58:26 +0300
-User-Agent: KMail/1.13.6 (Linux/2.6.38-gentoo-anarsoul; KDE/4.6.1; i686; ; )
-Cc: Marek Belisko <marek.belisko@open-nandra.com>, ben-linux@fluff.org,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
-References: <AANLkTi=RW0o=+hXcO0Y04nq10QEd=hWY0Nzc0enJ=Tr7@mail.gmail.com> <1301392380-9022-1-git-send-email-marek.belisko@open-nandra.com>
-In-Reply-To: <1301392380-9022-1-git-send-email-marek.belisko@open-nandra.com>
+	Tue, 29 Mar 2011 09:05:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Par-Gunnar Hjalmdahl" <par-gunnar.p.hjalmdahl@stericsson.com>
+Subject: Re: [PATCH v3] staging: Add ST-Ericsson CG2900 driver
+Date: Tue, 29 Mar 2011 15:04:53 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
+        Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>
+References: <1301399358-10783-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+In-Reply-To: <1301399358-10783-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103291558.26624.anarsoul@gmail.com>
+Message-Id: <201103291504.54031.arnd@arndb.de>
+X-Provags-ID: V02:K0:CP0tkNSeO6XjdD5ZuJXNBcZdWblYDUVfQI5hy2N77zB
+ 6CGDgMwP8wwj5XyXugJGYfD1V8KKUIK3Rmw5EfvIjMG7AqQQo8
+ d2TOIg2mmLYhWc5kYDq9XQUMyGtUCk+SFupblrFWEZ/ataua9r
+ C4i882pMo7NqyWi7714NUJH+NLg3OnjSXxe9cJv/mqj/SXqWFE
+ 8Baz5e2ncvvBEP0fxAVTg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 29 March 2011 12:53:00 Marek Belisko wrote:
-> Intention of this patch is convert existing usage of leds-s3c24xx driver
-> to use generic gpio-leds driver. Leds are separated to 2 devices.
-> First device handle 4 available leds. Second device is used to drive
-> LCD backlight. Backlight can be controlled via parameter b so we need
-> separate device which is registered or not depending on parameter.
+On Tuesday 29 March 2011, Par-Gunnar Hjalmdahl wrote:
+> This patch adds support for the ST-Ericsson CG2900
+> Connectivity Combo controller (Bluetooth, FM, GPS).
 > 
-> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+> Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-You also need to remove mach/leds-gpio.h include, you don't need it anymore, 
-right? Rest part looks good for me.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Regards
-Vasily
+
