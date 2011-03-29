@@ -1,41 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab1C2X4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 19:56:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49241 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751676Ab1C2X4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 19:56:31 -0400
-Date: Tue, 29 Mar 2011 16:56:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jack Steiner <steiner@sgi.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] bitmap, irq: Add smp_affinity_list interface to
- /proc/irq
-Message-Id: <20110329165612.bd6ad7e4.akpm@linux-foundation.org>
-In-Reply-To: <4D926F6C.8010705@sgi.com>
-References: <4D926F6C.8010705@sgi.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1753644Ab1C2X6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 19:58:18 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:33971 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975Ab1C2X6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 19:58:17 -0400
+Subject: Should corrected machine check errors still taint the kernel?
+From: Max Asbock <masbock@linux.vnet.ibm.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain
+Date: Tue, 29 Mar 2011 16:58:17 -0700
+Message-Id: <1301443098.5867.34.camel@w-amax.beaverton.ibm.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Mar 2011 16:46:52 -0700
-Mike Travis <travis@sgi.com> wrote:
+I noticed that corrected machine check errors taint the kernel. And it
+looks like they have done that forever.
 
-> +	/* create /proc/irq/<irq>/smp_affinity_list */
-> +	proc_create_data("smp_affinity_list", 0600, desc->dir,
-> +			 &irq_affinity_list_proc_fops, (void *)(long)irq);
+Is that still the right thing to do?
 
-Always document your interfaces, please.  `grep -r smp_affinity
-Documentation' shows where.
+The comment in add_taint() says:
+"Can't trust the integrity of the kernel anymore."
 
-And one we've seen a description of the proposed new interface, we can
-review the patch!
+I don't think that's necessarily the case after seeing a corrected
+memory error.
+
+thanks,
+Max 
+
