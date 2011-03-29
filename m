@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab1C2ICO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 04:02:14 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:41486 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751022Ab1C2ICM convert rfc822-to-8bit (ORCPT
+	id S1751518Ab1C2I3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 04:29:09 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46012 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab1C2I3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 04:02:12 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX18okHlX32EosGhCfGgJ4KS48hMMC3i7Gx0aSBnytx
-	+kL41nO8r4jyjv
-From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-To: linux-kernel@vger.kernel.org
-Subject: /proc/sys/vm/dirty_writeback_centisecs value changed unexpectedly
-Date: Tue, 29 Mar 2011 10:01:59 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38.2; KDE/4.6.1; i686; ; )
+	Tue, 29 Mar 2011 04:29:08 -0400
+Date: Tue, 29 Mar 2011 09:28:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: David Collins <collinsd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-msm-owner@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 2/2] regulator: Propagate uA_load requirements up
+	supply chain
+Message-ID: <20110329082848.GA10447@n2100.arm.linux.org.uk>
+References: <1301326482-6547-1-git-send-email-collinsd@codeaurora.org> <1301326482-6547-3-git-send-email-collinsd@codeaurora.org> <20110328180255.GA28494@opensource.wolfsonmicro.com> <20110328181415.GD31457@n2100.arm.linux.org.uk> <20110329075310.GA29330@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103291002.02252.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110329075310.GA29330@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm wondering why the content of that file is changed from 1500 to 60000 after 
-I s2ram'ed the ThinkPad yesterday (docked) and waked it up today.
+On Tue, Mar 29, 2011 at 08:53:11AM +0100, Mark Brown wrote:
+> On Mon, Mar 28, 2011 at 07:14:15PM +0100, Russell King - ARM Linux wrote:
+> 
+> > That's not true.  Firstly, *all* regulators are not 100% efficient.  They
+> > lose *power* in the form of heat.  So power into the regulator will always
+> > be more than power out.
+> 
+> That's pretty much what I said, yes.
 
-I've a Gentoo system with kernel 2.6.38.2 and use /etc/conf.d/local.start to 
-set this value at boot to 1500.
-
-I think this is a regression althought it might be that this happened in 
-2.6.37 too. I cannot remember such a behaviour under 2.6.36.
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+No, you said the power will map through but the current will not.  I'm
+saying that the power will *not* map through either.
