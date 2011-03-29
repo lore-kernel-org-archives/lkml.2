@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab1C2PVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 11:21:52 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:32971 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab1C2PVv (ORCPT
+	id S1753873Ab1C2PX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 11:23:26 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40440 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab1C2PXZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 11:21:51 -0400
+	Tue, 29 Mar 2011 11:23:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=HPot23+dgyLcbHA9T4EG/kX3pp0Vxz92+ptR2Rtlh1yptQpkWImk/8a0hGP1X+FNSA
-         aKrKzu+tuOSpJC2VaJW51UNs3GR57Lk2EVx+VdGqHABTJfkhX2cbE4VRoa3lbF2wieN/
-         AUS4pIT0R6Ooc85/zQRympqXKMD4xapNSCMh0=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=oGg5ER3qxKDD4xexotR2nSvnDehOMIQEEFezOU4F3pBWzKB7uuX+W+vsIWDL8J2rFs
+         qwpMlLjiktQ2z+Rsn6diloD/kRVzG9NUO8b7vvuzGrH5rNUy/J8Sv4YoCPEkMGAWhRak
+         zUsy0he53RVVl5OLB8mF+tMdLQuFk9nvCU3RQ=
 MIME-Version: 1.0
-In-Reply-To: <849307$c7c8q8@azsmga001.ch.intel.com>
-References: <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
-	<1301401385-8935-1-git-send-email-chris@chris-wilson.co.uk>
-	<AANLkTin0bicOYyY2WCaBxN276t5RV-Q9UZVr=WQ6NmQe@mail.gmail.com>
-	<1bdc18$k1kc9s@fmsmga002.fm.intel.com>
-	<AANLkTi=Adq8i_qoiHhLB9K-CkUbT8uHZeg-H8Z3_Kgrw@mail.gmail.com>
-	<AANLkTi=ejDZYxyHYWXZiLXG+L1o8BqvQp8CQVhsUf570@mail.gmail.com>
-	<849307$c7c8q8@azsmga001.ch.intel.com>
-Date: Tue, 29 Mar 2011 18:21:50 +0300
-X-Google-Sender-Auth: 3I-TCE4vfFjAMrEhV-59XyldvGU
-Message-ID: <AANLkTikwbVBfqBd+ARo2Y3Hm4MYn=VtQy8gn1Rpc17rr@mail.gmail.com>
-Subject: Re: [PATCH] drm/i915: Move the irq wait queue initialisation into the
- ring init
-From: Pekka Enberg <penberg@kernel.org>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1301409864.5615.98.camel@wangqingchuan>
+References: <1301310995.5615.92.camel@wangqingchuan>
+	<1301336010.2217.20.camel@workstation>
+	<AANLkTikMJszEyv8-SMMjD-MeykSwmsKf=gmezcMgySoP@mail.gmail.com>
+	<1301409864.5615.98.camel@wangqingchuan>
+Date: Tue, 29 Mar 2011 11:23:23 -0400
+Message-ID: <AANLkTi=fcWBpmQ66a3+vQwgFOXn=0rJAviNzR4a0mfcJ@mail.gmail.com>
+Subject: Re: GEM-related desktop sluggishness due to linear-time arch_get_unmapped_area_topdown()
+From: Jerome Glisse <j.glisse@gmail.com>
+To: r6144 <rainy6144@gmail.com>
+Cc: Lucas Stach <dev@lynxeye.de>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 5:32 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Tue, 29 Mar 2011 17:22:13 +0300, Pekka Enberg <penberg@kernel.org> wrote:
->> No ssh - the box seems to be dead.
+2011/3/29 r6144 <rainy6144@gmail.com>:
+> 在 2011-03-29二的 10:22 -0400，Jerome Glisse写道：
 >
-> But now you have a machine with which to listen out for the netconsole
-> scream of anguish...
+>> Killer solution would be to have no mapping and a decent
+>> upload/download ioctl that can take userpage.
+>
+> Doesn't this sound like GEM's read/write interface implemented by e.g.
+> the i915 driver?  But if I understand correctly, a mmap-like interface
+> should still be necessary if we want to implement e.g. glMapBuffer()
+> without extra copying.
+>
+> r6144
+>
+>
+glMapBuffer should not be use, it's really not a good way to do stuff.
+Anyway the extra copy might be unavoidable given that sometime the
+front/back might either be in unmappable vram or either have memory
+layout that is not the one specify at buffer creation (this is very
+common when using tiling for instance). So even considering MapBuffer
+or a like function i believe it's a lot better to not allow buffer
+mapping in userspace but provide upload/download hooks that can use
+userpage to avoid as much as possible extra copy.
 
-OK, this gets interesting. With
-
-  netconsole=... loglevel=7
-
-I am not able to reproduce the bug. With
-
-  netconsole=... loglevel=6
-
-I am able to reproduce but nothing is printed to netconsole. I guess
-the kernel dies before it's able to set it up.
-
-                        Pekka
+Cheers,
+Jerome
