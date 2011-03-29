@@ -1,99 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab1C2Kpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 06:45:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42388 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab1C2Kpt (ORCPT
+	id S1752710Ab1C2Kql (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 06:46:41 -0400
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:53228
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752453Ab1C2Kqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 06:45:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=F+uZKXQsO1JujYjHv/IYToJHxPcAo5zhexVpYTXmKurgKKT9dqHhW01y1HdheAkduv
-         ocETW9YiJMs4LyfsfoZ8zHLWKRnU/pVN98DpuvWbmotW5T9lLJNT2vnZNhxRlF2RSJoS
-         MMSp3Q9L/Lodl0q2OCuHrs+u0nKM04mELYJEQ=
-Message-ID: <4D91B856.8040302@suse.cz>
-Date: Tue, 29 Mar 2011 12:45:42 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        rmk+kernel@arm.linux.org.uk, devel@linuxdriverproject.org,
-        gregkh@suse.de, linux-wireless@vger.kernel.org,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH 1/1] drivers: brcmaxi: provide amba axi functionality
- in separate module
-References: <1301391619-4499-1-git-send-email-arend@broadcom.com> <1301391619-4499-2-git-send-email-arend@broadcom.com>
-In-Reply-To: <1301391619-4499-2-git-send-email-arend@broadcom.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Mar 2011 06:46:39 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: intel-gfx@lists.freedesktop.org
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [PATCH] drm/i915: Disable all outputs early, before KMS takeover
+Date: Tue, 29 Mar 2011 11:46:29 +0100
+Message-Id: <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <AANLkTi=VqkYjdiDLJvM-OfmBSGx-EkRkt=4XCDEnvZsU@mail.gmail.com>
+References: <AANLkTi=VqkYjdiDLJvM-OfmBSGx-EkRkt=4XCDEnvZsU@mail.gmail.com>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2011 11:40 AM, Arend van Spriel wrote:
-> --- /dev/null
-> +++ b/drivers/brcmaxi/axi.c
-> @@ -0,0 +1,786 @@
-...
-> +/* resetctrl */
-> +#define	AIRC_RESET		1
-> +
-> +/* definition for specifying padding fields */
-> +#define	_PADLINE(line)	pad ## line
-> +#define	_XSTR(line)	_PADLINE(line)
-> +#define	PAD		_XSTR(__LINE__)
-> +
-> +/*
-> + * struct aidmp - device management plugin "wrapper" registers.
-> + */
-> +struct aidmp {
+If the outputs are active and continuing to access the GATT when we
+teardown the PTEs, then there is a potential for us to hang the GPU.
+The hang tends to be a PGTBL_ER with either an invalid host access or
+an invalid display plane fetch.
 
-This looks like it should be __packed__.
+Reported-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/gpu/drm/i915/i915_dma.c      |   31 ++++++++++++++++++++++---------
+ drivers/gpu/drm/i915/i915_drv.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |   17 +++++++++++------
+ 3 files changed, 34 insertions(+), 15 deletions(-)
 
-> +	u32 oobselina30;	/* 0x000 */
-> +	u32 oobselina74;	/* 0x004 */
-> +	u32 PAD[6];
-...
-> +};
-...
-> +struct axi_local *axi_create(u32 priv_len)
-> +{
-> +	struct axi_local *inst;
-> +	int size = ALIGN(sizeof(*inst), 4) + priv_len;
-> +
-> +	inst = kzalloc(size, GFP_ATOMIC);
-
-Hmm, ATOMIC without checking the retval. This is prepared for its first
-crash under a high memory pressure.
-
-> +	try_module_get(THIS_MODULE);
-> +
-> +	return inst;
-> +}
-> +struct axi_instance *axi_open(void *regs, u32 erombase, u32 priv_len)
-> +{
-> +	struct axi_local *inst = axi_create(priv_len);
-> +
-> +	/* fill public fields */
-> +	inst->pub.regs = regs;
-> +	inst->pub.priv = (char *)inst + ALIGN(sizeof(*inst), 4);
-> +
-> +	inst->enum_rom_ptr = ioremap_nocache((unsigned long)erombase,
-> +					     AXI_CORE_SIZE);
-
-Check retval.
-
-> +	return &inst->pub;
-> +}
-...
-
-regards,
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 7273037..65d5adf 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1176,11 +1176,11 @@ static bool i915_switcheroo_can_switch(struct pci_dev *pdev)
+ 	return can_switch;
+ }
+ 
+-static int i915_load_modeset_init(struct drm_device *dev)
++static int i915_load_gem_init(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	unsigned long prealloc_size, gtt_size, mappable_size;
+-	int ret = 0;
++	int ret;
+ 
+ 	prealloc_size = dev_priv->mm.gtt->stolen_size;
+ 	gtt_size = dev_priv->mm.gtt->gtt_total_entries << PAGE_SHIFT;
+@@ -1204,7 +1204,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 	ret = i915_gem_init_ringbuffer(dev);
+ 	mutex_unlock(&dev->struct_mutex);
+ 	if (ret)
+-		goto out;
++		return ret;
+ 
+ 	/* Try to set up FBC with a reasonable compressed buffer size */
+ 	if (I915_HAS_FBC(dev) && i915_powersave) {
+@@ -1222,6 +1222,13 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 
+ 	/* Allow hardware batchbuffers unless told otherwise. */
+ 	dev_priv->allow_batchbuffer = 1;
++	return 0;
++}
++
++static int i915_load_modeset_init(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	int ret;
+ 
+ 	ret = intel_parse_bios(dev);
+ 	if (ret)
+@@ -1236,7 +1243,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 	 */
+ 	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
+ 	if (ret && ret != -ENODEV)
+-		goto cleanup_ringbuffer;
++		goto out;
+ 
+ 	intel_register_dsm_handler();
+ 
+@@ -1257,13 +1264,19 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 	if (ret)
+ 		goto cleanup_vga_switcheroo;
+ 
++	ret = i915_load_gem_init(dev);
++	if (ret)
++		goto cleanup_irq;
++
++	intel_modeset_gem_init(dev);
++
+ 	/* Always safe in the mode setting case. */
+ 	/* FIXME: do pre/post-mode set stuff in core KMS code */
+ 	dev->vblank_disable_allowed = 1;
+ 
+ 	ret = intel_fbdev_init(dev);
+ 	if (ret)
+-		goto cleanup_irq;
++		goto cleanup_gem;
+ 
+ 	drm_kms_helper_poll_init(dev);
+ 
+@@ -1272,16 +1285,16 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 
+ 	return 0;
+ 
++cleanup_gem:
++	mutex_lock(&dev->struct_mutex);
++	i915_gem_cleanup_ringbuffer(dev);
++	mutex_unlock(&dev->struct_mutex);
+ cleanup_irq:
+ 	drm_irq_uninstall(dev);
+ cleanup_vga_switcheroo:
+ 	vga_switcheroo_unregister_client(dev->pdev);
+ cleanup_vga_client:
+ 	vga_client_register(dev->pdev, NULL, NULL, NULL);
+-cleanup_ringbuffer:
+-	mutex_lock(&dev->struct_mutex);
+-	i915_gem_cleanup_ringbuffer(dev);
+-	mutex_unlock(&dev->struct_mutex);
+ out:
+ 	return ret;
+ }
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 359ddce..60ebd79 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1268,6 +1268,7 @@ static inline void intel_unregister_dsm_handler(void) { return; }
+ 
+ /* modesetting */
+ extern void intel_modeset_init(struct drm_device *dev);
++extern void intel_modeset_gem_init(struct drm_device *dev);
+ extern void intel_modeset_cleanup(struct drm_device *dev);
+ extern int intel_modeset_vga_set_state(struct drm_device *dev, bool state);
+ extern void i8xx_disable_fbc(struct drm_device *dev);
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 432fc04..5c7385b 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6497,6 +6497,9 @@ static void intel_setup_outputs(struct drm_device *dev)
+ 	}
+ 
+ 	intel_panel_setup_backlight(dev);
++
++	/* disable all the possible outputs/crtcs before entering KMS mode */
++	drm_helper_disable_unused_functions(dev);
+ }
+ 
+ static void intel_user_framebuffer_destroy(struct drm_framebuffer *fb)
+@@ -7432,13 +7435,12 @@ void intel_modeset_init(struct drm_device *dev)
+ 		intel_crtc_init(dev, i);
+ 	}
+ 
++	/* Just disable it once at startup */
++	i915_disable_vga(dev);
+ 	intel_setup_outputs(dev);
+ 
+ 	intel_enable_clock_gating(dev);
+ 
+-	/* Just disable it once at startup */
+-	i915_disable_vga(dev);
+-
+ 	if (IS_IRONLAKE_M(dev)) {
+ 		ironlake_enable_drps(dev);
+ 		intel_init_emon(dev);
+@@ -7447,12 +7449,15 @@ void intel_modeset_init(struct drm_device *dev)
+ 	if (IS_GEN6(dev))
+ 		gen6_enable_rps(dev_priv);
+ 
+-	if (IS_IRONLAKE_M(dev))
+-		ironlake_enable_rc6(dev);
+-
+ 	INIT_WORK(&dev_priv->idle_work, intel_idle_update);
+ 	setup_timer(&dev_priv->idle_timer, intel_gpu_idle_timer,
+ 		    (unsigned long)dev);
++}
++
++void intel_modeset_gem_init(struct drm_device *dev)
++{
++	if (IS_IRONLAKE_M(dev))
++		ironlake_enable_rc6(dev);
+ 
+ 	intel_setup_overlay(dev);
+ }
 -- 
-js
-suse labs
+1.7.4.1
+
