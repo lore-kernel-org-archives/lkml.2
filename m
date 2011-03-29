@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab1C2IxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 04:53:00 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:58962 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751516Ab1C2Iw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 04:52:59 -0400
-Message-ID: <4D919DE5.1010509@parallels.com>
-Date: Tue, 29 Mar 2011 03:52:53 -0500
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1751888Ab1C2Iz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 04:55:58 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44013 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab1C2Iz5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 04:55:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=RfHKJy9UaIgPMq5Yj6D8UvryZXlAL+jEK+1LNVFyzoIn72OFV45NqMjtv7fQSSjuXw
+         4EOjYpZUbLoJVWHv9bNzLHQYSF51UffzEnhHyKrYKYF26w/zQXMPhYe/QJQ4EKFmSIdW
+         yjlCNidaawvwBPJbEw5oECn3CadxamsoEYpKs=
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
-References: <4D9179EE.9040707@parallels.com> <4D917DB1.9030300@fusionio.com>
-In-Reply-To: <4D917DB1.9030300@fusionio.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201103291150.32097.anarsoul@gmail.com>
+References: <1301380363-3282-1-git-send-email-marek.belisko@open-nandra.com>
+	<1301380363-3282-5-git-send-email-marek.belisko@open-nandra.com>
+	<201103291150.32097.anarsoul@gmail.com>
+Date: Tue, 29 Mar 2011 10:55:54 +0200
+Message-ID: <AANLkTi=RW0o=+hXcO0Y04nq10QEd=hWY0Nzc0enJ=Tr7@mail.gmail.com>
+Subject: Re: [PATCH 4/4] s3c2440: mini2440: Enable the backlight LED earlier
+ at boot time.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Vasily Khoruzhick <anarsoul@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, ben-linux@fluff.org,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        rpurdie@rpsys.net, buserror@gmail.com, esta1ien@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2011 01:35 AM, Jens Axboe wrote:
-> On 2011-03-29 08:19, Rob Landley wrote:
->> Using the attached config (run through oldconfig and holding down
->> enter), 2.6.38 boots but current -git hangs.  I've bisected it to this
->> commit:
+On Tue, Mar 29, 2011 at 10:50 AM, Vasily Khoruzhick <anarsoul@gmail.com> wrote:
+> On Tuesday 29 March 2011 09:32:43 Marek Belisko wrote:
+>> Code overtaken from:
+>> http://repo.or.cz/w/linux-2.6/mini2440.git
 >>
->> 7eaceaccab5f40bbfda044629a6298616aeaed50 is the first bad commit
->> commit 7eaceaccab5f40bbfda044629a6298616aeaed50
->> Author: Jens Axboe <jaxboe@fusionio.com>
->> Date:   Thu Mar 10 08:52:07 2011 +0100
->>
->>     block: remove per-queue plugging
->>
->>     Code has been converted over to the new explicit on-stack plugging,
->>     and delay users have been converted to use the new API for that.
->>     So lets kill off the old plugging along with aops->sync_page().
->>
->>     Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
->>
->> I suspect it broke CONFIG_IDE_GD_ATA.  (The symptoms change a bit in
->> later versions, when that was first introduced it hung right after
->> discovering hda, now it makes it to freeing kernel memory and then hangs
->> trying to launch init.  But "the disk hangs a lot" still seems to
->> describe the problem.)
-> 
-> That is the case even with 9ced0b95b3993660e7990cf6bf68c1a80f31544e,
-> which was otherwise supposed to fix this queue stall?
-> 
+>> Use flag that allows s3c24xx LED to start in the "on" state.
+>> This is necesary to enable LCD backlight during early boot stage.
+>
+> Why are you still using leds-s3c24xx driver? mini2440 should work OK with
+> leds-gpio. Anyway, looks like patch should be splitted into 2 patches: first
+> adds flag to leds-s3c24xx driver, second enables this flag for mini2440.
+Right with leds-gpio I can use .default_state  = LEDS_GPIO_DEFSTATE_ON,
+which is same like implemented in this patch. Will change and resend.
+Thanks for hint.
+>
+> Regards
+> Vasily
+>
+>> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+>> Signed-off-by: Michel Pollet <buserror@gmail.com>
+>> ---
+>>  arch/arm/mach-s3c2410/include/mach/leds-gpio.h |    1 +
+>>  arch/arm/mach-s3c2440/mach-mini2440.c          |    1 +
+>>  drivers/leds/leds-s3c24xx.c                    |    6 +++++-
+>>  3 files changed, 7 insertions(+), 1 deletions(-)
+>
 
-The first time I tried it, that version did manage to launch init, and
-then hung two lines later with ".udev/ already exists on the static
-/dev! ..." and the cursor still on the end of that line.  Could be an
-unrelated bug, hard to tell.
+regards,
 
-I tried it three more times and it hung right after "freeing unused
-kernel memory", with no output from init.  (I also tried adding
-"init=/bin/bash" to the kernel command line and it still hung after the
-"freeing unused kernel memory" line, with no output from bash.  Pressed
-a lot of keys, nothing echoed back.)
+marek
 
-This is an improvement over hanging earlier in the boot, but userspace
-isn't really happy at the moment.
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-I'm booting all this under kvm or qemu, by the way:
-
-qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
-  -hda ~/sid.ext3 -append "root=/dev/hda rw"
-
-Sometimes with init=/bin/bash in that last quoted bit.  The root
-filesystem's debian sid but that's probably not relevant because it
-worked fine with .38.
-
-Rob
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+icq: 290551086
+web: http://open-nandra.com
