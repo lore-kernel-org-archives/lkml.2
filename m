@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab1C2DGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 23:06:44 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:42059 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751505Ab1C2DGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 23:06:42 -0400
-Subject: Re: [xfs-masters] linux-next: manual merge of the xfs tree with 
- Linus' tree
-From: Alex Elder <aelder@sgi.com>
-Reply-To: aelder@sgi.com
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Christoph Hellwig <hch@lst.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Chinner <david@fromorbit.com>,
-        "xfs-masters@oss.sgi.com" <xfs-masters@oss.sgi.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D9069C1.4080602@fusionio.com>
-References: <20110328122148.1b48a742.sfr@canb.auug.org.au>
-	 <20110328104753.GA27327@lst.de> <20110328105348.GA27458@lst.de>
-	 <4D9069C1.4080602@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Mar 2011 21:57:18 -0500
-Message-ID: <1301367438.2005.1.camel@doink>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Mar 2011 02:57:19.0006 (UTC) FILETIME=[047C7BE0:01CBEDBD]
+	id S1755515Ab1C2DHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 23:07:34 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:62443 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab1C2DHc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Mar 2011 23:07:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=CqajU5UY/1GdiMzMedhmCho5OUjPDYNgTQAbWmjk4TScCD+wvf0NSYJGuV1j9xqzmy
+         P3K9uTAOycLbKgi/8iYeU7SRoO3GCCsNvuOulrnsuZdWUsWad/V4ncd6Su10N1ZFFCpv
+         gwOvo8esnHqg82W20KEvBpJwtwXA0eJlHpjBs=
+Date: Tue, 29 Mar 2011 00:07:24 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Miller <davem@davemloft.net>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: Properly align symbol_conf.priv_size
+Message-ID: <20110329030723.GC19510@ghostprotocols.net>
+References: <20110328.175849.112593455.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110328.175849.112593455.davem@davemloft.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-28 at 12:58 +0200, Jens Axboe wrote:
-> On 2011-03-28 12:53, Christoph Hellwig wrote:
-> > On Mon, Mar 28, 2011 at 12:47:53PM +0200, Christoph Hellwig wrote:
-> >> What XFS does is to replace blk_run_address_space, which was a wrapper
-> >> around blk_run_backing_dev with a direct call to blk_run_backing_dev,
-> >> as there change means we don't have the address_space around anymore.
-> >>
-> >> Jens' tree removes both these functions, and introduces blk_flush_plug
-> >> as a sort-of replacement.  Sticking to the variant from Jens' tree / mainline
-> >> with blk_flush_plug is the correct thing here for this case.
-> >>
-> >> Where there more conflicts than just this?
-> > 
-> > Actually I think we can remove some calls alltogether:  the on-stack
-> > plugging already flushes the plug queue when context switching,
-> > which we'll always do in xfs_buf_wait_unpin, and if we get the lock
-> > without blocking in xfs_buf_lock we don't need to unplug either.
+Em Mon, Mar 28, 2011 at 05:58:49PM -0700, David Miller escreveu:
 > 
-> Yes, in fact all of the blk_flush_plug() calls in XFS can just go away
-> now. I tried to keep them for clarity, but they are primarily there
-> since XFS was the first conversion/testing I did back when it was hacked
-> up.
+> If symbol_conf.priv_size is not a multiple of "sizeof(u64)" we'll bus
+> error on sparc64 in symbol__new because the "struct symbol *" pointer
+> is computed by adding symbol_conf.priv_size to the memory allocated.
 > 
+> We cannot isloate the fix to symbol__new and symbol__delete since the
+> private area is computed by subtracting the priv_size value from a
+> "struct symbol" pointer, so then the private area can still be
+> potentially unaligned.
 
-I sent a fix to Linus but he must not have pulled it in
-time for the March 29 build.  He has pulled it now though.
-Ought to be fixed tomorrow.
+That is a clever area, aka something that needs some sanitization,
+container_of use possibilities...
+attempt-possible-to-become-some-sort-of-progress. :-\
 
-(To be clear, I just did the simple conflict resolution,
-I didn't remove the calls--that'll wait.)
-
-					-Alex
-
+Rusty willing, vowel-optmz+=blts words to trow at that...
+ 
+> So, simply align the symbol_conf.priv_size value in symbol__init()
+> 
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> 
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index 17df793..76c09099 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -2403,6 +2403,8 @@ int symbol__init(void)
+>  	if (symbol_conf.initialized)
+>  		return 0;
+>  
+> +	symbol_conf.priv_size = ALIGN(symbol_conf.priv_size, sizeof(u64));
+> +
+>  	elf_version(EV_CURRENT);
+>  	if (symbol_conf.sort_by_name)
+>  		symbol_conf.priv_size += (sizeof(struct symbol_name_rb_node) -
