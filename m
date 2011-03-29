@@ -1,139 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab1C2SDP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 14:03:15 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:32805
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752438Ab1C2SDO (ORCPT
+	id S1753964Ab1C2SGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 14:06:41 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63385 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab1C2SGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 14:03:14 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i637h668h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LITZGZ-02-HQP-02
-X-M-MSG: 
-Date: Tue, 29 Mar 2011 20:02:57 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: [PATCH] perf tools: Fix NO_NEWT=1 python build error
-Message-ID: <20110329180236.GA19366@erda.amd.com>
-References: <AANLkTimjSZSvz2zPEoc3SSJUBtWVJ_mza5ujpyaM0RVi@mail.gmail.com>
+	Tue, 29 Mar 2011 14:06:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=LosQG3mmpSQ74oehtu/BVS53zvfEUJKZt7JGdx35pql8yD5QYTJ/UMyzvmuP94Ba/7
+         /bWpMzT7or+g/gk4G3mB7rc7vULJRvDTeMzshb6YoYk/n2jSb0lJg2iRRF/IPlTFcwwh
+         5lPwbPs7xPfgUbXUYAV8JwbRntUZSEE0r19qU=
+Message-ID: <4D921FA9.4000909@gmail.com>
+Date: Tue, 29 Mar 2011 11:06:33 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110316 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <AANLkTimjSZSvz2zPEoc3SSJUBtWVJ_mza5ujpyaM0RVi@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: trivial@kernel.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH]arch:Kconfig.locks Remove unused config option.
+References: <1301416611-3651-1-git-send-email-justinmattock@gmail.com> <20110329175302.GF8529@home.goodmis.org>
+In-Reply-To: <20110329175302.GF8529@home.goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.03.11 10:19:59, Stephane Eranian wrote:
-> Looks like some define is missing during the generation of the python support.
-> If you don't have newt then it fails to compile:
-> 
-> $ make
-> Makefile:430: newt not found, disables TUI support. Please install
-> newt-devel or libnewt-dev
-> PERF_VERSION = 2.6.38
-> Makefile:430: newt not found, disables TUI support. Please install
-> newt-devel or libnewt-dev
-> ...
-> GEN perf-archive
-> GEN python/perf.so
-> In file included from util/evsel.h:10,
->                  from util/python.c:6:
-> util/hist.h:105: fatal error: newt.h: No such file or directory
-> compilation terminated.
-> error: command 'gcc' failed with exit status 1
+On 03/29/2011 10:53 AM, Steven Rostedt wrote:
+> On Tue, Mar 29, 2011 at 09:36:51AM -0700, Justin P. Mattock wrote:
+>> using a cleanup script I found this, could be real/fake not sure
+>> I grepped the whole kernel and only found this. If/when you have
+>> time let me know..
+>
+> This was added by: 36cd3c9f925b9307236505ae7ad1ad7ac4d4357c
+> mutex: have non-spinning mutexes on s390 by default
+>
+> and removed by: fa188ae1657d6edc7963d524ce9a0650fe725242
+> [S390] mutex: enable spinning mutex on s390
+>
+> So I think you are safe in removing it.
+>
+> Thanks!
+>
+>>
+>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>
+> Acked-by: Steven Rostedt<rostedt@goodmis.org>
+>
+> -- Steve
+>
 
+o.k... a bit confusing with some of these, but good learning!!
 
-I encountered the same problem. See my fix below.
-
--Robert
-
-
-
-
->From 5a64703b924b67165ec20607f7cb057231edbeae Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Tue, 29 Mar 2011 18:16:27 +0200
-Subject: [PATCH] perf tools: Fix NO_NEWT=1 python build error
-
-Fix the following build error:
-
-     GEN python/perf.so
- In file included from util/evsel.h:10,
-                  from util/python.c:6:
- util/hist.h:106:18: error: newt.h: No such file or directory
- error: command 'x86_64-pc-linux-gnu-gcc' failed with exit status 1
- make: *** [python/perf.so] Error 1
-
-by passing BASIC_CFLAGS to setup.py. BASIC_CFLAGS variable contains
-the -DNO_NEWT_SUPPORT switch which prevents building python c
-extension with newt.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- tools/perf/Makefile      |    8 ++++++--
- tools/perf/util/setup.py |    7 ++++++-
- 2 files changed, 12 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 158c30e..207dee5 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -165,8 +165,12 @@ grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
- 
- $(OUTPUT)python/perf.so: $(PYRF_OBJS)
--	$(QUIET_GEN)python util/setup.py --quiet  build_ext --build-lib='$(OUTPUT)python' \
--						--build-temp='$(OUTPUT)python/temp'
-+	$(QUIET_GEN)( \
-+		export CFLAGS="$(BASIC_CFLAGS)"; \
-+		python util/setup.py --quiet  build_ext --build-lib='$(OUTPUT)python' \
-+			--build-temp='$(OUTPUT)python/temp' \
-+	)
-+
- #
- # No Perl scripts right now:
- #
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index e24ffad..bbc982f 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -1,13 +1,18 @@
- #!/usr/bin/python2
- 
- from distutils.core import setup, Extension
-+from os import getenv
-+
-+cflags = ['-fno-strict-aliasing', '-Wno-write-strings']
-+cflags += getenv('CFLAGS', '').split()
- 
- perf = Extension('perf',
- 		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
- 			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
- 			     'util/util.c', 'util/xyarray.c', 'util/cgroup.c'],
- 		  include_dirs = ['util/include'],
--		  extra_compile_args = ['-fno-strict-aliasing', '-Wno-write-strings'])
-+		  extra_compile_args = cflags,
-+                 )
- 
- setup(name='perf',
-       version='0.1',
--- 
-1.7.3.4
-
-
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+>>
+>> ---
+>>   arch/Kconfig         |    3 ---
+>>   kernel/Kconfig.locks |    2 +-
+>>   2 files changed, 1 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/Kconfig b/arch/Kconfig
+>> index f78c2be..8d24bac 100644
+>> --- a/arch/Kconfig
+>> +++ b/arch/Kconfig
+>> @@ -144,9 +144,6 @@ config HAVE_CLK
+>>   config HAVE_DMA_API_DEBUG
+>>   	bool
+>>
+>> -config HAVE_DEFAULT_NO_SPIN_MUTEXES
+>> -	bool
+>> -
+>>   config HAVE_HW_BREAKPOINT
+>>   	bool
+>>   	depends on PERF_EVENTS
+>> diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+>> index 88c92fb..5e62baf 100644
+>> --- a/kernel/Kconfig.locks
+>> +++ b/kernel/Kconfig.locks
+>> @@ -199,4 +199,4 @@ config INLINE_WRITE_UNLOCK_IRQRESTORE
+>>   	def_bool !DEBUG_SPINLOCK&&  ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
+>>
+>>   config MUTEX_SPIN_ON_OWNER
+>> -	def_bool SMP&&  !DEBUG_MUTEXES&&  !HAVE_DEFAULT_NO_SPIN_MUTEXES
+>> +	def_bool SMP&&  !DEBUG_MUTEXES
+>> --
+>> 1.7.4.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
