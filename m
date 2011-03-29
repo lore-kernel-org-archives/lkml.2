@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab1C2Tn0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 15:43:26 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33011 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab1C2TnZ (ORCPT
+	id S1754230Ab1C2Tph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 15:45:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57841 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab1C2Tpg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 15:43:25 -0400
-Date: Tue, 29 Mar 2011 15:43:24 -0400
-From: "'Christoph Hellwig'" <hch@infradead.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: "'Christoph Hellwig'" <hch@infradead.org>,
-        Sean Noonan <Sean.Noonan@twosigma.com>,
-        "'Michel Lespinasse'" <walken@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Martin Bligh <Martin.Bligh@twosigma.com>,
-        Trammell Hudson <Trammell.Hudson@twosigma.com>,
-        Christos Zoulas <Christos.Zoulas@twosigma.com>,
-        "'linux-xfs@oss.sgi.com'" <linux-xfs@oss.sgi.com>,
-        Stephen Degler <Stephen.Degler@twosigma.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>
-Subject: Re: XFS memory allocation deadlock in 2.6.38
-Message-ID: <20110329194323.GA27840@infradead.org>
-References: <081DDE43F61F3D43929A181B477DCA95639B52FD@MSXAOA6.twosigma.com>
- <081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
- <20110324174311.GA31576@infradead.org>
- <AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
- <081DDE43F61F3D43929A181B477DCA95639B5349@MSXAOA6.twosigma.com>
- <BANLkTin0jJevStg5P2hqsLbqMzo3o30sYg@mail.gmail.com>
- <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
- <081DDE43F61F3D43929A181B477DCA95639B5359@MSXAOA6.twosigma.com>
- <20110329192434.GA10536@infradead.org>
- <20110329193907.GK2310@cmpxchg.org>
+	Tue, 29 Mar 2011 15:45:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HgOHGB1OQ0UuiGZwiXjV5OQS+m/LsZdOnTyQ1ggbtqPm3aRhV/L4VKqopb4H6NMXyF
+         bj7oKsTvc8UkbW2w1DVtd0ItGpQs+RSfNL8dNpCypuhjz6Sx3X8OMkGqmm1vH3tqX374
+         peoX0O0JlrnyL0Pd6FgBdspDnLjJ2dfu+dap0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110329193907.GK2310@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1301421664.2151.12.camel@Portable-Work>
+References: <1301310995.5615.92.camel@wangqingchuan>
+	<1301336010.2217.20.camel@workstation>
+	<AANLkTikMJszEyv8-SMMjD-MeykSwmsKf=gmezcMgySoP@mail.gmail.com>
+	<1301409864.5615.98.camel@wangqingchuan>
+	<AANLkTi=fcWBpmQ66a3+vQwgFOXn=0rJAviNzR4a0mfcJ@mail.gmail.com>
+	<1301421664.2151.12.camel@Portable-Work>
+Date: Tue, 29 Mar 2011 15:45:34 -0400
+Message-ID: <AANLkTin_v5h==E0i5mQgK2AEdaZhwViykr3acbz4CW0k@mail.gmail.com>
+Subject: Re: GEM-related desktop sluggishness due to linear-time arch_get_unmapped_area_topdown()
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Lucas Stach <dev@lynxeye.de>
+Cc: r6144 <rainy6144@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 09:39:07PM +0200, Johannes Weiner wrote:
-> > -	ptr = vmalloc(size);
-> > +	ptr = __vmalloc(size, GFP_NOFS | __GFP_HIGHMEM, PAGE_KERNEL);
-> >  	if (ptr)
-> >  		memset(ptr, 0, size);
-> >  	return ptr;
-> 
-> Note that vmalloc is currently broken in that it does a GFP_KERNEL
-> allocation if it has to allocate page table pages, even when invoked
-> with GFP_NOFS:
-> 
-> 	http://marc.info/?l=linux-mm&m=128942194520631&w=4
+On Tue, Mar 29, 2011 at 2:01 PM, Lucas Stach <dev@lynxeye.de> wrote:
+> Am Dienstag, den 29.03.2011, 11:23 -0400 schrieb Jerome Glisse:
+>> 2011/3/29 r6144 <rainy6144@gmail.com>:
+>> > 在 2011-03-29二的 10:22 -0400，Jerome Glisse写道：
+>> >
+>> >> Killer solution would be to have no mapping and a decent
+>> >> upload/download ioctl that can take userpage.
+>> >
+>> > Doesn't this sound like GEM's read/write interface implemented by e.g.
+>> > the i915 driver?  But if I understand correctly, a mmap-like interface
+>> > should still be necessary if we want to implement e.g. glMapBuffer()
+>> > without extra copying.
+>> >
+>> > r6144
+>> >
+>> >
+>> glMapBuffer should not be use, it's really not a good way to do stuff.
+>> Anyway the extra copy might be unavoidable given that sometime the
+>> front/back might either be in unmappable vram or either have memory
+>> layout that is not the one specify at buffer creation (this is very
+>> common when using tiling for instance). So even considering MapBuffer
+>> or a like function i believe it's a lot better to not allow buffer
+>> mapping in userspace but provide upload/download hooks that can use
+>> userpage to avoid as much as possible extra copy.
+>>
+>> Cheers,
+>> Jerome
+>>
+>
+> Wouldn't this give us a performance penalty for short lived resources
+> like vbo's which are located in GART memory? Mmap allows us to write
+> directly to this drm controlled portion of sysram. With a copy based
+> implementation we would have to allocate the buffer in sysram just to
+> copy it over to another portion of sysram which seems a little insane to
+> me, but I'm not an expert here.
+>
+> -- Lucas
 
-Oh great.  In that case we had a chance to hit the deadlock even before
-the offending commit, just a much smaller one.
+Short lived & small bo would definitly doesn't work well for this kind
+of API, it would all be a function of the ioctl cost. But i am not
+sure the drawback would be that big, intel tested with pread/pwrite
+and gived up don't remember why. For the vbo case you describe the
+scheme i was thinking would be : allocate bo and on buffer data call
+upload to the allocated bo using the bind user page feature that would
+mean zero extra copy operation. For the fire forget case of vbo,
+likely somekind of transient buffer would be more appropriate.
 
+Cheers,
+Jerome
