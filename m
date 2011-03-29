@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab1C2JDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 05:03:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62969 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab1C2JDI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 05:03:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=UQ5LXX5uhM6EfdcH2XwhY3dykJ0tpEm1c1B8gmsPW0eTtZGOMNuKABC6YUkjZtrbzW
-         IfwUFnwFPSrMApY84/zVhyIXlYNKxSkjPzpqvYtzsprgJW/M0RDoB0vpjc7QQTFfqQCg
-         GXHRjb+4zo3tD3HARUG8EZItoHHeMgAXYrTi0=
-Date: Tue, 29 Mar 2011 11:02:48 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: lkml <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: ptrace pull request for linux-next
-Message-ID: <20110329090248.GJ6736@htj.dyndns.org>
+	id S1752135Ab1C2JGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 05:06:05 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:17929 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223Ab1C2JGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 05:06:03 -0400
+Subject: [PATCH] NFS4: some cleanup in kernel thread creation
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net
+Date: Tue, 29 Mar 2011 13:06:38 +0400
+Message-ID: <20110329090442.10367.54282.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Stephen.
+kthread_run() macro allows to pass kthread name with parameters in printf
+style. So, additinal array for kthread name is redundant and was removed.
 
-Can you please pull from the following tree into linux-next?
+Patch for 2.6.38
+Found in 2.6.32
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git ptrace
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@openvz.org>
 
-The tree hosts ongoing ptrace/group stop improvements.  Oleg is in the
-process of getting a korg account and setting up a dedicated tree and
-it has been agreed that I maintain a temporary tree to be tested in
-linux-next until things are properly setup.  The branch is stable and
-will be pulled verbatim into Oleg's tree once it's up and running.
+---
+ fs/nfs/callback.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-Thank you.
+diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+index e3d2942..9e5220f 100644
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -250,7 +250,6 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 	struct svc_rqst *rqstp;
+ 	int (*callback_svc)(void *vrqstp);
+ 	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
+-	char svc_name[12];
+ 	int ret = 0;
+ 	int minorversion_setup;
+ 
+@@ -280,10 +279,10 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 
+ 	svc_sock_update_bufs(serv);
+ 
+-	sprintf(svc_name, "nfsv4.%u-svc", minorversion);
+ 	cb_info->serv = serv;
+ 	cb_info->rqst = rqstp;
+-	cb_info->task = kthread_run(callback_svc, cb_info->rqst, svc_name);
++	cb_info->task = kthread_run(callback_svc, cb_info->rqst,
++					"nfsv4.%u-svc", minorversion);
+ 	if (IS_ERR(cb_info->task)) {
+ 		ret = PTR_ERR(cb_info->task);
+ 		svc_exit_thread(cb_info->rqst);
 
--- 
-tejun
