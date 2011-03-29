@@ -1,89 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab1C2MZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 08:25:06 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42284 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752936Ab1C2MZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 08:25:03 -0400
-Message-ID: <4D91CF9D.3050500@linux.vnet.ibm.com>
-Date: Tue, 29 Mar 2011 08:25:01 -0400
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1753315Ab1C2M1I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 08:27:08 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:33998 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab1C2M1G convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 08:27:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=r5yM8fJiS/bGomLOz+iEQR9b9L79yc8js5TJVwt3EZ/INJhRfv0hFRRYZhuVRgO58w
+         Qhx8skx0bigez7IVBFLjNcfu6Uy6tpdp8o7b6hJDYaO6kEYlnCf0BHXt/ndkWMVimHXD
+         hU4VhcFxSIx2le4bVYEJQOFBskp9uGCBnrtlI=
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@poochiereds.net>
-CC: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        "debora@linux.vnet.ibm.com" <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Subject: Re: TPM chip prevents machine from suspending
-References: <20110328100846.0ba2e039@tlielax.poochiereds.net> <4D90C472.3090908@linux.vnet.ibm.com> <20110328141241.06a435f8@tlielax.poochiereds.net> <20110328154543.1bb979fd@tlielax.poochiereds.net> <4D91157F.2020502@linux.vnet.ibm.com> <20110329080856.1726dfaa@tlielax.poochiereds.net>
-In-Reply-To: <20110329080856.1726dfaa@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
+References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
+	<AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
+	<1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
+	<1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
+	<1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
+Date: Tue, 29 Mar 2011 13:27:04 +0100
+Message-ID: <AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
+Subject: Re: kmemleak for MIPS
+From: Maxin John <maxin.john@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Daniel Baluta <dbaluta@ixiacom.com>, naveen yadav <yad.naveen@gmail.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2011 08:08 AM, Jeff Layton wrote:
-> On Mon, 28 Mar 2011 19:10:55 -0400
-> Stefan Berger<stefanb@linux.vnet.ibm.com>  wrote:
->
->> Ok, so this error code means TPM_INVALID_POSTINIT  (not a posix code)
->> and means that this command was received in the wrong sequence relative
->> to a TPM_Startup command. Well, what's supposed to be happening is this:
->>
->> When the machines (S3) suspends then the OS needs to send a
->> TPM_SaveState() to the TPM. This is done by the Linux driver. Once the
->> VM resumes, the BIOS is supposed to send a TPM_Startup(ST_STATE) to the TPM.
->>
->> Now the fun starts when a BIOS isn't doing that (even though the spec
->> says it's supposed to), which could very well be the case in your case
->> (don't know what broken BIOSes are out there...  Did it ever work before
->> with the TPM driver in the kernel ?). I could try to send you a small
->> tool that you would have to run from user space upon resume so that we
->> can see that this error goes away. If that's verified we could
->> subsequently write a patch for the TPM driver to also send the
->> TPM_Startup(ST_STATE) to the TPM, which then in the case of most BIOSes
->> would be the 2nd time that the TPM receives such a command. I think TPMs
->> should be able to digest this 2nd TPM_Startup() well, but I'd have to
->> check -- but really we would ill-fix it just because of one (possibly)
->> buggy BIOS.
->>
->> The failure of the 2nd suspend then likely stems from the TPM not
->> accepting the TPM_SaveState() anymore since it hasn't seen the
->> TPM_Startup(ST_STATE) that we expected the BIOS to send.
->>
-> Yep. That program fixed the problem. When I run it after a resume, I
-> can then cat the caps file and get output from it, and the machine will
-> successfully suspend again.
-Well, we now could (once) probe the TPM after the resume and send a test 
-command to it and see whether it returns error code 38 and if so send 
-the TPM_Startup() from the driver -- as a work-around for your broken BIOS.
+Hi,
 
->> Another possibility would be for you to check for BIOS updates from the
->> laptop manufacturer...
+On Tue, Mar 29, 2011 at 12:50 PM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Tue, 2011-03-29 at 12:38 +0100, Maxin John wrote:
+>> Hi,
 >>
-> This is actually a desktop machine and the BIOS for the motherboard is
-> at the latest version, though it is quite old -- 2007/09/01. For the
-> record this is a:
+>> > You may want to disable the kmemleak testing to reduce the amount of
+>> > leaks reported.
+>>
+>> The kmemleak results in MIPS that I have included in the previous mail
+>> were obtained during the booting of the malta kernel.
+>> Later, I have checked the "real" usage by using the default
+>> "kmemleak_test" module.
+>>
+>> Following output shows the kmemleak results when I used the "kmemleak_test.ko"
 >
->       Foxconn 6150BK8MC
->
-> I'm actually not using the TPM in this thing at all. I'd be just as
-> happy if there were some way to disable it. Unfortunately, the option
-> in the BIOS to do this doesn't seem to actually work. When I set "TPM
-> Control" in the BIOS to "Disable" it always ends up reset back to "No
-> Change". I'd report both problems to the mfr, but this thing is long
-> out of warranty and I'm pretty sure they won't care.
->
-> Is there some way short of recompiling with CONFIG_TCG_* turned off
-> to disable the TPM driver at boot time?
->
-As far as I know, 'no'. I'd defer it to the maintainers as to how they 
-would want to solve your particular problem... either by using above 
-work-around, which would be more transparent, or actively having to turn 
-the driver off with a command line parameter.
+> Yes, that's fine to test kmemleak and show that it reports issues on
+> MIPS. But it shouldn't report other leaks if the test module isn't
+> loaded at all (removing it wouldn't remove the leaks reported as they
+> are permanent).
 
-    Stefan
+Thank a lot for this information.  Based on this, I will check it
+again in the MIPS platform.
 
+>> debian-mips:~# cat /sys/kernel/debug/kmemleak
+>> ........
+>
+> These were caused by the kmemleak test.
+
+Oh.. I am sorry for creating confusion. I have added these lines (
+........) just to show that I haven't shared the
+complete output in order to reduce the length of the mail.
+
+>>
+>> > These are probably false positives.
+>> The previous results could be false positives. However, the current
+>> results are not false positives as we have intentionally created the
+>> memory leaks using the test module.
+>
+> I was only referring to those leaks coming from udp.c and ignored the
+> kmemleak tests (that's why I said that you should run it again without
+> the kmemleak_test.ko).
+>> > Since the pointer referring this
+>> > block (udp_table) is __read_mostly, is it possible that the
+>> > corresponding section gets placed outside the _sdata.._edata range?
+>>
+>> I am not sure about this. Please  let know how can I check this.
+>
+> Boot the kernel with kmemleak enabled but don't load kmemleak_test.ko.
+> Than you can either wait 10-15 minutes or force a scan with:
+>
+> echo scan > /sys/kernel/debug/kmemleak
+> echo scan > /sys/kernel/debug/kmemleak
+> cat /sys/kernel/debug/kmemleak.
+>
+
+Thanks a lot for sharing the detailed steps.I will perform the test as
+mentioned above and will share the results.
+
+Thanks and Regards,
+Maxin B. John
