@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab1C2VWE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 17:22:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46155 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752809Ab1C2VWC (ORCPT
+	id S1753021Ab1C2VXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 17:23:49 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:32862 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab1C2VXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 17:22:02 -0400
-Date: Wed, 30 Mar 2011 06:22:11 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Will Simoneau <simoneau@ele.uri.edu>
-Cc: Chuck Lever <chuck.lever@oracle.com>,
-        Belisko Marek <marek.belisko@gmail.com>, Trond.Myklebust@netapp.com,
-        bdowning@lavos.net, linux-nfs@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [bisect] kernel 2.6.38 regression with root nfs mounting
-Message-ID: <20110329212210.GB30482@opensource.wolfsonmicro.com>
-References: <43F07477-9075-444D-9BBB-368650538EA8@oracle.com>
- <AANLkTinHUQkBvcvh9APVutOqcKOug6CA066kS_O4p4Tq@mail.gmail.com>
- <DC2B75F8-382A-4AFB-9286-4A55EAF7609A@oracle.com>
- <AANLkTikWyUbtHbbnSh8NBeP3mT4jDOu5Pbtfw=TwKrwE@mail.gmail.com>
- <977C528D-4540-4EB2-92F9-6DAF357D8C81@oracle.com>
- <AANLkTik0UgB+k2i=E5t9XcF50SoSr_iXaFYrhctDx0FJ@mail.gmail.com>
- <8F19F0FE-0800-4C45-B857-1C682CF6A30D@oracle.com>
- <AANLkTin4-+Mc7d0a-XnZvPKL-C_Cf+Kmnm1Bmh1XZZu4@mail.gmail.com>
- <4AD2FFC1-E777-4C29-8718-4E1717EFCD86@oracle.com>
- <20110329202408.GM1966@ele.uri.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110329202408.GM1966@ele.uri.edu>
-X-Cookie: You are standing on my toes.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 Mar 2011 17:23:48 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 1/1] Char: moxa, do not touch NORMAL_ACTIVE bit
+Date: Tue, 29 Mar 2011 23:23:41 +0200
+Message-Id: <1301433821-4246-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 04:24:08PM -0400, Will Simoneau wrote:
+The bit is set in tty_port_block_til_ready (via moxa_open) and unset
+in tty_port_close (via moxa_close). No need to pin it in the driver.
 
-> Interestingly, we are both using DM9000 network chips. I wonder if there
-> is a UDP-related problem on the DM9000. I will play with my
-> configuration a little more (in particular testing proto=tcp and revert
-> of 53d4737580535e073963b91ce87d4216e434fab5) but my guess is the DM9000
-> driver/chip is to blame. The DM9000A on my board has 16K of on-chip SRAM
-> used for its RX/TX buffers which may be playing a part in the problem.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/tty/moxa.c |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
 
-It's more likely that the DM9000 is just slow and fragile.  One thing to
-note with a lot of the lower end network chips is that you end up
-needing to specify rsize and wsize so that you don't get fragmentation -
-about 1k tends to work well IME.  Otherwise performance often degrades
-to the point of unusability.
+diff --git a/drivers/tty/moxa.c b/drivers/tty/moxa.c
+index ffdaab3..a290e9e 100644
+--- a/drivers/tty/moxa.c
++++ b/drivers/tty/moxa.c
+@@ -1129,7 +1129,6 @@ static void moxa_shutdown(struct tty_port *port)
+ 	struct moxa_port *ch = container_of(port, struct moxa_port, port);
+         MoxaPortDisable(ch);
+ 	MoxaPortFlushData(ch, 2);
+-	clear_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
+ }
+ 
+ static int moxa_carrier_raised(struct tty_port *port)
+@@ -1155,7 +1154,6 @@ static int moxa_open(struct tty_struct *tty, struct file *filp)
+ 	struct moxa_board_conf *brd;
+ 	struct moxa_port *ch;
+ 	int port;
+-	int retval;
+ 
+ 	port = tty->index;
+ 	if (port == MAX_PORTS) {
+@@ -1190,10 +1188,7 @@ static int moxa_open(struct tty_struct *tty, struct file *filp)
+ 	mutex_unlock(&ch->port.mutex);
+ 	mutex_unlock(&moxa_openlock);
+ 
+-	retval = tty_port_block_til_ready(&ch->port, tty, filp);
+-	if (retval == 0)
+-	        set_bit(ASYNCB_NORMAL_ACTIVE, &ch->port.flags);
+-	return retval;
++	return tty_port_block_til_ready(&ch->port, tty, filp);
+ }
+ 
+ static void moxa_close(struct tty_struct *tty, struct file *filp)
+-- 
+1.7.4.1
+
+
