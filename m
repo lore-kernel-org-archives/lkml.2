@@ -1,91 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab1C2AcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 20:32:19 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45137 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab1C2AcS (ORCPT
+	id S1752556Ab1C2AhI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 20:37:08 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:42457 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab1C2AhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 20:32:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 29 Mar 2011 09:25:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 0/4] forkbomb killer
-Message-Id: <20110329092542.190fa31d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <BANLkTi=BJrqsTTAuxz-ZDeioCZ=Sc6hbSw@mail.gmail.com>
-References: <20110324182240.5fe56de2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110324105222.GA2625@barrios-desktop>
-	<20110325090411.56c5e5b2.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTi=f3gu7-8uNiT4qz6s=BOhto5s=7g@mail.gmail.com>
-	<20110325115453.82a9736d.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTim3fFe3VzvaWRwzaCT6aRd-yeyfiQ@mail.gmail.com>
-	<20110326023452.GA8140@google.com>
-	<AANLkTi=ng9vwoMJ=tseWwTsXMf9XZkMKUexcpEmQ45M_@mail.gmail.com>
-	<BANLkTi=BJrqsTTAuxz-ZDeioCZ=Sc6hbSw@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 28 Mar 2011 20:37:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LHBvIk3lt1ntjfi7BjOOkAqBPv7zqibq9kZaGFKX+iWK5d9mQSWkAZ31C+6BfYLYxG
+         s6DGGb2GlKatfhGq7izg==
+MIME-Version: 1.0
+In-Reply-To: <20110329091254.20c7cfcb.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110328093957.089007035@suse.cz>
+	<AANLkTi=CPMxOg3juDiD-_hnBsXKdZ+at+i9c1YYM=vv1@mail.gmail.com>
+	<20110329091254.20c7cfcb.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 28 Mar 2011 17:37:02 -0700
+Message-ID: <BANLkTin4J5kiysPdQD2aTC52U4-dy04C1g@mail.gmail.com>
+Subject: Re: [RFC 0/3] Implementation of cgroup isolation
+From: Ying Han <yinghan@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011 16:46:42 -0700
-Michel Lespinasse <walken@google.com> wrote:
+On Mon, Mar 28, 2011 at 5:12 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Mon, 28 Mar 2011 11:01:18 -0700
+> Ying Han <yinghan@google.com> wrote:
+>
+>> On Mon, Mar 28, 2011 at 2:39 AM, Michal Hocko <mhocko@suse.cz> wrote:
+>> > Hi all,
+>> >
+>> > Memory cgroups can be currently used to throttle memory usage of a group of
+>> > processes. It, however, cannot be used for an isolation of processes from
+>> > the rest of the system because all the pages that belong to the group are
+>> > also placed on the global LRU lists and so they are eligible for the global
+>> > memory reclaim.
+>> >
+>> > This patchset aims at providing an opt-in memory cgroup isolation. This
+>> > means that a cgroup can be configured to be isolated from the rest of the
+>> > system by means of cgroup virtual filesystem (/dev/memctl/group/memory.isolated).
+>>
+>> Thank you Hugh pointing me to the thread. We are working on similar
+>> problem in memcg currently
+>>
+>> Here is the problem we see:
+>> 1. In memcg, a page is both on per-memcg-per-zone lru and global-lru.
+>> 2. Global memory reclaim will throw page away regardless of cgroup.
+>> 3. The zone->lru_lock is shared between per-memcg-per-zone lru and global-lru.
+>>
+>> And we know:
+>> 1. We shouldn't do global reclaim since it breaks memory isolation.
+>> 2. There is no need for a page to be on both LRU list, especially
+>> after having per-memcg background reclaim.
+>>
+>> So our approach is to take off page from global lru after it is
+>> charged to a memcg. Only pages allocated at root cgroup remains in
+>> global LRU, and each memcg reclaims pages on its isolated LRU.
+>>
+>
+> Why you don't use cpuset and virtual nodes ? It's what you want.
 
-> On Sat, Mar 26, 2011 at 1:48 AM, Hiroyuki Kamezawa
-> <kamezawa.hiroyuki@gmail.com> wrote:
-> > 2011/3/26 Michel Lespinasse <walken@google.com>:
-> >> I haven't heard of fork bombs being an issue for us (and it's not been
-> >> for me on my desktop, either).
-> >>
-> >> Also, I want to point out that there is a classical userspace solution
-> >> for this, as implemented by killall5 for example. One can do
-> >> kill(-1, SIGSTOP) to stop all processes that they can send
-> >> signals to (except for init and itself). Target processes
-> >> can never catch or ignore the SIGSTOP. This stops the fork bomb
-> >> from causing further damage. Then, one can look at the process
-> >> tree and do whatever is appropriate - including killing by uid,
-> >> by cgroup or whatever policies one wants to implement in userspace.
-> >> Finally, the remaining processes can be restarted using SIGCONT.
-> >>
-> >
-> > Can that solution work even under OOM situation without new login/commands ?
-> > Please show us your solution, how to avoid Andrey's Bomb  with your way.
-> > Then, we can add Documentation, at least. Or you can show us your tool.
-> 
-> To be clear, I don't have a full solution. I just think that the
-> problem is approachable from userspace by freezing processes and then
-> sorting them out. The killall5 utility is an example of that, though
-> you would possibly want to add more smarts to it. If we want to
-> include a kernel solution, I do like the simplicity of Minchan's
-> proposal, too. But, I don't have a strong opinion on this matter, so
-> feel free to ignore me if this is not useful feedback.
-> 
+We've been running cpuset + fakenuma nodes configuration in google to
+provide memory isolation. The configuration of having the virtual box
+is complex which user needs to know great details of the which node to
+assign to which cgroup. That is one of the motivations for us moving
+towards to memory controller which simply do memory accounting no
+matter where pages are allocated.
 
-I don't have strong opinion, too. I just think easily breakable kernel
-by an user application is not ideal thing for me. To go to other buildings
-to press reset-button is good for my health. I just implemnted a solution and
-it seems to work well. Then, just want to ask how my patch looks.
+By saying that, memcg simplified the memory accounting per-cgroup but
+the memory isolation is broken. This is one of examples where pages
+are shared between global LRU and per-memcg LRU. It is easy to get
+cgroup-A's page evicted by adding memory pressure to cgroup-B.
 
-But no one see patches, and it seems this feature is not welcome.
-I'll continue to walk or just use virtual machines for testing OOM.
+The approach we are thinking to make the page->lru exclusive solve the
+problem. and also we should be able to break the zone->lru_lock
+sharing.
 
-Thanks,
--Kame
+--Ying
 
 
 
 
-
+>
+> Thanks,
+> -Kame
+>
+>
