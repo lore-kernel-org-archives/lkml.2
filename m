@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab1C2OTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 10:19:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7630 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606Ab1C2OTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 10:19:03 -0400
-Date: Tue, 29 Mar 2011 10:18:53 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: block: eliminate ELEVATOR_INSERT_REQUEUE
-Message-ID: <20110329141853.GA23949@redhat.com>
-References: <20110325151530.GA4414@swordfish.minsk.epam.com>
- <20110325152228.GA1707@gentoo.trippels.de>
- <20110325154024.GA16029@redhat.com>
- <4D8CB9C9.5010208@kernel.dk>
- <20110325185455.GA2969@redhat.com>
- <4D8CF202.9010809@kernel.dk>
- <20110326042156.GB28458@redhat.com>
- <20110328082321.GC16530@htj.dyndns.org>
- <20110328221547.GA1118@redhat.com>
- <4D91C8E7.5070205@kernel.dk>
+	id S1753812Ab1C2OWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 10:22:16 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49919 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668Ab1C2OWO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 10:22:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=m0uuCeL+3Wq0dz2ZMbpZMXx7v0gWyhBRX/MSENtWRN3LC/80BZozcNAYqrUWe+GCVI
+         ZUuzEZ2QW6zDZPnD1A1rUPz37bfSkSfJivIW+Aq1EDnrgIn1gPXohqQ1hQEz28pv72sR
+         H28VHrQJiK0JsBcaLhYQqL1cQ4/i2V4sGy6ug=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D91C8E7.5070205@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTi=Adq8i_qoiHhLB9K-CkUbT8uHZeg-H8Z3_Kgrw@mail.gmail.com>
+References: <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
+	<1301401385-8935-1-git-send-email-chris@chris-wilson.co.uk>
+	<AANLkTin0bicOYyY2WCaBxN276t5RV-Q9UZVr=WQ6NmQe@mail.gmail.com>
+	<1bdc18$k1kc9s@fmsmga002.fm.intel.com>
+	<AANLkTi=Adq8i_qoiHhLB9K-CkUbT8uHZeg-H8Z3_Kgrw@mail.gmail.com>
+Date: Tue, 29 Mar 2011 17:22:13 +0300
+X-Google-Sender-Auth: mBciq6wbdr7-BrpaHx3K4mxBqT0
+Message-ID: <AANLkTi=ejDZYxyHYWXZiLXG+L1o8BqvQp8CQVhsUf570@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: Move the irq wait queue initialisation into the
+ ring init
+From: Pekka Enberg <penberg@kernel.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29 2011 at  7:56am -0400,
-Jens Axboe <axboe@kernel.dk> wrote:
+On Tue, Mar 29, 2011 at 4:39 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> On Tue, Mar 29, 2011 at 4:22 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> On Tue, 29 Mar 2011 16:05:35 +0300, Pekka Enberg <penberg@kernel.org> wrote:
+>>> On Tue, Mar 29, 2011 at 3:23 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>>> > Required so that we don't obliterate the queue if initialising the
+>>> > rings after the global IRQ handler is installed.
+>>> >
+>>> > Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+>>>
+>>> I applied both of the patches on top of yesterdays git HEAD and I just
+>>> get a blank screen after GRUB. No serial or net console here. Do you
+>>> want me to try just one of the patches or turn on some debugging
+>>> options?
+>>
+>> That was the unspoken side-effect: if we fail to load the i915 module after
+>> disabling the outputs, then we would be left with a blank screen.
+>>
+>> If you can ssh in and retrieve the dmesg, then it should at least give a
+>> reason...
+>
+> I have
+>
+> CONFIG_DRM_I915=y
+>
+> so there are no modules involved. I'll see if I can ssh to the box.
 
-> On 2011-03-29 00:15, Mike Snitzer wrote:
-> > On Mon, Mar 28 2011 at  4:23am -0400,
-> > Tejun Heo <tj@kernel.org> wrote:
-> > 
-> >> On Sat, Mar 26, 2011 at 12:21:56AM -0400, Mike Snitzer wrote:
-> >>> Should blk_kick_flush() process the flush request without calling
-> >>> elv_insert() -- like is done with open coded list_add() in
-> >>> blk_insert_flush()?
-> >>>
-> >>> Or should blk_insert_flush() use elv_insert() with
-> >>> ELEVATOR_INSERT_REQUEUE too? 
-> >>
-> >> Hmmm... I would prefer the latter.  Given that INSERT_REQUEUE and
-> >> FRONT are no longer different, it would probably be better to use
-> >> FRONT tho.  The only reason REQUEUE is used there is to avoid kicking
-> >> the queue from elv_insert(), which is gone now.
-> > 
-> > OK, I came up with the following patch.
-> > 
-> > Jens, this is just a natural cleanup given the code that resulted from
-> > the flush-merge and onstack plugging changes coming together.
-> 
-> That looks nice and clean. What kind of testing has been done?
-
-I successfully tested it with that fsync-heavy ffsb workload (xfs on
-mpath device).
-
-Mike
+No ssh - the box seems to be dead.
