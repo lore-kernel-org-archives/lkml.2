@@ -1,96 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab1C2AJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 20:09:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50350 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322Ab1C2AJl (ORCPT
+	id S932232Ab1C2AKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 20:10:49 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:47801 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586Ab1C2AKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 20:09:41 -0400
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Snitzer <snizer@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
-        Giacomo Catenazzi <cate@cateee.net>
-Subject: Re: [Regression] Please revert a91a2785b20
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <alpine.LFD.2.00.1103290006070.2774@localhost6.localdomain6>
-	<yq1hbamkgoe.fsf@sermon.lab.mkp.net>
-	<alpine.LFD.2.00.1103290049330.2774@localhost6.localdomain6>
-Date: Mon, 28 Mar 2011 20:09:12 -0400
-In-Reply-To: <alpine.LFD.2.00.1103290049330.2774@localhost6.localdomain6>
-	(Thomas Gleixner's message of "Tue, 29 Mar 2011 01:03:17 +0200
-	(CEST)")
-Message-ID: <yq1d3lakct3.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110013 (No Gnus v0.13) Emacs/23.2 (gnu/linux)
+	Mon, 28 Mar 2011 20:10:47 -0400
+Date: Mon, 28 Mar 2011 17:10:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: sedat.dilek@gmail.com
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: linux-next: Tree for March 25 (Call trace:
+ RCU|workqueues|block|VFS|ext4 related?)
+Message-ID: <20110329001040.GT2287@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110327050720.GA31424@linux.vnet.ibm.com>
+ <AANLkTimpbGGcxNJUDMjdg1wijYhvXQ3KySvRYnEsUYsy@mail.gmail.com>
+ <20110327213220.GE2322@linux.vnet.ibm.com>
+ <AANLkTi=ti+PVC8N-3Bt2fzuHHQz6kuMdUPeb3Gudn7EU@mail.gmail.com>
+ <20110328040823.GG2322@linux.vnet.ibm.com>
+ <AANLkTinQiDSXLP1o-HfdedYOMKtnsbBrcOfuqw9sFf2X@mail.gmail.com>
+ <20110328132436.GL2322@linux.vnet.ibm.com>
+ <20110328151143.GA4859@linux.vnet.ibm.com>
+ <AANLkTikcX75FaFDcDnYFxMtaE03w7-UbNaeL6h-VeRPo@mail.gmail.com>
+ <AANLkTimtKP9ypNzf4ZpLK-CvGnqY+UigJaALHbFzUwg+@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D91232E.002A,ss=1,fgs=0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimtKP9ypNzf4ZpLK-CvGnqY+UigJaALHbFzUwg+@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Thomas" == Thomas Gleixner <tglx@linutronix.de> writes:
+On Mon, Mar 28, 2011 at 06:46:48PM +0200, Sedat Dilek wrote:
+> On Mon, Mar 28, 2011 at 6:38 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> > On Mon, Mar 28, 2011 at 5:11 PM, Paul E. McKenney
+> > <paulmck@linux.vnet.ibm.com> wrote:
+> >> On Mon, Mar 28, 2011 at 06:24:36AM -0700, Paul E. McKenney wrote:
+> >>> On Mon, Mar 28, 2011 at 02:33:36PM +0200, Sedat Dilek wrote:
 
-Thomas> Why didn't you send a revert to Linus right away?
+[ . . . ]
 
-Simply didn't think of it. Didn't get the bug report until this
-afternoon and few people build with BLK_DEV_INTEGRITY enabled. But I
-guess Fedora has it on by default.
+> >>> > Ah, before I forget...
+> >>> >
+> >>> > I used TREE_RCU (was the default before noticing RCU issue) for
+> >>> > finding the culprit commit.
+> >>> > If it is from your POV more helpful to switch to PREEMPT + PREEMPT_RCU
+> >>> > + RCU_BOOST, please let me *now* know.
+> >>> > ( Both RCU setups freaks up the system. )
+> >>>
+> >>> If TREE_RCU hits problems faster, it is probably best to stay with
+> >>> TREE_RCU.
+> >>
+> >> And of course, one exception to this advice is if TREE_RCU hangs so hard
+> >> and fast that you don't have time to get any diagnostics.  If this is the
+> >> case, then TREE_PREEMPT_RCU might be more productive.
+> >>
+> >
+> > OK, that would somehow explain why I could not really get some debug
+> > infos when doing "my stress-test" and checking via:
+> >
+> > $ LC_ALL=C tail -f /sys/kernel/debug/rcu/rcudata
+> >
+> > Then I remembered I saw a snippet for a RCU torture script mentionned
+> > in the kernel-docs (see Documentation/RCU/torture.txt).
+> >
+> > 189 The following script may be used to torture RCU:
+> > 190
+> > 191         #!/bin/sh
+> > 192
+> > 193         modprobe rcutorture
+> > 194         sleep 100
+> > 195         rmmod rcutorture
+> > 196         dmesg | grep torture:
+> >
+> > So, I recompiled a new TREE_RC-based kernel and build with
+> > CONFIG_RCU_TORTURE_TEST=m.
+> >
+> > Unfortunately, the rmmod (I prefer modprobe -r -v) hangs... the
+> > messages in the logs look promising.
+> >
+> > - Sedat -
+> >
+> 
+> Wrong attachment, correct attached.
 
+And one stupid problem located thus far.  I can make a (tortured) case
+for it resulting in the symptoms you see, but it does seem unlikely to
+happen repeatedly, as it would require a burst of CPU just at the wrong
+time.  But who knows?
 
-Thomas> So for your thing, it was already in Linus tree. Though if you
-Thomas> get aware of it and it's revertable w/o creating lots of mess,
-Thomas> then it's the right thing to revert it immediately. Do not drag
-Thomas> out regressions longer than necessary, please.
+In any case, I am still looking.
 
-Noted.
+							Thanx, Paul
 
-Patch below...
+------------------------------------------------------------------------
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+Fix stupid typo.
 
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-[PATCH] md: Fix integrity registration error when no devices are capable
-
-We incorrectly returned -EINVAL when none of the devices in the array
-had an integrity profile. This in turn prevented mdadm from starting the
-metadevice. Fix this so we only return errors on mismatched profiles and
-memory allocation failures.
-
-Reported-by: Giacomo Catenazzi <cate@cateee.net>
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
-
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index f11e0bc..aab112f 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1778,12 +1778,6 @@ int md_integrity_register(mddev_t *mddev)
- 			continue;
- 		if (rdev->raid_disk < 0)
- 			continue;
--		/*
--		 * If at least one rdev is not integrity capable, we can not
--		 * enable data integrity for the md device.
--		 */
--		if (!bdev_get_integrity(rdev->bdev))
--			return -EINVAL;
- 		if (!reference) {
- 			/* Use the first rdev as the reference */
- 			reference = rdev;
-@@ -1794,6 +1788,8 @@ int md_integrity_register(mddev_t *mddev)
- 				rdev->bdev->bd_disk) < 0)
- 			return -EINVAL;
- 	}
-+	if (!reference || !bdev_get_integrity(reference->bdev))
-+		return 0;
- 	/*
- 	 * All component devices are integrity capable and have matching
- 	 * profiles, register the common profile for the md device.
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 5477764..f311228 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1618,7 +1618,7 @@ static int rcu_node_kthread(void *arg)
+ 		rnp->wakemask = 0;
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 		rcu_initiate_boost(rnp);
+-		for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask <<= 1) {
++		for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask >>= 1) {
+ 			if ((mask & 0x1) == 0)
+ 				continue;
+ 			preempt_disable();
