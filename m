@@ -1,122 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab1C2S7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 14:59:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35092 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab1C2S7r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 14:59:47 -0400
-Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
- value
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110329162851.GA6317@redhat.com>
-References: <20110326161346.GA18272@redhat.com>
-	 <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com>
-	 <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop>
-	 <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins>
-	 <1301327368.4859.28.camel@twins> <20110328165648.GA9304@redhat.com>
-	 <1301387532.4859.54.camel@twins>  <20110329162851.GA6317@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Mar 2011 21:01:58 +0200
-Message-ID: <1301425318.2250.485.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752694Ab1C2TBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 15:01:18 -0400
+Received: from void.printf.net ([89.145.121.20]:41505 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751212Ab1C2TBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 15:01:16 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: MMC cleanups for 2.6.39
+Date: Tue, 29 Mar 2011 15:07:11 -0400
+Message-ID: <m3ei5pd9uo.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 18:28 +0200, Oleg Nesterov wrote:
-> On 03/29, Peter Zijlstra wrote:
-> >
-> > On Mon, 2011-03-28 at 18:56 +0200, Oleg Nesterov wrote:
-> > >
-> > > jump_label_dec:
-> > >
-> > > 	if (atomic_dec_and_test(key))
-> > > 		jump_label_disable(key);
-> > >
-> > > Another thread can create the PERF_ATTACH_TASK event in between
-> > > and call jump_label_update(JUMP_LABEL_ENABLE) first. Looks like,
-> > > jump_label_update() should ensure that "type" matches the state
-> > > of the "*key" under jump_label_lock().
-> >
-> > No I think you're right, and I think we fixed that but it looks like
-> > Ingo still didn't merge the new jump-label patches :/
-> 
-> OK. To remind, we have another problem, perf_install can race with exit.
-> But lets ignore this for now...
+Hi Linus,
 
-Yay! ;-)
+Please pull from:
 
-> 
-> You know, I honestly tried to convince myself I can understand your
-> patch. All I can say, I'll try to read it again ;) But the main idea
-> is clear, we give more respect to ->nr_events and once it is zero
-> task_ctx must not be active.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
-Right, except I'm leaking an ->is_active and was seriously considering
-your clever idea of splitting the sched_in and sched_out jump-labels.
-
-> > @@ -2114,8 +2107,19 @@ static void perf_event_context_sched_in(
-> >  	struct perf_cpu_context *cpuctx;
-> >
-> >  	cpuctx = __get_cpu_context(ctx);
-> > -	if (cpuctx->task_ctx == ctx)
-> > +	raw_spin_lock(&ctx->lock);
-> > +	/*
-> > +	 * Serialize against perf_install_in_context(), the interesting case
-> > +	 * is where perf_install_in_context() finds the context inactive and
-> > +	 * another cpu is just about to schedule the task in. In that case
-> > +	 * we need to avoid observing a stale ctx->nr_events.
-> 
-> I don't understand the comment... We can't race __perf_install_in_context,
-> it can only run on the same CPU but we are called with irqs disabled.
-
-Ah, I meant a race with perf_install_in_context() where task_function()
-fails because !task_curr(), in that case we'll attempt
-add_event_to_ctx() from the remote cpu. If we race wrong with sched_in
-nobody might schedule the event.
-
-> > +	ctx->is_active = 1;
-> > +	if (cpuctx->task_ctx == ctx || !ctx->nr_events) {
-> > +		raw_spin_lock(&ctx->lock);
-> >  		return;
-> 
-> I guess you meant _unlock.
-
-Yeah, utter fail day today :/
-
-> But now I don't understand what ->is_active means. We make it true,
-> but doesn't set cpuctx->task_ctx = ctx. Why __perf_event_release()
-> clears ->is_active then?
-
-Yeha, that's the big problem I have with this.
-
-> It seems to me, instead we should change ctx_sched_in() to check
-> nr_events and do nothing if it is zero.
-
-you mean, not set ->is_active?
-
-> > +	cpuctx->task_ctx = ctx;
-> > +
-> >  	ctx_sched_in(ctx, cpuctx, EVENT_PINNED, task);
-> 
-> But we already dropped ctx->lock, __perf_event_release() can remove
-> the last event before ctx_sched_in() takes it again.
-> 
-> This should be moved into ctx_sched_in() afaics, but this is not simple.
-> 
-> So, perhaps we can take ctx->lock and check nr_events after the 2nd
-> ctx_sched_in(). If it is zero, we should clear task_ctx/is_active.
-> 
-> Perhaps. Right now I got lost.
-
-Yeah, you and me both.. I went to look at something else because I
-simply confused myself more. Hopefully tomorrow will bring some sanity.
+to receive a few small driver fixes, and a larger cleanup of the TMIO
+MMC driver.  This splits up the driver and touches arch/arm, arch/sh
+and drivers/mfd -- these patches all come with ACKs from the relevant
+maintainers.  There are no currently no merge conflicts.  Thanks.
 
 
+The following changes since commit d39dd11c3e6a7af5c20bfac40594db36cf270f42:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://git.kernel.org/.../viro/vfs-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
+
+Chris Ball (1):
+      mmc: mmc_test: Remove set-but-unused variable.
+
+David Miller (1):
+      mmc: of_mmc_spi: Need to include irq.h and of_irq.h
+
+Guennadi Liakhovetski (15):
+      mmc: tmio-mmc: Improve DMA stability on sh-mobile
+      mmc: tmio: use PIO for short transfers
+      mmc: tmio: split core functionality, DMA and MFD glue
+      sh: ecovec: use the CONFIG_MMC_TMIO symbols instead of MFD
+      mmc: tmio: convert the SDHI MMC driver from MFD to a platform driver
+      ARM: mach-shmobile: convert boards to use linux/mmc/sh_mobile_sdhi.h
+      sh: convert boards to use linux/mmc/sh_mobile_sdhi.h
+      mfd: remove now redundant sh_mobile_sdhi.h header
+      mmc: tmio: only access registers above 0xff, if available
+      ARM: mach-shmobile: fix SDHI IO address-range
+      sh: fix SDHI IO address-range
+      mmc: tmio: remove work-around for unmasked SDIO interrupts
+      mmc: tmio: fix power-mode interpretation
+      mmc: tmio: support aggressive clock gating
+      mmc: SDHI should depend on SUPERH || ARCH_SHMOBILE
+
+Jaehoon Chung (1):
+      mmc: dw_mmc: set fixed burst in BMOD register
+
+Pawel Moll (1):
+      mmc: mmci: Add ARM variant with extended FIFO
+
+Richard Zhu (4):
+      mmc: sdhci-esdhc: remove SDHCI_QUIRK_NO_CARD_NO_RESET from esdhc
+      mmc: sdhci: add the abort CMDTYPE bits definition
+      mmc: sdhci-esdhc: use writel/readl as general APIs
+      mmc: sdhci-esdhc: enable esdhc on imx53
+
+Sergei Shtylyov (1):
+      mmc: use pci_dev->revision
+
+Simon Horman (1):
+      mmc: tmio_mmc: Move some defines into a shared header
+
+Yoshihiro Shimoda (1):
+      mmc: fix mmc_app_send_scr() for dma transfer
+
+ arch/arm/mach-shmobile/board-ap4evb.c       |    6 +-
+ arch/arm/mach-shmobile/board-g4evm.c        |    6 +-
+ arch/arm/mach-shmobile/board-mackerel.c     |    8 +-
+ arch/sh/boards/mach-ap325rxa/setup.c        |    6 +-
+ arch/sh/boards/mach-ecovec24/setup.c        |   12 +-
+ arch/sh/boards/mach-kfr2r09/setup.c         |    4 +-
+ arch/sh/boards/mach-migor/setup.c           |    4 +-
+ arch/sh/boards/mach-se/7724/setup.c         |    6 +-
+ drivers/mfd/Kconfig                         |   14 -
+ drivers/mfd/Makefile                        |    1 -
+ drivers/mmc/card/mmc_test.c                 |    3 +-
+ drivers/mmc/core/sd_ops.c                   |   14 +-
+ drivers/mmc/host/Kconfig                    |   14 +-
+ drivers/mmc/host/Makefile                   |    8 +-
+ drivers/mmc/host/dw_mmc.c                   |    4 +-
+ drivers/mmc/host/mmci.c                     |   13 +-
+ drivers/mmc/host/of_mmc_spi.c               |    2 +
+ drivers/mmc/host/sdhci-esdhc-imx.c          |   86 ++-
+ drivers/mmc/host/sdhci-esdhc.h              |    3 +-
+ drivers/mmc/host/sdhci-of-esdhc.c           |    3 +-
+ drivers/mmc/host/sdhci-pci.c                |    6 +-
+ drivers/mmc/host/sdhci-pltfm.h              |    2 +-
+ drivers/mmc/host/sdhci.h                    |    1 +
+ drivers/{mfd => mmc/host}/sh_mobile_sdhi.c  |   95 +--
+ drivers/mmc/host/tmio_mmc.c                 | 1285 +--------------------------
+ drivers/mmc/host/tmio_mmc.h                 |  123 +++
+ drivers/mmc/host/tmio_mmc_dma.c             |  317 +++++++
+ drivers/mmc/host/tmio_mmc_pio.c             |  897 +++++++++++++++++++
+ drivers/mmc/host/via-sdmmc.c                |    5 +-
+ include/linux/{mfd => mmc}/sh_mobile_sdhi.h |    0
+ include/linux/mmc/tmio.h                    |   63 ++
+ 31 files changed, 1615 insertions(+), 1396 deletions(-)
+ rename drivers/{mfd => mmc/host}/sh_mobile_sdhi.c (63%)
+ create mode 100644 drivers/mmc/host/tmio_mmc.h
+ create mode 100644 drivers/mmc/host/tmio_mmc_dma.c
+ create mode 100644 drivers/mmc/host/tmio_mmc_pio.c
+ rename include/linux/{mfd => mmc}/sh_mobile_sdhi.h (100%)
+ create mode 100644 include/linux/mmc/tmio.h
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
