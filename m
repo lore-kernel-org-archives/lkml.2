@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab1C2PfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 11:35:18 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:54707 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751301Ab1C2PfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 11:35:16 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=MIhDCcLt4nkhGkZftZ+88ONs1UUElXvPNdC6HVIoT3zbxFwBs/0FhWNCmwxlGdFLpOJP7gJTLkyaOtErK/ixkZRwxuZr1SP2FbndIk5krfktHhTtFsdU8ccPOmiOgOn7;
-Date: Tue, 29 Mar 2011 08:33:34 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Daniel Baluta <dbaluta@ixiacom.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, catalin.marinas@arm.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kmemleak: update documentation
-Message-Id: <20110329083334.f33742bd.rdunlap@xenotime.net>
-In-Reply-To: <AANLkTi=Kr5DQrZW+d=u-fyYcDNQogBj=TFr1_25+Z4Uw@mail.gmail.com>
-References: <1300978173-9983-1-git-send-email-dbaluta@ixiacom.com>
-	<20110329073632.GB10163@osiris.boeblingen.de.ibm.com>
-	<AANLkTi=Kr5DQrZW+d=u-fyYcDNQogBj=TFr1_25+Z4Uw@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751836Ab1C2PjY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 11:39:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23213 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994Ab1C2PjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 11:39:23 -0400
+Message-ID: <4D91FD1D.4070508@redhat.com>
+Date: Tue, 29 Mar 2011 12:39:09 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/30] amd64_edac: Cleanup chipselect handling
+References: <1297358133-14320-1-git-send-email-bp@amd64.org> <1297358133-14320-6-git-send-email-bp@amd64.org> <4D91F31A.7040600@redhat.com> <20110329151643.GA22419@aftab>
+In-Reply-To: <20110329151643.GA22419@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Mar 2011 10:51:33 +0300 Daniel Baluta wrote:
-
-> >> +Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze and tile.
-> >
-> > You missed s390.
+Em 29-03-2011 12:16, Borislav Petkov escreveu:
+> On Tue, Mar 29, 2011 at 10:56:26AM -0400, Mauro Carvalho Chehab wrote:
+>> Em 10-02-2011 15:15, Borislav Petkov escreveu:
+>>> From: Borislav Petkov <borislav.petkov@amd.com>
+>>>
+>>> Add a struct representing the DRAM chip select base/limit register
+>>> pairs. Concentrate all CS handling in a single function. Also, add CS
+>>> looping macros for cleaner, more readable code. While at it, adjust code
+>>> to F15h. Finally, do smaller macro names cleanups (remove family names
+>>> from register macros) and debug messages clarification.
+>>>
+>>> No functional change.
+>>>
+>>> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+>>
+>> Hi Borislav,
+>>
+>>> --- a/drivers/edac/amd64_edac.h
+>>> +++ b/drivers/edac/amd64_edac.h
+>>> @@ -160,6 +160,14 @@
+>>>  #define OFF false
+>>>  
+>>>  /*
+>>> + * Create a contiguous bitmask starting at bit position @lo and ending at
+>>> + * position @hi. For example
+>>> + *
+>>> + * GENMASK(21, 39) gives us the 64bit vector 0x000000ffffe00000.
+>>> + */
+>>> +#define GENMASK(lo, hi)			(((1ULL << ((hi) - (lo) + 1)) - 1) << (lo))
+>>> +
+>>
+>> This is a nice macro that could be useful outside amd64. It is probably a good
+>> idea to move it to include/linux/bitops.h.
 > 
-> You are right.
-> 
-> Randy, should I send a v2 of this patch, or is it already applied?
-> Another option would be to send a separate patch adding s390,
-> on top of my previous patch.
+> I'd suggest rather <drivers/edac/edac_core.h> if you want to use it in
+> EDAC. But if we have more users, I don't have a problem with putting
+> it there (or somewhere else generic enough if people have a better
+> suggestion).
 
-Your patch is still in my patch queue, so please send me a full replacement
-patch for it.
+Yeah, other edac drivers could benefit of using it, and also could benefit on a
+variant that would do an AND operation and shift it, something like (untested):
 
-thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+/*
+ * Create a contiguous bitmask starting at bit position @lo and ending at
+ * position @hi. For example
+ *
+ * APPLY_BITMASK(v, 21, 39) will return the result of:
+ * 	(v & 0x000000ffffe00000) >> 21
+ */
+#define APPLY_BITMASK(v, lo, hi)	(((v) & ((1ULL << ((hi) - (lo) + 1)) - 1) << (lo)) >> (lo))
+
+
+Almost all edac drivers do something like the above, for example, to get DIMM rows/cols/banks, etc.
+
+Probably, the most complex part is to find a nice name for it ;)
+
+Yet, I think non-edac drivers could also benefit of such macro, and, as this is not
+edac-specific, I think it would be better to add it at bitops.h.
+
+Cheers,
+Mauro
+
