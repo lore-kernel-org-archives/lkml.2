@@ -1,363 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab1C2FiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 01:38:14 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:55403 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752526Ab1C2Fhx (ORCPT
+	id S1752905Ab1C2Fsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 01:48:47 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53788 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433Ab1C2Fsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 01:37:53 -0400
-From: Shubhrajyoti Datta <shubhrajyoti@ti.com>
-References: <1301089260.29448.22.camel@jonz-ubuntu> <4D8E1F9B.9080302@ti.com> <1301338247.1830.6.camel@jonz-ubuntu>
+	Tue, 29 Mar 2011 01:48:46 -0400
+Date: Mon, 28 Mar 2011 22:48:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: sedat.dilek@gmail.com
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: linux-next: Tree for March 25 (Call trace:
+ RCU|workqueues|block|VFS|ext4 related?)
+Message-ID: <20110329054839.GE2272@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <AANLkTikpq2CiSTk9Br7DdkVt=E1p8OFGa+Ls2BzkkhcO@mail.gmail.com>
+ <20110327032529.GC2322@linux.vnet.ibm.com>
+ <20110327050720.GA31424@linux.vnet.ibm.com>
+ <AANLkTimpbGGcxNJUDMjdg1wijYhvXQ3KySvRYnEsUYsy@mail.gmail.com>
+ <20110327213220.GE2322@linux.vnet.ibm.com>
+ <AANLkTi=ti+PVC8N-3Bt2fzuHHQz6kuMdUPeb3Gudn7EU@mail.gmail.com>
+ <20110328040823.GG2322@linux.vnet.ibm.com>
+ <AANLkTinQiDSXLP1o-HfdedYOMKtnsbBrcOfuqw9sFf2X@mail.gmail.com>
+ <20110328132436.GL2322@linux.vnet.ibm.com>
+ <AANLkTi=TrwVs-0w9iK9Wbq5RpMomxFw20uEJmTYgsM4_@mail.gmail.com>
 MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1301338247.1830.6.camel@jonz-ubuntu>
-Thread-Index: AcvteRnOrJQewLFuSfik+FRCK4uFigAWbx6Q
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
-Date: Tue, 29 Mar 2011 11:07:41 +0530
-Message-ID: <a3971e1f0d7d9d86b13f09015574b69e@mail.gmail.com>
-Subject: RE: [PATCH V3]TAOS 258x: Device Driver
-To: Jon Brenner <jbrenner@taosinc.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, linux-iio <linux-iio@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=TrwVs-0w9iK9Wbq5RpMomxFw20uEJmTYgsM4_@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jon Brenner [mailto:jbrenner@TAOSinc.com]
-> Sent: Tuesday, March 29, 2011 12:21 AM
-> To: Shubhrajyoti
-> Cc: Jonathan Cameron; linux-iio; Linux Kernel
-> Subject: Re: [PATCH V3]TAOS 258x: Device Driver
->
-> HI Shubhrajyoti:
-> Thanks for taking time to review the code.
-> Please see my response to your comments throughout.
->
->
-> Jon
->
-> On Sat, 2011-03-26 at 22:47 +0530, Shubhrajyoti wrote:
-> > Hi Jon,
-> > Some minor comments.
+On Tue, Mar 29, 2011 at 06:39:45AM +0200, Sedat Dilek wrote:
+> [...]
+> >> BTW, today's linux-next (next-20110328) is still freaky, I applied the
+> >> revert-rcu-patches patchset and all is fine.
 > >
-> > On Saturday 26 March 2011 03:11 AM, Jon Brenner wrote:
-> > > [PATCH v3] for TAOS tsl2580/81/83 Device driver
-> > >
-> > > Added suspend/resume functions.
-> > > Changed attribute names to match existing where applicable and updated
-> or documented new ABI as discussed.
-> > > Changed integration time ABI from using index (0 to 3) to use actual
-> gain values (1x,8x, etc.).
-> > > Removed various unused variables, declarations, and functions.
-> > > Revised code to accommodate different endianess (le16_to_cpu).
-> > > Updated error return codes in various functions.
-> > > Changed from mdelay to msleep after determining that longer wait would
-> be acceptable.
-> > >
-> > > Signed-off-by:Jon August Brenner<jbrenner@taosinc.com>
-> > >
-> > > ---
-> > >   drivers/staging/iio/Documentation/sysfs-bus-iio    |    6 +
-> > >   .../staging/iio/Documentation/sysfs-bus-iio-light  |   13 +
-> > >   .../iio/Documentation/sysfs-bus-iio-light-tsl2583  |   20 +
-> > >   drivers/staging/iio/light/Kconfig                  |    9 +
-> > >   drivers/staging/iio/light/Makefile                 |    1 +
-> > >   drivers/staging/iio/light/tsl2583.c                |  962
-> ++++++++++++++++++++
-> > >   6 files changed, 1011 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio
-> b/drivers/staging/iio/Documentation/sysfs-bus-iio
-> > > index 2dde97d..6a86ad2 100644
-> > > --- a/drivers/staging/iio/Documentation/sysfs-bus-iio
-> > > +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio
-> > > @@ -6,6 +6,12 @@ Description:
-> > >   		Corresponds to a grouping of sensor channels. X is the
-> IIO
-> > >   		index of the device.
-> > >
-> > > +What:		/sys/bus/iio/devices/device[n]/power_state
-> > > +KernelVersion:	2.6.37
-> > > +Contact:	linux-iio@vger.kernel.org
-> > > +Description:
-> > > +		This property gets/sets the device power state.
-> > > +
-> > >   What:		/sys/bus/iio/devices/triggerX
-> > >   KernelVersion:	2.6.35
-> > >   Contact:	linux-iio@vger.kernel.org
-> > > diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> > > index 5d84856..21d2774 100644
-> > > --- a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> > > +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> > > @@ -62,3 +62,16 @@ Description:
-> > >   		sensing mode. This value should be the output from a
-> reading
-> > >   		and if expressed in SI units, should include _input. If
-> this
-> > >   		value is not in SI units, then it should include _raw.
-> > > +
-> > > +What:		/sys/bus/iio/devices/device[n]/illuminance0_target
-> > > +KernelVersion:	2.6.37
-> > > +Contact:	linux-iio@vger.kernel.org
-> > > +Description:
-> > > +		This property gets/sets the last known external
-> > > +		lux measurement used in/for calibration.
-> > > +
-> > > +What:
-> 	/sys/bus/iio/devices/device[n]/illuminance0_integration_time
-> > > +KernelVersion:	2.6.37
-> > > +Contact:	linux-iio@vger.kernel.org
-> > > +Description:
-> > > +		This property gets/sets the sensors ADC analog integration
-> time.
-> > > diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-light-
-> tsl2583 b/drivers/staging/iio/Documentation/sysfs-bus-iio-light-tsl2583
-> > > new file mode 100644
-> > > index 0000000..660781d
-> > > --- /dev/null
-> > > +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-light-tsl2583
-> > > @@ -0,0 +1,20 @@
-> > > +What:		/sys/bus/iio/devices/device[n]/lux_table
-> > > +KernelVersion:	2.6.37
-> > > +Contact:	linux-iio@vger.kernel.org
-> > > +Description:
-> > > +		This property gets/sets the table of coefficients
-> > > +		used in calculating illuminance in lux.
-> > > +
-> > > +What:		/sys/bus/iio/devices/device[n]/illuminance0_calibrate
-> > > +KernelVersion:	2.6.37
-> > > +Contact:	linux-iio@vger.kernel.org
-> > > +Description:
-> > > +		This property causes an internal calibration of the als gain
-> trim
-> > > +		value which is later used in calculating illuminance in lux.
-> > > +
-> > > +What:		/sys/bus/iio/devices/device[n]/illuminance0_input_target
-> > > +KernelVersion:	2.6.37
-> > > +Contact:	linux-iio@vger.kernel.org
-> > > +Description:
-> > > +		This property is the known externally illuminance (in lux).
-> > > +		It is used in the process of calibrating the device accuracy.
-> > > diff --git a/drivers/staging/iio/light/Kconfig
-> b/drivers/staging/iio/light/Kconfig
-> > > index 36d8bbe..55c146c 100644
-> > > --- a/drivers/staging/iio/light/Kconfig
-> > > +++ b/drivers/staging/iio/light/Kconfig
-> > > @@ -13,6 +13,15 @@ config SENSORS_TSL2563
-> > >   	 This driver can also be built as a module.  If so, the module
-> > >   	 will be called tsl2563.
-> > >
-> > > +config TSL2583
-> > > +	tristate "TAOS TSL2580, TSL2581, and TSL2583 light-to-digital
-> converters"
-> > > +	depends on I2C
-> > > +	help
-> > > +	  Y = in kernel.
-> > > +	  M = as module.
-> > > +	  Provides support for the TAOS tsl2580, tsl2581, and tsl2583
-> devices.
-> > > +	  Access ALS data via iio, sysfs.
-> > > +
-> > >   config SENSORS_ISL29018
-> > >           tristate "ISL 29018 light and proximity sensor"
-> > >           depends on I2C
-> > > diff --git a/drivers/staging/iio/light/Makefile
-> b/drivers/staging/iio/light/Makefile
-> > > index 9142c0e..8a10815 100644
-> > > --- a/drivers/staging/iio/light/Makefile
-> > > +++ b/drivers/staging/iio/light/Makefile
-> > > @@ -3,4 +3,5 @@
-> > >   #
-> > >
-> > >   obj-$(CONFIG_SENSORS_TSL2563)	+= tsl2563.o
-> > > +obj-$(CONFIG_TSL2583)	+= tsl2583.o
-> > >   obj-$(CONFIG_SENSORS_ISL29018)	+= isl29018.o
-> > > diff --git a/drivers/staging/iio/light/tsl2583.c
-> b/drivers/staging/iio/light/tsl2583.c
-> > > new file mode 100644
-> > > index 0000000..013a742
-> > > --- /dev/null
-> > > +++ b/drivers/staging/iio/light/tsl2583.c
-> > > @@ -0,0 +1,962 @@
-> > > +/*
-> > > + * Device driver for monitoring ambient light intensity (lux)
-> > > + * within the TAOS tsl258x family of devices (tsl2580, tsl2581).
-> > > + *
-> > > + * Copyright (c) 2011, TAOS Corporation.
-> > > + *
-> > > + * This program is free software; you can redistribute it and/or
-> modify
-> > > + * it under the terms of the GNU General Public License as published
-> by
-> > > + * the Free Software Foundation; either version 2 of the License, or
-> > > + * (at your option) any later version.
-> > > + *
-> > > + * This program is distributed in the hope that it will be useful,
-> but WITHOUT
-> > > + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-> or
-> > > + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-> License for
-> > > + * more details.
-> > > + *
-> > > + * You should have received a copy of the GNU General Public License
-> along
-> > > + * with this program; if not, write to the Free Software Foundation,
-> Inc.,
-> > > + * 51 Franklin Street, Fifth Floor, Boston, MA	02110-1301, USA.
-> > > + */
-> > > +
-> > > +#include<linux/kernel.h>
-> > > +#include<linux/i2c.h>
-> > > +#include<linux/errno.h>
-> > > +#include<linux/delay.h>
-> > > +#include<linux/string.h>
-> > > +#include<linux/mutex.h>
-> > > +#include<linux/unistd.h>
-> > > +#include "../iio.h"
-> > > +
-> > > +
-> > > +#define TSL258X_MAX_DEVICE_REGS		32
-> > > +
-> > > +/* Triton register offsets */
-> > > +#define	TSL258X_REG_MAX		8
-> > > +
-> > > +/* Device Registers and Masks */
-> > > +#define TSL258X_CNTRL			0x00
-> > > +#define TSL258X_ALS_TIME		0X01
-> > > +#define TSL258X_INTERRUPT		0x02
-> > > +#define TSL258X_GAIN			0x07
-> > > +#define TSL258X_REVID			0x11
-> > > +#define TSL258X_CHIPID			0x12
-> > > +#define TSL258X_ALS_CHAN0LO		0x14
-> > > +#define TSL258X_ALS_CHAN0HI		0x15
-> > > +#define TSL258X_ALS_CHAN1LO		0x16
-> > > +#define TSL258X_ALS_CHAN1HI		0x17
-> > > +#define TSL258X_TMR_LO			0x18
-> > > +#define TSL258X_TMR_HI			0x19
-> > > +
-> > > +/* tsl2583 cmd reg masks */
-> > > +#define TSL258X_CMD_REG			0x80
-> > > +#define TSL258X_CMD_SPL_FN		0x60
-> > > +#define TSL258X_CMD_ALS_INT_CLR	0X01
-> > > +
-> > > +/* tsl2583 cntrl reg masks */
-> > > +#define TSL258X_CNTL_ADC_ENBL	0x02
-> > > +#define TSL258X_CNTL_PWR_ON		0x01
-> > > +
-> > > +/* tsl2583 status reg masks */
-> > > +#define TSL258X_STA_ADC_VALID	0x01
-> > > +#define TSL258X_STA_ADC_INTR	0x10
-> > > +
-> > > +/* Lux calculation constants */
-> > > +#define	TSL258X_LUX_CALC_OVER_FLOW		65535
-> > > +
-> > > +enum {
-> > > +	TSL258X_CHIP_UNKNOWN = 0,
-> > > +	TSL258X_CHIP_WORKING = 1,
-> > > +	TSL258X_CHIP_SUSPENDED = 2
-> > > +} TSL258X_CHIP_WORKING_STATUS;
-> > > +
-> > > +/* Per-device data */
-> > > +struct taos_als_info {
-> > > +	u16 als_ch0;
-> > > +	u16 als_ch1;
-> > > +	u16 lux;
-> > > +};
-> > > +
-> > > +struct taos_settings {
-> > > +	int als_time;
-> > > +	int als_gain;
-> > > +	int als_gain_trim;
-> > > +	int als_cal_target;
-> > > +};
-> > > +
-> > > +struct tsl2583_chip {
-> > > +	struct mutex als_mutex;
-> > > +	struct i2c_client *client;
-> > > +	struct iio_dev *iio_dev;
-> > > +	struct taos_als_info als_cur_info;
-> > > +	struct taos_settings taos_settings;
-> > > +	int als_time_scale;
-> > > +	int als_saturation;
-> > > +	int taos_chip_status;
-> > > +	u8 taos_config[8];
-> > > +};
-> > > +
-> > > +/*
-> > > + * Initial values for device - this values can/will be changed by
-> driver.
-> > > + * and applications as needed.
-> > > + * These values are dynamic.
-> > > + */
-> > > +static const u8 taos_config[8] = {
-> > > +		0x00, 0xee, 0x00, 0x03, 0x00, 0xFF, 0xFF, 0x00
-> > > +}; /*	cntrl atime intC  Athl0 Athl1 Athh0 Athh1 gain */
-> > > +
-> > > +struct taos_lux {
-> > > +	unsigned int ratio;
-> > > +	unsigned int ch0;
-> > > +	unsigned int ch1;
-> > > +};
-> > > +
-> > > +/* This structure is intentionally large to accommodate updates via
-> sysfs. */
-> > > +/* Sized to 11 = max 10 segments + 1 termination segment */
-> > > +/* Assumption is is one and only one type of glass used  */
-> > > +struct taos_lux taos_device_lux[11] = {
-> > > +	{  9830,  8520, 15729 },
-> > > +	{ 12452, 10807, 23344 },
-> > > +	{ 14746,  6383, 11705 },
-> > > +	{ 17695,  4063,  6554 },
-> > > +};
-> > > +
-> > > +struct gainadj {
-> > > +	s16 ch0;
-> > > +	s16 ch1;
-> > > +};
-> > > +
-> > > +/* Index = (0 - 3) Used to validate the gain selection index */
-> > > +static const struct gainadj gainadj[] = {
-> > > +	{ 1, 1 },
-> > > +	{ 8, 8 },
-> > > +	{ 16, 16 },
-> > > +	{ 107, 115 }
-> > > +};
-> > > +
-> > > +/*
-> > > + * Provides initial operational parameter defaults.
-> > > + * These defaults may be changed through the device's sysfs files.
-> > > + */
-> > > +static void taos_defaults(struct tsl2583_chip *chip)
-> > > +{
-> > > +	/* Operational parameters */
-> > > +	chip->taos_settings.als_time = 450;
-> > > +	/* must be a multiple of 50mS */
-> > > +	chip->taos_settings.als_gain = 2;
-> > > +	/* this is actually an index into the gain table */
-> > > +	/* assume clear glass as default */
-> > > +	chip->taos_settings.als_gain_trim = 1000;
-> > > +	/* default gain trim to account for aperture effects */
-> > > +	chip->taos_settings.als_cal_target = 130;
-> > > +	/* Known external ALS reading used for calibration */
-> > > +}
-> > > +
-> > > +/*
-> > > + * Read a number of bytes starting at register (reg) location.
-> > > + * Return 0, or i2c_smbus_write_byte ERROR code.
-> > > + */
-> > Could we use i2c_smbus_read_block_data ?
-> NO -Many controllers no longer seem to support block mode read/write.
-> To use block mode reads could exclude some.
-By controller you mean the i2c controller?
+> > I reverted back to the commit preceding the one you pointed out last night
+> > my time, so the upcoming -next should be less freaky.
+> >
+> 
+> Makes sense.
+> Looks like the "old" commits are now in boost.2011.03.25b GIT branch [1]?
 
->
-> > > +static int
-> > > +taos_i2c_read(struct i2c_client *client, u8 reg, u8 *val, unsigned
-> int len)
-> > > +{
-> > > +	int ret;
+Yep.  I keep them always, digital packrat that I am.
+
+I will be posting updates.
+
+> I have attached the result from rcu-torture for linux-next (20110329)
+> as I wanted to see what is logged (loaded rcutorture module 3x normal,
+> 1x with verbose=1).
+
+Yep, that is expected output.  Now I just need to work out what else
+is messed up.
+
+							Thanx, Paul
+
+> - Sedat -
+> 
+> [1] http://git.us.kernel.org/?p=linux/kernel/git/paulmck/linux-2.6-rcu.git;a=shortlog;h=refs/heads/boost.2011.03.25b
+
+> [  688.623078] rcu-torture:--- Start of test: nreaders=2 nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4
+> [  788.672108] rcu-torture: rtc:   (null) ver: 12030 tfle: 0 rta: 12030 rtaf: 0 rtf: 12025 rtmbe: 0 rtbke: 0 rtbre: 0 rtbae: 0 rtbafe: 0 rtbf: 0 rtb: 0 nt: 20281
+> [  788.672118] rcu-torture: Reader Pipe:  30198896 782 0 0 0 0 0 0 0 0 0
+> [  788.672123] rcu-torture: Reader Batch:  30196680 2998 0 0 0 0 0 0 0 0 0
+> [  788.672128] rcu-torture: Free-Block Circulation:  12029 12027 12025 12025 12025 12025 12025 12025 12025 12025 0
+> [  788.672158] rcu-torture:--- End of test: SUCCESS: nreaders=2 nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4
+> [  923.777108] rcu-torture:--- Start of test: nreaders=2 nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4
+> [ 1023.820120] rcu-torture: rtc:   (null) ver: 12206 tfle: 0 rta: 12206 rtaf: 0 rtf: 12203 rtmbe: 0 rtbke: 0 rtbre: 0 rtbae: 0 rtbafe: 0 rtbf: 0 rtb: 0 nt: 20509
+> [ 1023.820130] rcu-torture: Reader Pipe:  31024643 786 0 0 0 0 0 0 0 0 0
+> [ 1023.820135] rcu-torture: Reader Batch:  31022307 3122 0 0 0 0 0 0 0 0 0
+> [ 1023.820140] rcu-torture: Free-Block Circulation:  12205 12203 12203 12203 12203 12203 12203 12203 12203 12203 0
+> [ 1023.820171] rcu-torture:--- End of test: SUCCESS: nreaders=2 nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4
+> [ 1292.474530] rcu-torture:--- Start of test: nreaders=2 nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4
+> [ 1392.504192] rcu-torture: rtc:   (null) ver: 12248 tfle: 0 rta: 12248 rtaf: 0 rtf: 12245 rtmbe: 0 rtbke: 0 rtbre: 0 rtbae: 0 rtbafe: 0 rtbf: 0 rtb: 0 nt: 21087
+> [ 1392.504201] rcu-torture: Reader Pipe:  31674422 790 0 0 0 0 0 0 0 0 0
+> [ 1392.504207] rcu-torture: Reader Batch:  31672026 3186 0 0 0 0 0 0 0 0 0
+> [ 1392.504212] rcu-torture: Free-Block Circulation:  12247 12246 12245 12245 12245 12245 12245 12245 12245 12245 0
+> [ 1392.504242] rcu-torture:--- End of test: SUCCESS: nreaders=2 nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4
+> [ 1601.082101] rcu-torture:--- Start of test: nreaders=2 nfakewriters=4 stat_interval=0 verbose=1 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4
+> [ 1601.082114] rcu-torture:Creating rcu_torture_writer task
+> [ 1601.082239] rcu-torture:Creating rcu_torture_fakewriter task
+> [ 1601.082261] rcu-torture:rcu_torture_writer task started
+> [ 1601.087257] rcu-torture:Creating rcu_torture_fakewriter task
+> [ 1601.087300] rcu-torture:rcu_torture_fakewriter task started
+> [ 1601.090700] rcu-torture:Creating rcu_torture_fakewriter task
+> [ 1601.090742] rcu-torture:rcu_torture_fakewriter task started
+> [ 1601.090754] rcu-torture:Creating rcu_torture_fakewriter task
+> [ 1601.090773] rcu-torture:rcu_torture_fakewriter task started
+> [ 1601.090784] rcu-torture:Creating rcu_torture_reader task
+> [ 1601.090802] rcu-torture:rcu_torture_fakewriter task started
+> [ 1601.090812] rcu-torture:Creating rcu_torture_reader task
+> [ 1601.090830] rcu-torture:rcu_torture_reader task started
+> [ 1601.090883] rcu-torture:rcu_torture_reader task started
+> [ 1601.091303] rcu-torture:rcu_torture_stutter task started
+> [ 1701.099323] rcu-torture:Stopping rcu_torture_stutter task
+> [ 1701.099347] rcu-torture:rcu_torture_stutter task stopping
+> [ 1701.099395] rcu-torture:Stopping rcu_torture_writer task
+> [ 1701.099409] rcu-torture:rcu_torture_reader task stopping
+> [ 1701.099422] rcu-torture:rcu_torture_reader task stopping
+> [ 1701.099437] rcu-torture:rcu_torture_writer task stopping
+> [ 1701.099456] rcu-torture:Stopping rcu_torture_reader task
+> [ 1701.099497] rcu-torture:Stopping rcu_torture_reader task
+> [ 1701.099535] rcu-torture:Stopping rcu_torture_fakewriter task
+> [ 1701.100726] rcu-torture:rcu_torture_fakewriter task stopping
+> [ 1701.104291] rcu-torture:rcu_torture_fakewriter task stopping
+> [ 1701.104315] rcu-torture:Stopping rcu_torture_fakewriter task
+> [ 1701.104359] rcu-torture:Stopping rcu_torture_fakewriter task
+> [ 1701.131318] rcu-torture:rcu_torture_fakewriter task stopping
+> [ 1701.139632] rcu-torture:rcu_torture_fakewriter task stopping
+> [ 1701.139668] rcu-torture:Stopping rcu_torture_fakewriter task
+> [ 1701.144211] rcu-torture: rtc:   (null) ver: 12179 tfle: 0 rta: 12179 rtaf: 0 rtf: 12177 rtmbe: 0 rtbke: 0 rtbre: 0 rtbae: 0 rtbafe: 0 rtbf: 0 rtb: 0 nt: 20951
+> [ 1701.144220] rcu-torture: Reader Pipe:  31547701 757 0 0 0 0 0 0 0 0 0
+> [ 1701.144226] rcu-torture: Reader Batch:  31545363 3095 0 0 0 0 0 0 0 0 0
+> [ 1701.144231] rcu-torture: Free-Block Circulation:  12178 12177 12177 12177 12177 12177 12177 12177 12177 12177 0
+> [ 1701.144259] rcu-torture:--- End of test: SUCCESS: nreaders=2 nfakewriters=4 stat_interval=0 verbose=1 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4
+
