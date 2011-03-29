@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab1C2AZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Mar 2011 20:25:28 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:39473 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752Ab1C2AZ1 (ORCPT
+	id S1752520Ab1C2AcT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Mar 2011 20:32:19 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45137 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab1C2AcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Mar 2011 20:25:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=YhKWGbTTgDZcopJgyQmFb3wQoTRVBB8ukD5trgpCE9sI4BZD0CxAV6JgKpevSzZgIT
-         9M5jdf+94HkHU6zOXV2g==
-MIME-Version: 1.0
-In-Reply-To: <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
-References: <081DDE43F61F3D43929A181B477DCA95639B52FD@MSXAOA6.twosigma.com>
-	<081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
-	<20110324174311.GA31576@infradead.org>
-	<AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
-	<081DDE43F61F3D43929A181B477DCA95639B5349@MSXAOA6.twosigma.com>
-	<BANLkTin0jJevStg5P2hqsLbqMzo3o30sYg@mail.gmail.com>
-	<081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
-Date: Mon, 28 Mar 2011 17:25:24 -0700
-Message-ID: <BANLkTikzpC9DdaoWaUTvO98jnjFdJOomwQ@mail.gmail.com>
-Subject: Re: XFS memory allocation deadlock in 2.6.38
-From: Michel Lespinasse <walken@google.com>
-To: Sean Noonan <Sean.Noonan@twosigma.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Martin Bligh <Martin.Bligh@twosigma.com>,
-        Trammell Hudson <Trammell.Hudson@twosigma.com>,
-        Christos Zoulas <Christos.Zoulas@twosigma.com>,
-        "linux-xfs@oss.sgi.com" <linux-xfs@oss.sgi.com>,
-        Stephen Degler <Stephen.Degler@twosigma.com>,
+	Mon, 28 Mar 2011 20:32:18 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 29 Mar 2011 09:25:42 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rientjes@google.com" <rientjes@google.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 0/4] forkbomb killer
+Message-Id: <20110329092542.190fa31d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <BANLkTi=BJrqsTTAuxz-ZDeioCZ=Sc6hbSw@mail.gmail.com>
+References: <20110324182240.5fe56de2.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110324105222.GA2625@barrios-desktop>
+	<20110325090411.56c5e5b2.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTi=f3gu7-8uNiT4qz6s=BOhto5s=7g@mail.gmail.com>
+	<20110325115453.82a9736d.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTim3fFe3VzvaWRwzaCT6aRd-yeyfiQ@mail.gmail.com>
+	<20110326023452.GA8140@google.com>
+	<AANLkTi=ng9vwoMJ=tseWwTsXMf9XZkMKUexcpEmQ45M_@mail.gmail.com>
+	<BANLkTi=BJrqsTTAuxz-ZDeioCZ=Sc6hbSw@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 2:34 PM, Sean Noonan <Sean.Noonan@twosigma.com> wrote:
->> Could you test if you see the deadlock before
->> 5ecfda041e4b4bd858d25bbf5a16c2a6c06d7272 without MAP_POPULATE ?
->
-> Built and tested 72ddc8f72270758951ccefb7d190f364d20215ab.
-> Confirmed that the original bug does not present in this version.
-> Confirmed that removing MAP_POPULATE does cause the deadlock to occur.
+On Mon, 28 Mar 2011 16:46:42 -0700
+Michel Lespinasse <walken@google.com> wrote:
 
-It seems that the test (without MAP_POPULATE) reveals that the root
-cause is an xfs bug, which had been hidden up to now by MAP_POPULATE
-preallocating disk blocks (but could always be triggered by the same
-test without the MAP_POPULATE flag). I'm not sure how to go about
-debugging the xfs deadlock; it would probably be best if an xfs person
-could have a look ?
+> On Sat, Mar 26, 2011 at 1:48 AM, Hiroyuki Kamezawa
+> <kamezawa.hiroyuki@gmail.com> wrote:
+> > 2011/3/26 Michel Lespinasse <walken@google.com>:
+> >> I haven't heard of fork bombs being an issue for us (and it's not been
+> >> for me on my desktop, either).
+> >>
+> >> Also, I want to point out that there is a classical userspace solution
+> >> for this, as implemented by killall5 for example. One can do
+> >> kill(-1, SIGSTOP) to stop all processes that they can send
+> >> signals to (except for init and itself). Target processes
+> >> can never catch or ignore the SIGSTOP. This stops the fork bomb
+> >> from causing further damage. Then, one can look at the process
+> >> tree and do whatever is appropriate - including killing by uid,
+> >> by cgroup or whatever policies one wants to implement in userspace.
+> >> Finally, the remaining processes can be restarted using SIGCONT.
+> >>
+> >
+> > Can that solution work even under OOM situation without new login/commands ?
+> > Please show us your solution, how to avoid Andrey's Bomb  with your way.
+> > Then, we can add Documentation, at least. Or you can show us your tool.
+> 
+> To be clear, I don't have a full solution. I just think that the
+> problem is approachable from userspace by freezing processes and then
+> sorting them out. The killall5 utility is an example of that, though
+> you would possibly want to add more smarts to it. If we want to
+> include a kernel solution, I do like the simplicity of Minchan's
+> proposal, too. But, I don't have a strong opinion on this matter, so
+> feel free to ignore me if this is not useful feedback.
+> 
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+I don't have strong opinion, too. I just think easily breakable kernel
+by an user application is not ideal thing for me. To go to other buildings
+to press reset-button is good for my health. I just implemnted a solution and
+it seems to work well. Then, just want to ask how my patch looks.
+
+But no one see patches, and it seems this feature is not welcome.
+I'll continue to walk or just use virtual machines for testing OOM.
+
+Thanks,
+-Kame
+
+
+
+
+
