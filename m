@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab1C2VE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 17:04:26 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:39996 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754167Ab1C2VEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 17:04:25 -0400
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <johnstul@us.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] fix msecs_to_jiffies() to not return values greater than MAX_JIFFY_OFFSET
-Date: Tue, 29 Mar 2011 23:03:47 +0200
-Message-Id: <6206394.oTpczxkaEM@donald.sf-tec.de>
-User-Agent: KMail/4.6 beta4 (Linux/2.6.37-12-desktop; KDE/4.6.1; i686; ; )
-In-Reply-To: <alpine.LFD.2.00.1103292103070.2774@localhost6.localdomain6>
-References: <2120287.WTetKHanc4@donald.sf-tec.de> <alpine.LFD.2.00.1103292103070.2774@localhost6.localdomain6>
+	id S1754613Ab1C2VEn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 17:04:43 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:42920 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545Ab1C2VEl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 17:04:41 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6300"; a="82791828"
+Message-ID: <4D924966.2050707@codeaurora.org>
+Date: Tue, 29 Mar 2011 17:04:38 -0400
+From: Neil Leeder <nleeder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1434542.gV8MdA4CJe"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: quoted-printable
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jean Pihet <jean.pihet@newoldbits.com>
+CC: Sheetal Sahasrabudhe <sheetals@codeaurora.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, will.deacon@arm.com,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, jamie.iles@picochip.com,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: accessing vfpinstr macros from outside vfp directory
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(Resending: forgot to add Russell to To: list; subject change to avoid it getting lost in 
+code review thread, was Re: [PATCH v4 2/3] [ARM] perfevents: Add support for Scorpion 
+performance monitors)
 
---nextPart1434542.gV8MdA4CJe
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="US-ASCII"
+Russell,
 
-Am Dienstag, 29. M=E4rz 2011, 21:42:59 schrieb Thomas Gleixner:
-> On Tue, 29 Mar 2011, Rolf Eike Beer wrote:
+On 3/16/2011 5:13 AM, Jean Pihet wrote:
+ > On Tue, Mar 15, 2011 at 4:58 PM, Sheetal Sahasrabudhe
+ > <sheetals@codeaurora.org>  wrote:
+ >> Hi Will/Jean,
+ >>
+ >> On Mon, March 14, 2011 6:35 pm, Bryan Huntsman wrote:
+ >>> On 03/09/2011 09:16 AM, Sheetal Sahasrabudhe wrote:
+ >>>> This commit adds support for performance monitors provided by
+ >>>> Qualcomm Scorpion and ScorpionMP processor to perfevents.
+ >>>>
+ >>>> Signed-off-by: Sheetal Sahasrabudhe<sheetals@codeaurora.org>
+ >>>> Reviewed-by: Jean Pihet<j-pihet@ti.com>
+ >>>> Reviewed-by: Will Deacon<will.deacon@arm.com>
+ >>>> ---
+ >>>>   arch/arm/include/asm/perf_event.h |    2 +
+ >>>>   arch/arm/kernel/perf_event.c      |   11 +
+ >>>>   arch/arm/kernel/perf_event_msm.c  |  679 +++++++++++++++++++++++++++++++++++++
+ >>>>   3 files changed, 692 insertions(+), 0 deletions(-)
+ >>>>   create mode 100644 arch/arm/kernel/perf_event_msm.c
+ >>>>
+ >>>
+ >>> ...
+ >>>
+ >>>> diff --git a/arch/arm/kernel/perf_event_msm.c b/arch/arm/kernel/perf_event_msm.c
+ >>>> new file mode 100644
+ >>>> index 0000000..4e42f27
+ >>>> --- /dev/null
+ >>>> +++ b/arch/arm/kernel/perf_event_msm.c
+ >> [...]
+ >>
+ >>>> +#include<asm/vfp.h>
+ >>>> +#include<asm/system.h>
+ >>>> +#include "../vfp/vfpinstr.h"
+ >>>
+ >>> Sorry I didn't see this earlier.  Is there another way to get the info
+ >>> you need that wouldn't use a relative include path?  If the info from
+ >>> vfpinstr.h is now needed outside of the vfp directory, can it be moved
+ >>> to a common header instead?  Thanks.
+ > Good catch! Sorry I did not catch this one while reviewing the code.
+ >
+ >>>
+ >>> - Bryan
+ >>
+ >> I see other files under vfp that include this header.
+ >> So if we were to implement Bryan's suggestion, I think a separate patch that moves the 
+header and updates all the depdendencies would be more appropriate.
+ >> Are you okay with the relative include path for vfpinstr.h in this patch for now or 
+would you want to see an update to move vfpinstr.h to include/asm?.
+ >
+ > Adding Russell and Nicolas for the VFP question.
+ > Only fmrx and fmxr are used from "../vfp/vfpinstr.h". Can those be
+ > moved to arch/arm/include/asm/vfp.h?
+ >
+ > What is the best solution to this?
+ >
+ > Regards,
+ > Jean
+ >
 
-> > @@ -467,9 +468,10 @@ unsigned long msecs_to_jiffies(const unsigned =
-int m)
-> >=20
-> >  =09if (HZ > MSEC_PER_SEC && m > jiffies_to_msecs(MAX_JIFFY_OFFSET)=
-)
-> >  =09
-> >  =09=09return MAX_JIFFY_OFFSET;
->=20
-> Hmm, this check is silly. MUL32 is chosen, so that we cannot overflow=
-.
+Any opinions on what would be the best thing to do here? Choices appear to be:
 
-IMHO the second part of the check should be enough, no? If m is greater=
- than=20
-j2m(MAX) then it's irrelevant what's up else, it's too big. Period.
+1) allow the relative include path of ../vfp/vfpinstr.h
+2) move the definitions of fmrx, fmxr from vfp/vfpinstr.h to include/asm/vfp.h
+3) move vfp/vfpinstr.h to include/asm
+4) other...?
 
-Eike
---nextPart1434542.gV8MdA4CJe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
+If it helps, I can create a patch for whichever is considered the preferred solution.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
+Thanks,
+Neil (Standing in temporarily for Sheetal while she is on leave of absence)
 
-iEYEABECAAYFAk2SSVAACgkQXKSJPmm5/E7hkgCeKh09MNecx1nv/IwAnDfHghwp
-9RoAniRgYGsC5AwkfmHppY3EuI3doCS4
-=R2OD
------END PGP SIGNATURE-----
+ >>
+ >> Thanks,
+ >> Sheetal
+ >>
 
---nextPart1434542.gV8MdA4CJe--
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
