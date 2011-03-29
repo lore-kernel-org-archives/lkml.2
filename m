@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab1C2MWm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 08:22:42 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58139 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752680Ab1C2MWk (ORCPT
+	id S1753389Ab1C2MXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 08:23:16 -0400
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:61045
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753299Ab1C2MXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 08:22:40 -0400
+	Tue, 29 Mar 2011 08:23:15 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: intel-gfx@lists.freedesktop.org
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [PATCH] drm/i915: Move the irq wait queue initialisation into the ring init
 Date: Tue, 29 Mar 2011 13:23:05 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Waldemar.Rymarkiewicz@tieto.com, sameo@linux.intel.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hthebaud@insidefr.com, matti.j.aaltonen@nokia.com
-Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Message-ID: <20110329132305.7aa065a1@lxorguk.ukuu.org.uk>
-In-Reply-To: <201103291404.39023.arnd@arndb.de>
-References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
-	<201103291305.02293.arnd@arndb.de>
-	<20110329125931.21a69776@lxorguk.ukuu.org.uk>
-	<201103291404.39023.arnd@arndb.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Message-Id: <1301401385-8935-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
+References: <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I was under the impression that NFC was peer-to-peer, so the driver
-> would already be handling both sides potentially.
+Required so that we don't obliterate the queue if initialising the
+rings after the global IRQ handler is installed.
 
-Your security requirements each side are going to be very different. A
-phone or handheld device is generally single user at a time, the other
-end may well be interacting with many devices at once each with their own
-security context and potentially handling sensitive data (payment
-authorisations for example).
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
 
-Alan
+This patch is required in conjunction with the first to prevent an oops
+the first time we try to use i915_wait_request (i.e. when starting X).
+-Chris
+
+---
+ drivers/gpu/drm/i915/i915_irq.c         |    6 ------
+ drivers/gpu/drm/i915/intel_ringbuffer.c |    1 +
+ 2 files changed, 1 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index 188b497..46ccfc8 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -1688,12 +1688,6 @@ int i915_driver_irq_postinstall(struct drm_device *dev)
+ 	u32 enable_mask = I915_INTERRUPT_ENABLE_FIX | I915_INTERRUPT_ENABLE_VAR;
+ 	u32 error_mask;
+ 
+-	DRM_INIT_WAITQUEUE(&dev_priv->ring[RCS].irq_queue);
+-	if (HAS_BSD(dev))
+-		DRM_INIT_WAITQUEUE(&dev_priv->ring[VCS].irq_queue);
+-	if (HAS_BLT(dev))
+-		DRM_INIT_WAITQUEUE(&dev_priv->ring[BCS].irq_queue);
+-
+ 	dev_priv->vblank_pipe = DRM_I915_VBLANK_PIPE_A | DRM_I915_VBLANK_PIPE_B;
+ 
+ 	if (HAS_PCH_SPLIT(dev))
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index e9e6f71..884556d 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -800,6 +800,7 @@ int intel_init_ring_buffer(struct drm_device *dev,
+ 	INIT_LIST_HEAD(&ring->request_list);
+ 	INIT_LIST_HEAD(&ring->gpu_write_list);
+ 
++	init_waitqueue_head(&ring->irq_queue);
+ 	spin_lock_init(&ring->irq_lock);
+ 	ring->irq_mask = ~0;
+ 
+-- 
+1.7.4.1
+
