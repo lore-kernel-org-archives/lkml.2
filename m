@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab1C2WWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 18:22:23 -0400
-Received: from mail.perches.com ([173.55.12.10]:4359 "EHLO mail.perches.com"
+	id S1754872Ab1C2WWb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 18:22:31 -0400
+Received: from mail.perches.com ([173.55.12.10]:4366 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754652Ab1C2WWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 18:22:21 -0400
+	id S1754789Ab1C2WW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 18:22:26 -0400
 From: Joe Perches <joe@perches.com>
-To: Matthew Garrett <mjg@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
+To: Matthew Garrett <mjg@redhat.com>, Frank Seidel <frank@f-seidel.de>
 Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/23] dell: Convert printks to pr_<level>
-Date: Tue, 29 Mar 2011 15:21:37 -0700
-Message-Id: <0d6e50d5caa832a8a9bf20996991ab56c576b894.1301436234.git.joe@perches.com>
+Subject: [PATCH 09/23] hdaps: Convert printks to pr_<level>
+Date: Tue, 29 Mar 2011 15:21:40 -0700
+Message-Id: <f4fbd2191533fd96fa59ba19c9917ed679920e1b.1301436234.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6.dirty
 In-Reply-To: <cover.1301436234.git.joe@perches.com>
 References: <cover.1301436234.git.joe@perches.com>
@@ -19,149 +19,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add pr_fmt.
-Remove hard coded prefixes and use pr_<level>.
+Added pr_fmt, converted printks and removed
+hard coded prefixes.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/platform/x86/dell-laptop.c  |   12 ++++++------
- drivers/platform/x86/dell-wmi-aio.c |    3 ++-
- drivers/platform/x86/dell-wmi.c     |   17 ++++++++---------
- 3 files changed, 16 insertions(+), 16 deletions(-)
+ drivers/platform/x86/hdaps.c |   19 ++++++++++---------
+ 1 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
-index de301aa..d3841de 100644
---- a/drivers/platform/x86/dell-laptop.c
-+++ b/drivers/platform/x86/dell-laptop.c
-@@ -11,6 +11,8 @@
-  *  published by the Free Software Foundation.
+diff --git a/drivers/platform/x86/hdaps.c b/drivers/platform/x86/hdaps.c
+index 067bf36..5a34973 100644
+--- a/drivers/platform/x86/hdaps.c
++++ b/drivers/platform/x86/hdaps.c
+@@ -26,6 +26,8 @@
+  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
   */
  
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
-@@ -434,8 +436,7 @@ static int __init dell_setup_rfkill(void)
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
+ #include <linux/input-polldev.h>
+@@ -238,7 +240,7 @@ static int hdaps_device_init(void)
+ 		     __check_latch(0x1611, 0x01))
+ 		goto out;
+ 
+-	printk(KERN_DEBUG "hdaps: initial latch check good (0x%02x).\n",
++	printk(KERN_DEBUG "hdaps: initial latch check good (0x%02x)\n",
+ 	       __get_latch(0x1611));
+ 
+ 	outb(0x17, 0x1610);
+@@ -299,7 +301,7 @@ static int hdaps_probe(struct platform_device *dev)
+ 	if (ret)
+ 		return ret;
+ 
+-	printk(KERN_INFO "hdaps: device successfully initialized.\n");
++	pr_info("device successfully initialized\n");
+ 	return 0;
+ }
+ 
+@@ -480,7 +482,7 @@ static struct attribute_group hdaps_attribute_group = {
+ /* hdaps_dmi_match - found a match.  return one, short-circuiting the hunt. */
+ static int __init hdaps_dmi_match(const struct dmi_system_id *id)
+ {
+-	printk(KERN_INFO "hdaps: %s detected.\n", id->ident);
++	pr_info("%s detected\n", id->ident);
+ 	return 1;
+ }
+ 
+@@ -488,8 +490,7 @@ static int __init hdaps_dmi_match(const struct dmi_system_id *id)
+ static int __init hdaps_dmi_match_invert(const struct dmi_system_id *id)
+ {
+ 	hdaps_invert = (unsigned long)id->driver_data;
+-	printk(KERN_INFO "hdaps: inverting axis (%u) readings.\n",
+-	       hdaps_invert);
++	pr_info("inverting axis (%u) readings\n", hdaps_invert);
+ 	return hdaps_dmi_match(id);
+ }
+ 
+@@ -543,7 +544,7 @@ static int __init hdaps_init(void)
  	int ret;
  
- 	if (dmi_check_system(dell_blacklist)) {
--		printk(KERN_INFO "dell-laptop: Blacklisted hardware detected - "
--				"not enabling rfkill\n");
-+		pr_info("Blacklisted hardware detected - not enabling rfkill\n");
- 		return 0;
+ 	if (!dmi_check_system(hdaps_whitelist)) {
+-		printk(KERN_WARNING "hdaps: supported laptop not found!\n");
++		pr_warn("supported laptop not found!\n");
+ 		ret = -ENODEV;
+ 		goto out;
  	}
+@@ -595,7 +596,7 @@ static int __init hdaps_init(void)
+ 	if (ret)
+ 		goto out_idev;
  
-@@ -606,7 +607,7 @@ static int __init dell_init(void)
- 	dmi_walk(find_tokens, NULL);
+-	printk(KERN_INFO "hdaps: driver successfully loaded.\n");
++	pr_info("driver successfully loaded\n");
+ 	return 0;
  
- 	if (!da_tokens)  {
--		printk(KERN_INFO "dell-laptop: Unable to find dmi tokens\n");
-+		pr_info("Unable to find dmi tokens\n");
- 		return -ENODEV;
- 	}
+ out_idev:
+@@ -609,7 +610,7 @@ out_driver:
+ out_region:
+ 	release_region(HDAPS_LOW_PORT, HDAPS_NR_PORTS);
+ out:
+-	printk(KERN_WARNING "hdaps: driver init failed (ret=%d)!\n", ret);
++	pr_warn("driver init failed (ret=%d)!\n", ret);
+ 	return ret;
+ }
  
-@@ -636,14 +637,13 @@ static int __init dell_init(void)
- 	ret = dell_setup_rfkill();
+@@ -622,7 +623,7 @@ static void __exit hdaps_exit(void)
+ 	platform_driver_unregister(&hdaps_driver);
+ 	release_region(HDAPS_LOW_PORT, HDAPS_NR_PORTS);
  
- 	if (ret) {
--		printk(KERN_WARNING "dell-laptop: Unable to setup rfkill\n");
-+		pr_warn("Unable to setup rfkill\n");
- 		goto fail_rfkill;
- 	}
+-	printk(KERN_INFO "hdaps: driver unloaded.\n");
++	pr_info("driver unloaded\n");
+ }
  
- 	ret = i8042_install_filter(dell_laptop_i8042_filter);
- 	if (ret) {
--		printk(KERN_WARNING
--		       "dell-laptop: Unable to install key filter\n");
-+		pr_warn("Unable to install key filter\n");
- 		goto fail_filter;
- 	}
- 
-diff --git a/drivers/platform/x86/dell-wmi-aio.c b/drivers/platform/x86/dell-wmi-aio.c
-index 0ed8457..3f94545 100644
---- a/drivers/platform/x86/dell-wmi-aio.c
-+++ b/drivers/platform/x86/dell-wmi-aio.c
-@@ -15,6 +15,7 @@
-  *  along with this program; if not, write to the Free Software
-  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
-+
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/kernel.h>
-@@ -138,7 +139,7 @@ static int __init dell_wmi_aio_init(void)
- 
- 	guid = dell_wmi_aio_find();
- 	if (!guid) {
--		pr_warning("No known WMI GUID found\n");
-+		pr_warn("No known WMI GUID found\n");
- 		return -ENXIO;
- 	}
- 
-diff --git a/drivers/platform/x86/dell-wmi.c b/drivers/platform/x86/dell-wmi.c
-index 77f1d55..ce79082 100644
---- a/drivers/platform/x86/dell-wmi.c
-+++ b/drivers/platform/x86/dell-wmi.c
-@@ -23,6 +23,8 @@
-  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/init.h>
-@@ -141,7 +143,7 @@ static void dell_wmi_notify(u32 value, void *context)
- 
- 	status = wmi_get_event_data(value, &response);
- 	if (status != AE_OK) {
--		printk(KERN_INFO "dell-wmi: bad event status 0x%x\n", status);
-+		pr_info("bad event status 0x%x\n", status);
- 		return;
- 	}
- 
-@@ -153,8 +155,8 @@ static void dell_wmi_notify(u32 value, void *context)
- 		u16 *buffer_entry = (u16 *)obj->buffer.pointer;
- 
- 		if (dell_new_hk_type && (buffer_entry[1] != 0x10)) {
--			printk(KERN_INFO "dell-wmi: Received unknown WMI event"
--					 " (0x%x)\n", buffer_entry[1]);
-+			pr_info("Received unknown WMI event (0x%x)\n",
-+				buffer_entry[1]);
- 			kfree(obj);
- 			return;
- 		}
-@@ -167,8 +169,7 @@ static void dell_wmi_notify(u32 value, void *context)
- 		key = sparse_keymap_entry_from_scancode(dell_wmi_input_dev,
- 							reported_key);
- 		if (!key) {
--			printk(KERN_INFO "dell-wmi: Unknown key %x pressed\n",
--				reported_key);
-+			pr_info("Unknown key %x pressed\n", reported_key);
- 		} else if ((key->keycode == KEY_BRIGHTNESSUP ||
- 			    key->keycode == KEY_BRIGHTNESSDOWN) && acpi_video) {
- 			/* Don't report brightness notifications that will also
-@@ -275,7 +276,7 @@ static int __init dell_wmi_init(void)
- 	acpi_status status;
- 
- 	if (!wmi_has_guid(DELL_EVENT_GUID)) {
--		printk(KERN_WARNING "dell-wmi: No known WMI GUID found\n");
-+		pr_warn("No known WMI GUID found\n");
- 		return -ENODEV;
- 	}
- 
-@@ -290,9 +291,7 @@ static int __init dell_wmi_init(void)
- 					 dell_wmi_notify, NULL);
- 	if (ACPI_FAILURE(status)) {
- 		dell_wmi_input_destroy();
--		printk(KERN_ERR
--			"dell-wmi: Unable to register notify handler - %d\n",
--			status);
-+		pr_err("Unable to register notify handler - %d\n", status);
- 		return -ENODEV;
- 	}
- 
+ module_init(hdaps_init);
 -- 
 1.7.4.2.g597a6.dirty
 
