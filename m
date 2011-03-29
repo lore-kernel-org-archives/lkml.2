@@ -1,31 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1C2XgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 19:36:05 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:49715 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751975Ab1C2XgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 19:36:04 -0400
-Message-Id: <20110329233602.272459647@gulag1.americas.sgi.com>
-User-Agent: quilt/0.46-1
-Date: Tue, 29 Mar 2011 18:36:02 -0500
-From: Mike Travis <travis@sgi.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Mike Habeck <habeck@sgi.com>, iommu@lists.linux-foundation.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] pci: Speed up processing of IOMMU related functions
+	id S1754715Ab1C2XjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 19:39:03 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42590 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751683Ab1C2XjC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 19:39:02 -0400
+Date: Wed, 30 Mar 2011 08:39:10 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: David Collins <collinsd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] regulator: When constraining modes fall back to higher
+ power modes
+Message-ID: <20110329233909.GN30482@opensource.wolfsonmicro.com>
+References: <1301434152-16393-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1301441364.3402.41.camel@odin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301441364.3402.41.camel@odin>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 30, 2011 at 12:29:24AM +0100, Liam Girdwood wrote:
 
-    During testing of a large customer UV configuration with a lot of
-    I/O devices, certain IOMMU functions were either consuming too much
-    time or not functioning correctly.
+> It's late and I'm wondering if it's cleaner here just to :-
+> 
+> if (mask & *mode)
+> 	return 0;
 
-    This patchset addresses those problems.
+> *mode = fls(mask);
+> if (*mode)
+> 	return 0;
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-
--- 
+This will end up selecting the highest mode in mask, even if it's lower
+than the one asked for, you'd need to recheck against the original mask.
+There's a few ways I can think of to do that but they're none of them
+exceptionally pretty.
