@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab1C2LYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 07:24:38 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41717 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878Ab1C2LYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 07:24:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=o54lac2FW18+zDm3uVPDsNj5aaglU3bZ1GcKlh0Pug8WeMoWv3ytqsPUDRwU8l73Qa
-         /U5FX2uTEtcbLF3N5qrYpjxOJLXHfG2ipewzEufYbJJjE1DsHSrWU7JoisWCA9f23mIk
-         t2azn8xHji14q9FZ3iSeG14UbbWcgPx2cjsHg=
+	id S1753241Ab1C2LZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 07:25:07 -0400
+Received: from mail.aknet.ru ([78.158.192.28]:46433 "EHLO mail.aknet.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753042Ab1C2LZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 07:25:05 -0400
+Message-ID: <4D91C18D.8030701@aknet.ru>
+Date: Tue, 29 Mar 2011 15:25:01 +0400
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimaR8PW+N=tYwrD4+rXmzfm5uFv7a6SD-fWUG7B@mail.gmail.com>
-References: <1300978173-9983-1-git-send-email-dbaluta@ixiacom.com>
-	<20110329073632.GB10163@osiris.boeblingen.de.ibm.com>
-	<AANLkTi=Kr5DQrZW+d=u-fyYcDNQogBj=TFr1_25+Z4Uw@mail.gmail.com>
-	<AANLkTimaR8PW+N=tYwrD4+rXmzfm5uFv7a6SD-fWUG7B@mail.gmail.com>
-Date: Tue, 29 Mar 2011 14:24:36 +0300
-Message-ID: <AANLkTin7X=+HK0T0N99KJsHabzvhKxZfSj_+qzCxTeX0@mail.gmail.com>
-Subject: Re: [PATCH] kmemleak: update documentation
-From: Daniel Baluta <daniel.baluta@gmail.com>
-To: Maxin John <maxin.john@gmail.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, rdunlap@xenotime.net,
-        catalin.marinas@arm.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linux kernel <linux-kernel@vger.kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>
+Subject: vmsplice from mmapped DMA buffer
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> With some minor modifications, I was able to run kmemleak in MIPS platform.
-> Kmemleak output and Patch are available in this link:
->
-> https://lkml.org/lkml/2011/3/28/483
->
-> Should we include that information in the Documentation ?
+Hi.
 
-Sure, but first lets consolidate the patch for MIPS support.
+I'm trying to use vmsplice() to speed up the transfer
+from the mmapped DMA buffer, and read it by another process.
+As it seems to me, right now this is not really possible:
+if the pipe reader lags, the DMA will overwrite the pages
+that were not yet transferred. And I can't pause the DMA,
+because it transfers the incoming realtime data stream.
+So right now I am using the classic read/write, but that's
+a huge CPU load.
+Is there any way to achieve the reliable results with vmsplice?
 
-Daniel.
+If right now vmsplice cannot be reliably used to transfer
+from the non-pausible DMA buffer, then I can think of the
+following extensions (flags) to it:
+- VMSPLICE_F_QUERY_PENDING: returns the number of bytes
+still pending for IO, within the specified memory areas.
+- VMSPLICE_F_VACATE: vacate the specified memory areas
+from the pending IO, if any. By copying the pending data to the
+kernel buffer.
+- VMSPLICE_F_FLUSH: block until there is no more pending
+IO for the specified memory areas.
+- VMSPLICE_F_ASYNC: give SIGIO when the specified memory
+areas are completely xferred and consumed by the reader.
+
+Well, this flags will not play well with the existing vmsplice(),
+so basically this is a brain-storming.
+Anyway, are there any suggestions about vmsplicing from
+the DMA buffer? Or, if not yet possible - what have to be done
+to get there?
