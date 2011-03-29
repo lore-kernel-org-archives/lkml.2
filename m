@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab1C2O44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 10:56:56 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:34933 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727Ab1C2O4y (ORCPT
+	id S1753412Ab1C2PAs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 11:00:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53974 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab1C2PAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 10:56:54 -0400
-Date: Tue, 29 Mar 2011 16:56:51 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: linux-kernel@vger.kernel.org
-Cc: dri-devel@lists.freedesktop.org
-Subject: WARNING: at drivers/gpu/drm/ttm/ttm_page_alloc.c:758
-Message-ID: <20110329145651.GA1641@gentoo.trippels.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	Tue, 29 Mar 2011 11:00:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=dLXmIK7EbQlxPNzjHK2eqLa1+GJD6DDBKzaEBEPCMLQqXjNcKLJI70pd7zJ0jaJaNs
+         u8ZeyweZBcyzlRwlDaFfoCDEpjmvK/FAWvnaSkwzClbWYB97oeSOXvWVe1vLHkdcBFpm
+         dhrxwsEapAI+aneNmagibhc0fg4jp7pFHh7kI=
+Subject: Re: ping when network down BUG: unable to handle kernel NULL
+ pointer dereference at 000000000000001b
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTinthHDRYpfNrXSiOz9t_y5HyVMpjP-dLm_bn0es@mail.gmail.com>
+References: <AANLkTinthHDRYpfNrXSiOz9t_y5HyVMpjP-dLm_bn0es@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Mar 2011 16:59:24 +0200
+Message-ID: <1301410764.3161.156.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just came across this WARNING (running latest git kernel):
+Le mardi 29 mars 2011 à 22:54 +0800, Jeff Chua a écrit :
+> I don't know when this started happening as my network was always up.
+> Just down, I shutdown my network, and ping a known host and
+> encountered this BUG.
+> 
+> # ifconfig eth0 down
+> # ping knowngoodhost
+> 
+> Pid: 2144, comm: ping Not tainted 2.6.38 #34 LENOVO 5413FGA/5413FGA
+> RIP: 0010:[<ffffffff81421047>]  [<ffffffff81421047>] dst_release+0x11/0x57
+> RSP: 0018:ffff880231975c28  EFLAGS: 00010286
+> RAX: ffffffffffffff9b RBX: ffffffffffffff9b RCX: 00000000fffffffd
+> RDX: 0000000000000000 RSI: 00000000000000fd RDI: ffffffffffffff9b
+> RBP: 00000000ffffffff R08: ffff880231975bc8 R09: ffff88023bd8e1c8
+> R10: 0000000000000001 R11: ffff880231975a08 R12: 0000000000000040
+> R13: 00000000bcc8a19b R14: 00000000ffffff9b R15: 0000000000000000
+> FS:  00007fa75ba60700(0000) GS:ffff88023bc00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 000000000000001b CR3: 000000022f886000 CR4: 00000000000006f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process ping (pid: 2144, threadinfo ffff880231974000, task ffff8802330e2d00)
+> Stack:
+>  ffff880231889b00 ffff880231889b00 ffff880231975ee8 ffffffff81464f97
+>  ffffffff0100007f 0000000000000202 ffffffff818385b0 0000000000000002
+>  0000000000000000 0401000000000000 bcc8a19b00000000 0000000800000000
+> Call Trace:
+>  [<ffffffff81464f97>] ? raw_sendmsg+0x66c/0x6c1
+>  [<ffffffff8140b0be>] ? sock_sendmsg+0xab/0xc3
+>  [<ffffffff8109cf03>] ? alloc_pages_vma+0x150/0x1fa
+>  [<ffffffff8104bde6>] ? up+0xe/0x36
+>  [<ffffffff81032cd8>] ? console_unlock+0x160/0x187
+>  [<ffffffff8104bde6>] ? up+0xe/0x36
+>  [<ffffffff810484b0>] ? remove_wait_queue+0x11/0x4a
+>  [<ffffffff8140b12d>] ? sockfd_lookup_light+0x1a/0x52
+>  [<ffffffff8140ab12>] ? move_addr_to_kernel+0x26/0x37
+>  [<ffffffff8140b7e7>] ? sys_sendto+0x114/0x148
+>  [<ffffffff8103d5e1>] ? do_sigaction+0x160/0x178
+>  [<ffffffff814b7d12>] ? system_call_fastpath+0x16/0x1b
+> Code: 00 48 c7 c7 70 4c 72 81 e8 41 37 c2 ff 48 c7 c7 50 4c 72 81 5b
+> e9 90 60 09 00 55 53 48 89 fb 48 83 ec 08 48 85 ff 74 45 83 cd ff <f0>
+> 0f c1 af 80 00 00 00 ff cd 79 11 be 16 01 00 00 48 c7 c7 84
+> RIP  [<ffffffff81421047>] dst_release+0x11/0x57
+>  RSP <ffff880231975c28>
+> CR2: 000000000000001b
+> ---[ end trace 4b75e8b1559e0b81 ]---
+> --
 
-Mar 29 09:14:39 gentoo kernel: udev[888]: starting version 164                                                                                       
-Mar 29 15:45:45 gentoo kernel: ------------[ cut here ]------------                                                                                  
-Mar 29 15:45:45 gentoo kernel: WARNING: at drivers/gpu/drm/ttm/ttm_page_alloc.c:758 ttm_put_pages+0x1c6/0x2b0()                                      
-Mar 29 15:45:45 gentoo kernel: Hardware name: System Product Name                                                                                    
-Mar 29 15:45:45 gentoo kernel: Pid: 688, comm: kworker/u:6 Not tainted 2.6.38-09065-g89078d5 #23                                                     
-Mar 29 15:45:45 gentoo kernel: Call Trace:                                                                                                           
-Mar 29 15:45:45 gentoo kernel: [<ffffffff81073fea>] warn_slowpath_common+0x7a/0xb0                                                                   
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8107410a>] warn_slowpath_null+0x1a/0x20                                                                     
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8130fe46>] ttm_put_pages+0x1c6/0x2b0                                                                        
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8130889d>] ttm_tt_free_alloced_pages+0xbd/0x100                                                             
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8130933c>] ttm_tt_swapout+0x1ac/0x2a0                                                                       
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8130ab85>] ttm_bo_swapout+0x1a5/0x230                                                                       
-Mar 29 15:45:45 gentoo kernel: [<ffffffff812fcefc>] ? drm_mm_kmalloc+0x3c/0xd0                                                                       
-Mar 29 15:45:45 gentoo kernel: [<ffffffff81307d38>] ttm_shrink+0xd8/0x120                                                                            
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8108f101>] ? queue_delayed_work_on+0x91/0x100                                                               
-Mar 29 15:45:45 gentoo kernel: [<ffffffff81307d80>] ? ttm_shrink+0x120/0x120                                                                         
-Mar 29 15:45:45 gentoo kernel: [<ffffffff81307d99>] ttm_shrink_work+0x19/0x20                                                                        
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8108e0ae>] process_one_work+0x11e/0x4c0                                                                     
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8108ea2e>] worker_thread+0x15e/0x340                                                                        
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8108e8d0>] ? manage_workers.isra.28+0x220/0x220                                                             
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8109348c>] kthread+0x8c/0xa0                                                                                
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8156e814>] kernel_thread_helper+0x4/0x10                                                                    
-Mar 29 15:45:45 gentoo kernel: [<ffffffff81093400>] ? kthread_flush_work_fn+0x20/0x20                                                                
-Mar 29 15:45:45 gentoo kernel: [<ffffffff8156e810>] ? gs_change+0xb/0xb                                                                              
-Mar 29 15:45:45 gentoo kernel: ---[ end trace d5b07e4231e70291 ]---                                                                                  
-Mar 29 15:45:45 gentoo kernel: ------------[ cut here ]------------
-...
-It's repeated ad nauseam from there on. (/var/log/kern.log is now over
-85MB in size)
+Hello Jeff.
 
--- 
-Markus
+Known problem, should be fixed by 
+
+http://git2.kernel.org/?p=linux/kernel/git/davem/net-2.6.git;a=commit;h=4910ac6c526d2868adcb5893e0c428473de862b5
+
+Thanks
+
+
