@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab1C2SVp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 14:21:45 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33730 "EHLO mx3.mail.elte.hu"
+	id S1754119Ab1C2SWG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 14:22:06 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:33776 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018Ab1C2SVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 14:21:44 -0400
-Date: Tue, 29 Mar 2011 20:21:31 +0200
+	id S1751911Ab1C2SWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 14:22:04 -0400
+Date: Tue, 29 Mar 2011 20:21:54 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
@@ -15,12 +15,13 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>
 Subject: Re: [RFC][PATCH] lockdep: Print a nice description of an irq locking
  issue
-Message-ID: <20110329182131.GB16244@elte.hu>
+Message-ID: <20110329182154.GA18913@elte.hu>
 References: <1301418845.14261.284.camel@gandalf.stny.rr.com>
+ <20110329182131.GB16244@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301418845.14261.284.camel@gandalf.stny.rr.com>
+In-Reply-To: <20110329182131.GB16244@elte.hu>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -34,19 +35,20 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-> After having to explain lockdep interrupt locking inversions a few
-> times, I decided to have lockdep spit out the scenario that it is
-> complaining about.
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > After having to explain lockdep interrupt locking inversions a few
+> > times, I decided to have lockdep spit out the scenario that it is
+> > complaining about.
+> 
+> Looks very useful!
+> 
+> Would you be interested in extending this to other lockdep splats as well? 
 
-Looks very useful!
+In separate patches, of course.
 
-Would you be interested in extending this to other lockdep splats as well? 
-
-"What does this mean" is a very common reaction to lockdep splats on lkml, and 
-it's kind of silly that lockdep does not explain things better (like your patch 
-does) - it has already done the much harder job of *proving* that a locking 
-sequence is problematic :-)
+Thanks,
 
 	Ingo
