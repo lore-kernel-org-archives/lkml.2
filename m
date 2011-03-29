@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab1C2WYu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 18:24:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:32868 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755161Ab1C2WYs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 18:24:48 -0400
-Date: Tue, 29 Mar 2011 15:24:34 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH]mmap: add alignment for some variables
-Message-Id: <20110329152434.d662706f.akpm@linux-foundation.org>
-In-Reply-To: <1301360054.3981.31.camel@sli10-conroe>
-References: <1301277536.3981.27.camel@sli10-conroe>
-	<m2oc4v18x8.fsf@firstfloor.org>
-	<1301360054.3981.31.camel@sli10-conroe>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755121Ab1C2WZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 18:25:28 -0400
+Received: from mail.perches.com ([173.55.12.10]:4372 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754840Ab1C2WWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 18:22:30 -0400
+From: Joe Perches <joe@perches.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 12/23] ideapad-laptop: Add pr_fmt
+Date: Tue, 29 Mar 2011 15:21:43 -0700
+Message-Id: <685c9e00532982dba8f88ed1ab6859693aae267c.1301436234.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.4.2.g597a6.dirty
+In-Reply-To: <cover.1301436234.git.joe@perches.com>
+References: <cover.1301436234.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Mar 2011 08:54:14 +0800
-Shaohua Li <shaohua.li@intel.com> wrote:
+Add pr_fmt to prefix logging messages.
 
-> -struct percpu_counter vm_committed_as;
-> +struct percpu_counter vm_committed_as ____cacheline_internodealigned_in_smp;
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/platform/x86/ideapad-laptop.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Why ____cacheline_internodealigned_in_smp?  That's pretty aggressive.
-
-afacit the main benefit from this will occur if the read-only
-vm_committed_as.counters lands in the same cacheline as some
-write-frequently storage.
-
-But that's a complete mad guess and I'd prefer not to have to guess.
+diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+index 21b1018..bfdda33 100644
+--- a/drivers/platform/x86/ideapad-laptop.c
++++ b/drivers/platform/x86/ideapad-laptop.c
+@@ -20,6 +20,8 @@
+  *  02110-1301, USA.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
+-- 
+1.7.4.2.g597a6.dirty
 
