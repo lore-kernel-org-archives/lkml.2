@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab1C2Kw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 06:52:27 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38843 "EHLO
+	id S1753183Ab1C2Kwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 06:52:35 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46331 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753025Ab1C2KwW (ORCPT
+	by vger.kernel.org with ESMTP id S1753136Ab1C2Kwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 06:52:22 -0400
-X-Sasl-enc: MAwCOKkDMKGGkp+uh010IWNO+GTaXe57wBKjFUTbXdVp 1301395938
+	Tue, 29 Mar 2011 06:52:30 -0400
+X-Sasl-enc: VOqK8wP2EUJMP7ilh3EgcJILhNndL9biiRLaUMWjXavJ 1301395945
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
@@ -16,452 +16,124 @@ Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
         tyhicks@linux.vnet.ibm.com, kirkland@canonical.com,
         ecryptfs-devel@lists.launchpad.net,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [PATCH v4 5/6] encrypted-keys: add ecryptfs format support
-Date: Tue, 29 Mar 2011 12:47:34 +0200
-Message-Id: <1301395658-28494-6-git-send-email-roberto.sassu@polito.it>
+Subject: [PATCH v4 6/6] eCryptfs: added support for the encrypted key type
+Date: Tue, 29 Mar 2011 12:47:35 +0200
+Message-Id: <1301395658-28494-7-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1301395658-28494-1-git-send-email-roberto.sassu@polito.it>
 References: <1301395658-28494-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----B51894D3E568A07736EC5A400C724095"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----B10D406C1950CBBA872A99A6B658329B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------B51894D3E568A07736EC5A400C724095
+------B10D406C1950CBBA872A99A6B658329B
 
-The 'encrypted' key type defines its own payload format which contains a
-symmetric key randomly generated that cannot be used directly to mount
-an eCryptfs filesystem, because it expects an authentication token
-structure.
-
-This patch introduces the new format 'ecryptfs' that allows to store an
-authentication token structure inside the encrypted key payload containing
-a randomly generated symmetric key, as the same for the format 'default'.
-
-More details about the usage of encrypted keys with the eCryptfs
-filesystem can be found in the file 'Documentation/keys-ecryptfs.txt'.
+The function ecryptfs_keyring_auth_tok_for_sig() has been modified in order
+to search keys of both 'user' and 'encrypted' types.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 Acked-by: Gianluca Ramunno <ramunno@polito.it>
-Reviewed-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Acked-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 ---
- Documentation/keys-ecryptfs.txt          |   68 +++++++++++++++++++++++++
- Documentation/keys-trusted-encrypted.txt |    6 ++-
- security/keys/Makefile                   |    2 +-
- security/keys/ecryptfs_format.c          |   81 ++++++++++++++++++++++++++++++
- security/keys/ecryptfs_format.h          |   30 +++++++++++
- security/keys/encrypted.c                |   75 +++++++++++++++++++++++++---
- 6 files changed, 252 insertions(+), 10 deletions(-)
- create mode 100644 Documentation/keys-ecryptfs.txt
- create mode 100644 security/keys/ecryptfs_format.c
- create mode 100644 security/keys/ecryptfs_format.h
+ fs/ecryptfs/ecryptfs_kernel.h |   41 +++++++++++++++++++++++++++++++++++++++--
+ fs/ecryptfs/keystore.c        |   13 ++++++++-----
+ 2 files changed, 47 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/keys-ecryptfs.txt b/Documentation/keys-ecryptfs.txt
-new file mode 100644
-index 0000000..c3bbeba
---- /dev/null
-+++ b/Documentation/keys-ecryptfs.txt
-@@ -0,0 +1,68 @@
-+		Encrypted keys for the eCryptfs filesystem
-+
-+ECryptfs is a stacked filesystem which transparently encrypts and decrypts each
-+file using a randomly generated File Encryption Key (FEK).
-+
-+Each FEK is in turn encrypted with a File Encryption Key Encryption Key (FEFEK)
-+either in kernel space or in user space with a daemon called 'ecryptfsd'.  In
-+the former case the operation is performed directly by the kernel CryptoAPI
-+using a key, the FEFEK, derived from a user prompted passphrase;  in the latter
-+the FEK is encrypted by 'ecryptfsd' with the help of external libraries in order
-+to support other mechanisms like public key cryptography, PKCS#11 and TPM based
-+operations.
-+
-+The data structure defined by eCryptfs to contain information required for the
-+FEK decryption is called authentication token and, currently, can be stored in a
-+kernel key of the 'user' type, inserted in the user's session specific keyring
-+by the userspace utility 'mount.ecryptfs' shipped with the package
-+'ecryptfs-utils'.
-+
-+The 'encrypted' key type has been extended with the introduction of the new
-+format 'ecryptfs' in order to be used in conjunction with the eCryptfs
-+filesystem.  Encrypted keys of the newly introduced format store an
-+authentication token in its payload with a FEFEK randomly generated by the
-+kernel and protected by the parent master key.
-+
-+In order to avoid known-plaintext attacks, the datablob obtained through
-+commands 'keyctl print' or 'keyctl pipe' does not contain the overall
-+authentication token, which content is well known, but only the FEFEK in
-+encrypted form.
-+
-+The eCryptfs filesystem may really benefit from using encrypted keys in that the
-+required key can be securely generated by an Administrator and provided at boot
-+time after the unsealing of a 'trusted' key in order to perform the mount in a
-+controlled environment.  Another advantage is that the key is not exposed to
-+threats of malicious software, because it is available in clear form only at
-+kernel level.
-+
-+Usage:
-+   keyctl add encrypted name "new ecryptfs key-type:master-key-name keylen" ring
-+   keyctl add encrypted name "load hex_blob" ring
-+   keyctl update keyid "update key-type:master-key-name"
-+
-+name:= '<16 hexadecimal characters>'
-+key-type:= 'trusted' | 'user'
-+keylen:= 64
-+
-+
-+Example of encrypted key usage with the eCryptfs filesystem:
-+
-+Create an encrypted key "1000100010001000" of length 64 bytes with format
-+'ecryptfs' and save it using a previously loaded user key "test":
-+
-+    $ keyctl add encrypted 1000100010001000 "new ecryptfs user:test 64" @u
-+    19184530
-+
-+    $ keyctl print 19184530
-+    ecryptfs user:test 64 490045d4bfe48c99f0d465fbbbb79e7500da954178e2de0697
-+    dd85091f5450a0511219e9f7cd70dcd498038181466f78ac8d4c19504fcc72402bfc41c2
-+    f253a41b7507ccaa4b2b03fff19a69d1cc0b16e71746473f023a95488b6edfd86f7fdd40
-+    9d292e4bacded1258880122dd553a661
-+
-+    $ keyctl pipe 19184530 > ecryptfs.blob
-+
-+Mount an eCryptfs filesystem using the created encrypted key "1000100010001000"
-+into the '/secret' directory:
-+
-+    $ mount -i -t ecryptfs -oecryptfs_sig=1000100010001000,\
-+      ecryptfs_cipher=aes,ecryptfs_key_bytes=32 /secret /secret
-diff --git a/Documentation/keys-trusted-encrypted.txt b/Documentation/keys-trusted-encrypted.txt
-index 0afcb50..5f50cca 100644
---- a/Documentation/keys-trusted-encrypted.txt
-+++ b/Documentation/keys-trusted-encrypted.txt
-@@ -63,7 +63,7 @@ Usage:
-     keyctl add encrypted name "load hex_blob" ring
-     keyctl update keyid "update key-type:master-key-name"
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index 02e39c8..f7c32d7 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -29,6 +29,7 @@
+ #define ECRYPTFS_KERNEL_H
  
--format:= 'default'
-+format:= 'default | ecryptfs'
- key-type:= 'trusted' | 'user'
- 
- 
-@@ -154,4 +154,6 @@ Load an encrypted key "evm" from saved blob:
-     24717c64 5972dcb82ab2dde83376d82b2e3c09ffc
- 
- Other uses for trusted and encrypted keys, such as for disk and file encryption
--are anticipated.
-+are anticipated.  In particular the new format 'ecryptfs' has been defined in
-+in order to use encrypted keys to mount an eCryptfs filesystem.  More details
-+about the usage can be found in the file 'Documentation/keys-ecryptfs.txt'.
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 1bf090a..b34cc6e 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -14,7 +14,7 @@ obj-y := \
- 	user_defined.o
- 
- obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
--obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted.o
-+obj-$(CONFIG_ENCRYPTED_KEYS) += ecryptfs_format.o encrypted.o
- obj-$(CONFIG_KEYS_COMPAT) += compat.o
- obj-$(CONFIG_PROC_FS) += proc.o
- obj-$(CONFIG_SYSCTL) += sysctl.o
-diff --git a/security/keys/ecryptfs_format.c b/security/keys/ecryptfs_format.c
-new file mode 100644
-index 0000000..6daa3b6
---- /dev/null
-+++ b/security/keys/ecryptfs_format.c
-@@ -0,0 +1,81 @@
-+/*
-+ * ecryptfs_format.c: helper functions for the encrypted key type
-+ *
-+ * Copyright (C) 2006 International Business Machines Corp.
-+ * Copyright (C) 2010 Politecnico di Torino, Italy
-+ *                    TORSEC group -- http://security.polito.it
-+ *
-+ * Authors:
-+ * Michael A. Halcrow <mahalcro@us.ibm.com>
-+ * Tyler Hicks <tyhicks@ou.edu>
-+ * Roberto Sassu <roberto.sassu@polito.it>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, version 2 of the License.
-+ */
-+
-+#include <linux/module.h>
-+#include "ecryptfs_format.h"
-+
-+u8 *ecryptfs_get_auth_tok_key(struct ecryptfs_auth_tok *auth_tok)
-+{
-+	return auth_tok->token.password.session_key_encryption_key;
-+}
-+EXPORT_SYMBOL(ecryptfs_get_auth_tok_key);
-+
-+/*
-+ * ecryptfs_get_versions()
-+ *
-+ * Source code taken from the software 'ecryptfs-utils' version 83.
-+ *
-+ */
-+void ecryptfs_get_versions(int *major, int *minor, int *file_version)
-+{
-+	*major = ECRYPTFS_VERSION_MAJOR;
-+	*minor = ECRYPTFS_VERSION_MINOR;
-+	if (file_version)
-+		*file_version = ECRYPTFS_SUPPORTED_FILE_VERSION;
-+}
-+EXPORT_SYMBOL(ecryptfs_get_versions);
-+
-+/*
-+ * ecryptfs_fill_auth_tok - fill the ecryptfs_auth_tok structure
-+ *
-+ * Fill the ecryptfs_auth_tok structure with required ecryptfs data.
-+ * The source code is inspired to the original function generate_payload()
-+ * shipped with the software 'ecryptfs-utils' version 83.
-+ *
-+ */
-+int ecryptfs_fill_auth_tok(struct ecryptfs_auth_tok *auth_tok,
-+			   const char *key_desc)
-+{
-+	int major, minor;
-+
-+	ecryptfs_get_versions(&major, &minor, NULL);
-+	auth_tok->version = (((uint16_t)(major << 8) & 0xFF00)
-+			     | ((uint16_t)minor & 0x00FF));
-+	auth_tok->token_type = ECRYPTFS_PASSWORD;
-+	strncpy((char *)auth_tok->token.password.signature, key_desc,
-+		ECRYPTFS_PASSWORD_SIG_SIZE);
-+	auth_tok->token.password.session_key_encryption_key_bytes =
-+		ECRYPTFS_MAX_KEY_BYTES;
-+	/*
-+	 * Removed auth_tok->token.password.salt and
-+	 * auth_tok->token.password.session_key_encryption_key
-+	 * initialization from the original code
-+	 */
-+	/* TODO: Make the hash parameterizable via policy */
-+	auth_tok->token.password.flags |=
-+		ECRYPTFS_SESSION_KEY_ENCRYPTION_KEY_SET;
-+	/* The kernel code will encrypt the session key. */
-+	auth_tok->session_key.encrypted_key[0] = 0;
-+	auth_tok->session_key.encrypted_key_size = 0;
-+	/* Default; subject to change by kernel eCryptfs */
-+	auth_tok->token.password.hash_algo = PGP_DIGEST_ALGO_SHA512;
-+	auth_tok->token.password.flags &= ~(ECRYPTFS_PERSISTENT_PASSWORD);
-+	return 0;
-+}
-+EXPORT_SYMBOL(ecryptfs_fill_auth_tok);
-+
-+MODULE_LICENSE("GPL");
-diff --git a/security/keys/ecryptfs_format.h b/security/keys/ecryptfs_format.h
-new file mode 100644
-index 0000000..40294de
---- /dev/null
-+++ b/security/keys/ecryptfs_format.h
-@@ -0,0 +1,30 @@
-+/*
-+ * ecryptfs_format.h: helper functions for the encrypted key type
-+ *
-+ * Copyright (C) 2006 International Business Machines Corp.
-+ * Copyright (C) 2010 Politecnico di Torino, Italy
-+ *                    TORSEC group -- http://security.polito.it
-+ *
-+ * Authors:
-+ * Michael A. Halcrow <mahalcro@us.ibm.com>
-+ * Tyler Hicks <tyhicks@ou.edu>
-+ * Roberto Sassu <roberto.sassu@polito.it>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, version 2 of the License.
-+ */
-+
-+#ifndef __KEYS_ECRYPTFS_H
-+#define __KEYS_ECRYPTFS_H
-+
-+#include <linux/ecryptfs.h>
-+
-+#define PGP_DIGEST_ALGO_SHA512   10
-+
-+u8 *ecryptfs_get_auth_tok_key(struct ecryptfs_auth_tok *auth_tok);
-+void ecryptfs_get_versions(int *major, int *minor, int *file_version);
-+int ecryptfs_fill_auth_tok(struct ecryptfs_auth_tok *auth_tok,
-+			   const char *key_desc);
-+
-+#endif /* __KEYS_ECRYPTFS_H */
-diff --git a/security/keys/encrypted.c b/security/keys/encrypted.c
-index 77f1007..d2dd6e1 100644
---- a/security/keys/encrypted.c
-+++ b/security/keys/encrypted.c
-@@ -29,11 +29,13 @@
- #include <linux/rcupdate.h>
- #include <linux/scatterlist.h>
- #include <linux/crypto.h>
-+#include <linux/ctype.h>
- #include <crypto/hash.h>
- #include <crypto/sha.h>
- #include <crypto/aes.h>
- 
- #include "encrypted.h"
-+#include "ecryptfs_format.h"
- 
- static const char KEY_TRUSTED_PREFIX[] = "trusted:";
- static const char KEY_USER_PREFIX[] = "user:";
-@@ -41,11 +43,13 @@ static const char hash_alg[] = "sha256";
- static const char hmac_alg[] = "hmac(sha256)";
- static const char blkcipher_alg[] = "cbc(aes)";
- static const char key_format_default[] = "default";
-+static const char key_format_ecryptfs[] = "ecryptfs";
- static unsigned int ivsize;
- static int blksize;
- 
- #define KEY_TRUSTED_PREFIX_LEN (sizeof (KEY_TRUSTED_PREFIX) - 1)
- #define KEY_USER_PREFIX_LEN (sizeof (KEY_USER_PREFIX) - 1)
-+#define KEY_ECRYPTFS_DESC_LEN 16
- #define HASH_SIZE SHA256_DIGEST_SIZE
- #define MAX_DATA_SIZE 4096
- #define MIN_DATA_SIZE  20
-@@ -63,11 +67,12 @@ enum {
+ #include <keys/user-type.h>
++#include <keys/encrypted-type.h>
+ #include <linux/fs.h>
+ #include <linux/fs_stack.h>
+ #include <linux/namei.h>
+@@ -78,11 +79,47 @@ struct ecryptfs_page_crypt_context {
+ 	} param;
  };
  
- enum {
--	Opt_error = -1, Opt_default
-+	Opt_error = -1, Opt_default, Opt_ecryptfs
- };
- 
- static const match_table_t key_format_tokens = {
- 	{Opt_default, "default"},
-+	{Opt_ecryptfs, "ecryptfs"},
- 	{Opt_error, NULL}
- };
- 
-@@ -95,6 +100,34 @@ static int aes_get_sizes(void)
- }
- 
- /*
-+ * valid_ecryptfs_desc - verify the description of a new/loaded encrypted key
-+ *
-+ * The description of a encrypted key with format 'ecryptfs' must contain
-+ * exactly 16 hexadecimal characters.
-+ *
-+ */
-+static int valid_ecryptfs_desc(const char *ecryptfs_desc)
++#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
++static inline struct ecryptfs_auth_tok *
++ecryptfs_get_encrypted_key_payload_data(struct key *key)
 +{
-+	int i;
-+
-+	if (strlen(ecryptfs_desc) != KEY_ECRYPTFS_DESC_LEN) {
-+		pr_err("encrypted_key: key description must be %d hexadecimal "
-+		       "characters long\n", KEY_ECRYPTFS_DESC_LEN);
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < KEY_ECRYPTFS_DESC_LEN; i++) {
-+		if (!isxdigit(ecryptfs_desc[i])) {
-+			pr_err("encrypted_key: key description must contain "
-+			       "only hexadecimal characters\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
++	if (key->type == &key_type_encrypted)
++		return (struct ecryptfs_auth_tok *)
++			(&((struct encrypted_key_payload *)key->payload.data)->payload_data);
++	else
++		return NULL;
 +}
 +
-+/*
-  * valid_master_desc - verify the 'key-type:desc' of a new/updated master-key
-  *
-  * key-type:= "trusted:" | "user:"
-@@ -158,7 +191,7 @@ static int datablob_parse(char *datablob, const char **format,
- 	}
- 	key_cmd = match_token(keyword, key_tokens, args);
- 
--	/* Get optional format: default */
-+	/* Get optional format: default | ecryptfs */
- 	p = strsep(&datablob, " \t");
- 	if (!p) {
- 		pr_err("encrypted_key: insufficient parameters specified\n");
-@@ -167,6 +200,7 @@ static int datablob_parse(char *datablob, const char **format,
- 
- 	key_format = match_token(p, key_format_tokens, args);
- 	switch (key_format) {
-+	case Opt_ecryptfs:
- 	case Opt_default:
- 		*format = p;
- 		*master_desc = strsep(&datablob, " \t");
-@@ -598,6 +632,17 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
- 	format_len = (!format) ? strlen(key_format_default) : strlen(format);
- 	decrypted_datalen = dlen;
- 	payload_datalen = decrypted_datalen;
-+	if (format && !strcmp(format, key_format_ecryptfs)) {
-+		if (dlen != ECRYPTFS_MAX_KEY_BYTES) {
-+			pr_err("encrypted_key: keylen for the ecryptfs format "
-+			       "must be equal to %d bytes\n",
-+			       ECRYPTFS_MAX_KEY_BYTES);
-+			return ERR_PTR(-EINVAL);
-+		}
-+		decrypted_datalen = ECRYPTFS_MAX_KEY_BYTES;
-+		payload_datalen = sizeof(struct ecryptfs_auth_tok);
-+	}
++static inline struct key *ecryptfs_get_encrypted_key(char *sig)
++{
++	return request_key(&key_type_encrypted, sig, NULL);
++}
 +
- 	encrypted_datalen = roundup(decrypted_datalen, blksize);
- 
- 	datablob_len = format_len + 1 + strlen(master_desc) + 1
-@@ -683,8 +728,14 @@ static void __ekey_init(struct encrypted_key_payload *epayload,
- 
- 	if (!format)
- 		memcpy(epayload->format, key_format_default, format_len);
--	else
-+	else {
-+		if (!strcmp(format, key_format_ecryptfs))
-+			epayload->decrypted_data =
-+				ecryptfs_get_auth_tok_key((struct ecryptfs_auth_tok *)epayload->payload_data);
++#else
++static inline struct ecryptfs_auth_tok *
++ecryptfs_get_encrypted_key_payload_data(struct key *key)
++{
++	return NULL;
++}
 +
- 		memcpy(epayload->format, format, format_len);
-+	}
++static inline struct key *ecryptfs_get_encrypted_key(char *sig)
++{
++	return ERR_PTR(-ENOKEY);
++}
 +
- 	memcpy(epayload->master_desc, master_desc, strlen(master_desc));
- 	memcpy(epayload->datalen, datalen, strlen(datalen));
- }
-@@ -696,11 +747,21 @@ static void __ekey_init(struct encrypted_key_payload *epayload,
-  * itself.  For an old key, decrypt the hex encoded data.
-  */
- static int encrypted_init(struct encrypted_key_payload *epayload,
--			  const char *format, const char *master_desc,
--			  const char *datalen, const char *hex_encoded_iv)
-+			  const char *key_desc, const char *format,
-+			  const char *master_desc, const char *datalen,
-+			  const char *hex_encoded_iv)
++#endif /* CONFIG_ENCRYPTED_KEYS */
++
+ static inline struct ecryptfs_auth_tok *
+ ecryptfs_get_key_payload_data(struct key *key)
  {
- 	int ret = 0;
+-	return (struct ecryptfs_auth_tok *)
+-		(((struct user_key_payload*)key->payload.data)->data);
++	struct ecryptfs_auth_tok *auth_tok;
++
++	auth_tok = ecryptfs_get_encrypted_key_payload_data(key);
++	if (!auth_tok)
++		return (struct ecryptfs_auth_tok *)
++			(((struct user_key_payload *)key->payload.data)->data);
++	else
++		return auth_tok;
+ }
  
-+	if (format && !strcmp(format, key_format_ecryptfs)) {
-+		ret = valid_ecryptfs_desc(key_desc);
-+		if (ret < 0)
-+			return ret;
-+
-+		ecryptfs_fill_auth_tok((struct ecryptfs_auth_tok *)epayload->payload_data,
-+				       key_desc);
-+	}
-+
- 	__ekey_init(epayload, format, master_desc, datalen);
- 	if (!hex_encoded_iv) {
- 		get_random_bytes(epayload->iv, ivsize);
-@@ -750,8 +811,8 @@ static int encrypted_instantiate(struct key *key, const void *data,
- 		ret = PTR_ERR(epayload);
- 		goto out;
+ #define ECRYPTFS_MAX_KEYSET_SIZE 1024
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index 03e609c..1966d1b 100644
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -1639,11 +1639,14 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
+ 
+ 	(*auth_tok_key) = request_key(&key_type_user, sig, NULL);
+ 	if (!(*auth_tok_key) || IS_ERR(*auth_tok_key)) {
+-		printk(KERN_ERR "Could not find key with description: [%s]\n",
+-		       sig);
+-		rc = process_request_key_err(PTR_ERR(*auth_tok_key));
+-		(*auth_tok_key) = NULL;
+-		goto out;
++		(*auth_tok_key) = ecryptfs_get_encrypted_key(sig);
++		if (!(*auth_tok_key) || IS_ERR(*auth_tok_key)) {
++			printk(KERN_ERR "Could not find key with description: [%s]\n",
++			      sig);
++			rc = process_request_key_err(PTR_ERR(*auth_tok_key));
++			(*auth_tok_key) = NULL;
++			goto out;
++		}
  	}
--	ret = encrypted_init(epayload, format, master_desc, decrypted_datalen,
--			     hex_encoded_iv);
-+	ret = encrypted_init(epayload, key->description, format, master_desc,
-+			     decrypted_datalen, hex_encoded_iv);
- 	if (ret < 0) {
- 		kfree(epayload);
- 		goto out;
+ 	down_write(&(*auth_tok_key)->sem);
+ 	rc = ecryptfs_verify_auth_tok_from_key(*auth_tok_key, auth_tok);
 -- 
 1.7.4
 
 
-------B51894D3E568A07736EC5A400C724095
+------B10D406C1950CBBA872A99A6B658329B
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -499,17 +171,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTAzMjkxMDQ4MTFaMCMGCSqG
-SIb3DQEJBDEWBBQBunKFQnoWKKZOo+W4PqhI61M66jB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTAzMjkxMDQ4MThaMCMGCSqG
+SIb3DQEJBDEWBBS73snWUwCJecQNrOWJ8BiomczuEDB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQDO6cWUQ6TngPLno5oQhqab3QNx
-sFAqA9+rrJtLYxKLLDZq0G54zPajfI4vK3uOBJ7ClS2hlkdnH2zmtFVGoZDrr1eU
-uYLl/3RzrtCM4yy9CMaJHVMNok3Qlxl9hpzFhXOF8VzzJ4jQu6FZ7Ccd6LSTxQGO
-tGNj88Ovm0GB/9y8vkWMBKidelNYsNvCj4VzBlw3u8GBS1qQGKocDIQ/LYJ/3uiG
-g1qakLnGv0RMqjnXuGEf8vSfjH7+KyVHbaTo+435ReFZGTVeFiyFUVPF8PuHo9+b
-1PabQzID5R+CgVhBnuHcpg3T6ZEraMo9jZUrbzFSZwM39gvovO61l+eu9Dnt
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCYoUSRUeZ626mn6QSYmUyaiAXd
+OBriNKVTLCA6VqCR5oicFWJ+6zuXHD/5Z80pcY3ihCdmEKhAUvoyNXdxkZCM4Rp8
+QF0XaVlIp5h/EDtc+Gl/LPhKqqCuO6b7sQYzKQ8wULwYoqzD4GxZRoctmyG9zFkI
+hhSfgu1lWNgS1Xs/0kZG4LON8s2UUAXk3WGFRNz79baBCRkhsFXojw9JaptR2Bxg
+2lyXhviL7UBxgbk7I6xxr+uOiwj8jHniy38Kn1E1D41E0E/olqjQnoedXXwAPPIk
+ed4b3jFnHzGnLkMHdJ2cro1tNSgPl7Km+yB5zut35mmQtSb5A50XQMuvQCwt
 
-------B51894D3E568A07736EC5A400C724095--
+------B10D406C1950CBBA872A99A6B658329B--
 
 
