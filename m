@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab1C2HFJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 03:05:09 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56058 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab1C2HFI (ORCPT
+	id S1753994Ab1C2HIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 03:08:35 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:43825 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752487Ab1C2HIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 03:05:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Bkd8ilct9yDQGkiQ4VkAbm1n0soHOah0hIcxk9Tb0IxuDXjm11c+fU0x0oiDW7xV0p
-         NF2Bat82Ko0Z0INu2VsIfuGY46M71LTiw01uwyDXbhTYeg3N5iwKQSFIiu0C5cJsCBMi
-         yHaEAY/o02fhsnQ6xirBcfvzO2pFfF8if9I+4=
-Subject: Re: [PATCH] ubifs: fix kconfig dependency warning
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
-        Adrian Hunter <adrian.hunter@nokia.com>
-In-Reply-To: <20110328134016.deb5d0c8.randy.dunlap@oracle.com>
-References: <20110328134016.deb5d0c8.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Mar 2011 10:02:58 +0300
-Message-ID: <1301382178.2816.69.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+	Tue, 29 Mar 2011 03:08:34 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiQIAFGDkU15LK5JTmdsb2JhbACESZQFjHYLAQEbBQMjJbJjkHiBJ4NMdwSTAA
+From: Dave Chinner <david@fromorbit.com>
+To: torvalds@linux-foundation.org
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, ryan@bluewatersys.com
+Subject: [PATCH] fs: don't use igrab() while holding i_lock
+Date: Tue, 29 Mar 2011 18:08:50 +1100
+Message-Id: <1301382530-32069-1-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.7.2.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-28 at 13:40 -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Fix another kconfig dependency warning, this time in ubifs.
-> 
-> warning: (UBIFS_FS_DEBUG && LOCKDEP && LATENCYTOP) selects KALLSYMS_ALL which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
-> 
-> Without this patch, we can have:
-> # CONFIG_KALLSYMS is not set
-> CONFIG_KALLSYMS_ALL=y
-> which is useless (does nothing unless KALLSYMS is enabled).
-> 
-> However, ubifs builds successfully with or without this patch,
-> and it builds with this line completely deleted,
-> so what was this 'select' for?  Just developer convenience?
+From: Dave Chinner <dchinner@redhat.com>
 
-Well, here is the idea. You can compile UBIFS with debugging and without
-debugging. Without debugging the resulting ubifs.ko is much smaller, so
-some embedded people prefer it this way.
+Fix the incorrect use of igrab() inside the i_lock in NFS and Ceph‥
+If we are already holding the i_lock, we have a reference to the
+inode so we can safely use ihold() to gain an extra reference. This
+avoids hangs due to lock recursion on the i_lock now that the
+inode_lock is gone and igrab() uses the i_lock itself.
 
-If you select debugging support, then we'll compile it a lot of
-assertions, self-checks, test-modes, extra error messages with detailed
-dumps. And we want to see stackdumps when errors or problems happen,
-this is why we select KALLSYMS_ALL.
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/ceph/addr.c     |    2 +-
+ fs/ceph/snap.c     |    4 ++--
+ fs/nfs/nfs4state.c |    3 ++-
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
-So I guess instead we should do:
-
-select KALLSYMS
-select KALLSYMS_ALL
-
-?
-
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index 561438b..37368ba 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -92,7 +92,7 @@ static int ceph_set_page_dirty(struct page *page)
+ 		ci->i_head_snapc = ceph_get_snap_context(snapc);
+ 	++ci->i_wrbuffer_ref_head;
+ 	if (ci->i_wrbuffer_ref == 0)
+-		igrab(inode);
++		ihold(inode);
+ 	++ci->i_wrbuffer_ref;
+ 	dout("%p set_page_dirty %p idx %lu head %d/%d -> %d/%d "
+ 	     "snapc %p seq %lld (%d snaps)\n",
+diff --git a/fs/ceph/snap.c b/fs/ceph/snap.c
+index f40b913..0aee66b 100644
+--- a/fs/ceph/snap.c
++++ b/fs/ceph/snap.c
+@@ -463,8 +463,8 @@ void ceph_queue_cap_snap(struct ceph_inode_info *ci)
+ 
+ 		dout("queue_cap_snap %p cap_snap %p queuing under %p\n", inode,
+ 		     capsnap, snapc);
+-		igrab(inode);
+-		
++		ihold(inode);
++
+ 		atomic_set(&capsnap->nref, 1);
+ 		capsnap->ci = ci;
+ 		INIT_LIST_HEAD(&capsnap->ci_item);
+diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+index ab1bf5b..a6804f7 100644
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -590,7 +590,8 @@ nfs4_get_open_state(struct inode *inode, struct nfs4_state_owner *owner)
+ 		state->owner = owner;
+ 		atomic_inc(&owner->so_count);
+ 		list_add(&state->inode_states, &nfsi->open_states);
+-		state->inode = igrab(inode);
++		ihold(inode);
++		state->inode = inode;
+ 		spin_unlock(&inode->i_lock);
+ 		/* Note: The reclaim code dictates that we add stateless
+ 		 * and read-only stateids to the end of the list */
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+1.7.2.3
 
