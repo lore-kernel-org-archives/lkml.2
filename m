@@ -1,51 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab1C2N2s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 09:28:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20150 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301Ab1C2N2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 09:28:47 -0400
-Date: Tue, 29 Mar 2011 14:19:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Julien Tinnes <jln@google.com>,
-        Klaus Dittrich <kladit@arcor.de>, Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH v2] Relax si_code check in rt_sigqueueinfo and
-	rt_tgsigqueueinfo
-Message-ID: <20110329121937.GA27497@redhat.com>
-References: <1301346815-6755-1-git-send-email-roland@kernel.org>
+	id S1752544Ab1C2Nc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 09:32:28 -0400
+Received: from outbound-mail01.westnet.com.au ([203.10.1.242]:56783 "EHLO
+	outbound-mail01.westnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751630Ab1C2Nc1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 09:32:27 -0400
+X-Greylist: delayed 565 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Mar 2011 09:32:26 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkVOAGTckU3AqCcs/2dsb2JhbACESZJ4gkCKPTpVd4hyqxWHcYkQgSeDTHcEhTqLNjSFTYJvAg
+X-IronPort-AV: E=Sophos;i="4.63,262,1299427200"; 
+   d="scan'208";a="138363576"
+Date: Tue, 29 Mar 2011 21:22:58 +0800 (WST)
+From: M B Promo <kerrie_bernie@westnet.com.au>
+Reply-To: "jerrysmith001@live.co.uk" <jerrysmith001@live.co.uk>
+Message-ID: <1248835950.682961301404978493.JavaMail.root@zim-store04.web.westnet.com.au>
+Subject: RE
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301346815-6755-1-git-send-email-roland@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [115.240.118.16]
+X-Mailer: Zimbra 5.0.18_GA_3011.RHEL4_64 (ZimbraWebClient - IE7 (Win)/5.0.18_GA_3011.RHEL4_64)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28, Roland Dreier wrote:
->
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index 324eff5..b2bfa3a 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -2437,7 +2437,7 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t, pid, int, sig,
->  	/* Not even root can pretend to send signals from the kernel.
->  	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
->  	 */
-> -	if (info.si_code != SI_QUEUE) {
-> +	if (info.si_code >= 0 || info.si_code == SI_TKILL) {
->  		/* We used to allow any < 0 si_code */
->  		WARN_ON_ONCE(info.si_code < 0);
+You e-mail id has won £950,000,00 pounds in our Mercedez Benz On-line Promo, send us your details
 
-This is equivalent to WARN_ON_ONCE(SI_TKILL)... doesn't matter, please ignore.
-
-Thanks, I think -stable needs this patch asap. It turns out 2.6.32.36, 2.6.33.9,
-2.6.37.6 and 2.6.38.2 pulled da48524eb20662618854bb3df2db01fc65f3070c.
-
-If this change breaks something too, we can make even more conservative check.
-
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-
+1.Name............
+2.Address..........
+3.Phone/No.........
+4.Country.. ........
