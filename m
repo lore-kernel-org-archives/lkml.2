@@ -1,84 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab1C2QbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 12:31:14 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34384 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab1C2QbM (ORCPT
+	id S1753923Ab1C2Qfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 12:35:55 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57451 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890Ab1C2Qfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 12:31:12 -0400
-Date: Tue, 29 Mar 2011 18:31:05 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] amd64_edac last minute fix
-Message-ID: <20110329163105.GD22419@aftab>
+	Tue, 29 Mar 2011 12:35:54 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Cc: Milton Miller <miltonm@bga.com>, Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Vivek Goyal <vgoyal@redhat.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH v2] generic-ipi: Initialize call_single_queue before enabling interrupt
+Date: Tue, 29 Mar 2011 12:35:04 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-Mailer: HidemaruMail 5.38 (WinNT,501)
+Message-Id: <D6CBEE2F420741indou.takao@jp.fujitsu.com>
+X-Antivirus: avast! (VPS 110329-0, 2011/03/29), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi all,
 
-please pull this last-minute amd64_edac fix for a potential memleak if
-it's not too late yet. If it is, I'll send it to you after -rc1 is out
-since it is a minor bugfix.
+This patch renames init_call_single_data() to call_function_init() and
+calls it in start_kernel() so that call_single_queue can be initialized
+before enabling interrupt.
 
-Thanks.
+There is a problem that kdump(2nd kernel) sometimes hangs up due to
+pending IPI from 1st kernel. Kernel panic occurs because IPI comes
+before call_single_queue is initialized. The details are as follows.
+(1) 2nd kernel boot up
+(2) A pending IPI from 1st kernel comes when irqs are first enabled
+    in start_kernel().
+(3) Kernel tries to handle the interrupt, but call_single_queue is not
+    initialized yet at this point. As a result, in the
+    generic_smp_call_function_single_interrupt(), NULL pointer
+    dereference occurs when list_replace_init() tries to access
+    &q->list.next.
+Therefore this patch changes the name of init_call_single_data() to
+call_function_init() and calls it before local_irq_enable() in
+start_kernel().
 
-The following changes since commit 89078d572eb9ce8d4c04264b8b0ba86de0d74c8f:
+v2:
+- Rename init_call_single_data() to call_function_init() and calls it in
+  start_kernel()
+- Change insert position in start_kernel().
+- Adjust for CONFIG_SMP/CONFIG_USE_GENERIC_SMP_HELPERS options
+- Rebased to Linus's latest tree
 
-  md: Fix integrity registration error when no devices are capable (2011-03-28 17:53:29 -0700)
+v1:
+https://lkml.org/lkml/2011/3/25/317
+- Divide init_call_single_data() into two functions,
+   o init_call_single_data: initialize call_single_queue
+   o init_hotplug_cfd: initialize hotplug_cfd_notifier
+  And call init_call_single_data before local_irq_enable() in
+  start_kernel().
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-linus
+v0:
+https://lkml.org/lkml/2011/3/23/417
+- In generic_smp_call_function_single_interrupt(), check if
+  call_single_queue was initialized or not, and just return if not
+  initialized.
 
-Borislav Petkov (1):
-      amd64_edac: Fix potential memleak
+Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+---
+ include/linux/smp.h |    5 ++++-
+ init/main.c         |    1 +
+ kernel/smp.c        |    5 +----
+ 3 files changed, 6 insertions(+), 5 deletions(-)
 
- drivers/edac/amd64_edac.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
---
-
-commit a9f0fbe2bbf328f869fc5ee5a12c6a4118c32689
-Author: Borislav Petkov <borislav.petkov@amd.com>
-Date:   Tue Mar 29 18:10:53 2011 +0200
-
-    amd64_edac: Fix potential memleak
-    
-    We check the pointers together but at least one of them could be invalid
-    due to failed allocation. Since we cannot continue if either of the two
-    allocations has failed, exit early by freeing them both.
-    
-    Cc: <stable@kernel.org> # 38.x
-    Reported-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-    Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 0be30e9..31e71c4f 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -2679,7 +2679,7 @@ static int __init amd64_edac_init(void)
- 	mcis	  = kzalloc(amd_nb_num() * sizeof(mcis[0]), GFP_KERNEL);
- 	ecc_stngs = kzalloc(amd_nb_num() * sizeof(ecc_stngs[0]), GFP_KERNEL);
- 	if (!(mcis && ecc_stngs))
--		goto err_ret;
-+		goto err_free;
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 74243c8..4fb3eac 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -85,12 +85,15 @@ int smp_call_function_any(const struct cpumask *mask,
+  * Generic and arch helpers
+  */
+ #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
++void __init call_function_init(void);
+ void generic_smp_call_function_single_interrupt(void);
+ void generic_smp_call_function_interrupt(void);
+ void ipi_call_lock(void);
+ void ipi_call_unlock(void);
+ void ipi_call_lock_irq(void);
+ void ipi_call_unlock_irq(void);
++#else
++static inline void call_function_init(void) { }
+ #endif
  
- 	msrs = msrs_alloc();
- 	if (!msrs)
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+ /*
+@@ -144,7 +147,7 @@ static inline void smp_send_reschedule(int cpu) { }
+ #define smp_prepare_boot_cpu()			do {} while (0)
+ #define smp_call_function_many(mask, func, info, wait) \
+ 			(up_smp_call_function(func, info))
+-static inline void init_call_single_data(void) { }
++static inline void call_function_init(void) { }
+ 
+ static inline int
+ smp_call_function_any(const struct cpumask *mask, smp_call_func_t func,
+diff --git a/init/main.c b/init/main.c
+index 4a9479e..12821d1 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -539,6 +539,7 @@ asmlinkage void __init start_kernel(void)
+ 	timekeeping_init();
+ 	time_init();
+ 	profile_init();
++	call_function_init();
+ 	if (!irqs_disabled())
+ 		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
+ 				 "enabled early\n");
+diff --git a/kernel/smp.c b/kernel/smp.c
+index 73a1951..fb67dfa 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -74,7 +74,7 @@ static struct notifier_block __cpuinitdata hotplug_cfd_notifier = {
+ 	.notifier_call		= hotplug_cfd,
+ };
+ 
+-static int __cpuinit init_call_single_data(void)
++void __init call_function_init(void)
+ {
+ 	void *cpu = (void *)(long)smp_processor_id();
+ 	int i;
+@@ -88,10 +88,7 @@ static int __cpuinit init_call_single_data(void)
+ 
+ 	hotplug_cfd(&hotplug_cfd_notifier, CPU_UP_PREPARE, cpu);
+ 	register_cpu_notifier(&hotplug_cfd_notifier);
+-
+-	return 0;
+ }
+-early_initcall(init_call_single_data);
+ 
+ /*
+  * csd_lock/csd_unlock used to serialize access to per-cpu csd resources
