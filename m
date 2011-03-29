@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab1C2QpW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 12:45:22 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58417 "EHLO e7.ny.us.ibm.com"
+	id S1753994Ab1C2Qp5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 12:45:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12203 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753890Ab1C2QpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 12:45:19 -0400
-Message-ID: <4D920C9B.5070405@linux.vnet.ibm.com>
-Date: Tue, 29 Mar 2011 12:45:15 -0400
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-CC: debora@linux.vnet.ibm.com, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com, preining@logic.at
-Subject: Re: [patch 1/8] tpm_tis: Use timeouts returned from TPM
-References: <20110315111307.895085413@linux.vnet.ibm.com> <20110315111425.620707275@linux.vnet.ibm.com> <4D91EE00.1000801@linux.vnet.ibm.com>
-In-Reply-To: <4D91EE00.1000801@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753279Ab1C2Qp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 12:45:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,263,1299484800"; 
+   d="scan'208";a="726549061"
+Subject: Re: [RFC PATCH] perf report: add sort by file lines
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1301392457.4859.74.camel@twins>
+References: <1301391136.14111.98.camel@minggr.sh.intel.com>
+	 <1301392457.4859.74.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Mar 2011 00:45:55 +0800
+Message-Id: <1301417155.3620.8.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2011 10:34 AM, Rajiv Andrade wrote:
-> Hi Stefan,
->
-> Some comments:
->
-> On 03/15/2011 08:13 AM, Stefan Berger wrote:
->> v3:
->> - sysfs entry now called 'durations' to resemble TPM-speak (previously
->>    was called 'timeouts')
->>
->> v2:
->> - adjusting all timeouts for TPM devices reporting timeouts in msec rather
->>    than usec
-> This is a bugfix that's different than the one you originally sent, can you
-> submit this as a separated patch? This is mainly for easier debug in the
-> future, so each feature/bugfix/commit can be tested separately.
-Originally I sent a patch that corrected the evaluation of the return 
-code within the TPM's response and introduced the sysfs entry. I did not 
-scale the MEDIUM and LONG timeouts, which then caused the problems on 
-the Infineon TPM and the patch was removed. I then introduced the 
-scaling of the MEDIUM and LONG timeouts, which seems necessary as a 
-consequence to working with the TPM-reported timeouts. Then adding a 
-sysfs entry to it is an additional feature. I'd split this patch in 2 
-patches where the 2nd one introduces the sysfs entry. Is this ok with you?
+On Tue, 2011-03-29 at 17:54 +0800, Peter Zijlstra wrote:
+> On Tue, 2011-03-29 at 17:32 +0800, Lin Ming wrote:
+> > 
+> > Peter suggested to reverse map the reported IP (PEBS + fixup)
+> > to a data access using dwarf info.
+> > So I wrote this patch to see if the direction is right. 
+> 
+> I'm not sure this is quite the same thing, I'm not arguing this might
+> not be useful, but this is not about data access.
+> 
+> Suppose you have a line like:
+> 
+>   foo->bar->fubar = tmp->blah;
+> 
+> There's 3 indirections there, a line number doesn't even get you close
+> to knowing what data access triggered the event.
+> 
+> struct bar {
+>         int poekoe[5];
+>         int fubar;
+> };
+> 
+> struct foo {
+>         long poekoe[3];
+>         struct bar *bar;
+> };
+> 
+> struct tmp {
+>         long poekoe[4];
+>         int blah;
+> };
+> 
+> void foo(struct foo *foo, struct tmp *tmp)
+> {
+>         foo->bar->fubar = tmp->blah;
+> }
+> 
+> Which gives (somewhat simplified):
+> 
+> foo:
+> 	.cfi_startproc
+> 	pushq	%rbp
+> 	.cfi_def_cfa_offset 16
+> 	movq	%rsp, %rbp
+> 	.cfi_offset 6, -16
+> 	.cfi_def_cfa_register 6
+> 	movq	%rdi, -8(%rbp)
+> 	movq	%rsi, -16(%rbp)
+> 	movq	-8(%rbp), %rax    /* load foo arg from stack */
+> 	movq	24(%rax), %rax    /* load foo->bar */
+> 	movq	-16(%rbp), %rdx   /* load tmp arg from stack */
+> 	movl	32(%rdx), %edx    /* load tmp->blah */
+> 	movl	%edx, 20(%rax)    /* store bar->fubar */
+> 	leave
+> 	ret
+> 	.cfi_endproc
 
-    Stefan
+I need to have a close look at how dwarf cfi thing works.
+
+> 
+> where I annotated the various moves with C comments.
+> 
+> Now depending on what exact IP you get using PEBS+fixup you could using
+> DWARF bits generate similar deductions from the code as I did in those
+> comments and thus know exactly what data member was accessed and how
+> (read/write).
+
+Is it an unwind of the call frame stack to find out what data member was
+accessed?
+How to know the access type(read or write)?
+
+> 
+> With that data you could then borrow some pahole code and annotate the
+> various data structures to illustrate read/write distributions, which
+> can then be used as input for data-reorder.
+
+Could you explain a bit more about this?
+
+Thanks,
+Lin Ming
+
 
