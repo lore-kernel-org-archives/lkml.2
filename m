@@ -1,55 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1C2Gdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 02:33:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37719 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843Ab1C2Gds (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 02:33:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=W3J9plMpgA0i8tfXL4NNXAFje0NiAfMgbJyCwDFebD6RRDNKz6gU1bKZpoglpv4Z5x
-         a30JyvwHKpBtAdoI7bLBaqPuW9Nx+CU0b2OAMiNkckt8tiUyYMVMSawhPxhtXkaCrv4r
-         LfRN1XytLTgQKekFFEs+jn3b8pqUEwQOOWpWM=
-Date: Mon, 28 Mar 2011 23:33:41 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Chris Bagwell <chris@cnpbagwell.com>, Matthew Garrett <mjg@redhat.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] eeepc-wmi: Add support for T101MT Home/Express Gate
- key
-Message-ID: <20110329063341.GA26490@core.coreip.homeip.net>
-References: <AANLkTi=U2Qkqv7FKfe18f0a=8Xg0QwRX_cxFj-j7ZPC=@mail.gmail.com>
- <1301337224-3293-1-git-send-email-seth.forshee@canonical.com>
+	id S1753857Ab1C2GeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 02:34:09 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:53010 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751876Ab1C2GeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 02:34:06 -0400
+X-ASG-Debug-ID: 1301380445-03d6a5652c11790001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D917D5A.5040502@fusionio.com>
+Date: Tue, 29 Mar 2011 08:34:02 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301337224-3293-1-git-send-email-seth.forshee@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] block drivers for 2.6.39-rc
+References: <4D8E36CC.7080707@fusionio.com> <AANLkTinpjfyrN0mCRZi8zPqd2=+=WGRRToFhc+MqBDSB@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] block drivers for 2.6.39-rc
+In-Reply-To: <AANLkTinpjfyrN0mCRZi8zPqd2=+=WGRRToFhc+MqBDSB@mail.gmail.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301380445
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59285
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 01:33:41PM -0500, Seth Forshee wrote:
-> On Mon, Mar 28, 2011 at 02:14:33PM +0000, Corentin Chary wrote:
-> > But since Dmitry and Chris seems to prefer the autorepeat approach
-> > with a single key code, if it works then it's ok, we just need to set
-> > REP_DELAY, report press and release events, and drop 0xea events.
+On 2011-03-29 01:06, Linus Torvalds wrote:
+> On Sat, Mar 26, 2011 at 11:56 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>> Hi Linus,
+>>
+>> This is the pull request for the block driver updates for 2.6.39. Two
+>> things here:
+>>
+>> - Big drbd update, as per usual...
+>> - cciss update.
 > 
-> New patches follow. I didn't set REP_DELAY (or REP_PERIOD) because the
-> input core interprets this to mean that the driver will handle the
-> autorepeat itself. There's always EVIOCSREP to change the delay and
-> repeat period from userspace.
+> Btw, that cciss thing causes a very annoying compiler warning:
+> 
+>   drivers/block/cciss.c: In function ‘dev_show_unique_id’:
+>   drivers/block/cciss.c:617:7: warning: ‘sn[0]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[1]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[2]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[3]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[4]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[5]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[6]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[7]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[8]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[9]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[10]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[11]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[12]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[13]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[14]’ may be used
+> uninitialized in this function
+>   drivers/block/cciss.c:617:7: warning: ‘sn[15]’ may be used
+> uninitialized in this function
+> 
+> which is because the compiler doesn't really notice that those things
+> are only used if the error return isn't being set.
+> 
+> So it's a compiler mis-feature, but the thing is, the warning could
+> easily be avoided by just writing the code more prettily.
+> 
+> Just do the memcpy() unconditionally: we know that 'drv' is a valid
+> pointer (we just loaded 'h' off it), and we're talking about a nice
+> constant 16-byte copy.
+> 
+> IOW, a patch something like the attached.
+> 
+> Untested, but it looks really obvious. Hmm?
 
-Just an FYI: it is perfectly fine to set custom REP_DELAY and REP_PERIOD
-after registering an input device.
+Looks good to me. I'm curious, you get a warning in dev_show_unique_id()
+but not in dev_show_vendor() or any of the other following 4-5 functions
+written in the same style?
 
-Thanks.
+My gcc here does not warn for any of them. But it is very convoluted for
+what it does
 
 -- 
-Dmitry
+Jens Axboe
+
