@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab1C2GdC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 02:33:02 -0400
+	id S1753956Ab1C2GdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 02:33:10 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:42041 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab1C2Gc7 (ORCPT
+	with ESMTP id S1753125Ab1C2GdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 02:32:59 -0400
+	Tue, 29 Mar 2011 02:33:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=jv1FOD6Qc09RAihaXArfeiA8U1f+0Bo64EEucT1zUTUapmyeI5j+9sol5kB+xA5Kri
-         +3iXBPpkrF+nU5ixXhExSuSbZ48IQHy+G1drBv3Gbjz8H58FYeWDyFCjb5VYlNETOFJm
-         0GuXHInmFcXvDZcSnocJYIY4B4lGE38ZFMees=
+        b=n1zJ3vCGqMaxuUZ8hmvAiZ7k+OdqZEsZN0GWxYVpGE3V4O42sWComOAMcGmjOFMBPp
+         DVuQFTaS0NvhWbDydTyMidyLyAz84ude09Y0BUQGTOhw1bpi8w4w71i2S9YMoM8QAwyP
+         +Ludqr0WpYWJOEmGFzTt7FyVB7f/qSq5Q6D3g=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: ben-linux@fluff.org
 Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, rpurdie@rpsys.net, esta1ien@gmail.com,
         buserror@gmail.com, Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 1/4] s3c2440: mini2440: Add support for new LCD panels.
-Date: Tue, 29 Mar 2011 08:32:40 +0200
-Message-Id: <1301380363-3282-2-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH 4/4] s3c2440: mini2440: Enable the backlight LED earlier at boot time.
+Date: Tue, 29 Mar 2011 08:32:43 +0200
+Message-Id: <1301380363-3282-5-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1301380363-3282-1-git-send-email-marek.belisko@open-nandra.com>
 References: <1301380363-3282-1-git-send-email-marek.belisko@open-nandra.com>
@@ -29,68 +29,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add support for new mini2440 board LCD's:
-3.5" TFT + TS (TD035STED4)
-5.6" TFT (Innolux AT056TN52).
-3.5" TFT + TS (SONY X35)
+Code overtaken from:
+http://repo.or.cz/w/linux-2.6/mini2440.git
 
-Values overtaken from mini2440 kernel:
-git://repo.or.cz/linux-2.6/mini2440.git
-and https://github.com/a1ien/mini2440-linux-kernel
+Use flag that allows s3c24xx LED to start in the "on" state.
+This is necesary to enable LCD backlight during early boot stage.
 
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+Signed-off-by: Michel Pollet <buserror@gmail.com>
 ---
- arch/arm/mach-s3c2440/mach-mini2440.c |   37 +++++++++++++++++++++++++++++++++
- 1 files changed, 37 insertions(+), 0 deletions(-)
+ arch/arm/mach-s3c2410/include/mach/leds-gpio.h |    1 +
+ arch/arm/mach-s3c2440/mach-mini2440.c          |    1 +
+ drivers/leds/leds-s3c24xx.c                    |    6 +++++-
+ 3 files changed, 7 insertions(+), 1 deletions(-)
 
+diff --git a/arch/arm/mach-s3c2410/include/mach/leds-gpio.h b/arch/arm/mach-s3c2410/include/mach/leds-gpio.h
+index d8a7672..c3ae81f 100644
+--- a/arch/arm/mach-s3c2410/include/mach/leds-gpio.h
++++ b/arch/arm/mach-s3c2410/include/mach/leds-gpio.h
+@@ -16,6 +16,7 @@
+ 
+ #define S3C24XX_LEDF_ACTLOW	(1<<0)		/* LED is on when GPIO low */
+ #define S3C24XX_LEDF_TRISTATE	(1<<1)		/* tristate to turn off */
++#define S3C24XX_LEDF_STARTON    (1<<2)          /* Initialise 'on' */
+ 
+ struct s3c24xx_led_platdata {
+ 	unsigned int		 gpio;
 diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c b/arch/arm/mach-s3c2440/mach-mini2440.c
-index dfedc9c..ce152b4 100644
+index 163d318..46f2034 100644
 --- a/arch/arm/mach-s3c2440/mach-mini2440.c
 +++ b/arch/arm/mach-s3c2440/mach-mini2440.c
-@@ -167,6 +167,43 @@ static struct s3c2410fb_display mini2440_lcd_cfg[] __initdata = {
- 		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
- 				   S3C2410_LCDCON5_HWSWP),
- 	},
-+	[3] = {	/* mini2440 + 3.5" TFT + TS -- New model as Nov 2009 "T35" */
-+		_LCD_DECLARE(
-+			7,			/* The 3.5 is quite fast */
-+			240, 21, 25, 6,		/* x timing */
-+			320, 2, 4, 2,		/* y timing */
-+			40),			/* refresh rate */
-+		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
-+				   S3C2410_LCDCON5_INVVLINE |
-+				   S3C2410_LCDCON5_INVVFRAME |
-+				   S3C2410_LCDCON5_INVVDEN |
-+				   S3C2410_LCDCON5_PWREN),
-+	},
-+	[4] = { /* mini2440 + 5.6" TFT + touchscreen -- Innolux AT056TN52 */
-+		/* be sure the "power" jumper is set accordingly ! */
-+		_LCD_DECLARE(
-+			10,			/* the 5.3" runs slower */
-+			640, 41, 68, 22,	/* x timing */
-+			480, 26, 6, 2,		/* y timing */
-+			40),			/* refresh rate */
-+		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
-+				   S3C2410_LCDCON5_INVVLINE |
-+				   S3C2410_LCDCON5_INVVFRAME |
-+				   S3C2410_LCDCON5_PWREN),
-+	},
-+	[5] = { /* mini2440 + 3,5" TFT + touchscreen -- SONY X35 */
-+		_LCD_DECLARE(
-+			7,
-+			240, 1, 26, 5,		/* x timing */
-+			320, 1, 5, 9,		/* y timing */
-+			60),			/* refresh rate */
-+		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
-+					S3C2410_LCDCON5_INVVDEN |
-+					S3C2410_LCDCON5_INVVFRAME |
-+					S3C2410_LCDCON5_INVVLINE |
-+					S3C2410_LCDCON5_INVVCLK |
-+					S3C2410_LCDCON5_HWSWP),
-+	},
+@@ -451,6 +451,7 @@ static struct s3c24xx_led_platdata mini2440_led4_pdata = {
+ static struct s3c24xx_led_platdata mini2440_led_backlight_pdata = {
+ 	.name		= "backlight",
+ 	.gpio		= S3C2410_GPG(4),
++	.flags		= S3C24XX_LEDF_STARTON,
+ 	.def_trigger	= "backlight",
  };
  
- /* todo - put into gpio header */
+diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+index a77771d..42d0a08 100644
+--- a/drivers/leds/leds-s3c24xx.c
++++ b/drivers/leds/leds-s3c24xx.c
+@@ -95,7 +95,11 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_INPUT);
+ 	} else {
+ 		s3c2410_gpio_pullup(pdata->gpio, 0);
+-		s3c2410_gpio_setpin(pdata->gpio, 0);
++
++		if (pdata->flags & S3C24XX_LEDF_STARTON)
++			s3c2410_gpio_setpin(pdata->gpio, 1);
++		else
++			s3c2410_gpio_setpin(pdata->gpio, 0);
+ 		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_OUTPUT);
+ 	}
+ 
 -- 
 1.7.1
 
