@@ -1,36 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab1C2HCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 03:02:24 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:36938 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751457Ab1C2HCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 03:02:23 -0400
-Date: Tue, 29 Mar 2011 09:02:15 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org
-Subject: show autogroup cgroups using cgroup fs?
-Message-ID: <20110329070215.GA6650@comet.dominikbrodowski.net>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753740Ab1C2HFJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 03:05:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56058 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab1C2HFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 03:05:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Bkd8ilct9yDQGkiQ4VkAbm1n0soHOah0hIcxk9Tb0IxuDXjm11c+fU0x0oiDW7xV0p
+         NF2Bat82Ko0Z0INu2VsIfuGY46M71LTiw01uwyDXbhTYeg3N5iwKQSFIiu0C5cJsCBMi
+         yHaEAY/o02fhsnQ6xirBcfvzO2pFfF8if9I+4=
+Subject: Re: [PATCH] ubifs: fix kconfig dependency warning
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
+        Adrian Hunter <adrian.hunter@nokia.com>
+In-Reply-To: <20110328134016.deb5d0c8.randy.dunlap@oracle.com>
+References: <20110328134016.deb5d0c8.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Mar 2011 10:02:58 +0300
+Message-ID: <1301382178.2816.69.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Mon, 2011-03-28 at 13:40 -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Fix another kconfig dependency warning, this time in ubifs.
+> 
+> warning: (UBIFS_FS_DEBUG && LOCKDEP && LATENCYTOP) selects KALLSYMS_ALL which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
+> 
+> Without this patch, we can have:
+> # CONFIG_KALLSYMS is not set
+> CONFIG_KALLSYMS_ALL=y
+> which is useless (does nothing unless KALLSYMS is enabled).
+> 
+> However, ubifs builds successfully with or without this patch,
+> and it builds with this line completely deleted,
+> so what was this 'select' for?  Just developer convenience?
 
-is there a way to display the autogroup-created cgroups using the cgroup
-filesystems? 
+Well, here is the idea. You can compile UBIFS with debugging and without
+debugging. Without debugging the resulting ubifs.ko is much smaller, so
+some embedded people prefer it this way.
 
-$ mount none -t cgroup -o cpu cpu
+If you select debugging support, then we'll compile it a lot of
+assertions, self-checks, test-modes, extra error messages with detailed
+dumps. And we want to see stackdumps when errors or problems happen,
+this is why we select KALLSYMS_ALL.
 
-merely displays one group containing everything, AFAICS.
+So I guess instead we should do:
 
-Thanks,
-	Dominik
+select KALLSYMS
+select KALLSYMS_ALL
+
+?
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
