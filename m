@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965256Ab1C3VUR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:20:17 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:36803 "EHLO mx01.d-labs.de"
+	id S933664Ab1C3VUr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:20:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12060 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964850Ab1C3VUN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:20:13 -0400
-Date: Wed, 30 Mar 2011 23:19:39 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Corentin Chary <corentincj@iksaif.net>,
-        "Lee, Chun-Yi" <jlee@novell.com>
-Subject: Re: [PATCH] acer-wmi: does not set persistence state by
- rfkill_init_sw_state
-Message-ID: <20110330231939.70ed40ac@schatten.dmk.lab>
-In-Reply-To: <1301516552.3791.5.camel@jlt3.sipsolutions.net>
-References: <1301516277-1752-1-git-send-email-florian@mickler.org>
-	<1301516552.3791.5.camel@jlt3.sipsolutions.net>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S965182Ab1C3VJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:09:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
+   d="scan'208";a="903736605"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110330203.501921634@firstfloor.org>
+In-Reply-To: <20110330203.501921634@firstfloor.org>
+To: mijinlong@cn.fujitsu.com, ak@linux.intel.com, bfields@redhat.com,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [232/275] nfsd: wrong index used in inner loop
+Message-Id: <20110330210757.F3D223E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:07:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Mar 2011 22:22:32 +0200
-Johannes Berg <johannes@sipsolutions.net> wrote:
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-> On Wed, 2011-03-30 at 22:17 +0200, Florian Mickler wrote:
-> > From: Lee, Chun-Yi <joeyli.kernel@gmail.com>
-> > 
-> > Acer BIOS keeps devices state when system reboot, but reset to default
-> > device states (Wlan on, Bluetooth off, wwan on) if system cold boot.
-> > That means BIOS's initial state is not always real persistence.
-> > 
-> > So, removed rfkill_init_sw_state because it sets initial state to
-> > persistence then replicate to other new killswitch when rfkill-input
-> > enabled.
-> > After removed it, acer-wmi set initial soft-block state after rfkill
-> > register, and doesn't allow set_block until rfkill initial finished.
-> > 
-> > Reference: bko#31002
-> > 	https://bugzilla.kernel.org/show_bug.cgi?id=31002
-> > 
-> > Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-> > Cc: Matthew Garrett <mjg@redhat.com>
-> > Cc: Dmitry Torokhov <dtor@mail.ru>
-> > Cc: Corentin Chary <corentincj@iksaif.net>
-> > Cc: Johannes Berg <johannes@sipsolutions.net>
-> > Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
-> > Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> > Tested-by: OldÅich JedliÄka <oldium.pro@seznam.cz>
-> 
-> Your mailer messed up the character set, you're advertising
-> Content-Type: text/plain; charset=UTF-8
-> and then here putting the byte sequence
-> \xc3\x85\xc2\x99
-> instead of
-> \xc5\x99
-> 
-> for "ř".
-> 
-> johannes
-> 
-Dang. That was vim+xterm or git-send-email. 
+------------------
+From: Mi Jinlong <mijinlong@cn.fujitsu.com>
 
-I did 
+commit 5a02ab7c3c4580f94d13c683721039855b67cda6 upstream.
 
-git-send-email sha1^..sha1 --to stable --cc lkml --annotate 
+We must not use dummy for index.
+After the first index, READ32(dummy) will change dummy!!!!
 
-and then moved the CC: Old*ich Jedli*ka line via yy and p to the bottom
-and changed it to Tested-by:, and added my Signed-off-by: . 
+Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+[bfields@redhat.com: Trond points out READ_BUF alone is sufficient.]
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-I don't think I can easily fix this up on my side as my xterm sadly 
-has some issues with utf8. 
-I don't know what's up with that. Maybe font?
+---
+ fs/nfsd/nfs4xdr.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-Any tipps?
-Flo
+Index: linux-2.6.35.y/fs/nfsd/nfs4xdr.c
+===================================================================
+--- linux-2.6.35.y.orig/fs/nfsd/nfs4xdr.c	2011-03-29 23:03:01.975249629 -0700
++++ linux-2.6.35.y/fs/nfsd/nfs4xdr.c	2011-03-29 23:03:03.054222021 -0700
+@@ -1107,7 +1107,7 @@
+ 
+ 	u32 dummy;
+ 	char *machine_name;
+-	int i, j;
++	int i;
+ 	int nr_secflavs;
+ 
+ 	READ_BUF(16);
+@@ -1180,8 +1180,6 @@
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy * 4);
+-			for (j = 0; j < dummy; ++j)
+-				READ32(dummy);
+ 			break;
+ 		case RPC_AUTH_GSS:
+ 			dprintk("RPC_AUTH_GSS callback secflavor "
+@@ -1197,7 +1195,6 @@
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy);
+-			p += XDR_QUADLEN(dummy);
+ 			break;
+ 		default:
+ 			dprintk("Illegal callback secflavor\n");
