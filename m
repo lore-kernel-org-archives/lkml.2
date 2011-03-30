@@ -1,38 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab1C3KgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 06:36:11 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40142
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753017Ab1C3KgH (ORCPT
+	id S1754992Ab1C3KjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 06:39:06 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39479 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab1C3KjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 06:36:07 -0400
-Date: Wed, 30 Mar 2011 03:35:29 -0700 (PDT)
-Message-Id: <20110330.033529.71582712.davem@davemloft.net>
-To: rlandley@parallels.com
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        netdev@vger.kernel.org, stable@kernel.org
-Subject: Re: 2.6.38 containers bug: Infinite loop in
- /proc/sys/net/ipv6/neigh/neigh/neigh...
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D9302F3.6080206@parallels.com>
-References: <4D92E9DC.3070405@parallels.com>
-	<20110330.020120.02272125.davem@davemloft.net>
-	<4D9302F3.6080206@parallels.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Mar 2011 06:39:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=tid3pro4ZMfXLjadQKQPnbw3weybkywJR5fk0ZiB4HDy/gp+HxyEx2KlxR7mRMV5+5
+         uNhYixUpkCfNReGS/ND+NsWnB7tjcDcXPc+ttRtPmXdU2FzI3imM6VatRvXTZ1tZCGgV
+         Gse9yTYnHetjz5iJD41y5PT50FKgwvlqGzXO8=
+MIME-Version: 1.0
+Date: Wed, 30 Mar 2011 19:39:03 +0900
+Message-ID: <AANLkTi=0h+wiU+Q0BXVtg_bFRch8vDgZ_Q7i7HBZkZD4@mail.gmail.com>
+Subject: the latency difference between deadline and CFQ
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Landley <rlandley@parallels.com>
-Date: Wed, 30 Mar 2011 05:16:19 -0500
+Hi. Jens.
 
-> Pinging the stable guys to make sure this goes in a dot release.
+I heard that deadline worked great from a latency in comparison with CFQ.
 
-Please do not do this.
+How do I demonstrate why the latency of deadlinne is better than CFQ ?
 
-I let fixes soak in Linus's tree for a week or even more before I submit
-them to -stable.
+And would you inform me weakness of CFQ in comparison with deadline ?
+
+Thanks.
