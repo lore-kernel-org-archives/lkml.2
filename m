@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965390Ab1C3Vy6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:54:58 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:31248 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756252Ab1C3Vyy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:54:54 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19jLyQakr3xftXcmfyb5Y+i
-Date: Wed, 30 Mar 2011 14:54:35 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110330215434.GI18334@atomide.com>
-References: <20110317183048.GW7258@atomide.com>
- <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
- <20110318101512.GA15375@n2100.arm.linux.org.uk>
- <201103301906.42429.arnd@arndb.de>
- <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
- <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756270Ab1C3Vzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:55:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:17364 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933363Ab1C3VHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:07:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
+   d="scan'208";a="673447398"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110330203.501921634@firstfloor.org>
+In-Reply-To: <20110330203.501921634@firstfloor.org>
+To: alexdeucher@gmail.com, airlied@gmail.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [80/275] drm/radeon/kms: make the mac rv630 quirk generic
+Message-Id: <20110330210517.E35663E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:05:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner <tglx@linutronix.de> [110330 14:07]:
-> 
-> So one person will be not enough, that needs to be a whole team of
-> experienced people in the very near future to deal with the massive
-> tsunami of crap which is targeted at mainline. If we fail to set that
-> up, then we run into a very ugly maintainability issue in no time.
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-One thing that will help here and distribute the load is to move
-more things under drivers/ as then we have more maintainers looking
-at the code.
+------------------
+From: Alex Deucher <alexdeucher@gmail.com>
 
-Regards,
+commit be23da8ad219650517cbbb7acbeaeb235667113a upstream.
 
-Tony
+Seems some other boards do this as well.
+
+Reported-by: Andrea Merello <andrea.merello@gmail.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ drivers/gpu/drm/radeon/radeon_atombios.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
+
+Index: linux-2.6.35.y/drivers/gpu/drm/radeon/radeon_atombios.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/gpu/drm/radeon/radeon_atombios.c	2011-03-29 23:02:59.799305306 -0700
++++ linux-2.6.35.y/drivers/gpu/drm/radeon/radeon_atombios.c	2011-03-29 23:55:08.406252081 -0700
+@@ -289,15 +289,11 @@
+ 			*line_mux = 0x90;
+ 	}
+ 
+-	/* mac rv630 */
+-	if ((dev->pdev->device == 0x9588) &&
+-	    (dev->pdev->subsystem_vendor == 0x106b) &&
+-	    (dev->pdev->subsystem_device == 0x00a6)) {
+-		if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
+-		    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
+-			*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
+-			*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
+-		}
++	/* mac rv630, rv730, others */
++	if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
++	    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
++		*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
++		*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
+ 	}
+ 
+ 	/* ASUS HD 3600 XT board lists the DVI port as HDMI */
