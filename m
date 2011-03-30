@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965270Ab1C3VJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:09:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44838 "EHLO mga02.intel.com"
+	id S965348Ab1C3VKV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:10:21 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38679 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965229Ab1C3VJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:09:51 -0400
+	id S965285Ab1C3VKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:10:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="621238913"
+   d="scan'208";a="903737072"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: stuart_hayes@yahoo.com, douglas_warzecha@dell.com, ak@linux.intel.com,
-        cebbert@redhat.com, jkosina@suse.cz, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [242/275] dcdbas: force SMI to happen when expected
-Message-Id: <20110330210808.823D93E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:08:08 -0700 (PDT)
+To: pablo@netfilter.org, stable@kernel.org, kaber@trash.net,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [257/275] netfilter: arpt_mangle: fix return values of checkentry
+Message-Id: <20110330210824.45DFF3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:08:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,40 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Stuart Hayes <stuart_hayes@yahoo.com>
+In 135367b "netfilter: xtables: change xt_target.checkentry return type",
+the type returned by checkentry was changed from boolean to int, but the
+return values where not adjusted.
 
-commit dd65c736d1b5312c80c88a64bf521db4959eded5 upstream.
+arptables: Input/output error
 
-The dcdbas driver can do an I/O write to cause a SMI to occur.  The SMI handler
-looks at certain registers and memory locations, so the SMI needs to happen
-immediately.  On some systems I/O writes are posted, though, causing the SMI to
-happen well after the "outb" occurred, which causes random failures.  Following
-the "outb" with an "inb" forces the write to go through even if it is posted.
+This broke arptables with the mangle target since it returns true
+under success, which is interpreted by xtables as >0, thus
+returning EIO.
 
-Signed-off-by: Stuart Hayes <stuart_hayes@yahoo.com>
-Acked-by: Doug Warzecha <douglas_warzecha@dell.com>
+The following Linux kernels are affected:
+* 2.6.35.9
+* 2.6.36.4
+* 2.6.37.3
+
+Cc: stable@kernel.org
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Chuck Ebbert <cebbert@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+(cherry picked from commit 9d0db8b6b1da9e3d4c696ef29449700c58d589db)
 ---
- drivers/firmware/dcdbas.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/ipv4/netfilter/arpt_mangle.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-2.6.35.y/drivers/firmware/dcdbas.c
+Index: linux-2.6.35.y/net/ipv4/netfilter/arpt_mangle.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/firmware/dcdbas.c	2011-03-29 22:50:16.283841755 -0700
-+++ linux-2.6.35.y/drivers/firmware/dcdbas.c	2011-03-29 23:03:03.249217032 -0700
-@@ -268,8 +268,10 @@
- 	}
+--- linux-2.6.35.y.orig/net/ipv4/netfilter/arpt_mangle.c	2011-01-13 09:47:51.000000000 -0800
++++ linux-2.6.35.y/net/ipv4/netfilter/arpt_mangle.c	2011-03-29 23:12:09.451240810 -0700
+@@ -60,12 +60,12 @@
  
- 	/* generate SMI */
-+	/* inb to force posted write through and make SMI happen now */
- 	asm volatile (
--		"outb %b0,%w1"
-+		"outb %b0,%w1\n"
-+		"inb %w1"
- 		: /* no output args */
- 		: "a" (smi_cmd->command_code),
- 		  "d" (smi_cmd->command_address),
+ 	if (mangle->flags & ~ARPT_MANGLE_MASK ||
+ 	    !(mangle->flags & ARPT_MANGLE_MASK))
+-		return false;
++		return -EINVAL;
+ 
+ 	if (mangle->target != NF_DROP && mangle->target != NF_ACCEPT &&
+ 	   mangle->target != ARPT_CONTINUE)
+-		return false;
+-	return true;
++		return -EINVAL;
++	return 0;
+ }
+ 
+ static struct xt_target arpt_mangle_reg __read_mostly = {
