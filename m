@@ -1,59 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab1C3QvI (ORCPT <rfc822;w@1wt.eu>);
+	id S1756097Ab1C3QvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 12:51:13 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:17307 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab1C3QvI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Mar 2011 12:51:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40647 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752864Ab1C3QvG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 12:51:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1103301845020.22418@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1103301648460.22418@localhost6.localdomain6>
- <AANLkTinnGfpVeugk4WOKeDAUQEuzBo75yCq_E73=w66V@mail.gmail.com>
- <alpine.LFD.2.00.1103301827530.22418@localhost6.localdomain6> <alpine.LFD.2.00.1103301845020.22418@localhost6.localdomain6>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 30 Mar 2011 09:50:43 -0700
-Message-ID: <AANLkTikeMFpxVW2bU+CXh=VVPBf2Tm4ccMFBUELSeVy4@mail.gmail.com>
-Subject: Re: [GIT pull] irq fixes for .39.rc
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=RcFvENTkhLRVcgkdAwFshMmwho/oXbvTCgPfzaMgwUlq4YJXwVP3BG+ZCEwDkvR1L
+	dQT9ekzD7a0GQaIA5Y06A==
+From: Justin TerAvest <teravest@google.com>
+To: vgoyal@redhat.com
+Cc: jaxboe@fusionio.com, m-ikeda@ds.jp.nec.com, ryov@valinux.co.jp,
+        taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
+        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
+        balbir@linux.vnet.ibm.com, ctalbott@google.com,
+        linux-kernel@vger.kernel.org, Justin TerAvest <teravest@google.com>
+Subject: [PATCH v3 5/8] cfq: Fix up tracked async workload length.
+Date: Wed, 30 Mar 2011 09:50:37 -0700
+Message-Id: <1301503840-25851-6-git-send-email-teravest@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1301503840-25851-1-git-send-email-teravest@google.com>
+References: <1301503840-25851-1-git-send-email-teravest@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 9:46 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Wed, 30 Mar 2011, Thomas Gleixner wrote:
->> On Wed, 30 Mar 2011, Linus Torvalds wrote:
->> >
->> > which just makes me go "Somebody is really really confused".
->> >
->> > The whole thing may mean that both handler_data and chip_data contains
->> > the right thing, but it still makes me go "WTF?".
->> >
->> > Which way should I resolve it?
->>
->> get_irq_desc_data() maps to irq_desc_get_handler_data() so Richards
->> resolution is correct even if the other might work as well.
->
-> Older code which was not using any accessors has:
->
->      desc->handler_data
->
-> But yeah, the init stuff is confusing as hell.
+This reverts effectively reverts commit f26bd1f0a3a31bc5e16d285f5e1b00a56abf6238
+"blkio: Determine async workload length based on total number of queues"
+in the case when async IO tracking is enabled.
 
-So I took the handler_data version, but I do think the chip_data one
-seems to make more conceptual sense. It would be good if somebody who
-can actually test that code and knows all the details of the
-particular irq controller could just take a look, and decide on using
-one or the other, and not both.
+That commit was used to work around the fact that async
+queues were part of root cgroup. That is no longer the case when we have
+async write tracking enabed.
 
-I pushed out my resolution (but the mirroring has been slow lately, so
-it might take a while to show up on git.kernel.org - it's there on
-master now, though)
+Signed-off-by: Justin TerAvest <teravest@google.com>
+---
+ block/cfq-iosched.c |   90 +++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 56 insertions(+), 34 deletions(-)
 
-                  Linus
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index c75bbbf..1b315c3 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -448,13 +448,6 @@ static inline int cfq_group_busy_queues_wl(enum wl_prio_t wl,
+ 		+ cfqg->service_trees[wl][SYNC_WORKLOAD].count;
+ }
+ 
+-static inline int cfqg_busy_async_queues(struct cfq_data *cfqd,
+-					struct cfq_group *cfqg)
+-{
+-	return cfqg->service_trees[RT_WORKLOAD][ASYNC_WORKLOAD].count
+-		+ cfqg->service_trees[BE_WORKLOAD][ASYNC_WORKLOAD].count;
+-}
+-
+ static void cfq_dispatch_insert(struct request_queue *, struct request *);
+ static struct cfq_queue *cfq_get_queue(struct cfq_data *, struct bio*, bool,
+ 				       struct io_context *, gfp_t);
+@@ -1014,27 +1007,50 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq,
+ 	return slice_used;
+ }
+ 
+-static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+-				struct cfq_queue *cfqq)
++#ifndef CONFIG_CGROUP_BLKIOTRACK
++static inline int cfqg_busy_async_queues(struct cfq_group *cfqg)
+ {
+-	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+-	unsigned int used_sl, charge, unaccounted_sl = 0;
+-	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqd, cfqg)
++	return cfqg->service_trees[RT_WORKLOAD][ASYNC_WORKLOAD].count
++		+ cfqg->service_trees[BE_WORKLOAD][ASYNC_WORKLOAD].count;
++}
++#endif
++
++static void cfq_charge_slice(struct cfq_rb_root *st, struct cfq_group *cfqg,
++				struct cfq_queue *cfqq, unsigned int used_sl)
++{
++	struct cfq_data *cfqd = cfqq->cfqd;
++	unsigned int charge = used_sl;
++#ifndef CONFIG_CGROUP_BLKIOTRACK
++	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqg)
+ 			- cfqg->service_tree_idle.count;
+ 
+ 	BUG_ON(nr_sync < 0);
+-	used_sl = charge = cfq_cfqq_slice_usage(cfqq, &unaccounted_sl);
+ 
+ 	if (iops_mode(cfqd))
+ 		charge = cfqq->slice_dispatch;
+ 	else if (!cfq_cfqq_sync(cfqq) && !nr_sync)
+ 		charge = cfqq->allocated_slice;
++#endif
+ 
+ 	/* Can't update vdisktime while group is on service tree */
+ 	cfq_group_service_tree_del(st, cfqg);
+ 	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
+ 	/* If a new weight was requested, update now, off tree */
++	cfq_update_group_weight(cfqg);
+ 	cfq_group_service_tree_add(st, cfqg);
++	cfq_log_cfqq(cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u"
++			" sect=%u", used_sl, cfqq->slice_dispatch, charge,
++			iops_mode(cfqd), cfqq->nr_sectors);
++}
++
++static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
++				struct cfq_queue *cfqq)
++{
++	struct cfq_rb_root *st = &cfqd->grp_service_tree;
++	unsigned int used_sl, unaccounted_sl = 0;
++
++	used_sl = cfq_cfqq_slice_usage(cfqq, &unaccounted_sl);
++	cfq_charge_slice(st, cfqg, cfqq, used_sl);
+ 
+ 	/* This group is being expired. Save the context */
+ 	if (time_after(cfqd->workload_expires, jiffies)) {
+@@ -1047,9 +1063,6 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+ 
+ 	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+ 					st->min_vdisktime);
+-	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u"
+-			" sect=%u", used_sl, cfqq->slice_dispatch, charge,
+-			iops_mode(cfqd), cfqq->nr_sectors);
+ 	cfq_blkiocg_update_timeslice_used(&cfqg->blkg, used_sl,
+ 					  unaccounted_sl);
+ 	cfq_blkiocg_set_start_empty_time(&cfqg->blkg);
+@@ -2215,6 +2228,30 @@ static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
+ 	return cur_best;
+ }
+ 
++static unsigned cfq_async_slice(struct cfq_data *cfqd, struct cfq_group *cfqg,
++				unsigned slice)
++{
++#ifndef CONFIG_CGROUP_BLKIOTRACK
++	unsigned tmp;
++	/*
++	 * Async queues are currently system wide. Just taking
++	 * proportion of queues with-in same group will lead to higher
++	 * async ratio system wide as generally root group is going
++	 * to have higher weight. A more accurate thing would be to
++	 * calculate system wide asnc/sync ratio.
++	 */
++	tmp = cfq_target_latency * cfqg_busy_async_queues(cfqg);
++	tmp = tmp/cfqd->busy_queues;
++	slice = min_t(unsigned, slice, tmp);
++#endif
++	/*
++	 * async workload slice is scaled down according to
++	 * the sync/async slice ratio.
++	 */
++	slice = slice * cfqd->cfq_slice[0] / cfqd->cfq_slice[1];
++	return slice;
++}
++
+ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ {
+ 	unsigned slice;
+@@ -2269,24 +2306,9 @@ new_workload:
+ 		max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
+ 		      cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
+ 
+-	if (cfqd->serving_type == ASYNC_WORKLOAD) {
+-		unsigned int tmp;
+-
+-		/*
+-		 * Async queues are currently system wide. Just taking
+-		 * proportion of queues with-in same group will lead to higher
+-		 * async ratio system wide as generally root group is going
+-		 * to have higher weight. A more accurate thing would be to
+-		 * calculate system wide asnc/sync ratio.
+-		 */
+-		tmp = cfq_target_latency * cfqg_busy_async_queues(cfqd, cfqg);
+-		tmp = tmp/cfqd->busy_queues;
+-		slice = min_t(unsigned, slice, tmp);
+-
+-		/* async workload slice is scaled down according to
+-		 * the sync/async slice ratio. */
+-		slice = slice * cfqd->cfq_slice[0] / cfqd->cfq_slice[1];
+-	} else
++	if (cfqd->serving_type == ASYNC_WORKLOAD)
++		slice = cfq_async_slice(cfqd, cfqg, slice);
++	else
+ 		/* sync workload slice is at least 2 * cfq_slice_idle */
+ 		slice = max(slice, 2 * cfqd->cfq_slice_idle);
+ 
+-- 
+1.7.3.1
+
