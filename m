@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab1C3JMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 05:12:51 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:65164 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754931Ab1C3JMu (ORCPT
+	id S932158Ab1C3JM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 05:12:56 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42144 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755656Ab1C3JMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 05:12:50 -0400
-Message-ID: <9E9CA0E03AAF4C9AA18DDD7CDE5168A8@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Arnd Bergmann" <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: <davinci-linux-open-source@linux.davincidsp.com>,
-        <sachi@mistralsolutions.com>, "Samuel Ortiz" <sameo@linux.intel.com>,
-        <nsekhar@ti.com>, "open list" <linux-kernel@vger.kernel.org>,
-        <m-watkins@ti.com>, "Marc Kleine-Budde" <mkl@pengutronix.de>
-References: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com> <1299592667-21367-2-git-send-email-subhasish@mistralsolutions.com> <201103111628.57549.arnd@arndb.de>
-In-Reply-To: <201103111628.57549.arnd@arndb.de>
-Subject: Re: [PATCH v3 1/7] mfd: add pruss mfd driver.
-Date: Wed, 30 Mar 2011 14:45:16 +0530
-Organization: Mistral Solutions
+	Wed, 30 Mar 2011 05:12:55 -0400
+Date: Wed, 30 Mar 2011 10:12:30 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: fix build failure introduced by typo in irq
+	namespace cleanup.
+Message-ID: <20110330091230.GB29121@n2100.arm.linux.org.uk>
+References: <20110330060229.27397.7628.stgit@ponder> <alpine.LFD.2.00.1103301107020.22418@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1103301107020.22418@localhost6.localdomain6>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Wed, Mar 30, 2011 at 11:08:07AM +0200, Thomas Gleixner wrote:
+> On Wed, 30 Mar 2011, Grant Likely wrote:
+> 
+> > Commit 6845664a6a7d443f03883db59d10749d38d98b8e, "arm: Cleanup the irq
+> > namespace" introduces a typo causing a build failure for the versatile
+> > platform.
+> 
+> Sorry about that. I have no clue how I fatfingered that in last
+> minute.
+> 
+> rmk: are you picking it up or should I push it linuswards with the
+> other fixups ?
 
-I am using a .setup to initialize pin mux etc. To use the mfd_cells directly 
-should I
-use .enable and .disable of the mfd_cells instead of the .setup.
-
->> +static int pruss_mfd_add_devices(struct platform_device *pdev)
->> +{
->> + struct da8xx_pruss_devices *dev_data = pdev->dev.platform_data;
->> + struct device *dev = &pdev->dev;
->> + struct mfd_cell cell;
->> + u32 err, count;
->> +
->> + for (count = 0; dev_data[count].dev_name != NULL; count++) {
->> + memset(&cell, 0, sizeof(struct mfd_cell));
->> + cell.id = count;
->> + cell.name = dev_data[count].dev_name;
->> + cell.platform_data = dev_data[count].pdata;
->> + cell.data_size = dev_data[count].pdata_size;
->> + cell.resources = dev_data[count].resources;
->> + cell.num_resources = dev_data[count].num_resources;
->> +
->> + err = mfd_add_devices(dev, 0, &cell, 1, NULL, 0);
->> + if (err) {
->> + dev_err(dev, "cannot add mfd cells\n");
->> + return err;
->> + }
->> + dev_info(dev, "mfd: added %s device\n",
->> + dev_data[count].dev_name);
->> + }
->> +
->> + return err;
->> +}
->
-> This would get much simpler if you just replaced the da8xx_pruss_devices
-> array with an mfd_cell array. 
-
+If you have other fixes which you're already sending, you might as well
+include those.  Linus hasn't pulled my stuff from last night so I'm not
+touching my tree today.
