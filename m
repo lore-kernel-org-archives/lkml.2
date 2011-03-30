@@ -1,85 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab1C3XOU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 19:14:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36199 "EHLO linutronix.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756514Ab1C3XOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 19:14:18 -0400
-Date: Thu, 31 Mar 2011 01:14:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tony Lindgren <tony@atomide.com>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-In-Reply-To: <20110330224752.GN18334@atomide.com>
-Message-ID: <alpine.LFD.2.00.1103310059531.22418@localhost6.localdomain6>
-References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com> <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
- <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6> <20110330215434.GI18334@atomide.com> <20110330223807.GP2255@linux.vnet.ibm.com> <20110330224752.GN18334@atomide.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1756578Ab1C3XQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 19:16:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57031 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756515Ab1C3XQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 19:16:43 -0400
+Date: Wed, 30 Mar 2011 15:51:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH]mmap: improve scalability for updating vm_committed_as
+Message-Id: <20110330155114.fa47dd9d.akpm@linux-foundation.org>
+In-Reply-To: <1301447847.3981.49.camel@sli10-conroe>
+References: <1301447847.3981.49.camel@sli10-conroe>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Mar 2011, Tony Lindgren wrote:
+On Wed, 30 Mar 2011 09:17:27 +0800
+Shaohua Li <shaohua.li@intel.com> wrote:
 
-> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> [110330 15:35]:
-> > On Wed, Mar 30, 2011 at 02:54:35PM -0700, Tony Lindgren wrote:
-> > > * Thomas Gleixner <tglx@linutronix.de> [110330 14:07]:
-> > > > 
-> > > > So one person will be not enough, that needs to be a whole team of
-> > > > experienced people in the very near future to deal with the massive
-> > > > tsunami of crap which is targeted at mainline. If we fail to set that
-> > > > up, then we run into a very ugly maintainability issue in no time.
-> > > 
-> > > One thing that will help here and distribute the load is to move
-> > > more things under drivers/ as then we have more maintainers looking
-> > > at the code.
-> > 
-> > In many cases, the ARM SoC vendors will want their people producing the
-> > code, so although moving things to drivers might be a good thing to do,
-> > it won't really increase the number of people involved.  Plus the move
-> > to the drivers subtree would be a problem for devices with tight ties
-> > to the board or SoC.
-> > 
-> > There is work on pushing towards common code, but there is a lot of code
-> > and this will take time and a lot of work.
-> 
-> I agree on the common code part, then even drivers with tight
-> ties to board or SoC become just generic drivers that are easy
-> to review.
+> In a workload with a lot of mmap/mumap, updating vm_committed_as is
+> a scalability issue, because the percpu_counter_batch is too small, and
+> the update needs hold percpu_counter lock.
+> On the other hand, vm_committed_as is only used in OVERCOMMIT_NEVER case,
+> which isn't the default setting.
+> We can make the batch bigger in other cases and then switch to small batch
+> in OVERCOMMIT_NEVER case, so that we will have no scalability issue with
+> default setting. We flush all CPUs' percpu counter when switching
+> sysctl_overcommit_memory, so there is no race the counter is incorrect.
 
-You wish. There is an already existing problem that the identical IP
-cores of peripheral crap are reused accross architectures. And of
-course because it is a different architecture we have two different
-drivers with different issues.
+The patch is purportedly a performance improvement, but the changelog
+didn't tell us how much it improves performance?
 
-See: http://marc.info/?l=linux-kernel&m=130041568128164
+> ...
+>
+> --- linux.orig/include/linux/mman.h	2011-03-29 16:28:57.000000000 +0800
+> +++ linux/include/linux/mman.h	2011-03-30 09:01:38.000000000 +0800
+> @@ -20,9 +20,17 @@ extern int sysctl_overcommit_memory;
+>  extern int sysctl_overcommit_ratio;
+>  extern struct percpu_counter vm_committed_as;
+>  
+> +extern int overcommit_memory_handler(struct ctl_table *table, int write,
+> +		void __user *buffer, size_t *lenp, loff_t *ppos);
+>  static inline void vm_acct_memory(long pages)
+>  {
+> -	percpu_counter_add(&vm_committed_as, pages);
+> +	/* avoid overflow and the value is big enough */
+> +	int batch = INT_MAX/2;
+> +
+> +	if (sysctl_overcommit_memory == OVERCOMMIT_NEVER)
+> +		batch = percpu_counter_batch;
+> +
+> +	__percpu_counter_add(&vm_committed_as, pages, batch);
+>  }
 
-We already fail to detect this on the driver level, so please answer
-the question I asked before: How do you spread the load and scale with
-the amount of shite which is coming in?
+It would be better to create a global __read_mostly variable for this
+and alter its value within the sysctl, rather than recalculating it
+each time.
 
-The above example is probably not the only one in tree and we will see
-lots of unnoticed instances of drivers dealing with minimal different
-versions of the same IP crappola in the near future simply because the
-vendors claim that their stuff is unique and only works with their
-particular instance of hackery unless we have enough capable people to
-look over this. Whether it's in arch/ or drivers/ it does not
-matter. We are simply not prepared to the amount of crap coming in.
+This again points at the need to make the batch count a field within
+the percpu_counter.
 
-Thanks,
+>  static inline void vm_unacct_memory(long pages)
+> Index: linux/fs/proc/meminfo.c
+> ===================================================================
+> --- linux.orig/fs/proc/meminfo.c	2011-03-29 16:28:57.000000000 +0800
+> +++ linux/fs/proc/meminfo.c	2011-03-30 09:01:38.000000000 +0800
+> @@ -35,7 +35,7 @@ static int meminfo_proc_show(struct seq_
+>  #define K(x) ((x) << (PAGE_SHIFT - 10))
+>  	si_meminfo(&i);
+>  	si_swapinfo(&i);
+> -	committed = percpu_counter_read_positive(&vm_committed_as);
+> +	committed = percpu_counter_sum_positive(&vm_committed_as);
+>  	allowed = ((totalram_pages - hugetlb_total_pages())
+>  		* sysctl_overcommit_ratio / 100) + total_swap_pages;
 
-	tglx
+This is a big change, and it wasn't even changelogged.  It's
+potentially a tremendous increase in the expense of a read from
+/proc/meminfo, which is a file that lots of tools will be polling. 
+Many of those tools we don't even know about or have access to.
 
+The change is unneeded if sysctl_overcommit_memory==OVERCOMMIT_NEVER,
+but that's hardly a fix.
+
+Quite worrisome.
+
+Perhaps a better approach would be to carefully tune the batch size
+according to the size of the machine.  Going all the way to INT_MAX/2
+is surely overkill.
+
+
+> Index: linux/kernel/sysctl.c
+> ===================================================================
+> --- linux.orig/kernel/sysctl.c	2011-03-29 16:28:57.000000000 +0800
+> +++ linux/kernel/sysctl.c	2011-03-30 09:01:38.000000000 +0800
+> @@ -56,6 +56,7 @@
+>  #include <linux/kprobes.h>
+>  #include <linux/pipe_fs_i.h>
+>  #include <linux/oom.h>
+> +#include <linux/mman.h>
+>  
+>  #include <asm/uaccess.h>
+>  #include <asm/processor.h>
+> @@ -86,8 +87,6 @@
+>  #if defined(CONFIG_SYSCTL)
+>  
+>  /* External variables not in a header file. */
+> -extern int sysctl_overcommit_memory;
+> -extern int sysctl_overcommit_ratio;
+>  extern int max_threads;
+>  extern int core_uses_pid;
+>  extern int suid_dumpable;
+> @@ -977,7 +976,7 @@ static struct ctl_table vm_table[] = {
+>  		.data		= &sysctl_overcommit_memory,
+>  		.maxlen		= sizeof(sysctl_overcommit_memory),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_dointvec_minmax,
+> +		.proc_handler	= overcommit_memory_handler,
+>  		.extra1		= &zero,
+>  		.extra2		= &two,
+>  	},
+> Index: linux/mm/mmap.c
+> ===================================================================
+> --- linux.orig/mm/mmap.c	2011-03-30 08:59:23.000000000 +0800
+> +++ linux/mm/mmap.c	2011-03-30 09:01:38.000000000 +0800
+> @@ -93,6 +93,33 @@ int sysctl_max_map_count __read_mostly =
+>   */
+>  struct percpu_counter vm_committed_as ____cacheline_internodealigned_in_smp;
+>  
+> +static void overcommit_drain_counter(struct work_struct *dummy)
+> +{
+> +	/*
+> +	 * Flush percpu counter to global counter when batch is changed, see
+> +	 * vm_acct_memory for detail
+> +	 */
+> +	vm_acct_memory(0);
+> +}
+> +
+> +int overcommit_memory_handler(struct ctl_table *table, int write,
+> +                void __user *buffer, size_t *lenp, loff_t *ppos)
+> +{
+> +	int error;
+> +
+> +	error = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
+> +	if (error)
+> +		return error;
+> +
+> +	if (write) {
+> +		/* Make sure each CPU sees the new sysctl_overcommit_memory */
+> +		smp_wmb();
+> +		schedule_on_each_cpu(overcommit_drain_counter);
+> +	}
+> +
+> +	return 0;
+> +}
+
+Calling vm_acct_memory(0) is a bit of a hack.
+
+Rather than open-coding this twice, it would be better to introduce a
+new percpu_counter core primitive to collapse the counters.
+
+>
+> ...
+>
