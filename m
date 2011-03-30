@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965288Ab1C3Vfj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:35:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26918 "EHLO mga02.intel.com"
+	id S964999Ab1C3Vfg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:35:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:33607 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964935Ab1C3VI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:08:29 -0400
+	id S964942Ab1C3VIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:08:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="621237852"
+   d="scan'208";a="673447872"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: johunt@akamai.com, viro@ZenIV.linux.org.uk, jack@suse.cz, gregkh@suse.de,
+To: gerrit@erg.abdn.ac.uk, davem@davemloft.net, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: [PATCH] [165/275] ext2: Fix link count corruption under heavy link+rename load
-Message-Id: <20110330210647.744503E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:47 -0700 (PDT)
+Subject: [PATCH] [167/275] dccp: fix oops on Reset after close
+Message-Id: <20110330210649.8F7513E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,68 +25,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Josh Hunt <johunt@akamai.com>
+From: Gerrit Renker <gerrit@erg.abdn.ac.uk>
 
-commit e8a80c6f769dd4622d8b211b398452158ee60c0b upstream.
+commit 720dc34bbbe9493c7bd48b2243058b4e447a929d upstream.
 
-vfs_rename_other() does not lock renamed inode with i_mutex. Thus changing
-i_nlink in a non-atomic manner (which happens in ext2_rename()) can corrupt
-it as reported and analyzed by Josh.
+This fixes a bug in the order of dccp_rcv_state_process() that still permitted
+reception even after closing the socket. A Reset after close thus causes a NULL
+pointer dereference by not preventing operations on an already torn-down socket.
 
-In fact, there is no good reason to mess with i_nlink of the moved file.
-We did it presumably to simulate linking into the new directory and unlinking
-from an old one. But the practical effect of this is disputable because fsck
-can possibly treat file as being properly linked into both directories without
-writing any error which is confusing. So we just stop increment-decrement
-games with i_nlink which also fixes the corruption.
+ dccp_v4_do_rcv()
+	|
+	| state other than OPEN
+	v
+ dccp_rcv_state_process()
+	|
+	| DCCP_PKT_RESET
+	v
+ dccp_rcv_reset()
+	|
+	v
+ dccp_time_wait()
 
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Josh Hunt <johunt@akamai.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+ WARNING: at net/ipv4/inet_timewait_sock.c:141 __inet_twsk_hashdance+0x48/0x128()
+ Modules linked in: arc4 ecb carl9170 rt2870sta(C) mac80211 r8712u(C) crc_ccitt ah
+ [<c0038850>] (unwind_backtrace+0x0/0xec) from [<c0055364>] (warn_slowpath_common)
+ [<c0055364>] (warn_slowpath_common+0x4c/0x64) from [<c0055398>] (warn_slowpath_n)
+ [<c0055398>] (warn_slowpath_null+0x1c/0x24) from [<c02b72d0>] (__inet_twsk_hashd)
+ [<c02b72d0>] (__inet_twsk_hashdance+0x48/0x128) from [<c031caa0>] (dccp_time_wai)
+ [<c031caa0>] (dccp_time_wait+0x40/0xc8) from [<c031c15c>] (dccp_rcv_state_proces)
+ [<c031c15c>] (dccp_rcv_state_process+0x120/0x538) from [<c032609c>] (dccp_v4_do_)
+ [<c032609c>] (dccp_v4_do_rcv+0x11c/0x14c) from [<c0286594>] (release_sock+0xac/0)
+ [<c0286594>] (release_sock+0xac/0x110) from [<c031fd34>] (dccp_close+0x28c/0x380)
+ [<c031fd34>] (dccp_close+0x28c/0x380) from [<c02d9a78>] (inet_release+0x64/0x70)
+
+The fix is by testing the socket state first. Receiving a packet in Closed state
+now also produces the required "No connection" Reset reply of RFC 4340, 8.3.1.
+
+Reported-and-tested-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Gerrit Renker <gerrit@erg.abdn.ac.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/ext2/namei.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ net/dccp/input.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-Index: linux-2.6.35.y/fs/ext2/namei.c
+Index: linux-2.6.35.y/net/dccp/input.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/ext2/namei.c	2011-03-29 22:50:58.827753164 -0700
-+++ linux-2.6.35.y/fs/ext2/namei.c	2011-03-29 23:03:01.688256973 -0700
-@@ -344,7 +344,6 @@
- 		new_de = ext2_find_entry (new_dir, &new_dentry->d_name, &new_page);
- 		if (!new_de)
- 			goto out_dir;
--		inode_inc_link_count(old_inode);
- 		ext2_set_link(new_dir, new_de, new_page, old_inode, 1);
- 		new_inode->i_ctime = CURRENT_TIME_SEC;
- 		if (dir_de)
-@@ -356,12 +355,9 @@
- 			if (new_dir->i_nlink >= EXT2_LINK_MAX)
- 				goto out_dir;
- 		}
--		inode_inc_link_count(old_inode);
- 		err = ext2_add_link(new_dentry, old_inode);
--		if (err) {
--			inode_dec_link_count(old_inode);
-+		if (err)
- 			goto out_dir;
--		}
- 		if (dir_de)
- 			inode_inc_link_count(new_dir);
+--- linux-2.6.35.y.orig/net/dccp/input.c	2011-03-29 22:50:57.838778468 -0700
++++ linux-2.6.35.y/net/dccp/input.c	2011-03-29 23:03:01.725256025 -0700
+@@ -617,6 +617,9 @@
+ 		/* Caller (dccp_v4_do_rcv) will send Reset */
+ 		dcb->dccpd_reset_code = DCCP_RESET_CODE_NO_CONNECTION;
+ 		return 1;
++	} else if (sk->sk_state == DCCP_CLOSED) {
++		dcb->dccpd_reset_code = DCCP_RESET_CODE_NO_CONNECTION;
++		return 1;
  	}
-@@ -369,12 +365,11 @@
- 	/*
- 	 * Like most other Unix systems, set the ctime for inodes on a
-  	 * rename.
--	 * inode_dec_link_count() will mark the inode dirty.
- 	 */
- 	old_inode->i_ctime = CURRENT_TIME_SEC;
-+	mark_inode_dirty(old_inode);
  
- 	ext2_delete_entry (old_de, old_page);
--	inode_dec_link_count(old_inode);
+ 	if (sk->sk_state != DCCP_REQUESTING && sk->sk_state != DCCP_RESPOND) {
+@@ -679,10 +682,6 @@
+ 	}
  
- 	if (dir_de) {
- 		if (old_dir != new_dir)
+ 	switch (sk->sk_state) {
+-	case DCCP_CLOSED:
+-		dcb->dccpd_reset_code = DCCP_RESET_CODE_NO_CONNECTION;
+-		return 1;
+-
+ 	case DCCP_REQUESTING:
+ 		queued = dccp_rcv_request_sent_state_process(sk, skb, dh, len);
+ 		if (queued >= 0)
