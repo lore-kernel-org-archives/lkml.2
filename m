@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933632Ab1C3WMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:12:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15534 "EHLO mga09.intel.com"
+	id S933204Ab1C3WMy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 18:12:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16640 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933086Ab1C3VF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:05:58 -0400
+	id S933113Ab1C3VF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:05:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="727132724"
+   d="scan'208";a="727132736"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: alex.he@amd.com, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [21/275] USB: EHCI: ASPM quirk of ISOC on AMD Hudson
-Message-Id: <20110330210415.C67303E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:04:15 -0700 (PDT)
+To: stern@rowland.harvard.edu, ak@linux.intel.com, Larry.Finger@lwfinger.net,
+        david-b@pacbell.net, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [22/275] USB: EHCI: fix DMA deallocation bug
+Message-Id: <20110330210416.D30183E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:04:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,78 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Alex He <alex.he@amd.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit baab93afc2844b68d57b0dcca5e1d34c5d7cf411 upstream.
+commit f75593ceaa08e6d27aec1a5de31cded19e850dd1 upstream.
 
-AMD Hudson also needs the same ASPM quirk as SB800
+This patch (as1440) fixes a bug in ehci-hcd.  ehci->periodic_size is
+used to compute the size in a dma_alloc_coherent() call, but then it
+gets changed later on.  As a result, the corresponding call to
+dma_free_coherent() passes a different size from the original
+allocation.  Fix the problem by adjusting ehci->periodic_size before
+carrying out any of the memory allocations.
 
-Signed-off-by: Alex He <alex.he@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
+CC: David Brownell <david-b@pacbell.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-pci.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+ drivers/usb/host/ehci-hcd.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-Index: linux-2.6.35.y/drivers/usb/host/ehci-pci.c
+Index: linux-2.6.35.y/drivers/usb/host/ehci-hcd.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/usb/host/ehci-pci.c	2011-03-29 23:02:58.277344248 -0700
-+++ linux-2.6.35.y/drivers/usb/host/ehci-pci.c	2011-03-29 23:02:58.654334603 -0700
-@@ -41,28 +41,35 @@
- 	return 0;
- }
+--- linux-2.6.35.y.orig/drivers/usb/host/ehci-hcd.c	2011-03-29 23:02:58.277344248 -0700
++++ linux-2.6.35.y/drivers/usb/host/ehci-hcd.c	2011-03-29 23:02:58.672334141 -0700
+@@ -544,6 +544,8 @@
+ 	ehci->iaa_watchdog.function = ehci_iaa_watchdog;
+ 	ehci->iaa_watchdog.data = (unsigned long) ehci;
  
--static int ehci_quirk_amd_SB800(struct ehci_hcd *ehci)
-+static int ehci_quirk_amd_hudson(struct ehci_hcd *ehci)
- {
- 	struct pci_dev *amd_smbus_dev;
- 	u8 rev = 0;
++	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
++
+ 	/*
+ 	 * hw default: 1K periodic list heads, one per frame.
+ 	 * periodic_size can shrink by USBCMD update if hcc_params allows.
+@@ -551,11 +553,20 @@
+ 	ehci->periodic_size = DEFAULT_I_TDPS;
+ 	INIT_LIST_HEAD(&ehci->cached_itd_list);
+ 	INIT_LIST_HEAD(&ehci->cached_sitd_list);
++
++	if (HCC_PGM_FRAMELISTLEN(hcc_params)) {
++		/* periodic schedule size can be smaller than default */
++		switch (EHCI_TUNE_FLS) {
++		case 0: ehci->periodic_size = 1024; break;
++		case 1: ehci->periodic_size = 512; break;
++		case 2: ehci->periodic_size = 256; break;
++		default:	BUG();
++		}
++	}
+ 	if ((retval = ehci_mem_init(ehci, GFP_KERNEL)) < 0)
+ 		return retval;
  
- 	amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
--	if (!amd_smbus_dev)
--		return 0;
--
--	pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
--	if (rev < 0x40) {
--		pci_dev_put(amd_smbus_dev);
--		amd_smbus_dev = NULL;
--		return 0;
-+	if (amd_smbus_dev) {
-+		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+		if (rev < 0x40) {
-+			pci_dev_put(amd_smbus_dev);
-+			amd_smbus_dev = NULL;
-+			return 0;
-+		}
-+	} else {
-+		amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x780b, NULL);
-+		if (!amd_smbus_dev)
-+			return 0;
-+		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+		if (rev < 0x11 || rev > 0x18) {
-+			pci_dev_put(amd_smbus_dev);
-+			amd_smbus_dev = NULL;
-+			return 0;
-+		}
+ 	/* controllers may cache some of the periodic schedule ... */
+-	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
+ 	if (HCC_ISOC_CACHE(hcc_params))		// full frame cache
+ 		ehci->i_thresh = 2 + 8;
+ 	else					// N microframes cached
+@@ -604,12 +615,6 @@
+ 		/* periodic schedule size can be smaller than default */
+ 		temp &= ~(3 << 2);
+ 		temp |= (EHCI_TUNE_FLS << 2);
+-		switch (EHCI_TUNE_FLS) {
+-		case 0: ehci->periodic_size = 1024; break;
+-		case 1: ehci->periodic_size = 512; break;
+-		case 2: ehci->periodic_size = 256; break;
+-		default:	BUG();
+-		}
  	}
+ 	ehci->command = temp;
  
- 	if (!amd_nb_dev)
- 		amd_nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
--	if (!amd_nb_dev)
--		ehci_err(ehci, "QUIRK: unable to get AMD NB device\n");
- 
--	ehci_info(ehci, "QUIRK: Enable AMD SB800 L1 fix\n");
-+	ehci_info(ehci, "QUIRK: Enable exception for AMD Hudson ASPM\n");
- 
- 	pci_dev_put(amd_smbus_dev);
- 	amd_smbus_dev = NULL;
-@@ -128,7 +135,7 @@
- 	/* cache this readonly data; minimize chip reads */
- 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
- 
--	if (ehci_quirk_amd_SB800(ehci))
-+	if (ehci_quirk_amd_hudson(ehci))
- 		ehci->amd_l1_fix = 1;
- 
- 	retval = ehci_halt(ehci);
