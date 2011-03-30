@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab1C3PMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 11:12:00 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58555 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab1C3PL7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 11:11:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=pqR4i2Tdaq1t56fW2YiHjIMNqEQTV/DTG0eh0rNafPi3Q5vp54Oo/1VubgSt21kKib
-         zqkYOP7S8yfBfCsxhwPQlHCM8+iihbdwTX4PekGUlUE1aXoR6JBGEk2u7/qdjoHlySyZ
-         bHNT+/tTnCMttIq3j+RDbQYn7MLjcpoK6QpRY=
-From: Geunsik Lim <leemgs1@gmail.com>
-To: Paul Menage <menage@google.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2] cgroup-doc: suitable words to explain cgroups.
-Date: Thu, 31 Mar 2011 00:11:39 +0900
-Message-Id: <1301497899-15322-1-git-send-email-leemgs1@gmail.com>
-X-Mailer: git-send-email 1.7.3
+	id S932547Ab1C3POZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 11:14:25 -0400
+Received: from bn-scl-osf02.barracuda.com ([64.235.144.26]:14615 "EHLO
+	bn-scl-osf02.barracuda.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753728Ab1C3POX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 11:14:23 -0400
+X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Mar 2011 11:14:23 EDT
+X-ASG-Debug-ID: 1301497117-4078038c0000-xx1T2L
+X-Barracuda-URL: http://10.8.0.46:80/cgi-bin/mark.cgi
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Message-ID: <88d4fb7a-49b8-488f-9f48-de62a470a949@BN-INN-BE01.phionnet.com>
+From: <aheiss@barracuda.com>
+To: Undisclosed recipients:;
+Date: Wed, 30 Mar 2011 16:58:09 +0200
+Content-Transfer-Encoding: 8BIT
+X-EXCLAIMER-MD-CONFIG: 23550527-0592-4512-8b29-af9b0339669a
+X-Barracuda-Connect: bn-scl-smrthst01.it.cudanet.local[10.8.1.70]
+X-Barracuda-Start-Time: 1301497117
+X-Barracuda-Encrypted: AES256-SHA
+X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at barracuda.com
+X-Barracuda-Spam-Score: -1002.00
+X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update suitable words to explain / understand cgroups contents.
+﻿
 
-Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
-Cc: Paul Menage <menage@google.com>
----
- Documentation/cgroups/cgroups.txt |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-index cbdfb7d..aedf1bd 100644
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -110,22 +110,22 @@ university server with various users - students, professors, system
- tasks etc. The resource planning for this server could be along the
- following lines:
- 
--       CPU :           Top cpuset
-+       CPU :          "Top cpuset"
-                        /       \
-                CPUSet1         CPUSet2
--                  |              |
--               (Profs)         (Students)
-+                  |               |
-+               (Professors)    (Students)
- 
-                In addition (system tasks) are attached to topcpuset (so
-                that they can run anywhere) with a limit of 20%
- 
--       Memory : Professors (50%), students (30%), system (20%)
-+       Memory : Professors (50%), Students (30%), system (20%)
- 
--       Disk : Prof (50%), students (30%), system (20%)
-+       Disk : Professors (50%), Students (30%), system (20%)
- 
-        Network : WWW browsing (20%), Network File System (60%), others (20%)
-                                / \
--                       Prof (15%) students (5%)
-+               Professors (15%)  students (5%)
- 
- Browsers like Firefox/Lynx go into the WWW network class, while (k)nfsd go
- into NFS network class.
--- 
-1.7.3
+
+Andreas Heiss
+IT Manager Infrastructure and Application
+
+Barracuda Networks AG
+Eduard-Bodem-Gasse 1
+6020 Innsbruck
+Austria
+
+Phone: +43 (0) 508 100
+Fax: +43 508 100 20
+eMail: mailto:aheiss@barracuda.com
+Web: www.barracudanetworks.com, www.phion.com
+
+
+
+
+
+
+
+Barracuda Networks AG
+Vorsitzender des Aufsichtsrates/ Chairman of the supervisory board: Dean Drako
+Vorstand/ Executive Board: Dr. Wieland Alge, Mag. Guenter Klausner
+Sitz der Gesellschaft/ Registered office: 6020 Innsbruck, Austria
+Handelsgericht Innsbruck Firmenbuch/ Registration Number: 184392s
+UID-Nr/ VAT Number: ATU47509003
+
+Diese Nachricht und allfaellige angehaengte Dokumente sind vertraulich und nur fuer den/die Adressaten bestimmt. Sollten Sie nicht der beabsichtigte Adressat sein, ist jede Offenlegung, Weiterleitung oder sonstige Verwendung dieser Information nicht gestattet. In diesem Fall bitten wir, den Absender zu verstaendigen und die Information zu vernichten. Fuer Uebermittlungsfehler oder sonstige Irrtuemer bei Uebermittlung besteht keine Haftung.
+
+This message and any attached files are confidential and intended solely for the addressee(s). Any publication, transmission or other use of the information by a person or entity other than the intended addressee is prohibited. If you receive this in error please contact the sender and delete the material. The sender does not accept liability for any errors or omissions as a result of the transmission.
+
+
+Barracuda Networks solutions are now available as virtual appliances. 
+Visit www.barracudanetworks.com/vx for more information.
+
+
 
