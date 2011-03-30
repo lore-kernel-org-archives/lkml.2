@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab1C3Qv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 12:51:28 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:58914 "EHLO
+	id S1756129Ab1C3Qva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 12:51:30 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:58929 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab1C3Qv0 (ORCPT
+	with ESMTP id S1756104Ab1C3Qv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 12:51:26 -0400
+	Wed, 30 Mar 2011 12:51:28 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=kxEdK7uqOBpUuZUVu7FSvIUeTkAbTBEkn++wnyrvga9xoGxObH07870KqFXBjVlFW
-	8KTMNNcWjPs8WYjCpwUQQ==
+	b=tLfkC51dS2D27XIaml2Raar51JTFKI6PBVXVaLe9FMCEj/o1JBhGN+Ze+j1COU2xm
+	5mMDHehs3/cWyAbs6etsA==
 From: Justin TerAvest <teravest@google.com>
 To: vgoyal@redhat.com
 Cc: jaxboe@fusionio.com, m-ikeda@ds.jp.nec.com, ryov@valinux.co.jp,
@@ -18,9 +18,9 @@ Cc: jaxboe@fusionio.com, m-ikeda@ds.jp.nec.com, ryov@valinux.co.jp,
         righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
         balbir@linux.vnet.ibm.com, ctalbott@google.com,
         linux-kernel@vger.kernel.org, Justin TerAvest <teravest@google.com>
-Subject: [PATCH v3 4/8] block: Modify CFQ to use IO tracking information.
-Date: Wed, 30 Mar 2011 09:50:36 -0700
-Message-Id: <1301503840-25851-5-git-send-email-teravest@google.com>
+Subject: [PATCH v3 7/8] block: Per cgroup request descriptor counts
+Date: Wed, 30 Mar 2011 09:50:39 -0700
+Message-Id: <1301503840-25851-8-git-send-email-teravest@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1301503840-25851-1-git-send-email-teravest@google.com>
 References: <1301503840-25851-1-git-send-email-teravest@google.com>
@@ -28,446 +28,861 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IO tracking bits are used to send IOs to the right async
-queue. Current task is still used to identify the cgroup of the
-synchronous IO. Current task is also used if IO tracking is disabled.
+If a cgroup gets starved, it keeps allocating request
+descriptors until it hits the limit. Other cgroups could be
+starved of request descriptors, which is a problem.
+This patch implements per-cgroup request descriptor limits.
+
+There has been discussion to remove limits entirely, but they are
+introduced here to enable tracking for buffered writes without causing
+problems for the per request-queue limit.
+
+There are some interesting corner cases that are also covered.
+During elevator switch, we start counting the request descriptors
+towards the request list of the root group. We drain all the requests
+that were started before the switch. If new requests arrive after
+the switch is progressing, they are counted towards the common, shared
+request list of the root group. As these requests complete, the counter
+in the common request list is decremented properly.
 
 Signed-off-by: Justin TerAvest <teravest@google.com>
 ---
- block/blk-cgroup.c       |    6 +-
- block/blk-core.c         |    7 +-
- block/cfq-iosched.c      |  175 +++++++++++++++++++++++++++++++++++++++++-----
- block/elevator.c         |    5 +-
- include/linux/elevator.h |    6 +-
- 5 files changed, 172 insertions(+), 27 deletions(-)
+ Documentation/block/biodoc.txt |   10 ++
+ block/blk-core.c               |  211 +++++++++++++++++++++++++++-------------
+ block/blk-flush.c              |    2 +
+ block/blk-settings.c           |    2 +-
+ block/blk-sysfs.c              |   59 ++++++-----
+ block/cfq-iosched.c            |   61 +++++++++++-
+ block/elevator.c               |    2 +-
+ include/linux/blkdev.h         |   81 +++++++++++++++-
+ include/linux/elevator.h       |    8 ++
+ 9 files changed, 339 insertions(+), 97 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index f626c65..9732cfd 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -111,6 +111,9 @@ blkio_policy_search_node(const struct blkio_cgroup *blkcg, dev_t dev,
+diff --git a/Documentation/block/biodoc.txt b/Documentation/block/biodoc.txt
+index 2a7b38c..856d706 100644
+--- a/Documentation/block/biodoc.txt
++++ b/Documentation/block/biodoc.txt
+@@ -970,6 +970,16 @@ elevator_latter_req_fn		These return the request before or after the
  
- struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
- {
-+	if (!cgroup)
-+		return &blkio_root_cgroup;
+ elevator_completed_req_fn	called when a request is completed.
+ 
++elevator_req_list_fn		called to obtain the active request list for
++				either a bio or a request. This function can
++				be called with either a valid bio or request.
++				This function must be defined only if the
++				scheduler supports per cgroup request lists.
++				When defined, it becomes the responsibility
++				of the scheduler to call blk_alloced_request
++				after the request and queue are allocated and
++				the cgroup is declared.
 +
- 	return container_of(cgroup_subsys_state(cgroup, blkio_subsys_id),
- 			    struct blkio_cgroup, css);
- }
-@@ -1550,6 +1553,7 @@ unsigned long get_blkio_cgroup_id(struct bio *bio)
- 		id = page_cgroup_get_blkio_id(pc);
- 	return id;
- }
-+EXPORT_SYMBOL(get_blkio_cgroup_id);
- 
- /**
-  * get_cgroup_from_page() - determine the cgroup from a page.
-@@ -1576,8 +1580,6 @@ struct cgroup *get_cgroup_from_page(struct page *page)
- 
- 	return css->cgroup;
- }
--
--EXPORT_SYMBOL(get_blkio_cgroup_id);
- EXPORT_SYMBOL(get_cgroup_from_page);
- 
- #endif /* CONFIG_CGROUP_BLKIOTRACK */
+ elevator_may_queue_fn		returns true if the scheduler wants to allow the
+ 				current context to queue a new request even if
+ 				it is over the queue limit. This must be used
 diff --git a/block/blk-core.c b/block/blk-core.c
-index 5256932..1b7936bf 100644
+index 1b7936bf..465df36 100644
 --- a/block/blk-core.c
 +++ b/block/blk-core.c
-@@ -583,7 +583,8 @@ static inline void blk_free_request(struct request_queue *q, struct request *rq)
+@@ -381,23 +381,28 @@ void blk_cleanup_queue(struct request_queue *q)
+ }
+ EXPORT_SYMBOL(blk_cleanup_queue);
+ 
+-static int blk_init_free_list(struct request_queue *q)
++void blk_init_request_list(struct request_list *rl)
+ {
+-	struct request_list *rl = &q->rq;
+-
+-	if (unlikely(rl->rq_pool))
+-		return 0;
+-
+ 	rl->count[BLK_RW_SYNC] = rl->count[BLK_RW_ASYNC] = 0;
+ 	rl->starved[BLK_RW_SYNC] = rl->starved[BLK_RW_ASYNC] = 0;
+-	rl->elvpriv = 0;
+ 	init_waitqueue_head(&rl->wait[BLK_RW_SYNC]);
+ 	init_waitqueue_head(&rl->wait[BLK_RW_ASYNC]);
++}
+ 
+-	rl->rq_pool = mempool_create_node(BLKDEV_MIN_RQ, mempool_alloc_slab,
+-				mempool_free_slab, request_cachep, q->node);
++static int blk_init_free_list(struct request_queue *q)
++{
++	if (unlikely(q->rq_pool.rq_pool))
++		return 0;
++
++	blk_init_request_list(&q->rq);
+ 
+-	if (!rl->rq_pool)
++	q->rq_pool.count[BLK_RW_SYNC] = 0;
++	q->rq_pool.count[BLK_RW_ASYNC] = 0;
++	q->rq_pool.elvpriv = 0;
++	q->rq_pool.rq_pool = mempool_create_node(BLKDEV_MIN_RQ,
++					mempool_alloc_slab, mempool_free_slab,
++					request_cachep, q->node);
++	if (!q->rq_pool.rq_pool)
+ 		return -ENOMEM;
+ 
+ 	return 0;
+@@ -579,14 +584,14 @@ static inline void blk_free_request(struct request_queue *q, struct request *rq)
+ 
+ 	if (rq->cmd_flags & REQ_ELVPRIV)
+ 		elv_put_request(q, rq);
+-	mempool_free(rq, q->rq.rq_pool);
++	mempool_free(rq, q->rq_pool.rq_pool);
  }
  
  static struct request *
--blk_alloc_request(struct request_queue *q, int flags, int priv, gfp_t gfp_mask)
-+blk_alloc_request(struct request_queue *q, struct bio *bio, int flags, int priv,
-+					gfp_t gfp_mask)
+ blk_alloc_request(struct request_queue *q, struct bio *bio, int flags, int priv,
+ 					gfp_t gfp_mask)
  {
- 	struct request *rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
+-	struct request *rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
++	struct request *rq = mempool_alloc(q->rq_pool.rq_pool, gfp_mask);
  
-@@ -595,7 +596,7 @@ blk_alloc_request(struct request_queue *q, int flags, int priv, gfp_t gfp_mask)
+ 	if (!rq)
+ 		return NULL;
+@@ -596,11 +601,11 @@ blk_alloc_request(struct request_queue *q, struct bio *bio, int flags, int priv,
  	rq->cmd_flags = flags | REQ_ALLOCED;
  
  	if (priv) {
--		if (unlikely(elv_set_request(q, rq, gfp_mask))) {
-+		if (unlikely(elv_set_request(q, rq, bio, gfp_mask))) {
- 			mempool_free(rq, q->rq.rq_pool);
++		rq->cmd_flags |= REQ_ELVPRIV;
+ 		if (unlikely(elv_set_request(q, rq, bio, gfp_mask))) {
+-			mempool_free(rq, q->rq.rq_pool);
++			mempool_free(rq, q->rq_pool.rq_pool);
  			return NULL;
  		}
-@@ -757,7 +758,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
- 		rw_flags |= REQ_IO_STAT;
- 	spin_unlock_irq(q->queue_lock);
+-		rq->cmd_flags |= REQ_ELVPRIV;
+ 	}
  
--	rq = blk_alloc_request(q, rw_flags, priv, gfp_mask);
-+	rq = blk_alloc_request(q, bio, rw_flags, priv, gfp_mask);
- 	if (unlikely(!rq)) {
- 		/*
- 		 * Allocation failed presumably due to memory. Undo anything
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 011d268..c75bbbf 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -14,6 +14,7 @@
- #include <linux/rbtree.h>
- #include <linux/ioprio.h>
- #include <linux/blktrace_api.h>
-+#include <linux/blkio-track.h>
- #include "cfq.h"
+ 	return rq;
+@@ -640,38 +645,67 @@ static void ioc_set_batching(struct request_queue *q, struct io_context *ioc)
+ 	ioc->last_waited = jiffies;
+ }
+ 
+-static void __freed_request(struct request_queue *q, int sync)
++static void __freed_request(struct request_queue *q, int sync,
++			    struct request_list *rl)
+ {
+-	struct request_list *rl = &q->rq;
+-
+-	if (rl->count[sync] < queue_congestion_off_threshold(q))
++	if (q->rq_pool.count[sync] < queue_congestion_off_threshold(q))
+ 		blk_clear_queue_congested(q, sync);
+ 
+-	if (rl->count[sync] + 1 <= q->nr_requests) {
++	if (q->rq_pool.count[sync] + 1 <= q->nr_requests)
++		blk_clear_queue_full(q, sync);
++
++	if (rl->count[sync] + 1 <= q->nr_group_requests) {
+ 		if (waitqueue_active(&rl->wait[sync]))
+ 			wake_up(&rl->wait[sync]);
+-
+-		blk_clear_queue_full(q, sync);
+ 	}
+ }
  
  /*
-@@ -309,6 +310,10 @@ static void cfq_get_queue_ref(struct cfq_queue *cfqq);
- static void cfq_put_queue_ref(struct cfq_queue *cfqq);
- 
- static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
-+static struct cfq_group *cfq_get_cfqg_bio(struct cfq_data *cfqd,
-+				   struct bio *bio, int create);
-+static struct cfq_queue **
-+cfq_async_queue_prio(struct cfq_group *cfqg, int ioprio_class, int ioprio);
- 
- static struct cfq_rb_root *service_tree_for(struct cfq_group *cfqg,
- 					    enum wl_prio_t prio,
-@@ -451,7 +456,7 @@ static inline int cfqg_busy_async_queues(struct cfq_data *cfqd,
- }
- 
- static void cfq_dispatch_insert(struct request_queue *, struct request *);
--static struct cfq_queue *cfq_get_queue(struct cfq_data *, bool,
-+static struct cfq_queue *cfq_get_queue(struct cfq_data *, struct bio*, bool,
- 				       struct io_context *, gfp_t);
- static struct cfq_io_context *cfq_cic_lookup(struct cfq_data *,
- 						struct io_context *);
-@@ -463,9 +468,55 @@ static inline struct cfq_queue *cic_to_cfqq(struct cfq_io_context *cic,
- 	return cic->cfqq[is_sync];
- }
- 
-+/*
-+ * Determine the cfq queue bio should go in. This is primarily used by
-+ * front merge and allow merge functions.
-+ *
-+ * Currently this function takes the ioprio and iprio_class from task
-+ * submitting async bio. Later save the task information in the page_cgroup
-+ * and retrieve task's ioprio and class from there.
-+ */
-+static struct cfq_queue *cic_bio_to_cfqq(struct cfq_data *cfqd,
-+		struct cfq_io_context *cic, struct bio *bio, int is_sync)
-+{
-+	struct cfq_queue *cfqq = cic_to_cfqq(cic, is_sync);
-+
-+#ifdef CONFIG_CGROUP_BLKIOTRACK
-+	if (!cfqq && !is_sync) {
-+		const int ioprio = task_ioprio(cic->ioc);
-+		const int ioprio_class = task_ioprio_class(cic->ioc);
-+		struct cfq_group *cfqg;
-+		struct cfq_queue **async_cfqq;
-+		/*
-+		 * async bio tracking is enabled and we are not caching
-+		 * async queue pointer in cic.
-+		 */
-+		cfqg = cfq_get_cfqg_bio(cfqd, bio, 0);
-+		if (!cfqg) {
-+			/*
-+			 * May be this is first rq/bio and io group has not
-+			 * been setup yet.
-+			 */
-+			return NULL;
-+		}
-+		async_cfqq = cfq_async_queue_prio(cfqg, ioprio_class, ioprio);
-+		return *async_cfqq;
-+	}
-+#endif
-+	return cfqq;
-+}
-+
- static inline void cic_set_cfqq(struct cfq_io_context *cic,
- 				struct cfq_queue *cfqq, bool is_sync)
- {
-+#ifdef CONFIG_CGROUP_BLKIOTRACK
-+	/*
-+	 * Don't cache async queue pointer as now one io context might
-+	 * be submitting async io for various different async queues
-+	 */
-+	if (!is_sync)
-+		return;
-+#endif
- 	cic->cfqq[is_sync] = cfqq;
- }
- 
-@@ -1032,7 +1083,9 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
- 	unsigned int major, minor;
- 
- 	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
--	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
-+	if (!bdi || !bdi->dev || !dev_name(bdi->dev))
-+		goto done;
-+	if (cfqg && !cfqg->blkg.dev) {
- 		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
- 		cfqg->blkg.dev = MKDEV(major, minor);
- 		goto done;
-@@ -1083,20 +1136,61 @@ done:
-  * Search for the cfq group current task belongs to. If create = 1, then also
-  * create the cfq group if it does not exist. request_queue lock must be held.
+  * A request has just been released.  Account for it, update the full and
+- * congestion status, wake up any waiters.   Called under q->queue_lock.
++ * congestion status, wake up any waiters.  Called under q->queue_lock.
   */
--static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
-+static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, struct page *page,
-+				      int create)
+-static void freed_request(struct request_queue *q, int sync, int priv)
++static void freed_request(struct request_queue *q, int sync, int priv,
++			  struct request_list *rl)
  {
- 	struct cgroup *cgroup;
- 	struct cfq_group *cfqg = NULL;
- 
- 	rcu_read_lock();
--	cgroup = task_cgroup(current, blkio_subsys_id);
-+
-+	if (!page)
-+		cgroup = task_cgroup(current, blkio_subsys_id);
-+	else
-+		cgroup = get_cgroup_from_page(page);
-+
-+	if (!cgroup) {
-+		cfqg = &cfqd->root_group;
-+		goto out;
+-	struct request_list *rl = &q->rq;
++	if (priv) {
++		q->rq_pool.elvpriv--;
++		BUG_ON(!rl->count[sync]);
++		rl->count[sync]--;
 +	}
-+
- 	cfqg = cfq_find_alloc_cfqg(cfqd, cgroup, create);
- 	if (!cfqg && create)
- 		cfqg = &cfqd->root_group;
-+out:
- 	rcu_read_unlock();
- 	return cfqg;
- }
  
-+struct cfq_group *cfq_get_cfqg_bio(struct cfq_data *cfqd,
-+					struct bio *bio, int create)
+-	rl->count[sync]--;
+-	if (priv)
+-		rl->elvpriv--;
++	BUG_ON(!q->rq_pool.count[sync]);
++	q->rq_pool.count[sync]--;
+ 
+-	__freed_request(q, sync);
++	__freed_request(q, sync, rl);
+ 
+ 	if (unlikely(rl->starved[sync ^ 1]))
+-		__freed_request(q, sync ^ 1);
++		__freed_request(q, sync ^ 1, rl);
++}
++
++void blk_alloced_request(struct request_queue *q, struct request_list *rl,
++			 int sync)
 +{
-+	struct page *page = NULL;
++	int priv;
++
++	q->rq_pool.count[sync]++;
++	rl->starved[sync] = 0;
++
++	priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
++	if (priv) {
++		q->rq_pool.elvpriv++;
++		/*
++		 * Account the request to request list only if request is
++		 * going to elevator. During elevator switch, there will
++		 * be small window where group is going away and new group
++		 * will not be allocated till elevator switch is complete.
++		 * So till then instead of slowing down the application,
++		 * we will continue to allocate request from total common
++		 * pool instead of per group limit
++		 */
++		rl->count[sync]++;
++	}
+ }
++EXPORT_SYMBOL(blk_alloced_request);
+ 
+ /*
+  * Determine if elevator data should be initialized when allocating the
+@@ -698,10 +732,10 @@ static bool blk_rq_should_init_elevator(struct bio *bio)
+  * Returns !NULL on success, with queue_lock *not held*.
+  */
+ static struct request *get_request(struct request_queue *q, int rw_flags,
+-				   struct bio *bio, gfp_t gfp_mask)
++				   struct bio *bio, gfp_t gfp_mask,
++				   struct request_list *rl)
+ {
+ 	struct request *rq = NULL;
+-	struct request_list *rl = &q->rq;
+ 	struct io_context *ioc = NULL;
+ 	const bool is_sync = rw_is_sync(rw_flags) != 0;
+ 	int may_queue, priv = 0;
+@@ -710,31 +744,41 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 	if (may_queue == ELV_MQUEUE_NO)
+ 		goto rq_starved;
+ 
+-	if (rl->count[is_sync]+1 >= queue_congestion_on_threshold(q)) {
+-		if (rl->count[is_sync]+1 >= q->nr_requests) {
+-			ioc = current_io_context(GFP_ATOMIC, q->node);
++	if (q->rq_pool.count[is_sync]+1 >= queue_congestion_on_threshold(q)) {
++		blk_add_trace_msg(q, "Queue congested: setting congested flag");
++		blk_set_queue_congested(q, is_sync);
++	}
 +
 +	/*
-+	 * Determine the group from task context. Even calls from
-+	 * blk_get_request() which don't have any bio info will be mapped
-+	 * to the task's group
++	 * Looks like there is no user of queue full now.
++	 * Keeping it for time being.
 +	 */
-+	if (!bio)
-+		goto sync;
-+
-+#ifdef CONFIG_CGROUP_BLKIOTRACK
-+	if (!bio_has_data(bio))
-+		goto sync;
-+
-+	/* Map the sync bio to the right group using task context */
-+	if (cfq_bio_sync(bio))
-+		goto sync;
-+
-+	/* Determine the group from info stored in page */
-+	page = bio_iovec_idx(bio, 0)->bv_page;
-+#endif
-+
-+sync:
-+	return cfq_get_cfqg(cfqd, page, create);
-+}
-+
- static void cfq_get_group_ref(struct cfq_group *cfqg)
- {
- 	cfqg->ref++;
-@@ -1180,6 +1274,11 @@ void cfq_unlink_blkio_group(void *key, struct blkio_group *blkg)
- 
- #else /* GROUP_IOSCHED */
- 
-+static struct cfq_group *cfq_get_cfqg_bio(struct cfq_data *cfqd,
-+					  struct bio *bio, int create)
-+{
-+}
-+
- static void cfq_get_group_ref(struct cfq_group *cfqg)
- {
- }
-@@ -1491,7 +1590,7 @@ cfq_find_rq_fmerge(struct cfq_data *cfqd, struct bio *bio)
- 	if (!cic)
- 		return NULL;
- 
--	cfqq = cic_to_cfqq(cic, cfq_bio_sync(bio));
-+	cfqq = cic_bio_to_cfqq(cfqd, cic, bio, cfq_bio_sync(bio));
- 	if (cfqq) {
- 		sector_t sector = bio->bi_sector + bio_sectors(bio);
- 
-@@ -1615,7 +1714,7 @@ static int cfq_allow_merge(struct request_queue *q, struct request *rq,
- 	if (!cic)
- 		return false;
- 
--	cfqq = cic_to_cfqq(cic, cfq_bio_sync(bio));
-+	cfqq = cic_bio_to_cfqq(cfqd, cic, bio, cfq_bio_sync(bio));
- 	return cfqq == RQ_CFQQ(rq);
- }
- 
-@@ -2848,14 +2947,10 @@ static void changed_ioprio(struct io_context *ioc, struct cfq_io_context *cic)
- 	spin_lock_irqsave(cfqd->queue->queue_lock, flags);
- 
- 	cfqq = cic->cfqq[BLK_RW_ASYNC];
-+
- 	if (cfqq) {
--		struct cfq_queue *new_cfqq;
--		new_cfqq = cfq_get_queue(cfqd, BLK_RW_ASYNC, cic->ioc,
--						GFP_ATOMIC);
--		if (new_cfqq) {
--			cic->cfqq[BLK_RW_ASYNC] = new_cfqq;
--			cfq_put_queue_ref(cfqq);
--		}
-+		cic_set_cfqq(cic, NULL, BLK_RW_ASYNC);
-+		cfq_put_queue_ref(cfqq);
- 	}
- 
- 	cfqq = cic->cfqq[BLK_RW_SYNC];
-@@ -2895,6 +2990,7 @@ static void cfq_init_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- static void changed_cgroup(struct io_context *ioc, struct cfq_io_context *cic)
- {
- 	struct cfq_queue *sync_cfqq = cic_to_cfqq(cic, 1);
-+	struct cfq_queue *async_cfqq = cic_to_cfqq(cic, 0);
- 	struct cfq_data *cfqd = cic_to_cfqd(cic);
- 	unsigned long flags;
- 	struct request_queue *q;
-@@ -2916,6 +3012,12 @@ static void changed_cgroup(struct io_context *ioc, struct cfq_io_context *cic)
- 		cfq_put_queue_ref(sync_cfqq);
- 	}
- 
-+	if (async_cfqq != NULL) {
-+		cfq_log_cfqq(cfqd, async_cfqq, "changed cgroup");
-+		cic_set_cfqq(cic, NULL, 0);
-+		cfq_put_queue_ref(async_cfqq);
++	if (q->rq_pool.count[is_sync]+1 >= q->nr_requests) {
++		blk_add_trace_msg(q, "Queue congested: setting full flag");
++		blk_set_queue_full(q, is_sync);
 +	}
 +
- 	spin_unlock_irqrestore(q->queue_lock, flags);
- }
++	if (rl->count[is_sync]+1 >= q->nr_group_requests) {
++		ioc = current_io_context(GFP_ATOMIC, q->node);
++		/*
++		 * The queue request descriptor group will fill after this
++		 * allocation, so mark this process as "batching".
++		 * This process will be allowed to complete a batch of
++		 * requests, others will be blocked.
++		 */
++		if (rl->count[is_sync] <= q->nr_group_requests)
++			ioc_set_batching(q, ioc);
++		else if (may_queue != ELV_MQUEUE_MUST
++				&& !ioc_batching(q, ioc)) {
+ 			/*
+-			 * The queue will fill after this allocation, so set
+-			 * it as full, and mark this process as "batching".
+-			 * This process will be allowed to complete a batch of
+-			 * requests, others will be blocked.
++			 * The queue is full and the allocating
++			 * process is not a "batcher", and not
++			 * exempted by the IO scheduler
+ 			 */
+-			if (!blk_queue_full(q, is_sync)) {
+-				ioc_set_batching(q, ioc);
+-				blk_set_queue_full(q, is_sync);
+-			} else {
+-				if (may_queue != ELV_MQUEUE_MUST
+-						&& !ioc_batching(q, ioc)) {
+-					/*
+-					 * The queue is full and the allocating
+-					 * process is not a "batcher", and not
+-					 * exempted by the IO scheduler
+-					 */
+-					goto out;
+-				}
+-			}
++			blk_add_trace_msg(q, "Queue congested: "
++						"not allocating request");
++			goto out;
+ 		}
+-		blk_set_queue_congested(q, is_sync);
+ 	}
  
-@@ -2938,6 +3040,24 @@ retry:
- 	/* cic always exists here */
- 	cfqq = cic_to_cfqq(cic, is_sync);
+ 	/*
+@@ -742,18 +786,26 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 	 * limit of requests, otherwise we could have thousands of requests
+ 	 * allocated with any setting of ->nr_requests
+ 	 */
+-	if (rl->count[is_sync] >= (3 * q->nr_requests / 2))
++	if (rl->count[is_sync] >= (3 * q->nr_group_requests / 2)) {
++		blk_add_trace_msg(q, "50 percent over limit, not allocating");
+ 		goto out;
++	}
  
-+#ifdef CONFIG_CGROUP_BLKIOTRACK
-+	if (!cfqq && !is_sync) {
-+		const int ioprio = task_ioprio(cic->ioc);
-+		const int ioprio_class = task_ioprio_class(cic->ioc);
-+		struct cfq_queue **async_cfqq;
+-	rl->count[is_sync]++;
+-	rl->starved[is_sync] = 0;
+ 
++	priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
+ 	if (blk_rq_should_init_elevator(bio)) {
+-		priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
+ 		if (priv)
+-			rl->elvpriv++;
++			q->rq_pool.elvpriv++;
+ 	}
+ 
++	/*
++	 * If the scheduler supports per cgroup request lists it will call
++	 * blk_alloced_request after the request and queue is allocated and
++	 * the cgroup has been decided.
++	 */
++	if (!blk_supports_cgroups(q) || !priv)
++		blk_alloced_request(q, rl, is_sync);
++
+ 	if (blk_queue_io_stat(q))
+ 		rw_flags |= REQ_IO_STAT;
+ 	spin_unlock_irq(q->queue_lock);
+@@ -768,7 +820,8 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 		 * wait queue, but this is pretty rare.
+ 		 */
+ 		spin_lock_irq(q->queue_lock);
+-		freed_request(q, is_sync, priv);
++		if (!blk_supports_cgroups(q) || !priv)
++			freed_request(q, is_sync, priv, rl);
+ 
+ 		/*
+ 		 * in the very unlikely event that allocation failed and no
+@@ -778,9 +831,11 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 		 * rq mempool into READ and WRITE
+ 		 */
+ rq_starved:
+-		if (unlikely(rl->count[is_sync] == 0))
++		if (unlikely(rl->count[is_sync] == 0)) {
++			blk_add_trace_msg(q, "Queue congested: "
++				"marking %d starved", is_sync);
+ 			rl->starved[is_sync] = 1;
+-
++		}
+ 		goto out;
+ 	}
+ 
+@@ -809,16 +864,23 @@ static struct request *get_request_wait(struct request_queue *q, int rw_flags,
+ {
+ 	const bool is_sync = rw_is_sync(rw_flags) != 0;
+ 	struct request *rq;
++	struct request_list *rl = blk_get_request_list(q, bio);
+ 
+-	rq = get_request(q, rw_flags, bio, GFP_NOIO);
++	rq = get_request(q, rw_flags, bio, GFP_NOIO, rl);
+ 	while (!rq) {
+ 		DEFINE_WAIT(wait);
+ 		struct io_context *ioc;
+-		struct request_list *rl = &q->rq;
+ 
++		/*
++		 * We are about to sleep on a request list and we
++		 * drop queue lock. After waking up, we will do
++		 * finish_wait() on request list and in the mean
++		 * time group might be gone. Take a reference to
++		 * the group now.
++		 */
+ 		prepare_to_wait_exclusive(&rl->wait[is_sync], &wait,
+ 				TASK_UNINTERRUPTIBLE);
+-
++		blk_get_rl_group(q, rl);
+ 		trace_block_sleeprq(q, bio, rw_flags & 1);
+ 
+ 		spin_unlock_irq(q->queue_lock);
+@@ -836,7 +898,18 @@ static struct request *get_request_wait(struct request_queue *q, int rw_flags,
+ 		spin_lock_irq(q->queue_lock);
+ 		finish_wait(&rl->wait[is_sync], &wait);
+ 
+-		rq = get_request(q, rw_flags, bio, GFP_NOIO);
++		/*
++		 * We had taken a reference to the request list goup.
++		 * Put that now
++		 */
++		blk_put_rl_group(q, rl);
 +
 +		/*
-+		 * We have not cached async queue pointer as bio tracking
-+		 * is enabled. Look into group async queue array using ioc
-+		 * class and prio to see if somebody already allocated the
-+		 * queue.
++		 * After the sleep check the rl again in case the group the bio
++		 * belonged to is gone and it is mapped to root group now
 +		 */
-+
-+		async_cfqq = cfq_async_queue_prio(cfqg, ioprio_class, ioprio);
-+		cfqq = *async_cfqq;
-+	}
-+#endif
-+
- 	/*
- 	 * Always try a new alloc if we fell back to the OOM cfqq
- 	 * originally, since it should just be a temporary situation.
-@@ -2992,14 +3112,14 @@ cfq_async_queue_prio(struct cfq_group *cfqg, int ioprio_class, int ioprio)
++		rl = blk_get_request_list(q, bio);
++		rq = get_request(q, rw_flags, bio, GFP_NOIO, rl);
+ 	};
+ 
+ 	return rq;
+@@ -845,6 +918,7 @@ static struct request *get_request_wait(struct request_queue *q, int rw_flags,
+ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
+ {
+ 	struct request *rq;
++	struct request_list *rl;
+ 
+ 	BUG_ON(rw != READ && rw != WRITE);
+ 
+@@ -852,7 +926,8 @@ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
+ 	if (gfp_mask & __GFP_WAIT) {
+ 		rq = get_request_wait(q, rw, NULL);
+ 	} else {
+-		rq = get_request(q, rw, NULL, gfp_mask);
++		rl = blk_get_request_list(q, NULL);
++		rq = get_request(q, rw, NULL, gfp_mask, rl);
+ 		if (!rq)
+ 			spin_unlock_irq(q->queue_lock);
+ 	}
+@@ -1059,12 +1134,14 @@ void __blk_put_request(struct request_queue *q, struct request *req)
+ 	if (req->cmd_flags & REQ_ALLOCED) {
+ 		int is_sync = rq_is_sync(req) != 0;
+ 		int priv = req->cmd_flags & REQ_ELVPRIV;
++		struct request_list *rl = rq_rl(q, req);
+ 
+ 		BUG_ON(!list_empty(&req->queuelist));
+ 		BUG_ON(!hlist_unhashed(&req->hash));
++		BUG_ON(!rl);
+ 
++		freed_request(q, is_sync, priv, rl);
+ 		blk_free_request(q, req);
+-		freed_request(q, is_sync, priv);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(__blk_put_request);
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 93d5fd8..675d7b6 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -122,6 +122,8 @@ static void blk_flush_restore_request(struct request *rq)
+ 
+ 	/* make @rq a normal request */
+ 	rq->cmd_flags &= ~REQ_FLUSH_SEQ;
++	/* Don't free request descriptors twice. */
++	rq->cmd_flags &= ~REQ_ALLOCED;
+ 	rq->end_io = NULL;
  }
  
- static struct cfq_queue *
--cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct io_context *ioc,
--	      gfp_t gfp_mask)
-+cfq_get_queue(struct cfq_data *cfqd, struct bio *bio, bool is_sync,
-+	      struct io_context *ioc, gfp_t gfp_mask)
+diff --git a/block/blk-settings.c b/block/blk-settings.c
+index 1fa7692..a3039dd 100644
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -158,7 +158,7 @@ void blk_queue_make_request(struct request_queue *q, make_request_fn *mfn)
+ 	 * set defaults
+ 	 */
+ 	q->nr_requests = BLKDEV_MAX_RQ;
+-
++	q->nr_group_requests = BLKDEV_MAX_GROUP_RQ;
+ 	q->make_request_fn = mfn;
+ 	blk_queue_dma_alignment(q, 511);
+ 	blk_queue_congestion_threshold(q);
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index 261c75c..88116df 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -39,7 +39,6 @@ static ssize_t queue_requests_show(struct request_queue *q, char *page)
+ static ssize_t
+ queue_requests_store(struct request_queue *q, const char *page, size_t count)
  {
- 	const int ioprio = task_ioprio(ioc);
+-	struct request_list *rl = &q->rq;
+ 	unsigned long nr;
+ 	int ret;
+ 
+@@ -53,33 +52,31 @@ queue_requests_store(struct request_queue *q, const char *page, size_t count)
+ 	spin_lock_irq(q->queue_lock);
+ 	q->nr_requests = nr;
+ 	blk_queue_congestion_threshold(q);
++	spin_unlock_irq(q->queue_lock);
++	return ret;
++}
+ 
+-	if (rl->count[BLK_RW_SYNC] >= queue_congestion_on_threshold(q))
+-		blk_set_queue_congested(q, BLK_RW_SYNC);
+-	else if (rl->count[BLK_RW_SYNC] < queue_congestion_off_threshold(q))
+-		blk_clear_queue_congested(q, BLK_RW_SYNC);
+-
+-	if (rl->count[BLK_RW_ASYNC] >= queue_congestion_on_threshold(q))
+-		blk_set_queue_congested(q, BLK_RW_ASYNC);
+-	else if (rl->count[BLK_RW_ASYNC] < queue_congestion_off_threshold(q))
+-		blk_clear_queue_congested(q, BLK_RW_ASYNC);
+-
+-	if (rl->count[BLK_RW_SYNC] >= q->nr_requests) {
+-		blk_set_queue_full(q, BLK_RW_SYNC);
+-	} else if (rl->count[BLK_RW_SYNC]+1 <= q->nr_requests) {
+-		blk_clear_queue_full(q, BLK_RW_SYNC);
+-		wake_up(&rl->wait[BLK_RW_SYNC]);
+-	}
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
++static ssize_t queue_group_requests_show(struct request_queue *q, char *page)
++{
++	return queue_var_show(q->nr_group_requests, page);
++}
+ 
+-	if (rl->count[BLK_RW_ASYNC] >= q->nr_requests) {
+-		blk_set_queue_full(q, BLK_RW_ASYNC);
+-	} else if (rl->count[BLK_RW_ASYNC]+1 <= q->nr_requests) {
+-		blk_clear_queue_full(q, BLK_RW_ASYNC);
+-		wake_up(&rl->wait[BLK_RW_ASYNC]);
+-	}
++static ssize_t
++queue_group_requests_store(struct request_queue *q, const char *page,
++				size_t count)
++{
++	unsigned long nr;
++	int ret = queue_var_store(&nr, page, count);
++	if (nr < BLKDEV_MIN_RQ)
++		nr = BLKDEV_MIN_RQ;
++
++	spin_lock_irq(q->queue_lock);
++	q->nr_group_requests = nr;
+ 	spin_unlock_irq(q->queue_lock);
+ 	return ret;
+ }
++#endif
+ 
+ static ssize_t queue_ra_show(struct request_queue *q, char *page)
+ {
+@@ -271,6 +268,14 @@ static struct queue_sysfs_entry queue_requests_entry = {
+ 	.store = queue_requests_store,
+ };
+ 
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
++static struct queue_sysfs_entry queue_group_requests_entry = {
++	.attr = {.name = "nr_group_requests", .mode = S_IRUGO | S_IWUSR },
++	.show = queue_group_requests_show,
++	.store = queue_group_requests_store,
++};
++#endif
++
+ static struct queue_sysfs_entry queue_ra_entry = {
+ 	.attr = {.name = "read_ahead_kb", .mode = S_IRUGO | S_IWUSR },
+ 	.show = queue_ra_show,
+@@ -381,6 +386,9 @@ static struct queue_sysfs_entry queue_random_entry = {
+ 
+ static struct attribute *default_attrs[] = {
+ 	&queue_requests_entry.attr,
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
++	&queue_group_requests_entry.attr,
++#endif
+ 	&queue_ra_entry.attr,
+ 	&queue_max_hw_sectors_entry.attr,
+ 	&queue_max_sectors_entry.attr,
+@@ -467,12 +475,11 @@ static void blk_release_queue(struct kobject *kobj)
+ {
+ 	struct request_queue *q =
+ 		container_of(kobj, struct request_queue, kobj);
+-	struct request_list *rl = &q->rq;
+ 
+ 	blk_sync_queue(q);
+ 
+-	if (rl->rq_pool)
+-		mempool_destroy(rl->rq_pool);
++	if (q->rq_pool.rq_pool)
++		mempool_destroy(q->rq_pool.rq_pool);
+ 
+ 	if (q->queue_tags)
+ 		__blk_queue_free_tags(q);
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index c885493..23caa79 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -214,6 +214,9 @@ struct cfq_group {
+ 	enum wl_prio_t saved_serving_prio;
+ 	struct blkio_group blkg;
+ #ifdef CONFIG_CFQ_GROUP_IOSCHED
++	/* Request list associated with the group */
++	struct request_list rl;
++
+ 	struct hlist_node cfqd_node;
+ 	int ref;
+ #endif
+@@ -1137,6 +1140,7 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+ 					0);
+ 
+ 	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
++	blk_init_request_list(&cfqg->rl);
+ 
+ 	/* Add group on cfqd list */
+ 	hlist_add_head(&cfqg->cfqd_node, &cfqd->cfqg_list);
+@@ -1224,6 +1228,7 @@ static void cfq_put_group_ref(struct cfq_group *cfqg)
+ 		return;
+ 	for_each_cfqg_st(cfqg, i, j, st)
+ 		BUG_ON(!RB_EMPTY_ROOT(&st->rb));
++	BUG_ON(cfqg->rl.count[0] | cfqg->rl.count[1]);
+ 	kfree(cfqg);
+ }
+ 
+@@ -3145,7 +3150,13 @@ cfq_get_queue(struct cfq_data *cfqd, struct bio *bio, int *is_oo_ctx,
  	const int ioprio_class = task_ioprio_class(ioc);
  	struct cfq_queue **async_cfqq = NULL;
  	struct cfq_queue *cfqq = NULL;
--	struct cfq_group *cfqg = cfq_get_cfqg(cfqd, 1);
-+	struct cfq_group *cfqg = cfq_get_cfqg_bio(cfqd, bio, 1);
+-	struct cfq_group *cfqg = cfq_get_cfqg_bio(cfqd, bio, is_oo_ctx, 1);
++	/* If cfqg has not been allocated during request list allocation,
++	   do not create it now. Otherwise, request list counter could get
++	   off-by one errors.
++	 */
++	struct cfq_group *cfqg = cfq_get_cfqg_bio(cfqd, bio, is_oo_ctx, 0);
++	if (!cfqg)
++		cfqg = &cfqd->root_group;
  
  	if (!is_sync) {
  		async_cfqq = cfq_async_queue_prio(cfqg, ioprio_class,
-@@ -3018,7 +3138,25 @@ cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct io_context *ioc,
- 		*async_cfqq = cfqq;
- 	}
- 
-+#ifdef CONFIG_CGROUP_BLKIOTRACK
-+	/*
-+	 * ioc reference. If async request queue/group is determined from the
-+	 * original task/cgroup and not from submitter task, io context can
-+	 * not cache the pointer to async queue and everytime a request comes,
-+	 * it will be determined by going through the async queue array.
-+	 *
-+	 */
-+	if (is_sync)
-+		cfq_get_queue_ref(cfqq);
-+#else
-+	/*
-+	 * async requests are being attributed to task submitting
-+	 * it, hence cic can cache async cfqq pointer. Take the
-+	 * queue reference even for async queue.
-+	 */
-+
- 	cfq_get_queue_ref(cfqq);
-+#endif
- 	return cfqq;
+@@ -3581,6 +3592,46 @@ static void cfq_insert_request(struct request_queue *q, struct request *rq)
+ 	cfq_rq_enqueued(cfqd, cfqq, rq);
  }
  
-@@ -3686,7 +3824,8 @@ split_cfqq(struct cfq_io_context *cic, struct cfq_queue *cfqq)
-  * Allocate cfq data structures associated with this request.
-  */
- static int
--cfq_set_request(struct request_queue *q, struct request *rq, gfp_t gfp_mask)
-+cfq_set_request(struct request_queue *q, struct request *rq, struct bio *bio,
-+				gfp_t gfp_mask)
- {
- 	struct cfq_data *cfqd = q->elevator->elevator_data;
- 	struct cfq_io_context *cic;
-@@ -3707,7 +3846,7 @@ cfq_set_request(struct request_queue *q, struct request *rq, gfp_t gfp_mask)
- new_queue:
- 	cfqq = cic_to_cfqq(cic, is_sync);
- 	if (!cfqq || cfqq == &cfqd->oom_cfqq) {
--		cfqq = cfq_get_queue(cfqd, is_sync, cic->ioc, gfp_mask);
-+		cfqq = cfq_get_queue(cfqd, bio, is_sync, cic->ioc, gfp_mask);
- 		cic_set_cfqq(cic, cfqq, is_sync);
- 	} else {
- 		/*
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
++/*
++ * This function is essentially overloaded to return a request list
++ * given either a bio or a request. Only one of these is expected to
++ * be provided on any given invocation. The other must be NULL.
++ */
++static struct request_list *cfq_request_list(struct request_queue *q,
++					     struct bio *bio,
++					     struct request *rq)
++{
++	if (rq) {
++		struct cfq_queue *cfqq = RQ_CFQQ(rq);
++		return &cfqq->cfqg->rl;
++	} else {
++		struct cfq_data *cfqd = q->elevator->elevator_data;
++		struct cfq_group *cfqg = cfq_get_cfqg_bio(cfqd, bio, NULL, 1);
++
++		if (!cfqg)
++			cfqg = &cfqd->root_group;
++		return &cfqg->rl;
++	}
++}
++
++#define RL_CFQG(rl) container_of((rl), struct cfq_group, rl)
++
++static void cfq_get_rl_group(struct request_list *rl)
++{
++	struct cfq_group *cfqg = RL_CFQG(rl);
++
++	cfqg->ref++;
++}
++
++static void cfq_put_rl_group(struct request_list *rl)
++{
++	struct cfq_group *cfqg = RL_CFQG(rl);
++
++	cfq_put_group_ref(cfqg);
++}
++#endif
++
+ /*
+  * Update hw_tag based on peak queue depth over 50 samples under
+  * sufficient load.
+@@ -3908,6 +3959,8 @@ new_queue:
+ 
+ 	cfq_get_group_ref(cfqq->cfqg);
+ 	rq->elevator_private[2] = cfqq->cfqg;
++
++	blk_alloced_request(q, rq_rl(q, rq), is_sync != 0);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
+ 	return 0;
+ 
+@@ -4110,6 +4163,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	 */
+ 	cfq_get_group_ref(cfqg);
+ 	rcu_read_lock();
++	blk_init_request_list(&cfqg->rl);
+ 	cfq_blkiocg_add_blkio_group(&blkio_root_cgroup, &cfqg->blkg,
+ 					(void *)cfqd, 0);
+ 	rcu_read_unlock();
+@@ -4294,6 +4348,11 @@ static struct elevator_type iosched_cfq = {
+ 		.elevator_completed_req_fn =	cfq_completed_request,
+ 		.elevator_former_req_fn =	elv_rb_former_request,
+ 		.elevator_latter_req_fn =	elv_rb_latter_request,
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
++		.elevator_req_list_fn =		cfq_request_list,
++		.elevator_get_rl_group_fn =	cfq_get_rl_group,
++		.elevator_put_rl_group_fn =	cfq_put_rl_group,
++#endif
+ 		.elevator_set_req_fn =		cfq_set_request,
+ 		.elevator_put_req_fn =		cfq_put_request,
+ 		.elevator_may_queue_fn =	cfq_may_queue,
 diff --git a/block/elevator.c b/block/elevator.c
-index c387d31..9edaeb5 100644
+index 9edaeb5..f427fad 100644
 --- a/block/elevator.c
 +++ b/block/elevator.c
-@@ -770,12 +770,13 @@ struct request *elv_former_request(struct request_queue *q, struct request *rq)
- 	return NULL;
+@@ -641,7 +641,7 @@ void elv_quiesce_start(struct request_queue *q)
+ 	 * make sure we don't have any requests in flight
+ 	 */
+ 	elv_drain_elevator(q);
+-	while (q->rq.elvpriv) {
++	while (q->rq_pool.elvpriv) {
+ 		__blk_run_queue(q, false);
+ 		spin_unlock_irq(q->queue_lock);
+ 		msleep(10);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 16a902f..a8802ce 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -32,7 +32,18 @@ struct request;
+ struct sg_io_hdr;
+ 
+ #define BLKDEV_MIN_RQ	4
++
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
++#define BLKDEV_MAX_RQ	128	/* Default maximum */
++#define BLKDEV_MAX_GROUP_RQ	128	/* Default per group maximum */
++#else
+ #define BLKDEV_MAX_RQ	128	/* Default maximum */
++/*
++ * This is eqivalent to case of only one group present (root group). Let
++ * it consume all the request descriptors available on the queue.
++ */
++#define BLKDEV_MAX_GROUP_RQ    BLKDEV_MAX_RQ
++#endif
+ 
+ struct request;
+ typedef void (rq_end_io_fn)(struct request *, int);
+@@ -44,9 +55,21 @@ struct request_list {
+ 	 */
+ 	int count[2];
+ 	int starved[2];
++	wait_queue_head_t wait[2];
++};
++
++/*
++ * This data structure keeps track of mempool of requests for the queue
++ * and some overall statistics.
++ */
++struct request_pool {
++	/*
++	 * Per queue request descriptor count. This is in addition to per
++	 * cgroup count.
++	 */
++	int count[2];
+ 	int elvpriv;
+ 	mempool_t *rq_pool;
+-	wait_queue_head_t wait[2];
+ };
+ 
+ /*
+@@ -274,6 +297,11 @@ struct request_queue
+ 	 */
+ 	struct request_list	rq;
+ 
++	/*
++	 * Contains request pool and other data like overall request count
++	 */
++	struct request_pool	rq_pool;
++
+ 	request_fn_proc		*request_fn;
+ 	make_request_fn		*make_request_fn;
+ 	prep_rq_fn		*prep_rq_fn;
+@@ -330,6 +358,7 @@ struct request_queue
+ 	 * queue settings
+ 	 */
+ 	unsigned long		nr_requests;	/* Max # of requests */
++	unsigned long		nr_group_requests;
+ 	unsigned int		nr_congestion_on;
+ 	unsigned int		nr_congestion_off;
+ 	unsigned int		nr_batching;
+@@ -606,6 +635,53 @@ static inline void blk_queue_bounce(struct request_queue *q, struct bio **bio)
  }
+ #endif /* CONFIG_MMU */
  
--int elv_set_request(struct request_queue *q, struct request *rq, gfp_t gfp_mask)
-+int elv_set_request(struct request_queue *q, struct request *rq,
-+			struct bio *bio, gfp_t gfp_mask)
- {
- 	struct elevator_queue *e = q->elevator;
++static inline struct request_list *blk_get_request_list(struct request_queue *q,
++							struct bio *bio)
++{
++	struct elevator_queue *e = q->elevator;
++	int priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
++
++	if (priv && e->ops->elevator_req_list_fn)
++		return e->ops->elevator_req_list_fn(q, bio, NULL);
++	return &q->rq;
++}
++
++static inline struct request_list *rq_rl(struct request_queue *q,
++					 struct request *rq)
++{
++	struct elevator_queue *e = q->elevator;
++	int priv = rq->cmd_flags & REQ_ELVPRIV;
++
++	if (priv && e->ops->elevator_req_list_fn)
++		return e->ops->elevator_req_list_fn(q, NULL, rq);
++	return &q->rq;
++}
++
++static inline void blk_get_rl_group(struct request_queue *q,
++				    struct request_list *rl)
++{
++	struct elevator_queue *e = q->elevator;
++
++	if (e->ops->elevator_get_rl_group_fn)
++		e->ops->elevator_get_rl_group_fn(rl);
++}
++
++static inline void blk_put_rl_group(struct request_queue *q,
++				    struct request_list *rl)
++{
++	struct elevator_queue *e = q->elevator;
++
++	if (e->ops->elevator_put_rl_group_fn)
++		e->ops->elevator_put_rl_group_fn(rl);
++}
++
++static inline int blk_supports_cgroups(struct request_queue *q)
++{
++	struct elevator_queue *e = q->elevator;
++
++	return (e->ops->elevator_req_list_fn) ? 1 : 0;
++}
++
+ struct rq_map_data {
+ 	struct page **pages;
+ 	int page_order;
+@@ -802,6 +878,7 @@ extern struct request_queue *blk_init_allocated_queue_node(struct request_queue
+ extern struct request_queue *blk_init_queue(request_fn_proc *, spinlock_t *);
+ extern struct request_queue *blk_init_allocated_queue(struct request_queue *,
+ 						      request_fn_proc *, spinlock_t *);
++extern void blk_init_request_list(struct request_list *rl);
+ extern void blk_cleanup_queue(struct request_queue *);
+ extern void blk_queue_make_request(struct request_queue *, make_request_fn *);
+ extern void blk_queue_bounce_limit(struct request_queue *, u64);
+@@ -853,6 +930,8 @@ int blk_get_queue(struct request_queue *);
+ struct request_queue *blk_alloc_queue(gfp_t);
+ struct request_queue *blk_alloc_queue_node(gfp_t, int);
+ extern void blk_put_queue(struct request_queue *);
++extern void blk_alloced_request(struct request_queue *q,
++				struct request_list *rl, int sync);
  
- 	if (e->ops->elevator_set_req_fn)
--		return e->ops->elevator_set_req_fn(q, rq, gfp_mask);
-+		return e->ops->elevator_set_req_fn(q, rq, bio, gfp_mask);
- 
- 	rq->elevator_private[0] = NULL;
- 	return 0;
+ struct blk_plug {
+ 	unsigned long magic;
 diff --git a/include/linux/elevator.h b/include/linux/elevator.h
-index d93efcc445..c3a884c 100644
+index c3a884c..767bade 100644
 --- a/include/linux/elevator.h
 +++ b/include/linux/elevator.h
-@@ -24,7 +24,8 @@ typedef struct request *(elevator_request_list_fn) (struct request_queue *, stru
+@@ -21,6 +21,10 @@ typedef int (elevator_dispatch_fn) (struct request_queue *, int);
+ 
+ typedef void (elevator_add_req_fn) (struct request_queue *, struct request *);
+ typedef struct request *(elevator_request_list_fn) (struct request_queue *, struct request *);
++typedef struct request_list *(elevator_req_list_fn)
++		(struct request_queue *, struct bio *, struct request *);
++typedef void (elevator_get_rl_group_fn)(struct request_list *);
++typedef void (elevator_put_rl_group_fn)(struct request_list *);
  typedef void (elevator_completed_req_fn) (struct request_queue *, struct request *);
  typedef int (elevator_may_queue_fn) (struct request_queue *, int);
  
--typedef int (elevator_set_req_fn) (struct request_queue *, struct request *, gfp_t);
-+typedef int (elevator_set_req_fn) (struct request_queue *, struct request *,
-+					struct bio *bio, gfp_t);
- typedef void (elevator_put_req_fn) (struct request *);
- typedef void (elevator_activate_req_fn) (struct request_queue *, struct request *);
- typedef void (elevator_deactivate_req_fn) (struct request_queue *, struct request *);
-@@ -117,7 +118,8 @@ extern void elv_unregister_queue(struct request_queue *q);
- extern int elv_may_queue(struct request_queue *, int);
- extern void elv_abort_queue(struct request_queue *);
- extern void elv_completed_request(struct request_queue *, struct request *);
--extern int elv_set_request(struct request_queue *, struct request *, gfp_t);
-+extern int elv_set_request(struct request_queue *, struct request *,
-+					struct bio *bio, gfp_t);
- extern void elv_put_request(struct request_queue *, struct request *);
- extern void elv_drain_elevator(struct request_queue *);
+@@ -50,10 +54,14 @@ struct elevator_ops
  
+ 	elevator_request_list_fn *elevator_former_req_fn;
+ 	elevator_request_list_fn *elevator_latter_req_fn;
++	elevator_req_list_fn *elevator_req_list_fn;
+ 
+ 	elevator_set_req_fn *elevator_set_req_fn;
+ 	elevator_put_req_fn *elevator_put_req_fn;
+ 
++	elevator_get_rl_group_fn *elevator_get_rl_group_fn;
++	elevator_put_rl_group_fn *elevator_put_rl_group_fn;
++
+ 	elevator_may_queue_fn *elevator_may_queue_fn;
+ 
+ 	elevator_init_fn *elevator_init_fn;
 -- 
 1.7.3.1
 
