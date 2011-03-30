@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab1C3Pcy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 11:32:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754572Ab1C3Pcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 11:32:53 -0400
-Date: Wed, 30 Mar 2011 17:32:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
-	value
-Message-ID: <20110330153228.GA1787@redhat.com>
-References: <20110326161346.GA18272@redhat.com> <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com> <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop> <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins> <1301327368.4859.28.camel@twins> <20110328165648.GA9304@redhat.com> <20110330130951.GA2124@jolsa.brq.redhat.com>
+	id S932607Ab1C3Pdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 11:33:44 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:62236 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932136Ab1C3Pdm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 11:33:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=oiVEjJq5MrWYkQfiAdmfLzC8bzaJFDnYlKzi/p8/CxTRcSsqf3WhCnDgGb/5ts+OwE
+         oVwkseIYH4hE4NUMAOmu8MdbAbKMffjv/EkSfTj0PiLHV/56bDeFA1M6N42Aw4devVFA
+         hYS/b2WiZvwbb22GeNYloKjt+UAGrQ+3vwqrI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110330130951.GA2124@jolsa.brq.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D934648.7040500@kernel.org>
+References: <c79ac2a9a1caad9865ffa3c4a05438227c59f63e.1301408701.git.luto@mit.edu>
+ <4D934648.7040500@kernel.org>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 30 Mar 2011 11:33:21 -0400
+X-Google-Sender-Auth: qI9dQe4mZLv-NNU3JlMpygiq2zg
+Message-ID: <AANLkTi=gbVQjHx34BaGEAt7bkf8uQbPzU+UbUKmDwFH5@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: Clean up vdso/kernel shared variables
+To: "H. Peter Anvin" <hpa@kernel.org>
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30, Jiri Olsa wrote:
+On Wed, Mar 30, 2011 at 11:03 AM, H. Peter Anvin <hpa@kernel.org> wrote:
+> On 03/29/2011 07:29 AM, Andy Lutomirski wrote:
+>> Variables that are shared between the vdso and the kernel are
+>> currently a bit of a mess.  They are each defined with their own
+>> magic, they are accessed differently in the kernel, the vsyscall page,
+>> and the vdso, and one of them (vsyscall_clock) doesn't even really
+>> exist.
+>>
+>> This changes them all to use a common mechanism.  All of them are
+>> delcared in vvar.h with a fixed address (validated by the linker
+>> script).  In the kernel (as before), they look like ordinary
+>> read-write variables.  In the vsyscall page and the vdso, they are
+>> accessed through a new macro VVAR, which gives read-only access.
+>>
+>> The vdso is now loaded verbatim into memory without any fixups.  As a
+>> side bonus, access from the vdso is faster because a level of
+>> indirection is removed.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@mit.edu>
 >
-> On Mon, Mar 28, 2011 at 06:56:48PM +0200, Oleg Nesterov wrote:
-> >
-> > As for HAVE_JUMP_LABEL, I still can't understand why this test-case
-> > triggers the problem. But jump_label_inc/dec logic looks obviously
-> > racy.
->
-> I think the reason is, that there are actually 2 places that
-> needs to be updated by jump label code
->  - perf_event_task_sched_in
->  - perf_event_task_sched_out
->
-> As for my image it first patches perf_event_task_sched_out and then
-> perf_event_task_sched_in
+> How does this deal with variables which really should be shared with
+> multiple vdsos (in particular the 32-bit vdso and the 64-bit vdso)?
+> Part of me is wondering if it might not be simpler to put them all into
+> a structure?
 
-Indeed! Thanks a lot Jiri, now I understand.
+Good question.  As far as I can tell, the 32-bit VDSO doesn't access
+the vsyscall page at all.  I think it just has the magic needed to
+invoke syscalls.  I don't know whether there even is a 32-bit
+vgettimeofday, etc.
 
-jump_label_update() doesn't change all entries in a batch. So, as you
-explained, it is quite possible that jump_label_update() disables
-perf_event_task_sched_out() first. When the caller calls
-arch_jump_label_transform() again to disable the next entry, it has
-task_ctx != NULL which can't be cleared.
+If we wanted to *add* that (for a huge performance increase on systems
+with stable TSC), then there would need to be a 32-bit visible address
+for the vsyscall page, and I don't know enough about the architecture
+to do that without a bit of research.  Nor do I really feel inclined
+to start messing with magic functions called compat_vread :)
 
-> IIUIC that calling synchronize_sched in perf_sched_events_dec
-> ensures that final schedule back to the release code will not
-> call perf_event_task_sched_in, so task_ctx stays sane (NULL).
+I think a structure would be a little simpler, but similar magic would
+be needed to find the think as we have now.  The down side is that
+most of the kernel expects there to be a symbol called "jiffies".  So
+we'd need more linker magic to make jiffies exist and point to the
+right place in the structure.
 
-Yes. IOW, this guarantees that perf_event_task_sched_in() is always
-paired with perf_event_task_sched_out().
-
-> The cool think is, that it also fixies the original issue,
-> which was: wrong counters for perf builtin test #3..
-> which I started with from the very beggining :)
-
-Great ;)
-
-> please let me know what you think, thanks
-
-Yes, this is what I meant.
-
-I'd like to look at this patch again later, perhaps we can move some
-code from #ifdef/#else... But I have the headache today, just can't
-understand all these ifdef's.
-
-> +#ifdef HAVE_JUMP_LABEL
-> +static inline
-> +void perf_sched_events_inc(void)
-> +{
-> +	jump_label_inc(&perf_sched_events_out);
-> +	smp_mb__after_atomic_inc();
-> +	jump_label_inc(&perf_sched_events_in);
-> +}
-> +
-> +static inline
-> +void perf_sched_events_dec(void)
-> +{
-> +	if (atomic_dec_and_test(&perf_sched_events_in)) {
-> +		jump_label_disable(&perf_sched_events_in);
-> +		synchronize_sched();
-> +	}
-> +
-> +	jump_label_dec(&perf_sched_events_out);
-
-probably smp_mb__after_atomic_inc() needs a comment...
-
-It is needed to avoid the race between perf_sched_events_dec() and
-perf_sched_events_inc().
-
-Suppose that we have a single event, both counters == 1. We create
-another event and call perf_sched_events_inc(). Without the barrier
-we could increment the counters in reverse order,
-
-	jump_label_inc(&perf_sched_events_in);
-	/* ---- WINDOW ---- */
-	jump_label_inc(&perf_sched_events_out);
-
-Now, if perf_sched_events_dec() is called in between, it can disable
-_out but not _in. This means we can leak ->task_ctx again.
-
-
----------------------------------------------------------------------
-
-HOWEVER. While I think synchronize_sched() should work in practice,
-in theory (according to the documentation) it can't always help in
-this case. I'll write another email tomorrow, can't think properly
-today. Anyway this looks solveable, but perhaps we need stop_cpus()
-instead.
-
-Oleg.
-
+--Andy
