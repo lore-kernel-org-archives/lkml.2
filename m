@@ -1,68 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932826Ab1C3TQE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 15:16:04 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:38628 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932769Ab1C3TQC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 15:16:02 -0400
-Date: Wed, 30 Mar 2011 21:14:26 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
+	id S1756079Ab1C3TUD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 15:20:03 -0400
+Received: from sous-sol.org ([216.99.217.87]:48381 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754847Ab1C3TUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 15:20:01 -0400
+Date: Wed, 30 Mar 2011 12:19:02 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Mike Travis <travis@sgi.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        iommu@lists.linux-foundation.org, Mike Habeck <habeck@sgi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] xen: events: fix error checks in bind_*_to_irqhandler()
-Message-ID: <20110330211426.13f182d6@absol.kitzblitz>
-Organization: -
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
- AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
- T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
- ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
- BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 2/4] Intel iommu: Speed up processing of the
+ identity_mapping function
+Message-ID: <20110330191902.GT18712@sequoia.sous-sol.org>
+References: <20110329233602.272459647@gulag1.americas.sgi.com>
+ <20110329233602.585251738@gulag1.americas.sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110329233602.585251738@gulag1.americas.sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checking 'irq < 0' doesn't work when 'irq' is unsigned.
+* Mike Travis (travis@sgi.com) wrote:
+> @@ -2138,6 +2134,7 @@ static int domain_add_dev_info(struct dm
+>  	list_add(&info->global, &device_domain_list);
+>  	pdev->dev.archdata.iommu = info;
 
-The assigned bind_evtchn_to_irq() and bind_virq_to_irq()
-return int, so using int appears appropriate.
+The si_domain is cached right here...can you not use this instead of
+adding an iommu impl. specific bit to pci_dev?
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/xen/events.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 036343b..589f0a5 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -912,8 +912,7 @@ int bind_evtchn_to_irqhandler(unsigned int evtchn,
- 			      unsigned long irqflags,
- 			      const char *devname, void *dev_id)
- {
--	unsigned int irq;
--	int retval;
-+	int irq, retval;
- 
- 	irq = bind_evtchn_to_irq(evtchn);
- 	if (irq < 0)
-@@ -955,8 +954,7 @@ int bind_virq_to_irqhandler(unsigned int virq, unsigned int cpu,
- 			    irq_handler_t handler,
- 			    unsigned long irqflags, const char *devname, void *dev_id)
- {
--	unsigned int irq;
--	int retval;
-+	int irq, retval;
- 
- 	irq = bind_virq_to_irq(virq, cpu);
- 	if (irq < 0)
--- 
-1.7.3.4
+>  	spin_unlock_irqrestore(&device_domain_lock, flags);
+> +	pdev->is_identity_mapped = (domain == si_domain);
