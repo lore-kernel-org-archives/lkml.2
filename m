@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965435Ab1C3V6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:58:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4889 "EHLO mga01.intel.com"
+	id S965446Ab1C3V7V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:59:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65216 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964800Ab1C3VGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:06:46 -0400
+	id S933228Ab1C3VGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:06:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="673447326"
+   d="scan'208";a="727132954"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: benh@kernel.crashing.org, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [66/275] powerpc: Fix some 6xx/7xxx CPU setup functions
-Message-Id: <20110330210503.2C1E73E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:05:03 -0700 (PDT)
+To: Tim.Deegan@citrix.com, ak@linux.intel.com, jbeulich@novell.com,
+        jslaby@suse.cz, jeremy@goop.org, torvalds@linux-foundation.org,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [63/275] fix jiffy calculations in calibrate_delay_direct to handle overflow
+Message-Id: <20110330210500.065CC3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:04:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,140 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Tim Deegan <Tim.Deegan@citrix.com>
 
-commit 1f1936ff3febf38d582177ea319eaa278f32c91f upstream.
+commit 70a062286b9dfcbd24d2e11601aecfead5cf709a upstream.
 
-Some of those functions try to adjust the CPU features, for example
-to remove NAP support on some revisions. However, they seem to use
-r5 as an index into the CPU table entry, which might have been right
-a long time ago but no longer is. r4 is the right register to use.
+Fixes a hang when booting as dom0 under Xen, when jiffies can be
+quite large by the time the kernel init gets this far.
 
-This probably caused some off behaviours on some PowerMac variants
-using 750cx or 7455 processor revisions.
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Tim Deegan <Tim.Deegan@citrix.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+[jbeulich@novell.com: !time_after() -> time_before_eq() as suggested by Jiri Slaby]
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/cpu_setup_6xx.S |   40 ++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 20 deletions(-)
+ init/calibrate.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-2.6.35.y/arch/powerpc/kernel/cpu_setup_6xx.S
+Index: linux-2.6.35.y/init/calibrate.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/powerpc/kernel/cpu_setup_6xx.S	2011-03-29 22:51:43.567608382 -0700
-+++ linux-2.6.35.y/arch/powerpc/kernel/cpu_setup_6xx.S	2011-03-29 23:02:59.554311574 -0700
-@@ -18,7 +18,7 @@
- #include <asm/mmu.h>
+--- linux-2.6.35.y.orig/init/calibrate.c	2011-03-29 22:51:44.697579468 -0700
++++ linux-2.6.35.y/init/calibrate.c	2011-03-29 23:02:59.497313032 -0700
+@@ -66,7 +66,7 @@
+ 		pre_start = 0;
+ 		read_current_timer(&start);
+ 		start_jiffies = jiffies;
+-		while (jiffies <= (start_jiffies + 1)) {
++		while (time_before_eq(jiffies, start_jiffies + 1)) {
+ 			pre_start = start;
+ 			read_current_timer(&start);
+ 		}
+@@ -74,8 +74,8 @@
  
- _GLOBAL(__setup_cpu_603)
--	mflr	r4
-+	mflr	r5
- BEGIN_MMU_FTR_SECTION
- 	li	r10,0
- 	mtspr	SPRN_SPRG_603_LRU,r10		/* init SW LRU tracking */
-@@ -27,60 +27,60 @@
- 	bl	__init_fpu_registers
- END_FTR_SECTION_IFCLR(CPU_FTR_FPU_UNAVAILABLE)
- 	bl	setup_common_caches
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_604)
--	mflr	r4
-+	mflr	r5
- 	bl	setup_common_caches
- 	bl	setup_604_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750cx)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	bl	setup_750cx
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750fx)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	bl	setup_750fx
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_7400)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_7400_workarounds
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_7410)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_7410_workarounds
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	li	r3,0
- 	mtspr	SPRN_L2CR2,r3
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_745x)
--	mflr	r4
-+	mflr	r5
- 	bl	setup_common_caches
- 	bl	setup_745x_specifics
--	mtlr	r4
-+	mtlr	r5
- 	blr
- 
- /* Enable caches for 603's, 604, 750 & 7400 */
-@@ -194,10 +194,10 @@
- 	cror	4*cr0+eq,4*cr0+eq,4*cr1+eq
- 	cror	4*cr0+eq,4*cr0+eq,4*cr2+eq
- 	bnelr
--	lwz	r6,CPU_SPEC_FEATURES(r5)
-+	lwz	r6,CPU_SPEC_FEATURES(r4)
- 	li	r7,CPU_FTR_CAN_NAP
- 	andc	r6,r6,r7
--	stw	r6,CPU_SPEC_FEATURES(r5)
-+	stw	r6,CPU_SPEC_FEATURES(r4)
- 	blr
- 
- /* 750fx specific
-@@ -225,12 +225,12 @@
- 	andis.	r11,r11,L3CR_L3E@h
- 	beq	1f
- END_FTR_SECTION_IFSET(CPU_FTR_L3CR)
--	lwz	r6,CPU_SPEC_FEATURES(r5)
-+	lwz	r6,CPU_SPEC_FEATURES(r4)
- 	andi.	r0,r6,CPU_FTR_L3_DISABLE_NAP
- 	beq	1f
- 	li	r7,CPU_FTR_CAN_NAP
- 	andc	r6,r6,r7
--	stw	r6,CPU_SPEC_FEATURES(r5)
-+	stw	r6,CPU_SPEC_FEATURES(r4)
- 1:
- 	mfspr	r11,SPRN_HID0
- 
+ 		pre_end = 0;
+ 		end = post_start;
+-		while (jiffies <=
+-		       (start_jiffies + 1 + DELAY_CALIBRATION_TICKS)) {
++		while (time_before_eq(jiffies, start_jiffies + 1 +
++					       DELAY_CALIBRATION_TICKS)) {
+ 			pre_end = end;
+ 			read_current_timer(&end);
+ 		}
