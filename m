@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965051Ab1C3Vbb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:31:31 -0400
+	id S965052Ab1C3Vbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:31:46 -0400
 Received: from mga09.intel.com ([134.134.136.24]:48428 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965012Ab1C3VIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:08:49 -0400
+	id S965006Ab1C3VIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:08:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="727133583"
+   d="scan'208";a="727133541"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: lizf@cn.fujitsu.com, ak@linux.intel.com, menage@google.com,
-        rientjes@google.com, miaox@cn.fujitsu.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [173/275] cpuset: add a missing unlock in cpuset_write_resmask()
-Message-Id: <20110330210655.D946A3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:55 -0700 (PDT)
+To: dzickus@redhat.com, mjg@redhat.com, ak@linux.intel.com, mingo@elte.hu,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [162/275] x86: Use u32 instead of long to set reset vector back to 0
+Message-Id: <20110330210644.4A10B3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,48 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Li Zefan <lizf@cn.fujitsu.com>
+From: Don Zickus <dzickus@redhat.com>
 
-commit b75f38d659e6fc747eda64cb72f3920e29dd44a4 upstream.
+commit 299c56966a72b9109d47c71a6db52097098703dd upstream.
 
-Don't forget to release cgroup_mutex if alloc_trial_cpuset() fails.
+A customer of ours, complained that when setting the reset
+vector back to 0, it trashed other data and hung their box.
+They noticed when only 4 bytes were set to 0 instead of 8,
+everything worked correctly.
 
-[akpm@linux-foundation.org: avoid multiple return points]
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Mathew pointed out:
+
+ |
+ | We're supposed to be resetting trampoline_phys_low and
+ | trampoline_phys_high here, which are two 16-bit values.
+ | Writing 64 bits is definitely going to overwrite space
+ | that we're not supposed to be touching.
+ |
+
+So limit the area modified to u32.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Acked-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Paul Menage <menage@google.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <1297139100-424-1-git-send-email-dzickus@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/cpuset.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/smpboot_hooks.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/kernel/cpuset.c
+Index: linux-2.6.35.y/arch/x86/include/asm/smpboot_hooks.h
 ===================================================================
---- linux-2.6.35.y.orig/kernel/cpuset.c	2011-03-29 22:50:54.764857122 -0700
-+++ linux-2.6.35.y/kernel/cpuset.c	2011-03-29 23:03:01.845252954 -0700
-@@ -1576,8 +1576,10 @@
- 		return -ENODEV;
+--- linux-2.6.35.y.orig/arch/x86/include/asm/smpboot_hooks.h	2011-03-29 22:51:00.390713170 -0700
++++ linux-2.6.35.y/arch/x86/include/asm/smpboot_hooks.h	2011-03-29 23:03:01.622258662 -0700
+@@ -34,7 +34,7 @@
+ 	 */
+ 	CMOS_WRITE(0, 0xf);
  
- 	trialcs = alloc_trial_cpuset(cs);
--	if (!trialcs)
--		return -ENOMEM;
-+	if (!trialcs) {
-+		retval = -ENOMEM;
-+		goto out;
-+	}
- 
- 	switch (cft->private) {
- 	case FILE_CPULIST:
-@@ -1592,6 +1594,7 @@
- 	}
- 
- 	free_trial_cpuset(trialcs);
-+out:
- 	cgroup_unlock();
- 	return retval;
+-	*((volatile long *)phys_to_virt(apic->trampoline_phys_low)) = 0;
++	*((volatile u32 *)phys_to_virt(apic->trampoline_phys_low)) = 0;
  }
+ 
+ static inline void __init smpboot_setup_io_apic(void)
