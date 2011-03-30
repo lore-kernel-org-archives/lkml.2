@@ -1,72 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab1C3B5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 21:57:48 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55334 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755334Ab1C3B5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 21:57:47 -0400
-Subject: Re: linux-next: build failure after merge of the Linus' tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-next@vger.kernel.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110330110045.48fb0ccf.sfr@canb.auug.org.au>
-References: <20110330110045.48fb0ccf.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Mar 2011 12:57:01 +1100
-Message-ID: <1301450221.2402.717.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755503Ab1C3B6b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 21:58:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:62891 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755348Ab1C3B6a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 21:58:30 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=wom5GMh1gUkA:10 a=QQjA4Iv6OQkA:10 a=kj9zAlcOel0A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=20KFwNOVAAAA:8 a=fxJcL_dCAAAA:8 a=VSa_WXT-AAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=lWEsJVV14k4uZJ-3p5YA:9 a=xLXhESsooQEPQ_CEu28A:7 a=g8TsgemOOTqacRF2ZVvVBipfrPAA:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=jEp0ucaQiEUA:10 a=2eKvNQJKnqYA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.154.172
+Date: Tue, 29 Mar 2011 20:58:30 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, hughd@google.com,
+        akpm@linux-foundation.org, davej@redhat.com, hch@infradead.org,
+        jmorris@namei.org
+Subject: Re: [PATCH] tmpfs: implement xattr support for the entire security
+ namespace
+Message-ID: <20110330015830.GA2656@hallyn.com>
+References: <20110329185648.3549.51631.stgit@paris.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110329185648.3549.51631.stgit@paris.rdu.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-30 at 11:00 +1100, Stephen Rothwell wrote:
-> Hi all,
+Quoting Eric Paris (eparis@redhat.com):
+> This patch implements security namespace xattrs for tmpfs filesystems.  The
+> feodra project, while trying to replace suid apps with file capabilities,
+> realized that tmpfs, which is used on the build systems, does not support file
+> capabilities and thus cannot be used to build packages which use file
+> capabilities.
 > 
-> After merging the Linus' tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+> The xattr interface is a bit, odd.  If a filesystem does not implement any
+> {get,set,list}xattr functions the VFS will call into some random LSM hooks and
+> the running LSM can then implement some method for handling xattrs.  SELinux
+> for example provides a method to support security.selinux but no other
+> security.* xattrs.
 > 
-> arch/powerpc/platforms/cell/interrupt.c: In function 'iic_host_map':
-> arch/powerpc/platforms/cell/interrupt.c:247: error: 'handle_iic_irq' undeclared (first use in this function)
+> As it stands today when one enables CONFIG_TMPFS_POSIX_ACL tmpfs will have
+> xattr handler routines specifically to handle acls.  Because of this tmpfs
+> would loose the VFS/LSM helpers to support the running LSM.  To make up for
+> that tmpfs had stub functions that did nothing but call into the LSM hooks
+> which implement the helpers.
+> 
+> This new patch does not use the LSM fallback functions and instead just
+> implements a native get/set/list xattr feature for the full security.*
+> namespace like a normal filesystem.  This means that tmpfs can now support
+> both security.selinux and security.capability, which was not previously
+> possible.
+> 
+> The basic implementation is that I attach a:
+> 
+> struct shmem_xattr {
+> 	struct list_head list; /* anchored by shmem_inode_info->xattr_list */
+> 	char *name;
+> 	size_t size;
+> 	char value[0];
+> };
+> 
+> Into the struct shmem_inode_info for each xattr that is set.  This
+> implementation could easily be turned into 2d array with one dimention being
+> the xattr prefix and one the xattr suffix.  That could result in an easy
+> implementation for user.* if we ever want it.  As it stands today though I
+> assume the prefix is always security.
+> 
+> Signed-off-by: Eric Paris <eparis@redhat.com>
 
-There's a fix in powerpc "merge" for which I'm about to send Linus a
-pull request :-)
+Thanks, Eric.  I don't see any problems with this.  I do wonder whether
+it could save quite a bit of space to use hlist_head instead of list_head
+if selinux is not enabled?
 
-Cheers,
-Ben.
+Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
 
-> Caused by commit f9ba4475f95b ("powerpc: cell: Use the core flow handler").
-> 
-> I applied the following patch:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 30 Mar 2011 10:48:28 +1100
-> Subject: [PATCH] powerpc/cell: fixup for removal of handle_iic_irq
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 > ---
->  arch/powerpc/platforms/cell/interrupt.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/powerpc/platforms/cell/interrupt.c b/arch/powerpc/platforms/cell/interrupt.c
-> index a19bec0..44cfd1b 100644
-> --- a/arch/powerpc/platforms/cell/interrupt.c
-> +++ b/arch/powerpc/platforms/cell/interrupt.c
-> @@ -244,7 +244,7 @@ static int iic_host_map(struct irq_host *h, unsigned int virq,
->  		break;
->  	case IIC_IRQ_TYPE_IOEXC:
->  		irq_set_chip_and_handler(virq, &iic_ioexc_chip,
-> -					 handle_iic_irq);
-> +					 handle_edge_eoi_irq);
->  		break;
->  	default:
->  		irq_set_chip_and_handler(virq, &iic_chip, handle_edge_eoi_irq);
-> -- 
-> 1.7.4.1
+>  fs/Kconfig               |    4 ++
+>  include/linux/shmem_fs.h |    1 
+>  mm/shmem.c               |  116 ++++++++++++++++++++++++++++++++++++++++++----
+>  3 files changed, 111 insertions(+), 10 deletions(-)
 > 
-
-
+> diff --git a/fs/Kconfig b/fs/Kconfig
+> index f3aa9b0..5e2bfc4 100644
+> --- a/fs/Kconfig
+> +++ b/fs/Kconfig
+> @@ -132,6 +132,10 @@ config TMPFS_POSIX_ACL
+>  	  To learn more about Access Control Lists, visit the POSIX ACLs for
+>  	  Linux website <http://acl.bestbits.at/>.
+>  
+> +	  Enablings this option will also enable support for the entire
+> +	  security.* xattr namespace.  This is to make up for support lost
+> +	  from the VFS/LSM when a filesystem has any xattr handler.
+> +
+>  	  If you don't know what Access Control Lists are, say N.
+>  
+>  config HUGETLBFS
+> diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
+> index 399be5a..20912d1 100644
+> --- a/include/linux/shmem_fs.h
+> +++ b/include/linux/shmem_fs.h
+> @@ -19,6 +19,7 @@ struct shmem_inode_info {
+>  	struct page		*i_indirect;	/* top indirect blocks page */
+>  	swp_entry_t		i_direct[SHMEM_NR_DIRECT]; /* first blocks */
+>  	struct list_head	swaplist;	/* chain of maybes on swap */
+> +	struct list_head	xattr_list;	/* list of shmem_xattr */
+>  	struct inode		vfs_inode;
+>  };
+>  
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 58da7c1..c77634f 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -99,6 +99,13 @@ static struct vfsmount *shm_mnt;
+>  /* Pretend that each entry is of this size in directory's i_size */
+>  #define BOGO_DIRENT_SIZE 20
+>  
+> +struct shmem_xattr {
+> +	struct list_head list;	/* anchored by shmem_inode_info->xattr_list */
+> +	char *name;		/* xattr suffix */
+> +	size_t size;
+> +	char value[0];
+> +};
+> +
+>  /* Flag allocation requirements to shmem_getpage and shmem_swp_alloc */
+>  enum sgp_type {
+>  	SGP_READ,	/* don't exceed i_size, don't allocate page */
+> @@ -821,6 +828,7 @@ static int shmem_notify_change(struct dentry *dentry, struct iattr *attr)
+>  static void shmem_evict_inode(struct inode *inode)
+>  {
+>  	struct shmem_inode_info *info = SHMEM_I(inode);
+> +	struct shmem_xattr *xattr, *nxattr;
+>  
+>  	if (inode->i_mapping->a_ops == &shmem_aops) {
+>  		truncate_inode_pages(inode->i_mapping, 0);
+> @@ -833,6 +841,11 @@ static void shmem_evict_inode(struct inode *inode)
+>  			mutex_unlock(&shmem_swaplist_mutex);
+>  		}
+>  	}
+> +
+> +	list_for_each_entry_safe(xattr, nxattr, &info->xattr_list, list) {
+> +		kfree(xattr->name);
+> +		kfree(xattr);
+> +	}
+>  	BUG_ON(inode->i_blocks);
+>  	shmem_free_inode(inode->i_sb);
+>  	end_writeback(inode);
+> @@ -1595,6 +1608,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
+>  		spin_lock_init(&info->lock);
+>  		info->flags = flags & VM_NORESERVE;
+>  		INIT_LIST_HEAD(&info->swaplist);
+> +		INIT_LIST_HEAD(&info->xattr_list);
+>  		cache_no_acl(inode);
+>  
+>  		switch (mode & S_IFMT) {
+> @@ -2059,8 +2073,8 @@ static const struct inode_operations shmem_symlink_inode_operations = {
+>  
+>  #ifdef CONFIG_TMPFS_POSIX_ACL
+>  /*
+> - * Superblocks without xattr inode operations will get security.* xattr
+> - * support from the VFS "for free". As soon as we have any other xattrs
+> + * Superblocks without xattr inode operations may get some security.* xattr
+> + * support from the LSM "for free". As soon as we have any other xattrs
+>   * like ACLs, we also need to implement the security.* handlers at
+>   * filesystem level, though.
+>   */
+> @@ -2069,24 +2083,106 @@ static size_t shmem_xattr_security_list(struct dentry *dentry, char *list,
+>  					size_t list_len, const char *name,
+>  					size_t name_len, int handler_flags)
+>  {
+> -	return security_inode_listsecurity(dentry->d_inode, list, list_len);
+> +	struct shmem_xattr *xattr;
+> +	struct shmem_inode_info *info;
+> +	size_t used = 0;
+> +
+> +	info = SHMEM_I(dentry->d_inode);
+> +
+> +	spin_lock(&dentry->d_inode->i_lock);
+> +	list_for_each_entry(xattr, &info->xattr_list, list) {
+> +		used += XATTR_SECURITY_PREFIX_LEN;
+> +		used += strlen(xattr->name) + 1;
+> +
+> +		if (list) {
+> +			if (list_len < used) {
+> +				used = -ERANGE;
+> +				break;
+> +			}
+> +			strncpy(list, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN);
+> +			list += XATTR_SECURITY_PREFIX_LEN;
+> +			strncpy(list, xattr->name, strlen(xattr->name) + 1);
+> +			list += strlen(xattr->name) + 1;
+> +		}
+> +	}
+> +	spin_unlock(&dentry->d_inode->i_lock);
+> +
+> +	return used;
+>  }
+>  
+>  static int shmem_xattr_security_get(struct dentry *dentry, const char *name,
+>  		void *buffer, size_t size, int handler_flags)
+>  {
+> -	if (strcmp(name, "") == 0)
+> -		return -EINVAL;
+> -	return xattr_getsecurity(dentry->d_inode, name, buffer, size);
+> +	struct shmem_inode_info *info;
+> +	struct shmem_xattr *xattr;
+> +	int ret = -ENODATA;
+> +
+> +	info = SHMEM_I(dentry->d_inode);
+> +
+> +	spin_lock(&dentry->d_inode->i_lock);
+> +	list_for_each_entry(xattr, &info->xattr_list, list) {
+> +		if (strcmp(name, xattr->name))
+> +			continue;
+> +
+> +		ret = xattr->size;
+> +		if (buffer) {
+> +			if (size < xattr->size)
+> +				ret = -ERANGE;
+> +			else
+> +				memcpy(buffer, xattr->value, xattr->size);
+> +		}
+> +		break;
+> +	}
+> +	spin_unlock(&dentry->d_inode->i_lock);
+> +	return ret;
+>  }
+>  
+> +/*
+> + * We only handle security.* but we could potentially store the prefix
+> + * as well as the suffix in struct shmem_xattr and support *.*
+> + */
+>  static int shmem_xattr_security_set(struct dentry *dentry, const char *name,
+>  		const void *value, size_t size, int flags, int handler_flags)
+>  {
+> -	if (strcmp(name, "") == 0)
+> -		return -EINVAL;
+> -	return security_inode_setsecurity(dentry->d_inode, name, value,
+> -					  size, flags);
+> +	struct inode *inode = dentry->d_inode;
+> +	struct shmem_inode_info *info = SHMEM_I(inode);
+> +	struct shmem_xattr *xattr;
+> +	struct shmem_xattr *new_xattr;
+> +	size_t len;
+> +
+> +	/* wrap around? */
+> +	len = sizeof(*new_xattr) + size;
+> +	if (len <= sizeof(*new_xattr))
+> +		return -ENOMEM;
+> +
+> +	new_xattr = kmalloc(len, GFP_NOFS);
+> +	if (!new_xattr)
+> +		return -ENOMEM;
+> +
+> +	new_xattr->name = kstrdup(name, GFP_NOFS);
+> +	if (!new_xattr->name) {
+> +		kfree(new_xattr);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	new_xattr->size = size;
+> +	memcpy(new_xattr->value, value, size);
+> +
+> +	spin_lock(&inode->i_lock);
+> +	list_for_each_entry(xattr, &info->xattr_list, list) {
+> +		if (!strcmp(name, xattr->name)) {
+> +			list_replace(&xattr->list, &new_xattr->list);
+> +			goto out;
+> +		}
+> +	}
+> +	list_add(&new_xattr->list, &info->xattr_list);
+> +	xattr = NULL;
+> +out:
+> +	spin_unlock(&inode->i_lock);
+> +	if (xattr)
+> +		kfree(xattr->name);
+> +	kfree(xattr);
+> +	return 0;
+>  }
+>  
+>  static const struct xattr_handler shmem_xattr_security_handler = {
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
