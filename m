@@ -1,132 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932940Ab1C3R70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 13:59:26 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:23504 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760Ab1C3R7Z convert rfc822-to-8bit (ORCPT
+	id S932938Ab1C3SCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 14:02:53 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64022 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863Ab1C3SCv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 13:59:25 -0400
+	Wed, 30 Mar 2011 14:02:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NDhcI1CmPKl64Q2AnMqKowE/NKaAf9pAeEvxpIkZH98TEQQ1mogdKzuKtDakEeOnPe
-         XnTxHwZFltW4OaUmR3yQ==
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=F6yfJHg0iBhIdgKxWVXsTids2FE1Q6Md2rQJP7+euVn7/MS09P5r1OPTV2bvpBSBbu
+         OQ48zlZA5IL3NQw6Q0aoABgrzZ8e+H0qEFkCgxHBlNnLRy3mZ+qDpFNvw5RPl+BaOWlu
+         IaDJHi12rNExN4R+8tc/SiMRAhvlXTXVMG6NY=
 MIME-Version: 1.0
-In-Reply-To: <20110330081853.GC15394@tiehlicka.suse.cz>
-References: <20110328093957.089007035@suse.cz>
-	<20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
-	<4D920066.7000609@gmail.com>
-	<20110330081853.GC15394@tiehlicka.suse.cz>
-Date: Wed, 30 Mar 2011 10:59:21 -0700
-Message-ID: <BANLkTinTKyqv11JPwQ1GszYv5e3xOM=b8A@mail.gmail.com>
-Subject: Re: [RFC 0/3] Implementation of cgroup isolation
-From: Ying Han <yinghan@google.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1301050810-11329-1-git-send-email-akinobu.mita@gmail.com>
+References: <1301050810-11329-1-git-send-email-akinobu.mita@gmail.com>
+Date: Wed, 30 Mar 2011 20:02:50 +0200
+X-Google-Sender-Auth: FrlbRYZtbRqFUzLS7cEO7BiJHIs
+Message-ID: <AANLkTikKA2MY6nf+LLyJbNQffX=qYY3eZdpNmwVQc21u@mail.gmail.com>
+Subject: Re: [PATCH] m68k: fix find_next bitops
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>,
+        Andreas Schwab <schwab@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        Michael Schmitz <schmitzmic@googlemail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 1:18 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Tue 29-03-11 21:23:10, Balbir Singh wrote:
->> On 03/28/11 16:33, KAMEZAWA Hiroyuki wrote:
->> > On Mon, 28 Mar 2011 11:39:57 +0200
->> > Michal Hocko <mhocko@suse.cz> wrote:
-> [...]
->> > Isn't it the same result with the case where no cgroup is used ?
->> > What is the problem ?
->> > Why it's not a problem of configuration ?
->> > IIUC, you can put all logins to some cgroup by using cgroupd/libgcgroup.
->> >
->>
->> I agree with Kame, I am still at loss in terms of understand the use
->> case, I should probably see the rest of the patches
+On Fri, Mar 25, 2011 at 12:00, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+> find_next bitops on m68k (find_next_zero_bit, find_next_bit, and
+> find_next_bit_le) may cause out of bounds memory access
+> when the bitmap size in bits % 32 != 0 and offset (the bitnumber
+> to start searching at) is very close to the bitmap size.
 >
-> OK, it looks that I am really bad at explaining the usecase. Let's try
-> it again then (hopefully in a better way).
+> For example,
 >
-> Consider a service which serves requests based on the in-memory
-> precomputed or preprocessed data.
-> Let's assume that getting data into memory is rather costly operation
-> which considerably increases latency of the request processing. Memory
-> access can be considered random from the system POV because we never
-> know which requests will come from outside.
-> This workflow will benefit from having the memory resident as long as
-> and as much as possible because we have higher chances to be used more
-> often and so the initial costs would pay off.
-> Why is mlock not the right thing to do here? Well, if the memory would
-> be locked and the working set would grow (again this depends on the
-> incoming requests) then the application would have to unlock some
-> portions of the memory or to risk OOM because it basically cannot
-> overcommit.
-> On the other hand, if the memory is not mlocked and there is a global
-> memory pressure we can have some part of the costly memory swapped or
-> paged out which will increase requests latencies. If the application is
-> placed into an isolated cgroup, though, the global (or other cgroups)
-> activity doesn't influence its cgroup thus the working set of the
-> application.
-
-> If we compare that to mlock we will benefit from per-group reclaim when
-> we get over the limit (or soft limit). So we do not start evicting the
-> memory unless somebody makes really pressure on the _application_.
-> Cgroup limits would, of course, need to be selected carefully.
+>       unsigned long bitmap[2] = { 0, 0 };
+>       find_next_bit(bitmap, 63, 62);
 >
-> There might be other examples when simply kernel cannot know which
-> memory is important for the process and the long unused memory is not
-> the ideal choice.
-
-Michal,
-
-Reading through your example, sounds to me you can accomplish the
-"guarantee" of the high priority service using existing
-memcg mechanisms.
-
-Assume you have the service named cgroup-A which needs memory
-"guarantee". Meantime we want to launch cgroup-B with no memory
-"guarantee". What you want is to have cgroup-B uses the slack memory
-(not being allocated by cgroup-A), but also volunteer to give up under
-system memory pressure.
-
-So continue w/ my previous post, you can consider the following
-configuration in 32G machine. We can only have resident size of
-cgroup-A as much as the machine capacity.
-
-cgroup-A :  limit_in_bytes =32G soft_limit_in_bytes = 32G
-cgroup-B : limit_in_bytes =20G  soft_limit_in_bytes = 0G
-
-To be a little bit extreme, there shouldn't be memory pressure on
-cgroup-A unless it grows above the machine capacity. If the global
-memory contention is triggered by cgroup-B, we should steal pages from
-it always.
-
-However, the current implementation of soft_limit needs to be improved
-for the example above. Especially when we start having lots of cgroups
-running w/ different limit setting, we need to have soft_limit being
-efficient and we can eliminate the global lru scanning. The later one
-breaks the isolation.
-
---Ying
-
-> Makes sense?
-> --
-> Michal Hocko
-> SUSE Labs
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9
-> Czech Republic
+> 1. find_next_bit() tries to find any set bits in bitmap[1],
+>   but no bits set.
 >
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org. �For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 2. Then find_first_bit(bimap + 2, -1)
 >
+> 3. Unfortunately find_fist_bit() takes unsigned int as the size argument.
+>
+> 4. find_first_bit will access bitmap[2~] until it find any set bits.
+>
+> This switches find_next bitops to use generic implementation of
+> find bitops to fix the problem.
+
+Andreas, do you think it's worth keeping (and fixing) the m68k "optimized"
+versions?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
