@@ -1,141 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab1C3XD7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 19:03:59 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:18424
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756251Ab1C3XD5 (ORCPT
+	id S1756554Ab1C3XMQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 19:12:16 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50813 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756258Ab1C3XMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 19:03:57 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: <Dinh.Nguyen@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
-        <arnaud.patard@rtp-net.org>, <ra5478@freescale.com>,
-        <xiao-lizhang@freescale.com>, <festevam@gmail.com>,
-        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv8] ARM: mx51: Add support for low power suspend on MX51
-Date: Wed, 30 Mar 2011 18:03:30 -0500
-Message-ID: <1301526210-21260-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
+	Wed, 30 Mar 2011 19:12:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=o666axh3CFav80MadWn+JkpqEuGtH7E//BpLk+b4psXof4Zuntp8RohwNZnVYYaXbM
+         3dz2MFSKta69mHK3j67ejANQa/4xEywDNrNy5V4nb4Re/x+eSC7KkVd5cS/SnH1b3RFW
+         /ffhSe7ddRgay9Q596l/GWMDXkcLgklk7+BaY=
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Wed, 30 Mar 2011 16:11:53 -0700
+Message-ID: <AANLkTi=CmYAYO5awFvdcO07qcj6oiOV8B+NoYSEkddbF@mail.gmail.com>
+Subject: compat-wireless for 2.6.38.2
+To: linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+A new stable update has been made so we get the extra stuff sucked in.
+The vanilla release:
 
-Adds initial low power suspend functionality to MX51.
-Supports "mem" and "standby" modes.
+http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.38/compat-wireless-2.6.38.2-2.tar.bz2
 
-Tested on mx51-babbage.
+And then this "-ns" release:
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/mach-mx5/Makefile  |    1 +
- arch/arm/mach-mx5/pm-imx5.c |   74 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 75 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-mx5/pm-imx5.c
+http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.38/compat-wireless-2.6.38.2-2-ns.tar.bz2
 
-diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
-index 0b9338c..d646feb 100644
---- a/arch/arm/mach-mx5/Makefile
-+++ b/arch/arm/mach-mx5/Makefile
-@@ -6,6 +6,7 @@
- obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o system.o
- obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
- 
-+obj-$(CONFIG_PM) += pm-imx5.o
- obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
- obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
- obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
-diff --git a/arch/arm/mach-mx5/pm-imx5.c b/arch/arm/mach-mx5/pm-imx5.c
-new file mode 100644
-index 0000000..2232d04
---- /dev/null
-+++ b/arch/arm/mach-mx5/pm-imx5.c
-@@ -0,0 +1,74 @@
-+/*
-+ *  Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+#include <linux/suspend.h>
-+#include <linux/clk.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
-+#include <mach/system.h>
-+#include "crm_regs.h"
-+
-+static struct clk *gpc_dvfs_clk;
-+
-+static int mx5_suspend_enter(suspend_state_t state)
-+{
-+	clk_enable(gpc_dvfs_clk);
-+	switch (state) {
-+	case PM_SUSPEND_MEM:
-+		mx5_cpu_lp_set(STOP_POWER_OFF);
-+		break;
-+	case PM_SUSPEND_STANDBY:
-+		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	if (state == PM_SUSPEND_MEM) {
-+		local_flush_tlb_all();
-+		flush_cache_all();
-+
-+		/*clear the EMPGC0/1 bits */
-+		__raw_writel(0, MXC_SRPG_EMPGC0_SRPGCR);
-+		__raw_writel(0, MXC_SRPG_EMPGC1_SRPGCR);
-+	}
-+	cpu_do_idle();
-+	clk_disable(gpc_dvfs_clk);
-+
-+	return 0;
-+}
-+
-+static int mx5_pm_valid(suspend_state_t state)
-+{
-+	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
-+}
-+
-+static const struct platform_suspend_ops mx5_suspend_ops = {
-+	.valid = mx5_pm_valid,
-+	.enter = mx5_suspend_enter,
-+};
-+
-+static int __init mx5_pm_init(void)
-+{
-+	if (!cpu_is_mx51())
-+		return 0;
-+
-+	gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
-+
-+	if (IS_ERR(gpc_dvfs_clk))
-+		printk(KERN_ERR "Cannot enter SRPG suspend -no gpc_dvfs clock!\n");
-+	else
-+		suspend_set_ops(&mx5_suspend_ops);
-+
-+	return 0;
-+}
-+device_initcall(mx5_pm_init);
--- 
-1.6.0.4
+has these extra patches applied:
 
+mcgrof@tux ~/devel/compat-wireless-2.6 (git::linux-2.6.38.y)$ ls -1
+linux-next-cherry-picks/
+0001a-ath9k_hw-Add-a-function-to-read-sqsum_dvc.patch
+0001b-ath9k-Fix-a-PLL-hang-issue-observed-with-AR9485.patch
+0001c-ath9k-Cancel-pll_work-while-disabling-radio.patch
+0002-ath9k-Fix-incorrect-GPIO-LED-pin-for-AR9485.patch
+0003-ath9k_hw-Read-noise-floor-only-for-available-chains-.patch
+0004-ath9k_hw-Improve-idle-power-consumption-for-AR9485.patch
+0005-ath9k_hw-Increase-the-wait-count-for-nf-load.patch
+0006-ath9k_hw-fix-REG_SET_BIT-and-REG_CLR_BIT-for-multipl.patch
+0007-ath9k-fix-stopping-tx-dma-on-reset.patch
+0008-ath9k-disable-beaconing-before-stopping-beacon-queue.patch
+0009-ath9k-improve-reliability-of-beacon-transmission-and.patch
+0010-ath9k-fix-aggregation-related-interoperability-issue.patch
+0011-staging-Fix-some-incorrect-use-of-positive-error-cod.patch
+0012-staging-ath6kl-Fixing-a-NULL-pointer-exception.patch
+0013-staging-ath6kl-Fixing-key-settings-for-WPA-WPA2.patch
+0014-staging-ath6kl-Return-correct-scan-complete-status.patch
+0015-staging-ath6kl-Fixing-target-crash-due-to-mismatch-c.patch
+0016-staging-ath6kl-Fixing-driver-initialization-for-manu.patch
+0017-staging-ath6kl-Consolidating-hardware-configuration.patch
+0018-staging-ath6kl-Adding-support-for-txop-bursting-enab.patch
+0019-staging-ath6kl-Fixing-a-memory-leak.patch
+0020-staging-ath6kl-Fixing-a-memory-leak.patch
+0021-staging-ath6kl-Add-configuration-for-excessive-TX-re.patch
+0022-staging-ath6kl-Fixing-memory-leak.patch
+0023-staging-ath6kl-Fixing-the-cached-copy-of-the-BSS-fil.patch
+0024-staging-ath6kl-Adding-state-in-driver-to-track-the-s.patch
+0025-staging-ath6kl-Fixing-accidental-overwriting-of-prob.patch
+0026-staging-ath6kl-Fixing-disappearing-of-scan-list-due-.patch
+0027-staging-ath6kl-buffer-overflow-in-SEND_FRAME-ioctl.patch
+0028-staging-ath6kl-Eliminate-cfg80211-warnings.patch
+README
+mcgrof@tux ~/devel/compat-wireless-2.6 (git::linux-2.6.38.y)$ ls -1
+pending-stable/
+0006-ath9k-Fix-kernel-panic-in-AR2427.patch
+0007-mac80211-initialize-sta-last_rx-in-sta_info_alloc.patch
+0008-mac80211-fix-a-crash-in-minstrel_ht-in-HT-mode-with-.patch
+0009-ath9k-fix-a-chip-wakeup-related-crash-in-ath9k_start.patch
+backports
+README
+mcgrof@tux ~/devel/compat-wireless-2.6 (git::linux-2.6.38.y)$ ls -1
+pending-stable/backports/
+0010-iwlegacy-fix-bugs-in-change_interface.patch
 
+  Luis
