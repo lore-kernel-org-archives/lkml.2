@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842Ab1C3TZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 15:25:58 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44859 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932783Ab1C3TZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 15:25:56 -0400
-Date: Wed, 30 Mar 2011 20:26:28 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Daniel Palmer <me@danielpalmer.co.uk>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: PATA_ARTOP reads byte from PCI IO port without mapping it to
- the right address.
-Message-ID: <20110330202628.5dc8db5f@lxorguk.ukuu.org.uk>
-In-Reply-To: <4D937FDC.4090607@danielpalmer.co.uk>
-References: <4D937FDC.4090607@danielpalmer.co.uk>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932426Ab1C3T3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 15:29:16 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:37464 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754838Ab1C3T3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 15:29:15 -0400
+Message-ID: <4D938488.7010607@sgi.com>
+Date: Wed, 30 Mar 2011 12:29:12 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        iommu@lists.linux-foundation.org, Mike Habeck <habeck@sgi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] Intel iommu: Speed up processing of the identity_mapping
+ function
+References: <20110329233602.272459647@gulag1.americas.sgi.com> <20110329233602.585251738@gulag1.americas.sgi.com> <20110330191902.GT18712@sequoia.sous-sol.org>
+In-Reply-To: <20110330191902.GT18712@sequoia.sous-sol.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> unsigned long io = pci_resource_start(pdev, 4);           // This 
-> returns 0x1400 on my machine
 
-That is the PCI port address.
 
->                  u8 reg;
+Chris Wright wrote:
+> * Mike Travis (travis@sgi.com) wrote:
+>> @@ -2138,6 +2134,7 @@ static int domain_add_dev_info(struct dm
+>>  	list_add(&info->global, &device_domain_list);
+>>  	pdev->dev.archdata.iommu = info;
 > 
->                  ppi[0] = &info_628x;
->                  if (inb(io) & 0x10)                                    
->          // This reads from 0x1400, which isn't were the port actually 
-> is in the processors address                                             
+> The si_domain is cached right here...can you not use this instead of
+> adding an iommu impl. specific bit to pci_dev?
+> 
+>>  	spin_unlock_irqrestore(&device_domain_lock, flags);
+>> +	pdev->is_identity_mapped = (domain == si_domain);
 
-This reads from I/O port 0x1400 - your inb logic and I/O port mapping on
-the platform is responsible for making that work.
-
-
-
+Yes, it looks like I came at the solution backwards... I added
+the bit then figured out how to set it.  I'll update that patch.
