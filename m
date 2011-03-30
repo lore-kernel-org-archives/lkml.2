@@ -1,241 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab1C3AJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 20:09:49 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:16230 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751676Ab1C3AJs (ORCPT
+	id S1754817Ab1C3AYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 20:24:18 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:15156
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753569Ab1C3AYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 20:09:48 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkkGAFhykk15LK5JTmdsb2JhbAClUAsBASADIyW+BA2FXQQ
-Date: Wed, 30 Mar 2011 11:09:42 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Sean Noonan <Sean.Noonan@twosigma.com>
-Cc: "'Christoph Hellwig'" <hch@infradead.org>,
-        "'Michel Lespinasse'" <walken@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Martin Bligh <Martin.Bligh@twosigma.com>,
-        Trammell Hudson <Trammell.Hudson@twosigma.com>,
-        Christos Zoulas <Christos.Zoulas@twosigma.com>,
-        "'linux-xfs@oss.sgi.com'" <linux-xfs@oss.sgi.com>,
-        Stephen Degler <Stephen.Degler@twosigma.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>
-Subject: Re: XFS memory allocation deadlock in 2.6.38
-Message-ID: <20110330000942.GI3008@dastard>
-References: <081DDE43F61F3D43929A181B477DCA95639B52FD@MSXAOA6.twosigma.com>
- <081DDE43F61F3D43929A181B477DCA95639B5327@MSXAOA6.twosigma.com>
- <20110324174311.GA31576@infradead.org>
- <AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
- <081DDE43F61F3D43929A181B477DCA95639B5349@MSXAOA6.twosigma.com>
- <BANLkTin0jJevStg5P2hqsLbqMzo3o30sYg@mail.gmail.com>
- <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
- <081DDE43F61F3D43929A181B477DCA95639B5359@MSXAOA6.twosigma.com>
- <20110329192434.GA10536@infradead.org>
- <081DDE43F61F3D43929A181B477DCA95639B535D@MSXAOA6.twosigma.com>
+	Tue, 29 Mar 2011 20:24:17 -0400
+X-SpamScore: -4
+X-BigFish: VPS-4(zz4015Lzz1202hzz8275bhz2dh95h668h64h)
+X-Spam-TCS-SCL: 3:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+From: John Linn <john.linn@xilinx.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
+        <glikely@secretlab.ca>, <jamie@jamieiles.com>, <arnd@arndb.de>
+Subject: [PATCH V5 0/4] ARM: Basic Xilinx Support
+Date: Tue, 29 Mar 2011 18:24:07 -0600
+X-Mailer: git-send-email 1.5.6.6
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <081DDE43F61F3D43929A181B477DCA95639B535D@MSXAOA6.twosigma.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+Message-ID: <54ecc6c4-1a00-4581-8390-0b42d705f29b@VA3EHSMHS018.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 03:54:12PM -0400, Sean Noonan wrote:
-> > Can you check if the brute force patch below helps?  
-> 
-> Not sure if this helps at all, but here is the stack from all three processes involved.  This is without MAP_POPULATE and with the patch you just sent.
-> 
-> # ps aux | grep 'D[+]*[[:space:]]'
-> USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
-> root      2314  0.2  0.0      0     0 ?        D    19:44   0:00 [flush-8:0]
-> root      2402  0.0  0.0      0     0 ?        D    19:44   0:00 [xfssyncd/sda9]
-> root      3861  2.6  9.9 16785280 4912848 pts/0 D+  19:45   0:07 ./vmtest /xfs/hugefile.dat 17179869184
-> 
-> # for p in 2314 2402 3861; do echo $p; cat /proc/$p/stack; done
-> 2314
-> [<ffffffff810d634a>] congestion_wait+0x7a/0x130
-> [<ffffffff8129721c>] kmem_alloc+0x6c/0xf0
-> [<ffffffff8127c07e>] xfs_inode_item_format+0x36e/0x3b0
-> [<ffffffff8128401f>] xfs_log_commit_cil+0x4f/0x3b0
-> [<ffffffff8128ff31>] _xfs_trans_commit+0x1f1/0x2b0
-> [<ffffffff8127c716>] xfs_iomap_write_allocate+0x1a6/0x340
-> [<ffffffff81298883>] xfs_map_blocks+0x193/0x2c0
-> [<ffffffff812992fa>] xfs_vm_writepage+0x1ca/0x520
-> [<ffffffff810c4bd2>] __writepage+0x12/0x40
-> [<ffffffff810c53dd>] write_cache_pages+0x1dd/0x4f0
-> [<ffffffff810c573c>] generic_writepages+0x4c/0x70
-> [<ffffffff812986b8>] xfs_vm_writepages+0x58/0x70
-> [<ffffffff810c577c>] do_writepages+0x1c/0x40
-> [<ffffffff811247d1>] writeback_single_inode+0xf1/0x240
-> [<ffffffff81124edd>] writeback_sb_inodes+0xdd/0x1b0
-> [<ffffffff81125966>] writeback_inodes_wb+0x76/0x160
-> [<ffffffff81125d93>] wb_writeback+0x343/0x550
-> [<ffffffff81126126>] wb_do_writeback+0x186/0x2e0
-> [<ffffffff81126342>] bdi_writeback_thread+0xc2/0x310
-> [<ffffffff81067846>] kthread+0x96/0xa0
-> [<ffffffff8165a414>] kernel_thread_helper+0x4/0x10
-> [<ffffffffffffffff>] 0xffffffffffffffff
 
-So, it's trying to allocate a buffer for the inode extent list, so
-should only be a couple of hundred bytes, and at most ~2kB if you
-are using large inodes. That still doesn't seem like it should be
-having memory allocation problems here with 44GB of free RAM....
+This is a resend of V5. There have been no updates since V5. 
 
-Hmmmm. I wonder - the process is doing a random walk of 16GB, so
-it's probably created tens of thousands of delayed allocation
-extents before any real allocation was done. xfs_inode_item_format()
-uses the in-core data fork size for the extent buffer allocation
-which in this case would be much larger than what can possibly fit
-inside the inode data fork.
+The mach-types got updated with the Xilinx platforms in 
+2.6.39-rc1.  I retested with 2.6.39-rc1 and these patches.
+Kconfigs and Makefile only had to be tweaked to apply.
 
-Lets see - worst case is 8GB of sparse blocks, which is 2^21
-delalloc blocks, which gives a worst case allocation size of 2^21 *
-sizeof(struct xfs_bmbt_rec), which is roughly 64MB. Which would
-overflow the return value. Even at 1k delalloc extents, we'll be
-asking for an order-15 allocation when all we really need is an
-order-0 allocation.
+I am putting a tree into linux-next based on these patches.
 
-Ok, so that looks like root cause of the problem. can you try the
-patch below to see if it fixes the problem (without any other
-patches applied or reverted).
+git://git.xilinx.com/linux-2.6-xlnx arm-next
 
-Cheers,,
+Thanks,
+John
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+V5
 
-xfs: fix extent format buffer allocation size
+Minor cleanups based on feedback from Russell, Jamie
+and Arnd.  Nothing big.
 
-From: Dave Chinner <dchinner@redhat.com>
+This patch set was tested against a tree based on Linus's
+current 2.6.38-rcX tree, then Russell's p2v-stable merged in. 
 
-When formatting an inode item, we have to allocate a separate buffer
-to hold extents when there are delayed allocation extents on the
-inode and it is in extent format. The allocation size is derived
-from the in-core data fork representation, which accounts for
-delayed allocation extents, while the on-disk representation does
-not contain any delalloc extents.
+Other than the update to mach-types that is missing for the
+board, this should merge in easily in the next merge window
+is my hope.
 
-As a result of this mismatch, the allocated buffer can be far larger
-than needed to hold the real extent list which, due to the fact the
-inode is in extent format, is limited to the size of the literal
-area of the inode. However, we can have thousands of delalloc
-extents, resulting in an allocation size orders of magnitude larger
-than is needed to hold all the real extents.
+I'm making these patches available at git://git.xilinx.com in
+linux-2.6-xlnx/arm-mainline.
 
-Fix this by limiting the size of the buffer being allocated to the
-size of the literal area of the inodes in the filesystem (i.e. the
-maximum size an inode fork can grow to).
+V4
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/xfs/xfs_inode_item.c |   69 ++++++++++++++++++++++++++++------------------
- 1 files changed, 42 insertions(+), 27 deletions(-)
+I incorporated more feedback from Jamie Iles. It was 
+primariy cleanup with the only significant change
+being a move to using raw_read/write in the uncompressor
+uart code.
 
-diff --git a/fs/xfs/xfs_inode_item.c b/fs/xfs/xfs_inode_item.c
-index 46cc401..12cdc39 100644
---- a/fs/xfs/xfs_inode_item.c
-+++ b/fs/xfs/xfs_inode_item.c
-@@ -198,6 +198,43 @@ xfs_inode_item_size(
- }
- 
- /*
-+ * xfs_inode_item_format_extents - convert in-core extents to on-disk form
-+ *
-+ * For either the data or attr fork in extent format, we need to endian convert
-+ * the in-core extent as we place them into the on-disk inode. In this case, we
-+ * ned to do this conversion before we write the extents into the log. Because
-+ * we don't have the disk inode to write into here, we allocate a buffer and
-+ * format the extents into it via xfs_iextents_copy(). We free the buffer in
-+ * the unlock routine after the copy for the log has been made.
-+ *
-+ * For the data fork, there can be delayed allocation extents
-+ * in the inode as well, so the in-core data fork can be much larger than the
-+ * on-disk data representation of real inodes. Hence we need to limit the size
-+ * of the allocation to what will fit in the inode fork, otherwise we could be
-+ * asking for excessively large allocation sizes.
-+ */
-+STATIC void
-+xfs_inode_item_format_extents(
-+	struct xfs_inode	*ip,
-+	struct xfs_log_iovec	*vecp,
-+	int			whichfork,
-+	int			type)
-+{
-+	xfs_bmbt_rec_t		*ext_buffer;
-+
-+	ext_buffer = kmem_alloc(XFS_IFORK_SIZE(ip, whichfork),
-+							KM_SLEEP | KM_NOFS);
-+	if (whichfork == XFS_DATA_FORK)
-+		ip->i_itemp->ili_extents_buf = ext_buffer;
-+	else
-+		ip->i_itemp->ili_aextents_buf = ext_buffer;
-+
-+	vecp->i_addr = ext_buffer;
-+	vecp->i_len = xfs_iextents_copy(ip, ext_buffer, whichfork);
-+	vecp->i_type = type;
-+}
-+
-+/*
-  * This is called to fill in the vector of log iovecs for the
-  * given inode log item.  It fills the first item with an inode
-  * log format structure, the second with the on-disk inode structure,
-@@ -213,7 +250,6 @@ xfs_inode_item_format(
- 	struct xfs_inode	*ip = iip->ili_inode;
- 	uint			nvecs;
- 	size_t			data_bytes;
--	xfs_bmbt_rec_t		*ext_buffer;
- 	xfs_mount_t		*mp;
- 
- 	vecp->i_addr = &iip->ili_format;
-@@ -320,22 +356,8 @@ xfs_inode_item_format(
- 			} else
- #endif
- 			{
--				/*
--				 * There are delayed allocation extents
--				 * in the inode, or we need to convert
--				 * the extents to on disk format.
--				 * Use xfs_iextents_copy()
--				 * to copy only the real extents into
--				 * a separate buffer.  We'll free the
--				 * buffer in the unlock routine.
--				 */
--				ext_buffer = kmem_alloc(ip->i_df.if_bytes,
--					KM_SLEEP);
--				iip->ili_extents_buf = ext_buffer;
--				vecp->i_addr = ext_buffer;
--				vecp->i_len = xfs_iextents_copy(ip, ext_buffer,
--						XFS_DATA_FORK);
--				vecp->i_type = XLOG_REG_TYPE_IEXT;
-+				xfs_inode_item_format_extents(ip, vecp,
-+					XFS_DATA_FORK, XLOG_REG_TYPE_IEXT);
- 			}
- 			ASSERT(vecp->i_len <= ip->i_df.if_bytes);
- 			iip->ili_format.ilf_dsize = vecp->i_len;
-@@ -445,19 +467,12 @@ xfs_inode_item_format(
- 			 */
- 			vecp->i_addr = ip->i_afp->if_u1.if_extents;
- 			vecp->i_len = ip->i_afp->if_bytes;
-+			vecp->i_type = XLOG_REG_TYPE_IATTR_EXT;
- #else
- 			ASSERT(iip->ili_aextents_buf == NULL);
--			/*
--			 * Need to endian flip before logging
--			 */
--			ext_buffer = kmem_alloc(ip->i_afp->if_bytes,
--				KM_SLEEP);
--			iip->ili_aextents_buf = ext_buffer;
--			vecp->i_addr = ext_buffer;
--			vecp->i_len = xfs_iextents_copy(ip, ext_buffer,
--					XFS_ATTR_FORK);
-+			xfs_inode_item_format_extents(ip, vecp,
-+					XFS_ATTR_FORK, XLOG_REG_TYPE_IATTR_EXT);
- #endif
--			vecp->i_type = XLOG_REG_TYPE_IATTR_EXT;
- 			iip->ili_format.ilf_asize = vecp->i_len;
- 			vecp++;
- 			nvecs++;
+The other changes were minor updates so that the patch
+set applies to linux-next.
+
+This patch set is now tested against the linux-next branch
+from pub/scm/linux/kernel/git/sfr/linux-next.git.
+
+V3
+
+I incorporated more feedback from Russell King.
+Primarily clean up of the license header to remove
+the address. 
+
+Also minor cleanup of the Kconfig and Makefile for the board
+to match the MACH_XILINX entry in the machine ID database.
+
+These changes were tested on 2.6.38-rc4 and rc5.
+
+V2
+
+I incorporated review comments from Russell King and Jamie Iles.
+
+Each patch has V2 comments describing the details. The order of
+each patch in the series did change.
+
+Thanks a lot to them for the detailed review as this patch set
+is much cleaner and improved (I think anyway).  
+
+Thanks for comments from Arnd and Grant also.
+
+This was tested against 2.6.38-rc4.
+
+----
+
+This patch series adds very basic support for the Xilinx ARM platform.
+The entire patch set must be used, I only broke it up into logical 
+pieces to make the review easier (I hope). 
+
+I would like to get the review feedback and make any changes, but after
+that I need to change mach-xilinx to the real product name.  The real
+product name is expected to be released by marketing very soon.
+
+There's always the option of keeping mach-xilinx and then only 
+documenting the product name in the Kconfig. I'm less in favor of that
+but it could be ok.
+
+This code has been tested against 2.6.38-rc2, r3, and against head. The
+only checkpatch warnings are about volatile in the uncompress.h file
+and this method I used seems normal.
+
+Thanks,
+John
+
+ arch/arm/Kconfig                                |   14 +
+ arch/arm/Makefile                               |    1 
+ arch/arm/mach-xilinx/Kconfig                    |   14 +
+ arch/arm/mach-xilinx/Makefile                   |    9 
+ arch/arm/mach-xilinx/Makefile.boot              |    3 
+ arch/arm/mach-xilinx/board_ep107.c              |   82 ++++++
+ arch/arm/mach-xilinx/common.c                   |  113 +++++++++
+ arch/arm/mach-xilinx/common.h                   |   31 ++
+ arch/arm/mach-xilinx/include/mach/clkdev.h      |   33 ++
+ arch/arm/mach-xilinx/include/mach/debug-macro.S |   36 ++
+ arch/arm/mach-xilinx/include/mach/entry-macro.S |   30 ++
+ arch/arm/mach-xilinx/include/mach/hardware.h    |   18 +
+ arch/arm/mach-xilinx/include/mach/io.h          |   33 ++
+ arch/arm/mach-xilinx/include/mach/irqs.h        |   29 ++
+ arch/arm/mach-xilinx/include/mach/memory.h      |   23 +
+ arch/arm/mach-xilinx/include/mach/system.h      |   28 ++
+ arch/arm/mach-xilinx/include/mach/timex.h       |   22 +
+ arch/arm/mach-xilinx/include/mach/uart.h        |   25 ++
+ arch/arm/mach-xilinx/include/mach/uncompress.h  |   61 ++++
+ arch/arm/mach-xilinx/include/mach/vmalloc.h     |   20 +
+ arch/arm/mach-xilinx/include/mach/xilinx_soc.h  |   47 +++
+ arch/arm/mach-xilinx/timer.c                    |  293 +++++++++++++++++++++++-
+ arch/arm/mm/Kconfig                             |    3 
+ 23 files changed, 962 insertions(+), 6 deletions(-)
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
