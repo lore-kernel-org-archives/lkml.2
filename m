@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932685Ab1C3OqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 10:46:14 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60856 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab1C3OqM (ORCPT
+	id S932700Ab1C3Oqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 10:46:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34431 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932544Ab1C3Oqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 10:46:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kyungmin Park <kmpark@infradead.org>
-Subject: Re: [PATCH v6] fat: Batched discard support for fat
-Date: Wed, 30 Mar 2011 16:45:57 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Lukas Czerner <lczerner@redhat.com>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-References: <20110328103431.GA22323@july> <alpine.LFD.2.00.1103301538580.3418@dhcp-27-109.brq.redhat.com> <AANLkTimA7tmaaw=8XZjaxs9qVOZMjYFCL=UnkJoKXqT=@mail.gmail.com>
-In-Reply-To: <AANLkTimA7tmaaw=8XZjaxs9qVOZMjYFCL=UnkJoKXqT=@mail.gmail.com>
+	Wed, 30 Mar 2011 10:46:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GU9i0yNF5S/hGitMsGYp63p9t3VrT5KCEsSKqvZn/pg2wmAQuJFTPZhy2xBEhSU7aH
+         9eG0ef7YHzG9rKkgFmW2znmv7YkDfL2K3iuS+aunMiOxjUsAH3jXp3gG6PdzJW4io8Cq
+         RAwW3bHTlZ4Qy6Rfy/MVbT02ElPXggn60Df0A=
+Date: Wed, 30 Mar 2011 16:46:43 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        2nddept-manager@sdl.hitachi.co.jp, David Ahern <daahern@cisco.com>
+Subject: Re: [PATCH -tip v3 0/6] perf: Introduce branch sub commands
+Message-ID: <20110330144639.GA2204@nowhere>
+References: <20110324113137.20235.42265.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103301645.57991.arnd@arndb.de>
-X-Provags-ID: V02:K0:yd41rm4KVrH103SYucYpDOehiphgPS3VbQ8byM6aU7/
- +c/OEdwNLDLNdTXx1Oh37U5AHXApgrV9rTbTX16JDe/ORTTXD+
- UhfB6WST1oCSLzXumleG6ABrd2z9uW102Iq2EpoZrQAQeD8c4T
- Ddi/orrU0fKapkEOw4uq/TJmC4FjLxtv8f37k9JZudngE/USLh
- pGChHG1vQepxvFKD4h6/Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110324113137.20235.42265.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 March 2011, Kyungmin Park wrote:
-> >> If you just pass the minimum length, the file system could end up
-> >> erasing a 4 MB section that spans two half erase blocks, or it
-> >> could span a few clusters of the following erase block, both of
-> >> which is not desirable from a performance point of view.
-> >
-> > Does those cards export such information correctly ?
+On Thu, Mar 24, 2011 at 08:31:37PM +0900, Akihiro Nagai wrote:
+> Hi,
 > 
-> Each chip vendor knows it exactly and usually can't tell it outside officially.
+> This patch series provides the commands 'perf branch record' and 'perf branch trace'
+> version 3. These commands record and analyze a BTS (Branch Trace Store) log.
+> And, they provide the interface to use BTS log for application developers.
+> 
+> BTS is a facility of Intel x86 processors, which records the address of
+> 'branch to/from' on every branch/jump instruction and interrupt.
+> This facility is very useful for developers to test their software,
+> for example, coverage test, execution path analysis, dynamic step count ...etc.
+> These test tools have a big advantage, which user doesn't have to modify target
+> executable binaries, because the BTS is a hardware feauture.
+> 
+> But, there are few applications using BTS. Reasons I guess are ...
+>  - Few people know what BTS is.
+>  - Few people know how to use BTS on Linux box.
+>  - It's hard to analyze the BTS log because it includes just a series of addresses.
+> 
+> So, I want to provide a user-friendly interface to BTS for application developers.
+> 
+> 
+>  About new sub commands
+> ========================
+> 'perf branch record' provides an easy way to record BTS log.
+> Usage is 'perf branch record <command>'.  This command is just an alias to
+> 'perf record -e branches:u -c 1 <command>'. But, new one is more simple and
+> more intuitive.
+> 
+> 'perf branch trace' can parse and analyze recorded BTS log and print various
+> information of execution path. This command can show address, pid, command name,
+> function+offset, file path of elf.
+> You can choose the printed information with option.
+> 
+> Example: 'perf branch trace'
+> function+offset
+> irq_return+0x0  => _start+0x0
+> irq_return+0x0  => _start+0x0
+> _start+0x3      => _dl_start+0x0
+> irq_return+0x0  => _dl_start+0x0
+> irq_return+0x0  => _dl_start+0x26
+> irq_return+0x0  => _dl_start+0x2d
 
-I have written a tool for measuring the erase block size reliably
-and guessing the page size.
+These results are a bit surprising. May be we can
+jump once from irq_return to _start, in the first schedule()
+of a new task perhaps, but thereafter I would expect
+further jumps not to happen from irq_return, but rather
+from _start. When we have x as a destination in line n, then
+I would expect to have x as a source in n + 1.
 
-> but it's not big as you think.
+Also we are supposed to only trace BTS in userspace, but
+perhaps, if we are interrupted, after the execution of the iret instruction,
+BTS considers the following jump "iret -> interrupted inst" as a branch
+in userspace. After all it makes sense, it is a jump in userspace.
 
-The largest erase block I have measured is 12 MB (on a USB stick),
-while the smallest typical erase block that gets used in SDHC cards
-is 2 MB. I have seen one card using a 1.5 MB erase block.
+So BTS, because of the way it defines a jump inside userspace,
+traces irq returns but not irq entries, that would explain the trace
+you gave as an example.
 
-Older SD cards (up to 2 GB) commonly have erase blocks as small as 
-128 KB, but for all I know these do not get produced any more. The
-smallest cards on the market today are 2 GB cards with 2 MB erase
-blocks.
+I suspect we want to filter irq returns. ie: if the source comes
+from the kernel, then filter it by default. And then we can later
+think about an option to enable interrupt return tracing if
+people want them.
 
-> also if the request size is under trim size, then it's discarded internally.
-> I mean do nothing at firmware level.
-
-I don't think that's possible with SD cards, since the command is "erase",
-not "trim", i.e. the data gets inaccessible after the command returns.
-
-On eMMC, the command is actually "trim", which can probably be discarded
-as you say.
-
-SD cards can also do pre-erase when writing. This has similar meaning
-as trim, but is not currently supported by Linux, because it is not
-as easy to use.
-
-	Arnd
+Thanks.
