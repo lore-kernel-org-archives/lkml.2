@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933506Ab1C3WIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:08:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:53540 "EHLO mga11.intel.com"
+	id S933178Ab1C3VGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:06:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54022 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933184Ab1C3VGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:06:13 -0400
+	id S933161Ab1C3VGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:06:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="673447185"
+   d="scan'208";a="621235913"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: sgruszka@redhat.com, wey-yi.w.guy@intel.com, linville@tuxdriver.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [35/275] iwlagn: enable only rfkill interrupt when device is down
-Message-Id: <20110330210430.8BB013E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:04:30 -0700 (PDT)
+To: ionut.nicu@gmail.com, ionut.nicu@mindbit.ro, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [25/275] USB: ti_usb: fix module removal
+Message-Id: <20110330210420.06ED33E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:04:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,81 +25,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Ionut Nicu <ionut.nicu@gmail.com>
 
-commit 554d1d027b19265c4aa3f718b3126d2b86e09a08 upstream.
+commit b14de3857227cd978f515247853fd15cc2425d3e upstream.
 
-Since commit 6cd0b1cb872b3bf9fc5de4536404206ab74bafdd "iwlagn: fix
-hw-rfkill while the interface is down", we enable interrupts when
-device is not ready to receive them. However hardware, when it is in
-some inconsistent state, can generate other than rfkill interrupts
-and crash the system. I can reproduce crash with "kernel BUG at
-drivers/net/wireless/iwlwifi/iwl-agn.c:1010!" message, when forcing
-firmware restarts.
+If usb_deregister() is called after usb_serial_deregister() when
+the device is plugged in, the following Oops occurs:
 
-To fix only enable rfkill interrupt when down device and after probe.
-I checked patch on laptop with 5100 device, rfkill change is still
-passed to user space when device is down.
+[   95.337377] BUG: unable to handle kernel NULL pointer dereference at 00000010
+[   95.338236] IP: [<c0776b2d>] klist_put+0x12/0x62
+[   95.338356] *pdpt = 000000003001a001 *pde = 0000000000000000
+[   95.338356] Oops: 0000 [#1] SMP
+[   95.340499] last sysfs file: /sys/devices/pci0000:00/0000:00:1d.2/usb8/idVendor
+[   95.340499] Modules linked in: ti_usb_3410_5052(-) usbserial cpufreq_ondemand acpi_cpufreq mperf iptable_nat nf_nat iptable_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6 uinput arc4 ecb iwlagn iwlcore mac80211 cfg80211 microcode pcspkr acer_wmi joydev wmi sky2 [last unloaded: scsi_wait_scan]
+[   95.341908]
+[   95.341908] Pid: 1532, comm: modprobe Not tainted 2.6.37-rc7+ #6 Eiger                          /Aspire 5930
+[   95.341908] EIP: 0060:[<c0776b2d>] EFLAGS: 00010246 CPU: 0
+[   95.341908] EIP is at klist_put+0x12/0x62
+[   95.341908] EAX: 00000000 EBX: eedc0c84 ECX: c09c21b4 EDX: 00000001
+[   95.341908] ESI: 00000000 EDI: efaa0c1c EBP: f214fe2c ESP: f214fe1c
+[   95.341908]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[   95.341908] Process modprobe (pid: 1532, ti=f214e000 task=efaaf080 task.ti=f214e000)
+[   95.341908] Stack:
+[   95.341908]  f214fe24 eedc0c84 efaaf080 efaa0c1c f214fe34 c0776ba8 f214fe5c c0776c76
+[   95.341908]  c09c21b4 c09c21b4 eedc0c84 efaaf080 00000000 c0634398 eafe2d1c f7b515f0
+[   95.341908]  f214fe6c c0631b5c eafe2d50 eafe2d1c f214fe7c c0631ba2 eafe2d1c eafe2c00
+[   95.341908] Call Trace:
+[   95.341908]  [<c0776ba8>] ? klist_del+0xd/0xf
+[   95.341908]  [<c0776c76>] ? klist_remove+0x48/0x74
+[   95.341908]  [<c0634398>] ? devres_release_all+0x49/0x51
+[   95.341908]  [<c0631b5c>] ? __device_release_driver+0x7b/0xa4
+[   95.341908]  [<c0631ba2>] ? device_release_driver+0x1d/0x28
+[   95.341908]  [<c06317c4>] ? bus_remove_device+0x92/0xa1
+[   95.341908]  [<c062f3d8>] ? device_del+0xf9/0x13e
+[   95.341908]  [<f7b06146>] ? usb_serial_disconnect+0xd9/0x116 [usbserial]
+[   95.341908]  [<c0681e3f>] ? usb_disable_interface+0x32/0x40
+[   95.341908]  [<c0683972>] ? usb_unbind_interface+0x48/0xfd
+[   95.341908]  [<c0631b43>] ? __device_release_driver+0x62/0xa4
+[   95.341908]  [<c06320b9>] ? driver_detach+0x62/0x81
+[   95.341908]  [<c0631a41>] ? bus_remove_driver+0x8f/0xae
+[   95.341908]  [<c063214c>] ? driver_unregister+0x50/0x57
+[   95.341908]  [<c0682f95>] ? usb_deregister+0x77/0x84
+[   95.341908]  [<f7b505b6>] ? ti_exit+0x26/0x28 [ti_usb_3410_5052]
+[   95.341908]  [<c046a307>] ? sys_delete_module+0x181/0x1de
+[   95.341908]  [<c04e2727>] ? path_put+0x1a/0x1d
+[   95.341908]  [<c047f4c5>] ? audit_syscall_entry+0x116/0x138
+[   95.341908]  [<c04094df>] ? sysenter_do_call+0x12/0x28
+[   95.341908] Code: 00 83 7d f0 00 74 09 85 f6 74 05 89 f0 ff 55 f0 8b 43 04 5a 5b 5e 5f 5d c3 55 89 e5 57 56 53 89 c3 83 ec 04 8b 30 83 e6 fe 89 f0 <8b> 7e 10 88 55 f0 e8 47 26 01 00 8a 55 f0 84 d2 74 17 f6 03 01
+[   95.341908] EIP: [<c0776b2d>] klist_put+0x12/0x62 SS:ESP 0068:f214fe1c
+[   95.341908] CR2: 0000000000000010
+[   95.342357] ---[ end trace 8124d00ad871ad18 ]---
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Ionut Nicu <ionut.nicu@mindbit.ro>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-agn.c     |    9 +++++----
- drivers/net/wireless/iwlwifi/iwl-helpers.h |    6 ++++++
- 2 files changed, 11 insertions(+), 4 deletions(-)
+ drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/drivers/net/wireless/iwlwifi/iwl-agn.c
+Index: linux-2.6.35.y/drivers/usb/serial/ti_usb_3410_5052.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/net/wireless/iwlwifi/iwl-agn.c	2011-03-29 22:51:54.909318176 -0700
-+++ linux-2.6.35.y/drivers/net/wireless/iwlwifi/iwl-agn.c	2011-03-29 23:55:19.919957475 -0700
-@@ -3112,9 +3112,10 @@
+--- linux-2.6.35.y.orig/drivers/usb/serial/ti_usb_3410_5052.c	2011-03-29 22:51:58.334230542 -0700
++++ linux-2.6.35.y/drivers/usb/serial/ti_usb_3410_5052.c	2011-03-29 23:02:58.728332710 -0700
+@@ -365,9 +365,9 @@
  
- 	flush_workqueue(priv->workqueue);
- 
--	/* enable interrupts again in order to receive rfkill changes */
-+	/* User space software may expect getting rfkill changes
-+	 * even if interface is down */
- 	iwl_write32(priv, CSR_INT, 0xFFFFFFFF);
--	iwl_enable_interrupts(priv);
-+	iwl_enable_rfkill_int(priv);
- 
- 	IWL_DEBUG_MAC80211(priv, "leave\n");
- }
-@@ -3832,14 +3833,14 @@
- 	 * 8. Enable interrupts and read RFKILL state
- 	 *********************************************/
- 
--	/* enable interrupts if needed: hw bug w/a */
-+	/* enable rfkill interrupt: hw bug w/a */
- 	pci_read_config_word(priv->pci_dev, PCI_COMMAND, &pci_cmd);
- 	if (pci_cmd & PCI_COMMAND_INTX_DISABLE) {
- 		pci_cmd &= ~PCI_COMMAND_INTX_DISABLE;
- 		pci_write_config_word(priv->pci_dev, PCI_COMMAND, pci_cmd);
- 	}
- 
--	iwl_enable_interrupts(priv);
-+	iwl_enable_rfkill_int(priv);
- 
- 	/* If platform's RF_KILL switch is NOT set to KILL */
- 	if (iwl_read32(priv, CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)
-Index: linux-2.6.35.y/drivers/net/wireless/iwlwifi/iwl-helpers.h
-===================================================================
---- linux-2.6.35.y.orig/drivers/net/wireless/iwlwifi/iwl-helpers.h	2011-03-29 22:51:54.908318202 -0700
-+++ linux-2.6.35.y/drivers/net/wireless/iwlwifi/iwl-helpers.h	2011-03-29 23:02:58.917327873 -0700
-@@ -163,6 +163,12 @@
- 	IWL_DEBUG_ISR(priv, "Disabled interrupts\n");
- }
- 
-+static inline void iwl_enable_rfkill_int(struct iwl_priv *priv)
-+{
-+	IWL_DEBUG_ISR(priv, "Enabling rfkill interrupt\n");
-+	iwl_write32(priv, CSR_INT_MASK, CSR_INT_BIT_RF_KILL);
-+}
-+
- static inline void iwl_enable_interrupts(struct iwl_priv *priv)
+ static void __exit ti_exit(void)
  {
- 	IWL_DEBUG_ISR(priv, "Enabling interrupts\n");
++	usb_deregister(&ti_usb_driver);
+ 	usb_serial_deregister(&ti_1port_device);
+ 	usb_serial_deregister(&ti_2port_device);
+-	usb_deregister(&ti_usb_driver);
+ }
+ 
+ 
