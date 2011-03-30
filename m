@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab1C3JUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 05:20:00 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51205 "EHLO
+	id S932358Ab1C3JUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 05:20:12 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51209 "EHLO
 	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932263Ab1C3JT4 (ORCPT
+	with ESMTP id S932249Ab1C3JUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 05:19:56 -0400
+	Wed, 30 Mar 2011 05:20:10 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 14/18] gma500: Clean up more unused structures and code
+Subject: [PATCH 15/18] gma500: pull mrst firmware stuff into its own header
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Wed, 30 Mar 2011 10:01:13 +0100
-Message-ID: <20110330090108.5897.11414.stgit@localhost.localdomain>
+Date: Wed, 30 Mar 2011 10:01:22 +0100
+Message-ID: <20110330090118.5897.137.stgit@localhost.localdomain>
 In-Reply-To: <20110330085539.5897.67919.stgit@localhost.localdomain>
 References: <20110330085539.5897.67919.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,337 +22,450 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need the 3D validation stuff so it and all the related gunge can
-depart. While we are at it prune some unused definitions.
-
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/psb_drv.c |   16 ------
- drivers/staging/gma500/psb_drv.h |  105 -------------------------------------
- drivers/staging/gma500/psb_sgx.c |  107 --------------------------------------
- 3 files changed, 0 insertions(+), 228 deletions(-)
+ drivers/staging/gma500/mrst.h    |  217 ++++++++++++++++++++++++++++++++++++++
+ drivers/staging/gma500/psb_drv.h |  197 ----------------------------------
+ 2 files changed, 218 insertions(+), 196 deletions(-)
+ create mode 100644 drivers/staging/gma500/mrst.h
 
-diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index cbb691e..6e9954c 100644
---- a/drivers/staging/gma500/psb_drv.c
-+++ b/drivers/staging/gma500/psb_drv.c
-@@ -284,20 +284,7 @@ static void psb_set_uopt(struct drm_psb_uopt *uopt)
- 
- static void psb_lastclose(struct drm_device *dev)
- {
--	struct drm_psb_private *dev_priv =
--	    (struct drm_psb_private *) dev->dev_private;
--
- 	return;
--
--	if (!dev->dev_private)
--		return;
--
--	mutex_lock(&dev_priv->cmdbuf_mutex);
--	if (dev_priv->context.buffers) {
--		vfree(dev_priv->context.buffers);
--		dev_priv->context.buffers = NULL;
--	}
--	mutex_unlock(&dev_priv->cmdbuf_mutex);
- }
- 
- static void psb_do_takedown(struct drm_device *dev)
-@@ -744,7 +731,6 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
- 	dev_priv = kzalloc(sizeof(*dev_priv), GFP_KERNEL);
- 	if (dev_priv == NULL)
- 		return -ENOMEM;
--	INIT_LIST_HEAD(&dev_priv->video_ctx);
- 
- 	if (IS_MRST(dev))
- 		dev_priv->num_pipe = 1;
-@@ -767,8 +753,6 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
- 	mutex_init(&dev_priv->temp_mem);
- 	mutex_init(&dev_priv->cmdbuf_mutex);
- 	mutex_init(&dev_priv->reset_mutex);
--	INIT_LIST_HEAD(&dev_priv->context.validate_list);
--	INIT_LIST_HEAD(&dev_priv->context.kern_validate_list);
- 
- /*	mutex_init(&dev_priv->dsr_mutex); */
- 
+diff --git a/drivers/staging/gma500/mrst.h b/drivers/staging/gma500/mrst.h
+new file mode 100644
+index 0000000..5e4aaeb
+--- /dev/null
++++ b/drivers/staging/gma500/mrst.h
+@@ -0,0 +1,217 @@
++/**************************************************************************
++ * Copyright (c) 2007-2011, Intel Corporation.
++ * All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ **************************************************************************/
++
++/* MID device specific descriptors */
++
++struct mrst_vbt {
++	s8 signature[4];	/*4 bytes,"$GCT" */
++	u8 revision;
++	u8 size;
++	u8 checksum;
++	void *mrst_gct;
++} __attribute__ ((packed));
++
++struct mrst_timing_info {
++	u16 pixel_clock;
++	u8 hactive_lo;
++	u8 hblank_lo;
++	u8 hblank_hi:4;
++	u8 hactive_hi:4;
++	u8 vactive_lo;
++	u8 vblank_lo;
++	u8 vblank_hi:4;
++	u8 vactive_hi:4;
++	u8 hsync_offset_lo;
++	u8 hsync_pulse_width_lo;
++	u8 vsync_pulse_width_lo:4;
++	u8 vsync_offset_lo:4;
++	u8 vsync_pulse_width_hi:2;
++	u8 vsync_offset_hi:2;
++	u8 hsync_pulse_width_hi:2;
++	u8 hsync_offset_hi:2;
++	u8 width_mm_lo;
++	u8 height_mm_lo;
++	u8 height_mm_hi:4;
++	u8 width_mm_hi:4;
++	u8 hborder;
++	u8 vborder;
++	u8 unknown0:1;
++	u8 hsync_positive:1;
++	u8 vsync_positive:1;
++	u8 separate_sync:2;
++	u8 stereo:1;
++	u8 unknown6:1;
++	u8 interlaced:1;
++} __attribute__((packed));
++
++struct gct_r10_timing_info {
++	u16 pixel_clock;
++	u32 hactive_lo:8;
++	u32 hactive_hi:4;
++	u32 hblank_lo:8;
++	u32 hblank_hi:4;
++	u32 hsync_offset_lo:8;
++	u16 hsync_offset_hi:2;
++	u16 hsync_pulse_width_lo:8;
++	u16 hsync_pulse_width_hi:2;
++	u16 hsync_positive:1;
++	u16 rsvd_1:3;
++	u8  vactive_lo:8;
++	u16 vactive_hi:4;
++	u16 vblank_lo:8;
++	u16 vblank_hi:4;
++	u16 vsync_offset_lo:4;
++	u16 vsync_offset_hi:2;
++	u16 vsync_pulse_width_lo:4;
++	u16 vsync_pulse_width_hi:2;
++	u16 vsync_positive:1;
++	u16 rsvd_2:3;
++} __attribute__((packed));
++
++struct mrst_panel_descriptor_v1 {
++	u32 Panel_Port_Control; /* 1 dword, Register 0x61180 if LVDS */
++				/* 0x61190 if MIPI */
++	u32 Panel_Power_On_Sequencing;/*1 dword,Register 0x61208,*/
++	u32 Panel_Power_Off_Sequencing;/*1 dword,Register 0x6120C,*/
++	u32 Panel_Power_Cycle_Delay_and_Reference_Divisor;/* 1 dword */
++						/* Register 0x61210 */
++	struct mrst_timing_info DTD;/*18 bytes, Standard definition */
++	u16 Panel_Backlight_Inverter_Descriptor;/* 16 bits, as follows */
++				/* Bit 0, Frequency, 15 bits,0 - 32767Hz */
++			/* Bit 15, Polarity, 1 bit, 0: Normal, 1: Inverted */
++	u16 Panel_MIPI_Display_Descriptor;
++			/*16 bits, Defined as follows: */
++			/* if MIPI, 0x0000 if LVDS */
++			/* Bit 0, Type, 2 bits, */
++			/* 0: Type-1, */
++			/* 1: Type-2, */
++			/* 2: Type-3, */
++			/* 3: Type-4 */
++			/* Bit 2, Pixel Format, 4 bits */
++			/* Bit0: 16bpp (not supported in LNC), */
++			/* Bit1: 18bpp loosely packed, */
++			/* Bit2: 18bpp packed, */
++			/* Bit3: 24bpp */
++			/* Bit 6, Reserved, 2 bits, 00b */
++			/* Bit 8, Minimum Supported Frame Rate, 6 bits, 0 - 63Hz */
++			/* Bit 14, Reserved, 2 bits, 00b */
++} __attribute__ ((packed));
++
++struct mrst_panel_descriptor_v2 {
++	u32 Panel_Port_Control; /* 1 dword, Register 0x61180 if LVDS */
++				/* 0x61190 if MIPI */
++	u32 Panel_Power_On_Sequencing;/*1 dword,Register 0x61208,*/
++	u32 Panel_Power_Off_Sequencing;/*1 dword,Register 0x6120C,*/
++	u8 Panel_Power_Cycle_Delay_and_Reference_Divisor;/* 1 byte */
++						/* Register 0x61210 */
++	struct mrst_timing_info DTD;/*18 bytes, Standard definition */
++	u16 Panel_Backlight_Inverter_Descriptor;/*16 bits, as follows*/
++				/*Bit 0, Frequency, 16 bits, 0 - 32767Hz*/
++	u8 Panel_Initial_Brightness;/* [7:0] 0 - 100% */
++			/*Bit 7, Polarity, 1 bit,0: Normal, 1: Inverted*/
++	u16 Panel_MIPI_Display_Descriptor;
++			/*16 bits, Defined as follows: */
++			/* if MIPI, 0x0000 if LVDS */
++			/* Bit 0, Type, 2 bits, */
++			/* 0: Type-1, */
++			/* 1: Type-2, */
++			/* 2: Type-3, */
++			/* 3: Type-4 */
++			/* Bit 2, Pixel Format, 4 bits */
++			/* Bit0: 16bpp (not supported in LNC), */
++			/* Bit1: 18bpp loosely packed, */
++			/* Bit2: 18bpp packed, */
++			/* Bit3: 24bpp */
++			/* Bit 6, Reserved, 2 bits, 00b */
++			/* Bit 8, Minimum Supported Frame Rate, 6 bits, 0 - 63Hz */
++			/* Bit 14, Reserved, 2 bits, 00b */
++} __attribute__ ((packed));
++
++union mrst_panel_rx {
++	struct{
++		u16 NumberOfLanes:2; /*Num of Lanes, 2 bits,0 = 1 lane,*/
++			/* 1 = 2 lanes, 2 = 3 lanes, 3 = 4 lanes. */
++		u16 MaxLaneFreq:3; /* 0: 100MHz, 1: 200MHz, 2: 300MHz, */
++		/*3: 400MHz, 4: 500MHz, 5: 600MHz, 6: 700MHz, 7: 800MHz.*/
++		u16 SupportedVideoTransferMode:2; /*0: Non-burst only */
++					/* 1: Burst and non-burst */
++					/* 2/3: Reserved */
++		u16 HSClkBehavior:1; /*0: Continuous, 1: Non-continuous*/
++		u16 DuoDisplaySupport:1; /*1 bit,0: No, 1: Yes*/
++		u16 ECC_ChecksumCapabilities:1;/*1 bit,0: No, 1: Yes*/
++		u16 BidirectionalCommunication:1;/*1 bit,0: No, 1: Yes */
++		u16 Rsvd:5;/*5 bits,00000b */
++	} panelrx;
++	u16 panel_receiver;
++} __attribute__ ((packed));
++
++struct mrst_gct_v1 {
++	union{ /*8 bits,Defined as follows: */
++		struct {
++			u8 PanelType:4; /*4 bits, Bit field for panels*/
++					/* 0 - 3: 0 = LVDS, 1 = MIPI*/
++					/*2 bits,Specifies which of the*/
++			u8 BootPanelIndex:2;
++					/* 4 panels to use by default*/
++			u8 BootMIPI_DSI_RxIndex:2;/*Specifies which of*/
++					/* the 4 MIPI DSI receivers to use*/
++		} PD;
++		u8 PanelDescriptor;
++	};
++	struct mrst_panel_descriptor_v1 panel[4];/*panel descrs,38 bytes each*/
++	union mrst_panel_rx panelrx[4]; /* panel receivers*/
++} __attribute__ ((packed));
++
++struct mrst_gct_v2 {
++	union{ /*8 bits,Defined as follows: */
++		struct {
++			u8 PanelType:4; /*4 bits, Bit field for panels*/
++					/* 0 - 3: 0 = LVDS, 1 = MIPI*/
++					/*2 bits,Specifies which of the*/
++			u8 BootPanelIndex:2;
++					/* 4 panels to use by default*/
++			u8 BootMIPI_DSI_RxIndex:2;/*Specifies which of*/
++					/* the 4 MIPI DSI receivers to use*/
++		} PD;
++		u8 PanelDescriptor;
++	};
++	struct mrst_panel_descriptor_v2 panel[4];/*panel descrs,38 bytes each*/
++	union mrst_panel_rx panelrx[4]; /* panel receivers*/
++} __attribute__ ((packed));
++
++struct mrst_gct_data {
++	u8 bpi; /* boot panel index, number of panel used during boot */
++	u8 pt; /* panel type, 4 bit field, 0=lvds, 1=mipi */
++	struct mrst_timing_info DTD; /* timing info for the selected panel */
++	u32 Panel_Port_Control;
++	u32 PP_On_Sequencing;/*1 dword,Register 0x61208,*/
++	u32 PP_Off_Sequencing;/*1 dword,Register 0x6120C,*/
++	u32 PP_Cycle_Delay;
++	u16 Panel_Backlight_Inverter_Descriptor;
++	u16 Panel_MIPI_Display_Descriptor;
++} __attribute__ ((packed));
++
++#define MODE_SETTING_IN_CRTC 	0x1
++#define MODE_SETTING_IN_ENCODER 0x2
++#define MODE_SETTING_ON_GOING 	0x3
++#define MODE_SETTING_IN_DSR 	0x4
++#define MODE_SETTING_ENCODER_DONE 0x8
++#define GCT_R10_HEADER_SIZE	16
++#define GCT_R10_DISPLAY_DESC_SIZE	28
++
 diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
-index 7c83c8d..014035f 100644
+index 014035f..c2fd475 100644
 --- a/drivers/staging/gma500/psb_drv.h
 +++ b/drivers/staging/gma500/psb_drv.h
-@@ -94,23 +94,10 @@ enum {
- #define PSB_MEM_MMU_START       0x00000000
- #define PSB_MEM_TT_START        0xE0000000
- 
--#define PSB_GL3_CACHE_CTL	0x2100
--#define PSB_GL3_CACHE_STAT	0x2108
--
- /*
-  *Flags for external memory type field.
-  */
- 
--#define MRST_MSVDX_OFFSET	0x90000	/*MSVDX Base offset */
--#define PSB_MSVDX_OFFSET	0x50000	/*MSVDX Base offset */
--/* MSVDX MMIO region is 0x50000 - 0x57fff ==> 32KB */
--#define PSB_MSVDX_SIZE		0x10000
--
--#define LNC_TOPAZ_OFFSET	0xA0000
--#define PNW_TOPAZ_OFFSET	0xC0000
--#define PNW_GL3_OFFSET		0xB0000
--#define LNC_TOPAZ_SIZE		0x10000
--#define PNW_TOPAZ_SIZE		0x30000 /* PNW VXE285 has two cores */
- #define PSB_MMU_CACHED_MEMORY	  0x0001	/* Bind to MMU only */
- #define PSB_MMU_RO_MEMORY	  0x0002	/* MMU RO memory */
- #define PSB_MMU_WO_MEMORY	  0x0004	/* MMU WO memory */
-@@ -222,20 +209,6 @@ enum {
- #define MDFLD_PNW_B0 0x04
- #define MDFLD_PNW_C0 0x08
- 
--#define MDFLD_DSR_2D_3D_0 BIT0
--#define MDFLD_DSR_2D_3D_2 BIT1
--#define MDFLD_DSR_CURSOR_0 BIT2
--#define MDFLD_DSR_CURSOR_2 BIT3
--#define MDFLD_DSR_OVERLAY_0 BIT4
--#define MDFLD_DSR_OVERLAY_2 BIT5
--#define MDFLD_DSR_MIPI_CONTROL	BIT6
--#define MDFLD_DSR_2D_3D 	(MDFLD_DSR_2D_3D_0 | MDFLD_DSR_2D_3D_2)
--
--#define MDFLD_DSR_RR 45
--#define MDFLD_DPU_ENABLE BIT31
--#define MDFLD_DSR_FULLSCREEN BIT30
--#define MDFLD_DSR_DELAY (DRM_HZ / MDFLD_DSR_RR)
--
- #define PSB_PWR_STATE_ON		1
- #define PSB_PWR_STATE_OFF		2
- 
-@@ -249,9 +222,6 @@ enum {
- #define PSB_PCIx_MSI_ADDR_LOC		0x94
- #define PSB_PCIx_MSI_DATA_LOC		0x98
- 
--#define MDFLD_PLANE_MAX_WIDTH		2048
--#define MDFLD_PLANE_MAX_HEIGHT		2048
--
- struct opregion_header;
- struct opregion_acpi;
- struct opregion_swsci;
-@@ -273,66 +243,6 @@ struct drm_psb_uopt {
+@@ -29,6 +29,7 @@
+ #include "psb_intel_drv.h"
+ #include "psb_gtt.h"
+ #include "psb_powermgmt.h"
++#include "mrst.h"
+ #include "ttm/ttm_object.h"
+ #include "psb_ttm_fence_driver.h"
+ #include "psb_ttm_userobj_api.h"
+@@ -243,202 +244,6 @@ struct drm_psb_uopt {
  	int pad; /*keep it here in case we use it in future*/
  };
  
--/**
-- *struct psb_context
-- *
-- *@buffers:	 array of pre-allocated validate buffers.
-- *@used_buffers: number of buffers in @buffers array currently in use.
-- *@validate_buffer: buffers validated from user-space.
-- *@kern_validate_buffers : buffers validated from kernel-space.
-- *@fence_flags : Fence flags to be used for fence creation.
-- *
-- *This structure is used during execbuf validation.
-- */
+-struct mrst_vbt {
+-	s8 signature[4];	/*4 bytes,"$GCT" */
+-	u8 revision;
+-	u8 size;
+-	u8 checksum;
+-	void *mrst_gct;
+-} __attribute__ ((packed));
 -
--struct psb_context {
--	struct psb_validate_buffer *buffers;
--	uint32_t used_buffers;
--	struct list_head validate_list;
--	struct list_head kern_validate_list;
--	uint32_t fence_types;
--	uint32_t val_seq;
--};
+-struct mrst_timing_info {
+-	u16 pixel_clock;
+-	u8 hactive_lo;
+-	u8 hblank_lo;
+-	u8 hblank_hi:4;
+-	u8 hactive_hi:4;
+-	u8 vactive_lo;
+-	u8 vblank_lo;
+-	u8 vblank_hi:4;
+-	u8 vactive_hi:4;
+-	u8 hsync_offset_lo;
+-	u8 hsync_pulse_width_lo;
+-	u8 vsync_pulse_width_lo:4;
+-	u8 vsync_offset_lo:4;
+-	u8 vsync_pulse_width_hi:2;
+-	u8 vsync_offset_hi:2;
+-	u8 hsync_pulse_width_hi:2;
+-	u8 hsync_offset_hi:2;
+-	u8 width_mm_lo;
+-	u8 height_mm_lo;
+-	u8 height_mm_hi:4;
+-	u8 width_mm_hi:4;
+-	u8 hborder;
+-	u8 vborder;
+-	u8 unknown0:1;
+-	u8 hsync_positive:1;
+-	u8 vsync_positive:1;
+-	u8 separate_sync:2;
+-	u8 stereo:1;
+-	u8 unknown6:1;
+-	u8 interlaced:1;
+-} __attribute__((packed));
 -
--struct psb_validate_buffer;
+-struct gct_r10_timing_info {
+-	u16 pixel_clock;
+-	u32 hactive_lo:8;
+-	u32 hactive_hi:4;
+-	u32 hblank_lo:8;
+-	u32 hblank_hi:4;
+-	u32 hsync_offset_lo:8;
+-	u16 hsync_offset_hi:2;
+-	u16 hsync_pulse_width_lo:8;
+-	u16 hsync_pulse_width_hi:2;
+-	u16 hsync_positive:1;
+-	u16 rsvd_1:3;
+-	u8  vactive_lo:8;
+-	u16 vactive_hi:4;
+-	u16 vblank_lo:8;
+-	u16 vblank_hi:4;
+-	u16 vsync_offset_lo:4;
+-	u16 vsync_offset_hi:2;
+-	u16 vsync_pulse_width_lo:4;
+-	u16 vsync_pulse_width_hi:2;
+-	u16 vsync_positive:1;
+-	u16 rsvd_2:3;
+-} __attribute__((packed));
 -
--/* Currently defined profiles */
--enum VAProfile {
--	VAProfileMPEG2Simple		= 0,
--	VAProfileMPEG2Main		= 1,
--	VAProfileMPEG4Simple		= 2,
--	VAProfileMPEG4AdvancedSimple	= 3,
--	VAProfileMPEG4Main		= 4,
--	VAProfileH264Baseline		= 5,
--	VAProfileH264Main		= 6,
--	VAProfileH264High		= 7,
--	VAProfileVC1Simple		= 8,
--	VAProfileVC1Main		= 9,
--	VAProfileVC1Advanced		= 10,
--	VAProfileH263Baseline		= 11,
--	VAProfileJPEGBaseline           = 12,
--	VAProfileH264ConstrainedBaseline = 13
--};
+-struct mrst_panel_descriptor_v1 {
+-	u32 Panel_Port_Control; /* 1 dword, Register 0x61180 if LVDS */
+-				/* 0x61190 if MIPI */
+-	u32 Panel_Power_On_Sequencing;/*1 dword,Register 0x61208,*/
+-	u32 Panel_Power_Off_Sequencing;/*1 dword,Register 0x6120C,*/
+-	u32 Panel_Power_Cycle_Delay_and_Reference_Divisor;/* 1 dword */
+-						/* Register 0x61210 */
+-	struct mrst_timing_info DTD;/*18 bytes, Standard definition */
+-	u16 Panel_Backlight_Inverter_Descriptor;/* 16 bits, as follows */
+-				/* Bit 0, Frequency, 15 bits,0 - 32767Hz */
+-			/* Bit 15, Polarity, 1 bit, 0: Normal, 1: Inverted */
+-	u16 Panel_MIPI_Display_Descriptor;
+-			/*16 bits, Defined as follows: */
+-			/* if MIPI, 0x0000 if LVDS */
+-			/* Bit 0, Type, 2 bits, */
+-			/* 0: Type-1, */
+-			/* 1: Type-2, */
+-			/* 2: Type-3, */
+-			/* 3: Type-4 */
+-			/* Bit 2, Pixel Format, 4 bits */
+-			/* Bit0: 16bpp (not supported in LNC), */
+-			/* Bit1: 18bpp loosely packed, */
+-			/* Bit2: 18bpp packed, */
+-			/* Bit3: 24bpp */
+-			/* Bit 6, Reserved, 2 bits, 00b */
+-			/* Bit 8, Minimum Supported Frame Rate, 6 bits, 0 - 63Hz */
+-			/* Bit 14, Reserved, 2 bits, 00b */
+-} __attribute__ ((packed));
 -
--/* Currently defined entrypoints */
--enum VAEntrypoint {
--	VAEntrypointVLD		= 1,
--	VAEntrypointIZZ		= 2,
--	VAEntrypointIDCT	= 3,
--	VAEntrypointMoComp	= 4,
--	VAEntrypointDeblocking	= 5,
--	VAEntrypointEncSlice	= 6,	/* slice level encode */
--	VAEntrypointEncPicture 	= 7	/* pictuer encode, JPEG, etc */
--};
+-struct mrst_panel_descriptor_v2 {
+-	u32 Panel_Port_Control; /* 1 dword, Register 0x61180 if LVDS */
+-				/* 0x61190 if MIPI */
+-	u32 Panel_Power_On_Sequencing;/*1 dword,Register 0x61208,*/
+-	u32 Panel_Power_Off_Sequencing;/*1 dword,Register 0x6120C,*/
+-	u8 Panel_Power_Cycle_Delay_and_Reference_Divisor;/* 1 byte */
+-						/* Register 0x61210 */
+-	struct mrst_timing_info DTD;/*18 bytes, Standard definition */
+-	u16 Panel_Backlight_Inverter_Descriptor;/*16 bits, as follows*/
+-				/*Bit 0, Frequency, 16 bits, 0 - 32767Hz*/
+-	u8 Panel_Initial_Brightness;/* [7:0] 0 - 100% */
+-			/*Bit 7, Polarity, 1 bit,0: Normal, 1: Inverted*/
+-	u16 Panel_MIPI_Display_Descriptor;
+-			/*16 bits, Defined as follows: */
+-			/* if MIPI, 0x0000 if LVDS */
+-			/* Bit 0, Type, 2 bits, */
+-			/* 0: Type-1, */
+-			/* 1: Type-2, */
+-			/* 2: Type-3, */
+-			/* 3: Type-4 */
+-			/* Bit 2, Pixel Format, 4 bits */
+-			/* Bit0: 16bpp (not supported in LNC), */
+-			/* Bit1: 18bpp loosely packed, */
+-			/* Bit2: 18bpp packed, */
+-			/* Bit3: 24bpp */
+-			/* Bit 6, Reserved, 2 bits, 00b */
+-			/* Bit 8, Minimum Supported Frame Rate, 6 bits, 0 - 63Hz */
+-			/* Bit 14, Reserved, 2 bits, 00b */
+-} __attribute__ ((packed));
 -
+-union mrst_panel_rx {
+-	struct{
+-		u16 NumberOfLanes:2; /*Num of Lanes, 2 bits,0 = 1 lane,*/
+-			/* 1 = 2 lanes, 2 = 3 lanes, 3 = 4 lanes. */
+-		u16 MaxLaneFreq:3; /* 0: 100MHz, 1: 200MHz, 2: 300MHz, */
+-		/*3: 400MHz, 4: 500MHz, 5: 600MHz, 6: 700MHz, 7: 800MHz.*/
+-		u16 SupportedVideoTransferMode:2; /*0: Non-burst only */
+-					/* 1: Burst and non-burst */
+-					/* 2/3: Reserved */
+-		u16 HSClkBehavior:1; /*0: Continuous, 1: Non-continuous*/
+-		u16 DuoDisplaySupport:1; /*1 bit,0: No, 1: Yes*/
+-		u16 ECC_ChecksumCapabilities:1;/*1 bit,0: No, 1: Yes*/
+-		u16 BidirectionalCommunication:1;/*1 bit,0: No, 1: Yes */
+-		u16 Rsvd:5;/*5 bits,00000b */
+-	} panelrx;
+-	u16 panel_receiver;
+-} __attribute__ ((packed));
 -
--struct psb_video_ctx {
--	struct list_head head;
--	struct file *filp; /* DRM device file pointer */
--	int ctx_type; /* profile<<8|entrypoint */
--	/* todo: more context specific data for multi-context support */
--};
+-struct mrst_gct_v1 {
+-	union{ /*8 bits,Defined as follows: */
+-		struct {
+-			u8 PanelType:4; /*4 bits, Bit field for panels*/
+-					/* 0 - 3: 0 = LVDS, 1 = MIPI*/
+-					/*2 bits,Specifies which of the*/
+-			u8 BootPanelIndex:2;
+-					/* 4 panels to use by default*/
+-			u8 BootMIPI_DSI_RxIndex:2;/*Specifies which of*/
+-					/* the 4 MIPI DSI receivers to use*/
+-		} PD;
+-		u8 PanelDescriptor;
+-	};
+-	struct mrst_panel_descriptor_v1 panel[4];/*panel descrs,38 bytes each*/
+-	union mrst_panel_rx panelrx[4]; /* panel receivers*/
+-} __attribute__ ((packed));
 -
- struct mrst_vbt {
- 	s8 signature[4];	/*4 bytes,"$GCT" */
- 	u8 revision;
-@@ -574,10 +484,6 @@ struct drm_psb_private {
- 	uint8_t *vdc_reg;
- 	uint32_t gatt_free_offset;
- 
--	/* IMG video context */
--	struct list_head video_ctx;
+-struct mrst_gct_v2 {
+-	union{ /*8 bits,Defined as follows: */
+-		struct {
+-			u8 PanelType:4; /*4 bits, Bit field for panels*/
+-					/* 0 - 3: 0 = LVDS, 1 = MIPI*/
+-					/*2 bits,Specifies which of the*/
+-			u8 BootPanelIndex:2;
+-					/* 4 panels to use by default*/
+-			u8 BootMIPI_DSI_RxIndex:2;/*Specifies which of*/
+-					/* the 4 MIPI DSI receivers to use*/
+-		} PD;
+-		u8 PanelDescriptor;
+-	};
+-	struct mrst_panel_descriptor_v2 panel[4];/*panel descrs,38 bytes each*/
+-	union mrst_panel_rx panelrx[4]; /* panel receivers*/
+-} __attribute__ ((packed));
 -
+-struct mrst_gct_data {
+-	u8 bpi; /* boot panel index, number of panel used during boot */
+-	u8 pt; /* panel type, 4 bit field, 0=lvds, 1=mipi */
+-	struct mrst_timing_info DTD; /* timing info for the selected panel */
+-	u32 Panel_Port_Control;
+-	u32 PP_On_Sequencing;/*1 dword,Register 0x61208,*/
+-	u32 PP_Off_Sequencing;/*1 dword,Register 0x6120C,*/
+-	u32 PP_Cycle_Delay;
+-	u16 Panel_Backlight_Inverter_Descriptor;
+-	u16 Panel_MIPI_Display_Descriptor;
+-} __attribute__ ((packed));
 -
- 
+-#define MODE_SETTING_IN_CRTC 	0x1
+-#define MODE_SETTING_IN_ENCODER 0x2
+-#define MODE_SETTING_ON_GOING 	0x3
+-#define MODE_SETTING_IN_DSR 	0x4
+-#define MODE_SETTING_ENCODER_DONE 0x8
+-#define GCT_R10_HEADER_SIZE	16
+-#define GCT_R10_DISPLAY_DESC_SIZE	28
+-
+ struct drm_psb_private {
  	/*
- 	 *Fencing / irq.
-@@ -870,12 +776,6 @@ struct drm_psb_private {
- 	atomic_t val_seq;
- 
- 	/*
--	 *TODO: change this to be per drm-context.
--	 */
--
--	struct psb_context context;
--
--	/*
- 	 * LID-Switch
- 	 */
- 	spinlock_t lid_lock;
-@@ -1032,11 +932,6 @@ extern void psb_fence_or_sync(struct drm_file *file_priv,
- 			      struct list_head *list,
- 			      struct psb_ttm_fence_rep *fence_arg,
- 			      struct ttm_fence_object **fence_p);
--extern int psb_validate_kernel_buffer(struct psb_context *context,
--				      struct ttm_buffer_object *bo,
--				      uint32_t fence_class,
--				      uint64_t set_flags,
--				      uint64_t clr_flags);
- 
- /*
-  *psb_irq.c
-diff --git a/drivers/staging/gma500/psb_sgx.c b/drivers/staging/gma500/psb_sgx.c
-index 973134b..91fbb6a 100644
---- a/drivers/staging/gma500/psb_sgx.c
-+++ b/drivers/staging/gma500/psb_sgx.c
-@@ -64,113 +64,6 @@ struct psb_validate_buffer {
- 	uint32_t offset;
- 	int po_correct;
- };
--static int
--psb_placement_fence_type(struct ttm_buffer_object *bo,
--			 uint64_t set_val_flags,
--			 uint64_t clr_val_flags,
--			 uint32_t new_fence_class,
--			 uint32_t *new_fence_type)
--{
--	int ret;
--	uint32_t n_fence_type;
--	/*
--	uint32_t set_flags = set_val_flags & 0xFFFFFFFF;
--	uint32_t clr_flags = clr_val_flags & 0xFFFFFFFF;
--	*/
--	struct ttm_fence_object *old_fence;
--	uint32_t old_fence_type;
--	struct ttm_placement placement;
--
--	if (unlikely
--	    (!(set_val_flags &
--	       (PSB_GPU_ACCESS_READ | PSB_GPU_ACCESS_WRITE)))) {
--		DRM_ERROR
--		    ("GPU access type (read / write) is not indicated.\n");
--		return -EINVAL;
--	}
--
--	/* User space driver doesn't set any TTM placement flags in
--					set_val_flags or clr_val_flags */
--	placement.num_placement = 0;/* FIXME  */
--	placement.num_busy_placement = 0;
--	placement.fpfn = 0;
--	placement.lpfn = 0;
--	ret = psb_ttm_bo_check_placement(bo, &placement);
--	if (unlikely(ret != 0))
--		return ret;
--
--	switch (new_fence_class) {
--	default:
--		n_fence_type = _PSB_FENCE_TYPE_EXE;
--	}
--
--	*new_fence_type = n_fence_type;
--	old_fence = (struct ttm_fence_object *) bo->sync_obj;
--	old_fence_type = (uint32_t) (unsigned long) bo->sync_obj_arg;
--
--	if (old_fence && ((new_fence_class != old_fence->fence_class) ||
--			  ((n_fence_type ^ old_fence_type) &
--			   old_fence_type))) {
--		ret = ttm_bo_wait(bo, 0, 1, 0);
--		if (unlikely(ret != 0))
--			return ret;
--	}
--	/*
--	bo->proposed_flags = (bo->proposed_flags | set_flags)
--		& ~clr_flags & TTM_PL_MASK_MEMTYPE;
--	*/
--	return 0;
--}
--
--int psb_validate_kernel_buffer(struct psb_context *context,
--			       struct ttm_buffer_object *bo,
--			       uint32_t fence_class,
--			       uint64_t set_flags, uint64_t clr_flags)
--{
--	struct psb_validate_buffer *item;
--	uint32_t cur_fence_type;
--	int ret;
--
--	if (unlikely(context->used_buffers >= PSB_NUM_VALIDATE_BUFFERS)) {
--		DRM_ERROR("Out of free validation buffer entries for "
--			  "kernel buffer validation.\n");
--		return -ENOMEM;
--	}
--
--	item = &context->buffers[context->used_buffers];
--	item->user_val_arg = NULL;
--	item->base.reserved = 0;
--
--	ret = ttm_bo_reserve(bo, 1, 0, 1, context->val_seq);
--	if (unlikely(ret != 0))
--	        return ret;
--
--	ret = psb_placement_fence_type(bo, set_flags, clr_flags, fence_class,
--				       &cur_fence_type);
--	if (unlikely(ret != 0)) {
--		ttm_bo_unreserve(bo);
--		return ret;
--	}
--
--	item->base.bo = ttm_bo_reference(bo);
--	item->base.new_sync_obj_arg = (void *) (unsigned long) cur_fence_type;
--	item->base.reserved = 1;
--
--	/* Internal locking ??? FIXMEAC */
--	list_add_tail(&item->base.head, &context->kern_validate_list);
--	context->used_buffers++;
--	/*
--	ret = ttm_bo_validate(bo, 1, 0, 0);
--	if (unlikely(ret != 0))
--		goto out_unlock;
--	*/
--	item->offset = bo->offset;
--	item->flags = bo->mem.placement;
--	context->fence_types |= cur_fence_type;
--
--	return ret;
--}
--
- void psb_fence_or_sync(struct drm_file *file_priv,
- 		       uint32_t engine,
- 		       uint32_t fence_types,
+ 	 * DSI info.
 
