@@ -1,169 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933689Ab1C3VNp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:13:45 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45379 "EHLO mga03.intel.com"
+	id S933657Ab1C3VNn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:13:43 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58125 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965318Ab1C3VKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965321Ab1C3VKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Mar 2011 17:10:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="411279355"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110330203.501921634@firstfloor.org>
-In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: guenter.roeck@ericsson.com, khali@linux-fr.org, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [266/275] hwmon: (w83627ehf) Driver cleanup
-Message-Id: <20110330210833.B13D73E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:08:33 -0700 (PDT)
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Subject: Re: [Xen-devel] [PATCH] PM / Hibernate: Introduce CONFIG_HIBERNATE_INTERFACE
+Date: Wed, 30 Mar 2011 23:10:24 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        Shriram Rajagopalan <rshriram@cs.ubc.ca>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201103261229.44770.rjw@sisk.pl> <1301414013.18413.29.camel@zakaz.uk.xensource.com> <201103292139.35645.rjw@sisk.pl>
+In-Reply-To: <201103292139.35645.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103302310.24717.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Tuesday, March 29, 2011, Rafael J. Wysocki wrote:
+> On Tuesday, March 29, 2011, Ian Campbell wrote:
+> > Hi Rafael,
+> > 
+> > On Sat, 2011-03-26 at 11:29 +0000, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > > 
+> > > Xen save/restore is going to use hibernate device callbacks for
+> > > quiescing devices and putting them back to normal operations and it
+> > > would need to select CONFIG_HIBERNATION for this purpose.  However,
+> > > that also would cause the hibernate interfaces for user space to be
+> > > enabled, which might confuse user space, because the Xen kernels
+> > > don't support hibernation.  Moreover, it would be wasteful, as it
+> > > would make the Xen kernels include a substantial amount of code that
+> > > they would never use.
+> > > 
+> > > To address this issue introduce new power management Kconfig option
+> > > CONFIG_HIBERNATE_INTERFACE, such that the hibernate interfaces for
+> > > user space and the image-handling code will depend on it and it will
+> > > select CONFIG_HIBERNATION.  Then, Xen save/restore will be able to
+> > > select CONFIG_HIBERNATION without dragging the entire hibernate code
+> > > along with it.
+> > > 
+> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > Were you planning to put this forward for 2.6.39 or are you waiting for
+> > 2.6.40?
+> 
+> I'm goint to push it for 2.6.39.  In fact, I'm going to send the pull request
+> shortly.
 
-------------------
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+Unfortunately Linus didn't like it, so I need to rework it to make him happy.
 
-[ upstream commit da2e025590cf7038440132d4bbc967a579b11112 ]
+As a result the patch is not going to go into 2.6.39.
 
-- Moved fan pwm register array pointers into per-instance data.
-- Only read fan pwm data for installed/supported fans.
-- Update fan max output and fan step output information from data in
-  registers.
-- Create max_output and step_output attribute files only if respective
-  fan pwm registers exist.
-
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
----
- drivers/hwmon/w83627ehf.c |   59 +++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 56 insertions(+), 3 deletions(-)
-
-Index: linux-2.6.35.y/drivers/hwmon/w83627ehf.c
-===================================================================
---- linux-2.6.35.y.orig/drivers/hwmon/w83627ehf.c	2011-01-13 09:47:51.000000000 -0800
-+++ linux-2.6.35.y/drivers/hwmon/w83627ehf.c	2011-03-29 23:35:17.169732997 -0700
-@@ -277,6 +277,11 @@
- 	struct device *hwmon_dev;
- 	struct mutex lock;
- 
-+	const u8 *REG_FAN_START_OUTPUT;
-+	const u8 *REG_FAN_STOP_OUTPUT;
-+	const u8 *REG_FAN_MAX_OUTPUT;
-+	const u8 *REG_FAN_STEP_OUTPUT;
-+
- 	struct mutex update_lock;
- 	char valid;		/* !=0 if following fields are valid */
- 	unsigned long last_updated;	/* In jiffies */
-@@ -524,7 +529,10 @@
- 			}
- 		}
- 
--		for (i = 0; i < 4; i++) {
-+		for (i = 0; i < data->pwm_num; i++) {
-+			if (!(data->has_fan & (1 << i)))
-+				continue;
-+
- 			/* pwmcfg, tolerance mapped for i=0, i=1 to same reg */
- 			if (i != 1) {
- 				pwmcfg = w83627ehf_read_value(data,
-@@ -546,6 +554,17 @@
- 						W83627EHF_REG_FAN_STOP_OUTPUT[i]);
- 			data->fan_stop_time[i] = w83627ehf_read_value(data,
- 						W83627EHF_REG_FAN_STOP_TIME[i]);
-+
-+			if (data->REG_FAN_MAX_OUTPUT[i] != 0xff)
-+				data->fan_max_output[i] =
-+				  w83627ehf_read_value(data,
-+					       data->REG_FAN_MAX_OUTPUT[i]);
-+
-+			if (data->REG_FAN_STEP_OUTPUT[i] != 0xff)
-+				data->fan_step_output[i] =
-+				  w83627ehf_read_value(data,
-+					       data->REG_FAN_STEP_OUTPUT[i]);
-+
- 			data->target_temp[i] =
- 				w83627ehf_read_value(data,
- 					W83627EHF_REG_TARGET[i]) &
-@@ -1126,7 +1145,7 @@
- 	u32 val = SENSORS_LIMIT(simple_strtoul(buf, NULL, 10), 1, 255); \
- 	mutex_lock(&data->update_lock); \
- 	data->reg[nr] = val; \
--	w83627ehf_write_value(data, W83627EHF_REG_##REG[nr], val); \
-+	w83627ehf_write_value(data, data->REG_##REG[nr], val); \
- 	mutex_unlock(&data->update_lock); \
- 	return count; \
- }
-@@ -1206,12 +1225,26 @@
- 		    store_fan_stop_output, 1),
- 	SENSOR_ATTR(pwm3_stop_output, S_IWUSR | S_IRUGO, show_fan_stop_output,
- 		    store_fan_stop_output, 2),
-+};
- 
--	/* pwm1 and pwm3 don't support max and step settings */
-+
-+/*
-+ * pwm1 and pwm3 don't support max and step settings on all chips.
-+ * Need to check support while generating/removing attribute files.
-+ */
-+static struct sensor_device_attribute sda_sf3_max_step_arrays[] = {
-+	SENSOR_ATTR(pwm1_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
-+		    store_fan_max_output, 0),
-+	SENSOR_ATTR(pwm1_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
-+		    store_fan_step_output, 0),
- 	SENSOR_ATTR(pwm2_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
- 		    store_fan_max_output, 1),
- 	SENSOR_ATTR(pwm2_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
- 		    store_fan_step_output, 1),
-+	SENSOR_ATTR(pwm3_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
-+		    store_fan_max_output, 2),
-+	SENSOR_ATTR(pwm3_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
-+		    store_fan_step_output, 2),
- };
- 
- static ssize_t
-@@ -1235,6 +1268,12 @@
- 
- 	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays); i++)
- 		device_remove_file(dev, &sda_sf3_arrays[i].dev_attr);
-+	for (i = 0; i < ARRAY_SIZE(sda_sf3_max_step_arrays); i++) {
-+		struct sensor_device_attribute *attr =
-+		  &sda_sf3_max_step_arrays[i];
-+		if (data->REG_FAN_STEP_OUTPUT[attr->index] != 0xff)
-+			device_remove_file(dev, &attr->dev_attr);
-+	}
- 	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays_fan4); i++)
- 		device_remove_file(dev, &sda_sf3_arrays_fan4[i].dev_attr);
- 	for (i = 0; i < data->in_num; i++) {
-@@ -1352,6 +1391,11 @@
- 		data->in6_skip = !data->temp3_disable;
- 	}
- 
-+	data->REG_FAN_START_OUTPUT = W83627EHF_REG_FAN_START_OUTPUT;
-+	data->REG_FAN_STOP_OUTPUT = W83627EHF_REG_FAN_STOP_OUTPUT;
-+	data->REG_FAN_MAX_OUTPUT = W83627EHF_REG_FAN_MAX_OUTPUT;
-+	data->REG_FAN_STEP_OUTPUT = W83627EHF_REG_FAN_STEP_OUTPUT;
-+
- 	/* Initialize the chip */
- 	w83627ehf_init_device(data);
- 
-@@ -1440,6 +1484,15 @@
- 			&sda_sf3_arrays[i].dev_attr)))
- 			goto exit_remove;
- 
-+	for (i = 0; i < ARRAY_SIZE(sda_sf3_max_step_arrays); i++) {
-+		struct sensor_device_attribute *attr =
-+		  &sda_sf3_max_step_arrays[i];
-+		if (data->REG_FAN_STEP_OUTPUT[attr->index] != 0xff) {
-+			err = device_create_file(dev, &attr->dev_attr);
-+			if (err)
-+				goto exit_remove;
-+		}
-+	}
- 	/* if fan4 is enabled create the sf3 files for it */
- 	if ((data->has_fan & (1 << 3)) && data->pwm_num >= 4)
- 		for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays_fan4); i++) {
+Thanks,
+Rafael
