@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab1C3L1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 07:27:55 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:38775 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755817Ab1C3L1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 07:27:54 -0400
-Message-ID: <4D9313B4.2070104@parallels.com>
-Date: Wed, 30 Mar 2011 06:27:48 -0500
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, <containers@lists.linux-foundation.org>,
-        <netdev@vger.kernel.org>, <stable@kernel.org>
-Subject: Re: 2.6.38 containers bug: Infinite loop in /proc/sys/net/ipv6/neigh/neigh/neigh...
-References: <4D9302F3.6080206@parallels.com>	<20110330.033529.71582712.davem@davemloft.net>	<4D9309B4.2000501@parallels.com> <20110330.034820.124005354.davem@davemloft.net>
-In-Reply-To: <20110330.034820.124005354.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S932403Ab1C3LaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 07:30:16 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41593 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300Ab1C3LaO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 07:30:14 -0400
+Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+In-Reply-To: <20110330081716.GE17523@htj.dyndns.org>
+References: <20110323153727.GB12003@htj.dyndns.org>
+	 <20110324094119.GD12038@htj.dyndns.org>
+	 <20110324094151.GE12038@htj.dyndns.org>
+	 <20110325101238.GC1409@htj.dyndns.org>
+	 <20110329163702.GE29865@htj.dyndns.org>
+	 <20110329170949.GF29865@htj.dyndns.org> <1301420253.2250.430.camel@laptop>
+	 <20110330081716.GE17523@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 30 Mar 2011 13:29:38 +0200
+Message-ID: <1301484578.4859.178.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2011 05:48 AM, David Miller wrote:
-> From: Rob Landley <rlandley@parallels.com>
-> Date: Wed, 30 Mar 2011 05:45:08 -0500
+On Wed, 2011-03-30 at 10:17 +0200, Tejun Heo wrote:
+> Hey, Peter.
 > 
->> So you think letting it soak in the merge window and the churn of -rc1
->> (which currently doesn't boot for me due to an ide issue) will provide
->> more validity than a specific "There was an infinite loop in the
->> filesystem, there is now no longer an infinite loop in the filesystem,
->> here's the specific test for it" and visual inspection ofthe patch?
+> On Tue, Mar 29, 2011 at 07:37:33PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2011-03-29 at 19:09 +0200, Tejun Heo wrote:
+> > > Here's the combined patch I was planning on testing but didn't get to
+> > > (yet).  It implements two things - hard limit on spin duration and
+> > > early break if the owner also is spinning on a mutex.
+> > 
+> > This is going to give massive conflicts with
+> > 
+> >  https://lkml.org/lkml/2011/3/2/286
+> >  https://lkml.org/lkml/2011/3/2/282
+> > 
+> > which I was planning to stuff into .40
 > 
-> Yes I absolutely do think it's better to let it soak somewhere than
-> to repeat the reason why this patch is necessary in the first place.
+> I see.  Adapting shouldn't be hard.  The patch is in proof-of-concept
+> stage anyway.
 > 
-> This patch is necessary because Eric already screwed up trying to fix
-> this neigh dirctory under ipv6 once, and he got it wrong.
+> > > + * Forward progress is guaranteed regardless of locking ordering by never
+> > > + * spinning longer than MAX_MUTEX_SPIN_NS.  This is necessary because
+> > > + * mutex_trylock(), which doesn't have to follow the usual locking
+> > > + * ordering, also uses this function.
+> > 
+> > While that puts a limit on things it'll still waste time. I'd much
+> > rather pass an trylock argument to mutex_spin_on_owner() and then bail
+> > on owner also spinning.
 > 
-> That patch looked correct and straightforward.
-> 
-> Yet it introduced the bug you're seeing.
-> 
-> Given that consideration, are you still holding steady to your
-> opinion wise guy? :-)
+> Do we guarantee or enforce that the lock ownership can't be
+> transferred to a different task?  If we do, the recursive spinning
+> detection is enough to guarantee forward progress.
 
-The patch fixed the specific bug I hit (find /proc hanging), and didn't
-noticeably make the system worse in my use cases.  I have a specific
-test case which used to fail and now succeeds.  The system _without_ the
-patch is broken, and I weigh the possibility of breakage with the patch
-against that. I wasn't particularly concerned with it being the "right"
-fix from a long-term structural standpoint because that's what 2.6.39 is
-for.  I just wanted the obvious breakage (a regression from 2.6.37) to
-go away, I tested this fix and it Worked For Me (tm), hence letting the
-stable guys know about it being the obvious next move.
+The only way to switch owner is for the current owner to release and a
+new owner to acquire the lock. Also we already bail the spin loop when
+owner changes.
 
-How many people do you think are likely to even try containers under
-2.6.39-rc1 or -rc2?  Eric's patch introducing the bug is dated January
-31, and it was in 2.6.38-rc4.  Apparently nobody noticed the breakage in
--rc5, -rc6, -rc7, or -rc8.  His patch fixing the bug is dated one week
-after 2.6.38 shipped.  I also noticed it in the stable kernel, not in
-any of the 2.6.38-rc releases.  So at least two people hit this in
--stable already, and nobody hit it in -dev for four -rc releases.  I
-have tested it in 2.6.38 and it Worked For Me.  Supposing the new patch
-did introduce subtle breakage, how is leaving it in the 2.6.39-dev
-series for a _month_ more likely to find it than the entire second half
-of the 2.6.38 development cycle (when it was at its most stable, and
-thus easiest to test)?
+> > > +		if (task_thread_info(rq->curr) != owner ||
+> > > +		    rq->spinning_on_mutex || need_resched() ||
+> > > +		    local_clock() > start + MAX_MUTEX_SPIN_NS) {
+> > 
+> > While we did our best with making local_clock() cheap, I'm still fairly
+> > uncomfortable with putting it in such a tight loop.
+> 
+> That's one thing I didn't really understand.  It seems the spinning
+> code tried to be light on CPU cycle usage, but we're wasting CPU
+> cycles there anyway.  If the spinning can become smarter using some
+> CPU cycles, isn't that a gain?  Why is the spinning code optimizing
+> for less CPU cycles?
 
-I have no idea if this patch fixes 2.6.39-rc1, because -rc1 still
-doesn't _boot_ in my test environment.  Many other things about -rc1 are
-broken.  That's sort of the point of -rc1.  A fairly small number of
-people test the development branch, and this is the most unstable time
-of the development cycle where many things about it are _expected_ not
-to work.  Especially right now, I don't see how letting it "soak" for a
-week or two in the -dev branch accomplishes anything whatsoever.
+Loop exit latency mostly, the lighter the loop, the faster you're
+through the less time you waste once the condition is true, but yeah,
+what you say is true too, its a balance game as always.
 
-So yes, I am still holding steady to my opinion.  But you're the
-maintainer, so my opinion doesn't really matter here.
+> Also, it would be great if you can share what you're using for locking
+> performance measurements.  My attempts with dbench didn't end too
+> well. :-(
 
-Rob
+The thing I used for the initial implementation is mentioned in the
+changelog (0d66bf6d3):
+
+    Testing with Ingo's test-mutex application (http://lkml.org/lkml/2006/1/8/50)
+    gave a 345% boost for VFS scalability on my testbox:
+    
+     # ./test-mutex-shm V 16 10 | grep "^avg ops"
+     avg ops/sec:               296604
+    
+     # ./test-mutex-shm V 16 10 | grep "^avg ops"
+     avg ops/sec:               85870
+
+I've no idea how heavy that is on trylock though, you'd have to look at
+that.
+
+Chris did some improvements using dbench in ac6e60ee4 but clearly that
+isn't working for you.
+
+
