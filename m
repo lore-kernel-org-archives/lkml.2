@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab1C3WiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:38:14 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:37412 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab1C3WiN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 18:38:13 -0400
-Date: Wed, 30 Mar 2011 15:38:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110330223807.GP2255@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110317183048.GW7258@atomide.com>
- <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
- <20110318101512.GA15375@n2100.arm.linux.org.uk>
- <201103301906.42429.arnd@arndb.de>
- <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
- <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6>
- <20110330215434.GI18334@atomide.com>
+	id S1756381Ab1C3WjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 18:39:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58851 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756329Ab1C3WjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 18:39:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Shriram Rajagopalan <rshriram@cs.ubc.ca>
+Subject: Re: [GIT PULL] Power management Kconfig modification for 2.6.39
+Date: Thu, 31 Mar 2011 00:39:33 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+References: <201103292143.12777.rjw@sisk.pl> <201103302355.38136.rjw@sisk.pl> <AANLkTiksT50imm3yQJPrRTqp732=jNYqnNdyvGhGbyHQ@mail.gmail.com>
+In-Reply-To: <AANLkTiksT50imm3yQJPrRTqp732=jNYqnNdyvGhGbyHQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110330215434.GI18334@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103310039.34128.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 02:54:35PM -0700, Tony Lindgren wrote:
-> * Thomas Gleixner <tglx@linutronix.de> [110330 14:07]:
-> > 
-> > So one person will be not enough, that needs to be a whole team of
-> > experienced people in the very near future to deal with the massive
-> > tsunami of crap which is targeted at mainline. If we fail to set that
-> > up, then we run into a very ugly maintainability issue in no time.
+On Thursday, March 31, 2011, Linus Torvalds wrote:
+> On Wed, Mar 30, 2011 at 2:55 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > That, in fact, is not necessary.  Moreover, it turns out that the patch size
+> > is not much different, because only a few subsystems use CONFIG_HIBERNATION
+> > directly.
+> >
+> > The patch below has only been slightly tested, in particular I'd like the Xen
+> > people to check if it works for them.
 > 
-> One thing that will help here and distribute the load is to move
-> more things under drivers/ as then we have more maintainers looking
-> at the code.
+> Ok, this seems to make much more sense. Just from a quick scan, the
+> places where you changed things to
+> 
+>   #ifdef CONFIG_HIBERNATE_CALLBACKS
+> 
+> really do seem to be about the freeze/thaw callbacks. So now the patch
+> looks more logical to me. And it obviously doesn't change the
+> user-visible questions.
+> 
+> Thank you,
 
-In many cases, the ARM SoC vendors will want their people producing the
-code, so although moving things to drivers might be a good thing to do,
-it won't really increase the number of people involved.  Plus the move
-to the drivers subtree would be a problem for devices with tight ties
-to the board or SoC.
+Thanks for the review!
 
-There is work on pushing towards common code, but there is a lot of code
-and this will take time and a lot of work.
+@Shriram: Can you please test if the new patch works with your other Xen
+patches?
 
-							Thanx, Paul
+Rafael
