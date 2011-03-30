@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab1C3ToH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 15:44:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56801 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932792Ab1C3ToF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 15:44:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V5 3/4] ARM: Xilinx: base header files and assembly macros
-Date: Wed, 30 Mar 2011 21:43:51 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>, glikely@secretlab.ca,
-        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
-        jamie@jamieiles.com, John Linn <John.Linn@xilinx.com>
-References: <1301444651-18008-1-git-send-email-john.linn@xilinx.com> <201103301529.03648.arnd@arndb.de> <20110330191506.GD2939@n2100.arm.linux.org.uk>
-In-Reply-To: <20110330191506.GD2939@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S932852Ab1C3ToK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 15:44:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17273 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932792Ab1C3ToI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 15:44:08 -0400
+Subject: Re: [tpmdd-devel] TPM chip prevents machine from suspending
+From: Eric Paris <eparis@redhat.com>
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <4D91F4BB.5090708@linux.vnet.ibm.com>
+References: <20110328100846.0ba2e039@tlielax.poochiereds.net>
+	 <4D90C472.3090908@linux.vnet.ibm.com>
+	 <20110328141241.06a435f8@tlielax.poochiereds.net>
+	 <20110328154543.1bb979fd@tlielax.poochiereds.net>
+	 <4D91157F.2020502@linux.vnet.ibm.com>
+	 <20110329080856.1726dfaa@tlielax.poochiereds.net>
+	 <4D91CF9D.3050500@linux.vnet.ibm.com> <4D91ED0C.8070503@linux.vnet.ibm.com>
+	 <4D91F4BB.5090708@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Mar 2011 15:43:58 -0400
+Message-ID: <1301514238.561.9.camel@unknown001a4b0c2895>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103302143.51409.arnd@arndb.de>
-X-Provags-ID: V02:K0:xENXqxUOcUhvAaSyYrpUXNYOTcx98adCkr5Abg28b6Q
- 3HgdD4YhkaYstpU0kKSXzUjmANp8iUDIqtCvv9EXdMunGaT3L3
- Io6BWOxr3qRQqNu/mEg6blU+iTgFmHPQ67VUmLYoqnTo31nTAL
- DPZJ3WZb2uoxHrb/EPoAwMD2du5dCPKxyHz3HzquPQhiBLxMpB
- RdHHIIfmSsPCTAQ7WdMRA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 March 2011 21:15:06 Russell King - ARM Linux wrote:
-> And how do you deal with PCMCIA implementations where each socket has
-> its own separate IO space, each maybe several MB large and may be spread
-> across several MB of memory with the PCMCIA attribute and PCMCIA memory
-> spaces interspersed.  Remember that PCMCIA drivers assume PCI/ISA IO
-> support.
+On Tue, 2011-03-29 at 11:03 -0400, Stefan Berger wrote:
 
-I would assume that the majority of implementations uses regular (64KB)
-I/O spaces per bus, so within 1 MB, that could fit 16 of them.
+> - send  a command to the TPM upon resume and if TPM response returns 
+> with error code 38 set a flag and don't send TPM_SaveState() upon the 
+> next suspend; log this case; the TPM becomes unusable; machine will 
+> suspend a 2nd time
 
-> What about platforms which have a real ISA IO space in addition to the
-> PCMCIA IO spaces?
+I assume there is no reasonable way to detect this particular piece of
+broken BIOS/hardware?  If not I think this sounds like the best option
+to me.  If the TPM doesn't work after resume not much we can do other
+than accept it doesn't work and move along.....
 
-I'd do the same as on powerpc: One of them gets registered as the "primary"
-bus, which gets the first 64KB. This one is typically the only
-one that can support legacy ISA devices with hardcoded I/O port numbers.
-
-Any other bus (PCI, PCMCIA, secondary ISA if needed) can go into one
-of the other 15 64KB slots.
-
-> Things aren't as simple as you'd like them to be, and sometimes changing
-> this stuff changes userland too (think PCMCIA needing the IO regions
-> declared to it from userspace during boot.)
-
-Can you give an example what hardware or driver needs this?
-
-Anyway, the idea is more to have a standard implementation that can be
-used by most platforms without causing pain, getting us one step
-closer to a multiplatform kernel. If one of the more obscure platforms
-doesn't fit, it can still use its own variant and not be part of the
-multiplatform configuration. There are a lot of other things needed
-before we get there anyway.
-
-	Arnd
