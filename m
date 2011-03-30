@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965363Ab1C3VnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:43:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54420 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964901Ab1C3VnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:43:09 -0400
-Date: Wed, 30 Mar 2011 14:36:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [PATCH] Accelerate OOM killing
-Message-Id: <20110330143617.3d57aad2.akpm@linux-foundation.org>
-In-Reply-To: <1300960353-2596-1-git-send-email-minchan.kim@gmail.com>
-References: <1300960353-2596-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S965338Ab1C3Vnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:43:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43212 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964882Ab1C3VHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:07:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
+   d="scan'208";a="673447669"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110330203.501921634@firstfloor.org>
+In-Reply-To: <20110330203.501921634@firstfloor.org>
+To: warns@pre-sense.de, torvalds@linux-foundation.org, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [129/275] fs/partitions: Validate map_count in Mac partition tables
+Message-Id: <20110330210609.813FF3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Mar 2011 18:52:33 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-> When I test Andrey's problem, I saw the livelock and sysrq-t says
-> there are many tasks in cond_resched after try_to_free_pages.
+------------------
+From: Timo Warns <warns@pre-sense.de>
 
-__alloc_pages_direct_reclaim() has two cond_resched()s, in
-straight-line code.  So I think you're concluding that the first
-cond_resched() is a no-op, but the second one frequently schedules
-away.
+commit fa7ea87a057958a8b7926c1a60a3ca6d696328ed upstream.
 
-For this to be true, the try_to_free_pages() call must be doing
-something to cause it, such as taking a large amount of time, or
-delivering wakeups, etc.  Do we know?
+Validate number of blocks in map and remove redundant variable.
 
-The patch is really a bit worrisome and ugly.  If the CPU scheduler has
-decided that this task should be preempted then *that* is the problem,
-and we need to work out why it is happening and see if there is anything
-we should fix.  Instead the patch simply ignores the scheduler's
-directive, which is known as "papering over a bug".
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-IOW, we should work out why need_resched is getting set so frequently
-rather than just ignoring it (and potentially worsening kernel
-scheduling latency).
+---
+ fs/partitions/mac.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-> If did_some_progress is false, cond_resched could delay oom killing so
-> It might be killing another task.
-> 
-> This patch accelerates oom killing without unnecessary giving CPU
-> to another task. It could help avoding unnecessary another task killing
-> and livelock situation a litte bit.
-
-Well...  _does_ it help?  What were the results of your testing of this
-patch?
-
+Index: linux-2.6.35.y/fs/partitions/mac.c
+===================================================================
+--- linux-2.6.35.y.orig/fs/partitions/mac.c	2011-03-29 22:51:16.260307109 -0700
++++ linux-2.6.35.y/fs/partitions/mac.c	2011-03-29 23:03:00.969275369 -0700
+@@ -29,10 +29,9 @@
+ 
+ int mac_partition(struct parsed_partitions *state)
+ {
+-	int slot = 1;
+ 	Sector sect;
+ 	unsigned char *data;
+-	int blk, blocks_in_map;
++	int slot, blocks_in_map;
+ 	unsigned secsize;
+ #ifdef CONFIG_PPC_PMAC
+ 	int found_root = 0;
+@@ -59,10 +58,14 @@
+ 		put_dev_sector(sect);
+ 		return 0;		/* not a MacOS disk */
+ 	}
+-	printk(" [mac]");
+ 	blocks_in_map = be32_to_cpu(part->map_count);
+-	for (blk = 1; blk <= blocks_in_map; ++blk) {
+-		int pos = blk * secsize;
++	if (blocks_in_map < 0 || blocks_in_map >= DISK_MAX_PARTS) {
++		put_dev_sector(sect);
++		return 0;
++	}
++	printk(" [mac]");
++	for (slot = 1; slot <= blocks_in_map; ++slot) {
++		int pos = slot * secsize;
+ 		put_dev_sector(sect);
+ 		data = read_part_sector(state, pos/512, &sect);
+ 		if (!data)
+@@ -113,13 +116,11 @@
+ 			}
+ 
+ 			if (goodness > found_root_goodness) {
+-				found_root = blk;
++				found_root = slot;
+ 				found_root_goodness = goodness;
+ 			}
+ 		}
+ #endif /* CONFIG_PPC_PMAC */
+-
+-		++slot;
+ 	}
+ #ifdef CONFIG_PPC_PMAC
+ 	if (found_root_goodness)
