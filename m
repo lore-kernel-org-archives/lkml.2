@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965175Ab1C3VJi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:09:38 -0400
+	id S965189Ab1C3VVg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:21:36 -0400
 Received: from mga09.intel.com ([134.134.136.24]:9067 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965153Ab1C3VJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:09:36 -0400
+	id S965166Ab1C3VJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:09:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="727133923"
+   d="scan'208";a="727133929"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: aaro.koskinen@nokia.com, ak@linux.intel.com,
-        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [228/275] procfs: fix /proc/<pid>/maps heap check
-Message-Id: <20110330210753.C33003E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:07:53 -0700 (PDT)
+To: henry.nestler@gmail.com, lethal@linux-sh.org, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [230/275] fbcon: Bugfix soft cursor detection in Tile Blitting
+Message-Id: <20110330210755.DC59A3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:07:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,128 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
+From: Henry Nestler <henry.nestler@gmail.com>
 
-commit 0db0c01b53a1a421513f91573241aabafb87802a upstream.
+commit d6244bc0ed0c52a795e6f4dcab3886daf3e74fac upstream.
 
-The current code fails to print the "[heap]" marking if the heap is split
-into multiple mappings.
+Use mask 0x10 for "soft cursor" detection on in function tile_cursor.
+(Tile Blitting Operation in framebuffer console).
 
-Fix the check so that the marking is displayed in all possible cases:
-	1. vma matches exactly the heap
-	2. the heap vma is merged e.g. with bss
-	3. the heap vma is splitted e.g. due to locked pages
+The old mask 0x01 for vc_cursor_type detects CUR_NONE, CUR_LOWER_THIRD
+and every second mode value as "software cursor". This hides the cursor
+for these modes (cursor.mode = 0). But, only CUR_NONE or "software cursor"
+should hide the cursor.
+See also 0x10 in functions add_softcursor, bit_cursor and cw_cursor.
 
-Test cases. In all cases, the process should have mapping(s) with
-[heap] marking:
-
-	(1) vma matches exactly the heap
-
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/types.h>
-
-	int main (void)
-	{
-		if (sbrk(4096) != (void *)-1) {
-			printf("check /proc/%d/maps\n", (int)getpid());
-			while (1)
-				sleep(1);
-		}
-		return 0;
-	}
-
-	# ./test1
-	check /proc/553/maps
-	[1] + Stopped                    ./test1
-	# cat /proc/553/maps | head -4
-	00008000-00009000 r-xp 00000000 01:00 3113640    /test1
-	00010000-00011000 rw-p 00000000 01:00 3113640    /test1
-	00011000-00012000 rw-p 00000000 00:00 0          [heap]
-	4006f000-40070000 rw-p 00000000 00:00 0
-
-	(2) the heap vma is merged
-
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/types.h>
-
-	char foo[4096] = "foo";
-	char bar[4096];
-
-	int main (void)
-	{
-		if (sbrk(4096) != (void *)-1) {
-			printf("check /proc/%d/maps\n", (int)getpid());
-			while (1)
-				sleep(1);
-		}
-		return 0;
-	}
-
-	# ./test2
-	check /proc/556/maps
-	[2] + Stopped                    ./test2
-	# cat /proc/556/maps | head -4
-	00008000-00009000 r-xp 00000000 01:00 3116312    /test2
-	00010000-00012000 rw-p 00000000 01:00 3116312    /test2
-	00012000-00014000 rw-p 00000000 00:00 0          [heap]
-	4004a000-4004b000 rw-p 00000000 00:00 0
-
-	(3) the heap vma is splitted (this fails without the patch)
-
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/mman.h>
-	#include <sys/types.h>
-
-	int main (void)
-	{
-		if ((sbrk(4096) != (void *)-1) && !mlockall(MCL_FUTURE) &&
-		    (sbrk(4096) != (void *)-1)) {
-			printf("check /proc/%d/maps\n", (int)getpid());
-			while (1)
-				sleep(1);
-		}
-		return 0;
-	}
-
-	# ./test3
-	check /proc/559/maps
-	[1] + Stopped                    ./test3
-	# cat /proc/559/maps|head -4
-	00008000-00009000 r-xp 00000000 01:00 3119108    /test3
-	00010000-00011000 rw-p 00000000 01:00 3119108    /test3
-	00011000-00012000 rw-p 00000000 00:00 0          [heap]
-	00012000-00013000 rw-p 00000000 00:00 0          [heap]
-
-It looks like the bug has been there forever, and since it only results in
-some information missing from a procfile, it does not fulfil the -stable
-"critical issue" criteria.
-
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Henry Nestler <henry.nestler@gmail.com>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/proc/task_mmu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/console/tileblit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/fs/proc/task_mmu.c
+Index: linux-2.6.35.y/drivers/video/console/tileblit.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/proc/task_mmu.c	2011-03-29 22:50:24.508631304 -0700
-+++ linux-2.6.35.y/fs/proc/task_mmu.c	2011-03-29 23:03:02.979223940 -0700
-@@ -248,8 +248,8 @@
- 		const char *name = arch_vma_name(vma);
- 		if (!name) {
- 			if (mm) {
--				if (vma->vm_start <= mm->start_brk &&
--						vma->vm_end >= mm->brk) {
-+				if (vma->vm_start <= mm->brk &&
-+						vma->vm_end >= mm->start_brk) {
- 					name = "[heap]";
- 				} else if (vma->vm_start <= mm->start_stack &&
- 					   vma->vm_end >= mm->start_stack) {
+--- linux-2.6.35.y.orig/drivers/video/console/tileblit.c	2011-03-29 22:50:23.367660498 -0700
++++ linux-2.6.35.y/drivers/video/console/tileblit.c	2011-03-29 23:03:03.016222993 -0700
+@@ -83,7 +83,7 @@
+ 			int softback_lines, int fg, int bg)
+ {
+ 	struct fb_tilecursor cursor;
+-	int use_sw = (vc->vc_cursor_type & 0x01);
++	int use_sw = (vc->vc_cursor_type & 0x10);
+ 
+ 	cursor.sx = vc->vc_x;
+ 	cursor.sy = vc->vc_y;
