@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965106Ab1C3Vd3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:33:29 -0400
-Received: from mga14.intel.com ([143.182.124.37]:49299 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933271Ab1C3VIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S964982Ab1C3VIm (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 30 Mar 2011 17:08:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:33607 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933368Ab1C3VIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:08:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="411278369"
+   d="scan'208";a="903735749"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: hughd@google.com, torvalds@linux-foundation.org, ak@linux.intel.com,
-        kerframil@gmail.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+To: Ian.Campbell@citrix.com, ian.campbell@citrix.com, davem@davemloft.net,
+        ak@linux.intel.com, haiyangz@microsoft.com, mike@surcouf.co.uk,
+        hjanssen@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
         stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [177/275] mm: fix possible cause of a page_mapped BUG
-Message-Id: <20110330210700.17E2C3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:07:00 -0700 (PDT)
+Subject: [PATCH] [171/275] arp_notify: unconditionally send gratuitous ARP for NETDEV_NOTIFY_PEERS.
+Message-Id: <20110330210653.C01543E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,48 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Hugh Dickins <hughd@google.com>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-commit a3e8cc643d22d2c8ed36b9be7d9c9ca21efcf7f7 upstream.
+commit d11327ad6695db8117c78d70611e71102ceec2ac upstream.
 
-Robert Swiecki reported a BUG_ON(page_mapped) from a fuzzer, punching
-a hole with madvise(,, MADV_REMOVE).  That path is under mutex, and
-cannot be explained by lack of serialization in unmap_mapping_range().
+NETDEV_NOTIFY_PEER is an explicit request by the driver to send a link
+notification while NETDEV_UP/NETDEV_CHANGEADDR generate link
+notifications as a sort of side effect.
 
-Reviewing the code, I found one place where vm_truncate_count handling
-should have been updated, when I switched at the last minute from one
-way of managing the restart_addr to another: mremap move changes the
-virtual addresses, so it ought to adjust the restart_addr.
+In the later cases the sysctl option is present because link
+notification events can have undesired effects e.g. if the link is
+flapping. I don't think this applies in the case of an explicit
+request from a driver.
 
-But rather than exporting the notion of restart_addr from memory.c, or
-converting to restart_pgoff throughout, simply reset vm_truncate_count
-to 0 to force a rescan if mremap move races with preempted truncation.
+This patch makes NETDEV_NOTIFY_PEER unconditional, if preferred we
+could add a new sysctl for this case which defaults to on.
 
-We have no confirmation that this fixes Robert's BUG,
-but it is a fix that's worth making anyway.
+This change causes Xen post-migration ARP notifications (which cause
+switches to relearn their MAC tables etc) to be sent by default.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Kerin Millar <kerframil@gmail.com>
+[reported to solve hyperv live migration problem - gkh]
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: Mike Surcouf <mike@surcouf.co.uk>
+Cc: Hank Janssen <hjanssen@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mremap.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/ipv4/devinet.c |   30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
-Index: linux-2.6.35.y/mm/mremap.c
+Index: linux-2.6.35.y/net/ipv4/devinet.c
 ===================================================================
---- linux-2.6.35.y.orig/mm/mremap.c	2011-03-29 22:50:52.769908168 -0700
-+++ linux-2.6.35.y/mm/mremap.c	2011-03-29 23:03:01.920251035 -0700
-@@ -91,9 +91,7 @@
- 		 */
- 		mapping = vma->vm_file->f_mapping;
- 		spin_lock(&mapping->i_mmap_lock);
--		if (new_vma->vm_truncate_count &&
--		    new_vma->vm_truncate_count != vma->vm_truncate_count)
--			new_vma->vm_truncate_count = 0;
-+		new_vma->vm_truncate_count = 0;
- 	}
+--- linux-2.6.35.y.orig/net/ipv4/devinet.c	2011-03-29 22:50:55.819830128 -0700
++++ linux-2.6.35.y/net/ipv4/devinet.c	2011-03-29 23:03:01.802254055 -0700
+@@ -1029,6 +1029,21 @@
+ 	return mtu >= 68;
+ }
  
- 	/*
++static void inetdev_send_gratuitous_arp(struct net_device *dev,
++					struct in_device *in_dev)
++
++{
++	struct in_ifaddr *ifa = in_dev->ifa_list;
++
++	if (!ifa)
++		return;
++
++	arp_send(ARPOP_REQUEST, ETH_P_ARP,
++		 ifa->ifa_address, dev,
++		 ifa->ifa_address, NULL,
++		 dev->dev_addr, NULL);
++}
++
+ /* Called only under RTNL semaphore */
+ 
+ static int inetdev_event(struct notifier_block *this, unsigned long event,
+@@ -1081,18 +1096,13 @@
+ 		}
+ 		ip_mc_up(in_dev);
+ 		/* fall through */
+-	case NETDEV_NOTIFY_PEERS:
+ 	case NETDEV_CHANGEADDR:
++		if (!IN_DEV_ARP_NOTIFY(in_dev))
++			break;
++		/* fall through */
++	case NETDEV_NOTIFY_PEERS:
+ 		/* Send gratuitous ARP to notify of link change */
+-		if (IN_DEV_ARP_NOTIFY(in_dev)) {
+-			struct in_ifaddr *ifa = in_dev->ifa_list;
+-
+-			if (ifa)
+-				arp_send(ARPOP_REQUEST, ETH_P_ARP,
+-					 ifa->ifa_address, dev,
+-					 ifa->ifa_address, NULL,
+-					 dev->dev_addr, NULL);
+-		}
++		inetdev_send_gratuitous_arp(dev, in_dev);
+ 		break;
+ 	case NETDEV_DOWN:
+ 		ip_mc_down(in_dev);
