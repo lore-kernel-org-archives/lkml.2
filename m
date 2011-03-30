@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965172Ab1C3VXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:23:42 -0400
+	id S965196Ab1C3VXy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:23:54 -0400
 Received: from mga14.intel.com ([143.182.124.37]:37491 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965118Ab1C3VJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:09:26 -0400
+	id S965115Ab1C3VJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:09:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="411278846"
+   d="scan'208";a="411278839"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: stefan.xk.nilsson@stericsson.com, ak@linux.intel.com,
-        ulf.hansson@stericsson.com, pawel.wieczorkiewicz@stericsson.com,
-        linus.walleij@linaro.org, cjb@laptop.org, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [218/275] mmc: sdio: remember new card RCA when redetecting card
-Message-Id: <20110330210743.3A7633E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:07:43 -0700 (PDT)
+To: roman.fietze@telemotive.de, khali@linux-fr.org, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [217/275] i2c: Fix typo in instantiating-devices document
+Message-Id: <20110330210742.2FF1D3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:07:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,44 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+From: Roman Fietze <roman.fietze@telemotive.de>
 
-commit 0aab3995485b8a994bf29a995a008c9ea4a28054 upstream.
+commit 6ced9e6b3901af4ab6ac0a11231402c888286ea6 upstream.
 
-During redetection of a SDIO card, a request for a new card RCA
-was submitted to the card, but was then overwritten by the old RCA.
-This caused the card to be deselected instead of selected when using
-the incorrect RCA.  This bug's been present since the "oldcard"
-handling was introduced in 2.6.32.
+The struct i2c_board_info member holding the name is "type", not
+"name".
 
-Signed-off-by: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@stericsson.com>
-Reviewed-by: Pawel Wieczorkiewicz <pawel.wieczorkiewicz@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/mmc/core/sdio.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ Documentation/i2c/instantiating-devices |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/drivers/mmc/core/sdio.c
+Index: linux-2.6.35.y/Documentation/i2c/instantiating-devices
 ===================================================================
---- linux-2.6.35.y.orig/drivers/mmc/core/sdio.c	2011-03-29 22:50:30.116487813 -0700
-+++ linux-2.6.35.y/drivers/mmc/core/sdio.c	2011-03-29 23:03:02.787228853 -0700
-@@ -309,6 +309,14 @@
- 		if (err)
- 			goto remove;
- 
-+		/*
-+		 * Update oldcard with the new RCA received from the SDIO
-+		 * device -- we're doing this so that it's updated in the
-+		 * "card" struct when oldcard overwrites that later.
-+		 */
-+		if (oldcard)
-+			oldcard->rca = card->rca;
-+
- 		mmc_set_bus_mode(host, MMC_BUSMODE_PUSHPULL);
- 	}
- 
+--- linux-2.6.35.y.orig/Documentation/i2c/instantiating-devices	2011-03-29 22:50:30.672473587 -0700
++++ linux-2.6.35.y/Documentation/i2c/instantiating-devices	2011-03-29 23:03:02.768229338 -0700
+@@ -100,7 +100,7 @@
+ 	(...)
+ 	i2c_adap = i2c_get_adapter(2);
+ 	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
+-	strlcpy(i2c_info.name, "isp1301_pnx", I2C_NAME_SIZE);
++	strlcpy(i2c_info.type, "isp1301_pnx", I2C_NAME_SIZE);
+ 	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
+ 						   normal_i2c);
+ 	i2c_put_adapter(i2c_adap);
