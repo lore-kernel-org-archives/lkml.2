@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965052Ab1C3Vbq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:31:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48428 "EHLO mga09.intel.com"
+	id S965229Ab1C3Vbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:31:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6140 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965006Ab1C3VIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965007Ab1C3VIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Mar 2011 17:08:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="727133541"
+   d="scan'208";a="727133561"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: dzickus@redhat.com, mjg@redhat.com, ak@linux.intel.com, mingo@elte.hu,
-        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [162/275] x86: Use u32 instead of long to set reset vector back to 0
-Message-Id: <20110330210644.4A10B3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:44 -0700 (PDT)
+To: tglx@linutronix.de, ak@linux.intel.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [164/275] clockevents: Prevent oneshot mode when broadcast device is periodic
+Message-Id: <20110330210646.675223E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,47 +24,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Don Zickus <dzickus@redhat.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 299c56966a72b9109d47c71a6db52097098703dd upstream.
+commit 3a142a0672b48a853f00af61f184c7341ac9c99d upstream.
 
-A customer of ours, complained that when setting the reset
-vector back to 0, it trashed other data and hung their box.
-They noticed when only 4 bytes were set to 0 instead of 8,
-everything worked correctly.
+When the per cpu timer is marked CLOCK_EVT_FEAT_C3STOP, then we only
+can switch into oneshot mode, when the backup broadcast device
+supports oneshot mode as well. Otherwise we would try to switch the
+broadcast device into an unsupported mode unconditionally. This went
+unnoticed so far as the current available broadcast devices support
+oneshot mode. Seth unearthed this problem while debugging and working
+around an hpet related BIOS wreckage.
 
-Mathew pointed out:
+Add the necessary check to tick_is_oneshot_available().
 
- |
- | We're supposed to be resetting trampoline_phys_low and
- | trampoline_phys_high here, which are two 16-bit values.
- | Writing 64 bits is definitely going to overwrite space
- | that we're not supposed to be touching.
- |
-
-So limit the area modified to u32.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Acked-by: Matthew Garrett <mjg@redhat.com>
+Reported-and-tested-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <1297139100-424-1-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+LKML-Reference: <alpine.LFD.2.00.1102252231200.2701@localhost6.localdomain6>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/smpboot_hooks.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/time/tick-broadcast.c |   10 ++++++++++
+ kernel/time/tick-common.c    |    6 +++++-
+ kernel/time/tick-internal.h  |    3 +++
+ 3 files changed, 18 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/arch/x86/include/asm/smpboot_hooks.h
+Index: linux-2.6.35.y/kernel/time/tick-broadcast.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/include/asm/smpboot_hooks.h	2011-03-29 22:51:00.390713170 -0700
-+++ linux-2.6.35.y/arch/x86/include/asm/smpboot_hooks.h	2011-03-29 23:03:01.622258662 -0700
-@@ -34,7 +34,7 @@
- 	 */
- 	CMOS_WRITE(0, 0xf);
- 
--	*((volatile long *)phys_to_virt(apic->trampoline_phys_low)) = 0;
-+	*((volatile u32 *)phys_to_virt(apic->trampoline_phys_low)) = 0;
+--- linux-2.6.35.y.orig/kernel/time/tick-broadcast.c	2011-03-29 22:50:59.394738656 -0700
++++ linux-2.6.35.y/kernel/time/tick-broadcast.c	2011-03-29 23:03:01.661257663 -0700
+@@ -600,4 +600,14 @@
+ 	return tick_broadcast_device.mode == TICKDEV_MODE_ONESHOT;
  }
  
- static inline void __init smpboot_setup_io_apic(void)
++/*
++ * Check whether the broadcast device supports oneshot.
++ */
++bool tick_broadcast_oneshot_available(void)
++{
++	struct clock_event_device *bc = tick_broadcast_device.evtdev;
++
++	return bc ? bc->features & CLOCK_EVT_FEAT_ONESHOT : false;
++}
++
+ #endif
+Index: linux-2.6.35.y/kernel/time/tick-common.c
+===================================================================
+--- linux-2.6.35.y.orig/kernel/time/tick-common.c	2011-03-29 22:50:59.393738682 -0700
++++ linux-2.6.35.y/kernel/time/tick-common.c	2011-03-29 23:03:01.662257637 -0700
+@@ -51,7 +51,11 @@
+ {
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
+ 
+-	return dev && (dev->features & CLOCK_EVT_FEAT_ONESHOT);
++	if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT))
++		return 0;
++	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
++		return 1;
++	return tick_broadcast_oneshot_available();
+ }
+ 
+ /*
+Index: linux-2.6.35.y/kernel/time/tick-internal.h
+===================================================================
+--- linux-2.6.35.y.orig/kernel/time/tick-internal.h	2011-03-29 22:50:59.393738682 -0700
++++ linux-2.6.35.y/kernel/time/tick-internal.h	2011-03-29 23:03:01.669257458 -0700
+@@ -36,6 +36,7 @@
+ extern int tick_resume_broadcast_oneshot(struct clock_event_device *bc);
+ extern int tick_broadcast_oneshot_active(void);
+ extern void tick_check_oneshot_broadcast(int cpu);
++bool tick_broadcast_oneshot_available(void);
+ # else /* BROADCAST */
+ static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ {
+@@ -46,6 +47,7 @@
+ static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
+ static inline int tick_broadcast_oneshot_active(void) { return 0; }
+ static inline void tick_check_oneshot_broadcast(int cpu) { }
++static inline bool tick_broadcast_oneshot_available(void) { return true; }
+ # endif /* !BROADCAST */
+ 
+ #else /* !ONESHOT */
+@@ -76,6 +78,7 @@
+ 	return 0;
+ }
+ static inline int tick_broadcast_oneshot_active(void) { return 0; }
++static inline bool tick_broadcast_oneshot_available(void) { return false; }
+ #endif /* !TICK_ONESHOT */
+ 
+ /*
