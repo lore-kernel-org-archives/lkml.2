@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab1C3SZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 14:25:06 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:51516 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754837Ab1C3SZE (ORCPT
+	id S1754922Ab1C3S2c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 14:28:32 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:35521 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751755Ab1C3S2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 14:25:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/1] new module for amba axi on-chip interconnect
-Date: Wed, 30 Mar 2011 20:24:49 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>, gregkh@suse.de,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arend van Spriel <arend@broadcom.com>, devel@linuxdriverproject.org,
-        akpm@linux-foundation.org
-References: <1301391619-4499-1-git-send-email-arend@broadcom.com> <201103301509.04899.arnd@arndb.de> <20110330174010.GA2939@n2100.arm.linux.org.uk>
-In-Reply-To: <20110330174010.GA2939@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 30 Mar 2011 14:28:31 -0400
+Date: Wed, 30 Mar 2011 20:27:00 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/rtc/rtc-jz4740.c: fix error check v2
+Message-ID: <20110330202700.7d8142e8@absol.kitzblitz>
+In-Reply-To: <4D935C56.4060903@metafoo.de>
+References: <20110330181201.29e473bf@absol.kitzblitz>
+	<4D935C56.4060903@metafoo.de>
+Organization: -
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
+ AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
+ T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
+ ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
+ BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103302024.49921.arnd@arndb.de>
-X-Provags-ID: V02:K0:1+1L2mwN/rYqPZFI1EXicFtj2sdjX1uXVO+lnkqPR+N
- fNKC4xw3jCUbaF+XJAbi4uE0VqboPsv/FxZOg+MmnLUm6lwADD
- Z1MfKzjU8u8gFSyck7j8SDMt4ddrE957BLthQE9+2QrbCRhe6e
- eKEJEsxxgXdiSYmMOtnrr/SZtk2hJbaUpytqNeid0jftYKzK6L
- VjKPuO+TPNgxOmqIxSqaw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 March 2011 19:40:10 Russell King - ARM Linux wrote:
+Checking 'rtc->irq < 0' doesn't work because 'rtc->irq' is unsigned.
 
-> The reason we don't do automatic scanning (which we could on the various
-> ARM platforms) is because of the platform data necessary to make some of
-> the primecell drivers work.
-> 
-> Unfortunately, these buses are not as simple as PCI, where a device
-> typically sits on its own card and is totally self-contained.  With
-> primecell stuff, there's normally some interdependencies between the
-> various primecells.
-> 
-> That doesn't stop there being an automatic enumeration layer, but such
-> a layer would need some way of attaching platform specific data to
-> specific amba devices.
+v2: return error code from platform_get_irq() instead of -ENOENT.
 
-Right, I understand that this would not completely remove the need for
-platform devices, but I think it would be a great step in the right
-direction if we could scan all simple devices automatically, or
-possibly even all devices in some simple machines.
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/rtc/rtc-jz4740.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-If we can scan the main resources (memory ranges, interrupts, ...),
-that will make it possible to avoid a whole lot of the stuff we currently
-do for each new board. It also means we can gradually move away from
-statically defined devices, something that Greg has been pushing for
-quite some time.
-
-The device tree work has shown that it's possible to describe very
-complex hardware in simple data structures, but it would be much
-better if we needed neither a device tree nor a board file for this.
-As you say, this isn't possible today with the data on available
-to the AMBA bus, but I think it would be better to just fill in 
-the blanks (and corrections where they are wrong) than to duplicate
-all of it as we now do in the kernel.
-
-Ideally, we would point SoC companies to this (or a future extended
-version) as the place to add all the required information when
-they want the drivers to work out of the box. My impression is that
-there is no fundamental difference to buses like PCI or USB, other
-than that there is more data required to encode and that there is
-a lack of social pressure to get it right. I remember PCI cards
-from the 1990s that could not be probed properly and required
-setting a lot of module parameters copied from a web site depending
-on what hardware you had bought. The reason we don't have that 
-as much today is that the manufacturers realized that it's impossible
-to write proper drivers if you cannot detect the hardware.
-
-	Arnd
+diff --git a/drivers/rtc/rtc-jz4740.c b/drivers/rtc/rtc-jz4740.c
+index b647363..efd9691 100644
+--- a/drivers/rtc/rtc-jz4740.c
++++ b/drivers/rtc/rtc-jz4740.c
+@@ -220,12 +220,12 @@ static int __devinit jz4740_rtc_probe(struct platform_device *pdev)
+ 	if (!rtc)
+ 		return -ENOMEM;
+ 
+-	rtc->irq = platform_get_irq(pdev, 0);
+-	if (rtc->irq < 0) {
+-		ret = -ENOENT;
++	ret = platform_get_irq(pdev, 0);
++	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Failed to get platform irq\n");
+ 		goto err_free;
+ 	}
++	rtc->irq = ret;
+ 
+ 	rtc->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!rtc->mem) {
+-- 
+1.7.3.4
