@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab1C3PEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 11:04:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38661 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754710Ab1C3PEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 11:04:06 -0400
-Message-ID: <4D934648.7040500@kernel.org>
-Date: Wed, 30 Mar 2011 08:03:36 -0700
-From: "H. Peter Anvin" <hpa@kernel.org>
-Organization: Linux Kernel Organization, Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1755975Ab1C3PFi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 11:05:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55246 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234Ab1C3PFh (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 30 Mar 2011 11:05:37 -0400
+Date: Wed, 30 Mar 2011 11:05:11 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Merge window closed - 2.6.39-rc1 out
+Message-ID: <20110330150511.GA17010@dumpdata.com>
+References: <AANLkTikwbY5mm10ZWg7B6XeSBkZXFqKcYVZfJCi2QGx_@mail.gmail.com>
+ <20110330120151.GA23358@infradead.org>
+ <20110330144359.GA16430@dumpdata.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@mit.edu>
-CC: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86-64: Clean up vdso/kernel shared variables
-References: <c79ac2a9a1caad9865ffa3c4a05438227c59f63e.1301408701.git.luto@mit.edu>
-In-Reply-To: <c79ac2a9a1caad9865ffa3c4a05438227c59f63e.1301408701.git.luto@mit.edu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110330144359.GA16430@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D9346A3.00C3,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2011 07:29 AM, Andy Lutomirski wrote:
-> Variables that are shared between the vdso and the kernel are
-> currently a bit of a mess.  They are each defined with their own
-> magic, they are accessed differently in the kernel, the vsyscall page,
-> and the vdso, and one of them (vsyscall_clock) doesn't even really
-> exist.
+On Wed, Mar 30, 2011 at 10:43:59AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Wed, Mar 30, 2011 at 08:01:51AM -0400, Christoph Hellwig wrote:
+> > On Tue, Mar 29, 2011 at 02:07:35PM -0700, Linus Torvalds wrote:
+> > > So 2.6.39-rc1 is out there, and the merge window is closed. I still
+> > > have to look over the cleancache pull request (which I got in plenty
+> > > of time, but decided that I want to review after the merge window
+> > > craziness is over), but other than that, we're done.
+> > 
+> > FYI, strong no for me for this one.  None of the comments why it's
+> > utterly wrong have been addresses, and it hasn't even been posted
 > 
-> This changes them all to use a common mechanism.  All of them are
-> delcared in vvar.h with a fixed address (validated by the linker
-> script).  In the kernel (as before), they look like ordinary
-> read-write variables.  In the vsyscall page and the vdso, they are
-> accessed through a new macro VVAR, which gives read-only access.
-> 
-> The vdso is now loaded verbatim into memory without any fixups.  As a
-> side bonus, access from the vdso is faster because a level of
-> indirection is removed.
-> 
-> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+> <scratches his head>
+> The one I see is from V3, which was: "but no actual users.". There is code
+> in zcache (drivers/staging/zcache), and naturally the Xen one that utilize
+> this API (part of the cleancache API). I am probably missing other ones?
 
-How does this deal with variables which really should be shared with
-multiple vdsos (in particular the 32-bit vdso and the 64-bit vdso)?
-Part of me is wondering if it might not be simpler to put them all into
-a structure?
-
-	-hpa
+Ah, I did: https://lkml.org/lkml/2010/8/20/266 has the full list which
+I think had been addressed.
