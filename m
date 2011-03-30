@@ -1,333 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab1C3Vzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:55:53 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58577 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933358Ab1C3Vzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:55:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL] Power management Kconfig modification for 2.6.39
-Date: Wed, 30 Mar 2011 23:55:37 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Shriram Rajagopalan <rshriram@cs.ubc.ca>
-References: <201103292143.12777.rjw@sisk.pl> <201103302247.16339.rjw@sisk.pl> <AANLkTikoBbbq223q7+2kS_nLDi7XUtgT2hczu9P6nQCx@mail.gmail.com>
-In-Reply-To: <AANLkTikoBbbq223q7+2kS_nLDi7XUtgT2hczu9P6nQCx@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S933380Ab1C3V4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:56:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44764 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933359Ab1C3V4I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:56:08 -0400
+Date: Wed, 30 Mar 2011 14:45:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
+Message-Id: <20110330144507.2c0ecf73.akpm@linux-foundation.org>
+In-Reply-To: <20110308114159.7EAD.A69D9226@jp.fujitsu.com>
+References: <20110307172609.8A01.A69D9226@jp.fujitsu.com>
+	<20110307163513.GC13384@alboin.amr.corp.intel.com>
+	<20110308114159.7EAD.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103302355.38136.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 30, 2011, Linus Torvalds wrote:
-> On Wed, Mar 30, 2011 at 1:47 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >
-> > Well, otherwise I'd have to change CONFIG_HIBERNATION to something else
-> > throughout the tree and then add CONFIG_HIBERNATION as a user-visible option.
-> > Perhaps that would be better from the user's viewpoint, but the confusion would
-> > be still there.
+On Tue,  8 Mar 2011 11:43:23 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+
+> > > Don't we need to make per zone stastics? I'm afraid small dma zone 
+> > > makes much thp-splitting and screw up this stastics.
+> > 
+> > Does it? I haven't seen that so far.
+> > 
+> > If it happens a lot it would be better to disable THP for the 16MB DMA
+> > zone at least. Or did you mean the 4GB zone?
 > 
-> Umm. It would be *less* confusing than the thing you sent me.
+> I assumered 4GB. And cpusets/mempolicy binding might makes similar 
+> issue. It can make only one zone high pressure.
 > 
-> I would heartily support just renaming them all. Who cares about patch
-> size? What matters is the end result not being confusing.
+> But, hmmm...
+> Do you mean you don't hit any issue then? I don't think do don't tested
+> NUMA machine. So, it has  no practical problem I can agree this.
+> 
 
-That, in fact, is not necessary.  Moreover, it turns out that the patch size
-is not much different, because only a few subsystems use CONFIG_HIBERNATION
-directly.
+I didn't actually merge this patch because I assumed you guys were
+still arguing over it.  But I now see you weren't.
 
-The patch below has only been slightly tested, in particular I'd like the Xen
-people to check if it works for them.
+Do we still want it?  Are we sure we don't want the per-zone numbers?
 
-Thanks,
-Rafael
 
+From: Andi Kleen <ak@linux.intel.com>
+
+I found it difficult to make sense of transparent huge pages without
+having any counters for its actions.  Add some counters to vmstat for
+allocation of transparent hugepages and fallback to smaller pages.
+
+Optional patch, but useful for development and understanding the system.
+
+Contains improvements from Andrea Arcangeli and Johannes Weiner
+
+[akpm@linux-foundation.org: coding-style fixes]
+[hannes@cmpxchg.org: fix vmstat_text[] entries]
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Acked-by: Andrea Arcangeli <aarcange@redhat.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM / Hibernate: Introduce CONFIG_HIBERNATE_CALLBACKS
 
-Xen save/restore is going to use hibernate device callbacks for
-quiescing devices and putting them back to normal operations and it
-would need to select CONFIG_HIBERNATION for this purpose.  However,
-that also would cause the hibernate interfaces for user space to be
-enabled, which might confuse user space, because the Xen kernels
-don't support hibernation.  Moreover, it would be wasteful, as it
-would make the Xen kernels include a substantial amount of code that
-they would never use.
+ include/linux/vmstat.h |    7 +++++++
+ mm/huge_memory.c       |   25 +++++++++++++++++++++----
+ mm/vmstat.c            |    9 +++++++++
+ 3 files changed, 37 insertions(+), 4 deletions(-)
 
-To address this issue introduce new power management Kconfig option
-CONFIG_HIBERNATE_CALLBACKS, such that it will only select the code
-that is necessary for the hibernate device callbacks to work and make
-CONFIG_HIBERNATION select it.  Then, Xen save/restore will be able to
-select CONFIG_HIBERNATE_CALLBACKS without dragging the entire
-hibernate code along with it.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- arch/powerpc/kernel/ibmebus.c |    6 +++---
- drivers/amba/bus.c            |    6 +++---
- drivers/base/platform.c       |    6 +++---
- drivers/base/power/main.c     |    8 ++++----
- drivers/pci/pci-driver.c      |    6 +++---
- drivers/xen/manage.c          |    6 +++---
- include/linux/suspend.h       |   11 +++--------
- kernel/power/Kconfig          |    6 +++++-
- 8 files changed, 27 insertions(+), 28 deletions(-)
-
-Index: linux-2.6/kernel/power/Kconfig
-===================================================================
---- linux-2.6.orig/kernel/power/Kconfig
-+++ linux-2.6/kernel/power/Kconfig
-@@ -18,9 +18,13 @@ config SUSPEND_FREEZER
+diff -puN include/linux/vmstat.h~mm-add-vm-counters-for-transparent-hugepages include/linux/vmstat.h
+--- a/include/linux/vmstat.h~mm-add-vm-counters-for-transparent-hugepages
++++ a/include/linux/vmstat.h
+@@ -58,6 +58,13 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
+ 		UNEVICTABLE_PGCLEARED,	/* on COW, page truncate */
+ 		UNEVICTABLE_PGSTRANDED,	/* unable to isolate on unlock */
+ 		UNEVICTABLE_MLOCKFREED,
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++		THP_FAULT_ALLOC,
++		THP_FAULT_FALLBACK,
++		THP_COLLAPSE_ALLOC,
++		THP_COLLAPSE_ALLOC_FAILED,
++		THP_SPLIT,
++#endif
+ 		NR_VM_EVENT_ITEMS
+ };
  
- 	  Turning OFF this setting is NOT recommended! If in doubt, say Y.
+diff -puN mm/huge_memory.c~mm-add-vm-counters-for-transparent-hugepages mm/huge_memory.c
+--- a/mm/huge_memory.c~mm-add-vm-counters-for-transparent-hugepages
++++ a/mm/huge_memory.c
+@@ -680,8 +680,11 @@ int do_huge_pmd_anonymous_page(struct mm
+ 			return VM_FAULT_OOM;
+ 		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+ 					  vma, haddr, numa_node_id(), 0);
+-		if (unlikely(!page))
++		if (unlikely(!page)) {
++			count_vm_event(THP_FAULT_FALLBACK);
+ 			goto out;
++		}
++		count_vm_event(THP_FAULT_ALLOC);
+ 		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
+ 			put_page(page);
+ 			goto out;
+@@ -909,11 +912,13 @@ int do_huge_pmd_wp_page(struct mm_struct
+ 		new_page = NULL;
  
-+config HIBERNATE_CALLBACKS
-+	bool
+ 	if (unlikely(!new_page)) {
++		count_vm_event(THP_FAULT_FALLBACK);
+ 		ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
+ 						   pmd, orig_pmd, page, haddr);
+ 		put_page(page);
+ 		goto out;
+ 	}
++	count_vm_event(THP_FAULT_ALLOC);
+ 
+ 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
+ 		put_page(new_page);
+@@ -1390,6 +1395,7 @@ int split_huge_page(struct page *page)
+ 
+ 	BUG_ON(!PageSwapBacked(page));
+ 	__split_huge_page(page, anon_vma);
++	count_vm_event(THP_SPLIT);
+ 
+ 	BUG_ON(PageCompound(page));
+ out_unlock:
+@@ -1784,9 +1790,11 @@ static void collapse_huge_page(struct mm
+ 				      node, __GFP_OTHER_NODE);
+ 	if (unlikely(!new_page)) {
+ 		up_read(&mm->mmap_sem);
++		count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+ 		*hpage = ERR_PTR(-ENOMEM);
+ 		return;
+ 	}
++	count_vm_event(THP_COLLAPSE_ALLOC);
+ 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
+ 		up_read(&mm->mmap_sem);
+ 		put_page(new_page);
+@@ -2151,8 +2159,11 @@ static void khugepaged_do_scan(struct pa
+ #ifndef CONFIG_NUMA
+ 		if (!*hpage) {
+ 			*hpage = alloc_hugepage(khugepaged_defrag());
+-			if (unlikely(!*hpage))
++			if (unlikely(!*hpage)) {
++				count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+ 				break;
++			}
++			count_vm_event(THP_COLLAPSE_ALLOC);
+ 		}
+ #else
+ 		if (IS_ERR(*hpage))
+@@ -2192,8 +2203,11 @@ static struct page *khugepaged_alloc_hug
+ 
+ 	do {
+ 		hpage = alloc_hugepage(khugepaged_defrag());
+-		if (!hpage)
++		if (!hpage) {
++			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+ 			khugepaged_alloc_sleep();
++		} else
++			count_vm_event(THP_COLLAPSE_ALLOC);
+ 	} while (unlikely(!hpage) &&
+ 		 likely(khugepaged_enabled()));
+ 	return hpage;
+@@ -2210,8 +2224,11 @@ static void khugepaged_loop(void)
+ 	while (likely(khugepaged_enabled())) {
+ #ifndef CONFIG_NUMA
+ 		hpage = khugepaged_alloc_hugepage();
+-		if (unlikely(!hpage))
++		if (unlikely(!hpage)) {
++			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+ 			break;
++		}
++		count_vm_event(THP_COLLAPSE_ALLOC);
+ #else
+ 		if (IS_ERR(hpage)) {
+ 			khugepaged_alloc_sleep();
+diff -puN mm/vmstat.c~mm-add-vm-counters-for-transparent-hugepages mm/vmstat.c
+--- a/mm/vmstat.c~mm-add-vm-counters-for-transparent-hugepages
++++ a/mm/vmstat.c
+@@ -951,7 +951,16 @@ static const char * const vmstat_text[] 
+ 	"unevictable_pgs_cleared",
+ 	"unevictable_pgs_stranded",
+ 	"unevictable_pgs_mlockfreed",
 +
- config HIBERNATION
- 	bool "Hibernation (aka 'suspend to disk')"
- 	depends on SWAP && ARCH_HIBERNATION_POSSIBLE
-+	select HIBERNATE_CALLBACKS
- 	select LZO_COMPRESS
- 	select LZO_DECOMPRESS
- 	---help---
-@@ -85,7 +89,7 @@ config PM_STD_PARTITION
- 
- config PM_SLEEP
- 	def_bool y
--	depends on SUSPEND || HIBERNATION || XEN_SAVE_RESTORE
-+	depends on SUSPEND || HIBERNATE_CALLBACKS || XEN_SAVE_RESTORE
- 
- config PM_SLEEP_SMP
- 	def_bool y
-Index: linux-2.6/include/linux/suspend.h
-===================================================================
---- linux-2.6.orig/include/linux/suspend.h
-+++ linux-2.6/include/linux/suspend.h
-@@ -249,6 +249,8 @@ extern void hibernation_set_ops(const st
- extern int hibernate(void);
- extern bool system_entering_hibernation(void);
- #else /* CONFIG_HIBERNATION */
-+static inline void register_nosave_region(unsigned long b, unsigned long e) {}
-+static inline void register_nosave_region_late(unsigned long b, unsigned long e) {}
- static inline int swsusp_page_is_forbidden(struct page *p) { return 0; }
- static inline void swsusp_set_page_free(struct page *p) {}
- static inline void swsusp_unset_page_free(struct page *p) {}
-@@ -297,14 +299,7 @@ static inline bool pm_wakeup_pending(voi
- 
- extern struct mutex pm_mutex;
- 
--#ifndef CONFIG_HIBERNATION
--static inline void register_nosave_region(unsigned long b, unsigned long e)
--{
--}
--static inline void register_nosave_region_late(unsigned long b, unsigned long e)
--{
--}
--
-+#ifndef CONFIG_HIBERNATE_CALLBACKS
- static inline void lock_system_sleep(void) {}
- static inline void unlock_system_sleep(void) {}
- 
-Index: linux-2.6/arch/powerpc/kernel/ibmebus.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/kernel/ibmebus.c
-+++ linux-2.6/arch/powerpc/kernel/ibmebus.c
-@@ -527,7 +527,7 @@ static int ibmebus_bus_pm_resume_noirq(s
- 
- #endif /* !CONFIG_SUSPEND */
- 
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_CALLBACKS
- 
- static int ibmebus_bus_pm_freeze(struct device *dev)
- {
-@@ -665,7 +665,7 @@ static int ibmebus_bus_pm_restore_noirq(
- 	return ret;
- }
- 
--#else /* !CONFIG_HIBERNATION */
-+#else /* !CONFIG_HIBERNATE_CALLBACKS */
- 
- #define ibmebus_bus_pm_freeze		NULL
- #define ibmebus_bus_pm_thaw		NULL
-@@ -676,7 +676,7 @@ static int ibmebus_bus_pm_restore_noirq(
- #define ibmebus_bus_pm_poweroff_noirq	NULL
- #define ibmebus_bus_pm_restore_noirq	NULL
- 
--#endif /* !CONFIG_HIBERNATION */
-+#endif /* !CONFIG_HIBERNATE_CALLBACKS */
- 
- static struct dev_pm_ops ibmebus_bus_dev_pm_ops = {
- 	.prepare = ibmebus_bus_pm_prepare,
-Index: linux-2.6/drivers/amba/bus.c
-===================================================================
---- linux-2.6.orig/drivers/amba/bus.c
-+++ linux-2.6/drivers/amba/bus.c
-@@ -214,7 +214,7 @@ static int amba_pm_resume_noirq(struct d
- 
- #endif /* !CONFIG_SUSPEND */
- 
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_CALLBACKS
- 
- static int amba_pm_freeze(struct device *dev)
- {
-@@ -352,7 +352,7 @@ static int amba_pm_restore_noirq(struct
- 	return ret;
- }
- 
--#else /* !CONFIG_HIBERNATION */
-+#else /* !CONFIG_HIBERNATE_CALLBACKS */
- 
- #define amba_pm_freeze		NULL
- #define amba_pm_thaw		NULL
-@@ -363,7 +363,7 @@ static int amba_pm_restore_noirq(struct
- #define amba_pm_poweroff_noirq	NULL
- #define amba_pm_restore_noirq	NULL
- 
--#endif /* !CONFIG_HIBERNATION */
-+#endif /* !CONFIG_HIBERNATE_CALLBACKS */
- 
- #ifdef CONFIG_PM
- 
-Index: linux-2.6/drivers/base/platform.c
-===================================================================
---- linux-2.6.orig/drivers/base/platform.c
-+++ linux-2.6/drivers/base/platform.c
-@@ -771,7 +771,7 @@ int __weak platform_pm_resume_noirq(stru
- 
- #endif /* !CONFIG_SUSPEND */
- 
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_CALLBACKS
- 
- static int platform_pm_freeze(struct device *dev)
- {
-@@ -909,7 +909,7 @@ static int platform_pm_restore_noirq(str
- 	return ret;
- }
- 
--#else /* !CONFIG_HIBERNATION */
-+#else /* !CONFIG_HIBERNATE_CALLBACKS */
- 
- #define platform_pm_freeze		NULL
- #define platform_pm_thaw		NULL
-@@ -920,7 +920,7 @@ static int platform_pm_restore_noirq(str
- #define platform_pm_poweroff_noirq	NULL
- #define platform_pm_restore_noirq	NULL
- 
--#endif /* !CONFIG_HIBERNATION */
-+#endif /* !CONFIG_HIBERNATE_CALLBACKS */
- 
- #ifdef CONFIG_PM_RUNTIME
- 
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -233,7 +233,7 @@ static int pm_op(struct device *dev,
- 		}
- 		break;
- #endif /* CONFIG_SUSPEND */
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_CALLBACKS
- 	case PM_EVENT_FREEZE:
- 	case PM_EVENT_QUIESCE:
- 		if (ops->freeze) {
-@@ -260,7 +260,7 @@ static int pm_op(struct device *dev,
- 			suspend_report_result(ops->restore, error);
- 		}
- 		break;
--#endif /* CONFIG_HIBERNATION */
-+#endif /* CONFIG_HIBERNATE_CALLBACKS */
- 	default:
- 		error = -EINVAL;
- 	}
-@@ -308,7 +308,7 @@ static int pm_noirq_op(struct device *de
- 		}
- 		break;
- #endif /* CONFIG_SUSPEND */
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_CALLBACKS
- 	case PM_EVENT_FREEZE:
- 	case PM_EVENT_QUIESCE:
- 		if (ops->freeze_noirq) {
-@@ -335,7 +335,7 @@ static int pm_noirq_op(struct device *de
- 			suspend_report_result(ops->restore_noirq, error);
- 		}
- 		break;
--#endif /* CONFIG_HIBERNATION */
-+#endif /* CONFIG_HIBERNATE_CALLBACKS */
- 	default:
- 		error = -EINVAL;
- 	}
-Index: linux-2.6/drivers/pci/pci-driver.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pci-driver.c
-+++ linux-2.6/drivers/pci/pci-driver.c
-@@ -781,7 +781,7 @@ static int pci_pm_resume(struct device *
- 
- #endif /* !CONFIG_SUSPEND */
- 
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_CALLBACKS
- 
- static int pci_pm_freeze(struct device *dev)
- {
-@@ -970,7 +970,7 @@ static int pci_pm_restore(struct device
- 	return error;
- }
- 
--#else /* !CONFIG_HIBERNATION */
-+#else /* !CONFIG_HIBERNATE_CALLBACKS */
- 
- #define pci_pm_freeze		NULL
- #define pci_pm_freeze_noirq	NULL
-@@ -981,7 +981,7 @@ static int pci_pm_restore(struct device
- #define pci_pm_restore		NULL
- #define pci_pm_restore_noirq	NULL
- 
--#endif /* !CONFIG_HIBERNATION */
-+#endif /* !CONFIG_HIBERNATE_CALLBACKS */
- 
- #ifdef CONFIG_PM_RUNTIME
- 
-Index: linux-2.6/drivers/xen/manage.c
-===================================================================
---- linux-2.6.orig/drivers/xen/manage.c
-+++ linux-2.6/drivers/xen/manage.c
-@@ -61,7 +61,7 @@ static void xen_post_suspend(int cancell
- 	xen_mm_unpin_all();
- }
- 
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_CALLBACKS
- static int xen_suspend(void *data)
- {
- 	struct suspend_info *si = data;
-@@ -173,7 +173,7 @@ out:
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	"thp_fault_alloc",
++	"thp_fault_fallback",
++	"thp_collapse_alloc",
++	"thp_collapse_alloc_failed",
++	"thp_split",
  #endif
- 	shutting_down = SHUTDOWN_INVALID;
- }
--#endif	/* CONFIG_HIBERNATION */
-+#endif	/* CONFIG_HIBERNATE_CALLBACKS */
++
++#endif /* CONFIG_VM_EVENTS_COUNTERS */
+ };
  
- struct shutdown_handler {
- 	const char *command;
-@@ -202,7 +202,7 @@ static void shutdown_handler(struct xenb
- 		{ "poweroff",	do_poweroff },
- 		{ "halt",	do_poweroff },
- 		{ "reboot",	do_reboot   },
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_HIBERNATE_CALLBACKS
- 		{ "suspend",	do_suspend  },
- #endif
- 		{NULL, NULL},
+ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
+_
+
