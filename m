@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab1C3OEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 10:04:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48306 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab1C3OEi (ORCPT
+	id S932540Ab1C3OHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 10:07:12 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:33238 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754746Ab1C3OHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 10:04:38 -0400
+	Wed, 30 Mar 2011 10:07:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=vHeqNanYPW8Tkf16IMQnAJYuMdT5nyS1uVR+WNl1a+ccIjUiAV+EsvSLjIqP2sziM9
-         P33/Gmvf8LTm20AQs1W+GM9TlzCmNGXM/fzKVHJPhc3PgyPkcul8/qgMNXIs0mzOry9U
-         BiBzwVIFPiIJJ63VMn63EUAdqK5pQT3Ln6MCY=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Stable <stable@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf: Rebase max unprivileged mlock threshold on top of page size
-Date: Wed, 30 Mar 2011 16:04:30 +0200
-Message-Id: <1301493870-4551-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1301065512.2250.223.camel@laptop>
-References: <1301065512.2250.223.camel@laptop>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=dLLWp91hc0DC0EDB1Pu9fuSyGBYJJAf/K4885nyeAstfbvLpo7h2kSmBqiYXBIAUP9
+         xiuxAEJW+hjyd8STo1EezxuzamWdLv1H5I1vt8jDM2QBIenFU6gthTyDiUIin3bp56u5
+         QDTGgP+K3N/5cTfdip7LAL74LIaiKogJmcfho=
+MIME-Version: 1.0
+In-Reply-To: <1301491622.3283.46.camel@edumazet-laptop>
+References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
+	<AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
+	<1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
+	<1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
+	<1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
+	<AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
+	<1301476505.29074.47.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTi=YB+nBG7BYuuU+rB9TC-BbWcJ6mVfkxq0iUype@mail.gmail.com>
+	<AANLkTi=L0zqwQ869khH1efFUghGeJjoyTaBXs-O2icaM@mail.gmail.com>
+	<AANLkTi=vcn5jHpk0O8XS9XJ8s5k-mCnzUwu70mFTx4=g@mail.gmail.com>
+	<1301485085.29074.61.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTikXfVNkyFE2MpW9ZtfX2G=QKvT7kvEuDE-YE5xO@mail.gmail.com>
+	<1301488032.3283.42.camel@edumazet-laptop>
+	<AANLkTikX0jxdkyYgPoqjvC5HzY8VydTbFh_gFDzM8zJ7@mail.gmail.com>
+	<AANLkTi=RXoEOVmTPiL=dfO97aOVKWOJWE7hoQduPPsCZ@mail.gmail.com>
+	<1301491622.3283.46.camel@edumazet-laptop>
+Date: Wed, 30 Mar 2011 15:07:09 +0100
+Message-ID: <AANLkTi=tyhbb54iHPpPjK4+jM09SQv4giOTjpsjvD33E@mail.gmail.com>
+Subject: Re: kmemleak for MIPS
+From: Maxin John <maxin.john@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Daniel Baluta <daniel.baluta@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        naveen yadav <yad.naveen@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So that we ensure we allow 129 pages, even if the page size is
-different than 4096.
+Hi Eric,
 
-Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stable <stable@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Hmm, then MIPS kmemleak port might have a problem with percpu data ?
+>
+> fcp->hash_table = kzalloc_node(sz, GFP_KERNEL, cpu_to_node(cpu));
+>
+> fcp is a per cpu "struct flow_cache_percpu"
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index c75925c..fce1b8a 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -146,7 +146,7 @@ static struct srcu_struct pmus_srcu;
- int sysctl_perf_event_paranoid __read_mostly = 1;
- 
- /* Minimum for 128 pages + 1 for the user control page */
--int sysctl_perf_event_mlock __read_mostly = 516; /* 'free' kb per user */
-+int sysctl_perf_event_mlock __read_mostly = (129 * PAGE_SIZE) / 1024; /* 'free' kb per user */
- 
- /*
-  * max perf event sample rate
--- 
-1.7.3.2
+Thank you very much for the inputs. I will definitely investigate this.
+However, I think, the "basic" kmemleak support for MIPS is working as
+expected with the present patch.
+The kmemleak test case is also working as expected in MIPS target.
 
+So, as Daniel mentioned, shall we go ahead with integrating the
+kmemleak support for MIPS ?
+
+Please let me know your comments.
+
+Cheers,
+Maxin
