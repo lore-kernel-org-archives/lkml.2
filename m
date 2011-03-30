@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932547Ab1C3POZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 11:14:25 -0400
-Received: from bn-scl-osf02.barracuda.com ([64.235.144.26]:14615 "EHLO
-	bn-scl-osf02.barracuda.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753728Ab1C3POX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 11:14:23 -0400
-X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Mar 2011 11:14:23 EDT
-X-ASG-Debug-ID: 1301497117-4078038c0000-xx1T2L
-X-Barracuda-URL: http://10.8.0.46:80/cgi-bin/mark.cgi
+	id S932570Ab1C3PTw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 11:19:52 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:56786 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754910Ab1C3PTv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 11:19:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=C4BFMnN8rfyAfyC/WxLETZ9wQNTd6fB5hMoZ1na1Og3jz55a+umImHN1L3SNgvTEnj
+         4K6cTx3T/tx/R2FiSEApqFUpsKLAlV+fkyUsuSx0lzaLW2tyTZ5pjlC/AJHzspznJ6Zq
+         ZMlwlSwy678A5aXOos+ofPP7lRM/ZUk+kgZMU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Message-ID: <88d4fb7a-49b8-488f-9f48-de62a470a949@BN-INN-BE01.phionnet.com>
-From: <aheiss@barracuda.com>
-To: Undisclosed recipients:;
-Date: Wed, 30 Mar 2011 16:58:09 +0200
+In-Reply-To: <D6CBEE2F420741indou.takao@jp.fujitsu.com>
+References: <D6CBEE2F420741indou.takao@jp.fujitsu.com>
+Date: Wed, 30 Mar 2011 23:19:50 +0800
+Message-ID: <AANLkTi=cne0mSNOV0BC3X-SGeNOPPa5MSUf3L6yLJ1-t@mail.gmail.com>
+Subject: Re: [PATCH v2] generic-ipi: Initialize call_single_queue before
+ enabling interrupt
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        Milton Miller <miltonm@bga.com>, Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Vivek Goyal <vgoyal@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-EXCLAIMER-MD-CONFIG: 23550527-0592-4512-8b29-af9b0339669a
-X-Barracuda-Connect: bn-scl-smrthst01.it.cudanet.local[10.8.1.70]
-X-Barracuda-Start-Time: 1301497117
-X-Barracuda-Encrypted: AES256-SHA
-X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at barracuda.com
-X-Barracuda-Spam-Score: -1002.00
-X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-﻿
+On Wed, Mar 30, 2011 at 12:35 AM, Takao Indoh
+<indou.takao@jp.fujitsu.com> wrote:
+> Hi all,
+>
+> This patch renames init_call_single_data() to call_function_init() and
+> calls it in start_kernel() so that call_single_queue can be initialized
+> before enabling interrupt.
+>
+> There is a problem that kdump(2nd kernel) sometimes hangs up due to
+> pending IPI from 1st kernel. Kernel panic occurs because IPI comes
+> before call_single_queue is initialized. The details are as follows.
+> (1) 2nd kernel boot up
+> (2) A pending IPI from 1st kernel comes when irqs are first enabled
+>    in start_kernel().
+> (3) Kernel tries to handle the interrupt, but call_single_queue is not
+>    initialized yet at this point. As a result, in the
+>    generic_smp_call_function_single_interrupt(), NULL pointer
+>    dereference occurs when list_replace_init() tries to access
+>    &q->list.next.
+> Therefore this patch changes the name of init_call_single_data() to
+> call_function_init() and calls it before local_irq_enable() in
+> start_kernel().
+>
+> v2:
+> - Rename init_call_single_data() to call_function_init() and calls it in
+>  start_kernel()
+> - Change insert position in start_kernel().
+> - Adjust for CONFIG_SMP/CONFIG_USE_GENERIC_SMP_HELPERS options
+> - Rebased to Linus's latest tree
+>
 
+Looks good to my eyes,
 
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-Andreas Heiss
-IT Manager Infrastructure and Application
-
-Barracuda Networks AG
-Eduard-Bodem-Gasse 1
-6020 Innsbruck
-Austria
-
-Phone: +43 (0) 508 100
-Fax: +43 508 100 20
-eMail: mailto:aheiss@barracuda.com
-Web: www.barracudanetworks.com, www.phion.com
-
-
-
-
-
-
-
-Barracuda Networks AG
-Vorsitzender des Aufsichtsrates/ Chairman of the supervisory board: Dean Drako
-Vorstand/ Executive Board: Dr. Wieland Alge, Mag. Guenter Klausner
-Sitz der Gesellschaft/ Registered office: 6020 Innsbruck, Austria
-Handelsgericht Innsbruck Firmenbuch/ Registration Number: 184392s
-UID-Nr/ VAT Number: ATU47509003
-
-Diese Nachricht und allfaellige angehaengte Dokumente sind vertraulich und nur fuer den/die Adressaten bestimmt. Sollten Sie nicht der beabsichtigte Adressat sein, ist jede Offenlegung, Weiterleitung oder sonstige Verwendung dieser Information nicht gestattet. In diesem Fall bitten wir, den Absender zu verstaendigen und die Information zu vernichten. Fuer Uebermittlungsfehler oder sonstige Irrtuemer bei Uebermittlung besteht keine Haftung.
-
-This message and any attached files are confidential and intended solely for the addressee(s). Any publication, transmission or other use of the information by a person or entity other than the intended addressee is prohibited. If you receive this in error please contact the sender and delete the material. The sender does not accept liability for any errors or omissions as a result of the transmission.
-
-
-Barracuda Networks solutions are now available as virtual appliances. 
-Visit www.barracudanetworks.com/vx for more information.
-
-
-
+Thanks.
