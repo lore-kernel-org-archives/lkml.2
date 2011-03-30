@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933792Ab1C3WXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:23:31 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:49870 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933145Ab1C3WX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 18:23:29 -0400
-Message-ID: <4D93AD5C.1070308@canonical.com>
-Date: Wed, 30 Mar 2011 17:23:24 -0500
-From: Manoj <manoj.iyer@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1756299Ab1C3WZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 18:25:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48681 "EHLO linutronix.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753491Ab1C3WZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 18:25:21 -0400
+Date: Thu, 31 Mar 2011 00:25:09 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tony Lindgren <tony@atomide.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+In-Reply-To: <20110330215434.GI18334@atomide.com>
+Message-ID: <alpine.LFD.2.00.1103310018540.22418@localhost6.localdomain6>
+References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com> <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+ <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6> <20110330215434.GI18334@atomide.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: SDHCI: Ricoh [1180:e823] unable to mount MMC cards.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ricoh SD/MMC card reader [1180:e823] is able to read SD cards, I 
-recently submitted a patch to enable this card reader 
-(https://lkml.org/lkml/2011/2/11/309).
+On Wed, 30 Mar 2011, Tony Lindgren wrote:
 
-But it is not able to mount MMC cards.
+> * Thomas Gleixner <tglx@linutronix.de> [110330 14:07]:
+> > 
+> > So one person will be not enough, that needs to be a whole team of
+> > experienced people in the very near future to deal with the massive
+> > tsunami of crap which is targeted at mainline. If we fail to set that
+> > up, then we run into a very ugly maintainability issue in no time.
+> 
+> One thing that will help here and distribute the load is to move
+> more things under drivers/ as then we have more maintainers looking
+> at the code.
 
-When I insert an MMC card I get:
-mmc0: error -110 whilst initialising MMC card
+Guess what's that going to solve? Nothing, nada.
 
-I traced it down to ETIMEDOUT coming from sdhci_cmd_irq() can someone 
-give me a clue as to where I should start looking?
+Really, you move the problem to people who are not prepared to deal
+with the wave either. So what's the gain?
 
-======= lspci -vvnn ==============
-0d:00.0 System peripheral [0880]: Ricoh Co Ltd Device [1180:e823] (rev 
-05) (prog-if 01)
-	Subsystem: Lenovo Device [17aa:21ce]
-	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 16
-	Region 0: Memory at d1400000 (32-bit, non-prefetchable) [size=256]
-	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
-		Address: 0000000000000000  Data: 0000
-	Capabilities: [78] Power Management version 3
-		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=2 PME+
-	Capabilities: [80] Express (v1) Endpoint, MSI 00
-		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s unlimited, L1 
-unlimited
-			ExtTag- AttnBtn+ AttnInd+ PwrInd+ RBE+ FLReset-
-		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-			MaxPayload 128 bytes, MaxReadReq 512 bytes
-		DevSta:	CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr- TransPend-
-		LnkCap:	Port #1, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 
-<4us, L1 <64us
-			ClockPM+ Surprise- LLActRep- BwNot-
-		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
-			ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- 
-BWMgmt- ABWMgmt-
-	Capabilities: [100 v1] Virtual Channel
-		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
-		Arb:	Fixed- WRR32- WRR64- WRR128-
-		Ctrl:	ArbSelect=Fixed
-		Status:	InProgress-
-		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
-			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
-			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
-			Status:	NegoPending- InProgress-
-	Capabilities: [800 v1] Advanced Error Reporting
-		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- 
-MalfTLP- ECRC- UnsupReq- ACSViol-
-		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- 
-MalfTLP- ECRC- UnsupReq- ACSViol-
-		UESvrt:	DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ 
-MalfTLP+ ECRC- UnsupReq- ACSViol-
-		CESta:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-		AERCap:	First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
-	Kernel driver in use: sdhci-pci
-	Kernel modules: sdhci-pci
-=======================================================
+FYI, lots of the wreckage I observed regarding irq stuff was in
+drivers/*
 
--- 
-Manoj Iyer
-Ubuntu/Canonical
-Hardware Enablement
+My statement stays the same. In whatever playground you try to shift
+that problem in it's not going to scale the way it is right now,
+
+Thanks,
+
+	tglx
