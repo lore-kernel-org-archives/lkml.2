@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab1C3Px4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 11:53:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37220 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754659Ab1C3Pxz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 11:53:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kHN0jeoB0kPrgmfna3A8dpOkOfhP92H4TGt64MVQaecwQd2BAtX60QXPamRl0IQyGi
-         eMw1AvAPOgxqJcfgyx1xlDDmLnK4nWsV60buOgPP2/QAcwFThgo6t5TUmC0npXTbAXJ+
-         IRV/Qy1lr8NfmufwfqMjn0vuWhWmxTtvk4x+s=
-Date: Wed, 30 Mar 2011 17:53:50 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Tvrtko Ursulin <tvrtko@ursulin.net>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: 2.6.38 hangs on boot until key is pressed
-Message-ID: <20110330155350.GA31845@alberich.amd.com>
-References: <1301253485.2500.2.camel@deuteros>
+	id S1756023Ab1C3Pyh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 11:54:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40351 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754659Ab1C3Pyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 11:54:36 -0400
+Date: Wed, 30 Mar 2011 11:54:09 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Lina Lu <lulina_nuaa@foxmail.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: cfq-iosched.c:Use cfqq->nr_sectors in charge the vdisktime
+Message-ID: <20110330155409.GE1291@redhat.com>
+References: <201103302323256090890@foxmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301253485.2500.2.camel@deuteros>
+In-Reply-To: <201103302323256090890@foxmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 27, 2011 at 08:18:05PM +0100, Tvrtko Ursulin wrote:
-> 
-> Hi all,
-> 
-> It always happens at the same spot. 2.6.37 is fine with almost
-> identical .config. Dmesg and config attached.
+On Wed, Mar 30, 2011 at 11:23:30PM +0800, Lina Lu wrote:
+> Hi Vivek,
+>       I find the weight policy can be more accuracy with cfqq->nr_sectors instead
+> of cfqq->slice_dispatch. 
+>       Today, I try to modify cfq_group_served(), and use "charge = cfqq->nr_sectors; "
+> instead of "charge = cfqq->slice_dispatch; " . The test result seens more accuracy.
+> Why you choose slice_dispatch here? Is the nr_sectors will lower the total performance?
 
+Lina,
 
-Hi,
+CFQ fundamentally allocates time slices hence accounting is done in time
+and not in terms of sectors. The other reason is that accounting in
+terms of time can be more accurate where some process is seeking all
+over the disk and doing little IO. If we account in terms of sectors
+then such seeky process will get much more share.
 
-can you please send dmesg when 2.6.37 is booted.
-Also output of "lspci -nnxxxx" would be of interest.
-dmidecode (as root) would also help.
+>       And in iops mod, if I try to apply weight policy on two IO processes with different 
+> avgrq-sz, the test results will not exact match the weight value.
 
-Does it help to disable C1e in your BIOS (if there is such an option)?
-If there is no such option please try to boot 2.6.38.1 with idle=mwait
-on the command line.
+IOPS mode kicks in when slice_idle=0. I suspect that group does not drive
+enough IO to remain on service tree hence gets deleted and hence loses
+share.
 
+Can you run a 20 sec backtrace and upload it somewhere.
 
-Thanks for now,
-
-Andreas
-
+Thanks
+Vivek
