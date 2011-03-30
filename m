@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793Ab1C3QP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 12:15:58 -0400
-Received: from tex.lwn.net ([70.33.254.29]:34956 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756086Ab1C3QP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 12:15:56 -0400
-Date: Wed, 30 Mar 2011 10:15:55 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Luis Rossi <luisf.rossi@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Help with dma on PCI driver
-Message-ID: <20110330101555.573491e1@bike.lwn.net>
-In-Reply-To: <AANLkTimkss168HfsPtJPpF1MiYAbHty3csW=R10P+=JA@mail.gmail.com>
-References: <AANLkTim3eMR+5VQT9Cbew70bLZ_3P7eo3FXx_TxMuP1=@mail.gmail.com>
-	<20110330092307.4a8deb79@bike.lwn.net>
-	<AANLkTimkss168HfsPtJPpF1MiYAbHty3csW=R10P+=JA@mail.gmail.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.24.3; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S932796Ab1C3QQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 12:16:28 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:54059 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754527Ab1C3QOY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 12:14:24 -0400
+Message-Id: <20110330161419.859336395@linux.vnet.ibm.com>
+User-Agent: quilt/0.48-1
+Date: Wed, 30 Mar 2011 12:13:34 -0400
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+To: debora@linux.vnet.ibm.com, srajiv@linux.vnet.ibm.com,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Cc: jirislaby@gmail.com, preining@logic.at,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>
+Subject: [PATCH V2 12/12] tpm: Fix a typo
+References: <20110330161322.015113054@linux.vnet.ibm.com>
+Content-Disposition: inline; filename=tpm_fix_typo.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Mar 2011 13:11:40 -0300
-Luis Rossi <luisf.rossi@gmail.com> wrote:
+This patch fixes a typo.
 
-> should i stop the inti function on the device register,
-> and make all the rest inside probe? It makes a lot of sense as the
-> rest should be called just if the device is connected...
+Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
 
-Yes, you should.  Also, please look at your cdev_add() call and bear in
-mind that your device can be accessed immediately after that call.  You
-should not call cdev_add() until the device is completely initialized and
-ready to go.
+Index: linux-2.6/drivers/char/tpm/tpm.c
+===================================================================
+--- linux-2.6.orig/drivers/char/tpm/tpm.c
++++ linux-2.6/drivers/char/tpm/tpm.c
+@@ -615,7 +615,7 @@ void tpm_continue_selftest(struct tpm_ch
+ 	u8 data[] = {
+ 		0, 193,			/* TPM_TAG_RQU_COMMAND */
+ 		0, 0, 0, 10,		/* length */
+-		0, 0, 0, 83,		/* TPM_ORD_GetCapability */
++		0, 0, 0, 83,		/* TPM_ORD_ContinueSelfTest */
+ 	};
+ 
+ 	tpm_transmit(chip, data, sizeof(data));
 
-Some thought given to locking would also not be misplaced.
-
-Thanks,
-
-jon
