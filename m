@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632Ab1C3QbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 12:31:08 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50677 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab1C3QbG (ORCPT
+	id S1755248Ab1C3QhD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 12:37:03 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:33203 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754760Ab1C3QhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 12:31:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Zwn16UtZLsyAxA2lgrRe76fABhIcuhwD5QghBp/2InDhsNZnDGmFVYkyjyFLorM0m1
-         tNI7y0nQPNdkjf24ZOkT8xtachkS+dyKU9rtaXkLYtDt8RTLTBTBlP34jylHYUHfkSac
-         fnSRLp9b/8Dv3Sf2+Y8t1LkMp7wtJHMp1w890=
-Message-ID: <4D935AC3.2030509@gmail.com>
-Date: Wed, 30 Mar 2011 09:30:59 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110316 Thunderbird/3.1.9
+	Wed, 30 Mar 2011 12:37:00 -0400
+Message-ID: <4D935C56.4060903@metafoo.de>
+Date: Wed, 30 Mar 2011 18:37:42 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: trivial@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]arch:x86:kvm:i8254.h Fix typo in kvm_pit
-References: <1301501942-3937-1-git-send-email-justinmattock@gmail.com> <4D9359CC.6050508@redhat.com>
-In-Reply-To: <4D9359CC.6050508@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Nicolas Kaiser <nikai@nikai.net>
+CC: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/rtc/rtc-jz4740.c: fix error check
+References: <20110330181201.29e473bf@absol.kitzblitz>
+In-Reply-To: <20110330181201.29e473bf@absol.kitzblitz>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2011 09:26 AM, Avi Kivity wrote:
-> On 03/30/2011 06:19 PM, Justin P. Mattock wrote:
->> The below patch changes base_addresss to base_address.
->> Note: I have grepped for base_addresss and nothing shows up,
->> grepping for base_address gets me lots of output, telling me that
->> this is a typo, but could be wrong.
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>
->> ---
->> arch/x86/kvm/i8254.h | 2 +-
->> 1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kvm/i8254.h b/arch/x86/kvm/i8254.h
->> index 46d08ca..c2fa48b 100644
->> --- a/arch/x86/kvm/i8254.h
->> +++ b/arch/x86/kvm/i8254.h
->> @@ -33,7 +33,7 @@ struct kvm_kpit_state {
->> };
->>
->> struct kvm_pit {
->> - unsigned long base_addresss;
->> + unsigned long base_address;
->> struct kvm_io_device dev;
->> struct kvm_io_device speaker_dev;
->> struct kvm *kvm;
->
-> Why not remove the variable completely?
->
+On 03/30/2011 06:12 PM, Nicolas Kaiser wrote:
+> Checking 'rtc->irq < 0' doesn't work because 'rtc->irq' is unsigned.
+> 
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-didnt even think to completely remove the variable(figured it was used 
-somewhere).I will look at that and resend with removal of the variable 
-for you..
+But while were at it we should change it, so that the result of
+platform_get_irq becomes the return value in case of an error instead of using
+the wrong or at least confusing -ENOENT.
 
-Justin P. Mattock
+> ---
+> Untested.
+> 
+>  drivers/rtc/rtc-jz4740.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-jz4740.c b/drivers/rtc/rtc-jz4740.c
+> index b647363..ba91bc6 100644
+> --- a/drivers/rtc/rtc-jz4740.c
+> +++ b/drivers/rtc/rtc-jz4740.c
+> @@ -220,12 +220,13 @@ static int __devinit jz4740_rtc_probe(struct platform_device *pdev)
+>  	if (!rtc)
+>  		return -ENOMEM;
+>  
+> -	rtc->irq = platform_get_irq(pdev, 0);
+> -	if (rtc->irq < 0) {
+> +	ret = platform_get_irq(pdev, 0);
+> +	if (ret < 0) {
+>  		ret = -ENOENT;
+>  		dev_err(&pdev->dev, "Failed to get platform irq\n");
+>  		goto err_free;
+>  	}
+> +	rtc->irq = ret;
+>  
+>  	rtc->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (!rtc->mem) {
+
