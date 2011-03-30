@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab1C3GXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 02:23:03 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:48694 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126Ab1C3GXB (ORCPT
+	id S1754135Ab1C3Gyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 02:54:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54181 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1C3Gyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 02:23:01 -0400
-Date: Wed, 30 Mar 2011 08:22:59 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>, trivial@kernel.org,
-        fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: Re: [PATCH]arch:Kconfig.locks Remove unused config option.
-Message-ID: <20110330062258.GA2600@osiris.boeblingen.de.ibm.com>
-References: <1301416611-3651-1-git-send-email-justinmattock@gmail.com>
- <20110329175302.GF8529@home.goodmis.org>
+	Wed, 30 Mar 2011 02:54:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH] unicore32 framebuffer driver fix: make videomemory kmalloc-ed and floatable
+Date: Wed, 30 Mar 2011 08:54:05 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
+Cc: "'Paul Mundt'" <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+References: <019701cbee1e$c4e2d260$4ea87720$@mprc.pku.edu.cn> <201103291642.49555.arnd@arndb.de> <01ca01cbee7b$4f790370$ee6b0a50$@mprc.pku.edu.cn>
+In-Reply-To: <01ca01cbee7b$4f790370$ee6b0a50$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110329175302.GF8529@home.goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103300854.05366.arnd@arndb.de>
+X-Provags-ID: V02:K0:fuWg3mKRWsuqQSLRWb1auFQnGOWAW12OaePNYPaHgRM
+ KpnmrjH4Gej/uBp8GxKKdQ+eSU4hgPNXtayomxn03L4auBCOLL
+ /MYmFqonMBDhoFYp5JtQT/y0zkdIN0KlzFOUiwizpLbrZHWyUk
+ W/KWQoYIjWW9NtwMSKT5ATQ7rTyCOLnkgaw3BLhP8FtLy/Tujn
+ pjH6vIv46RV2p3JoRa23g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 01:53:02PM -0400, Steven Rostedt wrote:
-> On Tue, Mar 29, 2011 at 09:36:51AM -0700, Justin P. Mattock wrote:
-> > using a cleanup script I found this, could be real/fake not sure
-> > I grepped the whole kernel and only found this. If/when you have
-> > time let me know..
-> 
-> This was added by: 36cd3c9f925b9307236505ae7ad1ad7ac4d4357c
-> mutex: have non-spinning mutexes on s390 by default
-> 
-> and removed by: fa188ae1657d6edc7963d524ce9a0650fe725242
-> [S390] mutex: enable spinning mutex on s390
-> 
-> So I think you are safe in removing it.
-
-Yes, that's just a leftover.
-
-> 
+On Wednesday 30 March 2011 03:39:26 Guan Xuetao wrote:
+> > How does this work? UNIFB_MEMSIZE seems to be 4 MB, much more than the
+> > maximum of 128 KB that kmalloc can allocate.
 > > 
-> > Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> > Shouldn't this use get_free_pages() instead of kmalloc?
+> > 
 > 
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> When using SLUB allocator, if required memory size  is larger
+> than 2*PAGE_SIZE, kmalloc_large is called,
+> and eventually __get_free_pages will  be called.
+> So,  it would be the same as __get_free_pages.
 
-Acked-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Ok, I see. It's probably still better to use __get_free_pages directly,
+because it's possible to select a different allocator that does not
+do this itself.
+
+	Arnd
