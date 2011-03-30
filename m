@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965118Ab1C3V3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:29:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33747 "EHLO mga02.intel.com"
+	id S965056Ab1C3VI7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:08:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48428 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933626Ab1C3VJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:09:03 -0400
+	id S965020Ab1C3VIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:08:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="621238327"
+   d="scan'208";a="727133646"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: andreas.herrmann3@amd.com, f3d27b@gmail.com, ak@linux.intel.com,
-        akpm@linux-foundation.org, mingo@elte.hu, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [197/275] x86, quirk: Fix SB600 revision check
-Message-Id: <20110330210721.24C9C3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:07:21 -0700 (PDT)
+To: axel.lin@gmail.com, Artem.Bityutskiy@nokia.com, David.Woodhouse@intel.com,
+        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [185/275] mtd: add "platform:" prefix for platform modalias
+Message-Id: <20110330210708.7D34B3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:07:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,50 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit 1d3e09a304e6c4e004ca06356578b171e8735d3c upstream.
+commit c804c733846572ca85c2bba60c7fe6fa024dff18 upstream.
 
-Commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
-(x86 quirk: Fix polarity for IRQ0 pin2 override on SB800
-systems) introduced a regression. It removed some SB600 specific
-code to determine the revision ID without adapting a
-corresponding revision ID check for SB600.
+Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
+with "platform:"), the platform modalias is prefixed with "platform:".
 
-See this mail thread:
-
-  http://marc.info/?l=linux-kernel&m=129980296006380&w=2
-
-This patch adapts the corresponding check to cover all SB600
-revisions.
-
-Tested-by: Wang Lei <f3d27b@gmail.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-LKML-Reference: <20110315143137.GD29499@alberich.amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/x86/kernel/early-quirks.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/mtd/nand/omap2.c      |    2 +-
+ drivers/mtd/onenand/generic.c |    2 +-
+ drivers/mtd/onenand/omap2.c   |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-2.6.35.y/arch/x86/kernel/early-quirks.c
+Index: linux-2.6.35.y/drivers/mtd/nand/omap2.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/kernel/early-quirks.c	2011-03-29 23:03:01.447263137 -0700
-+++ linux-2.6.35.y/arch/x86/kernel/early-quirks.c	2011-03-29 23:03:02.000000000 -0700
-@@ -161,7 +161,12 @@
- 	if (rev >= 0x40)
- 		acpi_fix_pin2_polarity = 1;
+--- linux-2.6.35.y.orig/drivers/mtd/nand/omap2.c	2011-03-29 22:50:48.138026688 -0700
++++ linux-2.6.35.y/drivers/mtd/nand/omap2.c	2011-03-29 23:03:02.106246277 -0700
+@@ -1077,6 +1077,6 @@
+ module_init(omap_nand_init);
+ module_exit(omap_nand_exit);
  
--	if (rev > 0x13)
-+	/*
-+	 * SB600: revisions 0x11, 0x12, 0x13, 0x14, ...
-+	 * SB700: revisions 0x39, 0x3a, ...
-+	 * SB800: revisions 0x40, 0x41, ...
-+	 */
-+	if (rev >= 0x39)
- 		return;
+-MODULE_ALIAS(DRIVER_NAME);
++MODULE_ALIAS("platform:" DRIVER_NAME);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Glue layer for NAND flash on TI OMAP boards");
+Index: linux-2.6.35.y/drivers/mtd/onenand/generic.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/mtd/onenand/generic.c	2011-03-29 22:50:48.138026688 -0700
++++ linux-2.6.35.y/drivers/mtd/onenand/generic.c	2011-03-29 23:03:02.106246277 -0700
+@@ -131,7 +131,7 @@
+ 	.remove		= __devexit_p(generic_onenand_remove),
+ };
  
- 	if (acpi_use_timer_override)
+-MODULE_ALIAS(DRIVER_NAME);
++MODULE_ALIAS("platform:" DRIVER_NAME);
+ 
+ static int __init generic_onenand_init(void)
+ {
+Index: linux-2.6.35.y/drivers/mtd/onenand/omap2.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/mtd/onenand/omap2.c	2011-03-29 22:50:48.138026688 -0700
++++ linux-2.6.35.y/drivers/mtd/onenand/omap2.c	2011-03-29 23:03:02.107246252 -0700
+@@ -815,7 +815,7 @@
+ module_init(omap2_onenand_init);
+ module_exit(omap2_onenand_exit);
+ 
+-MODULE_ALIAS(DRIVER_NAME);
++MODULE_ALIAS("platform:" DRIVER_NAME);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Jarkko Lavinen <jarkko.lavinen@nokia.com>");
+ MODULE_DESCRIPTION("Glue layer for OneNAND flash on OMAP2 / OMAP3");
