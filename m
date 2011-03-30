@@ -1,45 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab1C3F37 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 01:29:59 -0400
-Received: from mail.ltoscas.com.ar ([200.43.197.4]:41217 "HELO ltoscas.com.ar"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750912Ab1C3F36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 01:29:58 -0400
-X-Greylist: delayed 70741 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Mar 2011 01:29:58 EDT
-X-Virus-Checked: Checked by ClamAV on ltoscas.com.ar
-Message-ID: <20110328100712.17806o1668obpcsg@webmail.ltoscas.com.ar>
-Date: Mon, 28 Mar 2011 10:07:12 -0300
-From: cean loan firm <ceanloanfirm31@yahoo.co.uk>
-Reply-to: ceanloanfirm.co@gmx.com
-To: undisclosed-recipients:;
-Subject: 
+	id S1752932Ab1C3Fai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 01:30:38 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:52767 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab1C3Fah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 01:30:37 -0400
+Subject: [PATCH 0/3] Unmapped page cache control (v5)
+To: linux-mm@kvack.org, akpm@linux-foundation.org
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: npiggin@kernel.dk, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Date: Wed, 30 Mar 2011 11:00:26 +0530
+Message-ID: <20110330052819.8212.1359.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.5)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Do you need any financial help such as loan to pay bills? If yes email
-us at vl.oceanloanfirm.co@gmx.com with the information below
-Full Name:...
-Country:..
-State:..
-Phone Number:...
-Loan Amount Needed:...
-Duration:...
-Monthly Incom
-Email us at vl.oceanloanfirm.co@gmx.com
+The following series implements page cache control,
+this is a split out version of patch 1 of version 3 of the
+page cache optimization patches posted earlier at
+Previous posting http://lwn.net/Articles/425851/ and analysis
+at http://lwn.net/Articles/419713/
+
+Detailed Description
+====================
+This patch implements unmapped page cache control via preferred
+page cache reclaim. The current patch hooks into kswapd and reclaims
+page cache if the user has requested for unmapped page control.
+This is useful in the following scenario
+- In a virtualized environment with cache=writethrough, we see
+  double caching - (one in the host and one in the guest). As
+  we try to scale guests, cache usage across the system grows.
+  The goal of this patch is to reclaim page cache when Linux is running
+  as a guest and get the host to hold the page cache and manage it.
+  There might be temporary duplication, but in the long run, memory
+  in the guests would be used for mapped pages.
+- The option is controlled via a boot option and the administrator
+  can selectively turn it on, on a need to use basis.
+
+A lot of the code is borrowed from zone_reclaim_mode logic for
+__zone_reclaim(). One might argue that the with ballooning and
+KSM this feature is not very useful, but even with ballooning,
+we need extra logic to balloon multiple VM machines and it is hard
+to figure out the correct amount of memory to balloon. With these
+patches applied, each guest has a sufficient amount of free memory
+available, that can be easily seen and reclaimed by the balloon driver.
+The additional memory in the guest can be reused for additional
+applications or used to start additional guests/balance memory in
+the host.
+
+KSM currently does not de-duplicate host and guest page cache. The goal
+of this patch is to help automatically balance unmapped page cache when
+instructed to do so.
+
+The sysctl for min_unmapped_ratio provides further control from
+within the guest on the amount of unmapped pages to reclaim, a similar
+max_unmapped_ratio sysctl is added and helps in the decision making
+process of when reclaim should occur. This is tunable and set by
+default to 16 (based on tradeoff's seen between aggressiveness in
+balancing versus size of unmapped pages). Distro's and administrators
+can further tweak this for desired control.
+
+Data from the previous patchsets can be found at
+https://lkml.org/lkml/2010/11/30/79
+
+---
+
+Balbir Singh (3):
+      Move zone_reclaim() outside of CONFIG_NUMA
+      Refactor zone_reclaim code
+      Provide control over unmapped pages
 
 
+ Documentation/kernel-parameters.txt |    8 ++
+ Documentation/sysctl/vm.txt         |   19 +++++
+ include/linux/mmzone.h              |   11 +++
+ include/linux/swap.h                |   25 ++++++-
+ init/Kconfig                        |   12 +++
+ kernel/sysctl.c                     |   29 ++++++--
+ mm/page_alloc.c                     |   35 +++++++++-
+ mm/vmscan.c                         |  123 +++++++++++++++++++++++++++++++----
+ 8 files changed, 229 insertions(+), 33 deletions(-)
 
-
-
-
+-- 
+	Three Cheers,
+	Balbir
