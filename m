@@ -1,87 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab1C3NhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 09:37:23 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:41676
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750798Ab1C3NhW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 09:37:22 -0400
-X-SpamScore: -30
-X-BigFish: VPS-30(zz542N1432N98dN4015L9371Pzz1202hzz8275bhz2dh95h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1755949Ab1C3NkS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 09:40:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46099 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754861Ab1C3NkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 09:40:16 -0400
+Date: Wed, 30 Mar 2011 13:39:50 GMT
+From: tip-bot for Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        richardcochran@gmail.com, richard.cochran@omicron.at,
+        benh@kernel.crashing.org, tglx@linutronix.de, buytenh@secretlab.ca
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, richardcochran@gmail.com, tglx@linutronix.de,
+        buytenh@secretlab.ca, richard.cochran@omicron.at
+In-Reply-To: <20110330132504.GA31832@riccoc20.at.omicron.at>
+References: <20110330132504.GA31832@riccoc20.at.omicron.at>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] powerpc: qe_ic: Rename get_irq_desc_data and get_irq_desc_chip
+Message-ID: <tip-eead4d5c63ff9200a46d71345227f2b2f3eb86c0@git.kernel.org>
+Git-Commit-ID: eead4d5c63ff9200a46d71345227f2b2f3eb86c0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH V5 3/4] ARM: Xilinx: base header files and assembly macros
-Date: Wed, 30 Mar 2011 07:37:10 -0600
-In-Reply-To: <201103301529.03648.arnd@arndb.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH V5 3/4] ARM: Xilinx: base header files and assembly macros
-Thread-Index: Acvu3nddRGhv2g2TTRCM/xVgJ3B8YgAADFpw
-References: <1301444651-18008-1-git-send-email-john.linn@xilinx.com> <201103301344.45307.arnd@arndb.de> <f4872ed7-b6e4-4050-9445-5176f5aa961a@VA3EHSMHS017.ehs.local> <201103301529.03648.arnd@arndb.de>
-From: John Linn <John.Linn@xilinx.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
-        <glikely@secretlab.ca>, <jamie@jamieiles.com>
-X-OriginalArrivalTime: 30 Mar 2011 13:37:11.0668 (UTC) FILETIME=[92B58B40:01CBEEDF]
-X-RCIS-Action: ALLOW
-Message-ID: <807f31a6-c9ff-4f35-bece-e0222a8e1fda@VA3EHSMHS006.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 30 Mar 2011 13:39:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Wednesday, March 30, 2011 7:29 AM
-> To: John Linn
-> Cc: linux-arm-kernel@lists.infradead.org;
-linux-kernel@vger.kernel.org;
-> linux@arm.linux.org.uk; catalin.marinas@arm.com; glikely@secretlab.ca;
-> jamie@jamieiles.com
-> Subject: Re: [PATCH V5 3/4] ARM: Xilinx: base header files and
-assembly
-> macros
-> 
-> On Wednesday 30 March 2011, John Linn wrote:
-> > Yes that makes sense.  We don't have immediate plans for PCI and
-> > I was assuming when we add PCI we would need to change that.
-> >
-> > If you think I shouldn't put it off then I'll fix it now.  My
-> > preference was to get the platform supported, then add more
-features.
-> 
-> Getting it fixed properly depends a bit on the PCI implementation.
-> I've been planning to clean up this part of the ARM architecture
-> for some time and I can probably do it for one more platform when
-> I get to it.
+Commit-ID:  eead4d5c63ff9200a46d71345227f2b2f3eb86c0
+Gitweb:     http://git.kernel.org/tip/eead4d5c63ff9200a46d71345227f2b2f3eb86c0
+Author:     Richard Cochran <richardcochran@gmail.com>
+AuthorDate: Wed, 30 Mar 2011 15:25:04 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 30 Mar 2011 15:38:02 +0200
 
-Sounds like it's fine to postpone it til we do PCI as I don't know all
-the
-details of the system yet. Soft logic in FPGAs is great :)
+powerpc: qe_ic: Rename get_irq_desc_data and get_irq_desc_chip
 
-> 
-> My idea for the multiplatform kernel is to have a global I/O space
-> window (maybe 1 MB) that is in the same location in the virtual
-> address space all the time, so any platform that wants to support
-> PCI with direct-mapped I/O space can simply map it in there
-> at boot time.
-> 
+These two functions disappeared in commit
 
-Sounds like that will make it easier for everyone and more consistent.
+    0c6f8a8b917ad361319c8ace3e9f28e69bfdb4c1
+    "genirq: Remove compat code"
 
-Thanks,
-John
+but they still exist in qe_ic.h.
+This patch renames the function to their new names.
 
-> 	Arnd
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Lennert Buytenhek <buytenh@secretlab.ca>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+LKML-Reference: <20110330132504.GA31832@riccoc20.at.omicron.at>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/powerpc/include/asm/qe_ic.h |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+diff --git a/arch/powerpc/include/asm/qe_ic.h b/arch/powerpc/include/asm/qe_ic.h
+index 9e2cb20..f706164 100644
+--- a/arch/powerpc/include/asm/qe_ic.h
++++ b/arch/powerpc/include/asm/qe_ic.h
+@@ -81,7 +81,7 @@ int qe_ic_set_high_priority(unsigned int virq, unsigned int priority, int high);
+ static inline void qe_ic_cascade_low_ipic(unsigned int irq,
+ 					  struct irq_desc *desc)
+ {
+-	struct qe_ic *qe_ic = get_irq_desc_data(desc);
++	struct qe_ic *qe_ic = irq_desc_get_handler_data(desc);
+ 	unsigned int cascade_irq = qe_ic_get_low_irq(qe_ic);
+ 
+ 	if (cascade_irq != NO_IRQ)
+@@ -91,7 +91,7 @@ static inline void qe_ic_cascade_low_ipic(unsigned int irq,
+ static inline void qe_ic_cascade_high_ipic(unsigned int irq,
+ 					   struct irq_desc *desc)
+ {
+-	struct qe_ic *qe_ic = get_irq_desc_data(desc);
++	struct qe_ic *qe_ic = irq_desc_get_handler_data(desc);
+ 	unsigned int cascade_irq = qe_ic_get_high_irq(qe_ic);
+ 
+ 	if (cascade_irq != NO_IRQ)
+@@ -101,9 +101,9 @@ static inline void qe_ic_cascade_high_ipic(unsigned int irq,
+ static inline void qe_ic_cascade_low_mpic(unsigned int irq,
+ 					  struct irq_desc *desc)
+ {
+-	struct qe_ic *qe_ic = get_irq_desc_data(desc);
++	struct qe_ic *qe_ic = irq_desc_get_handler_data(desc);
+ 	unsigned int cascade_irq = qe_ic_get_low_irq(qe_ic);
+-	struct irq_chip *chip = get_irq_desc_chip(desc);
++	struct irq_chip *chip = irq_desc_get_chip(desc);
+ 
+ 	if (cascade_irq != NO_IRQ)
+ 		generic_handle_irq(cascade_irq);
+@@ -114,9 +114,9 @@ static inline void qe_ic_cascade_low_mpic(unsigned int irq,
+ static inline void qe_ic_cascade_high_mpic(unsigned int irq,
+ 					   struct irq_desc *desc)
+ {
+-	struct qe_ic *qe_ic = get_irq_desc_data(desc);
++	struct qe_ic *qe_ic = irq_desc_get_handler_data(desc);
+ 	unsigned int cascade_irq = qe_ic_get_high_irq(qe_ic);
+-	struct irq_chip *chip = get_irq_desc_chip(desc);
++	struct irq_chip *chip = irq_desc_get_chip(desc);
+ 
+ 	if (cascade_irq != NO_IRQ)
+ 		generic_handle_irq(cascade_irq);
+@@ -127,9 +127,9 @@ static inline void qe_ic_cascade_high_mpic(unsigned int irq,
+ static inline void qe_ic_cascade_muxed_mpic(unsigned int irq,
+ 					    struct irq_desc *desc)
+ {
+-	struct qe_ic *qe_ic = get_irq_desc_data(desc);
++	struct qe_ic *qe_ic = irq_desc_get_handler_data(desc);
+ 	unsigned int cascade_irq;
+-	struct irq_chip *chip = get_irq_desc_chip(desc);
++	struct irq_chip *chip = irq_desc_get_chip(desc);
+ 
+ 	cascade_irq = qe_ic_get_high_irq(qe_ic);
+ 	if (cascade_irq == NO_IRQ)
