@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab1C3RAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 13:00:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43711 "EHLO linutronix.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932777Ab1C3RAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 13:00:36 -0400
-Date: Wed, 30 Mar 2011 19:00:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT pull] irq fixes for .39.rc
-In-Reply-To: <AANLkTikeMFpxVW2bU+CXh=VVPBf2Tm4ccMFBUELSeVy4@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1103301856550.22418@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1103301648460.22418@localhost6.localdomain6> <AANLkTinnGfpVeugk4WOKeDAUQEuzBo75yCq_E73=w66V@mail.gmail.com> <alpine.LFD.2.00.1103301827530.22418@localhost6.localdomain6> <alpine.LFD.2.00.1103301845020.22418@localhost6.localdomain6>
- <AANLkTikeMFpxVW2bU+CXh=VVPBf2Tm4ccMFBUELSeVy4@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1577517588-1301504431=:22418"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S932929Ab1C3RBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 13:01:32 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:40054 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754785Ab1C3RBb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 13:01:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=YJ77uVrd2SNW7vLad46Kp48VPH1SUpAEaMSw5WFLEK3o7eaC93tk0slofjgG0WIxGE
+         PsaXrcDjADTin/d4BrnOLhw/9IcXf1JxTXjit2pKW2Mhd2BnJXv0ZjZnqFsJsbiHwq/A
+         2nVWP2Gdapk/lgPYCI/TO85dpwnBoCz9PN3rA=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 1/5]drivers: Typo change teh to the.
+Date: Wed, 30 Mar 2011 10:01:14 -0700
+Message-Id: <1301504478-3450-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+The below patch fixes some typos in various parts of the kernel.
 
----1463795968-1577517588-1301504431=:22418
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-On Wed, 30 Mar 2011, Linus Torvalds wrote:
+---
+ drivers/infiniband/hw/qib/qib_twsi.c      |    2 +-
+ drivers/scsi/lpfc/lpfc_sli.c              |    2 +-
+ drivers/staging/octeon/cvmx-helper-util.c |    2 +-
+ fs/notify/inotify/inotify_fsnotify.c      |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-> On Wed, Mar 30, 2011 at 9:46 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Wed, 30 Mar 2011, Thomas Gleixner wrote:
-> >> On Wed, 30 Mar 2011, Linus Torvalds wrote:
-> >> >
-> >> > which just makes me go "Somebody is really really confused".
-> >> >
-> >> > The whole thing may mean that both handler_data and chip_data contains
-> >> > the right thing, but it still makes me go "WTF?".
-> >> >
-> >> > Which way should I resolve it?
-> >>
-> >> get_irq_desc_data() maps to irq_desc_get_handler_data() so Richards
-> >> resolution is correct even if the other might work as well.
-> >
-> > Older code which was not using any accessors has:
-> >
-> >      desc->handler_data
-> >
-> > But yeah, the init stuff is confusing as hell.
-> 
-> So I took the handler_data version, but I do think the chip_data one
-> seems to make more conceptual sense. It would be good if somebody who
-> can actually test that code and knows all the details of the
-> particular irq controller could just take a look, and decide on using
-> one or the other, and not both.
+diff --git a/drivers/infiniband/hw/qib/qib_twsi.c b/drivers/infiniband/hw/qib/qib_twsi.c
+index 6f31ca5..ddde72e 100644
+--- a/drivers/infiniband/hw/qib/qib_twsi.c
++++ b/drivers/infiniband/hw/qib/qib_twsi.c
+@@ -41,7 +41,7 @@
+  * QLogic_IB "Two Wire Serial Interface" driver.
+  * Originally written for a not-quite-i2c serial eeprom, which is
+  * still used on some supported boards. Later boards have added a
+- * variety of other uses, most board-specific, so teh bit-boffing
++ * variety of other uses, most board-specific, so the bit-boffing
+  * part has been split off to this file, while the other parts
+  * have been moved to chip-specific files.
+  *
+diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
+index 4746dcd..7dab966 100644
+--- a/drivers/scsi/lpfc/lpfc_sli.c
++++ b/drivers/scsi/lpfc/lpfc_sli.c
+@@ -3040,7 +3040,7 @@ lpfc_sli_sp_handle_rspiocb(struct lpfc_hba *phba, struct lpfc_sli_ring *pring,
+ 	list_add_tail(&rspiocbp->list, &(pring->iocb_continueq));
+ 	pring->iocb_continueq_cnt++;
+ 
+-	/* Now, determine whetehr the list is completed for processing */
++	/* Now, determine whether the list is completed for processing */
+ 	irsp = &rspiocbp->iocb;
+ 	if (irsp->ulpLe) {
+ 		/*
+diff --git a/drivers/staging/octeon/cvmx-helper-util.c b/drivers/staging/octeon/cvmx-helper-util.c
+index 41ef8a4..131182b 100644
+--- a/drivers/staging/octeon/cvmx-helper-util.c
++++ b/drivers/staging/octeon/cvmx-helper-util.c
+@@ -362,7 +362,7 @@ int __cvmx_helper_setup_gmx(int interface, int num_ports)
+ }
+ 
+ /**
+- * Returns the IPD/PKO port number for a port on teh given
++ * Returns the IPD/PKO port number for a port on the given
+  * interface.
+  *
+  * @interface: Interface to use
+diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
+index a91b69a..7400898 100644
+--- a/fs/notify/inotify/inotify_fsnotify.c
++++ b/fs/notify/inotify/inotify_fsnotify.c
+@@ -194,7 +194,7 @@ static int idr_callback(int id, void *p, void *data)
+ 
+ static void inotify_free_group_priv(struct fsnotify_group *group)
+ {
+-	/* ideally the idr is empty and we won't hit the BUG in teh callback */
++	/* ideally the idr is empty and we won't hit the BUG in the callback */
+ 	idr_for_each(&group->inotify_data.idr, idr_callback, group);
+ 	idr_remove_all(&group->inotify_data.idr);
+ 	idr_destroy(&group->inotify_data.idr);
+-- 
+1.7.4.1
 
-I think I figured it out. The cascade interrupts do not set chip_data,
-they set handler data in qe_ic_init().
-
-The interrupts which are demultiplexed by the cascade handlers set
-chip_data on different irq_desc instances. So Ben's resolution would
-have resulted in a NULL pointer dereference.
-
-Thanks,
-
-	tglx
----1463795968-1577517588-1301504431=:22418--
