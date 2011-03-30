@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab1C3CMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 22:12:12 -0400
-Received: from lo.gmane.org ([80.91.229.12]:34756 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754148Ab1C3CMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 22:12:10 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: jmheo <jongman.heo@gmail.com>
-Subject: compile error with 2.6.39-rc1 (in =?utf-8?b?YXJjaC94ODYva2VybmVsL2FwYl90aW1lci5jKQ==?=
-Date: Wed, 30 Mar 2011 02:11:57 +0000 (UTC)
-Message-ID: <loom.20110330T040947-18@post.gmane.org>
+	id S1754799Ab1C3CNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 22:13:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:44388 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab1C3CNV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 22:13:21 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=XdyGaWegCa8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=C2oOpmTikdHkmFHgcv4A:9 a=BMehiCjh4hFjR-vg7Q9rG_rLFvUA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH] netfilter: Fix build failure when ipv6 but xt_tproxy is
+ built in
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        KOVACS Krisztian <hidden@balabit.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 29 Mar 2011 22:13:19 -0400
+Message-ID: <1301451199.14261.327.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 210.94.41.89 (Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; MS-RTC LM 8; .NET4.0C; .NET4.0E))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+While running ktest.pl doing ranconfigs, the following build error
+occurred:
 
-I got following compile error with 2.6.39-rc1.
+net/built-in.o: In function `tproxy_tg6_v1':
+/home/rostedt/work/autotest/nobackup/linux-test.git/net/netfilter/xt_TPROXY.c:288: undefined reference to `ipv6_find_hdr'
 
-arch/x86/kernel/apb_timer.c: In function ??apbt_setup_irq??:
-arch/x86/kernel/apb_timer.c:319:2: error: implicit declaration of function ??
-__set_irq_handler??
-make[2]: *** [arch/x86/kernel/apb_timer.o] Error 1
-make[1]: *** [arch/x86/kernel] Error 2
-make: *** [arch/x86] Error 2
-make: *** Waiting for unfinished jobs....
+This happened because the xt_TPROXY code was compiled into the kernel
+proper, but the ipv6 netfilter was compiled as a module. The fix is to
+only enter the code that calls ipv6_find_hdr if ipv6 netfilter is
+compiled into the kernel, or if it is a module, so is the xt_TPROXY
+code.
 
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-I have CONFIG_APB_TIMER & CONFIG_SMP in my .config.
+diff --git a/net/netfilter/xt_TPROXY.c b/net/netfilter/xt_TPROXY.c
+index dcfd57e..5915f94 100644
+--- a/net/netfilter/xt_TPROXY.c
++++ b/net/netfilter/xt_TPROXY.c
+@@ -22,7 +22,13 @@
+ 
+ #include <net/netfilter/ipv4/nf_defrag_ipv4.h>
+ 
+-#if defined(CONFIG_IP6_NF_IPTABLES) || defined(CONFIG_IP6_NF_IPTABLES_MODULE)
++/*
++ * Only include the following if ip6 tables is compiled in
++ * the kernel, or it is a module and this code is also a module.
++ */
++#if defined(CONFIG_IP6_NF_IPTABLES) || \
++	(defined(CONFIG_IP6_NF_IPTABLES_MODULE) && \
++	 defined(CONFIG_NETFILTER_XT_TARGET_TPROXY_MODULE))
+ #define XT_TPROXY_HAVE_IPV6 1
+ #include <net/if_inet6.h>
+ #include <net/addrconf.h>
+
 
