@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965164Ab1C3V3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:29:06 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56389 "EHLO mga03.intel.com"
+	id S965118Ab1C3V3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:29:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33747 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933624Ab1C3VJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933626Ab1C3VJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Mar 2011 17:09:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="411278573"
+   d="scan'208";a="621238327"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: sean.hefty@intel.com, dledford@redhat.com, roland@purestorage.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [196/275] IB/cm: Bump reference count on cm_id before invoking callback
-Message-Id: <20110330210720.182FB3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:07:20 -0700 (PDT)
+To: andreas.herrmann3@amd.com, f3d27b@gmail.com, ak@linux.intel.com,
+        akpm@linux-foundation.org, mingo@elte.hu, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [197/275] x86, quirk: Fix SB600 revision check
+Message-Id: <20110330210721.24C9C3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:07:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,43 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Sean Hefty <sean.hefty@intel.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit 29963437a48475036353b95ab142bf199adb909e upstream.
+commit 1d3e09a304e6c4e004ca06356578b171e8735d3c upstream.
 
-When processing a SIDR REQ, the ib_cm allocates a new cm_id.  The
-refcount of the cm_id is initialized to 1.  However, cm_process_work
-will decrement the refcount after invoking all callbacks.  The result
-is that the cm_id will end up with refcount set to 0 by the end of the
-sidr req handler.
+Commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
+(x86 quirk: Fix polarity for IRQ0 pin2 override on SB800
+systems) introduced a regression. It removed some SB600 specific
+code to determine the revision ID without adapting a
+corresponding revision ID check for SB600.
 
-If a user tries to destroy the cm_id, the destruction will proceed,
-under the incorrect assumption that no other threads are referencing
-the cm_id.  This can lead to a crash when the cm callback thread tries
-to access the cm_id.
+See this mail thread:
 
-This problem was noticed as part of a larger investigation with kernel
-crashes in the rdma_cm when running on a real time OS.
+  http://marc.info/?l=linux-kernel&m=129980296006380&w=2
 
-Signed-off-by: Sean Hefty <sean.hefty@intel.com>
-Acked-by: Doug Ledford <dledford@redhat.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+This patch adapts the corresponding check to cover all SB600
+revisions.
+
+Tested-by: Wang Lei <f3d27b@gmail.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+LKML-Reference: <20110315143137.GD29499@alberich.amd.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/core/cm.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/early-quirks.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/drivers/infiniband/core/cm.c
+Index: linux-2.6.35.y/arch/x86/kernel/early-quirks.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/infiniband/core/cm.c	2011-03-29 22:50:42.296176166 -0700
-+++ linux-2.6.35.y/drivers/infiniband/core/cm.c	2011-03-29 23:03:02.367239599 -0700
-@@ -2987,6 +2987,7 @@
- 		goto out; /* No match. */
- 	}
- 	atomic_inc(&cur_cm_id_priv->refcount);
-+	atomic_inc(&cm_id_priv->refcount);
- 	spin_unlock_irq(&cm.lock);
+--- linux-2.6.35.y.orig/arch/x86/kernel/early-quirks.c	2011-03-29 23:03:01.447263137 -0700
++++ linux-2.6.35.y/arch/x86/kernel/early-quirks.c	2011-03-29 23:03:02.000000000 -0700
+@@ -161,7 +161,12 @@
+ 	if (rev >= 0x40)
+ 		acpi_fix_pin2_polarity = 1;
  
- 	cm_id_priv->id.cm_handler = cur_cm_id_priv->id.cm_handler;
+-	if (rev > 0x13)
++	/*
++	 * SB600: revisions 0x11, 0x12, 0x13, 0x14, ...
++	 * SB700: revisions 0x39, 0x3a, ...
++	 * SB800: revisions 0x40, 0x41, ...
++	 */
++	if (rev >= 0x39)
+ 		return;
+ 
+ 	if (acpi_use_timer_override)
