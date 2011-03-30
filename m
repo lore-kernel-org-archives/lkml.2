@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965443Ab1C3Vp7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:45:59 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39222 "EHLO gate.crashing.org"
+	id S965418Ab1C3Vps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:45:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23361 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965426Ab1C3Vp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:45:56 -0400
-Subject: Re: [GIT pull] irq fixes for .39.rc
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <AANLkTinnGfpVeugk4WOKeDAUQEuzBo75yCq_E73=w66V@mail.gmail.com>
-References: <alpine.LFD.2.00.1103301648460.22418@localhost6.localdomain6>
-	 <AANLkTinnGfpVeugk4WOKeDAUQEuzBo75yCq_E73=w66V@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 31 Mar 2011 08:45:23 +1100
-Message-ID: <1301521523.2407.4.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S964847Ab1C3VHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:07:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
+   d="scan'208";a="621237281"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110330203.501921634@firstfloor.org>
+In-Reply-To: <20110330203.501921634@firstfloor.org>
+To: penguin-kernel@i-love.sakura.ne.jp, penguin-kernel@i-love.sakura.ne.jp,
+        dhowells@redhat.com, torvalds@linux-foundation.org, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [119/275] CRED: Fix kernel panic upon security_file_alloc() failure.
+Message-Id: <20110330210558.F27273E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:05:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-30 at 08:36 -0700, Linus Torvalds wrote:
-> 
-> which just makes me go "Somebody is really really confused".
-> 
-> The whole thing may mean that both handler_data and chip_data contains
-> the right thing, but it still makes me go "WTF?".
-> 
-> Which way should I resolve it? 
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-Looks like I'm the one who mixed up here.
+------------------
+From: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
 
-Kumar: shows that you are overdue for sending me some FSL HW so I can
-test things :-)
+commit 78d2978874e4e10e97dfd4fd79db45bdc0748550 upstream.
 
-Cheers,
-Ben.
+In get_empty_filp() since 2.6.29, file_free(f) is called with f->f_cred == NULL
+when security_file_alloc() returned an error.  As a result, kernel will panic()
+due to put_cred(NULL) call within RCU callback.
 
+Fix this bug by assigning f->f_cred before calling security_file_alloc().
 
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ fs/file_table.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.35.y/fs/file_table.c
+===================================================================
+--- linux-2.6.35.y.orig/fs/file_table.c	2011-03-29 22:51:20.759191992 -0700
++++ linux-2.6.35.y/fs/file_table.c	2011-03-29 23:03:00.692282457 -0700
+@@ -123,13 +123,13 @@
+ 		goto fail;
+ 
+ 	percpu_counter_inc(&nr_files);
++	f->f_cred = get_cred(cred);
+ 	if (security_file_alloc(f))
+ 		goto fail_sec;
+ 
+ 	INIT_LIST_HEAD(&f->f_u.fu_list);
+ 	atomic_long_set(&f->f_count, 1);
+ 	rwlock_init(&f->f_owner.lock);
+-	f->f_cred = get_cred(cred);
+ 	spin_lock_init(&f->f_lock);
+ 	eventpoll_init_file(f);
+ 	/* f->f_version: 0 */
