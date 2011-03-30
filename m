@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab1C3Cag (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 22:30:36 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43146 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034Ab1C3CaB (ORCPT
+	id S1754945Ab1C3Cfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 22:35:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59536 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024Ab1C3Cfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 22:30:01 -0400
+	Tue, 29 Mar 2011 22:35:44 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <daahern@cisco.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/2] perf tools: Fix NO_NEWT=1 python build error
-Date: Tue, 29 Mar 2011 23:29:51 -0300
-Message-Id: <1301452191-906-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/3] perf tools: Emit clearer message for sys_perf_event_open ENOENT return
+Date: Tue, 29 Mar 2011 23:35:31 -0300
+Message-Id: <1301452532-1260-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1301452191-906-1-git-send-email-acme@infradead.org>
-References: <1301452191-906-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+In-Reply-To: <1301452532-1260-1-git-send-email-acme@infradead.org>
+References: <1301452532-1260-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@amd.com>
+From: David Ahern <daahern@cisco.com>
 
-Fix the following build error:
+Resend of patch sent back in January 2011 in light of recent confusion around
+unsupported events for a given platform.
 
-     GEN python/perf.so
- In file included from util/evsel.h:10,
-                  from util/python.c:6:
- util/hist.h:106:18: error: newt.h: No such file or directory
- error: command 'x86_64-pc-linux-gnu-gcc' failed with exit status 1
- make: *** [python/perf.so] Error 1
+Improve sys_perf_event_open ENOENT return handling in top and record, just
+like 5a3446b does for stat.
 
-by passing BASIC_CFLAGS to setup.py. BASIC_CFLAGS variable contains
-the -DNO_NEWT_SUPPORT switch which prevents building python c
-extension with newt.
+Retry of Arnaldo's patch using ui_warning instead of die which allows the
+fallback from hardware cycles to software clock.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <20110329180236.GA19366@erda.amd.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+LKML-Reference: <1301080271-20945-1-git-send-email-daahern@cisco.com>
+Signed-off-by: David Ahern <daahern@cisco.com>
+[ committer note: Some adjustments to make it apply to newer codebase ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile      |    8 ++++++--
- tools/perf/util/setup.py |    7 ++++++-
- 2 files changed, 12 insertions(+), 3 deletions(-)
+ tools/perf/builtin-record.c |   10 +++++++++-
+ tools/perf/builtin-top.c    |    6 ++++++
+ 2 files changed, 15 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 158c30e..207dee5 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -165,8 +165,12 @@ grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 623695e..db6adec 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -301,11 +301,19 @@ try_again:
+ 					&& attr->config == PERF_COUNT_HW_CPU_CYCLES) {
  
- $(OUTPUT)python/perf.so: $(PYRF_OBJS)
--	$(QUIET_GEN)python util/setup.py --quiet  build_ext --build-lib='$(OUTPUT)python' \
--						--build-temp='$(OUTPUT)python/temp'
-+	$(QUIET_GEN)( \
-+		export CFLAGS="$(BASIC_CFLAGS)"; \
-+		python util/setup.py --quiet  build_ext --build-lib='$(OUTPUT)python' \
-+			--build-temp='$(OUTPUT)python/temp' \
-+	)
+ 				if (verbose)
+-					warning(" ... trying to fall back to cpu-clock-ticks\n");
++					ui__warning("The cycles event is not supported, "
++						    "trying to fall back to cpu-clock-ticks\n");
+ 				attr->type = PERF_TYPE_SOFTWARE;
+ 				attr->config = PERF_COUNT_SW_CPU_CLOCK;
+ 				goto try_again;
+ 			}
 +
- #
- # No Perl scripts right now:
- #
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index e24ffad..bbc982f 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -1,13 +1,18 @@
- #!/usr/bin/python2
- 
- from distutils.core import setup, Extension
-+from os import getenv
++			if (err == ENOENT) {
++				ui__warning("The %s event is not supported.\n",
++					    event_name(pos));
++				exit(EXIT_FAILURE);
++			}
 +
-+cflags = ['-fno-strict-aliasing', '-Wno-write-strings']
-+cflags += getenv('CFLAGS', '').split()
+ 			printf("\n");
+ 			error("sys_perf_event_open() syscall returned with %d (%s).  /bin/dmesg may provide additional information.\n",
+ 			      err, strerror(err));
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 935fc4f..fc1273e 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -870,6 +870,12 @@ try_again:
+ 				goto try_again;
+ 			}
  
- perf = Extension('perf',
- 		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
- 			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
- 			     'util/util.c', 'util/xyarray.c', 'util/cgroup.c'],
- 		  include_dirs = ['util/include'],
--		  extra_compile_args = ['-fno-strict-aliasing', '-Wno-write-strings'])
-+		  extra_compile_args = cflags,
-+                 )
- 
- setup(name='perf',
-       version='0.1',
++			if (err == ENOENT) {
++				ui__warning("The %s event is not supported.\n",
++					    event_name(counter));
++				goto out_err;
++			}
++
+ 			ui__warning("The sys_perf_event_open() syscall "
+ 				    "returned with %d (%s).  /bin/dmesg "
+ 				    "may provide additional information.\n"
 -- 
 1.6.2.5
 
