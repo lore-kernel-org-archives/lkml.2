@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab1C3RR2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 13:17:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22779 "EHLO mx1.redhat.com"
+	id S932912Ab1C3R2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 13:28:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7765 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754527Ab1C3RR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 13:17:27 -0400
-Message-ID: <4D93659F.2020900@redhat.com>
-Date: Wed, 30 Mar 2011 19:17:19 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1754815Ab1C3R2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 13:28:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,269,1299484800"; 
+   d="scan'208";a="903642791"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>, Borislav Petkov <bp@amd64.org>
+CC: Borislav Petkov <bp@alien8.de>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 30 Mar 2011 10:27:43 -0700
+Subject: RE: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly
+ Report Mechanism (HARM)
+Thread-Topic: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly
+ Report Mechanism (HARM)
+Thread-Index: AcvtgL2TjsfrVMzWTV2TnjDKol/1HgBfgzCg
+Message-ID: <987664A83D2D224EAE907B061CE93D5301A7A60074@orsmsx505.amr.corp.intel.com>
+References: <cover.1300996141.git.mchehab@redhat.com>
+ <20110324173257.36680b90@pedra> <20110324223907.GA10498@liondog.tnic>
+ <4D8C6C80.8010600@redhat.com> <20110325141322.GB28313@gere.osrc.amd.com>
+ <4D8D078C.1040201@redhat.com> <20110328170302.GF11590@aftab>
+ <4D90E525.4030709@redhat.com>
+In-Reply-To: <4D90E525.4030709@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: trivial@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]arch:x86:kvm:i8254.h Fix typo in kvm_pit
-References: <1301501942-3937-1-git-send-email-justinmattock@gmail.com> <4D9359CC.6050508@redhat.com> <4D935AC3.2030509@gmail.com>
-In-Reply-To: <4D935AC3.2030509@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2UHSNvK021137
 
-On 03/30/2011 06:30 PM, Justin P. Mattock wrote:
-> On 03/30/2011 09:26 AM, Avi Kivity wrote:
->> On 03/30/2011 06:19 PM, Justin P. Mattock wrote:
->>> The below patch changes base_addresss to base_address.
->>> Note: I have grepped for base_addresss and nothing shows up,
->>> grepping for base_address gets me lots of output, telling me that
->>> this is a typo, but could be wrong.
->>>
->>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>>
->>> ---
->>> arch/x86/kvm/i8254.h | 2 +-
->>> 1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/arch/x86/kvm/i8254.h b/arch/x86/kvm/i8254.h
->>> index 46d08ca..c2fa48b 100644
->>> --- a/arch/x86/kvm/i8254.h
->>> +++ b/arch/x86/kvm/i8254.h
->>> @@ -33,7 +33,7 @@ struct kvm_kpit_state {
->>> };
->>>
->>> struct kvm_pit {
->>> - unsigned long base_addresss;
->>> + unsigned long base_address;
->>> struct kvm_io_device dev;
->>> struct kvm_io_device speaker_dev;
->>> struct kvm *kvm;
->>
->> Why not remove the variable completely?
->>
+> A INT13 persistent data saving will probably be too hard to implement for
+> all kind of storages. So, it will probably need lots of hack in order to
+> work. Also, some hardware may even not have any local hard disk. Not sure
+> if it is worth to spend time on it.
+
+Linus was pretty clear that he didn't like the idea when
+it came up a few weeks ago in the:
+ [PATCH 0/2][conceâ€‹pt RFC] x86: BIOS-save kernel log to disk upon panic
+thread.
+
+Linus ranted:
+> Quite frankly, I'm not likely to _ever_ merge anything like this.
 >
-> didnt even think to completely remove the variable(figured it was used 
-> somewhere).I will look at that and resend with removal of the variable 
-> for you..
+> Over the years, many people have tried to write things to disk on
+> oops. I refuse to take it. No way in hell do I want the situation of
+> "the system is screwed, so let's overwrite the disk" to be something
+> the kernel I release might do. It's crazy. That disk is a lot more
+> important than the kernel, and overwriting it when we might have
+> serious memory corruption issues or something is not a thing I feel is
+> appropriate.
 
-Well if it was used, you ought to have changed all of the users, no?
+I agree with him - writing to disk from a known broken kernel (using
+a probably buggy BIOS) is a disaster waiting to happen to somebody's
+disk.
 
--- 
-error compiling committee.c: too many arguments to function
+-Tony
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
