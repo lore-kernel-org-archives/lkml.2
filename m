@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab1C3LaQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 07:30:16 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41593 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300Ab1C3LaO convert rfc822-to-8bit (ORCPT
+	id S1755854Ab1C3LdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 07:33:12 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34238 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755760Ab1C3LdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 07:30:14 -0400
-Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-In-Reply-To: <20110330081716.GE17523@htj.dyndns.org>
-References: <20110323153727.GB12003@htj.dyndns.org>
-	 <20110324094119.GD12038@htj.dyndns.org>
-	 <20110324094151.GE12038@htj.dyndns.org>
-	 <20110325101238.GC1409@htj.dyndns.org>
-	 <20110329163702.GE29865@htj.dyndns.org>
-	 <20110329170949.GF29865@htj.dyndns.org> <1301420253.2250.430.camel@laptop>
-	 <20110330081716.GE17523@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 30 Mar 2011 13:29:38 +0200
-Message-ID: <1301484578.4859.178.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 30 Mar 2011 07:33:10 -0400
+Message-ID: <4D931498.9000505@ru.mvista.com>
+Date: Wed, 30 Mar 2011 15:31:36 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Simon Wood <simon@mungewell.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH] pl25a1_support
+References: <1301456667-1648-1-git-send-email-simon@mungewell.org>
+In-Reply-To: <1301456667-1648-1-git-send-email-simon@mungewell.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-30 at 10:17 +0200, Tejun Heo wrote:
-> Hey, Peter.
-> 
-> On Tue, Mar 29, 2011 at 07:37:33PM +0200, Peter Zijlstra wrote:
-> > On Tue, 2011-03-29 at 19:09 +0200, Tejun Heo wrote:
-> > > Here's the combined patch I was planning on testing but didn't get to
-> > > (yet).  It implements two things - hard limit on spin duration and
-> > > early break if the owner also is spinning on a mutex.
-> > 
-> > This is going to give massive conflicts with
-> > 
-> >  https://lkml.org/lkml/2011/3/2/286
-> >  https://lkml.org/lkml/2011/3/2/282
-> > 
-> > which I was planning to stuff into .40
-> 
-> I see.  Adapting shouldn't be hard.  The patch is in proof-of-concept
-> stage anyway.
-> 
-> > > + * Forward progress is guaranteed regardless of locking ordering by never
-> > > + * spinning longer than MAX_MUTEX_SPIN_NS.  This is necessary because
-> > > + * mutex_trylock(), which doesn't have to follow the usual locking
-> > > + * ordering, also uses this function.
-> > 
-> > While that puts a limit on things it'll still waste time. I'd much
-> > rather pass an trylock argument to mutex_spin_on_owner() and then bail
-> > on owner also spinning.
-> 
-> Do we guarantee or enforce that the lock ownership can't be
-> transferred to a different task?  If we do, the recursive spinning
-> detection is enough to guarantee forward progress.
+Hello.
 
-The only way to switch owner is for the current owner to release and a
-new owner to acquire the lock. Also we already bail the spin loop when
-owner changes.
+On 30-03-2011 7:44, Simon Wood wrote:
 
-> > > +		if (task_thread_info(rq->curr) != owner ||
-> > > +		    rq->spinning_on_mutex || need_resched() ||
-> > > +		    local_clock() > start + MAX_MUTEX_SPIN_NS) {
-> > 
-> > While we did our best with making local_clock() cheap, I'm still fairly
-> > uncomfortable with putting it in such a tight loop.
-> 
-> That's one thing I didn't really understand.  It seems the spinning
-> code tried to be light on CPU cycle usage, but we're wasting CPU
-> cycles there anyway.  If the spinning can become smarter using some
-> CPU cycles, isn't that a gain?  Why is the spinning code optimizing
-> for less CPU cycles?
+> Adds support for 'Windows Easy Transfer' cables based around the
+> Prolific PL-25A1 chip (includes Belkin F5U258&  F5U279)
 
-Loop exit latency mostly, the lighter the loop, the faster you're
-through the less time you waste once the condition is true, but yeah,
-what you say is true too, its a balance game as always.
+> Patch originally suggested by David Brownell here:
+> http://www.mail-archive.com/netdev@vger.kernel.org/msg61926.html
 
-> Also, it would be great if you can share what you're using for locking
-> performance measurements.  My attempts with dbench didn't end too
-> well. :-(
+> Modified to work with latest kernel, tested with F5U279.
+>
+> Signed-off-by: Simon Wood<simon@mungewell.org>
 
-The thing I used for the initial implementation is mentioned in the
-changelog (0d66bf6d3):
+[...]
 
-    Testing with Ingo's test-mutex application (http://lkml.org/lkml/2006/1/8/50)
-    gave a 345% boost for VFS scalability on my testbox:
-    
-     # ./test-mutex-shm V 16 10 | grep "^avg ops"
-     avg ops/sec:               296604
-    
-     # ./test-mutex-shm V 16 10 | grep "^avg ops"
-     avg ops/sec:               85870
+> diff --git a/drivers/net/usb/plusb.c b/drivers/net/usb/plusb.c
+> index 08ad269..a20afac 100644
+> --- a/drivers/net/usb/plusb.c
+> +++ b/drivers/net/usb/plusb.c
+[...]
+> @@ -89,13 +97,17 @@ static int pl_reset(struct usbnet *dev)
+>   	/* some units seem to need this reset, others reject it utterly.
+>   	 * FIXME be more like "naplink" or windows drivers.
+>   	 */
+> -	(void) pl_set_QuickLink_features(dev,
+> +	int     status;
+> +
+> +        status = pl_set_QuickLink_features(dev,
 
-I've no idea how heavy that is on trylock though, you'd have to look at
-that.
+    This line is indented with spaces ISO tab.
 
-Chris did some improvements using dbench in ac6e60ee4 but clearly that
-isn't working for you.
+> +	if (status != 0 && netif_msg_probe(dev))
+> +		netif_dbg(dev, link, dev->net, "pl_reset --> %d\n", status);
+>  	return 0;
+>  }
 
+    Also, the above change doesn't seem to be related to the declared purpose 
+of the patch, so seems to be a matter of another patch...
 
+> @@ -134,16 +153,16 @@ static struct usb_driver plusb_driver = {
+>
+>   static int __init plusb_init(void)
+>   {
+> - 	return usb_register(&plusb_driver);
+> +	return usb_register(&plusb_driver);
+>   }
+>   module_init(plusb_init);
+>
+>   static void __exit plusb_exit(void)
+>   {
+> - 	usb_deregister(&plusb_driver);
+> +	usb_deregister(&plusb_driver);
+>   }
+
+    Likewise, the whitespace fixes should be a matgter of a separate patch...
+
+WBR, Sergei
