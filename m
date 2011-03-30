@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964961Ab1C3Vg3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:36:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16164 "EHLO mx1.redhat.com"
+	id S965296Ab1C3VhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:37:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61838 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933639Ab1C3VgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:36:25 -0400
-Date: Wed, 30 Mar 2011 23:35:53 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
-	value
-Message-ID: <20110330213553.GA20571@redhat.com>
-References: <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop> <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins> <1301327368.4859.28.camel@twins> <20110328165648.GA9304@redhat.com> <20110330130951.GA2124@jolsa.brq.redhat.com> <1301496684.4859.192.camel@twins> <20110330163730.GA6038@redhat.com> <1301520405.4859.213.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301520405.4859.213.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S964890Ab1C3VIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:08:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
+   d="scan'208";a="621237780"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110330203.501921634@firstfloor.org>
+In-Reply-To: <20110330203.501921634@firstfloor.org>
+To: airlied@redhat.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [160/275] drm: fix unsigned vs signed comparison issue in modeset ctl ioctl.
+Message-Id: <20110330210642.2EB063E1A06@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30, Peter Zijlstra wrote:
->
-> Anyway how about we do the partial revert below that should get us back
-> to a working kernel and is a nice small patch to send -stable wards.
->
-> After that we can try and be clever with clearing ->task_ctx from things
-> like remove_from_context and the like.
->
-> ---
->  include/linux/perf_event.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 311b4dc..04d75a8 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -1086,7 +1086,7 @@ void perf_event_task_sched_out(struct task_struct *task, struct task_struct *nex
->  {
->  	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, 1, NULL, 0);
->
-> -	COND_STMT(&perf_sched_events, __perf_event_task_sched_out(task, next));
-> +	__perf_event_task_sched_out(task, next);
->  }
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-I agree completely. We need the simple (and suitable for stable) fix first.
+------------------
+From: Dave Airlie <airlied@redhat.com>
 
-Oleg.
+commit 1922756124ddd53846877416d92ba4a802bc658f upstream.
 
+This fixes CVE-2011-1013.
+
+Reported-by: Matthiew Herrb (OpenBSD X.org team)
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ drivers/gpu/drm/drm_irq.c |    3 ++-
+ include/drm/drmP.h        |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+Index: linux-2.6.35.y/drivers/gpu/drm/drm_irq.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/gpu/drm/drm_irq.c	2011-03-29 22:51:01.380687839 -0700
++++ linux-2.6.35.y/drivers/gpu/drm/drm_irq.c	2011-03-29 23:03:01.580259734 -0700
+@@ -545,7 +545,8 @@
+ 		    struct drm_file *file_priv)
+ {
+ 	struct drm_modeset_ctl *modeset = data;
+-	int crtc, ret = 0;
++	int ret = 0;
++	unsigned int crtc;
+ 
+ 	/* If drm_vblank_init() hasn't been called yet, just no-op */
+ 	if (!dev->num_crtcs)
+Index: linux-2.6.35.y/include/drm/drmP.h
+===================================================================
+--- linux-2.6.35.y.orig/include/drm/drmP.h	2011-03-29 22:51:01.380687839 -0700
++++ linux-2.6.35.y/include/drm/drmP.h	2011-03-29 23:03:01.581259709 -0700
+@@ -1021,7 +1021,7 @@
+ 	struct pci_controller *hose;
+ #endif
+ 	struct drm_sg_mem *sg;	/**< Scatter gather memory */
+-	int num_crtcs;                  /**< Number of CRTCs on this device */
++	unsigned int num_crtcs;                  /**< Number of CRTCs on this device */
+ 	void *dev_private;		/**< device private data */
+ 	void *mm_private;
+ 	struct address_space *dev_mapping;
