@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932878Ab1C3UEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 16:04:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47105 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754227Ab1C3UEe convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 16:04:34 -0400
+	id S1756179Ab1C3UJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 16:09:57 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:40632 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab1C3UJz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 16:09:55 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Roman Zippel <zippel@linux-m68k.org>,
+        linux-m68k@vger.kernel.org,
+        Michael Schmitz <schmitzmic@googlemail.com>
+Subject: Re: [PATCH] m68k: fix find_next bitops
+References: <1301050810-11329-1-git-send-email-akinobu.mita@gmail.com>
+	<AANLkTikKA2MY6nf+LLyJbNQffX=qYY3eZdpNmwVQc21u@mail.gmail.com>
+X-Yow: Maybe we could paint GOLDIE HAWN a rich PRUSSIAN BLUE--
+Date: Wed, 30 Mar 2011 22:09:52 +0200
+In-Reply-To: <AANLkTikKA2MY6nf+LLyJbNQffX=qYY3eZdpNmwVQc21u@mail.gmail.com>
+	(Geert Uytterhoeven's message of "Wed, 30 Mar 2011 20:02:50 +0200")
+Message-ID: <m2sju4jrov.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20110330202628.5dc8db5f@lxorguk.ukuu.org.uk>
-References: <4D937FDC.4090607@danielpalmer.co.uk> <20110330202628.5dc8db5f@lxorguk.ukuu.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 30 Mar 2011 12:36:16 -0700
-Message-ID: <AANLkTimokmN5++Qghz-2pTDa7KLnRn_YBW-ox_9tP+XO@mail.gmail.com>
-Subject: Re: PATA_ARTOP reads byte from PCI IO port without mapping it to the
- right address.
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Daniel Palmer <me@danielpalmer.co.uk>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 12:26 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> unsigned long io = pci_resource_start(pdev, 4);           // This
->> returns 0x1400 on my machine
->
-> That is the PCI port address.
->
->>                  u8 reg;
->>
->>                  ppi[0] = &info_628x;
->>                  if (inb(io) & 0x10)
->>          // This reads from 0x1400, which isn't were the port actually
->> is in the processors address
->
-> This reads from I/O port 0x1400 - your inb logic and I/O port mapping on
-> the platform is responsible for making that work.
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-Indeed. We do _not_ expect inb/outb to do the equivalent of ioremap()
-etc, since the IO port range is just 64kB. The arch code is supposed
-to do whatever mapping it needs statically at bootup, and just make
-inb/outb honor that mapping.
+> Andreas, do you think it's worth keeping (and fixing) the m68k "optimized"
+> versions?
 
-                          Linus
+Should be easy to add the required offset >= size checks.
+
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
