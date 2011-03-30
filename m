@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab1C3OUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 10:20:15 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:23821 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754812Ab1C3OUO (ORCPT
+	id S932534Ab1C3OU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 10:20:26 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52790 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755959Ab1C3OUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 10:20:14 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: ug1Z3BQVM1l.CQokVYBVYPjTejfaNujuJc90BIQp6I.8qAa
- JUM7z0aee59CHPaeiehzr8QNIAQIz1po7ZnpnVJLC9EmL6pDtaLTbk94BkI_
- WzBf5INLtF5nbx9G8WJJtUVUUj8DDa4nGcC4FFE8ExM3n4KlMJzNSOoc4t6z
- VbS0AzXgEY0AFpSwwFiqBuVJO5q0oRGd6.IzKNLqebWd9u5EJGK3QlFallz6
- LPOP27qUbdt9JILB8pWYKqNwVLaA0gBepB83Uj5mV6g7kGct46JY5bGQA4Bi
- 0IBH9Lw7rjxdx_HtJFWlipga_jVnJyZdYcBIDlKY6JNc0HPb1
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 30 Mar 2011 09:20:08 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH tip:x86/mm 3/3] acpi throttling: Use this_cpu_has and
- simplify code current cpu
-In-Reply-To: <20110328164039.GF6736@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.00.1103300918240.25965@router.home>
-References: <20110312115010.GC2005@htj.dyndns.org> <20110312115046.GD2005@htj.dyndns.org> <20110312115112.GE2005@htj.dyndns.org> <20110328164039.GF6736@htj.dyndns.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 30 Mar 2011 10:20:21 -0400
+Date: Wed, 30 Mar 2011 16:16:46 +0200
+From: Anisse Astier <anisse@astier.eu>
+To: Joe Perches <joe@perches.com>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/23] msi-wmi: Use pr_fmt and pr_<level>
+Message-ID: <20110330161646.59743cb2@destiny.ordissimo>
+In-Reply-To: <03d9dcf405e4a12d137f1fea83bc920f0b8de923.1301436234.git.joe@perches.com>
+References: <cover.1301436234.git.joe@perches.com>
+	<03d9dcf405e4a12d137f1fea83bc920f0b8de923.1301436234.git.joe@perches.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011, Tejun Heo wrote:
+Hi Joe,
 
-> On Sat, Mar 12, 2011 at 12:51:12PM +0100, Tejun Heo wrote:
-> > From: Christoph Lameter <cl@linux.com>
-> >
-> > With the this_cpu_xx we no longer need to pass an acpi
-> > structure to the msr management code. Simplifies code and improves
-> > performance.
-> >
-> > NOTE: This code is x86 specific (see #ifdef CONFIG_X86) but not under
-> >       arch/x86.
-> >
-> > Signed-off-by: Christoph Lameter <cl@linux.com>
-> > Acked-by: Tejun Heo <tj@kernel.org>
-> > ---
->
-> Ingo, are you planning on picking these up?
+On Tue, 29 Mar 2011 15:21:47 -0700, Joe Perches <joe@perches.com> wrote :
 
-Guess the patches missed the merge period. There could be more
-optimizations of arch code if the infrastructure for this_cpu_has() would
-be in but I guess I better hold off for awhile.
+> Added pr_fmt.
+> Removed now unused #define DRV_PFX
+> Convert dprintk to pr_debug.
+> Convert printks to pr_<level>.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
+Acked-by: Anisse Astier <anisse@astier.eu>
+
+I've been wanting to do that since I replaced original dprintk
+implementation with pr_debug. I just didn't know you could use the
+pr_fmt() macro to manipulate prefixes.
+
+Regards,
+
+Anisse
+
+> ---
+>  drivers/platform/x86/msi-wmi.c |   45 +++++++++++++++++----------------------
+>  1 files changed, 20 insertions(+), 25 deletions(-)
+> 
