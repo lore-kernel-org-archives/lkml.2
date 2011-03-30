@@ -1,104 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab1C3X2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 19:28:24 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:59041 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332Ab1C3X2X (ORCPT
+	id S932860Ab1C3Xaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 19:30:55 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:36262 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754721Ab1C3Xay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 19:28:23 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/vpLGlpQgQp7hage9QYgxg
-Date: Wed, 30 Mar 2011 16:28:08 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110330232808.GP18334@atomide.com>
-References: <20110317183048.GW7258@atomide.com>
- <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
- <20110318101512.GA15375@n2100.arm.linux.org.uk>
- <201103301906.42429.arnd@arndb.de>
- <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
- <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6>
- <20110330215434.GI18334@atomide.com>
- <20110330223807.GP2255@linux.vnet.ibm.com>
- <20110330224752.GN18334@atomide.com>
- <alpine.LFD.2.00.1103310059531.22418@localhost6.localdomain6>
-MIME-Version: 1.0
+	Wed, 30 Mar 2011 19:30:54 -0400
+Date: Thu, 31 Mar 2011 01:30:50 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
+Message-ID: <20110330233050.GG21838@one.firstfloor.org>
+References: <20110307172609.8A01.A69D9226@jp.fujitsu.com> <20110307163513.GC13384@alboin.amr.corp.intel.com> <20110308114159.7EAD.A69D9226@jp.fujitsu.com> <20110330144507.2c0ecf73.akpm@linux-foundation.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103310059531.22418@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110330144507.2c0ecf73.akpm@linux-foundation.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner <tglx@linutronix.de> [110330 16:11]:
-> On Wed, 30 Mar 2011, Tony Lindgren wrote:
-> 
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> [110330 15:35]:
-> > > On Wed, Mar 30, 2011 at 02:54:35PM -0700, Tony Lindgren wrote:
-> > > > * Thomas Gleixner <tglx@linutronix.de> [110330 14:07]:
-> > > > > 
-> > > > > So one person will be not enough, that needs to be a whole team of
-> > > > > experienced people in the very near future to deal with the massive
-> > > > > tsunami of crap which is targeted at mainline. If we fail to set that
-> > > > > up, then we run into a very ugly maintainability issue in no time.
-> > > > 
-> > > > One thing that will help here and distribute the load is to move
-> > > > more things under drivers/ as then we have more maintainers looking
-> > > > at the code.
-> > > 
-> > > In many cases, the ARM SoC vendors will want their people producing the
-> > > code, so although moving things to drivers might be a good thing to do,
-> > > it won't really increase the number of people involved.  Plus the move
-> > > to the drivers subtree would be a problem for devices with tight ties
-> > > to the board or SoC.
-> > > 
-> > > There is work on pushing towards common code, but there is a lot of code
-> > > and this will take time and a lot of work.
-> > 
-> > I agree on the common code part, then even drivers with tight
-> > ties to board or SoC become just generic drivers that are easy
-> > to review.
-> 
-> You wish. There is an already existing problem that the identical IP
-> cores of peripheral crap are reused accross architectures. And of
-> course because it is a different architecture we have two different
-> drivers with different issues.
-> 
-> See: http://marc.info/?l=linux-kernel&m=130041568128164
+> Do we still want it?  Are we sure we don't want the per-zone numbers?
 
-Yeah that's a problem. And getting people to create generic device
-drivers is hard, takes tons of commenting and still needs some hardware
-workaround options passed in the platform_data..
- 
-> We already fail to detect this on the driver level, so please answer
-> the question I asked before: How do you spread the load and scale with
-> the amount of shite which is coming in?
+At least I still want it and Dave Hansen did too.
 
-Sorry I don't have a solution to that :) I'm struggling with that issue
-big time myself.
- 
-> The above example is probably not the only one in tree and we will see
-> lots of unnoticed instances of drivers dealing with minimal different
-> versions of the same IP crappola in the near future simply because the
-> vendors claim that their stuff is unique and only works with their
-> particular instance of hackery unless we have enough capable people to
-> look over this. Whether it's in arch/ or drivers/ it does not
-> matter. We are simply not prepared to the amount of crap coming in.
+I don't need per zone personally and I remember a strong request from 
+anyone.  Or was there one?
 
-Yes I agree. Tools like checkpatch and sparse don't help with issues
-like this.
-
-Tony
+-Andi
