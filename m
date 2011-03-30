@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933448Ab1C3VHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:07:24 -0400
-Received: from mga14.intel.com ([143.182.124.37]:58267 "EHLO mga14.intel.com"
+	id S1755445Ab1C3Vuj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:50:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48759 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933431Ab1C3VHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:07:20 -0400
+	id S933445Ab1C3VHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:07:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="411277487"
+   d="scan'208";a="727133193"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
 To: venki@google.com, a.p.zijlstra@chello.nl, ak@linux.intel.com,
         mingo@elte.hu, efault@gmx.de, gregkh@suse.de,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [89/275] sched: Increment cache_nice_tries only on periodic lb
-Message-Id: <20110330210527.632863E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:05:27 -0700 (PDT)
+Subject: [PATCH] [103/275] sched: Do not account irq time to current task
+Message-Id: <20110330210542.1BF143E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:05:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,95 +25,203 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Commit: 58b26c4c025778c09c7a1438ff185080e11b7d0a upstream
+Commit: 305e6835e05513406fa12820e40e4a8ecb63743c upstream
 
-scheduler uses cache_nice_tries as an indicator to do cache_hot and
-active load balance, when normal load balance fails. Currently,
-this value is changed on any failed load balance attempt. That ends
-up being not so nice to workloads that enter/exit idle often, as
-they do more frequent new_idle balance and that pretty soon results
-in cache hot tasks being pulled in.
+Scheduler accounts both softirq and interrupt processing times to the
+currently running task. This means, if the interrupt processing was
+for some other task in the system, then the current task ends up being
+penalized as it gets shorter runtime than otherwise.
 
-Making the cache_nice_tries ignore failed new_idle balance seems to
-make better sense. With that only the failed load balance in
-periodic load balance gets accounted and the rate of accumulation
-of cache_nice_tries will not depend on idle entry/exit (short
-running sleep-wakeup kind of tasks). This reduces movement of
-cache_hot tasks.
+Change sched task accounting to acoount only actual task time from
+currently running task. Now update_curr(), modifies the delta_exec to
+depend on rq->clock_task.
 
-schedstat diff (after-before) excerpt from a workload that has
-frequent and short wakeup-idle pattern (:2 in cpu col below refers
-to NEWIDLE idx) This snapshot was across ~400 seconds.
+Note that this change only handles CONFIG_IRQ_TIME_ACCOUNTING case. We can
+extend this to CONFIG_VIRT_CPU_ACCOUNTING with minimal effort. But, thats
+for later.
 
-Without this change:
-domainstats:  domain0
- cpu     cnt      bln      fld      imb     gain    hgain  nobusyq  nobusyg
- 0:2  306487   219575    73167  110069413    44583    19070     1172   218403
- 1:2  292139   194853    81421  120893383    50745    21902     1259   193594
- 2:2  283166   174607    91359  129699642    54931    23688     1287   173320
- 3:2  273998   161788    93991  132757146    57122    24351     1366   160422
- 4:2  289851   215692    62190  83398383    36377    13680      851   214841
- 5:2  316312   222146    77605  117582154    49948    20281      988   221158
- 6:2  297172   195596    83623  122133390    52801    21301      929   194667
- 7:2  283391   178078    86378  126622761    55122    22239      928   177150
- 8:2  297655   210359    72995  110246694    45798    19777     1125   209234
- 9:2  297357   202011    79363  119753474    50953    22088     1089   200922
-10:2  278797   178703    83180  122514385    52969    22726     1128   177575
-11:2  272661   167669    86978  127342327    55857    24342     1195   166474
-12:2  293039   204031    73211  110282059    47285    19651      948   203083
-13:2  289502   196762    76803  114712942    49339    20547     1016   195746
-14:2  264446   169609    78292  115715605    50459    21017      982   168627
-15:2  260968   163660    80142  116811793    51483    21281     1064   162596
+This change will impact scheduling behavior in interrupt heavy conditions.
 
-With this change:
-domainstats:  domain0
- cpu     cnt      bln      fld      imb     gain    hgain  nobusyq  nobusyg
- 0:2  272347   187380    77455  105420270    24975        1      953   186427
- 1:2  267276   172360    86234  116242264    28087        6     1028   171332
- 2:2  259769   156777    93281  123243134    30555        1     1043   155734
- 3:2  250870   143129    97627  127370868    32026        6     1188   141941
- 4:2  248422   177116    64096  78261112    22202        2      757   176359
- 5:2  275595   180683    84950  116075022    29400        6      778   179905
- 6:2  262418   162609    88944  119256898    31056        4      817   161792
- 7:2  252204   147946    92646  122388300    32879        4      824   147122
- 8:2  262335   172239    81631  110477214    26599        4      864   171375
- 9:2  261563   164775    88016  117203621    28331        3      849   163926
-10:2  243389   140949    93379  121353071    29585        2      909   140040
-11:2  242795   134651    98310  124768957    30895        2     1016   133635
-12:2  255234   166622    79843  104696912    26483        4      746   165876
-13:2  244944   151595    83855  109808099    27787        3      801   150794
-14:2  241301   140982    89935  116954383    30403        6      845   140137
-15:2  232271   128564    92821  119185207    31207        4     1416   127148
+Tested on a 4-way system with eth0 handled by CPU 2 and a network heavy
+task (nc) running on CPU 3 (and no RSS/RFS). With that I have CPU 2
+spending 75%+ of its time in irq processing. CPU 3 spending around 35%
+time running nc task.
+
+Now, if I run another CPU intensive task on CPU 2, without this change
+/proc/<pid>/schedstat shows 100% of time accounted to this task. With this
+change, it rightly shows less than 25% accounted to this task as remaining
+time is actually spent on irq processing.
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <1284167957-3675-1-git-send-email-venki@google.com>
+LKML-Reference: <1286237003-12406-7-git-send-email-venki@google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sched_fair.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ kernel/sched.c      |   38 +++++++++++++++++++++++++++++++++++++-
+ kernel/sched_fair.c |    6 +++---
+ kernel/sched_rt.c   |    8 ++++----
+ 3 files changed, 44 insertions(+), 8 deletions(-)
 
+Index: linux-2.6.35.y/kernel/sched.c
+===================================================================
+--- linux-2.6.35.y.orig/kernel/sched.c	2011-03-29 23:03:00.273293178 -0700
++++ linux-2.6.35.y/kernel/sched.c	2011-03-29 23:54:59.406482364 -0700
+@@ -491,6 +491,7 @@
+ 	struct mm_struct *prev_mm;
+ 
+ 	u64 clock;
++	u64 clock_task;
+ 
+ 	atomic_t nr_iowait;
+ 
+@@ -641,10 +642,18 @@
+ 
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
++static u64 irq_time_cpu(int cpu);
++
+ inline void update_rq_clock(struct rq *rq)
+ {
++	int cpu = cpu_of(rq);
++	u64 irq_time;
++
+ 	if (!rq->skip_clock_update)
+ 		rq->clock = sched_clock_cpu(cpu_of(rq));
++	irq_time = irq_time_cpu(cpu);
++	if (rq->clock - irq_time > rq->clock_task)
++		rq->clock_task = rq->clock - irq_time;
+ }
+ 
+ /*
+@@ -1821,6 +1830,18 @@
+ 
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ 
++/*
++ * There are no locks covering percpu hardirq/softirq time.
++ * They are only modified in account_system_vtime, on corresponding CPU
++ * with interrupts disabled. So, writes are safe.
++ * They are read and saved off onto struct rq in update_rq_clock().
++ * This may result in other CPU reading this CPU's irq time and can
++ * race with irq/account_system_vtime on this CPU. We would either get old
++ * or new value (or semi updated value on 32 bit) with a side effect of
++ * accounting a slice of irq time to wrong task when irq is in progress
++ * while we read rq->clock. That is a worthy compromise in place of having
++ * locks on each irq in account_system_time.
++ */
+ static DEFINE_PER_CPU(u64, cpu_hardirq_time);
+ static DEFINE_PER_CPU(u64, cpu_softirq_time);
+ 
+@@ -1837,6 +1858,14 @@
+ 	sched_clock_irqtime = 0;
+ }
+ 
++static u64 irq_time_cpu(int cpu)
++{
++	if (!sched_clock_irqtime)
++		return 0;
++
++	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
++}
++
+ void account_system_vtime(struct task_struct *curr)
+ {
+ 	unsigned long flags;
+@@ -1866,6 +1895,13 @@
+ 	local_irq_restore(flags);
+ }
+ 
++#else
++
++static u64 irq_time_cpu(int cpu)
++{
++	return 0;
++}
++
+ #endif
+ 
+ #include "sched_stats.h"
+@@ -3263,7 +3299,7 @@
+ 
+ 	if (task_current(rq, p)) {
+ 		update_rq_clock(rq);
+-		ns = rq->clock - p->se.exec_start;
++		ns = rq->clock_task - p->se.exec_start;
+ 		if ((s64)ns < 0)
+ 			ns = 0;
+ 	}
 Index: linux-2.6.35.y/kernel/sched_fair.c
 ===================================================================
---- linux-2.6.35.y.orig/kernel/sched_fair.c	2011-03-29 23:02:59.969300955 -0700
-+++ linux-2.6.35.y/kernel/sched_fair.c	2011-03-29 23:55:04.726346241 -0700
-@@ -2894,7 +2894,14 @@
+--- linux-2.6.35.y.orig/kernel/sched_fair.c	2011-03-29 23:03:00.126296938 -0700
++++ linux-2.6.35.y/kernel/sched_fair.c	2011-03-29 23:54:59.406482364 -0700
+@@ -519,7 +519,7 @@
+ static void update_curr(struct cfs_rq *cfs_rq)
+ {
+ 	struct sched_entity *curr = cfs_rq->curr;
+-	u64 now = rq_of(cfs_rq)->clock;
++	u64 now = rq_of(cfs_rq)->clock_task;
+ 	unsigned long delta_exec;
  
- 	if (!ld_moved) {
- 		schedstat_inc(sd, lb_failed[idle]);
--		sd->nr_balance_failed++;
-+		/*
-+		 * Increment the failure counter only on periodic balance.
-+		 * We do not want newidle balance, which can be very
-+		 * frequent, pollute the failure counter causing
-+		 * excessive cache_hot migrations and active balances.
-+		 */
-+		if (idle != CPU_NEWLY_IDLE)
-+			sd->nr_balance_failed++;
+ 	if (unlikely(!curr))
+@@ -602,7 +602,7 @@
+ 	/*
+ 	 * We are starting a new run period:
+ 	 */
+-	se->exec_start = rq_of(cfs_rq)->clock;
++	se->exec_start = rq_of(cfs_rq)->clock_task;
+ }
  
- 		if (need_active_balance(sd, sd_idle, idle)) {
- 			raw_spin_lock_irqsave(&busiest->lock, flags);
+ /**************************************************
+@@ -1803,7 +1803,7 @@
+ 	 * 2) too many balance attempts have failed.
+ 	 */
+ 
+-	tsk_cache_hot = task_hot(p, rq->clock, sd);
++	tsk_cache_hot = task_hot(p, rq->clock_task, sd);
+ 	if (!tsk_cache_hot ||
+ 		sd->nr_balance_failed > sd->cache_nice_tries) {
+ #ifdef CONFIG_SCHEDSTATS
+Index: linux-2.6.35.y/kernel/sched_rt.c
+===================================================================
+--- linux-2.6.35.y.orig/kernel/sched_rt.c	2011-03-29 23:03:00.028299446 -0700
++++ linux-2.6.35.y/kernel/sched_rt.c	2011-03-29 23:03:00.322291923 -0700
+@@ -609,7 +609,7 @@
+ 	if (!task_has_rt_policy(curr))
+ 		return;
+ 
+-	delta_exec = rq->clock - curr->se.exec_start;
++	delta_exec = rq->clock_task - curr->se.exec_start;
+ 	if (unlikely((s64)delta_exec < 0))
+ 		delta_exec = 0;
+ 
+@@ -618,7 +618,7 @@
+ 	curr->se.sum_exec_runtime += delta_exec;
+ 	account_group_exec_runtime(curr, delta_exec);
+ 
+-	curr->se.exec_start = rq->clock;
++	curr->se.exec_start = rq->clock_task;
+ 	cpuacct_charge(curr, delta_exec);
+ 
+ 	sched_rt_avg_update(rq, delta_exec);
+@@ -1075,7 +1075,7 @@
+ 	} while (rt_rq);
+ 
+ 	p = rt_task_of(rt_se);
+-	p->se.exec_start = rq->clock;
++	p->se.exec_start = rq->clock_task;
+ 
+ 	return p;
+ }
+@@ -1716,7 +1716,7 @@
+ {
+ 	struct task_struct *p = rq->curr;
+ 
+-	p->se.exec_start = rq->clock;
++	p->se.exec_start = rq->clock_task;
+ 
+ 	/* The running task is never eligible for pushing */
+ 	dequeue_pushable_task(rq, p);
