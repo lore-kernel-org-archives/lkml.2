@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965262Ab1C3VJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:09:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24598 "EHLO mga01.intel.com"
+	id S933671Ab1C3VQz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:16:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44838 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965105Ab1C3VJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:09:47 -0400
+	id S965253Ab1C3VJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:09:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="673448674"
+   d="scan'208";a="621238982"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: olaf@aepfle.de, stefano.stabellini@eu.citrix.com, dtor@mail.ru,
+To: bud.brown@redhat.com, mike.miller@hp.com, jaxboe@fusionio.com,
         gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
         stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [239/275] Input: xen-kbdfront - advertise either absolute or relative coordinates
-Message-Id: <20110330210805.560EC3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:08:05 -0700 (PDT)
+Subject: [PATCH] [247/275] cciss: fix lost command issue
+Message-Id: <20110330210813.BD7C23E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:08:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,127 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Olaf Hering <olaf@aepfle.de>
+From: Bud Brown <bud.brown@redhat.com>
 
-commit 8c3c283e6bf463ab498d6e7823aff6c4762314b6 upstream.
+commit 1ddd5049545e0aa1a0ed19bca4d9c9c3ce1ac8a2 upstream.
 
-A virtualized display device is usually viewed with the vncviewer
-application, either by 'xm vnc domU' or with vncviewer localhost:port.
-vncviewer and the RFB protocol provides absolute coordinates to the
-virtual display. These coordinates are either passed through to a PV
-guest or converted to relative coordinates for a HVM guest.
+Under certain workloads a command may seem to get lost. IOW, the Smart Array
+thinks all commands have been completed but we still have commands in our
+completion queue. This may lead to system instability, filesystems going
+read-only, or even panics depending on the affected filesystem. We add an
+extra read to force the write to complete.
 
-A PV guest receives these coordinates and passes them to the kernels
-evdev driver. There it can be picked up by applications such as the
-xorg-input drivers. Using absolute coordinates avoids issues such as
-guest mouse pointer not tracking host mouse pointer due to wrong mouse
-acceleration settings in the guests X display.
+Testing shows this extra read avoids the problem.
 
-Advertise either absolute or relative coordinates to the input system
-and the evdev driver, depending on what dom0 provides. The xorg-input
-driver prefers relative coordinates even if a devices provides both.
-
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/input/xen-kbdfront.c |   45 ++++++++++++++++++++++---------------------
- 1 file changed, 24 insertions(+), 21 deletions(-)
+ drivers/block/cciss.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: linux-2.6.35.y/drivers/input/xen-kbdfront.c
+Index: linux-2.6.35.y/drivers/block/cciss.h
 ===================================================================
---- linux-2.6.35.y.orig/drivers/input/xen-kbdfront.c	2011-03-29 22:50:18.101795240 -0700
-+++ linux-2.6.35.y/drivers/input/xen-kbdfront.c	2011-03-29 23:03:03.192218490 -0700
-@@ -109,7 +109,7 @@
- static int __devinit xenkbd_probe(struct xenbus_device *dev,
- 				  const struct xenbus_device_id *id)
- {
--	int ret, i;
-+	int ret, i, abs;
- 	struct xenkbd_info *info;
- 	struct input_dev *kbd, *ptr;
- 
-@@ -127,6 +127,11 @@
- 	if (!info->page)
- 		goto error_nomem;
- 
-+	if (xenbus_scanf(XBT_NIL, dev->otherend, "feature-abs-pointer", "%d", &abs) < 0)
-+		abs = 0;
-+	if (abs)
-+		xenbus_printf(XBT_NIL, dev->nodename, "request-abs-pointer", "1");
-+
- 	/* keyboard */
- 	kbd = input_allocate_device();
- 	if (!kbd)
-@@ -136,11 +141,12 @@
- 	kbd->id.bustype = BUS_PCI;
- 	kbd->id.vendor = 0x5853;
- 	kbd->id.product = 0xffff;
--	kbd->evbit[0] = BIT(EV_KEY);
-+
-+	__set_bit(EV_KEY, kbd->evbit);
- 	for (i = KEY_ESC; i < KEY_UNKNOWN; i++)
--		set_bit(i, kbd->keybit);
-+		__set_bit(i, kbd->keybit);
- 	for (i = KEY_OK; i < KEY_MAX; i++)
--		set_bit(i, kbd->keybit);
-+		__set_bit(i, kbd->keybit);
- 
- 	ret = input_register_device(kbd);
- 	if (ret) {
-@@ -159,12 +165,20 @@
- 	ptr->id.bustype = BUS_PCI;
- 	ptr->id.vendor = 0x5853;
- 	ptr->id.product = 0xfffe;
--	ptr->evbit[0] = BIT(EV_KEY) | BIT(EV_REL) | BIT(EV_ABS);
-+
-+	if (abs) {
-+		__set_bit(EV_ABS, ptr->evbit);
-+		input_set_abs_params(ptr, ABS_X, 0, XENFB_WIDTH, 0, 0);
-+		input_set_abs_params(ptr, ABS_Y, 0, XENFB_HEIGHT, 0, 0);
-+	} else {
-+		input_set_capability(ptr, EV_REL, REL_X);
-+		input_set_capability(ptr, EV_REL, REL_Y);
-+	}
-+	input_set_capability(ptr, EV_REL, REL_WHEEL);
-+
-+	__set_bit(EV_KEY, ptr->evbit);
- 	for (i = BTN_LEFT; i <= BTN_TASK; i++)
--		set_bit(i, ptr->keybit);
--	ptr->relbit[0] = BIT(REL_X) | BIT(REL_Y) | BIT(REL_WHEEL);
--	input_set_abs_params(ptr, ABS_X, 0, XENFB_WIDTH, 0, 0);
--	input_set_abs_params(ptr, ABS_Y, 0, XENFB_HEIGHT, 0, 0);
-+		__set_bit(i, ptr->keybit);
- 
- 	ret = input_register_device(ptr);
- 	if (ret) {
-@@ -271,7 +285,7 @@
- 				   enum xenbus_state backend_state)
- {
- 	struct xenkbd_info *info = dev_get_drvdata(&dev->dev);
--	int ret, val;
-+	int val;
- 
- 	switch (backend_state) {
- 	case XenbusStateInitialising:
-@@ -282,17 +296,6 @@
- 
- 	case XenbusStateInitWait:
- InitWait:
--		ret = xenbus_scanf(XBT_NIL, info->xbdev->otherend,
--				   "feature-abs-pointer", "%d", &val);
--		if (ret < 0)
--			val = 0;
--		if (val) {
--			ret = xenbus_printf(XBT_NIL, info->xbdev->nodename,
--					    "request-abs-pointer", "1");
--			if (ret)
--				printk(KERN_WARNING
--				       "xenkbd: can't request abs-pointer");
--		}
- 		xenbus_switch_state(dev, XenbusStateConnected);
- 		break;
- 
+--- linux-2.6.35.y.orig/drivers/block/cciss.h	2011-03-29 22:50:13.312917773 -0700
++++ linux-2.6.35.y/drivers/block/cciss.h	2011-03-29 23:03:03.435212271 -0700
+@@ -173,6 +173,7 @@
+ 	 printk("Sending %x - down to controller\n", c->busaddr );
+ #endif /* CCISS_DEBUG */ 
+          writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
++	readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
+ 	 h->commands_outstanding++;
+ 	 if ( h->commands_outstanding > h->max_outstanding)
+ 		h->max_outstanding = h->commands_outstanding;
