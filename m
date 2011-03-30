@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964869Ab1C3VsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:48:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43212 "EHLO mga11.intel.com"
+	id S933367Ab1C3VHi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:07:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58267 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933492Ab1C3VHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:07:40 -0400
+	id S933439Ab1C3VHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:07:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="673447612"
+   d="scan'208";a="411277550"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: bhutchings@solarflare.com, fubar@us.ibm.com, davem@davemloft.net,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [118/275] bonding/vlan: Avoid mangled NAs on slaves without VLAN tag insertion
-Message-Id: <20110330210557.E5DF33E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:05:57 -0700 (PDT)
+To: suresh.b.siddha@intel.com, a.p.zijlstra@chello.nl, ak@linux.intel.com,
+        mingo@elte.hu, efault@gmx.de, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [88/275] sched: Move sched_avg_update() to update_cpu_load()
+Message-Id: <20110330210526.569A53E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:05:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,51 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Ben Hutchings <bhutchings@solarflare.com>
+Commit: da2b71edd8a7db44fe1746261410a981f3e03632 upstream
 
-This is related to commit f88a4a9b65a6f3422b81be995535d0e69df11bb8
-upstream, but the bug cannot be properly fixed without the other
-changes to VLAN tagging in 2.6.37.
+Currently sched_avg_update() (which updates rt_avg stats in the rq)
+is getting called from scale_rt_power() (in the load balance context)
+which doesn't take rq->lock.
 
-bond_na_send() attempts to insert a VLAN tag in between building and
-sending packets of the respective formats.  If the slave does not
-implement hardware VLAN tag insertion then vlan_put_tag() will mangle
-the network-layer header because the Ethernet header is not present at
-this point (unlike in bond_arp_send()).
+Fix it by moving the sched_avg_update() to more appropriate
+update_cpu_load() where the CFS load gets updated as well.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
+LKML-Reference: <1282596171.2694.3.camel@sbsiddha-MOBL3>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/bonding/bond_ipv6.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ kernel/sched.c      |    6 ++++++
+ kernel/sched_fair.c |    2 --
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.35.y/drivers/net/bonding/bond_ipv6.c
+Index: linux-2.6.35.y/kernel/sched.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/net/bonding/bond_ipv6.c	2011-03-29 22:51:21.201180683 -0700
-+++ linux-2.6.35.y/drivers/net/bonding/bond_ipv6.c	2011-03-29 23:03:00.673282942 -0700
-@@ -70,6 +70,13 @@
- 	};
- 	struct sk_buff *skb;
- 
-+	/* The Ethernet header is built in ndisc_send_skb(), not
-+	 * ndisc_build_skb(), so we cannot insert a VLAN tag.  Only an
-+	 * out-of-line tag inserted by the hardware will work.
-+	 */
-+	if (vlan_id && !(slave_dev->features & NETIF_F_HW_VLAN_TX))
-+		return;
+--- linux-2.6.35.y.orig/kernel/sched.c	2011-03-29 22:51:34.981828070 -0700
++++ linux-2.6.35.y/kernel/sched.c	2011-03-29 23:55:04.322356578 -0700
+@@ -1270,6 +1270,10 @@
+ static void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
+ {
+ }
 +
- 	icmp6h.icmp6_router = router;
- 	icmp6h.icmp6_solicited = 0;
- 	icmp6h.icmp6_override = 1;
-@@ -88,7 +95,7 @@
++static void sched_avg_update(struct rq *rq)
++{
++}
+ #endif /* CONFIG_SMP */
+ 
+ #if BITS_PER_LONG == 32
+@@ -3152,6 +3156,8 @@
  	}
  
- 	if (vlan_id) {
--		skb = vlan_put_tag(skb, vlan_id);
-+		skb = __vlan_hwaccel_put_tag(skb, vlan_id);
- 		if (!skb) {
- 			pr_err("failed to insert VLAN tag\n");
- 			return;
+ 	calc_load_account_active(this_rq);
++
++	sched_avg_update(this_rq);
+ }
+ 
+ #ifdef CONFIG_SMP
+Index: linux-2.6.35.y/kernel/sched_fair.c
+===================================================================
+--- linux-2.6.35.y.orig/kernel/sched_fair.c	2011-03-29 22:51:34.981828070 -0700
++++ linux-2.6.35.y/kernel/sched_fair.c	2011-03-29 23:55:05.971314385 -0700
+@@ -2268,8 +2268,6 @@
+ 	struct rq *rq = cpu_rq(cpu);
+ 	u64 total, available;
+ 
+-	sched_avg_update(rq);
+-
+ 	total = sched_avg_period() + (rq->clock - rq->age_stamp);
+ 	available = total - rq->rt_avg;
+ 
