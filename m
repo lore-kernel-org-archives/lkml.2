@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab1C3GEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 02:04:16 -0400
-Received: from purkki.adurom.net ([80.68.90.206]:33101 "EHLO purkki.adurom.net"
+	id S1753916Ab1C3GGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 02:06:51 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:60605 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752049Ab1C3GEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 02:04:15 -0400
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, devel@linuxdriverproject.org,
-        Naveen Singh <nsingh@atheros.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jouni Malinen <Jouni.Malinen@atheros.com>,
-        Vipin Mehta <vmehta@atheros.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: Update on Android PM enhancements - CONFIG_HAS_EARLYSUSPEND and friends
-References: <AANLkTik69v+gdPzwdMSyVnvHMKbWquvfCFvHLmLu-bBB@mail.gmail.com>
-	<AANLkTikurVF_-u8gTqM3ireKia28zMrkXRyrvdNTob7e@mail.gmail.com>
-	<1300957495.3807.7.camel@jlt3.sipsolutions.net>
-	<1300957590.3807.8.camel@jlt3.sipsolutions.net>
-	<87k4fouamf.fsf@purkki.adurom.net>
-From: Kalle Valo <kvalo@adurom.com>
-Date: Wed, 30 Mar 2011 09:03:54 +0300
-In-Reply-To: <87k4fouamf.fsf@purkki.adurom.net> (Kalle Valo's message of "Thu\, 24 Mar 2011 11\:32\:40 +0200")
-Message-ID: <87vcz1rvp1.fsf@purkki.adurom.net>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1751812Ab1C3GGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 02:06:50 -0400
+Message-ID: <4D92C874.7040104@parallels.com>
+Date: Wed, 30 Mar 2011 01:06:44 -0500
+From: Rob Landley <rlandley@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Pete Clements <clem@clem.clem-digital.net>
+CC: Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
+References: <201103291551.p2TFpDqZ001692@clem.clem-digital.net>
+In-Reply-To: <201103291551.p2TFpDqZ001692@clem.clem-digital.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kalle Valo <kvalo@adurom.com> writes:
+On 03/29/2011 10:51 AM, Pete Clements wrote:
+> Quoting Jens Axboe
+>   > 
+>   > On 2011-03-29 16:13, Rob Landley wrote:
+>   > > On 03/29/2011 08:59 AM, Jens Axboe wrote:
+>   > >> On 2011-03-29 10:52, Rob Landley wrote:
+>   > >>> I'm booting all this under kvm or qemu, by the way:
+>   > >>>
+>   > >>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
+>   > >>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
+>   > >>>
+>   > >>> Sometimes with init=/bin/bash in that last quoted bit.  The root
+>   > >>> filesystem's debian sid but that's probably not relevant because it
+>   > >>> worked fine with .38.
+>   > >>
+>   > >> Does this help?
+>   > >>
+>   > >> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
+>   > >> index 0e406d73..ca27d30 100644
+>   > >> --- a/drivers/ide/ide-io.c
+>   > >> +++ b/drivers/ide/ide-io.c
+>   > >> @@ -570,8 +570,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
+>   > >>  	spin_unlock_irqrestore(q->queue_lock, flags);
+>   > >>  
+>   > >>  	/* Use 3ms as that was the old plug delay */
+>   > >> -	if (rq)
+>   > >> -		blk_delay_queue(q, 3);
+>   > >> +	blk_delay_queue(q, 3);
+>   > >>  }
+>   > >>  
+>   > >>  static int drive_is_ready(ide_drive_t *drive)
+>   > >>
+>   > > 
+>   > > Nope, still hung the same way.
+>   > 
+>   > Funky. I'll try and reproduce this tonight.
+>   > 
+>   > -- 
+>   > Jens Axboe
+>   > 
+> 
+> I have had a similiar problem (reported earlier) unable to boot.
+> With git15-18 hung with IDE drives (hda), git19-21 moved the hang down to
+> the IDE CDROM (hdc). Applied the above patch and now booted into git21 without
+> any hang and all appears ok.
 
-> In maemo, to save power, we decreased the dynamic power save timeout
-> whenever display was turned off. This was all done from user space and
-> wifi driver in the kernel was completely unaware of the display state.
+It may have made it better for me, it's hard to tell.
 
-[...]
+I did a fresh pull, re-applied the patch, and tried again with
+init=/bin/sh and it booted to the shell prompt... which then hung when I
+did "ls -l /".
 
-> And before someone suggests adding dynamic timeout variable to
-> nl80211: I think it's very much implementation specific parameter. Not
-> all drivers support it and it might be that even in future mac80211
-> uses something else. So having the timeout variable in nl80211 is not
-> a long term solution.
+If I let it boot normally, init announces itself, gives a spurious
+warning about a fstab field (which it's been doing for a while, my fault
+but harmless), then hangs.
 
-I totally forgot that Juuso added QoS requirements support to
-mac80211. And that's the proper wayq to do this, user space sets QoS
-requirements based on display state, and whatever else it thinks is
-important, and mac80211 adapts the power save parameters accordingly.
-In this method we are not revealing any implemention details to user
-space, and that's always a good thing.
+> This is i386, UP.
 
--- 
-Kalle Valo
+I'm doing x86-64 SMP.
+
+Rob
