@@ -1,136 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab1C3X1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 19:27:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43007 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab1C3X1I convert rfc822-to-8bit (ORCPT
+	id S1756585Ab1C3X2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 19:28:24 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:59041 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332Ab1C3X2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 19:27:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=vWr3fyVrDpUzVjfFiBI0skGUSJ2u7matmCBSAhc8PWEgvuWs1hOQMq/ImDC33aZqYb
-         g7pWJXtbsPLzzs8jgLYwQEVS+r7K1aQP2HEo4C928IgZaDd1uldr5irH1RxdlJy+P7nR
-         NbGzBNVOLfxPj6q3yPzq+DQ0RevKGo1mwBvAU=
+	Wed, 30 Mar 2011 19:28:23 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/vpLGlpQgQp7hage9QYgxg
+Date: Wed, 30 Mar 2011 16:28:08 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Message-ID: <20110330232808.GP18334@atomide.com>
+References: <20110317183048.GW7258@atomide.com>
+ <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+ <20110318101512.GA15375@n2100.arm.linux.org.uk>
+ <201103301906.42429.arnd@arndb.de>
+ <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+ <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6>
+ <20110330215434.GI18334@atomide.com>
+ <20110330223807.GP2255@linux.vnet.ibm.com>
+ <20110330224752.GN18334@atomide.com>
+ <alpine.LFD.2.00.1103310059531.22418@localhost6.localdomain6>
 MIME-Version: 1.0
-In-Reply-To: <20110326000456.346395018@clark.kroah.org>
-References: <20110326000509.GA29736@kroah.com>
-	<20110326000456.346395018@clark.kroah.org>
-Date: Wed, 30 Mar 2011 19:27:06 -0400
-X-Google-Sender-Auth: RC75AnBa1N8XErtFuZ-dA02MCMQ
-Message-ID: <AANLkTi=XPPxVYPB8fzr2Ent3QOsKF=JunhGL+ExEk_7f@mail.gmail.com>
-Subject: Re: [05/35] powerpc/kdump: Fix race in kdump shutdown
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1103310059531.22418@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 8:03 PM, Greg KH <gregkh@suse.de> wrote:
-> 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
->
-> ------------------
->
-> From: Michael Neuling <mikey@neuling.org>
->
-> commit 60adec6226bbcf061d4c2d10944fced209d1847d upstream.
+* Thomas Gleixner <tglx@linutronix.de> [110330 16:11]:
+> On Wed, 30 Mar 2011, Tony Lindgren wrote:
+> 
+> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> [110330 15:35]:
+> > > On Wed, Mar 30, 2011 at 02:54:35PM -0700, Tony Lindgren wrote:
+> > > > * Thomas Gleixner <tglx@linutronix.de> [110330 14:07]:
+> > > > > 
+> > > > > So one person will be not enough, that needs to be a whole team of
+> > > > > experienced people in the very near future to deal with the massive
+> > > > > tsunami of crap which is targeted at mainline. If we fail to set that
+> > > > > up, then we run into a very ugly maintainability issue in no time.
+> > > > 
+> > > > One thing that will help here and distribute the load is to move
+> > > > more things under drivers/ as then we have more maintainers looking
+> > > > at the code.
+> > > 
+> > > In many cases, the ARM SoC vendors will want their people producing the
+> > > code, so although moving things to drivers might be a good thing to do,
+> > > it won't really increase the number of people involved.  Plus the move
+> > > to the drivers subtree would be a problem for devices with tight ties
+> > > to the board or SoC.
+> > > 
+> > > There is work on pushing towards common code, but there is a lot of code
+> > > and this will take time and a lot of work.
+> > 
+> > I agree on the common code part, then even drivers with tight
+> > ties to board or SoC become just generic drivers that are easy
+> > to review.
+> 
+> You wish. There is an already existing problem that the identical IP
+> cores of peripheral crap are reused accross architectures. And of
+> course because it is a different architecture we have two different
+> drivers with different issues.
+> 
+> See: http://marc.info/?l=linux-kernel&m=130041568128164
 
-Hi Greg,
+Yeah that's a problem. And getting people to create generic device
+drivers is hard, takes tons of commenting and still needs some hardware
+workaround options passed in the platform_data..
+ 
+> We already fail to detect this on the driver level, so please answer
+> the question I asked before: How do you spread the load and scale with
+> the amount of shite which is coming in?
 
-It looks like this introduces an issue for ppc32 unless we also take
-the upstream c2be05481f612525 commit.  There is an e500 kexec
-patch in between that modifies context; here is the one I've tentatively
-queued for 2.6.34 without a dependency on the e500 patch context.
+Sorry I don't have a solution to that :) I'm struggling with that issue
+big time myself.
+ 
+> The above example is probably not the only one in tree and we will see
+> lots of unnoticed instances of drivers dealing with minimal different
+> versions of the same IP crappola in the near future simply because the
+> vendors claim that their stuff is unique and only works with their
+> particular instance of hackery unless we have enough capable people to
+> look over this. Whether it's in arch/ or drivers/ it does not
+> matter. We are simply not prepared to the amount of crap coming in.
 
-http://git.kernel.org/?p=linux/kernel/git/longterm/longterm-queue-2.6.34.git;a=blob;f=next_round/powerpc-Fix-default_machine_crash_shutdown-ifdef-bot.patch
+Yes I agree. Tools like checkpatch and sparse don't help with issues
+like this.
 
-Paul.
-
->
-> When we are crashing, the crashing/primary CPU IPIs the secondaries to
-> turn off IRQs, go into real mode and wait in kexec_wait.  While this
-> is happening, the primary tears down all the MMU maps.  Unfortunately
-> the primary doesn't check to make sure the secondaries have entered
-> real mode before doing this.
->
-> On PHYP machines, the secondaries can take a long time shutting down
-> the IRQ controller as RTAS calls are need.  These RTAS calls need to
-> be serialised which resilts in the secondaries contending in
-> lock_rtas() and hence taking a long time to shut down.
->
-> We've hit this on large POWER7 machines, where some secondaries are
-> still waiting in lock_rtas(), when the primary tears down the HPTEs.
->
-> This patch makes sure all secondaries are in real mode before the
-> primary tears down the MMU.  It uses the new kexec_state entry in the
-> paca.  It times out if the secondaries don't reach real mode after
-> 10sec.
->
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
->
-> ---
->  arch/powerpc/kernel/crash.c |   27 +++++++++++++++++++++++++++
->  1 file changed, 27 insertions(+)
->
-> --- a/arch/powerpc/kernel/crash.c
-> +++ b/arch/powerpc/kernel/crash.c
-> @@ -162,6 +162,32 @@ static void crash_kexec_prepare_cpus(int
->        /* Leave the IPI callback set */
->  }
->
-> +/* wait for all the CPUs to hit real mode but timeout if they don't come in */
-> +static void crash_kexec_wait_realmode(int cpu)
-> +{
-> +       unsigned int msecs;
-> +       int i;
-> +
-> +       msecs = 10000;
-> +       for (i=0; i < NR_CPUS && msecs > 0; i++) {
-> +               if (i == cpu)
-> +                       continue;
-> +
-> +               while (paca[i].kexec_state < KEXEC_STATE_REAL_MODE) {
-> +                       barrier();
-> +                       if (!cpu_possible(i)) {
-> +                               break;
-> +                       }
-> +                       if (!cpu_online(i)) {
-> +                               break;
-> +                       }
-> +                       msecs--;
-> +                       mdelay(1);
-> +               }
-> +       }
-> +       mb();
-> +}
-> +
->  /*
->  * This function will be called by secondary cpus or by kexec cpu
->  * if soft-reset is activated to stop some CPUs.
-> @@ -419,6 +445,7 @@ void default_machine_crash_shutdown(stru
->        crash_kexec_prepare_cpus(crashing_cpu);
->        cpu_set(crashing_cpu, cpus_in_crash);
->        crash_kexec_stop_spus();
-> +       crash_kexec_wait_realmode(crashing_cpu);
->        if (ppc_md.kexec_cpu_down)
->                ppc_md.kexec_cpu_down(1, 0);
->  }
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Tony
