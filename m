@@ -1,205 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933380Ab1C3V4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:56:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44764 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933359Ab1C3V4I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933395Ab1C3V4N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:56:13 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:34552 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933362Ab1C3V4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Mar 2011 17:56:08 -0400
-Date: Wed, 30 Mar 2011 14:45:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
-Message-Id: <20110330144507.2c0ecf73.akpm@linux-foundation.org>
-In-Reply-To: <20110308114159.7EAD.A69D9226@jp.fujitsu.com>
-References: <20110307172609.8A01.A69D9226@jp.fujitsu.com>
-	<20110307163513.GC13384@alboin.amr.corp.intel.com>
-	<20110308114159.7EAD.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Message-ID: <4D93A6F4.60206@msgid.tls.msk.ru>
+Date: Thu, 31 Mar 2011 01:56:04 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: mijinlong@cn.fujitsu.com, ak@linux.intel.com, bfields@redhat.com,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: Re: [PATCH] [232/275] nfsd: wrong index used in inner loop
+References: <20110330203.501921634@firstfloor.org> <20110330210757.F3D223E1A05@tassilo.jf.intel.com>
+In-Reply-To: <20110330210757.F3D223E1A05@tassilo.jf.intel.com>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  8 Mar 2011 11:43:23 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-
-> > > Don't we need to make per zone stastics? I'm afraid small dma zone 
-> > > makes much thp-splitting and screw up this stastics.
-> > 
-> > Does it? I haven't seen that so far.
-> > 
-> > If it happens a lot it would be better to disable THP for the 16MB DMA
-> > zone at least. Or did you mean the 4GB zone?
+31.03.2011 01:07, Andi Kleen wrote:
+> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 > 
-> I assumered 4GB. And cpusets/mempolicy binding might makes similar 
-> issue. It can make only one zone high pressure.
+> ------------------
+> From: Mi Jinlong <mijinlong@cn.fujitsu.com>
 > 
-> But, hmmm...
-> Do you mean you don't hit any issue then? I don't think do don't tested
-> NUMA machine. So, it has  no practical problem I can agree this.
+> commit 5a02ab7c3c4580f94d13c683721039855b67cda6 upstream.
 > 
+> We must not use dummy for index.
+> After the first index, READ32(dummy) will change dummy!!!!
 
-I didn't actually merge this patch because I assumed you guys were
-still arguing over it.  But I now see you weren't.
+This is also in patch 180/275 (this one is 232/275).
 
-Do we still want it?  Are we sure we don't want the per-zone numbers?
-
-
-From: Andi Kleen <ak@linux.intel.com>
-
-I found it difficult to make sense of transparent huge pages without
-having any counters for its actions.  Add some counters to vmstat for
-allocation of transparent hugepages and fallback to smaller pages.
-
-Optional patch, but useful for development and understanding the system.
-
-Contains improvements from Andrea Arcangeli and Johannes Weiner
-
-[akpm@linux-foundation.org: coding-style fixes]
-[hannes@cmpxchg.org: fix vmstat_text[] entries]
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- include/linux/vmstat.h |    7 +++++++
- mm/huge_memory.c       |   25 +++++++++++++++++++++----
- mm/vmstat.c            |    9 +++++++++
- 3 files changed, 37 insertions(+), 4 deletions(-)
-
-diff -puN include/linux/vmstat.h~mm-add-vm-counters-for-transparent-hugepages include/linux/vmstat.h
---- a/include/linux/vmstat.h~mm-add-vm-counters-for-transparent-hugepages
-+++ a/include/linux/vmstat.h
-@@ -58,6 +58,13 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
- 		UNEVICTABLE_PGCLEARED,	/* on COW, page truncate */
- 		UNEVICTABLE_PGSTRANDED,	/* unable to isolate on unlock */
- 		UNEVICTABLE_MLOCKFREED,
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+		THP_FAULT_ALLOC,
-+		THP_FAULT_FALLBACK,
-+		THP_COLLAPSE_ALLOC,
-+		THP_COLLAPSE_ALLOC_FAILED,
-+		THP_SPLIT,
-+#endif
- 		NR_VM_EVENT_ITEMS
- };
- 
-diff -puN mm/huge_memory.c~mm-add-vm-counters-for-transparent-hugepages mm/huge_memory.c
---- a/mm/huge_memory.c~mm-add-vm-counters-for-transparent-hugepages
-+++ a/mm/huge_memory.c
-@@ -680,8 +680,11 @@ int do_huge_pmd_anonymous_page(struct mm
- 			return VM_FAULT_OOM;
- 		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
- 					  vma, haddr, numa_node_id(), 0);
--		if (unlikely(!page))
-+		if (unlikely(!page)) {
-+			count_vm_event(THP_FAULT_FALLBACK);
- 			goto out;
-+		}
-+		count_vm_event(THP_FAULT_ALLOC);
- 		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
- 			put_page(page);
- 			goto out;
-@@ -909,11 +912,13 @@ int do_huge_pmd_wp_page(struct mm_struct
- 		new_page = NULL;
- 
- 	if (unlikely(!new_page)) {
-+		count_vm_event(THP_FAULT_FALLBACK);
- 		ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
- 						   pmd, orig_pmd, page, haddr);
- 		put_page(page);
- 		goto out;
- 	}
-+	count_vm_event(THP_FAULT_ALLOC);
- 
- 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
- 		put_page(new_page);
-@@ -1390,6 +1395,7 @@ int split_huge_page(struct page *page)
- 
- 	BUG_ON(!PageSwapBacked(page));
- 	__split_huge_page(page, anon_vma);
-+	count_vm_event(THP_SPLIT);
- 
- 	BUG_ON(PageCompound(page));
- out_unlock:
-@@ -1784,9 +1790,11 @@ static void collapse_huge_page(struct mm
- 				      node, __GFP_OTHER_NODE);
- 	if (unlikely(!new_page)) {
- 		up_read(&mm->mmap_sem);
-+		count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
- 		*hpage = ERR_PTR(-ENOMEM);
- 		return;
- 	}
-+	count_vm_event(THP_COLLAPSE_ALLOC);
- 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
- 		up_read(&mm->mmap_sem);
- 		put_page(new_page);
-@@ -2151,8 +2159,11 @@ static void khugepaged_do_scan(struct pa
- #ifndef CONFIG_NUMA
- 		if (!*hpage) {
- 			*hpage = alloc_hugepage(khugepaged_defrag());
--			if (unlikely(!*hpage))
-+			if (unlikely(!*hpage)) {
-+				count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
- 				break;
-+			}
-+			count_vm_event(THP_COLLAPSE_ALLOC);
- 		}
- #else
- 		if (IS_ERR(*hpage))
-@@ -2192,8 +2203,11 @@ static struct page *khugepaged_alloc_hug
- 
- 	do {
- 		hpage = alloc_hugepage(khugepaged_defrag());
--		if (!hpage)
-+		if (!hpage) {
-+			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
- 			khugepaged_alloc_sleep();
-+		} else
-+			count_vm_event(THP_COLLAPSE_ALLOC);
- 	} while (unlikely(!hpage) &&
- 		 likely(khugepaged_enabled()));
- 	return hpage;
-@@ -2210,8 +2224,11 @@ static void khugepaged_loop(void)
- 	while (likely(khugepaged_enabled())) {
- #ifndef CONFIG_NUMA
- 		hpage = khugepaged_alloc_hugepage();
--		if (unlikely(!hpage))
-+		if (unlikely(!hpage)) {
-+			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
- 			break;
-+		}
-+		count_vm_event(THP_COLLAPSE_ALLOC);
- #else
- 		if (IS_ERR(hpage)) {
- 			khugepaged_alloc_sleep();
-diff -puN mm/vmstat.c~mm-add-vm-counters-for-transparent-hugepages mm/vmstat.c
---- a/mm/vmstat.c~mm-add-vm-counters-for-transparent-hugepages
-+++ a/mm/vmstat.c
-@@ -951,7 +951,16 @@ static const char * const vmstat_text[] 
- 	"unevictable_pgs_cleared",
- 	"unevictable_pgs_stranded",
- 	"unevictable_pgs_mlockfreed",
-+
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	"thp_fault_alloc",
-+	"thp_fault_fallback",
-+	"thp_collapse_alloc",
-+	"thp_collapse_alloc_failed",
-+	"thp_split",
- #endif
-+
-+#endif /* CONFIG_VM_EVENTS_COUNTERS */
- };
- 
- static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
-_
-
+/mjt
