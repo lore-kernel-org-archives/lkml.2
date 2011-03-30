@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab1C3OY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 10:24:27 -0400
+	id S932564Ab1C3OYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 10:24:33 -0400
 Received: from misc-148-66-126-238.pool.starband.net ([148.66.126.238]:48832
 	"EHLO brontomerus.synaptics.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754812Ab1C3OYZ (ORCPT
+	by vger.kernel.org with ESMTP id S1754812Ab1C3OYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 10:24:25 -0400
+	Wed, 30 Mar 2011 10:24:31 -0400
 X-Greylist: delayed 983 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Mar 2011 10:24:12 EDT
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
@@ -19,90 +19,97 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Joerie de Gram <j.de.gram@gmail.com>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [PATCH 3/3] (corrected) input/touchscreen: Synaptics RMI4 Touchscreen Driver
-Date: Wed, 30 Mar 2011 07:05:27 -0700
-Message-Id: <1301493927-30237-4-git-send-email-cheiny@synaptics.com>
+Subject: [PATCH 0/3] input/touchscreen: Synaptics RMI4 Touchscreen Driver
+Date: Wed, 30 Mar 2011 07:05:24 -0700
+Message-Id: <1301493927-30237-1-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1301493927-30237-1-git-send-email-cheiny@synaptics.com>
-References: <1301493927-30237-1-git-send-email-cheiny@synaptics.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver for Synaptics touchscreens using RMI4 protocol.
+This patch implements a driver supporting Synaptics ClearPad and other
+touchscreens that use the RMI4 protocol, as defined here:
 
-Signed-off-by: William Manson <wmanson@synaptics.com>
-Signed-off-by: Allie Xiong <axiong@synaptics.com>
-Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
+    http://www.synaptics.com/sites/default/files/511-000136-01_revD.pdf
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+This patch is against the v2.6.38 tag of Linus' kernel tree, commit
+521cb40b0c44418a4fd36dc633f575813d59a43d.  Note that previous patches
+were against the synaptics-rmi4 branch of Dmitry Torokhov's input
+tree.  At Dmitry's request, we have switched the base for our work
+to v2.6.38 - this should make it easier for people to pick up and
+test this and future patches.
+
+I2C functionality was previously ACK'ed by Jean Delvare on 2010/05/29.
+
+SPI code is included, but not ready for prime time yet.
+
+This patch completely supersedes the previous patch of 2011/03/01.  In addition
+to benefitting from more thorough review and testing, this version of the
+driver includes the following:
+      
+    - preliminary implementation of rmi_f11 relative motion support
+
+    - support for RMI4 Function 19 (capacitive buttons)
+    
+    - fixes for a kernel panic in rmi_f34.c configuration
+    
+    - additional sysfs parameters, particularly for rmi_f11 (2D pointing)
+    
+    - major restructuring of platformdata to (hopefully) simplify its
+      use while also allowing more operating parameters to be specified
+      via the platformdata.
+    
+    - deletion of more legacy code and behavior
+
+This patch supports a system having one or more RMI sensors attached to it.
+Most devices have just a single touch sensor, but some have more than one.
+An example is the Fuse concept phone, which has 4 RMI sensors in it).
+Each sensor implements a number of RMI4 functions, which are best represented
+as devices on the bus.
+
+The patch is divide into three parts:
+
+    1/3 - the core of the driver, implementing the logical rmi_bus and 
+    	  access to the physical bus (rmi_i2c and rmi_spi).
+    	  
+    2/3 - the sensor and function implementation.
+      
+    3/3 - Makefile and Kconfig
+
+The driver core manages the sensors on a device via the rmi bus (/sys/bus/rmi),
+handles interfunction communications (mostly IRQ notifications from F01 to
+other functions), and proxies register read/write requests to the appropriate
+physical layer for a given sensor.
+
+Individual sensors are presented on the bus as /sys/bus/rmi/devices/sensor00,
+/sys/bus/rmi/devices/sensor01/, and so on.
+      
+Functions for each sensor are presented as devices next to that sensor, for
+example /sys/bus/rmi/devices/sensor00f01, /sys/bus/rmi/devices/sensor00f11,
+and so on.
+      
+Sensor driver instances are attached to the bus using the kernel device discovery
+mechanism.  A future release will do the same for function driver instances,
+but for now we use an ad hoc mechanism to match functions to sensors.
+
+We chose this approach because almost all RMI4 functions are independent
+of one another.  The sole exception is F01, and its primary interaction
+with other functions is to notify them of the need to read or write data
+from or to the sensor.  In the long term, this will allow 3rd parties to
+implement additional RMI functions in a modular fashion, without having
+to modify the core driver implementation or the implementation of unrelated
+functions.
+
+
+Comments and other feedback on this driver are welcomed.
+
+Bill Manson
+Allie Xiong
+Christopher Heiny
+
+Cc: Jean Delvare <khali@linux-fr.org>
 Cc: Linus Walleij <linus.walleij@stericsson.com>
 Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
 Cc: Joeri de Gram <j.de.gram@gmail.com>
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
-
 ---
-
-diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-index 718bcc8..3181008 100644
---- a/drivers/input/touchscreen/Makefile
-+++ b/drivers/input/touchscreen/Makefile
-@@ -41,6 +41,16 @@ obj-$(CONFIG_TOUCHSCREEN_QT602240)	+= qt602240_ts.o
- obj-$(CONFIG_TOUCHSCREEN_S3C2410)	+= s3c2410_ts.o
- obj-$(CONFIG_TOUCHSCREEN_ST1232)	+= st1232.o
- obj-$(CONFIG_TOUCHSCREEN_STMPE)		+= stmpe-ts.o
-+CFLAGS_rmi_bus.o := -DDEBUG
-+CFLAGS_rmi_sensor.o := -DDEBUG
-+CFLAGS_rmi_function.o := -DDEBUG
-+CFLAGS_rmi_f01.o := -DDEBUG
-+CFLAGS_rmi_f11.o := -DDEBUG
-+CFLAGS_rmi_f19.o := -DDEBUG
-+CFLAGS_rmi_f34.o := -DDEBUG
-+CFLAGS_rmi_i2c.o := -DDEBUG
-+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_RMI4_I2C)	+=  rmi_bus.o rmi_sensor.o rmi_function.o rmi_f01.o rmi_f11.o rmi_f19.o rmi_f34.o rmi_i2c.o
-+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_RMI4_SPI)	+=  rmi_bus.o rmi_sensor.o rmi_function.o rmi_f01.o rmi_f11.o rmi_f19.o rmi_f34.o rmi_spi.o
- obj-$(CONFIG_TOUCHSCREEN_TNETV107X)	+= tnetv107x-ts.o
- obj-$(CONFIG_TOUCHSCREEN_TOUCHIT213)	+= touchit213.o
- obj-$(CONFIG_TOUCHSCREEN_TOUCHRIGHT)	+= touchright.o
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 61834ae..2b2f6dc 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -362,6 +362,36 @@ config TOUCHSCREEN_MIGOR
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called migor_ts.
- 
-+config TOUCHSCREEN_SYNAPTICS_RMI4_I2C
-+	tristate "Synaptics RMI4 I2C touchscreens"
-+	depends on I2C
-+	help
-+	  Say Y here if you have a Synaptics RMI4 I2C touchscreen connected to
-+	  your system. This enables support for Synaptics RMI4 over I2C based
-+	  touchscreens.
-+
-+	  If unsure, say N.
-+
-+	  To compile this driver as a set of modules, choose M here: the
-+	  modules will be called rmi_core, rmi_app_touchpad, rmi_phys_i2c.
-+
-+config TOUCHSCREEN_SYNAPTICS_RMI4_SPI
-+	tristate "Synaptics RMI4 SPI touchscreens"
-+	depends on SPI
-+	help
-+	  Say Y here if you have a Synaptics RMI4 SPI touchscreen connected to
-+	  your system. This enables support for Synaptics RMI4 over SPI based
-+	  touchscreens.
-+
-+	  If unsure, say N.
-+
-+	  To compile this driver as a set of modules, choose M here: the
-+	  modules will be called rmi_core, rmi_app_touchpad, rmi_phys_spi.
-+
-+config SYNA_MULTI_TOUCH
-+	bool "Synaptics pointing using multi-touch events"
-+	depends on TOUCHSCREEN_SYNAPTICS_RMI4_I2C || TOUCHSCREEN_SYNAPTICS_RMI4_SPI
-+
- config TOUCHSCREEN_TNETV107X
- 	tristate "TI TNETV107X touchscreen support"
- 	depends on ARCH_DAVINCI_TNETV107X
