@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746Ab1C3SgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 14:36:09 -0400
-Received: from us-mx4.synaptics.com ([12.178.49.178]:48386 "EHLO
-	us-mx4.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680Ab1C3SgH (ORCPT
+	id S932218Ab1C3ShE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 14:37:04 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45049 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab1C3ShC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 14:36:07 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Wed, 30 Mar 2011 10:21:09 -0800
-Message-ID: <4D937814.5010604@synaptics.com>
-Date: Wed, 30 Mar 2011 11:36:04 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	Wed, 30 Mar 2011 14:37:02 -0400
+Date: Wed, 30 Mar 2011 14:36:56 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, anton@samba.org
+Subject: Re: [PATCH] POWER: perf_event: Skip updating kernel counters if
+ register value shrinks
+Message-ID: <20110330183656.GA2564@mgebm.net>
+References: <1301059689-4556-1-git-send-email-emunson@mgebm.net>
+ <1301378637.2402.671.camel@pasglop>
+ <20110329142519.GA3527@mgebm.net>
+ <1301433165.2402.689.camel@pasglop>
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>,
-        William Manson <WManson@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: Re: [PATCH 1/3] input/touchscreen: Synaptics RMI4 Touchscreen Driver
-References: <1301446249-13646-1-git-send-email-cheiny@synaptics.com> <1301446249-13646-2-git-send-email-cheiny@synaptics.com> <20110330080223.GB2232@pengutronix.de>
-In-Reply-To: <20110330080223.GB2232@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
+Content-Disposition: inline
+In-Reply-To: <1301433165.2402.689.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2011 01:02 AM, Wolfram Sang wrote:
-> * PGP Signed by an unknown key: 03/30/2011 at 12:02:23 AM
-> Hi,
->
->> +	retval = rmi_register_sensor(&instancedata->rmiphysdrvr, platformdata->perfunctiondata);
->> +	if (retval) {
->> +		dev_err(&client->dev, "%s: Failed to Register %s sensor drivers\n",
->> +				__func__, instancedata->rmiphysdrvr.name);
->> +		i2c_set_clientdata(client, NULL);
->
-> I originally just wanted to say that this line can be removed. Then I
-> remembered that I already sent a patch for a similar driver in staging
-> (dc7b202a4ee6cb686e2bbef80c84443f43ec91bd). The staging driver looks in
-> a better shape to me. Do you know about it?
 
-Hi Wolfram,
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That call is required in order to register the sensor device on the rmi 
-bus, so that the rmi functions can be associated with it.  Without that 
-call, the driver will not function.
+On Wed, 30 Mar 2011, Benjamin Herrenschmidt wrote:
 
-I'm afraid I can't locate the commit you specified.  I do find a driver 
-in staging/ste_rmi4/synaptics_i2c_rmi4.[ch] - is that the one?  If not 
-which, tree/branch can I find it in?
+> On Tue, 2011-03-29 at 10:25 -0400, Eric B Munson wrote:
+> > Here I made the assumption that the hardware would never remove more ev=
+ents in
+> > a speculative roll back than it had added.  This is not a situation I
+> > encoutered in my limited testing, so I didn't think underflow was possi=
+ble.  I
+> > will send out a V2 using the signed 32 bit delta and remeber to CC stab=
+le
+> > this time.=20
+>=20
+> I'm not thinking about underflow but rollover... or that isn't possible
+> with those counters ? IE. They don't wrap back to 0 after hitting
+> ffffffff ?
+>=20
 
-					Thanks,
-						Chris
+They do roll over to 0 after ffffffff, but I thought that case was already
+covered by the perf_event_interrupt.  Are you concerned that we will reset a
+counter and speculative roll back will underflow that counter?
 
+--EVF5PPMfhYS0aIcm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNk3hIAAoJEH65iIruGRnNsUwH/3qT728+BEeypqHDAYtS6Vxt
+vrLNmiVCOjkBvek7FvXdmGmK2hlqj/fziTA9UCN5Z84Bm170X4R+PJFLeDBHfJSt
+kcJVVw/TwQlmUu+E7K6tg1LRt0mfxeh/JvxhZylW3XlCNyL0xvs8PLtc5anbThDL
+bi52mX7vbZLJxb+5ESLP71WmGYJ5K4ldLKH2BiwzEmXc8a1XhHmM6bmsh4qBL5pg
+4Z4vTn+KB+L1JpYj6OVMYynmZtxx8/H1eRPSyVPVloQy9Ty3RzaUnpiqo46Autwc
+2a2hYuDtk9Uq8Z1Ru75UVZI4cW838VmikMBOaZmRzMaSdIt/uCwlJQiLxGDYXpY=
+=dnjq
+-----END PGP SIGNATURE-----
+
+--EVF5PPMfhYS0aIcm--
