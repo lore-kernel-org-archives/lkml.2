@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab1C3Seu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 14:34:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754883Ab1C3Set (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 14:34:49 -0400
-Date: Wed, 30 Mar 2011 14:34:46 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>
-Subject: Re: Why do we use cpu nice priority for ioprio?
-Message-ID: <20110330183446.GG1291@redhat.com>
-References: <BANLkTimiL5VZki4oUaw5hQYgB=E2jYwKrw@mail.gmail.com>
- <4D8C48B6.6050300@fusionio.com>
- <BANLkTimzt7QhBdayBpB3dRSOSY3G3VCfcw@mail.gmail.com>
+	id S932232Ab1C3SfA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 14:35:00 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:52085 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932105Ab1C3Se5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 14:34:57 -0400
+Date: Wed, 30 Mar 2011 20:34:47 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, amd-nb: Rename CPU PCI id define for F4
+Message-ID: <20110330183447.GA3668@aftab>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimzt7QhBdayBpB3dRSOSY3G3VCfcw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 11:23:45AM -0700, Justin TerAvest wrote:
-> On Fri, Mar 25, 2011 at 12:48 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
-> > On 2011-03-25 03:38, Justin TerAvest wrote:
-> >> It's not clear why the cpu nice value should be mapped to the ioprio
-> >> for a task when none is picked.
-> >>
-> >> Internally, at cfq_init_prio_data(), we just set:
-> >>               ioprio = IOPRIO_NORM;
-> >>               ioprio_class = IOPRIO_CLASS_BE;
-> >> if ioprio_class is IOPRIO_CLASS_NONE.
-> >>
-> >>
-> >> The problem is that  today, SCHED_RR and SCHED_FIFO threads
-> >> automatically get bumped up to RT class. This all happens behind the
-> >> curtains and the io_class of the thread is still shown as NONE with
-> >> sys_ioprio_get(). What's the motivation behind this promotion of
-> >> ioprio class?
-> >
-> > It was decided back in the day when io priorities were introduced. I
-> > still think it's a good idea.
-> 
-> This is the part I'm especially curious about. If we're managing the
-> resources separately,
-> why should be be adjusting io_class based on the nice value?
+With increasing number of PCI function ids, add the PCI function id
+in the define name instead of its symbolic name in the BKDG for more
+clarity. This renames function 4 define.
 
-What's wrong with taking a hint about ioclass and ioprio from cpu
-scheduling class and nice value?
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/amd_nb.c |    2 +-
+ include/linux/pci_ids.h  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-I think in general if some task is important from cpu perspective then
-most likely it is important from IO perspective too. And if user thinks
-otherwise, then one can explicitly set ioclass and ioprio of the task.
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index 6801959..4c39baa 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -21,7 +21,7 @@ const struct pci_device_id amd_nb_misc_ids[] = {
+ EXPORT_SYMBOL(amd_nb_misc_ids);
+ 
+ static struct pci_device_id amd_nb_link_ids[] = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_LINK) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
+ 	{}
+ };
+ 
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 11fd381..4e2c915 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -518,7 +518,7 @@
+ #define PCI_DEVICE_ID_AMD_11H_NB_MISC	0x1303
+ #define PCI_DEVICE_ID_AMD_11H_NB_LINK	0x1304
+ #define PCI_DEVICE_ID_AMD_15H_NB_F3	0x1603
+-#define PCI_DEVICE_ID_AMD_15H_NB_LINK	0x1604
++#define PCI_DEVICE_ID_AMD_15H_NB_F4	0x1604
+ #define PCI_DEVICE_ID_AMD_CNB17H_F3	0x1703
+ #define PCI_DEVICE_ID_AMD_LANCE		0x2000
+ #define PCI_DEVICE_ID_AMD_LANCE_HOME	0x2001
+-- 
+1.7.4.rc2
 
-So this makes sense to me.
 
-Thanks
-Vivek
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
