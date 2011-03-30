@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965093Ab1C3Van (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:30:43 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55956 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965029Ab1C3VIy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:08:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1103301531420.28032@xanadu.home>
-References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
- <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de>
- <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <alpine.LFD.2.00.1103301531420.28032@xanadu.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 30 Mar 2011 14:02:20 -0700
-Message-ID: <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S965169Ab1C3Va5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:30:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48428 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965027Ab1C3VIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:08:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
+   d="scan'208";a="727133654"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110330203.501921634@firstfloor.org>
+In-Reply-To: <20110330203.501921634@firstfloor.org>
+To: avagin@openvz.org, akpm@linux-foundation.org, ak@linux.intel.com,
+        hpa@zytor.com, torvalds@linux-foundation.org, mingo@elte.hu,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [188/275] x86/mm: Handle mm_fault_error() in kernel space
+Message-Id: <20110330210711.A34603E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:07:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 1:41 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
->
-> If in your mind "competitors" == "morons" then you might be right.
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-There's a difference between "competition" and "do things differently
-just to be difficult".
+------------------
+From: Andrey Vagin <avagin@openvz.org>
 
-> Trying to rely on bootloaders doing things right is like saying that x86
-> should always rely on the BIOS doing things right.
+commit f86268549f424f83b9eb0963989270e14fbfc3de upstream.
 
-No. Not at all.
+mm_fault_error() should not execute oom-killer, if page fault
+occurs in kernel space.  E.g. in copy_from_user()/copy_to_user().
 
-The problem with firmware/BIOS is that it's set in stone and closed-source.
+This would happen if we find ourselves in OOM on a
+copy_to_user(), or a copy_from_user() which faults.
 
-I'm suggesting splitting out the crazy part into a separate project
-that does this. Open-source. Like a mini-kernel. Because the thing is,
-the main kernel doesn't care, and _shouldn't_ care. Those board files
-are just noise.
+Without this patch, the kernels hangs up in copy_from_user(),
+because OOM killer sends SIG_KILL to current process, but it
+can't handle a signal while in syscall, then the kernel returns
+to copy_from_user(), reexcute current command and provokes
+page_fault again.
 
-The long-term situation should be that you should be able to have ONE
-binary kernel "just work". That's where we are on x86. Really.
+With this patch the kernel return -EFAULT from copy_from_user().
 
-Without that kind of long-term view, where do you think ARM is going
-to be in five years?
+The code, which checks that page fault occurred in kernel space,
+has been copied from do_sigbus().
 
->> almost *SIXTY* percent of all arch updates were to ARM code.
->
-> Absolutely not!  You have 14% going to OMAP code which happens to be
-> under arch/arm/ but there is nothing ARM specific in there.  If OMAP was
-> using a PPC or a MIPS core then you'd have the same result except under
-> arch/powerpc or arch/mips.  There is very little in terms of ARM
-> specific peculiarities under arch/arm/mach-omap2/ in fact.
+This situation is handled by the same way on powerpc, xtensa,
+tile, ...
 
-But that's my point - the problem is all the crazy board crap.
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <201103092322.p29NMNPH001682@imap1.linux-foundation.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-I've never claimed that this is about the ARM cpu (which has it's own
-issues, but that's a separate rant entirely). It's about the broken
-infrastructure.
+---
+ arch/x86/mm/fault.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Now, some of it is quite understandable - ie real drivers for real
-hardware. But a _lot_ of it seems to be just descriptor tables, and
-I'm getting the very strong feeling that ARM people aren't even
-_trying_ to make it sane, and trying to standardize things, or trying
-to aim for the whole notion of "one kernel image, with much more hw
-description done elsewhere".
-
-Sure, you'll fundamentally always need several images (due to the
-afore-mentioned crazy CPU architecture flaws - arm6 vs arm7 vs
-armxyz), but I'm looking at the future, and arch/arm will get
-_totally_ unmaintainable unless you guys have a plan for getting out
-of the crazy hole you are in now.
-
-arch/arm is already about 3x the size of arch/x86. And it's pretty
-much all the crazy infrastructure afaik. timer chips, irq chips, gpio
-differences - crap like that.
-
-And the fact that you don't even seem to UNDERSTAND the problem, and
-think that it's ok, and that continued future explosion of this is all
-fine makes me even more nervous.
-
-                           Linus
+Index: linux-2.6.35.y/arch/x86/mm/fault.c
+===================================================================
+--- linux-2.6.35.y.orig/arch/x86/mm/fault.c	2011-03-29 22:50:46.520068086 -0700
++++ linux-2.6.35.y/arch/x86/mm/fault.c	2011-03-29 23:03:02.185244254 -0700
+@@ -831,6 +831,13 @@
+ 	       unsigned long address, unsigned int fault)
+ {
+ 	if (fault & VM_FAULT_OOM) {
++		/* Kernel mode? Handle exceptions or die: */
++		if (!(error_code & PF_USER)) {
++			up_read(&current->mm->mmap_sem);
++			no_context(regs, error_code, address);
++			return;
++		}
++
+ 		out_of_memory(regs, error_code, address);
+ 	} else {
+ 		if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON))
