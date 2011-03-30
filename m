@@ -1,35 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab1C3KjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 06:39:06 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39479 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552Ab1C3KjE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 06:39:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=tid3pro4ZMfXLjadQKQPnbw3weybkywJR5fk0ZiB4HDy/gp+HxyEx2KlxR7mRMV5+5
-         uNhYixUpkCfNReGS/ND+NsWnB7tjcDcXPc+ttRtPmXdU2FzI3imM6VatRvXTZ1tZCGgV
-         Gse9yTYnHetjz5iJD41y5PT50FKgwvlqGzXO8=
-MIME-Version: 1.0
-Date: Wed, 30 Mar 2011 19:39:03 +0900
-Message-ID: <AANLkTi=0h+wiU+Q0BXVtg_bFRch8vDgZ_Q7i7HBZkZD4@mail.gmail.com>
-Subject: the latency difference between deadline and CFQ
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: linux-kernel@vger.kernel.org, axboe@kernel.dk
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755652Ab1C3Kml (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 06:42:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13948 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754218Ab1C3Kmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 06:42:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,267,1299484800"; 
+   d="scan'208";a="903499470"
+Date: Wed, 30 Mar 2011 11:23:57 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/18] GMA500 updates
+Message-ID: <20110330112357.3ce1ccb9@bob.linux.org.uk>
+In-Reply-To: <20110330103556.GB29796@srcf.ucam.org>
+References: <20110330085539.5897.67919.stgit@localhost.localdomain>
+	<20110330103556.GB29796@srcf.ucam.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi. Jens.
+On Wed, 30 Mar 2011 11:35:56 +0100
+Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 
-I heard that deadline worked great from a latency in comparison with CFQ.
+> On Wed, Mar 30, 2011 at 09:58:57AM +0100, Alan Cox wrote:
+> > This set of patches tackles three basic things
+> > 
+> > - Add support for Moorestown (not yet usable as it needs a memory
+> > allocator)
+> 
+> Is Moorestown known as GMA500 or GMA600? Is there some more generic
+> name that would cover all of them?
 
-How do I demonstrate why the latency of deadlinne is better than CFQ ?
+GMA600 if I remember rightly
 
-And would you inform me weakness of CFQ in comparison with deadline ?
-
-Thanks.
+I'm not aware of a generic naming for them.
