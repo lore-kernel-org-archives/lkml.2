@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab1C3QQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 12:16:50 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:53920 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756035Ab1C3QOV (ORCPT
+	id S932779Ab1C3QRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 12:17:16 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:51251 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045Ab1C3QOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Mar 2011 12:14:21 -0400
-Message-Id: <20110330161418.162492342@linux.vnet.ibm.com>
+Message-Id: <20110330161416.905554456@linux.vnet.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 30 Mar 2011 12:13:30 -0400
+Date: Wed, 30 Mar 2011 12:13:27 -0400
 From: Stefan Berger <stefanb@linux.vnet.ibm.com>
 To: debora@linux.vnet.ibm.com, srajiv@linux.vnet.ibm.com,
         tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org
 Cc: jirislaby@gmail.com, preining@logic.at,
         Stefan Berger <stefanb@linux.vnet.ibm.com>
-Subject: [PATCH V2 08/12] tpm_tis: Re-enable interrupts upon (S3) resume
+Subject: [PATCH V2 05/12] tpm: Adjust interface timeouts if they are too small
 References: <20110330161322.015113054@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=tpm_irq_fix.patch
+Content-Disposition: inline; filename=tpm_fix_iftimeouts_infineon.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes sure that if the TPM TIS interface is run in interrupt mode
-(rather than polling mode) that all interrupts are enabled in the TPM's
-interrupt enable register after a resume from ACPI S3 suspend. The registers
-may either have been cleared by the TPM loosing its state during device sleep
-or by the BIOS leaving the TPM in polling mode (after sending a command to
-the TPM for starting it up again)
-
-You may want to check if your TPM runs with interrupts by doing
-
-cat /proc/interrupts | grep -i tpm
-
-and see whether there is an entry or otherwise for it to use interrupts:
-
-modprobe tpm_tis interrupts=1 [add 'itpm=1' for Intel TPM ]
-
-v2:
-  - the patch was adapted to work with the pnp and platform driver
-    implementations in tpm_tis.c
-
+Adjust the interface timeouts if they are found to be too small, i.e., if
+they are returned in milliseconds rather than microseconds as we heared
+from Infineon that some (old) Infineon TPMs do.
 
 Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
 
 ---
- drivers/char/tpm/tpm_tis.c |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ drivers/char/tpm/tpm.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-Index: linux-2.6/drivers/char/tpm/tpm_tis.c
+Index: linux-2.6/drivers/char/tpm/tpm.c
 ===================================================================
---- linux-2.6.orig/drivers/char/tpm/tpm_tis.c
-+++ linux-2.6/drivers/char/tpm/tpm_tis.c
-@@ -649,11 +649,36 @@ static int tpm_tis_pnp_suspend(struct pn
- 	return tpm_pm_suspend(&dev->dev, msg);
- }
+--- linux-2.6.orig/drivers/char/tpm/tpm.c
++++ linux-2.6/drivers/char/tpm/tpm.c
+@@ -534,6 +534,7 @@ void tpm_get_timeouts(struct tpm_chip *c
+ 	struct duration_t *duration_cap;
+ 	ssize_t rc;
+ 	u32 timeout;
++	unsigned int scale = 1;
  
-+static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
-+{
-+	u32 intmask;
-+
-+	/* reenable interrupts that device may have lost or
-+	   BIOS/firmware may have disabled */
-+	iowrite8(chip->vendor.irq, chip->vendor.iobase +
-+		 TPM_INT_VECTOR(chip->vendor.locality));
-+
-+	intmask =
-+	    ioread32(chip->vendor.iobase +
-+		     TPM_INT_ENABLE(chip->vendor.locality));
-+
-+	intmask |= TPM_INTF_CMD_READY_INT
-+	    | TPM_INTF_LOCALITY_CHANGE_INT | TPM_INTF_DATA_AVAIL_INT
-+	    | TPM_INTF_STS_VALID_INT | TPM_GLOBAL_INT_ENABLE;
-+
-+	iowrite32(intmask,
-+		  chip->vendor.iobase + TPM_INT_ENABLE(chip->vendor.locality));
-+}
-+
-+
- static int tpm_tis_pnp_resume(struct pnp_dev *dev)
- {
- 	struct tpm_chip *chip = pnp_get_drvdata(dev);
- 	int ret;
+ 	tpm_cmd.header.in = tpm_getcap_header;
+ 	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
+@@ -553,17 +554,21 @@ void tpm_get_timeouts(struct tpm_chip *c
+ 	timeout_cap = &tpm_cmd.params.getcap_out.cap.timeout;
+ 	/* Don't overwrite default if value is 0 */
+ 	timeout = be32_to_cpu(timeout_cap->a);
++	if (timeout && timeout < 1000) {
++		/* timeouts in msec rather usec */
++		scale = 1000;
++	}
+ 	if (timeout)
+-		chip->vendor.timeout_a = usecs_to_jiffies(timeout);
++		chip->vendor.timeout_a = usecs_to_jiffies(timeout * scale);
+ 	timeout = be32_to_cpu(timeout_cap->b);
+ 	if (timeout)
+-		chip->vendor.timeout_b = usecs_to_jiffies(timeout);
++		chip->vendor.timeout_b = usecs_to_jiffies(timeout * scale);
+ 	timeout = be32_to_cpu(timeout_cap->c);
+ 	if (timeout)
+-		chip->vendor.timeout_c = usecs_to_jiffies(timeout);
++		chip->vendor.timeout_c = usecs_to_jiffies(timeout * scale);
+ 	timeout = be32_to_cpu(timeout_cap->d);
+ 	if (timeout)
+-		chip->vendor.timeout_d = usecs_to_jiffies(timeout);
++		chip->vendor.timeout_d = usecs_to_jiffies(timeout * scale);
  
-+	if (chip->vendor.irq)
-+		tpm_tis_reenable_interrupts(chip);
-+
- 	ret = tpm_pm_resume(&dev->dev);
- 	if (!ret)
- 		tpm_continue_selftest(chip);
-@@ -706,6 +731,11 @@ static int tpm_tis_suspend(struct platfo
- 
- static int tpm_tis_resume(struct platform_device *dev)
- {
-+	struct tpm_chip *chip = dev_get_drvdata(&dev->dev);
-+
-+	if (chip->vendor.irq)
-+		tpm_tis_reenable_interrupts(chip);
-+
- 	return tpm_pm_resume(&dev->dev);
- }
- static struct platform_driver tis_drv = {
+ duration:
+ 	tpm_cmd.header.in = tpm_getcap_header;
 
