@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab1C3NRH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 09:17:07 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59994 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754657Ab1C3NRE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 09:17:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=fVrDC2zUwzv03Kcb7csisWhCF9411g9W61/V461iWC1RQX1t0IqvyrASiC0mMDtp5v
-         5LfVBlhjZHzC1DYynolwenHI/d+eQkcgVuaaFFWdsR4U1hlEuYFUED33MrQtaSnkKD0u
-         qCm29FFbSWfyKC0Ehd8c0ugFzHpZxyEZEUCl0=
+	id S932483Ab1C3NR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 09:17:57 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:15551
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754409Ab1C3NR4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 09:17:56 -0400
+X-SpamScore: -39
+X-BigFish: VPS-39(zz542N1432N98dN4015L1fa4L148cM9371Pzz1202hzz8275bhz2dh95h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikX0jxdkyYgPoqjvC5HzY8VydTbFh_gFDzM8zJ7@mail.gmail.com>
-References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
-	<AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
-	<1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
-	<1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
-	<1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
-	<AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
-	<1301476505.29074.47.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTi=YB+nBG7BYuuU+rB9TC-BbWcJ6mVfkxq0iUype@mail.gmail.com>
-	<AANLkTi=L0zqwQ869khH1efFUghGeJjoyTaBXs-O2icaM@mail.gmail.com>
-	<AANLkTi=vcn5jHpk0O8XS9XJ8s5k-mCnzUwu70mFTx4=g@mail.gmail.com>
-	<1301485085.29074.61.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTikXfVNkyFE2MpW9ZtfX2G=QKvT7kvEuDE-YE5xO@mail.gmail.com>
-	<1301488032.3283.42.camel@edumazet-laptop>
-	<AANLkTikX0jxdkyYgPoqjvC5HzY8VydTbFh_gFDzM8zJ7@mail.gmail.com>
-Date: Wed, 30 Mar 2011 14:17:03 +0100
-Message-ID: <AANLkTi=RXoEOVmTPiL=dfO97aOVKWOJWE7hoQduPPsCZ@mail.gmail.com>
-Subject: Re: kmemleak for MIPS
-From: Maxin John <maxin.john@gmail.com>
-To: Daniel Baluta <daniel.baluta@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        naveen yadav <yad.naveen@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH V5 3/4] ARM: Xilinx: base header files and assembly macros
+Date: Wed, 30 Mar 2011 07:17:46 -0600
+In-Reply-To: <201103301344.45307.arnd@arndb.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH V5 3/4] ARM: Xilinx: base header files and assembly macros
+Thread-Index: Acvuz+7X8EIYfzPxS9qy553cJc6oFAAC+Ajw
+References: <1301444651-18008-1-git-send-email-john.linn@xilinx.com> <1301444651-18008-3-git-send-email-john.linn@xilinx.com> <9ceff117-ad43-4513-bee0-153a93c379ce@VA3EHSMHS008.ehs.local> <201103301344.45307.arnd@arndb.de>
+From: John Linn <John.Linn@xilinx.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
+        <glikely@secretlab.ca>, <jamie@jamieiles.com>
+X-OriginalArrivalTime: 30 Mar 2011 13:17:47.0088 (UTC) FILETIME=[DC90BD00:01CBEEDC]
+X-RCIS-Action: ALLOW
+Message-ID: <f4872ed7-b6e4-4050-9445-5176f5aa961a@VA3EHSMHS017.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Wednesday, March 30, 2011 5:45 AM
+> To: John Linn
+> Cc: linux-arm-kernel@lists.infradead.org;
+linux-kernel@vger.kernel.org;
+> linux@arm.linux.org.uk; catalin.marinas@arm.com; glikely@secretlab.ca;
+> jamie@jamieiles.com
+> Subject: Re: [PATCH V5 3/4] ARM: Xilinx: base header files and
+assembly
+> macros
+> 
+> Hi John,
+> 
+> I looked over the latest version of your patches, everything looks
+> good to me, but I found one problem that you have probably copied
+> from other platforms:
 
-I have compiled the kernel with below given modification in .config
+Hi Arnd,
 
-CONFIG_CMDLINE="uhash_entries=256"
+Thanks for taking the time to review again. Yep I did copy from others.
 
-After booting with the new kernel, the "kmemleak" no longer complains
-about the "udp_table_init".
-However it do report another possible leak :)
+> 
+> On Wednesday 30 March 2011, John Linn wrote:
+> > +
+> > +/* Allow IO space to be anywhere in the memory */
+> > +
+> > +#define IO_SPACE_LIMIT 0xffff
+> > +
+> > +/* IO address mapping macros, nothing special at this time but
+> required */
+> > +
+> > +#ifdef __ASSEMBLER__
+> > +#define IOMEM(x)               (x)
+> > +#else
+> > +#define IOMEM(x)               ((void __force __iomem *)(x))
+> > +#endif
+> > +
+> > +#define __io(a)                        __typesafe_io(a)
+> > +#define __mem_pci(a)           (a)
+> 
+> The definition of __io() looks wrong, so any call to inb()/outb()
+> will be a wild pointer access when you add PCI support.
 
-debian-mips:~# cat /sys/kernel/debug/kmemleak
-unreferenced object 0x8f085000 (size 4096):
-  comm "swapper", pid 1, jiffies 4294937670 (age 1043.280s)
-  hex dump (first 32 bytes):
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<801ac7a8>] __kmalloc+0x130/0x180
-    [<80532500>] flow_cache_cpu_prepare+0x50/0xa8
-    [<8052378c>] flow_cache_init_global+0x90/0x138
-    [<80100584>] do_one_initcall+0x174/0x1e0
-    [<8050c348>] kernel_init+0xe4/0x174
-    [<80103d4c>] kernel_thread_helper+0x10/0x18
-debian-mips:~#
+Yes that makes sense.  We don't have immediate plans for PCI and 
+I was assuming when we add PCI we would need to change that.  
 
-> So, I guess everything is fine regarding udp_init_table. We can move on,
-> integrating MIPS support for kmemleak :).
->
+If you think I shouldn't put it off then I'll fix it now.  My 
+preference was to get the platform supported, then add more features.
 
-I completely agree with Daniel. Shall we move on and integrate the
-kmemleak support for MIPS ?
+Thanks,
+John
 
-Cheers,
-Maxin
+> 
+> If you don't plan to support PCI in the future, there should
+> be no problem.
+> 
+> 	Arnd
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
