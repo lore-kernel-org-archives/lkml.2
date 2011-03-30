@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab1C3XMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 19:12:16 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50813 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756258Ab1C3XMN (ORCPT
+	id S1756560Ab1C3XNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 19:13:42 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:49053 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124Ab1C3XNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 19:12:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=o666axh3CFav80MadWn+JkpqEuGtH7E//BpLk+b4psXof4Zuntp8RohwNZnVYYaXbM
-         3dz2MFSKta69mHK3j67ejANQa/4xEywDNrNy5V4nb4Re/x+eSC7KkVd5cS/SnH1b3RFW
-         /ffhSe7ddRgay9Q596l/GWMDXkcLgklk7+BaY=
+	Wed, 30 Mar 2011 19:13:40 -0400
+Date: Wed, 30 Mar 2011 16:13:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Message-ID: <20110330231336.GT2255@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110317183048.GW7258@atomide.com>
+ <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+ <20110318101512.GA15375@n2100.arm.linux.org.uk>
+ <201103301906.42429.arnd@arndb.de>
+ <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+ <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6>
+ <20110330215434.GI18334@atomide.com>
+ <20110330223807.GP2255@linux.vnet.ibm.com>
+ <20110330224752.GN18334@atomide.com>
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Wed, 30 Mar 2011 16:11:53 -0700
-Message-ID: <AANLkTi=CmYAYO5awFvdcO07qcj6oiOV8B+NoYSEkddbF@mail.gmail.com>
-Subject: compat-wireless for 2.6.38.2
-To: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110330224752.GN18334@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A new stable update has been made so we get the extra stuff sucked in.
-The vanilla release:
+On Wed, Mar 30, 2011 at 03:47:52PM -0700, Tony Lindgren wrote:
+> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> [110330 15:35]:
+> > On Wed, Mar 30, 2011 at 02:54:35PM -0700, Tony Lindgren wrote:
+> > > * Thomas Gleixner <tglx@linutronix.de> [110330 14:07]:
+> > > > 
+> > > > So one person will be not enough, that needs to be a whole team of
+> > > > experienced people in the very near future to deal with the massive
+> > > > tsunami of crap which is targeted at mainline. If we fail to set that
+> > > > up, then we run into a very ugly maintainability issue in no time.
+> > > 
+> > > One thing that will help here and distribute the load is to move
+> > > more things under drivers/ as then we have more maintainers looking
+> > > at the code.
+> > 
+> > In many cases, the ARM SoC vendors will want their people producing the
+> > code, so although moving things to drivers might be a good thing to do,
+> > it won't really increase the number of people involved.  Plus the move
+> > to the drivers subtree would be a problem for devices with tight ties
+> > to the board or SoC.
+> > 
+> > There is work on pushing towards common code, but there is a lot of code
+> > and this will take time and a lot of work.
+> 
+> I agree on the common code part, then even drivers with tight
+> ties to board or SoC become just generic drivers that are easy
+> to review.
 
-http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.38/compat-wireless-2.6.38.2-2.tar.bz2
+Yep!  The trick is getting to that point.  Some drivers will be easier
+than others.
 
-And then this "-ns" release:
-
-http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.38/compat-wireless-2.6.38.2-2-ns.tar.bz2
-
-has these extra patches applied:
-
-mcgrof@tux ~/devel/compat-wireless-2.6 (git::linux-2.6.38.y)$ ls -1
-linux-next-cherry-picks/
-0001a-ath9k_hw-Add-a-function-to-read-sqsum_dvc.patch
-0001b-ath9k-Fix-a-PLL-hang-issue-observed-with-AR9485.patch
-0001c-ath9k-Cancel-pll_work-while-disabling-radio.patch
-0002-ath9k-Fix-incorrect-GPIO-LED-pin-for-AR9485.patch
-0003-ath9k_hw-Read-noise-floor-only-for-available-chains-.patch
-0004-ath9k_hw-Improve-idle-power-consumption-for-AR9485.patch
-0005-ath9k_hw-Increase-the-wait-count-for-nf-load.patch
-0006-ath9k_hw-fix-REG_SET_BIT-and-REG_CLR_BIT-for-multipl.patch
-0007-ath9k-fix-stopping-tx-dma-on-reset.patch
-0008-ath9k-disable-beaconing-before-stopping-beacon-queue.patch
-0009-ath9k-improve-reliability-of-beacon-transmission-and.patch
-0010-ath9k-fix-aggregation-related-interoperability-issue.patch
-0011-staging-Fix-some-incorrect-use-of-positive-error-cod.patch
-0012-staging-ath6kl-Fixing-a-NULL-pointer-exception.patch
-0013-staging-ath6kl-Fixing-key-settings-for-WPA-WPA2.patch
-0014-staging-ath6kl-Return-correct-scan-complete-status.patch
-0015-staging-ath6kl-Fixing-target-crash-due-to-mismatch-c.patch
-0016-staging-ath6kl-Fixing-driver-initialization-for-manu.patch
-0017-staging-ath6kl-Consolidating-hardware-configuration.patch
-0018-staging-ath6kl-Adding-support-for-txop-bursting-enab.patch
-0019-staging-ath6kl-Fixing-a-memory-leak.patch
-0020-staging-ath6kl-Fixing-a-memory-leak.patch
-0021-staging-ath6kl-Add-configuration-for-excessive-TX-re.patch
-0022-staging-ath6kl-Fixing-memory-leak.patch
-0023-staging-ath6kl-Fixing-the-cached-copy-of-the-BSS-fil.patch
-0024-staging-ath6kl-Adding-state-in-driver-to-track-the-s.patch
-0025-staging-ath6kl-Fixing-accidental-overwriting-of-prob.patch
-0026-staging-ath6kl-Fixing-disappearing-of-scan-list-due-.patch
-0027-staging-ath6kl-buffer-overflow-in-SEND_FRAME-ioctl.patch
-0028-staging-ath6kl-Eliminate-cfg80211-warnings.patch
-README
-mcgrof@tux ~/devel/compat-wireless-2.6 (git::linux-2.6.38.y)$ ls -1
-pending-stable/
-0006-ath9k-Fix-kernel-panic-in-AR2427.patch
-0007-mac80211-initialize-sta-last_rx-in-sta_info_alloc.patch
-0008-mac80211-fix-a-crash-in-minstrel_ht-in-HT-mode-with-.patch
-0009-ath9k-fix-a-chip-wakeup-related-crash-in-ath9k_start.patch
-backports
-README
-mcgrof@tux ~/devel/compat-wireless-2.6 (git::linux-2.6.38.y)$ ls -1
-pending-stable/backports/
-0010-iwlegacy-fix-bugs-in-change_interface.patch
-
-  Luis
+							Thanx, Paul
