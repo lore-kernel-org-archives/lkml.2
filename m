@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965465Ab1C3WJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:09:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35488 "EHLO mga01.intel.com"
+	id S933583Ab1C3WJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 18:09:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:53540 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933182Ab1C3VGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:06:12 -0400
+	id S933180Ab1C3VGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:06:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="903733768"
+   d="scan'208";a="673447170"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: khali@linux-fr.org, guenter.roeck@ericsson.com, gregkh@suse.de,
+To: haiyangz@microsoft.com, hjanssen@microsoft.com, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: [PATCH] [11/275] hwmon: (via686a) Initialize fan_div values
-Message-Id: <20110330210405.481C33E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:04:05 -0700 (PDT)
+Subject: [PATCH] [34/275] staging: hv: Enable sending GARP packet after live migration
+Message-Id: <20110330210429.7CA053E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:04:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,65 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Jean Delvare <khali@linux-fr.org>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-commit f790674d3f87df6390828ac21a7d1530f71b59c8 upstream.
+commit 7c161d0b900ea9bd9fc5ea5d3fa9916e9eb0dd88 upstream.
 
-Functions set_fan_min() and set_fan_div() assume that the fan_div
-values have already been read from the register. The driver currently
-doesn't initialize them at load time, they are only set when function
-via686a_update_device() is called. This means that set_fan_min() and
-set_fan_div() misbehave if, for example, "sensors -s" is called
-before any monitoring application (e.g. "sensors") is has been run.
+The hv_netvsc gets RNDIS_STATUS_MEDIA_CONNECT event after the VM
+is live migrated. Adding call to netif_notify_peers() for this event
+to send GARP (Gratuitous ARP) to notify network peers. Otherwise,
+the VM's network connection may stop after a live migration.
 
-Fix the problem by always initializing the fan_div values at device
-bind time.
+This patch should also be applied to stable kernel 2.6.32 and later.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/hwmon/via686a.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/staging/hv/netvsc_drv.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: linux-2.6.35.y/drivers/hwmon/via686a.c
+Index: linux-2.6.35.y/drivers/staging/hv/netvsc_drv.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/hwmon/via686a.c	2011-03-29 22:52:03.381101405 -0700
-+++ linux-2.6.35.y/drivers/hwmon/via686a.c	2011-03-29 23:02:58.460339566 -0700
-@@ -687,6 +687,13 @@
- 	return 0;
- }
- 
-+static void via686a_update_fan_div(struct via686a_data *data)
-+{
-+	int reg = via686a_read_value(data, VIA686A_REG_FANDIV);
-+	data->fan_div[0] = (reg >> 4) & 0x03;
-+	data->fan_div[1] = reg >> 6;
-+}
-+
- static void __devinit via686a_init_device(struct via686a_data *data)
- {
- 	u8 reg;
-@@ -700,6 +707,9 @@
- 	via686a_write_value(data, VIA686A_REG_TEMP_MODE,
- 			    (reg & ~VIA686A_TEMP_MODE_MASK)
- 			    | VIA686A_TEMP_MODE_CONTINUOUS);
-+
-+	/* Pre-read fan clock divisor values */
-+	via686a_update_fan_div(data);
- }
- 
- static struct via686a_data *via686a_update_device(struct device *dev)
-@@ -751,9 +761,7 @@
- 		    (via686a_read_value(data, VIA686A_REG_TEMP_LOW23) &
- 		     0xc0) >> 6;
- 
--		i = via686a_read_value(data, VIA686A_REG_FANDIV);
--		data->fan_div[0] = (i >> 4) & 0x03;
--		data->fan_div[1] = i >> 6;
-+		via686a_update_fan_div(data);
- 		data->alarms =
- 		    via686a_read_value(data,
- 				       VIA686A_REG_ALARM1) |
+--- linux-2.6.35.y.orig/drivers/staging/hv/netvsc_drv.c	2011-03-29 22:51:55.255309324 -0700
++++ linux-2.6.35.y/drivers/staging/hv/netvsc_drv.c	2011-03-29 23:02:58.898328360 -0700
+@@ -249,6 +249,7 @@
+ 	if (status == 1) {
+ 		netif_carrier_on(net);
+ 		netif_wake_queue(net);
++		netif_notify_peers(net);
+ 	} else {
+ 		netif_carrier_off(net);
+ 		netif_stop_queue(net);
