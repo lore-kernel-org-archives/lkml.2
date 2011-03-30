@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965193Ab1C3VTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:19:34 -0400
+	id S965239Ab1C3VTr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:19:47 -0400
 Received: from mga01.intel.com ([192.55.52.88]:24598 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965190Ab1C3VJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:09:42 -0400
+	id S965189Ab1C3VJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:09:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="673448579"
+   d="scan'208";a="673448624"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: stefano.stabellini@eu.citrix.com, jbarnes@virtuousgeek.org, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [223/275] PCI hotplug: acpiphp: set current_state to D0 in register_slot
-Message-Id: <20110330210748.7BBEA3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:07:48 -0700 (PDT)
+To: shaohua.li@intel.com, y-goto@jp.fujitsu.com, ak@linux.intel.com,
+        riel@redhat.com, asit.k.mallick@intel.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-mm@kvack.org, mingo@elte.hu, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [214/275] x86: Flush TLB if PGD entry is changed in i386 PAE mode
+Message-Id: <20110330210739.07D5E3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:07:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,66 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Shaohua Li <shaohua.li@intel.com>
 
-commit 47e9037ac16637cd7f12b8790ea7ce6680e42168 upstream.
+commit 4981d01eada5354d81c8929d5b2836829ba3df7b upstream.
 
-If a device doesn't support power management (pm_cap == 0) but it is
-acpi_pci_power_manageable() because there is a _PS0 method declared for
-it and _EJ0 is also declared for the slot then nobody is going to set
-current_state = PCI_D0 for this device.  This is what I think it is
-happening:
+According to intel CPU manual, every time PGD entry is changed in i386 PAE
+mode, we need do a full TLB flush. Current code follows this and there is
+comment for this too in the code.
 
-pci_enable_device
-    |
-__pci_enable_device_flags
-/* here we do not set current_state because !pm_cap */
-    |
-do_pci_enable_device
-    |
-pci_set_power_state
-    |
-__pci_start_power_transition
-    |
-pci_platform_power_transition
-/* platform_pci_power_manageable() calls acpi_pci_power_manageable that
- * returns true */
-    |
-platform_pci_set_power_state
-/* acpi_pci_set_power_state gets called and does nothing because the
- * acpi device has _EJ0, see the comment "If the ACPI device has _EJ0,
- * ignore the device" */
+But current code misses the multi-threaded case. A changed page table
+might be used by several CPUs, every such CPU should flush TLB. Usually
+this isn't a problem, because we prepopulate all PGD entries at process
+fork. But when the process does munmap and follows new mmap, this issue
+will be triggered.
 
-at this point if we refer to the commit message that introduced the
-comment above (10b3dcae0f275e2546e55303d64ddbb58cec7599), it is up to
-the hotplug driver to set the state to D0.
-However AFAICT the pci hotplug driver never does, in fact
-drivers/pci/hotplug/acpiphp_glue.c:register_slot sets the slot flags to
-(SLOT_ENABLED | SLOT_POWEREDON) but it does not set the pci device
-current state to PCI_D0.
+When it happens, some CPUs keep doing page faults:
 
-So my proposed fix is also to set current_state = PCI_D0 in
-register_slot.
-Comments are very welcome.
+  http://marc.info/?l=linux-kernel&m=129915020508238&w=2
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Reported-by: Yasunori Goto<y-goto@jp.fujitsu.com>
+Tested-by: Yasunori Goto<y-goto@jp.fujitsu.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Shaohua Li<shaohua.li@intel.com>
+Cc: Mallick Asit K <asit.k.mallick@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>
+LKML-Reference: <1300246649.2337.95.camel@sli10-conroe>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/hotplug/acpiphp_glue.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/include/asm/pgtable-3level.h |   11 +++--------
+ arch/x86/mm/pgtable.c                 |    3 +--
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
-Index: linux-2.6.35.y/drivers/pci/hotplug/acpiphp_glue.c
+Index: linux-2.6.35.y/arch/x86/include/asm/pgtable-3level.h
 ===================================================================
---- linux-2.6.35.y.orig/drivers/pci/hotplug/acpiphp_glue.c	2011-03-29 22:50:27.345558715 -0700
-+++ linux-2.6.35.y/drivers/pci/hotplug/acpiphp_glue.c	2011-03-29 23:03:02.881226447 -0700
-@@ -212,6 +212,7 @@
+--- linux-2.6.35.y.orig/arch/x86/include/asm/pgtable-3level.h	2011-03-29 22:50:32.352430601 -0700
++++ linux-2.6.35.y/arch/x86/include/asm/pgtable-3level.h	2011-03-29 23:03:02.707230900 -0700
+@@ -69,8 +69,6 @@
  
- 	pdev = pci_get_slot(pbus, PCI_DEVFN(device, function));
- 	if (pdev) {
-+		pdev->current_state = PCI_D0;
- 		slot->flags |= (SLOT_ENABLED | SLOT_POWEREDON);
- 		pci_dev_put(pdev);
- 	}
+ static inline void pud_clear(pud_t *pudp)
+ {
+-	unsigned long pgd;
+-
+ 	set_pud(pudp, __pud(0));
+ 
+ 	/*
+@@ -79,13 +77,10 @@
+ 	 * section 8.1: in PAE mode we explicitly have to flush the
+ 	 * TLB via cr3 if the top-level pgd is changed...
+ 	 *
+-	 * Make sure the pud entry we're updating is within the
+-	 * current pgd to avoid unnecessary TLB flushes.
++	 * Currently all places where pud_clear() is called either have
++	 * flush_tlb_mm() followed or don't need TLB flush (x86_64 code or
++	 * pud_clear_bad()), so we don't need TLB flush here.
+ 	 */
+-	pgd = read_cr3();
+-	if (__pa(pudp) >= pgd && __pa(pudp) <
+-	    (pgd + sizeof(pgd_t)*PTRS_PER_PGD))
+-		write_cr3(pgd);
+ }
+ 
+ #ifdef CONFIG_SMP
+Index: linux-2.6.35.y/arch/x86/mm/pgtable.c
+===================================================================
+--- linux-2.6.35.y.orig/arch/x86/mm/pgtable.c	2011-03-29 22:50:32.352430601 -0700
++++ linux-2.6.35.y/arch/x86/mm/pgtable.c	2011-03-29 23:03:02.708230874 -0700
+@@ -160,8 +160,7 @@
+ 	 * section 8.1: in PAE mode we explicitly have to flush the
+ 	 * TLB via cr3 if the top-level pgd is changed...
+ 	 */
+-	if (mm == current->active_mm)
+-		write_cr3(read_cr3());
++	flush_tlb_mm(mm);
+ }
+ #else  /* !CONFIG_X86_PAE */
+ 
