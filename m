@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab1C3ByG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 21:54:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19030 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754020Ab1C3ByE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 21:54:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,266,1299484800"; 
-   d="scan'208";a="620765085"
-Subject: Re: [PATCH]mmap: add alignment for some variables
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-In-Reply-To: <20110329184110.0086924e.akpm@linux-foundation.org>
-References: <1301277536.3981.27.camel@sli10-conroe>
-	 <m2oc4v18x8.fsf@firstfloor.org>	<1301360054.3981.31.camel@sli10-conroe>
-	 <20110329152434.d662706f.akpm@linux-foundation.org>
-	 <1301446882.3981.33.camel@sli10-conroe>
-	 <20110329180611.a71fe829.akpm@linux-foundation.org>
-	 <1301447843.3981.48.camel@sli10-conroe>
-	 <20110329182544.6ad4eccb.akpm@linux-foundation.org>
-	 <1301449000.3981.52.camel@sli10-conroe>
-	 <20110329184110.0086924e.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Mar 2011 09:54:01 +0800
-Message-ID: <1301450041.3981.55.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755450Ab1C3Byn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 21:54:43 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64993 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754108Ab1C3Bym convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 21:54:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=G0EzpLKCkUmNpUK5v4fgshqx1VEhPium3H+HdZjGsX87U2dADFzimrs53javUG7naQ
+         Xi57+ZCH2FEv+//Ru/o1VVsuBDxliXU+0bE8YQ7837Gwp4WkVee3z5XVqIi0hqPAufiQ
+         qVQn0r0YHdTmqxvgdjJ6064JNwpQOV5BqtD5Q=
+MIME-Version: 1.0
+In-Reply-To: <f4fbd2191533fd96fa59ba19c9917ed679920e1b.1301436234.git.joe@perches.com>
+References: <cover.1301436234.git.joe@perches.com> <f4fbd2191533fd96fa59ba19c9917ed679920e1b.1301436234.git.joe@perches.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Tue, 29 Mar 2011 22:54:21 -0300
+Message-ID: <AANLkTikWbHSPaCTStEz5v=gEvm-nG6MU2eSCq9G8eZtD@mail.gmail.com>
+Subject: Re: [PATCH 09/23] hdaps: Convert printks to pr_<level>
+To: Joe Perches <joe@perches.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Frank Seidel <frank@f-seidel.de>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-30 at 09:41 +0800, Andrew Morton wrote:
-> On Wed, 30 Mar 2011 09:36:40 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
-> 
-> > > how is it that this improves things?
-> > Hmm, it actually is:
-> > struct percpu_counter {
-> >  	spinlock_t lock;
-> >  	s64 count;
-> >  #ifdef CONFIG_HOTPLUG_CPU
-> >  	struct list_head list;	/* All percpu_counters are on a list */
-> >  #endif
-> >  	s32 __percpu *counters;
-> >  } __attribute__((__aligned__(1 << (INTERNODE_CACHE_SHIFT))))
-> > so lock and count are in one cache line.
-> 
-> ____cacheline_aligned_in_smp would achieve that?
-____cacheline_aligned_in_smp can't guarantee the cache alignment for
-multiple nodes, because the variable can be updated by multiple
-nodes/cpus.
+On Tue, Mar 29, 2011 at 19:21, Joe Perches <joe@perches.com> wrote:
+> Added pr_fmt, converted printks and removed
+> hard coded prefixes.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/platform/x86/hdaps.c |   19 ++++++++++---------
+>  1 files changed, 10 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/platform/x86/hdaps.c b/drivers/platform/x86/hdaps.c
+> index 067bf36..5a34973 100644
+> --- a/drivers/platform/x86/hdaps.c
+> +++ b/drivers/platform/x86/hdaps.c
+> @@ -26,6 +26,8 @@
+>  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+>  */
+>
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/delay.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/input-polldev.h>
+> @@ -238,7 +240,7 @@ static int hdaps_device_init(void)
+>                     __check_latch(0x1611, 0x01))
+>                goto out;
+>
+> -       printk(KERN_DEBUG "hdaps: initial latch check good (0x%02x).\n",
+> +       printk(KERN_DEBUG "hdaps: initial latch check good (0x%02x)\n",
 
-Thanks,
-Shaohua
+Shouldn't this be pr_debug() or pr_devel() ?
 
 
+
+Lucas De Marchi
