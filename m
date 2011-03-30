@@ -1,37 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab1C3MBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 08:01:54 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55788 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab1C3MBx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 08:01:53 -0400
-Date: Wed, 30 Mar 2011 08:01:51 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Merge window closed - 2.6.39-rc1 out
-Message-ID: <20110330120151.GA23358@infradead.org>
-References: <AANLkTikwbY5mm10ZWg7B6XeSBkZXFqKcYVZfJCi2QGx_@mail.gmail.com>
+	id S1755893Ab1C3MD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 08:03:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51118 "EHLO linutronix.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754681Ab1C3MDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 08:03:55 -0400
+Date: Wed, 30 Mar 2011 14:03:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Michal Simek <monstr@monstr.eu>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] microblaze: Fix level/edge irq sensibility
+In-Reply-To: <1301484264-6220-1-git-send-email-monstr@monstr.eu>
+Message-ID: <alpine.LFD.2.00.1103301403290.22418@localhost6.localdomain6>
+References: <1301484264-6220-1-git-send-email-monstr@monstr.eu>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikwbY5mm10ZWg7B6XeSBkZXFqKcYVZfJCi2QGx_@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 02:07:35PM -0700, Linus Torvalds wrote:
-> So 2.6.39-rc1 is out there, and the merge window is closed. I still
-> have to look over the cleancache pull request (which I got in plenty
-> of time, but decided that I want to review after the merge window
-> craziness is over), but other than that, we're done.
+On Wed, 30 Mar 2011, Michal Simek wrote:
 
-FYI, strong no for me for this one.  None of the comments why it's
-utterly wrong have been addresses, and it hasn't even been posted
-a single time for review in this merge window.
+> Patches:
+> "microblaze: Convert to new irq function names"
+> sha (4adc192ec7d977c74c750320f289af9d61c1caca)
+> and
+> "microblaze: Use generic show_interrupts()"
+> sha(9d61c18b25726306c9231428c17db42e3ff29ba7)
+> 
+> should also setup edge/level in irq_set_chip_and_handler_name
+> name parameter.
+> 
+> Error log:
+> ~ # cat /proc/interrupts
+>            CPU0
+>   2:          2  Xilinx INTC-Xilinx INTC  eth0
+>   3:          2  Xilinx INTC-Xilinx INTC  eth0
+>   4:        241  Xilinx INTC-Xilinx INTC  timer
+>   6:        108  Xilinx INTC-Xilinx INTC  serial
+> 
+> Fixed:
+> ~ # cat /proc/interrupts
+>            CPU0
+>   2:          2  Xilinx INTC-level     eth0
+>   3:          2  Xilinx INTC-level     eth0
+>   4:        238  Xilinx INTC-edge      timer
+>   6:        108  Xilinx INTC-level     serial
+> 
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
 
+Should I pick that up for the urgent fixes ?
+ 
+> ---
+> 
+> v2: Fix exchanged edge and level
+> ---
+>  arch/microblaze/kernel/intc.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/microblaze/kernel/intc.c b/arch/microblaze/kernel/intc.c
+> index 5ba7e16..c88f066 100644
+> --- a/arch/microblaze/kernel/intc.c
+> +++ b/arch/microblaze/kernel/intc.c
+> @@ -158,11 +158,11 @@ void __init init_IRQ(void)
+>  	for (i = 0; i < nr_irq; ++i) {
+>  		if (intr_type & (0x00000001 << i)) {
+>  			irq_set_chip_and_handler_name(i, &intc_dev,
+> -				handle_edge_irq, intc_dev.name);
+> +				handle_edge_irq, "edge");
+>  			irq_clear_status_flags(i, IRQ_LEVEL);
+>  		} else {
+>  			irq_set_chip_and_handler_name(i, &intc_dev,
+> -				handle_level_irq, intc_dev.name);
+> +				handle_level_irq, "level");
+>  			irq_set_status_flags(i, IRQ_LEVEL);
+>  		}
+>  	}
+> -- 
+> 1.5.5.6
+> 
+> 
