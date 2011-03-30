@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964798Ab1C3VGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:06:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65216 "EHLO mga09.intel.com"
+	id S933335Ab1C3VGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:06:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4889 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933308Ab1C3VGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:06:41 -0400
+	id S964804Ab1C3VGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:06:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="621236398"
+   d="scan'208";a="673447346"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: suresh.b.siddha@intel.com, ak@linux.intel.com, jabber@gmx.org,
-        trenn@novell.com, rjw@novell.com, venki@google.com, mingo@elte.hu,
-        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
+To: sgruszka@redhat.com, linville@tuxdriver.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: [PATCH] [62/275] x86, mtrr: Avoid MTRR reprogramming on BP during boot on UP platforms
-Message-Id: <20110330210458.EDE5B3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:04:58 -0700 (PDT)
+Subject: [PATCH] [69/275] hostap_cs: fix sleeping function called from invalid context
+Message-Id: <20110330210506.522BA3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:05:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,109 +25,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit f7448548a9f32db38f243ccd4271617758ddfe2c upstream.
+commit 4e5518ca53be29c1ec3c00089c97bef36bfed515 upstream.
 
-Markus Kohn ran into a hard hang regression on an acer aspire
-1310, when acpi is enabled. git bisect showed the following
-commit as the bad one that introduced the boot regression.
+pcmcia_request_irq() and pcmcia_enable_device() are intended
+to be called from process context (first function allocate memory
+with GFP_KERNEL, second take a mutex). We can not take spin lock
+and call them.
 
-	commit d0af9eed5aa91b6b7b5049cae69e5ea956fd85c3
-	Author: Suresh Siddha <suresh.b.siddha@intel.com>
-	Date:   Wed Aug 19 18:05:36 2009 -0700
+It's safe to move spin lock after pcmcia_enable_device() as we
+still hold off IRQ until dev->base_addr is 0 and driver will
+not proceed with interrupts when is not ready.
 
-	    x86, pat/mtrr: Rendezvous all the cpus for MTRR/PAT init
+Patch resolves:
+https://bugzilla.redhat.com/show_bug.cgi?id=643758
 
-Because of the UP configuration of that platform,
-native_smp_prepare_cpus() bailed out (in smp_sanity_check())
-before doing the set_mtrr_aps_delayed_init()
-
-Further down the boot path, native_smp_cpus_done() will call the
-delayed MTRR initialization for the AP's (mtrr_aps_init()) with
-mtrr_aps_delayed_init not set. This resulted in the boot
-processor reprogramming its MTRR's to the values seen during the
-start of the OS boot. While this is not needed ideally, this
-shouldn't have caused any side-effects. This is because the
-reprogramming of MTRR's (set_mtrr_state() that gets called via
-set_mtrr()) will check if the live register contents are
+Reported-and-tested-by: rbugz@biobind.com
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-different from what is being asked to write and will do the actual
-write only if they are different.
-
-BP's mtrr state is read during the start of the OS boot and
-typically nothing would have changed when we ask to reprogram it
-on BP again because of the above scenario on an UP platform. So
-on a normal UP platform no reprogramming of BP MTRR MSR's
-happens and all is well.
-
-However, on this platform, bios seems to be modifying the fixed
-mtrr range registers between the start of OS boot and when we
-double check the live registers for reprogramming BP MTRR
-registers. And as the live registers are modified, we end up
-reprogramming the MTRR's to the state seen during the start of
-the OS boot.
-
-During ACPI initialization, something in the bios (probably smi
-handler?) don't like this fact and results in a hard lockup.
-
-We didn't see this boot hang issue on this platform before the
-commit d0af9eed5aa91b6b7b5049cae69e5ea956fd85c3, because only
-the AP's (if any) will program its MTRR's to the value that BP
-had at the start of the OS boot.
-
-Fix this issue by checking mtrr_aps_delayed_init before
-continuing further in the mtrr_aps_init(). Now, only AP's (if
-any) will program its MTRR's to the BP values during boot.
-
-Addresses https://bugzilla.novell.com/show_bug.cgi?id=623393
-
-  [ By the way, this behavior of the bios modifying MTRR's after the start
-    of the OS boot is not common and the kernel is not prepared to
-    handle this situation well. Irrespective of this issue, during
-    suspend/resume, linux kernel will try to reprogram the BP's MTRR values
-    to the values seen during the start of the OS boot. So suspend/resume might
-    be already broken on this platform for all linux kernel versions. ]
-
-Reported-and-bisected-by: Markus Kohn <jabber@gmx.org>
-Tested-by: Markus Kohn <jabber@gmx.org>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Thomas Renninger <trenn@novell.com>
-Cc: Rafael Wysocki <rjw@novell.com>
-Cc: Venkatesh Pallipadi <venki@google.com>
-LKML-Reference: <1296694975.4418.402.camel@sbsiddha-MOBL3.sc.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/mtrr/main.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/wireless/hostap/hostap_cs.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
-Index: linux-2.6.35.y/arch/x86/kernel/cpu/mtrr/main.c
+Index: linux-2.6.35.y/drivers/net/wireless/hostap/hostap_cs.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/kernel/cpu/mtrr/main.c	2011-03-29 22:51:45.075569797 -0700
-+++ linux-2.6.35.y/arch/x86/kernel/cpu/mtrr/main.c	2011-03-29 23:02:59.481313441 -0700
-@@ -793,13 +793,21 @@
- }
+--- linux-2.6.35.y.orig/drivers/net/wireless/hostap/hostap_cs.c	2011-03-29 22:51:42.422637681 -0700
++++ linux-2.6.35.y/drivers/net/wireless/hostap/hostap_cs.c	2011-03-29 23:02:59.610310141 -0700
+@@ -626,15 +626,9 @@
+ 	local->hw_priv = hw_priv;
+ 	hw_priv->link = link;
  
- /*
-- * MTRR initialization for all AP's
-+ * Delayed MTRR initialization for all AP's
-  */
- void mtrr_aps_init(void)
- {
- 	if (!use_intel())
- 		return;
+-	/*
+-	 * Make sure the IRQ handler cannot proceed until at least
+-	 * dev->base_addr is initialized.
+-	 */
+-	spin_lock_irqsave(&local->irq_init_lock, flags);
+-
+ 	ret = pcmcia_request_irq(link, prism2_interrupt);
+ 	if (ret)
+-		goto failed_unlock;
++		goto failed;
  
-+	/*
-+	 * Check if someone has requested the delay of AP MTRR initialization,
-+	 * by doing set_mtrr_aps_delayed_init(), prior to this point. If not,
-+	 * then we are done.
-+	 */
-+	if (!mtrr_aps_delayed_init)
-+		return;
-+
- 	set_mtrr(~0U, 0, 0, 0);
- 	mtrr_aps_delayed_init = false;
- }
+ 	/*
+ 	 * This actually configures the PCMCIA socket -- setting up
+@@ -643,11 +637,12 @@
+ 	 */
+ 	ret = pcmcia_request_configuration(link, &link->conf);
+ 	if (ret)
+-		goto failed_unlock;
++		goto failed;
+ 
++	/* IRQ handler cannot proceed until at dev->base_addr is initialized */
++	spin_lock_irqsave(&local->irq_init_lock, flags);
+ 	dev->irq = link->irq;
+ 	dev->base_addr = link->io.BasePort1;
+-
+ 	spin_unlock_irqrestore(&local->irq_init_lock, flags);
+ 
+ 	/* Finally, report what we've done */
+@@ -676,8 +671,6 @@
+ 
+ 	return ret;
+ 
+- failed_unlock:
+-	 spin_unlock_irqrestore(&local->irq_init_lock, flags);
+  failed:
+ 	kfree(hw_priv);
+ 	prism2_release((u_long)link);
