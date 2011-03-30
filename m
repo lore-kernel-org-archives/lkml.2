@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab1C3K6R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 06:58:17 -0400
-Received: from sh.osrg.net ([192.16.179.4]:44573 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754193Ab1C3K6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 06:58:16 -0400
-Date: Wed, 30 Mar 2011 19:58:09 +0900 (JST)
-Message-Id: <20110330.195809.130853394.ryusuke@osrg.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        linux-nilfs@vger.kernel.org
-Subject: [GIT PULL] nilfs2 fixes
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+	id S932187Ab1C3K61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 06:58:27 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:48592 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932128Ab1C3K6Z convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 06:58:25 -0400
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, paulmck@linux.vnet.ibm.com,
+        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <20110330105505.GA3195@sepie.suse.cz>
+References: <4D8FF9BC.7050609@cn.fujitsu.com>
+	 <4D90647902000078000389CB@vpn.id2.novell.com>
+	 <4D924BAF.1020906@linux.intel.com>
+	 <20110329213130.GK2261@linux.vnet.ibm.com>
+	 <4D924FEE.8040804@linux.intel.com>
+	 <20110329214704.GM2261@linux.vnet.ibm.com>
+	 <4D9256AF.5000308@linux.intel.com>
+	 <20110330004725.GO2261@linux.vnet.ibm.com> <4D92BECA.50802@cn.fujitsu.com>
+	 <4D92DA32.2010809@cn.fujitsu.com>  <20110330105505.GA3195@sepie.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 30 Mar 2011 12:57:36 +0200
+Message-ID: <1301482656.4859.171.camel@twins>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 30 Mar 2011 19:58:10 +0900 (JST)
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 2011-03-30 at 12:55 +0200, Michal Marek wrote:
+> Subject: [PATCH] headers: Allow for lightweight inclusion of task_struct definition
+> 
+> Factor out a couple of type definitions to <header>_types.h to allow
+> using task_struct without pulling tons of new dependencies via sched.h.
 
-please pull from:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
-
-This fixes a kernel oops on the rc1 and a data loss issue in mmap
-write.
-
-Thanks!
-
-Ryusuke Konishi
---
-The following changes since commit 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d:
-
-  Linux 2.6.39-rc1 (2011-03-29 12:09:47 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
-
-Nicolas Kaiser (1):
-      nilfs2: fix whitespace coding style issues
-
-Ryusuke Konishi (2):
-      nilfs2: fix data loss in mmap page write for hole blocks
-      nilfs2: fix oops due to a bad aops initialization
-
- fs/nilfs2/file.c  |   11 +++++------
- fs/nilfs2/nilfs.h |   14 +++++++-------
- fs/nilfs2/page.c  |    4 +++-
- 3 files changed, 15 insertions(+), 14 deletions(-)
+Urgh, not pretty.. so why not clean up sched.h properly? There's way too
+much cruft in there.
