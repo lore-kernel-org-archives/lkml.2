@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933271Ab1C3Vev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:34:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26918 "EHLO mga02.intel.com"
+	id S965008Ab1C3VfD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:35:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5407 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964948Ab1C3VId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:08:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="621237896"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110330203.501921634@firstfloor.org>
-In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: bruce.w.allan@intel.com, jeffrey.t.kirsher@intel.com, gregkh@suse.de,
+	id S964948Ab1C3Ve6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:34:58 -0400
+Date: Wed, 30 Mar 2011 23:33:38 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: jln@google.com, torvalds@linux-foundation.org, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [168/275] e1000e: disable broken PHY wakeup for ICH10 LOMs, use MAC wakeup instead
-Message-Id: <20110330210650.9C03A3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:50 -0700 (PDT)
+        tim.bird@am.sony.com, Roland Dreier <roland@purestorage.com>
+Subject: Re: [PATCH] [226/275] Prevent rt_sigqueueinfo and
+	rt_tgsigqueueinfo from spoofing the signal code
+Message-ID: <20110330213338.GA20367@redhat.com>
+References: <20110330203.501921634@firstfloor.org> <20110330210751.A9ADB3E1A05@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110330210751.A9ADB3E1A05@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On 03/30, Andi Kleen wrote:
+>
+> --- linux-2.6.35.y.orig/kernel/signal.c	2011-03-29 22:50:25.616602954 -0700
+> +++ linux-2.6.35.y/kernel/signal.c	2011-03-29 23:03:02.941224912 -0700
+> @@ -2410,9 +2410,13 @@
+>  		return -EFAULT;
+>
+>  	/* Not even root can pretend to send signals from the kernel.
+> -	   Nor can they impersonate a kill(), which adds source info.  */
+> -	if (info.si_code >= 0)
+> +	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
+> +	 */
+> +	if (info.si_code != SI_QUEUE) {
+> +		/* We used to allow any < 0 si_code */
+> +		WARN_ON_ONCE(info.si_code < 0);
+>  		return -EPERM;
 
-------------------
-From: Bruce Allan <bruce.w.allan@intel.com>
+Oh, please don't.
 
-commit 4def99bbfd46e05c5e03b5b282cb4ee30e27ff19 upstream.
+Quoting Roland:
 
-When support for 82577/82578 was added[1] in 2.6.31, PHY wakeup was in-
-advertently enabled (even though it does not function properly) on ICH10
-LOMs.  This patch makes it so that the ICH10 LOMs use MAC wakeup instead
-as was done with the initial support for those devices (i.e. 82567LM-3,
-82567LF-3 and 82567V-4).
+	Commit da48524eb206 ("Prevent rt_sigqueueinfo and rt_tgsigqueueinfo
+	from spoofing the signal code") made the check on si_code too strict:
+	glibc's aio implementation wants to queue signals with SI_ASYNCIO, and
+	indeed glibc's tst-aio4 fails with the patched kernel.
 
-[1] commit a4f58f5455ba0efda36fb33c37074922d1527a10
+If stable needs this change, then it probably needs
 
-Reported-by: Aurelien Jarno <aurelien@aurel32.net>
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+	Relax si_code check in rt_sigqueueinfo and rt_tgsigqueueinfo
+	commit 243b422af9ea9af4ead07a8ad54c90d4f9b6081a
 
----
- drivers/net/e1000e/netdev.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+as well.
 
-Index: linux-2.6.35.y/drivers/net/e1000e/netdev.c
-===================================================================
---- linux-2.6.35.y.orig/drivers/net/e1000e/netdev.c	2011-03-29 22:50:57.340791211 -0700
-+++ linux-2.6.35.y/drivers/net/e1000e/netdev.c	2011-03-29 23:03:01.745255514 -0700
-@@ -5678,7 +5678,8 @@
- 		/* APME bit in EEPROM is mapped to WUC.APME */
- 		eeprom_data = er32(WUC);
- 		eeprom_apme_mask = E1000_WUC_APME;
--		if (eeprom_data & E1000_WUC_PHY_WAKE)
-+		if ((hw->mac.type > e1000_ich10lan) &&
-+		    (eeprom_data & E1000_WUC_PHY_WAKE))
- 			adapter->flags2 |= FLAG2_HAS_PHY_WAKEUP;
- 	} else if (adapter->flags & FLAG_APME_IN_CTRL3) {
- 		if (adapter->flags & FLAG_APME_CHECK_PORT_B &&
+Oleg.
+
