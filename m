@@ -1,106 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab1C3TVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 15:21:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35912 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932169Ab1C3TVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 15:21:53 -0400
+	id S932780Ab1C3TZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 15:25:50 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:37273 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754536Ab1C3TZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 15:25:49 -0400
+Message-ID: <4D9383B7.40807@sgi.com>
+Date: Wed, 30 Mar 2011 12:25:43 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-In-Reply-To: <201103301906.42429.arnd@arndb.de>
-References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
- <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 30 Mar 2011 12:21:32 -0700
-Message-ID: <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, Nicolas Pitre <nico@fluxnic.net>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        iommu@lists.linux-foundation.org, Mike Habeck <habeck@sgi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] Intel pci: Remove Host Bridge devices from identity
+ mapping
+References: <20110329233602.272459647@gulag1.americas.sgi.com> <20110329233602.439245439@gulag1.americas.sgi.com> <20110330175137.GQ18712@sequoia.sous-sol.org> <4D9376DE.1060207@sgi.com> <20110330191511.GS18712@sequoia.sous-sol.org>
+In-Reply-To: <20110330191511.GS18712@sequoia.sous-sol.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 10:06 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->
-> I'm still new to the ARM world, but I think one real problem is the way
-> that all platforms have their own trees with a very flat hierarchy --
-> a lot of people directly ask Linus to pull their trees, and the main
-> way to sort out conflicts is linux-next. The number of platforms in the
-> ARM arch is still increasing, so I assume that this only gets worse.
 
-As far as I'm concerned, the biggest issuee is that some of the ARM
-crap is just CRAP. It's idiotic tables that get updated by multiple
-people, and in totally nonsensical ways. When I see conflicts in those
-damn clock-data files, I just go mental. Those files are an
-abomination.
 
-Why the hell is the clock-data for fifty (number taken out of my ass)
-different clocking rules in one array? And why do we have eight
-different files of that kind of crap for omap2?
+Chris Wright wrote:
+> * Mike Travis (travis@sgi.com) wrote:
+>> Chris Wright wrote:
+>>> * Mike Travis (travis@sgi.com) wrote:
+>>>>    When the IOMMU is being used, each request for a DMA mapping requires
+>>>>    the intel_iommu code to look for some space in the DMA mapping table.
+>>>>    For most drivers this occurs for each transfer.
+>>>>
+>>>>    When there are many outstanding DMA mappings [as seems to be the case
+>>>>    with the 10GigE driver], the table grows large and the search for
+>>>>    space becomes increasingly time consuming.  Performance for the
+>>>>    10GigE driver drops to about 10% of it's capacity on a UV system
+>>>>    when the CPU count is large.
+>>> That's pretty poor.  I've seen large overheads, but when that big it was
+>>> also related to issues in the 10G driver.  Do you have profile data
+>>> showing this as the hotspot?
+>> Here's one from our internal bug report:
+>>
+>> Here is a profile from a run with iommu=on  iommu=pt  (no forcedac)
+> 
+> OK, I was actually interested in the !pt case.  But this is useful
+> still.  The iova lookup being distinct from the identity_mapping() case.
 
-THAT is an example of something that is totally and utterly screwed
-up. Those kinds of random board-level detail files abound in the ARM
-tree. They should either be in a per-board file, or (much better) the
-ARM people should have standardized this ten f*cking years ago, and
-put it in a bootloader or something that just initializes the crap so
-that the kernel doesn't have to have random tables like that at all.
+I can get that as well, but having every device using maps caused it's
+own set of problems (hundreds of dma maps).  Here's a list of devices
+on the system under test.  You can see that even 'minor' glitches can
+get magnified when there are so many...
 
-ARM right now i a nightmare, and most of it is because ARM hardware
-manufacturers are morons. But the way the ARM tree is then laid out
-has made that even more painful, and the decision to put all the crazy
-board details in the kernel tables instead of trying to have a
-per-board boot loader that fills in the details is just crazy.
+Blade Location    NASID  PCI Address X Display   Device
+----------------------------------------------------------------------
+    0 r001i01b00      0  0000:01:00.0      -   Intel 82576 Gigabit Network Connection
+    .          .      .  0000:01:00.1      -   Intel 82576 Gigabit Network Connection
+    .          .      .  0000:04:00.0      -   LSI SAS1064ET Fusion-MPT SAS
+    .          .      .  0000:05:00.0      -   Matrox MGA G200e
+    2 r001i01b02      4  0001:02:00.0      -   Mellanox MT26428 InfiniBand
+    3 r001i01b03      6  0002:02:00.0      -   Mellanox MT26428 InfiniBand
+    4 r001i01b04      8  0003:02:00.0      -   Mellanox MT26428 InfiniBand
+   11 r001i01b11     22  0007:02:00.0      -   Mellanox MT26428 InfiniBand
+   13 r001i01b13     26  0008:02:00.0      -   Mellanox MT26428 InfiniBand
+   15 r001i01b15     30  0009:07:00.0   :0.0   nVidia GF100 [Tesla S2050]
+    .          .      .  0009:08:00.0   :1.1   nVidia GF100 [Tesla S2050]
+   18 r001i23b02     36  000b:02:00.0      -   Mellanox MT26428 InfiniBand
+   20 r001i23b04     40  000c:01:00.0      -   Intel 82599EB 10-Gigabit Network Connection
+    .          .      .  000c:01:00.1      -   Intel 82599EB 10-Gigabit Network Connection
+    .          .      .  000c:04:00.0      -   Mellanox MT26428 InfiniBand
+   23 r001i23b07     46  000d:07:00.0      -   nVidia GF100 [Tesla S2050]
+    .          .      .  000d:08:00.0      -   nVidia GF100 [Tesla S2050]
+   25 r001i23b09     50  000e:01:00.0      -   Intel 82599EB 10-Gigabit Network Connection
+    .          .      .  000e:01:00.1      -   Intel 82599EB 10-Gigabit Network Connection
+    .          .      .  000e:04:00.0      -   Mellanox MT26428 InfiniBand
+   26 r001i23b10     52  000f:02:00.0      -   Mellanox MT26428 InfiniBand
+   27 r001i23b11     54  0010:02:00.0      -   Mellanox MT26428 InfiniBand
+   29 r001i23b13     58  0011:02:00.0      -   Mellanox MT26428 InfiniBand
+   31 r001i23b15     62  0012:02:00.0      -   Mellanox MT26428 InfiniBand
+   34 r002i01b02     68  0013:01:00.0      -   Mellanox MT26428 InfiniBand
+   35 r002i01b03     70  0014:02:00.0      -   Mellanox MT26428 InfiniBand
+   36 r002i01b04     72  0015:01:00.0      -   Mellanox MT26428 InfiniBand
+   41 r002i01b09     82  0018:07:00.0      -   nVidia GF100 [Tesla S2050]
+    .          .      .  0018:08:00.0      -   nVidia GF100 [Tesla S2050]
+   43 r002i01b11     86  0019:01:00.0      -   Mellanox MT26428 InfiniBand
+   45 r002i01b13     90  001a:01:00.0      -   Mellanox MT26428 InfiniBand
+   48 r002i23b00     96  001c:07:00.0      -   nVidia GF100 [Tesla S2050]
+    .          .      .  001c:08:00.0      -   nVidia GF100 [Tesla S2050]
+   50 r002i23b02    100  001d:02:00.0      -   Mellanox MT26428 InfiniBand
+   52 r002i23b04    104  001e:01:00.0      -   Intel 82599EB 10-Gigabit Network Connection
+    .          .      .  001e:01:00.1      -   Intel 82599EB 10-Gigabit Network Connection
+    .          .      .  001e:04:00.0      -   Mellanox MT26428 InfiniBand
+   57 r002i23b09    114  0020:01:00.0      -   Intel 82599EB 10-Gigabit Network Connection
+    .          .      .  0020:01:00.1      -   Intel 82599EB 10-Gigabit Network Connection
+    .          .      .  0020:04:00.0      -   Mellanox MT26428 InfiniBand
+   58 r002i23b10    116  0021:02:00.0      -   Mellanox MT26428 InfiniBand
+   59 r002i23b11    118  0022:02:00.0      -   Mellanox MT26428 InfiniBand
+   61 r002i23b13    122  0023:02:00.0      -   Mellanox MT26428 InfiniBand
+   63 r002i23b15    126  0024:02:00.0      -   Mellanox MT26428 InfiniBand
 
-Look at the dirstat for arch/ in just the current merge window
-(cut-off at 5% just to not get too much):
+> 
+>> uv48-sys was receiving and uv-debug sending.
+>> ksoftirqd/640 was running at approx. 100% cpu utilization.
+>> I had pinned the nttcp process on uv48-sys to cpu 64.
+>>
+>> # Samples: 1255641
+>> #
+>> # Overhead        Command  Shared Object  Symbol
+>> # ........  .............  .............  ......
+>> #
+>>    50.27%ESC[m  ksoftirqd/640  [kernel]       [k] _spin_lock
+>>    27.43%ESC[m  ksoftirqd/640  [kernel]       [k] iommu_no_mapping
+> 
+>> ...
+>>      0.48%  ksoftirqd/640  [kernel]       [k] iommu_should_identity_map
+>>      0.45%  ksoftirqd/640  [kernel]       [k] ixgbe_alloc_rx_buffers    [
+>> ixgbe]
+> 
+> Note, ixgbe has had rx dma mapping issues (that's why I wondered what
+> was causing the massive slowdown under !pt mode).
 
-[torvalds@i5 linux]$ git diff -C --dirstat=5 --cumulative v2.6.38.. arch
-  14.0% arch/arm/mach-omap2/
-   5.8% arch/arm/plat-mxc/include/mach/
-   6.3% arch/arm/plat-mxc/
-  57.1% arch/arm/
-   5.4% arch/m68k/
-   9.6% arch/unicore32/
-   6.9% arch/x86/
- 100.0% arch/
+I think since this profile run, the network guys updated the ixgbe
+driver with a later version.  (I don't know the outcome of that test.)
 
-almost *SIXTY* percent of all arch updates were to ARM code. And
-that's despite the fact that one of those architectures (unicore32) is
-a totally new architecture, and despite m68k having gone through a
-first-level unification of nommu and mmu code!
+> 
+> <snip>
+>> I tracked this time down to identity_mapping() in this loop:
+>>
+>>       list_for_each_entry(info, &si_domain->devices, link)
+>>               if (info->dev == pdev)
+>>                       return 1;
+>>
+>> I didn't get the exact count, but there was approx 11,000 PCI devices
+>> on this system.  And this function was called for every page request
+>> in each DMA request.
+> 
+> Right, so this is the list traversal (and wow, a lot of PCI devices).
 
-And was this just a fluke? No. Doing the same for 2.3.37..38 gives
-58.3% for arch/arm (and in that release we had a blackfin unification
-effort, otherwise arm would have been an even bigger percentage).
+Most of the PCI devices were the 45 on each of 256 Nahalem sockets.
+Also, there's a ton of bridges as well.
 
-That's ridiculous. It's entirely due to the whole f*cked-up arm ecosystem.
+> Did you try a smarter data structure? (While there's room for another
+> bit in pci_dev, the bit is more about iommu implementation details than
+> anything at the pci level).
+> 
+> Or the domain_dev_info is cached in the archdata of device struct.
+> You should be able to just reference that directly.
+> 
+> Didn't think it through completely, but perhaps something as simple as:
+> 
+> 	return pdev->dev.archdata.iommu == si_domain;
 
-Something needs to be done. A small part is to make sure the source
-code is more hierarchical, so that we don't have those crazy shared
-data-files that are ugly as hell and get conflicts because different
-boards all think they need to care.
+I can try this, thanks!
 
-But the larger problem is that somebody really REALLY needs to think
-about how to get those crazy board details out of the kernel entirely.
-Having per-board drivers for real hardware is sane - having to have
-per-board detail files for clock chips is just crazy. Split off that
-thing a "Linux ARM second-stage bootloader" project that has the
-per-board tables or something. Don't pollute the main kernel with
-crazy details like this.
-
-Because as far as I can tell, most of that board support really is
-about crazy details that the kernel shouldn't even care about. Come up
-with a table that describes them, have one common parsing routine, and
-push the table into a bootloader. And get rid of having to add a board
-file for every crazy random piece of hardware that nobody really cares
-about.
-
-Or something.
-
-                          Linus
+> 
+> thanks,
+> -chris
