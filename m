@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933684Ab1C3VMf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:12:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50512 "EHLO mga02.intel.com"
+	id S933686Ab1C3VND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:13:03 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41554 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965342Ab1C3VKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:10:20 -0400
+	id S965335Ab1C3VKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:10:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="621239531"
+   d="scan'208";a="903737218"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: penberg@kernel.org, stable@kernel.org, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [264/275] Revert "slab: Fix missing DEBUG_SLAB last user"
-Message-Id: <20110330210831.95BBB3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:08:31 -0700 (PDT)
+To: mtosatti@redhat.com, andre.przywara@amd.com, avi@redhat.com,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [269/275] KVM: enlarge number of possible CPUID leaves
+Message-Id: <20110330210836.D6EBF3E1A07@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:08:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,79 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Pekka Enberg <penberg@kernel.org>
+From: Andre Przywara <andre.przywara@amd.com>
 
-[ upstream commit 3ff84a7f36554b257cd57325b1a7c1fa4b49fbe3 ]
+commit 73c1160ce377d8fc6d84cb630ebf9658808bec49 upstream.
 
-This reverts commit 5c5e3b33b7cb959a401f823707bee006caadd76e.
+Currently the number of CPUID leaves KVM handles is limited to 40.
+My desktop machine (AthlonII) already has 35 and future CPUs will
+expand this well beyond the limit. Extend the limit to 80 to make
+room for future processors.
 
-The commit breaks ARM thusly:
-
-| Mount-cache hash table entries: 512
-| slab error in verify_redzone_free(): cache `idr_layer_cache': memory outside object was overwritten
-| Backtrace:
-| [<c0227088>] (dump_backtrace+0x0/0x110) from [<c0431afc>] (dump_stack+0x18/0x1c)
-| [<c0431ae4>] (dump_stack+0x0/0x1c) from [<c0293304>] (__slab_error+0x28/0x30)
-| [<c02932dc>] (__slab_error+0x0/0x30) from [<c0293a74>] (cache_free_debugcheck+0x1c0/0x2b8)
-| [<c02938b4>] (cache_free_debugcheck+0x0/0x2b8) from [<c0293f78>] (kmem_cache_free+0x3c/0xc0)
-| [<c0293f3c>] (kmem_cache_free+0x0/0xc0) from [<c032b1c8>] (ida_get_new_above+0x19c/0x1c0)
-| [<c032b02c>] (ida_get_new_above+0x0/0x1c0) from [<c02af7ec>] (alloc_vfsmnt+0x54/0x144)
-| [<c02af798>] (alloc_vfsmnt+0x0/0x144) from [<c0299830>] (vfs_kern_mount+0x30/0xec)
-| [<c0299800>] (vfs_kern_mount+0x0/0xec) from [<c0299908>] (kern_mount_data+0x1c/0x20)
-| [<c02998ec>] (kern_mount_data+0x0/0x20) from [<c02146c4>] (sysfs_init+0x68/0xc8)
-| [<c021465c>] (sysfs_init+0x0/0xc8) from [<c02137d4>] (mnt_init+0x90/0x1b0)
-| [<c0213744>] (mnt_init+0x0/0x1b0) from [<c0213388>] (vfs_caches_init+0x100/0x140)
-| [<c0213288>] (vfs_caches_init+0x0/0x140) from [<c0208c0c>] (start_kernel+0x2e8/0x368)
-| [<c0208924>] (start_kernel+0x0/0x368) from [<c0208034>] (__enable_mmu+0x0/0x2c)
-| c0113268: redzone 1:0xd84156c5c032b3ac, redzone 2:0xd84156c5635688c0.
-| slab error in cache_alloc_debugcheck_after(): cache `idr_layer_cache': double free, or memory outside object was overwritten
-| ...
-| c011307c: redzone 1:0x9f91102ffffffff, redzone 2:0x9f911029d74e35b
-| slab: Internal list corruption detected in cache 'idr_layer_cache'(24), slabp c0113000(16). Hexdump:
-|
-| 000: 20 4f 10 c0 20 4f 10 c0 7c 00 00 00 7c 30 11 c0
-| 010: 10 00 00 00 10 00 00 00 00 00 c9 17 fe ff ff ff
-| 020: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
-| 030: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
-| 040: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
-| 050: fe ff ff ff fe ff ff ff fe ff ff ff 11 00 00 00
-| 060: 12 00 00 00 13 00 00 00 14 00 00 00 15 00 00 00
-| 070: 16 00 00 00 17 00 00 00 c0 88 56 63
-| kernel BUG at /home/rmk/git/linux-2.6-rmk/mm/slab.c:2928!
-
-Reference: https://lkml.org/lkml/2011/2/7/238
-Cc: <stable@kernel.org> # 2.6.35.y and later
-Reported-and-analyzed-by: Russell King <rmk@arm.linux.org.uk>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+KVM-Stable-Tag.
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- mm/slab.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/mm/slab.c
+Index: linux-2.6.35.y/arch/x86/include/asm/kvm_host.h
 ===================================================================
---- linux-2.6.35.y.orig/mm/slab.c	2011-01-13 09:47:51.000000000 -0800
-+++ linux-2.6.35.y/mm/slab.c	2011-03-29 23:28:50.113636629 -0700
-@@ -2289,8 +2289,8 @@
- 	if (ralign < align) {
- 		ralign = align;
- 	}
--	/* disable debug if not aligning with REDZONE_ALIGN */
--	if (ralign & (__alignof__(unsigned long long) - 1))
-+	/* disable debug if necessary */
-+	if (ralign > __alignof__(unsigned long long))
- 		flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
- 	/*
- 	 * 4) Store it.
-@@ -2316,8 +2316,8 @@
- 	 */
- 	if (flags & SLAB_RED_ZONE) {
- 		/* add space for red zone words */
--		cachep->obj_offset += align;
--		size += align + sizeof(unsigned long long);
-+		cachep->obj_offset += sizeof(unsigned long long);
-+		size += 2 * sizeof(unsigned long long);
- 	}
- 	if (flags & SLAB_STORE_USER) {
- 		/* user store requires one word storage behind the end of
+--- linux-2.6.35.y.orig/arch/x86/include/asm/kvm_host.h	2011-01-13 09:47:51.000000000 -0800
++++ linux-2.6.35.y/arch/x86/include/asm/kvm_host.h	2011-03-29 23:53:33.373683727 -0700
+@@ -77,7 +77,7 @@
+ #define KVM_NUM_MMU_PAGES (1 << KVM_MMU_HASH_SHIFT)
+ #define KVM_MIN_FREE_MMU_PAGES 5
+ #define KVM_REFILL_PAGES 25
+-#define KVM_MAX_CPUID_ENTRIES 40
++#define KVM_MAX_CPUID_ENTRIES 80
+ #define KVM_NR_FIXED_MTRR_REGION 88
+ #define KVM_NR_VAR_MTRR 8
+ 
