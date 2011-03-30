@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab1C3NFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 09:05:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:53252 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab1C3NFf (ORCPT
+	id S1755895Ab1C3NJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 09:09:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58877 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab1C3NJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 09:05:35 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=XYJHFtupD_QA:10 a=6e3NE4ipf18A:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=aIzfbH8M4opDCJzU2mEA:9 a=OESqZY25dACZSNSjGeQA:7 a=hwY_VtllnaERwX-ldE7IBRPjluEA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Wed, 30 Mar 2011 09:05:32 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: jmheo <jongman.heo@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: compile error with 2.6.39-rc1 (in arch/x86/kernel/apb_timer.c)
-Message-ID: <20110330130532.GH8529@home.goodmis.org>
-References: <loom.20110330T040947-18@post.gmane.org>
- <20110330022138.GG8529@home.goodmis.org>
- <loom.20110330T044159-684@post.gmane.org>
+	Wed, 30 Mar 2011 09:09:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Russell King <rmk@arm.linux.org.uk>
+Subject: Re: [PATCH 0/1] new module for amba axi on-chip interconnect
+Date: Wed, 30 Mar 2011 15:09:04 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Arend van Spriel <arend@broadcom.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, gregkh@suse.de,
+        linux-wireless@vger.kernel.org, devel@linuxdriverproject.org,
+        linux-arm-kernel@lists.infradead.org
+References: <1301391619-4499-1-git-send-email-arend@broadcom.com> <20110329181947.GA18134@flint.arm.linux.org.uk>
+In-Reply-To: <20110329181947.GA18134@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <loom.20110330T044159-684@post.gmane.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103301509.04899.arnd@arndb.de>
+X-Provags-ID: V02:K0:17zpePePx/M4jAhjc37JmX0M7njQaNHOXuB/C4THJeE
+ QTGA9nmCSM4iPLepMb55nYD/N9jJ3MNBtMpmbGv6z3pZuzIaoi
+ C7+d4FDhlwk+rNWR10HQVkuarc/frorp5l0qjlD7RpcT0Sne+j
+ bS91gVeAHHUljR+Mfd8GaiZ3B1DHJES3szkrBGFasatWAX0iZj
+ ILodAZCjH6/MluDjPjDLQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note, the Linux kernel mailing list gets over 600 emails a day. I do not
-read all of them, but I do skim through. By not including me in the
-reply, I will most likely never see this message again. Always do a reply
-all on LKML.
-
-On Wed, Mar 30, 2011 at 02:43:55AM +0000, jmheo wrote:
+On Tuesday 29 March 2011, Russell King wrote:
+> On Tue, Mar 29, 2011 at 11:40:18AM +0200, Arend van Spriel wrote:
+> > GUIDANCE NEEDED:
+> > This patch puts the module at proposed location. Please provide your
+> > guidance if there is a better location within the linux tree for this
+> > module.
 > > 
-> > Could you post your full config please.
-> > 
-> > Thanks,
-> > 
+> > This module has been isolated from the brcm80211 driver currently
+> > located in staging and provided to other drivers for chipsets using
+> > the AMBA AXI on-chip interconnect with ARM Device Management Plugin
+> > (DMP) silicon IP, which provides system discovery (chip being the
+> > system) and basic core function (disable, reset, etc.).
 > 
-> Here it is, thanks.
-> 
+> What does this do which the 'amba' bus support doesn't?
 
-As others have posted, it seems that an allmodconfig produces the same
-error and there's already a fix.
+I believe the one thing we really want from this driver is the bus
+scan code, which is not present in the amba bus implementation,
+as far as I can tell. Today, the amba bus does very little beyond
+what the platform bus does, in particular you still need to
+register every single device from board specific code.
 
-Thanks,
+When the proposed axi_scan() function gets turned into an
+amba_bus_register() function, a board file can call that to
+add all devices on the bus without listing them individually
+and calling amba_device_register() for each one.
 
--- Steve
+Basically everything else is already there in the amba bus,
+no need to do it again.
 
+	Arnd
