@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab1C3OHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 10:07:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64250 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754812Ab1C3OHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 10:07:32 -0400
-Message-Id: <b7da2f$qtmdi3@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,269,1299484800"; 
-   d="scan'208";a="903558723"
-Date: Wed, 30 Mar 2011 15:07:28 +0100
-To: Jerome Glisse <j.glisse@gmail.com>
-Subject: Re: GEM-related desktop sluggishness due to linear-time arch_get_unmapped_area_topdown()
-Cc: Dave Airlie <airlied@gmail.com>, r6144 <rainy6144@gmail.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <1301310995.5615.92.camel@wangqingchuan> <1301336010.2217.20.camel@workstation> <AANLkTikMJszEyv8-SMMjD-MeykSwmsKf=gmezcMgySoP@mail.gmail.com> <1301409864.5615.98.camel@wangqingchuan> <AANLkTi=fcWBpmQ66a3+vQwgFOXn=0rJAviNzR4a0mfcJ@mail.gmail.com> <1301421664.2151.12.camel@Portable-Work> <AANLkTin_v5h==E0i5mQgK2AEdaZhwViykr3acbz4CW0k@mail.gmail.com> <20110329202608.GA3454@viiv.ffwll.ch> <AANLkTim2AyGPrun8MNq0=TyXpJ+b8i=eyHhLz01F+f2P@mail.gmail.com> <AANLkTi=vFwoKCOsvyGBQA9w01QX_TwGu_GF6mA0grr2o@mail.gmail.com> <849307$c7qtj5@azsmga001.ch.intel.com> <AANLkTinxVznFtHwM2RM3kNm9-eSXuz9L7TgfaMpgu=uZ@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <AANLkTinxVznFtHwM2RM3kNm9-eSXuz9L7TgfaMpgu=uZ@mail.gmail.com>
+	id S1755965Ab1C3OIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 10:08:00 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:51932 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754838Ab1C3OH7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 10:07:59 -0400
+Subject: Re: kmemleak for MIPS
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Maxin John <maxin.john@gmail.com>, Daniel Baluta <daniel.baluta@gmail.com>,
+        naveen yadav <yad.naveen@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <1301491622.3283.46.camel@edumazet-laptop>
+References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
+	 <AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
+	 <1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
+	 <1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
+	 <1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
+	 <AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
+	 <1301476505.29074.47.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTi=YB+nBG7BYuuU+rB9TC-BbWcJ6mVfkxq0iUype@mail.gmail.com>
+	 <AANLkTi=L0zqwQ869khH1efFUghGeJjoyTaBXs-O2icaM@mail.gmail.com>
+	 <AANLkTi=vcn5jHpk0O8XS9XJ8s5k-mCnzUwu70mFTx4=g@mail.gmail.com>
+	 <1301485085.29074.61.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTikXfVNkyFE2MpW9ZtfX2G=QKvT7kvEuDE-YE5xO@mail.gmail.com>
+	 <1301488032.3283.42.camel@edumazet-laptop>
+	 <AANLkTikX0j xdkyYgPoqjvC5HzY8VydTbFh_gFDzM8zJ7@mail.gmail.com>
+	 <AANLkTi=RXoEOVmTPiL=dfO97aOVKWOJWE7hoQduPPsCZ@mail.gmail.com>
+	 <1301491622.3283.46.camel@edumazet-laptop>
+Organization: ARM Limited
+Date: Wed, 30 Mar 2011 15:07:48 +0100
+Message-ID: <1301494068.29074.94.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 30 Mar 2011 14:07:50.0474 (UTC) FILETIME=[DAB912A0:01CBEEE3]
+X-MC-Unique: 111033015075307901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Mar 2011 09:28:07 -0400, Jerome Glisse <j.glisse@gmail.com> wrote:
-> On Wed, Mar 30, 2011 at 3:32 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > On Wed, 30 Mar 2011 07:57:49 +1000, Dave Airlie <airlied@gmail.com> wrote:
-> >> On Wed, Mar 30, 2011 at 7:04 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
-> >> > What i had in mind was something little bit more advance that pwrite,
-> >> > somethings that would take width,height,pitch of userpage and would be
-> >> > able to perform proper blit. But yes pwrite in intel is kind of
-> >> > limited.
-> >>
-> >> TTM has support for userpage binding we just don't use it.
+On Wed, 2011-03-30 at 14:27 +0100, Eric Dumazet wrote:
+> Le mercredi 30 mars 2011 à 14:17 +0100, Maxin John a écrit :
+> > I have compiled the kernel with below given modification in .config
 > >
-> > Yes, and I've been experimenting with the same in GEM to great effect in
-> > the DDX. The complication remains in managing the CPU synchronisation,
-> > which suggests that it would only be useful for STREAM_DRAW objects (and
-> > perhaps the sub-region updates to STATIC_DRAW). (And for readback, if
-> > retrieving the data were the actual bottleneck.)
+> > CONFIG_CMDLINE="uhash_entries=256"
+> >
+> > After booting with the new kernel, the "kmemleak" no longer complains
+> > about the "udp_table_init".
+> > However it do report another possible leak :)
+> >
+> > debian-mips:~# cat /sys/kernel/debug/kmemleak
+> > unreferenced object 0x8f085000 (size 4096):
+> >   comm "swapper", pid 1, jiffies 4294937670 (age 1043.280s)
+> >   hex dump (first 32 bytes):
+> >     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> >     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> >   backtrace:
+> >     [<801ac7a8>] __kmalloc+0x130/0x180
+> >     [<80532500>] flow_cache_cpu_prepare+0x50/0xa8
+> >     [<8052378c>] flow_cache_init_global+0x90/0x138
+> >     [<80100584>] do_one_initcall+0x174/0x1e0
+> >     [<8050c348>] kernel_init+0xe4/0x174
+> >     [<80103d4c>] kernel_thread_helper+0x10/0x18
+> > debian-mips:~#
 > 
-> What do you mean by CPU synchronisation ? In what i had in mind the
-> upload/download would block userspace until operation is, this would
-> make upload/dowload barrier of course it doesn't play well with
-> usecase where you keep uploading/downloading (idea to aleviate that is
-> to allow several download/upload in one ioctl call).
+> Hmm, then MIPS kmemleak port might have a problem with percpu data ?
+> 
+> fcp->hash_table = kzalloc_node(sz, GFP_KERNEL, cpu_to_node(cpu));
+> 
+> fcp is a per cpu "struct flow_cache_percpu"
 
-Yes, that is the issue: having to control access to the user pages whilst
-they are in use by the GPU. A completely synchronous API for performing
-a single pwrite with the blitter is too slow, much slower than doing an
-uncached write with the CPU and queueing up multiple blits (as we
-currently do).
+I can't figure out what it is. Kmemleak uses this block for scanning the
+percpu data:
 
-The API I ended up with for the pwrite using the BLT was to specify a 2D
-region (addr, width, height, stride, flags etc) and list of clip rects. At
-which point I grew disenchanted, and realised that simply creating a bo
-for mapping user pages was the far better solution.
--Chris
+	for_each_possible_cpu(i)
+		scan_block(__per_cpu_start + per_cpu_offset(i),
+			   __per_cpu_end + per_cpu_offset(i), NULL, 1);
+
+The __per_cpu_* symbols seem to be correctly defined in the MIPS
+vmlinux.lds.S as it uses the PERCPU macro directly.
+
+Other chunks allocated via pcpu_mem_alloc() should be tracked by
+kmemleak and either reported as leaks or scanned (and not reporting
+subsequent blocks referred from the percpu memory).
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Catalin
+
+
