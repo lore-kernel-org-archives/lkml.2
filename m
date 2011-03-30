@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab1C3FgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 01:36:15 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47849
+	id S1753487Ab1C3Fhg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 01:37:36 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47856
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750912Ab1C3FgO (ORCPT
+	by vger.kernel.org with ESMTP id S1751045Ab1C3Fhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 01:36:14 -0400
-Date: Tue, 29 Mar 2011 22:35:36 -0700 (PDT)
-Message-Id: <20110329.223536.245392030.davem@davemloft.net>
+	Wed, 30 Mar 2011 01:37:35 -0400
+Date: Tue, 29 Mar 2011 22:36:57 -0700 (PDT)
+Message-Id: <20110329.223657.70189067.davem@davemloft.net>
 To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, hidden@balabit.hu, akpm@linux-foundation.org,
-        netfilter-devel@vger.kernel.org, kaber@trash.net,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] netfilter: Fix build failure when ipv6 but xt_tproxy
- is built in
+Cc: jongman.heo@gmail.com, linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: compile error with 2.6.39-rc1 (in arch/x86/kernel/apb_timer.c)
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1301451199.14261.327.camel@gandalf.stny.rr.com>
-References: <1301451199.14261.327.camel@gandalf.stny.rr.com>
+In-Reply-To: <20110330022138.GG8529@home.goodmis.org>
+References: <loom.20110330T040947-18@post.gmane.org>
+	<20110330022138.GG8529@home.goodmis.org>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,46 +25,28 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <rostedt@goodmis.org>
-Date: Tue, 29 Mar 2011 22:13:19 -0400
+Date: Tue, 29 Mar 2011 22:21:38 -0400
 
-> While running ktest.pl doing ranconfigs, the following build error
-> occurred:
+> On Wed, Mar 30, 2011 at 02:11:57AM +0000, jmheo wrote:
+>> 
+>> I got following compile error with 2.6.39-rc1.
+>> 
+>> arch/x86/kernel/apb_timer.c: In function ??apbt_setup_irq??:
+>> arch/x86/kernel/apb_timer.c:319:2: error: implicit declaration of function ??
+>> __set_irq_handler??
+>> make[2]: *** [arch/x86/kernel/apb_timer.o] Error 1
+>> make[1]: *** [arch/x86/kernel] Error 2
+>> make: *** [arch/x86] Error 2
+>> make: *** Waiting for unfinished jobs....
+>> 
+>> 
+>> I have CONFIG_APB_TIMER & CONFIG_SMP in my .config.
+> 
+> Could you post your full config please.
 
-Is sending netfilter patches to the explicitly listed maintainer in
-MAINTAINERS too much to ask Stephen? :-/
+I hit this as well, even a stock "allmodconfig" build hits this.
 
-CC:'d
+A quick "git grep __set_irq_handler" will that that this one reference
+apb_timer.c is the only match you'll get.  I don't think you need a
+config to see what the problem is here, do you?
 
-> 
-> net/built-in.o: In function `tproxy_tg6_v1':
-> /home/rostedt/work/autotest/nobackup/linux-test.git/net/netfilter/xt_TPROXY.c:288: undefined reference to `ipv6_find_hdr'
-> 
-> This happened because the xt_TPROXY code was compiled into the kernel
-> proper, but the ipv6 netfilter was compiled as a module. The fix is to
-> only enter the code that calls ipv6_find_hdr if ipv6 netfilter is
-> compiled into the kernel, or if it is a module, so is the xt_TPROXY
-> code.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> diff --git a/net/netfilter/xt_TPROXY.c b/net/netfilter/xt_TPROXY.c
-> index dcfd57e..5915f94 100644
-> --- a/net/netfilter/xt_TPROXY.c
-> +++ b/net/netfilter/xt_TPROXY.c
-> @@ -22,7 +22,13 @@
->  
->  #include <net/netfilter/ipv4/nf_defrag_ipv4.h>
->  
-> -#if defined(CONFIG_IP6_NF_IPTABLES) || defined(CONFIG_IP6_NF_IPTABLES_MODULE)
-> +/*
-> + * Only include the following if ip6 tables is compiled in
-> + * the kernel, or it is a module and this code is also a module.
-> + */
-> +#if defined(CONFIG_IP6_NF_IPTABLES) || \
-> +	(defined(CONFIG_IP6_NF_IPTABLES_MODULE) && \
-> +	 defined(CONFIG_NETFILTER_XT_TARGET_TPROXY_MODULE))
->  #define XT_TPROXY_HAVE_IPV6 1
->  #include <net/if_inet6.h>
->  #include <net/addrconf.h>
-> 
-> 
