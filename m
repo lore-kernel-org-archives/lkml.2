@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab1C3QPp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 12:15:45 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:48992 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756065Ab1C3QPm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 12:15:42 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: yfS5_GYVM1ngzSUEqo71NJ66vAUSPXNecs__X28w2wKPd6d
- tynTqwtC6LAtZix2Io7gPXWwm8rCtX8kLZ4R5PSq1QHVyW8Uye3hUemLV5NY
- FknfOcy4kF3Uxo3o369J8XcdmHVM7aoyuifesQlvqPnj_XhfWA97aZcsguiL
- 2OKH9f8RPFr0UB6ic93Lpw6fV9WnL2oeFQLHNKnwX9wy.8_lWSU9J5HCMKFR
- IePLuPEFBY5yLF1ijCTFQgMC9NuD.a.INvJwHSoDb0jvTuJIyh4HFiWubEV9
- _SGMekiSyBbJqmMm77pS49qNlIlk0M8usqJj0lFwW5NhFgl0D
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 30 Mar 2011 11:15:38 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH tip:x86/mm 1/3] x86: A fast way to check capabilities of
- the current cpu
-In-Reply-To: <20110330160756.GL17523@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.00.1103301113510.27742@router.home>
-References: <20110312115010.GC2005@htj.dyndns.org> <m2k4g1zdmt.fsf@firstfloor.org> <4D93531F.5080403@zytor.com> <20110330160756.GL17523@htj.dyndns.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932793Ab1C3QP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 12:15:58 -0400
+Received: from tex.lwn.net ([70.33.254.29]:34956 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756086Ab1C3QP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 12:15:56 -0400
+Date: Wed, 30 Mar 2011 10:15:55 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Luis Rossi <luisf.rossi@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Help with dma on PCI driver
+Message-ID: <20110330101555.573491e1@bike.lwn.net>
+In-Reply-To: <AANLkTimkss168HfsPtJPpF1MiYAbHty3csW=R10P+=JA@mail.gmail.com>
+References: <AANLkTim3eMR+5VQT9Cbew70bLZ_3P7eo3FXx_TxMuP1=@mail.gmail.com>
+	<20110330092307.4a8deb79@bike.lwn.net>
+	<AANLkTimkss168HfsPtJPpF1MiYAbHty3csW=R10P+=JA@mail.gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.24.3; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Mar 2011, Tejun Heo wrote:
+On Wed, 30 Mar 2011 13:11:40 -0300
+Luis Rossi <luisf.rossi@gmail.com> wrote:
 
-> Hello,
->
-> On Wed, Mar 30, 2011 at 08:58:23AM -0700, H. Peter Anvin wrote:
-> > >> Add this_cpu_has() which determines if the current cpu has a certain
-> > >> ability using a segment prefix and a bit test operation.
-> > >
-> > >
-> > > Hmm: if the CPU capability is really tested in a performance critical
-> > > path, wouldn't it even be better to just use static_branch() now?
-> > >
-> >
-> > We have static_cpu_has() for this specific purpose (it actually predates
-> > static_branch()).
->
-> These patches have performance benefits but I don't think it would be
-> noticeable.  I think it's more of code cleanup.
+> should i stop the inti function on the device register,
+> and make all the rest inside probe? It makes a lot of sense as the
+> rest should be called just if the device is connected...
 
-The main simplification is that the pointer to the cpu_info can be
-omitted. Its passed around quite a bit right now in x86 arch code.
-Removal of the cpu_info pointer could reduce code size and allow faster
-access.
+Yes, you should.  Also, please look at your cdev_add() call and bear in
+mind that your device can be accessed immediately after that call.  You
+should not call cdev_add() until the device is completely initialized and
+ready to go.
 
+Some thought given to locking would also not be misplaced.
 
+Thanks,
+
+jon
