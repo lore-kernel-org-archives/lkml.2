@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab1C3DZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 23:25:10 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:50660 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab1C3DZI (ORCPT
+	id S1754538Ab1C3D1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 23:27:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61815 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754135Ab1C3D1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 23:25:08 -0400
-Date: Wed, 30 Mar 2011 05:25:04 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Shaohua Li <shaohua.li@intel.com>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH]mmap: avoid unnecessary anon_vma lock
-Message-ID: <20110330032504.GD21838@one.firstfloor.org>
-References: <1301277532.3981.25.camel@sli10-conroe> <m2fwq718u4.fsf@firstfloor.org> <20110329153517.3b87842f.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110329153517.3b87842f.akpm@linux-foundation.org>
-User-Agent: Mutt/1.4.2.2i
+	Tue, 29 Mar 2011 23:27:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=sMXx3CbH4wTaPza/SOcZwLHp482hBjd2Oq9Q5UXr8sHK1bQPSVMWlzTrnCr02ETTar
+         tEgT/R7qeveICp+RibL6dG45MgRqR22SgDdgEYdCLh3UaxzBWPaWzJQlPnanisxkfe5m
+         +Wdqcoe2ZtCYxhKqJSdnUItjdpqPJlXgOVmec=
+From: Pan Weiping <panweiping3@gmail.com>
+To: aelder@sgi.com, xfs-masters@oss.sgi.com, dchinner@redhat.com, hch@lst.de,
+        tj@kernel.org, jaxboe@fusionio.com
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        Pan Weiping <panweiping3@gmail.com>
+Subject: [PATCH] delete a warning in function xfs_buf_readahead
+Date: Wed, 30 Mar 2011 11:28:06 +0800
+Message-Id: <1301455686-21517-1-git-send-email-panweiping3@gmail.com>
+X-Mailer: git-send-email 1.7.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 03:35:17PM -0700, Andrew Morton wrote:
-> On Mon, 28 Mar 2011 09:57:39 -0700
-> Andi Kleen <andi@firstfloor.org> wrote:
-> 
-> > Shaohua Li <shaohua.li@intel.com> writes:
-> > 
-> > > If we only change vma->vm_end, we can avoid taking anon_vma lock even 'insert'
-> > > isn't NULL, which is the case of split_vma.
-> > > From my understanding, we need the lock before because rmap must get the
-> > > 'insert' VMA when we adjust old VMA's vm_end (the 'insert' VMA is linked to
-> > > anon_vma list in __insert_vm_struct before).
-> > > But now this isn't true any more. The 'insert' VMA is already linked to
-> > > anon_vma list in __split_vma(with anon_vma_clone()) instead of
-> > > __insert_vm_struct. There is no race rmap can't get required VMAs.
-> > > So the anon_vma lock is unnecessary, and this can reduce one locking in brk
-> > > case and improve scalability.
-> > 
-> > Looks good to me.
-> 
-> Looks way too tricky to me.
-> 
-> Please review this code for maintainability.  Have we documented what
-> we're doing as completely and as clearly as we are able?
+/home/pwp/mysvn/linux/linux-2.6/fs/xfs/linux-2.6/xfs_buf.c: In function
+‘xfs_buf_readahead’:
+/home/pwp/mysvn/linux/linux-2.6/fs/xfs/linux-2.6/xfs_buf.c:660:27: warning:
+unused variable ‘bdi’
+Signed-off-by: Pan Weiping <panweiping3@gmail.com>
+---
+ fs/xfs/linux-2.6/xfs_buf.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-I agree the comments could be improved, but the code change looked good
-to me. I don't think it impacts maintainability by itself because
-we already do similar magic.
+diff --git a/fs/xfs/linux-2.6/xfs_buf.c b/fs/xfs/linux-2.6/xfs_buf.c
+index 596bb2c..d917146 100644
+--- a/fs/xfs/linux-2.6/xfs_buf.c
++++ b/fs/xfs/linux-2.6/xfs_buf.c
+@@ -657,8 +657,6 @@ xfs_buf_readahead(
+ 	xfs_off_t		ioff,
+ 	size_t			isize)
+ {
+-	struct backing_dev_info *bdi;
+-
+ 	if (bdi_read_congested(target->bt_bdi))
+ 		return;
+ 
+-- 
+1.7.4
 
--Andi
