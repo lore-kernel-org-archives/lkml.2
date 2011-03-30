@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab1C3PXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 11:23:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40010 "EHLO mx1.redhat.com"
+	id S1754803Ab1C3PXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 11:23:11 -0400
+Received: from tex.lwn.net ([70.33.254.29]:48806 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab1C3PXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 11:23:08 -0400
-Date: Wed, 30 Mar 2011 11:22:48 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        hch@infradead.org
-Subject: Re: block: eliminate ELEVATOR_INSERT_REQUEUE
-Message-ID: <20110330152248.GC1291@redhat.com>
-References: <20110328082321.GC16530@htj.dyndns.org>
- <20110328221547.GA1118@redhat.com>
- <x49y63yvwum.fsf@segfault.boston.devel.redhat.com>
- <20110329175458.GE24485@redhat.com>
- <20110330074123.GA17523@htj.dyndns.org>
- <20110330075752.GC17523@htj.dyndns.org>
- <4D92E2CD.6000909@kernel.dk>
- <20110330080203.GD17523@htj.dyndns.org>
- <20110330140123.GA28212@redhat.com>
- <20110330142751.GH17523@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110330142751.GH17523@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755096Ab1C3PXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 11:23:09 -0400
+Date: Wed, 30 Mar 2011 09:23:07 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Luis Filipe Rossi <luisf.rossi@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Help with dma on PCI driver
+Message-ID: <20110330092307.4a8deb79@bike.lwn.net>
+In-Reply-To: <AANLkTim3eMR+5VQT9Cbew70bLZ_3P7eo3FXx_TxMuP1=@mail.gmail.com>
+References: <AANLkTim3eMR+5VQT9Cbew70bLZ_3P7eo3FXx_TxMuP1=@mail.gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.24.3; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 04:27:51PM +0200, Tejun Heo wrote:
+On Wed, 30 Mar 2011 07:07:32 -0300
+Luis Filipe Rossi <luisf.rossi@gmail.com> wrote:
 
-[..]
-> > And just to be clear: none of this is a concern for stable right?  It is
-> > just the flush-merge code introduced for 2.6.39 that needs fixing?
-> 
-> I think 2.6.38 needs a -stable fix.  It has the previous version of
-> the new flush implementation and is using front insertion.
+> I am developing a driver for a custom PCI board. I am following the
+> example on Essential Linux Device Drivers, but when i am calling the
+> pci_alloc_consitent i get the following error:
+> Mar 29 15:18:42 luis-desktop kernel: [ 4520.075823] BUG: unable to
+> handle kernel NULL pointer dereference at 00000004
 
-Tejun,
+Your source was horribly mangled, which is likely to reduce the number of
+responses you get.  I've not had the time to look at it in great detail,
+but I will say that the assumption that the PCI device is already probed
+and registered immediately after the pci_register_driver() call is
+dangerous at best.  Things like dma_descriptor_setup() should be called in
+your probe routine (or even later, when you actually need the buffer)
+rather than in your module init function.
 
-So wee need this as stable fix because FLUSH request can get ahead of
-REQUEUED requests and it can break some drivers?
+There's a lot of other issues with this driver, but that's the one I would
+look first at for the resolution of this particular crash.
 
-Thanks
-Vivek
+jon
