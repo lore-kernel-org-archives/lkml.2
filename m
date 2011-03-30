@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965323Ab1C3VKQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:10:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44838 "EHLO mga02.intel.com"
+	id S965369Ab1C3VK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:10:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17671 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965267Ab1C3VJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:09:59 -0400
+	id S965350Ab1C3VKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:10:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="621239294"
+   d="scan'208";a="411279446"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: john@Calva.COM, James.Bottomley@suse.de, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [250/275] ses: show devices for enclosures with no page 7
-Message-Id: <20110330210816.E33E33E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:08:16 -0700 (PDT)
+To: mtosatti@redhat.com, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [271/275] Revert "KVM: Correct ordering of ldt reload wrt fs/gs reload"
+Message-Id: <20110330210838.F06E23E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:08:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,38 +24,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: John Hughes <john@Calva.COM>
-
-commit 877a55979c189c590e819a61cbbe2b7947875f17 upstream.
-
-enclosure page 7 gives us the "pretty" names of the enclosure slots.
-Without a page 7, we can still use the enclosure code as long as we
-make up numeric names for the slots. Unfortunately, the current code
-fails to add any devices because the check for page 10 is in the wrong
-place if we have no page 7.  Fix it so that devices show up even if
-the enclosure has no page 7.
-
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+This reverts commit d3f813da18f83a31f2678988b450e6a1c94c95ed.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/scsi/ses.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/svm.c |    2 +-
+ arch/x86/kvm/vmx.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-2.6.35.y/drivers/scsi/ses.c
+Index: linux-2.6.35.y/arch/x86/kvm/svm.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/scsi/ses.c	2011-03-29 22:50:11.521963601 -0700
-+++ linux-2.6.35.y/drivers/scsi/ses.c	2011-03-29 23:03:03.484211019 -0700
-@@ -390,9 +390,9 @@
- 		len = (desc_ptr[2] << 8) + desc_ptr[3];
- 		/* skip past overall descriptor */
- 		desc_ptr += len + 4;
--		if (ses_dev->page10)
--			addl_desc_ptr = ses_dev->page10 + 8;
+--- linux-2.6.35.y.orig/arch/x86/kvm/svm.c	2011-01-13 09:47:51.000000000 -0800
++++ linux-2.6.35.y/arch/x86/kvm/svm.c	2011-03-29 23:53:33.374683701 -0700
+@@ -3184,9 +3184,9 @@
+ 	vcpu->arch.regs[VCPU_REGS_RSP] = svm->vmcb->save.rsp;
+ 	vcpu->arch.regs[VCPU_REGS_RIP] = svm->vmcb->save.rip;
+ 
+-	kvm_load_ldt(ldt_selector);
+ 	kvm_load_fs(fs_selector);
+ 	kvm_load_gs(gs_selector);
++	kvm_load_ldt(ldt_selector);
+ 	load_host_msrs(vcpu);
+ 
+ 	reload_tss(vcpu);
+Index: linux-2.6.35.y/arch/x86/kvm/vmx.c
+===================================================================
+--- linux-2.6.35.y.orig/arch/x86/kvm/vmx.c	2011-01-13 09:47:51.000000000 -0800
++++ linux-2.6.35.y/arch/x86/kvm/vmx.c	2011-03-29 23:53:33.374683701 -0700
+@@ -791,6 +791,8 @@
+ 
+ 	++vmx->vcpu.stat.host_state_reload;
+ 	vmx->host_state.loaded = 0;
++	if (vmx->host_state.fs_reload_needed)
++		kvm_load_fs(vmx->host_state.fs_sel);
+ 	if (vmx->host_state.gs_ldt_reload_needed) {
+ 		kvm_load_ldt(vmx->host_state.ldt_sel);
+ 		/*
+@@ -804,8 +806,6 @@
+ #endif
+ 		local_irq_restore(flags);
  	}
-+	if (ses_dev->page10)
-+		addl_desc_ptr = ses_dev->page10 + 8;
- 	type_ptr = ses_dev->page1 + 12 + ses_dev->page1[11];
- 	components = 0;
- 	for (i = 0; i < types; i++, type_ptr += 4) {
+-	if (vmx->host_state.fs_reload_needed)
+-		loadsegment(fs, vmx->host_state.fs_sel);
+ 	reload_tss();
+ #ifdef CONFIG_X86_64
+ 	if (is_long_mode(&vmx->vcpu)) {
