@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab1C3VvQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:51:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26254 "EHLO mga11.intel.com"
+	id S933429Ab1C3VHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:07:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51403 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933434Ab1C3VHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:07:22 -0400
+	id S933271Ab1C3VHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:07:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="903734886"
+   d="scan'208";a="621236782"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: venki@google.com, a.p.zijlstra@chello.nl, ak@linux.intel.com,
-        mingo@elte.hu, efault@gmx.de, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [101/275] sched: Add IRQ_TIME_ACCOUNTING, finer accounting of irq time
-Message-Id: <20110330210540.024DB3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:05:39 -0700 (PDT)
+To: suresh.b.siddha@intel.com, mingo@elte.hu, torvalds@linux-foundation.org,
+        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [86/275] x86, mm: avoid possible bogus tlb entries by clearing prev mm_cpumask after switching mm
+Message-Id: <20110330210524.3D67F3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:05:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,133 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Commit: b52bfee445d315549d41eacf2fa7c156e7d153d5 upstream
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-s390/powerpc/ia64 have support for CONFIG_VIRT_CPU_ACCOUNTING which does
-the fine granularity accounting of user, system, hardirq, softirq times.
-Adding that option on archs like x86 will be challenging however, given the
-state of TSC reliability on various platforms and also the overhead it will
-add in syscall entry exit.
+commit 831d52bc153971b70e64eccfbed2b232394f22f8 upstream.
 
-Instead, add a lighter variant that only does finer accounting of
-hardirq and softirq times, providing precise irq times (instead of timer tick
-based samples). This accounting is added with a new config option
-CONFIG_IRQ_TIME_ACCOUNTING so that there won't be any overhead for users not
-interested in paying the perf penalty.
+Clearing the cpu in prev's mm_cpumask early will avoid the flush tlb
+IPI's while the cr3 is still pointing to the prev mm.  And this window
+can lead to the possibility of bogus TLB fills resulting in strange
+failures.  One such problematic scenario is mentioned below.
 
-This accounting is based on sched_clock, with the code being generic.
-So, other archs may find it useful as well.
+ T1. CPU-1 is context switching from mm1 to mm2 context and got a NMI
+     etc between the point of clearing the cpu from the mm_cpumask(mm1)
+     and before reloading the cr3 with the new mm2.
 
-This patch just adds the core logic and does not enable this logic yet.
+ T2. CPU-2 is tearing down a specific vma for mm1 and will proceed with
+     flushing the TLB for mm1.  It doesn't send the flush TLB to CPU-1
+     as it doesn't see that cpu listed in the mm_cpumask(mm1).
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <1286237003-12406-5-git-send-email-venki@google.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+ T3. After the TLB flush is complete, CPU-2 goes ahead and frees the
+     page-table pages associated with the removed vma mapping.
+
+ T4. CPU-2 now allocates those freed page-table pages for something
+     else.
+
+ T5. As the CR3 and TLB caches for mm1 is still active on CPU-1, CPU-1
+     can potentially speculate and walk through the page-table caches
+     and can insert new TLB entries.  As the page-table pages are
+     already freed and being used on CPU-2, this page walk can
+     potentially insert a bogus global TLB entry depending on the
+     (random) contents of the page that is being used on CPU-2.
+
+ T6. This bogus TLB entry being global will be active across future CR3
+     changes and can result in weird memory corruption etc.
+
+To avoid this issue, for the prev mm that is handing over the cpu to
+another mm, clear the cpu from the mm_cpumask(prev) after the cr3 is
+changed.
+
+Marking it for -stable, though we haven't seen any reported failure that
+can be attributed to this.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- include/linux/hardirq.h |    2 -
- include/linux/sched.h   |   13 ++++++++++++
- kernel/sched.c          |   49 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 63 insertions(+), 1 deletion(-)
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Index: linux-2.6.35.y/include/linux/hardirq.h
+---
+ arch/x86/include/asm/mmu_context.h |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+Index: linux-2.6.35.y/arch/x86/include/asm/mmu_context.h
 ===================================================================
---- linux-2.6.35.y.orig/include/linux/hardirq.h	2011-03-29 23:03:00.208294838 -0700
-+++ linux-2.6.35.y/include/linux/hardirq.h	2011-03-29 23:03:00.268293305 -0700
-@@ -137,7 +137,7 @@
+--- linux-2.6.35.y.orig/arch/x86/include/asm/mmu_context.h	2011-03-29 22:51:35.790807371 -0700
++++ linux-2.6.35.y/arch/x86/include/asm/mmu_context.h	2011-03-29 23:02:59.928302005 -0700
+@@ -36,8 +36,6 @@
+ 	unsigned cpu = smp_processor_id();
  
- struct task_struct;
+ 	if (likely(prev != next)) {
+-		/* stop flush ipis for the previous mm */
+-		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+ #ifdef CONFIG_SMP
+ 		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+ 		percpu_write(cpu_tlbstate.active_mm, next);
+@@ -47,6 +45,9 @@
+ 		/* Re-load page tables */
+ 		load_cr3(next->pgd);
  
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#if !defined(CONFIG_VIRT_CPU_ACCOUNTING) && !defined(CONFIG_IRQ_TIME_ACCOUNTING)
- static inline void account_system_vtime(struct task_struct *tsk)
- {
- }
-Index: linux-2.6.35.y/include/linux/sched.h
-===================================================================
---- linux-2.6.35.y.orig/include/linux/sched.h	2011-03-29 23:03:00.248293818 -0700
-+++ linux-2.6.35.y/include/linux/sched.h	2011-03-29 23:54:58.089516061 -0700
-@@ -1823,6 +1823,19 @@
-  */
- extern unsigned long long cpu_clock(int cpu);
- 
-+#ifdef CONFIG_IRQ_TIME_ACCOUNTING
-+/*
-+ * An i/f to runtime opt-in for irq time accounting based off of sched_clock.
-+ * The reason for this explicit opt-in is not to have perf penalty with
-+ * slow sched_clocks.
-+ */
-+extern void enable_sched_clock_irqtime(void);
-+extern void disable_sched_clock_irqtime(void);
-+#else
-+static inline void enable_sched_clock_irqtime(void) {}
-+static inline void disable_sched_clock_irqtime(void) {}
-+#endif
++		/* stop flush ipis for the previous mm */
++		cpumask_clear_cpu(cpu, mm_cpumask(prev));
 +
- extern unsigned long long
- task_sched_runtime(struct task_struct *task);
- extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
-Index: linux-2.6.35.y/kernel/sched.c
-===================================================================
---- linux-2.6.35.y.orig/kernel/sched.c	2011-03-29 23:03:00.149296350 -0700
-+++ linux-2.6.35.y/kernel/sched.c	2011-03-29 23:54:59.868470542 -0700
-@@ -1819,6 +1819,55 @@
- #define for_each_class(class) \
-    for (class = sched_class_highest; class; class = class->next)
- 
-+#ifdef CONFIG_IRQ_TIME_ACCOUNTING
-+
-+static DEFINE_PER_CPU(u64, cpu_hardirq_time);
-+static DEFINE_PER_CPU(u64, cpu_softirq_time);
-+
-+static DEFINE_PER_CPU(u64, irq_start_time);
-+static int sched_clock_irqtime;
-+
-+void enable_sched_clock_irqtime(void)
-+{
-+	sched_clock_irqtime = 1;
-+}
-+
-+void disable_sched_clock_irqtime(void)
-+{
-+	sched_clock_irqtime = 0;
-+}
-+
-+void account_system_vtime(struct task_struct *curr)
-+{
-+	unsigned long flags;
-+	int cpu;
-+	u64 now, delta;
-+
-+	if (!sched_clock_irqtime)
-+		return;
-+
-+	local_irq_save(flags);
-+
-+	now = sched_clock();
-+	cpu = smp_processor_id();
-+	delta = now - per_cpu(irq_start_time, cpu);
-+	per_cpu(irq_start_time, cpu) = now;
-+	/*
-+	 * We do not account for softirq time from ksoftirqd here.
-+	 * We want to continue accounting softirq time to ksoftirqd thread
-+	 * in that case, so as not to confuse scheduler with a special task
-+	 * that do not consume any time, but still wants to run.
-+	 */
-+	if (hardirq_count())
-+		per_cpu(cpu_hardirq_time, cpu) += delta;
-+	else if (in_serving_softirq() && !(curr->flags & PF_KSOFTIRQD))
-+		per_cpu(cpu_softirq_time, cpu) += delta;
-+
-+	local_irq_restore(flags);
-+}
-+
-+#endif
-+
- #include "sched_stats.h"
- 
- static void inc_nr_running(struct rq *rq)
+ 		/*
+ 		 * load the LDT, if the LDT is different:
+ 		 */
