@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab1C3IhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 04:37:14 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:58049 "EHLO mgw-da01.nokia.com"
+	id S932092Ab1C3IoP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 04:44:15 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:51811 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755603Ab1C3IhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 04:37:13 -0400
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: MTD list <linux-mtd@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] UBIFS: do not select KALLSYMS_ALL
-Date: Wed, 30 Mar 2011 11:40:15 +0300
-Message-Id: <1301474416-8202-2-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>
-References: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>
-X-Nokia-AV: Clean
+	id S1754480Ab1C3IoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 04:44:14 -0400
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: "'Paul Mundt'" <lethal@linux-sh.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>
+References: <019701cbee1e$c4e2d260$4ea87720$@mprc.pku.edu.cn> <201103291642.49555.arnd@arndb.de> <01ca01cbee7b$4f790370$ee6b0a50$@mprc.pku.edu.cn> <201103300854.05366.arnd@arndb.de>
+In-Reply-To: <201103300854.05366.arnd@arndb.de>
+Subject: RE: [PATCH] unicore32 framebuffer driver fix: make videomemory kmalloc-ed and floatable
+Date: Wed, 30 Mar 2011 16:43:52 +0800
+Message-ID: <01ea01cbeeb6$99bb5240$cd31f6c0$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIFvKgm+ycIK6IzhVqIuzAjQEIKYgHgnBR1AiHIzrkBGMzJqZOpGWMw
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-All UBIFS needs is to make sure we stacktraces when UBIFS debugging
-is enabled. It is enough to select KALLSYMS for this, KALLSYMS_ALL
-is not necessary. Moreover, Randy Dunlap reported that UBIFS causes
-the following Kconfig dependency warning:
 
-warning: (UBIFS_FS_DEBUG && LOCKDEP && LATENCYTOP) selects KALLSYMS_ALL
-which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Wednesday, March 30, 2011 2:54 PM
+> To: Guan Xuetao
+> Cc: 'Paul Mundt'; linux-kernel@vger.kernel.org; linux-fbdev@vger.kernel.org
+> Subject: Re: [PATCH] unicore32 framebuffer driver fix: make videomemory kmalloc-ed and floatable
+> 
+> On Wednesday 30 March 2011 03:39:26 Guan Xuetao wrote:
+> > > How does this work? UNIFB_MEMSIZE seems to be 4 MB, much more than the
+> > > maximum of 128 KB that kmalloc can allocate.
+> > >
+> > > Shouldn't this use get_free_pages() instead of kmalloc?
+> > >
+> >
+> > When using SLUB allocator, if required memory size  is larger
+> > than 2*PAGE_SIZE, kmalloc_large is called,
+> > and eventually __get_free_pages will  be called.
+> > So,  it would be the same as __get_free_pages.
+> 
+> Ok, I see. It's probably still better to use __get_free_pages directly,
+> because it's possible to select a different allocator that does not
+> do this itself.
+> 
+> 	Arnd
+Is it appropriate to using __get_free_pages in framebuffer driver?
+And both SLAB and SLUB allocators support 4MB request.
 
-The reason is that KALLSYMS_ALL requires DEBUG_KERNEL and KALLSYMS, so
-ideally, to select KALLSYMS_ALL we'd need to select DEBUG_KERNEL and
-KALLSYMS first.
+Thanks & Regards.
 
-This seems to be too much to select. The easiest way to go is to forget
-about KALLSYMS_ALL and just select KALLSYMS when UBIFS debugging is
-enabled - that should be enough for stackdumps.
+Guan Xuetao
 
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
----
- fs/ubifs/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/ubifs/Kconfig b/fs/ubifs/Kconfig
-index d744090..f8b0160 100644
---- a/fs/ubifs/Kconfig
-+++ b/fs/ubifs/Kconfig
-@@ -47,7 +47,7 @@ config UBIFS_FS_DEBUG
- 	bool "Enable debugging support"
- 	depends on UBIFS_FS
- 	select DEBUG_FS
--	select KALLSYMS_ALL
-+	select KALLSYMS
- 	help
- 	  This option enables UBIFS debugging support. It makes sure various
- 	  assertions, self-checks, debugging messages and test modes are compiled
--- 
-1.7.2.3
 
