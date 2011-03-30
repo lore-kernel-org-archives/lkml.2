@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab1C3O16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 10:27:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34372 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932470Ab1C3O15 (ORCPT
+	id S932639Ab1C3O2S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 10:28:18 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54999 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932470Ab1C3O2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 10:27:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=epKxdtkhwJaa69tZAREtdr8WQYhPHJy5svoRXYzIXvhp7xTeENBPzDegcvPHwY13Nm
-         1085Q+TC+aZLBQztBkt45HlReXk/GV7h0XGLfC5IUfPuAbED+mSWrclVVszaQ22jWcbJ
-         GGId+1ViVtDceqpnJts69MCibVwQWPqkqxjRM=
-Date: Wed, 30 Mar 2011 16:27:51 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        Jeff Moyer <jmoyer@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        hch@infradead.org
-Subject: Re: block: eliminate ELEVATOR_INSERT_REQUEUE
-Message-ID: <20110330142751.GH17523@htj.dyndns.org>
-References: <20110326042156.GB28458@redhat.com>
- <20110328082321.GC16530@htj.dyndns.org>
- <20110328221547.GA1118@redhat.com>
- <x49y63yvwum.fsf@segfault.boston.devel.redhat.com>
- <20110329175458.GE24485@redhat.com>
- <20110330074123.GA17523@htj.dyndns.org>
- <20110330075752.GC17523@htj.dyndns.org>
- <4D92E2CD.6000909@kernel.dk>
- <20110330080203.GD17523@htj.dyndns.org>
- <20110330140123.GA28212@redhat.com>
+	Wed, 30 Mar 2011 10:28:16 -0400
+Date: Wed, 30 Mar 2011 09:28:11 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, ecryptfs-devel@lists.launchpad.net
+Subject: Re: [GIT PULL] eCryptfs updates for 2.6.39-rc1
+Message-ID: <20110330142810.GA31091@boyd.l.tihix.com>
+References: <20110328150205.GA9054@boyd.l.tihix.com>
+ <4D930AF0.2050708@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110330140123.GA28212@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D930AF0.2050708@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 10:01:24AM -0400, Mike Snitzer wrote:
-> Why can we all of a sudden append the flush to the dispatch queue _but_
-> not have any concern about queue draining?  Seems that avoiding use of
-> BACK, by using list_add_tail, is enabling that.  Couldn't we have always
-> done that?
+On Wed Mar 30, 2011 at 12:50:24PM +0200, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> On 03/28/2011 05:02 PM, Tyler Hicks wrote:
+> >Hi Linus,
+> >
+> >The eCryptfs patches for 2.6.39-rc1 are mainly fixes. Roberto's patches
+> >add key locking so keys aren't modified underneath us. Thieu's patch
+> >moves encryption to writepage so userspace isn't waiting on page
+> >encryption during each write(). My patches remove a wasteful
+> >encrypt/write operation during file creation and fix a missing page
+> >unlock in an error path.
+> >
+> >The following changes since commit 40471856f2e38e9bfa8d605295e8234421110dd6:
+> >
+> >   Merge branch 'nfs-for-2.6.39' of git://git.linux-nfs.org/projects/trondmy/nfs-2.6 (2011-03-25 10:03:28 -0700)
+> >
+> >are available in the git repository at:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git for-linus
+> >
+> >Roberto Sassu (6):
+> >       eCryptfs: ecryptfs_keyring_auth_tok_for_sig() bug fix
+> >       eCryptfs: removed num_global_auth_toks from ecryptfs_mount_crypt_stat
+> >       eCryptfs: modified size of keysig in the ecryptfs_key_sig structure
+> >       eCryptfs: verify authentication tokens before their use
+> >       eCryptfs: move ecryptfs_find_auth_tok_for_sig() call before mutex_lock
+> >       eCryptfs: write lock requested keys
+> >
+> >Thieu Le (1):
+> >       ecryptfs: modify write path to encrypt page in writepage
+> >
+> >Tyler Hicks (3):
+> >       eCryptfs: Remove unnecessary grow_file() function
+> >       eCryptfs: Remove ECRYPTFS_NEW_FILE crypt stat flag
+> >       eCryptfs: Unlock page in write_begin error path
+> 
+> Is "eCryptfs: Handle failed metadata read in lookup" going into 2.6.39?
 
-Yes, we could have.  I was just being lazy and looking for an easy
-solution.
+Yes - while testing the above changes, I found some other issues with
+the upper i_size and decided to hold off on pushing that patch until I
+have a complete fix. It will definitely go into one of the 2.6.39-rcX
+releases.
 
-> The folding of elv_insert() into __elv_add_request() seems
-> irrelevant.
+Tyler
 
-Strictly, it is but they kinda go well together.
-
-> Can we take a step back and be more explicit about the implications of
-> having inserted the flush with REQUEUE/FRONT?  Seems to me that having
-> _not_ inserted the flush at the end of the dispatch queue is cause for
-> potential corruption (preceding data hasn't been issued to the device
-> yet).
-
-No, the data ordering is enforced by the filesystem in the new
-implementation meaning that by the time FLUSH is issued by the
-filesystem, it should have made sure that all requests which must be
-written before the FLUSH already had completed.
-
-> And just to be clear: none of this is a concern for stable right?  It is
-> just the flush-merge code introduced for 2.6.39 that needs fixing?
-
-I think 2.6.38 needs a -stable fix.  It has the previous version of
-the new flush implementation and is using front insertion.
-
-Thanks.
-
--- 
-tejun
+> 
+> Paolo
