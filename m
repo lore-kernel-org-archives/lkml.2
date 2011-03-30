@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965266Ab1C3VjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:39:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:33187 "EHLO mga01.intel.com"
+	id S965330Ab1C3VjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:39:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26880 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964828Ab1C3VIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:08:13 -0400
+	id S933542Ab1C3VIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:08:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="673447751"
+   d="scan'208";a="727133411"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: max@vozeler.com, MWehby@luxotticaRetail.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [149/275] staging: usbip: vhci: use urb->dev->portnum to find port
-Message-Id: <20110330210630.8F0993E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:30 -0700 (PDT)
+To: tglx@linutronix.de, ak@linux.intel.com, avorontsov@ru.mvista.com,
+        dwmw2@infradead.org, arjan@infradead.org, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [139/275] genirq: Disable the SHIRQ_DEBUG call in request_threaded_irq for now
+Message-Id: <20110330210620.1201B3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,56 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Max Vozeler <max@vozeler.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 01446ef5af4e8802369bf4d257806e24345a9371 upstream.
+commit 6d83f94db95cfe65d2a6359cccdf61cf087c2598 upstream.
 
-The access to pending_port was racy when two devices
-were being attached at the same time.
+With CONFIG_SHIRQ_DEBUG=y we call a newly installed interrupt handler
+in request_threaded_irq().
 
-Signed-off-by: Max Vozeler <max@vozeler.com>
-Tested-by: Mark Wehby <MWehby@luxotticaRetail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+The original implementation (commit a304e1b8) called the handler
+_BEFORE_ it was installed, but that caused problems with handlers
+calling disable_irq_nosync(). See commit 377bf1e4.
+
+It's braindead in the first place to call disable_irq_nosync in shared
+handlers, but ....
+
+Moving this call after we installed the handler looks innocent, but it
+is very subtle broken on SMP.
+
+Interrupt handlers rely on the fact, that the irq core prevents
+reentrancy.
+
+Now this debug call violates that promise because we run the handler
+w/o the IRQ_INPROGRESS protection - which we cannot apply here because
+that would result in a possibly forever masked interrupt line.
+
+A concurrent real hardware interrupt on a different CPU results in
+handler reentrancy and can lead to complete wreckage, which was
+unfortunately observed in reality and took a fricking long time to
+debug.
+
+Leave the code here for now. We want this debug feature, but that's
+not easy to fix. We really should get rid of those
+disable_irq_nosync() abusers and remove that function completely.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Anton Vorontsov <avorontsov@ru.mvista.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/usbip/vhci.h     |    3 ---
- drivers/staging/usbip/vhci_hcd.c |    4 +---
- 2 files changed, 1 insertion(+), 6 deletions(-)
+ kernel/irq/manage.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/drivers/staging/usbip/vhci.h
+Index: linux-2.6.35.y/kernel/irq/manage.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/staging/usbip/vhci.h	2011-03-29 23:03:01.319266414 -0700
-+++ linux-2.6.35.y/drivers/staging/usbip/vhci.h	2011-03-29 23:03:01.359265390 -0700
-@@ -100,9 +100,6 @@
- 	 * But, the index of this array begins from 0.
- 	 */
- 	struct vhci_device vdev[VHCI_NPORTS];
--
--	/* vhci_device which has not been assiged its address yet */
--	int pending_port;
- };
+--- linux-2.6.35.y.orig/kernel/irq/manage.c	2011-03-29 22:51:11.695423912 -0700
++++ linux-2.6.35.y/kernel/irq/manage.c	2011-03-29 23:03:01.175270097 -0700
+@@ -1093,7 +1093,7 @@
+ 	if (retval)
+ 		kfree(action);
  
- 
-Index: linux-2.6.35.y/drivers/staging/usbip/vhci_hcd.c
-===================================================================
---- linux-2.6.35.y.orig/drivers/staging/usbip/vhci_hcd.c	2011-03-29 23:03:01.341265850 -0700
-+++ linux-2.6.35.y/drivers/staging/usbip/vhci_hcd.c	2011-03-29 23:03:01.360265365 -0700
-@@ -138,8 +138,6 @@
- 	 * the_controller->vdev[rhport].ud.status = VDEV_CONNECT;
- 	 * spin_unlock(&the_controller->vdev[rhport].ud.lock); */
- 
--	the_controller->pending_port = rhport;
--
- 	spin_unlock_irqrestore(&the_controller->lock, flags);
- 
- 	usb_hcd_poll_rh_status(vhci_to_hcd(the_controller));
-@@ -575,7 +573,7 @@
- 		return urb->status;
- 	}
- 
--	vdev = port_to_vdev(the_controller->pending_port);
-+	vdev = port_to_vdev(urb->dev->portnum-1);
- 
- 	/* refuse enqueue for dead connection */
- 	spin_lock(&vdev->ud.lock);
+-#ifdef CONFIG_DEBUG_SHIRQ
++#ifdef CONFIG_DEBUG_SHIRQ_FIXME
+ 	if (!retval && (irqflags & IRQF_SHARED)) {
+ 		/*
+ 		 * It's a shared IRQ -- the driver ought to be prepared for it
