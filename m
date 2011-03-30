@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab1C3KgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 06:36:04 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59611 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017Ab1C3KgC (ORCPT
+	id S1755065Ab1C3KgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 06:36:11 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40142
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753017Ab1C3KgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 06:36:02 -0400
-Date: Wed, 30 Mar 2011 11:35:56 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@linux.intel.com>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/18] GMA500 updates
-Message-ID: <20110330103556.GB29796@srcf.ucam.org>
-References: <20110330085539.5897.67919.stgit@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110330085539.5897.67919.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 30 Mar 2011 06:36:07 -0400
+Date: Wed, 30 Mar 2011 03:35:29 -0700 (PDT)
+Message-Id: <20110330.033529.71582712.davem@davemloft.net>
+To: rlandley@parallels.com
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        netdev@vger.kernel.org, stable@kernel.org
+Subject: Re: 2.6.38 containers bug: Infinite loop in
+ /proc/sys/net/ipv6/neigh/neigh/neigh...
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4D9302F3.6080206@parallels.com>
+References: <4D92E9DC.3070405@parallels.com>
+	<20110330.020120.02272125.davem@davemloft.net>
+	<4D9302F3.6080206@parallels.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 09:58:57AM +0100, Alan Cox wrote:
-> This set of patches tackles three basic things
-> 
-> - Add support for Moorestown (not yet usable as it needs a memory allocator)
+From: Rob Landley <rlandley@parallels.com>
+Date: Wed, 30 Mar 2011 05:16:19 -0500
 
-Is Moorestown known as GMA500 or GMA600? Is there some more generic name 
-that would cover all of them?
+> Pinging the stable guys to make sure this goes in a dot release.
 
-(Clearly not a high-priority issue, given the set of hardware supported 
-by the i915 driver)
+Please do not do this.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I let fixes soak in Linus's tree for a week or even more before I submit
+them to -stable.
