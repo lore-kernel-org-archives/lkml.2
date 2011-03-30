@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab1C3NTx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 09:19:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:47692 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157Ab1C3NTw (ORCPT
+	id S1755925Ab1C3NW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 09:22:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52828 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754657Ab1C3NWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 09:19:52 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=XYJHFtupD_QA:10 a=_1REmzv8xjcA:10 a=8nJEP1OIZ-IA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=-j4potA_lYyAumOTwkwA:9 a=HvC47gylbIE-S7Yr3aJDaegfEXoA:4 a=wPNLvfGTeEIA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Wed, 30 Mar 2011 09:19:51 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Keval Vora <kevalvora@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Compiling kernel 2.6.12
-Message-ID: <20110330131951.GI8529@home.goodmis.org>
-References: <AANLkTi=9kaSJ6hOa6rB7QScSa-aStf45cHA_HNASicUP@mail.gmail.com>
+	Wed, 30 Mar 2011 09:22:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kyungmin Park <kmpark@infradead.org>
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+Date: Wed, 30 Mar 2011 15:22:18 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
+References: <20110328103431.GA22323@july>
+In-Reply-To: <20110328103431.GA22323@july>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=9kaSJ6hOa6rB7QScSa-aStf45cHA_HNASicUP@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103301522.18836.arnd@arndb.de>
+X-Provags-ID: V02:K0:GCeYKNe4a1EGLMUlXRdSoL/bweViWova3xO44Y+4/fG
+ huvQVeOSXYDMCEQiCM3042lQT76fUFR50pAZQBTlfgs5ko+u/A
+ qwy9+Vd5y/F/7rIWlZL0NIwMIk32iJDoIZyq4DV5m7JeHkpjzG
+ +2DLpGnnOU4L72orJWkkdsccwFt5uXLhq1NFaxax55x/WbDqp8
+ 7SOhfiPVJemvpqvW2tsCA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 10:38:33AM +0530, Keval Vora wrote:
-> Hello
+On Monday 28 March 2011, Kyungmin Park wrote:
+> So you will go through (blocks, bytes...) 0 -> 20
 > 
-> I was trying to compile the kernel 2.6.12. The command "make O=/build
-> menuconfig" executed successfully. However I am getting the following
-> error on executing "make O=/build":
+>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+>   ^                   ^
+>   0                   20
 > 
-> operand type mismatch for `mov'
+> So, you will call discard on extents:
 > 
-> I am a student and I particularly wanted to compile this version
-> because there are few patches coded for this version I need to study
-> them and may be extend them. Can anyone please help me with this one?
+> 0-3
+> You'll skip 6 because is smaller than minlen
+> 10-11
+> 15-19
 > 
+> instead of 
+> 
+> 0-3
+> 10-11
+> 15-19
+> 30-36
 
-2.6.12 is a very old kernel and probably wont even build with the latest
-toolchains, as now the tool chains will error on things that it use to
-let by back then.
+Sorry for joining the discussion late, but shouldn't you also pass
+the alignment of the discards?
 
-You'll probably want to try and find a version of a distro from 2005 and
-install that on a machine. Then you could build the 2.6.12 kernel on
-that distro. You may need to also find a machine from 2005 as well.
+FAT is typically used on cheap media that have very limited support
+for garbage-collection, such as eMMC or SD cards.
 
-Good luck,
+On most SDHC cards, you only ever want to issue discard on full erase
+blocks (allocation units per spec), typically sized 4 MB.
 
--- Steve
+If you just pass the minimum length, the file system could end up
+erasing a 4 MB section that spans two half erase blocks, or it
+could span a few clusters of the following erase block, both of
+which is not desirable from a performance point of view.
 
+On other media, you have the same problem inside an erase block:
+These might be able to discard parts of an erase block efficiently,
+but normally not less than a flash page (typically 8 to 32 KB).
+
+Again, you don't want to discard partial pages in this case, and
+that is much more important than discarding a large number of pages
+because it would result in an immediate copy-on-write operation.
+
+Further, when you erase some pages inside of an erase block, you
+probably should not span multiple erase blocks but instead issue
+separate requests for each set of pages in one erase block.
+
+	Arnd
+
+	Arnd
