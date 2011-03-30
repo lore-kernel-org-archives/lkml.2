@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965452Ab1C3WDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:03:35 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:43168 "EHLO
+	id S933300Ab1C3WDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 18:03:34 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:43177 "EHLO
 	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933313Ab1C3WB5 (ORCPT
+	with ESMTP id S933263Ab1C3WB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 18:01:57 -0400
+	Wed, 30 Mar 2011 18:01:58 -0400
 From: Sage Weil <sage@newdream.net>
 To: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, mszeredi@suse.cz,
         Sage Weil <sage@newdream.net>
-Subject: [PATCH 3/7] vfs: push dentry_unhash on rmdir into file systems
-Date: Wed, 30 Mar 2011 15:09:24 -0700
-Message-Id: <1301522968-4382-4-git-send-email-sage@newdream.net>
+Subject: [PATCH 4/7] vfs: push dentry_unhash on rename_dir into file systems
+Date: Wed, 30 Mar 2011 15:09:25 -0700
+Message-Id: <1301522968-4382-5-git-send-email-sage@newdream.net>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1301522968-4382-1-git-send-email-sage@newdream.net>
 References: <1301522968-4382-1-git-send-email-sage@newdream.net>
@@ -22,547 +22,557 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Only a few file systems need this.  Start by pushing it down into each
-fs rmdir method so it can be dealt with on a per-fs basis.
-
-This does not change behavior for any in-tree file systems.
+rename method so that it can be dealt with on a per-fs basis.
 
 Signed-off-by: Sage Weil <sage@newdream.net>
 ---
- fs/9p/vfs_inode.c       |    1 +
- fs/affs/namei.c         |    2 ++
- fs/afs/dir.c            |    2 ++
- fs/autofs4/root.c       |    2 ++
- fs/btrfs/inode.c        |    2 ++
+ fs/9p/vfs_inode.c       |    3 +++
+ fs/affs/namei.c         |    3 +++
+ fs/afs/dir.c            |    3 +++
+ fs/bfs/dir.c            |    3 +++
+ fs/btrfs/inode.c        |    3 +++
  fs/ceph/dir.c           |    3 +++
- fs/cifs/inode.c         |    2 ++
- fs/coda/dir.c           |    2 ++
- fs/configfs/dir.c       |    2 ++
- fs/ecryptfs/inode.c     |    2 ++
- fs/exofs/namei.c        |    2 ++
- fs/ext2/namei.c         |    2 ++
- fs/ext3/namei.c         |    2 ++
- fs/ext4/namei.c         |    2 ++
- fs/fat/namei_msdos.c    |    2 ++
- fs/fat/namei_vfat.c     |    2 ++
- fs/fuse/dir.c           |    2 ++
- fs/gfs2/ops_inode.c     |    2 ++
+ fs/cifs/inode.c         |    3 +++
+ fs/coda/dir.c           |    3 +++
+ fs/ecryptfs/inode.c     |    3 +++
+ fs/exofs/namei.c        |    3 +++
+ fs/ext2/namei.c         |    3 +++
+ fs/ext3/namei.c         |    3 +++
+ fs/ext4/namei.c         |    3 +++
+ fs/fat/namei_msdos.c    |    3 +++
+ fs/fat/namei_vfat.c     |    3 +++
+ fs/fuse/dir.c           |    4 ++++
+ fs/gfs2/ops_inode.c     |    3 +++
  fs/hfs/dir.c            |    3 +++
- fs/hfsplus/dir.c        |    2 ++
- fs/hostfs/hostfs_kern.c |    2 ++
- fs/hpfs/namei.c         |    2 ++
- fs/jffs2/dir.c          |    2 ++
- fs/jfs/namei.c          |    2 ++
- fs/libfs.c              |    2 ++
- fs/logfs/dir.c          |    2 ++
- fs/minix/namei.c        |    2 ++
- fs/namei.c              |    1 -
- fs/ncpfs/dir.c          |    2 ++
- fs/nfs/dir.c            |    2 ++
- fs/nilfs2/namei.c       |    2 ++
+ fs/hostfs/hostfs_kern.c |    3 +++
+ fs/hpfs/namei.c         |    4 ++++
+ fs/jffs2/dir.c          |    3 +++
+ fs/jfs/namei.c          |    3 +++
+ fs/libfs.c              |    3 +++
+ fs/logfs/dir.c          |    3 +++
+ fs/minix/namei.c        |    3 +++
+ fs/namei.c              |    5 +----
+ fs/ncpfs/dir.c          |    3 +++
+ fs/nfs/dir.c            |    3 +++
+ fs/nilfs2/namei.c       |    3 +++
  fs/ocfs2/namei.c        |    3 +++
- fs/omfs/dir.c           |    2 ++
- fs/reiserfs/namei.c     |    2 ++
- fs/sysv/namei.c         |    2 ++
- fs/ubifs/dir.c          |    2 ++
- fs/udf/namei.c          |    2 ++
- fs/ufs/namei.c          |    2 ++
- 38 files changed, 76 insertions(+), 1 deletions(-)
+ fs/omfs/dir.c           |    3 +++
+ fs/reiserfs/namei.c     |    3 +++
+ fs/sysv/namei.c         |    3 +++
+ fs/ubifs/dir.c          |    3 +++
+ fs/udf/namei.c          |    3 +++
+ fs/ufs/namei.c          |    3 +++
+ 36 files changed, 108 insertions(+), 4 deletions(-)
 
 diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index b76a40b..eb83ad1 100644
+index eb83ad1..7ce3619 100644
 --- a/fs/9p/vfs_inode.c
 +++ b/fs/9p/vfs_inode.c
-@@ -731,6 +731,7 @@ int v9fs_vfs_unlink(struct inode *i, struct dentry *d)
+@@ -756,6 +756,9 @@ v9fs_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct p9_wstat wstat;
+ 	int retval;
  
- int v9fs_vfs_rmdir(struct inode *i, struct dentry *d)
- {
-+	dentry_unhash(d);
- 	return v9fs_remove(i, d, 1);
- }
- 
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
++
+ 	P9_DPRINTK(P9_DEBUG_VFS, "\n");
+ 	retval = 0;
+ 	old_inode = old_dentry->d_inode;
 diff --git a/fs/affs/namei.c b/fs/affs/namei.c
-index e3e9efc..d087153 100644
+index d087153..03330e2 100644
 --- a/fs/affs/namei.c
 +++ b/fs/affs/namei.c
-@@ -320,6 +320,8 @@ affs_rmdir(struct inode *dir, struct dentry *dentry)
- 		 dentry->d_inode->i_ino,
- 		 (int)dentry->d_name.len, dentry->d_name.name);
+@@ -419,6 +419,9 @@ affs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct buffer_head *bh = NULL;
+ 	int retval;
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	return affs_remove_header(dentry);
- }
- 
+ 	pr_debug("AFFS: rename(old=%u,\"%*s\" to new=%u,\"%*s\")\n",
+ 		 (u32)old_dir->i_ino, (int)old_dentry->d_name.len, old_dentry->d_name.name,
+ 		 (u32)new_dir->i_ino, (int)new_dentry->d_name.len, new_dentry->d_name.name);
 diff --git a/fs/afs/dir.c b/fs/afs/dir.c
-index 20c106f..9a7f414 100644
+index 9a7f414..2c4e051 100644
 --- a/fs/afs/dir.c
 +++ b/fs/afs/dir.c
-@@ -845,6 +845,8 @@ static int afs_rmdir(struct inode *dir, struct dentry *dentry)
- 	_enter("{%x:%u},{%s}",
- 	       dvnode->fid.vid, dvnode->fid.vnode, dentry->d_name.name);
- 
-+	dentry_unhash(dentry);
-+
- 	ret = -ENAMETOOLONG;
- 	if (dentry->d_name.len >= AFSNAMEMAX)
- 		goto error;
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 014e7ab..64415f4 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -600,6 +600,8 @@ static int autofs4_dir_unlink(struct inode *dir, struct dentry *dentry)
- 	if (!autofs4_oz_mode(sbi) && !capable(CAP_SYS_ADMIN))
- 		return -EACCES;
- 
-+	dentry_unhash(dentry);
-+
- 	if (atomic_dec_and_test(&ino->count)) {
- 		p_ino = autofs4_dentry_ino(dentry->d_parent);
- 		if (p_ino && dentry->d_parent != dentry)
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 9007bbd..bd3527b 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -3005,6 +3005,8 @@ static int btrfs_rmdir(struct inode *dir, struct dentry *dentry)
- 	    inode->i_ino == BTRFS_FIRST_FREE_OBJECTID)
- 		return -ENOTEMPTY;
- 
-+	dentry_unhash(dentry);
-+
- 	trans = __unlink_start_trans(dir, dentry);
- 	if (IS_ERR(trans))
- 		return PTR_ERR(trans);
-diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
-index ebafa65..c1d9d6f 100644
---- a/fs/ceph/dir.c
-+++ b/fs/ceph/dir.c
-@@ -824,6 +824,9 @@ static int ceph_unlink(struct inode *dir, struct dentry *dentry)
- 	int err = -EROFS;
- 	int op;
- 
-+	if ((dentry->d_inode->i_mode & S_IFMT) == S_IFDIR)
-+		dentry_unhash(dentry);
-+
- 	if (ceph_snap(dir) == CEPH_SNAPDIR) {
- 		/* rmdir .snap/foo is RMSNAP */
- 		dout("rmsnap dir %p '%.*s' dn %p\n", dir, dentry->d_name.len,
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 8852470..cee5896 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -1461,6 +1461,8 @@ int cifs_rmdir(struct inode *inode, struct dentry *direntry)
- 
- 	cFYI(1, "cifs_rmdir, inode = 0x%p", inode);
- 
-+	dentry_unhash(direntry);
-+
- 	xid = GetXid();
- 
- 	full_path = build_path_from_dentry(direntry);
-diff --git a/fs/coda/dir.c b/fs/coda/dir.c
-index 2b8dae4..9f72b75 100644
---- a/fs/coda/dir.c
-+++ b/fs/coda/dir.c
-@@ -336,6 +336,8 @@ static int coda_rmdir(struct inode *dir, struct dentry *de)
- 	int len = de->d_name.len;
- 	int error;
- 
-+	dentry_unhash(de);
-+
- 	error = venus_rmdir(dir->i_sb, coda_i2f(dir), name, len);
- 	if (!error) {
- 		/* VFS may delete the child */
-diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
-index 90ff3cb..468c77c 100644
---- a/fs/configfs/dir.c
-+++ b/fs/configfs/dir.c
-@@ -1355,6 +1355,8 @@ static int configfs_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct module *subsys_owner = NULL, *dead_item_owner = NULL;
+@@ -1148,6 +1148,9 @@ static int afs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct key *key;
  	int ret;
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	if (dentry->d_parent == configfs_sb->s_root)
+ 	vnode = AFS_FS_I(old_dentry->d_inode);
+ 	orig_dvnode = AFS_FS_I(old_dir);
+ 	new_dvnode = AFS_FS_I(new_dir);
+diff --git a/fs/bfs/dir.c b/fs/bfs/dir.c
+index 685ecff..fb71de1 100644
+--- a/fs/bfs/dir.c
++++ b/fs/bfs/dir.c
+@@ -224,6 +224,9 @@ static int bfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct bfs_sb_info *info;
+ 	int error = -ENOENT;
+ 
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
++
+ 	old_bh = new_bh = NULL;
+ 	old_inode = old_dentry->d_inode;
+ 	if (S_ISDIR(old_inode->i_mode))
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index bd3527b..9b48003 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -6823,6 +6823,9 @@ static int btrfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	u64 root_objectid;
+ 	int ret;
+ 
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
++
+ 	if (new_dir->i_ino == BTRFS_EMPTY_SUBVOL_DIR_OBJECTID)
  		return -EPERM;
  
+diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
+index c1d9d6f..06524c7 100644
+--- a/fs/ceph/dir.c
++++ b/fs/ceph/dir.c
+@@ -866,6 +866,9 @@ static int ceph_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct ceph_mds_request *req;
+ 	int err;
+ 
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
++
+ 	if (ceph_snap(old_dir) != ceph_snap(new_dir))
+ 		return -EXDEV;
+ 	if (ceph_snap(old_dir) != CEPH_NOSNAP ||
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index cee5896..18546b7 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -1571,6 +1571,9 @@ int cifs_rename(struct inode *source_dir, struct dentry *source_dentry,
+ 	FILE_UNIX_BASIC_INFO *info_buf_target;
+ 	int xid, rc, tmprc;
+ 
++	if (target_dentry->d_inode && S_ISDIR(target_dentry->d_inode->i_mode))
++		dentry_unhash(target_dentry);
++
+ 	cifs_sb = CIFS_SB(source_dir->i_sb);
+ 	tlink = cifs_sb_tlink(cifs_sb);
+ 	if (IS_ERR(tlink))
+diff --git a/fs/coda/dir.c b/fs/coda/dir.c
+index 9f72b75..a46126f 100644
+--- a/fs/coda/dir.c
++++ b/fs/coda/dir.c
+@@ -361,6 +361,9 @@ static int coda_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	int new_length = new_dentry->d_name.len;
+ 	int error;
+ 
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
++
+ 	error = venus_rename(old_dir->i_sb, coda_i2f(old_dir),
+ 			     coda_i2f(new_dir), old_length, new_length,
+ 			     (const char *) old_name, (const char *)new_name);
 diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index b592938..6f8a00b 100644
+index 6f8a00b..ea221bf 100644
 --- a/fs/ecryptfs/inode.c
 +++ b/fs/ecryptfs/inode.c
-@@ -556,6 +556,8 @@ static int ecryptfs_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct dentry *lower_dir_dentry;
- 	int rc;
+@@ -610,6 +610,9 @@ ecryptfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct dentry *lower_new_dir_dentry;
+ 	struct dentry *trap = NULL;
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	lower_dentry = ecryptfs_dentry_to_lower(dentry);
- 	dget(dentry);
- 	lower_dir_dentry = lock_parent(lower_dentry);
+ 	lower_old_dentry = ecryptfs_dentry_to_lower(old_dentry);
+ 	lower_new_dentry = ecryptfs_dentry_to_lower(new_dentry);
+ 	dget(lower_old_dentry);
 diff --git a/fs/exofs/namei.c b/fs/exofs/namei.c
-index 4d70db1..0697175 100644
+index 0697175..de252e5 100644
 --- a/fs/exofs/namei.c
 +++ b/fs/exofs/namei.c
-@@ -227,6 +227,8 @@ static int exofs_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct inode *inode = dentry->d_inode;
- 	int err = -ENOTEMPTY;
+@@ -251,6 +251,9 @@ static int exofs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct exofs_dir_entry *old_de;
+ 	int err = -ENOENT;
  
-+	dentry_unhash(dentry);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	if (exofs_empty_dir(inode)) {
- 		err = exofs_unlink(dir, dentry);
- 		if (!err) {
+ 	old_de = exofs_find_entry(old_dir, old_dentry, &old_page);
+ 	if (!old_de)
+ 		goto out;
 diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
-index adb9185..23aa4b3 100644
+index 23aa4b3..c2b209b 100644
 --- a/fs/ext2/namei.c
 +++ b/fs/ext2/namei.c
-@@ -296,6 +296,8 @@ static int ext2_rmdir (struct inode * dir, struct dentry *dentry)
- 	struct inode * inode = dentry->d_inode;
- 	int err = -ENOTEMPTY;
+@@ -320,6 +320,9 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 	struct ext2_dir_entry_2 * old_de;
+ 	int err = -ENOENT;
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	if (ext2_empty_dir(inode)) {
- 		err = ext2_unlink(dir, dentry);
- 		if (!err) {
+ 	dquot_initialize(old_dir);
+ 	dquot_initialize(new_dir);
+ 
 diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
-index b27ba71..3256f48 100644
+index 3256f48..1b3f814 100644
 --- a/fs/ext3/namei.c
 +++ b/fs/ext3/namei.c
-@@ -2074,6 +2074,8 @@ static int ext3_rmdir (struct inode * dir, struct dentry *dentry)
- 	struct ext3_dir_entry_2 * de;
- 	handle_t *handle;
+@@ -2305,6 +2305,9 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
+ 	struct ext3_dir_entry_2 * old_de, * new_de;
+ 	int retval, flush_file = 0;
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	/* Initialize quotas before so that eventual writes go in
- 	 * separate transaction */
- 	dquot_initialize(dir);
+ 	dquot_initialize(old_dir);
+ 	dquot_initialize(new_dir);
+ 
 diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 5485390..39a93c2 100644
+index 39a93c2..90cf091 100644
 --- a/fs/ext4/namei.c
 +++ b/fs/ext4/namei.c
-@@ -2122,6 +2122,8 @@ static int ext4_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct ext4_dir_entry_2 *de;
- 	handle_t *handle;
+@@ -2356,6 +2356,9 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct ext4_dir_entry_2 *old_de, *new_de;
+ 	int retval, force_da_alloc = 0;
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	/* Initialize quotas before so that eventual writes go in
- 	 * separate transaction */
- 	dquot_initialize(dir);
+ 	dquot_initialize(old_dir);
+ 	dquot_initialize(new_dir);
+ 
 diff --git a/fs/fat/namei_msdos.c b/fs/fat/namei_msdos.c
-index 7114990..0c25cea 100644
+index 0c25cea..c3eccbd 100644
 --- a/fs/fat/namei_msdos.c
 +++ b/fs/fat/namei_msdos.c
-@@ -326,6 +326,8 @@ static int msdos_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct fat_slot_info sinfo;
- 	int err;
+@@ -459,6 +459,9 @@ static int do_msdos_rename(struct inode *old_dir, unsigned char *old_name,
+ 	old_inode = old_dentry->d_inode;
+ 	new_inode = new_dentry->d_inode;
  
-+	dentry_unhash(dentry);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	lock_super(sb);
- 	/*
- 	 * Check whether the directory is not in use, then check
+ 	err = fat_scan(old_dir, old_name, &old_sinfo);
+ 	if (err) {
+ 		err = -EIO;
 diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
-index adae3fb..d7b9383 100644
+index d7b9383..e2466b2 100644
 --- a/fs/fat/namei_vfat.c
 +++ b/fs/fat/namei_vfat.c
-@@ -824,6 +824,8 @@ static int vfat_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct fat_slot_info sinfo;
- 	int err;
+@@ -933,6 +933,9 @@ static int vfat_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	int err, is_dir, update_dotdot, corrupt = 0;
+ 	struct super_block *sb = old_dir->i_sb;
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	lock_super(sb);
- 
- 	err = fat_dir_empty(inode);
+ 	old_sinfo.bh = sinfo.bh = dotdot_bh = NULL;
+ 	old_inode = old_dentry->d_inode;
+ 	new_inode = new_dentry->d_inode;
 diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 8bd0ef9..4459fda 100644
+index 4459fda..8e20db1 100644
 --- a/fs/fuse/dir.c
 +++ b/fs/fuse/dir.c
-@@ -667,6 +667,8 @@ static int fuse_rmdir(struct inode *dir, struct dentry *entry)
+@@ -693,6 +693,10 @@ static int fuse_rename(struct inode *olddir, struct dentry *oldent,
+ 	struct fuse_rename_in inarg;
+ 	struct fuse_conn *fc = get_fuse_conn(olddir);
+ 	struct fuse_req *req = fuse_get_req(fc);
++
++	if (newent->d_inode && S_ISDIR(newent->d_inode->i_mode))
++		dentry_unhash(newent);
++
  	if (IS_ERR(req))
  		return PTR_ERR(req);
  
-+	dentry_unhash(entry);
-+
- 	req->in.h.opcode = FUSE_RMDIR;
- 	req->in.h.nodeid = get_node_id(dir);
- 	req->in.numargs = 1;
 diff --git a/fs/gfs2/ops_inode.c b/fs/gfs2/ops_inode.c
-index d8b26ac..6baa30f 100644
+index 6baa30f..3fd5a31 100644
 --- a/fs/gfs2/ops_inode.c
 +++ b/fs/gfs2/ops_inode.c
-@@ -572,6 +572,8 @@ static int gfs2_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct gfs2_holder ri_gh;
+@@ -743,6 +743,9 @@ static int gfs2_rename(struct inode *odir, struct dentry *odentry,
  	int error;
  
-+	dentry_unhash(dentry);
+ 	if (ndentry->d_inode) {
++		if (S_ISDIR(ndentry->d_inode->i_mode))
++			dentry_unhash(ndentry);
 +
- 	error = gfs2_rindex_hold(sdp, &ri_gh);
- 	if (error)
- 		return error;
+ 		nip = GFS2_I(ndentry->d_inode);
+ 		if (ip == nip)
+ 			return 0;
 diff --git a/fs/hfs/dir.c b/fs/hfs/dir.c
-index b4d70b1..616cfe0 100644
+index 616cfe0..1cb70cd 100644
 --- a/fs/hfs/dir.c
 +++ b/fs/hfs/dir.c
-@@ -253,6 +253,9 @@ static int hfs_remove(struct inode *dir, struct dentry *dentry)
- 	struct inode *inode = dentry->d_inode;
- 	int res;
+@@ -286,6 +286,9 @@ static int hfs_rename(struct inode *old_dir, struct dentry *old_dentry,
  
-+	if (S_ISDIR(inode->i_mode))
-+		dentry_unhash(dentry);
+ 	/* Unlink destination if it already exists */
+ 	if (new_dentry->d_inode) {
++		if (S_ISDIR(new_dentry->d_inode->i_mode))
++			dentry_unhash(new_dentry);
 +
- 	if (S_ISDIR(inode->i_mode) && inode->i_size != 2)
- 		return -ENOTEMPTY;
- 	res = hfs_cat_delete(inode->i_ino, dir, &dentry->d_name);
-diff --git a/fs/hfsplus/dir.c b/fs/hfsplus/dir.c
-index 4df5059..23451a9 100644
---- a/fs/hfsplus/dir.c
-+++ b/fs/hfsplus/dir.c
-@@ -370,6 +370,8 @@ static int hfsplus_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct inode *inode = dentry->d_inode;
- 	int res;
- 
-+	dentry_unhash(dentry);
-+
- 	if (inode->i_size != 2)
- 		return -ENOTEMPTY;
- 
+ 		res = hfs_remove(new_dir, new_dentry);
+ 		if (res)
+ 			return res;
 diff --git a/fs/hostfs/hostfs_kern.c b/fs/hostfs/hostfs_kern.c
-index 2638c83..73ea3ba 100644
+index 73ea3ba..e6816b9 100644
 --- a/fs/hostfs/hostfs_kern.c
 +++ b/fs/hostfs/hostfs_kern.c
-@@ -683,6 +683,8 @@ int hostfs_rmdir(struct inode *ino, struct dentry *dentry)
- 	char *file;
+@@ -738,6 +738,9 @@ int hostfs_rename(struct inode *from_ino, struct dentry *from,
+ 	char *from_name, *to_name;
  	int err;
  
-+	dentry_unhash(dentry);
++	if (to->d_inode && S_ISDIR(to->d_inode->i_mode))
++		dentry_unhash(to);
 +
- 	if ((file = dentry_name(dentry)) == NULL)
+ 	if ((from_name = dentry_name(from)) == NULL)
  		return -ENOMEM;
- 	err = do_rmdir(file);
+ 	if ((to_name = dentry_name(to)) == NULL) {
 diff --git a/fs/hpfs/namei.c b/fs/hpfs/namei.c
-index 00c8218..c6674ae 100644
+index c6674ae..04713f7 100644
 --- a/fs/hpfs/namei.c
 +++ b/fs/hpfs/namei.c
-@@ -462,6 +462,8 @@ static int hpfs_rmdir(struct inode *dir, struct dentry *dentry)
+@@ -562,6 +562,10 @@ static int hpfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct buffer_head *bh;
+ 	struct fnode *fnode;
  	int err;
- 	int r;
- 
-+	dentry_unhash(dentry);
 +
- 	hpfs_adjust_length(name, &len);
- 	lock_kernel();
- 	mutex_lock(&hpfs_i(inode)->i_parent_mutex);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
++
+ 	if ((err = hpfs_chk_name(new_name, &new_len))) return err;
+ 	err = 0;
+ 	hpfs_adjust_length(old_name, &old_len);
 diff --git a/fs/jffs2/dir.c b/fs/jffs2/dir.c
-index 9297865..4619ee4 100644
+index 4619ee4..80879d1 100644
 --- a/fs/jffs2/dir.c
 +++ b/fs/jffs2/dir.c
-@@ -610,6 +610,8 @@ static int jffs2_rmdir (struct inode *dir_i, struct dentry *dentry)
- 	int ret;
- 	uint32_t now = get_seconds();
+@@ -787,6 +787,9 @@ static int jffs2_rename (struct inode *old_dir_i, struct dentry *old_dentry,
+ 	uint8_t type;
+ 	uint32_t now;
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	for (fd = f->dents ; fd; fd = fd->next) {
- 		if (fd->ino)
- 			return -ENOTEMPTY;
+ 	/* The VFS will check for us and prevent trying to rename a
+ 	 * file over a directory and vice versa, but if it's a directory,
+ 	 * the VFS can't check whether the victim is empty. The filesystem
 diff --git a/fs/jfs/namei.c b/fs/jfs/namei.c
-index 5a2b269..32eebe6 100644
+index 32eebe6..d213b62 100644
 --- a/fs/jfs/namei.c
 +++ b/fs/jfs/namei.c
-@@ -360,6 +360,8 @@ static int jfs_rmdir(struct inode *dip, struct dentry *dentry)
+@@ -1100,6 +1100,9 @@ static int jfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	jfs_info("jfs_rename: %s %s", old_dentry->d_name.name,
+ 		 new_dentry->d_name.name);
  
- 	jfs_info("jfs_rmdir: dip:0x%p name:%s", dip, dentry->d_name.name);
- 
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	/* Init inode for quota operations. */
- 	dquot_initialize(dip);
- 	dquot_initialize(ip);
+ 	dquot_initialize(old_dir);
+ 	dquot_initialize(new_dir);
+ 
 diff --git a/fs/libfs.c b/fs/libfs.c
-index c88eab5..1e2ba5a 100644
+index 1e2ba5a..91a3710 100644
 --- a/fs/libfs.c
 +++ b/fs/libfs.c
-@@ -311,6 +311,8 @@ int simple_rmdir(struct inode *dir, struct dentry *dentry)
- 	if (!simple_empty(dentry))
+@@ -325,6 +325,9 @@ int simple_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct inode *inode = old_dentry->d_inode;
+ 	int they_are_dirs = S_ISDIR(old_dentry->d_inode->i_mode);
+ 
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
++
+ 	if (!simple_empty(new_dentry))
  		return -ENOTEMPTY;
  
-+	dentry_unhash(dentry);
-+
- 	drop_nlink(dentry->d_inode);
- 	simple_unlink(dir, dentry);
- 	drop_nlink(dir);
 diff --git a/fs/logfs/dir.c b/fs/logfs/dir.c
-index f9ddf0c..9a77518 100644
+index 9a77518..7409059 100644
 --- a/fs/logfs/dir.c
 +++ b/fs/logfs/dir.c
-@@ -273,6 +273,8 @@ static int logfs_rmdir(struct inode *dir, struct dentry *dentry)
- {
- 	struct inode *inode = dentry->d_inode;
+@@ -624,6 +624,9 @@ static int logfs_rename_cross(struct inode *old_dir, struct dentry *old_dentry,
+ 	loff_t pos;
+ 	int err;
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	if (!logfs_empty_dir(inode))
- 		return -ENOTEMPTY;
- 
+ 	/* 1. locate source dd */
+ 	err = logfs_get_dd(old_dir, old_dentry, &dd, &pos);
+ 	if (err)
 diff --git a/fs/minix/namei.c b/fs/minix/namei.c
-index 6e6777f..091626f 100644
+index 091626f..f60aed8 100644
 --- a/fs/minix/namei.c
 +++ b/fs/minix/namei.c
-@@ -168,6 +168,8 @@ static int minix_rmdir(struct inode * dir, struct dentry *dentry)
- 	struct inode * inode = dentry->d_inode;
- 	int err = -ENOTEMPTY;
+@@ -192,6 +192,9 @@ static int minix_rename(struct inode * old_dir, struct dentry *old_dentry,
+ 	struct minix_dir_entry * old_de;
+ 	int err = -ENOENT;
  
-+	dentry_unhash(dentry);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	if (minix_empty_dir(inode)) {
- 		err = minix_unlink(dir, dentry);
- 		if (!err) {
+ 	old_de = minix_find_entry(old_dentry, &old_page);
+ 	if (!old_de)
+ 		goto out;
 diff --git a/fs/namei.c b/fs/namei.c
-index 316e89b..fbbc6d7 100644
+index fbbc6d7..17de6ab 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2842,7 +2842,6 @@ int vfs_rmdir(struct inode *dir, struct dentry *dentry)
- 	else {
- 		error = security_inode_rmdir(dir, dentry);
+@@ -3244,11 +3244,8 @@ static int vfs_rename_dir(struct inode *old_dir, struct dentry *old_dentry,
+ 		mutex_lock(&target->i_mutex);
+ 	if (d_mountpoint(old_dentry)||d_mountpoint(new_dentry))
+ 		error = -EBUSY;
+-	else {
+-		if (target)
+-			dentry_unhash(new_dentry);
++	else
+ 		error = old_dir->i_op->rename(old_dir, old_dentry, new_dir, new_dentry);
+-	}
+ 	if (target) {
  		if (!error) {
--			dentry_unhash(dentry);
- 			error = dir->i_op->rmdir(dir, dentry);
- 			if (!error) {
- 				dentry->d_inode->i_flags |= S_DEAD;
+ 			target->i_flags |= S_DEAD;
 diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
-index f6946bb..57336b7 100644
+index 57336b7..e3e646b 100644
 --- a/fs/ncpfs/dir.c
 +++ b/fs/ncpfs/dir.c
-@@ -1033,6 +1033,8 @@ static int ncp_rmdir(struct inode *dir, struct dentry *dentry)
- 	DPRINTK("ncp_rmdir: removing %s/%s\n",
- 		dentry->d_parent->d_name.name, dentry->d_name.name);
+@@ -1141,6 +1141,9 @@ static int ncp_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		old_dentry->d_parent->d_name.name, old_dentry->d_name.name,
+ 		new_dentry->d_parent->d_name.name, new_dentry->d_name.name);
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	error = -EBUSY;
- 	if (!d_unhashed(dentry))
- 		goto out;
+ 	ncp_age_dentry(server, old_dentry);
+ 	ncp_age_dentry(server, new_dentry);
+ 
 diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 2c3eb33..78cdbdd 100644
+index 78cdbdd..2520def 100644
 --- a/fs/nfs/dir.c
 +++ b/fs/nfs/dir.c
-@@ -1668,6 +1668,8 @@ static int nfs_rmdir(struct inode *dir, struct dentry *dentry)
- 	dfprintk(VFS, "NFS: rmdir(%s/%ld), %s\n",
- 			dir->i_sb->s_id, dir->i_ino, dentry->d_name.name);
+@@ -1879,6 +1879,9 @@ static int nfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		 new_dentry->d_parent->d_name.name, new_dentry->d_name.name,
+ 		 new_dentry->d_count);
  
-+	dentry_unhash(dentry);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	error = NFS_PROTO(dir)->rmdir(dir, &dentry->d_name);
- 	/* Ensure the VFS deletes this inode */
- 	if (error == 0 && dentry->d_inode != NULL)
+ 	/*
+ 	 * For non-directories, check whether the target is busy and if so,
+ 	 * make a copy of the dentry and then do a silly-rename. If the
 diff --git a/fs/nilfs2/namei.c b/fs/nilfs2/namei.c
-index 161791d..87dddb1 100644
+index 87dddb1..b0ec307 100644
 --- a/fs/nilfs2/namei.c
 +++ b/fs/nilfs2/namei.c
-@@ -334,6 +334,8 @@ static int nilfs_rmdir(struct inode *dir, struct dentry *dentry)
+@@ -371,6 +371,9 @@ static int nilfs_rename(struct inode *old_dir, struct dentry *old_dentry,
  	struct nilfs_transaction_info ti;
  	int err;
  
-+	dentry_unhash(dentry);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	err = nilfs_transaction_begin(dir->i_sb, &ti, 0);
- 	if (err)
+ 	err = nilfs_transaction_begin(old_dir->i_sb, &ti, 1);
+ 	if (unlikely(err))
  		return err;
 diff --git a/fs/ocfs2/namei.c b/fs/ocfs2/namei.c
-index 849fb4a..65e4dfd 100644
+index 65e4dfd..68dccef 100644
 --- a/fs/ocfs2/namei.c
 +++ b/fs/ocfs2/namei.c
-@@ -812,6 +812,9 @@ static int ocfs2_unlink(struct inode *dir,
- 	mlog_entry("(0x%p, 0x%p, '%.*s')\n", dir, dentry,
- 		   dentry->d_name.len, dentry->d_name.name);
+@@ -1067,6 +1067,9 @@ static int ocfs2_rename(struct inode *old_dir,
+ 	struct ocfs2_dir_lookup_result orphan_insert = { NULL, };
+ 	struct ocfs2_dir_lookup_result target_insert = { NULL, };
  
-+	if (S_ISDIR(inode->i_mode))
-+		dentry_unhash(dentry);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	dquot_initialize(dir);
+ 	/* At some point it might be nice to break this function up a
+ 	 * bit. */
  
- 	BUG_ON(dentry->d_parent->d_inode != dir);
 diff --git a/fs/omfs/dir.c b/fs/omfs/dir.c
-index 393f3f6..3cc7e89 100644
+index 3cc7e89..08e7c60 100644
 --- a/fs/omfs/dir.c
 +++ b/fs/omfs/dir.c
-@@ -256,6 +256,8 @@ static int omfs_rmdir(struct inode *dir, struct dentry *dentry)
- 	int err = -ENOTEMPTY;
- 	struct inode *inode = dentry->d_inode;
+@@ -394,6 +394,9 @@ static int omfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	is_dir = S_ISDIR(old_inode->i_mode);
  
-+	dentry_unhash(dentry);
+ 	if (new_inode) {
++		if (S_ISDIR(new_inode->i_mode))
++			dentry_unhash(new_dentry);
 +
- 	if (omfs_dir_is_empty(inode)) {
- 		err = omfs_unlink(dir, dentry);
- 		if (!err)
+ 		/* overwriting existing file/dir */
+ 		err = -ENOTEMPTY;
+ 		if (is_dir && !omfs_dir_is_empty(new_inode))
 diff --git a/fs/reiserfs/namei.c b/fs/reiserfs/namei.c
-index 68fdf45..c2d2412 100644
+index c2d2412..fee5284 100644
 --- a/fs/reiserfs/namei.c
 +++ b/fs/reiserfs/namei.c
-@@ -831,6 +831,8 @@ static int reiserfs_rmdir(struct inode *dir, struct dentry *dentry)
- 	INITIALIZE_PATH(path);
- 	struct reiserfs_dir_entry de;
+@@ -1230,6 +1230,9 @@ static int reiserfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	unsigned long savelink = 1;
+ 	struct timespec ctime;
  
-+	dentry_unhash(dentry);
++	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	/* we will be doing 2 balancings and update 2 stat data, we change quotas
- 	 * of the owner of the directory and of the owner of the parent directory.
- 	 * The quota structure is possibly deleted only on last iput => outside
+ 	/* three balancings: (1) old name removal, (2) new name insertion
+ 	   and (3) maybe "save" link insertion
+ 	   stat data updates: (1) old directory,
 diff --git a/fs/sysv/namei.c b/fs/sysv/namei.c
-index e474fbc..fac64ac 100644
+index fac64ac..e2cc675 100644
 --- a/fs/sysv/namei.c
 +++ b/fs/sysv/namei.c
-@@ -196,6 +196,8 @@ static int sysv_rmdir(struct inode * dir, struct dentry * dentry)
- 	struct inode *inode = dentry->d_inode;
- 	int err = -ENOTEMPTY;
+@@ -224,6 +224,9 @@ static int sysv_rename(struct inode * old_dir, struct dentry * old_dentry,
+ 	struct sysv_dir_entry * old_de;
+ 	int err = -ENOENT;
  
-+	dentry_unhash(dentry);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	if (sysv_empty_dir(inode)) {
- 		err = sysv_unlink(dir, dentry);
- 		if (!err) {
+ 	old_de = sysv_find_entry(old_dentry, &old_page);
+ 	if (!old_de)
+ 		goto out;
 diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
-index 14f64b6..c2d0756 100644
+index c2d0756..d5dfd6b 100644
 --- a/fs/ubifs/dir.c
 +++ b/fs/ubifs/dir.c
-@@ -674,6 +674,8 @@ static int ubifs_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct ubifs_inode *dir_ui = ubifs_inode(dir);
- 	struct ubifs_budget_req req = { .mod_dent = 1, .dirtied_ino = 2 };
+@@ -996,6 +996,9 @@ static int ubifs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 			.dirtied_ino_d = ALIGN(old_inode_ui->data_len, 8) };
+ 	struct timespec time;
  
-+	dentry_unhash(dentry);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
  	/*
- 	 * Budget request settings: deletion direntry, deletion inode and
- 	 * changing the parent inode. If budgeting fails, go ahead anyway
+ 	 * Budget request settings: deletion direntry, new direntry, removing
+ 	 * the old inode, and changing old and new parent directory inodes.
 diff --git a/fs/udf/namei.c b/fs/udf/namei.c
-index b7c338d..45d1c99 100644
+index 45d1c99..f9729a2 100644
 --- a/fs/udf/namei.c
 +++ b/fs/udf/namei.c
-@@ -783,6 +783,8 @@ static int udf_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct fileIdentDesc *fi, cfi;
+@@ -1083,6 +1083,9 @@ static int udf_rename(struct inode *old_dir, struct dentry *old_dentry,
  	struct kernel_lb_addr tloc;
+ 	struct udf_inode_info *old_iinfo = UDF_I(old_inode);
  
-+	dentry_unhash(dentry);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	retval = -ENOENT;
- 	fi = udf_find_entry(dir, &dentry->d_name, &fibh, &cfi);
- 	if (!fi)
+ 	ofi = udf_find_entry(old_dir, &old_dentry->d_name, &ofibh, &ocfi);
+ 	if (ofi) {
+ 		if (ofibh.sbh != ofibh.ebh)
 diff --git a/fs/ufs/namei.c b/fs/ufs/namei.c
-index d6f6815..a430d7b 100644
+index a430d7b..85a2204 100644
 --- a/fs/ufs/namei.c
 +++ b/fs/ufs/namei.c
-@@ -259,6 +259,8 @@ static int ufs_rmdir (struct inode * dir, struct dentry *dentry)
- 	struct inode * inode = dentry->d_inode;
- 	int err= -ENOTEMPTY;
+@@ -285,6 +285,9 @@ static int ufs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct ufs_dir_entry *old_de;
+ 	int err = -ENOENT;
  
-+	dentry_unhash(dentry);
++	if (new_inode && S_ISDIR(new_inode->i_mode))
++		dentry_unhash(new_dentry);
 +
- 	lock_kernel();
- 	if (ufs_empty_dir (inode)) {
- 		err = ufs_unlink(dir, dentry);
+ 	old_de = ufs_find_entry(old_dir, &old_dentry->d_name, &old_page);
+ 	if (!old_de)
+ 		goto out;
 -- 
 1.7.0
 
