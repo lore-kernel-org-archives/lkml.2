@@ -1,43 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852Ab1C3ToK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 15:44:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17273 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932792Ab1C3ToI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 15:44:08 -0400
-Subject: Re: [tpmdd-devel] TPM chip prevents machine from suspending
-From: Eric Paris <eparis@redhat.com>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-In-Reply-To: <4D91F4BB.5090708@linux.vnet.ibm.com>
-References: <20110328100846.0ba2e039@tlielax.poochiereds.net>
-	 <4D90C472.3090908@linux.vnet.ibm.com>
-	 <20110328141241.06a435f8@tlielax.poochiereds.net>
-	 <20110328154543.1bb979fd@tlielax.poochiereds.net>
-	 <4D91157F.2020502@linux.vnet.ibm.com>
-	 <20110329080856.1726dfaa@tlielax.poochiereds.net>
-	 <4D91CF9D.3050500@linux.vnet.ibm.com> <4D91ED0C.8070503@linux.vnet.ibm.com>
-	 <4D91F4BB.5090708@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Mar 2011 15:43:58 -0400
-Message-ID: <1301514238.561.9.camel@unknown001a4b0c2895>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932875Ab1C3ToX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 15:44:23 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40196 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932854Ab1C3ToT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 15:44:19 -0400
+Date: Wed, 30 Mar 2011 21:44:12 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>,
+        William Manson <WManson@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Subject: Re: [PATCH 1/3] input/touchscreen: Synaptics RMI4 Touchscreen
+ Driver
+Message-ID: <20110330194412.GA26261@pengutronix.de>
+References: <1301446249-13646-1-git-send-email-cheiny@synaptics.com>
+ <1301446249-13646-2-git-send-email-cheiny@synaptics.com>
+ <20110330080223.GB2232@pengutronix.de>
+ <4D937814.5010604@synaptics.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+In-Reply-To: <4D937814.5010604@synaptics.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 11:03 -0400, Stefan Berger wrote:
 
-> - send  a command to the TPM upon resume and if TPM response returns 
-> with error code 38 set a flag and don't send TPM_SaveState() upon the 
-> next suspend; log this case; the TPM becomes unusable; machine will 
-> suspend a 2nd time
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I assume there is no reasonable way to detect this particular piece of
-broken BIOS/hardware?  If not I think this sounds like the best option
-to me.  If the TPM doesn't work after resume not much we can do other
-than accept it doesn't work and move along.....
+On Wed, Mar 30, 2011 at 11:36:04AM -0700, Christopher Heiny wrote:
+> On 03/30/2011 01:02 AM, Wolfram Sang wrote:
+> >* PGP Signed by an unknown key: 03/30/2011 at 12:02:23 AM
+> >Hi,
+> >
+> >>+	retval =3D rmi_register_sensor(&instancedata->rmiphysdrvr, platformda=
+ta->perfunctiondata);
+> >>+	if (retval) {
+> >>+		dev_err(&client->dev, "%s: Failed to Register %s sensor drivers\n",
+> >>+				__func__, instancedata->rmiphysdrvr.name);
+> >>+		i2c_set_clientdata(client, NULL);
+> >
+> >I originally just wanted to say that this line can be removed. Then I
+> >remembered that I already sent a patch for a similar driver in staging
+> >(dc7b202a4ee6cb686e2bbef80c84443f43ec91bd). The staging driver looks in
+> >a better shape to me. Do you know about it?
+>=20
+> That call is required in order to register the sensor device on the
 
+I meant the last line, setting clientdata to NULL is not needed anymore.
+
+> I'm afraid I can't locate the commit you specified.
+
+Direct search failed for me, too, but here is the link:
+
+http://git.kernel.org/?p=3Dlinux/kernel/git/torvalds/linux-2.6.git;a=3Dcomm=
+it;h=3Ddc7b202a4ee6cb686e2bbef80c84443f43ec91bd
+
+> I do find a driver in staging/ste_rmi4/synaptics_i2c_rmi4.[ch] - is that =
+the
+> one?
+
+Yes, I meant this one. Looks a bit better from a glimpse; no '#if 0'-blocks,
+much less printk. I just wondered how these two are related and if it makes
+sense to join efforts here.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--tKW2IUtsqtDRztdT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAk2TiAwACgkQD27XaX1/VRszhACdFJj9UQYtrG/cJKULA7C4Yl8Q
+/Q4AnRQhSMXClLA3P9vOMnbYnVQTLMf3
+=hDZ/
+-----END PGP SIGNATURE-----
+
+--tKW2IUtsqtDRztdT--
