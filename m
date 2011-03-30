@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab1C3LdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 07:33:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34238 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755760Ab1C3LdK (ORCPT
+	id S932240Ab1C3LiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 07:38:15 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:43167 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754783Ab1C3LiN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 07:33:10 -0400
-Message-ID: <4D931498.9000505@ru.mvista.com>
-Date: Wed, 30 Mar 2011 15:31:36 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Simon Wood <simon@mungewell.org>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH] pl25a1_support
-References: <1301456667-1648-1-git-send-email-simon@mungewell.org>
-In-Reply-To: <1301456667-1648-1-git-send-email-simon@mungewell.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Mar 2011 07:38:13 -0400
+Subject: Re: kmemleak for MIPS
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Daniel Baluta <dbaluta@ixiacom.com>
+Cc: Maxin John <maxin.john@gmail.com>, naveen yadav <yad.naveen@gmail.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Eric Dumazet <eric.dumazet@gmail.com>
+In-Reply-To: <AANLkTi=vcn5jHpk0O8XS9XJ8s5k-mCnzUwu70mFTx4=g@mail.gmail.com>
+References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
+	 <AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
+	 <1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
+	 <1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
+	 <1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
+	 <AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
+	 <1301476505.29074.47.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTi=YB+nBG7BYuuU+rB9TC-BbWcJ6mVfkxq0iUype@mail.gmail.com>
+	 <AANLkTi=L0zqwQ869khH1efFUghGeJjoyTaBXs-O2icaM@mail.gmail.com>
+	 <AANLkTi=vcn5jHpk0O8XS9XJ8s5k-mCnzUwu70mFTx4=g@mail.gmail.com>
+Organization: ARM Limited
+Date: Wed, 30 Mar 2011 12:38:05 +0100
+Message-ID: <1301485085.29074.61.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 30 Mar 2011 11:38:06.0287 (UTC) FILETIME=[EFBAEDF0:01CBEECE]
+X-MC-Unique: 111033012380904901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, 2011-03-30 at 12:24 +0100, Daniel Baluta wrote:
+> We have:
+> 
+> > UDP hash table entries: 128 (order: 0, 4096 bytes)
+> > CONFIG_BASE_SMALL=0
+> 
+> udp_table_init looks like:
+> 
+>         if (!CONFIG_BASE_SMALL)
+>                 table->hash = alloc_large_system_hash(name, .. &table->mask);
+>         /*
+>          * Make sure hash table has the minimum size
+>          */
+> 
+> Since CONFIG_BASE_SMALL is 0, we are allocating the hash using
+> alloc_large_system
+> Then:
+>         if (CONFIG_BASE_SMALL || table->mask < UDP_HTABLE_SIZE_MIN - 1) {
+>                 table->hash = kmalloc();
+> 
+> table->mask is 127, and UDP_HTABLE_SIZE_MIN is 256, so we are allocating again
+> table->hash without freeing already allocated memory.
 
-On 30-03-2011 7:44, Simon Wood wrote:
+Indeed (on my ARM system the reported UDP hash table entries is 512, so
+I don't get the memory leak).
 
-> Adds support for 'Windows Easy Transfer' cables based around the
-> Prolific PL-25A1 chip (includes Belkin F5U258&  F5U279)
+> We could free table->hash, before allocating the memory with kmalloc.
+> I don't fully understand the condition table->mask < UDP_HTABLE_SIZE_MIN - 1.
 
-> Patch originally suggested by David Brownell here:
-> http://www.mail-archive.com/netdev@vger.kernel.org/msg61926.html
+We don't have the equivalent of free_large_system_hash(). Reordering the
+'if' blocks may be better.
 
-> Modified to work with latest kernel, tested with F5U279.
->
-> Signed-off-by: Simon Wood<simon@mungewell.org>
+-- 
+Catalin
 
-[...]
 
-> diff --git a/drivers/net/usb/plusb.c b/drivers/net/usb/plusb.c
-> index 08ad269..a20afac 100644
-> --- a/drivers/net/usb/plusb.c
-> +++ b/drivers/net/usb/plusb.c
-[...]
-> @@ -89,13 +97,17 @@ static int pl_reset(struct usbnet *dev)
->   	/* some units seem to need this reset, others reject it utterly.
->   	 * FIXME be more like "naplink" or windows drivers.
->   	 */
-> -	(void) pl_set_QuickLink_features(dev,
-> +	int     status;
-> +
-> +        status = pl_set_QuickLink_features(dev,
-
-    This line is indented with spaces ISO tab.
-
-> +	if (status != 0 && netif_msg_probe(dev))
-> +		netif_dbg(dev, link, dev->net, "pl_reset --> %d\n", status);
->  	return 0;
->  }
-
-    Also, the above change doesn't seem to be related to the declared purpose 
-of the patch, so seems to be a matter of another patch...
-
-> @@ -134,16 +153,16 @@ static struct usb_driver plusb_driver = {
->
->   static int __init plusb_init(void)
->   {
-> - 	return usb_register(&plusb_driver);
-> +	return usb_register(&plusb_driver);
->   }
->   module_init(plusb_init);
->
->   static void __exit plusb_exit(void)
->   {
-> - 	usb_deregister(&plusb_driver);
-> +	usb_deregister(&plusb_driver);
->   }
-
-    Likewise, the whitespace fixes should be a matgter of a separate patch...
-
-WBR, Sergei
