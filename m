@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933376Ab1C3VHE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:07:04 -0400
-Received: from mga14.intel.com ([143.182.124.37]:17014 "EHLO mga14.intel.com"
+	id S1756237Ab1C3VyH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:54:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51403 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933356Ab1C3VG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:06:58 -0400
+	id S933356Ab1C3VHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:07:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="411277049"
+   d="scan'208";a="727133097"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: chunkeey@googlemail.com, linville@tuxdriver.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [58/275] p54: fix sequence no. accounting off-by-one error
-Message-Id: <20110330210454.BB1FE3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:04:54 -0700 (PDT)
+To: chris@chris-wilson.co.uk, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [85/275] drm/i915: Add dependency on CONFIG_TMPFS
+Message-Id: <20110330210523.3081D3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:05:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,39 +24,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 3b5c5827d1f80ad8ae844a8b1183f59ddb90fe25 upstream.
+commit f7ab9b407b3bc83161c2aa74c992ba4782e87c9c upstream.
 
-P54_HDR_FLAG_DATA_OUT_SEQNR is meant to tell the
-firmware that "the frame's sequence number has
-already been set by the application."
+Without tmpfs, shmem_readpage() is not compiled in causing an OOPS as
+soon as we try to allocate some swappable pages for GEM.
 
-Whereas IEEE80211_TX_CTL_ASSIGN_SEQ is set for
-frames which lack a valid sequence number and
-either the driver or firmware has to assign one.
+Jan 19 22:52:26 harlie kernel: Modules linked in: i915(+) drm_kms_helper cfbcopyarea video backlight cfbimgblt cfbfillrect
+Jan 19 22:52:26 harlie kernel:
+Jan 19 22:52:26 harlie kernel: Pid: 1125, comm: modprobe Not tainted 2.6.37Harlie #10 To be filled by O.E.M./To be filled by O.E.M.
+Jan 19 22:52:26 harlie kernel: EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 3
+Jan 19 22:52:26 harlie kernel: EIP is at 0x0
+Jan 19 22:52:26 harlie kernel: EAX: 00000000 EBX: f7b7d000 ECX: f3383100 EDX: f7b7d000
+Jan 19 22:52:26 harlie kernel: ESI: f1456118 EDI: 00000000 EBP: f2303c98 ESP: f2303c7c
+Jan 19 22:52:26 harlie kernel:  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+Jan 19 22:52:26 harlie kernel: Process modprobe (pid: 1125, ti=f2302000 task=f259cd80 task.ti=f2302000)
+Jan 19 22:52:26 harlie kernel: Stack:
+Jan 19 22:52:26 harlie udevd-work[1072]: '/sbin/modprobe -b pci:v00008086d00000046sv00000000sd00000000bc03sc00i00' unexpected exit with status 0x0009
+Jan 19 22:52:26 harlie kernel:  c1074061 000000d0 f2f42b80 00000000 000a13d2 f2d5dcc0 00000001 f2303cac
+Jan 19 22:52:26 harlie kernel:  c107416f 00000000 000a13d2 00000000 f2303cd4 f8d620ed f2cee620 00001000
+Jan 19 22:52:26 harlie kernel:  00000000 000a13d2 f1456118 f2d5dcc0 f1a40000 00001000 f2303d04 f8d637ab
+Jan 19 22:52:26 harlie kernel: Call Trace:
+Jan 19 22:52:26 harlie kernel:  [<c1074061>] ? do_read_cache_page+0x71/0x160
+Jan 19 22:52:26 harlie kernel:  [<c107416f>] ? read_cache_page_gfp+0x1f/0x30
+Jan 19 22:52:26 harlie kernel:  [<f8d620ed>] ? i915_gem_object_get_pages+0xad/0x1d0 [i915]
+Jan 19 22:52:26 harlie kernel:  [<f8d637ab>] ? i915_gem_object_bind_to_gtt+0xeb/0x2d0 [i915]
+Jan 19 22:52:26 harlie kernel:  [<f8d65961>] ? i915_gem_object_pin+0x151/0x190 [i915]
+Jan 19 22:52:26 harlie kernel:  [<c11e16ed>] ? drm_gem_object_init+0x3d/0x60
+Jan 19 22:52:26 harlie kernel:  [<f8d65aa5>] ? i915_gem_init_ringbuffer+0x105/0x1e0 [i915]
+Jan 19 22:52:26 harlie kernel:  [<f8d571b7>] ? i915_driver_load+0x667/0x1160 [i915]
 
-Yup, it's the exact opposite!
-
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: John J. Stimson-III <john@idsfa.net>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/net/wireless/p54/txrx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/Kconfig |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Index: linux-2.6.35.y/drivers/net/wireless/p54/txrx.c
+Index: linux-2.6.35.y/drivers/gpu/drm/Kconfig
 ===================================================================
---- linux-2.6.35.y.orig/drivers/net/wireless/p54/txrx.c	2011-03-29 22:51:46.583531213 -0700
-+++ linux-2.6.35.y/drivers/net/wireless/p54/txrx.c	2011-03-29 23:02:59.358316589 -0700
-@@ -616,7 +616,7 @@
- 	else
- 		*burst_possible = false;
- 
--	if (info->flags & IEEE80211_TX_CTL_ASSIGN_SEQ)
-+	if (!(info->flags & IEEE80211_TX_CTL_ASSIGN_SEQ))
- 		*flags |= P54_HDR_FLAG_DATA_OUT_SEQNR;
- 
- 	if (info->flags & IEEE80211_TX_CTL_PSPOLL_RESPONSE)
+--- linux-2.6.35.y.orig/drivers/gpu/drm/Kconfig	2011-03-29 22:51:36.191797111 -0700
++++ linux-2.6.35.y/drivers/gpu/drm/Kconfig	2011-03-29 23:02:59.909302491 -0700
+@@ -96,7 +96,10 @@
+ config DRM_I915
+ 	tristate "i915 driver"
+ 	depends on AGP_INTEL
++	# we need shmfs for the swappable backing store, and in particular
++	# the shmem_readpage() which depends upon tmpfs
+ 	select SHMEM
++	select TMPFS
+ 	select DRM_KMS_HELPER
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
