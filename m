@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933233Ab1C3WJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:09:55 -0400
+	id S965458Ab1C3WKV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 18:10:21 -0400
 Received: from mga02.intel.com ([134.134.136.20]:54022 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933173Ab1C3VGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:06:10 -0400
+	id S933154Ab1C3VGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:06:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="621236041"
+   d="scan'208";a="621235858"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: ksrinivasan@novell.com, ak@linux.intel.com, hjanssen@microsoft.com,
-        haiyangz@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [33/275] Staging: hv: fix sysfs symlink on hv block device
-Message-Id: <20110330210428.6FF413E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:04:28 -0700 (PDT)
+To: nicolaus.colberg@cinterion.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [20/275] USB: adding USB support for Cinterion's HC2x, EU3 and PH8 products
+Message-Id: <20110330210414.BBEA83E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:04:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,33 +24,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Ky Srinivasan <ksrinivasan@novell.com>
+From: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
 
-commit 268eff909afaca93188d2d14554cbf824f6a0e41 upstream.
+commit aa52b3a92918039b273fc9d1994bd34227c40269 upstream.
 
-The block device does not create the proper symlink in sysfs because we
-forgot to set up the gendisk structure properly.  This patch fixes the
-issue.
+/drivers/usb/serial/option.c: Adding support for Cinterion's HC25, HC28,
+HC28J, EU3-E, EU3-P and PH8 by correcting/adding Cinterion's and
+Siemens' Vendor IDs as well as Product IDs and USB_DEVICE tuples
 
-Signed-off-by: K. Y. Srinivasan <ksrinivasan@novell.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Hank Janssen <hjanssen@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/staging/hv/blkvsc_drv.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/option.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.35.y/drivers/staging/hv/blkvsc_drv.c
+Index: linux-2.6.35.y/drivers/usb/serial/option.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/staging/hv/blkvsc_drv.c	2011-03-29 22:51:55.596300598 -0700
-+++ linux-2.6.35.y/drivers/staging/hv/blkvsc_drv.c	2011-03-29 23:02:58.880328819 -0700
-@@ -378,6 +378,7 @@
- 		blkdev->gd->first_minor = 0;
- 	blkdev->gd->fops = &block_ops;
- 	blkdev->gd->private_data = blkdev;
-+	blkdev->gd->driverfs_dev = &(blkdev->device_ctx->device);
- 	sprintf(blkdev->gd->disk_name, "hd%c", 'a' + devnum);
+--- linux-2.6.35.y.orig/drivers/usb/serial/option.c	2011-03-29 22:51:59.987188247 -0700
++++ linux-2.6.35.y/drivers/usb/serial/option.c	2011-03-29 23:02:58.635335088 -0700
+@@ -362,7 +362,16 @@
+ #define HAIER_VENDOR_ID				0x201e
+ #define HAIER_PRODUCT_CE100			0x2009
  
- 	blkvsc_do_inquiry(blkdev);
+-#define CINTERION_VENDOR_ID			0x0681
++/* Cinterion (formerly Siemens) products */
++#define SIEMENS_VENDOR_ID				0x0681
++#define CINTERION_VENDOR_ID				0x1e2d
++#define CINTERION_PRODUCT_HC25_MDM		0x0047
++#define CINTERION_PRODUCT_HC25_MDMNET	0x0040
++#define CINTERION_PRODUCT_HC28_MDM		0x004C
++#define CINTERION_PRODUCT_HC28_MDMNET	0x004A /* same for HC28J */
++#define CINTERION_PRODUCT_EU3_E			0x0051
++#define CINTERION_PRODUCT_EU3_P			0x0052
++#define CINTERION_PRODUCT_PH8			0x0053
+ 
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+@@ -912,7 +921,17 @@
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_100F) },
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1011)},
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1012)},
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, 0x0047) },
++	/* Cinterion */
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDMNET) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, /* HC28 enumerates with Siemens or Cinterion VID depending on FW revision */
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
++
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ } /* Terminating entry */
