@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756398Ab1C3WkA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:40:00 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:40568 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756329Ab1C3Wj6 (ORCPT
+	id S1756402Ab1C3Wlj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 18:41:39 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62631 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265Ab1C3Wli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 18:39:58 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18rt1wMFZPD+auPfU6eIN0W
-Date: Wed, 30 Mar 2011 15:39:46 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110330223946.GL18334@atomide.com>
-References: <20110317183048.GW7258@atomide.com>
- <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
- <20110318101512.GA15375@n2100.arm.linux.org.uk>
- <201103301906.42429.arnd@arndb.de>
- <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
- <20110330214437.GH18334@atomide.com>
- <AANLkTikE5LXMkaSH4t4=DPvAOWXDh5Zyp0ESi=v2mra3@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikE5LXMkaSH4t4=DPvAOWXDh5Zyp0ESi=v2mra3@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 30 Mar 2011 18:41:38 -0400
+Date: Wed, 30 Mar 2011 15:41:30 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: MTD list <linux-mtd@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] UBIFS: do not select KALLSYMS_ALL
+Message-Id: <20110330154130.e62e04e0.randy.dunlap@oracle.com>
+In-Reply-To: <1301474416-8202-2-git-send-email-dedekind1@gmail.com>
+References: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>
+	<1301474416-8202-2-git-send-email-dedekind1@gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D93B19C.0163:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds <torvalds@linux-foundation.org> [110330 15:18]:
-> On Wed, Mar 30, 2011 at 2:44 PM, Tony Lindgren <tony@atomide.com> wrote:
+On Wed, 30 Mar 2011 11:40:15 +0300 Artem Bityutskiy wrote:
+
+> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 > 
-> But for ARM, I suspect even ACPI would actually be an improvement.
-> Because on ARM, the crazy non-platform hw people already happened, and
-> took over the insane asylum.  So having a complicated description
-> language with an interpreter wouldn't be worse than what we already do
-> there.
+> All UBIFS needs is to make sure we stacktraces when UBIFS debugging
+> is enabled. It is enough to select KALLSYMS for this, KALLSYMS_ALL
+> is not necessary. Moreover, Randy Dunlap reported that UBIFS causes
+> the following Kconfig dependency warning:
 > 
-> I'm only half kidding. I wouldn't wish for ACPI even on ARM. But..
-
-Heh I think the device tree is saner here than ACPI :)
- 
-> > Anyways, let's plan on kicking out per-SoC and per-board data from
-> > the kernel and get it from the bootloader via device tree in the
-> > long run. Most of the data is already separate from the code, so
-> > it should not be that hard to do, just takes some time.
+> warning: (UBIFS_FS_DEBUG && LOCKDEP && LATENCYTOP) selects KALLSYMS_ALL
+> which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
 > 
-> This is basically my hope for the future. I just think that ARM people
-> should be very very aggressive about it, because the longer it isn't
-> done, the more crud there will be to convert.
+> The reason is that KALLSYMS_ALL requires DEBUG_KERNEL and KALLSYMS, so
+> ideally, to select KALLSYMS_ALL we'd need to select DEBUG_KERNEL and
+> KALLSYMS first.
+> 
+> This seems to be too much to select. The easiest way to go is to forget
+> about KALLSYMS_ALL and just select KALLSYMS when UBIFS debugging is
+> enabled - that should be enough for stackdumps.
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> ---
+>  fs/ubifs/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/ubifs/Kconfig b/fs/ubifs/Kconfig
+> index d744090..f8b0160 100644
+> --- a/fs/ubifs/Kconfig
+> +++ b/fs/ubifs/Kconfig
+> @@ -47,7 +47,7 @@ config UBIFS_FS_DEBUG
+>  	bool "Enable debugging support"
+>  	depends on UBIFS_FS
+>  	select DEBUG_FS
+> -	select KALLSYMS_ALL
+> +	select KALLSYMS
+>  	help
+>  	  This option enables UBIFS debugging support. It makes sure various
+>  	  assertions, self-checks, debugging messages and test modes are compiled
+> -- 
 
-At least now all that data is in one place in convertable format instead
-of direct register tinkering of shared registers in each device driver
-probe function..
- 
-> I bet it will be painful to do. But it will be even more painful to
-> _not_ do it, and then five years from now realize that it should have
-> been done ten years ago.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Something needs to be done for sure.
+Thanks.
 
-Tony
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
