@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab1C3Juk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 05:50:40 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42922 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab1C3Juj convert rfc822-to-8bit (ORCPT
+	id S1755718Ab1C3JyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 05:54:13 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:64488 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755549Ab1C3JyM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 05:50:39 -0400
-Subject: Re: [RFC] seqlock,lockdep: Add lock primitives to read_seqbegin().
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: rostedt@goodmis.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <201103300812.p2U8CJ9T071782@www262.sakura.ne.jp>
-References: <201103261312.AEJ01293.OVFJFSLtHOFOMQ@I-love.SAKURA.ne.jp>
-	 <20110328171217.GA8529@home.goodmis.org>
-	 <201103290430.p2T4UhLA081016@www262.sakura.ne.jp>
-	 <1301405984.2250.402.camel@laptop> <1301421032.2250.432.camel@laptop>
-	 <201103300812.p2U8CJ9T071782@www262.sakura.ne.jp>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 30 Mar 2011 05:54:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DT1bQwFf6jIo0cBqoCA+k0ShfhtzV/hM+fAGFZ/t8N7QbqHfeGkY9k6EIUXXaait60
+         01JXdQLw9kwX6guGAPua/D4luHK+4cTgq1AU7wsQQ5PBnd8U2ftDIQKxhCO9dal9mS7b
+         LNeWIXPnbDda4Vr8KdwAmE+fyay3ySOYwE5bY=
+MIME-Version: 1.0
+In-Reply-To: <1301476505.29074.47.camel@e102109-lin.cambridge.arm.com>
+References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
+	<AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
+	<1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
+	<1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
+	<1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
+	<AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
+	<1301476505.29074.47.camel@e102109-lin.cambridge.arm.com>
+Date: Wed, 30 Mar 2011 12:54:11 +0300
+Message-ID: <AANLkTi=YB+nBG7BYuuU+rB9TC-BbWcJ6mVfkxq0iUype@mail.gmail.com>
+Subject: Re: kmemleak for MIPS
+From: Daniel Baluta <daniel.baluta@gmail.com>
+To: Maxin John <maxin.john@gmail.com>
+Cc: naveen yadav <yad.naveen@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 30 Mar 2011 11:50:10 +0200
-Message-ID: <1301478610.4859.170.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-30 at 17:12 +0900, Tetsuo Handa wrote:
-> Peter Zijlstra wrote:
-> > On Tue, 2011-03-29 at 15:39 +0200, Peter Zijlstra wrote:
-> > > 
-> > > That said, there are some out-standing issues with rw_locks and lockdep,
-> > > Gautham and I worked on that for a while but we never persevered and
-> > > finished it..
-> > > 
-> > >   http://lkml.org/lkml/2009/5/11/203 
-> > 
-> > I just did a quick rebase onto tip/master (compile tested only):
-> > 
-> >   http://programming.kicks-ass.net/sekrit/patches-lockdep.tar.bz2
-> > 
-> > That series needs testing and a few patches to extend the
-> > lib/locking-selftest* bits to cover the new functionality.
-> 
-> Thanks, but I didn't apply above tarball to 2.6.38.2 because lockdep selftests
-> failed. 
+>> unreferenced object 0x8f90d000 (size 4096):
+>>   comm "swapper", pid 1, jiffies 4294937330 (age 815.000s)
+>>   hex dump (first 32 bytes):
+>>     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>>     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>>   backtrace:
+>>     [<80529644>] alloc_large_system_hash+0x2f8/0x410
+>>     [<805383b4>] udp_table_init+0x4c/0x158
+>>     [<805384dc>] udp_init+0x1c/0x94
+>>     [<8053889c>] inet_init+0x184/0x2a0
+>>     [<80100584>] do_one_initcall+0x174/0x1e0
+>>     [<8051f348>] kernel_init+0xe4/0x174
+>>     [<80103d4c>] kernel_thread_helper+0x10/0x18
+>
+> If you for the kmemleak scan (via echo) a few times, do you get more
+> leaks? The udp_table_init() function looks like it could leak some
+> memory but I haven't seen it before. I'm not sure whether this is a
+> false positive or a real leak.
 
-I probably messed up the last patch, its basically a complete rewrite
-because lockdep changed significantly between when that series was
-written and now.
+Looking again at udp_init_table it seem that a memory leak is possible.
+Could you post your .config and the full output of dmesg after booting.
 
-> > In order to hit your inversion you need to do something like:
-> > 
-> > cat /proc/locktest1 & cat /proc/locktest2
-> > 
-> > if you do them serialized you'll never hit that inversion.
-> 
-> Yes, I know. But I think that lockdep should report the possibility of hitting
-> that inversion even if I do them serialized.
+A situation where CONFIG_BASE_SMALL is 0, and
+table->mask < UDP_HTABLE_SIZE_MIN - 1 would lead
+to a memory leak.
 
-True, my bad.
+Furthermore, you can add some printks inside udp_init_table
+and check what is really happening there. ([1])
 
-> So, this is not a bug but intended coding. Then, we want a comment here why
-> lockdep annotation is missing.
+thanks,
+Daniel.
 
-Nah, ideally we'd fix it by making the VDSO code use another primitive.
+[1] http://lxr.linux.no/linux+v2.6.38/net/ipv4/udp.c#L2125
 
-> > --- a/include/linux/seqlock.h
-> > +++ b/include/linux/seqlock.h
-> > @@ -94,6 +94,7 @@ static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
-> >               cpu_relax();
-> >               goto repeat;
-> >       }
-> > +     rwlock_acquire_read(&sl->lock->dep_map, 0, 0, _RET_IP_);
-> >  
-> >       return ret;
-> >  }
-> > @@ -107,6 +108,8 @@ static __always_inline int read_seqretry(const seqlock_t *sl, unsigned start)
-> >  {
-> >       smp_rmb();
-> >  
-> > +     rwlock_release(&sl->lock->dep_map, 1, _RET_IP_);
-> > +
-> >       return unlikely(sl->sequence != start);
-> >  }
-> 
-> Excuse me, but the lock embedded into seqlock_t is spinlock rather than rwlock.
-> I assume you meant spin_acquire()/spin_release() rather than
-> rwlock_acquire_read()/rwlock_release().
-
-No, I meant what I wrote ;-) it doesn't matter to lockdep that its a
-spinlock (lockdep doesn't even know that) and in fact rwlock_acquire
-(the write version) is identical to spin_acquire() both acquire the lock
-in the exclusive state.
-
-The read side of seqlocks is a recursive read lock, hence
-rwlock_acquire_read()
-
->  Also, I assume you meant to call
-> spin_acquire() before entering the spin state (as with
-> 
->   static inline void __raw_spin_lock(raw_spinlock_t *lock)
->   {
->         preempt_disable();
->         spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
->         LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
->   }
-> 
-> . Otherwise, lockdep cannot report it when hit this bug upon the first call to
-> this function). 
-
-Huh no, of course not, a seqlock read side cannot contend in the classic
-sense.
+thanks,
+Daniel.
