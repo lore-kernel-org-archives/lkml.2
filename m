@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933220Ab1C3VGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:06:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55099 "EHLO mga09.intel.com"
+	id S1756279Ab1C3V61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:58:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13486 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933308Ab1C3VGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:06:44 -0400
+	id S933317Ab1C3VGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:06:50 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="727132968"
+   d="scan'208";a="727133008"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: davem@davemloft.net, jesper.nilsson@axis.com,
-        torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
+To: neilb@suse.de, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [65/275] klist: Fix object alignment on 64-bit.
-Message-Id: <20110330210502.1F8563E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:05:02 -0700 (PDT)
+Subject: [PATCH] [70/275] md: fix regression with re-adding devices to arrays with no metadata
+Message-Id: <20110330210507.5EBE33E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:05:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,36 +24,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: David Miller <davem@davemloft.net>
+From: NeilBrown <neilb@suse.de>
 
-commit 795abaf1e4e188c4171e3cd3dbb11a9fcacaf505 upstream.
+commit bf572541ab44240163eaa2d486b06f306a31d45a upstream.
 
-Commit c0e69a5bbc6f ("klist.c: bit 0 in pointer can't be used as flag")
-intended to make sure that all klist objects were at least pointer size
-aligned, but used the constant "4" which only works on 32-bit.
+Commit 1a855a0606 (2.6.37-rc4) fixed a problem where devices were
+re-added when they shouldn't be but caused a regression in a less
+common case that means sometimes devices cannot be re-added when they
+should be.
 
-Use "sizeof(void *)" which is correct in all cases.
+In particular, when re-adding a device to an array without metadata
+we should always access the device, but after the above commit we
+didn't.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch sets the In_sync flag in that case so that the re-add
+succeeds.
+
+This patch is suitable for any -stable kernel to which 1a855a0606 was
+applied.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- include/linux/klist.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/md.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.35.y/include/linux/klist.h
+Index: linux-2.6.35.y/drivers/md/md.c
 ===================================================================
---- linux-2.6.35.y.orig/include/linux/klist.h	2011-03-29 22:51:43.946598685 -0700
-+++ linux-2.6.35.y/include/linux/klist.h	2011-03-29 23:02:59.534312087 -0700
-@@ -22,7 +22,7 @@
- 	struct list_head	k_list;
- 	void			(*get)(struct klist_node *);
- 	void			(*put)(struct klist_node *);
--} __attribute__ ((aligned (4)));
-+} __attribute__ ((aligned (sizeof(void *))));
- 
- #define KLIST_INIT(_name, _get, _put)					\
- 	{ .k_lock	= __SPIN_LOCK_UNLOCKED(_name.k_lock),		\
+--- linux-2.6.35.y.orig/drivers/md/md.c	2011-03-29 22:51:42.038647504 -0700
++++ linux-2.6.35.y/drivers/md/md.c	2011-03-29 23:54:36.691063594 -0700
+@@ -5109,9 +5109,10 @@
+ 		/* set saved_raid_disk if appropriate */
+ 		if (!mddev->persistent) {
+ 			if (info->state & (1<<MD_DISK_SYNC)  &&
+-			    info->raid_disk < mddev->raid_disks)
++			    info->raid_disk < mddev->raid_disks) {
+ 				rdev->raid_disk = info->raid_disk;
+-			else
++				set_bit(In_sync, &rdev->flags);
++			} else
+ 				rdev->raid_disk = -1;
+ 		} else
+ 			super_types[mddev->major_version].
