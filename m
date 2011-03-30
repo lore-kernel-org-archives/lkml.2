@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab1C3PhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 11:37:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46794 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754647Ab1C3PhI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 11:37:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1103301648460.22418@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1103301648460.22418@localhost6.localdomain6>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 30 Mar 2011 08:36:13 -0700
-Message-ID: <AANLkTinnGfpVeugk4WOKeDAUQEuzBo75yCq_E73=w66V@mail.gmail.com>
-Subject: Re: [GIT pull] irq fixes for .39.rc
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756005Ab1C3PlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 11:41:25 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59610 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760Ab1C3PlY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 11:41:24 -0400
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
+ value
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110330153228.GA1787@redhat.com>
+References: <20110326161346.GA18272@redhat.com>
+	 <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com>
+	 <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop>
+	 <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins>
+	 <1301327368.4859.28.camel@twins> <20110328165648.GA9304@redhat.com>
+	 <20110330130951.GA2124@jolsa.brq.redhat.com>
+	 <20110330153228.GA1787@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Wed, 30 Mar 2011 17:40:52 +0200
+Message-ID: <1301499652.4859.193.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 7:51 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> Please pull the latest irq-fixes-for-linus git tree from:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-fixes-for-linus
+On Wed, 2011-03-30 at 17:32 +0200, Oleg Nesterov wrote:
+> > +#ifdef HAVE_JUMP_LABEL
+> > +static inline
+> > +void perf_sched_events_inc(void)
+> > +{
+> > +     jump_label_inc(&perf_sched_events_out);
+> > +     smp_mb__after_atomic_inc();
+> > +     jump_label_inc(&perf_sched_events_in);
+> > +}
+> > +
+> > +static inline
+> > +void perf_sched_events_dec(void)
+> > +{
+> > +     if (atomic_dec_and_test(&perf_sched_events_in)) {
+> > +             jump_label_disable(&perf_sched_events_in);
+> > +             synchronize_sched();
+> > +     }
+> > +
+> > +     jump_label_dec(&perf_sched_events_out);
+> 
+> probably smp_mb__after_atomic_inc() needs a comment...
 
-Hmm. This has a fundamental merge  conflict with BenH's tree that I just pulled.
-
-You guys did different things in arch/powerpc/include/asm/qe_ic.h:
-
- - BenH has:
-
-        -       struct qe_ic *qe_ic = get_irq_desc_data(desc);
-        +       struct qe_ic *qe_ic = irq_desc_get_chip_data(desc);
-
- - Thomas has:
-
-        -       struct qe_ic *qe_ic = get_irq_desc_data(desc);
-        +       struct qe_ic *qe_ic = irq_desc_get_handler_data(desc);
-
-Note the "chip_data" vs "handler_data" difference.
-
-And when I tried to figure out which one is the correct one, I see that
-
- - qe_ic_host_map does:
-
-        irq_set_chip_data(virq, qe_ic);
-
- - qe_ic_init does:
-
-        irq_set_handler_data(qe_ic->virq_low, qe_ic);
-        ...
-                irq_set_handler_data(qe_ic->virq_high, qe_ic);
-
-which just makes me go "Somebody is really really confused".
-
-The whole thing may mean that both handler_data and chip_data contains
-the right thing, but it still makes me go "WTF?".
-
-Which way should I resolve it?
-
-                         Linus
+You don't need it, jump_label_inc() uses atomic_add_return() which
+implies a full mb.
