@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab1C3QhD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 12:37:03 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:33203 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754760Ab1C3QhA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 12:37:00 -0400
-Message-ID: <4D935C56.4060903@metafoo.de>
-Date: Wed, 30 Mar 2011 18:37:42 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	id S932738Ab1C3Qh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 12:37:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60835 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753234Ab1C3Qhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 12:37:54 -0400
+Date: Wed, 30 Mar 2011 18:37:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
+	value
+Message-ID: <20110330163730.GA6038@redhat.com>
+References: <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com> <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop> <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins> <1301327368.4859.28.camel@twins> <20110328165648.GA9304@redhat.com> <20110330130951.GA2124@jolsa.brq.redhat.com> <1301496684.4859.192.camel@twins>
 MIME-Version: 1.0
-To: Nicolas Kaiser <nikai@nikai.net>
-CC: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/rtc/rtc-jz4740.c: fix error check
-References: <20110330181201.29e473bf@absol.kitzblitz>
-In-Reply-To: <20110330181201.29e473bf@absol.kitzblitz>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301496684.4859.192.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2011 06:12 PM, Nicolas Kaiser wrote:
-> Checking 'rtc->irq < 0' doesn't work because 'rtc->irq' is unsigned.
-> 
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+On 03/30, Peter Zijlstra wrote:
+>
+> --- linux-2.6.orig/kernel/perf_event.c
+> +++ linux-2.6/kernel/perf_event.c
+> @@ -125,9 +125,25 @@ enum event_type_t {
+>   * perf_sched_events : >0 events exist
+>   * perf_cgroup_events: >0 per-cpu cgroup events exist on this cpu
+>   */
+> -atomic_t perf_sched_events __read_mostly;
+> +atomic_t perf_sched_events_in __read_mostly;
+> +atomic_t perf_sched_events_out __read_mostly;
+>  static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
+>
+> +static void perf_sched_events_inc(void)
+> +{
+> +	jump_label_inc(&perf_sched_events_out);
+> +	jump_label_inc(&perf_sched_events_in);
+> +}
+> +
+> +static void perf_sched_events_dec(void)
+> +{
+> +	jump_label_dec(&perf_sched_events_in);
+> +	JUMP_LABEL(&perf_sched_events_in, no_sync);
+> +	synchronize_sched();
+> +no_sync:
+> +	jump_label_dec(&perf_sched_events_out);
+> +}
 
-But while were at it we should change it, so that the result of
-platform_get_irq becomes the return value in case of an error instead of using
-the wrong or at least confusing -ENOENT.
+Nice! I didn't realize we can simply use JUMP_LABEL() directly and then
+the code doesn't depend on HAVE_JUMP_LABEL.
 
-> ---
-> Untested.
-> 
->  drivers/rtc/rtc-jz4740.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/rtc/rtc-jz4740.c b/drivers/rtc/rtc-jz4740.c
-> index b647363..ba91bc6 100644
-> --- a/drivers/rtc/rtc-jz4740.c
-> +++ b/drivers/rtc/rtc-jz4740.c
-> @@ -220,12 +220,13 @@ static int __devinit jz4740_rtc_probe(struct platform_device *pdev)
->  	if (!rtc)
->  		return -ENOMEM;
->  
-> -	rtc->irq = platform_get_irq(pdev, 0);
-> -	if (rtc->irq < 0) {
-> +	ret = platform_get_irq(pdev, 0);
-> +	if (ret < 0) {
->  		ret = -ENOENT;
->  		dev_err(&pdev->dev, "Failed to get platform irq\n");
->  		goto err_free;
->  	}
-> +	rtc->irq = ret;
->  
->  	rtc->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!rtc->mem) {
+Now, the problem is, after I read the comments I am not sure I understand
+what synchronize_sched() actually doe. Add Paul.
+
+
+
+So. synchronize_sched() above should ensure that all CPUs do context
+switch at least once (ignoring idle). And I _thought_ that in practice
+this should work.
+
+But, unles I misread the comment above synchronize_sched(), it seems that
+it only guarantees the end of "everything" which disables preemption,
+explicitly or not. IOW, say, in theory rcu_read_unlock_sched() could
+trigger ->passed_quiesc == T without reschedule.
+
+Oh, and this is not theoretical, afaics. run_ksoftirqd() does
+rcu_note_context_switch().
+
+
+
+So, I think we need something else :/
+
+Oleg.
 
