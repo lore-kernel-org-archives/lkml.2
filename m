@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126Ab1C3WO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:14:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25024 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932342Ab1C3VFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:05:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="903733588"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110330203.501921634@firstfloor.org>
-In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: hmh@hmh.eng.br, mjg@redhat.com, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [2/275] thinkpad-acpi: lock down size of hotkey keymap
-Message-Id: <20110330210355.C84D23E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:03:55 -0700 (PDT)
+	id S933035Ab1C3WQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 18:16:14 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:9833 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932342Ab1C3WQL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 18:16:11 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6301"; a="82841765"
+From: David Collins <collinsd@codeaurora.org>
+To: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm-owner@vger.kernel.org,
+        David Collins <collinsd@codeaurora.org>
+Subject: [PATCH 0/2] regulator: msm: Add PM8921 regulator driver
+Date: Wed, 30 Mar 2011 15:16:01 -0700
+Message-Id: <1301523361-5982-1-git-send-email-collinsd@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+This patch set adds a new regulator driver to control the regulators in
+Qualcomm PM8921 PMIC chips.  It also introduces board file changes to use
+this new driver with the Qualcomm MSM 8960 platform.
 
-------------------
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+This patch set depends upon the following outstanding PM8XXX and PM8921
+patches:
 
-[ upstream commit 34a656d22f5539f613b93e7a1d14b4bd53592505 ]
+https://patchwork.kernel.org/patch/643231/
+https://patchwork.kernel.org/patch/643221/
+https://patchwork.kernel.org/patch/643201/
+https://patchwork.kernel.org/patch/643211/
+https://patchwork.kernel.org/patch/643241/
 
-Use a safer coding style for the hotkey keymap.  This does not fix any
-problems, as the current code is correct.  But it might help avoid
-mistakes in the future.
+David Collins (2):
+  regulator: pm8921-regulator: Add regulator driver for PM8921
+  msm: board-8960: Add support for pm8921-regulator
 
-Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+ arch/arm/mach-msm/Makefile                  |    1 +
+ arch/arm/mach-msm/board-msm8960-regulator.c |  303 ++++
+ arch/arm/mach-msm/board-msm8960.c           |    6 +
+ arch/arm/mach-msm/board-msm8960.h           |   23 +
+ drivers/mfd/pm8921-core.c                   |   32 +-
+ drivers/regulator/Kconfig                   |   10 +
+ drivers/regulator/Makefile                  |    1 +
+ drivers/regulator/pm8921-regulator.c        | 2211 +++++++++++++++++++++++++++
+ include/linux/mfd/pm8xxx/pm8921.h           |    3 +
+ include/linux/regulator/pm8921-regulator.h  |   97 ++
+ 10 files changed, 2686 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-msm/board-msm8960-regulator.c
+ create mode 100644 arch/arm/mach-msm/board-msm8960.h
+ create mode 100644 drivers/regulator/pm8921-regulator.c
+ create mode 100644 include/linux/regulator/pm8921-regulator.h
 
----
- drivers/platform/x86/thinkpad_acpi.c |   19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Index: linux-2.6.35.y/drivers/platform/x86/thinkpad_acpi.c
-===================================================================
---- linux-2.6.35.y.orig/drivers/platform/x86/thinkpad_acpi.c	2011-03-29 22:52:06.274027381 -0700
-+++ linux-2.6.35.y/drivers/platform/x86/thinkpad_acpi.c	2011-03-29 23:55:37.481508118 -0700
-@@ -1911,6 +1911,17 @@
- 	TP_ACPI_HOTKEYSCAN_VOLUMEDOWN,
- 	TP_ACPI_HOTKEYSCAN_MUTE,
- 	TP_ACPI_HOTKEYSCAN_THINKPAD,
-+	TP_ACPI_HOTKEYSCAN_UNK1,
-+	TP_ACPI_HOTKEYSCAN_UNK2,
-+	TP_ACPI_HOTKEYSCAN_UNK3,
-+	TP_ACPI_HOTKEYSCAN_UNK4,
-+	TP_ACPI_HOTKEYSCAN_UNK5,
-+	TP_ACPI_HOTKEYSCAN_UNK6,
-+	TP_ACPI_HOTKEYSCAN_UNK7,
-+	TP_ACPI_HOTKEYSCAN_UNK8,
-+
-+	/* Hotkey keymap size */
-+	TPACPI_HOTKEY_MAP_LEN
- };
- 
- enum {	/* Keys/events available through NVRAM polling */
-@@ -3113,7 +3124,7 @@
- 	 * If the above is too much to ask, don't change the keymap.
- 	 * Ask the thinkpad-acpi maintainer to do it, instead.
- 	 */
--	static u16 ibm_keycode_map[] __initdata = {
-+	static u16 ibm_keycode_map[TPACPI_HOTKEY_MAP_LEN] __initdata = {
- 		/* Scan Codes 0x00 to 0x0B: ACPI HKEY FN+F1..F12 */
- 		KEY_FN_F1,	KEY_FN_F2,	KEY_COFFEE,	KEY_SLEEP,
- 		KEY_WLAN,	KEY_FN_F6, KEY_SWITCHVIDEOMODE, KEY_FN_F8,
-@@ -3147,7 +3158,7 @@
- 		KEY_UNKNOWN, KEY_UNKNOWN, KEY_UNKNOWN, KEY_UNKNOWN,
- 		KEY_UNKNOWN, KEY_UNKNOWN, KEY_UNKNOWN, KEY_UNKNOWN,
- 	};
--	static u16 lenovo_keycode_map[] __initdata = {
-+	static u16 lenovo_keycode_map[TPACPI_HOTKEY_MAP_LEN] __initdata = {
- 		/* Scan Codes 0x00 to 0x0B: ACPI HKEY FN+F1..F12 */
- 		KEY_FN_F1,	KEY_COFFEE,	KEY_BATTERY,	KEY_SLEEP,
- 		KEY_WLAN,	KEY_FN_F6, KEY_SWITCHVIDEOMODE, KEY_FN_F8,
-@@ -3191,7 +3202,6 @@
- 		KEY_UNKNOWN, KEY_UNKNOWN, KEY_UNKNOWN, KEY_UNKNOWN,
- 	};
- 
--#define TPACPI_HOTKEY_MAP_LEN		ARRAY_SIZE(ibm_keycode_map)
- #define TPACPI_HOTKEY_MAP_SIZE		sizeof(ibm_keycode_map)
- #define TPACPI_HOTKEY_MAP_TYPESIZE	sizeof(ibm_keycode_map[0])
- 
-@@ -3469,7 +3479,8 @@
- 	*send_acpi_ev = true;
- 	*ignore_acpi_ev = false;
- 
--	if (scancode > 0 && scancode < 0x21) {
-+	/* HKEY event 0x1001 is scancode 0x00 */
-+	if (scancode > 0 && scancode <= TPACPI_HOTKEY_MAP_LEN) {
- 		scancode--;
- 		if (!(hotkey_source_mask & (1 << scancode))) {
- 			tpacpi_input_send_key_masked(scancode);
