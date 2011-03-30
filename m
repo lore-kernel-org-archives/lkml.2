@@ -1,130 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab1C3Nxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 09:53:33 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49532 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab1C3Nxc (ORCPT
+	id S1755856Ab1C3N6u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 09:58:50 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63530 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab1C3N6t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 09:53:32 -0400
+	Wed, 30 Mar 2011 09:58:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=icRq1dytbCgGYWrO0dD9bQ0awwuzffPU3iajCm8aZ3azCzRuOVs437h4xdktrt6EQU
-         CAH3SkSfY266CgBSGJZC4RB3l3dfs0ojc7nPf9+g6E5VS+cUv66qNddiyyMyW/Bd0xX3
-         mfIUBjGEaICo3cbXYW5oLbM2fUmHcxC5BMu64=
-From: wanlong.gao@gmail.com
-To: dmitry.torokhov@gmail.com, w.sang@pengutronix.de, rpurdie@linux.intel.com,
-        broonie@opensource.wolfsonmicro.com, khali@linux-fr.org
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jiaweiwei.xiyou@gmail.com, Wanlong Gao <wanlong.gao@gmail.com>
-Subject: [PATCH V2] Add the support of the touchscreen keypad of tsc2007 .
-Date: Sun, 27 Mar 2011 17:46:32 +0800
-Message-Id: <1301219192-5293-1-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.3
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=RM413u5imAAtoYdXYy/MqQj31QffeDTXln6iOJYXUjln89E8jbJhekGb8AFg8FdUrD
+         CWdWz2aA9DBMmO7kYNJAWvF+yyKmzZq5cOW5cxwUCCHkH5SGkp96aJPW0kPOi5BvBX2P
+         ONWW9JvLu0mWPO3iGw/R1dUfbH4qzlsfDfZV4=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1103301538580.3418@dhcp-27-109.brq.redhat.com>
+References: <20110328103431.GA22323@july>
+	<201103301522.18836.arnd@arndb.de>
+	<alpine.LFD.2.00.1103301538580.3418@dhcp-27-109.brq.redhat.com>
+Date: Wed, 30 Mar 2011 22:58:47 +0900
+X-Google-Sender-Auth: tGy7Nze9wS_lLlBHOAvXQDN0_9M
+Message-ID: <AANLkTimA7tmaaw=8XZjaxs9qVOZMjYFCL=UnkJoKXqT=@mail.gmail.com>
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+From: Kyungmin Park <kmpark@infradead.org>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao <wanlong.gao@gmail.com>
+On Wed, Mar 30, 2011 at 10:50 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> On Wed, 30 Mar 2011, Arnd Bergmann wrote:
+>
+>> On Monday 28 March 2011, Kyungmin Park wrote:
+>> > So you will go through (blocks, bytes...) 0 -> 20
+>> >
+>> >   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+>> >   ^                   ^
+>> >   0                   20
+>> >
+>> > So, you will call discard on extents:
+>> >
+>> > 0-3
+>> > You'll skip 6 because is smaller than minlen
+>> > 10-11
+>> > 15-19
+>> >
+>> > instead of
+>> >
+>> > 0-3
+>> > 10-11
+>> > 15-19
+>> > 30-36
+>>
+>> Sorry for joining the discussion late, but shouldn't you also pass
+>> the alignment of the discards?
+>>
+>> FAT is typically used on cheap media that have very limited support
+>> for garbage-collection, such as eMMC or SD cards.
+>>
+>> On most SDHC cards, you only ever want to issue discard on full erase
+>> blocks (allocation units per spec), typically sized 4 MB.
+>
+> I was not aware of the fact that SD cards (etc..) does have garbage
+> collection of some sort, or that they even have support discard, since I
+> thought that we have only TRIM,UNAMP/WRITE_SAME comands for SATA or SCSI
+> drives.
+>
+> Or is there some sort of kernel mechanism doing garbage collection such
+> is this for the cheap media ?
+>
+>>
+>> If you just pass the minimum length, the file system could end up
+>> erasing a 4 MB section that spans two half erase blocks, or it
+>> could span a few clusters of the following erase block, both of
+>> which is not desirable from a performance point of view.
+>
+> Does those cards export such information correctly ?
 
-Many touchscreens support touch-keypad .
-Open the definition of the TOUCHSCREEN_TSC2007_WITH_KEYPAD, you can
-open the support of the touchscreen's keypad .
-We can add the support of the touchscreen keypad in the driver.
-In this patch , add the ts_key_pos array to determine the position
-of the key's X. And the ts_key_sensitivity can use to detemine the
-key's sensitivity. You can modify the ts_key_pos array for you own
-touchscreen keys . And modify the ts_key_sensitivity for you own
-key's sensitivity .
-If you want to modify the ts_key_map, change the position of the
-keys ,too.
+Each chip vendor knows it exactly and usually can't tell it outside officially.
+but it's not big as you think. also if the request size is under trim
+size, then it's discarded internally.
+I mean do nothing at firmware level.
 
-Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
----
- drivers/input/touchscreen/tsc2007.c |   48 +++++++++++++++++++++++++++++++++++
- 1 files changed, 48 insertions(+), 0 deletions(-)
+Thank you,
+Kyungmin Park
 
-diff --git a/drivers/input/touchscreen/tsc2007.c b/drivers/input/touchscreen/tsc2007.c
-index 80467f2..8f70fca 100644
---- a/drivers/input/touchscreen/tsc2007.c
-+++ b/drivers/input/touchscreen/tsc2007.c
-@@ -83,6 +83,51 @@ struct tsc2007 {
- 	void			(*clear_penirq)(void);
- };
- 
-+/*
-+#define	TOUCHSCREEN_TSC2007_WITH_KEYPAD
-+*/
-+#ifndef	TOUCHSCREEN_TSC2007_WITH_KEYPAD
-+static void ts_key_set_capacity(struct input_dev *input) {};
-+static void ts_key_up(struct input_dev *input) {};
-+static void ts_key_event(struct input_dev *input, u16 x, u16 y) {};
-+#else
-+static int ts_key_pos[] = {700, 1650, 2550, 3500};
-+static int ts_key_map[] = {KEY_MENU, KEY_HOME, KEY_BACK, KEY_SEARCH};
-+/* you can modify this value to change the touch_key's sensitivity */
-+static int ts_key_sensitivity = 50;
-+
-+static void ts_key_set_capacity(struct input_dev *input)
-+{
-+	int i;
-+	for (i = 0; i < ARRAY_SIZE(ts_key_map); i++) {
-+		input_set_capability(input, EV_KEY, ts_key_map[i]);
-+	}
-+}
-+
-+/* you must have an input_sync() followed this func . */
-+static void ts_key_up(struct input_dev *input)
-+{
-+	int i;
-+	for (i = 0; i < ARRAY_SIZE(ts_key_map); i++) {
-+		input_report_key(input, ts_key_map[i], 0);
-+	}
-+}
-+
-+static void ts_key_event(struct input_dev *input, u16 x, u16 y)
-+{
-+	int i;
-+	if (y > MAX_12BIT) {
-+		for (i = 0; i < ARRAY_SIZE(ts_key_pos); i++) {
-+			if ((x > (ts_key_pos[i] - ts_key_sensitivity)) &&
-+				(x < (ts_key_pos[i] + ts_key_sensitivity))) {
-+				input_report_key(input, ts_key_map[i], 1);
-+				input_sync(input);
-+			}
-+		}
-+	}
-+}
-+#endif
-+
- static inline int tsc2007_xfer(struct tsc2007 *tsc, u8 cmd)
- {
- 	s32 data;
-@@ -149,6 +194,7 @@ static void tsc2007_send_up_event(struct tsc2007 *tsc)
- 
- 	input_report_key(input, BTN_TOUCH, 0);
- 	input_report_abs(input, ABS_PRESSURE, 0);
-+	ts_key_up(input);
- 	input_sync(input);
- }
- 
-@@ -201,6 +247,7 @@ static void tsc2007_work(struct work_struct *work)
- 		if (!ts->pendown) {
- 			dev_dbg(&ts->client->dev, "DOWN\n");
- 
-+			ts_key_event(input, tc.x, tc.y);
- 			input_report_key(input, BTN_TOUCH, 1);
- 			ts->pendown = true;
- 		}
-@@ -308,6 +355,7 @@ static int __devinit tsc2007_probe(struct i2c_client *client,
- 	input_set_abs_params(input_dev, ABS_X, 0, MAX_12BIT, 0, 0);
- 	input_set_abs_params(input_dev, ABS_Y, 0, MAX_12BIT, 0, 0);
- 	input_set_abs_params(input_dev, ABS_PRESSURE, 0, MAX_12BIT, 0, 0);
-+	ts_key_set_capacity(input_dev);
- 
- 	if (pdata->init_platform_hw)
- 		pdata->init_platform_hw();
--- 
-1.7.3
-
+>
+>>
+>> On other media, you have the same problem inside an erase block:
+>> These might be able to discard parts of an erase block efficiently,
+>> but normally not less than a flash page (typically 8 to 32 KB).
+>
+> Well I have tested several SSD's and thinly provisioned devices, but I
+> have not seen any strange behaviour, other than it was terribly
+> unefficient to do so. See my results here:
+>
+> http://people.redhat.com/lczerner/discard/test_discard.html
+>
+> the fact is that I have not tried discard size smaller than 4K, since
+> this is the most usual block size for the filesystem.
+>
+>>
+>> Again, you don't want to discard partial pages in this case, and
+>> that is much more important than discarding a large number of pages
+>> because it would result in an immediate copy-on-write operation.
+>>
+>> Further, when you erase some pages inside of an erase block, you
+>> probably should not span multiple erase blocks but instead issue
+>> separate requests for each set of pages in one erase block.
+>
+> Does it mean that we should not issue bigger discards that erase block ?
+> That does not sound good given my test results. Or maybe I misunderstood
+> your point ?
+>
+>>
+>>       Arnd
+>>
+>>       Arnd
+>>
+>
+> Thanks!
+> -Lukas
+>
