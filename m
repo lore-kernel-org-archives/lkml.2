@@ -1,205 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab1C3XcD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 19:32:03 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:19974 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab1C3XcA (ORCPT
+	id S1756607Ab1C3XdI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 19:33:08 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:55784 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754787Ab1C3XdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 19:32:00 -0400
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_Tk7ql5dkesEECgG9U/f7XQ)"
-Date: Wed, 30 Mar 2011 19:31:59 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-In-reply-to: <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
-Message-id: <alpine.LFD.2.00.1103301814250.28032@xanadu.home>
-References: <20110317183048.GW7258@atomide.com>
- <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
- <20110318101512.GA15375@n2100.arm.linux.org.uk>
- <201103301906.42429.arnd@arndb.de>
- <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
- <alpine.LFD.2.00.1103301531420.28032@xanadu.home>
- <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 30 Mar 2011 19:33:05 -0400
+Message-ID: <4D93BDA9.1020107@canonical.com>
+Date: Wed, 30 Mar 2011 18:32:57 -0500
+From: Manoj <manoj.iyer@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Chris Ball <cjb@laptop.org>
+CC: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: SDHCI: Ricoh [1180:e823] unable to mount MMC cards.
+References: <4D93AD5C.1070308@canonical.com> <m34o6k43c4.fsf@pullcord.laptop.org>
+In-Reply-To: <m34o6k43c4.fsf@pullcord.laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---Boundary_(ID_Tk7ql5dkesEECgG9U/f7XQ)
-Content-type: TEXT/PLAIN; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
+>
+> * turn on CONFIG_MMC_DEBUG and post output
+> * see if sdhci.debug_quirks=1 helps
 
-On Wed, 30 Mar 2011, Linus Torvalds wrote:
+It could be that this card does not support MMC cards, it shows up as 
+SDHCI controller and does not mention MMC, or may be they all come up as 
+SDHCI, I dont know enough to make that assessment.
 
-> On Wed, Mar 30, 2011 at 1:41 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> >
-> > If in your mind "competitors" == "morons" then you might be right.
-> 
-> There's a difference between "competition" and "do things differently
-> just to be difficult".
+Here is the output with debug turned on. Sorry for the flood:
 
-Absolutely.  We've seen that from some proprietary software companies.
+[    2.182294] sdhci-pci 0000:0d:00.0: SDHCI controller found 
+[1180:e823] (rev 5)
+[    1.182298] sdhci-pci 0000:0d:00.0: found 1 slot(s)
+[    1.182318] sdhci-pci 0000:0d:00.0: PCI INT A -> GSI 16 (level, low) 
+-> IRQ 16
+[    1.182381] mmc0: Unknown controller version (2). You may experience 
+problems.
+[    1.182389] sdhci-pci 0000:0d:00.0: setting latency timer to 64
+[    1.182403] sdhci: ============== REGISTER DUMP ==============
+[    1.182411] sdhci: Sys addr: 0x00000000 | Version:  0x00000502
+[    1.182418] sdhci: Blk size: 0x00000000 | Blk cnt:  0x00000000
+[    1.182425] sdhci: Argument: 0x00000000 | Trn mode: 0x00000000
+[    1.182432] sdhci: Present:  0x01f20000 | Host ctl: 0x00000000
+[    1.182436]   alloc irq_desc for 44 on node -1
+[    1.182437]   alloc kstat_irqs on node -1
+[    1.182439] sdhci: Power:    0x00000000 | Blk gap:  0x00000000
+[    1.182444] sdhci: Wake-up:  0x00000000 | Clock:    0x00000000
+[    1.182451] sdhci: Timeout:  0x00000000 | Int stat: 0x00000000
+[    1.182456] sdhci: Int enab: 0x00ff0003 | Sig enab: 0x00ff0003
+[    1.182463] sdhci: AC12 err: 0x00000000 | Slot int: 0x00000000
+[    1.182470] sdhci: Caps:     0x21e8c8b2 | Max curr: 0x00000040
+[    1.182477] sdhci: ADMA Err: 0x00000000 | ADMA Ptr: 0x00000000
+[    1.182478] sdhci: ===========================================
+[    1.182499] Registered led device: mmc0::
+[    1.182518] mmc0: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0 
+timing 0
+[    1.182574] mmc0: SDHCI controller on PCI [0000:0d:00.0] using ADMA
+[    1.182578] mmc0: clock 0Hz busmode 1 powermode 1 cs 0 Vdd 21 width 0 
+timing 0
+[    1.195203] mmc0: clock 400000Hz busmode 1 powermode 2 cs 0 Vdd 21 
+width 0 timing 0
+[    1.211345] mmc0: starting CMD52 arg 00000c00 flags 00000195
+[    1.213394] mmc0: req done (CMD52): -123: 00000000 00000000 00000000 
+00000000
+[    1.213402] mmc0: starting CMD52 arg 80000c08 flags 00000195
+[    1.215470] mmc0: req done (CMD52): -123: 00000000 00000000 00000000 
+00000000
+[    1.215476] mmc0: clock 400000Hz busmode 1 powermode 2 cs 1 Vdd 21 
+width 0 timing 0
+[    1.216473] mmc0: starting CMD0 arg 00000000 flags 000000c0
+[    1.218477] mmc0: req done (CMD0): -123: 00000000 00000000 00000000 
+00000000
+[    1.219472] mmc0: clock 400000Hz busmode 1 powermode 2 cs 0 Vdd 21 
+width 0 timing 0
+[    1.220469] mmc0: starting CMD8 arg 000001aa flags 000002f5
+[    1.222472] mmc0: req done (CMD8): -123: 00000000 00000000 00000000 
+00000000
+[    1.222476] mmc0: starting CMD5 arg 00000000 flags 000002e1
+[    1.224479] mmc0: req failed (CMD5): -123, retrying...
+[    1.226476] mmc0: req failed (CMD5): -123, retrying...
+[    1.228478] mmc0: req failed (CMD5): -123, retrying...
+[    1.230479] mmc0: req done (CMD5): -123: 00000000 00000000 00000000 
+00000000
+[    1.230483] mmc0: starting CMD55 arg 00000000 flags 000000f5
+[    1.232489] mmc0: req done (CMD55): -123: 00000000 00000000 00000000 
+00000000
+[    1.232492] mmc0: starting CMD55 arg 00000000 flags 000000f5
+[    1.234496] mmc0: req done (CMD55): -123: 00000000 00000000 00000000 
+00000000
+[    1.234499] mmc0: starting CMD55 arg 00000000 flags 000000f5
+[    1.236507] mmc0: req done (CMD55): -123: 00000000 00000000 00000000 
+00000000
+[    1.236511] mmc0: starting CMD55 arg 00000000 flags 000000f5
+[    1.238521] mmc0: req done (CMD55): -123: 00000000 00000000 00000000 
+00000000
+[    1.238524] mmc0: starting CMD1 arg 00000000 flags 000000e1
+[    1.240531] mmc0: req done (CMD1): -123: 00000000 00000000 00000000 
+00000000
+[    1.240536] mmc0: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0 
+timing 0
+[   30.617181] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000040
+[   30.813108] mmc0: clock 0Hz busmode 1 powermode 1 cs 0 Vdd 21 width 0 
+timing 0
+[   30.829096] mmc0: clock 400000Hz busmode 1 powermode 2 cs 0 Vdd 21 
+width 0 timing 0
+[   30.845074] mmc0: starting CMD52 arg 00000c00 flags 00000195
+[   30.845216] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.847216] mmc0: req done (CMD52): -110: 00000000 00000000 00000000 
+00000000
+[   30.847224] mmc0: starting CMD52 arg 80000c08 flags 00000195
+[   30.847303] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.849310] mmc0: req done (CMD52): -110: 00000000 00000000 00000000 
+00000000
+[   30.849315] mmc0: clock 400000Hz busmode 1 powermode 2 cs 1 Vdd 21 
+width 0 timing 0
+[   30.850310] mmc0: starting CMD0 arg 00000000 flags 000000c0
+[   30.850359] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.850364] mmc0: req done (CMD0): 0: 00000000 00000000 00000000 00000000
+[   30.851361] mmc0: clock 400000Hz busmode 1 powermode 2 cs 0 Vdd 21 
+width 0 timing 0
+[   30.852356] mmc0: starting CMD8 arg 000001aa flags 000002f5
+[   30.852399] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.854403] mmc0: req done (CMD8): -110: 00000000 00000000 00000000 
+00000000
+[   30.854463] mmc0: starting CMD5 arg 00000000 flags 000002e1
+[   30.854501] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.856497] mmc0: req failed (CMD5): -110, retrying...
+[   30.856535] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.858536] mmc0: req failed (CMD5): -110, retrying...
+[   30.858569] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.860565] mmc0: req failed (CMD5): -110, retrying...
+[   30.860599] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.862600] mmc0: req done (CMD5): -110: 00000000 00000000 00000000 
+00000000
+[   30.862605] mmc0: starting CMD55 arg 00000000 flags 000000f5
+[   30.862642] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.864641] mmc0: req done (CMD55): -110: 00000000 00000000 00000000 
+00000000
+[   30.864645] mmc0: starting CMD55 arg 00000000 flags 000000f5
+[   30.864684] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.866682] mmc0: req done (CMD55): -110: 00000000 00000000 00000000 
+00000000
+[   30.866686] mmc0: starting CMD55 arg 00000000 flags 000000f5
+[   30.866764] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.868771] mmc0: req done (CMD55): -110: 00000000 00000000 00000000 
+00000000
+[   30.868776] mmc0: starting CMD55 arg 00000000 flags 000000f5
+[   30.868816] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.870821] mmc0: req done (CMD55): -110: 00000000 00000000 00000000 
+00000000
+[   30.870825] mmc0: starting CMD1 arg 00000000 flags 000000e1
+[   30.870856] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.870862] mmc0: req done (CMD1): 0: 003f8000 00000000 00000000 00000000
+[   30.870868] mmc0: clock 400000Hz busmode 1 powermode 2 cs 0 Vdd 20 
+width 0 timing 0
+[   30.870873] mmc0: clock 400000Hz busmode 1 powermode 2 cs 1 Vdd 20 
+width 0 timing 0
+[   30.871869] mmc0: starting CMD0 arg 00000000 flags 000000c0
+[   30.871918] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.871923] mmc0: req done (CMD0): 0: 00000000 00000000 00000000 00000000
+[   30.872922] mmc0: clock 400000Hz busmode 1 powermode 2 cs 0 Vdd 20 
+width 0 timing 0
+[   30.873918] mmc0: starting CMD1 arg 40300000 flags 000000e1
+[   30.873996] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.874015] mmc0: req done (CMD1): 0: 003f8000 00000000 00000000 00000000
+[   30.889033] mmc0: starting CMD1 arg 40300000 flags 000000e1
+[   30.889095] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.889110] mmc0: req done (CMD1): 0: 003f8000 00000000 00000000 00000000
+[   30.905020] mmc0: starting CMD1 arg 40300000 flags 000000e1
+[   30.905081] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.905096] mmc0: req done (CMD1): 0: 003f8000 00000000 00000000 00000000
+[   30.921009] mmc0: starting CMD1 arg 40300000 flags 000000e1
+[   30.921087] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.921103] mmc0: req done (CMD1): 0: 003f8000 00000000 00000000 00000000
+[   30.936994] mmc0: starting CMD1 arg 40300000 flags 000000e1
+[   30.937071] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.937087] mmc0: req done (CMD1): 0: 003f8000 00000000 00000000 00000000
+[   30.952980] mmc0: starting CMD1 arg 40300000 flags 000000e1
+[   30.953057] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.953074] mmc0: req done (CMD1): 0: 003f8000 00000000 00000000 00000000
+[   30.968961] mmc0: starting CMD1 arg 40300000 flags 000000e1
+[   30.969039] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.969055] mmc0: req done (CMD1): 0: 003f8000 00000000 00000000 00000000
+[   30.984946] mmc0: starting CMD1 arg 40300000 flags 000000e1
+[   30.985024] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.985039] mmc0: req done (CMD1): 0: 803f8000 00000000 00000000 00000000
+[   30.985054] mmc0: starting CMD2 arg 00000000 flags 00000067
+[   30.985112] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
+[   30.985135] mmc0: req done (CMD2): 0: ffffffff ffffffff ffffffff ffffff00
+[   30.985151] mmc0: starting CMD3 arg 00010000 flags 00000015
+[   30.985201] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.987204] mmc0: req failed (CMD3): -110, retrying...
+[   30.987237] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.989232] mmc0: req failed (CMD3): -110, retrying...
+[   30.989265] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.991262] mmc0: req failed (CMD3): -110, retrying...
+[   30.991296] sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
+[   30.993295] mmc0: req done (CMD3): -110: 00000000 00000000 00000000 
+00000000
+[   30.993302] mmc0: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0 
+timing 0
+[   30.993313] mmc0: error -110 whilst initialising MMC card
+[   30.993315] mmc0: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0 
+timing 0
 
-> > Trying to rely on bootloaders doing things right is like saying that x86
-> > should always rely on the BIOS doing things right.
-> 
-> No. Not at all.
-> 
-> The problem with firmware/BIOS is that it's set in stone and closed-source.
-> 
-> I'm suggesting splitting out the crazy part into a separate project
-> that does this. Open-source. Like a mini-kernel. Because the thing is,
-> the main kernel doesn't care, and _shouldn't_ care. Those board files
-> are just noise.
 
-Sure, but important noise nevertheless.  As long as the noise is 
-confined to a limited set of .c files I'm happy.  OTOH I have very 
-little hope for a separate project that would only deal with that noise.  
-That will simply never fly, even less so as an Open Source project.  
-The insentive for people to work on such thing simply aren't there as 
-that is totally uninteresting and without any rewards.
-
-Furthermore, this does create pain.  you have to make things in sync 
-between the kernel and the mini-kernel (let's call it bootloader).  In 
-practice the bootloader is always maintained separately from the kernel, 
-on its own pace and with its own release schedule.  Trying to 
-synchronize independent projects is really painful as you know already, 
-otherwise the user space for perf would still be maintained separately 
-from the kernel, right?
-
-Now, when there is a bug in one of the clock settings, or one clock 
-is missing for that new kernel driver to work properly, the 
-bootloader would have to be fixed, revalidated, and the fix deployed 
-separately but still in addition to the kernel.  This process still adds 
-to the pain such that what people do in those cases is simply to hack 
-the driver code in the kernel.  Instead, the OMAP folks created a table 
-to abstract them into something more manageable.
-
-And here's the final catch.  Most of those clocks are often derived from 
-each other in a tree structure inside the SOC.  And for power saving 
-reasons, some crazy people want to dynamically change the config for 
-those clocks at run time according to the required frequency for given 
-loads, turn them off when possible, and of course turn the parent clock 
-off as well if all the children clocks are themselves turned off.  So 
-the kernel has NO CHOICE but to be fully aware of them.
-
-Then comes power domains with the cascade of regulators and so forth, 
-again all software controlled.  Add to the mix the different sleep 
-states that can be derived from that, which is far more sophisticated 
-than ACPI states on Intel.  And in some cases, the hardware capabilities 
-are there but people still didn't find the optimal way to drive them, so 
-research is still on-going software wise.  And obviously those SOC 
-vendors do compete on that front since power consumption is the killing 
-weapon these days.  No wonder why they are so different from each other 
-with all that "board crap".
-
-> The long-term situation should be that you should be able to have ONE
-> binary kernel "just work". That's where we are on x86. Really.
-
-But X86 is peanuts.  Really.  There was one machine called the IBM PC at 
-some point that everybody cloned, and the rest was totally irrelevant.  
-Then came that thing called Windows that reinforced this hardware 
-monoculture as it was used for the ultimate conformance testing.  This 
-is damn easy in that case to produce a kernel that works virtually 
-everywhere.
-
-On ARM there is simply not such thing as a single machine design to 
-clone, and a closed source test bench to design for.
-
-And this is orthogonal to this discussion anyway, as having in-kernel 
-clock tables is not incompatible with a single kernel binary.  Dropping 
-at runtime those clock tables that are irrelevant to the currently 
-running hardware is not rocket science.
-
-> Without that kind of long-term view, where do you think ARM is going
-> to be in five years?
-
-ARM is going to still be relevant simply because they now have Linux 
-that they can modify to suit their latest changes.  That's one thing 
-with Open Source which can be good or bad: full hardware compatibility 
-is no longer an issue since the software can be adapted at will.
-
-Still... there are on-going efforts to consolidate things amongst all 
-the ARM vendors.  The ARM architecture is standardizing more and more 
-stuff in the whole stack in every revision.  But they won't standardize 
-everything otherwise they'll kill that competing ecosystem.
-
-> >> almost *SIXTY* percent of all arch updates were to ARM code.
-> >
-> > Absolutely not!  You have 14% going to OMAP code which happens to be
-> > under arch/arm/ but there is nothing ARM specific in there.  If OMAP was
-> > using a PPC or a MIPS core then you'd have the same result except under
-> > arch/powerpc or arch/mips.  There is very little in terms of ARM
-> > specific peculiarities under arch/arm/mach-omap2/ in fact.
-> 
-> But that's my point - the problem is all the crazy board crap.
-> 
-> I've never claimed that this is about the ARM cpu (which has it's own
-> issues, but that's a separate rant entirely). It's about the broken
-> infrastructure.
-
-Let's see how we can fix it then.  Trying to shovel the problem away 
-won't help the situation.  Those ARM vendors are crazy for sure.  But 
-it's not a relatively few merge conflicts compared to the volume of 
-changes that will make us flinch, right?
-
-> Now, some of it is quite understandable - ie real drivers for real
-> hardware. But a _lot_ of it seems to be just descriptor tables, and
-> I'm getting the very strong feeling that ARM people aren't even
-> _trying_ to make it sane, and trying to standardize things, or trying
-> to aim for the whole notion of "one kernel image, with much more hw
-> description done elsewhere".
-
-That work is happening.  It is not ready.  I'm not against it but I 
-remain sceptical.  I still think that a self contained kernel is more 
-maintainable.
-
-Still, because ARM is just a CPU architecture, those SOC vendors will 
-always have something new to differenciate themselves from the other SOC 
-vendors.  And that cannot be described in a table alone. The power 
-management hardware from TI will still require separate _executable_ 
-code from the Freescale one, or the Samsung one, or the Nvidia one, or 
-the Qualcomm one, or the Marvell one, yada yada.  And I really don't 
-want to see that code turned into some vendor provided buggy ACPI 
-bytecode or similar.
-
-> arch/arm is already about 3x the size of arch/x86. And it's pretty
-> much all the crazy infrastructure afaik. timer chips, irq chips, gpio
-> differences - crap like that.
-
-Indeed.  And I expect it to grow even bigger.  Be warned.
-
-> And the fact that you don't even seem to UNDERSTAND the problem, and
-> think that it's ok, and that continued future explosion of this is all
-> fine makes me even more nervous.
-
-I do understand the problem.  And so far, the way we scaled is to have 
-TI people care about the OMAP code, Freescale people care about the iMX 
-code, and so on.  If one of them produces crap code then so it is, and 
-the other vendor is totally unaffected, which is why I'm not too 
-nervous.  Blaming a merge conflict on the entire ARM ecosystem just 
-because one team was large enough to have separate people doing 
-different things that intersected into the clock table is blowing things 
-totally out of proportion.
-
-And if those hardware vendors are still in business in the future, and 
-apparently new ones are joining in, then the arch/arm/ directory will 
-continue to gain weight.  And on ARM, Linux is very very successful 
-that's all.
-
-
-Nicolas
-
---Boundary_(ID_Tk7ql5dkesEECgG9U/f7XQ)--
+>
+> If you have access to a scope, checking out the CMD line often hints at
+> whether a problem is software or hardware.
+>
+> - Chris.
+>
+>>
+>> ======= lspci -vvnn ==============
+>> 0d:00.0 System peripheral [0880]: Ricoh Co Ltd Device [1180:e823] (rev
+>> 05) (prog-if 01)
+>> 	Subsystem: Lenovo Device [17aa:21ce]
+>> 	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+>> ParErr-
+>> Stepping- SERR- FastB2B- DisINTx-
+>> 	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast>TAbort-
+>> <TAbort-
+>> <MAbort->SERR-<PERR- INTx-
+>> 	Latency: 0, Cache Line Size: 64 bytes
+>> 	Interrupt: pin A routed to IRQ 16
+>> 	Region 0: Memory at d1400000 (32-bit, non-prefetchable) [size=256]
+>> 	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+>> 		Address: 0000000000000000  Data: 0000
+>> 	Capabilities: [78] Power Management version 3
+>> 		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
+>> 		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=2 PME+
+>> 	Capabilities: [80] Express (v1) Endpoint, MSI 00
+>> 		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+>> unlimited, L1 unlimited
+>> 			ExtTag- AttnBtn+ AttnInd+ PwrInd+ RBE+ FLReset-
+>> 		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+>> 			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+>> 			MaxPayload 128 bytes, MaxReadReq 512 bytes
+>> 		DevSta:	CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr- TransPend-
+>> 		LnkCap:	Port #1, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+>> Latency L0<4us, L1<64us
+>> 			ClockPM+ Surprise- LLActRep- BwNot-
+>> 		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+>> 			ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
+>> 		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train-
+>> SlotClk+ DLActive-
+>> BWMgmt- ABWMgmt-
+>> 	Capabilities: [100 v1] Virtual Channel
+>> 		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
+>> 		Arb:	Fixed- WRR32- WRR64- WRR128-
+>> 		Ctrl:	ArbSelect=Fixed
+>> 		Status:	InProgress-
+>> 		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+>> 			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+>> 			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+>> 			Status:	NegoPending- InProgress-
+>> 	Capabilities: [800 v1] Advanced Error Reporting
+>> 		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+>> UnxCmplt- RxOF-
+>> MalfTLP- ECRC- UnsupReq- ACSViol-
+>> 		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+>> UnxCmplt- RxOF-
+>> MalfTLP- ECRC- UnsupReq- ACSViol-
+>> 		UESvrt:	DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt-
+>> UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+>> 		CESta:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+>> 		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+>> 		AERCap:	First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
+>> 	Kernel driver in use: sdhci-pci
+>> 	Kernel modules: sdhci-pci
+>
