@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab1C3NTn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 09:19:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27895 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798Ab1C3NTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 09:19:42 -0400
-Date: Wed, 30 Mar 2011 09:19:36 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
-        paulmck@linux.vnet.ibm.com, oleg@redhat.com
-Subject: Re: [PATCH] blk-throttle: don't call xchg on bool
-Message-ID: <20110330131936.GA1291@redhat.com>
-References: <1292447255-10698-1-git-send-email-vgoyal@redhat.com>
- <1292447255-10698-3-git-send-email-vgoyal@redhat.com>
- <m21v1ph639.fsf_-_@igel.home>
+	id S932491Ab1C3NTx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 09:19:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:47692 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157Ab1C3NTw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 09:19:52 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=XYJHFtupD_QA:10 a=_1REmzv8xjcA:10 a=8nJEP1OIZ-IA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=-j4potA_lYyAumOTwkwA:9 a=HvC47gylbIE-S7Yr3aJDaegfEXoA:4 a=wPNLvfGTeEIA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Wed, 30 Mar 2011 09:19:51 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Keval Vora <kevalvora@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Compiling kernel 2.6.12
+Message-ID: <20110330131951.GI8529@home.goodmis.org>
+References: <AANLkTi=9kaSJ6hOa6rB7QScSa-aStf45cHA_HNASicUP@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <m21v1ph639.fsf_-_@igel.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=9kaSJ6hOa6rB7QScSa-aStf45cHA_HNASicUP@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 01:14:50AM +0200, Andreas Schwab wrote:
-> xchg does not work portably with smaller than 32bit types.
+On Wed, Mar 30, 2011 at 10:38:33AM +0530, Keval Vora wrote:
+> Hello
+> 
+> I was trying to compile the kernel 2.6.12. The command "make O=/build
+> menuconfig" executed successfully. However I am getting the following
+> error on executing "make O=/build":
+> 
+> operand type mismatch for `mov'
+> 
+> I am a student and I particularly wanted to compile this version
+> because there are few patches coded for this version I need to study
+> them and may be extend them. Can anyone please help me with this one?
 > 
 
-Hi Andreas,
+2.6.12 is a very old kernel and probably wont even build with the latest
+toolchains, as now the tool chains will error on things that it use to
+let by back then.
 
-Which arch creates the problem and what's the issue here if data type
-is smaller than 32bit? Is it a compile time warning?
+You'll probably want to try and find a version of a distro from 2005 and
+install that on a machine. Then you could build the 2.6.12 kernel on
+that distro. You may need to also find a machine from 2005 as well.
 
-Also, you also probably need to chagne ->limits_changed assignments?
-Instead of using true/false use 1/0.
+Good luck,
 
-Thanks
-Vivek
+-- Steve
 
-> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-> ---
->  block/blk-throttle.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 5352bda..6c98cfe 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-> @@ -77,7 +77,7 @@ struct throtl_grp {
->  	unsigned long slice_end[2];
->  
->  	/* Some throttle limits got updated for the group */
-> -	bool limits_changed;
-> +	int limits_changed;
->  };
->  
->  struct throtl_data
-> @@ -102,7 +102,7 @@ struct throtl_data
->  	/* Work for dispatching throttled bios */
->  	struct delayed_work throtl_work;
->  
-> -	bool limits_changed;
-> +	int limits_changed;
->  };
->  
->  enum tg_state_flags {
-> -- 
-> 1.7.4.2
-> 
-> 
-> -- 
-> Andreas Schwab, schwab@linux-m68k.org
-> GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-> "And now for something completely different."
