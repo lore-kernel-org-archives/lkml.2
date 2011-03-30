@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab1C3QMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 12:12:20 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:49960 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680Ab1C3QMT convert rfc822-to-8bit (ORCPT
+	id S932681Ab1C3QOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 12:14:23 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53768 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754815Ab1C3QOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 12:12:19 -0400
-Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
- value
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110330153228.GA1787@redhat.com>
-References: <20110326161346.GA18272@redhat.com>
-	 <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com>
-	 <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop>
-	 <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins>
-	 <1301327368.4859.28.camel@twins> <20110328165648.GA9304@redhat.com>
-	 <20110330130951.GA2124@jolsa.brq.redhat.com>
-	 <20110330153228.GA1787@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 30 Mar 2011 18:11:47 +0200
-Message-ID: <1301501507.4859.210.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 30 Mar 2011 12:14:19 -0400
+Message-Id: <20110330161322.015113054@linux.vnet.ibm.com>
+User-Agent: quilt/0.48-1
+Date: Wed, 30 Mar 2011 12:13:22 -0400
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+To: debora@linux.vnet.ibm.com, srajiv@linux.vnet.ibm.com,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Cc: jirislaby@gmail.com, preining@logic.at
+Subject: [PATCH V2 00/12] tpm + tpm_tis : Various fixes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-30 at 17:32 +0200, Oleg Nesterov wrote:
-> probably smp_mb__after_atomic_inc() needs a comment...
-> 
-> It is needed to avoid the race between perf_sched_events_dec() and
-> perf_sched_events_inc().
-> 
-> Suppose that we have a single event, both counters == 1. We create
-> another event and call perf_sched_events_inc(). Without the barrier
-> we could increment the counters in reverse order,
-> 
->         jump_label_inc(&perf_sched_events_in);
->         /* ---- WINDOW ---- */
->         jump_label_inc(&perf_sched_events_out);
-> 
-> Now, if perf_sched_events_dec() is called in between, it can disable
-> _out but not _in. This means we can leak ->task_ctx again. 
+This patchset fixes various issues in the general TPM driver and the TPM TIS
+driver. Some of the patches were previously posted, and are being re-posted
+without change, while other patches were refactored. This patchset applies to
+the tip of the main git tree.
 
-But in that case we need an mb in perf_sched_events_dec() too, because
-for the !JUMP_LABEL case that's a simple atomic_dec() and combined with
-synchronize_sched() being a nop for num_online_cpus()==1 there's no
-ordering there either.
+Patches 1-6 are related to using the timeouts that the TPM reports, along with
+work-arounds for TPMs that don't report the timeouts in microseconds but
+rather in milliseconds.
 
-Also, wouldn't this then require an smp_rmb() in the
-perf_event_task_sched_{in,out} COND_STMT/JUMP_LABEL read side?
+Patch 7 fixes the display of the public key of the TPM's Endorsement Key in
+sysfs.
 
+Patch 8 re-enables the TPM's interrupts after resume from S3.
+
+Patch 9 is useful if the TPM is run in interrupt mode and delays the S3 suspend
+until the TPM has finished processing a command.
+
+Patch 10 fixes several aspects of the code around the probing for interrupts.
+
+Patch 11 introduces automatic probing for the Intel iTPM flaw. The probing
+is useful in combination with the 'force' module parameter that enables
+the interrupt mode on some machines but then ends up circumventing ACPI to
+determine whether an Intel iTPM is present to activate the work-around. So,
+in that case we can rely on the probing.
+
+Patch 12 fixes a typo.
+
+I have tested these patches on four different types of machines. They worked
+fine there even though the TPM could not be used in interrupt mode on all of
+them (IRQ line not connected?).
+
+V2:
+  - following Rajiv's feedback. Splitting the durations and timeout
+    patches in 3 parts.
+  - slightly rearranging the order of the patches
+
+  Regards,
+         Stefan
