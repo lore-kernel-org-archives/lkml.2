@@ -1,122 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab1C3NgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 09:36:17 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:46958 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab1C3NgP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 09:36:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=J7eSnk9kfpSi1EJMYRwHTWlhCEe2+DJENRQZHsVV2Hh6pNyRNeW0up/ER7fdrks2vl
-         cwlTRZnPDvGTHbH0aEtaIYBpvp62Jh9cMqPRwGeUrO7n1mwkLXgFKtPLuPhMFf+5wwKi
-         4KAUjpJbrks/Ac2uODNdQLr4NtCJbproW6qWQ=
-From: wanlong.gao@gmail.com
-To: dmitry.torokhov@gmail.com, w.sang@pengutronix.de, rpurdie@linux.intel.com,
-        broonie@opensource.wolfsonmicro.com, khali@linux-fr.org
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jiaweiwei.xiyou@gmail.com, Wanlong Gao <wanlong.gao@gmail.com>
-Subject: [PATCH] Add the support of the touchscreen keypad of tsc2007 .
-Date: Sun, 27 Mar 2011 17:29:22 +0800
-Message-Id: <1301218162-5210-1-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.3
+	id S932448Ab1C3NhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 09:37:23 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:41676
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750798Ab1C3NhW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 09:37:22 -0400
+X-SpamScore: -30
+X-BigFish: VPS-30(zz542N1432N98dN4015L9371Pzz1202hzz8275bhz2dh95h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH V5 3/4] ARM: Xilinx: base header files and assembly macros
+Date: Wed, 30 Mar 2011 07:37:10 -0600
+In-Reply-To: <201103301529.03648.arnd@arndb.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH V5 3/4] ARM: Xilinx: base header files and assembly macros
+Thread-Index: Acvu3nddRGhv2g2TTRCM/xVgJ3B8YgAADFpw
+References: <1301444651-18008-1-git-send-email-john.linn@xilinx.com> <201103301344.45307.arnd@arndb.de> <f4872ed7-b6e4-4050-9445-5176f5aa961a@VA3EHSMHS017.ehs.local> <201103301529.03648.arnd@arndb.de>
+From: John Linn <John.Linn@xilinx.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
+        <glikely@secretlab.ca>, <jamie@jamieiles.com>
+X-OriginalArrivalTime: 30 Mar 2011 13:37:11.0668 (UTC) FILETIME=[92B58B40:01CBEEDF]
+X-RCIS-Action: ALLOW
+Message-ID: <807f31a6-c9ff-4f35-bece-e0222a8e1fda@VA3EHSMHS006.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao <wanlong.gao@gmail.com>
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Wednesday, March 30, 2011 7:29 AM
+> To: John Linn
+> Cc: linux-arm-kernel@lists.infradead.org;
+linux-kernel@vger.kernel.org;
+> linux@arm.linux.org.uk; catalin.marinas@arm.com; glikely@secretlab.ca;
+> jamie@jamieiles.com
+> Subject: Re: [PATCH V5 3/4] ARM: Xilinx: base header files and
+assembly
+> macros
+> 
+> On Wednesday 30 March 2011, John Linn wrote:
+> > Yes that makes sense.  We don't have immediate plans for PCI and
+> > I was assuming when we add PCI we would need to change that.
+> >
+> > If you think I shouldn't put it off then I'll fix it now.  My
+> > preference was to get the platform supported, then add more
+features.
+> 
+> Getting it fixed properly depends a bit on the PCI implementation.
+> I've been planning to clean up this part of the ARM architecture
+> for some time and I can probably do it for one more platform when
+> I get to it.
 
-Many touchscreens support touch-keypad .
-Open the definition of the TOUCHSCREEN_TSC2007_WITH_KEYPAD, you can
-open the support of the touchscreen's keypad .
-We can add the support of the touchscreen keypad in the driver.
-In this patch , add the ts_key_pos array to determine the position
-of the key's X. And the ts_key_sensitivity can use to detemine the
-key's sensitivity. You can modify the ts_key_pos array for you own
-touchscreen keys . And modify the ts_key_sensitivity for you own
-key's sensitivity .
-If you want to modify the ts_key_map, change the position of the
-keys ,too.
+Sounds like it's fine to postpone it til we do PCI as I don't know all
+the
+details of the system yet. Soft logic in FPGAs is great :)
 
-Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
----
- drivers/input/touchscreen/tsc2007.c |   47 +++++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+> 
+> My idea for the multiplatform kernel is to have a global I/O space
+> window (maybe 1 MB) that is in the same location in the virtual
+> address space all the time, so any platform that wants to support
+> PCI with direct-mapped I/O space can simply map it in there
+> at boot time.
+> 
 
-diff --git a/drivers/input/touchscreen/tsc2007.c b/drivers/input/touchscreen/tsc2007.c
-index 80467f2..496369f 100644
---- a/drivers/input/touchscreen/tsc2007.c
-+++ b/drivers/input/touchscreen/tsc2007.c
-@@ -83,6 +83,51 @@ struct tsc2007 {
- 	void			(*clear_penirq)(void);
- };
- 
-+/*
-+#define	TOUCHSCREEN_TSC2007_WITH_KEYPAD
-+*/
-+#ifndef	TOUCHSCREEN_TSC2007_WITH_KEYPAD
-+static void ts_key_set_capacity(struct input_dev *input) {};
-+static void ts_key_up(struct input_dev *input) {};
-+static void ts_key_event(struct input_dev *input, u16 x, u16 y) {};
-+#else
-+static int ts_key_pos[] = {700, 1650, 2550, 3500};
-+static int ts_key_map[] = {KEY_MENU, KEY_HOME, KEY_BACK, KEY_SEARCH};
-+/* you can modify this value to change the touch_key's sensitivity */
-+static int ts_key_sensitivity = 50;
-+
-+static void ts_key_set_capacity(struct input_dev *input)
-+{
-+	int i;
-+	for (i = 0; i < ARRAY_SIZE(ts_key_map); i++) {
-+		input_set_capability(input, EV_KEY, ts_key_map[i]);
-+	}
-+}
-+
-+/* you must have an input_sync() followed this func . */
-+static void ts_key_up(struct input_dev *input)
-+{
-+	int i;
-+	for (i = 0; i < ARRAY_SIZE(ts_key_map); i++) {
-+		input_report_key(input, ts_key_map[i], 0);
-+	}
-+}
-+
-+static void ts_key_event(struct input_dev *input, u16 x, u16 y)
-+{
-+	int i;
-+	if (y > MAX_12BIT) {
-+		for (i = 0; i < ARRAY_SIZE(ts_key_pos); i++) {
-+			if ((x > (ts_key_pos[i] - ts_key_sensitivity)) &&
-+				(x < (ts_key_pos[i] + ts_key_sensitivity))) {
-+				input_report_key(input, ts_key_map[i], 1);
-+				input_sync(input);
-+			}
-+		}
-+	}
-+}
-+#endif
-+
- static inline int tsc2007_xfer(struct tsc2007 *tsc, u8 cmd)
- {
- 	s32 data;
-@@ -149,6 +194,7 @@ static void tsc2007_send_up_event(struct tsc2007 *tsc)
- 
- 	input_report_key(input, BTN_TOUCH, 0);
- 	input_report_abs(input, ABS_PRESSURE, 0);
-+	ts_key_up(input);
- 	input_sync(input);
- }
- 
-@@ -201,6 +247,7 @@ static void tsc2007_work(struct work_struct *work)
- 		if (!ts->pendown) {
- 			dev_dbg(&ts->client->dev, "DOWN\n");
- 
-+			ts_key_event(input, tc.x, tc.y);
- 			input_report_key(input, BTN_TOUCH, 1);
- 			ts->pendown = true;
- 		}
--- 
-1.7.3
+Sounds like that will make it easier for everyone and more consistent.
+
+Thanks,
+John
+
+> 	Arnd
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
 
