@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933549Ab1C3VIA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:08:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41245 "EHLO mga01.intel.com"
+	id S965352Ab1C3Vme (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:42:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61735 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933516Ab1C3VH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:07:57 -0400
+	id S933516Ab1C3VIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:08:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="903735322"
+   d="scan'208";a="621237495"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: mjg@redhat.com, carlos@strangeworlds.co.uk, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [134/275] acer-wmi: Fix capitalisation of GUID
-Message-Id: <20110330210614.C8DD63E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:14 -0700 (PDT)
+To: segoon@openwall.com, mjg@redhat.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [138/275] platform: x86: tc1100-wmi: world-writable sysfs wireless and jogdial files
+Message-Id: <20110330210619.0573B3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,32 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Matthew Garrett <mjg@redhat.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit bbb706079abe955a9e3f208f541de97d99449236 upstream.
+commit 8a6a142c1286797978e4db266d22875a5f424897 upstream.
 
-6AF4F258-B401-42fd-BE91-3D4AC2D7C0D3 needs to be
-6AF4F258-B401-42FD-BE91-3D4AC2D7C0D3 to match the hardware alias.
+Don't allow everybody to change WMI settings.
 
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Acked-by: Carlos Corbacho <carlos@strangeworlds.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/platform/x86/acer-wmi.c |    2 +-
+ drivers/platform/x86/tc1100-wmi.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/drivers/platform/x86/acer-wmi.c
+Index: linux-2.6.35.y/drivers/platform/x86/tc1100-wmi.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/platform/x86/acer-wmi.c	2011-03-29 22:51:13.954366111 -0700
-+++ linux-2.6.35.y/drivers/platform/x86/acer-wmi.c	2011-03-29 23:54:44.341867828 -0700
-@@ -91,7 +91,7 @@
-  */
- #define AMW0_GUID1		"67C3371D-95A3-4C37-BB61-DD47B491DAAB"
- #define AMW0_GUID2		"431F16ED-0C2B-444C-B267-27DEB140CF9C"
--#define WMID_GUID1		"6AF4F258-B401-42fd-BE91-3D4AC2D7C0D3"
-+#define WMID_GUID1		"6AF4F258-B401-42FD-BE91-3D4AC2D7C0D3"
- #define WMID_GUID2		"95764E09-FB56-4e83-B31A-37761F60994A"
+--- linux-2.6.35.y.orig/drivers/platform/x86/tc1100-wmi.c	2011-03-29 22:51:12.162411964 -0700
++++ linux-2.6.35.y/drivers/platform/x86/tc1100-wmi.c	2011-03-29 23:03:01.135271122 -0700
+@@ -162,7 +162,7 @@
+ 			return -EINVAL; \
+ 	return count; \
+ } \
+-static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, \
++static DEVICE_ATTR(value, S_IRUGO | S_IWUSR, \
+ 	show_bool_##value, set_bool_##value);
  
- MODULE_ALIAS("wmi:67C3371D-95A3-4C37-BB61-DD47B491DAAB");
+ show_set_bool(wireless, TC1100_INSTANCE_WIRELESS);
