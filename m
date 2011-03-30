@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab1C3PWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 11:22:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54756 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680Ab1C3PWU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 11:22:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KijuhDtkuKgYMxWMm2dfDr44q7JDHyq948WjaQzCBmbpw26hDqYYUr6kvF3Z9R+dot
-         A+MynJ/vrf8U7b9YE9V+6ubUSn5EUdpexi36d+y2kmmZIqIoYBZ5nfC2VASj6VHdQMLD
-         Nj4XkYyoe1lzpSWDq5jHS7SgHstCMxMVCYpaA=
-Date: Wed, 30 Mar 2011 17:19:48 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH tip:x86/mm 3/3] acpi throttling: Use this_cpu_has and
- simplify code current cpu
-Message-ID: <20110330151948.GI17523@htj.dyndns.org>
-References: <20110312115010.GC2005@htj.dyndns.org>
- <20110312115046.GD2005@htj.dyndns.org>
- <20110312115112.GE2005@htj.dyndns.org>
- <20110328164039.GF6736@htj.dyndns.org>
- <alpine.DEB.2.00.1103300918240.25965@router.home>
+	id S1755868Ab1C3PXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 11:23:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40010 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753728Ab1C3PXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 11:23:08 -0400
+Date: Wed, 30 Mar 2011 11:22:48 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Moyer <jmoyer@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+        hch@infradead.org
+Subject: Re: block: eliminate ELEVATOR_INSERT_REQUEUE
+Message-ID: <20110330152248.GC1291@redhat.com>
+References: <20110328082321.GC16530@htj.dyndns.org>
+ <20110328221547.GA1118@redhat.com>
+ <x49y63yvwum.fsf@segfault.boston.devel.redhat.com>
+ <20110329175458.GE24485@redhat.com>
+ <20110330074123.GA17523@htj.dyndns.org>
+ <20110330075752.GC17523@htj.dyndns.org>
+ <4D92E2CD.6000909@kernel.dk>
+ <20110330080203.GD17523@htj.dyndns.org>
+ <20110330140123.GA28212@redhat.com>
+ <20110330142751.GH17523@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103300918240.25965@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110330142751.GH17523@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 09:20:08AM -0500, Christoph Lameter wrote:
-> > Ingo, are you planning on picking these up?
+On Wed, Mar 30, 2011 at 04:27:51PM +0200, Tejun Heo wrote:
+
+[..]
+> > And just to be clear: none of this is a concern for stable right?  It is
+> > just the flush-merge code introduced for 2.6.39 that needs fixing?
 > 
-> Guess the patches missed the merge period. There could be more
-> optimizations of arch code if the infrastructure for this_cpu_has() would
-> be in but I guess I better hold off for awhile.
+> I think 2.6.38 needs a -stable fix.  It has the previous version of
+> the new flush implementation and is using front insertion.
 
-Yeah, merging didn't go very smooth with your recent patches.  Sorry
-about that.  I applied the this_cpu_has() patches to x86-mm and will
-soon send pull request to Ingo.  Please feel free to send further
-patches on top of that tree.
+Tejun,
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git
+So wee need this as stable fix because FLUSH request can get ahead of
+REQUEUED requests and it can break some drivers?
 
-Thanks.
-
--- 
-tejun
+Thanks
+Vivek
