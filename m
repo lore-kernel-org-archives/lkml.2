@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964947Ab1C3Vln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:41:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61735 "EHLO mga09.intel.com"
+	id S933569Ab1C3Vll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:41:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61791 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933562Ab1C3VIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:08:04 -0400
+	id S933565Ab1C3VIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:08:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="621237532"
+   d="scan'208";a="621237540"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: stern@rowland.harvard.edu, nur.kholis.majid@gmail.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [141/275] USB: add quirks entry for Keytouch QWERTY Panel
-Message-Id: <20110330210622.2B5473E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:22 -0700 (PDT)
+To: mhej@o2.pl, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [142/275] USB: Add Samsung SGH-I500/Android modem ID switch to visor driver
+Message-Id: <20110330210623.386BC3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,36 +24,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Maciej Szmigiero <mhej@o2.pl>
 
-commit 3c18e30f87ac5466bddbb05cf955605efd7db025 upstream.
+commit acb52cb1613e1d3c8a8c650717cc51965c60d7d4 upstream.
 
-This patch (as1448) adds a quirks entry for the Keytouch QWERTY Panel
-firmware, used in the IEC 60945 keyboard.  This device crashes during
-enumeration when the computer asks for its configuration string
-descriptor.
+[USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: kholis <nur.kholis.majid@gmail.com>
+Samsung decided to reuse USB ID of its old CDMA phone SGH-I500 for the
+modem part of some of their Android phones. At least Galaxy Spica
+is affected.
+
+This modem needs ACM driver and does not work with visor driver which
+binds the conflicting ID for SGH-I500.
+Because SGH-I500 is pretty an old hardware its best to add switch to
+visor
+driver in cause somebody still wants to use that phone with Linux.
+
+Note that this is needed only when using the Android phone as modem,
+not in USB storage or ADB mode.
+
+Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/usb/core/quirks.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/visor.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-Index: linux-2.6.35.y/drivers/usb/core/quirks.c
+Index: linux-2.6.35.y/drivers/usb/serial/visor.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/usb/core/quirks.c	2011-03-29 22:51:10.768447631 -0700
-+++ linux-2.6.35.y/drivers/usb/core/quirks.c	2011-03-29 23:54:41.011953034 -0700
-@@ -68,6 +68,10 @@
- 	/* M-Systems Flash Disk Pioneers */
- 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
+--- linux-2.6.35.y.orig/drivers/usb/serial/visor.c	2011-03-29 22:51:10.292459811 -0700
++++ linux-2.6.35.y/drivers/usb/serial/visor.c	2011-03-29 23:03:01.228268742 -0700
+@@ -27,6 +27,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/usb.h>
+ #include <linux/usb/serial.h>
++#include <linux/usb/cdc.h>
+ #include "visor.h"
  
-+	/* Keytouch QWERTY Panel keyboard */
-+	{ USB_DEVICE(0x0926, 0x3333), .driver_info =
-+			USB_QUIRK_CONFIG_INTF_STRINGS },
+ /*
+@@ -479,6 +480,17 @@
+ 
+ 	dbg("%s", __func__);
+ 
++	/*
++	 * some Samsung Android phones in modem mode have the same ID
++	 * as SPH-I500, but they are ACM devices, so dont bind to them
++	 */
++	if (id->idVendor == SAMSUNG_VENDOR_ID &&
++		id->idProduct == SAMSUNG_SPH_I500_ID &&
++		serial->dev->descriptor.bDeviceClass == USB_CLASS_COMM &&
++		serial->dev->descriptor.bDeviceSubClass ==
++			USB_CDC_SUBCLASS_ACM)
++		return -ENODEV;
 +
- 	/* X-Rite/Gretag-Macbeth Eye-One Pro display colorimeter */
- 	{ USB_DEVICE(0x0971, 0x2000), .driver_info = USB_QUIRK_NO_SET_INTF },
- 
+ 	if (serial->dev->actconfig->desc.bConfigurationValue != 1) {
+ 		dev_err(&serial->dev->dev, "active config #%d != 1 ??\n",
+ 			serial->dev->actconfig->desc.bConfigurationValue);
