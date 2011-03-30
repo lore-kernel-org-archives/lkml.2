@@ -1,72 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab1C3JPO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 05:15:14 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:44596 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753863Ab1C3JPM convert rfc822-to-8bit (ORCPT
+	id S1755669Ab1C3JRq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 05:17:46 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51149 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755564Ab1C3JRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 05:15:12 -0400
-Subject: Re: kmemleak for MIPS
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Maxin John <maxin.john@gmail.com>
-Cc: Daniel Baluta <dbaluta@ixiacom.com>, naveen yadav <yad.naveen@gmail.com>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
-References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
-	 <AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
-	 <1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
-	 <AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
-	 <1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
-	 <AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
-	 <1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
-	 <AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
-	 <AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
-Organization: ARM Limited
-Date: Wed, 30 Mar 2011 10:15:05 +0100
-Message-ID: <1301476505.29074.47.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 30 Mar 2011 09:15:06.0492 (UTC) FILETIME=[F5C61BC0:01CBEEBA]
-X-MC-Unique: 111033010150808201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 Mar 2011 05:17:46 -0400
+From: Alan Cox <alan@linux.intel.com>
+Subject: [PATCH 00/18] GMA500 updates
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Wed, 30 Mar 2011 09:58:57 +0100
+Message-ID: <20110330085539.5897.67919.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-29 at 20:36 +0100, Maxin John wrote:
-> I have prepared the combined patch for kmemleak porting to MIPS. After
-> applying the patch and enabling the kmemleak in Kernel, I can see one
-> kernel memleak reported during booting itself:
-...
-> unreferenced object 0x8f90d000 (size 4096):
->   comm "swapper", pid 1, jiffies 4294937330 (age 815.000s)
->   hex dump (first 32 bytes):
->     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->   backtrace:
->     [<80529644>] alloc_large_system_hash+0x2f8/0x410
->     [<805383b4>] udp_table_init+0x4c/0x158
->     [<805384dc>] udp_init+0x1c/0x94
->     [<8053889c>] inet_init+0x184/0x2a0
->     [<80100584>] do_one_initcall+0x174/0x1e0
->     [<8051f348>] kernel_init+0xe4/0x174
->     [<80103d4c>] kernel_thread_helper+0x10/0x18
+This set of patches tackles three basic things
 
-If you for the kmemleak scan (via echo) a few times, do you get more
-leaks? The udp_table_init() function looks like it could leak some
-memory but I haven't seen it before. I'm not sure whether this is a
-false positive or a real leak.
-> 
-> Please let me know your comments.
-> 
-> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+- Add support for Moorestown (not yet usable as it needs a memory allocator)
+- Completely remove all the ttm related glue from the driver
+- Turn on SDVO support on Poulsbo - which should get the various non panel
+  users working
 
-I think the last line should be more like:
+Getting useful Moorestown support will need the power management tackling
+further, memory allocator and possibly MIPI panel support. For now the priority
+is Poulsbo.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+---
 
+Alan Cox (17):
+      gma500: turn on psb SDVO
+      gma500; kill off TTM
+      gma500: pull mrst firmware stuff into its own header
+      gma500: Clean up more unused structures and code
+      gma500: We don't support the CI either
+      gma500: delete the RAR handling
+      gma500: Add Moorestown identifiers
+      gma500: Moorestown does its setup differently
+      gma500: enable Moorestown CRTC handling
+      gma500: add framebuffer setup
+      gma500: Add Moorestown backlight support
+      gma500: Makefiles
+      gma500: Add moorestown specific data to the device structure
+      gma500: Add moorestown config structures
+      gma500: Make some of the lvds operations non-static
+      gma500: Add moorestown lvds driver code
+      gma500: begin adding Moorestown support
+
+Justin P. Mattock (1):
+      drivers:staging:gma500 Remove extra semi-colon.
+
+
+ drivers/staging/gma500/Makefile                 |   11 
+ drivers/staging/gma500/mrst.h                   |  217 ++++++++
+ drivers/staging/gma500/mrst_crtc.c              |  623 +++++++++++++++++++++++
+ drivers/staging/gma500/mrst_lvds.c              |  364 +++++++++++++
+ drivers/staging/gma500/psb_2d.c                 |    1 
+ drivers/staging/gma500/psb_bl.c                 |  112 +++-
+ drivers/staging/gma500/psb_buffer.c             |  450 ----------------
+ drivers/staging/gma500/psb_drm.h                |  111 ----
+ drivers/staging/gma500/psb_drv.c                |  543 ++++++++------------
+ drivers/staging/gma500/psb_drv.h                |  278 +---------
+ drivers/staging/gma500/psb_fb.c                 |   23 +
+ drivers/staging/gma500/psb_fence.c              |  122 ----
+ drivers/staging/gma500/psb_gtt.c                |   51 --
+ drivers/staging/gma500/psb_gtt.h                |    4 
+ drivers/staging/gma500/psb_intel_display.c      |   10 
+ drivers/staging/gma500/psb_intel_lvds.c         |   16 -
+ drivers/staging/gma500/psb_sgx.c                |  238 ---------
+ drivers/staging/gma500/psb_sgx.h                |   32 -
+ drivers/staging/gma500/psb_ttm_fence.c          |  605 ----------------------
+ drivers/staging/gma500/psb_ttm_fence_api.h      |  272 ----------
+ drivers/staging/gma500/psb_ttm_fence_driver.h   |  302 -----------
+ drivers/staging/gma500/psb_ttm_fence_user.c     |  237 ---------
+ drivers/staging/gma500/psb_ttm_fence_user.h     |  140 -----
+ drivers/staging/gma500/psb_ttm_glue.c           |  349 -------------
+ drivers/staging/gma500/psb_ttm_placement_user.c |  628 -----------------------
+ drivers/staging/gma500/psb_ttm_userobj_api.h    |   85 ---
+ 26 files changed, 1593 insertions(+), 4231 deletions(-)
+ create mode 100644 drivers/staging/gma500/mrst.h
+ create mode 100644 drivers/staging/gma500/mrst_crtc.c
+ create mode 100644 drivers/staging/gma500/mrst_lvds.c
+ delete mode 100644 drivers/staging/gma500/psb_buffer.c
+ delete mode 100644 drivers/staging/gma500/psb_fence.c
+ delete mode 100644 drivers/staging/gma500/psb_sgx.c
+ delete mode 100644 drivers/staging/gma500/psb_sgx.h
+ delete mode 100644 drivers/staging/gma500/psb_ttm_fence.c
+ delete mode 100644 drivers/staging/gma500/psb_ttm_fence_api.h
+ delete mode 100644 drivers/staging/gma500/psb_ttm_fence_driver.h
+ delete mode 100644 drivers/staging/gma500/psb_ttm_fence_user.c
+ delete mode 100644 drivers/staging/gma500/psb_ttm_fence_user.h
+ delete mode 100644 drivers/staging/gma500/psb_ttm_glue.c
+ delete mode 100644 drivers/staging/gma500/psb_ttm_placement_user.c
+ delete mode 100644 drivers/staging/gma500/psb_ttm_userobj_api.h
+
+-- 
+Alan
 
