@@ -1,112 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab1C3SaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 14:30:12 -0400
-Received: from incomingmail.riverbed.com ([208.70.196.45]:5914 "EHLO
-	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab1C3SaK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 14:30:10 -0400
-From: "Francis St. Amant" <Francis.St.Amant@riverbed.com>
-To: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 30 Mar 2011 11:30:00 -0700
-Subject: RE: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly
- Report Mechanism (HARM)
-Thread-Topic: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly
- Report Mechanism (HARM)
-Thread-Index: AcvvAxLLctO5rafAS7mIheC7u/G/uwABMkZg
-Message-ID: <05E7F0869FB1C54AA467D77BC9C9E63F3FF7EEC271@MAILBOXES.nbttech.com>
-References: <cover.1300996141.git.mchehab@redhat.com>
- <20110324173257.36680b90@pedra> <20110324223907.GA10498@liondog.tnic>
- <4D8C6C80.8010600@redhat.com> <20110325141322.GB28313@gere.osrc.amd.com>
- <4D8D078C.1040201@redhat.com> <20110328170302.GF11590@aftab>
- <4D90E525.4030709@redhat.com>
- <987664A83D2D224EAE907B061CE93D5301A7A60074@orsmsx505.amr.corp.intel.com>
- <20110330175106.GB1601@aftab>
-In-Reply-To: <20110330175106.GB1601@aftab>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1755598Ab1C3Sa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 14:30:59 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:44168 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754628Ab1C3Sa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 14:30:57 -0400
+Message-ID: <4D9376DE.1060207@sgi.com>
+Date: Wed, 30 Mar 2011 11:30:54 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        iommu@lists.linux-foundation.org, Mike Habeck <habeck@sgi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] Intel pci: Remove Host Bridge devices from identity
+ mapping
+References: <20110329233602.272459647@gulag1.americas.sgi.com> <20110329233602.439245439@gulag1.americas.sgi.com> <20110330175137.GQ18712@sequoia.sous-sol.org>
+In-Reply-To: <20110330175137.GQ18712@sequoia.sous-sol.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2UIUKSH021455
-
-Hi,
-
-Sorry for using your BW but I wonder if you can do me a favor and remove Arthur Jones (Arthur.jones@riverbed.com; ajones@riverbed.com) from this list?  I tried to do that via the unsubscribe method at bottom but it didn't work.
-
-Arthur has left Riverbed, and as his former manager I now get all his emails forwarded to me.  Since I'm not useful to this list, there's no reason to receive all these emails.  Probably my attempt to unsubscribe didn't work because the email came from me and I'm already not on the list--Arthur is.
-
-Thanks very much,
-
-- - - - - - - - - - - - - - - - - - - - - - - - - -
-Francis St. Amant
-Sr. Mgr., Platform/OEM Engineering
-Riverbed Technology
-francis@riverbed.com
-Voice: 415-344-4480
-FAX: 415-247-8801
 
 
------Original Message-----
-From: linux-edac-owner@vger.kernel.org [mailto:linux-edac-owner@vger.kernel.org] On Behalf Of Borislav Petkov
-Sent: Wednesday, March 30, 2011 10:51 AM
-To: Luck, Tony
-Cc: Mauro Carvalho Chehab; Borislav Petkov; Borislav Petkov; Linux Edac Mailing List; Linux Kernel Mailing List
-Subject: Re: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly Report Mechanism (HARM)
 
-On Wed, Mar 30, 2011 at 01:27:43PM -0400, Luck, Tony wrote:
-> > A INT13 persistent data saving will probably be too hard to implement for
-> > all kind of storages. So, it will probably need lots of hack in order to
-> > work. Also, some hardware may even not have any local hard disk. Not sure
-> > if it is worth to spend time on it.
+Chris Wright wrote:
+> * Mike Travis (travis@sgi.com) wrote:
+>>     When the IOMMU is being used, each request for a DMA mapping requires
+>>     the intel_iommu code to look for some space in the DMA mapping table.
+>>     For most drivers this occurs for each transfer.
+>>
+>>     When there are many outstanding DMA mappings [as seems to be the case
+>>     with the 10GigE driver], the table grows large and the search for
+>>     space becomes increasingly time consuming.  Performance for the
+>>     10GigE driver drops to about 10% of it's capacity on a UV system
+>>     when the CPU count is large.
 > 
-> Linus was pretty clear that he didn't like the idea when
-> it came up a few weeks ago in the:
->  [PATCH 0/2][conceâ€‹pt RFC] x86: BIOS-save kernel log to disk upon panic
-> thread.
+> That's pretty poor.  I've seen large overheads, but when that big it was
+> also related to issues in the 10G driver.  Do you have profile data
+> showing this as the hotspot?
+
+Here's one from our internal bug report:
+
+Here is a profile from a run with iommu=on  iommu=pt  (no forcedac)
+
+uv48-sys was receiving and uv-debug sending.
+ksoftirqd/640 was running at approx. 100% cpu utilization.
+I had pinned the nttcp process on uv48-sys to cpu 64.
+
+# Samples: 1255641
+#
+# Overhead        Command  Shared Object  Symbol
+# ........  .............  .............  ......
+#
+    50.27%ESC[m  ksoftirqd/640  [kernel]       [k] _spin_lock
+    27.43%ESC[m  ksoftirqd/640  [kernel]       [k] iommu_no_mapping
+...
+      0.48%  ksoftirqd/640  [kernel]       [k] iommu_should_identity_map
+      0.45%  ksoftirqd/640  [kernel]       [k] ixgbe_alloc_rx_buffers    [
+ixgbe]
+      0.42%  ksoftirqd/640  [kernel]       [k] ioat2_tx_submit_unlock    [
+ioatdma]
+      0.29%  ksoftirqd/640  [kernel]       [k] uv_read_rtc
+      0.25%  ksoftirqd/640  [kernel]       [k] __alloc_skb
+      0.20%  ksoftirqd/640  [kernel]       [k] try_to_wake_up
+      0.19%  ksoftirqd/640  [kernel]       [k] ____cache_alloc_node
+      0.19%  ksoftirqd/640  [kernel]       [k] kmem_cache_free
+      0.19%  ksoftirqd/640  [kernel]       [k] __netdev_alloc_skb
+      0.18%  ksoftirqd/640  [kernel]       [k] tcp_v4_rcv
+      0.15%  ksoftirqd/640  [kernel]       [k] resched_task
+      0.15%  ksoftirqd/640  [kernel]       [k] tcp_data_queue
+      0.13%  ksoftirqd/640  [kernel]       [k] xfrm4_policy_check
+      0.11%  ksoftirqd/640  [kernel]       [k] get_page_from_freelist
+      0.10%  ksoftirqd/640  [kernel]       [k] sched_clock_cpu
+      0.10%  ksoftirqd/640  [kernel]       [k] sock_def_readable
+...
+
+I tracked this time down to identity_mapping() in this loop:
+
+       list_for_each_entry(info, &si_domain->devices, link)
+               if (info->dev == pdev)
+                       return 1;
+
+I didn't get the exact count, but there was approx 11,000 PCI devices
+on this system.  And this function was called for every page request
+in each DMA request.
+
+Here's an excerpt from our internal bug report:
+
+I also looked at the cpu utilization uv. Its at 22% for the nttcp process
+and ksoftirqd is not at the top so I think this means the fix is working.
+
+Another run
+uv-debug:~/eddiem/nttcp-1.52 # ./nttcp -T -l 1048576 -P 60 192.168.1.2
+Running for 60 seconds...
+     Bytes  Real s   CPU s Real-MBit/s  CPU-MBit/s   Calls  Real-C/s   CPU-C/s
+l51671728128   60.00   13.52   6889.4548  30582.1259   49278    821.29    3645.7
+151671728128   60.00   12.53   6889.4660  32983.4024  123666   2061.07    9867.4
+
+Trying it from the other side shows nttcp on uv at 44% cpu.
+
+uv41-sys:~/eddiem/nttcp-1.52 # ./nttcp -T -l 1048576 -P 60 192.168.1.1
+Running for 60 seconds...
+     Bytes  Real s   CPU s Real-MBit/s  CPU-MBit/s   Calls  Real-C/s   CPU-C/s
+l51292143616   60.00   26.40   6838.9326  15544.4581   48917    815.28    1853.1
+151292456796   60.00    7.35   6839.0407  55809.8528   93530   1558.84   12720.9
+
+
+Note that our networking experts also tuned the 10GigE parameters which
+helped bring the speed back up to almost line speed.  (The 10GigE was
+by far the most affected driver, but even the 1GigE driver lost performance.)
+
+There was also changes for the irq_rebalancer and disabling sched domains
+2 and 3 (which was being hit by idle_rebalancer).  I remember sched domain 3
+had all 4096 cpus but I forgot what sd 2 had.)
+
+Also, running the network test on the same node as where the cards were
+helped as well.
+
+If you really need them, I can sign up for some system time and get better
+before/after profile data specifically for these IOMMU changes?
+
+Thanks,
+Mike
+
 > 
-> Linus ranted:
-> > Quite frankly, I'm not likely to _ever_ merge anything like this.
-> >
-> > Over the years, many people have tried to write things to disk on
-> > oops. I refuse to take it. No way in hell do I want the situation of
-> > "the system is screwed, so let's overwrite the disk" to be something
-> > the kernel I release might do. It's crazy. That disk is a lot more
-> > important than the kernel, and overwriting it when we might have
-> > serious memory corruption issues or something is not a thing I feel is
-> > appropriate.
+>>     The workaround is to specify the iommu=pt option which sets up a 1:1
+>>     identity map for those devices that support enough DMA address bits to
+>>     cover the physical system memory.  This is the "pass through" option.
+>>
+>>     But this can only be accomplished by those devices that pass their
+>>     DMA data through the IOMMU (VTd).  But Host Bridge Devices connected
+>>     to System Sockets do not pass their data through the VTd, thus the
+>>     following error occurs:
+>>
+>>     IOMMU: hardware identity mapping for device 1000:3e:00.0
+>>     Failed to setup IOMMU pass-through
+>>     BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
+>>
+>>     This patch fixes that problem but removing Host Bridge devices from
+>>     being identity mapped, given that they do not generate DMA ops anyways.
+>>
+>> Signed-off-by: Mike Travis <travis@sgi.com>
+>> Reviewed-by: Mike Habeck <habeck@sgi.com>
+>> ---
+>>  drivers/pci/intel-iommu.c |    6 +++++-
+>>  1 file changed, 5 insertions(+), 1 deletion(-)
+>>
+>> --- linux.orig/drivers/pci/intel-iommu.c
+>> +++ linux/drivers/pci/intel-iommu.c
+>> @@ -46,6 +46,7 @@
+>>  #define ROOT_SIZE		VTD_PAGE_SIZE
+>>  #define CONTEXT_SIZE		VTD_PAGE_SIZE
+>>  
+>> +#define IS_HOSTBRIDGE_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_HOST)
+>>  #define IS_GFX_DEVICE(pdev) ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
+>>  #define IS_ISA_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_ISA)
+>>  #define IS_AZALIA(pdev) ((pdev)->vendor == 0x8086 && (pdev)->device == 0x3a3e)
+>> @@ -2183,7 +2184,7 @@ static int iommu_should_identity_map(str
+>>  	 * take them out of the 1:1 domain later.
+>>  	 */
+>>  	if (!startup)
+>> -		return pdev->dma_mask > DMA_BIT_MASK(32);
+>> +		return pdev->dma_mask == DMA_BIT_MASK(64);
 > 
-> I agree with him - writing to disk from a known broken kernel (using
-> a probably buggy BIOS) is a disaster waiting to happen to somebody's
-> disk.
-
-I can't say I don't agree. The reference to the BIOS method was simply
-to say that we need some kind of a solution for saving OOPSen and other
-error info on clients too, with no pers. storage hw. And frankly, and
-AFAICT, we don't have one that would work reliably on existing hw right
-now :(.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
---
-To unsubscribe from this list: send the line "unsubscribe linux-edac" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> This looks unrelated, why the change?
+> 
+>>  	return 1;
+>>  }
+>> @@ -2198,6 +2199,9 @@ static int __init iommu_prepare_static_i
+>>  		return -EFAULT;
+>>  
+>>  	for_each_pci_dev(pdev) {
+>> +		/* Skip PCI Host Bridge devices */
+>> +		if (IS_HOSTBRIDGE_DEVICE(pdev))
+>> +			continue;
+>>  		if (iommu_should_identity_map(pdev, 1)) {
+> 
+> Should this host bridge check go into iommu_should_identity_map?
+> 
+> I understand skipping the extra host bridges, but what is the NULL ptr deref
+> coming from?  Just to be sure this isn't a bandaid.
+> 
+> thanks,
+> -chris
+> 
