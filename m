@@ -1,174 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab1C3XQp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 19:16:45 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57031 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756515Ab1C3XQn (ORCPT
+	id S1756571Ab1C3X1K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 19:27:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43007 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753613Ab1C3X1I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 19:16:43 -0400
-Date: Wed, 30 Mar 2011 15:51:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH]mmap: improve scalability for updating vm_committed_as
-Message-Id: <20110330155114.fa47dd9d.akpm@linux-foundation.org>
-In-Reply-To: <1301447847.3981.49.camel@sli10-conroe>
-References: <1301447847.3981.49.camel@sli10-conroe>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Mar 2011 19:27:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=vWr3fyVrDpUzVjfFiBI0skGUSJ2u7matmCBSAhc8PWEgvuWs1hOQMq/ImDC33aZqYb
+         g7pWJXtbsPLzzs8jgLYwQEVS+r7K1aQP2HEo4C928IgZaDd1uldr5irH1RxdlJy+P7nR
+         NbGzBNVOLfxPj6q3yPzq+DQ0RevKGo1mwBvAU=
+MIME-Version: 1.0
+In-Reply-To: <20110326000456.346395018@clark.kroah.org>
+References: <20110326000509.GA29736@kroah.com>
+	<20110326000456.346395018@clark.kroah.org>
+Date: Wed, 30 Mar 2011 19:27:06 -0400
+X-Google-Sender-Auth: RC75AnBa1N8XErtFuZ-dA02MCMQ
+Message-ID: <AANLkTi=XPPxVYPB8fzr2Ent3QOsKF=JunhGL+ExEk_7f@mail.gmail.com>
+Subject: Re: [05/35] powerpc/kdump: Fix race in kdump shutdown
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Mar 2011 09:17:27 +0800
-Shaohua Li <shaohua.li@intel.com> wrote:
-
-> In a workload with a lot of mmap/mumap, updating vm_committed_as is
-> a scalability issue, because the percpu_counter_batch is too small, and
-> the update needs hold percpu_counter lock.
-> On the other hand, vm_committed_as is only used in OVERCOMMIT_NEVER case,
-> which isn't the default setting.
-> We can make the batch bigger in other cases and then switch to small batch
-> in OVERCOMMIT_NEVER case, so that we will have no scalability issue with
-> default setting. We flush all CPUs' percpu counter when switching
-> sysctl_overcommit_memory, so there is no race the counter is incorrect.
-
-The patch is purportedly a performance improvement, but the changelog
-didn't tell us how much it improves performance?
-
-> ...
+On Fri, Mar 25, 2011 at 8:03 PM, Greg KH <gregkh@suse.de> wrote:
+> 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 >
-> --- linux.orig/include/linux/mman.h	2011-03-29 16:28:57.000000000 +0800
-> +++ linux/include/linux/mman.h	2011-03-30 09:01:38.000000000 +0800
-> @@ -20,9 +20,17 @@ extern int sysctl_overcommit_memory;
->  extern int sysctl_overcommit_ratio;
->  extern struct percpu_counter vm_committed_as;
->  
-> +extern int overcommit_memory_handler(struct ctl_table *table, int write,
-> +		void __user *buffer, size_t *lenp, loff_t *ppos);
->  static inline void vm_acct_memory(long pages)
->  {
-> -	percpu_counter_add(&vm_committed_as, pages);
-> +	/* avoid overflow and the value is big enough */
-> +	int batch = INT_MAX/2;
-> +
-> +	if (sysctl_overcommit_memory == OVERCOMMIT_NEVER)
-> +		batch = percpu_counter_batch;
-> +
-> +	__percpu_counter_add(&vm_committed_as, pages, batch);
->  }
+> ------------------
+>
+> From: Michael Neuling <mikey@neuling.org>
+>
+> commit 60adec6226bbcf061d4c2d10944fced209d1847d upstream.
 
-It would be better to create a global __read_mostly variable for this
-and alter its value within the sysctl, rather than recalculating it
-each time.
+Hi Greg,
 
-This again points at the need to make the batch count a field within
-the percpu_counter.
+It looks like this introduces an issue for ppc32 unless we also take
+the upstream c2be05481f612525 commit.  There is an e500 kexec
+patch in between that modifies context; here is the one I've tentatively
+queued for 2.6.34 without a dependency on the e500 patch context.
 
->  static inline void vm_unacct_memory(long pages)
-> Index: linux/fs/proc/meminfo.c
-> ===================================================================
-> --- linux.orig/fs/proc/meminfo.c	2011-03-29 16:28:57.000000000 +0800
-> +++ linux/fs/proc/meminfo.c	2011-03-30 09:01:38.000000000 +0800
-> @@ -35,7 +35,7 @@ static int meminfo_proc_show(struct seq_
->  #define K(x) ((x) << (PAGE_SHIFT - 10))
->  	si_meminfo(&i);
->  	si_swapinfo(&i);
-> -	committed = percpu_counter_read_positive(&vm_committed_as);
-> +	committed = percpu_counter_sum_positive(&vm_committed_as);
->  	allowed = ((totalram_pages - hugetlb_total_pages())
->  		* sysctl_overcommit_ratio / 100) + total_swap_pages;
+http://git.kernel.org/?p=linux/kernel/git/longterm/longterm-queue-2.6.34.git;a=blob;f=next_round/powerpc-Fix-default_machine_crash_shutdown-ifdef-bot.patch
 
-This is a big change, and it wasn't even changelogged.  It's
-potentially a tremendous increase in the expense of a read from
-/proc/meminfo, which is a file that lots of tools will be polling. 
-Many of those tools we don't even know about or have access to.
-
-The change is unneeded if sysctl_overcommit_memory==OVERCOMMIT_NEVER,
-but that's hardly a fix.
-
-Quite worrisome.
-
-Perhaps a better approach would be to carefully tune the batch size
-according to the size of the machine.  Going all the way to INT_MAX/2
-is surely overkill.
-
-
-> Index: linux/kernel/sysctl.c
-> ===================================================================
-> --- linux.orig/kernel/sysctl.c	2011-03-29 16:28:57.000000000 +0800
-> +++ linux/kernel/sysctl.c	2011-03-30 09:01:38.000000000 +0800
-> @@ -56,6 +56,7 @@
->  #include <linux/kprobes.h>
->  #include <linux/pipe_fs_i.h>
->  #include <linux/oom.h>
-> +#include <linux/mman.h>
->  
->  #include <asm/uaccess.h>
->  #include <asm/processor.h>
-> @@ -86,8 +87,6 @@
->  #if defined(CONFIG_SYSCTL)
->  
->  /* External variables not in a header file. */
-> -extern int sysctl_overcommit_memory;
-> -extern int sysctl_overcommit_ratio;
->  extern int max_threads;
->  extern int core_uses_pid;
->  extern int suid_dumpable;
-> @@ -977,7 +976,7 @@ static struct ctl_table vm_table[] = {
->  		.data		= &sysctl_overcommit_memory,
->  		.maxlen		= sizeof(sysctl_overcommit_memory),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_dointvec_minmax,
-> +		.proc_handler	= overcommit_memory_handler,
->  		.extra1		= &zero,
->  		.extra2		= &two,
->  	},
-> Index: linux/mm/mmap.c
-> ===================================================================
-> --- linux.orig/mm/mmap.c	2011-03-30 08:59:23.000000000 +0800
-> +++ linux/mm/mmap.c	2011-03-30 09:01:38.000000000 +0800
-> @@ -93,6 +93,33 @@ int sysctl_max_map_count __read_mostly =
->   */
->  struct percpu_counter vm_committed_as ____cacheline_internodealigned_in_smp;
->  
-> +static void overcommit_drain_counter(struct work_struct *dummy)
-> +{
-> +	/*
-> +	 * Flush percpu counter to global counter when batch is changed, see
-> +	 * vm_acct_memory for detail
-> +	 */
-> +	vm_acct_memory(0);
-> +}
-> +
-> +int overcommit_memory_handler(struct ctl_table *table, int write,
-> +                void __user *buffer, size_t *lenp, loff_t *ppos)
-> +{
-> +	int error;
-> +
-> +	error = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
-> +	if (error)
-> +		return error;
-> +
-> +	if (write) {
-> +		/* Make sure each CPU sees the new sysctl_overcommit_memory */
-> +		smp_wmb();
-> +		schedule_on_each_cpu(overcommit_drain_counter);
-> +	}
-> +
-> +	return 0;
-> +}
-
-Calling vm_acct_memory(0) is a bit of a hack.
-
-Rather than open-coding this twice, it would be better to introduce a
-new percpu_counter core primitive to collapse the counters.
+Paul.
 
 >
-> ...
+> When we are crashing, the crashing/primary CPU IPIs the secondaries to
+> turn off IRQs, go into real mode and wait in kexec_wait.  While this
+> is happening, the primary tears down all the MMU maps.  Unfortunately
+> the primary doesn't check to make sure the secondaries have entered
+> real mode before doing this.
+>
+> On PHYP machines, the secondaries can take a long time shutting down
+> the IRQ controller as RTAS calls are need.  These RTAS calls need to
+> be serialised which resilts in the secondaries contending in
+> lock_rtas() and hence taking a long time to shut down.
+>
+> We've hit this on large POWER7 machines, where some secondaries are
+> still waiting in lock_rtas(), when the primary tears down the HPTEs.
+>
+> This patch makes sure all secondaries are in real mode before the
+> primary tears down the MMU.  It uses the new kexec_state entry in the
+> paca.  It times out if the secondaries don't reach real mode after
+> 10sec.
+>
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>
+> ---
+>  arch/powerpc/kernel/crash.c |   27 +++++++++++++++++++++++++++
+>  1 file changed, 27 insertions(+)
+>
+> --- a/arch/powerpc/kernel/crash.c
+> +++ b/arch/powerpc/kernel/crash.c
+> @@ -162,6 +162,32 @@ static void crash_kexec_prepare_cpus(int
+>        /* Leave the IPI callback set */
+>  }
+>
+> +/* wait for all the CPUs to hit real mode but timeout if they don't come in */
+> +static void crash_kexec_wait_realmode(int cpu)
+> +{
+> +       unsigned int msecs;
+> +       int i;
+> +
+> +       msecs = 10000;
+> +       for (i=0; i < NR_CPUS && msecs > 0; i++) {
+> +               if (i == cpu)
+> +                       continue;
+> +
+> +               while (paca[i].kexec_state < KEXEC_STATE_REAL_MODE) {
+> +                       barrier();
+> +                       if (!cpu_possible(i)) {
+> +                               break;
+> +                       }
+> +                       if (!cpu_online(i)) {
+> +                               break;
+> +                       }
+> +                       msecs--;
+> +                       mdelay(1);
+> +               }
+> +       }
+> +       mb();
+> +}
+> +
+>  /*
+>  * This function will be called by secondary cpus or by kexec cpu
+>  * if soft-reset is activated to stop some CPUs.
+> @@ -419,6 +445,7 @@ void default_machine_crash_shutdown(stru
+>        crash_kexec_prepare_cpus(crashing_cpu);
+>        cpu_set(crashing_cpu, cpus_in_crash);
+>        crash_kexec_stop_spus();
+> +       crash_kexec_wait_realmode(crashing_cpu);
+>        if (ppc_md.kexec_cpu_down)
+>                ppc_md.kexec_cpu_down(1, 0);
+>  }
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
