@@ -1,74 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957Ab1C3UiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 16:38:25 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:57771 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754979Ab1C3UiY (ORCPT
+	id S932955Ab1C3Ulr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 16:41:47 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:63060 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847Ab1C3Ulq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 16:38:24 -0400
-Date: Wed, 30 Mar 2011 13:38:23 -0700
-From: Dmitry Torokhov <dtor@vmware.com>
-To: linux-kernel@vger.kernel.org
-Cc: Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: 2.6.39-rc1 regression: NFS - unable to mount some shares (bisected)
-Message-ID: <20110330203823.GA3228@dtor-ws.eng.vmware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Mar 2011 16:41:46 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Wed, 30 Mar 2011 16:41:45 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+In-reply-to: <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+Message-id: <alpine.LFD.2.00.1103301531420.28032@xanadu.home>
+References: <20110317183048.GW7258@atomide.com>
+ <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+ <20110318101512.GA15375@n2100.arm.linux.org.uk>
+ <201103301906.42429.arnd@arndb.de>
+ <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 30 Mar 2011, Linus Torvalds wrote:
 
-The following commit appears to the open preventng me from mounting some
-of my NFS shares (not all, of them, just some):
+> ARM right now i a nightmare, and most of it is because ARM hardware
+> manufacturers are morons.
 
-8f70e95f9f4159184f557a1db60c909d7c1bd2e3 is the first bad commit
-commit 8f70e95f9f4159184f557a1db60c909d7c1bd2e3
-Author: Bryan Schumaker <bjschuma@netapp.com>
-Date:   Thu Mar 24 17:12:31 2011 +0000
+If in your mind "competitors" == "morons" then you might be right.
 
-    NFS: Determine initial mount security
-    
-    When sec=<something> is not presented as a mount option,
-    we should attempt to determine what security flavor the
-    server is using.
-    
-    Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> But the way the ARM tree is then laid out
+> has made that even more painful, and the decision to put all the crazy
+> board details in the kernel tables instead of trying to have a
+> per-board boot loader that fills in the details is just crazy.
 
-Here is the bisect log:
+I beg to disagree.
 
-[dtor@dtor-ws linus]$ git bisect log
-git bisect start
-# good: [4bbba111d94781d34081c37856bbc5eb33f6c72a] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6
-git bisect good 4bbba111d94781d34081c37856bbc5eb33f6c72a
-# bad: [0ce790e7d736cedc563e1fb4e998babf5a4dbc3d] Linux 2.6.39-rc1
-git bisect bad 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d
-# good: [e285c1746accb80620e511f9c72e9893beeedc0e] Merge branch 'drm-core-next' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6
-git bisect good e285c1746accb80620e511f9c72e9893beeedc0e
-# bad: [8d49a77568d1105ff3e64aec484dac059f54824e] Merge branch 'for-2.6.39/drivers' of git://git.kernel.dk/linux-2.6-block
-git bisect bad 8d49a77568d1105ff3e64aec484dac059f54824e
-# bad: [5aafdea448fb86412a6f8e46df518c1545d32436] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6
-git bisect bad 5aafdea448fb86412a6f8e46df518c1545d32436
-# bad: [9458ea567a72ebd3852c2d764d32c0f2fb61d0df] MIPS: IP22/IP28: Convert to new irq_chip functions
-git bisect bad 9458ea567a72ebd3852c2d764d32c0f2fb61d0df
-# good: [ae005cbed12d0b340b04b59d6f5c56e710b3895d] Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4
-git bisect good ae005cbed12d0b340b04b59d6f5c56e710b3895d
-# bad: [1685f3b158a244d4f6e205e67c84483fffcb2d9f] MIPS: SMTC: Move declaration of smtc_init_secondary to <asm/smtc.h>.
-git bisect bad 1685f3b158a244d4f6e205e67c84483fffcb2d9f
-# good: [988b6dceb0ae6d642587c8594529b94f6be0c5ea] NFSv4.1: remove GETATTR from ds commits
-git bisect good 988b6dceb0ae6d642587c8594529b94f6be0c5ea
-# good: [35124a0994fc02545b14b9fa3aad000b3331f1c0] Cleanup XDR parsing for LAYOUTGET, GETDEVICEINFO
-git bisect good 35124a0994fc02545b14b9fa3aad000b3331f1c0
-# bad: [8f70e95f9f4159184f557a1db60c909d7c1bd2e3] NFS: Determine initial mount security
-git bisect bad 8f70e95f9f4159184f557a1db60c909d7c1bd2e3
-# good: [7c5130588d691a3b34d02312f1bd1b6d56fe0100] NFS: lookup supports s alternate client
-git bisect good 7c5130588d691a3b34d02312f1bd1b6d56fe0100
-# good: [7ebb931598cd95cccea10d4bc4c0123a464ea565] NFS: use secinfo when crossing mountpoints
-git bisect good 7ebb931598cd95cccea10d4bc4c0123a464ea565
+Trying to rely on bootloaders doing things right is like saying that x86 
+should always rely on the BIOS doing things right.  We have this chance 
+in the OMAP case to have a manufacturer who is smart enough to document 
+all those things so that the kernel can be autonomous and more reliable, 
+and the BIOS joke avoided entirely. When something needs fixing it is 
+much easier to update the kernel ourselves than waiting after any 
+bootloader updates which are themselves much more risky to perform.
 
+Granted, things could be structured in a better way so to minimize the 
+risk of conflicts when clocks for unrelated drivers are updated at the 
+same time.  Something like initcall tables or the like.
+
+> Look at the dirstat for arch/ in just the current merge window
+> (cut-off at 5% just to not get too much):
+> 
+> [torvalds@i5 linux]$ git diff -C --dirstat=5 --cumulative v2.6.38.. arch
+>   14.0% arch/arm/mach-omap2/
+>    5.8% arch/arm/plat-mxc/include/mach/
+>    6.3% arch/arm/plat-mxc/
+>   57.1% arch/arm/
+>    5.4% arch/m68k/
+>    9.6% arch/unicore32/
+>    6.9% arch/x86/
+>  100.0% arch/
+> 
+> almost *SIXTY* percent of all arch updates were to ARM code.
+
+Absolutely not!  You have 14% going to OMAP code which happens to be 
+under arch/arm/ but there is nothing ARM specific in there.  If OMAP was 
+using a PPC or a MIPS core then you'd have the same result except under 
+arch/powerpc or arch/mips.  There is very little in terms of ARM 
+specific peculiarities under arch/arm/mach-omap2/ in fact.
+
+And it happens that, after all the beating we've made on those embedded 
+(ARM) SOC manufacturers, trying to push the point home that it is far 
+better for everyone to have support merged in the mainline kernel 
+instead of keeping their patches piled up into an obsolete kernel 
+version, it happens that the OMAP folks are the top champions when it's 
+time to upstream their code.  Are we going to complain to them now that 
+they're doing exactly what the upstream kernel community people have 
+been asking of them for so many years?
+
+> And that's despite the fact that one of those architectures 
+> (unicore32) is a totally new architecture, and despite m68k having 
+> gone through a first-level unification of nommu and mmu code!
+
+So what?  That only shows that those architectures are not being used as 
+much as ARM is.  This is probably just a reflect of actual market share.
+
+> And was this just a fluke? No. Doing the same for 2.3.37..38 gives
+> 58.3% for arch/arm (and in that release we had a blackfin unification
+> effort, otherwise arm would have been an even bigger percentage).
+
+And don't be surprised if the dirstat result for arch/arm/ goes up even 
+further in the near future.  Other SOC manufacturers which happen to 
+have chosen an ARM core for their CPU are also coming out of their 
+moronic stupor and waking up to speed with this Open Source thing.  If 
+they were choosing a MIPS core this could rebalance the dirstat, but 
+they happen to also have an ARM core with a _completely_ different 
+architecture around it since that's what they compete over.  If ARM Ltd 
+was to dictate everything composing the ARM architecture like what 
+happened on X86 then you'd end up with a much lower level of competition 
+and innovation.
+
+If that means doing someting similar to "git mv arch/arm/mach-omap2 
+arch/omap2" for the dirstat to be more meaningful then let's do it.  But 
+I think that a different interpretation of the one you did would be more 
+appropriate here.
+
+> That's ridiculous. It's entirely due to the whole f*cked-up arm ecosystem.
+
+Well, let's face it, ARM is at the moment highly successful.  And yes it 
+might be destabilizing as ARM might be surpassing the X86 kernel 
+development rate while X86 always used to be the ultimate reference.  
+But calling the whole ecosystem "f*cked-up" because we have issue 
+scaling to it properly is a rather cheap argument.
+
+> Something needs to be done. A small part is to make sure the source
+> code is more hierarchical, so that we don't have those crazy shared
+> data-files that are ugly as hell and get conflicts because different
+> boards all think they need to care.
+
+Absolutely!
+
+> But the larger problem is that somebody really REALLY needs to think
+> about how to get those crazy board details out of the kernel entirely.
+> Having per-board drivers for real hardware is sane - having to have
+> per-board detail files for clock chips is just crazy. Split off that
+> thing a "Linux ARM second-stage bootloader" project that has the
+> per-board tables or something. Don't pollute the main kernel with
+> crazy details like this.
+
+There is on-going work to bring device tree support to ARM.  Maybe that 
+will be the way to go to move those clock details out of the kernel.  
+And maybe that will become another unfixable PC BIOS fiasco. We'll see.  
+I don't particularly like the idea of _more_ APIs between bootloaders 
+and the kernel.  Keeping everything fixable in only one place is way 
+more convenient than the burden of the occasional merge conflict.
+
+Sure, something has to be done to minimize the pain, your pain, but not 
+by increasing the pain elsewhere.  I think that you know pretty well 
+already how painful dealing with BIOS data, or ACPI, or any other vendor 
+controlled (sometimes closed source) config tables might be.  We've 
+sidestepped that pain entirely on ARM so far and that really feels good.
+
+
+Nicolas
