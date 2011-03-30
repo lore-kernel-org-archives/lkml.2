@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559Ab1C3OCd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 10:02:33 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:54202 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932543Ab1C3OCc (ORCPT
+	id S932529Ab1C3OEk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 10:04:40 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48306 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab1C3OEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 10:02:32 -0400
-Date: Wed, 30 Mar 2011 15:59:11 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Colin Cross <ccross@android.com>
-Cc: Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm: tegra: fix error check in tegra2_clocks.c
-Message-ID: <20110330155911.6dc0ef63@absol.kitzblitz>
-Organization: -
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
- AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
- T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
- ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
- BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Mar 2011 10:04:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=vHeqNanYPW8Tkf16IMQnAJYuMdT5nyS1uVR+WNl1a+ccIjUiAV+EsvSLjIqP2sziM9
+         P33/Gmvf8LTm20AQs1W+GM9TlzCmNGXM/fzKVHJPhc3PgyPkcul8/qgMNXIs0mzOry9U
+         BiBzwVIFPiIJJ63VMn63EUAdqK5pQT3Ln6MCY=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Stable <stable@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH] perf: Rebase max unprivileged mlock threshold on top of page size
+Date: Wed, 30 Mar 2011 16:04:30 +0200
+Message-Id: <1301493870-4551-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1301065512.2250.223.camel@laptop>
+References: <1301065512.2250.223.camel@laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checking 'rate < 0' doesn't work because 'rate' is unsigned.
+So that we ensure we allow 129 pages, even if the page size is
+different than 4096.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stable <stable@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
 ---
-Untested.
+ kernel/perf_event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
- arch/arm/mach-tegra/tegra2_clocks.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-tegra/tegra2_clocks.c b/arch/arm/mach-tegra/tegra2_clocks.c
-index 6d7c4ee..4459470 100644
---- a/arch/arm/mach-tegra/tegra2_clocks.c
-+++ b/arch/arm/mach-tegra/tegra2_clocks.c
-@@ -1362,14 +1362,15 @@ static int tegra_clk_shared_bus_set_rate(struct clk *c, unsigned long rate)
- {
- 	unsigned long flags;
- 	int ret;
-+	long new_rate = rate;
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index c75925c..fce1b8a 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -146,7 +146,7 @@ static struct srcu_struct pmus_srcu;
+ int sysctl_perf_event_paranoid __read_mostly = 1;
  
--	rate = clk_round_rate(c->parent, rate);
--	if (rate < 0)
--		return rate;
-+	new_rate = clk_round_rate(c->parent, new_rate);
-+	if (new_rate < 0)
-+		return new_rate;
+ /* Minimum for 128 pages + 1 for the user control page */
+-int sysctl_perf_event_mlock __read_mostly = 516; /* 'free' kb per user */
++int sysctl_perf_event_mlock __read_mostly = (129 * PAGE_SIZE) / 1024; /* 'free' kb per user */
  
- 	spin_lock_irqsave(&c->parent->spinlock, flags);
- 
--	c->u.shared_bus_user.rate = rate;
-+	c->u.shared_bus_user.rate = new_rate;
- 	ret = tegra_clk_shared_bus_update(c->parent);
- 
- 	spin_unlock_irqrestore(&c->parent->spinlock, flags);
+ /*
+  * max perf event sample rate
 -- 
-1.7.3.4
+1.7.3.2
+
