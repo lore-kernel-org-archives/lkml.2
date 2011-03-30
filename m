@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965428Ab1C3Vpu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:45:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:58322 "EHLO mga14.intel.com"
+	id S965443Ab1C3Vp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:45:59 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39222 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964846Ab1C3VHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:07:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="411277839"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110330203.501921634@firstfloor.org>
-In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: hooanon05@yahoo.co.jp, Trond.Myklebust@netapp.com,
-        tim.gardner@canonical.com, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [122/275] NFS: fix the return value of nfs_file_fsync()
-Message-Id: <20110330210602.2875A3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:02 -0700 (PDT)
+	id S965426Ab1C3Vp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:45:56 -0400
+Subject: Re: [GIT pull] irq fixes for .39.rc
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <AANLkTinnGfpVeugk4WOKeDAUQEuzBo75yCq_E73=w66V@mail.gmail.com>
+References: <alpine.LFD.2.00.1103301648460.22418@localhost6.localdomain6>
+	 <AANLkTinnGfpVeugk4WOKeDAUQEuzBo75yCq_E73=w66V@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 Mar 2011 08:45:23 +1100
+Message-ID: <1301521523.2407.4.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Wed, 2011-03-30 at 08:36 -0700, Linus Torvalds wrote:
+> 
+> which just makes me go "Somebody is really really confused".
+> 
+> The whole thing may mean that both handler_data and chip_data contains
+> the right thing, but it still makes me go "WTF?".
+> 
+> Which way should I resolve it? 
 
-------------------
-From: J. R. Okajima <hooanon05@yahoo.co.jp>
+Looks like I'm the one who mixed up here.
 
-commit 0702099bd86c33c2dcdbd3963433a61f3f503901 upstream.
+Kumar: shows that you are overdue for sending me some FSL HW so I can
+test things :-)
 
-By the commit af7fa16 2010-08-03 NFS: Fix up the fsync code
-close(2) became returning the non-zero value even if it went well.
-nfs_file_fsync() should return 0 when "status" is positive.
+Cheers,
+Ben.
 
-Signed-off-by: J. R. Okajima <hooanon05@yahoo.co.jp>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
----
- fs/nfs/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6.35.y/fs/nfs/file.c
-===================================================================
---- linux-2.6.35.y.orig/fs/nfs/file.c	2011-03-29 22:51:19.419226280 -0700
-+++ linux-2.6.35.y/fs/nfs/file.c	2011-03-29 23:03:00.750280971 -0700
-@@ -222,7 +222,7 @@
- 	have_error |= test_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
- 	if (have_error)
- 		ret = xchg(&ctx->error, 0);
--	if (!ret)
-+	if (!ret && status < 0)
- 		ret = status;
- 	return ret;
- }
