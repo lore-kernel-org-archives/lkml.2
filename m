@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab1C3N1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 09:27:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47572 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754785Ab1C3N1H (ORCPT
+	id S1755938Ab1C3N2M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 09:28:12 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64104 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab1C3N2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 09:27:07 -0400
+	Wed, 30 Mar 2011 09:28:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ljm7lq+SaRsk00gWyTBpsGbXpY0aAl3XVF+2teTz4DRC+vJqJhq8t45S5G5/b/7jZs
-         f/EbR+Z7pE11EZYruGqzX8Q2AnGx4hz3DE1uajx1MvCpc0yI+rtH+pcfW93pga+XBPg/
-         bAzHYwobcAP3Rd3fMtDB+XEZA5BKsf8eq4MHY=
-Subject: Re: kmemleak for MIPS
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Maxin John <maxin.john@gmail.com>
-Cc: Daniel Baluta <daniel.baluta@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        naveen yadav <yad.naveen@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <AANLkTi=RXoEOVmTPiL=dfO97aOVKWOJWE7hoQduPPsCZ@mail.gmail.com>
-References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
-	 <AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
-	 <1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
-	 <AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
-	 <1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
-	 <AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
-	 <1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
-	 <AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
-	 <AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
-	 <1301476505.29074.47.camel@e102109-lin.cambridge.arm.com>
-	 <AANLkTi=YB+nBG7BYuuU+rB9TC-BbWcJ6mVfkxq0iUype@mail.gmail.com>
-	 <AANLkTi=L0zqwQ869khH1efFUghGeJjoyTaBXs-O2icaM@mail.gmail.com>
-	 <AANLkTi=vcn5jHpk0O8XS9XJ8s5k-mCnzUwu70mFTx4=g@mail.gmail.com>
-	 <1301485085.29074.61.camel@e102109-lin.cambridge.arm.com>
-	 <AANLkTikXfVNkyFE2MpW9ZtfX2G=QKvT7kvEuDE-YE5xO@mail.gmail.com>
-	 <1301488032.3283.42.camel@edumazet-laptop>
-	 <AANLkTikX0jxdkyYgPoqjvC5HzY8VydTbFh_gFDzM8zJ7@mail.gmail.com>
-	 <AANLkTi=RXoEOVmTPiL=dfO97aOVKWOJWE7hoQduPPsCZ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Mar 2011 15:27:02 +0200
-Message-ID: <1301491622.3283.46.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=odXwbMBLo4+Xs0AvgGGjEsitAO+VK3+yFNBUviUPRZ7OworGegu6cjUAl5wnlffjrH
+         CwCvOxwvgCZAni8pGJWkZP5CPFqtEMDC/OvVmJ0N+3Q15BjV/qgTX1Jl1jrhXCX9OKWY
+         Q5KnQXIgmU3oo5oX0FoB0iLcRA0+wlShGPSDg=
+MIME-Version: 1.0
+In-Reply-To: <849307$c7qtj5@azsmga001.ch.intel.com>
+References: <1301310995.5615.92.camel@wangqingchuan>
+	<1301336010.2217.20.camel@workstation>
+	<AANLkTikMJszEyv8-SMMjD-MeykSwmsKf=gmezcMgySoP@mail.gmail.com>
+	<1301409864.5615.98.camel@wangqingchuan>
+	<AANLkTi=fcWBpmQ66a3+vQwgFOXn=0rJAviNzR4a0mfcJ@mail.gmail.com>
+	<1301421664.2151.12.camel@Portable-Work>
+	<AANLkTin_v5h==E0i5mQgK2AEdaZhwViykr3acbz4CW0k@mail.gmail.com>
+	<20110329202608.GA3454@viiv.ffwll.ch>
+	<AANLkTim2AyGPrun8MNq0=TyXpJ+b8i=eyHhLz01F+f2P@mail.gmail.com>
+	<AANLkTi=vFwoKCOsvyGBQA9w01QX_TwGu_GF6mA0grr2o@mail.gmail.com>
+	<849307$c7qtj5@azsmga001.ch.intel.com>
+Date: Wed, 30 Mar 2011 09:28:07 -0400
+Message-ID: <AANLkTinxVznFtHwM2RM3kNm9-eSXuz9L7TgfaMpgu=uZ@mail.gmail.com>
+Subject: Re: GEM-related desktop sluggishness due to linear-time arch_get_unmapped_area_topdown()
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@gmail.com>, r6144 <rainy6144@gmail.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 30 mars 2011 à 14:17 +0100, Maxin John a écrit :
-> Hi,
-> 
-> I have compiled the kernel with below given modification in .config
-> 
-> CONFIG_CMDLINE="uhash_entries=256"
-> 
-> After booting with the new kernel, the "kmemleak" no longer complains
-> about the "udp_table_init".
-> However it do report another possible leak :)
-> 
-> debian-mips:~# cat /sys/kernel/debug/kmemleak
-> unreferenced object 0x8f085000 (size 4096):
->   comm "swapper", pid 1, jiffies 4294937670 (age 1043.280s)
->   hex dump (first 32 bytes):
->     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->   backtrace:
->     [<801ac7a8>] __kmalloc+0x130/0x180
->     [<80532500>] flow_cache_cpu_prepare+0x50/0xa8
->     [<8052378c>] flow_cache_init_global+0x90/0x138
->     [<80100584>] do_one_initcall+0x174/0x1e0
->     [<8050c348>] kernel_init+0xe4/0x174
->     [<80103d4c>] kernel_thread_helper+0x10/0x18
-> debian-mips:~#
+On Wed, Mar 30, 2011 at 3:32 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Wed, 30 Mar 2011 07:57:49 +1000, Dave Airlie <airlied@gmail.com> wrote:
+>> On Wed, Mar 30, 2011 at 7:04 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>> > What i had in mind was something little bit more advance that pwrite,
+>> > somethings that would take width,height,pitch of userpage and would be
+>> > able to perform proper blit. But yes pwrite in intel is kind of
+>> > limited.
+>>
+>> TTM has support for userpage binding we just don't use it.
+>
+> Yes, and I've been experimenting with the same in GEM to great effect in
+> the DDX. The complication remains in managing the CPU synchronisation,
+> which suggests that it would only be useful for STREAM_DRAW objects (and
+> perhaps the sub-region updates to STATIC_DRAW). (And for readback, if
+> retrieving the data were the actual bottleneck.)
 
-Hmm, then MIPS kmemleak port might have a problem with percpu data ?
+What do you mean by CPU synchronisation ? In what i had in mind the
+upload/download would block userspace until operation is, this would
+make upload/dowload barrier of course it doesn't play well with
+usecase where you keep uploading/downloading (idea to aleviate that is
+to allow several download/upload in one ioctl call).
 
-fcp->hash_table = kzalloc_node(sz, GFP_KERNEL, cpu_to_node(cpu));
+> And I did play with a new pread/pwrite interface that did as you suggest,
+> binding the user pages and performing a blit. But by the time you make the
+> interface asynchronous, it becomes much easier to let the client code
+> create the mapping and be fully aware of the barriers.
+>
+> And yes I do concur that vma bookkeeping does impose significant overheads
+> and I have been removing as many mappings from our drivers as I can; within
+> the limitations of the pwrite interface.
+> -Chris
+>
+> --
+> Chris Wilson, Intel Open Source Technology Centre
+>
 
-fcp is a per cpu "struct flow_cache_percpu"
-
-> I completely agree with Daniel. Shall we move on and integrate the
-> kmemleak support for MIPS ?
-
-
+Cheers,
+Jerome
