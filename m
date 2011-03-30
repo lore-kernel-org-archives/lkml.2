@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab1C3B5J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 21:57:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14350 "EHLO mx1.redhat.com"
+	id S1755511Ab1C3B5t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 21:57:49 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55335 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755334Ab1C3B5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 21:57:07 -0400
-Message-ID: <4D928DE2.8070804@redhat.com>
-Date: Tue, 29 Mar 2011 22:56:50 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Alexander Beregalov <a.beregalov@gmail.com>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "Igor M. Liplianin" <liplianin@netup.ru>
-Subject: Re: [PATCH -next] staging: altera-jtag needs delay.h
-References: <20110304180027.20deb6c4.sfr@canb.auug.org.au>	<20110304173528.60c04f76.randy.dunlap@oracle.com> <AANLkTinhKKtPS7-tFcoU8JE=zsgikEn979DemyXX8q_z@mail.gmail.com>
-In-Reply-To: <AANLkTinhKKtPS7-tFcoU8JE=zsgikEn979DemyXX8q_z@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755348Ab1C3B5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 21:57:47 -0400
+Subject: Re: linux-next: build failure after merge of the Linus' tree
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-next@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110330110027.b83a1d20.sfr@canb.auug.org.au>
+References: <20110330110027.b83a1d20.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Mar 2011 12:56:43 +1100
+Message-ID: <1301450203.2402.716.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 29-03-2011 18:27, Alexander Beregalov escreveu:
-> On 5 March 2011 04:35, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> altera-jtag.c needs to include <linux/delay.h> to fix a build error:
->>
->> drivers/staging/altera-stapl/altera-jtag.c:398: error: implicit declaration of function 'udelay'
->>
->> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
->> Cc: Igor M. Liplianin <liplianin@netup.ru>
+On Wed, 2011-03-30 at 11:00 +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Mauro, Greg. 2.6.39 still needs this fix.
+> After merging the Linus' tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> kernel/irq/chip.c: In function 'handle_edge_eoi_irq':
+> kernel/irq/chip.c:517: warning: label 'out_unlock' defined but not used
+> kernel/irq/chip.c:503: error: label 'out_eoi' used but not defined
 
-I'm updating the fix right now to -next. I'll be sending it upstream after having it
-merged there.
+There's a fix in tip/irq/urgent ...
 
-Thanks,
-Mauro.
+Cheers,
+Ben.
+
+> Caused by commit 0521c8fbb3da ("genirq: Provide edge_eoi flow handler")
+> which was clearly not even built with CONFIG_IRQ_EDGE_EOI_HANDLER defined.
+> 
+> I applied this fixup patch:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 30 Mar 2011 10:55:12 +1100
+> Subject: [PATCH] genirq: fix CONFIG_IRQ_EDGE_EOI_HANDLER build
+> 
+> Fixes these errors:
+> 
+> kernel/irq/chip.c: In function 'handle_edge_eoi_irq':
+> kernel/irq/chip.c:517: warning: label 'out_unlock' defined but not used
+> kernel/irq/chip.c:503: error: label 'out_eoi' used but not defined
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  kernel/irq/chip.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+> index 616ec1c..1dafc86 100644
+> --- a/kernel/irq/chip.c
+> +++ b/kernel/irq/chip.c
+> @@ -514,7 +514,7 @@ void handle_edge_eoi_irq(unsigned int irq, struct irq_desc *desc)
+>  	} while ((desc->istate & IRQS_PENDING) &&
+>  		 !irqd_irq_disabled(&desc->irq_data));
+>  
+> -out_unlock:
+> +out_eoi:
+>  	chip->irq_eoi(&desc->irq_data);
+>  	raw_spin_unlock(&desc->lock);
+>  }
+> -- 
+> 1.7.4.1
+> 
+> 
+
+
