@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab1C3Mkm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 08:40:42 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:47496 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab1C3Mkl (ORCPT
+	id S932467Ab1C3Mpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 08:45:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52938 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436Ab1C3Mpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 08:40:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=pNG8oGOrx3I2EflueVnHtJmJ92FjVBYxbKs3MWwNdGwhpKpKxDdowoM0q/D2Mdfzc1
-         NmlsC+tmwnavwkmzcPaSAswNrlQf5c5knng1mClJJNdwIijFK9vkRaTlzup8jTBIZ5BV
-         z72YTl5VUNIMh94wR93a6/aGhZVFv6JE7PjTw=
+	Wed, 30 Mar 2011 08:45:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] unicore32 fix: remove arch-specific futex support
+Date: Wed, 30 Mar 2011 14:40:03 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, Paul Mundt <lethal@linux-sh.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <01eb01cbeeb7$30390460$90ab0d20$@mprc.pku.edu.cn> <201103301417.20027.arnd@arndb.de> <alpine.LFD.2.00.1103301421390.22418@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103301421390.22418@localhost6.localdomain6>
 MIME-Version: 1.0
-In-Reply-To: <1301488032.3283.42.camel@edumazet-laptop>
-References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
-	<AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
-	<1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
-	<1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
-	<1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
-	<AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
-	<1301476505.29074.47.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTi=YB+nBG7BYuuU+rB9TC-BbWcJ6mVfkxq0iUype@mail.gmail.com>
-	<AANLkTi=L0zqwQ869khH1efFUghGeJjoyTaBXs-O2icaM@mail.gmail.com>
-	<AANLkTi=vcn5jHpk0O8XS9XJ8s5k-mCnzUwu70mFTx4=g@mail.gmail.com>
-	<1301485085.29074.61.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTikXfVNkyFE2MpW9ZtfX2G=QKvT7kvEuDE-YE5xO@mail.gmail.com>
-	<1301488032.3283.42.camel@edumazet-laptop>
-Date: Wed, 30 Mar 2011 13:40:40 +0100
-Message-ID: <AANLkTimvwZXJup9NhzAdWr1dO2p7=usLrsXXhyy7zrk4@mail.gmail.com>
-Subject: Re: kmemleak for MIPS
-From: Maxin John <maxin.john@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Daniel Baluta <dbaluta@ixiacom.com>,
-        naveen yadav <yad.naveen@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103301440.03479.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZCKAxxh25mKPzmPsqMKx+Wgt6Iwrq4xaaVd5Y6M3xKN
+ YOZptsJQ3hxP1c4qXiTVZxJ+z581tXCVd5Rqt2sxBeJ/d5NEhS
+ MtxQpIhbzbvpKtqQ/0PmsNiycZL2b9pPOSTs/hT8X/ENHsahcx
+ KG0W0R7P9+jp9IolyTM1XGh+BF16D6Z7ognhgyJ0PKyOjLmoX+
+ ebiIJzsVjhtFEUJjrWITw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wednesday 30 March 2011, Thomas Gleixner wrote:
+> The problem is that you need cmpxchg in user space as well.
+> 
+> ARM does this with some syscall magic for machines which do not have
+> cmpxchg.
 
-> How much memory do you have exactly on this machine ?
+Ah, right. I wonder how sh does it.
 
-debian-mips:~# cat /proc/meminfo
-MemTotal:         255500 kB
-MemFree:          214848 kB
-Buffers:            3116 kB
-Cached:            15960 kB
-SwapCached:            0 kB
-Active:            10332 kB
-Inactive:          12512 kB
-Active(anon):       3776 kB
-Inactive(anon):     2500 kB
-Active(file):       6556 kB
-Inactive(file):    10012 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-SwapTotal:        738952 kB
-SwapFree:         738952 kB
-Dirty:                 0 kB
-Writeback:             0 kB
-AnonPages:          3796 kB
-Mapped:             3300 kB
-Shmem:              2508 kB
-Slab:              16940 kB
-SReclaimable:       2884 kB
-SUnreclaim:        14056 kB
-KernelStack:         272 kB
-PageTables:          312 kB
-NFS_Unstable:          0 kB
-Bounce:                0 kB
-WritebackTmp:          0 kB
-CommitLimit:      866700 kB
-Committed_AS:      36916 kB
-VmallocTotal:    1048372 kB
-VmallocUsed:         220 kB
-VmallocChunk:    1048140 kB
+I also remember that the original unicore32 ABI had support for a cmpxchg
+system call, but that was removed with the move to the generic syscall
+table.
 
-> If you care about losing 8192 bytes of memory, you could boot with
->
-> "uhash_entries=256"
+It is of course possible to add it back using the __NR_arch_specific_syscall
+entry point.
 
-Thank you very much for your inputs. I will try booting with this option.
-
-Best Regards,
-Maxin
+	Arnd
