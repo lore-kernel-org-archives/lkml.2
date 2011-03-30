@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab1C3VxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:53:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51403 "EHLO mga02.intel.com"
+	id S933387Ab1C3VHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:07:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:17014 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933352Ab1C3VHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:07:11 -0400
+	id S933337Ab1C3VG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:06:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="621236878"
+   d="scan'208";a="411277062"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: srostedt@redhat.com, rostedt@goodmis.org, a.p.zijlstra@chello.nl,
-        ak@linux.intel.com, ghaskins@novell.com, mingo@elte.hu, efault@gmx.de,
-        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [91/275] sched: Give CPU bound RT tasks preference
-Message-Id: <20110330210529.7CCF93E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:05:29 -0700 (PDT)
+To: pavel@ucw.cz, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [60/275] serial: unbreak billionton CF card
+Message-Id: <20110330210456.D44A03E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:04:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,53 +24,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From:: Steven Rostedt <srostedt@redhat.com>
+From: Pavel Machek <pavel@ucw.cz>
 
-Commit: b3bc211cfe7d5fe94b310480d78e00bea96fbf2a upstream
+commit d0694e2aeb815042aa0f3e5036728b3db4446f1d upstream.
 
-If a high priority task is waking up on a CPU that is running a
-lower priority task that is bound to a CPU, see if we can move the
-high RT task to another CPU first. Note, if all other CPUs are
-running higher priority tasks than the CPU bounded current task,
-then it will be preempted regardless.
+Unbreak Billionton CF bluetooth card. This actually fixes a regression
+on zaurus.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Gregory Haskins <ghaskins@novell.com>
-LKML-Reference: <20100921024138.888922071@goodmis.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- kernel/sched_rt.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Index: linux-2.6.35.y/kernel/sched_rt.c
+---
+ drivers/serial/8250.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.35.y/drivers/serial/8250.c
 ===================================================================
---- linux-2.6.35.y.orig/kernel/sched_rt.c	2011-03-29 23:03:00.009299932 -0700
-+++ linux-2.6.35.y/kernel/sched_rt.c	2011-03-29 23:54:59.868470542 -0700
-@@ -971,7 +971,8 @@
- 	 * For equal prio tasks, we just let the scheduler sort it out.
- 	 */
- 	if (unlikely(rt_task(rq->curr)) &&
--	    rq->curr->prio < p->prio &&
-+	    (rq->curr->rt.nr_cpus_allowed < 2 ||
-+	     rq->curr->prio < p->prio) &&
- 	    (p->rt.nr_cpus_allowed > 1)) {
- 		int cpu = find_lowest_rq(p);
- 
-@@ -1491,9 +1492,10 @@
- 	if (!task_running(rq, p) &&
- 	    !test_tsk_need_resched(rq->curr) &&
- 	    has_pushable_tasks(rq) &&
-+	    p->rt.nr_cpus_allowed > 1 &&
- 	    rt_task(rq->curr) &&
--	    rq->curr->prio < p->prio &&
--	    p->rt.nr_cpus_allowed > 1)
-+	    (rq->curr->rt.nr_cpus_allowed < 2 ||
-+	     rq->curr->prio < p->prio))
- 		push_rt_tasks(rq);
- }
- 
+--- linux-2.6.35.y.orig/drivers/serial/8250.c	2011-03-29 22:51:45.825550607 -0700
++++ linux-2.6.35.y/drivers/serial/8250.c	2011-03-29 23:02:59.395315642 -0700
+@@ -256,7 +256,8 @@
+ 		.fifo_size	= 128,
+ 		.tx_loadsz	= 128,
+ 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+-		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
++		/* UART_CAP_EFR breaks billionon CF bluetooth card. */
++		.flags		= UART_CAP_FIFO | UART_CAP_SLEEP,
+ 	},
+ 	[PORT_RSA] = {
+ 		.name		= "RSA",
