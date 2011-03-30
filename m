@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab1C3IRX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 04:17:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49750 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925Ab1C3IRU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 04:17:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Ya7Pv/NqOw8OQaai9tUC9v6jYHvCh6xTIQYefWmfjZbqJqFOO6js58d5KjDMbMu+0z
-         a4oPB1gDmALbKdOfBYNFJd5TPGRglRMf6o95F3HxUK7np5NX9+QtKB2PJlJN5iXnSRbs
-         LKyl5KyJngoQg8osl66EKfycqC63YAX+9ibWc=
-Date: Wed, 30 Mar 2011 10:17:16 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 2/2] mutex: Apply adaptive spinning on mutex_trylock()
-Message-ID: <20110330081716.GE17523@htj.dyndns.org>
-References: <20110323153727.GB12003@htj.dyndns.org>
- <20110324094119.GD12038@htj.dyndns.org>
- <20110324094151.GE12038@htj.dyndns.org>
- <20110325101238.GC1409@htj.dyndns.org>
- <20110329163702.GE29865@htj.dyndns.org>
- <20110329170949.GF29865@htj.dyndns.org>
- <1301420253.2250.430.camel@laptop>
+	id S932097Ab1C3IS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 04:18:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49316 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754473Ab1C3IS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 04:18:56 -0400
+Date: Wed, 30 Mar 2011 10:18:53 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/3] Implementation of cgroup isolation
+Message-ID: <20110330081853.GC15394@tiehlicka.suse.cz>
+References: <20110328093957.089007035@suse.cz>
+ <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
+ <4D920066.7000609@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301420253.2250.430.camel@laptop>
+In-Reply-To: <4D920066.7000609@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Peter.
-
-On Tue, Mar 29, 2011 at 07:37:33PM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-03-29 at 19:09 +0200, Tejun Heo wrote:
-> > Here's the combined patch I was planning on testing but didn't get to
-> > (yet).  It implements two things - hard limit on spin duration and
-> > early break if the owner also is spinning on a mutex.
+On Tue 29-03-11 21:23:10, Balbir Singh wrote:
+> On 03/28/11 16:33, KAMEZAWA Hiroyuki wrote:
+> > On Mon, 28 Mar 2011 11:39:57 +0200
+> > Michal Hocko <mhocko@suse.cz> wrote:
+[...]
+> > Isn't it the same result with the case where no cgroup is used ?
+> > What is the problem ?
+> > Why it's not a problem of configuration ?
+> > IIUC, you can put all logins to some cgroup by using cgroupd/libgcgroup.
+> > 
 > 
-> This is going to give massive conflicts with
-> 
->  https://lkml.org/lkml/2011/3/2/286
->  https://lkml.org/lkml/2011/3/2/282
-> 
-> which I was planning to stuff into .40
+> I agree with Kame, I am still at loss in terms of understand the use
+> case, I should probably see the rest of the patches
 
-I see.  Adapting shouldn't be hard.  The patch is in proof-of-concept
-stage anyway.
+OK, it looks that I am really bad at explaining the usecase. Let's try
+it again then (hopefully in a better way).
 
-> > + * Forward progress is guaranteed regardless of locking ordering by never
-> > + * spinning longer than MAX_MUTEX_SPIN_NS.  This is necessary because
-> > + * mutex_trylock(), which doesn't have to follow the usual locking
-> > + * ordering, also uses this function.
-> 
-> While that puts a limit on things it'll still waste time. I'd much
-> rather pass an trylock argument to mutex_spin_on_owner() and then bail
-> on owner also spinning.
+Consider a service which serves requests based on the in-memory
+precomputed or preprocessed data. 
+Let's assume that getting data into memory is rather costly operation
+which considerably increases latency of the request processing. Memory
+access can be considered random from the system POV because we never
+know which requests will come from outside.
+This workflow will benefit from having the memory resident as long as
+and as much as possible because we have higher chances to be used more
+often and so the initial costs would pay off.
+Why is mlock not the right thing to do here? Well, if the memory would
+be locked and the working set would grow (again this depends on the
+incoming requests) then the application would have to unlock some
+portions of the memory or to risk OOM because it basically cannot
+overcommit.
+On the other hand, if the memory is not mlocked and there is a global
+memory pressure we can have some part of the costly memory swapped or
+paged out which will increase requests latencies. If the application is
+placed into an isolated cgroup, though, the global (or other cgroups)
+activity doesn't influence its cgroup thus the working set of the
+application.
+If we compare that to mlock we will benefit from per-group reclaim when
+we get over the limit (or soft limit). So we do not start evicting the
+memory unless somebody makes really pressure on the _application_.
+Cgroup limits would, of course, need to be selected carefully.
 
-Do we guarantee or enforce that the lock ownership can't be
-transferred to a different task?  If we do, the recursive spinning
-detection is enough to guarantee forward progress.
+There might be other examples when simply kernel cannot know which
+memory is important for the process and the long unused memory is not
+the ideal choice.
 
-> > +		if (task_thread_info(rq->curr) != owner ||
-> > +		    rq->spinning_on_mutex || need_resched() ||
-> > +		    local_clock() > start + MAX_MUTEX_SPIN_NS) {
-> 
-> While we did our best with making local_clock() cheap, I'm still fairly
-> uncomfortable with putting it in such a tight loop.
-
-That's one thing I didn't really understand.  It seems the spinning
-code tried to be light on CPU cycle usage, but we're wasting CPU
-cycles there anyway.  If the spinning can become smarter using some
-CPU cycles, isn't that a gain?  Why is the spinning code optimizing
-for less CPU cycles?
-
-Also, it would be great if you can share what you're using for locking
-performance measurements.  My attempts with dbench didn't end too
-well. :-(
-
-Thanks.
-
+Makes sense?
 -- 
-tejun
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
