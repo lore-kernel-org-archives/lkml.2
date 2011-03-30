@@ -1,42 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab1C3O2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 10:28:36 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:55461 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932470Ab1C3O2e (ORCPT
+	id S932621Ab1C3Oag (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 10:30:36 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56094 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932230Ab1C3Oaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 10:28:34 -0400
-Date: Wed, 30 Mar 2011 16:28:30 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Maxin John <maxin.john@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Daniel Baluta <dbaluta@ixiacom.com>,
-        naveen yadav <yad.naveen@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: kmemleak for MIPS
-Message-ID: <20110330142829.GA25423@linux-mips.org>
-References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
- <AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
- <1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
- <AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
- <1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
- <AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
- <1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
- <AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
- <AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
+	Wed, 30 Mar 2011 10:30:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:content-type;
+        b=nuldXLV+2+oVhDsh5X+fxaVXmSFywxkdyj8ayVIrchb7ALNjPvfDpCSH2rhcqyRnXo
+         uLTBdnLlHqbyNWVTbwEhL7Fly2r2JlPR1pkc7a8fAhQRFjt6Njt5kK3bFQGhbi+EdKC+
+         3MLNSl7P4yqW8fbtnBUDxCNl9bYpT+gm/AQB4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+Date: Wed, 30 Mar 2011 16:30:34 +0200
+Message-ID: <AANLkTimor7EZhek8gXnzC0TFDNdQfpnynBvrxbHkzZZ4@mail.gmail.com>
+Subject: patchwork.kernel.org down
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 10:36:02PM +0300, Maxin John wrote:
+Hi,
 
-Dropped as I've applied Catalin's patch
-https://patchwork.linux-mips.org/patch/2247/.
+Host <patchwork.kernel.org> is ping-able, but lists & patches are not
+browseable.
 
-  Ralf
+- Sedat -
