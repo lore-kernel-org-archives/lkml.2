@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964782Ab1C3VGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:06:37 -0400
+	id S964798Ab1C3VGo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:06:44 -0400
 Received: from mga09.intel.com ([134.134.136.24]:65216 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933228Ab1C3VGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:06:33 -0400
+	id S933308Ab1C3VGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:06:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="727132912"
+   d="scan'208";a="621236398"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: tj@kernel.org, jbarnes@virtuousgeek.org, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+To: suresh.b.siddha@intel.com, ak@linux.intel.com, jabber@gmx.org,
+        trenn@novell.com, rjw@novell.com, venki@google.com, mingo@elte.hu,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: [PATCH] [55/275] PCI: pci-stub: ignore zero-length id parameters
-Message-Id: <20110330210451.94FFE3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:04:51 -0700 (PDT)
+Subject: [PATCH] [62/275] x86, mtrr: Avoid MTRR reprogramming on BP during boot on UP platforms
+Message-Id: <20110330210458.EDE5B3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:04:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,39 +26,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Tejun Heo <tj@kernel.org>
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-commit 99a0fadf561e1f553c08f0a29f8b2578f55dd5f0 upstream.
+commit f7448548a9f32db38f243ccd4271617758ddfe2c upstream.
 
-pci-stub uses strsep() to separate list of ids and generates a warning
-message when it fails to parse an id.  However, not specifying the
-parameter results in ids set to an empty string.  strsep() happily
-returns the empty string as the first token and thus triggers the
-warning message spuriously.
+Markus Kohn ran into a hard hang regression on an acer aspire
+1310, when acpi is enabled. git bisect showed the following
+commit as the bad one that introduced the boot regression.
 
-Make the tokner ignore zero length ids.
+	commit d0af9eed5aa91b6b7b5049cae69e5ea956fd85c3
+	Author: Suresh Siddha <suresh.b.siddha@intel.com>
+	Date:   Wed Aug 19 18:05:36 2009 -0700
 
-Reported-by: Chris Wright <chrisw@sous-sol.org>
-Reported-by: Prasad Joshi <P.G.Joshi@student.reading.ac.uk>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+	    x86, pat/mtrr: Rendezvous all the cpus for MTRR/PAT init
+
+Because of the UP configuration of that platform,
+native_smp_prepare_cpus() bailed out (in smp_sanity_check())
+before doing the set_mtrr_aps_delayed_init()
+
+Further down the boot path, native_smp_cpus_done() will call the
+delayed MTRR initialization for the AP's (mtrr_aps_init()) with
+mtrr_aps_delayed_init not set. This resulted in the boot
+processor reprogramming its MTRR's to the values seen during the
+start of the OS boot. While this is not needed ideally, this
+shouldn't have caused any side-effects. This is because the
+reprogramming of MTRR's (set_mtrr_state() that gets called via
+set_mtrr()) will check if the live register contents are
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
----
- drivers/pci/pci-stub.c |    3 +++
- 1 file changed, 3 insertions(+)
+different from what is being asked to write and will do the actual
+write only if they are different.
 
-Index: linux-2.6.35.y/drivers/pci/pci-stub.c
+BP's mtrr state is read during the start of the OS boot and
+typically nothing would have changed when we ask to reprogram it
+on BP again because of the above scenario on an UP platform. So
+on a normal UP platform no reprogramming of BP MTRR MSR's
+happens and all is well.
+
+However, on this platform, bios seems to be modifying the fixed
+mtrr range registers between the start of OS boot and when we
+double check the live registers for reprogramming BP MTRR
+registers. And as the live registers are modified, we end up
+reprogramming the MTRR's to the state seen during the start of
+the OS boot.
+
+During ACPI initialization, something in the bios (probably smi
+handler?) don't like this fact and results in a hard lockup.
+
+We didn't see this boot hang issue on this platform before the
+commit d0af9eed5aa91b6b7b5049cae69e5ea956fd85c3, because only
+the AP's (if any) will program its MTRR's to the value that BP
+had at the start of the OS boot.
+
+Fix this issue by checking mtrr_aps_delayed_init before
+continuing further in the mtrr_aps_init(). Now, only AP's (if
+any) will program its MTRR's to the BP values during boot.
+
+Addresses https://bugzilla.novell.com/show_bug.cgi?id=623393
+
+  [ By the way, this behavior of the bios modifying MTRR's after the start
+    of the OS boot is not common and the kernel is not prepared to
+    handle this situation well. Irrespective of this issue, during
+    suspend/resume, linux kernel will try to reprogram the BP's MTRR values
+    to the values seen during the start of the OS boot. So suspend/resume might
+    be already broken on this platform for all linux kernel versions. ]
+
+Reported-and-bisected-by: Markus Kohn <jabber@gmx.org>
+Tested-by: Markus Kohn <jabber@gmx.org>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Thomas Renninger <trenn@novell.com>
+Cc: Rafael Wysocki <rjw@novell.com>
+Cc: Venkatesh Pallipadi <venki@google.com>
+LKML-Reference: <1296694975.4418.402.camel@sbsiddha-MOBL3.sc.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/x86/kernel/cpu/mtrr/main.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.35.y/arch/x86/kernel/cpu/mtrr/main.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/pci/pci-stub.c	2011-03-29 22:51:47.688502940 -0700
-+++ linux-2.6.35.y/drivers/pci/pci-stub.c	2011-03-29 23:02:59.304317971 -0700
-@@ -54,6 +54,9 @@
- 			subdevice = PCI_ANY_ID, class=0, class_mask=0;
- 		int fields;
+--- linux-2.6.35.y.orig/arch/x86/kernel/cpu/mtrr/main.c	2011-03-29 22:51:45.075569797 -0700
++++ linux-2.6.35.y/arch/x86/kernel/cpu/mtrr/main.c	2011-03-29 23:02:59.481313441 -0700
+@@ -793,13 +793,21 @@
+ }
  
-+		if (!strlen(id))
-+			continue;
+ /*
+- * MTRR initialization for all AP's
++ * Delayed MTRR initialization for all AP's
+  */
+ void mtrr_aps_init(void)
+ {
+ 	if (!use_intel())
+ 		return;
+ 
++	/*
++	 * Check if someone has requested the delay of AP MTRR initialization,
++	 * by doing set_mtrr_aps_delayed_init(), prior to this point. If not,
++	 * then we are done.
++	 */
++	if (!mtrr_aps_delayed_init)
++		return;
 +
- 		fields = sscanf(id, "%x:%x:%x:%x:%x:%x",
- 				&vendor, &device, &subvendor, &subdevice,
- 				&class, &class_mask);
+ 	set_mtrr(~0U, 0, 0, 0);
+ 	mtrr_aps_delayed_init = false;
+ }
