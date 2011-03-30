@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932929Ab1C3RBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 13:01:32 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:40054 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754785Ab1C3RBb (ORCPT
+	id S932951Ab1C3RBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 13:01:36 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34244 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932932Ab1C3RBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 13:01:31 -0400
+	Wed, 30 Mar 2011 13:01:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=YJ77uVrd2SNW7vLad46Kp48VPH1SUpAEaMSw5WFLEK3o7eaC93tk0slofjgG0WIxGE
-         PsaXrcDjADTin/d4BrnOLhw/9IcXf1JxTXjit2pKW2Mhd2BnJXv0ZjZnqFsJsbiHwq/A
-         2nVWP2Gdapk/lgPYCI/TO85dpwnBoCz9PN3rA=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=tGNbj9d+KqORZys+ren5FBYD8x13I8bRbs3YzSf9ERqYReSoLXg2N5Hp/Nj30oesbs
+         aLlElJGBUvcCn4iVcVGIvZl0jjr/POfWrAyHRKVyQvUvoClILjGp+eNgzta+GYhYTw/3
+         4uV3KLQ5pIPHWpKVY9LeZ/ryYdOpUEzRuoTCI=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 1/5]drivers: Typo change teh to the.
-Date: Wed, 30 Mar 2011 10:01:14 -0700
-Message-Id: <1301504478-3450-1-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 2/5]Documentation and driver: Change kenrel to kernel.
+Date: Wed, 30 Mar 2011 10:01:15 -0700
+Message-Id: <1301504478-3450-2-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1301504478-3450-1-git-send-email-justinmattock@gmail.com>
+References: <1301504478-3450-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below patch fixes some typos in various parts of the kernel.
+The below patch changes kenrel to kernel.
+Note:searching I am getting hits about kenrel having to do with
+android so these could be wrong.
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/infiniband/hw/qib/qib_twsi.c      |    2 +-
- drivers/scsi/lpfc/lpfc_sli.c              |    2 +-
- drivers/staging/octeon/cvmx-helper-util.c |    2 +-
- fs/notify/inotify/inotify_fsnotify.c      |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ Documentation/feature-removal-schedule.txt    |    2 +-
+ drivers/media/video/saa7164/saa7164-encoder.c |    2 +-
+ drivers/media/video/saa7164/saa7164-vbi.c     |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/infiniband/hw/qib/qib_twsi.c b/drivers/infiniband/hw/qib/qib_twsi.c
-index 6f31ca5..ddde72e 100644
---- a/drivers/infiniband/hw/qib/qib_twsi.c
-+++ b/drivers/infiniband/hw/qib/qib_twsi.c
-@@ -41,7 +41,7 @@
-  * QLogic_IB "Two Wire Serial Interface" driver.
-  * Originally written for a not-quite-i2c serial eeprom, which is
-  * still used on some supported boards. Later boards have added a
-- * variety of other uses, most board-specific, so teh bit-boffing
-+ * variety of other uses, most board-specific, so the bit-boffing
-  * part has been split off to this file, while the other parts
-  * have been moved to chip-specific files.
-  *
-diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
-index 4746dcd..7dab966 100644
---- a/drivers/scsi/lpfc/lpfc_sli.c
-+++ b/drivers/scsi/lpfc/lpfc_sli.c
-@@ -3040,7 +3040,7 @@ lpfc_sli_sp_handle_rspiocb(struct lpfc_hba *phba, struct lpfc_sli_ring *pring,
- 	list_add_tail(&rspiocbp->list, &(pring->iocb_continueq));
- 	pring->iocb_continueq_cnt++;
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 274b32d..b364c59 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -226,7 +226,7 @@ Who:	Zhang Rui <rui.zhang@intel.com>
+ What:	CONFIG_ACPI_PROCFS_POWER
+ When:	2.6.39
+ Why:	sysfs I/F for ACPI power devices, including AC and Battery,
+-        has been working in upstream kenrel since 2.6.24, Sep 2007.
++        has been working in upstream kernel since 2.6.24, Sep 2007.
+ 	In 2.6.37, we make the sysfs I/F always built in and this option
+ 	disabled by default.
+ 	Remove this option and the ACPI power procfs interface in 2.6.39.
+diff --git a/drivers/media/video/saa7164/saa7164-encoder.c b/drivers/media/video/saa7164/saa7164-encoder.c
+index f9d5946..4003645 100644
+--- a/drivers/media/video/saa7164/saa7164-encoder.c
++++ b/drivers/media/video/saa7164/saa7164-encoder.c
+@@ -177,7 +177,7 @@ static int saa7164_encoder_buffers_alloc(struct saa7164_port *port)
+ 		}
+ 	}
  
--	/* Now, determine whetehr the list is completed for processing */
-+	/* Now, determine whether the list is completed for processing */
- 	irsp = &rspiocbp->iocb;
- 	if (irsp->ulpLe) {
- 		/*
-diff --git a/drivers/staging/octeon/cvmx-helper-util.c b/drivers/staging/octeon/cvmx-helper-util.c
-index 41ef8a4..131182b 100644
---- a/drivers/staging/octeon/cvmx-helper-util.c
-+++ b/drivers/staging/octeon/cvmx-helper-util.c
-@@ -362,7 +362,7 @@ int __cvmx_helper_setup_gmx(int interface, int num_ports)
- }
+-	/* Allocate some kenrel kernel buffers for copying
++	/* Allocate some kernel buffers for copying
+ 	 * to userpsace.
+ 	 */
+ 	len = params->numberoflines * params->pitch;
+diff --git a/drivers/media/video/saa7164/saa7164-vbi.c b/drivers/media/video/saa7164/saa7164-vbi.c
+index 9e5b01c..bc1fced 100644
+--- a/drivers/media/video/saa7164/saa7164-vbi.c
++++ b/drivers/media/video/saa7164/saa7164-vbi.c
+@@ -148,7 +148,7 @@ static int saa7164_vbi_buffers_alloc(struct saa7164_port *port)
+ 		}
+ 	}
  
- /**
-- * Returns the IPD/PKO port number for a port on teh given
-+ * Returns the IPD/PKO port number for a port on the given
-  * interface.
-  *
-  * @interface: Interface to use
-diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
-index a91b69a..7400898 100644
---- a/fs/notify/inotify/inotify_fsnotify.c
-+++ b/fs/notify/inotify/inotify_fsnotify.c
-@@ -194,7 +194,7 @@ static int idr_callback(int id, void *p, void *data)
- 
- static void inotify_free_group_priv(struct fsnotify_group *group)
- {
--	/* ideally the idr is empty and we won't hit the BUG in teh callback */
-+	/* ideally the idr is empty and we won't hit the BUG in the callback */
- 	idr_for_each(&group->inotify_data.idr, idr_callback, group);
- 	idr_remove_all(&group->inotify_data.idr);
- 	idr_destroy(&group->inotify_data.idr);
+-	/* Allocate some kenrel kernel buffers for copying
++	/* Allocate some kernel buffers for copying
+ 	 * to userpsace.
+ 	 */
+ 	len = params->numberoflines * params->pitch;
 -- 
 1.7.4.1
 
