@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab1C3LjW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 07:39:22 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62353 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab1C3LjV (ORCPT
+	id S932300Ab1C3Lm7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 07:42:59 -0400
+Received: from 216-146-103-100.dsl.nemontel.net ([216.146.103.100]:49545 "EHLO
+	silka.with-linux.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754783Ab1C3Lm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 07:39:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-Subject: Re: [PATCH v3 1/7] mfd: add pruss mfd driver.
-Date: Wed, 30 Mar 2011 13:38:56 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        sachi@mistralsolutions.com, "Samuel Ortiz" <sameo@linux.intel.com>,
-        nsekhar@ti.com, "open list" <linux-kernel@vger.kernel.org>,
-        m-watkins@ti.com, "Marc Kleine-Budde" <mkl@pengutronix.de>
-References: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com> <201103111628.57549.arnd@arndb.de> <9E9CA0E03AAF4C9AA18DDD7CDE5168A8@subhasishg>
-In-Reply-To: <9E9CA0E03AAF4C9AA18DDD7CDE5168A8@subhasishg>
+	Wed, 30 Mar 2011 07:42:58 -0400
+X-Greylist: delayed 666 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Mar 2011 07:42:57 EDT
+Message-ID: <4D9314A1.7030106@silka.with-linux.com>
+Date: Wed, 30 Mar 2011 05:31:45 -0600
+From: Kelly Anderson <kelly@silka.with-linux.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110309 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-kernel@vger.kernel.org, linux-sound@vger.kernel.org
+Subject: 2.6.38+ hard lockup in pcm_lib.c
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103301338.57207.arnd@arndb.de>
-X-Provags-ID: V02:K0:kX/sTjBL9bGga66mxYZfkyYAyl/KMDNgy8121Y3Y58P
- RLNBvFim8xrt7PfciaOB1pGUuUena590gOcsFhga9srAkOakQ0
- Z2jqF99FqzvOSrJi3vhMU590WRewBOi1/UNrEea8uci52dquIb
- s0d1uAfZ2nb5samUbLW16eW66OFBJsIatn9nEM9wAcS8z8DByU
- lfmKc4IhRuhLDOZewQBNA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 March 2011, Subhasish Ghosh wrote:
-> I am using a .setup to initialize pin mux etc. To use the mfd_cells directly 
-> should I
-> use .enable and .disable of the mfd_cells instead of the .setup.
+I had a consistent hard-lockup on one of my machines, an Amd X6, just 
+after Kdm loaded the desktop (most certainly when it decides to start 
+talking to the sound card).  Everything was dead, even ssh access to the 
+computer.  I git bisected it until I found the commit that was causing 
+it.  After reverting the patch everything is fine.  This is the only one 
+of four computers that had the problem.  Here's the revert patch (so I 
+can get some expert eyeballs looking at what may be the problem).
 
-I think it would be best not to define any per-board functions that
-are needed to set up the cell, but rather to initialize it from
-the ->probe function of the cell specific driver.
+--- ./sound/core/pcm_lib.c.orig    2011-03-27 12:37:20.000000000 -0600
++++ ./sound/core/pcm_lib.c    2011-03-30 03:34:50.222400089 -0600
+@@ -375,22 +375,6 @@ static int snd_pcm_update_hw_ptr0(struct
+      }
 
-If you need board specific data such as GPIO lists, you can pass
-them in the mfd_cell platform_data.
-	
-	Arnd
+      if (runtime->no_period_wakeup) {
+-        /*
+-         * Without regular period interrupts, we have to check
+-         * the elapsed time to detect xruns.
+-         */
+-        jdelta = jiffies - runtime->hw_ptr_jiffies;
+-        if (jdelta < runtime->hw_ptr_buffer_jiffies / 2)
+-            goto no_delta_check;
+-        hdelta = jdelta - delta * HZ / runtime->rate;
+-        while (hdelta > runtime->hw_ptr_buffer_jiffies / 2 + 1) {
+-            delta += runtime->buffer_size;
+-            hw_base += runtime->buffer_size;
+-            if (hw_base >= runtime->boundary)
+-                hw_base = 0;
+-            new_hw_ptr = hw_base + pos;
+-            hdelta -= runtime->hw_ptr_buffer_jiffies;
+-        }
+          goto no_delta_check;
+      }
+
+
+
+59ff878ffb26bc0be812ca8295799164f413ae88 is the first bad commit
+commit 59ff878ffb26bc0be812ca8295799164f413ae88
+Author: Clemens Ladisch
+Date:   Thu Nov 18 09:43:52 2010 +0100
+
+     ALSA: pcm: detect xruns in no-period-wakeup mode
+
+     When period wakeups are disabled, successive calls to the pointer 
+update
+     function do not have a maximum allowed distance, so xruns cannot be
+     detected with the pointer value only.
+
+     To detect xruns, compare the actually elapsed time with the time that
+     should have theoretically elapsed since the last update.  When the
+     hardware pointer has wrapped around due to an xrun, the actually 
+elapsed
+     time will be too big by about hw_ptr_buffer_jiffies.
+
+     Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+     Signed-off-by: Takashi Iwai <tiwai@suse.de>
+
+:040000 040000 5daac6baa3aaecbe4a030955a1cfe9714178019a 
+94f07701413dff5712c8fa5e60d93ef909864cc0 M    sound
+
