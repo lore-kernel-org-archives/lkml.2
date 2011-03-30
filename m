@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab1C3OQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 10:16:28 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55343 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754807Ab1C3OQ1 (ORCPT
+	id S1755955Ab1C3OUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 10:20:15 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:23821 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754812Ab1C3OUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 10:16:27 -0400
-Date: Wed, 30 Mar 2011 10:16:26 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: merging discard request in the block layer
-Message-ID: <20110330141626.GA17914@infradead.org>
-References: <20110322194755.GA20122@infradead.org>
- <4D88FE5E.1010204@fusionio.com>
- <4D890EBD.1090103@fusionio.com>
+	Wed, 30 Mar 2011 10:20:14 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: ug1Z3BQVM1l.CQokVYBVYPjTejfaNujuJc90BIQp6I.8qAa
+ JUM7z0aee59CHPaeiehzr8QNIAQIz1po7ZnpnVJLC9EmL6pDtaLTbk94BkI_
+ WzBf5INLtF5nbx9G8WJJtUVUUj8DDa4nGcC4FFE8ExM3n4KlMJzNSOoc4t6z
+ VbS0AzXgEY0AFpSwwFiqBuVJO5q0oRGd6.IzKNLqebWd9u5EJGK3QlFallz6
+ LPOP27qUbdt9JILB8pWYKqNwVLaA0gBepB83Uj5mV6g7kGct46JY5bGQA4Bi
+ 0IBH9Lw7rjxdx_HtJFWlipga_jVnJyZdYcBIDlKY6JNc0HPb1
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 30 Mar 2011 09:20:08 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH tip:x86/mm 3/3] acpi throttling: Use this_cpu_has and
+ simplify code current cpu
+In-Reply-To: <20110328164039.GF6736@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.00.1103300918240.25965@router.home>
+References: <20110312115010.GC2005@htj.dyndns.org> <20110312115046.GD2005@htj.dyndns.org> <20110312115112.GE2005@htj.dyndns.org> <20110328164039.GF6736@htj.dyndns.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D890EBD.1090103@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 22, 2011 at 10:03:57PM +0100, Jens Axboe wrote:
-> On 2011-03-22 20:54, Jens Axboe wrote:
-> > On 2011-03-22 20:47, Christoph Hellwig wrote:
-> >> It seems the current block layer wil happily try to merge discard
-> >> requests that were split because they are at the max that bi_size
-> >> can hold together again.  At least that's what the
-> >>
-> >> 	blk: request botched
-> > 
-> > That would seem to indicate a bug in the merging logic instead.
-> 
-> What kind of max discard size does you device have? If the max discard
-> size is smaller than the regular request size, this could help.
+On Mon, 28 Mar 2011, Tejun Heo wrote:
 
-I've done some heavier test, and both the extended check for mergeable
-requests or your patch with different limits hangs the test box hard
-with no way to get a backtrace.  Using my original patch to completely
-skip the merging logic seems to work fine.  
+> On Sat, Mar 12, 2011 at 12:51:12PM +0100, Tejun Heo wrote:
+> > From: Christoph Lameter <cl@linux.com>
+> >
+> > With the this_cpu_xx we no longer need to pass an acpi
+> > structure to the msr management code. Simplifies code and improves
+> > performance.
+> >
+> > NOTE: This code is x86 specific (see #ifdef CONFIG_X86) but not under
+> >       arch/x86.
+> >
+> > Signed-off-by: Christoph Lameter <cl@linux.com>
+> > Acked-by: Tejun Heo <tj@kernel.org>
+> > ---
+>
+> Ingo, are you planning on picking these up?
+
+Guess the patches missed the merge period. There could be more
+optimizations of arch code if the infrastructure for this_cpu_has() would
+be in but I guess I better hold off for awhile.
 
