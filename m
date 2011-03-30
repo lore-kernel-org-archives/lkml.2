@@ -1,156 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab1C3T56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 15:57:58 -0400
-Received: from sous-sol.org ([216.99.217.87]:43837 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754979Ab1C3T54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 15:57:56 -0400
-Date: Wed, 30 Mar 2011 12:57:48 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Mike Habeck <habeck@sgi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] Intel pci: Remove Host Bridge devices from identity
- mapping
-Message-ID: <20110330195748.GU18712@sequoia.sous-sol.org>
-References: <20110329233602.272459647@gulag1.americas.sgi.com>
- <20110329233602.439245439@gulag1.americas.sgi.com>
- <20110330175137.GQ18712@sequoia.sous-sol.org>
- <4D9376DE.1060207@sgi.com>
- <20110330191511.GS18712@sequoia.sous-sol.org>
- <4D9383B7.40807@sgi.com>
+	id S1756185Ab1C3UBC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 16:01:02 -0400
+Received: from smtp.riverbed.com ([208.70.196.44]:50337 "EHLO
+	smtp2.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754979Ab1C3UA7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 16:00:59 -0400
+From: "Francis St. Amant" <Francis.St.Amant@riverbed.com>
+To: Borislav Petkov <bp@amd64.org>, David Miller <davem@davemloft.net>
+CC: "Luck, Tony" <tony.luck@intel.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 30 Mar 2011 13:00:46 -0700
+Subject: RE: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly
+ Report Mechanism (HARM)
+Thread-Topic: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly
+ Report Mechanism (HARM)
+Thread-Index: AcvvE76fkGPy1A4nQzqoqvgIdAVL3QAAKUzQ
+Message-ID: <05E7F0869FB1C54AA467D77BC9C9E63F3FF7EEC289@MAILBOXES.nbttech.com>
+References: <20110324173257.36680b90@pedra>
+ <20110324223907.GA10498@liondog.tnic> <4D8C6C80.8010600@redhat.com>
+ <20110325141322.GB28313@gere.osrc.amd.com> <4D8D078C.1040201@redhat.com>
+ <20110328170302.GF11590@aftab> <4D90E525.4030709@redhat.com>
+ <987664A83D2D224EAE907B061CE93D5301A7A60074@orsmsx505.amr.corp.intel.com>
+ <20110330175106.GB1601@aftab>
+ <05E7F0869FB1C54AA467D77BC9C9E63F3FF7EEC271@MAILBOXES.nbttech.com>
+ <20110330195025.GA4297@aftab>
+In-Reply-To: <20110330195025.GA4297@aftab>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D9383B7.40807@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2UK17B0021908
 
-* Mike Travis (travis@sgi.com) wrote:
-> Chris Wright wrote:
-> >OK, I was actually interested in the !pt case.  But this is useful
-> >still.  The iova lookup being distinct from the identity_mapping() case.
+If it's not easy from your side, I can go to our IT and ask if they can revive Arthur's account just to send this one unsubscribe :) 
+
+FWIW on the below email, I do agree that some way to save OOPS output is very useful.  In our case Arthur created a special serial driver which wrote to EEPROM instead of console--besides not endangering the disk, a lot less SW has to be executed to save the data.  Then we fetch it back on next boot.
+
+Thanks again,
+
+  - Francis
+ 
+
+-----Original Message-----
+From: Borislav Petkov [mailto:bp@amd64.org] 
+Sent: Wednesday, March 30, 2011 12:50 PM
+To: Francis St. Amant; David Miller
+Cc: Borislav Petkov; Luck, Tony; Mauro Carvalho Chehab; Borislav Petkov; Linux Edac Mailing List; Linux Kernel Mailing List
+Subject: Re: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly Report Mechanism (HARM)
+
+Right,
+
+I guess you have to send from the subscribed mail address. Well, I don't
+know how to unsubscribe in that case either, but maybe David can help
+us.
+
+David, can you please take a look?
+
+Thanks.
+
+On Wed, Mar 30, 2011 at 02:30:00PM -0400, Francis St. Amant wrote:
+> Hi,
 > 
-> I can get that as well, but having every device using maps caused it's
-> own set of problems (hundreds of dma maps).  Here's a list of devices
-> on the system under test.  You can see that even 'minor' glitches can
-> get magnified when there are so many...
-
-Yeah, I was focused on the overhead of actually mapping/unmapping an
-address in the non-pt case.
-
-> Blade Location    NASID  PCI Address X Display   Device
-> ----------------------------------------------------------------------
->    0 r001i01b00      0  0000:01:00.0      -   Intel 82576 Gigabit Network Connection
->    .          .      .  0000:01:00.1      -   Intel 82576 Gigabit Network Connection
->    .          .      .  0000:04:00.0      -   LSI SAS1064ET Fusion-MPT SAS
->    .          .      .  0000:05:00.0      -   Matrox MGA G200e
->    2 r001i01b02      4  0001:02:00.0      -   Mellanox MT26428 InfiniBand
->    3 r001i01b03      6  0002:02:00.0      -   Mellanox MT26428 InfiniBand
->    4 r001i01b04      8  0003:02:00.0      -   Mellanox MT26428 InfiniBand
->   11 r001i01b11     22  0007:02:00.0      -   Mellanox MT26428 InfiniBand
->   13 r001i01b13     26  0008:02:00.0      -   Mellanox MT26428 InfiniBand
->   15 r001i01b15     30  0009:07:00.0   :0.0   nVidia GF100 [Tesla S2050]
->    .          .      .  0009:08:00.0   :1.1   nVidia GF100 [Tesla S2050]
->   18 r001i23b02     36  000b:02:00.0      -   Mellanox MT26428 InfiniBand
->   20 r001i23b04     40  000c:01:00.0      -   Intel 82599EB 10-Gigabit Network Connection
->    .          .      .  000c:01:00.1      -   Intel 82599EB 10-Gigabit Network Connection
->    .          .      .  000c:04:00.0      -   Mellanox MT26428 InfiniBand
->   23 r001i23b07     46  000d:07:00.0      -   nVidia GF100 [Tesla S2050]
->    .          .      .  000d:08:00.0      -   nVidia GF100 [Tesla S2050]
->   25 r001i23b09     50  000e:01:00.0      -   Intel 82599EB 10-Gigabit Network Connection
->    .          .      .  000e:01:00.1      -   Intel 82599EB 10-Gigabit Network Connection
->    .          .      .  000e:04:00.0      -   Mellanox MT26428 InfiniBand
->   26 r001i23b10     52  000f:02:00.0      -   Mellanox MT26428 InfiniBand
->   27 r001i23b11     54  0010:02:00.0      -   Mellanox MT26428 InfiniBand
->   29 r001i23b13     58  0011:02:00.0      -   Mellanox MT26428 InfiniBand
->   31 r001i23b15     62  0012:02:00.0      -   Mellanox MT26428 InfiniBand
->   34 r002i01b02     68  0013:01:00.0      -   Mellanox MT26428 InfiniBand
->   35 r002i01b03     70  0014:02:00.0      -   Mellanox MT26428 InfiniBand
->   36 r002i01b04     72  0015:01:00.0      -   Mellanox MT26428 InfiniBand
->   41 r002i01b09     82  0018:07:00.0      -   nVidia GF100 [Tesla S2050]
->    .          .      .  0018:08:00.0      -   nVidia GF100 [Tesla S2050]
->   43 r002i01b11     86  0019:01:00.0      -   Mellanox MT26428 InfiniBand
->   45 r002i01b13     90  001a:01:00.0      -   Mellanox MT26428 InfiniBand
->   48 r002i23b00     96  001c:07:00.0      -   nVidia GF100 [Tesla S2050]
->    .          .      .  001c:08:00.0      -   nVidia GF100 [Tesla S2050]
->   50 r002i23b02    100  001d:02:00.0      -   Mellanox MT26428 InfiniBand
->   52 r002i23b04    104  001e:01:00.0      -   Intel 82599EB 10-Gigabit Network Connection
->    .          .      .  001e:01:00.1      -   Intel 82599EB 10-Gigabit Network Connection
->    .          .      .  001e:04:00.0      -   Mellanox MT26428 InfiniBand
->   57 r002i23b09    114  0020:01:00.0      -   Intel 82599EB 10-Gigabit Network Connection
->    .          .      .  0020:01:00.1      -   Intel 82599EB 10-Gigabit Network Connection
->    .          .      .  0020:04:00.0      -   Mellanox MT26428 InfiniBand
->   58 r002i23b10    116  0021:02:00.0      -   Mellanox MT26428 InfiniBand
->   59 r002i23b11    118  0022:02:00.0      -   Mellanox MT26428 InfiniBand
->   61 r002i23b13    122  0023:02:00.0      -   Mellanox MT26428 InfiniBand
->   63 r002i23b15    126  0024:02:00.0      -   Mellanox MT26428 InfiniBand
+> Sorry for using your BW but I wonder if you can do me a favor and remove Arthur Jones (Arthur.jones@riverbed.com; ajones@riverbed.com) from this list?  I tried to do that via the unsubscribe method at bottom but it didn't work.
 > 
-> >
-> >>uv48-sys was receiving and uv-debug sending.
-> >>ksoftirqd/640 was running at approx. 100% cpu utilization.
-> >>I had pinned the nttcp process on uv48-sys to cpu 64.
-> >>
-> >># Samples: 1255641
-> >>#
-> >># Overhead        Command  Shared Object  Symbol
-> >># ........  .............  .............  ......
-> >>#
-> >>   50.27%ESC[m  ksoftirqd/640  [kernel]       [k] _spin_lock
-> >>   27.43%ESC[m  ksoftirqd/640  [kernel]       [k] iommu_no_mapping
-> >
-> >>...
-> >>     0.48%  ksoftirqd/640  [kernel]       [k] iommu_should_identity_map
-> >>     0.45%  ksoftirqd/640  [kernel]       [k] ixgbe_alloc_rx_buffers    [
-> >>ixgbe]
-> >
-> >Note, ixgbe has had rx dma mapping issues (that's why I wondered what
-> >was causing the massive slowdown under !pt mode).
+> Arthur has left Riverbed, and as his former manager I now get all his emails forwarded to me.  Since I'm not useful to this list, there's no reason to receive all these emails.  Probably my attempt to unsubscribe didn't work because the email came from me and I'm already not on the list--Arthur is.
 > 
-> I think since this profile run, the network guys updated the ixgbe
-> driver with a later version.  (I don't know the outcome of that test.)
-
-OK.  The ixgbe fix I was thinking of is in since 2.6.34:  43634e82 (ixgbe:
-Fix DMA mapping/unmapping issues when HWRSC is enabled on IOMMU enabled
-on IOMMU enabled kernels).
-
-> ><snip>
-> >>I tracked this time down to identity_mapping() in this loop:
-> >>
-> >>      list_for_each_entry(info, &si_domain->devices, link)
-> >>              if (info->dev == pdev)
-> >>                      return 1;
-> >>
-> >>I didn't get the exact count, but there was approx 11,000 PCI devices
-> >>on this system.  And this function was called for every page request
-> >>in each DMA request.
-> >
-> >Right, so this is the list traversal (and wow, a lot of PCI devices).
+> Thanks very much,
 > 
-> Most of the PCI devices were the 45 on each of 256 Nahalem sockets.
-> Also, there's a ton of bridges as well.
+> - - - - - - - - - - - - - - - - - - - - - - - - - -
+> Francis St. Amant
+> Sr. Mgr., Platform/OEM Engineering
+> Riverbed Technology
+> francis@riverbed.com
+> Voice: 415-344-4480
+> FAX: 415-247-8801
 > 
-> >Did you try a smarter data structure? (While there's room for another
-> >bit in pci_dev, the bit is more about iommu implementation details than
-> >anything at the pci level).
-> >
-> >Or the domain_dev_info is cached in the archdata of device struct.
-> >You should be able to just reference that directly.
-> >
-> >Didn't think it through completely, but perhaps something as simple as:
-> >
-> >	return pdev->dev.archdata.iommu == si_domain;
 > 
-> I can try this, thanks!
+> -----Original Message-----
+> From: linux-edac-owner@vger.kernel.org [mailto:linux-edac-owner@vger.kernel.org] On Behalf Of Borislav Petkov
+> Sent: Wednesday, March 30, 2011 10:51 AM
+> To: Luck, Tony
+> Cc: Mauro Carvalho Chehab; Borislav Petkov; Borislav Petkov; Linux Edac Mailing List; Linux Kernel Mailing List
+> Subject: Re: [PATCH RFC 2/2] events/hw_event: Create a Hardware Anomaly Report Mechanism (HARM)
+> 
+> On Wed, Mar 30, 2011 at 01:27:43PM -0400, Luck, Tony wrote:
+> > > A INT13 persistent data saving will probably be too hard to implement for
+> > > all kind of storages. So, it will probably need lots of hack in order to
+> > > work. Also, some hardware may even not have any local hard disk. Not sure
+> > > if it is worth to spend time on it.
+> > 
+> > Linus was pretty clear that he didn't like the idea when
+> > it came up a few weeks ago in the:
+> >  [PATCH 0/2][conceâ€‹pt RFC] x86: BIOS-save kernel log to disk upon panic
+> > thread.
+> > 
+> > Linus ranted:
+> > > Quite frankly, I'm not likely to _ever_ merge anything like this.
+> > >
+> > > Over the years, many people have tried to write things to disk on
+> > > oops. I refuse to take it. No way in hell do I want the situation of
+> > > "the system is screwed, so let's overwrite the disk" to be something
+> > > the kernel I release might do. It's crazy. That disk is a lot more
+> > > important than the kernel, and overwriting it when we might have
+> > > serious memory corruption issues or something is not a thing I feel is
+> > > appropriate.
+> > 
+> > I agree with him - writing to disk from a known broken kernel (using
+> > a probably buggy BIOS) is a disaster waiting to happen to somebody's
+> > disk.
+> 
+> I can't say I don't agree. The reference to the BIOS method was simply
+> to say that we need some kind of a solution for saving OOPSen and other
+> error info on clients too, with no pers. storage hw. And frankly, and
+> AFAICT, we don't have one that would work reliably on existing hw right
+> now :(.
+> 
+> -- 
+> Regards/Gruss,
+> Boris.
+> 
+> Advanced Micro Devices GmbH
+> Einsteinring 24, 85609 Dornach
+> General Managers: Alberto Bozzo, Andrew Bowd
+> Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+> Registergericht Muenchen, HRB Nr. 43632
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Err, I guess that'd be info = archdata.iommu; info->domain == si_domain
-(and probably need some sanity checking against things like
-DUMMY_DEVICE_DOMAIN_INFO).  But you get the idea.
+-- 
+Regards/Gruss,
+Boris.
 
-thanks,
--chris
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
