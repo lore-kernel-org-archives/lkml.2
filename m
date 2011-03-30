@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964993Ab1C3VIo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:08:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:49299 "EHLO mga14.intel.com"
+	id S964955Ab1C3VId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:08:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:33607 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964940Ab1C3VIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:08:34 -0400
+	id S964940Ab1C3VIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:08:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="411278295"
+   d="scan'208";a="673447867"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: sgruszka@redhat.com, davem@davemloft.net, gregkh@suse.de,
+To: chunkeey@googlemail.com, linville@tuxdriver.com, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: [PATCH] [169/275] r8169: disable ASPM
-Message-Id: <20110330210651.A8F843E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:51 -0700 (PDT)
+Subject: [PATCH] [166/275] p54usb: add Senao NUB-350 usbid
+Message-Id: <20110330210648.80D463E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,51 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit ba04c7c93bbcb48ce880cf75b6e9dffcd79d4c7b upstream.
+commit 2b799a6b25bb9f9fbc478782cd9503e8066ab618 upstream.
 
-For some time is known that ASPM is causing troubles on r8169, i.e. make
-device randomly stop working without any errors in dmesg.
-
-Currently Tomi Leppikangas reports that system with r8169 device hangs
-with MCE errors when ASPM is enabled:
-https://bugzilla.redhat.com/show_bug.cgi?id=642861#c4
-
-Lets disable ASPM for r8169 devices at all, to avoid problems with
-r8169 PCIe devices at least for some users.
-
-Reported-by: Tomi Leppikangas <tomi.leppikangas@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Mark Davis
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/net/r8169.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/p54/p54usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: linux-2.6.35.y/drivers/net/r8169.c
+Index: linux-2.6.35.y/drivers/net/wireless/p54/p54usb.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/net/r8169.c	2011-03-29 22:50:56.827804337 -0700
-+++ linux-2.6.35.y/drivers/net/r8169.c	2011-03-29 23:54:22.174435038 -0700
-@@ -24,6 +24,7 @@
- #include <linux/init.h>
- #include <linux/dma-mapping.h>
- #include <linux/pm_runtime.h>
-+#include <linux/pci-aspm.h>
- 
- #include <asm/system.h>
- #include <asm/io.h>
-@@ -3040,6 +3041,11 @@
- 	mii->reg_num_mask = 0x1f;
- 	mii->supports_gmii = !!(cfg->features & RTL_FEATURE_GMII);
- 
-+	/* disable ASPM completely as that cause random device stop working
-+	 * problems as well as full system hangs for some PCIe devices users */
-+	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
-+				     PCIE_LINK_STATE_CLKPM);
-+
- 	/* enable device (incl. PCI PM wakeup and hotplug setup) */
- 	rc = pci_enable_device(pdev);
- 	if (rc < 0) {
+--- linux-2.6.35.y.orig/drivers/net/wireless/p54/p54usb.c	2011-03-29 22:50:58.333765804 -0700
++++ linux-2.6.35.y/drivers/net/wireless/p54/p54usb.c	2011-03-29 23:03:01.707256486 -0700
+@@ -97,6 +97,7 @@
+ 	{USB_DEVICE(0x1413, 0x5400)},   /* Telsey 802.11g USB2.0 Adapter */
+ 	{USB_DEVICE(0x1435, 0x0427)},	/* Inventel UR054G */
+ 	{USB_DEVICE(0x1668, 0x1050)},	/* Actiontec 802UIG-1 */
++	{USB_DEVICE(0x1740, 0x1000)},	/* Senao NUB-350 */
+ 	{USB_DEVICE(0x2001, 0x3704)},	/* DLink DWL-G122 rev A2 */
+ 	{USB_DEVICE(0x2001, 0x3705)},	/* D-Link DWL-G120 rev C1 */
+ 	{USB_DEVICE(0x413c, 0x5513)},	/* Dell WLA3310 USB Wireless Adapter */
