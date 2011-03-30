@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965223Ab1C3VYQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:24:16 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:50955 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965136Ab1C3VYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965134Ab1C3VYL (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 30 Mar 2011 17:24:11 -0400
-Message-ID: <4D939F78.7030206@linux.vnet.ibm.com>
-Date: Wed, 30 Mar 2011 17:24:08 -0400
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: ak@linux.intel.com, guichaz@gmail.com, srajiv@linux.vnet.ibm.com,
-        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
+Received: from mga14.intel.com ([143.182.124.37]:37491 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965113Ab1C3VJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:09:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
+   d="scan'208";a="411278831"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110330203.501921634@firstfloor.org>
+In-Reply-To: <20110330203.501921634@firstfloor.org>
+To: tglx@linutronix.de, James.Bottomley@suse.de, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: Re: [PATCH] [73/275] tpm_tis: Use timeouts returned from TPM
-References: <20110330203.501921634@firstfloor.org> <20110330210510.8AF143E1A05@tassilo.jf.intel.com> <4D939CE5.1090405@linux.vnet.ibm.com> <20110330212057.GE21838@one.firstfloor.org>
-In-Reply-To: <20110330212057.GE21838@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+Subject: [PATCH] [216/275] fix per-cpu flag problem in the cpu affinity checkers
+Message-Id: <20110330210741.2309D3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:07:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2011 05:20 PM, Andi Kleen wrote:
-> On Wed, Mar 30, 2011 at 05:13:09PM -0400, Stefan Berger wrote:
->> On 03/30/2011 05:05 PM, Andi Kleen wrote:
->>
->> Please drop it. It has been rejected previously. A revised patch has
->> been sent.
-> Ok. What is the subject of the revised patch?
-It's part of a series I re-posted again today:
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-[PATCH V2 00/12] tpm + tpm_tis : Various fixes
+------------------
+From: Thomas Gleixner <tglx@linutronix.de>
 
-https://lkml.org/lkml/2011/3/30/290
+commit 9804c9eaeacfe78651052c5ddff31099f60ef78c upstream.
 
-    Stefan
+The CHECK_IRQ_PER_CPU is wrong, it should be checking
+irq_to_desc(irq)->status not just irq.
 
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ arch/parisc/kernel/irq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.35.y/arch/parisc/kernel/irq.c
+===================================================================
+--- linux-2.6.35.y.orig/arch/parisc/kernel/irq.c	2011-03-29 22:50:31.235459182 -0700
++++ linux-2.6.35.y/arch/parisc/kernel/irq.c	2011-03-29 23:03:02.750229799 -0700
+@@ -117,7 +117,7 @@
+ 	int cpu_dest;
+ 
+ 	/* timer and ipi have to always be received on all CPUs */
+-	if (CHECK_IRQ_PER_CPU(irq)) {
++	if (CHECK_IRQ_PER_CPU(irq_to_desc(irq)->status)) {
+ 		/* Bad linux design decision.  The mask has already
+ 		 * been set; we must reset it */
+ 		cpumask_setall(irq_desc[irq].affinity);
