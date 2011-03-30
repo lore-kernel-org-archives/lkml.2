@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965398Ab1C3VLL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:11:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14385 "EHLO mga03.intel.com"
+	id S965392Ab1C3VLK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:11:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25196 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965357Ab1C3VKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965359Ab1C3VKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Mar 2011 17:10:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="411279522"
+   d="scan'208";a="621239665"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
 To: mtosatti@redhat.com, avi@redhat.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [273/275] KVM: Correct ordering of ldt reload wrt fs/gs reload
-Message-Id: <20110330210841.136E63E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:08:41 -0700 (PDT)
+Subject: [PATCH] [274/275] KVM: VMX: Fix host userspace gsbase corruption
+Message-Id: <20110330210842.1FFE93E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:08:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,15 +24,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Avi Kivity <avi@redhat.com>
+commit c8770e7ba63bb5dd8fe5f9d251275a8fa717fb78 upstream.
 
-commit 0a77fe4c188e25917799f2356d4aa5e6d80c39a2 upstream.
+We now use load_gs_index() to load gs safely; unfortunately this also
+changes MSR_KERNEL_GS_BASE, which we managed separately.  This resulted
+in confusion and breakage running 32-bit host userspace on a 64-bit kernel.
 
-If fs or gs refer to the ldt, they must be reloaded after the ldt.  Reorder
-the code to that effect.
+Fix by
+- saving guest MSR_KERNEL_GS_BASE before we we reload the host's gs
+- doing the host save/load unconditionally, instead of only when in guest
+  long mode
 
-Userspace code that uses the ldt with kvm is nonexistent, so this doesn't fix
-a user-visible bug.
+Things can be cleaned up further, but this is the minmal fix for now.
 
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
@@ -40,49 +43,51 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/x86/kvm/svm.c |    2 +-
- arch/x86/kvm/vmx.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kvm/vmx.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-Index: linux-2.6.35.y/arch/x86/kvm/svm.c
-===================================================================
---- linux-2.6.35.y.orig/arch/x86/kvm/svm.c	2011-03-29 23:53:08.796312600 -0700
-+++ linux-2.6.35.y/arch/x86/kvm/svm.c	2011-03-29 23:53:15.697136026 -0700
-@@ -3185,6 +3185,7 @@
- 	vcpu->arch.regs[VCPU_REGS_RIP] = svm->vmcb->save.rip;
- 
- 	load_host_msrs(vcpu);
-+	kvm_load_ldt(ldt_selector);
- 	loadsegment(fs, fs_selector);
- #ifdef CONFIG_X86_64
- 	load_gs_index(gs_selector);
-@@ -3192,7 +3193,6 @@
- #else
- 	loadsegment(gs, gs_selector);
- #endif
--	kvm_load_ldt(ldt_selector);
- 
- 	reload_tss(vcpu);
- 
 Index: linux-2.6.35.y/arch/x86/kvm/vmx.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/kvm/vmx.c	2011-03-29 23:53:08.868310757 -0700
-+++ linux-2.6.35.y/arch/x86/kvm/vmx.c	2011-03-29 23:53:32.094716453 -0700
-@@ -789,8 +789,6 @@
+--- linux-2.6.35.y.orig/arch/x86/kvm/vmx.c	2011-03-29 23:53:15.698136001 -0700
++++ linux-2.6.35.y/arch/x86/kvm/vmx.c	2011-03-29 23:53:23.475936985 -0700
+@@ -771,10 +771,9 @@
+ #endif
+ 
+ #ifdef CONFIG_X86_64
+-	if (is_long_mode(&vmx->vcpu)) {
+-		rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
++	rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
++	if (is_long_mode(&vmx->vcpu))
+ 		wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
+-	}
+ #endif
+ 	for (i = 0; i < vmx->save_nmsrs; ++i)
+ 		kvm_set_shared_msr(vmx->guest_msrs[i].index,
+@@ -789,11 +788,14 @@
  
  	++vmx->vcpu.stat.host_state_reload;
  	vmx->host_state.loaded = 0;
--	if (vmx->host_state.fs_reload_needed)
--		loadsegment(fs, vmx->host_state.fs_sel);
++#ifdef CONFIG_X86_64
++	if (is_long_mode(&vmx->vcpu))
++		rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
++#endif
  	if (vmx->host_state.gs_ldt_reload_needed) {
  		kvm_load_ldt(vmx->host_state.ldt_sel);
  #ifdef CONFIG_X86_64
-@@ -800,6 +798,8 @@
+ 		load_gs_index(vmx->host_state.gs_sel);
+-		wrmsrl(MSR_KERNEL_GS_BASE, current->thread.gs);
+ #else
  		loadsegment(gs, vmx->host_state.gs_sel);
  #endif
- 	}
-+	if (vmx->host_state.fs_reload_needed)
-+		loadsegment(fs, vmx->host_state.fs_sel);
+@@ -802,10 +804,7 @@
+ 		loadsegment(fs, vmx->host_state.fs_sel);
  	reload_tss();
  #ifdef CONFIG_X86_64
- 	if (is_long_mode(&vmx->vcpu)) {
+-	if (is_long_mode(&vmx->vcpu)) {
+-		rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
+-		wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
+-	}
++	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
+ #endif
+ 	load_gdt(&__get_cpu_var(host_gdt));
+ }
