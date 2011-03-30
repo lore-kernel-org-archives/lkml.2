@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab1C3BMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 21:12:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62738 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754945Ab1C3BMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 21:12:22 -0400
-Message-ID: <4D92838B.4070706@cn.fujitsu.com>
-Date: Wed, 30 Mar 2011 09:12:43 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Vivek Goyal <vgoyal@redhat.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Bug at for-2.6.39/core
-References: <4D91AAB9.2000800@cn.fujitsu.com> <4D91AB5C.8030203@kernel.dk>
-In-Reply-To: <4D91AB5C.8030203@kernel.dk>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-30 09:10:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-30 09:10:49,
-	Serialize complete at 2011-03-30 09:10:49
+	id S1755391Ab1C3BNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 21:13:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35581 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753652Ab1C3BNL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 21:13:11 -0400
+Date: Tue, 29 Mar 2011 18:13:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] bitmap, irq: Add smp_affinity_list interface to
+ /proc/irq
+Message-Id: <20110329181346.d2e1fb3c.akpm@linux-foundation.org>
+In-Reply-To: <4D9281B8.1090904@sgi.com>
+References: <4D926F6C.8010705@sgi.com>
+	<20110329165612.bd6ad7e4.akpm@linux-foundation.org>
+	<20110329174314.80cf7b50.akpm@linux-foundation.org>
+	<4D927E86.90400@sgi.com>
+	<20110329175614.0c41ae8c.akpm@linux-foundation.org>
+	<4D9281B8.1090904@sgi.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe wrote:
-> On 2011-03-29 11:47, Gui Jianfeng wrote:
->> Hi Jens,
->>
->> I trigger an OOPS when testing, the following script can reproduce
->> this bug on my box.
->>
->> #!/bin/sh
->>
->> mkdir /mnt/blkio
->> mount -t cgroup -o blkio blkio /mnt/blkio/
->> mkdir /mnt/blkio/test1 /mnt/blkio/test2
->> echo noop > /sys/block/sdb/queue/scheduler
->> dd iflag=direct if=/dev/sdb of=/dev/null bs=4k &
->> echo $! > /mnt/blkio/test1/tasks
->> dd iflag=direct if=/dev/sdb of=/dev/null bs=4k &
->> echo $! > /mnt/blkio/test2/tasks
->> sleep 3
->> echo cfq > /sys/block/sdb/queue/scheduler
->>
->> ----
->> eBUG: unable to handle kernel NULL pointer dereference at 0000000000000008
->> IP: [<ffffffff812200e8>] cfq_completed_request+0x38/0x7f0
-> 
-> This is a known bug, update to Linus' current -git and it's fixed.
-
-Ok, I see.
-
-Thanks,
-Gui
+On Tue, 29 Mar 2011 18:04:56 -0700 Mike Travis <travis@sgi.com> wrote:
 
 > 
+> 
+> Andrew Morton wrote:
+> > On Tue, 29 Mar 2011 17:51:18 -0700 Mike Travis <travis@sgi.com> wrote:
+> > 
+> >>> Also, the patch adds a new interface which duplicates an existing one,
+> >>> only the formats are different, yes?  This is, of course, bad.
+> >>>
+> >>> The only justification we've seen for being bad is "Manually adjusting
+> >>> the smp_affinity for IRQ's becomes unwieldy when the cpu count is
+> >>> large".  A more thorough description of how painful this is might help
+> >>> motivate people to do bad things to the kernel.
+> >>>
+> >>> Also, if it's just a matter of an alternative presentation of the data,
+> >>> why not implement the desired user interface with a little userspace
+> >>> tool then feed the results down into the existing kernel interface?
+> >>>
+> >> Setting smp affinity to cpus 256 to 263 would be:
+> >>
+> >> echo 000000ff,00000000,00000000,00000000,00000000,00000000,00000000,00000000 > smp_affinity
+> >>
+> >> instead of:
+> >>
+> >> echo 256-263 > smp_affinity_list
+> >>
+> >> Think about what it looks like for cpus around say, 4088 to 4095.
+> >>
+> >> We already have many alternate "list" interfaces:
+> >>
+> >> /sys/devices/system/cpu/cpuX/indexY/shared_cpu_list
+> >> /sys/devices/system/cpu/cpuX/topology/thread_siblings_list
+> >> /sys/devices/system/cpu/cpuX/topology/core_siblings_list
+> >> /sys/devices/system/node/nodeX/cpulist
+> >> /sys/devices/pci***/***/local_cpulist
+> >>
+> >> etc.
+> >>
+> >> This just expands on that same philosophy.
+> > 
+> > You mean that if someone had written a stupid little tool to convert a
+> > list of tuples into a bitmap, we wouldn't have needed to add all that
+> > crap to the kernel?
+> > 
+> 
+> We actually had a problem where the interface would not take enough characters
+> to set the irq mask.  (It has since been fixed.)
+> 
+> I don't mind if there's an alternate way to do this if you really feel strongly
+> about it.  Be nice if it was somehow included but that requires yet way more
+> infrastructure somewhere else.
+> 
+> How about if I #ifdef CONFIG_MAX_SMP around it?  It's really not needed if
+> you only have a few cpu's enabled.
+
+Oh, I'm just using your patch as an opportunity to have my regular rant
+about how much we suck.  Our hammer is kernel patches and all problems
+look like nails, but we'd end up with better user interfaces and a
+better kernel if we'd just stop stuffing more and fatter user interface
+code into the kernel.
+
+Please redo the patch with documentation updates and a changelog which
+suitably justifies its awfulness and I'll add my Sucked-off-by: to it.
+
+> [If it was up to me, I'd eliminate the bitmask interfaces and just keep the
+> list interfaces.  That's the stupid interface that's not needed, and far more
+> shortsighted.]
+
+Agree.
+
+It's not impossible to remove those interfaces.  My preferred approach
+is to add a once-per-boot warning printk if anyone uses the old
+interface and to remove the thing altogether in three or five years.
+
+That reminds me.  It's been like ten years.  Someone please delete sys_bdflush().
+
+
