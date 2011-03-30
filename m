@@ -1,292 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab1C3B6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 21:58:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:62891 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755348Ab1C3B6a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 21:58:30 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=wom5GMh1gUkA:10 a=QQjA4Iv6OQkA:10 a=kj9zAlcOel0A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=20KFwNOVAAAA:8 a=fxJcL_dCAAAA:8 a=VSa_WXT-AAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=lWEsJVV14k4uZJ-3p5YA:9 a=xLXhESsooQEPQ_CEu28A:7 a=g8TsgemOOTqacRF2ZVvVBipfrPAA:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=jEp0ucaQiEUA:10 a=2eKvNQJKnqYA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.154.172
-Date: Tue, 29 Mar 2011 20:58:30 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, hughd@google.com,
-        akpm@linux-foundation.org, davej@redhat.com, hch@infradead.org,
-        jmorris@namei.org
-Subject: Re: [PATCH] tmpfs: implement xattr support for the entire security
- namespace
-Message-ID: <20110330015830.GA2656@hallyn.com>
-References: <20110329185648.3549.51631.stgit@paris.rdu.redhat.com>
+	id S1755497Ab1C3CAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 22:00:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25050 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755348Ab1C3CAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 22:00:09 -0400
+Message-ID: <4D928E9D.8070202@redhat.com>
+Date: Tue, 29 Mar 2011 22:59:57 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110329185648.3549.51631.stgit@paris.rdu.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Manjunatha Halli <manjunatha_halli@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [BUG] NULL pointer dereference in dev_get_drvdata
+References: <1301448497.14261.319.camel@gandalf.stny.rr.com>
+In-Reply-To: <1301448497.14261.319.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric Paris (eparis@redhat.com):
-> This patch implements security namespace xattrs for tmpfs filesystems.  The
-> feodra project, while trying to replace suid apps with file capabilities,
-> realized that tmpfs, which is used on the build systems, does not support file
-> capabilities and thus cannot be used to build packages which use file
-> capabilities.
+Em 29-03-2011 22:28, Steven Rostedt escreveu:
+> While running ktest.pl with randconfig tests on latest Linus (before
+> 2.6.38-rc9 was released), several tests triggered a bug similar to this:
 > 
-> The xattr interface is a bit, odd.  If a filesystem does not implement any
-> {get,set,list}xattr functions the VFS will call into some random LSM hooks and
-> the running LSM can then implement some method for handling xattrs.  SELinux
-> for example provides a method to support security.selinux but no other
-> security.* xattrs.
+> Starting udev: udevd-work[880]: '/usr/bin/vmmouse_detect' unexpected exit with status 0x000b
+> udevd-work[881]: '/usr/bin/vmmouse_detect' unexpected exit with status 0x000b
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+> IP: [<ffffffff818a6e9e>] dev_get_drvdata+0xe/0x39
+> PGD 74dc7067 PUD 741ef067 PMD 0 
+> Oops: 0000 [#1] SMP 
+> last sysfs file: /sys/devices/virtual/net/teql0/address
+> CPU 1 
+> Modules linked in: ide_pci_generic iTCO_wdt iTCO_vendor_support ide_core
 > 
-> As it stands today when one enables CONFIG_TMPFS_POSIX_ACL tmpfs will have
-> xattr handler routines specifically to handle acls.  Because of this tmpfs
-> would loose the VFS/LSM helpers to support the running LSM.  To make up for
-> that tmpfs had stub functions that did nothing but call into the LSM hooks
-> which implement the helpers.
+> Pid: 994, comm: v4l_id Not tainted 2.6.38-test-09043-gc585015 #1                  /DG965MQ
+> RIP: 0010:[<ffffffff818a6e9e>]  [<ffffffff818a6e9e>] dev_get_drvdata+0xe/0x39
+> RSP: 0018:ffff8800743dbb68  EFLAGS: 00010202
+> RAX: 0000000000000000 RBX: ffff8800743dbba0 RCX: 0000000000000000
+> RDX: ffffffff8408b740 RSI: 0000000000000000 RDI: 0000000000000010
+> RBP: ffff8800743dbb68 R08: ffff8800743dbb98 R09: 00000000000023e7
+> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+> R13: ffff88007784f888 R14: ffff880076f82140 R15: 0000000000000000
+> FS:  00007f4059724700(0000) GS:ffff88007e280000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000000000018 CR3: 00000000742bb000 CR4: 00000000000006e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process v4l_id (pid: 994, threadinfo ffff8800743da000, task ffff880074dac420)
+> Stack:
+>  ffff8800743dbb88 ffffffff818e4129 ffff880074dac420 ffffffff8408b740
+>  ffff8800743dbbc8 ffffffff818e1865 2222222222222222 2222222222222222
+>  ffff88007784f000 0000000000000000 ffff88007784f888 ffff880076f82140
+> Call Trace:
+>  [<ffffffff818e4129>] st_kim_ref+0x2c/0x42
+>  [<ffffffff818e1865>] st_register+0x29/0x444
+>  [<ffffffff81dc6415>] fmc_prepare+0x75/0x382
+>  [<ffffffff81dc9109>] fm_v4l2_fops_open+0x5a/0xce
+>  [<ffffffff81d40bab>] v4l2_open+0x180/0x212
+>  [<ffffffff811c6fc5>] chrdev_open+0x1c5/0x204
+>  [<ffffffff811c6e00>] ? cdev_put+0x45/0x45
+>  [<ffffffff811bf61e>] __dentry_open+0x2a1/0x467
+>  [<ffffffff811c0bd8>] nameidata_to_filp+0x75/0x83
+>  [<ffffffff811d2c5f>] do_last+0x716/0x902
+>  [<ffffffff811d02e7>] ? path_init+0x1fd/0x46f
+>  [<ffffffff811d3d07>] path_openat+0x102/0x4cd
+>  [<ffffffff811d413d>] do_filp_open+0x6b/0xb5
+>  [<ffffffff822671ab>] ? _raw_spin_unlock+0x40/0x4c
+>  [<ffffffff811e387e>] ? alloc_fd+0x165/0x17e
+>  [<ffffffff811c0c7f>] do_sys_open+0x99/0x16a
+>  [<ffffffff811c0d77>] sys_open+0x27/0x30
+>  [<ffffffff82270a82>] system_call_fastpath+0x16/0x1b
+> Code: 90 55 48 89 e5 0f 1f 44 00 00 48 ff 05 ac 70 5d 02 f0 ff 07 48 ff 05 aa 70 5d 02 c9 c3 55 48 89 e5 0f 1f 44 00 00 48 85 ff 74 20
+>  8b 47 08 48 ff 05 97 70 5d 02 48 85 c0 74 10 48 8b 80 b8 00 
+> RIP  [<ffffffff818a6e9e>] dev_get_drvdata+0xe/0x39
+>  RSP <ffff8800743dbb68>
+> CR2: 0000000000000018
 > 
-> This new patch does not use the LSM fallback functions and instead just
-> implements a native get/set/list xattr feature for the full security.*
-> namespace like a normal filesystem.  This means that tmpfs can now support
-> both security.selinux and security.capability, which was not previously
-> possible.
+> As not all configs triggered this, but when a config did trigger it, it
+> was consistent. I ran the "config-bisect" of ktest.pl to find the dirty
+> culprit, and it came up with:
 > 
-> The basic implementation is that I attach a:
+> ***************************************
+> Found bad config: CONFIG_RADIO_WL128X
+> ***************************************
 > 
-> struct shmem_xattr {
-> 	struct list_head list; /* anchored by shmem_inode_info->xattr_list */
-> 	char *name;
-> 	size_t size;
-> 	char value[0];
-> };
+> When I removed the config, sure enough, the bug goes away. I added it
+> back in and the bug re-appeared.
 > 
-> Into the struct shmem_inode_info for each xattr that is set.  This
-> implementation could easily be turned into 2d array with one dimention being
-> the xattr prefix and one the xattr suffix.  That could result in an easy
-> implementation for user.* if we ever want it.  As it stands today though I
-> assume the prefix is always security.
+> The .config can be downloaded here:
+> http://rostedt.homelinux.com/private/mxtest-boot-randconfig-fail-20110228232103/config
 > 
-> Signed-off-by: Eric Paris <eparis@redhat.com>
+> and the full dmesg here:
+> http://rostedt.homelinux.com/private/mxtest-boot-randconfig-fail-20110228232103/dmesg
+> 
+> -- Steve
 
-Thanks, Eric.  I don't see any problems with this.  I do wonder whether
-it could save quite a bit of space to use hlist_head instead of list_head
-if selinux is not enabled?
+Thanks for reporting it.
 
-Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+There were a change at ST interface, affecting this new driver.
 
-> ---
-> 
->  fs/Kconfig               |    4 ++
->  include/linux/shmem_fs.h |    1 
->  mm/shmem.c               |  116 ++++++++++++++++++++++++++++++++++++++++++----
->  3 files changed, 111 insertions(+), 10 deletions(-)
-> 
-> diff --git a/fs/Kconfig b/fs/Kconfig
-> index f3aa9b0..5e2bfc4 100644
-> --- a/fs/Kconfig
-> +++ b/fs/Kconfig
-> @@ -132,6 +132,10 @@ config TMPFS_POSIX_ACL
->  	  To learn more about Access Control Lists, visit the POSIX ACLs for
->  	  Linux website <http://acl.bestbits.at/>.
->  
-> +	  Enablings this option will also enable support for the entire
-> +	  security.* xattr namespace.  This is to make up for support lost
-> +	  from the VFS/LSM when a filesystem has any xattr handler.
-> +
->  	  If you don't know what Access Control Lists are, say N.
->  
->  config HUGETLBFS
-> diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
-> index 399be5a..20912d1 100644
-> --- a/include/linux/shmem_fs.h
-> +++ b/include/linux/shmem_fs.h
-> @@ -19,6 +19,7 @@ struct shmem_inode_info {
->  	struct page		*i_indirect;	/* top indirect blocks page */
->  	swp_entry_t		i_direct[SHMEM_NR_DIRECT]; /* first blocks */
->  	struct list_head	swaplist;	/* chain of maybes on swap */
-> +	struct list_head	xattr_list;	/* list of shmem_xattr */
->  	struct inode		vfs_inode;
->  };
->  
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index 58da7c1..c77634f 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -99,6 +99,13 @@ static struct vfsmount *shm_mnt;
->  /* Pretend that each entry is of this size in directory's i_size */
->  #define BOGO_DIRENT_SIZE 20
->  
-> +struct shmem_xattr {
-> +	struct list_head list;	/* anchored by shmem_inode_info->xattr_list */
-> +	char *name;		/* xattr suffix */
-> +	size_t size;
-> +	char value[0];
-> +};
-> +
->  /* Flag allocation requirements to shmem_getpage and shmem_swp_alloc */
->  enum sgp_type {
->  	SGP_READ,	/* don't exceed i_size, don't allocate page */
-> @@ -821,6 +828,7 @@ static int shmem_notify_change(struct dentry *dentry, struct iattr *attr)
->  static void shmem_evict_inode(struct inode *inode)
->  {
->  	struct shmem_inode_info *info = SHMEM_I(inode);
-> +	struct shmem_xattr *xattr, *nxattr;
->  
->  	if (inode->i_mapping->a_ops == &shmem_aops) {
->  		truncate_inode_pages(inode->i_mapping, 0);
-> @@ -833,6 +841,11 @@ static void shmem_evict_inode(struct inode *inode)
->  			mutex_unlock(&shmem_swaplist_mutex);
->  		}
->  	}
-> +
-> +	list_for_each_entry_safe(xattr, nxattr, &info->xattr_list, list) {
-> +		kfree(xattr->name);
-> +		kfree(xattr);
-> +	}
->  	BUG_ON(inode->i_blocks);
->  	shmem_free_inode(inode->i_sb);
->  	end_writeback(inode);
-> @@ -1595,6 +1608,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
->  		spin_lock_init(&info->lock);
->  		info->flags = flags & VM_NORESERVE;
->  		INIT_LIST_HEAD(&info->swaplist);
-> +		INIT_LIST_HEAD(&info->xattr_list);
->  		cache_no_acl(inode);
->  
->  		switch (mode & S_IFMT) {
-> @@ -2059,8 +2073,8 @@ static const struct inode_operations shmem_symlink_inode_operations = {
->  
->  #ifdef CONFIG_TMPFS_POSIX_ACL
->  /*
-> - * Superblocks without xattr inode operations will get security.* xattr
-> - * support from the VFS "for free". As soon as we have any other xattrs
-> + * Superblocks without xattr inode operations may get some security.* xattr
-> + * support from the LSM "for free". As soon as we have any other xattrs
->   * like ACLs, we also need to implement the security.* handlers at
->   * filesystem level, though.
->   */
-> @@ -2069,24 +2083,106 @@ static size_t shmem_xattr_security_list(struct dentry *dentry, char *list,
->  					size_t list_len, const char *name,
->  					size_t name_len, int handler_flags)
->  {
-> -	return security_inode_listsecurity(dentry->d_inode, list, list_len);
-> +	struct shmem_xattr *xattr;
-> +	struct shmem_inode_info *info;
-> +	size_t used = 0;
-> +
-> +	info = SHMEM_I(dentry->d_inode);
-> +
-> +	spin_lock(&dentry->d_inode->i_lock);
-> +	list_for_each_entry(xattr, &info->xattr_list, list) {
-> +		used += XATTR_SECURITY_PREFIX_LEN;
-> +		used += strlen(xattr->name) + 1;
-> +
-> +		if (list) {
-> +			if (list_len < used) {
-> +				used = -ERANGE;
-> +				break;
-> +			}
-> +			strncpy(list, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN);
-> +			list += XATTR_SECURITY_PREFIX_LEN;
-> +			strncpy(list, xattr->name, strlen(xattr->name) + 1);
-> +			list += strlen(xattr->name) + 1;
-> +		}
-> +	}
-> +	spin_unlock(&dentry->d_inode->i_lock);
-> +
-> +	return used;
->  }
->  
->  static int shmem_xattr_security_get(struct dentry *dentry, const char *name,
->  		void *buffer, size_t size, int handler_flags)
->  {
-> -	if (strcmp(name, "") == 0)
-> -		return -EINVAL;
-> -	return xattr_getsecurity(dentry->d_inode, name, buffer, size);
-> +	struct shmem_inode_info *info;
-> +	struct shmem_xattr *xattr;
-> +	int ret = -ENODATA;
-> +
-> +	info = SHMEM_I(dentry->d_inode);
-> +
-> +	spin_lock(&dentry->d_inode->i_lock);
-> +	list_for_each_entry(xattr, &info->xattr_list, list) {
-> +		if (strcmp(name, xattr->name))
-> +			continue;
-> +
-> +		ret = xattr->size;
-> +		if (buffer) {
-> +			if (size < xattr->size)
-> +				ret = -ERANGE;
-> +			else
-> +				memcpy(buffer, xattr->value, xattr->size);
-> +		}
-> +		break;
-> +	}
-> +	spin_unlock(&dentry->d_inode->i_lock);
-> +	return ret;
->  }
->  
-> +/*
-> + * We only handle security.* but we could potentially store the prefix
-> + * as well as the suffix in struct shmem_xattr and support *.*
-> + */
->  static int shmem_xattr_security_set(struct dentry *dentry, const char *name,
->  		const void *value, size_t size, int flags, int handler_flags)
->  {
-> -	if (strcmp(name, "") == 0)
-> -		return -EINVAL;
-> -	return security_inode_setsecurity(dentry->d_inode, name, value,
-> -					  size, flags);
-> +	struct inode *inode = dentry->d_inode;
-> +	struct shmem_inode_info *info = SHMEM_I(inode);
-> +	struct shmem_xattr *xattr;
-> +	struct shmem_xattr *new_xattr;
-> +	size_t len;
-> +
-> +	/* wrap around? */
-> +	len = sizeof(*new_xattr) + size;
-> +	if (len <= sizeof(*new_xattr))
-> +		return -ENOMEM;
-> +
-> +	new_xattr = kmalloc(len, GFP_NOFS);
-> +	if (!new_xattr)
-> +		return -ENOMEM;
-> +
-> +	new_xattr->name = kstrdup(name, GFP_NOFS);
-> +	if (!new_xattr->name) {
-> +		kfree(new_xattr);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	new_xattr->size = size;
-> +	memcpy(new_xattr->value, value, size);
-> +
-> +	spin_lock(&inode->i_lock);
-> +	list_for_each_entry(xattr, &info->xattr_list, list) {
-> +		if (!strcmp(name, xattr->name)) {
-> +			list_replace(&xattr->list, &new_xattr->list);
-> +			goto out;
-> +		}
-> +	}
-> +	list_add(&new_xattr->list, &info->xattr_list);
-> +	xattr = NULL;
-> +out:
-> +	spin_unlock(&inode->i_lock);
-> +	if (xattr)
-> +		kfree(xattr->name);
-> +	kfree(xattr);
-> +	return 0;
->  }
->  
->  static const struct xattr_handler shmem_xattr_security_handler = {
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I'm updating the fix today to -next:
+
+commit f3149c7d9d989796306c6e65afbf4e89b3f81436
+Author: Manjunatha Halli <manjunatha_halli@ti.com>
+Date:   Wed Mar 23 07:44:30 2011 -0300
+
+    [media] radio: wl128x: Update registration process with ST
+    
+    As underlying ST driver registration API's have changed with
+    latest 2.6.38-rc8 kernel this patch will update the FM driver
+    accordingly.
+    
+    Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+It is already on my tree:
+	ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-next.git
+
+It should be available soon at kernel.org mirrors.
+
+Could you please test it?
+
+Thanks!
+Mauro
+	
