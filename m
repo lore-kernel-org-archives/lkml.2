@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965406Ab1C3VpN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:45:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61735 "EHLO mga09.intel.com"
+	id S965428Ab1C3Vpu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:45:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58322 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964857Ab1C3VHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:07:47 -0400
+	id S964846Ab1C3VHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:07:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="727133343"
+   d="scan'208";a="411277839"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: brking@linux.vnet.ibm.com, James.Bottomley@suse.de, ak@linux.intel.com,
-        max@stro.at, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [125/275] scsi_dh_alua: Add IBM Power Virtual SCSI ALUA device to dev list
-Message-Id: <20110330210605.5093F3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:05 -0700 (PDT)
+To: hooanon05@yahoo.co.jp, Trond.Myklebust@netapp.com,
+        tim.gardner@canonical.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [122/275] NFS: fix the return value of nfs_file_fsync()
+Message-Id: <20110330210602.2875A3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,31 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Brian King <brking@linux.vnet.ibm.com>
+From: J. R. Okajima <hooanon05@yahoo.co.jp>
 
-commit 22963a37b3437a25812cc856afa5a84ad4a3f541 upstream.
+commit 0702099bd86c33c2dcdbd3963433a61f3f503901 upstream.
 
-Adds IBM Power Virtual SCSI ALUA devices to the ALUA device handler.
+By the commit af7fa16 2010-08-03 NFS: Fix up the fsync code
+close(2) became returning the non-zero value even if it went well.
+nfs_file_fsync() should return 0 when "status" is positive.
 
-Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: maximilian attems <max@stro.at>
+Signed-off-by: J. R. Okajima <hooanon05@yahoo.co.jp>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/scsi/device_handler/scsi_dh_alua.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfs/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/drivers/scsi/device_handler/scsi_dh_alua.c
+Index: linux-2.6.35.y/fs/nfs/file.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/scsi/device_handler/scsi_dh_alua.c	2011-03-29 23:03:00.822279127 -0700
-+++ linux-2.6.35.y/drivers/scsi/device_handler/scsi_dh_alua.c	2011-03-29 23:03:00.839278695 -0700
-@@ -721,6 +721,7 @@
- 	{"NETAPP", "LUN"},
- 	{"AIX", "NVDISK"},
- 	{"NETAPP", "LUN"},
-+	{"AIX", "NVDISK"},
- 	{NULL, NULL}
- };
- 
+--- linux-2.6.35.y.orig/fs/nfs/file.c	2011-03-29 22:51:19.419226280 -0700
++++ linux-2.6.35.y/fs/nfs/file.c	2011-03-29 23:03:00.750280971 -0700
+@@ -222,7 +222,7 @@
+ 	have_error |= test_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
+ 	if (have_error)
+ 		ret = xchg(&ctx->error, 0);
+-	if (!ret)
++	if (!ret && status < 0)
+ 		ret = status;
+ 	return ret;
+ }
