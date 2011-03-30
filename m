@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab1C3BzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 21:55:25 -0400
-Received: from mx5.twosigma.com ([208.77.212.35]:63538 "EHLO mx5.twosigma.com"
+	id S1755468Ab1C3B5J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 21:57:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14350 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754020Ab1C3BzY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 21:55:24 -0400
-From: Sean Noonan <Sean.Noonan@twosigma.com>
-To: "'Dave Chinner'" <david@fromorbit.com>
-CC: "'Christoph Hellwig'" <hch@infradead.org>,
-        "'Michel Lespinasse'" <walken@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Martin Bligh <Martin.Bligh@twosigma.com>,
-        Trammell Hudson <Trammell.Hudson@twosigma.com>,
-        Christos Zoulas <Christos.Zoulas@twosigma.com>,
-        "'linux-xfs@oss.sgi.com'" <linux-xfs@oss.sgi.com>,
-        Stephen Degler <Stephen.Degler@twosigma.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>
-Date: Tue, 29 Mar 2011 21:52:59 -0400
-Subject: RE: XFS memory allocation deadlock in 2.6.38
-Thread-Topic: XFS memory allocation deadlock in 2.6.38
-Thread-Index: Acvue/cwCBZjlARwRB2wMxd07xceLAAACPwQ
-Message-ID: <081DDE43F61F3D43929A181B477DCA95639B5365@MSXAOA6.twosigma.com>
-References: <20110324174311.GA31576@infradead.org>
- <AANLkTikwwRm6FHFtEdUg54NvmKdswQw-NPH5dtq1mXBK@mail.gmail.com>
- <081DDE43F61F3D43929A181B477DCA95639B5349@MSXAOA6.twosigma.com>
- <BANLkTin0jJevStg5P2hqsLbqMzo3o30sYg@mail.gmail.com>
- <081DDE43F61F3D43929A181B477DCA95639B534E@MSXAOA6.twosigma.com>
- <081DDE43F61F3D43929A181B477DCA95639B5359@MSXAOA6.twosigma.com>
- <20110329192434.GA10536@infradead.org>
- <081DDE43F61F3D43929A181B477DCA95639B535D@MSXAOA6.twosigma.com>
- <20110330000942.GI3008@dastard>
- <081DDE43F61F3D43929A181B477DCA95639B5364@MSXAOA6.twosigma.com>
- <20110330014400.GK3008@dastard>
-In-Reply-To: <20110330014400.GK3008@dastard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755334Ab1C3B5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 21:57:07 -0400
+Message-ID: <4D928DE2.8070804@redhat.com>
+Date: Tue, 29 Mar 2011 22:56:50 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Alexander Beregalov <a.beregalov@gmail.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "Igor M. Liplianin" <liplianin@netup.ru>
+Subject: Re: [PATCH -next] staging: altera-jtag needs delay.h
+References: <20110304180027.20deb6c4.sfr@canb.auug.org.au>	<20110304173528.60c04f76.randy.dunlap@oracle.com> <AANLkTinhKKtPS7-tFcoU8JE=zsgikEn979DemyXX8q_z@mail.gmail.com>
+In-Reply-To: <AANLkTinhKKtPS7-tFcoU8JE=zsgikEn979DemyXX8q_z@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Is this repeatable or is it just a one-off result?
+Em 29-03-2011 18:27, Alexander Beregalov escreveu:
+> On 5 March 2011 04:35, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> altera-jtag.c needs to include <linux/delay.h> to fix a build error:
+>>
+>> drivers/staging/altera-stapl/altera-jtag.c:398: error: implicit declaration of function 'udelay'
+>>
+>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+>> Cc: Igor M. Liplianin <liplianin@netup.ru>
+> 
+> Mauro, Greg. 2.6.39 still needs this fix.
 
-It was repeated three times before I sent the email, but I can't reproduce it again now.  Call it a fluke.
+I'm updating the fix right now to -next. I'll be sending it upstream after having it
+merged there.
 
-Sean
+Thanks,
+Mauro.
