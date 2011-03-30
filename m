@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab1C3MJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 08:09:05 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61725 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754285Ab1C3MJD (ORCPT
+	id S1755850Ab1C3MQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 08:16:45 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:47958 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754634Ab1C3MQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 08:09:03 -0400
-Message-ID: <4D931D50.9050404@monstr.eu>
-Date: Wed, 30 Mar 2011 14:08:48 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] microblaze: Fix level/edge irq sensibility
-References: <1301484264-6220-1-git-send-email-monstr@monstr.eu> <alpine.LFD.2.00.1103301403290.22418@localhost6.localdomain6> <4D931C98.4010009@monstr.eu> <alpine.LFD.2.00.1103301407480.22418@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1103301407480.22418@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Mar 2011 08:16:44 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Peter Tyser <ptyser@xes-inc.com>,
+        toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH] pch_gpio: Fix output value of pch_gpio_direction_output()
+Date: Wed, 30 Mar 2011 21:16:26 +0900
+Message-Id: <1301487386-29101-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner wrote:
-> On Wed, 30 Mar 2011, Michal Simek wrote:
-> 
->> Thomas Gleixner wrote:
->>> On Wed, 30 Mar 2011, Michal Simek wrote:
->>>
->>>> Patches:
->>>> "microblaze: Convert to new irq function names"
->>>> sha (4adc192ec7d977c74c750320f289af9d61c1caca)
->>>> and
->>>> "microblaze: Use generic show_interrupts()"
->>>> sha(9d61c18b25726306c9231428c17db42e3ff29ba7)
->>>>
->>>> should also setup edge/level in irq_set_chip_and_handler_name
->>>> name parameter.
->>>>
->>>> Error log:
->>>> ~ # cat /proc/interrupts
->>>>            CPU0
->>>>   2:          2  Xilinx INTC-Xilinx INTC  eth0
->>>>   3:          2  Xilinx INTC-Xilinx INTC  eth0
->>>>   4:        241  Xilinx INTC-Xilinx INTC  timer
->>>>   6:        108  Xilinx INTC-Xilinx INTC  serial
->>>>
->>>> Fixed:
->>>> ~ # cat /proc/interrupts
->>>>            CPU0
->>>>   2:          2  Xilinx INTC-level     eth0
->>>>   3:          2  Xilinx INTC-level     eth0
->>>>   4:        238  Xilinx INTC-edge      timer
->>>>   6:        108  Xilinx INTC-level     serial
->>>>
->>>> Signed-off-by: Michal Simek <monstr@monstr.eu>
->>> Should I pick that up for the urgent fixes ?
->> No you shouldn't. It can go through my tree.
->> You can give me ACK if you like.
-> 
-> Here you go:
-> 
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
+The pch_gpio_direction_output() function was missing a write to set the
+desired output value.  The function would properly set the GPIO
+direction, but not the output value.  The value would have to manually
+be set with a follow up call to pch_gpio_set().
 
-Thanks,
-Michal
+Add the missing write so that pch_gpio_direction_output() sets both the
+GPIO direction and value.
 
+Reported-by: Peter Tyser <ptyser@xes-inc.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/gpio/pch_gpio.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
+index 0eba0a7..b4e9915 100644
+--- a/drivers/gpio/pch_gpio.c
++++ b/drivers/gpio/pch_gpio.c
+@@ -105,6 +105,7 @@ static int pch_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
+ 		reg_val |= (1 << nr);
+ 	else
+ 		reg_val &= ~(1 << nr);
++	iowrite32(reg_val, &chip->reg->po);
+ 
+ 	mutex_unlock(&chip->lock);
+ 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+1.7.4
+
