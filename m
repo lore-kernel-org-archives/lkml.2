@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab1C3ICL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 04:02:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53812 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab1C3ICI (ORCPT
+	id S1754703Ab1C3ID1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 04:03:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60365 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab1C3IDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 04:02:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gfsxHnAfKYJE6JG9zc6SALa7BxS0n85i7LR/lxtkuyjsEI9HwtAiLTG22iNJG435KI
-         YPgzDEUhqBh8Zy7e11lTYd64MoPmivOMfHIhGZE90nRQZIMZ2ZBSYd4b3P3guvP+lRp1
-         7YEps6PqimRBhshA67Bdl1ouquKwYNTj1pyHE=
-Date: Wed, 30 Mar 2011 10:02:03 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH] block: eliminate ELEVATOR_INSERT_REQUEUE
-Message-ID: <20110330080203.GD17523@htj.dyndns.org>
-References: <20110325185455.GA2969@redhat.com>
- <4D8CF202.9010809@kernel.dk>
- <20110326042156.GB28458@redhat.com>
- <20110328082321.GC16530@htj.dyndns.org>
- <20110328221547.GA1118@redhat.com>
- <x49y63yvwum.fsf@segfault.boston.devel.redhat.com>
- <20110329175458.GE24485@redhat.com>
- <20110330074123.GA17523@htj.dyndns.org>
- <20110330075752.GC17523@htj.dyndns.org>
- <4D92E2CD.6000909@kernel.dk>
+	Wed, 30 Mar 2011 04:03:24 -0400
+Date: Wed, 30 Mar 2011 10:02:23 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>,
+        William Manson <wmanson@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Subject: Re: [PATCH 1/3] input/touchscreen: Synaptics RMI4 Touchscreen
+ Driver
+Message-ID: <20110330080223.GB2232@pengutronix.de>
+References: <1301446249-13646-1-git-send-email-cheiny@synaptics.com>
+ <1301446249-13646-2-git-send-email-cheiny@synaptics.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yEPQxsgoJgBvi8ip"
 Content-Disposition: inline
-In-Reply-To: <4D92E2CD.6000909@kernel.dk>
+In-Reply-To: <1301446249-13646-2-git-send-email-cheiny@synaptics.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jens.
 
-On Wed, Mar 30, 2011 at 09:59:09AM +0200, Jens Axboe wrote:
-> Pure front insert should be used for requeue and internal commands (like
-> spin up this drive, or get error information). Flush should append to
-> the dispatch list.
+--yEPQxsgoJgBvi8ip
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, right.  The reason I used REQUEUE/FRONT was because BACK
-insertion involves draining the elevator and then appending the
-request at the end of the dispatch queue, which is unnecessary and
-inefficient.  So, front insertion was a quick work around that.  If
-we're removing elv_insert(), we can just append directly to the
-dispatch queue from flush code.
+Hi,
 
-Thanks.
+> +	retval =3D rmi_register_sensor(&instancedata->rmiphysdrvr, platformdata=
+->perfunctiondata);
+> +	if (retval) {
+> +		dev_err(&client->dev, "%s: Failed to Register %s sensor drivers\n",
+> +				__func__, instancedata->rmiphysdrvr.name);
+> +		i2c_set_clientdata(client, NULL);
 
--- 
-tejun
+I originally just wanted to say that this line can be removed. Then I
+remembered that I already sent a patch for a similar driver in staging
+(dc7b202a4ee6cb686e2bbef80c84443f43ec91bd). The staging driver looks in
+a better shape to me. Do you know about it?
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--yEPQxsgoJgBvi8ip
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk2S448ACgkQD27XaX1/VRsOdACffOvvpHwddb0yANlelOwKNIxc
+eGsAoKzVsj5ZQ9IIBXhUUFI2Sw//diK5
+=AD2T
+-----END PGP SIGNATURE-----
+
+--yEPQxsgoJgBvi8ip--
