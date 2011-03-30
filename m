@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965413Ab1C3WEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:04:45 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:56426 "EHLO isrv.corpit.ru"
+	id S933246Ab1C3VG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:06:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21130 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933410Ab1C3WEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 18:04:43 -0400
-Message-ID: <4D93A8F9.2080407@msgid.tls.msk.ru>
-Date: Thu, 31 Mar 2011 02:04:41 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: mijinlong@cn.fujitsu.com, ak@linux.intel.com, bfields@redhat.com,
-        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
+	id S933137Ab1C3VGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:06:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
+   d="scan'208";a="621236178"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110330203.501921634@firstfloor.org>
+In-Reply-To: <20110330203.501921634@firstfloor.org>
+To: david.henningsson@canonical.com, tiwai@suse.de, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: Re: [PATCH] [232/275] nfsd: wrong index used in inner loop
-References: <20110330203.501921634@firstfloor.org> <20110330210757.F3D223E1A05@tassilo.jf.intel.com> <4D93A6F4.60206@msgid.tls.msk.ru>
-In-Reply-To: <4D93A6F4.60206@msgid.tls.msk.ru>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: [PATCH] [45/275] ALSA: HDA: Fix dmesg output of HDMI supported bits
+Message-Id: <20110330210441.143D13E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:04:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-31.03.2011 01:56, Michael Tokarev пишет:
-> 31.03.2011 01:07, Andi Kleen wrote:
->> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
->>
->> ------------------
->> From: Mi Jinlong <mijinlong@cn.fujitsu.com>
->>
->> commit 5a02ab7c3c4580f94d13c683721039855b67cda6 upstream.
->>
->> We must not use dummy for index.
->> After the first index, READ32(dummy) will change dummy!!!!
-> 
-> This is also in patch 180/275 (this one is 232/275).
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-Doh, so this 232/275 basically reverts that 180 and makes
-other change down the line, but keeps the subject intact.
-Especially useful that the two patches are so far away
-from each other (more than 50 patches in-between).
-Confusing :)
+------------------
+From: David Henningsson <david.henningsson@canonical.com>
 
-So both are actually needed, apparently.
+commit d757534ed15387202e322854cd72dc58bbb975de upstream.
 
-Thanks!
+This typo caused the dmesg output of the supported bits of HDMI
+to be cut off early.
 
-/mjt
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
+---
+ sound/pci/hda/hda_eld.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.35.y/sound/pci/hda/hda_eld.c
+===================================================================
+--- linux-2.6.35.y.orig/sound/pci/hda/hda_eld.c	2011-03-29 22:51:51.337409574 -0700
++++ linux-2.6.35.y/sound/pci/hda/hda_eld.c	2011-03-29 23:02:59.121322653 -0700
+@@ -381,7 +381,7 @@
+ 	snd_print_pcm_rates(a->rates, buf, sizeof(buf));
+ 
+ 	if (a->format == AUDIO_CODING_TYPE_LPCM)
+-		snd_print_pcm_bits(a->sample_bits, buf2 + 8, sizeof(buf2 - 8));
++		snd_print_pcm_bits(a->sample_bits, buf2 + 8, sizeof(buf2) - 8);
+ 	else if (a->max_bitrate)
+ 		snprintf(buf2, sizeof(buf2),
+ 				", max bitrate = %d", a->max_bitrate);
