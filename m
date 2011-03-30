@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483Ab1C3NR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 09:17:57 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:15551
-	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754409Ab1C3NR4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 09:17:56 -0400
-X-SpamScore: -39
-X-BigFish: VPS-39(zz542N1432N98dN4015L1fa4L148cM9371Pzz1202hzz8275bhz2dh95h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1755907Ab1C3NTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 09:19:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750798Ab1C3NTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 09:19:42 -0400
+Date: Wed, 30 Mar 2011 09:19:36 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        paulmck@linux.vnet.ibm.com, oleg@redhat.com
+Subject: Re: [PATCH] blk-throttle: don't call xchg on bool
+Message-ID: <20110330131936.GA1291@redhat.com>
+References: <1292447255-10698-1-git-send-email-vgoyal@redhat.com>
+ <1292447255-10698-3-git-send-email-vgoyal@redhat.com>
+ <m21v1ph639.fsf_-_@igel.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH V5 3/4] ARM: Xilinx: base header files and assembly macros
-Date: Wed, 30 Mar 2011 07:17:46 -0600
-In-Reply-To: <201103301344.45307.arnd@arndb.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH V5 3/4] ARM: Xilinx: base header files and assembly macros
-Thread-Index: Acvuz+7X8EIYfzPxS9qy553cJc6oFAAC+Ajw
-References: <1301444651-18008-1-git-send-email-john.linn@xilinx.com> <1301444651-18008-3-git-send-email-john.linn@xilinx.com> <9ceff117-ad43-4513-bee0-153a93c379ce@VA3EHSMHS008.ehs.local> <201103301344.45307.arnd@arndb.de>
-From: John Linn <John.Linn@xilinx.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
-        <glikely@secretlab.ca>, <jamie@jamieiles.com>
-X-OriginalArrivalTime: 30 Mar 2011 13:17:47.0088 (UTC) FILETIME=[DC90BD00:01CBEEDC]
-X-RCIS-Action: ALLOW
-Message-ID: <f4872ed7-b6e4-4050-9445-5176f5aa961a@VA3EHSMHS017.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m21v1ph639.fsf_-_@igel.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Wednesday, March 30, 2011 5:45 AM
-> To: John Linn
-> Cc: linux-arm-kernel@lists.infradead.org;
-linux-kernel@vger.kernel.org;
-> linux@arm.linux.org.uk; catalin.marinas@arm.com; glikely@secretlab.ca;
-> jamie@jamieiles.com
-> Subject: Re: [PATCH V5 3/4] ARM: Xilinx: base header files and
-assembly
-> macros
+On Wed, Mar 30, 2011 at 01:14:50AM +0200, Andreas Schwab wrote:
+> xchg does not work portably with smaller than 32bit types.
 > 
-> Hi John,
+
+Hi Andreas,
+
+Which arch creates the problem and what's the issue here if data type
+is smaller than 32bit? Is it a compile time warning?
+
+Also, you also probably need to chagne ->limits_changed assignments?
+Instead of using true/false use 1/0.
+
+Thanks
+Vivek
+
+> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+> ---
+>  block/blk-throttle.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> I looked over the latest version of your patches, everything looks
-> good to me, but I found one problem that you have probably copied
-> from other platforms:
-
-Hi Arnd,
-
-Thanks for taking the time to review again. Yep I did copy from others.
-
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index 5352bda..6c98cfe 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -77,7 +77,7 @@ struct throtl_grp {
+>  	unsigned long slice_end[2];
+>  
+>  	/* Some throttle limits got updated for the group */
+> -	bool limits_changed;
+> +	int limits_changed;
+>  };
+>  
+>  struct throtl_data
+> @@ -102,7 +102,7 @@ struct throtl_data
+>  	/* Work for dispatching throttled bios */
+>  	struct delayed_work throtl_work;
+>  
+> -	bool limits_changed;
+> +	int limits_changed;
+>  };
+>  
+>  enum tg_state_flags {
+> -- 
+> 1.7.4.2
 > 
-> On Wednesday 30 March 2011, John Linn wrote:
-> > +
-> > +/* Allow IO space to be anywhere in the memory */
-> > +
-> > +#define IO_SPACE_LIMIT 0xffff
-> > +
-> > +/* IO address mapping macros, nothing special at this time but
-> required */
-> > +
-> > +#ifdef __ASSEMBLER__
-> > +#define IOMEM(x)               (x)
-> > +#else
-> > +#define IOMEM(x)               ((void __force __iomem *)(x))
-> > +#endif
-> > +
-> > +#define __io(a)                        __typesafe_io(a)
-> > +#define __mem_pci(a)           (a)
 > 
-> The definition of __io() looks wrong, so any call to inb()/outb()
-> will be a wild pointer access when you add PCI support.
-
-Yes that makes sense.  We don't have immediate plans for PCI and 
-I was assuming when we add PCI we would need to change that.  
-
-If you think I shouldn't put it off then I'll fix it now.  My 
-preference was to get the platform supported, then add more features.
-
-Thanks,
-John
-
-> 
-> If you don't plan to support PCI in the future, there should
-> be no problem.
-> 
-> 	Arnd
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+> -- 
+> Andreas Schwab, schwab@linux-m68k.org
+> GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+> "And now for something completely different."
