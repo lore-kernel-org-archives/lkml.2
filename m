@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab1C3Wa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:30:56 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58819 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756282Ab1C3Way (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 18:30:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 typo-fixed] initcall: add config option for compiling initcall_debug
-Date: Thu, 31 Mar 2011 00:31:06 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Arjan van de Ven <arjan@infradead.org>
-References: <20110327115506.14008.17733.stgit@localhost6> <20110328075131.25063.93957.stgit@localhost6> <20110329155751.e7ba346a.akpm@linux-foundation.org>
-In-Reply-To: <20110329155751.e7ba346a.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103310031.06374.rjw@sisk.pl>
+	id S1756352Ab1C3Wbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 18:31:46 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:50899 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756294Ab1C3Wbp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 18:31:45 -0400
+Subject: Re: 2.6.39-rc1 regression: NFS - unable to mount some shares (bisected)
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Dmitry Torokhov <dtor@vmware.com>
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <8A85A9B4-D801-476F-B280-CE2B1D04277B@vmware.com>
+Date: Wed, 30 Mar 2011 15:31:44 -0700 (PDT)
+To: Bryan Schumaker <bjschuma@netapp.com>
+Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0
+X-Mailer: Zimbra 6.0.8_GA_2685 (MobileSync - Apple-iPhone1C2/802.117)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 30, 2011, Andrew Morton wrote:
-> On Mon, 28 Mar 2011 11:51:31 +0400
-> Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
-> 
-> > This patch adds bool config option CONFIG_INITCALL_DEBUG for
-> > compiling initcalls debuging, it on by default to keep current behaviour.
-> > 
-> > With CONFIG_INITCALL_DEBUG=n bloat-o-meter shows:
-> > 
-> > add/remove: 0/7 grow/shrink: 3/10 up/down: 88/-1448 (-1360)
-> > function                                     old     new   delta
-> > device_resume                                350     404     +54
-> > __device_suspend                             331     363     +32
-> > device_resume_noirq                          230     232      +2
-> > kernel_init                                  355     354      -1
-> > initcall_debug                                 4       -      -4
-> > __param_str_initcall_debug                    15       -     -15
-> > dpm_suspend                                  431     415     -16
-> > syscore_suspend                              280     250     -30
-> > syscore_shutdown                             123      93     -30
-> > __param_initcall_debug                        32       -     -32
-> > syscore_resume                               215     173     -42
-> > static.initcall_debug_start                   71       -     -71
-> > static.initcall_debug_report                 102       -    -102
-> > legacy_resume                                129       -    -129
-> > async_synchronize_cookie_domain              286     152    -134
-> > legacy_suspend                               135       -    -135
-> > async_run_entry_fn                           348     188    -160
-> > do_one_initcall                              364     197    -167
-> > pm_op                                        536     366    -170
-> > pm_noirq_op                                  576     366    -210
-> 
-> Well.  One hopes that most things which use initcall_debug are
-> marked __init or __initdata.
-> 
-> I see that async and pm have borrowed inticall_debug for reasonably
-> appropriate reasons, but I wonder if all that is permanent code, or if
-> it will later get removed.  Because if it gets removed, this patch
-> becomes rather pointless.
+Hi Bryan,
 
-This is permanent code, as far as PM is concerned.
+It is actually one of autofs + NIS, mounts that is failing.
 
-Thanks,
-Rafael
+-- 
+Dmitry
+
+
+On Mar 30, 2011, at 2:03 PM, Bryan Schumaker <bjschuma@netapp.com> wrote:
+
+> Hi,
+> 
+> Thanks for letting me know.  What does your exports file look like, and which mounts do and don't work?
+> 
+> Bryan
+> 
+> On 03/30/2011 04:38 PM, Dmitry Torokhov wrote:
+>> Hi,
+>> 
+>> The following commit appears to the open preventng me from mounting some
+>> of my NFS shares (not all, of them, just some):
+>> 
+>> 8f70e95f9f4159184f557a1db60c909d7c1bd2e3 is the first bad commit
+>> commit 8f70e95f9f4159184f557a1db60c909d7c1bd2e3
+>> Author: Bryan Schumaker <bjschuma@netapp.com>
+>> Date:   Thu Mar 24 17:12:31 2011 +0000
+>> 
+>>   NFS: Determine initial mount security
+>> 
+>>   When sec=<something> is not presented as a mount option,
+>>   we should attempt to determine what security flavor the
+>>   server is using.
+>> 
+>>   Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+>>   Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+>> 
+>> Here is the bisect log:
+>> 
+>> [dtor@dtor-ws linus]$ git bisect log
+>> git bisect start
+>> # good: [4bbba111d94781d34081c37856bbc5eb33f6c72a] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6
+>> git bisect good 4bbba111d94781d34081c37856bbc5eb33f6c72a
+>> # bad: [0ce790e7d736cedc563e1fb4e998babf5a4dbc3d] Linux 2.6.39-rc1
+>> git bisect bad 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d
+>> # good: [e285c1746accb80620e511f9c72e9893beeedc0e] Merge branch 'drm-core-next' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6
+>> git bisect good e285c1746accb80620e511f9c72e9893beeedc0e
+>> # bad: [8d49a77568d1105ff3e64aec484dac059f54824e] Merge branch 'for-2.6.39/drivers' of git://git.kernel.dk/linux-2.6-block
+>> git bisect bad 8d49a77568d1105ff3e64aec484dac059f54824e
+>> # bad: [5aafdea448fb86412a6f8e46df518c1545d32436] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6
+>> git bisect bad 5aafdea448fb86412a6f8e46df518c1545d32436
+>> # bad: [9458ea567a72ebd3852c2d764d32c0f2fb61d0df] MIPS: IP22/IP28: Convert to new irq_chip functions
+>> git bisect bad 9458ea567a72ebd3852c2d764d32c0f2fb61d0df
+>> # good: [ae005cbed12d0b340b04b59d6f5c56e710b3895d] Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4
+>> git bisect good ae005cbed12d0b340b04b59d6f5c56e710b3895d
+>> # bad: [1685f3b158a244d4f6e205e67c84483fffcb2d9f] MIPS: SMTC: Move declaration of smtc_init_secondary to <asm/smtc.h>.
+>> git bisect bad 1685f3b158a244d4f6e205e67c84483fffcb2d9f
+>> # good: [988b6dceb0ae6d642587c8594529b94f6be0c5ea] NFSv4.1: remove GETATTR from ds commits
+>> git bisect good 988b6dceb0ae6d642587c8594529b94f6be0c5ea
+>> # good: [35124a0994fc02545b14b9fa3aad000b3331f1c0] Cleanup XDR parsing for LAYOUTGET, GETDEVICEINFO
+>> git bisect good 35124a0994fc02545b14b9fa3aad000b3331f1c0
+>> # bad: [8f70e95f9f4159184f557a1db60c909d7c1bd2e3] NFS: Determine initial mount security
+>> git bisect bad 8f70e95f9f4159184f557a1db60c909d7c1bd2e3
+>> # good: [7c5130588d691a3b34d02312f1bd1b6d56fe0100] NFS: lookup supports s alternate client
+>> git bisect good 7c5130588d691a3b34d02312f1bd1b6d56fe0100
+>> # good: [7ebb931598cd95cccea10d4bc4c0123a464ea565] NFS: use secinfo when crossing mountpoints
+>> git bisect good 7ebb931598cd95cccea10d4bc4c0123a464ea565
+>> 
+> 
+
