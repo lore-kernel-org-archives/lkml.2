@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1C3LZD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 07:25:03 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:46201 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755094Ab1C3LZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 07:25:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=njPFbiRNGMz636OF67g0+2gYNeqGnRbZ7G98CRdQCMGMTEfn2Xq/328T529/bC1DQ6
-         Z8BU9XE5vpcrpMXQevjeWEjsF928YMxhG894Pxx5Wm2afcd+nQgAzF/DIfsk5NWgc/UT
-         AJ/IAdL1ffJyzYlmfboOxa7+43Kxu3s4FoIbA=
+	id S932285Ab1C3L1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 07:27:55 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:38775 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755817Ab1C3L1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 07:27:54 -0400
+Message-ID: <4D9313B4.2070104@parallels.com>
+Date: Wed, 30 Mar 2011 06:27:48 -0500
+From: Rob Landley <rlandley@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=L0zqwQ869khH1efFUghGeJjoyTaBXs-O2icaM@mail.gmail.com>
-References: <9bde694e1003020554p7c8ff3c2o4ae7cb5d501d1ab9@mail.gmail.com>
-	<AANLkTinnqtXf5DE+qxkTyZ9p9Mb8dXai6UxWP2HaHY3D@mail.gmail.com>
-	<1300960540.32158.13.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTim139fpJsMJFLiyUYvFgGMz-Ljgd_yDrks-tqhE@mail.gmail.com>
-	<1301395206.583.53.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTim-4v5Cbp6+wHoXjgKXoS0axk1cgQ5AHF_zot80@mail.gmail.com>
-	<1301399454.583.66.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTin0_gT0E3=oGyfMwk+1quqonYBExeN9a3=v=Lob@mail.gmail.com>
-	<AANLkTi=gMP6jQuQFovfsOX=7p-SSnwXoVLO_DVEpV63h@mail.gmail.com>
-	<1301476505.29074.47.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTi=YB+nBG7BYuuU+rB9TC-BbWcJ6mVfkxq0iUype@mail.gmail.com>
-	<AANLkTi=L0zqwQ869khH1efFUghGeJjoyTaBXs-O2icaM@mail.gmail.com>
-Date: Wed, 30 Mar 2011 14:24:59 +0300
-X-Google-Sender-Auth: KvC7MfIQxgX5fOuinasIvjaV3t0
-Message-ID: <AANLkTi=vcn5jHpk0O8XS9XJ8s5k-mCnzUwu70mFTx4=g@mail.gmail.com>
-Subject: Re: kmemleak for MIPS
-From: Daniel Baluta <dbaluta@ixiacom.com>
-To: Maxin John <maxin.john@gmail.com>
-Cc: naveen yadav <yad.naveen@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Miller <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, <containers@lists.linux-foundation.org>,
+        <netdev@vger.kernel.org>, <stable@kernel.org>
+Subject: Re: 2.6.38 containers bug: Infinite loop in /proc/sys/net/ipv6/neigh/neigh/neigh...
+References: <4D9302F3.6080206@parallels.com>	<20110330.033529.71582712.davem@davemloft.net>	<4D9309B4.2000501@parallels.com> <20110330.034820.124005354.davem@davemloft.net>
+In-Reply-To: <20110330.034820.124005354.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have:
+On 03/30/2011 05:48 AM, David Miller wrote:
+> From: Rob Landley <rlandley@parallels.com>
+> Date: Wed, 30 Mar 2011 05:45:08 -0500
+> 
+>> So you think letting it soak in the merge window and the churn of -rc1
+>> (which currently doesn't boot for me due to an ide issue) will provide
+>> more validity than a specific "There was an infinite loop in the
+>> filesystem, there is now no longer an infinite loop in the filesystem,
+>> here's the specific test for it" and visual inspection ofthe patch?
+> 
+> Yes I absolutely do think it's better to let it soak somewhere than
+> to repeat the reason why this patch is necessary in the first place.
+> 
+> This patch is necessary because Eric already screwed up trying to fix
+> this neigh dirctory under ipv6 once, and he got it wrong.
+> 
+> That patch looked correct and straightforward.
+> 
+> Yet it introduced the bug you're seeing.
+> 
+> Given that consideration, are you still holding steady to your
+> opinion wise guy? :-)
 
-> UDP hash table entries: 128 (order: 0, 4096 bytes)
-> CONFIG_BASE_SMALL=0
+The patch fixed the specific bug I hit (find /proc hanging), and didn't
+noticeably make the system worse in my use cases.  I have a specific
+test case which used to fail and now succeeds.  The system _without_ the
+patch is broken, and I weigh the possibility of breakage with the patch
+against that. I wasn't particularly concerned with it being the "right"
+fix from a long-term structural standpoint because that's what 2.6.39 is
+for.  I just wanted the obvious breakage (a regression from 2.6.37) to
+go away, I tested this fix and it Worked For Me (tm), hence letting the
+stable guys know about it being the obvious next move.
 
-udp_table_init looks like:
+How many people do you think are likely to even try containers under
+2.6.39-rc1 or -rc2?  Eric's patch introducing the bug is dated January
+31, and it was in 2.6.38-rc4.  Apparently nobody noticed the breakage in
+-rc5, -rc6, -rc7, or -rc8.  His patch fixing the bug is dated one week
+after 2.6.38 shipped.  I also noticed it in the stable kernel, not in
+any of the 2.6.38-rc releases.  So at least two people hit this in
+-stable already, and nobody hit it in -dev for four -rc releases.  I
+have tested it in 2.6.38 and it Worked For Me.  Supposing the new patch
+did introduce subtle breakage, how is leaving it in the 2.6.39-dev
+series for a _month_ more likely to find it than the entire second half
+of the 2.6.38 development cycle (when it was at its most stable, and
+thus easiest to test)?
 
-        if (!CONFIG_BASE_SMALL)
-                table->hash = alloc_large_system_hash(name, .. &table->mask);
-        /*
-         * Make sure hash table has the minimum size
-         */
+I have no idea if this patch fixes 2.6.39-rc1, because -rc1 still
+doesn't _boot_ in my test environment.  Many other things about -rc1 are
+broken.  That's sort of the point of -rc1.  A fairly small number of
+people test the development branch, and this is the most unstable time
+of the development cycle where many things about it are _expected_ not
+to work.  Especially right now, I don't see how letting it "soak" for a
+week or two in the -dev branch accomplishes anything whatsoever.
 
-Since CONFIG_BASE_SMALL is 0, we are allocating the hash using
-alloc_large_system
-Then:
-        if (CONFIG_BASE_SMALL || table->mask < UDP_HTABLE_SIZE_MIN - 1) {
-                table->hash = kmalloc();
+So yes, I am still holding steady to my opinion.  But you're the
+maintainer, so my opinion doesn't really matter here.
 
-table->mask is 127, and UDP_HTABLE_SIZE_MIN is 256, so we are allocating again
-table->hash without freeing already allocated memory.
-
-We could free table->hash, before allocating the memory with kmalloc.
-I don't fully understand the condition table->mask < UDP_HTABLE_SIZE_MIN - 1.
-
-Eric?
-
-thanks,
-Daniel.
+Rob
