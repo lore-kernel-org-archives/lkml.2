@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab1C3UWf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 16:22:35 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:55189 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932860Ab1C3UWe (ORCPT
+	id S932122Ab1C3UYJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 16:24:09 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38132 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932906Ab1C3UYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 16:22:34 -0400
-Subject: Re: [PATCH] acer-wmi: does not set persistence state by
- rfkill_init_sw_state
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Florian Mickler <florian@mickler.org>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Corentin Chary <corentincj@iksaif.net>,
-        "Lee, Chun-Yi" <jlee@novell.com>
-In-Reply-To: <1301516277-1752-1-git-send-email-florian@mickler.org>
-References: <1301516277-1752-1-git-send-email-florian@mickler.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Mar 2011 22:22:32 +0200
-Message-ID: <1301516552.3791.5.camel@jlt3.sipsolutions.net>
+	Wed, 30 Mar 2011 16:24:07 -0400
+Date: Wed, 30 Mar 2011 21:24:40 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Daniel Palmer <me@danielpalmer.co.uk>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: PATA_ARTOP reads byte from PCI IO port without mapping it to
+ the right address.
+Message-ID: <20110330212440.794e85de@lxorguk.ukuu.org.uk>
+In-Reply-To: <4D93890A.60307@danielpalmer.co.uk>
+References: <4D937FDC.4090607@danielpalmer.co.uk>
+	<20110330202628.5dc8db5f@lxorguk.ukuu.org.uk>
+	<4D93890A.60307@danielpalmer.co.uk>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-30 at 22:17 +0200, Florian Mickler wrote:
-> From: Lee, Chun-Yi <joeyli.kernel@gmail.com>
-> 
-> Acer BIOS keeps devices state when system reboot, but reset to default
-> device states (Wlan on, Bluetooth off, wwan on) if system cold boot.
-> That means BIOS's initial state is not always real persistence.
-> 
-> So, removed rfkill_init_sw_state because it sets initial state to
-> persistence then replicate to other new killswitch when rfkill-input
-> enabled.
-> After removed it, acer-wmi set initial soft-block state after rfkill
-> register, and doesn't allow set_block until rfkill initial finished.
-> 
-> Reference: bko#31002
-> 	https://bugzilla.kernel.org/show_bug.cgi?id=31002
-> 
-> Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Dmitry Torokhov <dtor@mail.ru>
-> Cc: Corentin Chary <corentincj@iksaif.net>
-> Cc: Johannes Berg <johannes@sipsolutions.net>
-> Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> Tested-by: OldÅich JedliÄka <oldium.pro@seznam.cz>
+On Wed, 30 Mar 2011 20:48:26 +0100
+Daniel Palmer <me@danielpalmer.co.uk> wrote:
 
-Your mailer messed up the character set, you're advertising
-Content-Type: text/plain; charset=UTF-8
-and then here putting the byte sequence
-\xc3\x85\xc2\x99
-instead of
-\xc5\x99
+> 
+> >  That is the PCI port address.
+> 
+> I don't pretend to understand most of this fully.
+> On the board the PCI address space/PCI controller is apparently at 
+> 0xfe240000
+> So I guess that when that byte is read it should read from 0xfe240000 + 
+> 0x1400?
+> That doesn't happen and a read happens at 0x1400 and an oops results.
+> I don't know enough to point the finger really.
+> 
+> There are probably only 2 people using this board still too. So I doubt 
+> it really matters. :)
 
-for "ř".
+That sounds like the inb() function has been broken by a change perhaps
+by some related board change - if your I/O is mapped as you describe I'd
+expect inb() to be implemented as something like
 
-johannes
 
+	return *(volatile u8 *)(0xfe2400 + addr)
+
+Might be worth bisecting between a good and bad release as it ought to be
+easy to find
+
+Alan
