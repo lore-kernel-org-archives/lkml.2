@@ -1,105 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab1C3CgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 22:36:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53442 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755453Ab1C3CgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 22:36:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,266,1299484800"; 
-   d="scan'208";a="620779924"
-Subject: Re: [PATCH]mmap: add alignment for some variables
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-In-Reply-To: <20110329191007.04e8376a.akpm@linux-foundation.org>
-References: <1301277536.3981.27.camel@sli10-conroe>
-	 <m2oc4v18x8.fsf@firstfloor.org>	<1301360054.3981.31.camel@sli10-conroe>
-	 <20110329152434.d662706f.akpm@linux-foundation.org>
-	 <1301446882.3981.33.camel@sli10-conroe>
-	 <20110329180611.a71fe829.akpm@linux-foundation.org>
-	 <1301447843.3981.48.camel@sli10-conroe>
-	 <20110329182544.6ad4eccb.akpm@linux-foundation.org>
-	 <1301449000.3981.52.camel@sli10-conroe>
-	 <20110329184110.0086924e.akpm@linux-foundation.org>
-	 <1301450041.3981.55.camel@sli10-conroe>
-	 <20110329191007.04e8376a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Mar 2011 10:35:51 +0800
-Message-ID: <1301452551.3981.62.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932099Ab1C3Cge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 22:36:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59537 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086Ab1C3Cfp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Mar 2011 22:35:45 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <daahern@cisco.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/3] perf tools: Fixup exit path when not able to open events
+Date: Tue, 29 Mar 2011 23:35:30 -0300
+Message-Id: <1301452532-1260-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1301452532-1260-1-git-send-email-acme@infradead.org>
+References: <1301452532-1260-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-30 at 10:10 +0800, Andrew Morton wrote:
-> On Wed, 30 Mar 2011 09:54:01 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
-> 
-> > On Wed, 2011-03-30 at 09:41 +0800, Andrew Morton wrote:
-> > > On Wed, 30 Mar 2011 09:36:40 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
-> > > 
-> > > > > how is it that this improves things?
-> > > > Hmm, it actually is:
-> > > > struct percpu_counter {
-> > > >  	spinlock_t lock;
-> > > >  	s64 count;
-> > > >  #ifdef CONFIG_HOTPLUG_CPU
-> > > >  	struct list_head list;	/* All percpu_counters are on a list */
-> > > >  #endif
-> > > >  	s32 __percpu *counters;
-> > > >  } __attribute__((__aligned__(1 << (INTERNODE_CACHE_SHIFT))))
-> > > > so lock and count are in one cache line.
-> > > 
-> > > ____cacheline_aligned_in_smp would achieve that?
-> > ____cacheline_aligned_in_smp can't guarantee the cache alignment for
-> > multiple nodes, because the variable can be updated by multiple
-> > nodes/cpus.
-> 
-> Confused.  If an object is aligned at a mulitple-of-128 address on one
-> node, it is aligned at a multiple-of-128 address when viewed from other
-> nodes, surely?
-> 
-> Even if the cache alignment to which you're referring is the internode
-> cache, can a 34-byte, L1-cache-aligned structure ever span multiple
-> internode cachelines?
-ah, you are right, ____cacheline_aligned_in_smp is enough here, thanks
-for correcting me here.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Make some variables have correct alignment/section to avoid cache issue.
-In a workload which heavily does mmap/munmap, the variables will be used
-frequently.
+We have to deal with the TUI mode in perf top, so that we don't end up
+with a garbled screen when, say, a non root user on a machine with a
+paranoid setting (the default) tries to use 'perf top'.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Introduce a ui__warning_paranoid() routine shared by top and record that
+tells the user the valid values for /proc/sys/kernel/perf_event_paranoid.
+
+Cc: David Ahern <daahern@cisco.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- mm/mmap.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ tools/perf/builtin-record.c |    9 ++++-----
+ tools/perf/builtin-top.c    |   38 ++++++++++++++++++++++++--------------
+ tools/perf/util/debug.c     |   10 ++++++++++
+ tools/perf/util/debug.h     |    1 +
+ 4 files changed, 39 insertions(+), 19 deletions(-)
 
-Index: linux/mm/mmap.c
-===================================================================
---- linux.orig/mm/mmap.c	2011-03-30 08:45:05.000000000 +0800
-+++ linux/mm/mmap.c	2011-03-30 10:34:36.000000000 +0800
-@@ -84,10 +84,14 @@ pgprot_t vm_get_page_prot(unsigned long
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 6febcc1..623695e 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -275,11 +275,10 @@ try_again:
+ 				     !no_inherit) < 0) {
+ 			int err = errno;
+ 
+-			if (err == EPERM || err == EACCES)
+-				die("Permission error - are you root?\n"
+-					"\t Consider tweaking"
+-					" /proc/sys/kernel/perf_event_paranoid.\n");
+-			else if (err ==  ENODEV && cpu_list) {
++			if (err == EPERM || err == EACCES) {
++				ui__warning_paranoid();
++				exit(EXIT_FAILURE);
++			} else if (err ==  ENODEV && cpu_list) {
+ 				die("No such device - did you specify"
+ 					" an out-of-range profile CPU?\n");
+ 			} else if (err == EINVAL && sample_id_all_avail) {
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 676b4fb..935fc4f 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -850,10 +850,10 @@ try_again:
+ 				     top.evlist->threads, group, inherit) < 0) {
+ 			int err = errno;
+ 
+-			if (err == EPERM || err == EACCES)
+-				die("Permission error - are you root?\n"
+-					"\t Consider tweaking"
+-					" /proc/sys/kernel/perf_event_paranoid.\n");
++			if (err == EPERM || err == EACCES) {
++				ui__warning_paranoid();
++				goto out_err;
++			}
+ 			/*
+ 			 * If it's cycles then fall back to hrtimer
+ 			 * based cpu-clock-tick sw counter, which
+@@ -861,25 +861,35 @@ try_again:
+ 			 */
+ 			if (attr->type == PERF_TYPE_HARDWARE &&
+ 			    attr->config == PERF_COUNT_HW_CPU_CYCLES) {
+-
+ 				if (verbose)
+-					warning(" ... trying to fall back to cpu-clock-ticks\n");
++					ui__warning("Cycles event not supported,\n"
++						    "trying to fall back to cpu-clock-ticks\n");
+ 
+ 				attr->type = PERF_TYPE_SOFTWARE;
+ 				attr->config = PERF_COUNT_SW_CPU_CLOCK;
+ 				goto try_again;
+ 			}
+-			printf("\n");
+-			error("sys_perf_event_open() syscall returned with %d "
+-			      "(%s).  /bin/dmesg may provide additional information.\n",
+-			      err, strerror(err));
+-			die("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
+-			exit(-1);
++
++			ui__warning("The sys_perf_event_open() syscall "
++				    "returned with %d (%s).  /bin/dmesg "
++				    "may provide additional information.\n"
++				    "No CONFIG_PERF_EVENTS=y kernel support "
++				    "configured?\n", err, strerror(err));
++			goto out_err;
+ 		}
+ 	}
+ 
+-	if (perf_evlist__mmap(evlist, mmap_pages, false) < 0)
+-		die("failed to mmap with %d (%s)\n", errno, strerror(errno));
++	if (perf_evlist__mmap(evlist, mmap_pages, false) < 0) {
++		ui__warning("Failed to mmap with %d (%s)\n",
++			    errno, strerror(errno));
++		goto out_err;
++	}
++
++	return;
++
++out_err:
++	exit_browser(0);
++	exit(0);
  }
- EXPORT_SYMBOL(vm_get_page_prot);
  
--int sysctl_overcommit_memory = OVERCOMMIT_GUESS;  /* heuristic overcommit */
--int sysctl_overcommit_ratio = 50;	/* default is 50% */
-+int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
-+int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
- int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
--struct percpu_counter vm_committed_as;
-+/*
-+ * Make sure vm_committed_as in one cacheline and not cacheline shared with
-+ * other variables. It can be updated by several CPUs frequently.
-+ */
-+struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
+ static int __cmd_top(void)
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index d4536a9..155749d 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -57,6 +57,16 @@ void ui__warning(const char *format, ...)
+ }
+ #endif
  
- /*
-  * Check that a process has enough memory to allocate a new virtual
-
++void ui__warning_paranoid(void)
++{
++	ui__warning("Permission error - are you root?\n"
++		    "Consider tweaking /proc/sys/kernel/perf_event_paranoid:\n"
++		    " -1 - Not paranoid at all\n"
++		    "  0 - Disallow raw tracepoint access for unpriv\n"
++		    "  1 - Disallow cpu events for unpriv\n"
++		    "  2 - Disallow kernel profiling for unpriv\n");
++}
++
+ void trace_event(union perf_event *event)
+ {
+ 	unsigned char *raw_event = (void *)event;
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 93516cf..fd53db4 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -36,5 +36,6 @@ int ui_helpline__show_help(const char *format, va_list ap);
+ #endif
+ 
+ void ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
++void ui__warning_paranoid(void);
+ 
+ #endif	/* __PERF_DEBUG_H */
+-- 
+1.6.2.5
 
