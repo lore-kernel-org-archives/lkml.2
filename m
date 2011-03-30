@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab1C3SDk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 14:03:40 -0400
-Received: from sous-sol.org ([216.99.217.87]:34157 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752925Ab1C3SDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 14:03:39 -0400
-Date: Wed, 30 Mar 2011 11:02:45 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Mike Travis <travis@sgi.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Mike Habeck <habeck@sgi.com>,
-        linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp
-Subject: Re: [PATCH 4/4] Intel pci: Use coherent DMA mask when requested
-Message-ID: <20110330180245.GR18712@sequoia.sous-sol.org>
-References: <20110329233602.272459647@gulag1.americas.sgi.com>
- <20110329233602.935998468@gulag1.americas.sgi.com>
+	id S1754804Ab1C3SMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 14:12:12 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56319 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755Ab1C3SML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 14:12:11 -0400
+Message-ID: <4D937278.4050202@kernel.dk>
+Date: Wed, 30 Mar 2011 20:12:08 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110329233602.935998468@gulag1.americas.sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+        hch@infradead.org
+Subject: Re: block: eliminate ELEVATOR_INSERT_REQUEUE
+References: <20110328221547.GA1118@redhat.com>	<x49y63yvwum.fsf@segfault.boston.devel.redhat.com>	<20110329175458.GE24485@redhat.com>	<20110330074123.GA17523@htj.dyndns.org>	<20110330075752.GC17523@htj.dyndns.org> <4D92E2CD.6000909@kernel.dk>	<20110330080203.GD17523@htj.dyndns.org>	<20110330140123.GA28212@redhat.com>	<20110330142751.GH17523@htj.dyndns.org>	<20110330152248.GC1291@redhat.com>	<20110330153024.GJ17523@htj.dyndns.org> <4D9364B0.5020604@kernel.dk> <x49zkoclcfm.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49zkoclcfm.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mike Travis (travis@sgi.com) wrote:
->     The __intel_map_single function is not honoring the passed in
->     DMA mask.  This results in not using the coherent DMA mask when
->     called from intel_alloc_coherent().
+On 2011-03-30 19:56, Jeff Moyer wrote:
+> Jens Axboe <axboe@kernel.dk> writes:
 > 
-> Signed-off-by: Mike Travis <travis@sgi.com>
-> Reviewed-by: Mike Habeck <habeck@sgi.com>
+>> On 2011-03-30 17:30, Tejun Heo wrote:
+>>> On Wed, Mar 30, 2011 at 11:22:48AM -0400, Vivek Goyal wrote:
+>>>> So wee need this as stable fix because FLUSH request can get ahead of
+>>>> REQUEUED requests and it can break some drivers?
+>>>
+>>> Yes, I think so.  All we need is just replacing elv_insert() calls in
+>>> blk-flush.c with list_add_tail().  Something like the following.  I'll
+>>> test it and send a proper patch later.  Thanks.
+>>
+>> I'd suggest I just mark the queued patch for stable.
+> 
+> Could you document the nuance in that patch, please?
 
-Hmm, looks like it has actually been broken since it was introduced
-in bb9e6d65.
+Yeah I will. I rebase for-linus, it's not a "stable" branch as such.
+Today I mainly collected some items as not to drop them, I'll expand on
+the explanations in there.
 
-Acked-by: Chris Wright <chrisw@sous-sol.org>
+-- 
+Jens Axboe
+
