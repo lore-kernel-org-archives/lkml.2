@@ -1,82 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab1C3Xk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 19:40:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753332Ab1C3XkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 19:40:25 -0400
-Date: Wed, 30 Mar 2011 19:40:21 -0400
-From: Dave Jones <davej@redhat.com>
-To: netdev@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: loading sctp fails an order 10 allocation.
-Message-ID: <20110330234020.GA24517@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, netdev@vger.kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
+	id S1756600Ab1C3XoP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 19:44:15 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:43989 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754721Ab1C3XoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 19:44:14 -0400
+Date: Thu, 31 Mar 2011 01:44:13 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, jln@google.com,
+        torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com,
+        Roland Dreier <roland@purestorage.com>, greg@kroah.com
+Subject: Re: [PATCH] [226/275] Prevent rt_sigqueueinfo and rt_tgsigqueueinfo from spoofing the signal code
+Message-ID: <20110330234413.GI21838@one.firstfloor.org>
+References: <20110330203.501921634@firstfloor.org> <20110330210751.A9ADB3E1A05@tassilo.jf.intel.com> <20110330213338.GA20367@redhat.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110330213338.GA20367@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-modprobe sctp on my laptop does this which looks crazy..
+> If stable needs this change, then it probably needs
+> 
+> 	Relax si_code check in rt_sigqueueinfo and rt_tgsigqueueinfo
+> 	commit 243b422af9ea9af4ead07a8ad54c90d4f9b6081a
+> 
+> as well.
 
+Added thanks.
 
-[28106.742435] modprobe: page allocation failure. order:10, mode:0x20
-[28106.742744] Pid: 8839, comm: modprobe Not tainted 2.6.38-09065-g89078d5-dirty #6
-[28106.743129] Call Trace:
-[28106.743262]  [<ffffffff810f6811>] __alloc_pages_nodemask+0x7f6/0x885
-[28106.743578]  [<ffffffff81193604>] ? proc_register+0x129/0x1ad
-[28106.743864]  [<ffffffff81121e29>] alloc_pages_current+0xb1/0xca
-[28106.744175]  [<ffffffff8126b35d>] ? __raw_spin_lock_init+0x31/0x50
-[28106.744478]  [<ffffffff810f2a21>] __get_free_pages+0x16/0x53
-[28106.744766]  [<ffffffffa03061a0>] sctp_init+0x1a0/0x7d5 [sctp]
-[28106.745066]  [<ffffffff8103403f>] ? set_memory_ro+0x21/0x23
-[28106.745349]  [<ffffffffa0306000>] ? 0xffffffffa0305fff
-[28106.745607]  [<ffffffff81002193>] do_one_initcall+0x7f/0x13c
-[28106.745889]  [<ffffffff81096ffb>] sys_init_module+0xe2/0x231
-[28106.746184]  [<ffffffff814d6bc2>] system_call_fastpath+0x16/0x1b
-[28106.746478] Mem-Info:
-[28106.746595] Node 0 DMA per-cpu:
-[28106.746762] CPU    0: hi:    0, btch:   1 usd:   0
-[28106.746998] CPU    1: hi:    0, btch:   1 usd:   0
-[28106.747256] Node 0 DMA32 per-cpu:
-[28106.747433] CPU    0: hi:  186, btch:  31 usd: 164
-[28106.747672] CPU    1: hi:  186, btch:  31 usd: 156
-[28106.747909] Node 0 Normal per-cpu:
-[28106.748103] CPU    0: hi:  186, btch:  31 usd:  93
-[28106.748341] CPU    1: hi:  186, btch:  31 usd: 162
-[28106.748582] active_anon:198288 inactive_anon:25897 isolated_anon:0
-[28106.748584]  active_file:118670 inactive_file:224764 isolated_file:0
-[28106.748585]  unevictable:4 dirty:39 writeback:0 unstable:0
-[28106.748586]  free:309311 slab_reclaimable:56405 slab_unreclaimable:38498
-[28106.748587]  mapped:59632 shmem:28756 pagetables:8080 bounce:0
-[28106.750099] Node 0 DMA free:15900kB min:256kB low:320kB high:384kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15676kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
-[28106.751887] lowmem_reserve[]: 0 2959 3969 3969
-[28106.752167] Node 0 DMA32 free:1208204kB min:50192kB low:62740kB high:75288kB active_anon:635892kB inactive_anon:83536kB active_file:268160kB inactive_file:620756kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:3030584kB mlocked:0kB dirty:24kB writeback:0kB mapped:150448kB shmem:90868kB slab_reclaimable:152208kB slab_unreclaimable:22560kB kernel_stack:288kB pagetables:4496kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:32 all_unreclaimable? no
-[28106.754183] lowmem_reserve[]: 0 0 1010 1010
-[28106.754437] Node 0 Normal free:21944kB min:17128kB low:21408kB high:25692kB active_anon:154572kB inactive_anon:22740kB active_file:206520kB inactive_file:269424kB unevictable:16kB isolated(anon):0kB isolated(file):0kB present:1034240kB mlocked:16kB dirty:132kB writeback:0kB mapped:88080kB shmem:24156kB slab_reclaimable:73412kB slab_unreclaimable:131432kB kernel_stack:2352kB pagetables:27824kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:39 all_unreclaimable? no
-[28106.756463] lowmem_reserve[]: 0 0 0 0
-[28106.756693] Node 0 DMA: 1*4kB 1*8kB 1*16kB 0*32kB 2*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15900kB
-[28106.757336] Node 0 DMA32: 27*4kB 46*8kB 15*16kB 170*32kB 2428*64kB 1505*128kB 894*256kB 427*512kB 377*1024kB 6*2048kB 2*4096kB = 1208204kB
-[28106.758068] Node 0 Normal: 280*4kB 390*8kB 139*16kB 80*32kB 53*64kB 36*128kB 14*256kB 2*512kB 0*1024kB 1*2048kB 0*4096kB = 23680kB
-[28106.758757] 369501 total pagecache pages
-[28106.758950] 0 pages in swap cache
-[28106.759131] Swap cache stats: add 0, delete 0, find 0/0
-[28106.759388] Free swap  = 6127612kB
-[28106.759558] Total swap = 6127612kB
-[28106.779675] 1048560 pages RAM
-[28106.779830] 47810 pages reserved
-[28106.779996] 252000 pages shared
-[28106.780169] 512980 pages non-shared
-[28106.785199] sctp: Hash tables configured (established 26214 bind 26214)
+BTW I think Greg would need that too for .32.
 
-
-it doesn't look like the hashtable allocation code has changed in ages, so I'm 
-not sure why I've never triggered this before.
-
-	Dave
-
+-Andi
