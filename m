@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964836Ab1C3VuQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:50:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60385 "EHLO mga01.intel.com"
+	id S933448Ab1C3VHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:07:24 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58267 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933450Ab1C3VHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:07:25 -0400
+	id S933431Ab1C3VHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:07:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="673447549"
+   d="scan'208";a="411277487"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
 To: venki@google.com, a.p.zijlstra@chello.nl, ak@linux.intel.com,
         mingo@elte.hu, efault@gmx.de, gregkh@suse.de,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [104/275] sched: Remove irq time from available CPU power
-Message-Id: <20110330210543.2885D3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:05:43 -0700 (PDT)
+Subject: [PATCH] [89/275] sched: Increment cache_nice_tries only on periodic lb
+Message-Id: <20110330210527.632863E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:05:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,122 +25,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Commit: aa483808516ca5cacfa0e5849691f64fec25828e upstream
+Commit: 58b26c4c025778c09c7a1438ff185080e11b7d0a upstream
 
-The idea was suggested by Peter Zijlstra here:
+scheduler uses cache_nice_tries as an indicator to do cache_hot and
+active load balance, when normal load balance fails. Currently,
+this value is changed on any failed load balance attempt. That ends
+up being not so nice to workloads that enter/exit idle often, as
+they do more frequent new_idle balance and that pretty soon results
+in cache hot tasks being pulled in.
 
-  http://marc.info/?l=linux-kernel&m=127476934517534&w=2
+Making the cache_nice_tries ignore failed new_idle balance seems to
+make better sense. With that only the failed load balance in
+periodic load balance gets accounted and the rate of accumulation
+of cache_nice_tries will not depend on idle entry/exit (short
+running sleep-wakeup kind of tasks). This reduces movement of
+cache_hot tasks.
 
-irq time is technically not available to the tasks running on the CPU.
-This patch removes irq time from CPU power piggybacking on
-sched_rt_avg_update().
+schedstat diff (after-before) excerpt from a workload that has
+frequent and short wakeup-idle pattern (:2 in cpu col below refers
+to NEWIDLE idx) This snapshot was across ~400 seconds.
 
-Tested this by keeping CPU X busy with a network intensive task having 75%
-oa a single CPU irq processing (hard+soft) on a 4-way system. And start seven
-cycle soakers on the system. Without this change, there will be two tasks on
-each CPU. With this change, there is a single task on irq busy CPU X and
-remaining 7 tasks are spread around among other 3 CPUs.
+Without this change:
+domainstats:  domain0
+ cpu     cnt      bln      fld      imb     gain    hgain  nobusyq  nobusyg
+ 0:2  306487   219575    73167  110069413    44583    19070     1172   218403
+ 1:2  292139   194853    81421  120893383    50745    21902     1259   193594
+ 2:2  283166   174607    91359  129699642    54931    23688     1287   173320
+ 3:2  273998   161788    93991  132757146    57122    24351     1366   160422
+ 4:2  289851   215692    62190  83398383    36377    13680      851   214841
+ 5:2  316312   222146    77605  117582154    49948    20281      988   221158
+ 6:2  297172   195596    83623  122133390    52801    21301      929   194667
+ 7:2  283391   178078    86378  126622761    55122    22239      928   177150
+ 8:2  297655   210359    72995  110246694    45798    19777     1125   209234
+ 9:2  297357   202011    79363  119753474    50953    22088     1089   200922
+10:2  278797   178703    83180  122514385    52969    22726     1128   177575
+11:2  272661   167669    86978  127342327    55857    24342     1195   166474
+12:2  293039   204031    73211  110282059    47285    19651      948   203083
+13:2  289502   196762    76803  114712942    49339    20547     1016   195746
+14:2  264446   169609    78292  115715605    50459    21017      982   168627
+15:2  260968   163660    80142  116811793    51483    21281     1064   162596
+
+With this change:
+domainstats:  domain0
+ cpu     cnt      bln      fld      imb     gain    hgain  nobusyq  nobusyg
+ 0:2  272347   187380    77455  105420270    24975        1      953   186427
+ 1:2  267276   172360    86234  116242264    28087        6     1028   171332
+ 2:2  259769   156777    93281  123243134    30555        1     1043   155734
+ 3:2  250870   143129    97627  127370868    32026        6     1188   141941
+ 4:2  248422   177116    64096  78261112    22202        2      757   176359
+ 5:2  275595   180683    84950  116075022    29400        6      778   179905
+ 6:2  262418   162609    88944  119256898    31056        4      817   161792
+ 7:2  252204   147946    92646  122388300    32879        4      824   147122
+ 8:2  262335   172239    81631  110477214    26599        4      864   171375
+ 9:2  261563   164775    88016  117203621    28331        3      849   163926
+10:2  243389   140949    93379  121353071    29585        2      909   140040
+11:2  242795   134651    98310  124768957    30895        2     1016   133635
+12:2  255234   166622    79843  104696912    26483        4      746   165876
+13:2  244944   151595    83855  109808099    27787        3      801   150794
+14:2  241301   140982    89935  116954383    30403        6      845   140137
+15:2  232271   128564    92821  119185207    31207        4     1416   127148
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <1286237003-12406-8-git-send-email-venki@google.com>
+LKML-Reference: <1284167957-3675-1-git-send-email-venki@google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sched.c          |   18 ++++++++++++++++++
- kernel/sched_fair.c     |    7 ++++++-
- kernel/sched_features.h |    5 +++++
- 3 files changed, 29 insertions(+), 1 deletion(-)
+ kernel/sched_fair.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/kernel/sched.c
-===================================================================
---- linux-2.6.35.y.orig/kernel/sched.c	2011-03-29 23:03:00.319292001 -0700
-+++ linux-2.6.35.y/kernel/sched.c	2011-03-29 23:54:58.951494004 -0700
-@@ -519,6 +519,10 @@
- 	u64 avg_idle;
- #endif
- 
-+#ifdef CONFIG_IRQ_TIME_ACCOUNTING
-+	u64 prev_irq_time;
-+#endif
-+
- 	/* calc_load related fields */
- 	unsigned long calc_load_update;
- 	long calc_load_active;
-@@ -643,6 +647,7 @@
- #endif /* CONFIG_CGROUP_SCHED */
- 
- static u64 irq_time_cpu(int cpu);
-+static void sched_irq_time_avg_update(struct rq *rq, u64 irq_time);
- 
- inline void update_rq_clock(struct rq *rq)
- {
-@@ -654,6 +659,8 @@
- 	irq_time = irq_time_cpu(cpu);
- 	if (rq->clock - irq_time > rq->clock_task)
- 		rq->clock_task = rq->clock - irq_time;
-+
-+	sched_irq_time_avg_update(rq, irq_time);
- }
- 
- /*
-@@ -1895,6 +1902,15 @@
- 	local_irq_restore(flags);
- }
- 
-+static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
-+{
-+	if (sched_clock_irqtime && sched_feat(NONIRQ_POWER)) {
-+		u64 delta_irq = curr_irq_time - rq->prev_irq_time;
-+		rq->prev_irq_time = curr_irq_time;
-+		sched_rt_avg_update(rq, delta_irq);
-+	}
-+}
-+
- #else
- 
- static u64 irq_time_cpu(int cpu)
-@@ -1902,6 +1918,8 @@
- 	return 0;
- }
- 
-+static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time) { }
-+
- #endif
- 
- #include "sched_stats.h"
-Index: linux-2.6.35.y/kernel/sched_features.h
-===================================================================
---- linux-2.6.35.y.orig/kernel/sched_features.h	2011-03-29 22:51:28.061005159 -0700
-+++ linux-2.6.35.y/kernel/sched_features.h	2011-03-29 23:03:00.345291335 -0700
-@@ -61,3 +61,8 @@
-  * release the lock. Decreases scheduling overhead.
-  */
- SCHED_FEAT(OWNER_SPIN, 1)
-+
-+/*
-+ * Decrement CPU power based on irq activity
-+ */
-+SCHED_FEAT(NONIRQ_POWER, 1)
 Index: linux-2.6.35.y/kernel/sched_fair.c
 ===================================================================
---- linux-2.6.35.y.orig/kernel/sched_fair.c	2011-03-29 23:03:00.320291975 -0700
-+++ linux-2.6.35.y/kernel/sched_fair.c	2011-03-29 23:54:58.089516061 -0700
-@@ -2276,8 +2276,13 @@
- 	u64 total, available;
+--- linux-2.6.35.y.orig/kernel/sched_fair.c	2011-03-29 23:02:59.969300955 -0700
++++ linux-2.6.35.y/kernel/sched_fair.c	2011-03-29 23:55:04.726346241 -0700
+@@ -2894,7 +2894,14 @@
  
- 	total = sched_avg_period() + (rq->clock - rq->age_stamp);
--	available = total - rq->rt_avg;
+ 	if (!ld_moved) {
+ 		schedstat_inc(sd, lb_failed[idle]);
+-		sd->nr_balance_failed++;
++		/*
++		 * Increment the failure counter only on periodic balance.
++		 * We do not want newidle balance, which can be very
++		 * frequent, pollute the failure counter causing
++		 * excessive cache_hot migrations and active balances.
++		 */
++		if (idle != CPU_NEWLY_IDLE)
++			sd->nr_balance_failed++;
  
-+	if (unlikely(total < rq->rt_avg)) {
-+		/* Ensures that power won't end up being negative */
-+		available = 0;
-+	} else {
-+		available = total - rq->rt_avg;
-+	}
- 	if (unlikely((s64)total < SCHED_LOAD_SCALE))
- 		total = SCHED_LOAD_SCALE;
- 
+ 		if (need_active_balance(sd, sd_idle, idle)) {
+ 			raw_spin_lock_irqsave(&busiest->lock, flags);
