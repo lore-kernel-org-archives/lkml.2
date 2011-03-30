@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab1C3FIz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 01:08:55 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57934 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab1C3FIy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 01:08:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type
-         :content-transfer-encoding;
-        b=Rvq3op9dgAspq0/QYTBKV3kG/Yr3vnsT4YU+Eo1h1RxMiFUSx/Aqf0KWxgRaC9+Y4U
-         xgpcAfYkZDnfiRwgyb/8SBApNfb1TW0lxSQbpb4500oL50mXRrTgtRya79qTL9GkVJr5
-         7l7oLkCa7uQ6vALrtjsGmn+wiGxInnhd2bRGo=
-MIME-Version: 1.0
-From: Keval Vora <kevalvora@gmail.com>
-Date: Wed, 30 Mar 2011 10:38:33 +0530
-Message-ID: <AANLkTi=9kaSJ6hOa6rB7QScSa-aStf45cHA_HNASicUP@mail.gmail.com>
-Subject: Compiling kernel 2.6.12
+	id S1752324Ab1C3FJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 01:09:06 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:41420 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752048Ab1C3FJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 01:09:02 -0400
+From: Mike Frysinger <vapier@gentoo.org>
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH 0/3] Blackfin fixes for 2.6.39-rc1
+Date: Wed, 30 Mar 2011 01:09:02 -0400
+Message-Id: <1301461742-19108-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+A build fix for a recent merge, an update for defconfigs which broke due
+to common Kconfig change, and a minor module loader tweak.  These latter
+two have been hanging around for a while, but I forgot about them.
 
-I was trying to compile the kernel 2.6.12. The command "make O=/build
-menuconfig" executed successfully. However I am getting the following
-error on executing "make O=/build":
+Joe Perches (1):
+  Blackfin: use more standard pr_fmt in the module loader
 
-operand type mismatch for `mov'
+Mike Frysinger (2):
+  Blackfin: defconfigs: update after misc devices defaulted to N
+  Blackfin: bitops: fix include order after little endian inclusion
 
-I am a student and I particularly wanted to compile this version
-because there are few patches coded for this version I need to study
-them and may be extend them. Can anyone please help me with this one?
+ arch/blackfin/configs/BF527-AD7160-EVAL_defconfig |    1 -
+ arch/blackfin/configs/BF538-EZKIT_defconfig       |    1 -
+ arch/blackfin/configs/BF561-ACVILON_defconfig     |    1 -
+ arch/blackfin/configs/BlackStamp_defconfig        |    1 +
+ arch/blackfin/configs/CM-BF527_defconfig          |    1 -
+ arch/blackfin/configs/CM-BF533_defconfig          |    1 -
+ arch/blackfin/configs/CM-BF548_defconfig          |    1 -
+ arch/blackfin/configs/DNP5370_defconfig           |    1 -
+ arch/blackfin/configs/H8606_defconfig             |    1 +
+ arch/blackfin/configs/SRV1_defconfig              |    1 +
+ arch/blackfin/include/asm/bitops.h                |    4 +-
+ arch/blackfin/kernel/module.c                     |   45 ++++++++------------
+ 12 files changed, 24 insertions(+), 35 deletions(-)
 
-- Keval
+-- 
+1.7.4.1
+
