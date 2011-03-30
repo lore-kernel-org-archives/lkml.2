@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965141Ab1C3VJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:09:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38078 "EHLO mga02.intel.com"
+	id S965127Ab1C3VJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:09:26 -0400
+Received: from mga14.intel.com ([143.182.124.37]:33350 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965093Ab1C3VJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:09:15 -0400
+	id S964903Ab1C3VJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:09:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="727133795"
+   d="scan'208";a="411278727"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: pbruskispam@op.pl, tiwai@suse.de, gregkh@suse.de, ak@linux.intel.com,
+To: Trond.Myklebust@netapp.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [208/275] ALSA: ctxfi - Clear input settings before initialization
-Message-Id: <20110330210732.B02703E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:07:32 -0700 (PDT)
+Subject: [PATCH] [209/275] SUNRPC: Ensure we always run the tk_callback before tk_action
+Message-Id: <20110330210733.BCBEB3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:07:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,38 +24,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Przemyslaw Bruski <pbruskispam@op.pl>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit efed5f26664f93991c929d5bb343e65f900d72bc upstream.
+commit e020c6800c9621a77223bf2c1ff68180e41e8ebf upstream.
 
-Clear input settings before initialization.
+This fixes a race in which the task->tk_callback() puts the rpc_task
+to sleep, setting a new callback. Under certain circumstances, the current
+code may end up executing the task->tk_action before it gets round to the
+callback.
 
-Signed-off-by: Przemyslaw Bruski <pbruskispam@op.pl>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- sound/pci/ctxfi/ctdaio.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/sunrpc/sched.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-Index: linux-2.6.35.y/sound/pci/ctxfi/ctdaio.c
+Index: linux-2.6.35.y/net/sunrpc/sched.c
 ===================================================================
---- linux-2.6.35.y.orig/sound/pci/ctxfi/ctdaio.c	2011-03-29 22:50:35.695345064 -0700
-+++ linux-2.6.35.y/sound/pci/ctxfi/ctdaio.c	2011-03-29 23:03:02.594233790 -0700
-@@ -176,6 +176,7 @@
- 	if (!entry)
- 		return -ENOMEM;
- 
-+	dao->ops->clear_left_input(dao);
- 	/* Program master and conjugate resources */
- 	input->ops->master(input);
- 	daio->rscl.ops->master(&daio->rscl);
-@@ -204,6 +205,7 @@
- 	if (!entry)
- 		return -ENOMEM;
- 
-+	dao->ops->clear_right_input(dao);
- 	/* Program master and conjugate resources */
- 	input->ops->master(input);
- 	daio->rscr.ops->master(&daio->rscr);
+--- linux-2.6.35.y.orig/net/sunrpc/sched.c	2011-03-29 22:50:35.157358829 -0700
++++ linux-2.6.35.y/net/sunrpc/sched.c	2011-03-29 23:03:02.613233304 -0700
+@@ -637,14 +637,12 @@
+ 			save_callback = task->tk_callback;
+ 			task->tk_callback = NULL;
+ 			save_callback(task);
+-		}
+-
+-		/*
+-		 * Perform the next FSM step.
+-		 * tk_action may be NULL when the task has been killed
+-		 * by someone else.
+-		 */
+-		if (!RPC_IS_QUEUED(task)) {
++		} else {
++			/*
++			 * Perform the next FSM step.
++			 * tk_action may be NULL when the task has been killed
++			 * by someone else.
++			 */
+ 			if (task->tk_action == NULL)
+ 				break;
+ 			task->tk_action(task);
