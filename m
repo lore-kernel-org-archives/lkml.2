@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab1C3Kzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 06:55:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51198 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932100Ab1C3Kz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 06:55:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH] unicore32 framebuffer driver fix: make videomemory kmalloc-ed and floatable
-Date: Wed, 30 Mar 2011 12:55:18 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "'Paul Mundt'" <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-References: <019701cbee1e$c4e2d260$4ea87720$@mprc.pku.edu.cn> <201103300854.05366.arnd@arndb.de> <01ea01cbeeb6$99bb5240$cd31f6c0$@mprc.pku.edu.cn>
-In-Reply-To: <01ea01cbeeb6$99bb5240$cd31f6c0$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1755778Ab1C3K6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 06:58:17 -0400
+Received: from sh.osrg.net ([192.16.179.4]:44573 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754193Ab1C3K6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 06:58:16 -0400
+Date: Wed, 30 Mar 2011 19:58:09 +0900 (JST)
+Message-Id: <20110330.195809.130853394.ryusuke@osrg.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        linux-nilfs@vger.kernel.org
+Subject: [GIT PULL] nilfs2 fixes
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103301255.18551.arnd@arndb.de>
-X-Provags-ID: V02:K0:+YMExDqKgp7Q1rQe9Vi3/zUEsDjfVzJUbTmqq+2dELx
- krJGYJ8TMbaRS6EwJOqXUIZGsn6qYzRTKS43i95g5LkjS8lHeL
- gHnlXby0s91nVJ1NwkiBaOnUqZWHw+YDiyE3DZOuDH8m9z5cUz
- 3DiLo+0D5vpNp0FqpU2LJimPItEnp3ejGeHBq4RBcsQK4GIdiC
- 6RF4gKRJPGuhgTvhg84lg==
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 30 Mar 2011 19:58:10 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 March 2011, Guan Xuetao wrote:
-> Is it appropriate to using __get_free_pages in framebuffer driver?
+Hi Linus,
 
-Yes, it is appropriate, and it is also more efficient than using
-kmalloc.
+please pull from:
 
-> And both SLAB and SLUB allocators support 4MB request.
+  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
 
-Ok, I did not know that, but I see now how the maximum size is computed.
-The limit was 128 KB for a long time, but has apparently changed.
+This fixes a kernel oops on the rc1 and a data loss issue in mmap
+write.
 
-	Arnd
+Thanks!
+
+Ryusuke Konishi
+--
+The following changes since commit 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d:
+
+  Linux 2.6.39-rc1 (2011-03-29 12:09:47 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+
+Nicolas Kaiser (1):
+      nilfs2: fix whitespace coding style issues
+
+Ryusuke Konishi (2):
+      nilfs2: fix data loss in mmap page write for hole blocks
+      nilfs2: fix oops due to a bad aops initialization
+
+ fs/nilfs2/file.c  |   11 +++++------
+ fs/nilfs2/nilfs.h |   14 +++++++-------
+ fs/nilfs2/page.c  |    4 +++-
+ 3 files changed, 15 insertions(+), 14 deletions(-)
