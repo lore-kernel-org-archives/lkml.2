@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab1C3Rc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 13:32:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33611 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754815Ab1C3Rc6 (ORCPT
+	id S1756121Ab1C3Rea (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 13:34:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20945 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754527Ab1C3Re3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 13:32:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=SDB5kLEWH5Mc+fp6pVklNjHRJD0XfgXS5EsZz7hGph5n89VZbBhbuo62QKALWZde+y
-         sbm6nt1RZL0+vxKsGO7S4i1vDmjvF8kaRozemvKHs9Yt3bY16rFyNitINnkSAF6LCGqH
-         wwnLlXKDLbIvh0a3e9KUGDDy8JCRQJtUCIvm0=
-Date: Wed, 30 Mar 2011 19:32:52 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Jeff Moyer <jmoyer@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        hch@infradead.org
-Subject: Re: block: eliminate ELEVATOR_INSERT_REQUEUE
-Message-ID: <20110330173252.GA24058@htj.dyndns.org>
-References: <20110329175458.GE24485@redhat.com>
- <20110330074123.GA17523@htj.dyndns.org>
- <20110330075752.GC17523@htj.dyndns.org>
- <4D92E2CD.6000909@kernel.dk>
- <20110330080203.GD17523@htj.dyndns.org>
- <20110330140123.GA28212@redhat.com>
- <20110330142751.GH17523@htj.dyndns.org>
- <20110330152248.GC1291@redhat.com>
- <20110330153024.GJ17523@htj.dyndns.org>
- <4D9364B0.5020604@kernel.dk>
+	Wed, 30 Mar 2011 13:34:29 -0400
+Message-ID: <4D9369A4.7060505@oracle.com>
+Date: Wed, 30 Mar 2011 10:34:28 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D9364B0.5020604@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: dedekind1@gmail.com
+CC: lkml <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
+        Adrian Hunter <adrian.hunter@nokia.com>
+Subject: Re: [PATCH v2] ubifs: fix kconfig dependency warning
+References: <20110328134016.deb5d0c8.randy.dunlap@oracle.com>	 <1301382178.2816.69.camel@localhost> <4D91F432.2070406@oracle.com>	 <1301411055.21445.13.camel@localhost>	 <20110329084855.0de29fff.randy.dunlap@oracle.com> <1301472729.2755.19.camel@localhost>
+In-Reply-To: <1301472729.2755.19.camel@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D93699C.007A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 07:13:20PM +0200, Jens Axboe wrote:
-> On 2011-03-30 17:30, Tejun Heo wrote:
-> > On Wed, Mar 30, 2011 at 11:22:48AM -0400, Vivek Goyal wrote:
-> >> So wee need this as stable fix because FLUSH request can get ahead of
-> >> REQUEUED requests and it can break some drivers?
-> > 
-> > Yes, I think so.  All we need is just replacing elv_insert() calls in
-> > blk-flush.c with list_add_tail().  Something like the following.  I'll
-> > test it and send a proper patch later.  Thanks.
-> 
-> I'd suggest I just mark the queued patch for stable.
+On 3/30/2011 1:12 AM, Artem Bityutskiy wrote:
+> On Tue, 2011-03-29 at 08:48 -0700, Randy Dunlap wrote:
+>> On Tue, 29 Mar 2011 18:04:15 +0300 Artem Bityutskiy wrote:
+>>
+>>> On Tue, 2011-03-29 at 08:01 -0700, Randy Dunlap wrote:
+>>>> On 03/29/11 00:02, Artem Bityutskiy wrote:
+>>>>> On Mon, 2011-03-28 at 13:40 -0700, Randy Dunlap wrote:
+>>>>>> From: Randy Dunlap<randy.dunlap@oracle.com>
+>>>>>>
+>>>>>> Fix another kconfig dependency warning, this time in ubifs.
+>>>>>>
+>>>>>> warning: (UBIFS_FS_DEBUG&&  LOCKDEP&&  LATENCYTOP) selects KALLSYMS_ALL which has unmet direct dependencies (DEBUG_KERNEL&&  KALLSYMS)
+>>>>>>
+>>>>>> Without this patch, we can have:
+>>>>>> # CONFIG_KALLSYMS is not set
+>>>>>> CONFIG_KALLSYMS_ALL=y
+>>>>>> which is useless (does nothing unless KALLSYMS is enabled).
+>>>>>>
+>>>>>> However, ubifs builds successfully with or without this patch,
+>>>>>> and it builds with this line completely deleted,
+>>>>>> so what was this 'select' for?  Just developer convenience?
+>>>>>
+>>>>> Well, here is the idea. You can compile UBIFS with debugging and without
+>>>>> debugging. Without debugging the resulting ubifs.ko is much smaller, so
+>>>>> some embedded people prefer it this way.
+>>>>>
+>>>>> If you select debugging support, then we'll compile it a lot of
+>>>>> assertions, self-checks, test-modes, extra error messages with detailed
+>>>>> dumps. And we want to see stackdumps when errors or problems happen,
+>>>>> this is why we select KALLSYMS_ALL.
+>>>>>
+>>>>> So I guess instead we should do:
+>>>>>
+>>>>> select KALLSYMS
+>>>>> select KALLSYMS_ALL
+>>>>
+>>>> Yes, that should do it.  Thanks for the explanation.
+>>>
+>>> Will you submit a patch? Alternatively, I can make it myself. What is
+>>> your preference?
+>>
+>> Here's an updated patch.  But since KALLSYMS_ALL depends on DEBUG_KERNEL,
+>> the lines above aren't quite sufficient and I don't care to select
+>> DEBUG_KERNEL.
+>
+> What is the real difference between KALLSYMS_ALL and KALLSYMS? It looks
+> like for stack dumps KALLSYMS is enough. The Kconfig help text is not
+> very helpful. And when I look at the help text of
+> CONFIG_KALLSYMS_EXTRA_PASS I get feeling that this area needs some
+> clean-up work.
 
-Ah, right.  It might not apply without conflict but they're basically
-the same changes.  Thanks.
+Yes, KALLSYMS is enough for most of us.
 
--- 
-tejun
+You can see what KALLSYMS_ALL does by looking at scripts/kallsyms.c,
+the --all-symbols option:
+
+>         /* if --all-symbols is not specified, then symbols outside the text
+>          * and inittext sections are discarded */
+
+
+
+> Anyway, any idea why we wouldn't just kill KALLSYMS_ALL by merging it
+> with KALLSYMS?
+
+KALLSYMS_ALL probably generates noise for most use cases.
+
+---
