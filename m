@@ -1,106 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965294Ab1C3Vgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:36:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60412 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964919Ab1C3VIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:08:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="673447851"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110330203.501921634@firstfloor.org>
-In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: jochen@scram.de, sameo@linux.intel.com, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [161/275] mfd: Fix NULL pointer due to non-initialized ucb1x00-ts absinfo
-Message-Id: <20110330210643.3D6D93E1A06@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:43 -0700 (PDT)
+	id S965012Ab1C3Vga (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:36:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45149 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933631Ab1C3VgY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:36:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <201103302247.16339.rjw@sisk.pl>
+References: <201103292143.12777.rjw@sisk.pl> <AANLkTi=nfzR=EQNaiPL_g=V_hfMY_61D7oKoPKAK=ETO@mail.gmail.com>
+ <201103302247.16339.rjw@sisk.pl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 30 Mar 2011 14:36:03 -0700
+Message-ID: <AANLkTikoBbbq223q7+2kS_nLDi7XUtgT2hczu9P6nQCx@mail.gmail.com>
+Subject: Re: [GIT PULL] Power management Kconfig modification for 2.6.39
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Shriram Rajagopalan <rshriram@cs.ubc.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Wed, Mar 30, 2011 at 1:47 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> Well, otherwise I'd have to change CONFIG_HIBERNATION to something else
+> throughout the tree and then add CONFIG_HIBERNATION as a user-visible option.
+> Perhaps that would be better from the user's viewpoint, but the confusion would
+> be still there.
 
-------------------
-From: Jochen Friedrich <jochen@scram.de>
+Umm. It would be *less* confusing than the thing you sent me.
 
-commit 9063f1f15eec35e5fd608879cef8be5728f2d12a upstream.
+I would heartily support just renaming them all. Who cares about patch
+size? What matters is the end result not being confusing.
 
-Call input_set_abs_params instead of manually setting absbit only.
-This fixes this oops:
+Your current patch results in an end result that doesn't make sense.
+That's what I'm complaining about. The #ifdef's don't make sense, and
+the question to the user doesn't make sense.
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000024
-Internal error: Oops: 41b67017 [#1]
-CPU: 0    Not tainted  (2.6.37 #4)
-pc : [<c016d1fc>]    lr : [<00000000>]    psr: 20000093
-sp : c19e5f30  ip : c19e5e6c  fp : c19e5f58
-r10: 00000000  r9 : c19e4000  r8 : 00000003
-r7 : 000001e4  r6 : 00000001  r5 : c1854400  r4 : 00000003
-r3 : 00000018  r2 : 00000018  r1 : 00000018  r0 : c185447c
-Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: c1b6717f  Table: c1b6717f  DAC: 00000017
-Stack: (0xc19e5f30 to 0xc19e6000)
-5f20:                                     00000003 00000003 c1854400 00000013
-5f40: 00000001 000001e4 000001c5 c19e5f80 c19e5f5c c016d5e8 c016cf5c 000001e4
-5f60: c1854400 c18b5860 00000000 00000171 000001e4 c19e5fc4 c19e5f84 c01559a4
-5f80: c016d584 c18b5868 00000000 c1bb5c40 c0035afc c18b5868 c18b5868 c1a55d54
-5fa0: c18b5860 c0155750 00000013 00000000 00000000 00000000 c19e5ff4 c19e5fc8
-5fc0: c0050174 c015575c 00000000 c18b5860 00000000 c19e5fd4 c19e5fd4 c1a55d54
-5fe0: c00500f0 c003b464 00000000 c19e5ff8 c003b464 c00500fc 04000400 04000400
-Backtrace:
-Function entered at [<c016cf50>] from [<c016d5e8>]
-Function entered at [<c016d578>] from [<c01559a4>]
- r8:000001e4 r7:00000171 r6:00000000 r5:c18b5860 r4:c1854400
-Function entered at [<c0155750>] from [<c0050174>]
-Function entered at [<c00500f0>] from [<c003b464>]
- r6:c003b464 r5:c00500f0 r4:c1a55d54
-Code: e59520fc e1a03286 e0433186 e0822003 (e592000c)
+It is in all ways _inferior_ to the current situation. So I simply
+won't pull it.
 
->>PC;  c016d1fc <input_handle_event+2ac/5a0>   <=====
+The thing it tries to fix (some crazy Xen detail) is not worth messing
+up the main code for.
 
-Trace; c016cf50 <input_handle_event+0/5a0>
-Trace; c016d5e8 <input_event+70/88>
-Trace; c016d578 <input_event+0/88>
-Trace; c01559a4 <ucb1x00_thread+254/2dc>
-Trace; c0155750 <ucb1x00_thread+0/2dc>
-Trace; c0050174 <kthread+84/8c>
-Trace; c00500f0 <kthread+0/8c>
-Trace; c003b464 <do_exit+0/624>
+So I'd be happy to fix up whatever issues Xen has, but not at the cost
+of making all the _sane_ configurations more confusing.
 
-Signed-off-by: Jochen Friedrich <jochen@scram.de>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Now, I agree, to the users it would be _less_ confusing to rename
+> CONFIG_HIBERNATION everywhere to eg. CONFIG_HIBERNATE_CALLBACKS and then
+> change every instance of CONFIG_HIBERNATE_CALLBACKS that's not about callbacks
+> to CONFIG_HIBERNATE (or CONFIG_HIBERNATION again), but that's going to
+> be confusing to every maintainer of the affected code (which is the majority
+> of architectures in the tree).  I simply wasn't quite sure which one to
+> choose, so I took an easier path.  If you want the more complicated one, then
+> so be it.
 
----
- drivers/mfd/ucb1x00-ts.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+Well, so having looked at the current #ifdef'fery, I actually think
+the Xen people would need to do more than that to make sense.
 
-Index: linux-2.6.35.y/drivers/mfd/ucb1x00-ts.c
-===================================================================
---- linux-2.6.35.y.orig/drivers/mfd/ucb1x00-ts.c	2011-03-29 22:51:00.879700658 -0700
-+++ linux-2.6.35.y/drivers/mfd/ucb1x00-ts.c	2011-03-29 23:03:01.604259121 -0700
-@@ -385,12 +385,18 @@
- 	idev->close      = ucb1x00_ts_close;
- 
- 	__set_bit(EV_ABS, idev->evbit);
--	__set_bit(ABS_X, idev->absbit);
--	__set_bit(ABS_Y, idev->absbit);
--	__set_bit(ABS_PRESSURE, idev->absbit);
- 
- 	input_set_drvdata(idev, ts);
- 
-+	ucb1x00_adc_enable(ts->ucb);
-+	ts->x_res = ucb1x00_ts_read_xres(ts);
-+	ts->y_res = ucb1x00_ts_read_yres(ts);
-+	ucb1x00_adc_disable(ts->ucb);
-+
-+	input_set_abs_params(idev, ABS_X, 0, ts->x_res, 0, 0);
-+	input_set_abs_params(idev, ABS_Y, 0, ts->y_res, 0, 0);
-+	input_set_abs_params(idev, ABS_PRESSURE, 0, 0, 0, 0);
-+
- 	err = input_register_device(idev);
- 	if (err)
- 		goto fail;
+For example, just renaming CONFIG_HIBERNATION to
+CONFIG_HIBERNATE_CALLBACKS is insane too. It makes some of the
+#ifdef's look just completely insane. Looking at the current state of
+<linux/mm.h>, for example, we have things like this:
+
+#ifdef CONFIG_HIBERNATION
+extern bool kernel_page_present(struct page *page);
+#endif /* CONFIG_HIBERNATION */
+#else
+static inline void
+kernel_map_pages(struct page *page, int numpages, int enable) {}
+static inline void enable_debug_pagealloc(void)
+{
+}
+#ifdef CONFIG_HIBERNATION
+static inline bool kernel_page_present(struct page *page) { return true; }
+#endif /* CONFIG_HIBERNATION */
+#endif
+
+which is just nasty, but at least reading it makes sense ("ok,
+kernel_page_present() is about HIBERNATION"). But would that be a
+"callback" case? That's what your old patch implies (because it wasn't
+changed to an "interface" case in your patch). But that makes no sense
+either. What does that function have to do with the callbacks?
+
+So once you split up CONFIG_HIBERNATION into multiple cases (and that
+is true both for the HIBERNATION_INTERFACE and HIBERNATION_CALLBACKS
+case), what is the rule for something like kernel_page_present()?
+Something that sounds logical? Taking into account that the config
+option needs to be logical for the person who actually sees the
+_question_ too (which was the problem with the "INTERFACE" approach).
+
+That mm.h thing - it sure doesn't look like some callback thing. Or if
+it is, I'd like an explanation about it.
+
+And why was the low-level x86 register save code under "interface"?
+That made no logical sense either. To me, the _interface_ is about
+things like /sys/power/disk etc, not about some low-level x86 code.
+
+So I'd expect that
+
+ (a) the main question to the user - and config variable) should be
+CONFIG_HINBERNATE, matching CONFIG_SUSPEND. We're already a bit
+illogical ("HIBERNATION" vs "SUSPEND" - if you google for those two
+words, you'll notice that the top answers actually talk about
+"hibernate" vs "suspend"), we shouldn't make it worse.
+
+     This one is just a no-brainer. We shouldn't ask users about
+"interfaces" in the first place, but more importantly, to the user the
+HIBERNATE vs SUSPEND question are about the exact same kind of thing,
+so if we _did_ ask about interfaces, then we should be consistent, and
+change it to SUSPEND_INTERFACE too.  And I don't think anybody really
+would want that.
+
+ (b) when writing code, the #ifdef's you need should not surprise you. Doing a
+
+    git grep '#.*if.*CONFIG_HIBERNAT'
+
+  shouldn't result in some WTF moment. I still don't understand why
+CONFIG_HIBERNATE_INTERFACE was the one that picked the x86
+hibernate_[asm]_$(BITS).o files, for example. That was a very WTF
+moment to me in the patch.
+
+What parts is it that Xen actually wants? It doesn't seem to be much
+of the core hibernate code at all - a lot of the core hibernate code
+seemed to go under "interface" in your patch. But what about
+kernel_page_present()? That's the kind of WTF? question that made me
+go "no, this makes things worse".
+
+                       Linus
