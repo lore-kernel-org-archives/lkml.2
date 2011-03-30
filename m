@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab1C3LWU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 07:22:20 -0400
-Received: from sh.osrg.net ([192.16.179.4]:49196 "EHLO sh.osrg.net"
+	id S1755843Ab1C3LXD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 07:23:03 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:58663 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754193Ab1C3LWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 07:22:19 -0400
-Date: Wed, 30 Mar 2011 20:22:15 +0900 (JST)
-Message-Id: <20110330.202215.163256481.ryusuke@osrg.net>
-To: jaxboe@fusionio.com
-Cc: konishi.ryusuke@lab.ntt.co.jp, linux-nilfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nilfs2: fix oops due to a bad aops initialization
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-In-Reply-To: <4D930F02.4070409@fusionio.com>
-References: <20110330.132555.158630340.ryusuke@osrg.net>
-	<4D930F02.4070409@fusionio.com>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755819Ab1C3LXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 07:23:01 -0400
+Message-ID: <4D931292.8050104@kernel.dk>
+Date: Wed, 30 Mar 2011 13:22:58 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Subject: Re: [PATCH] block: eliminate ELEVATOR_INSERT_REQUEUE
+References: <20110326042156.GB28458@redhat.com> <20110328082321.GC16530@htj.dyndns.org> <20110328221547.GA1118@redhat.com> <x49y63yvwum.fsf@segfault.boston.devel.redhat.com> <20110329175458.GE24485@redhat.com> <20110330074123.GA17523@htj.dyndns.org> <20110330075752.GC17523@htj.dyndns.org> <4D92E2CD.6000909@kernel.dk> <20110330080203.GD17523@htj.dyndns.org> <4D9302ED.4030807@kernel.dk> <20110330112126.GA3967@swordfish.minsk.epam.com>
+In-Reply-To: <20110330112126.GA3967@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 30 Mar 2011 20:22:16 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Mar 2011 13:07:46 +0200, Jens Axboe <jaxboe@fusionio.com> wrote:
-> On 2011-03-30 06:25, Ryusuke Konishi wrote:
-> > diff --git a/fs/nilfs2/page.c b/fs/nilfs2/page.c
-> > index 4d2a1ee..9d2dc6b 100644
-> > --- a/fs/nilfs2/page.c
-> > +++ b/fs/nilfs2/page.c
-> > @@ -495,12 +495,14 @@ unsigned nilfs_page_count_clean_buffers(struct page *page,
-> >  void nilfs_mapping_init(struct address_space *mapping,
-> >  			struct backing_dev_info *bdi)
-> >  {
-> > +	static const struct address_space_operations empty_aops;
-> > +
-> >  	mapping->host = NULL;
-> >  	mapping->flags = 0;
-> >  	mapping_set_gfp_mask(mapping, GFP_NOFS);
-> >  	mapping->assoc_mapping = NULL;
-> >  	mapping->backing_dev_info = bdi;
-> > -	mapping->a_ops = NULL;
-> > +	mapping->a_ops = &empty_aops;
-> >  }
+On 2011-03-30 13:21, Sergey Senozhatsky wrote:
+> Hello,
 > 
-> Hmm wait, inode init should set the mapping aops to an empty type
-> already. Does the OOPS go away if you just remove the mapping->a_ops =
-> NULL assignment?
+> On (03/30/11 12:16), Jens Axboe wrote:
+>> How does this look? It's really two patches, but rolled up into one for
+>> easier posting here.
+>>
 > 
-> -- 
-> Jens Axboe
+> Nope, doesn't work for me. fsck.ext4 crashed the system.
+> 
+> __elv_add_request
+> blk_flush_complete_seq
+> blk_insert_flush
+> __elv_add_request
+> __make_request
+> generic_make_request
+> ?bio_alloc_bioset
+> blkdev_issue_flush
+> blkdev_fsync
+> vfs_fsync
+> [..]
 
-Nilfs has two mappings in each inode, one for data pages and another
-for btree nodes.  The aops initialization is neede for the latter one.
+Ah, this addon should behave better.
 
-Ryusuke Konishi
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 6a16fea..eba4a27 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -261,7 +261,7 @@ static bool blk_kick_flush(struct request_queue *q)
+ 	q->flush_rq.end_io = flush_end_io;
+ 
+ 	q->flush_pending_idx ^= 1;
+-	__elv_add_request(q, &q->flush_rq, ELEVATOR_INSERT_FLUSH);
++	list_add_tail(&q->flush_rq.queuelist, &q->queue_head);
+ 	return true;
+ }
+ 
+
+-- 
+Jens Axboe
+
