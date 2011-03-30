@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab1C3AwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Mar 2011 20:52:01 -0400
-Received: from [12.234.97.163] ([12.234.97.163]:50137 "EHLO
-	brontomerus.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755118Ab1C3Avk (ORCPT
+	id S1755165Ab1C3Azi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Mar 2011 20:55:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55098 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753849Ab1C3Azh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Mar 2011 20:51:40 -0400
-From: Christopher Heiny <cheiny@synaptics.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        Allie Xiong <axiong@synaptics.com>,
-        William Manson <wmanson@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [PATCH 3/3] input/touchscreen: Synaptics RMI4 Touchscreen Driver
-Date: Tue, 29 Mar 2011 17:50:49 -0700
-Message-Id: <1301446249-13646-4-git-send-email-cheiny@synaptics.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1301446249-13646-1-git-send-email-cheiny@synaptics.com>
-References: <1301446249-13646-1-git-send-email-cheiny@synaptics.com>
+	Tue, 29 Mar 2011 20:55:37 -0400
+Date: Tue, 29 Mar 2011 17:56:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] bitmap, irq: Add smp_affinity_list interface to
+ /proc/irq
+Message-Id: <20110329175614.0c41ae8c.akpm@linux-foundation.org>
+In-Reply-To: <4D927E86.90400@sgi.com>
+References: <4D926F6C.8010705@sgi.com>
+	<20110329165612.bd6ad7e4.akpm@linux-foundation.org>
+	<20110329174314.80cf7b50.akpm@linux-foundation.org>
+	<4D927E86.90400@sgi.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver for Synaptics touchscreens using RMI4 protocol.
+On Tue, 29 Mar 2011 17:51:18 -0700 Mike Travis <travis@sgi.com> wrote:
 
-Signed-off-by: William Manson <wmanson@synaptics.com>
-Signed-off-by: Allie Xiong <axiong@synaptics.com>
-Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
+> > 
+> > Also, the patch adds a new interface which duplicates an existing one,
+> > only the formats are different, yes?  This is, of course, bad.
+> > 
+> > The only justification we've seen for being bad is "Manually adjusting
+> > the smp_affinity for IRQ's becomes unwieldy when the cpu count is
+> > large".  A more thorough description of how painful this is might help
+> > motivate people to do bad things to the kernel.
+> > 
+> > Also, if it's just a matter of an alternative presentation of the data,
+> > why not implement the desired user interface with a little userspace
+> > tool then feed the results down into the existing kernel interface?
+> > 
+> 
+> Setting smp affinity to cpus 256 to 263 would be:
+> 
+> echo 000000ff,00000000,00000000,00000000,00000000,00000000,00000000,00000000 > smp_affinity
+> 
+> instead of:
+> 
+> echo 256-263 > smp_affinity_list
+> 
+> Think about what it looks like for cpus around say, 4088 to 4095.
+> 
+> We already have many alternate "list" interfaces:
+> 
+> /sys/devices/system/cpu/cpuX/indexY/shared_cpu_list
+> /sys/devices/system/cpu/cpuX/topology/thread_siblings_list
+> /sys/devices/system/cpu/cpuX/topology/core_siblings_list
+> /sys/devices/system/node/nodeX/cpulist
+> /sys/devices/pci***/***/local_cpulist
+> 
+> etc.
+> 
+> This just expands on that same philosophy.
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Cc: Joeri de Gram <j.de.gram@gmail.com>
+You mean that if someone had written a stupid little tool to convert a
+list of tuples into a bitmap, we wouldn't have needed to add all that
+crap to the kernel?
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
-
----
-
-diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-index 718bcc8..3181008 100644
---- a/drivers/input/touchscreen/Makefile
-+++ b/drivers/input/touchscreen/Makefile
-@@ -41,6 +41,16 @@ obj-$(CONFIG_TOUCHSCREEN_QT602240)	+= qt602240_ts.o
- obj-$(CONFIG_TOUCHSCREEN_S3C2410)	+= s3c2410_ts.o
- obj-$(CONFIG_TOUCHSCREEN_ST1232)	+= st1232.o
- obj-$(CONFIG_TOUCHSCREEN_STMPE)		+= stmpe-ts.o
-+CFLAGS_rmi_bus.o := -DDEBUG
-+CFLAGS_rmi_sensor.o := -DDEBUG
-+CFLAGS_rmi_function.o := -DDEBUG
-+CFLAGS_rmi_f01.o := -DDEBUG
-+CFLAGS_rmi_f11.o := -DDEBUG
-+CFLAGS_rmi_f19.o := -DDEBUG
-+CFLAGS_rmi_f34.o := -DDEBUG
-+CFLAGS_rmi_i2c.o := -DDEBUG
-+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_RMI4_I2C)	+=  rmi_bus.o rmi_sensor.o rmi_function.o rmi_f01.o rmi_f11.o rmi_f19.o rmi_f34.o rmi_i2c.o
-+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_RMI4_SPI)	+=  rmi_bus.o rmi_sensor.o rmi_function.o rmi_f01.o rmi_f11.o rmi_f19.o rmi_f34.o rmi_spi.o
- obj-$(CONFIG_TOUCHSCREEN_TNETV107X)	+= tnetv107x-ts.o
- obj-$(CONFIG_TOUCHSCREEN_TOUCHIT213)	+= touchit213.o
- obj-$(CONFIG_TOUCHSCREEN_TOUCHRIGHT)	+= touchright.o
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 61834ae..2b2f6dc 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -362,6 +362,36 @@ config TOUCHSCREEN_MIGOR
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called migor_ts.
- 
-+config TOUCHSCREEN_SYNAPTICS_RMI4_I2C
-+	tristate "Synaptics RMI4 I2C touchscreens"
-+	depends on I2C
-+	help
-+	  Say Y here if you have a Synaptics RMI4 I2C touchscreen connected to
-+	  your system. This enables support for Synaptics RMI4 over I2C based
-+	  touchscreens.
-+
-+	  If unsure, say N.
-+
-+	  To compile this driver as a set of modules, choose M here: the
-+	  modules will be called rmi_core, rmi_app_touchpad, rmi_phys_i2c.
-+
-+config TOUCHSCREEN_SYNAPTICS_RMI4_SPI
-+	tristate "Synaptics RMI4 SPI touchscreens"
-+	depends on SPI
-+	help
-+	  Say Y here if you have a Synaptics RMI4 SPI touchscreen connected to
-+	  your system. This enables support for Synaptics RMI4 over SPI based
-+	  touchscreens.
-+
-+	  If unsure, say N.
-+
-+	  To compile this driver as a set of modules, choose M here: the
-+	  modules will be called rmi_core, rmi_app_touchpad, rmi_phys_spi.
-+
-+config SYNA_MULTI_TOUCH
-+	bool "Synaptics pointing using multi-touch events"
-+	depends on TOUCHSCREEN_SYNAPTICS_RMI4_I2C || TOUCHSCREEN_SYNAPTICS_RMI4_SPI
-+
- config TOUCHSCREEN_TNETV107X
- 	tristate "TI TNETV107X touchscreen support"
- 	depends on ARCH_DAVINCI_TNETV107X
