@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933672Ab1C3VMd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:12:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45379 "EHLO mga03.intel.com"
+	id S933684Ab1C3VMf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:12:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50512 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965343Ab1C3VKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965342Ab1C3VKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Mar 2011 17:10:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="411279413"
+   d="scan'208";a="621239531"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: mtosatti@redhat.com, avi@redhat.com, ak@linux.intel.com,
+To: penberg@kernel.org, stable@kernel.org, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [270/275] KVM: i8259: initialize isr_ack
-Message-Id: <20110330210837.E38383E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:08:37 -0700 (PDT)
+Subject: [PATCH] [264/275] Revert "slab: Fix missing DEBUG_SLAB last user"
+Message-Id: <20110330210831.95BBB3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:08:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,33 +24,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Avi Kivity <avi@redhat.com>
+From: Pekka Enberg <penberg@kernel.org>
 
-commit a0272630bb594b4eac03a79e77957df7dad8eade upstream.
+[ upstream commit 3ff84a7f36554b257cd57325b1a7c1fa4b49fbe3 ]
 
-isr_ack is never initialized.  So, until the first PIC reset, interrupts
-may fail to be injected.  This can cause Windows XP to fail to boot, as
-reported in the fallout from the fix to
-https://bugzilla.kernel.org/show_bug.cgi?id=21962.
+This reverts commit 5c5e3b33b7cb959a401f823707bee006caadd76e.
 
-Reported-and-tested-by: Nicolas Prochazka <prochazka.nicolas@gmail.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+The commit breaks ARM thusly:
+
+| Mount-cache hash table entries: 512
+| slab error in verify_redzone_free(): cache `idr_layer_cache': memory outside object was overwritten
+| Backtrace:
+| [<c0227088>] (dump_backtrace+0x0/0x110) from [<c0431afc>] (dump_stack+0x18/0x1c)
+| [<c0431ae4>] (dump_stack+0x0/0x1c) from [<c0293304>] (__slab_error+0x28/0x30)
+| [<c02932dc>] (__slab_error+0x0/0x30) from [<c0293a74>] (cache_free_debugcheck+0x1c0/0x2b8)
+| [<c02938b4>] (cache_free_debugcheck+0x0/0x2b8) from [<c0293f78>] (kmem_cache_free+0x3c/0xc0)
+| [<c0293f3c>] (kmem_cache_free+0x0/0xc0) from [<c032b1c8>] (ida_get_new_above+0x19c/0x1c0)
+| [<c032b02c>] (ida_get_new_above+0x0/0x1c0) from [<c02af7ec>] (alloc_vfsmnt+0x54/0x144)
+| [<c02af798>] (alloc_vfsmnt+0x0/0x144) from [<c0299830>] (vfs_kern_mount+0x30/0xec)
+| [<c0299800>] (vfs_kern_mount+0x0/0xec) from [<c0299908>] (kern_mount_data+0x1c/0x20)
+| [<c02998ec>] (kern_mount_data+0x0/0x20) from [<c02146c4>] (sysfs_init+0x68/0xc8)
+| [<c021465c>] (sysfs_init+0x0/0xc8) from [<c02137d4>] (mnt_init+0x90/0x1b0)
+| [<c0213744>] (mnt_init+0x0/0x1b0) from [<c0213388>] (vfs_caches_init+0x100/0x140)
+| [<c0213288>] (vfs_caches_init+0x0/0x140) from [<c0208c0c>] (start_kernel+0x2e8/0x368)
+| [<c0208924>] (start_kernel+0x0/0x368) from [<c0208034>] (__enable_mmu+0x0/0x2c)
+| c0113268: redzone 1:0xd84156c5c032b3ac, redzone 2:0xd84156c5635688c0.
+| slab error in cache_alloc_debugcheck_after(): cache `idr_layer_cache': double free, or memory outside object was overwritten
+| ...
+| c011307c: redzone 1:0x9f91102ffffffff, redzone 2:0x9f911029d74e35b
+| slab: Internal list corruption detected in cache 'idr_layer_cache'(24), slabp c0113000(16). Hexdump:
+|
+| 000: 20 4f 10 c0 20 4f 10 c0 7c 00 00 00 7c 30 11 c0
+| 010: 10 00 00 00 10 00 00 00 00 00 c9 17 fe ff ff ff
+| 020: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+| 030: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+| 040: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+| 050: fe ff ff ff fe ff ff ff fe ff ff ff 11 00 00 00
+| 060: 12 00 00 00 13 00 00 00 14 00 00 00 15 00 00 00
+| 070: 16 00 00 00 17 00 00 00 c0 88 56 63
+| kernel BUG at /home/rmk/git/linux-2.6-rmk/mm/slab.c:2928!
+
+Reference: https://lkml.org/lkml/2011/2/7/238
+Cc: <stable@kernel.org> # 2.6.35.y and later
+Reported-and-analyzed-by: Russell King <rmk@arm.linux.org.uk>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/x86/kvm/i8259.c |    2 ++
- 1 file changed, 2 insertions(+)
+ mm/slab.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Index: linux-2.6.35.y/arch/x86/kvm/i8259.c
+Index: linux-2.6.35.y/mm/slab.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/kvm/i8259.c	2011-01-13 09:47:51.000000000 -0800
-+++ linux-2.6.35.y/arch/x86/kvm/i8259.c	2011-03-29 23:47:12.738423232 -0700
-@@ -553,6 +553,8 @@
- 	s->irq_request_opaque = kvm;
- 	s->pics[0].pics_state = s;
- 	s->pics[1].pics_state = s;
-+	s->pics[0].isr_ack = 0xff;
-+	s->pics[1].isr_ack = 0xff;
- 
+--- linux-2.6.35.y.orig/mm/slab.c	2011-01-13 09:47:51.000000000 -0800
++++ linux-2.6.35.y/mm/slab.c	2011-03-29 23:28:50.113636629 -0700
+@@ -2289,8 +2289,8 @@
+ 	if (ralign < align) {
+ 		ralign = align;
+ 	}
+-	/* disable debug if not aligning with REDZONE_ALIGN */
+-	if (ralign & (__alignof__(unsigned long long) - 1))
++	/* disable debug if necessary */
++	if (ralign > __alignof__(unsigned long long))
+ 		flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
  	/*
- 	 * Initialize PIO device
+ 	 * 4) Store it.
+@@ -2316,8 +2316,8 @@
+ 	 */
+ 	if (flags & SLAB_RED_ZONE) {
+ 		/* add space for red zone words */
+-		cachep->obj_offset += align;
+-		size += align + sizeof(unsigned long long);
++		cachep->obj_offset += sizeof(unsigned long long);
++		size += 2 * sizeof(unsigned long long);
+ 	}
+ 	if (flags & SLAB_STORE_USER) {
+ 		/* user store requires one word storage behind the end of
