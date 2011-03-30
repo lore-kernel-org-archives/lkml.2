@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965348Ab1C3VKV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:10:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:38679 "EHLO mga01.intel.com"
+	id S965323Ab1C3VKQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:10:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44838 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965285Ab1C3VKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 17:10:07 -0400
+	id S965267Ab1C3VJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:09:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="903737072"
+   d="scan'208";a="621239294"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: pablo@netfilter.org, stable@kernel.org, kaber@trash.net,
+To: john@Calva.COM, James.Bottomley@suse.de, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: [PATCH] [257/275] netfilter: arpt_mangle: fix return values of checkentry
-Message-Id: <20110330210824.45DFF3E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:08:24 -0700 (PDT)
+Subject: [PATCH] [250/275] ses: show devices for enclosures with no page 7
+Message-Id: <20110330210816.E33E33E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:08:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,47 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-In 135367b "netfilter: xtables: change xt_target.checkentry return type",
-the type returned by checkentry was changed from boolean to int, but the
-return values where not adjusted.
+From: John Hughes <john@Calva.COM>
 
-arptables: Input/output error
+commit 877a55979c189c590e819a61cbbe2b7947875f17 upstream.
 
-This broke arptables with the mangle target since it returns true
-under success, which is interpreted by xtables as >0, thus
-returning EIO.
+enclosure page 7 gives us the "pretty" names of the enclosure slots.
+Without a page 7, we can still use the enclosure code as long as we
+make up numeric names for the slots. Unfortunately, the current code
+fails to add any devices because the check for page 10 is in the wrong
+place if we have no page 7.  Fix it so that devices show up even if
+the enclosure has no page 7.
 
-The following Linux kernels are affected:
-* 2.6.35.9
-* 2.6.36.4
-* 2.6.37.3
-
-Cc: stable@kernel.org
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-(cherry picked from commit 9d0db8b6b1da9e3d4c696ef29449700c58d589db)
----
- net/ipv4/netfilter/arpt_mangle.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-2.6.35.y/net/ipv4/netfilter/arpt_mangle.c
+---
+ drivers/scsi/ses.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-2.6.35.y/drivers/scsi/ses.c
 ===================================================================
---- linux-2.6.35.y.orig/net/ipv4/netfilter/arpt_mangle.c	2011-01-13 09:47:51.000000000 -0800
-+++ linux-2.6.35.y/net/ipv4/netfilter/arpt_mangle.c	2011-03-29 23:12:09.451240810 -0700
-@@ -60,12 +60,12 @@
- 
- 	if (mangle->flags & ~ARPT_MANGLE_MASK ||
- 	    !(mangle->flags & ARPT_MANGLE_MASK))
--		return false;
-+		return -EINVAL;
- 
- 	if (mangle->target != NF_DROP && mangle->target != NF_ACCEPT &&
- 	   mangle->target != ARPT_CONTINUE)
--		return false;
--	return true;
-+		return -EINVAL;
-+	return 0;
- }
- 
- static struct xt_target arpt_mangle_reg __read_mostly = {
+--- linux-2.6.35.y.orig/drivers/scsi/ses.c	2011-03-29 22:50:11.521963601 -0700
++++ linux-2.6.35.y/drivers/scsi/ses.c	2011-03-29 23:03:03.484211019 -0700
+@@ -390,9 +390,9 @@
+ 		len = (desc_ptr[2] << 8) + desc_ptr[3];
+ 		/* skip past overall descriptor */
+ 		desc_ptr += len + 4;
+-		if (ses_dev->page10)
+-			addl_desc_ptr = ses_dev->page10 + 8;
+ 	}
++	if (ses_dev->page10)
++		addl_desc_ptr = ses_dev->page10 + 8;
+ 	type_ptr = ses_dev->page1 + 12 + ses_dev->page1[11];
+ 	components = 0;
+ 	for (i = 0; i < types; i++, type_ptr += 4) {
