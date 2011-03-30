@@ -1,81 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab1C3IS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 04:18:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49316 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754473Ab1C3IS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 04:18:56 -0400
-Date: Wed, 30 Mar 2011 10:18:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/3] Implementation of cgroup isolation
-Message-ID: <20110330081853.GC15394@tiehlicka.suse.cz>
-References: <20110328093957.089007035@suse.cz>
- <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
- <4D920066.7000609@gmail.com>
+	id S1755200Ab1C3I2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 04:28:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41217 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543Ab1C3I2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 04:28:00 -0400
+Date: Wed, 30 Mar 2011 10:27:58 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
+        arnaud.patard@rtp-net.org, ra5478@freescale.com,
+        xiao-lizhang@freescale.com, festevam@gmail.com
+Subject: Re: [PATCHv7] ARM: mx51: Add support for low power suspend on MX51
+Message-ID: <20110330082758.GT7285@pengutronix.de>
+References: <1301325297-24126-1-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D920066.7000609@gmail.com>
+In-Reply-To: <1301325297-24126-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:20:18 up 5 days, 21:39, 43 users,  load average: 0.47, 0.41,
+ 0.43
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 29-03-11 21:23:10, Balbir Singh wrote:
-> On 03/28/11 16:33, KAMEZAWA Hiroyuki wrote:
-> > On Mon, 28 Mar 2011 11:39:57 +0200
-> > Michal Hocko <mhocko@suse.cz> wrote:
-[...]
-> > Isn't it the same result with the case where no cgroup is used ?
-> > What is the problem ?
-> > Why it's not a problem of configuration ?
-> > IIUC, you can put all logins to some cgroup by using cgroupd/libgcgroup.
-> > 
+On Mon, Mar 28, 2011 at 10:14:57AM -0500, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 > 
-> I agree with Kame, I am still at loss in terms of understand the use
-> case, I should probably see the rest of the patches
+> Adds initial low power suspend functionality to MX51.
+> Supports "mem" and "standby" modes.
+> 
+> Tested on mx51-babbage.
+> 
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  arch/arm/mach-mx5/Makefile  |    1 +
+>  arch/arm/mach-mx5/pm-imx5.c |   73 +++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 74 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/mach-mx5/pm-imx5.c
+> 
+> diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+> index 0b9338c..d646feb 100644
+> --- a/arch/arm/mach-mx5/Makefile
+> +++ b/arch/arm/mach-mx5/Makefile
+> @@ -6,6 +6,7 @@
+>  obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o system.o
+>  obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
+>  
+> +obj-$(CONFIG_PM) += pm-imx5.o
+>  obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
+>  obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+>  obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
+> diff --git a/arch/arm/mach-mx5/pm-imx5.c b/arch/arm/mach-mx5/pm-imx5.c
+> new file mode 100644
+> index 0000000..e4529af
+> --- /dev/null
+> +++ b/arch/arm/mach-mx5/pm-imx5.c
+> @@ -0,0 +1,73 @@
+> +/*
+> + *  Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +#include <linux/suspend.h>
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/err.h>
+> +#include <asm/cacheflush.h>
+> +#include <asm/tlbflush.h>
+> +#include <mach/system.h>
+> +#include "crm_regs.h"
+> +
+> +static struct clk *gpc_dvfs_clk;
+> +
+> +static int mx5_suspend_enter(suspend_state_t state)
+> +{
+> +	clk_enable(gpc_dvfs_clk);
+> +	switch (state) {
+> +	case PM_SUSPEND_MEM:
+> +		mx5_cpu_lp_set(STOP_POWER_OFF);
+> +		break;
+> +	case PM_SUSPEND_STANDBY:
+> +		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (state == PM_SUSPEND_MEM) {
+> +		local_flush_tlb_all();
+> +		flush_cache_all();
+> +
+> +		/*clear the EMPGC0/1 bits */
+> +		__raw_writel(0, MXC_SRPG_EMPGC0_SRPGCR);
+> +		__raw_writel(0, MXC_SRPG_EMPGC1_SRPGCR);
+> +	}
+> +	cpu_do_idle();
+> +	clk_disable(gpc_dvfs_clk);
+> +
+> +	return 0;
+> +}
+> +
+> +static int mx5_pm_valid(suspend_state_t state)
+> +{
+> +	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
+> +}
+> +
+> +static const struct platform_suspend_ops mx5_suspend_ops = {
+> +	.valid = mx5_pm_valid,
+> +	.enter = mx5_suspend_enter,
+> +};
+> +
+> +static int __init mx5_pm_init(void)
+> +{
+> +	if (gpc_dvfs_clk == NULL)
+> +		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
 
-OK, it looks that I am really bad at explaining the usecase. Let's try
-it again then (hopefully in a better way).
+This is only executed once, so gpc_dvfs_clk is always NULL here.
 
-Consider a service which serves requests based on the in-memory
-precomputed or preprocessed data. 
-Let's assume that getting data into memory is rather costly operation
-which considerably increases latency of the request processing. Memory
-access can be considered random from the system POV because we never
-know which requests will come from outside.
-This workflow will benefit from having the memory resident as long as
-and as much as possible because we have higher chances to be used more
-often and so the initial costs would pay off.
-Why is mlock not the right thing to do here? Well, if the memory would
-be locked and the working set would grow (again this depends on the
-incoming requests) then the application would have to unlock some
-portions of the memory or to risk OOM because it basically cannot
-overcommit.
-On the other hand, if the memory is not mlocked and there is a global
-memory pressure we can have some part of the costly memory swapped or
-paged out which will increase requests latencies. If the application is
-placed into an isolated cgroup, though, the global (or other cgroups)
-activity doesn't influence its cgroup thus the working set of the
-application.
-If we compare that to mlock we will benefit from per-group reclaim when
-we get over the limit (or soft limit). So we do not start evicting the
-memory unless somebody makes really pressure on the _application_.
-Cgroup limits would, of course, need to be selected carefully.
+> +
+> +	if (!IS_ERR(gpc_dvfs_clk)) {
+> +		if (cpu_is_mx51())
+> +			suspend_set_ops(&mx5_suspend_ops);
 
-There might be other examples when simply kernel cannot know which
-memory is important for the process and the long unused memory is not
-the ideal choice.
+This code shall only be executed on an i.MX51, so why don't you make a
+simple if (!cpu_is_mx51()) return 0; at the beginning of this function?
 
-Makes sense?
+Sascha
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
