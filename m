@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab1C3Gyy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 02:54:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54181 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab1C3Gyn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 02:54:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH] unicore32 framebuffer driver fix: make videomemory kmalloc-ed and floatable
-Date: Wed, 30 Mar 2011 08:54:05 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38+; KDE/4.5.1; x86_64; ; )
-Cc: "'Paul Mundt'" <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-References: <019701cbee1e$c4e2d260$4ea87720$@mprc.pku.edu.cn> <201103291642.49555.arnd@arndb.de> <01ca01cbee7b$4f790370$ee6b0a50$@mprc.pku.edu.cn>
-In-Reply-To: <01ca01cbee7b$4f790370$ee6b0a50$@mprc.pku.edu.cn>
+	id S1753352Ab1C3HG5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 03:06:57 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58540 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751638Ab1C3HG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 03:06:56 -0400
+Date: Wed, 30 Mar 2011 09:06:38 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, "David S . Miller" <davem@davemloft.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/2] perf/urgent fixes
+Message-ID: <20110330070638.GA24029@elte.hu>
+References: <1301452191-906-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103300854.05366.arnd@arndb.de>
-X-Provags-ID: V02:K0:fuWg3mKRWsuqQSLRWb1auFQnGOWAW12OaePNYPaHgRM
- KpnmrjH4Gej/uBp8GxKKdQ+eSU4hgPNXtayomxn03L4auBCOLL
- /MYmFqonMBDhoFYp5JtQT/y0zkdIN0KlzFOUiwizpLbrZHWyUk
- W/KWQoYIjWW9NtwMSKT5ATQ7rTyCOLnkgaw3BLhP8FtLy/Tujn
- pjH6vIv46RV2p3JoRa23g==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301452191-906-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 March 2011 03:39:26 Guan Xuetao wrote:
-> > How does this work? UNIFB_MEMSIZE seems to be 4 MB, much more than the
-> > maximum of 128 KB that kmalloc can allocate.
-> > 
-> > Shouldn't this use get_free_pages() instead of kmalloc?
-> > 
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Hi Ingo,
 > 
-> When using SLUB allocator, if required memory size  is larger
-> than 2*PAGE_SIZE, kmalloc_large is called,
-> and eventually __get_free_pages will  be called.
-> So,  it would be the same as __get_free_pages.
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> David S. Miller (1):
+>   perf symbols: Properly align symbol_conf.priv_size
+> 
+> Robert Richter (1):
+>   perf tools: Fix NO_NEWT=1 python build error
+> 
+>  tools/perf/Makefile      |    8 ++++++--
+>  tools/perf/util/setup.py |    7 ++++++-
+>  tools/perf/util/symbol.c |    2 ++
+>  3 files changed, 14 insertions(+), 3 deletions(-)
 
-Ok, I see. It's probably still better to use __get_free_pages directly,
-because it's possible to select a different allocator that does not
-do this itself.
+Pulled, thanks a lot Arnaldo!
 
-	Arnd
+	Ingo
