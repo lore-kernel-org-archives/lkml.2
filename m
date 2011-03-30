@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964775Ab1C3WCr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 18:02:47 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:43185 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933282Ab1C3WB6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 18:01:58 -0400
-From: Sage Weil <sage@newdream.net>
-To: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, mszeredi@suse.cz,
-        Miklos Szeredi <miklos@suse.cz>
-Subject: [PATCH 7/7] vfs: fix vfs_rename_dir for FS_RENAME_DOES_D_MOVE filesystems
-Date: Wed, 30 Mar 2011 15:09:28 -0700
-Message-Id: <1301522968-4382-8-git-send-email-sage@newdream.net>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1301522968-4382-1-git-send-email-sage@newdream.net>
-References: <1301522968-4382-1-git-send-email-sage@newdream.net>
+	id S933428Ab1C3WDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 18:03:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15931 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933253Ab1C3VG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 17:06:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
+   d="scan'208";a="673447257"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110330203.501921634@firstfloor.org>
+In-Reply-To: <20110330203.501921634@firstfloor.org>
+To: vapier@gentoo.org, lrg@slimlogic.co.uk,
+        broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [50/275] ASoC: Blackfin AC97: fix build error after multi-component update
+Message-Id: <20110330210446.53A9F3E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:04:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <miklos@suse.cz>
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-vfs_rename_dir() doesn't properly account for filesystems with
-FS_RENAME_DOES_D_MOVE.  If new_dentry has a target inode attached, it
-unhashes the new_dentry prior to the rename() iop and rehashes it after,
-but doesn't account for the possibility that rename() may have swapped
-{old,new}_dentry.  For FS_RENAME_DOES_D_MOVE filesystems, it rehashes
-new_dentry (now the old renamed-from name, which d_move() expected to go
-away), such that a subsequent lookup will find it.  Currently all
-FS_RENAME_DOES_D_MOVE filesystems compensate for this by failing in
-d_revalidate.
+------------------
+From: Mike Frysinger <vapier@gentoo.org>
 
-The bug was introduced by: commit 349457ccf2592c14bdf13b6706170ae2e94931b1
-"[PATCH] Allow file systems to manually d_move() inside of ->rename()"
+commit e9c2048915048d605fd76539ddd96f00d593e1eb upstream.
 
-Fix by not rehashing the new dentry.  Rehashing used to be needed by
-d_move() but isn't anymore.
+We need to tweak how we query the active capture/playback state after
+the recent overhauls of common code.
 
-Reported-by: Sage Weil <sage@newdream.net>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
 ---
- fs/namei.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ sound/soc/blackfin/bf5xx-ac97.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index d376688..98119a5 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3252,8 +3252,6 @@ static int vfs_rename_dir(struct inode *old_dir, struct dentry *old_dentry,
- 			dont_mount(new_dentry);
- 		}
- 		mutex_unlock(&target->i_mutex);
--		if (d_unhashed(new_dentry))
--			d_rehash(new_dentry);
- 	}
- 	if (!error)
- 		if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
--- 
-1.7.0
-
+Index: linux-2.6.35.y/sound/soc/blackfin/bf5xx-ac97.c
+===================================================================
+--- linux-2.6.35.y.orig/sound/soc/blackfin/bf5xx-ac97.c	2011-03-29 22:51:49.530455809 -0700
++++ linux-2.6.35.y/sound/soc/blackfin/bf5xx-ac97.c	2011-03-29 23:02:59.213320299 -0700
+@@ -261,9 +261,9 @@
+ 	pr_debug("%s : sport %d\n", __func__, dai->id);
+ 	if (!dai->active)
+ 		return 0;
+-	if (dai->capture.active)
++	if (dai->capture_active)
+ 		sport_rx_stop(sport);
+-	if (dai->playback.active)
++	if (dai->playback_active)
+ 		sport_tx_stop(sport);
+ 	return 0;
+ }
