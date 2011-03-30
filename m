@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965215Ab1C3Vdr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 17:33:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47856 "EHLO mga01.intel.com"
+	id S965245Ab1C3VeA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 17:34:00 -0400
+Received: from mga14.intel.com ([143.182.124.37]:49299 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964966Ab1C3VIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S964796Ab1C3VIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Mar 2011 17:08:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,270,1299484800"; 
-   d="scan'208";a="903735819"
+   d="scan'208";a="411278338"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110330203.501921634@firstfloor.org>
 In-Reply-To: <20110330203.501921634@firstfloor.org>
-To: donald.c.skidmore@intel.com, stephen.s.ko@intel.com,
-        jeffrey.t.kirsher@intel.com, gregkh@suse.de, ak@linux.intel.com,
+To: anton@au1.ibm.com, anton@samba.org, dhowells@redhat.com,
+        davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [176/275] ixgbe: fix for 82599 erratum on Header Splitting
-Message-Id: <20110330210659.0B3C93E1A05@tassilo.jf.intel.com>
-Date: Wed, 30 Mar 2011 14:06:59 -0700 (PDT)
+Subject: [PATCH] [175/275] RxRPC: Fix v1 keys
+Message-Id: <20110330210657.F2D073E1A05@tassilo.jf.intel.com>
+Date: Wed, 30 Mar 2011 14:06:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,38 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Don Skidmore <donald.c.skidmore@intel.com>
+From: Anton Blanchard <anton@au1.ibm.com>
 
-commit a124339ad28389093ed15eca990d39c51c5736cc upstream.
+commit f009918a1c1bbf8607b8aab3959876913a30193a upstream.
 
-We have found a hardware erratum on 82599 hardware that can lead to
-unpredictable behavior when Header Splitting mode is enabled.  So
-we are no longer enabling this feature on affected hardware.
+commit 339412841d7 (RxRPC: Allow key payloads to be passed in XDR form)
+broke klog for me. I notice the v1 key struct had a kif_version field
+added:
 
-Please see the 82599 Specification Update for more information.
+-struct rxkad_key {
+-       u16     security_index;         /* RxRPC header security index */
+-       u16     ticket_len;             /* length of ticket[] */
+-       u32     expiry;                 /* time at which expires */
+-       u32     kvno;                   /* key version number */
+-       u8      session_key[8];         /* DES session key */
+-       u8      ticket[0];              /* the encrypted ticket */
+-};
 
-Signed-off-by: Don Skidmore <donald.c.skidmore@intel.com>
-Tested-by: Stephen Ko <stephen.s.ko@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
++struct rxrpc_key_data_v1 {
++       u32             kif_version;            /* 1 */
++       u16             security_index;
++       u16             ticket_length;
++       u32             expiry;                 /* time_t */
++       u32             kvno;
++       u8              session_key[8];
++       u8              ticket[0];
++};
+
+However the code in rxrpc_instantiate strips it away:
+
+	data += sizeof(kver);
+	datalen -= sizeof(kver);
+
+Removing kif_version fixes my problem.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/net/ixgbe/ixgbe_main.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/keys/rxrpc-type.h |    1 -
+ 1 file changed, 1 deletion(-)
 
-Index: linux-2.6.35.y/drivers/net/ixgbe/ixgbe_main.c
+Index: linux-2.6.35.y/include/keys/rxrpc-type.h
 ===================================================================
---- linux-2.6.35.y.orig/drivers/net/ixgbe/ixgbe_main.c	2011-03-29 22:50:53.271895324 -0700
-+++ linux-2.6.35.y/drivers/net/ixgbe/ixgbe_main.c	2011-03-29 23:03:01.901251523 -0700
-@@ -2658,6 +2658,10 @@
- 	if (!adapter->num_vfs)
- 		adapter->flags |= IXGBE_FLAG_RX_PS_ENABLED;
- 
-+	/* Disable packet split due to 82599 erratum #45 */
-+	if (hw->mac.type == ixgbe_mac_82599EB)
-+		adapter->flags &= ~IXGBE_FLAG_RX_PS_ENABLED;
-+
- 	/* Set the RX buffer length according to the mode */
- 	if (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED) {
- 		rx_buf_len = IXGBE_RX_HDR_SIZE;
+--- linux-2.6.35.y.orig/include/keys/rxrpc-type.h	2011-03-29 22:50:53.770882557 -0700
++++ linux-2.6.35.y/include/keys/rxrpc-type.h	2011-03-29 23:03:01.881252033 -0700
+@@ -99,7 +99,6 @@
+  * structure of raw payloads passed to add_key() or instantiate key
+  */
+ struct rxrpc_key_data_v1 {
+-	u32		kif_version;		/* 1 */
+ 	u16		security_index;
+ 	u16		ticket_length;
+ 	u32		expiry;			/* time_t */
