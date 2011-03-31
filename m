@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759267Ab1CaT2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 15:28:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:13137 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759227Ab1CaT2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 15:28:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,277,1299484800"; 
-   d="scan'208";a="904183229"
-Message-ID: <4D94D5D2.1050509@linux.intel.com>
-Date: Thu, 31 Mar 2011 12:28:18 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        paulmck@linux.vnet.ibm.com, Jan Beulich <JBeulich@novell.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
+	id S1759283Ab1CaT21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 15:28:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54434 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759227Ab1CaT2Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 15:28:24 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=XYJHFtupD_QA:10 a=ufTYwEEDWR0A:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=2bW5aYeME0AoosgiAIAA:9 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Thu, 31 Mar 2011 15:28:21 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
-References: <4D8FF9BC.7050609@cn.fujitsu.com>	 <4D90647902000078000389CB@vpn.id2.novell.com>	 <4D924BAF.1020906@linux.intel.com>	 <20110329213130.GK2261@linux.vnet.ibm.com>	 <4D924FEE.8040804@linux.intel.com>	 <20110329214704.GM2261@linux.vnet.ibm.com>	 <4D9256AF.5000308@linux.intel.com>	 <20110330004725.GO2261@linux.vnet.ibm.com> <4D92BECA.50802@cn.fujitsu.com>	 <4D92DA32.2010809@cn.fujitsu.com>  <20110330105505.GA3195@sepie.suse.cz>	 <1301482656.4859.171.camel@twins> <4D931814.9090100@suse.cz>	 <4D93D29C.5010702@cn.fujitsu.com> <1301558691.2250.486.camel@laptop> <4D944E60.8080704@cn.fujitsu.com>
-In-Reply-To: <4D944E60.8080704@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
+Subject: Re: [PATCH 05/12] mm: alloc_contig_range() added
+Message-ID: <20110331192821.GF14441@home.goodmis.org>
+References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
+ <1301577368-16095-6-git-send-email-m.szyprowski@samsung.com>
+ <1301587361.31087.1040.camel@nimitz>
+ <op.vs7umufd3l0zgt@mnazarewicz-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <op.vs7umufd3l0zgt@mnazarewicz-glaptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 02:50 AM, Lai Jiangshan wrote:
+On Thu, Mar 31, 2011 at 06:26:45PM +0200, Michal Nazarewicz wrote:
+> >In any case, please pull the ++ret bit out of the WARN_ON().  Some
+> >people like to do:
+> >
+> >#define WARN_ON(...) do{}while(0)
+> >
+> >to save space on some systems.
 > 
-> But how about my kernel-offset.c patch? It is clean & simple,
-> it just seems not so normal.
-> 
+> I don't think that's the case.  Even if WARN_ON() decides not to print
+> a warning, it will still return the value of the argument.  If not,
+> a lot of code will brake.
+>
 
-It is neither clear nor simple, sorry.  It is quite the opposite.
+WARN_ON() should never do anything but test. That ret++ does not belong
+inside the WARN_ON() condition. If there are other locations in the
+kernel that do that, then those locations need to be fixed.
 
-I think Michal is on the right track, but yes, much work remains to be done.
+-- Steve
 
-	-hpa
