@@ -1,81 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757661Ab1CaN2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 09:28:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46409 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757437Ab1CaN2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 09:28:41 -0400
-Date: Thu, 31 Mar 2011 15:28:15 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
-	value
-Message-ID: <20110331132815.GA4267@redhat.com>
-References: <1301157483.2250.366.camel@laptop> <20110326170922.GA20329@redhat.com> <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop> <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins> <1301327368.4859.28.camel@twins> <20110328165648.GA9304@redhat.com> <20110330130951.GA2124@jolsa.brq.redhat.com> <1301496684.4859.192.camel@twins>
+	id S933501Ab1CaN2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 09:28:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55423 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933051Ab1CaN2p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 09:28:45 -0400
+Message-ID: <4D948189.9070606@monstr.eu>
+Date: Thu, 31 Mar 2011 15:28:41 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301496684.4859.192.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
+        hjk@linutronix.de, gregkh@suse.de
+Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
+References: <1301574600-4861-1-git-send-email-monstr@monstr.eu> <1301574600-4861-2-git-send-email-monstr@monstr.eu> <20110331124925.GA2202@pengutronix.de>
+In-Reply-To: <20110331124925.GA2202@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30, Peter Zijlstra wrote:
->
-> -atomic_t perf_sched_events __read_mostly;
-> +atomic_t perf_sched_events_in __read_mostly;
-> +atomic_t perf_sched_events_out __read_mostly;
->  static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
->
-> +static void perf_sched_events_inc(void)
-> +{
-> +	jump_label_inc(&perf_sched_events_out);
-> +	jump_label_inc(&perf_sched_events_in);
-> +}
-> +
-> +static void perf_sched_events_dec(void)
-> +{
-> +	jump_label_dec(&perf_sched_events_in);
-> +	JUMP_LABEL(&perf_sched_events_in, no_sync);
-> +	synchronize_sched();
-> +no_sync:
-> +	jump_label_dec(&perf_sched_events_out);
-> +}
+Wolfram Sang wrote:
+> On Thu, Mar 31, 2011 at 02:30:00PM +0200, Michal Simek wrote:
+>> Support OF support. "generic-uio" compatible property is used.
+> 
+> And exactly this was the issue last time (when I tried). This is a
+> generic property, which is linux-specific and not describing HW. The
+> agreement back then was to we probably need to add compatible-entries at
+> runtime (something like new_id for USB). So the uio-of-driver could be
+> matched against any device. Otherwise, we would collect a lot of
+> potential entries like "vendor,special-card1". Although I wonder
+> meanwhile if it is really going to be that bad; we don't have so much
+> UIO-driver in tree as well. Maybe worth a try?
 
-OK, synchronize_sched() can't work. How about
+I will read reactions to get better picture to be able to argue. :-)
 
-	static int force_perf_event_task_sched_out(void *unused)
-	{
-		struct task_struct *curr = current;
+> 
+>> Signed-off-by: Michal Simek <monstr@monstr.eu>
+>> ---
+>>  drivers/uio/uio_pdrv_genirq.c |   60 ++++++++++++++++++++++++++++++++++++++--
+>>  1 files changed, 57 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+>> index 7174d51..9e89806 100644
+>> --- a/drivers/uio/uio_pdrv_genirq.c
+>> +++ b/drivers/uio/uio_pdrv_genirq.c
+>> @@ -23,6 +23,10 @@
+>>  #include <linux/pm_runtime.h>
+>>  #include <linux/slab.h>
+>>  
+>> +#include <linux/of.h>
+>> +#include <linux/of_platform.h>
+>> +#include <linux/of_address.h>
+>> +
+>>  #define DRIVER_NAME "uio_pdrv_genirq"
+>>  
+>>  struct uio_pdrv_genirq_platdata {
+>> @@ -92,11 +96,44 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
+>>  static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>>  {
+>>  	struct uio_info *uioinfo = pdev->dev.platform_data;
+>> -	struct uio_pdrv_genirq_platdata *priv;
+>> +	struct uio_pdrv_genirq_platdata *priv = NULL;
+> 
+> unrelated?
 
-		__perf_event_task_sched_out(curr, task_rq(curr)->idle);
+you are right here. I changed order and this is not necessary.
 
-		return 0;
-	}
 
-	void synchronize_perf_event_task_sched_out(void)
-	{
-		stop_machine(force_perf_event_task_sched_out, NULL,
-				cpu_possible_mask);
-	}
+> 
+>>  	struct uio_mem *uiomem;
+>>  	int ret = -EINVAL;
+>>  	int i;
+>>  
+>> +	if (!uioinfo) {
+>> +		struct resource r_irq; /* Interrupt resources */
+>> +		int rc = 0;
+>> +
+>> +		rc = of_address_to_resource(pdev->dev.of_node, 0,
+>> +							&pdev->resource[0]);
+>> +		if (rc) {
+>> +			dev_err(&pdev->dev, "invalid address\n");
+>> +			goto bad2;
+>> +		}
+>> +		pdev->num_resources = 1;
+>> +
+>> +		/* alloc uioinfo for one device */
+>> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+>> +		if (!uioinfo) {
+>> +			ret = -ENOMEM;
+>> +			dev_err(&pdev->dev, "unable to kmalloc\n");
+>> +			goto bad2;
+>> +		}
+>> +		uioinfo->name = pdev->dev.of_node->name;
+>> +		/* Use version for storing full IP name for identification */
+>> +		uioinfo->version = pdev->dev.of_node->full_name;
+> 
+> I don't think this is apropriate, but will leave that to Hans.
 
-instead?
+I was thinking what to add and I choose full_name because I can read this value 
+and identify which UIO is this device.
+I know that there should be version but there is no version string in DTS.
 
-	- stop_machine(cpu_possible_mask) ensures that each cpu
-	  does the context switch and calls _sched_out
+> 
+>> +		/* Get IRQ for the device */
+>> +		rc = of_irq_to_resource(pdev->dev.of_node, 0, &r_irq);
+>> +		if (rc == NO_IRQ)
+>> +			dev_err(&pdev->dev, "no IRQ found\n");
+> 
+> No error, I think. Sometimes just mmaping the registers is enough.
 
-	- force_perf_event_task_sched_out() is only needed because
-	  the migration thread can have the counters too.
+OK. Let's changed it to dev_info if you like.
 
-Note, I am not sure this is the best solution. Just in case we don't
-find something better.
 
-In any case, do you think this can work or I missed something again?
+> 
+>> +		else {
+>> +			uioinfo->irq = r_irq.start;
+>> +			dev_info(&pdev->dev, "irq %d\n", (u32)uioinfo->irq);
+>> +		}
+>> +	}
+>> +
+>>  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+>>  		dev_err(&pdev->dev, "missing platform_data\n");
+>>  		goto bad0;
+>> @@ -176,10 +213,15 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>>  
+>>  	platform_set_drvdata(pdev, priv);
+>>  	return 0;
+>> - bad1:
+>> +
+>> +bad1:
+> 
+> The spaces before labels are intentional, better keep them.
 
-Oleg.
+I found both cases. checkpatch doesn't show any problem for both cases that's 
+why if you like space before label, I am fine with this.
 
+Michal
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
