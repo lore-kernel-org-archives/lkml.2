@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933911Ab1CaKut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 06:50:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60944 "EHLO mx1.redhat.com"
+	id S933915Ab1CaKxd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 06:53:33 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:33906 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757277Ab1CaKur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 06:50:47 -0400
-Message-ID: <4D945C4D.5090104@redhat.com>
-Date: Thu, 31 Mar 2011 12:49:49 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Robin Holt <holt@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Yinghai Lu <yinghai@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC 2/2] Make x86 calibrate_delay run in parallel.
-References: <20101215015840.390204279@gulag1.americas.sgi.com> <20101215015849.051095242@gulag1.americas.sgi.com> <AANLkTinoctZFKo4wBmrrdFggnjSj74QfqvEpz59sW15x@mail.gmail.com> <20110331065036.GC5938@elte.hu> <20110331065805.GG5938@elte.hu> <20110331093723.GE24046@sgi.com> <20110331095705.GA23319@elte.hu> <4D9457BF.1040601@redhat.com> <20110331104601.GA8577@elte.hu>
-In-Reply-To: <20110331104601.GA8577@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751476Ab1CaKxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 06:53:32 -0400
+Date: Thu, 31 Mar 2011 12:53:05 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
+        maciej.rutecki@gmail.com, mingo@elte.hu, rjw@sisk.pl,
+        sedat.dilek@gmail.com, zersaa@gmail.com, stable@kernel.org
+Subject: Re: [PATCH][POKE] Skip looking for ioapic overrides when ioapics
+ are not present
+Message-ID: <20110331125305.1e8c70ba@schatten.dmk.lab>
+In-Reply-To: <1301561386.1904.15.camel@t41.thuisdomein>
+References: <1301558489-4198-1-git-send-email-florian@mickler.org>
+	<1301561386.1904.15.camel@t41.thuisdomein>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 12:46 PM, Ingo Molnar wrote:
-> * Avi Kivity<avi@redhat.com>  wrote:
->
-> >  On 03/31/2011 11:57 AM, Ingo Molnar wrote:
-> >  >>
-> >  >>   I am not trying to be argumentative.  I never got an understanding of
-> >  >>   what was going wrong with that earlier patch and am hoping for some
-> >  >>   understanding now.
-> >  >
-> >  >  Well, if calibrate_delay() calls run in parallel then different
-> >  >  hyperthreads will impact each other.
-> >
-> >  It's different but not more wrong.  If delay() later runs on a thread whose
-> >  sibling is busy, it will in fact give more accurate results.
->
-> No, it's actively wrong: because it makes the delay loop *run faster* when
-> other siblings
->
-> I.e. this shortens udelay(X)s potentially, which is far more dangerous than the
-> current conservative approach of potentially *lengthening* them.
->
-> >  >  Really, there's no good reason why every CPU should be calibrated on a
-> >  >  system running identical CPUs, right? Mixed-frequency systems are rather
-> >  >  elusive on x86.
-> >
-> >  Good point.  And udelay() users are probably not sensitive to accuracy anyway
-> >  (which changes with load and thermal conditions).
->
-> True with one important distinction: they are only sensitive to one fact, that
-> the delay should not be *shorter* than specified. By shortening udelay() we
-> essentially overclock the hardware's tolerances - not good.
->
+On Thu, 31 Mar 2011 10:48:43 +0200
+Paul Bolle <pebolle@tiscali.nl> wrote:
 
-Makes sense.  But I think the thermally controlled cpu frequency 
-violates this in some way - if calibration is run while the cpu is how 
-and udelay is later run when it is cool then it could execute faster.
+> On Thu, 2011-03-31 at 10:01 +0200, Florian Mickler wrote:
+> > diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> > index 68df09b..3940103 100644
+> > --- a/arch/x86/kernel/apic/io_apic.c
+> > +++ b/arch/x86/kernel/apic/io_apic.c
+> > @@ -3789,6 +3789,9 @@ int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
+> >  {
+> >  	int ioapic, pin, idx;
+> >  
+> > +	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+> > +		return -1;
+> > +
+> >  	if (skip_ioapic_setup)
+> >  		return -1;
+> >  
+> 
+> Seems to have the same goal as commit
+> 678301ecadec24ff77ab310eebf8a32ccddb1850 ("x86, ioapic: Don't warn about
+> non-existing IOAPICs if we have none"), which got merged in the v2.6.38
+> cycle (authored by me, signed off by Ingo Molnar). Maybe Eric's patch is
+> more correct. I can't say as I was happy with the effect of my patch
+> (ie, make an uninteresting error disappear) and didn't investigate any
+> further. I have also no desire to dive into this matter again.
+> 
+> 
+> Paul
+> 
 
-How important is udelay() for hardware timing these days, btw?
+Thanks for letting me know. Sedat, did you actually test with 2.6.38?
 
--- 
-error compiling committee.c: too many arguments to function
-
+Regards,
+Flo
