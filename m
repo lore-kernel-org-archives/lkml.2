@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757782Ab1CaO3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:29:37 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:59496 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757540Ab1CaO3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:29:36 -0400
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH v3] x86: UV kdump reboot fix
-Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, rja@sgi.com
-Message-Id: <E1Q5Iuo-00013b-UK@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Thu, 31 Mar 2011 09:32:02 -0500
+	id S1757977Ab1CaObI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:31:08 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:43788 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752974Ab1CaObG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 10:31:06 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: xTk9SToVM1k0s3avqyO7YDSrNgaf_w5KFkoNrQawEUuDPXN
+ NBxjAMsFf.velhcIibt8PfJTuAdrdzijAPiJRsj4t_LaCK4Ta57fVbDNYTPz
+ 2OyAcH1ohv1V6KsqBTFV5IMghtoIsBNki1wxzdAM1Skcbdh5yBgQxD5Ur3fM
+ imQhVlfXNChNCOb6OYGQE2iGP1fck.s2lwiSI8nHttfj1ILyHh5XVSd1PnZP
+ fLN1uKksqh6zkTMfkMQTdE2u67.XDIQ5v84eedF5WylZvQhOWHMnJS7VeGvi
+ QrCVE7kt.17wqAgJzpegEe_pPLszPV.ipMmlh9BsjTqZxNxnw5Z.6jjvtuwk
+ hzUGodExvYz_1lOuo
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 31 Mar 2011 09:31:01 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Ingo Molnar <mingo@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH tip:x86/mm] x86-64, NUMA: Remove custom phys_to_nid()
+ implementation
+In-Reply-To: <20110331135744.GE3385@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.00.1103310920340.20823@router.home>
+References: <20110331135744.GE3385@htj.dyndns.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cliff Wickman <cpw@sgi.com>
+On Thu, 31 Mar 2011, Tejun Heo wrote:
 
-After a crash dump on an SGI Altix UV system the crash kernel fails to
-cause a reboot.  EFI mode is disabled in the kdump kernel, so only the
-reboot_type of BOOT_ACPI works.
+> However, with SPARSE memory model, the nid is encoded in page flags.
+> The perfect hash implementation was for DISCONTIG memory model which
+> got removed years ago by b263295dbf (x86: 64-bit, make sparsemem
+> vmemmap the only memory model).
 
-> The clean solution would be to add the reboot_type setting to an UV specific
-> initialization function. That way only UV is affected and there's no extra
-> kludge either, as reboot_type is already global.  [Ingo]
-(this is too simple -- sometimes I can't see the forest for the trees!)
+Most memory models have the nid either in page flags or you can get it
+from the zone that a page belongs to. So after boot its easy to
+determine the node. However, at early boot the page flags may be
+initialized relatively late. early_pfn_to_nid does use the early node map
+to determine the node and not the page flags. You are switching to
+the generic implementation of __pfn_to_nid and dropping the duplicate arch
+logic.
 
-Diffed against 2.6.38-rc8 (current tip tree)
+Reviewed-by: Christoph Lameter <cl@linux.com>
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-
- arch/x86/kernel/apic/x2apic_uv_x.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-Index: linux.trees.git/arch/x86/kernel/apic/x2apic_uv_x.c
-===================================================================
---- linux.trees.git.orig/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ linux.trees.git/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -23,6 +23,7 @@
- #include <linux/io.h>
- #include <linux/pci.h>
- #include <linux/kdebug.h>
-+#include <linux/crash_dump.h>
- 
- #include <asm/uv/uv_mmrs.h>
- #include <asm/uv/uv_hub.h>
-@@ -34,6 +35,7 @@
- #include <asm/ipi.h>
- #include <asm/smp.h>
- #include <asm/x86_init.h>
-+#include <asm/emergency-restart.h>
- 
- DEFINE_PER_CPU(int, x2apic_extra_bits);
- 
-@@ -810,4 +812,11 @@ void __init uv_system_init(void)
- 
- 	/* register Legacy VGA I/O redirection handler */
- 	pci_register_set_vga_state(uv_set_vga_state);
-+
-+	/*
-+	 * for a kdump kernel the reset must be BOOT_ACPI, not BOOT_EFI, as
-+	 * EFI is not enabled in the kdump kernel.
-+	 */
-+	if (is_kdump_kernel())
-+		reboot_type = BOOT_ACPI;
- }
