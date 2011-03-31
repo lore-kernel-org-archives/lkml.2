@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab1CaIIH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 04:08:07 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38402 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757164Ab1CaIHn (ORCPT
+	id S1757190Ab1CaIK7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 04:10:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57206 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757166Ab1CaIKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 04:07:43 -0400
-Subject: Re: [PATCH 2/2] perf: Mmap 512 kiB by default
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-In-Reply-To: <1301535324-9735-1-git-send-email-fweisbec@gmail.com>
-References: <1301496028.4859.183.camel@twins>
-	 <1301535324-9735-1-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 31 Mar 2011 10:09:52 +0200
-Message-ID: <1301558992.2250.489.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Mar 2011 04:10:55 -0400
+Date: Thu, 31 Mar 2011 09:09:54 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: david@lang.hm
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Message-ID: <20110331080954.GA14323@n2100.arm.linux.org.uk>
+References: <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com> <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-31 at 03:35 +0200, Frederic Weisbecker wrote:
-> The default setting of perf record is to mmap 128 pages if the user
-> did not override with -m.
-> However the page size may vary accross different architecture
-> settings, giving different default size between each.
-> 
-> Moreover the kernel side still has a default max number of mlocked
-> pages of 512 kiB + 1 page for unprivileged users. 128 + 1 pages
-> with page size > 4096 overlaps this threshold.
-> 
-> Thus, better adapt to this limitation and set the default number of
-> pages to fit those 512 kiB + 1 page.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> ---
->  tools/perf/builtin-record.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 6febcc1..a7e14bd 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -41,7 +41,7 @@ static u64			user_interval			= ULLONG_MAX;
->  static u64			default_interval		=      0;
->  
->  static unsigned int		page_size;
-> -static unsigned int		mmap_pages			=    128;
-> +static unsigned int		mmap_pages			= UINT_MAX;
->  static unsigned int		user_freq 			= UINT_MAX;
->  static int			freq				=   1000;
->  static int			output;
-> @@ -506,6 +506,10 @@ static int __cmd_record(int argc, const char **argv)
->  	if (have_tracepoints(&evsel_list->entries))
->  		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
->  
-> +	/* 512 kiB: default amount of unprivileged mlocked memory */
-> +	if (mmap_pages == UINT_MAX)
-> +		mmap_pages = (512 * 1024) / page_size;
-> +
->  	if (forks) {
->  		child_pid = fork();
->  		if (child_pid < 0) {
+On Wed, Mar 30, 2011 at 10:05:41PM -0700, david@lang.hm wrote:
+> with ARM you do have a couple different architectures (arm5 vs arm7 for  
+> example), but what you are hearing people say is that
+>
+> arm7+IPblock1+IPblock2
+> arm7+IPblock1+IPblock3>
+> arm7+IPblock2+IPblock3>
+>
+> are not three different architectures, they are one architecture with  
+> different devices attached.
 
-Ok, these two patches look good, I'll queue them. However a follow up
-might be to change the perf-record parameter from nr_pages to kb, which
-is a much more user friendly interface anyway ;-)
+Wrong.  Let's take an example.  If you have an OMAP SoC with ARMv7 + GIC +
+OMAP timer, and another SoC (eg, MSM) with GIC + their own timer, then
+the common code will be used to support ARMv7 on both SoCs.
 
+The common GIC support code will be used to talk to the GIC interrupt
+controller.
 
+The OMAP timer code will be used to handle the OMAP timer, and the MSM
+timer code will be used to handle the MSM timer.
 
+We're not crazy.  We don't have N sets of code implementing support for
+the GIC interrupt controller.  Same happens for the VIC code - we have
+common code supporting VIC implementations across the different SoCs
+which have a VIC.
+
+But the GIC is a totally different beast to the VIC.  The GIC is SMP
+capable and has two software interfaces - the CPU local part and the
+CPU global part.  The VIC doesn't have any of that as it is UP only.
+They function entirely differently.  How can you have some common code
+to support both of those?
+
+> what's more, you seem to be saying that
+>
+> arm7+IPblock1
+>
+> and
+>
+> arm7+IPblock1
+>
+> are different architectures if the wiring between the arm core and  
+> IPblock1 are different (they are different 'boards' or different chip  
+> models, possibly from different manufacturers)
+
+Over the years which I was overseeing platform support I tried to ensure
+as much sharing of code across different platforms.  I no longer oversee
+platform specific stuff, and so its entirely possible that several SoCs
+have the same IP block but their own code to drive it.
+
+That's where Thomas is right - we need a team of people to provide
+review of that to catch it and get it consolidated.  Such a team would
+need funding.  Where does that funding come from?  I've no idea.
+This review issue is something which I've been on about for the last
+ten years, and it hasn't really got much better during that time.
+
+We also need the various SoC designers and ARM architecture people to
+realise that what the hardware situation is rediculous; I have commented
+about this lack of standardisation to ARM in past years.  ARM have had
+a standard set of peripherals for ten years, but the SoC people haven't
+really taken them up - and when they do, they seem to always introduce
+their own tweaks, sometimes with no way to detect those tweaks.
+
+So far, I've avoided merging code to change the way the driver support
+works for those peripherals to allow the platform level code to describe
+those differences because I don't like it.  It sounds like I should
+continue to avoid merging it and, hopefully, it'll just go away.
