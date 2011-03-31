@@ -1,199 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965153Ab1CaTEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 15:04:53 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:58680 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759142Ab1CaTEw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 15:04:52 -0400
-Date: Thu, 31 Mar 2011 12:04:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        James Morris <jmorris@namei.org>, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 31/36] security,rcu: convert
- call_rcu(user_update_rcu_disposal) to kfree_rcu()
-Message-ID: <20110331190428.GI2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4D82DB5B.9000302@cn.fujitsu.com>
- <16158.1301597440@redhat.com>
+	id S1759177Ab1CaTLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 15:11:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43085 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759130Ab1CaTLQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 15:11:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <16158.1301597440@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1103311218240.28032@xanadu.home>
+References: <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+ <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
+ <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm>
+ <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm>
+ <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu>
+ <20110331083044.GB14323@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1103310855450.29543@asgard.lang.hm>
+ <alpine.LFD.2.00.1103311218240.28032@xanadu.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 31 Mar 2011 12:02:19 -0700
+Message-ID: <AANLkTikumKg8nOi5O=zym3eS4UOKO0+vA21bGHaagL=9@mail.gmail.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: david@lang.hm, Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 07:50:40PM +0100, David Howells wrote:
-> Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
-> 
-> > The rcu callback user_update_rcu_disposal() just calls a kfree(),
-> > so we use kfree_rcu() instead of the call_rcu(user_update_rcu_disposal).
-> > 
-> > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> 
-> Nice idea, but how do you handle the container_of()?
+On Thu, Mar 31, 2011 at 10:56 AM, Nicolas Pitre <nico@fluxnic.net> wrote:
+>
+> So... Is there missed opportunity for better code reuse here?  Most
+> probably.  Is all that code the result of misabstracted and duplicated
+> code?  Certainly not.  Let's just presume that half of that code is
+> genuine crap and the other half is simply the result of new hardware for
+> which there is no existing model to fit it in.  Even then, do we have 5
+> times the reviewer bandwidth to properly review all that code compared
+> to X86?  Absolutely not, not even close.
 
-Hello, David,
+That's an odd assumption. And it's followed by a total red herring
+that doesn't even make any sense. And then your conclusion seems to be
+that ARM could never have the same quality anyway, because of the
+whole lack of review issue is fundamental.
 
-This patch relies on an earlier patch from Lai shown below.
+And from there you seem to go on to think that there are no major
+problems, and things are "good enough"!
 
-The short answer is that kfree_rcu() is a cpp macro that takes a pointer
-to the struct rcu_head and the name of the rcu_head field within the
-enclosing structure.  This macro then does the required offset_of().
+> If prominent people looking at this from the side line continue bashing
+> at those who are both feet in the mud trying to contain the flood rather
+> than actually helping then nothing will change.
 
-							Thanx, Paul
+The reason nothing seems to be changing is that you don't seem to
+think it's even WORTH fixing. I really don't understand your
+arguments.
 
-------------------------------------------------------------------------
+They seem to boil down to the same thing that always happens in the
+embedded world, and why most of the hardware and software is crap:
+people don't think further than their own small project.
 
-commit 316b740440ea0a54615a3516df536fbf9a4c11b8
-Author: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date:   Fri Mar 18 11:15:47 2011 +0800
+It's why embedded OS's have always been crap, and it's why Linux is
+becomign so important to ARM - exactly because the embedded world
+(both software and hardware) always just look at their own issue, and
+say "hey, this is working for me right now, so I won't bother to try
+to solve the bigger issues, because it's not worth my time".
 
-    rcu: introduce kfree_rcu()
-    
-    Many rcu callbacks functions just call kfree() on the base structure.
-    These functions are trivial, but their size adds up, and furthermore
-    when they are used in a kernel module, that module must invoke the
-    high-latency rcu_barrier() function at module-unload time.
-    
-    The kfree_rcu() function introduced by this commit addresses this issue.
-    Rather than encoding a function address in the embedded rcu_head
-    structure, kfree_rcu() instead encodes the offset of the rcu_head
-    structure within the base structure.  Because the functions are not
-    allowed in the low-order 4096 bytes of kernel virtual memory, offsets
-    up to 4095 bytes can be accommodated.  If the offset is larger than
-    4095 bytes, a compile-time error will be generated in __kfree_rcu().
-    If this error is triggered, you can either fall back to use of call_rcu()
-    or rearrange the structure to position the rcu_head structure into the
-    first 4096 bytes.
-    
-    Note that the allowable offset might decrease in the future, for example,
-    to allow something like kmem_cache_free_rcu().
-    
-    The new kfree_rcu() function can replace code as follows:
-    
-    	call_rcu(&p->rcu, simple_kfree_callback);
-    
-    where "simple_kfree_callback()" might be defined as follows:
-    
-    	void simple_kfree_callback(struct rcu_head *p)
-    	{
-    		struct foo *q = container_of(p, struct foo, rcu);
-    
-    		kfree(q);
-    	}
-    
-    with the following:
-    
-    	kfree_rcu(&p->rcu, rcu);
-    
-    Note that the "rcu" is the name of a field in the structure being
-    freed.  The reason for using this rather than passing in a pointer
-    to the base structure is that the above approach allows better type
-    checking.
-    
-    This commit is based on earlier work by Lai Jiangshan and Manfred Spraul:
-    
-    Lai's V1 patch: http://lkml.org/lkml/2008/9/18/1
-    Manfred's patch: http://lkml.org/lkml/2009/1/2/115
-    
-    Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-    Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+To hammer that in:
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index af56148..70c932f 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -777,4 +777,60 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
- }
- #endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
- 
-+static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
-+{
-+	return offset < 4096;
-+}
-+
-+static __always_inline
-+void __kfree_rcu(struct rcu_head *head, unsigned long offset)
-+{
-+	typedef void (*rcu_callback)(struct rcu_head *);
-+
-+	BUILD_BUG_ON(!__builtin_constant_p(offset));
-+
-+	/* See the kfree_rcu() header comment. */
-+	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
-+
-+	call_rcu(head, (rcu_callback)offset);
-+}
-+
-+extern void kfree(const void *);
-+
-+static inline void __rcu_reclaim(struct rcu_head *head)
-+{
-+	unsigned long offset = (unsigned long)head->func;
-+
-+	if (__is_kfree_rcu_offset(offset))
-+		kfree((void *)head - offset);
-+	else
-+		head->func(head);
-+}
-+
-+/**
-+ * kfree_rcu() - kfree an object after a grace period.
-+ * @ptr:	pointer to kfree
-+ * @rcu_head:	the name of the struct rcu_head within the type of @ptr.
-+ *
-+ * Many rcu callbacks functions just call kfree() on the base structure.
-+ * These functions are trivial, but their size adds up, and furthermore
-+ * when they are used in a kernel module, that module must invoke the
-+ * high-latency rcu_barrier() function at module-unload time.
-+ *
-+ * The kfree_rcu() function handles this issue.  Rather than encoding a
-+ * function address in the embedded rcu_head structure, kfree_rcu() instead
-+ * encodes the offset of the rcu_head structure within the base structure.
-+ * Because the functions are not allowed in the low-order 4096 bytes of
-+ * kernel virtual memory, offsets up to 4095 bytes can be accommodated.
-+ * If the offset is larger than 4095 bytes, a compile-time error will
-+ * be generated in __kfree_rcu().  If this error is triggered, you can
-+ * either fall back to use of call_rcu() or rearrange the structure to
-+ * position the rcu_head structure into the first 4096 bytes.
-+ *
-+ * Note that the allowable offset might decrease in the future, for example,
-+ * to allow something like kmem_cache_free_rcu().
-+ */
-+#define kfree_rcu(ptr, rcu_head)					\
-+	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
-+
- #endif /* __LINUX_RCUPDATE_H */
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 0c343b9..4d60fbc 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -167,7 +167,7 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
- 		prefetch(next);
- 		debug_rcu_head_unqueue(list);
- 		local_bh_disable();
--		list->func(list);
-+		__rcu_reclaim(list);
- 		local_bh_enable();
- 		list = next;
- 		RCU_TRACE(cb_count++);
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 89e7dbb..4e1d925 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1161,7 +1161,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
- 		next = list->next;
- 		prefetch(next);
- 		debug_rcu_head_unqueue(list);
--		list->func(list);
-+		__rcu_reclaim(list);
- 		list = next;
- 		if (++count >= rdp->blimit)
- 			break;
+
+> ...  And the fact is that _users_ of the
+> ARM kernel are not complaining.  Things are far from being perfect, but
+> so far things have been "good enough" for the majority of the people
+> involved, and improvements are constantly being worked on with the men
+> power available.
+
+You really don't seem to care about how Thomas was complaining about
+the whole maintenance issue. As he was trying to clean up irq
+handling, the pure flow of more crap just made it hard to ever catch
+up. THAT is the kind of maintenance problem where I go "This is a big
+problem".
+
+But for some individual board user or the code-monkey who creates yet
+another board description, this isn't a problem. Because he's looking
+at a single kernel and a single board at a time, and seldom cares
+about anything else.
+
+But guess what? That really _is_ a problem. And it's likely to be a
+bigger problem in the future. Look at how we're actually starting to
+see vendors who are making ARM into more of a real platform, rather
+than a succession of one-off embedded boards, and think about what
+that actually will entail.
+
+I'm talking about things like ASUS getting their feet wet making
+netbooks with ARM. Things like that have been promised for the last
+several years now, and so far it's been a total failure.
+
+And it's going to CONTINUE to be a failure, unless the ARM platform
+mess can be sorted out.
+
+Why? Think of the Ubuntu's etc of the world. If you can't make
+half-way generic install images, you can't have a reasonably generic
+distribution. And if you don't have that, then what happens to your
+developer situation? Most sane people won't touch it with a ten-foot
+pole, because the bother is simply not worth their time.
+
+So the current embedded mindset of "hey, it's working for all these
+individual people" is just broken. It's broken for multiple reasons.
+It's broken because it makes it much harder to do top-level
+maintenance (but the low-level guys don't care), and it's broken
+because it results in insane fragmentation where it basically is never
+an option to support anything but one - or a couple - particular
+device.
+
+The ARM -core- situation is simple, and those high-level people can
+(and do) say that they'll just support ARM7 and screw all the other
+cores.
+
+But the platform problem is real. And it does need some solution,
+because continuing to just do the same thing really does mean that
+some new things simply cannot be done.
+
+And the fact that it's been "good enough" in the past when every
+single board was always just a one-off and had nothing to do with
+other boards does _not_ mean that it's going to continue to be good
+enough.
+
+So the _good_ news is that all the high-end ARM's are largely
+consolidating anyway, and when we're talking Cortex-A9 class hardware,
+there generally aren't millions of SoC's. And I'm hoping the hardware
+people are actually aware of this (presumably because their customers
+are starting to push back against pointless hw churn too) and clearly
+some manufacturers are trying to -create- platforms like OMAP that try
+to have lots of shared characteristics (and then screw up a lot of the
+details, but whatever).
+
+But I still do think that on the software side, people need to stop
+doing the whole "let's just copy that platform code for this other
+platform that is quite similar but has a different XYZ chip".
+
+                                   Linus
