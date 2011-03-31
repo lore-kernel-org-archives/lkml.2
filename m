@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964894Ab1CaIbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 04:31:18 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47168 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753387Ab1CaIbO (ORCPT
+	id S964945Ab1CaIbi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 04:31:38 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:43401 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933802Ab1CaIbf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 04:31:14 -0400
-Date: Thu, 31 Mar 2011 09:30:45 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Nicolas Pitre <nico@fluxnic.net>, david@lang.hm,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110331083044.GB14323@n2100.arm.linux.org.uk>
-References: <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110331080634.GA18022@elte.hu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 31 Mar 2011 04:31:35 -0400
+Date: Thu, 31 Mar 2011 10:30:54 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Carlos Corbacho <carlos@strangeworlds.co.uk>,
+        Matthew Garrett <mjg@redhat.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "Lee, Chun-Yi" <jlee@novell.com>
+Subject: Re: [PATCH] acer-wmi: does not set persistence state by
+ rfkill_init_sw_state
+Message-ID: <20110331103054.73438ab5@schatten.dmk.lab>
+In-Reply-To: <1301516277-1752-1-git-send-email-florian@mickler.org>
+References: <1301516277-1752-1-git-send-email-florian@mickler.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 10:06:34AM +0200, Ingo Molnar wrote:
-> Having strong, effective platform abstractions inside the kernel really helps 
-> even if the hardware space itself is inevitably fragmented: both powerpc and 
-> x86 has shown that. Until you realize and appreciate that you really have not 
-> understood the problem i think.
+On Wed, 30 Mar 2011 22:17:57 +0200
+Florian Mickler <florian@mickler.org> wrote:
 
-No, I think it is the other way around.  Folk like me and Nicolas over
-the last ten years have put considerable amounts of effort into trying
-to keep the ARM support code as clean and maintainable as possible.
+> From: Lee, Chun-Yi <joeyli.kernel@gmail.com>
+> 
+> Acer BIOS keeps devices state when system reboot, but reset to default
+> device states (Wlan on, Bluetooth off, wwan on) if system cold boot.
+> That means BIOS's initial state is not always real persistence.
+> 
+> So, removed rfkill_init_sw_state because it sets initial state to
+> persistence then replicate to other new killswitch when rfkill-input
+> enabled.
+> After removed it, acer-wmi set initial soft-block state after rfkill
+> register, and doesn't allow set_block until rfkill initial finished.
+> 
+> Reference: bko#31002
+> 	https://bugzilla.kernel.org/show_bug.cgi?id=31002
+> 
+> Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Cc: Dmitry Torokhov <dtor@mail.ru>
+> Cc: Corentin Chary <corentincj@iksaif.net>
+> Cc: Johannes Berg <johannes@sipsolutions.net>
+> Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> Tested-by: OldÅich JedliÄka <oldium.pro@seznam.cz>
+> Signed-off-by: Florian Mickler <florian@mickler.org>
+> ---
+> 
+> This fixes a regression, but no stable annotation was given...
+> 
+> Oversight? Matthew/Chun-Yi please take a look. 
+> 
 
-That is true of the common ARM stuff, but there's no way we can do this
-for all SoC support - there aren't the hours in the day to provide such
-a wide oversight.  That's why we have SoC maintainers, and the SoC
-maintainers have the responsibility to sort out their own sub-trees.
+I forgot: This is upstream
+commit 8215af019040ce9182728afee9642d8fdeb17f59 .
+
+As for the Tested-by:, I think that's borked in git. At least I can't
+get it out of git correctly. It should be:
+Tested-by: Oldřich Jedlička <oldium.pro@seznam.cz> 
+
+Thanks,
+Flo
+
