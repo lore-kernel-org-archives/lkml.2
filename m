@@ -1,121 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab1CaUNf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 16:13:35 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:47352 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751950Ab1CaUNe (ORCPT
+	id S1753792Ab1CaUZo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 16:25:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44844 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab1CaUZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 16:13:34 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: OP3kMjoVM1ntkKZ85RJuFRpgO0JUHH11FhXlIVtHfC.i3JE
- .X8uxmoHqr91HiaE54DOwF1Yx3hV.kcaiu3VRLwarcDieRmimYMyKpQ6GDSh
- 7YfUrd4kik6a3y1sP8HbkU9NI6Jjs0KP.N4oCT0wkTsjW8cQv9wsjEb.2AGC
- fOYGcUSPL2jswP.ROYGrYbx7jqNyp_H_Sl_VH2QBUqPhKF2s0RIXUdFMqXV.
- qdKzqbLAD1S5kMREEZNz9EBewSTzm0cRBJgdxo1TBtg5.BcLDFVp0yWKJDly
- zKgw195dis0IY9xC5qJPKQczukZji4tO.yZI8vFBBQ18ACr4E
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 31 Mar 2011 15:13:30 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        akpm@linux-foundation.org, npiggin@kernel.dk, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
-In-Reply-To: <20110331144145.0ECA.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1103311451530.28364@router.home>
-References: <20110330052819.8212.1359.stgit@localhost6.localdomain6> <20110331144145.0ECA.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 31 Mar 2011 16:25:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=ZkAHfIcDPWDv9AY1GsOfd+0L7FdicS+AhCL3nsgKUNTEWtPGgyvuvyBZCqU1/mJtOH
+         F1qBQ+0YI77vMF9XXwpX5lcNJMxzRtY2BVfNSEncZpUwBaS+LJMNPhuxZim0PjDId+jh
+         0nBfimD7109/ln4BGIVj0YEBETNT5KBLgHyoE=
+Message-ID: <4D94E33E.6030108@openvz.org>
+Date: Fri, 01 Apr 2011 00:25:34 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jason Wessel <jason.wessel@windriver.com>
+CC: Dongdong Deng <libfetion@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Lin Ming <ming.m.lin@intel.com>, Don Zickus <dzickus@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        KGDB Mailing List <Kgdb-bugreport@lists.sourceforge.net>
+Subject: Re: [PATCH -tip] kgdb, x86: Pull up NMI notifier handler priority
+References: <4D8A58E1.5090509@openvz.org>	<AANLkTimU3Hw5ZSo86Fv4RUtNPtS3kZBoWm4kh4MQaymu@mail.gmail.com> <AANLkTim_EDeYGu6_rsSh_3zDTW7mN5+Gwsb0t4HjKx6o@mail.gmail.com> <4D94BC9D.3040009@windriver.com>
+In-Reply-To: <4D94BC9D.3040009@windriver.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011, KOSAKI Motohiro wrote:
+On 03/31/2011 09:40 PM, Jason Wessel wrote:
+...
+> The net result. I'll sign-off on the kgdb change and add a TODO item to wait for the jump patching to enter the kernel.
+> 
+> Cyrill, I am assuming this is something we want to aim to merge into the 2.6.39 as a regression fix? 
+> I'll try to get a version of Deng Dongdong's patch into linux-next as soon as possible in the mean time.
+> 
+> Cheers,
+> Jason.
 
-> 1) zone reclaim doesn't work if the system has multiple node and the
->    workload is file cache oriented (eg file server, web server, mail server, et al).
->    because zone recliam make some much free pages than zone->pages_min and
->    then new page cache request consume nearest node memory and then it
->    bring next zone reclaim. Then, memory utilization is reduced and
->    unnecessary LRU discard is increased dramatically.
+ Hi Jason, I think Deng Dongdong's patch is a good candidate for a while. Though Don mention another issue
+on his Celerone machine so I need to think about the reason for unknown NMIs he observes. I try to get access
+to p4 machine tomorrow and test some ideas. Will keep you in touch! (initially I thought to write a long post
+about possible hang scenarios but then found they all are crap and I better to check details on real p4 machine
+before claiming anything :).
 
-That is only true if the webserver only allocates from a single node. If
-the allocation load is balanced then it will be fine. It is useful to
-reclaim pages from the node where we allocate memory since that keeps the
-dataset node local.
-
->    SGI folks added CPUSET specific solution in past. (cpuset.memory_spread_page)
->    But global recliam still have its issue. zone recliam is HPC workload specific
->    feature and HPC folks has no motivation to don't use CPUSET.
-
-The spreading can also be done via memory policies. But that is only
-required if the application has an unbalanced allocation behavior.
-
-> 2) Before 2.6.27, VM has only one LRU and calc_reclaim_mapped() is used to
->    decide to filter out mapped pages. It made a lot of problems for DB servers
->    and large application servers. Because, if the system has a lot of mapped
->    pages, 1) LRU was churned and then reclaim algorithm become lotree one. 2)
->    reclaim latency become terribly slow and hangup detectors misdetect its
->    state and start to force reboot. That was big problem of RHEL5 based banking
->    system.
->    So, sc->may_unmap should be killed in future. Don't increase uses.
-
-Because a bank could not configure its system properly we need to get rid
-of may_unmap? Maybe raise min_unmapped_ratio instead and take care that
-either the allocation load is balanced or a round robin scheme is
-used by the app?
-
-> And, this patch introduce new allocator fast path overhead. I haven't seen
-> any justification for it.
-
-We could do the triggering differently.
-
-> In other words, you have to kill following three for getting ack 1) zone
-> reclaim oriented reclaim 2) filter based LRU scanning (eg sc->may_unmap)
-> 3) fastpath overhead. In other words, If you want a feature for vm guest,
-> Any hardcoded machine configration assumption and/or workload assumption
-> are wrong.
-
-It would be good if you could come up with a new reclaim scheme that
-avoids the need for zone reclaim and still allows one to take advantage of
-memory distances. I agree that the current scheme sometimes requires
-tuning too many esoteric knobs to get useful behavior.
-
-> But, I agree that now we have to concern slightly large VM change parhaps
-> (or parhaps not). Ok, it's good opportunity to fill out some thing.
-> Historically, Linux MM has "free memory are waste memory" policy, and It
-> worked completely fine. But now we have a few exceptions.
->
-> 1) RT, embedded and finance systems. They really hope to avoid reclaim
->    latency (ie avoid foreground reclaim completely) and they can accept
->    to make slightly much free pages before memory shortage.
-
-In general we need a mechanism to ensure we can avoid reclaim during
-critical sections of application. So some way to give some hints to the
-machine to free up lots of memory (/proc/sys/vm/dropcaches is far too
-drastic) may be useful.
-
-> And, now we have four proposal of utilization related issues.
->
-> 1) cleancache (from Oracle)
-> 2) VirtFS (from IBM)
-> 3) kstaled (from Google)
-> 4) unmapped page reclaim (from you)
->
-> Probably, we can't merge all of them and we need to consolidate some
-> requirement and implementations.
-
-Well all these approaches show that we have major issues with reclaim and
-large memory. Things get overly complicated. Time for a new approach that
-integrates all the goals that these try to accomplish?
-
-> Personally I think cleancache or other multi level page cache framework
-> looks promising. but another solution is also acceptable. Anyway, I hope
-> to everyone back 1000feet bird eye at once and sorting out all requiremnt
-> with all related person.
-
-Would be good if you could takle that problem.
+-- 
+    Cyrill
