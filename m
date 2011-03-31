@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758258Ab1CaPXJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:23:09 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:56817 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753091Ab1CaPXH (ORCPT
+	id S1758270Ab1CaPXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:23:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:50727 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab1CaPXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:23:07 -0400
-Date: Thu, 31 Mar 2011 18:23:02 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Ramya Desai <ramya.desai@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: GPL License Query on a Plain Linux Application
-Message-ID: <20110331152301.GL5465@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <AANLkTi=aT2-ugOhDdSuh241PF-Sz-fFL1BkCUahoq0+o@mail.gmail.com>
+	Thu, 31 Mar 2011 11:23:21 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=XYJHFtupD_QA:10 a=Q3TRN94aEHEA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=64FLKib8zJ8yjf410YkA:9 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Thu, 31 Mar 2011 11:23:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dzickus@redhat.com
+Subject: Re: [PATCH]: Use cmpxchg() in WARN_*_ONCE() functions
+Message-ID: <20110331152319.GC14441@home.goodmis.org>
+References: <20110331124607.13219.33332.sendpatchset@prarit.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=aT2-ugOhDdSuh241PF-Sz-fFL1BkCUahoq0+o@mail.gmail.com>
+In-Reply-To: <20110331124607.13219.33332.sendpatchset@prarit.bos.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+On Thu, Mar 31, 2011 at 08:46:07AM -0400, Prarit Bhargava wrote:
+> An issue popped up where WARN_ON_ONCE() was used in a callback function
+> in smp_call_function().  This resulted in the WARN_ON executing multiple times
+> when it should have only executed once.
 
-On Thu, Mar 31, 2011 at 08:49:34PM +0530, Ramya Desai wrote:
-> I have written an application where it uses plain system calls like
-> open, read, write etc. and runs in the user space. My question here,
-> is this application comes under GPL?
+But that is just once per cpu, correct?
+
 > 
-> Any ideas / hints would be appreciated.
+> I then did
+> 
+>         for (i = 0; i < 1000000; i++)
+>                 on_each_cpu(prarit_callback, NULL, 0);
+> 
+> The current code, of course, explodes :).  That's the bug I'm trying to fix.
 
-you might want to ask FSF.org for that. But bottomline is that if you're
-not linking with any GPL code, you don't have to be GPL if you don't
-want to, although there are many benefits of doing so (IMHO).
+How exactly does it explode? How many CPUs do you have, and does this
+still just print once per CPU?
 
--- 
-balbi
+> What is interesting in this test, however, is the impact that checking the
+> !__warned flag has [Aside: Checking the !__warned flag is an enhancement
+> and is not explicitly required for this code].
+> 
+> A run with just (!cmpxchg(&__warned, 0, 1)) results in an average of 21.323s,
+> and a run with  (!__warned && !cmpxchg(&__warned, 0, 1)) results in an
+> average of 20.233s.  Of course, the !__warned is not necessary for the code
+> to work properly but it seems to be a significant impact to the time to run
+> this code.
+
+Yes adding the check for !__warned first should have obvious benefits.
+
+I really do not see anything wrong with this patch, but personally, I
+would rather fix what caused the WARN_ON_ONCE() than fix the warning
+itself, as long as the warning itself does not really break anything
+else.
+
+-- Steve
