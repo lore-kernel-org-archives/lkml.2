@@ -1,162 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559Ab1CaKHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 06:07:09 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:43866 "EHLO mx2.fusionio.com"
+	id S933907Ab1CaKMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 06:12:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59774 "EHLO linutronix.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751730Ab1CaKHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 06:07:07 -0400
-X-ASG-Debug-ID: 1301566025-01de284cf8e4fe0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D945247.4080404@fusionio.com>
-Date: Thu, 31 Mar 2011 12:07:03 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1757166Ab1CaKMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 06:12:07 -0400
+Date: Thu, 31 Mar 2011 12:11:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Nicolas Pitre <nico@fluxnic.net>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+In-Reply-To: <alpine.LFD.2.00.1103302319290.28032@xanadu.home>
+Message-ID: <alpine.LFD.2.00.1103310928240.22418@localhost6.localdomain6>
+References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com> <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+ <20110331001502.GB6680@n2100.arm.linux.org.uk> <AANLkTinE7EDbV8hrYZWBxgvwOxdPMLoS0Y57PSm04rvM@mail.gmail.com> <alpine.LFD.2.00.1103302319290.28032@xanadu.home>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Rob Landley <rlandley@parallels.com>
-CC: Pete Clements <clem@clem.clem-digital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
-References: <201103291551.p2TFpDqZ001692@clem.clem-digital.net> <4D92C874.7040104@parallels.com> <4D931634.5030807@fusionio.com> <4D933584.5050005@parallels.com> <4D94432D.5080601@fusionio.com> <4D944544.9040705@parallels.com>
-X-ASG-Orig-Subj: Re: Commit 7eaceaccab5f40 causing boot hang.
-In-Reply-To: <4D944544.9040705@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1301566025
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59492
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-31 11:11, Rob Landley wrote:
-> On 03/31/2011 04:02 AM, Jens Axboe wrote:
->> On 2011-03-30 15:52, Rob Landley wrote:
->>> On 03/30/2011 06:38 AM, Jens Axboe wrote:
->>>> On 2011-03-30 08:06, Rob Landley wrote:
->>>>> On 03/29/2011 10:51 AM, Pete Clements wrote:
->>>>>> Quoting Jens Axboe
->>>>>>   > 
->>>>>>   > On 2011-03-29 16:13, Rob Landley wrote:
->>>>>>   > > On 03/29/2011 08:59 AM, Jens Axboe wrote:
->>>>>>   > >> On 2011-03-29 10:52, Rob Landley wrote:
->>>>>>   > >>> I'm booting all this under kvm or qemu, by the way:
->>>>>>   > >>>
->>>>>>   > >>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
->>>>>>   > >>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
->>>>>>   > >>>
->>>>>>   > >>> Sometimes with init=/bin/bash in that last quoted bit.  The root
->>>>>>   > >>> filesystem's debian sid but that's probably not relevant because it
->>>>>>   > >>> worked fine with .38.
->>>>>>   > >>
->>>>>>   > >> Does this help?
->>>>>>   > >>
->>>>>>   > >> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
->>>>>>   > >> index 0e406d73..ca27d30 100644
->>>>>>   > >> --- a/drivers/ide/ide-io.c
->>>>>>   > >> +++ b/drivers/ide/ide-io.c
->>>>>>   > >> @@ -570,8 +570,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->>>>>>   > >>  	spin_unlock_irqrestore(q->queue_lock, flags);
->>>>>>   > >>  
->>>>>>   > >>  	/* Use 3ms as that was the old plug delay */
->>>>>>   > >> -	if (rq)
->>>>>>   > >> -		blk_delay_queue(q, 3);
->>>>>>   > >> +	blk_delay_queue(q, 3);
->>>>>>   > >>  }
->>>>>>   > >>  
->>>>>>   > >>  static int drive_is_ready(ide_drive_t *drive)
->>>>>>   > >>
->>>>>>   > > 
->>>>>>   > > Nope, still hung the same way.
->>>>>>   > 
->>>>>>   > Funky. I'll try and reproduce this tonight.
->>>>>>   > 
->>>>>>   > -- 
->>>>>>   > Jens Axboe
->>>>>>   > 
->>>>>>
->>>>>> I have had a similiar problem (reported earlier) unable to boot.
->>>>>> With git15-18 hung with IDE drives (hda), git19-21 moved the hang down to
->>>>>> the IDE CDROM (hdc). Applied the above patch and now booted into git21 without
->>>>>> any hang and all appears ok.
->>>>>
->>>>> It may have made it better for me, it's hard to tell.
->>>>>
->>>>> I did a fresh pull, re-applied the patch, and tried again with
->>>>> init=/bin/sh and it booted to the shell prompt... which then hung when I
->>>>> did "ls -l /".
->>>>>
->>>>> If I let it boot normally, init announces itself, gives a spurious
->>>>> warning about a fstab field (which it's been doing for a while, my fault
->>>>> but harmless), then hangs.
->>>>>
->>>>>> This is i386, UP.
->>>>>
->>>>> I'm doing x86-64 SMP.
->>>>
->>>> I think we have the same issue the other location. How about this, then:
->>>>
->>>> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
->>>> index 0e406d73..4978ec3 100644
->>>> --- a/drivers/ide/ide-io.c
->>>> +++ b/drivers/ide/ide-io.c
->>>> @@ -549,12 +549,11 @@ plug_device:
->>>>  	spin_unlock_irq(&hwif->lock);
->>>>  	ide_unlock_host(host);
->>>>  plug_device_2:
->>>> +	blk_delay_queue(q, queue_run_ms);
->>>>  	spin_lock_irq(q->queue_lock);
->>>>  
->>>> -	if (rq) {
->>>> +	if (rq)
->>>>  		blk_requeue_request(q, rq);
->>>> -		blk_delay_queue(q, queue_run_ms);
->>>> -	}
->>>>  }
->>>>  
->>>>  void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->>>> @@ -570,8 +569,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->>>>  	spin_unlock_irqrestore(q->queue_lock, flags);
->>>>  
->>>>  	/* Use 3ms as that was the old plug delay */
->>>> -	if (rq)
->>>> -		blk_delay_queue(q, 3);
->>>> +	blk_delay_queue(q, 3);
->>>>  }
->>>>  
->>>>  static int drive_is_ready(ide_drive_t *drive)
->>>>
->>>
->>> Did a fresh pull and applied that patch.  (It conflicts with your
->>> previous one, but looks like it includes it.)
->>>
->>> Now it hangs after the "EXT3-fs: barriers not enabled" line, doesn't
->>> make it to init.
->>
->> I have tried hard to reproduce this, but even stock 2.6.39-rc1 works
->> fine for me here. Setup a KVM image with a debian 6 install, then
->> converted it to IDE and booting it with a custom kernel like you are.
->> Works fine, boots and I can do disk activity tests and it all works.
->>
->> Can you send me your .config?
+B1;2401;0cOn Thu, 31 Mar 2011, Nicolas Pitre wrote:
+> On Wed, 30 Mar 2011, Linus Torvalds wrote:
+> > And ARM fanbois can say "oh, but arm is special" all they want, but
+> > they need to realize that the lack of common platform for ARM is a
+> > real major issue. It's not a "feature", and I'm sorry, but anybody who
+> > calls x86 "peanuts" is a moron and should be ashamed of himself.
+> > Instead of trying to feel superior, those people should feel like
+> > pariah.
 > 
-> It was attached to the first message in this series, here it is again.
-> 
-> I update it via "make oldconfig" and hold down return.
-> 
-> I boot it via:
-> 
-> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
->   -hda ~/sid.ext3 -append "root=/dev/hda rw"
+> Oh come on.  You just provided actual numbers above showing that ARM is 
+> simply fscked up (your words) compared to X86.  I would be curious to 
+> know what people like tglx who did significant work on both 
+> architectures actually think of X86 relative to ARM when it comes to 
+> kernel maintenance.
 
-Much better, I see the hang now! Now to try and diagnose...
+To be honest both suck in their own way. The only reason why x86 is
+slightly less horrible is the fact that it's better architectured at
+the hardware level.
 
--- 
-Jens Axboe
+But I see the same mess coming in with all those wonderful Atom based
+SoCs on the horizon, which are nothing else than any other random ARM
+SoC, just that they glue an x86 core into the same cheepo random IP
+peripherals conglomerate. In fact some of those chip have been ARM
+powered before they got an x86 injected.
 
+And worse: the Intel folks went there and wrote a new driver for an IP
+block which had already an "ARM associated" driver.
+
+So I say that it is not only an ARM problem, it's a general problem
+that people do not realize that the IP cores are reused all over the
+place and across architectures.
+
+I'm pretty sure after I went through all the irq code recently that
+lots of those ARM SoCs from vendors across the board could share a lot
+of driver code if someone would actually sit down and analyse the
+situation. Right now we have nobody who has the time and the stomach
+to go through this and at the same time prevent that more copied
+crappola is hitting the tree.
+
+I'm sure that device tree is part of the solution, but that only helps
+if we find a way to prevent duplicate drivers in the first place.
+
+Thanks,
+
+	tglx
