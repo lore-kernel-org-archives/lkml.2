@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126Ab1CaF3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 01:29:12 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47079
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754038Ab1CaF3K (ORCPT
+	id S1755252Ab1CaFdd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 01:33:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42745 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab1CaFdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 01:29:10 -0400
-Date: Wed, 30 Mar 2011 22:28:32 -0700 (PDT)
-Message-Id: <20110330.222832.193698433.davem@davemloft.net>
-To: martinez.javier@gmail.com
-Cc: bhutchings@solarflare.com, ffainelli@freebox.fr, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net: Remove IRQF_SAMPLE_RANDOM flag from
- network drivers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1301365651-9106-1-git-send-email-martinez.javier@gmail.com>
-References: <1301365651-9106-1-git-send-email-martinez.javier@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Mar 2011 01:33:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NQdA8zed47KH5Pz6jUrWvAqfKqzGSPVrN5vtUbS5CGkeTUFvy/D+qAuO4jBXGX52bu
+         nNHSUgk1B84+LkjdL8rbtjQ9mnKktbpkL9XSj0M97I99d8NTnQ81ReMW1sGK9jxKle+3
+         v9e3NqcSUBvOcolIySvF/Og64zfKVXJxJtHpQ=
+Date: Wed, 30 Mar 2011 22:33:24 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: wanlong.gao@gmail.com
+Cc: w.sang@pengutronix.de, rpurdie@linux.intel.com,
+        broonie@opensource.wolfsonmicro.com, khali@linux-fr.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jiaweiwei.xiyou@gmail.com
+Subject: Re: [PATCH V2] Add the support of the touchscreen keypad of tsc2007 .
+Message-ID: <20110331053324.GB31630@core.coreip.homeip.net>
+References: <1301219192-5293-1-git-send-email-wanlong.gao@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301219192-5293-1-git-send-email-wanlong.gao@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Tue, 29 Mar 2011 04:27:31 +0200
+Hi Wanlong,
 
-> The IRQF_SAMPLE_RANDOM flag is marked as deprecated and will be removed.
+On Sun, Mar 27, 2011 at 05:46:32PM +0800, wanlong.gao@gmail.com wrote:
+> From: Wanlong Gao <wanlong.gao@gmail.com>
 > 
-> Every input point to the kernel's entropy pool have to better document the
-> type of entropy source it is.
-> 
-> drivers/char/random.c now implements a set of interfaces that can be used for
-> devices to collect enviromental noise. IRQF_SAMPLE_RANDOM will be replaced
-> with these add_*_randomness exported functions.
-> 
-> Network drivers are not a good source of entropy. They use as a source of
-> entropy essentially a remote host. Which means that the source of entropy can
-> be potentially controlled by an attacker. Also, with heavy workloads the
-> entropy decreases due to less hardware interrupts happening thanks to irq
-> mitigation and NAPI.
-> 
-> If a system relies in its network interface as a entropy source it has a false
-> sense of security. Systems that don't have devices whose drivers are good
-> sources of entropy, should either use a hardware random number generator or
-> feed the kernel's entropy pool from userspace using other sources of entropy
-> such as EGD, video_entropyd, timer_entropyd and audio-entropyd.
-> 
-> Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+> Many touchscreens support touch-keypad .
+> Open the definition of the TOUCHSCREEN_TSC2007_WITH_KEYPAD, you can
+> open the support of the touchscreen's keypad .
+> We can add the support of the touchscreen keypad in the driver.
+> In this patch , add the ts_key_pos array to determine the position
+> of the key's X. And the ts_key_sensitivity can use to detemine the
+> key's sensitivity. You can modify the ts_key_pos array for you own
+> touchscreen keys . And modify the ts_key_sensitivity for you own
+> key's sensitivity .
+> If you want to modify the ts_key_map, change the position of the
+> keys ,too.
 
-Appied to net-next-2.6, thanks!
+No, this kind of data transformation does not belong to a driver (or,
+really in kernel). It is in no way TSC2007 specific (any touchscreen
+could be used in place of TSC2007 here).
+
+Do it in userspace and either loop the events back into kernel (after
+parsing) via uinput or feed directly into your framework.
+
+Thanks.
+
+-- 
+Dmitry
