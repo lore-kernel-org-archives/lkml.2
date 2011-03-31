@@ -1,83 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964803Ab1CaPCA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:02:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59381 "EHLO linutronix.de"
+	id S1758030Ab1CaPEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:04:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9165 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758077Ab1CaPB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:01:59 -0400
-Date: Thu, 31 Mar 2011 17:01:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kevin Hilman <khilman@ti.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ingo Molnar <mingo@elte.hu>, Nicolas Pitre <nico@fluxnic.net>,
-        david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-In-Reply-To: <87d3l7jqpr.fsf@ti.com>
-Message-ID: <alpine.LFD.2.00.1103311647300.22418@localhost6.localdomain6>
-References: <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home>
- <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu>
- <20110331083044.GB14323@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1103311359320.22418@localhost6.localdomain6> <87d3l7jqpr.fsf@ti.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753055Ab1CaPEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:04:21 -0400
+Date: Thu, 31 Mar 2011 11:03:45 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: excessive kworker activity when idle. (was Re: vma corruption in
+ today's -git)
+Message-ID: <20110331150344.GB10163@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Tejun Heo <tj@kernel.org>
+References: <20110329040939.GA32764@redhat.com>
+ <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
+ <20110331030917.GB26057@redhat.com>
+ <AANLkTikYAAYcYxTdKAxQjDxVQ7qrZGEfXg+gpfwcj1=-@mail.gmail.com>
+ <20110331035511.GA1255@redhat.com>
+ <AANLkTikP5edK=YSRx7zuNqyfwez8qEHpFumYun6GOPxu@mail.gmail.com>
+ <20110331145850.GA10163@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110331145850.GA10163@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011, Kevin Hilman wrote:
+On Thu, Mar 31, 2011 at 10:58:50AM -0400, Dave Jones wrote:
+ 
+bah I missed a level. which seems to be the smoking gun.
+something in the tty layer seems to have gone nuts.
+ 
+ > -     17.67%  kworker/0:1  [kernel.kallsyms]  [k] read_hpet
+ >    - read_hpet                          
+ >       - 76.07% timekeeping_get_ns        
+ >          - ktime_get                      
+ >             - 64.02% tick_dev_program_event
+ >                  tick_program_event        
+ >                  hrtimer_interrupt          
+ >                  smp_apic_timer_interrupt    
+ >                + apic_timer_interrupt         
 
-> Thomas Gleixner <tglx@linutronix.de> writes:
-> 
-> > But the current SoC maintainer model does not work either. The SoC
-> > maintainers care about their sandbox and have exactly zero incentive
-> > to look at the overall picture, e.g reuse of code for the same IP
-> > blocks, better abstraction mechanisms etc. 
-> 
-> zero incentive?  that's a bit strong, IMO.
-> 
-> That may be true for some SoCs, it's not really fair as a sweeping
-> statement.
+                  - 52.24% _raw_spin_unlock_irqrestore 
+                     - 39.26% flush_to_ldisc             
+                          process_one_work              
+                          worker_thread                
+                          kthread                     
+                          kernel_thread_helper       
+                     - 32.52% __wake_up             
+                          put_ldisc                
+                          tty_ldisc_deref         
+                          flush_to_ldisc         
+                          process_one_work      
+                          worker_thread        
+                          kthread             
+                          kernel_thread_helper        
+                     - 28.22% tty_ldisc_try          
+                          tty_ldisc_ref             
+                          flush_to_ldisc           
+                          process_one_work        
+                          worker_thread          
+                          kthread               
+                          kernel_thread_helper 
+                  - 18.80% _raw_spin_unlock_irq   
+                       process_one_work          
+                       worker_thread            
+                       kthread                 
+                       kernel_thread_helper    
+                  - 18.80% _raw_spin_unlock_irq
+                       process_one_work       
+                       worker_thread         
+                       kthread              
+                       kernel_thread_helper
+                  - 5.98% process_one_work         
+                       worker_thread              
+                       kthread                   
+                       kernel_thread_helper     
+                  - 4.81% lock_acquire         
+                       process_one_work       
+                       worker_thread         
+                       kthread              
+                       kernel_thread_helper
+                  - 4.70% put_ldisc       
+                       tty_ldisc_deref  
+                       flush_to_ldisc      
+                       process_one_work  
+                       worker_thread   
+                       kthread        
+                       kernel_thread_helper          
+                  - 4.17% worker_thread             
+                       kthread                     
+                       kernel_thread_helper       
+                  - 4.17% lock_release           
+                       process_one_work         
+                       worker_thread           
+                       kthread                
+                       kernel_thread_helper  
+                  - 1.28% flush_to_ldisc    
+                       process_one_work    
+                       worker_thread      
+                       kthread           
+                       kernel_thread_helper     
+                  - 1.28% arch_local_irq_save   
+                     - 58.33% lock_release      
+                          process_one_work      
+                          worker_thread         
+                          kthread               
+                          kernel_thread_helper  
+                     - 41.67% lock_acquire      
+                          process_one_work      
+                          worker_thread         
+                          kthread               
+                          kernel_thread_helper  
+                  - 0.85% tty_ldisc_deref       
+                       flush_to_ldisc           
+                       process_one_work         
+                       worker_thread            
+                       kthread                  
+                       kernel_thread_helper     
+                  - 0.85% _raw_spin_lock_irqsave
+                     - 62.51% flush_to_ldisc    
+                          process_one_work      
+                          worker_thread         
+                          kthread               
+                          kernel_thread_helper  
+                     - 37.49% tty_ldisc_try     
+                          tty_ldisc_ref       
+                          flush_to_ldisc        
+                          process_one_work      
+                          worker_thread         
+                          kthread               
+                          kernel_thread_helper      
+                  - 0.53% tty_ldisc_ref    
+                       flush_to_ldisc       
+                       process_one_work      
+                       worker_thread          
+                       kthread      
 
-Fair enough, but it's the perception in general.
-
-> Conference (ELC, US and Europe.)  Especially as IP blocks are reused
-> across SoC families, abstractions like runtime PM are the only way to
-> keep the SoC specifics of PM out of the common driver.
-
-Right, I know that these things happen, but at the same time the sheer
-amount of stuff flowing in makes it hard that these infrastructure
-stuff really works out. And we are only at the beginning of the big
-shuffle "code in to mainline" game.
-
-After cleaning up the whole irq stuff across the tree I can tell you,
-that the mess is non-linear growing with the number of instances.
-
-You can see the patterns which are:
-    - copy and paste
-    - introduce different bugs
-    - add more abuse
-
-That's what I'm really concerned about.
-
-> Yes, ARM SoC maintainers have to make up some ground.  But compare this
-> to just a couple years ago where the common complaint was "why aren't
-> embedded SoC people contributing code to mainline", and you'll see we
-> have come a long way.
-
-Well, code comes in, which is progress. But we need to figure out how
-to deal with the increasingly growing flood before we drown in it.
-
-Thanks,
-
-	tglx
+ >             - 35.30% sched_clock_tick          
+ >                  scheduler_tick                 
+ >                  update_process_times            
+ >                  tick_sched_timer                 
+ >                  __run_hrtimer                     
+ >                  hrtimer_interrupt                  
+ >                  smp_apic_timer_interrupt            
+ >                - apic_timer_interrupt                 
+ >                   + 65.70% _raw_spin_unlock_irqrestore 
+ >                   + 27.33% _raw_spin_unlock_irq  
+ >                   + 1.16% lock_acquire            
+ >                   + 1.16% put_ldisc                
+ >                   + 1.16% process_one_work          
+ >                   + 1.16% lock_release               
+ >                   + 0.78% worker_thread               
+ >                   + 0.58% _raw_spin_lock_irqsave       
+ >             + 0.55% tick_sched_timer      
+ >       - 23.82% do_timer                    
+ >            tick_do_update_jiffies64         
+ >            tick_sched_timer                  
+ >            __run_hrtimer                      
+ >            hrtimer_interrupt                   
+ >            smp_apic_timer_interrupt             
+ >          - apic_timer_interrupt                  
+ >             + 63.46% _raw_spin_unlock_irqrestore  
+ >             + 22.98% _raw_spin_unlock_irq      
+ >             + 3.50% put_ldisc                   
+ >             + 3.28% lock_acquire                 
 
