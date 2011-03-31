@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758876Ab1CaVR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 17:17:58 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49337 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755592Ab1CaVRz (ORCPT
+	id S1758808Ab1CaVR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 17:17:57 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44754 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581Ab1CaVRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Mar 2011 17:17:55 -0400
-Date: Thu, 31 Mar 2011 15:17:52 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Subject: Re: [PATCH] gpio: pch_gpio: Fix output value of
- pch_gpio_direction_output()
-Message-ID: <20110331211752.GC437@ponder.secretlab.ca>
-References: <1301008634-25429-1-git-send-email-ptyser@xes-inc.com>
- <1301065440-2418-1-git-send-email-ptyser@xes-inc.com>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:organization:message-id:in-reply-to
+         :user-agent;
+        b=ri2EjTVLjHk2ynUnQapt9MFwnnWxaK1sIcBvrH5pf9LsSFNR1hfRsQaPM05oY0Bmzb
+         cGA2mSyWUTi2br7cNXPYtbAZp37L0k5r2CNVN2GLJp1Gszemzr22FCy8/i+ojqalKQMO
+         mVw0MGfLGQTzvp2mjGn7TD8kXNWGA5QfCT8bE=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Dave Hansen" <dave@linux.vnet.ibm.com>
+Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Ankita Garg" <ankita@in.ibm.com>,
+        "Daniel Walker" <dwalker@codeaurora.org>,
+        "Johan MOSSBERG" <johan.xx.mossberg@stericsson.com>,
+        "Mel Gorman" <mel@csn.ul.ie>, "Pawel Osciak" <pawel@osciak.com>
+Subject: Re: [PATCH 05/12] mm: alloc_contig_range() added
+References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
+ <1301577368-16095-6-git-send-email-m.szyprowski@samsung.com>
+ <1301587361.31087.1040.camel@nimitz> <op.vs7umufd3l0zgt@mnazarewicz-glaptop>
+ <1301603322.31087.1196.camel@nimitz>
+Date: Thu, 31 Mar 2011 23:17:51 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301065440-2418-1-git-send-email-ptyser@xes-inc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Organization: Google
+Message-ID: <op.vs7731po3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1301603322.31087.1196.camel@nimitz>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 10:04:00AM -0500, Peter Tyser wrote:
-> The pch_gpio_direction_output() function was missing a write to set the
-> desired output value.  The function would properly set the GPIO
-> direction, but not the output value.  The value would have to manually
-> be set with a follow up call to pch_gpio_set().
-> 
-> Add the missing write so that pch_gpio_direction_output() sets both the
-> GPIO direction and value.
-> 
-> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
-> Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-> Cc: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
+On Thu, 31 Mar 2011 22:28:42 +0200, Dave Hansen <dave@linux.vnet.ibm.com>  
+wrote:
 
-Applied, thanks.
+> On Thu, 2011-03-31 at 18:26 +0200, Michal Nazarewicz wrote:
+>> > On Thu, 2011-03-31 at 15:16 +0200, Marek Szyprowski wrote:
+>> >> +       ret = 0;
+>> >> +       while (!PageBuddy(pfn_to_page(start & (~0UL << ret))))
+>> >> +               if (WARN_ON(++ret >= MAX_ORDER))
+>> >> +                       return -EINVAL;
+>>
+>> On Thu, 31 Mar 2011 18:02:41 +0200, Dave Hansen wrote:
+>> > Holy cow, that's dense.  Is there really no more straightforward way  
+>> to
+>> > do that?
+>>
+>> Which part exactly is dense?  What would be qualify as a more
+>> straightforward way?
+>
+> I'm still not 100% sure what it's trying to do.  It looks like it
+> attempts to check all of "start"'s buddy pages.
 
-g.
-> ---
-> Just noticed this driver has the same bug.  This file looks nearly identical
-> to ml_ioh_gpio.c.  They could likely be combined with minimal effort.
-> 
->  drivers/gpio/pch_gpio.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
-> index c59d953..fa52862 100644
-> --- a/drivers/gpio/pch_gpio.c
-> +++ b/drivers/gpio/pch_gpio.c
-> @@ -105,6 +105,7 @@ static int pch_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
->  		reg_val |= (1 << nr);
->  	else
->  		reg_val &= ~(1 << nr);
-> +	iowrite32(reg_val, &chip->reg->po);
->  
->  	mutex_unlock(&chip->lock);
->  
-> -- 
-> 1.7.0.4
-> 
+No.  I'm going up through parents.  This is because even though start
+falls in a free block (ie. one that page allocator tracks), the actual
+page that is in buddy system is larger then start and this loop looks
+for beginning of that page.
+
+> int order;
+> for (order = 0; order <= MAX_ORDER; order++) {
+> 	unsigned long buddy_pfn = find_buddy(start, order);
+> 	struct page *buddy = pfn_to_page(buddy_pfn);
+> 	if (PageBuddy(buddy)
+> 		break;
+> 	WARN();
+> 	return -EINVAL;
+> }
+
+The WARN() and return would have to be outside of the loop and, as I
+described, instead of find_buddy() something like find_parent() would
+have to be used.
+
+> I'm wondering also if you can share some code with __rmqueue().
+
+Doubtful since start does not (have to) point to a page that is tracked
+by page allocator but a page inside such a page.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
