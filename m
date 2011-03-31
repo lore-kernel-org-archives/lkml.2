@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab1CaOr7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:47:59 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:48200 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757479Ab1CaOr5 (ORCPT
+	id S1758037Ab1CaOsX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:48:23 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:53727 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758022Ab1CaOsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:47:57 -0400
-Message-ID: <4D94941B.9060103@canonical.com>
-Date: Thu, 31 Mar 2011 09:47:55 -0500
-From: Manoj <manoj.iyer@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	Thu, 31 Mar 2011 10:48:21 -0400
+X-IronPort-AV: E=Sophos;i="4.63,275,1299456000"; 
+   d="scan'208";a="5078815"
+Date: Thu, 31 Mar 2011 15:48:44 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Michael Leun <lkml20101129@newton.leun.net>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Mike Pagano <mpagano@gentoo.org>
+Subject: Re: 2.6.38.2 breaks suspend to disk
+In-Reply-To: <20110331090524.07ad0069@xenia.leun.net>
+Message-ID: <alpine.DEB.2.00.1103311546480.16492@kaball-desktop>
+References: <20110330203215.0a1a41a7@xenia.leun.net> <4D940DD0.7000704@kernel.org> <20110331090524.07ad0069@xenia.leun.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>
-CC: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: SDHCI: Ricoh [1180:e823] unable to mount MMC cards.
-References: <4D93AD5C.1070308@canonical.com>	<m34o6k43c4.fsf@pullcord.laptop.org> <4D93BDA9.1020107@canonical.com>	<m3vcz02mi1.fsf@pullcord.laptop.org> <4D948BC4.6020904@canonical.com> <m3sju3z6yc.fsf@pullcord.laptop.org>
-In-Reply-To: <m3sju3z6yc.fsf@pullcord.laptop.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 31 Mar 2011, Michael Leun wrote:
+> Nope, unfortunately this does not change anything (neither when
+> applying ontop of the tree resulting from bisecting, nor ontop
+> 2.6.38.2).
+> 
+> Just to make shure there was no mistake when bisecting I did
+> 
+> patch -R -p1 <~/linux-2.6.38.y.git-ff518ea26654e05d325d996f6e3a7f5f569cc2d5.txt
+> 
+> and then indeed it worked again.
 
->
-> How about setting CONFIG_MMC_RICOH_MMC?
+This patch fixes it for me.
 
-In fact that is one of the default config settings, so even if the card 
-reader was not present that option is always 'y'
 
->
-> config MMC_RICOH_MMC
->          bool "Ricoh MMC Controller Disabler  (EXPERIMENTAL)"
->          depends on MMC_SDHCI_PCI
->          help
->            This adds a pci quirk to disable Ricoh MMC Controller. This
->            proprietary controller is unnecessary because the SDHCI driver
->            supports MMC cards on the SD controller, but if it is not
->            disabled, it will steal the MMC cards away - rendering them
->            useless. It is safe to select this even if you don't
->            have a Ricoh based card reader.
->
+---
+
+save cr4 to mmu_cr4_features at boot time
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 5a0484a..0943eb2 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -891,6 +891,7 @@ void __init setup_arch(char **cmdline_p)
+ 		max_low_pfn = max_pfn;
+ 
+ 	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
++	mmu_cr4_features = read_cr4();
+ #endif
+ 
+ 	/*
