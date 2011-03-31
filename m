@@ -1,177 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758030Ab1CaPEX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:04:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9165 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab1CaPEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:04:21 -0400
-Date: Thu, 31 Mar 2011 11:03:45 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: excessive kworker activity when idle. (was Re: vma corruption in
- today's -git)
-Message-ID: <20110331150344.GB10163@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Tejun Heo <tj@kernel.org>
-References: <20110329040939.GA32764@redhat.com>
- <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
- <20110331030917.GB26057@redhat.com>
- <AANLkTikYAAYcYxTdKAxQjDxVQ7qrZGEfXg+gpfwcj1=-@mail.gmail.com>
- <20110331035511.GA1255@redhat.com>
- <AANLkTikP5edK=YSRx7zuNqyfwez8qEHpFumYun6GOPxu@mail.gmail.com>
- <20110331145850.GA10163@redhat.com>
+	id S1758111Ab1CaPEo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:04:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58240 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab1CaPEm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:04:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=Omi7rsafHiP1wkN9Ix3dKtDTpVmmPC1opaB5YFw8oiW2Q47V6vI+R8XRU5pI4OxuA7
+         nQBzxsRNbFwHQ7JgiytwhQCq0mBih8xr9SBzMiSL0kjFgjKvar2XpJ2TPNVv/8zFWkTc
+         fKWcxdoY9bM0BXrqaXLocy6WB0Fr/SzP48srA=
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>, jeffm@suse.com
+Subject: Re: Reiserfs deadlock in 2.6.36
+Date: Thu, 31 Mar 2011 17:04:37 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.37-trunk-amd64; KDE/4.4.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201011181650.00152.roucaries.bastien@gmail.com> <AANLkTinp4=c9qmVyfocUk_ydJ3PV50b9UckNhJJNFsFm@mail.gmail.com> <AANLkTimYiRYZVXtxLBNeGcG=KVJTTiaGn+XGYP2Y=XMo@mail.gmail.com>
+In-Reply-To: <AANLkTimYiRYZVXtxLBNeGcG=KVJTTiaGn+XGYP2Y=XMo@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110331145850.GA10163@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103311704.40372.roucaries.bastien@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 10:58:50AM -0400, Dave Jones wrote:
- 
-bah I missed a level. which seems to be the smoking gun.
-something in the tty layer seems to have gone nuts.
- 
- > -     17.67%  kworker/0:1  [kernel.kallsyms]  [k] read_hpet
- >    - read_hpet                          
- >       - 76.07% timekeeping_get_ns        
- >          - ktime_get                      
- >             - 64.02% tick_dev_program_event
- >                  tick_program_event        
- >                  hrtimer_interrupt          
- >                  smp_apic_timer_interrupt    
- >                + apic_timer_interrupt         
-
-                  - 52.24% _raw_spin_unlock_irqrestore 
-                     - 39.26% flush_to_ldisc             
-                          process_one_work              
-                          worker_thread                
-                          kthread                     
-                          kernel_thread_helper       
-                     - 32.52% __wake_up             
-                          put_ldisc                
-                          tty_ldisc_deref         
-                          flush_to_ldisc         
-                          process_one_work      
-                          worker_thread        
-                          kthread             
-                          kernel_thread_helper        
-                     - 28.22% tty_ldisc_try          
-                          tty_ldisc_ref             
-                          flush_to_ldisc           
-                          process_one_work        
-                          worker_thread          
-                          kthread               
-                          kernel_thread_helper 
-                  - 18.80% _raw_spin_unlock_irq   
-                       process_one_work          
-                       worker_thread            
-                       kthread                 
-                       kernel_thread_helper    
-                  - 18.80% _raw_spin_unlock_irq
-                       process_one_work       
-                       worker_thread         
-                       kthread              
-                       kernel_thread_helper
-                  - 5.98% process_one_work         
-                       worker_thread              
-                       kthread                   
-                       kernel_thread_helper     
-                  - 4.81% lock_acquire         
-                       process_one_work       
-                       worker_thread         
-                       kthread              
-                       kernel_thread_helper
-                  - 4.70% put_ldisc       
-                       tty_ldisc_deref  
-                       flush_to_ldisc      
-                       process_one_work  
-                       worker_thread   
-                       kthread        
-                       kernel_thread_helper          
-                  - 4.17% worker_thread             
-                       kthread                     
-                       kernel_thread_helper       
-                  - 4.17% lock_release           
-                       process_one_work         
-                       worker_thread           
-                       kthread                
-                       kernel_thread_helper  
-                  - 1.28% flush_to_ldisc    
-                       process_one_work    
-                       worker_thread      
-                       kthread           
-                       kernel_thread_helper     
-                  - 1.28% arch_local_irq_save   
-                     - 58.33% lock_release      
-                          process_one_work      
-                          worker_thread         
-                          kthread               
-                          kernel_thread_helper  
-                     - 41.67% lock_acquire      
-                          process_one_work      
-                          worker_thread         
-                          kthread               
-                          kernel_thread_helper  
-                  - 0.85% tty_ldisc_deref       
-                       flush_to_ldisc           
-                       process_one_work         
-                       worker_thread            
-                       kthread                  
-                       kernel_thread_helper     
-                  - 0.85% _raw_spin_lock_irqsave
-                     - 62.51% flush_to_ldisc    
-                          process_one_work      
-                          worker_thread         
-                          kthread               
-                          kernel_thread_helper  
-                     - 37.49% tty_ldisc_try     
-                          tty_ldisc_ref       
-                          flush_to_ldisc        
-                          process_one_work      
-                          worker_thread         
-                          kthread               
-                          kernel_thread_helper      
-                  - 0.53% tty_ldisc_ref    
-                       flush_to_ldisc       
-                       process_one_work      
-                       worker_thread          
-                       kthread      
-
- >             - 35.30% sched_clock_tick          
- >                  scheduler_tick                 
- >                  update_process_times            
- >                  tick_sched_timer                 
- >                  __run_hrtimer                     
- >                  hrtimer_interrupt                  
- >                  smp_apic_timer_interrupt            
- >                - apic_timer_interrupt                 
- >                   + 65.70% _raw_spin_unlock_irqrestore 
- >                   + 27.33% _raw_spin_unlock_irq  
- >                   + 1.16% lock_acquire            
- >                   + 1.16% put_ldisc                
- >                   + 1.16% process_one_work          
- >                   + 1.16% lock_release               
- >                   + 0.78% worker_thread               
- >                   + 0.58% _raw_spin_lock_irqsave       
- >             + 0.55% tick_sched_timer      
- >       - 23.82% do_timer                    
- >            tick_do_update_jiffies64         
- >            tick_sched_timer                  
- >            __run_hrtimer                      
- >            hrtimer_interrupt                   
- >            smp_apic_timer_interrupt             
- >          - apic_timer_interrupt                  
- >             + 63.46% _raw_spin_unlock_irqrestore  
- >             + 22.98% _raw_spin_unlock_irq      
- >             + 3.50% put_ldisc                   
- >             + 3.28% lock_acquire                 
-
+Le lundi 28 mars 2011 11:14:28, Bastien ROUCARIES a écrit :
+> On Tue, Mar 8, 2011 at 4:22 PM, Bastien ROUCARIES
+> 
+> <roucaries.bastien@gmail.com> wrote:
+> > On Tue, Mar 8, 2011 at 3:18 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> >> On Sun, Jan 30, 2011 at 01:08:29AM +0100, Bastien ROUCARIES wrote:
+> >>> Le jeudi 23 décembre 2010 04:42:33, Frederic Weisbecker a écrit :
+> >>> Hi,
+> >>> 
+> >>> I take me more than two days of testing to reporduce this bugs with
+> >>> trace enabled. My filesystem was quite slow and this bugs seems to be
+> >>> timing related.
+> 
+> Any news of this bug? Could I do something to help ?
+> 
+> bastien
+> 
+> > Ok bastien
