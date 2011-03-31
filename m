@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab1CaK2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 06:28:53 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40635 "EHLO mx2.mail.elte.hu"
+	id S1757232Ab1CaKbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 06:31:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25585 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab1CaK2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 06:28:51 -0400
-Date: Thu, 31 Mar 2011 12:28:36 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Len Brown <lenb@kernel.org>, x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH 0/9] x86 idle cruft removal - v2
-Message-ID: <20110331102836.GA3723@elte.hu>
-References: <1300950508-22746-1-git-send-email-lenb@kernel.org>
- <1301551404-8263-1-git-send-email-lenb@kernel.org>
- <20110331104549.3065ab29@lxorguk.ukuu.org.uk>
+	id S1752133Ab1CaKbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 06:31:17 -0400
+Message-ID: <4D9457BF.1040601@redhat.com>
+Date: Thu, 31 Mar 2011 12:30:23 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110331104549.3065ab29@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Ingo Molnar <mingo@elte.hu>
+CC: Robin Holt <holt@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Yinghai Lu <yinghai@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC 2/2] Make x86 calibrate_delay run in parallel.
+References: <20101215015840.390204279@gulag1.americas.sgi.com> <20101215015849.051095242@gulag1.americas.sgi.com> <AANLkTinoctZFKo4wBmrrdFggnjSj74QfqvEpz59sW15x@mail.gmail.com> <20110331065036.GC5938@elte.hu> <20110331065805.GG5938@elte.hu> <20110331093723.GE24046@sgi.com> <20110331095705.GA23319@elte.hu>
+In-Reply-To: <20110331095705.GA23319@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/31/2011 11:57 AM, Ingo Molnar wrote:
+> >
+> >  I am not trying to be argumentative.  I never got an understanding of
+> >  what was going wrong with that earlier patch and am hoping for some
+> >  understanding now.
+>
+> Well, if calibrate_delay() calls run in parallel then different hyperthreads
+> will impact each other.
 
-* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+It's different but not more wrong.  If delay() later runs on a thread 
+whose sibling is busy, it will in fact give more accurate results.
 
-> We don't care if it doesn't work on a few machines (in fact we have
-> a table to avoid that), we care that it *DOES* work on lots.
-> 
-> Removing it probably isn't a bad thing long term, but it's not appeared in
-> the deprecated list and has not been there for several releases so it is
-> not eligible for removal at this point.
-> 
-> People spent years getting Linux to support all this hardware and
-> throwing bits out left right and centre to tidy up your current project
-> is not the way it should be done.
-> 
-> So can we do this properly please. We have a process for good reason.
-> 
-> Deprecate it properly
+> >  Why does it spectacularly miscalibrate?  Can anything be done to correct
+> >  that miscalibration?  Doesn't this patch indicate another problem with
+> >  the calibration for hotplug cpus?  Isn't there already a problem if
+> >  you boot a cpu normally, then hot-remove a hyperthread of a cpu, run a
+> >  userland task which fully loads up all the cores on that socket, then
+> >  hot-add that hyperthread back in?  If the lpj value is that volatile,
+> >  what value does it really have?
+>
+> The typical CPU hotplug usecase is suspend/resume, where we bring down the CPUs
+> in a more or less controlled manner.
+>
+> Yes, you could achieve something similar by frobbing /sys/*/*/online but that's
+> a big difference to *always* running the calibration loops in parallel.
+>
+> I'd argue for the opposite direction: only calibrate a physical CPU once per
+> CPU per bootup - this would also make CPU hotplug faster btw.
+>
+> ( Virtual CPUs (KVM, etc.) need a recalibration per bringup, because the new
+>    CPU could be running on different hardware - but that's a detail: 4096 UV
+>    CPUs are not in this category. )
 
-Ok, agreed. Len, mind delaying this patch for a few releases?
+Virtual cpus change their performance dynamically due to overcommit, 
+live migration, the host scheduler rearranging them, etc.
 
-> Add a printk/WARN_ON() indicating to the user it is deprecated but we
-> will continue, and then give it a couple of releaes. Kerneloops.org will
-> help answer whether that WARN_ON was hit.
+> Really, there's no good reason why every CPU should be calibrated on a system
+> running identical CPUs, right? Mixed-frequency systems are rather elusive on
+> x86.
 
-Yeah, also add a -stable backport so that older kernel users have a chance to 
-notice faster.
+Good point.  And udelay() users are probably not sensitive to accuracy 
+anyway (which changes with load and thermal conditions).
 
-Thanks,
+-- 
+error compiling committee.c: too many arguments to function
 
-	Ingo
