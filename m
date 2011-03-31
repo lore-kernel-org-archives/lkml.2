@@ -1,37 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759085Ab1CaSu6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 14:50:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18382 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759070Ab1CaSu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 14:50:56 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4D82DB5B.9000302@cn.fujitsu.com>
-References: <4D82DB5B.9000302@cn.fujitsu.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: dhowells@redhat.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, James Morris <jmorris@namei.org>,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 31/36] security,rcu: convert call_rcu(user_update_rcu_disposal) to kfree_rcu()
-Date: Thu, 31 Mar 2011 19:50:40 +0100
-Message-ID: <16158.1301597440@redhat.com>
+	id S1759104Ab1CaSv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 14:51:56 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51260 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392Ab1CaSvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 14:51:55 -0400
+Date: Thu, 31 Mar 2011 20:51:53 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        ak@linux.intel.com, david-b@pacbell.net, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: Re: [PATCH] [115/275] OHCI: work around for nVidia shutdown problem
+Message-ID: <20110331185153.GM21838@one.firstfloor.org>
+References: <20110331060711.GL21838@one.firstfloor.org> <Pine.LNX.4.44L0.1103310948010.2025-100000@iolanthe.rowland.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1103310948010.2025-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
-
-> The rcu callback user_update_rcu_disposal() just calls a kfree(),
-> so we use kfree_rcu() instead of the call_rcu(user_update_rcu_disposal).
+> For now I think it should be dropped.  There is a fix for the problem
+> in that comment, but so far only one person has tested it (in fact,
+> only one person has reported having the problem).  For details, see the
+> thread starting here:
 > 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> 	http://marc.info/?l=linux-kernel&m=130132879827993&w=2
+> 
+> When the fix is approved and goes into the other stable kernels, then 
+> you can merge both patches.
+> 
 
-Nice idea, but how do you handle the container_of()?
-
-David
+Dropped for now. Thanks.
+-Andi
