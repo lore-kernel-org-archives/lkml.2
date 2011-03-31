@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933180Ab1CaJU5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 05:20:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45978 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932977Ab1CaJUx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 05:20:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=HAJiIe2t5qovvohrEB2AAxsNIDgd55sIYqorvhduFFT/bEgx8uU6sjKvCSA5lTA+sn
-         Cr+23QTdJdW8CVpqWQLlrur3avMyE1UzY7PBWyUh+ksF5rshXvb3i/IIRbt4URMu1KW7
-         EF+3d0/CJ8Cq7pew9mgvhEz/QeuONezBp/+9c=
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: John Williams <john.williams@petalogix.com>
-Cc: linux-usb@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: c67x00 gadget support?
-References: <AANLkTi=Xp3cP-CPeQx-XO45fsZ38qu21fYeDz6rbLe+s@mail.gmail.com>
-Date: Thu, 31 Mar 2011 11:20:35 +0200
-In-Reply-To: <AANLkTi=Xp3cP-CPeQx-XO45fsZ38qu21fYeDz6rbLe+s@mail.gmail.com>
-	(John Williams's message of "Thu, 31 Mar 2011 11:04:39 +1000")
-Message-ID: <8739m34pek.fsf@macbook.be.48ers.dk>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
+	id S933277Ab1CaJVs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 05:21:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54343 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933153Ab1CaJVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 05:21:47 -0400
+Date: Thu, 31 Mar 2011 11:21:45 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Simon Horman <horms@verge.net.au>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CREDITS: Leonard N. Zubkoff is no longer second last
+In-Reply-To: <20110331101942.160ac548@lxorguk.ukuu.org.uk>
+Message-ID: <alpine.LNX.2.00.1103311119440.26754@pobox.suse.cz>
+References: <1301555880-12117-1-git-send-email-horms@verge.net.au> <alpine.LNX.2.00.1103311020330.26754@pobox.suse.cz> <20110331101942.160ac548@lxorguk.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "John" == John Williams <john.williams@petalogix.com> writes:
+On Thu, 31 Mar 2011, Alan Cox wrote:
 
- John> Hi Peter K,
- John> Back in April 2007 you posted a patch series that included a prototype
- John> of gadget support for the c67x00.
+> > Well, dunno ... since Lenoard Zubkoff has passed away quite some time ago, 
+> > maybe this whole paragraph could just be removed.
+> 
+> This is CREDITS not MAINTAINERS, it should stay.
 
- John> http://www.spinics.net/lists/linux-usb-devel/msg04766.html
+I definitely didn't mean to remove Leonard's entry from CREDITS of course. 
+I just meant the sentence about Leonard being seriously pissed off when he 
+is not on certain place in this file might maybe be removed, rather than 
+fixing the wording by Simon's patch.
 
-Yes, long time ago ;)
-
- John> The host-side stuff is all merged, just wondering what, if
- John> anything, became of the gadget layer?  It was some low level
- John> tweaks on c67x00-drv.c but the majority was in c67x00-udc.[ch]
-
-I'm afraid it never went much further. We ended up not using the gadget
-side for that project, and haven't used the chip in any newer designs.
-
-I do remember that we ended up having to patch the bios code running on
-the device to get gadget mode running on port B. I'll see if I can find
-the latest code somewhere if you're interested.
+But frankly, I don't care too much.
 
 -- 
-Bye, Peter Korsgaard
+Jiri Kosina
+SUSE Labs, Novell Inc.
