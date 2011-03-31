@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab1CaUsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 16:48:38 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47945 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab1CaUsh (ORCPT
+	id S1755509Ab1CaUyI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 16:54:08 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59381 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab1CaUyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 16:48:37 -0400
-Date: Thu, 31 Mar 2011 14:48:33 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: gpio: pca953x: prevent freeing IRQ 0 on probe error
-Message-ID: <20110331204833.GA32522@ponder.secretlab.ca>
-References: <201103251502.54348.hartleys@visionengravers.com>
+	Thu, 31 Mar 2011 16:54:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=UFSPr0Pi6RtyAQcjzZGzzIhg3RnRO/zSlV+lmhvA8pMKRcE4JADX4XLpL4mDEOCC85
+         BRORtF0bOQWyEwDjlTACRJW3yoWRH/sKkFv2wNY3oqGJt/3IARq0mpNqc0yKIFwpJgDq
+         vG8pyBZ9CNJuIDOSr4Ahfkmqt4cSYg/SDMiMI=
+Message-ID: <4D94E9E7.2050600@suse.cz>
+Date: Thu, 31 Mar 2011 22:53:59 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103251502.54348.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Jack Stone <jwjstone@fastmail.fm>, Mac <kmac@poczta.fm>,
+        linux-kernel@vger.kernel.org, linux-ppp@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: 'scheduling while atomic' during ppp connection on 2.6.37.1 and
+ 2.6.38
+References: <fuopaigyaypsqveewtjx@pwmq>	<4D864A82.4090104@fastmail.fm>	<20110320215826.79cadfe2@lxorguk.ukuu.org.uk>	<4D87173D.50906@suse.cz> <20110321110214.5174f1b2@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110321110214.5174f1b2@lxorguk.ukuu.org.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 03:02:54PM -0700, H Hartley Sweeten wrote:
-> If CONFIG_GPIO_PCA953X_IRQ is enabled and an error occurs in the probe
-> before pca953x_irq_setup() is called chip->client->irq will be 0 due to
-> the kmalloc.  pca953x_irq_teardown() will then try to free_irq(0, chip)
-> which will produce a:
+On 03/21/2011 12:02 PM, Alan Cox wrote:
+>> Anyway is the test needed at all? I.e. could
+>> tty->ops->write/chars_in_buffer/ntty_write_room be called with
+>> port->port.count == 0 at all?
 > 
-> 	WARN(1, "Trying to free already-free IRQ %d\n", irq);
-> 
-> Add an error path to prevent this.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
+> I'm not entirely sure what the Nozomi driver is trying to do. Generally
+> any case a driver is looking at port->port.count it's a bug and should
+> not matter with the tty krefs. However the chances are it should be
+> testing *something* instead in this case.
 
-Thanks for catching this Hartley.
+Well, I looked into the history of the driver and into the driver
+itself. What I've found out is:
 
-Ben also submitted a patch for this and I ended up looking at his patch first, so that is what's applied.  :-)
+* tty_sem is useless now. It was used to protect port->tty_open_count
+which was later switched to port->port.count. The lock should have been
+switched to port->lock at that time too.
 
-g.
+* the port->port.count == 0 tests are an illusion of protection against
+race with hup.
 
-> 
-> ---
-> 
-> diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
-> index 2fc25de..e1ff4d5 100644
-> --- a/drivers/gpio/pca953x.c
-> +++ b/drivers/gpio/pca953x.c
-> @@ -523,7 +523,7 @@ static int __devinit pca953x_probe(struct i2c_client *client,
->  	if (pdata == NULL) {
->  		dev_dbg(&client->dev, "no platform data\n");
->  		ret = -EINVAL;
-> -		goto out_failed;
-> +		goto out_free;
->  	}
->  
->  	chip->client = client;
-> @@ -541,20 +541,20 @@ static int __devinit pca953x_probe(struct i2c_client *client,
->  
->  	ret = pca953x_read_reg(chip, PCA953X_OUTPUT, &chip->reg_output);
->  	if (ret)
-> -		goto out_failed;
-> +		goto out_free;
->  
->  	ret = pca953x_read_reg(chip, PCA953X_DIRECTION, &chip->reg_direction);
->  	if (ret)
-> -		goto out_failed;
-> +		goto out_free;
->  
->  	/* set platform specific polarity inversion */
->  	ret = pca953x_write_reg(chip, PCA953X_INVERT, pdata->invert);
->  	if (ret)
-> -		goto out_failed;
-> +		goto out_free;
->  
->  	ret = pca953x_irq_setup(chip, id);
->  	if (ret)
-> -		goto out_failed;
-> +		goto out_free;
->  
->  	ret = gpiochip_add(&chip->gpio_chip);
->  	if (ret)
-> @@ -572,6 +572,7 @@ static int __devinit pca953x_probe(struct i2c_client *client,
->  
->  out_failed:
->  	pca953x_irq_teardown(chip);
-> +out_free:
->  	kfree(chip->dyn_pdata);
->  	kfree(chip);
->  	return ret;
+IOW both of them are crap nowadays. The former doesn't protect anything,
+the latter is not protected by anything.
+
+What is the proper way to avoid a race with HUP in tty->ops->write,
+chars_in_buffer, ntty_write_room and possibly others?
+
+I looked into the drivers, moxa tests tty->driver_data (why? [1]), mxser
+does nothing as well as rocket and many others. What is the reference
+driver I should look into?
+
+[1] Perhaps leftover from when moxa_shutdown used to NULL it.
+
+I don't see why the driver should care at all. It has a tty,
+tty->driver_data and thus all the HW info. So it should ignore the race,
+i.e. test nothing, right?
+
+thanks,
+-- 
+js
+suse labs
