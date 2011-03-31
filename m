@@ -1,96 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab1CaKB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 06:01:59 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:56493 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab1CaKB6 (ORCPT
+	id S933830Ab1CaKDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 06:03:51 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39574 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757166Ab1CaKDt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 06:01:58 -0400
-Date: Thu, 31 Mar 2011 15:31:36 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/3] Implementation of cgroup isolation
-Message-ID: <20110331100136.GO2879@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20110328093957.089007035@suse.cz>
- <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
- <4D920066.7000609@gmail.com>
- <20110330081853.GC15394@tiehlicka.suse.cz>
+	Thu, 31 Mar 2011 06:03:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=wYtT3VeJOy+Wi2zmwqxjjPdMBO8azfAmpzy3a5jKUn4CoV8/gEgBVtwYjuA58PiSZK
+         U1LyK/exPAALY+J6nhwPScugV0axPSPBKlIzUsL1OH9xwl+RFwaJGrPeB56E7K3tWF4E
+         obRItfG1jmfIDJ9yB89acvo0uO4jLvV0amXFg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110330081853.GC15394@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <tip-706453b0d1fabf4dccbcffa29356d0dd6ab9afb9@git.kernel.org>
+References: <1301537604.2140.21.camel@offworld>
+	<tip-706453b0d1fabf4dccbcffa29356d0dd6ab9afb9@git.kernel.org>
+Date: Thu, 31 Mar 2011 12:03:48 +0200
+Message-ID: <AANLkTi=wZMCS_j+VAb4BpBJvoeh_cQpWVXgpdJ-tEmXN@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86, mce: Fix RCU lockdep from mce_poll()
+From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, dave@gnu.org, paulmck@linux.vnet.ibm.com,
+        zdenek.kabelac@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Michal Hocko <mhocko@suse.cz> [2011-03-30 10:18:53]:
+However on my machine - I do not a see a difference ?
 
-> On Tue 29-03-11 21:23:10, Balbir Singh wrote:
-> > On 03/28/11 16:33, KAMEZAWA Hiroyuki wrote:
-> > > On Mon, 28 Mar 2011 11:39:57 +0200
-> > > Michal Hocko <mhocko@suse.cz> wrote:
-> [...]
-> > > Isn't it the same result with the case where no cgroup is used ?
-> > > What is the problem ?
-> > > Why it's not a problem of configuration ?
-> > > IIUC, you can put all logins to some cgroup by using cgroupd/libgcgroup.
-> > > 
-> > 
-> > I agree with Kame, I am still at loss in terms of understand the use
-> > case, I should probably see the rest of the patches
-> 
-> OK, it looks that I am really bad at explaining the usecase. Let's try
-> it again then (hopefully in a better way).
-> 
-> Consider a service which serves requests based on the in-memory
-> precomputed or preprocessed data. 
-> Let's assume that getting data into memory is rather costly operation
-> which considerably increases latency of the request processing. Memory
-> access can be considered random from the system POV because we never
-> know which requests will come from outside.
-> This workflow will benefit from having the memory resident as long as
-> and as much as possible because we have higher chances to be used more
-> often and so the initial costs would pay off.
-> Why is mlock not the right thing to do here? Well, if the memory would
-> be locked and the working set would grow (again this depends on the
-> incoming requests) then the application would have to unlock some
-> portions of the memory or to risk OOM because it basically cannot
-> overcommit.
-> On the other hand, if the memory is not mlocked and there is a global
-> memory pressure we can have some part of the costly memory swapped or
-> paged out which will increase requests latencies. If the application is
-> placed into an isolated cgroup, though, the global (or other cgroups)
-> activity doesn't influence its cgroup thus the working set of the
-> application.
+I've this patch applied - and it still gives me the same error.
+(using 6aba74f2791287ec407e0f92487a725a25908067 and this patch)
 
-I think one important aspect is what percentage of the memory needs to
-be isolated/locked? If you expect really large parts, then we are in
-trouble, unless we are aware of the exact requirements for memory and
-know what else will run on the system.
+Here are my RCU config options:
 
-> If we compare that to mlock we will benefit from per-group reclaim when
-> we get over the limit (or soft limit). So we do not start evicting the
-> memory unless somebody makes really pressure on the _application_.
-> Cgroup limits would, of course, need to be selected carefully.
-> 
-> There might be other examples when simply kernel cannot know which
-> memory is important for the process and the long unused memory is not
-> the ideal choice.
+# grep RCU .config
+# RCU Subsystem
+CONFIG_TREE_PREEMPT_RCU=y
+CONFIG_PREEMPT_RCU=y
+CONFIG_RCU_TRACE=y
+CONFIG_RCU_FANOUT=64
+# CONFIG_RCU_FANOUT_EXACT is not set
+CONFIG_TREE_RCU_TRACE=y
+CONFIG_PROVE_RCU=y
+# CONFIG_PROVE_RCU_REPEATEDLY is not set
+# CONFIG_SPARSE_RCU_POINTER is not set
+# CONFIG_RCU_TORTURE_TEST is not set
+CONFIG_RCU_CPU_STALL_DETECTOR=y
+CONFIG_RCU_CPU_STALL_TIMEOUT=60
+CONFIG_RCU_CPU_STALL_DETECTOR_RUNNABLE=y
+CONFIG_RCU_CPU_STALL_VERBOSE=y
+
+
+2011/3/31 tip-bot for Davidlohr Bueso <dave@gnu.org>:
+> Commit-ID:  706453b0d1fabf4dccbcffa29356d0dd6ab9afb9
+> Gitweb:     http://git.kernel.org/tip/706453b0d1fabf4dccbcffa29356d0dd6ab9afb9
+> Author:     Davidlohr Bueso <dave@gnu.org>
+> AuthorDate: Wed, 30 Mar 2011 23:13:24 -0300
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Thu, 31 Mar 2011 11:06:08 +0200
 >
-
-There are other watermark based approaches that would work better,
-given that memory management is already complicated by topology, zones
-and we have non-reclaimable memory being used in the kernel on behalf
-of applications. I am not ruling out a solution, just sharing ideas.
-NOTE: In the longer run, we want to account for kernel usage and look
-at potential reclaim of slab pages. 
-
--- 
-	Three Cheers,
-	Balbir
+> x86, mce: Fix RCU lockdep from mce_poll()
+>
+> Based on the following message:
+>
+>  ===================================================
+>  [ INFO: suspicious rcu_dereference_check() usage. ]
+>  ---------------------------------------------------
+>  arch/x86/kernel/cpu/mcheck/mce.c:1628 invoked
+>  rcu_dereference_check() without protection!
+>
+>  other info that might help us debug this:
+>
+>  rcu_scheduler_active = 1, debug_locks = 1
+>  no locks held by mcelog/2350.
+>
+>  stack backtrace:
+>  Pid: 2350, comm: mcelog Tainted: G        W   2.6.37-rc1+ #7
+>  Call Trace:
+>   [<ffffffff8108e6d4>] lockdep_rcu_dereference+0xa4/0xc0
+>   [<ffffffff810189e9>] mce_poll+0xa9/0xd0
+>   [<ffffffff81160585>] do_sys_poll+0x275/0x550
+>   [<ffffffff8115f0e0>] ? __pollwait+0x0/0xf0
+>   [<ffffffff8115f1d0>] ? pollwake+0x0/0x60
+>   [<ffffffff8115f1d0>] ? pollwake+0x0/0x60
+>   [<ffffffff8130431c>] ? rcu_read_lock_held+0x2c/0x30
+>   [<ffffffff8130549a>] ? radix_tree_lookup_element+0xda/0x100
+>   [<ffffffff81121f08>] ? __do_fault+0x128/0x470
+>   [<ffffffff81100bdb>] ? filemap_fault+0xdb/0x4e0
+>   [<ffffffff810ffe75>] ? unlock_page+0x25/0x30
+>   [<ffffffff81069ddf>] ? sigprocmask+0x3f/0x100
+>   [<ffffffff8183672b>] ? _raw_spin_unlock_irq+0x2b/0x60
+>   [<ffffffff8108fefd>] ? trace_hardirqs_on_caller+0x13d/0x180
+>   [<ffffffff8108ff4d>] ? trace_hardirqs_on+0xd/0x10
+>   [<ffffffff8183672b>] ? _raw_spin_unlock_irq+0x2b/0x60
+>   [<ffffffff811608a7>] sys_ppoll+0x47/0x190
+>   [<ffffffff8108fefd>] ? trace_hardirqs_on_caller+0x13d/0x180
+>   [<ffffffff81835d39>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>   [<ffffffff810030eb>] system_call_fastpath+0x16/0x1b
+>
+> This code is simply checking the value of the pointer, and
+> therefore need not protect any actual dereferences. Replace
+> rcu_dereference_check_mce() with rcu_dereference_index_check().
+>
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> LKML-Reference: <1301537604.2140.21.camel@offworld>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 5a05ef6..a2d664f 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -1626,7 +1626,7 @@ out:
+>  static unsigned int mce_poll(struct file *file, poll_table *wait)
+>  {
+>        poll_wait(file, &mce_wait, wait);
+> -       if (rcu_dereference_check_mce(mcelog.next))
+> +       if (rcu_dereference_index_check(mcelog.next, rcu_read_lock_sched_held()))
+>                return POLLIN | POLLRDNORM;
+>        if (!mce_apei_read_done && apei_check_mce())
+>                return POLLIN | POLLRDNORM;
+>
