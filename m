@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758565Ab1CaP6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:58:07 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40189 "EHLO mx2.mail.elte.hu"
+	id S1758580Ab1CaP6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:58:15 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55330 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758246Ab1CaP6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:58:05 -0400
-Date: Thu, 31 Mar 2011 17:57:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
-        rja@sgi.com
-Subject: Re: [PATCH v3] x86: UV kdump reboot fix
-Message-ID: <20110331155754.GC9827@elte.hu>
-References: <E1Q5Iuo-00013b-UK@eag09.americas.sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1Q5Iuo-00013b-UK@eag09.americas.sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1758568Ab1CaP6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:58:11 -0400
+Subject: Re: [PATCH 04/12] mm: alloc_contig_freed_pages() added
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
+In-Reply-To: <1301577368-16095-5-git-send-email-m.szyprowski@samsung.com>
+References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
+	 <1301577368-16095-5-git-send-email-m.szyprowski@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 31 Mar 2011 08:58:03 -0700
+Message-ID: <1301587083.31087.1032.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-03-31 at 15:16 +0200, Marek Szyprowski wrote:
+> 
+> +unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
+> +                                      gfp_t flag)
+> +{
+> +       unsigned long pfn = start, count;
+> +       struct page *page;
+> +       struct zone *zone;
+> +       int order;
+> +
+> +       VM_BUG_ON(!pfn_valid(start));
 
-* Cliff Wickman <cpw@sgi.com> wrote:
+This seems kinda mean.  Could we return an error?  I understand that
+this is largely going to be an early-boot thing, but surely trying to
+punt on crappy input beats a full-on BUG().
 
-> Diffed against 2.6.38-rc8 (current tip tree)
+	if (!pfn_valid(start))
+		return -1;
 
-It does not apply here:
+> +       zone = page_zone(pfn_to_page(start));
+> +
+> +       spin_lock_irq(&zone->lock);
+> +
+> +       page = pfn_to_page(pfn);
+> +       for (;;) {
+> +               VM_BUG_ON(page_count(page) || !PageBuddy(page));
+> +               list_del(&page->lru);
+> +               order = page_order(page);
+> +               zone->free_area[order].nr_free--;
+> +               rmv_page_order(page);
+> +               __mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
+> +               pfn  += 1 << order;
+> +               if (pfn >= end)
+> +                       break;
 
-patching file arch/x86/kernel/apic/x2apic_uv_x.c
-Hunk #1 FAILED at 23.
-Hunk #2 succeeded at 35 (offset 1 line).
-Hunk #3 succeeded at 812 (offset 1 line).
-1 out of 3 hunks FAILED -- rejects in file arch/x86/kernel/apic/x2apic_uv_x.c
+If start->end happens to span the end of a zone, I believe this will
+jump out of the zone.  It will still be pfn_valid(), but potentially not
+in the same zone. 
 
-But yeah, the patch looks good now.
+> +               VM_BUG_ON(!pfn_valid(pfn));
+> +               page += 1 << order;
+> +       }
 
-One minor nit, please watch out for the proper capitalization of sentences:
+That will break on SPARSEMEM.  You potentially need to revalidate the
+pfn->page mapping on every MAX_ORDER pfn change.  It's easiest to just
+do pfn_to_page() on each loop.
 
 > +
-> +	/*
-> +	 * for a kdump kernel the reset must be BOOT_ACPI, not BOOT_EFI, as
-> +	 * EFI is not enabled in the kdump kernel.
-> +	 */
-> +	if (is_kdump_kernel())
-> +		reboot_type = BOOT_ACPI;
+> +       spin_unlock_irq(&zone->lock); 
+> 
+> +void free_contig_pages(struct page *page, int nr_pages)
+> +{
+> +       for (; nr_pages; --nr_pages, ++page)
+> +               __free_page(page);
+> +}
 
-Thanks,
+Can't help but notice that this resembles a bit of a patch I posted last
+week:
 
-	Ingo
+http://www.spinics.net/lists/linux-mm/msg16364.html
+
+We'll have to make sure we only have one copy of this in the end.
+
+-- Dave
+
