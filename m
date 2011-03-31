@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab1CaGDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 02:03:54 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:49261 "EHLO
+	id S1756659Ab1CaGD6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 02:03:58 -0400
+Received: from vms173013pub.verizon.net ([206.46.173.13]:49272 "EHLO
 	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756275Ab1CaGDu (ORCPT
+	with ESMTP id S1755853Ab1CaGDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 02:03:50 -0400
+	Thu, 31 Mar 2011 02:03:54 -0400
 From: Len Brown <lenb@kernel.org>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 6/9] x86 idle APM: delete apm_cpu_idle(),
- and its use of (pm_idle)()
-Date: Thu, 31 Mar 2011 02:03:21 -0400
-Message-id: <430a84e1b191344a15f75812be97ddcf5a430176.1301550524.git.len.brown@intel.com>
+Subject: [PATCH 9/9] x86 idle: delete mwait_idle()
+Date: Thu, 31 Mar 2011 02:03:24 -0400
+Message-id: <9797d1edfe558e20297785ce5b4e26339b74ea2c.1301550524.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.4.2.406.gbe91
 In-reply-to: <1301551404-8263-1-git-send-email-lenb@kernel.org>
 References: <1300950508-22746-1-git-send-email-lenb@kernel.org>
@@ -28,366 +27,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-There is some doubt whether the APM idle feature
-to call into the BIOS from the idle loop is reliable.
-Certainly it was known to fail on some machines,
-but more importantly, APM machines have not shipped
-for a decade and so finding machines to test the code
-is problematic.
+For ACPI mode, mwait_with_hints() in cstate.c is used instead of
+process.c's mwait_idle().
 
-After this patch, systems running in APM mode will
-simply run default_idle() and HALT without calling
-into the BIOS from their idle loop.
+For INTEL_IDLE mode, the mwait in intel_idle() is used instead of
+process.c's mwait_idle().
 
-This deletes modular use use of (pm_idle)() and default_idle().
+So delete process.c's mwait_idle().
+This will change the behaviour of SMP sysgtems that are
+running !ACPI and !INTEL_IDLE kernels -- they will use
+HALT instead of MWAIT.
+
+This deletes the "idle=mwait" parameter, and thus the
+boot_option_idle_override == IDLE_FORCE_MWAIT flag.
 
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/x86/Kconfig         |   11 --
- arch/x86/kernel/apm_32.c |  232 ----------------------------------------------
- 2 files changed, 0 insertions(+), 243 deletions(-)
+ Documentation/kernel-parameters.txt |    7 +------
+ arch/x86/include/asm/processor.h    |    2 +-
+ arch/x86/kernel/process.c           |   34 +---------------------------------
+ drivers/acpi/processor_idle.c       |    1 -
+ 4 files changed, 3 insertions(+), 41 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index d5ed94d..681bb25 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1809,17 +1809,6 @@ config APM_DO_ENABLE
- 	  T400CDT. This is off by default since most machines do fine without
- 	  this feature.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index e6b4843..ce9624a 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -917,16 +917,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Claim all unknown PCI IDE storage controllers.
  
--config APM_CPU_IDLE
--	bool "Make CPU Idle calls when idle"
--	---help---
--	  Enable calls to APM CPU Idle/CPU Busy inside the kernel's idle loop.
--	  On some machines, this can activate improved power savings, such as
--	  a slowed CPU clock rate, when the machine is idle. These idle calls
--	  are made after the idle loop has run for some length of time (e.g.,
--	  333 mS). On some machines, this will cause a hang at boot time or
--	  whenever the CPU becomes idle. (On machines with more than one CPU,
--	  this option does nothing.)
--
- config APM_DISPLAY_BLANK
- 	bool "Enable console blanking using APM"
- 	---help---
-diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-index 0e4f24c..5bc37aa 100644
---- a/arch/x86/kernel/apm_32.c
-+++ b/arch/x86/kernel/apm_32.c
-@@ -175,8 +175,6 @@
-  *         Ignore first resume after we generate our own resume event
-  *         after a suspend (Thomas Hood)
-  *         Daemonize now gets rid of our controlling terminal (sfr).
-- *         CONFIG_APM_CPU_IDLE now just affects the default value of
-- *         idle_threshold (sfr).
-  *         Change name of kernel apm daemon (as it no longer idles) (sfr).
-  *   1.16ac: Fix up SMP support somewhat. You can now force SMP on and we
-  *	   make _all_ APM calls on the CPU#0. Fix unsafe sign bug.
-@@ -261,12 +259,6 @@ extern int (*console_blank_hook)(int);
-  *	    [no-]smp			Use apm even on an SMP box
-  *	    bounce[-_]interval=<n>	number of ticks to ignore suspend
-  *	    				bounces
-- *          idle[-_]threshold=<n>       System idle percentage above which to
-- *                                      make APM BIOS idle calls. Set it to
-- *                                      100 to disable.
-- *          idle[-_]period=<n>          Period (in 1/100s of a second) over
-- *                                      which the idle percentage is
-- *                                      calculated.
-  */
+ 	idle=		[X86]
+-			Format: idle=poll, idle=mwait, idle=halt, idle=nomwait
++			Format: idle=poll, idle=halt, idle=nomwait
+ 			Poll forces a polling idle loop that can slightly
+ 			improve the performance of waking up a idle CPU, but
+ 			will use a lot of power and make the system run hot.
+ 			Not recommended.
+-			idle=mwait: On systems which support MONITOR/MWAIT but
+-			the kernel chose to not use it because it doesn't save
+-			as much power as a normal idle loop, use the
+-			MONITOR/MWAIT idle loop anyways. Performance should be
+-			the same as idle=poll.
+ 			idle=halt: Halt is forced to be used for CPU idle.
+ 			In such case C2/C3 won't be used again.
+ 			idle=nomwait: Disable mwait for CPU C-states
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 3b288ca..0d8d2a4 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -752,7 +752,7 @@ extern unsigned long		boot_option_idle_override;
+ extern bool			c1e_detected;
  
- /* KNOWN PROBLEM MACHINES:
-@@ -356,26 +348,12 @@ struct apm_user {
- #define APM_BIOS_MAGIC		0x4101
+ enum idle_boot_override {IDLE_NO_OVERRIDE=0, IDLE_HALT, IDLE_NOMWAIT,
+-			 IDLE_POLL, IDLE_FORCE_MWAIT};
++			 IDLE_POLL};
  
- /*
-- * idle percentage above which bios idle calls are done
-- */
--#ifdef CONFIG_APM_CPU_IDLE
--#define DEFAULT_IDLE_THRESHOLD	95
--#else
--#define DEFAULT_IDLE_THRESHOLD	100
--#endif
--#define DEFAULT_IDLE_PERIOD	(100 / 3)
--
--/*
-  * Local variables
-  */
- static struct {
- 	unsigned long	offset;
- 	unsigned short	segment;
- } apm_bios_entry;
--static int clock_slowed;
--static int idle_threshold __read_mostly = DEFAULT_IDLE_THRESHOLD;
--static int idle_period __read_mostly = DEFAULT_IDLE_PERIOD;
--static int set_pm_idle;
- static int suspends_pending;
- static int standbys_pending;
- static int ignore_sys_suspend;
-@@ -805,165 +783,6 @@ static int set_system_power_state(u_short state)
+ extern void enable_sep_cpu(void);
+ extern int sysenter_setup(void);
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 9f08e7b..4b93d50 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -399,27 +399,6 @@ void cpu_idle_wait(void)
  }
+ EXPORT_SYMBOL_GPL(cpu_idle_wait);
  
- /**
-- *	apm_do_idle	-	perform power saving
-- *
-- *	This function notifies the BIOS that the processor is (in the view
-- *	of the OS) idle. It returns -1 in the event that the BIOS refuses
-- *	to handle the idle request. On a success the function returns 1
-- *	if the BIOS did clock slowing or 0 otherwise.
-- */
--
--static int apm_do_idle(void)
+-/* Default MONITOR/MWAIT with no hints, used for default C1 state */
+-static void mwait_idle(void)
 -{
--	u32 eax;
--	u8 ret = 0;
--	int idled = 0;
--	int polling;
--	int err = 0;
--
--	polling = !!(current_thread_info()->status & TS_POLLING);
--	if (polling) {
--		current_thread_info()->status &= ~TS_POLLING;
--		/*
--		 * TS_POLLING-cleared state must be visible before we
--		 * test NEED_RESCHED:
--		 */
--		smp_mb();
--	}
 -	if (!need_resched()) {
--		idled = 1;
--		ret = apm_bios_call_simple(APM_FUNC_IDLE, 0, 0, &eax, &err);
--	}
--	if (polling)
--		current_thread_info()->status |= TS_POLLING;
+-		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
+-		trace_cpu_idle(1, smp_processor_id());
+-		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
+-			clflush((void *)&current_thread_info()->flags);
 -
--	if (!idled)
--		return 0;
--
--	if (ret) {
--		static unsigned long t;
--
--		/* This always fails on some SMP boards running UP kernels.
--		 * Only report the failure the first 5 times.
--		 */
--		if (++t < 5) {
--			printk(KERN_DEBUG "apm_do_idle failed (%d)\n", err);
--			t = jiffies;
--		}
--		return -1;
--	}
--	clock_slowed = (apm_info.bios.flags & APM_IDLE_SLOWS_CLOCK) != 0;
--	return clock_slowed;
--}
--
--/**
-- *	apm_do_busy	-	inform the BIOS the CPU is busy
-- *
-- *	Request that the BIOS brings the CPU back to full performance.
-- */
--
--static void apm_do_busy(void)
--{
--	u32 dummy;
--	int err;
--
--	if (clock_slowed || ALWAYS_CALL_BUSY) {
--		(void)apm_bios_call_simple(APM_FUNC_BUSY, 0, 0, &dummy, &err);
--		clock_slowed = 0;
--	}
--}
--
--/*
-- * If no process has really been interested in
-- * the CPU for some time, we want to call BIOS
-- * power management - we probably want
-- * to conserve power.
-- */
--#define IDLE_CALC_LIMIT	(HZ * 100)
--#define IDLE_LEAKY_MAX	16
--
--static void (*original_pm_idle)(void) __read_mostly;
--
--/**
-- * apm_cpu_idle		-	cpu idling for APM capable Linux
-- *
-- * This is the idling function the kernel executes when APM is available. It
-- * tries to do BIOS powermanagement based on the average system idle time.
-- * Furthermore it calls the system default idle routine.
-- */
--
--static void apm_cpu_idle(void)
--{
--	static int use_apm_idle; /* = 0 */
--	static unsigned int last_jiffies; /* = 0 */
--	static unsigned int last_stime; /* = 0 */
--
--	int apm_idle_done = 0;
--	unsigned int jiffies_since_last_check = jiffies - last_jiffies;
--	unsigned int bucket;
--
--recalc:
--	if (jiffies_since_last_check > IDLE_CALC_LIMIT) {
--		use_apm_idle = 0;
--		last_jiffies = jiffies;
--		last_stime = current->stime;
--	} else if (jiffies_since_last_check > idle_period) {
--		unsigned int idle_percentage;
--
--		idle_percentage = current->stime - last_stime;
--		idle_percentage *= 100;
--		idle_percentage /= jiffies_since_last_check;
--		use_apm_idle = (idle_percentage > idle_threshold);
--		if (apm_info.forbid_idle)
--			use_apm_idle = 0;
--		last_jiffies = jiffies;
--		last_stime = current->stime;
--	}
--
--	bucket = IDLE_LEAKY_MAX;
--
--	while (!need_resched()) {
--		if (use_apm_idle) {
--			unsigned int t;
--
--			t = jiffies;
--			switch (apm_do_idle()) {
--			case 0:
--				apm_idle_done = 1;
--				if (t != jiffies) {
--					if (bucket) {
--						bucket = IDLE_LEAKY_MAX;
--						continue;
--					}
--				} else if (bucket) {
--					bucket--;
--					continue;
--				}
--				break;
--			case 1:
--				apm_idle_done = 1;
--				break;
--			default: /* BIOS refused */
--				break;
--			}
--		}
--		if (original_pm_idle)
--			original_pm_idle();
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		smp_mb();
+-		if (!need_resched())
+-			__sti_mwait(0, 0);
 -		else
--			default_idle();
--		local_irq_disable();
--		jiffies_since_last_check = jiffies - last_jiffies;
--		if (jiffies_since_last_check > idle_period)
--			goto recalc;
--	}
--
--	if (apm_idle_done)
--		apm_do_busy();
--
--	local_irq_enable();
--}
--
--/**
-  *	apm_power_off	-	ask the BIOS to power off
-  *
-  *	Handle the power off sequence. This is the one piece of code we
-@@ -1881,12 +1700,6 @@ static int __init apm_setup(char *str)
- 		if ((strncmp(str, "bounce-interval=", 16) == 0) ||
- 		    (strncmp(str, "bounce_interval=", 16) == 0))
- 			bounce_interval = simple_strtol(str + 16, NULL, 0);
--		if ((strncmp(str, "idle-threshold=", 15) == 0) ||
--		    (strncmp(str, "idle_threshold=", 15) == 0))
--			idle_threshold = simple_strtol(str + 15, NULL, 0);
--		if ((strncmp(str, "idle-period=", 12) == 0) ||
--		    (strncmp(str, "idle_period=", 12) == 0))
--			idle_period = simple_strtol(str + 12, NULL, 0);
- 		invert = (strncmp(str, "no-", 3) == 0) ||
- 			(strncmp(str, "no_", 3) == 0);
- 		if (invert)
-@@ -1898,7 +1711,6 @@ static int __init apm_setup(char *str)
- 			power_off = !invert;
- 		if (strncmp(str, "smp", 3) == 0) {
- 			smp = !invert;
--			idle_threshold = 100;
- 		}
- 		if ((strncmp(str, "allow-ints", 10) == 0) ||
- 		    (strncmp(str, "allow_ints", 10) == 0))
-@@ -1999,17 +1811,6 @@ static int __init apm_is_horked_d850md(const struct dmi_system_id *d)
- 	return 0;
- }
- 
--/* Some APM bioses hang on APM idle calls */
--static int __init apm_likes_to_melt(const struct dmi_system_id *d)
--{
--	if (apm_info.forbid_idle == 0) {
--		apm_info.forbid_idle = 1;
--		printk(KERN_INFO "%s machine detected. "
--		       "Disabling APM idle calls.\n", d->ident);
--	}
--	return 0;
+-			local_irq_enable();
+-		trace_power_end(smp_processor_id());
+-		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
+-	} else
+-		local_irq_enable();
 -}
 -
  /*
-  *  Check for clue free BIOS implementations who use
-  *  the following QA technique
-@@ -2150,16 +1951,6 @@ static struct dmi_system_id __initdata apm_dmi_table[] = {
- 			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
- 			DMI_MATCH(DMI_BIOS_VERSION, "A11"), },
- 	},
--	{	/* APM idle hangs */
--		apm_likes_to_melt, "Jabil AMD",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
--			DMI_MATCH(DMI_BIOS_VERSION, "0AASNP06"), },
--	},
--	{	/* APM idle hangs */
--		apm_likes_to_melt, "AMI Bios",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
--			DMI_MATCH(DMI_BIOS_VERSION, "0AASNP05"), },
--	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-N505X(DE) */
- 		swab_apm_power_in_minutes, "Sony VAIO",
- 		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
-@@ -2390,14 +2181,6 @@ static int __init apm_init(void)
- 	if (misc_register(&apm_device))
- 		printk(KERN_WARNING "apm: Could not register misc device.\n");
+  * On SMP it's slightly faster (but much more power-consuming!)
+  * to poll the ->work.need_resched flag instead of waiting for the
+@@ -457,9 +436,6 @@ int mwait_usable(const struct cpuinfo_x86 *c)
+ {
+ 	u32 eax, ebx, ecx, edx;
  
--	if (HZ != 100)
--		idle_period = (idle_period * HZ) / 100;
--	if (idle_threshold < 100) {
--		original_pm_idle = pm_idle;
--		pm_idle  = apm_cpu_idle;
--		set_pm_idle = 1;
--	}
+-	if (boot_option_idle_override == IDLE_FORCE_MWAIT)
+-		return 1;
 -
- 	return 0;
+ 	if (c->cpuid_level < MWAIT_INFO)
+ 		return 0;
+ 
+@@ -548,13 +524,7 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+ 	if (pm_idle)
+ 		return;
+ 
+-	if (cpu_has(c, X86_FEATURE_MWAIT) && mwait_usable(c)) {
+-		/*
+-		 * One CPU supports mwait => All CPUs supports mwait
+-		 */
+-		printk(KERN_INFO "using mwait in idle threads.\n");
+-		pm_idle = mwait_idle;
+-	} else if (cpu_has_amd_erratum(amd_erratum_400)) {
++	if (cpu_has_amd_erratum(amd_erratum_400)) {
+ 		/* E400: APIC timer interrupt does not wake up CPU from C1e */
+ 		printk(KERN_INFO "using C1E aware idle routine\n");
+ 		pm_idle = c1e_idle;
+@@ -578,8 +548,6 @@ static int __init idle_setup(char *str)
+ 		printk("using polling idle threads.\n");
+ 		pm_idle = poll_idle;
+ 		boot_option_idle_override = IDLE_POLL;
+-	} else if (!strcmp(str, "mwait")) {
+-		boot_option_idle_override = IDLE_FORCE_MWAIT;
+ 	} else if (!strcmp(str, "halt")) {
+ 		/*
+ 		 * When the boot option of idle=halt is added, halt is
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index d615b7d..a15390c 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -82,7 +82,6 @@ module_param(latency_factor, uint, 0644);
+ static int disabled_by_idle_boot_param(void)
+ {
+ 	return boot_option_idle_override == IDLE_POLL ||
+-		boot_option_idle_override == IDLE_FORCE_MWAIT ||
+ 		boot_option_idle_override == IDLE_HALT;
  }
  
-@@ -2405,15 +2188,6 @@ static void __exit apm_exit(void)
- {
- 	int error;
- 
--	if (set_pm_idle) {
--		pm_idle = original_pm_idle;
--		/*
--		 * We are about to unload the current idle thread pm callback
--		 * (pm_idle), Wait for all processors to update cached/local
--		 * copies of pm_idle before proceeding.
--		 */
--		cpu_idle_wait();
--	}
- 	if (((apm_info.bios.flags & APM_BIOS_DISENGAGED) == 0)
- 	    && (apm_info.connection_version > 0x0100)) {
- 		error = apm_engage_power_management(APM_DEVICE_ALL, 0);
-@@ -2451,12 +2225,6 @@ MODULE_PARM_DESC(broken_psr, "BIOS has a broken GetPowerStatus call");
- module_param(realmode_power_off, bool, 0444);
- MODULE_PARM_DESC(realmode_power_off,
- 		"Switch to real mode before powering off");
--module_param(idle_threshold, int, 0444);
--MODULE_PARM_DESC(idle_threshold,
--	"System idle percentage above which to make APM BIOS idle calls");
--module_param(idle_period, int, 0444);
--MODULE_PARM_DESC(idle_period,
--	"Period (in sec/100) over which to caculate the idle percentage");
- module_param(smp, bool, 0444);
- MODULE_PARM_DESC(smp,
- 	"Set this to enable APM use on an SMP platform. Use with caution on older systems");
 -- 
 1.7.4.2.406.gbe91
 
