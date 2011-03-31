@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964904Ab1CaQE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:04:27 -0400
-Received: from mail.lang.hm ([64.81.33.126]:56424 "EHLO bifrost.lang.hm"
+	id S964953Ab1CaQEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:04:50 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:51694 "EHLO serv04.lahn.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758205Ab1CaQE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:04:26 -0400
-Date: Thu, 31 Mar 2011 09:03:28 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Ingo Molnar <mingo@elte.hu>, Nicolas Pitre <nico@fluxnic.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-In-Reply-To: <20110331083044.GB14323@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.00.1103310855450.29543@asgard.lang.hm>
-References: <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home>
- <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu>
- <20110331083044.GB14323@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S964909Ab1CaQEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 12:04:49 -0400
+Date: Thu, 31 Mar 2011 17:53:55 +0200
+From: Michael Leun <lkml20101129@newton.leun.net>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Mike Pagano <mpagano@gentoo.org>
+Subject: Re: 2.6.38.2 breaks suspend to disk
+Message-ID: <20110331175355.5bdc03fd@xenia.leun.net>
+In-Reply-To: <alpine.DEB.2.00.1103311546480.16492@kaball-desktop>
+References: <20110330203215.0a1a41a7@xenia.leun.net>
+	<4D940DD0.7000704@kernel.org>
+	<20110331090524.07ad0069@xenia.leun.net>
+	<alpine.DEB.2.00.1103311546480.16492@kaball-desktop>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011, Russell King - ARM Linux wrote:
+On Thu, 31 Mar 2011 15:48:44 +0100
+Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
 
-> On Thu, Mar 31, 2011 at 10:06:34AM +0200, Ingo Molnar wrote:
->> Having strong, effective platform abstractions inside the kernel really helps
->> even if the hardware space itself is inevitably fragmented: both powerpc and
->> x86 has shown that. Until you realize and appreciate that you really have not
->> understood the problem i think.
->
-> No, I think it is the other way around.  Folk like me and Nicolas over
-> the last ten years have put considerable amounts of effort into trying
-> to keep the ARM support code as clean and maintainable as possible.
+> On Thu, 31 Mar 2011, Michael Leun wrote:
+> > Nope, unfortunately this does not change anything (neither when
+> > applying ontop of the tree resulting from bisecting, nor ontop
+> > 2.6.38.2).
+> > 
+> > Just to make shure there was no mistake when bisecting I did
+> > 
+> > patch -R -p1
+> > <~/linux-2.6.38.y.git-ff518ea26654e05d325d996f6e3a7f5f569cc2d5.txt
+> > 
+> > and then indeed it worked again.
+> 
+> This patch fixes it for me.
+> 
+> 
+> ---
+> 
+> save cr4 to mmu_cr4_features at boot time
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 5a0484a..0943eb2 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -891,6 +891,7 @@ void __init setup_arch(char **cmdline_p)
+>  		max_low_pfn = max_pfn;
+>  
+>  	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
+> +	mmu_cr4_features = read_cr4();
+>  #endif
+>  
+>  	/*
+> 
 
-In this case I owe you and Nicolas an apology.
+Confirmed - fixes it for me too. Thanks.
 
-I think that part of the issue is that when Linus points out a problem, 
-the response isn't "we agree and are working on it, here's what we are 
-doing", instead it seems to be mostly "there is no problem, this is just 
-because there is so much variation in ARM"
+-- 
+MfG,
 
-Linus does look at the code he pulls, if he is pulling changesets that are 
-described as consolodations and cleanups, he won't be whining about code 
-churn.
+Michael Leun
 
-but if he is just pulling chnagesets that are described as "addsupport for 
-board X" or "modify defconfig defaults" he is going to complain.
-
-it's not the total amount of code, and it's not even the total amount of 
-change to the code that's the issue. It's that the changes are conflicting 
-with each other (due to things like central config tables that multiple 
-people are updating in different ways) and the same files getting modified 
-frequently, many times in ways that don't seem to have a clear direction 
-(defconfigs for example)
-
-David Lang
