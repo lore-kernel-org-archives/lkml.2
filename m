@@ -1,70 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933151Ab1CaA4i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 20:56:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60013 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756556Ab1CaA4g convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 20:56:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110331001502.GB6680@n2100.arm.linux.org.uk>
-References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
- <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de>
- <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <20110331001502.GB6680@n2100.arm.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 30 Mar 2011 17:55:45 -0700
-Message-ID: <AANLkTinE7EDbV8hrYZWBxgvwOxdPMLoS0Y57PSm04rvM@mail.gmail.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933370Ab1CaA4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 20:56:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60831 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933238Ab1CaA4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 20:56:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,271,1299484800"; 
+   d="scan'208";a="621351935"
+Subject: Re: [PATCH]mmap: improve scalability for updating vm_committed_as
+From: Shaohua Li <shaohua.li@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+In-Reply-To: <20110330155114.fa47dd9d.akpm@linux-foundation.org>
+References: <1301447847.3981.49.camel@sli10-conroe>
+	 <20110330155114.fa47dd9d.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 Mar 2011 08:56:43 +0800
+Message-ID: <1301533003.3981.75.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 5:15 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
->
-> In this merge window, I deleted at least 6000 lines from arch/arm, and
-> by quoting diffstat percentages, you're using that against the ARM
-> community.  Why did I bother (that's not a question).
+On Thu, 2011-03-31 at 06:51 +0800, Andrew Morton wrote:
+> On Wed, 30 Mar 2011 09:17:27 +0800
+> Shaohua Li <shaohua.li@intel.com> wrote:
+> 
+> > In a workload with a lot of mmap/mumap, updating vm_committed_as is
+> > a scalability issue, because the percpu_counter_batch is too small, and
+> > the update needs hold percpu_counter lock.
+> > On the other hand, vm_committed_as is only used in OVERCOMMIT_NEVER case,
+> > which isn't the default setting.
+> > We can make the batch bigger in other cases and then switch to small batch
+> > in OVERCOMMIT_NEVER case, so that we will have no scalability issue with
+> > default setting. We flush all CPUs' percpu counter when switching
+> > sysctl_overcommit_memory, so there is no race the counter is incorrect.
+> 
+> The patch is purportedly a performance improvement, but the changelog
+> didn't tell us how much it improves performance?
+I thought improving the scalability is enough, but anyway, I will add it later.
 
-Umm. The actual stats are still:
+> > --- linux.orig/include/linux/mman.h	2011-03-29 16:28:57.000000000 +0800
+> > +++ linux/include/linux/mman.h	2011-03-30 09:01:38.000000000 +0800
+> > @@ -20,9 +20,17 @@ extern int sysctl_overcommit_memory;
+> >  extern int sysctl_overcommit_ratio;
+> >  extern struct percpu_counter vm_committed_as;
+> >  
+> > +extern int overcommit_memory_handler(struct ctl_table *table, int write,
+> > +		void __user *buffer, size_t *lenp, loff_t *ppos);
+> >  static inline void vm_acct_memory(long pages)
+> >  {
+> > -	percpu_counter_add(&vm_committed_as, pages);
+> > +	/* avoid overflow and the value is big enough */
+> > +	int batch = INT_MAX/2;
+> > +
+> > +	if (sysctl_overcommit_memory == OVERCOMMIT_NEVER)
+> > +		batch = percpu_counter_batch;
+> > +
+> > +	__percpu_counter_add(&vm_committed_as, pages, batch);
+> >  }
+> 
+> It would be better to create a global __read_mostly variable for this
+> and alter its value within the sysctl, rather than recalculating it
+> each time.
+ok
 
- 1349 files changed, 62230 insertions(+), 33993 deletions(-)
+> This again points at the need to make the batch count a field within
+> the percpu_counter.
 
-which is sad. And the end result speaks for itself: this is lines per
-architecture:
+> >  static inline void vm_unacct_memory(long pages)
+> > Index: linux/fs/proc/meminfo.c
+> > ===================================================================
+> > --- linux.orig/fs/proc/meminfo.c	2011-03-29 16:28:57.000000000 +0800
+> > +++ linux/fs/proc/meminfo.c	2011-03-30 09:01:38.000000000 +0800
+> > @@ -35,7 +35,7 @@ static int meminfo_proc_show(struct seq_
+> >  #define K(x) ((x) << (PAGE_SHIFT - 10))
+> >  	si_meminfo(&i);
+> >  	si_swapinfo(&i);
+> > -	committed = percpu_counter_read_positive(&vm_committed_as);
+> > +	committed = percpu_counter_sum_positive(&vm_committed_as);
+> >  	allowed = ((totalram_pages - hugetlb_total_pages())
+> >  		* sysctl_overcommit_ratio / 100) + total_swap_pages;
+> 
+> This is a big change, and it wasn't even changelogged.  It's
+> potentially a tremendous increase in the expense of a read from
+> /proc/meminfo, which is a file that lots of tools will be polling. 
+> Many of those tools we don't even know about or have access to.
+Assume we don't read /proc/meminfo too often.
 
-  ...
-  124022 total arch/sh
-  124418 total arch/sparc
-  181997 total arch/m68k
-  246717 total arch/mips
-  254785 total arch/x86
-  370912 total arch/powerpc
-  732732 total arch/arm
+> The change is unneeded if sysctl_overcommit_memory==OVERCOMMIT_NEVER,
+> but that's hardly a fix.
+> 
+> Quite worrisome.
+> 
+> Perhaps a better approach would be to carefully tune the batch size
+> according to the size of the machine.  Going all the way to INT_MAX/2
+> is surely overkill.
+I understand the concern. But the tuning according to machien size is
+quite hard. Say a machine with 16 CPUs and we don't want the per-cpu
+counter to be bigger than 1% memory. If we do mmap/munmap 32M, then the
+system must have:
+32M*16*100*N = 50*N G memory. To reduce the lock contention, N must be
+more than 8. so the system must have more than 400G memory, where most
+system hasn't such big memory.
+the INT_MAX/2 is an arbitrary number because the batch counter is
+meaningless with sysctl_overcommit_memory != OVERCOMMIT_NEVER
 
-notice how ARM ends up being in a class of its own. This is a PROBLEM.
+> > Index: linux/kernel/sysctl.c
+> > ===================================================================
+> > --- linux.orig/kernel/sysctl.c	2011-03-29 16:28:57.000000000 +0800
+> > +++ linux/kernel/sysctl.c	2011-03-30 09:01:38.000000000 +0800
+> > @@ -56,6 +56,7 @@
+> >  #include <linux/kprobes.h>
+> >  #include <linux/pipe_fs_i.h>
+> >  #include <linux/oom.h>
+> > +#include <linux/mman.h>
+> >  
+> >  #include <asm/uaccess.h>
+> >  #include <asm/processor.h>
+> > @@ -86,8 +87,6 @@
+> >  #if defined(CONFIG_SYSCTL)
+> >  
+> >  /* External variables not in a header file. */
+> > -extern int sysctl_overcommit_memory;
+> > -extern int sysctl_overcommit_ratio;
+> >  extern int max_threads;
+> >  extern int core_uses_pid;
+> >  extern int suid_dumpable;
+> > @@ -977,7 +976,7 @@ static struct ctl_table vm_table[] = {
+> >  		.data		= &sysctl_overcommit_memory,
+> >  		.maxlen		= sizeof(sysctl_overcommit_memory),
+> >  		.mode		= 0644,
+> > -		.proc_handler	= proc_dointvec_minmax,
+> > +		.proc_handler	= overcommit_memory_handler,
+> >  		.extra1		= &zero,
+> >  		.extra2		= &two,
+> >  	},
+> > Index: linux/mm/mmap.c
+> > ===================================================================
+> > --- linux.orig/mm/mmap.c	2011-03-30 08:59:23.000000000 +0800
+> > +++ linux/mm/mmap.c	2011-03-30 09:01:38.000000000 +0800
+> > @@ -93,6 +93,33 @@ int sysctl_max_map_count __read_mostly =
+> >   */
+> >  struct percpu_counter vm_committed_as ____cacheline_internodealigned_in_smp;
+> >  
+> > +static void overcommit_drain_counter(struct work_struct *dummy)
+> > +{
+> > +	/*
+> > +	 * Flush percpu counter to global counter when batch is changed, see
+> > +	 * vm_acct_memory for detail
+> > +	 */
+> > +	vm_acct_memory(0);
+> > +}
+> > +
+> > +int overcommit_memory_handler(struct ctl_table *table, int write,
+> > +                void __user *buffer, size_t *lenp, loff_t *ppos)
+> > +{
+> > +	int error;
+> > +
+> > +	error = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
+> > +	if (error)
+> > +		return error;
+> > +
+> > +	if (write) {
+> > +		/* Make sure each CPU sees the new sysctl_overcommit_memory */
+> > +		smp_wmb();
+> > +		schedule_on_each_cpu(overcommit_drain_counter);
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> 
+> Calling vm_acct_memory(0) is a bit of a hack.
+> 
+> Rather than open-coding this twice, it would be better to introduce a
+> new percpu_counter core primitive to collapse the counters.
+ok, that's fine.
 
-And ARM fanbois can say "oh, but arm is special" all they want, but
-they need to realize that the lack of common platform for ARM is a
-real major issue. It's not a "feature", and I'm sorry, but anybody who
-calls x86 "peanuts" is a moron and should be ashamed of himself.
-Instead of trying to feel superior, those people should feel like
-pariah.
+Thanks,
+Shaohua
 
-The fact that x86 has a platform, and people have cared about
-compatibility, and actually gets things to work with less code is a
-good thing. I know ARM people who think that x86 is an "ugly"
-architecture. But the fact is, of all the architectures out there, ARM
-right now is the ugliest BY FAR. Exactly because of people who don't
-seem to understand that this kind of crap is a problem.
-
-                    Linus
