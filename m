@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965013Ab1CaQ1T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:27:19 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:43764 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964977Ab1CaQ1R (ORCPT
+	id S965033Ab1CaQ1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:27:53 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46854 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964977Ab1CaQ1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:27:17 -0400
-Subject: Re: [PATCH 05/12] mm: alloc_contig_range() added
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
-        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
-In-Reply-To: <1301577368-16095-6-git-send-email-m.szyprowski@samsung.com>
-References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
-	 <1301577368-16095-6-git-send-email-m.szyprowski@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 31 Mar 2011 09:04:05 -0700
-Message-ID: <1301587445.31087.1042.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Mar 2011 12:27:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=p4wNBKrv1QIdXiFjbAdxyLpm+vNCre7683PXsnLdomZM0Mr+fL7X5UiPIHHAaVvzDm
+         1GY5oqJ6fKKEiDdWJ4PuU8oh413gZx4EVgaummChiOlz+HeQXWvkQNoqbComj02JMCU8
+         LtZJhoJ1vNcJX5P9pA/HB3SWBjzQViQO3FyCM=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, David Ahern <daahern@cisco.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/2] perf: Fix python argument name list of read_on_cpu()
+Date: Thu, 31 Mar 2011 18:27:42 +0200
+Message-Id: <1301588863-20210-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-31 at 15:16 +0200, Marek Szyprowski wrote:
-> +       _start = start & (~0UL << ret);
-> +       _end   = alloc_contig_freed_pages(_start, end, flag); 
+Mandatory arguments need to be present in the argument name
+list, as well as optional arguments, otherwise python barfs:
 
-These names are a wee bit lacking.  Care to give them proper names that
-might let a reader figure out how the "_" makes the variable different
-from its nearly-identical twin?
+	# ./python/twatch.py
+	Traceback (most recent call last):
+	  File "./python/twatch.py", line 41, in <module>
+	    main()
+	  File "./python/twatch.py", line 32, in main
+	    event = evlist.read_on_cpu(cpu)
+	RuntimeError: more argument specifiers than keyword list entries
 
--- Dave
+Hence, add cpu to the name list.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: David Ahern <daahern@cisco.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+---
+ tools/perf/util/python.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index a9f2d7e..2914221 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -673,7 +673,7 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
+ 	struct perf_evlist *evlist = &pevlist->evlist;
+ 	union perf_event *event;
+ 	int sample_id_all = 1, cpu;
+-	static char *kwlist[] = {"sample_id_all", NULL, NULL};
++	static char *kwlist[] = {"cpu", "sample_id_all", NULL, NULL};
+ 
+ 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i|i", kwlist,
+ 					 &cpu, &sample_id_all))
+-- 
+1.7.3.2
 
