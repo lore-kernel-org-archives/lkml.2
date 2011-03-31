@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606Ab1CaN0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 09:26:12 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62833 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757546Ab1CaN0K (ORCPT
+	id S1757643Ab1CaN0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 09:26:21 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49546 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757610Ab1CaN0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 09:26:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: John Williams <john.williams@petalogix.com>
-Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
-Date: Thu, 31 Mar 2011 15:25:52 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Michal Simek <monstr@monstr.eu>,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de
-References: <1301574600-4861-1-git-send-email-monstr@monstr.eu> <20110331124925.GA2202@pengutronix.de> <AANLkTinJrG=s3Xuvf_=bNtYF-z8u+YXvd217UKKz24ik@mail.gmail.com>
-In-Reply-To: <AANLkTinJrG=s3Xuvf_=bNtYF-z8u+YXvd217UKKz24ik@mail.gmail.com>
+	Thu, 31 Mar 2011 09:26:16 -0400
+Date: Thu, 31 Mar 2011 14:25:33 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Nicolas Pitre <nico@fluxnic.net>, david@lang.hm,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Message-ID: <20110331132533.GC17547@n2100.arm.linux.org.uk>
+References: <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu> <20110331083044.GB14323@n2100.arm.linux.org.uk> <20110331104152.GB3723@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103311525.52396.arnd@arndb.de>
-X-Provags-ID: V02:K0:VlTp4czO5cZRawlX+GaIUm4ibuE7uUq+7h6ebE2FxK4
- YRHM+DzpHCHAEZE0qZKugXL6cksUgzTGUobTh5E7AhuvXOR08D
- tKw6FJRH5JnQ8CW6QyfYluW00EDYEZUN1dIF79qpttycA0mk5E
- rnSausxrlsZ7Ds3uUd+deksglr1MXY0VnGKT2rc5mxt4m7ioq5
- cCQrKtFzUexrYiserf/Xg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110331104152.GB3723@elte.hu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 31 March 2011, John Williams wrote:
-> On Thu, Mar 31, 2011 at 10:49 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> >
-> > On Thu, Mar 31, 2011 at 02:30:00PM +0200, Michal Simek wrote:
-> > > Support OF support. "generic-uio" compatible property is used.
-> >
-> > And exactly this was the issue last time (when I tried). This is a
-> > generic property, which is linux-specific and not describing HW. The
-> > agreement back then was to we probably need to add compatible-entries at
-> > runtime (something like new_id for USB). So the uio-of-driver could be
-> > matched against any device. Otherwise, we would collect a lot of
-> > potential entries like "vendor,special-card1". Although I wonder
-> > meanwhile if it is really going to be that bad; we don't have so much
-> > UIO-driver in tree as well. Maybe worth a try?
+On Thu, Mar 31, 2011 at 12:41:52PM +0200, Ingo Molnar wrote:
+> * Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > On Thu, Mar 31, 2011 at 10:06:34AM +0200, Ingo Molnar wrote:
+> > > Having strong, effective platform abstractions inside the kernel really helps 
+> > > even if the hardware space itself is inevitably fragmented: both powerpc and 
+> > > x86 has shown that. Until you realize and appreciate that you really have not 
+> > > understood the problem i think.
+> > 
+> > No, I think it is the other way around.  Folk like me and Nicolas over the 
+> > last ten years have put considerable amounts of effort into trying to keep 
+> > the ARM support code as clean and maintainable as possible.
 > 
-> 
-> Maybe I misunderstand you, in my view it is the responsibility of
-> <vendor> to create their DTS files to indicate they want
-> <special-card1> to bind to generic-uio.
-> 
-> So, no great list of compat strings should grow in the driver, but
-> rather the user of the driver must make it happen.
-> 
-> Am I missing something?
+> Absolutely no argument about that, whenever i have read core ARM code it was 
+> always a pleasure. You guys are doing a fine job there.
 
-We try to make the device tree on describe the present hardware,
-but not relate to how it is used.
-
-There are certainly cases where a specific piece of hardware can
-be used either by a kernel-only driver or the UIO driver with a
-user backend. I would argue that you should be able to use an
-identical device tree for both cases, because the hardware is
-the same. Chosing which driver to use can be either in the realm
-of the kernel, or even user policy.
-
-	Arnd
+Thanks for your vote of confidence.  It's really appreciated.
