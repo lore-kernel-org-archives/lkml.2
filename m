@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab1CaFcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 01:32:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39605 "EHLO
+	id S932197Ab1CaFdD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 01:33:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53061 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754691Ab1CaFcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 01:32:12 -0400
-Date: Wed, 30 Mar 2011 22:32:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: balbir@linux.vnet.ibm.com
-Cc: linux-mm@kvack.org, npiggin@kernel.dk, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        cl@linux.com, kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
-Message-Id: <20110330223231.e1f149eb.akpm@linux-foundation.org>
-In-Reply-To: <20110331052703.GJ2879@balbir.in.ibm.com>
-References: <20110330052819.8212.1359.stgit@localhost6.localdomain6>
-	<20110330163607.0984b831.akpm@linux-foundation.org>
-	<20110331052703.GJ2879@balbir.in.ibm.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	by vger.kernel.org with ESMTP id S1754786Ab1CaFdB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 01:33:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110331035511.GA1255@redhat.com>
+References: <20110329040939.GA32764@redhat.com> <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
+ <20110331030917.GB26057@redhat.com> <AANLkTikYAAYcYxTdKAxQjDxVQ7qrZGEfXg+gpfwcj1=-@mail.gmail.com>
+ <20110331035511.GA1255@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 30 Mar 2011 22:32:11 -0700
+Message-ID: <AANLkTikP5edK=YSRx7zuNqyfwez8qEHpFumYun6GOPxu@mail.gmail.com>
+Subject: Re: excessive kworker activity when idle. (was Re: vma corruption in
+ today's -git)
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011 10:57:03 +0530 Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+On Wed, Mar 30, 2011 at 8:55 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> I tried that, and wasn't particularly enlightened.
+>
+> +      6.53%  kworker/1:2  [kernel.kallsyms]  [k] read_hpet
+> +      4.83%  kworker/0:0  [kernel.kallsyms]  [k] read_hpet
 
-> * Andrew Morton <akpm@linux-foundation.org> [2011-03-30 16:36:07]:
-> 
-> > On Wed, 30 Mar 2011 11:00:26 +0530
-> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> > 
-> > > Data from the previous patchsets can be found at
-> > > https://lkml.org/lkml/2010/11/30/79
-> > 
-> > It would be nice if the data for the current patchset was present in
-> > the current patchset's changelog!
-> >
-> 
-> Sure, since there were no major changes, I put in a URL. The main
-> change was the documentation update. 
+Go into those, deeper into the callchain. That's how to see what the
+upper-level problem is - by seeing who actually calls it. The leafs
+themselves (where the time is obviously spent) don't tend to be very
+informative, no.
 
-Well some poor schmuck has to copy and paste the data into the
-changelog so it's still there in five years time.  It's better to carry
-this info around in the patch's own metedata, and to maintain
-and update it.
+>  > (Powertop can also do it, and is probably a better thing to use, I'm
+>  > just used to "perf record" for other reasons, so..)
+>
+> Tried that too, here's what it said..
 
+Hmm. Powertop is _supposed_ to be able to look into the kwork things
+(it has special trace points for it), but as mentioned, the times I've
+seen it I've used 'perf', so I haven't actually tried it myself.
+
+                  Linus
