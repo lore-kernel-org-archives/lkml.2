@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab1CaPGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:06:15 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46546 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab1CaPGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:06:13 -0400
-Date: Thu, 31 Mar 2011 16:05:17 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kevin Hilman <khilman@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Nicolas Pitre <nico@fluxnic.net>, david@lang.hm,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110331150517.GA19452@n2100.arm.linux.org.uk>
-References: <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu> <20110331083044.GB14323@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1103311359320.22418@localhost6.localdomain6> <87d3l7jqpr.fsf@ti.com> <alpine.LFD.2.00.1103311647300.22418@localhost6.localdomain6>
+	id S1758120Ab1CaPHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:07:21 -0400
+Received: from void.printf.net ([89.145.121.20]:60335 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752679Ab1CaPHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:07:18 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Manoj <manoj.iyer@canonical.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: SDHCI: Ricoh [1180:e823] unable to mount MMC cards.
+References: <4D93AD5C.1070308@canonical.com>
+	<m34o6k43c4.fsf@pullcord.laptop.org> <4D93BDA9.1020107@canonical.com>
+	<m3vcz02mi1.fsf@pullcord.laptop.org> <4D948BC4.6020904@canonical.com>
+	<m3sju3z6yc.fsf@pullcord.laptop.org> <4D949298.4000701@canonical.com>
+Date: Thu, 31 Mar 2011 11:13:10 -0400
+In-Reply-To: <4D949298.4000701@canonical.com> (Manoj's message of "Thu, 31 Mar
+	2011 09:41:28 -0500")
+Message-ID: <m3oc4rz5kp.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103311647300.22418@localhost6.localdomain6>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 05:01:40PM +0200, Thomas Gleixner wrote:
-> On Thu, 31 Mar 2011, Kevin Hilman wrote:
-> 
-> > Thomas Gleixner <tglx@linutronix.de> writes:
-> > 
-> > > But the current SoC maintainer model does not work either. The SoC
-> > > maintainers care about their sandbox and have exactly zero incentive
-> > > to look at the overall picture, e.g reuse of code for the same IP
-> > > blocks, better abstraction mechanisms etc. 
-> > 
-> > zero incentive?  that's a bit strong, IMO.
-> > 
-> > That may be true for some SoCs, it's not really fair as a sweeping
-> > statement.
-> 
-> Fair enough, but it's the perception in general.
-> 
-> > Conference (ELC, US and Europe.)  Especially as IP blocks are reused
-> > across SoC families, abstractions like runtime PM are the only way to
-> > keep the SoC specifics of PM out of the common driver.
-> 
-> Right, I know that these things happen, but at the same time the sheer
-> amount of stuff flowing in makes it hard that these infrastructure
-> stuff really works out. And we are only at the beginning of the big
-> shuffle "code in to mainline" game.
-> 
-> After cleaning up the whole irq stuff across the tree I can tell you,
-> that the mess is non-linear growing with the number of instances.
-> 
-> You can see the patterns which are:
->     - copy and paste
->     - introduce different bugs
->     - add more abuse
-> 
-> That's what I'm really concerned about.
-> 
-> > Yes, ARM SoC maintainers have to make up some ground.  But compare this
-> > to just a couple years ago where the common complaint was "why aren't
-> > embedded SoC people contributing code to mainline", and you'll see we
-> > have come a long way.
-> 
-> Well, code comes in, which is progress. But we need to figure out how
-> to deal with the increasingly growing flood before we drown in it.
+Hi,
 
-How about we declare the remainder of this cycle and the next merge window
-as being only for bug and regression fixes, and consolidation of stuff like
-the IRQ controller and GPIO controller code for the next merge window?
+On Thu, Mar 31 2011, Manoj wrote:
+>> How about setting CONFIG_MMC_RICOH_MMC?
+>
+> Yes Sir... that was already set.
+> CONFIG_MMC_RICOH_MMC=y
+
+Ah, I think MMC_RICOH_MMC needs to know about this new PCI ID too.
+I don't know whether that code knows how to turn off the MMC controller
+on this model, though.
+
+Please try this patch:
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index bd80f63..0852046 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2758,6 +2758,9 @@ static void ricoh_mmc_fixup_r5c832(struct pci_dev *dev)
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
++
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C823, ricoh_mmc_fixup_r5c832);
++DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C823, ricoh_mmc_fixup_r5c832);
+ #endif /*CONFIG_MMC_RICOH_MMC*/
+ 
+ #if defined(CONFIG_DMAR) || defined(CONFIG_INTR_REMAP)
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 11fd381..9ec3316 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1535,6 +1535,7 @@
+ #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
+ #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
+ #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
++#define PCI_DEVICE_ID_RICOH_R5C823	0x0823
+ #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
+ #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
+
+
+and post dmesg of the result, as well as whether it worked.
+
+We're trying the 0x832 disable method on an 0x823 controller, so I don't
+know whether that'll work.
+
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
