@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758275Ab1CaPX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:23:57 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:42305 "HELO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752817Ab1CaPXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:23:55 -0400
-Message-ID: <4D949C87.1000001@sgi.com>
-Date: Thu, 31 Mar 2011 08:23:51 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1758289Ab1CaPYB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:24:01 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63780 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758265Ab1CaPX7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:23:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Date: Thu, 31 Mar 2011 17:23:01 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, Nicolas Pitre <nico@fluxnic.net>,
+        david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
+        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+References: <201103301906.42429.arnd@arndb.de> <alpine.LFD.2.00.1103311359320.22418@localhost6.localdomain6> <87d3l7jqpr.fsf@ti.com>
+In-Reply-To: <87d3l7jqpr.fsf@ti.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, David Rientjes <rientjes@google.com>,
-        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/2] memblock: add error return when CONFIG_HAVE_MEMBLOCK
- is not set
-References: <20110225180633.857892225@gulag1.americas.sgi.com>	<20110225180634.017570095@gulag1.americas.sgi.com>	<20110227120949.GF16453@elte.hu>	<20110227121518.GA19165@elte.hu>	<4D6AFBB0.70401@kernel.org>	<4D6BF63D.2020404@sgi.com>	<AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com>	<4D6BFF46.3050001@sgi.com>	<AANLkTi=Xf5RaF559QsRNijmG0YP7amkG569NZFhpt4QY@mail.gmail.com>	<4D93CDD7.8000708@sgi.com> <AANLkTi=eRgp0wqpwq-W=E7ptrnQuM837+J+enEA2wey-@mail.gmail.com>
-In-Reply-To: <AANLkTi=eRgp0wqpwq-W=E7ptrnQuM837+J+enEA2wey-@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103311723.02301.arnd@arndb.de>
+X-Provags-ID: V02:K0:rG9T/DWqJO2ZsNoThzfls7wrAmYmqEJgta2iO83V9o3
+ PTwcEl05RDlXeV5mvEHBxvbEcdu34V7YwP8Cdkmua26DpSTJVA
+ T3SAG+0YLC+mEBppMpKhRSI0EhJp3XX6QsXePCy5YlQ0FQ/g+1
+ UPM++y4rwYm64ZVaS68kG+/gnQy4kPIw1mMVBvzMo6DDf+UTHi
+ sPkI5vDjQEZ/bu+LEBycw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 31 March 2011, Kevin Hilman wrote:
+> Some SoCs families (like OMAP) have huge amount of diversity even within
+> the SoC family, so better abstractions and generic infrastrucure
+> improvements are an obvious win, even staying within the SoC.
 
+But that's the point. The incentive is there for managing the infrastructure
+within the SoC, but not across SoCs. Allow me to use OMAP as a bad example
+while pointing out that it's really one of the best supported platforms
+we currently have, while the others are usually much worse in terms of
+working with the community (or at least they are behind on the learning
+curve but getting there):
 
-Yinghai Lu wrote:
-> On Wed, Mar 30, 2011 at 5:41 PM, Mike Travis <travis@sgi.com> wrote:
->> Subject: memblock: add error return when CONFIG_HAVE_MEMBLOCK is not set
->> Author: Yinghai Lu <yinghai@kernel.org>
->>
->>        Add an error return if CONFIG_HAVE_MEMBLOCK is not set instead
->>        of having to add #ifdef CONFIG_HAVE_MEMBLOCK around blocks of
->>        code calling that function.
->>
->> Signed-off-by: Mike Travis <travis@sgi.com>
->> ---
->> include/linux/memblock.h |    9 ++++++++-
->> 1 file changed, 8 insertions(+), 1 deletion(-)
->>
->> --- linux.orig/include/linux/memblock.h
->> +++ linux/include/linux/memblock.h
->> @@ -2,6 +2,8 @@
->> #define _LINUX_MEMBLOCK_H
->> #ifdef __KERNEL__
->>
->> +#define MEMBLOCK_ERROR 0
->> +
->> #ifdef CONFIG_HAVE_MEMBLOCK
->> /*
->>  * Logical memory blocks.
->> @@ -20,7 +22,6 @@
->> #include <asm/memblock.h>
->>
->> #define INIT_MEMBLOCK_REGIONS   128
->> -#define MEMBLOCK_ERROR         0
->>
->> struct memblock_region {
->>        phys_addr_t base;
->> @@ -160,6 +161,12 @@ static inline unsigned long memblock_reg
->> #define __initdata_memblock
->> #endif
->>
->> +#else
->> +static inline phys_addr_t memblock_alloc(phys_addr_t size, phys_addr_t
->> align)
->> +{
->> +       return MEMBLOCK_ERROR;
->> +}
->> +
->> #endif /* CONFIG_HAVE_MEMBLOCK */
->>
->> #endif /* __KERNEL__ */
->>
-> 
-> setup_log_buf will pass function pointer, So this one is not needed, right?
+* OMAP2 introduced the hwmod concept as an attempt to reduce duplication
+  between board code, but the code was done on the mach-omap2 level
+  instead of finding a way to make it work across SOC vendors, or using
+  an existing solution.
 
-The other function would need the #ifdef CONFIG_HAVE_MEMBLOCK before calling
-memblock_alloc which I thought was the point of this patch?  Note we still
-have the last fallback of using alloc_boot_mem in kernel/init.c.
+* The IOMMU code in omap2 duplicates the API we have in the common kernel,
+  with slight differences, instead of using the existing code, making it
+  impossible to share a driver between SOC families.
 
-Thanks,
-Mike
+* The ti-st code duplicates parts of the bluetooth layer (apparently
+  that is getting fixed soon).
+
+* The DSS display drivers introduce new infrastructure include new bus
+  types that have the complexity to make them completely generic, but
+  in practice can only work on OMAP, and are clearly not written with
+  cross-vendor abstractions in mind.
+
+	Arnd
