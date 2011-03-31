@@ -1,42 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758642Ab1CaQWa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:22:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60609 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758614Ab1CaQW3 (ORCPT
+	id S1758660Ab1CaQXt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:23:49 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46134 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330Ab1CaQXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:22:29 -0400
+	Thu, 31 Mar 2011 12:23:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mE+h/51L6cEhkNbQyNAtNhVtgokHnovBcfEfgSSqqO0i4Kwcg3E0LfoBcBIJ6ZvufX
+         ++cHOG0GXUqyYxGcNQs8NKoMqydsRQtsxEIh4MRBL+KXMQIx5fN1pcsICBLeoIXMmuho
+         uS2AO7ovuza1PfxUT1i1fW87br+Gzmv9l661E=
+Date: Thu, 31 Mar 2011 09:23:38 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: Bryan Schumaker <bjschuma@netapp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: 2.6.39-rc1 regression: NFS - unable to mount some shares
+ (bisected)
+Message-ID: <20110331162338.GA32296@core.coreip.homeip.net>
+References: <8A85A9B4-D801-476F-B280-CE2B1D04277B@vmware.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=uef63-mHHgHFU14H_Rhytcyc2p34Av6Ms6n3D@mail.gmail.com>
-References: <20110329040939.GA32764@redhat.com> <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
- <20110331030917.GB26057@redhat.com> <20110331033432.GA434@redhat.com>
- <AANLkTimPi-Vbi3DNLEeShCpfOJEuUZo3--3CQ_BMgJiS@mail.gmail.com>
- <20110331040818.GB1255@redhat.com> <AANLkTi=uef63-mHHgHFU14H_Rhytcyc2p34Av6Ms6n3D@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 31 Mar 2011 09:21:37 -0700
-Message-ID: <AANLkTimbjYuCT0VNDM5Rk_+20LocZHYaWKU37ROv3i+G@mail.gmail.com>
-Subject: Re: excessive kworker activity when idle. (was Re: vma corruption in
- today's -git)
-To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8A85A9B4-D801-476F-B280-CE2B1D04277B@vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 8:53 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Regardless, I'll put my money where my mouth is, and try to remove the
-> crazy re-flush thing.
+Hi Bryan,
 
-Yeah, that doesn't work. The tty does actually lock up when it fills
-up. So clearly we actually depended on that reflushing happening.
+On Wed, Mar 30, 2011 at 03:31:44PM -0700, Dmitry Torokhov wrote:
+> Hi Bryan,
+> 
+> It is actually one of autofs + NIS, mounts that is failing.
+> 
 
-That said, I do still think it's the right thing to do to remove that
-line, it just means that I need to figure out where the missing flush
-is.
+Some more data about NFS problemi I am seeing. With an older kernel I
+get:
 
-                         Linus
+[dtor@dtor-d630 ~]$ sudo mount -v build-toolchain:/toolchain /mnt/
+mount: no type was given - I'll assume nfs because of the colon
+mount.nfs: timeout set for Thu Mar 31 09:17:38 2011
+mount.nfs: trying text-based options 'vers=4,addr=10.17.52.98,clientaddr=10.20.94.47'
+mount.nfs: mount(2): Operation not permitted
+mount.nfs: trying text-based options 'addr=10.17.52.98'
+mount.nfs: prog 100003, trying vers=3, prot=6
+mount.nfs: trying 10.17.52.98 prog 100003 vers 3 prot TCP port 2049
+mount.nfs: prog 100005, trying vers=3, prot=17
+mount.nfs: trying 10.17.52.98 prog 100005 vers 3 prot UDP port 693
+build-toolchain:/toolchain on /mnt type nfs (rw)
+
+The failing kernel does it like this:
+
+[dtor@dtor-ws ~]$ sudo mount -v build-toolchain:/toolchain /mnt
+mount: no type was given - I'll assume nfs because of the colon
+mount.nfs: timeout set for Thu Mar 31 09:14:22 2011
+mount.nfs: trying text-based options 'vers=4,addr=10.17.52.98,clientaddr=10.20.94.123'
+mount.nfs: mount(2): Resource temporarily unavailable
+mount.nfs: Resource temporarily unavailable
+
+And I can mount it successfully if I explicitly request V3:
+
+[dtor@dtor-ws ~]$ sudo mount -v -o nfsvers=3 build-toolchain:/toolchain /mnt/
+mount: no type was given - I'll assume nfs because of the colon
+mount.nfs: timeout set for Thu Mar 31 09:22:57 2011
+mount.nfs: trying text-based options 'nfsvers=3,addr=10.17.52.98'
+mount.nfs: prog 100003, trying vers=3, prot=6
+mount.nfs: trying 10.17.52.98 prog 100003 vers 3 prot TCP port 2049
+mount.nfs: prog 100005, trying vers=3, prot=17
+mount.nfs: trying 10.17.52.98 prog 100005 vers 3 prot UDP port 693
+build-toolchain:/toolchain on /mnt type nfs (rw,nfsvers=3)
+
+The mounts that succeed automatically with the newer kernel do like
+this:
+
+[dtor@dtor-ws ~]$ sudo mount -v pa-home:/home2 /mnt/
+mount: no type was given - I'll assume nfs because of the colon
+mount.nfs: timeout set for Thu Mar 31 09:20:01 2011
+mount.nfs: trying text-based options 'vers=4,addr=10.17.4.25,clientaddr=10.20.94.123'
+mount.nfs: mount(2): Protocol not supported
+mount.nfs: trying text-based options 'addr=10.17.4.25'
+mount.nfs: prog 100003, trying vers=3, prot=6
+mount.nfs: trying 10.17.4.25 prog 100003 vers 3 prot TCP port 2049
+mount.nfs: prog 100005, trying vers=3, prot=17
+mount.nfs: trying 10.17.4.25 prog 100005 vers 3 prot UDP port 1234
+pa-home:/home2 on /mnt type nfs (rw)
+
+I am not sure why in failing case we are seeing "resource temporarily
+unavailable" instead of "protocol not supported".
+
+Thanks.
+
+-- 
+Dmitry
