@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab1CaCBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 22:01:37 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52884 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755432Ab1CaCBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 22:01:36 -0400
-Date: Thu, 31 Mar 2011 13:01:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Hellstrom <daniel@gaisler.com>
-Subject: linux-next: build failure after merge of the final tree
- (sparc-current tree related)
-Message-Id: <20110331130127.1d60ba11.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__31_Mar_2011_13_01_27_+1100_rYC.UpotZxCOWVXp"
+	id S1756720Ab1CaCDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 22:03:32 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:40548 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755432Ab1CaCDb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 22:03:31 -0400
+Date: Wed, 30 Mar 2011 22:02:58 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, venki@google.com,
+        ak@linux.intel.com, suresh.b.siddha@intel.com, sfr@canb.auug.org.au,
+        peterz@infradead.org, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        arjan@linux.intel.com, Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Subject: Re: [Xen-devel] Re: [RFC PATCH V4 4/5] cpuidle: driver for xen
+In-reply-to: <4D8CA902.7090907@goop.org>
+Message-id: <alpine.LFD.2.02.1103302159010.1920@x980>
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
+ <20110322123324.28725.3131.stgit@tringupt.in.ibm.com>
+ <20110322145054.GB26952@dumpdata.com> <4D89C40B.4020809@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1103231659210.12911@x980>
+ <20110324120522.GB29294@dumpdata.com> <4D8CA902.7090907@goop.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_Mar_2011_13_01_27_+1100_rYC.UpotZxCOWVXp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> >> Is a CONFIG_XEN kernel supposed to use just HLT in idle?
+> > For right now..
+> 
+> For always, I should think.
 
-Hi all,
+Yay!
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+> >> xen_arch_setup() does this:
+> >>
+> >>         pm_idle = default_idle;
+> >>         boot_option_idle_override = IDLE_HALT;
+> >>
+> >> which has that effect.  I guess this makes sense b/c the
+> >> CONFIG_XEN kernel is Dom0 and the real C-sates are done
+> >> by the hypervisor?
+> > Correct. There are some patches that make the C-states 
+> > be visible in the Linux kernel, but that hasn't been ported
+> > over yet.
+> 
+> All we need is for the idle CPU to block in the hypervisor; a plain
+> "hlt" is always going to be sufficient (which is overridden as a pvop
+> into a sched_idle hypercall).
+> 
+> Xen will choose an appropriate power state for the physical cpus
+> depending on the overall busyness of the system (which any individual
+> virtual machine can't determine).
 
-drivers/tty/serial/apbuart.c: In function 'apbuart_probe':
-drivers/tty/serial/apbuart.c:568: error: 'struct pdev_archdata' has no memb=
-er named 'irqs'
+Okay, knowing that the Dom0 kernel
 
-Caused by commit 10544f128c33 ("sparc32, leon: APBUART driver must use
-archdata to get IRQ number").
+1. can boot in non-xen mode on bare hardware and run cpuidle
+2. needs just HLT when booted in xen mode
 
-I have reverted that commit for today (and commit c897dcf6311e
-"sparc32,leon: Fixed APBUART frequency detection" that conflicts with the
-revert).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+will help us keep things simple.
 
---Signature=_Thu__31_Mar_2011_13_01_27_+1100_rYC.UpotZxCOWVXp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNk+B3AAoJEDMEi1NhKgbs1RQH/i55b7MhF3F3PaFMWKAUmBvZ
-AL3zEC0CLVICWx/tpIbelZ1S7QTFnwcro97NtWhrX5W7xushI5BKClqyShSol3cR
-Lny4btVCO27u0wdqGDN1MXWmGEy01+PWK7VL4xoTzlkkY4gtaySEg0Zri4hV4Eu9
-e8H60bZ+GEPw/Ky+N8w0tMmndmmE8KAWvZCkpBtsvnsHGGiw7yyB6fo826YUCmHU
-VjnHgOexd/4/7SyV4hcnh7aLhxXDvCPUoks73SYNxuQPF4KSuqQ1OkR06H0JQt+t
-GfoFYRd8cyE4vhv61VAKcTzVcWn0KFX2sDEPXt0kgxzGBDwKZ+p9D7I1uTdGZ4A=
-=bAu/
------END PGP SIGNATURE-----
-
---Signature=_Thu__31_Mar_2011_13_01_27_+1100_rYC.UpotZxCOWVXp--
+thanks,
+Len Brown, Intel Open Source Technology Center
