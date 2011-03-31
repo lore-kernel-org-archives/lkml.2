@@ -1,120 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759216Ab1CaTPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 15:15:19 -0400
-Received: from wnohang.net ([178.79.154.173]:42521 "EHLO mail.wnohang.net"
+	id S1759211Ab1CaTTQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 15:19:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:30014 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759205Ab1CaTPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 15:15:16 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 1E5D5249FC
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 94B42247C3
-Date: Fri, 1 Apr 2011 00:45:07 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Michael Witten <mfwitten@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Use the environment variable PYTHON if defined
-Message-ID: <20110331191507.GA5052@Xye>
-References: <20110326224408.GA1336@Xye>
- <20110328144721.GB17872@ghostprotocols.net>
- <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com>
- <20110329181524.GA5140@Xye>
- <AANLkTi=3Wq3Xt-QFR-FLRQ1kBjpWjaBZNFpOiE_T15WH@mail.gmail.com>
- <20110329204024.GA20824@ghostprotocols.net>
- <AANLkTinmXdmNX+iCB4svo3QqR6AcwGrasziFJPeu0J=M@mail.gmail.com>
- <20110329211437.GB20824@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s/l3CgOIzMHHjg/5"
-Content-Disposition: inline
-In-Reply-To: <20110329211437.GB20824@ghostprotocols.net>
-X-Operating-System: Arch linux x86_64 2.6.38.2-bldit-db-FAE
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759135Ab1CaTTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 15:19:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,277,1299484800"; 
+   d="scan'208";a="904180089"
+Date: Thu, 31 Mar 2011 12:19:05 -0700
+From: jacob pan <jacob.jun.pan@linux.intel.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] clocksource: clocksource/clockevent driver for Synopsys
+ dw_apb_timer
+Message-ID: <20110331121905.0d8bf325@jacob-laptop>
+In-Reply-To: <20110331174247.GE3371@pulham.picochip.com>
+References: <1301584372-26261-1-git-send-email-jamie@jamieiles.com>
+	<alpine.LFD.2.00.1103311719420.22418@localhost6.localdomain6>
+	<20110331095051.7933c7b9@jacob-laptop>
+	<20110331174247.GE3371@pulham.picochip.com>
+Organization: OTC
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 31 Mar 2011 18:42:47 +0100
+Jamie Iles <jamie@jamieiles.com> wrote:
 
---s/l3CgOIzMHHjg/5
-Content-Type: multipart/mixed; boundary="2fHTh5uZTiUOsy+g"
-Content-Disposition: inline
+> On Thu, Mar 31, 2011 at 09:50:51AM -0700, jacob pan wrote:
+> > On Thu, 31 Mar 2011 17:33:12 +0200 (CEST)
+> > Thomas Gleixner <tglx@linutronix.de> wrote:
+> > 
+> > > On Thu, 31 Mar 2011, Jamie Iles wrote:
+> > > 
+> > > > This patch adds a driver for the Synopsys DesignWare APB timer
+> > > > block found in some ARM systems.  This uses the timers with an
+> > > > IRQ as a clockevents device and a timer without an IRQ as a
+> > > > clocksource device.
+> > > 
+> > > Interesting. That's probably the same thing as:
+> > > 
+> > >      arch/x86/kernel/apb_timer.c
+> > > 
+> > > So if we merge that thing, then we should make sure, that we can
+> > > replace the x86 one with it.
+> > > 
+> > It seems we have room to consolidate, here is my 2c:
+> > 1. need to support multiple timer channels
+> > 2. support percpu clockevent, need to deal with cpu online/offline
+> > 3. early boot needs. I don't know if abp timer is needed for
+> > booting on ARM platforms. But for Moorestown, we need timer before
+> > platform bus running. So I guess we cannot enumerate the timer as
+> > platform device.
+> 
+> ARM does need it quite early to calibrate the delay loop but I've
+> been registering it early by creating an early_platform_device.  The
+> other difference is that x86 doesn't support the clk API.
+> 
+> How about factoring out the clockevent and clocksource operations 
+> (.set_next_event, .set_mode, .read etc) and the bits that actually
+> drive the hardware into an apb_timer.c then have stuff that does
+> platform device registration or langwell specific stuff in a higher
+> layer?
+> 
+I agree to extract out hardware access bits. how about also include a
+common allocation/reservation mechanism for apbt timer channels. i
+guess we have to stay with device specific bits. e.g.
+struct apbt_dev {
+	int irq;
+	__iomem *base;
+	int channel_id;
+	unsigned int flags; /* for possible platform quirks */
+};
+The allocation should also allow hints or specific request a specific
+timer. Our platform has hardcoded usage of timer channels.
 
-
---2fHTh5uZTiUOsy+g
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-     Regarding the point where it warns about python-devel not existing,
-it looks like that existing feature test will pass even when python3 is=20
-chosen and fail at a later stage. So I made this little change to feature t=
-est=20
-so that it fails when python3 is chosen and perf build succeeds with the wa=
-rning
-printed rather than failing later.
-* On Tue, Mar 29, 2011 at 06:14:37PM -0300, Arnaldo Carvalho de Melo <acme@=
-ghostprotocols.net> wrote:
->Em Tue, Mar 29, 2011 at 04:02:07PM -0500, Michael Witten escreveu:
->> On Tue, Mar 29, 2011 at 15:40, Arnaldo Carvalho de Melo
->> <acme@ghostprotocols.net> wrote:
->> > I think that the best course of action is to emit a warning and go
-
->> Good.
-
->> I'll make it so!
->
->Thanks.
-
---2fHTh5uZTiUOsy+g
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=patch
-Content-Transfer-Encoding: quoted-printable
-
-=46rom: Raghavendra D Prabhu <rprabhu@wnohang.net>
-Date: Fri, 1 Apr 2011 00:17:36 +0530
-Subject: [PATCH] Added a py3k test to feature tests.
-
-Currently, make fails at a later stage when python-devel test succeeds
-incorrectly for Py3k. This fixes that.
-
-Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
----
- tools/perf/feature-tests.mak |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
-index b041ca6..ba287c9 100644
---- a/tools/perf/feature-tests.mak
-+++ b/tools/perf/feature-tests.mak
-@@ -84,6 +84,8 @@ define SOURCE_PYTHON_EMBED
-=20
- int main(void)
- {
-+	if (PY_VERSION_HEX >=3D 0x03000000)
-+		return 1;
- 	Py_Initialize();
- 	return 0;
- }
---=20
-1.7.4.2
+Can you be more specific about "higher layer"?, my guess is that you
+meant platform code or drivers that uses apb timer. So arch specific
+timer code can alloc apb timer and combine with things that is
+appropriate for their platform. e.g. clk api.
 
 
---2fHTh5uZTiUOsy+g--
-
---s/l3CgOIzMHHjg/5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNlNK7AAoJEKYW3KHXK+l3w0EIAKEWd5HaXcL6w5RuMOobS9Q0
-AsjaIkR79+4VgzHSgB3TrQq++hxfKun3q8icsJfSPSkDW5co49L7P89ytHPLK/jc
-Wr3Dk06H2uNqLtzuCl/PfsHX3KdnslriLlO6b2ChaAv6L0z9M/nMrkoJ5byfWjTu
-ADk8ijjc3dD7gkvZ2l06eEfSBhKg5sVmGpBFCxFbz2ZSyyLw9KF5wzS1SqTnCzpL
-M8HWXGsKWaJsI6rFbaEODupMKUsTJyn+2WCWn64g46B8+ft0ZeqmZQUw3v7XbnEW
-pgR4gcgrzThcRsmgjwnLUedEWn6eAUtbcGHxvYALStpdUX9tzmSc0u6Ti/TB9dE=
-=ls2d
------END PGP SIGNATURE-----
-
---s/l3CgOIzMHHjg/5--
+> It looks like arch/x86/kernel/apb_timer.c would still need some lower 
+> level access to the timers for doing things like the calibration in 
+> apbt_quick_calibrate() before registering the clocksource.
+yeah, we still need some early access. perhaps by-pass the clocksource
+as an exception. I don't have a better idea at the moment.
