@@ -1,36 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab1CaGsf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 02:48:35 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48150 "EHLO mx3.mail.elte.hu"
+	id S1756889Ab1CaGux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 02:50:53 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45566 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950Ab1CaGse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 02:48:34 -0400
-Date: Thu, 31 Mar 2011 08:48:20 +0200
+	id S1752288Ab1CaGuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 02:50:52 -0400
+Date: Thu, 31 Mar 2011 08:50:36 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Mike Travis <travis@sgi.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
-        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/2] printk: Allocate kernel log buffer earlier v2
-Message-ID: <20110331064820.GB5938@elte.hu>
-References: <20110225180634.017570095@gulag1.americas.sgi.com>
- <20110227120949.GF16453@elte.hu>
- <20110227121518.GA19165@elte.hu>
- <4D6AFBB0.70401@kernel.org>
- <4D6BF63D.2020404@sgi.com>
- <AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com>
- <4D6BFF46.3050001@sgi.com>
- <AANLkTi=Xf5RaF559QsRNijmG0YP7amkG569NZFhpt4QY@mail.gmail.com>
- <4D93CDD7.8000708@sgi.com>
- <4D93D180.6020300@sgi.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Robin Holt <holt@sgi.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC 2/2] Make x86 calibrate_delay run in parallel.
+Message-ID: <20110331065036.GC5938@elte.hu>
+References: <20101215015840.390204279@gulag1.americas.sgi.com>
+ <20101215015849.051095242@gulag1.americas.sgi.com>
+ <AANLkTinoctZFKo4wBmrrdFggnjSj74QfqvEpz59sW15x@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D93D180.6020300@sgi.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinoctZFKo4wBmrrdFggnjSj74QfqvEpz59sW15x@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -44,23 +35,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Mike Travis <travis@sgi.com> wrote:
+* Yinghai Lu <yinghai@kernel.org> wrote:
 
-> Subject: printk: Allocate kernel log buffer earlier v2
+> On Tue, Dec 14, 2010 at 5:58 PM,  <Robin@sgi.com> wrote:
+> >
+> > On a 4096 cpu machine, we noticed that 318 seconds were taken for bringing
+> > up the cpus.  By specifying lpj=<value>, we reduced that to 75 seconds.
+> > Andi Kleen suggested we rework the calibrate_delay calls to run in
+> > parallel.  With that code in place, a test boot of the same machine took
+> > 61 seconds to bring the cups up.  I am not sure how we beat the lpj=
+> > case, but it did outperform.
+> >
+> > One thing to note is the total BogoMIPS value is also consistently higher.
+> > I am wondering if this is an effect with the cores being in performance
+> > mode.  I did notice that the parallel calibrate_delay calls did cause the
+> > fans on the machine to ramp up to full speed where the normal sequential
+> > calls did not cause them to budge at all.
 > 
-> On larger systems, because of the numerous ACPI, Bootmem and EFI
-> messages, the static log buffer overflows before the larger one
-> specified by the log_buf_len param is allocated.  Minimize the
-> overflow by allocating the new log buffer as soon as possible.
+> please check attached patch, that could calibrate correctly.
 > 
-> The allocation method is passed in as an argument to make
-> backporting to "pre-memblock" kernels easier.
+> Thanks
+> 
+> Yinghai
 
-Hm, all that allocation pointer magic looks a tad too complex and non-obvious.
+> [PATCH -v2] x86: Make calibrate_delay run in parallel.
+> 
+> On a 4096 cpu machine, we noticed that 318 seconds were taken for bringing
+> up the cpus.  By specifying lpj=<value>, we reduced that to 75 seconds.
+> Andi Kleen suggested we rework the calibrate_delay calls to run in
+> parallel.
 
-Why not just make it as simple and obvious as possible for the current kernel - 
-and we can still mark it -stable and you backport it to the non-memblock 
-kernel? That keeps compatibility complexity out of upstream ...
+The risk wit tat suggestion is that it will spectacularly miscalibrate on 
+hyperthreading systems.
 
 Thanks,
 
