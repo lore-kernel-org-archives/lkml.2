@@ -1,116 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab1CaD4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 23:56:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58328 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753515Ab1CaD4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 23:56:14 -0400
-Date: Wed, 30 Mar 2011 23:55:12 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: excessive kworker activity when idle. (was Re: vma corruption in
- today's -git)
-Message-ID: <20110331035511.GA1255@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Tejun Heo <tj@kernel.org>
-References: <20110329040939.GA32764@redhat.com>
- <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
- <20110331030917.GB26057@redhat.com>
- <AANLkTikYAAYcYxTdKAxQjDxVQ7qrZGEfXg+gpfwcj1=-@mail.gmail.com>
+	id S1756879Ab1CaD76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 23:59:58 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:1818 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab1CaD75 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 23:59:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=E+ZRlmj5zNoiYbKCC0r82GMv1k/inecog2U+LDXNbNab3R6UjcRynF9ZruzgQ1d64y
+         yUrCW5d1niswEedYHJ5A==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikYAAYcYxTdKAxQjDxVQ7qrZGEfXg+gpfwcj1=-@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110330183446.GG1291@redhat.com>
+References: <BANLkTimiL5VZki4oUaw5hQYgB=E2jYwKrw@mail.gmail.com>
+ <4D8C48B6.6050300@fusionio.com> <BANLkTimzt7QhBdayBpB3dRSOSY3G3VCfcw@mail.gmail.com>
+ <20110330183446.GG1291@redhat.com>
+From: Justin TerAvest <teravest@google.com>
+Date: Wed, 30 Mar 2011 20:59:34 -0700
+Message-ID: <BANLkTinKyWsB-Oj4B-tDWEV7SPxvi--RaQ@mail.gmail.com>
+Subject: Re: Why do we use cpu nice priority for ioprio?
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 08:37:21PM -0700, Linus Torvalds wrote:
- > You don't see some nice thread description
- > in 'top' any more (like you used to when everybody created their own
- > threads and didn't do the common worker thread thing), and the best
- > approach literally seems to be something like
- > 
- >    perf record -ag sleep 10
- >    perf report
- > 
- > which does tend to show what's going on, but it's still a ridiculous
- > way to this.
+On Wed, Mar 30, 2011 at 11:34 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Wed, Mar 30, 2011 at 11:23:45AM -0700, Justin TerAvest wrote:
+>> On Fri, Mar 25, 2011 at 12:48 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>> > On 2011-03-25 03:38, Justin TerAvest wrote:
+>> >> It's not clear why the cpu nice value should be mapped to the ioprio
+>> >> for a task when none is picked.
+>> >>
+>> >> Internally, at cfq_init_prio_data(), we just set:
+>> >>               ioprio = IOPRIO_NORM;
+>> >>               ioprio_class = IOPRIO_CLASS_BE;
+>> >> if ioprio_class is IOPRIO_CLASS_NONE.
+>> >>
+>> >>
+>> >> The problem is that  today, SCHED_RR and SCHED_FIFO threads
+>> >> automatically get bumped up to RT class. This all happens behind the
+>> >> curtains and the io_class of the thread is still shown as NONE with
+>> >> sys_ioprio_get(). What's the motivation behind this promotion of
+>> >> ioprio class?
+>> >
+>> > It was decided back in the day when io priorities were introduced. I
+>> > still think it's a good idea.
+>>
+>> This is the part I'm especially curious about. If we're managing the
+>> resources separately,
+>> why should be be adjusting io_class based on the nice value?
+>
+> What's wrong with taking a hint about ioclass and ioprio from cpu
+> scheduling class and nice value?
 
-I tried that, and wasn't particularly enlightened.
+I guess it's fine. I was just curious how strongly everyone felt about
+the way it works today. It sounds like we expect nice values and io
+scheduling classes to be closely matched.
 
-+      6.53%  kworker/1:2  [kernel.kallsyms]  [k] read_hpet            
-+      4.83%  kworker/0:0  [kernel.kallsyms]  [k] read_hpet           
-+      4.28%  kworker/0:0  [kernel.kallsyms]  [k] arch_local_irq_restore 
-+      4.03%  kworker/1:2  [kernel.kallsyms]  [k] arch_local_irq_restore  
-+      3.10%  kworker/0:0  [kernel.kallsyms]  [k] do_raw_spin_trylock      
-+      2.88%  kworker/1:2  [kernel.kallsyms]  [k] do_raw_spin_trylock       
-+      2.85%  kworker/1:2  [kernel.kallsyms]  [k] debug_locks_off  
-+      2.69%  kworker/0:0  [kernel.kallsyms]  [k] debug_locks_off   
-+      2.48%  kworker/0:0  [kernel.kallsyms]  [k] lock_release       
-+      2.26%  kworker/1:2  [kernel.kallsyms]  [k] lock_release        
-+      2.03%  kworker/0:0  [kernel.kallsyms]  [k] lock_acquire         
-+      1.88%  kworker/0:0  [kernel.kallsyms]  [k] arch_local_save_flags 
-+      1.87%  kworker/1:2  [kernel.kallsyms]  [k] lock_acquire           
-+      1.82%  kworker/1:2  [kernel.kallsyms]  [k] arch_local_save_flags 
-+      1.81%  kworker/1:2  [kernel.kallsyms]  [k] arch_local_irq_save    
-+      1.78%  kworker/0:0  [kernel.kallsyms]  [k] arch_local_irq_save     
-+      1.56%  kworker/0:0  [kernel.kallsyms]  [k] lock_acquired            
-+      1.53%  kworker/1:2  [kernel.kallsyms]  [k] __lock_acquire            
-+      1.51%  kworker/0:0  [kernel.kallsyms]  [k] __lock_acquire             
-+      1.29%  kworker/0:0  [kernel.kallsyms]  [k] native_write_msr_safe       
-+      1.23%  kworker/1:2  [kernel.kallsyms]  [k] cpu_relax                    
-+      1.17%  kworker/1:2  [kernel.kallsyms]  [k] lock_acquired                 
-+      1.17%  kworker/0:0  [kernel.kallsyms]  [k] trace_hardirqs_off_caller      
-+      1.11%  kworker/1:2  [kernel.kallsyms]  [k] trace_hardirqs_off_caller       
-+      1.08%  kworker/1:2  [kernel.kallsyms]  [k] native_write_msr_safe   
-+      1.02%  kworker/0:0  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave   
-+      0.92%  kworker/0:0  [kernel.kallsyms]  [k] process_one_work          
-+      0.87%  kworker/1:2  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave     
-+      0.80%  kworker/0:0  [kernel.kallsyms]  [k] flush_to_ldisc       
-+      0.76%  kworker/1:2  [kernel.kallsyms]  [k] process_one_work      
-+      0.76%  kworker/1:2  [kernel.kallsyms]  [k] flush_to_ldisc         
-+      0.72%  kworker/0:0  [kernel.kallsyms]  [k] arch_local_irq_restore  
-+      0.71%  kworker/1:2  [kernel.kallsyms]  [k] arch_local_irq_restore   
-+      0.64%  kworker/1:2  [kernel.kallsyms]  [k] do_raw_spin_unlock        
-+      0.63%  kworker/0:0  [kernel.kallsyms]  [k] perf_event_task_tick       
-+      0.61%  kworker/1:2  [kernel.kallsyms]  [k] ktime_get                   
-+      0.59%  kworker/0:0  [kernel.kallsyms]  [k] _raw_spin_unlock_irqrestore  
+Thanks,
+Justin
 
-this is what led me to try the other perf methods. the kmem traces were
-the only things that really jumped out.
-
- > (Powertop can also do it, and is probably a better thing to use, I'm
- > just used to "perf record" for other reasons, so..)
-
-Tried that too, here's what it said..
-
-Summary: 0.0 wakeups/second,  0.0 GPU ops/second and 0.0 VFS ops/sec
-
-                Usage       Events/s    Category       Description
-            -2147483648 ms/s   0.0        Timer
-            -2147483648 ms/s   0.0        kWork
-            35151589 ms/s    0.0        Timer
-            35151588 ms/s    0.0        Timer
-            35151587 ms/s    0.0        Timer
-            35151586 ms/s    0.0        Timer
-            35151585 ms/s    0.0        Timer
-            35151585 ms/s    0.0        Timer
-            35151584 ms/s    0.0        Timer
-            35151583 ms/s    0.0        Timer
-            35151582 ms/s    0.0        Timer
-            35151581 ms/s    0.0        Timer
-            35151581 ms/s    0.0        Timer
-            35151580 ms/s    0.0        Timer
-
-Not exactly helpful.
-
-	Dave
-
+>
+> I think in general if some task is important from cpu perspective then
+> most likely it is important from IO perspective too. And if user thinks
+> otherwise, then one can explicitly set ioclass and ioprio of the task.
+>
+> So this makes sense to me.
+>
+> Thanks
+> Vivek
+>
