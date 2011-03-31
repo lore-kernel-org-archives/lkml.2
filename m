@@ -1,211 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757957Ab1CaO0O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:26:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:23185 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab1CaO0M convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:26:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,275,1299484800"; 
-   d="scan'208";a="411710130"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "Kleen, Andi" <andi.kleen@intel.com>,
-        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        "gregkh@suse.de" <gregkh@suse.de>, "mingo@elte.hu" <mingo@elte.hu>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "Li, Xin" <xin.li@intel.com>
-Date: Thu, 31 Mar 2011 22:26:05 +0800
-Subject: [PATCH 7/7,v10] NUMA Hotplug Emulator: Implement per-node
- add_memory debugfs interface
-Thread-Topic: [PATCH 7/7,v10] NUMA Hotplug Emulator: Implement per-node
- add_memory debugfs interface
-Thread-Index: Acvvr5GUaqATCHD+RESmdxmcTWbu7A==
-Message-ID: <749B9D3DBF0F054390025D9EAFF47F224A3D6C45@shsmsx501.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1757782Ab1CaO3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:29:37 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:59496 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757540Ab1CaO3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 10:29:36 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH v3] x86: UV kdump reboot fix
+Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, rja@sgi.com
+Message-Id: <E1Q5Iuo-00013b-UK@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Thu, 31 Mar 2011 09:32:02 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add add_memory interface to support to memory hotplug emulation for each online
-node under debugfs. The reserved memory can be added into desired node with
-this interface.
+From: Cliff Wickman <cpw@sgi.com>
 
-The layout on debugfs:
-        node_hotplug/node0/add_memory
-        node_hotplug/node1/add_memory
-        node_hotplug/node2/add_memory
-        ...
+After a crash dump on an SGI Altix UV system the crash kernel fails to
+cause a reboot.  EFI mode is disabled in the kdump kernel, so only the
+reboot_type of BOOT_ACPI works.
 
-Add a memory section(128M) to node 3(boots with mem=1024m)
+> The clean solution would be to add the reboot_type setting to an UV specific
+> initialization function. That way only UV is affected and there's no extra
+> kludge either, as reboot_type is already global.  [Ingo]
+(this is too simple -- sometimes I can't see the forest for the trees!)
 
-        echo 0x40000000 > node_hotplug/node3/add_memory
+Diffed against 2.6.38-rc8 (current tip tree)
 
-CC: David Rientjes <rientjes@google.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-Signed-off-by: Haicheng Li <haicheng.li@intel.com>
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
-Signed-off-by: Yang Zhang <yang.z.zhang@Intel.com>
----
- Documentation/memory-hotplug.txt |   24 ++++++++++++
- mm/memory_hotplug.c              |   77 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 101 insertions(+), 0 deletions(-)
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
 
-diff --git a/Documentation/memory-hotplug.txt linux-hpe4/Documentation/memory-hotplug.txt
-index bc8c99e..9fa8fc7 100644
---- a/Documentation/memory-hotplug.txt
-+++ linux-hpe4/Documentation/memory-hotplug.txt
-@@ -19,6 +19,7 @@ be changed often.
-   4.1 Hardware(Firmware) Support
-   4.2 Notify memory hot-add event by hand
-   4.3 Node hotplug emulation
-+  4.4 Memory hotplug emulation
- 5. Logical Memory hot-add phase
-   5.1. State of memory
-   5.2. How to online memory
-@@ -254,6 +255,29 @@ Where "size" can be represented in megabytes or gigabytes (for example,
- Once the new node has been added, it is possible to online the memory by
- toggling the "state" of its memory section(s) as described in section 5.1.
+ arch/x86/kernel/apic/x2apic_uv_x.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-+4.4 Memory hotplug emulation
-+------------
-+With debugfs, it is possible to test memory hotplug with software method, we
-+can add memory section to desired node with add_memory interface. It is a much
-+more powerful interface than "probe" described in section 4.2.
+Index: linux.trees.git/arch/x86/kernel/apic/x2apic_uv_x.c
+===================================================================
+--- linux.trees.git.orig/arch/x86/kernel/apic/x2apic_uv_x.c
++++ linux.trees.git/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -23,6 +23,7 @@
+ #include <linux/io.h>
+ #include <linux/pci.h>
+ #include <linux/kdebug.h>
++#include <linux/crash_dump.h>
+ 
+ #include <asm/uv/uv_mmrs.h>
+ #include <asm/uv/uv_hub.h>
+@@ -34,6 +35,7 @@
+ #include <asm/ipi.h>
+ #include <asm/smp.h>
+ #include <asm/x86_init.h>
++#include <asm/emergency-restart.h>
+ 
+ DEFINE_PER_CPU(int, x2apic_extra_bits);
+ 
+@@ -810,4 +812,11 @@ void __init uv_system_init(void)
+ 
+ 	/* register Legacy VGA I/O redirection handler */
+ 	pci_register_set_vga_state(uv_set_vga_state);
 +
-+There is an add_memory interface for each online node at the debugfs mount
-+point.
-+       mem_hotplug/node0/add_memory
-+       mem_hotplug/node1/add_memory
-+       mem_hotplug/node2/add_memory
-+       ...
-+
-+Add a memory section(128M) to node 3(boots with mem=1024m)
-+
-+       echo 0x40000000 > mem_hotplug/node3/add_memory
-+
-+And more we make it friendly, it is possible to add memory to do
-+
-+       echo 1024m > mem_hotplug/node3/add_memory
-+
-+Once the new memory section has been added, it is possible to online the memory
-+by toggling the "state" described in section 5.1.
-
- ------------------------------
- 5. Logical Memory hot-add phase
-diff --git a/mm/memory_hotplug.c linux-hpe4/mm/memory_hotplug.c
-index f0be4b4..0193e96 100644
---- a/mm/memory_hotplug.c
-+++ linux-hpe4/mm/memory_hotplug.c
-@@ -942,6 +942,81 @@ static struct dentry *node_hp_debug_root;
- extern char *emu_cmdline;
- extern int emu_nid_to_phys[MAX_NUMNODES];
-
-+#ifdef CONFIG_ARCH_MEMORY_PROBE
-+
-+static ssize_t add_memory_store(struct file *file, const char __user *buf,
-+                               size_t count, loff_t *ppos)
-+{
-+       u64 phys_addr = 0;
-+       int nid = file->private_data - NULL;
-+       int ret;
-+
-+       printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
-+       phys_addr = simple_strtoull(buf, NULL, 0);
-+
-+       ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
-+       if (ret)
-+               count = ret;
-+
-+       return count;
-+}
-+
-+static int add_memory_open(struct inode *inode, struct file *file)
-+{
-+       file->private_data = inode->i_private;
-+       return 0;
-+}
-+
-+static const struct file_operations add_memory_file_ops = {
-+       .open           = add_memory_open,
-+       .write          = add_memory_store,
-+       .llseek         = generic_file_llseek,
-+};
-+
-+/*
-+ * Create add_memory debugfs entry under specified node
-+ */
-+static int debugfs_create_add_memory_entry(int nid)
-+{
-+       char buf[32];
-+       static struct dentry *node_debug_root;
-+
-+       snprintf(buf, sizeof(buf), "node%d", nid);
-+       node_debug_root = debugfs_create_dir(buf, memhp_debug_root);
-+       if (!node_debug_root)
-+               return -ENOMEM;
-+
-+       /* the nid information was represented by the offset of pointer(NULL+nid) */
-+       if (!debugfs_create_file("add_memory", S_IWUSR, node_debug_root,
-+                       NULL + nid, &add_memory_file_ops))
-+               return -ENOMEM;
-+
-+       return 0;
-+}
-+
-+static int __init memory_debug_init(void)
-+{
-+       int nid;
-+
-+       if (!memhp_debug_root)
-+               memhp_debug_root = debugfs_create_dir("mem_hotplug", NULL);
-+       if (!memhp_debug_root)
-+               return -ENOMEM;
-+
-+       for_each_online_node(nid)
-+                debugfs_create_add_memory_entry(nid);
-+
-+       return 0;
-+}
-+
-+module_init(memory_debug_init);
-+#else
-+static debugfs_create_add_memory_entry(int nid)
-+{
-+       return 0;
-+}
-+#endif /* CONFIG_ARCH_MEMORY_PROBE */
-+
- static ssize_t add_node_store(struct file *file, const char __user *buf,
-                                size_t count, loff_t *ppos)
- {
-@@ -973,6 +1048,8 @@ static ssize_t add_node_store(struct file *file, const char __user *buf,
-        emu_nid_to_phys[nid] = nid;
-
-        ret = add_memory(nid, start, size);
-+
-+       debugfs_create_add_memory_entry(nid);
-        return ret ? ret : count;
++	/*
++	 * for a kdump kernel the reset must be BOOT_ACPI, not BOOT_EFI, as
++	 * EFI is not enabled in the kdump kernel.
++	 */
++	if (is_kdump_kernel())
++		reboot_type = BOOT_ACPI;
  }
-
---
-1.7.1.1
---
-best regards
-yang
-
-
