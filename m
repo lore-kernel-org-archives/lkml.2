@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab1CaBPE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 21:15:04 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44732 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab1CaBPD convert rfc822-to-8bit (ORCPT
+	id S933522Ab1CaBWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 21:22:05 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:39048 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab1CaBWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 21:15:03 -0400
+	Wed, 30 Mar 2011 21:22:02 -0400
+Date: Wed, 30 Mar 2011 18:21:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Michal Marek <mmarek@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+Message-ID: <20110331012155.GZ2255@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D924FEE.8040804@linux.intel.com>
+ <20110329214704.GM2261@linux.vnet.ibm.com>
+ <4D9256AF.5000308@linux.intel.com>
+ <20110330004725.GO2261@linux.vnet.ibm.com>
+ <4D92BECA.50802@cn.fujitsu.com>
+ <4D92DA32.2010809@cn.fujitsu.com>
+ <20110330105505.GA3195@sepie.suse.cz>
+ <1301482656.4859.171.camel@twins>
+ <4D931814.9090100@suse.cz>
+ <4D93D29C.5010702@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinE7EDbV8hrYZWBxgvwOxdPMLoS0Y57PSm04rvM@mail.gmail.com>
-References: <20110317183048.GW7258@atomide.com>
-	<AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
-	<20110318101512.GA15375@n2100.arm.linux.org.uk>
-	<201103301906.42429.arnd@arndb.de>
-	<AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
-	<20110331001502.GB6680@n2100.arm.linux.org.uk>
-	<AANLkTinE7EDbV8hrYZWBxgvwOxdPMLoS0Y57PSm04rvM@mail.gmail.com>
-Date: Wed, 30 Mar 2011 20:15:02 -0500
-Message-ID: <AANLkTik-BFTzyPLuYVdhCJPocc0wPY0rKvO7BQS4Fg1S@mail.gmail.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-From: Bill Gatliff <bgat@billgatliff.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D93D29C.5010702@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus:
+On Thu, Mar 31, 2011 at 09:02:20AM +0800, Lai Jiangshan wrote:
+> On 03/30/2011 07:46 PM, Michal Marek wrote:
+> > On 30.3.2011 12:57, Peter Zijlstra wrote:
+> >> On Wed, 2011-03-30 at 12:55 +0200, Michal Marek wrote:
+> >>> Subject: [PATCH] headers: Allow for lightweight inclusion of task_struct definition
+> >>>
+> >>> Factor out a couple of type definitions to <header>_types.h to allow
+> >>> using task_struct without pulling tons of new dependencies via sched.h.
+> >>
+> >> Urgh, not pretty.. so why not clean up sched.h properly? There's way too
+> >> much cruft in there.
+> > 
+> > It was a proof-of-concept to show that it is doable to have proper
+> > definition of task_struct in rcupdate.h. Not an entry for any code
+> > beauty contest.
+> > 
+> > Michal
+> > 
+> 
+> I like this cleanup, could you continue for this hard job? I will help you if required.
+> 
+> Ingo & Peter - will you accept the patches when it is done.
+> 
+> Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-On Wed, Mar 30, 2011 at 7:55 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->  124022 total arch/sh
->  124418 total arch/sparc
->  181997 total arch/m68k
->  246717 total arch/mips
->  254785 total arch/x86
->  370912 total arch/powerpc
->  732732 total arch/arm
+I certainly like the idea of being able to inline TREE_PREEMPT_RCU's
+rcu_read_lock() and rcu_read_unlock() using normal C code!
 
-I'm not sure this metric is completely fair to ARM.  If you want to
-level the field, I think you have to divide each result by the number
-of SoC's (or equivalent, in the case of x86) represented by that
-architecture.  Otherwise you aren't taking the diversity of the
-various implementations of that instruction set into account.
-
-Doing that, I think you'll find that ARM is in much better shape than
-it appears.
-
-> And ARM fanbois can say "oh, but arm is special" all they want, but
-> they need to realize that the lack of common platform for ARM is a
-> real major issue. It's not a "feature", and I'm sorry, but anybody who
-> calls x86 "peanuts" is a moron and should be ashamed of himself.
-> Instead of trying to feel superior, those people should feel like
-> pariah.
-
-I didn't say it was peanuts, but I agreed with the statement and I
-stand by it.  I don't think x86 is even close to the diversity you
-find in the various ARM implementations.
-
-> The fact that x86 has a platform, and people have cared about
-> compatibility, and actually gets things to work with less code is a
-> good thing.
-
-Depends on who you ask.  I have had to completely re-do entire
-projects because we weren't able to bend the x86's notion of
-"platform" to fit the task at hand (the decision to go with x86 was
-made before I was involved in those projects, fwiw).
-
-Furthermore, why aren't you saying the same thing about SH?  They
-don't appear to have a concept of "platform" that's any more evolved
-than ARM.  But there are a lot fewer SH SoCs supported in-kernel, so
-the "problem" doesn't look as pronounced.
-
-> I know ARM people who think that x86 is an "ugly" architecture.
-
-You don't know me, but I think x86 is an ugly architecture.
-
-> But the fact is, of all the architectures out there, ARM
-> right now is the ugliest BY FAR. Exactly because of people who don't
-> seem to understand that this kind of crap is a problem.
-
-It's an OPPORTUNITY, not a problem.  ARM's absence of a "platform"
-concept allows developers to bend ARM into the shape needed to solve
-the problem--- something that you can't say about x86.
-
-This is a kernel architecture problem, not an SoC problem.
-
-
-b.g.
--- 
-Bill Gatliff
-bgat@billgatliff.com
+							Thanx, Paul
