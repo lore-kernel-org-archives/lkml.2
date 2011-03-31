@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805Ab1CaR5v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 13:57:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62494 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758648Ab1CaR5u (ORCPT
+	id S1758810Ab1CaR67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 13:58:59 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51930 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758648Ab1CaR66 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 13:57:50 -0400
-Message-ID: <4D94C09B.4070506@monstr.eu>
-Date: Thu, 31 Mar 2011 19:57:47 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Thu, 31 Mar 2011 13:58:58 -0400
 MIME-Version: 1.0
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-CC: Wolfram Sang <w.sang@pengutronix.de>, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca, john.williams@petalogix.com,
-        linux-kernel@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de
-Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
-References: <1301574600-4861-1-git-send-email-monstr@monstr.eu> <1301574600-4861-2-git-send-email-monstr@monstr.eu> <20110331124925.GA2202@pengutronix.de> <4D948189.9070606@monstr.eu> <20110331170321.GA2734@local>
-In-Reply-To: <20110331170321.GA2734@local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110331174334.GA414@core.coreip.homeip.net>
+References: <1301592052-4064-1-git-send-email-manoj.iyer@canonical.com>
+	<1301592052-4064-2-git-send-email-manoj.iyer@canonical.com>
+	<20110331174334.GA414@core.coreip.homeip.net>
+Date: Thu, 31 Mar 2011 12:58:57 -0500
+Message-ID: <AANLkTi=a1eZS2fjxKYzf1RsE=6n9wZwUTPs8v84zb6p_@mail.gmail.com>
+Subject: Re: [PATCH] add support for Lenovo tablet ID (0xE6)
+From: Chris Bagwell <chris@cnpbagwell.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
+        pingc@wacom.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hans J. Koch wrote:
-> On Thu, Mar 31, 2011 at 03:28:41PM +0200, Michal Simek wrote:
->>>> +		uioinfo->name = pdev->dev.of_node->name;
->>>> +		/* Use version for storing full IP name for identification */
->>>> +		uioinfo->version = pdev->dev.of_node->full_name;
->>> I don't think this is apropriate, but will leave that to Hans.
->> I was thinking what to add and I choose full_name because I can read
->> this value and identify which UIO is this device.
->> I know that there should be version but there is no version string in DTS.
-> 
-> The purpose of uio_info->version is to give the userspace part of the driver
-> additional information. Kernel part and userspace part might be developed
-> independently, and there should be a chance for the userspace part to find
-> out if a certain feature is already supported by the kernel part without
-> having to do dirty kernel version checks.
-> 
-> So, uio_info->version is an information about the driver, not the hardware.
-> 
-> Example: You write a UIO driver for a chip you use in a project. You don't
-> need all the functionality of that chip. One year later you need additional
-> chip functionality, and it turns out that you have to do certain
-> initializations in the kernel part. Your new userspace will need the new
-> kernel driver, but there are lots of older kernels around in your customers
-> devices. In that case, your userspace part can simply check the version
-> string in sysfs and require at least your new version.
+On Thu, Mar 31, 2011 at 12:43 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Thu, Mar 31, 2011 at 12:20:52PM -0500, Manoj Iyer wrote:
+>> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+>> ---
+>>  drivers/input/tablet/wacom_wac.c |    3 +++
+>>  1 files changed, 3 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+>> index 5597637..f751224 100644
+>> --- a/drivers/input/tablet/wacom_wac.c
+>> +++ b/drivers/input/tablet/wacom_wac.c
+>> @@ -1364,6 +1364,8 @@ static const struct wacom_features wacom_features_0xE2 =
+>>       { "Wacom ISDv4 E2",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG };
+>>  static const struct wacom_features wacom_features_0xE3 =
+>>       { "Wacom ISDv4 E3",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG };
+>> +static const struct wacom_features wacom_features_0xE6 =
+>> +     { "ISD-V4",               WACOM_PKGLEN_TPC2FG,    27760, 15694,  255,  0, TABLETPC2FG };
+>
+> Manoj, shouldn't we call it "Wacom ISDv4 E6" to be consistent?
 
-I understand reasons but this information is not in device tree and it must be 
-setup.
-Grant suggested compatible string but it is not the best option too.
+I think its best to rename to be consistent with others in series.
 
+>
+> Ping, is resolution the same as with other "ISDv4"s?
 
-> 
->>>> +		/* Get IRQ for the device */
->>>> +		rc = of_irq_to_resource(pdev->dev.of_node, 0, &r_irq);
->>>> +		if (rc == NO_IRQ)
->>>> +			dev_err(&pdev->dev, "no IRQ found\n");
->>> No error, I think. Sometimes just mmaping the registers is enough.
->> OK. Let's changed it to dev_info if you like.
-> 
-> The correct thing is to set uio_info->irq to UIO_IRQ_NONE.
+My guess is yes.
 
-ok, done.
+Note: There is a patch from Ping that you recently accepted but I do
+not see on a branch yet (maybe I'm looking in wrong place).  In it,
+Ping replaces all resolution values with #defines and they are metric
+based (aligns with synaptics) instead of these based on inches.
 
+This patch is on version before that patch.
 
-Michal
+When convering over, it looks like value of 100/WACOM_INTUOS_RES is
+the value to use here.
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+>
+> Thanks,
+>
+> --
+> Dmitry
+>
