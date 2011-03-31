@@ -1,157 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933903Ab1CaKrZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 06:47:25 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41815 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133Ab1CaKrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 06:47:23 -0400
-Message-ID: <4D945BAD.10309@parallels.com>
-Date: Thu, 31 Mar 2011 05:47:09 -0500
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1757271Ab1CaKt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 06:49:26 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:41245 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752133Ab1CaKtZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 06:49:25 -0400
+Date: Thu, 31 Mar 2011 13:49:19 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: david@lang.hm, Nicolas Pitre <nico@fluxnic.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Message-ID: <20110331104918.GI2267@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20110318101512.GA15375@n2100.arm.linux.org.uk>
+ <201103301906.42429.arnd@arndb.de>
+ <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+ <alpine.LFD.2.00.1103301531420.28032@xanadu.home>
+ <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
+ <alpine.LFD.2.00.1103301814250.28032@xanadu.home>
+ <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm>
+ <alpine.LFD.2.00.1103302255280.28032@xanadu.home>
+ <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm>
+ <20110331080954.GA14323@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Pete Clements <clem@clem.clem-digital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
-References: <201103291551.p2TFpDqZ001692@clem.clem-digital.net> <4D92C874.7040104@parallels.com> <4D931634.5030807@fusionio.com> <4D933584.5050005@parallels.com> <4D94432D.5080601@fusionio.com> <4D944544.9040705@parallels.com> <4D945247.4080404@fusionio.com> <4D945976.8000401@fusionio.com>
-In-Reply-To: <4D945976.8000401@fusionio.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110331080954.GA14323@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 05:37 AM, Jens Axboe wrote:
-> On 2011-03-31 12:07, Jens Axboe wrote:
->> On 2011-03-31 11:11, Rob Landley wrote:
->>> On 03/31/2011 04:02 AM, Jens Axboe wrote:
->>>> On 2011-03-30 15:52, Rob Landley wrote:
->>>>> On 03/30/2011 06:38 AM, Jens Axboe wrote:
->>>>>> On 2011-03-30 08:06, Rob Landley wrote:
->>>>>>> On 03/29/2011 10:51 AM, Pete Clements wrote:
->>>>>>>> Quoting Jens Axboe
->>>>>>>>   > 
->>>>>>>>   > On 2011-03-29 16:13, Rob Landley wrote:
->>>>>>>>   > > On 03/29/2011 08:59 AM, Jens Axboe wrote:
->>>>>>>>   > >> On 2011-03-29 10:52, Rob Landley wrote:
->>>>>>>>   > >>> I'm booting all this under kvm or qemu, by the way:
->>>>>>>>   > >>>
->>>>>>>>   > >>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
->>>>>>>>   > >>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
->>>>>>>>   > >>>
->>>>>>>>   > >>> Sometimes with init=/bin/bash in that last quoted bit.  The root
->>>>>>>>   > >>> filesystem's debian sid but that's probably not relevant because it
->>>>>>>>   > >>> worked fine with .38.
->>>>>>>>   > >>
->>>>>>>>   > >> Does this help?
->>>>>>>>   > >>
->>>>>>>>   > >> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
->>>>>>>>   > >> index 0e406d73..ca27d30 100644
->>>>>>>>   > >> --- a/drivers/ide/ide-io.c
->>>>>>>>   > >> +++ b/drivers/ide/ide-io.c
->>>>>>>>   > >> @@ -570,8 +570,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->>>>>>>>   > >>  	spin_unlock_irqrestore(q->queue_lock, flags);
->>>>>>>>   > >>  
->>>>>>>>   > >>  	/* Use 3ms as that was the old plug delay */
->>>>>>>>   > >> -	if (rq)
->>>>>>>>   > >> -		blk_delay_queue(q, 3);
->>>>>>>>   > >> +	blk_delay_queue(q, 3);
->>>>>>>>   > >>  }
->>>>>>>>   > >>  
->>>>>>>>   > >>  static int drive_is_ready(ide_drive_t *drive)
->>>>>>>>   > >>
->>>>>>>>   > > 
->>>>>>>>   > > Nope, still hung the same way.
->>>>>>>>   > 
->>>>>>>>   > Funky. I'll try and reproduce this tonight.
->>>>>>>>   > 
->>>>>>>>   > -- 
->>>>>>>>   > Jens Axboe
->>>>>>>>   > 
->>>>>>>>
->>>>>>>> I have had a similiar problem (reported earlier) unable to boot.
->>>>>>>> With git15-18 hung with IDE drives (hda), git19-21 moved the hang down to
->>>>>>>> the IDE CDROM (hdc). Applied the above patch and now booted into git21 without
->>>>>>>> any hang and all appears ok.
->>>>>>>
->>>>>>> It may have made it better for me, it's hard to tell.
->>>>>>>
->>>>>>> I did a fresh pull, re-applied the patch, and tried again with
->>>>>>> init=/bin/sh and it booted to the shell prompt... which then hung when I
->>>>>>> did "ls -l /".
->>>>>>>
->>>>>>> If I let it boot normally, init announces itself, gives a spurious
->>>>>>> warning about a fstab field (which it's been doing for a while, my fault
->>>>>>> but harmless), then hangs.
->>>>>>>
->>>>>>>> This is i386, UP.
->>>>>>>
->>>>>>> I'm doing x86-64 SMP.
->>>>>>
->>>>>> I think we have the same issue the other location. How about this, then:
->>>>>>
->>>>>> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
->>>>>> index 0e406d73..4978ec3 100644
->>>>>> --- a/drivers/ide/ide-io.c
->>>>>> +++ b/drivers/ide/ide-io.c
->>>>>> @@ -549,12 +549,11 @@ plug_device:
->>>>>>  	spin_unlock_irq(&hwif->lock);
->>>>>>  	ide_unlock_host(host);
->>>>>>  plug_device_2:
->>>>>> +	blk_delay_queue(q, queue_run_ms);
->>>>>>  	spin_lock_irq(q->queue_lock);
->>>>>>  
->>>>>> -	if (rq) {
->>>>>> +	if (rq)
->>>>>>  		blk_requeue_request(q, rq);
->>>>>> -		blk_delay_queue(q, queue_run_ms);
->>>>>> -	}
->>>>>>  }
->>>>>>  
->>>>>>  void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->>>>>> @@ -570,8 +569,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->>>>>>  	spin_unlock_irqrestore(q->queue_lock, flags);
->>>>>>  
->>>>>>  	/* Use 3ms as that was the old plug delay */
->>>>>> -	if (rq)
->>>>>> -		blk_delay_queue(q, 3);
->>>>>> +	blk_delay_queue(q, 3);
->>>>>>  }
->>>>>>  
->>>>>>  static int drive_is_ready(ide_drive_t *drive)
->>>>>>
->>>>>
->>>>> Did a fresh pull and applied that patch.  (It conflicts with your
->>>>> previous one, but looks like it includes it.)
->>>>>
->>>>> Now it hangs after the "EXT3-fs: barriers not enabled" line, doesn't
->>>>> make it to init.
->>>>
->>>> I have tried hard to reproduce this, but even stock 2.6.39-rc1 works
->>>> fine for me here. Setup a KVM image with a debian 6 install, then
->>>> converted it to IDE and booting it with a custom kernel like you are.
->>>> Works fine, boots and I can do disk activity tests and it all works.
->>>>
->>>> Can you send me your .config?
->>>
->>> It was attached to the first message in this series, here it is again.
->>>
->>> I update it via "make oldconfig" and hold down return.
->>>
->>> I boot it via:
->>>
->>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
->>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
->>
->> Much better, I see the hang now! Now to try and diagnose...
+Hi,
+
+On Thu, Mar 31, 2011 at 09:09:54AM +0100, Russell King - ARM Linux wrote:
+> > what's more, you seem to be saying that
+> >
+> > arm7+IPblock1
+> >
+> > and
+> >
+> > arm7+IPblock1
+> >
+> > are different architectures if the wiring between the arm core and  
+> > IPblock1 are different (they are different 'boards' or different chip  
+> > models, possibly from different manufacturers)
+
+This is utter BS, see e.g. that the same MUSB driver is re-used on OMAP,
+on an external discrete chip TUSB6010, on DaVinci, on Blackfin, on
+UX500, etc. The exact same driver is re-used on all those situations
+with a little platform glue layer. We can't live without that small glue
+layer for each different platform though and they sum up to 2600+ lines
+of code (all different platform glues).
+
+It's a pain to keep the core code generic enough so that it's useful on
+all those cases, specially because between OMAP and AM35x, even the
+register file that particular IP block is different. Still, we have
+people working to keep the IP block drivers generic enough to be re-used
+on several situations.
+
+> Over the years which I was overseeing platform support I tried to ensure
+> as much sharing of code across different platforms.  I no longer oversee
+> platform specific stuff, and so its entirely possible that several SoCs
+> have the same IP block but their own code to drive it.
 > 
-> It seems to hard hang, looks very odd:
+> That's where Thomas is right - we need a team of people to provide
+> review of that to catch it and get it consolidated.  Such a team would
+> need funding.  Where does that funding come from?  I've no idea.
 
-I should have mentioned that: when it hangs, you can't page back up in
-the console display anymore.
+Fully agree with you Russell.
 
-Rob
+> We also need the various SoC designers and ARM architecture people to
+> realise that what the hardware situation is rediculous; I have commented
+> about this lack of standardisation to ARM in past years.  ARM have had
+> a standard set of peripherals for ten years, but the SoC people haven't
+> really taken them up - and when they do, they seem to always introduce
+> their own tweaks, sometimes with no way to detect those tweaks.
+
+For sure that's happening, but should we prevent ARM vendors to add
+their tweaks ? Like Nicolas said, that's fuel to innovation.
+
+-- 
+balbi
