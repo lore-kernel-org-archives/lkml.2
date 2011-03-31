@@ -1,188 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933370Ab1CaA4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 20:56:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60831 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933238Ab1CaA4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 20:56:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,271,1299484800"; 
-   d="scan'208";a="621351935"
-Subject: Re: [PATCH]mmap: improve scalability for updating vm_committed_as
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-In-Reply-To: <20110330155114.fa47dd9d.akpm@linux-foundation.org>
-References: <1301447847.3981.49.camel@sli10-conroe>
-	 <20110330155114.fa47dd9d.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 31 Mar 2011 08:56:43 +0800
-Message-ID: <1301533003.3981.75.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S933333Ab1CaA5m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 20:57:42 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:42881 "HELO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S933084Ab1CaA5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 20:57:40 -0400
+Message-ID: <4D93D180.6020300@sgi.com>
+Date: Wed, 30 Mar 2011 17:57:36 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>
+Cc: David Rientjes <rientjes@google.com>, Jack Steiner <steiner@sgi.com>,
+        Robin Holt <holt@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] printk: Allocate kernel log buffer earlier v2
+References: <20110225180633.857892225@gulag1.americas.sgi.com>	<20110225180634.017570095@gulag1.americas.sgi.com>	<20110227120949.GF16453@elte.hu>	<20110227121518.GA19165@elte.hu>	<4D6AFBB0.70401@kernel.org>	<4D6BF63D.2020404@sgi.com>	<AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com>	<4D6BFF46.3050001@sgi.com> <AANLkTi=Xf5RaF559QsRNijmG0YP7amkG569NZFhpt4QY@mail.gmail.com> <4D93CDD7.8000708@sgi.com>
+In-Reply-To: <4D93CDD7.8000708@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-31 at 06:51 +0800, Andrew Morton wrote:
-> On Wed, 30 Mar 2011 09:17:27 +0800
-> Shaohua Li <shaohua.li@intel.com> wrote:
-> 
-> > In a workload with a lot of mmap/mumap, updating vm_committed_as is
-> > a scalability issue, because the percpu_counter_batch is too small, and
-> > the update needs hold percpu_counter lock.
-> > On the other hand, vm_committed_as is only used in OVERCOMMIT_NEVER case,
-> > which isn't the default setting.
-> > We can make the batch bigger in other cases and then switch to small batch
-> > in OVERCOMMIT_NEVER case, so that we will have no scalability issue with
-> > default setting. We flush all CPUs' percpu counter when switching
-> > sysctl_overcommit_memory, so there is no race the counter is incorrect.
-> 
-> The patch is purportedly a performance improvement, but the changelog
-> didn't tell us how much it improves performance?
-I thought improving the scalability is enough, but anyway, I will add it later.
+Subject: printk: Allocate kernel log buffer earlier v2
 
-> > --- linux.orig/include/linux/mman.h	2011-03-29 16:28:57.000000000 +0800
-> > +++ linux/include/linux/mman.h	2011-03-30 09:01:38.000000000 +0800
-> > @@ -20,9 +20,17 @@ extern int sysctl_overcommit_memory;
-> >  extern int sysctl_overcommit_ratio;
-> >  extern struct percpu_counter vm_committed_as;
-> >  
-> > +extern int overcommit_memory_handler(struct ctl_table *table, int write,
-> > +		void __user *buffer, size_t *lenp, loff_t *ppos);
-> >  static inline void vm_acct_memory(long pages)
-> >  {
-> > -	percpu_counter_add(&vm_committed_as, pages);
-> > +	/* avoid overflow and the value is big enough */
-> > +	int batch = INT_MAX/2;
-> > +
-> > +	if (sysctl_overcommit_memory == OVERCOMMIT_NEVER)
-> > +		batch = percpu_counter_batch;
-> > +
-> > +	__percpu_counter_add(&vm_committed_as, pages, batch);
-> >  }
-> 
-> It would be better to create a global __read_mostly variable for this
-> and alter its value within the sysctl, rather than recalculating it
-> each time.
-ok
+On larger systems, because of the numerous ACPI, Bootmem and EFI
+messages, the static log buffer overflows before the larger one
+specified by the log_buf_len param is allocated.  Minimize the
+overflow by allocating the new log buffer as soon as possible.
 
-> This again points at the need to make the batch count a field within
-> the percpu_counter.
+The allocation method is passed in as an argument to make
+backporting to "pre-memblock" kernels easier.
 
-> >  static inline void vm_unacct_memory(long pages)
-> > Index: linux/fs/proc/meminfo.c
-> > ===================================================================
-> > --- linux.orig/fs/proc/meminfo.c	2011-03-29 16:28:57.000000000 +0800
-> > +++ linux/fs/proc/meminfo.c	2011-03-30 09:01:38.000000000 +0800
-> > @@ -35,7 +35,7 @@ static int meminfo_proc_show(struct seq_
-> >  #define K(x) ((x) << (PAGE_SHIFT - 10))
-> >  	si_meminfo(&i);
-> >  	si_swapinfo(&i);
-> > -	committed = percpu_counter_read_positive(&vm_committed_as);
-> > +	committed = percpu_counter_sum_positive(&vm_committed_as);
-> >  	allowed = ((totalram_pages - hugetlb_total_pages())
-> >  		* sysctl_overcommit_ratio / 100) + total_swap_pages;
-> 
-> This is a big change, and it wasn't even changelogged.  It's
-> potentially a tremendous increase in the expense of a read from
-> /proc/meminfo, which is a file that lots of tools will be polling. 
-> Many of those tools we don't even know about or have access to.
-Assume we don't read /proc/meminfo too often.
+Signed-off-by: Mike Travis <travis@sgi.com>
+Reviewed-by: Jack Steiner <steiner@sgi.com>
+Reviewed-by: Robin Holt <holt@sgi.com>
+---
+ arch/x86/kernel/setup.c |   13 +++++++
+ include/linux/kernel.h  |    1 
+ include/linux/printk.h  |    5 ++
+ init/main.c             |    1 
+ kernel/printk.c         |   83 ++++++++++++++++++++++++++++++------------------
+ 5 files changed, 72 insertions(+), 31 deletions(-)
 
-> The change is unneeded if sysctl_overcommit_memory==OVERCOMMIT_NEVER,
-> but that's hardly a fix.
-> 
-> Quite worrisome.
-> 
-> Perhaps a better approach would be to carefully tune the batch size
-> according to the size of the machine.  Going all the way to INT_MAX/2
-> is surely overkill.
-I understand the concern. But the tuning according to machien size is
-quite hard. Say a machine with 16 CPUs and we don't want the per-cpu
-counter to be bigger than 1% memory. If we do mmap/munmap 32M, then the
-system must have:
-32M*16*100*N = 50*N G memory. To reduce the lock contention, N must be
-more than 8. so the system must have more than 400G memory, where most
-system hasn't such big memory.
-the INT_MAX/2 is an arbitrary number because the batch counter is
-meaningless with sysctl_overcommit_memory != OVERCOMMIT_NEVER
-
-> > Index: linux/kernel/sysctl.c
-> > ===================================================================
-> > --- linux.orig/kernel/sysctl.c	2011-03-29 16:28:57.000000000 +0800
-> > +++ linux/kernel/sysctl.c	2011-03-30 09:01:38.000000000 +0800
-> > @@ -56,6 +56,7 @@
-> >  #include <linux/kprobes.h>
-> >  #include <linux/pipe_fs_i.h>
-> >  #include <linux/oom.h>
-> > +#include <linux/mman.h>
-> >  
-> >  #include <asm/uaccess.h>
-> >  #include <asm/processor.h>
-> > @@ -86,8 +87,6 @@
-> >  #if defined(CONFIG_SYSCTL)
-> >  
-> >  /* External variables not in a header file. */
-> > -extern int sysctl_overcommit_memory;
-> > -extern int sysctl_overcommit_ratio;
-> >  extern int max_threads;
-> >  extern int core_uses_pid;
-> >  extern int suid_dumpable;
-> > @@ -977,7 +976,7 @@ static struct ctl_table vm_table[] = {
-> >  		.data		= &sysctl_overcommit_memory,
-> >  		.maxlen		= sizeof(sysctl_overcommit_memory),
-> >  		.mode		= 0644,
-> > -		.proc_handler	= proc_dointvec_minmax,
-> > +		.proc_handler	= overcommit_memory_handler,
-> >  		.extra1		= &zero,
-> >  		.extra2		= &two,
-> >  	},
-> > Index: linux/mm/mmap.c
-> > ===================================================================
-> > --- linux.orig/mm/mmap.c	2011-03-30 08:59:23.000000000 +0800
-> > +++ linux/mm/mmap.c	2011-03-30 09:01:38.000000000 +0800
-> > @@ -93,6 +93,33 @@ int sysctl_max_map_count __read_mostly =
-> >   */
-> >  struct percpu_counter vm_committed_as ____cacheline_internodealigned_in_smp;
-> >  
-> > +static void overcommit_drain_counter(struct work_struct *dummy)
-> > +{
-> > +	/*
-> > +	 * Flush percpu counter to global counter when batch is changed, see
-> > +	 * vm_acct_memory for detail
-> > +	 */
-> > +	vm_acct_memory(0);
-> > +}
-> > +
-> > +int overcommit_memory_handler(struct ctl_table *table, int write,
-> > +                void __user *buffer, size_t *lenp, loff_t *ppos)
-> > +{
-> > +	int error;
-> > +
-> > +	error = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
-> > +	if (error)
-> > +		return error;
-> > +
-> > +	if (write) {
-> > +		/* Make sure each CPU sees the new sysctl_overcommit_memory */
-> > +		smp_wmb();
-> > +		schedule_on_each_cpu(overcommit_drain_counter);
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> 
-> Calling vm_acct_memory(0) is a bit of a hack.
-> 
-> Rather than open-coding this twice, it would be better to introduce a
-> new percpu_counter core primitive to collapse the counters.
-ok, that's fine.
-
-Thanks,
-Shaohua
+--- linux.orig/arch/x86/kernel/setup.c
++++ linux/arch/x86/kernel/setup.c
+@@ -313,6 +313,17 @@ static void __init reserve_brk(void)
+ 	_brk_start = 0;
+ }
+ 
++static unsigned long __init reserve_log_buf(unsigned long len)
++{
++	unsigned long mem;
++
++	mem = memblock_alloc(len, PAGE_SIZE);
++	if (mem == MEMBLOCK_ERROR)
++		return 0ULL;
++
++	return (unsigned long)__va(mem);
++}
++
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 
+ #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
+@@ -948,6 +959,8 @@ void __init setup_arch(char **cmdline_p)
+ 	if (init_ohci1394_dma_early)
+ 		init_ohci1394_dma_on_all_controllers();
+ #endif
++	/* Allocate bigger log buffer as early as possible */
++	setup_log_buf(reserve_log_buf);
+ 
+ 	reserve_initrd();
+ 
+--- linux.orig/include/linux/kernel.h
++++ linux/include/linux/kernel.h
+@@ -19,6 +19,7 @@
+ #include <linux/typecheck.h>
+ #include <linux/printk.h>
+ #include <linux/dynamic_debug.h>
++#include <linux/init.h>
+ #include <asm/byteorder.h>
+ #include <asm/bug.h>
+ 
+--- linux.orig/include/linux/printk.h
++++ linux/include/linux/printk.h
+@@ -1,6 +1,8 @@
+ #ifndef __KERNEL_PRINTK__
+ #define __KERNEL_PRINTK__
+ 
++#include <linux/init.h>
++
+ extern const char linux_banner[];
+ extern const char linux_proc_banner[];
+ 
+@@ -89,6 +91,9 @@ int no_printk(const char *fmt, ...)
+ extern asmlinkage __attribute__ ((format (printf, 1, 2)))
+ void early_printk(const char *fmt, ...);
+ 
++typedef unsigned long (alloc_method)(unsigned long len);
++void __init setup_log_buf(alloc_method *alloc);
++
+ extern int printk_needs_cpu(int cpu);
+ extern void printk_tick(void);
+ 
+--- linux.orig/init/main.c
++++ linux/init/main.c
+@@ -504,6 +504,7 @@ asmlinkage void __init start_kernel(void
+ 	 * These use large bootmem allocations and must precede
+ 	 * kmem_cache_init()
+ 	 */
++	setup_log_buf(NULL);
+ 	pidhash_init();
+ 	vfs_caches_init_early();
+ 	sort_main_extable();
+--- linux.orig/kernel/printk.c
++++ linux/kernel/printk.c
+@@ -167,46 +167,67 @@ void log_buf_kexec_setup(void)
+ }
+ #endif
+ 
++/* requested log_buf_len from kernel cmdline */
++static unsigned long __initdata new_log_buf_len;
++
++/* save requested log_buf_len since it's too early to process it */
+ static int __init log_buf_len_setup(char *str)
+ {
+ 	unsigned size = memparse(str, &str);
+-	unsigned long flags;
+ 
+ 	if (size)
+ 		size = roundup_pow_of_two(size);
+-	if (size > log_buf_len) {
+-		unsigned start, dest_idx, offset;
+-		char *new_log_buf;
+-
+-		new_log_buf = alloc_bootmem(size);
+-		if (!new_log_buf) {
+-			printk(KERN_WARNING "log_buf_len: allocation failed\n");
+-			goto out;
+-		}
+-
+-		spin_lock_irqsave(&logbuf_lock, flags);
+-		log_buf_len = size;
+-		log_buf = new_log_buf;
+-
+-		offset = start = min(con_start, log_start);
+-		dest_idx = 0;
+-		while (start != log_end) {
+-			log_buf[dest_idx] = __log_buf[start & (__LOG_BUF_LEN - 1)];
+-			start++;
+-			dest_idx++;
+-		}
+-		log_start -= offset;
+-		con_start -= offset;
+-		log_end -= offset;
+-		spin_unlock_irqrestore(&logbuf_lock, flags);
++	if (size > log_buf_len)
++		new_log_buf_len = size;
+ 
+-		printk(KERN_NOTICE "log_buf_len: %d\n", log_buf_len);
+-	}
+-out:
+-	return 1;
++	return 0;
+ }
++early_param("log_buf_len", log_buf_len_setup);
+ 
+-__setup("log_buf_len=", log_buf_len_setup);
++void __init setup_log_buf(alloc_method *alloc)
++{
++	unsigned long flags;
++	unsigned start, dest_idx, offset;
++	char *new_log_buf;
++	int free;
++
++	if (!new_log_buf_len)
++		return;
++
++	if (alloc)
++		new_log_buf = (char *)alloc(new_log_buf_len);
++	else
++		new_log_buf = alloc_bootmem_nopanic(new_log_buf_len);
++
++	if (!new_log_buf) {
++		pr_err("log_buf_len: %d bytes not available\n", log_buf_len);
++		return;
++	}
++
++	spin_lock_irqsave(&logbuf_lock, flags);
++	log_buf_len = new_log_buf_len;
++	log_buf = new_log_buf;
++	new_log_buf_len = 0;
++	free = __LOG_BUF_LEN - log_end;
++
++	offset = start = min(con_start, log_start);
++	dest_idx = 0;
++	while (start != log_end) {
++		unsigned log_idx_mask = start & (__LOG_BUF_LEN - 1);
++
++		log_buf[dest_idx] = __log_buf[log_idx_mask];
++		start++;
++		dest_idx++;
++	}
++	log_start -= offset;
++	con_start -= offset;
++	log_end -= offset;
++	spin_unlock_irqrestore(&logbuf_lock, flags);
++
++	pr_info("log_buf_len: %d\n", log_buf_len);
++	pr_info("early log buf free: %d(%d%%)\n",
++		free, (free * 100) / __LOG_BUF_LEN);
++}
+ 
+ #ifdef CONFIG_BOOT_PRINTK_DELAY
+ 
 
