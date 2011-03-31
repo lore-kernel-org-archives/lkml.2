@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758783Ab1CaVUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 17:20:10 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:46626 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab1CaVUJ convert rfc822-to-8bit (ORCPT
+	id S1758704Ab1CaV1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 17:27:09 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:56376 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab1CaV1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 17:20:09 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-13.tower-132.messagelabs.com!1301606406!20897471!1
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.69]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 31 Mar 2011 16:20:04 -0500
-Subject: RE: gpio: pca953x: prevent freeing IRQ 0 on probe error
-Thread-Topic: gpio: pca953x: prevent freeing IRQ 0 on probe error
-Thread-Index: Acvv5QtmsVcSyTj1QDuYAQfp/6KW7wABEP8g
-Message-ID: <0D753D10438DA54287A00B027084269764D1B0C9B0@AUSP01VMBX24.collaborationhost.net>
-References: <201103251502.54348.hartleys@visionengravers.com>
- <20110331204833.GA32522@ponder.secretlab.ca>
-In-Reply-To: <20110331204833.GA32522@ponder.secretlab.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 31 Mar 2011 17:27:08 -0400
+Date: Thu, 31 Mar 2011 17:26:25 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, venki@google.com,
+        ak@linux.intel.com, suresh.b.siddha@intel.com, sfr@canb.auug.org.au,
+        peterz@infradead.org, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        arjan@linux.intel.com, Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Subject: Re: [Xen-devel] Re: [RFC PATCH V4 4/5] cpuidle: driver for xen
+In-reply-to: <alpine.LFD.2.02.1103302159010.1920@x980>
+Message-id: <alpine.LFD.2.02.1103311724100.9662@x980>
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
+ <20110322123324.28725.3131.stgit@tringupt.in.ibm.com>
+ <20110322145054.GB26952@dumpdata.com> <4D89C40B.4020809@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1103231659210.12911@x980>
+ <20110324120522.GB29294@dumpdata.com> <4D8CA902.7090907@goop.org>
+ <alpine.LFD.2.02.1103302159010.1920@x980>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 31, 2011 1:49 PM, Grant Likely wrote:
-> On Fri, Mar 25, 2011 at 03:02:54PM -0700, H Hartley Sweeten wrote:
->> If CONFIG_GPIO_PCA953X_IRQ is enabled and an error occurs in the probe
->> before pca953x_irq_setup() is called chip->client->irq will be 0 due to
->> the kmalloc.  pca953x_irq_teardown() will then try to free_irq(0, chip)
->> which will produce a:
->> 
->> 	WARN(1, "Trying to free already-free IRQ %d\n", irq);
->> 
->> Add an error path to prevent this.
->> 
->> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->
-> Thanks for catching this Hartley.
->
-> Ben also submitted a patch for this and I ended up looking at his patch 
-> first, so that is what's applied.  :-)
+> > >> xen_arch_setup() does this:
+> > >>
+> > >>         pm_idle = default_idle;
+> > >>         boot_option_idle_override = IDLE_HALT;
 
-Not a problem. Thanks!
-Hartley
+What happens on a Xen kernel if these lines are not there?
+Does Xen export the C-states tables to Dom0 kernel, and the Dom0
+kernel has an acpi processor driver, and thus it would try to
+use all the C-states?
+
+If yes, must Xen show those tables to Dom?
+If it did not, then the lines above would not be necessary,
+as in the absence of any C-states, the kernel should
+use halt by default.
+
+thanks,
+-Len Brown, Intel Open Source Technology Center
+
