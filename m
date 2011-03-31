@@ -1,73 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919Ab1CaOZm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:25:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64900 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757479Ab1CaOZk (ORCPT
+	id S1757957Ab1CaO0O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:26:14 -0400
+Received: from mga14.intel.com ([143.182.124.37]:23185 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800Ab1CaO0M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:25:40 -0400
-Message-ID: <4D948EC1.9080208@kernel.org>
-Date: Thu, 31 Mar 2011 07:25:05 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Thu, 31 Mar 2011 10:26:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,275,1299484800"; 
+   d="scan'208";a="411710130"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
+        "gregkh@suse.de" <gregkh@suse.de>, "mingo@elte.hu" <mingo@elte.hu>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "Li, Xin" <xin.li@intel.com>
+Date: Thu, 31 Mar 2011 22:26:05 +0800
+Subject: [PATCH 7/7,v10] NUMA Hotplug Emulator: Implement per-node
+ add_memory debugfs interface
+Thread-Topic: [PATCH 7/7,v10] NUMA Hotplug Emulator: Implement per-node
+ add_memory debugfs interface
+Thread-Index: Acvvr5GUaqATCHD+RESmdxmcTWbu7A==
+Message-ID: <749B9D3DBF0F054390025D9EAFF47F224A3D6C45@shsmsx501.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Robin Holt <holt@sgi.com>
-CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC 2/2] Make x86 calibrate_delay run in parallel.
-References: <20101215015840.390204279@gulag1.americas.sgi.com> <20101215015849.051095242@gulag1.americas.sgi.com> <AANLkTinoctZFKo4wBmrrdFggnjSj74QfqvEpz59sW15x@mail.gmail.com> <20110331092945.GD24046@sgi.com>
-In-Reply-To: <20110331092945.GD24046@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4D948ED1.01AA,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 02:29 AM, Robin Holt wrote:
-...
-> I don't see how this patch would affect that.  Has this been tested on
-> a multi-core intel cpu?  I will try to test it today when I get to the
-> office.
+Add add_memory interface to support to memory hotplug emulation for each online
+node under debugfs. The reserved memory can be added into desired node with
+this interface.
 
-Yes. I tested on our 8 sockets 10 cores intel cpu system and 8 cores system.
-looks getting correct result.
+The layout on debugfs:
+        node_hotplug/node0/add_memory
+        node_hotplug/node1/add_memory
+        node_hotplug/node2/add_memory
+        ...
 
->
-> Additionally, it takes the bogomips value from being part of an output
-> line and makes it a separate line.  On a 4096 cpu system, that will mean
-> many additional lines of output.  In the past, we have seen that will
-> cause a considerable slowdown as time is spent printing.  Fortunately,
-> that is likely not going to slow things down as a secondary cpu will
-> likely be doing that work while the boot cpu is allowed to continue with
-> the boot.  Is there really a value for a normal boot to have this output?
-> Can we remove the individual lines of output and just print the system
-> BogoMips value?
+Add a memory section(128M) to node 3(boots with mem=1024m)
 
-that is easy. just update print_lpj.
+        echo 0x40000000 > node_hotplug/node3/add_memory
 
-static void __cpuinit print_lpj(int cpu, char *str, unsigned long lpj)
-{
-         static bool printed;
+CC: David Rientjes <rientjes@google.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: Haicheng Li <haicheng.li@intel.com>
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+Signed-off-by: Yang Zhang <yang.z.zhang@Intel.com>
+---
+ Documentation/memory-hotplug.txt |   24 ++++++++++++
+ mm/memory_hotplug.c              |   77 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 101 insertions(+), 0 deletions(-)
 
-         if (printed)
-                 return;
+diff --git a/Documentation/memory-hotplug.txt linux-hpe4/Documentation/memory-hotplug.txt
+index bc8c99e..9fa8fc7 100644
+--- a/Documentation/memory-hotplug.txt
++++ linux-hpe4/Documentation/memory-hotplug.txt
+@@ -19,6 +19,7 @@ be changed often.
+   4.1 Hardware(Firmware) Support
+   4.2 Notify memory hot-add event by hand
+   4.3 Node hotplug emulation
++  4.4 Memory hotplug emulation
+ 5. Logical Memory hot-add phase
+   5.1. State of memory
+   5.2. How to online memory
+@@ -254,6 +255,29 @@ Where "size" can be represented in megabytes or gigabytes (for example,
+ Once the new node has been added, it is possible to online the memory by
+ toggling the "state" of its memory section(s) as described in section 5.1.
 
-         pr_info("CPU%d: Calibrating delay%s"
-                 "%lu.%02lu BogoMIPS (lpj=%lu)\n", cpu, str,
-                 lpj/(500000/HZ), (lpj/(5000/HZ)) % 100, lpj);
++4.4 Memory hotplug emulation
++------------
++With debugfs, it is possible to test memory hotplug with software method, we
++can add memory section to desired node with add_memory interface. It is a much
++more powerful interface than "probe" described in section 4.2.
++
++There is an add_memory interface for each online node at the debugfs mount
++point.
++       mem_hotplug/node0/add_memory
++       mem_hotplug/node1/add_memory
++       mem_hotplug/node2/add_memory
++       ...
++
++Add a memory section(128M) to node 3(boots with mem=1024m)
++
++       echo 0x40000000 > mem_hotplug/node3/add_memory
++
++And more we make it friendly, it is possible to add memory to do
++
++       echo 1024m > mem_hotplug/node3/add_memory
++
++Once the new memory section has been added, it is possible to online the memory
++by toggling the "state" described in section 5.1.
 
-         /* only print cpu0, and cpu1 */
-         if (cpu)
-                 printed = true;
-}
+ ------------------------------
+ 5. Logical Memory hot-add phase
+diff --git a/mm/memory_hotplug.c linux-hpe4/mm/memory_hotplug.c
+index f0be4b4..0193e96 100644
+--- a/mm/memory_hotplug.c
++++ linux-hpe4/mm/memory_hotplug.c
+@@ -942,6 +942,81 @@ static struct dentry *node_hp_debug_root;
+ extern char *emu_cmdline;
+ extern int emu_nid_to_phys[MAX_NUMNODES];
 
-current printing is for debug purpose, So we don't need to waiting the booting get done.
-just checking it serial console.
++#ifdef CONFIG_ARCH_MEMORY_PROBE
++
++static ssize_t add_memory_store(struct file *file, const char __user *buf,
++                               size_t count, loff_t *ppos)
++{
++       u64 phys_addr = 0;
++       int nid = file->private_data - NULL;
++       int ret;
++
++       printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
++       phys_addr = simple_strtoull(buf, NULL, 0);
++
++       ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
++       if (ret)
++               count = ret;
++
++       return count;
++}
++
++static int add_memory_open(struct inode *inode, struct file *file)
++{
++       file->private_data = inode->i_private;
++       return 0;
++}
++
++static const struct file_operations add_memory_file_ops = {
++       .open           = add_memory_open,
++       .write          = add_memory_store,
++       .llseek         = generic_file_llseek,
++};
++
++/*
++ * Create add_memory debugfs entry under specified node
++ */
++static int debugfs_create_add_memory_entry(int nid)
++{
++       char buf[32];
++       static struct dentry *node_debug_root;
++
++       snprintf(buf, sizeof(buf), "node%d", nid);
++       node_debug_root = debugfs_create_dir(buf, memhp_debug_root);
++       if (!node_debug_root)
++               return -ENOMEM;
++
++       /* the nid information was represented by the offset of pointer(NULL+nid) */
++       if (!debugfs_create_file("add_memory", S_IWUSR, node_debug_root,
++                       NULL + nid, &add_memory_file_ops))
++               return -ENOMEM;
++
++       return 0;
++}
++
++static int __init memory_debug_init(void)
++{
++       int nid;
++
++       if (!memhp_debug_root)
++               memhp_debug_root = debugfs_create_dir("mem_hotplug", NULL);
++       if (!memhp_debug_root)
++               return -ENOMEM;
++
++       for_each_online_node(nid)
++                debugfs_create_add_memory_entry(nid);
++
++       return 0;
++}
++
++module_init(memory_debug_init);
++#else
++static debugfs_create_add_memory_entry(int nid)
++{
++       return 0;
++}
++#endif /* CONFIG_ARCH_MEMORY_PROBE */
++
+ static ssize_t add_node_store(struct file *file, const char __user *buf,
+                                size_t count, loff_t *ppos)
+ {
+@@ -973,6 +1048,8 @@ static ssize_t add_node_store(struct file *file, const char __user *buf,
+        emu_nid_to_phys[nid] = nid;
 
-Thanks
+        ret = add_memory(nid, start, size);
++
++       debugfs_create_add_memory_entry(nid);
+        return ret ? ret : count;
+ }
 
-Yinghai
+--
+1.7.1.1
+--
+best regards
+yang
+
+
