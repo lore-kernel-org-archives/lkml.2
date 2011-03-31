@@ -1,37 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab1CaMaI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 08:30:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51764 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab1CaMaH (ORCPT
+	id S1757453Ab1CaMcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 08:32:41 -0400
+Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:2772 "EHLO
+	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058Ab1CaMck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 08:30:07 -0400
-From: Michal Simek <monstr@monstr.eu>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: grant.likely@secretlab.ca, john.williams@petalogix.com,
-        linux-kernel@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de
-Subject: UIO OF support
-Date: Thu, 31 Mar 2011 14:29:59 +0200
-Message-Id: <1301574600-4861-1-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.5.5.1
+	Thu, 31 Mar 2011 08:32:40 -0400
+Date: Thu, 31 Mar 2011 14:32:27 +0000
+From: Jurriaan <thunder8@xs4all.nl>
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.38 crash (null pointer reference at
+	mark_inode_dirty+0xa1/0x151)
+Message-ID: <20110331143227.GA8238@onderneming10.xs4all.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+My laptop, running Debian Unstable + 2.6.38 debian kernel from
+experimantal, just crashed.
 
-here is OF support for UIO. I tried to do minimal changes.
-John Williams has warned me that there was any previous attempt to add this OF support 
-to UIO.
+unable to handle null reference pointer
+mark_inode_dirty+0xa1/0x151
 
-Grant: Can you please review it? I wasn't sure about one part. I think you will see it 
-and will comment it if there is something stupid.
+call trace (top lines)
+setattr_copy
+fat_setattr
+path_init_rcu
+need_resched
 
-I look forward for your comments and discuss about it.
+After resuming, I was adding backgrounds to Desktop Drapes and running
+rsync from an ext4 partition to an USB stick with a vfat filesystem.
 
-Thanks,
-Michal
-
-
-
+Kind regards,
+Jurriaan
