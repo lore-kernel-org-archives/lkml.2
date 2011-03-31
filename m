@@ -1,158 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933872Ab1CaI3F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 04:29:05 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:55642 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757146Ab1CaI2v (ORCPT
+	id S964894Ab1CaIbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 04:31:18 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47168 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387Ab1CaIbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 04:28:51 -0400
-Date: Thu, 31 Mar 2011 13:58:13 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, cl@linux.com,
-        kamezawa.hiroyu@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
-Message-ID: <20110331082813.GN2879@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20110330052819.8212.1359.stgit@localhost6.localdomain6>
- <20110331144145.0ECA.A69D9226@jp.fujitsu.com>
+	Thu, 31 Mar 2011 04:31:14 -0400
+Date: Thu, 31 Mar 2011 09:30:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Nicolas Pitre <nico@fluxnic.net>, david@lang.hm,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Message-ID: <20110331083044.GB14323@n2100.arm.linux.org.uk>
+References: <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110331144145.0ECA.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110331080634.GA18022@elte.hu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2011-03-31 14:40:33]:
+On Thu, Mar 31, 2011 at 10:06:34AM +0200, Ingo Molnar wrote:
+> Having strong, effective platform abstractions inside the kernel really helps 
+> even if the hardware space itself is inevitably fragmented: both powerpc and 
+> x86 has shown that. Until you realize and appreciate that you really have not 
+> understood the problem i think.
 
-> > 
-> > The following series implements page cache control,
-> > this is a split out version of patch 1 of version 3 of the
-> > page cache optimization patches posted earlier at
-> > Previous posting http://lwn.net/Articles/425851/ and analysis
-> > at http://lwn.net/Articles/419713/
-> > 
-> > Detailed Description
-> > ====================
-> > This patch implements unmapped page cache control via preferred
-> > page cache reclaim. The current patch hooks into kswapd and reclaims
-> > page cache if the user has requested for unmapped page control.
-> > This is useful in the following scenario
-> > - In a virtualized environment with cache=writethrough, we see
-> >   double caching - (one in the host and one in the guest). As
-> >   we try to scale guests, cache usage across the system grows.
-> >   The goal of this patch is to reclaim page cache when Linux is running
-> >   as a guest and get the host to hold the page cache and manage it.
-> >   There might be temporary duplication, but in the long run, memory
-> >   in the guests would be used for mapped pages.
-> >
-> > - The option is controlled via a boot option and the administrator
-> >   can selectively turn it on, on a need to use basis.
-> > 
-> > A lot of the code is borrowed from zone_reclaim_mode logic for
-> > __zone_reclaim(). One might argue that the with ballooning and
-> > KSM this feature is not very useful, but even with ballooning,
-> > we need extra logic to balloon multiple VM machines and it is hard
-> > to figure out the correct amount of memory to balloon. With these
-> > patches applied, each guest has a sufficient amount of free memory
-> > available, that can be easily seen and reclaimed by the balloon driver.
-> > The additional memory in the guest can be reused for additional
-> > applications or used to start additional guests/balance memory in
-> > the host.
-> 
-> If anyone think this series works, They are just crazy. This patch reintroduce
-> two old issues.
-> 
-> 1) zone reclaim doesn't work if the system has multiple node and the
->    workload is file cache oriented (eg file server, web server, mail server, et al). 
->    because zone recliam make some much free pages than zone->pages_min and
->    then new page cache request consume nearest node memory and then it
->    bring next zone reclaim. Then, memory utilization is reduced and
->    unnecessary LRU discard is increased dramatically.
-> 
->    SGI folks added CPUSET specific solution in past. (cpuset.memory_spread_page)
->    But global recliam still have its issue. zone recliam is HPC workload specific 
->    feature and HPC folks has no motivation to don't use CPUSET.
->
+No, I think it is the other way around.  Folk like me and Nicolas over
+the last ten years have put considerable amounts of effort into trying
+to keep the ARM support code as clean and maintainable as possible.
 
-I am afraid you misread the patches and the intent. The intent to
-explictly enable control of unmapped pages and has nothing
-specifically to do with multiple nodes at this point. The control is
-system wide and carefully enabled by the administrator.
- 
-> 2) Before 2.6.27, VM has only one LRU and calc_reclaim_mapped() is used to
->    decide to filter out mapped pages. It made a lot of problems for DB servers
->    and large application servers. Because, if the system has a lot of mapped
->    pages, 1) LRU was churned and then reclaim algorithm become lotree one. 2)
->    reclaim latency become terribly slow and hangup detectors misdetect its
->    state and start to force reboot. That was big problem of RHEL5 based banking
->    system.
->    So, sc->may_unmap should be killed in future. Don't increase uses.
-> 
-
-Can you remove sc->may_unmap without removing zone_reclaim()? The LRU
-churn can be addressed at the time of isolation, I'll send out an
-incremental patch for that.
-
-> 
-> But, I agree that now we have to concern slightly large VM change parhaps
-> (or parhaps not). Ok, it's good opportunity to fill out some thing.
-> Historically, Linux MM has "free memory are waste memory" policy, and It
-> worked completely fine. But now we have a few exceptions.
-> 
-> 1) RT, embedded and finance systems. They really hope to avoid reclaim
->    latency (ie avoid foreground reclaim completely) and they can accept 
->    to make slightly much free pages before memory shortage.
-> 
-> 2) VM guest
->    VM host and VM guest naturally makes two level page cache model. and
->    Linux page cache + two level don't work fine. It has two issues
->    1) hard to visualize real memory consumption. That makes harder to 
->       works baloon fine. And google want to visualize memory utilization
->       to pack in more jobs.
->    2) hard to make in kernel memory utilization improvement mechanism.
-> 
-> 
-> And, now we have four proposal of utilization related issues.
-> 
-> 1) cleancache (from Oracle)
-
-Cleancache requires both hypervisor and guest support. With these
-patches, Linux can run well under hypverisor if we know the hypversior
-does a lot of the IO and maintains the cache.
-
-> 2) VirtFS (from IBM)
-> 3) kstaled (from Google)
-> 4) unmapped page reclaim (from you)
-> 
-> Probably, we can't merge all of them and we need to consolidate some 
-> requirement and implementations.
-> 
-> 
-> cleancache seems most straight forward two level cache handling for
-> virtalization. but it has soem xen specific mess and, currently, don't fit RT
-> usage. VirtFS has another interesting de-duplication idea. But filesystem based
-
-I am planning to work on deduplication at KSM level at some point, but
-I think again you misread the intention of these patches.
-
-> implemenation naturally inherit some vfs interface limitations.
-> Google approach is more unique. memcg don't have double cache
-> issue, therefore they only want to visualize it.
-> 
-> Personally I think cleancache or other multi level page cache framework
-> looks promising. but another solution is also acceptable. Anyway, I hope 
-> to everyone back 1000feet bird eye at once and sorting out all requiremnt 
-> with all related person. 
->
-
-Thanks for the review! 
-
--- 
-	Three Cheers,
-	Balbir
+That is true of the common ARM stuff, but there's no way we can do this
+for all SoC support - there aren't the hours in the day to provide such
+a wide oversight.  That's why we have SoC maintainers, and the SoC
+maintainers have the responsibility to sort out their own sub-trees.
