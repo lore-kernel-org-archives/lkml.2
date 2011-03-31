@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398Ab1CaPfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:35:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57562 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262Ab1CaPfw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:35:52 -0400
-Date: Thu, 31 Mar 2011 12:35:44 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-Message-ID: <20110331153544.GC25095@ghostprotocols.net>
-References: <1301392457.4859.74.camel@twins>
- <1301417155.3620.8.camel@localhost>
- <1301418183.2250.416.camel@laptop>
- <1301418404.2250.417.camel@laptop>
- <1301418533.2250.419.camel@laptop>
- <20110329174556.GC24129@ghostprotocols.net>
- <4D92818A.8020405@hitachi.com>
- <1301561155.14111.288.camel@minggr.sh.intel.com>
- <20110331134638.GA25095@ghostprotocols.net>
- <1301581176.2271.9.camel@localhost>
+	id S1758430Ab1CaPhw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:37:52 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:51298 "HELO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1758200Ab1CaPhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:37:50 -0400
+Message-ID: <4D949FCA.70503@sgi.com>
+Date: Thu, 31 Mar 2011 08:37:46 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301581176.2271.9.camel@localhost>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
+        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] printk: Allocate kernel log buffer earlier v2
+References: <20110225180634.017570095@gulag1.americas.sgi.com> <20110227120949.GF16453@elte.hu> <20110227121518.GA19165@elte.hu> <4D6AFBB0.70401@kernel.org> <4D6BF63D.2020404@sgi.com> <AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com> <4D6BFF46.3050001@sgi.com> <AANLkTi=Xf5RaF559QsRNijmG0YP7amkG569NZFhpt4QY@mail.gmail.com> <4D93CDD7.8000708@sgi.com> <4D93D180.6020300@sgi.com> <20110331064820.GB5938@elte.hu>
+In-Reply-To: <20110331064820.GB5938@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Mar 31, 2011 at 10:19:36PM +0800, Lin Ming escreveu:
-> On Thu, 2011-03-31 at 21:46 +0800, Arnaldo Carvalho de Melo wrote:
-> > I think it does, so we do just like with annotation, but parsing objdump
-> > -S output, is that what you're planning?
+
+
+Ingo Molnar wrote:
+> * Mike Travis <travis@sgi.com> wrote:
 > 
-> I mean to use libopcodes to decode the instructions.
-> But to parse objdump -S output maybe a better and simpler idea.
+>> Subject: printk: Allocate kernel log buffer earlier v2
+>>
+>> On larger systems, because of the numerous ACPI, Bootmem and EFI
+>> messages, the static log buffer overflows before the larger one
+>> specified by the log_buf_len param is allocated.  Minimize the
+>> overflow by allocating the new log buffer as soon as possible.
+>>
+>> The allocation method is passed in as an argument to make
+>> backporting to "pre-memblock" kernels easier.
+> 
+> Hm, all that allocation pointer magic looks a tad too complex and non-obvious.
+> 
+> Why not just make it as simple and obvious as possible for the current kernel - 
+> and we can still mark it -stable and you backport it to the non-memblock 
+> kernel? That keeps compatibility complexity out of upstream ...
+> 
+> Thanks,
+> 
+> 	Ingo
 
-When we started working on code annotation I thought about using a
-library, but after a while, no, not really, better to parse a tool
-output like Ingo did in the first usable version of perf annotate.
+Sure, I can do that.
 
-objdump output (and pahole, for data annotation) is very much set in
-stone after all those years, so we can just use it.
-
-> > After we have the members we can do data annotation, in much the same
-> > way we do with code annotation, i.e. augmenting pahole output.
- 
-> What is data annotation? Is it to list the percentage of access for each
-> member of the structure? For example,
- 
-> struct bar {
->         int poekoe[5];      //10%
->         int fubar;          //20%
-> };
-
-Exactly. Using different colors for percentage ranges, etc. Like code
-annotation right now.
-
-Done in perf report (static) zoomable, i.e. choosing a DSO and getting
-the hits originated from functions in it, or in a thread, or in both,
-like we have today for code annotation.
-
-And in 'perf top --tui' live data annotation. With the same set of
-zooming operations. So that one can see patterns of data structure
-access as a workload runs.
-
-- Arnaldo
+THanks,
+Mike
