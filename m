@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758284Ab1CaPZQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:25:16 -0400
-Received: from ebb06.tieto.com ([131.207.168.38]:53705 "EHLO ebb06.tieto.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758239Ab1CaPZO convert rfc822-to-8bit (ORCPT
+	id S1758313Ab1CaP0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:26:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41713 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758261Ab1CaP0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:25:14 -0400
-X-AuditID: 83cfa826-b7c9dae000006cef-a1-4d949cd814d4
-From: <Waldemar.Rymarkiewicz@tieto.com>
-To: <sameo@linux.intel.com>
-CC: <arnd@arndb.de>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <hthebaud@insidefr.com>,
-        <matti.j.aaltonen@nokia.com>, <alan@lxorguk.ukuu.org.uk>,
-        <Sebastian.Chlad@tieto.com>
-Date: Thu, 31 Mar 2011 18:24:50 +0300
-Subject: RE: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Thread-Topic: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Thread-Index: Acvvtatsmb3B/9MyQ3CkXgLwe/HTPAAACoPg
-Message-ID: <99B09243E1A5DA4898CDD8B7001114481085F0FE7C@EXMB04.eu.tieto.com>
-References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
- <20110325142648.GC3879@sortiz-mobl>
- <99B09243E1A5DA4898CDD8B7001114481085E2375D@EXMB04.eu.tieto.com>
- <201103291305.02293.arnd@arndb.de> <20110331141650.GB2704@sortiz-mobl>
- <99B09243E1A5DA4898CDD8B7001114481085F0FE5A@EXMB04.eu.tieto.com>
- <20110331150939.GC2704@sortiz-mobl>
-In-Reply-To: <20110331150939.GC2704@sortiz-mobl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 Mar 2011 11:26:34 -0400
 MIME-Version: 1.0
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20110331150344.GB10163@redhat.com>
+References: <20110329040939.GA32764@redhat.com> <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
+ <20110331030917.GB26057@redhat.com> <AANLkTikYAAYcYxTdKAxQjDxVQ7qrZGEfXg+gpfwcj1=-@mail.gmail.com>
+ <20110331035511.GA1255@redhat.com> <AANLkTikP5edK=YSRx7zuNqyfwez8qEHpFumYun6GOPxu@mail.gmail.com>
+ <20110331145850.GA10163@redhat.com> <20110331150344.GB10163@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 31 Mar 2011 08:25:36 -0700
+Message-ID: <AANLkTimAGbzYe7PNG1xhjsA12zErpRasTso711cq8UHq@mail.gmail.com>
+Subject: Re: excessive kworker activity when idle. (was Re: vma corruption in
+ today's -git)
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Thu, Mar 31, 2011 at 8:03 AM, Dave Jones <davej@redhat.com> wrote:
+> On Thu, Mar 31, 2011 at 10:58:50AM -0400, Dave Jones wrote:
+>
+> bah I missed a level. which seems to be the smoking gun.
+> something in the tty layer seems to have gone nuts.
 
->That's the Bluetooth approach, and it works just fine as well.
->However, the netlink option for sending commands and receiving 
->answers to/from a subsystem sounds more appropriate, at least to me.
+Ahhah. That is indeed the smoking gun.
 
-I haven't used netlink in practice, so just wondering why netlink. I assume, then, it's more suitable :)
+I bet it's an old problem where something causes some stupid tty
+ping-pong behaviour, and now it has become a high-CPU thing triggered
+by commit f23eb2b2b285 ("tty: stop using "delayed_work" in the tty
+layer").
 
-Waldek
+Before that commit, if the tty layer got somehow confused, it would
+always delay for a timer tick in between doing nothing. Now it will go
+pretty much full blast. Which explains your CPU being hot.
+
+                        Linus
