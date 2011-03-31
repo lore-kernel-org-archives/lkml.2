@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab1CaEim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 00:38:42 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:55067 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013Ab1CaEil (ORCPT
+	id S1753355Ab1CaEk7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 00:40:59 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:57504 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab1CaEk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 00:38:41 -0400
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_VbucNmY7XEIiiv8ksBGlZg)"
-Date: Thu, 31 Mar 2011 00:38:39 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Dave Airlie <airlied@gmail.com>
-Cc: david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-In-reply-to: <AANLkTikV5OMifKjWRVdtJLEcxcZ56jrjWLYJBX89pHQ0@mail.gmail.com>
-Message-id: <alpine.LFD.2.00.1103310012500.28032@xanadu.home>
-References: <20110317183048.GW7258@atomide.com>
- <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
- <20110318101512.GA15375@n2100.arm.linux.org.uk>
- <201103301906.42429.arnd@arndb.de>
- <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
- <alpine.LFD.2.00.1103301531420.28032@xanadu.home>
- <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
- <alpine.LFD.2.00.1103301814250.28032@xanadu.home>
- <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm>
- <alpine.LFD.2.00.1103302255280.28032@xanadu.home>
- <AANLkTikV5OMifKjWRVdtJLEcxcZ56jrjWLYJBX89pHQ0@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 31 Mar 2011 00:40:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=s2H51wGkqE0y1T6a3UTOrtRTEXBL3OLPTHghyrBbIz+0UYgqqZeIrCfL7aJmGTxeUk
+         pC86uL0feL1oOpV2e+IjmYDvOGeHBjNiKU/Qn7NmTMojCN5sq7PddD4dy5w9Vjh0bZIh
+         51UKGBNE1Yq89k1HqW6fMbgEk5viqP8UDNJHE=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1103302237200.1920@x980>
+References: <20110225180633.857892225@gulag1.americas.sgi.com>
+	<20110225180634.422972243@gulag1.americas.sgi.com>
+	<20110227120348.GE16453@elte.hu>
+	<4D6BFA76.2060208@sgi.com>
+	<20110301075128.GC12384@elte.hu>
+	<alpine.LFD.2.02.1103302237200.1920@x980>
+Date: Wed, 30 Mar 2011 21:40:56 -0700
+X-Google-Sender-Auth: ySoTzHy94d7aZoYjlG9yb_PCbbM
+Message-ID: <AANLkTin51ecq4weuzGaQ91eFisWPSircWJGu-UnndiuN@mail.gmail.com>
+Subject: Re: [PATCH 4/4] x86: Minimize SRAT messages
+From: Yinghai Lu <yinghai@kernel.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        David Rientjes <rientjes@google.com>, Jack Steiner <steiner@sgi.com>,
+        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-acpi@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, Mar 30, 2011 at 7:38 PM, Len Brown <lenb@kernel.org> wrote:
+> Hi Mike,
+>
+> How about a patch to stuff the srat info into a debugfs file,
+> and another patch to delete the console printk entirely?
 
---Boundary_(ID_VbucNmY7XEIiiv8ksBGlZg)
-Content-type: TEXT/PLAIN; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
+with the patch using memblock for allocate log buf early. this patch
+is not needed.
 
-On Thu, 31 Mar 2011, Dave Airlie wrote:
+Thanks
 
-> > As long as SOC vendors keep producing wildly different architectures
-> > besides the core CPU we'll have this problem.  Denying the reality won't
-> > make that problem go away either.  And device tree won't stop those
-> > vendor from still trying to do things differently (better?) because they
-> > are not constrained by having to ensure this single proprietary software
-> > stack still boot.
-> 
-> So you are saying the only way to get the Linux ARM shit cleaned up is
-> to hope Microsoft succeeds in making Windows a success on ARM?
-
-Absolutely.  On Intel, it is (still) Windows the reference.  If Windows 
-doesn't boot on your motherboard you have a problem.  So motherboard 
-vendors won't make crazy incompatible things.  They are constrained to 
-fix their hardware because they just cannot alter Windows to suit their 
-hardware differences.  That really helps keeping actual differences to a 
-minimum and only to things that are not fundamental. So Windows really 
-helped making a uniform hardware platform on X86.
-
-On ARM you have no prepackaged "real" Windows.  That let hardware people 
-try things.  So they do change the hardware platform all the time to 
-gain some edge.  And this is no problem for them because most of the 
-time they have access to the OS source code and they modify it 
-themselves directly. No wonder why Linux is so popular on ARM. I'm sure 
-hardware designers really enjoy this freedom.  We software developers 
-would much prefer if the whole hardware platform was standardized and 
-set in stone.  That would certainly make our lives so much better and 
-then we would have spare cycles to actually abstract all those GPIO 
-drivers even further.  But that would benefit Windows on ARM quite 
-significantly too.
-
-
-Nicolas
-
---Boundary_(ID_VbucNmY7XEIiiv8ksBGlZg)--
+Yinghai
