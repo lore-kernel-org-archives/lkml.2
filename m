@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab1CaQf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:35:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55209 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309Ab1CaQf4 (ORCPT
+	id S1757975Ab1CaQiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:38:20 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:54985 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab1CaQiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:35:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jjDS4WQOyl7/uPQtyQIRKHKrzuWPK9p0+Sa6vrfotzUNccQxLiYo22LzTGOH2Lezt9
-         P6COvB4SjxdgYJSX1cNM6zyCEMuEJO2uXfev/gy9M7QdJf+AmDlFZuTKZGvILE+n9Rck
-         X63aqX2Q11loQsuD7UIzMOQQFQLqZbBFYFURk=
-Date: Thu, 31 Mar 2011 18:35:52 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, roland@hack.frob.com
-Subject: Re: [PATCH 3/3] signal, ptrace: Fix delayed CONTINUED notification
- when ptraced
-Message-ID: <20110331163552.GG3385@htj.dyndns.org>
-References: <20110329144603.GA29865@htj.dyndns.org>
- <20110329144648.GB29865@htj.dyndns.org>
- <20110329144710.GC29865@htj.dyndns.org>
- <20110330192918.GA14861@redhat.com>
- <20110331072942.GB3385@htj.dyndns.org>
- <20110331151549.GA8458@redhat.com>
- <20110331163441.GF3385@htj.dyndns.org>
+	Thu, 31 Mar 2011 12:38:19 -0400
+X-IronPort-AV: E=Sophos;i="4.63,276,1299456000"; 
+   d="scan'208";a="5081858"
+Date: Thu, 31 Mar 2011 17:38:31 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: <x86@kernel.org>, <yinghai@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Greg KH <gregkh@suse.de>, <lkml20101129@newton.leun.net>
+Subject: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
+Message-ID: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110331163441.GF3385@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Small correction.
+Save cr4 to mmu_cr4_features at boot time
 
-On Thu, Mar 31, 2011 at 06:34:41PM +0200, Tejun Heo wrote:
-> * Interruptible sleeps won't be disturbed on SIGCONT generation, which
-                                 ^
-				 spuriously
->   is a visible behavior change, but, I agree, this is more of a bug
->   fix.
+This patch fixes a freeze when resuming from hibernation, introduced by
+"x86: Cleanup highmap after brk is concluded", commit id
+e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e.
+This patch should be backported to all the stable tree where the
+offending commit is present.
 
--- 
-tejun
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Tested-by: Michael Leun <lkml20101129@newton.leun.net>
+CC: Yinghai Lu <yinghai@kernel.org>
+CC: stable <stable@kernel.org>
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 5a0484a..0943eb2 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -891,6 +891,7 @@ void __init setup_arch(char **cmdline_p)
+ 		max_low_pfn = max_pfn;
+ 
+ 	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
++	mmu_cr4_features = read_cr4();
+ #endif
+ 
+ 	/*
