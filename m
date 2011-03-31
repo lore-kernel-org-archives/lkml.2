@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab1CaKZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 06:25:28 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37055 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752015Ab1CaKZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 06:25:28 -0400
-Date: Thu, 31 Mar 2011 11:25:59 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Pavan Savoy <pavan_savoy@sify.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: locks inside receive_buf
-Message-ID: <20110331112559.090948a7@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTi=FrmB=u09wvLoXzQstnV3h-U58R728t3k6_-B-@mail.gmail.com>
-References: <AANLkTi=FrmB=u09wvLoXzQstnV3h-U58R728t3k6_-B-@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757229Ab1CaK2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 06:28:53 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40635 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752627Ab1CaK2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 06:28:51 -0400
+Date: Thu, 31 Mar 2011 12:28:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Len Brown <lenb@kernel.org>, x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH 0/9] x86 idle cruft removal - v2
+Message-ID: <20110331102836.GA3723@elte.hu>
+References: <1300950508-22746-1-git-send-email-lenb@kernel.org>
+ <1301551404-8263-1-git-send-email-lenb@kernel.org>
+ <20110331104549.3065ab29@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110331104549.3065ab29@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Mar 2011 17:51:27 +0530
-Pavan Savoy <pavan_savoy@sify.com> wrote:
 
-> Hi,
+* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+
+> We don't care if it doesn't work on a few machines (in fact we have
+> a table to avoid that), we care that it *DOES* work on lots.
 > 
-> Does holding a lock make any sense inside the line discipline's
-> ops->receive_buf?
-> I see the locks being held and released - during some calls like
-> flush_to_ldisc, which end up calling receive_buf....
+> Removing it probably isn't a bad thing long term, but it's not appeared in
+> the deprecated list and has not been there for several releases so it is
+> not eligible for removal at this point.
 > 
+> People spent years getting Linux to support all this hardware and
+> throwing bits out left right and centre to tidy up your current project
+> is not the way it should be done.
 > 
-> and yes, I would like to have a lock because, there are other
-> functions in my ldisc driver executed in process context ...
-> Is there some hints as to what should be the do's and don'ts inside
-> the ldisc ops functions ? (say tty_wakeup ...)
+> So can we do this properly please. We have a process for good reason.
+> 
+> Deprecate it properly
 
-It's not well documented no. Your ld->receive_buf is single threaded and
-runs from a sleeping context (but please don't sleep too long)
+Ok, agreed. Len, mind delaying this patch for a few releases?
 
-The output path from user space will be in a sleeping context too, but
-you can call the write method of the tty your driver is using from
-interrupt context or holding a spinlock (eg from timers)
+> Add a printk/WARN_ON() indicating to the user it is deprecated but we
+> will continue, and then give it a couple of releaes. Kerneloops.org will
+> help answer whether that WARN_ON was hit.
 
+Yeah, also add a -stable backport so that older kernel users have a chance to 
+notice faster.
 
+Thanks,
 
+	Ingo
