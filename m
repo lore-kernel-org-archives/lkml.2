@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933537Ab1CaO7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:59:36 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49342 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758138Ab1CaO7d convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:59:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=aWp9uEDOXYbGla1/xUVMElOj2O92DH2fB9cdKsoguuaME9g/0Br1pVyFrYz9XbB97d
-         RKP7ynp5S0dMP9UgP676XFnZ8jjghJj/0HA7Svv6+6ccWQkvMGroMh6sNhPIiOXD1VdK
-         JG4xvdjamoizkb9rZK8WHWlSqEBnsXNCKpi1I=
+	id S964803Ab1CaPCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:02:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59381 "EHLO linutronix.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758077Ab1CaPB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:01:59 -0400
+Date: Thu, 31 Mar 2011 17:01:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Kevin Hilman <khilman@ti.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, Nicolas Pitre <nico@fluxnic.net>,
+        david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+In-Reply-To: <87d3l7jqpr.fsf@ti.com>
+Message-ID: <alpine.LFD.2.00.1103311647300.22418@localhost6.localdomain6>
+References: <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home>
+ <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu>
+ <20110331083044.GB14323@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1103311359320.22418@localhost6.localdomain6> <87d3l7jqpr.fsf@ti.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110330202700.7d8142e8@absol.kitzblitz>
-References: <20110330181201.29e473bf@absol.kitzblitz>
-	<4D935C56.4060903@metafoo.de>
-	<20110330202700.7d8142e8@absol.kitzblitz>
-Date: Thu, 31 Mar 2011 22:59:31 +0800
-Message-ID: <AANLkTinDYgJBG8VUn6w6pJ==743WEf9PFuQ3jErwjo0a@mail.gmail.com>
-Subject: Re: [rtc-linux] [PATCH] drivers/rtc/rtc-jz4740.c: fix error check v2
-From: Wan ZongShun <mcuos.com@gmail.com>
-To: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>
-Cc: Nicolas Kaiser <nikai@nikai.net>, Lars-Peter Clausen <lars@metafoo.de>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/31 Nicolas Kaiser <nikai@nikai.net>:
-> Checking 'rtc->irq < 0' doesn't work because 'rtc->irq' is unsigned.
->
-> v2: return error code from platform_get_irq() instead of -ENOENT.
->
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
-> ---
->  drivers/rtc/rtc-jz4740.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/rtc/rtc-jz4740.c b/drivers/rtc/rtc-jz4740.c
-> index b647363..efd9691 100644
-> --- a/drivers/rtc/rtc-jz4740.c
-> +++ b/drivers/rtc/rtc-jz4740.c
-> @@ -220,12 +220,12 @@ static int __devinit jz4740_rtc_probe(struct platform_device *pdev)
->        if (!rtc)
->                return -ENOMEM;
->
-> -       rtc->irq = platform_get_irq(pdev, 0);
-> -       if (rtc->irq < 0) {
-> -               ret = -ENOENT;
-> +       ret = platform_get_irq(pdev, 0);
-> +       if (ret < 0) {
->                dev_err(&pdev->dev, "Failed to get platform irq\n");
->                goto err_free;
->        }
-> +       rtc->irq = ret;
->
+On Thu, 31 Mar 2011, Kevin Hilman wrote:
 
-This patch looks good to me.
+> Thomas Gleixner <tglx@linutronix.de> writes:
+> 
+> > But the current SoC maintainer model does not work either. The SoC
+> > maintainers care about their sandbox and have exactly zero incentive
+> > to look at the overall picture, e.g reuse of code for the same IP
+> > blocks, better abstraction mechanisms etc. 
+> 
+> zero incentive?  that's a bit strong, IMO.
+> 
+> That may be true for some SoCs, it's not really fair as a sweeping
+> statement.
 
-Acked-by: Wan ZongShun <mcuos.com@gmail.com>
+Fair enough, but it's the perception in general.
 
->        rtc->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->        if (!rtc->mem) {
-> --
-> 1.7.3.4
->
-> --
-> You received this message because you are subscribed to "rtc-linux".
-> Membership options at http://groups.google.com/group/rtc-linux .
-> Please read http://groups.google.com/group/rtc-linux/web/checklist
-> before submitting a driver.
+> Conference (ELC, US and Europe.)  Especially as IP blocks are reused
+> across SoC families, abstractions like runtime PM are the only way to
+> keep the SoC specifics of PM out of the common driver.
 
+Right, I know that these things happen, but at the same time the sheer
+amount of stuff flowing in makes it hard that these infrastructure
+stuff really works out. And we are only at the beginning of the big
+shuffle "code in to mainline" game.
 
+After cleaning up the whole irq stuff across the tree I can tell you,
+that the mess is non-linear growing with the number of instances.
 
--- 
-*linux-arm-kernel mailing list
-mail addr:linux-arm-kernel@lists.infradead.org
-you can subscribe by:
-http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+You can see the patterns which are:
+    - copy and paste
+    - introduce different bugs
+    - add more abuse
 
-* linux-arm-NUC900 mailing list
-mail addr:NUC900@googlegroups.com
-main web: https://groups.google.com/group/NUC900
-you can subscribe it by sending me mail:
-mcuos.com@gmail.com
+That's what I'm really concerned about.
+
+> Yes, ARM SoC maintainers have to make up some ground.  But compare this
+> to just a couple years ago where the common complaint was "why aren't
+> embedded SoC people contributing code to mainline", and you'll see we
+> have come a long way.
+
+Well, code comes in, which is progress. But we need to figure out how
+to deal with the increasingly growing flood before we drown in it.
+
+Thanks,
+
+	tglx
+
