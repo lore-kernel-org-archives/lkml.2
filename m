@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab1CaGaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 02:30:05 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49651 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302Ab1CaGaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 02:30:04 -0400
-Date: Thu, 31 Mar 2011 08:29:49 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        lucas.de.marchi@gmail.com
-Subject: Re: [GIT PULL] Fix common misspellings
-Message-ID: <20110331062949.GA29526@elte.hu>
-References: <20110331032307.GA27999@vigoh>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110331032307.GA27999@vigoh>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S933565Ab1CaGcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 02:32:14 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57298 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab1CaGcN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 02:32:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=SepJVnrlWgXIbsfJ8Jv5VhzbJNjw2E4mOuVLP8O1OXjUC26AKzKN/1/9xP1d6CMq45
+         4cX8F86DVEXnv/cflrWcXVbFQKbsZqLtyayUeHgzbj5GeMyko4YNZkRMwt4R2LGytrrE
+         MQ1gxnR48olqyrffkvyXl0y8EE5wGetZvLSM8=
+Subject: Re: [PATCH 1/2] UBIFS: do not select KALLSYMS_ALL
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: MTD list <linux-mtd@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110330154130.e62e04e0.randy.dunlap@oracle.com>
+References: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>
+	 <1301474416-8202-2-git-send-email-dedekind1@gmail.com>
+	 <20110330154130.e62e04e0.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 Mar 2011 09:29:53 +0300
+Message-ID: <1301552993.2828.3.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-hi Lucas,
-
-* Lucas De Marchi <lucas.demarchi@profusion.mobi> wrote:
-
+On Wed, 2011-03-30 at 15:41 -0700, Randy Dunlap wrote:
+> > diff --git a/fs/ubifs/Kconfig b/fs/ubifs/Kconfig
+> > index d744090..f8b0160 100644
+> > --- a/fs/ubifs/Kconfig
+> > +++ b/fs/ubifs/Kconfig
+> > @@ -47,7 +47,7 @@ config UBIFS_FS_DEBUG
+> >  	bool "Enable debugging support"
+> >  	depends on UBIFS_FS
+> >  	select DEBUG_FS
+> > -	select KALLSYMS_ALL
+> > +	select KALLSYMS
+> >  	help
+> >  	  This option enables UBIFS debugging support. It makes sure various
+> >  	  assertions, self-checks, debugging messages and test modes are compiled
+> > -- 
 > 
-> Hi Linus,
-> 
-> Please pull the following fix for common misspellings in kernel code:
-> 
-> git://git.profusion.mobi/users/lucas/linux-2.6.git for-linus
-> 
-> I was doing it in a per maintainer basis, but as noted by Ingo, this was not
-> working out.
-> 
-> There's only one big patch that fixes misspellings in
->  * Documentation
->  * Comments
->  * Strings that are used only in printk and the like
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-I've gone over your changes and noticed one very small thing, you've changed 
-copyright strings as well:
+Pushed to UBI / UBIFS trees. These will show-up in linux-next a bit
+later (around -rc2, if it will be usable enough), and then I'll send
+this to Linus.
 
-- * Copyright (C) 2007 Marvell Internation Ltd.
-+ * Copyright (C) 2007 Marvell International Ltd.
-- * Copyright (C) 2007 Marvell Internation Ltd.
-+ * Copyright (C) 2007 Marvell International Ltd.
-- * Copyright (C) 2007 Marvell Internation Ltd.
-+ * Copyright (C) 2007 Marvell International Ltd.
-- * Copyright (C) 2007-2008 Marvell Internation Ltd.
-+ * Copyright (C) 2007-2008 Marvell International Ltd.
-- * Copyright (C) 2007 Marvell Internation Ltd.
-+ * Copyright (C) 2007 Marvell International Ltd.
-- * Copyright (C) 2007 Marvell Internation Ltd.
-+ * Copyright (C) 2007 Marvell International Ltd.
-- * Copyright (C) 2007 Marvell Internation Ltd.
-+ * Copyright (C) 2007 Marvell International Ltd.
-- * Copyright (c) 2002 The Regents of the Unviersity of Michigan
-+ * Copyright (c) 2002 The Regents of the University of Michigan
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-While all the fixes are correct, i'd advise against changing copyright notices 
-without the SOB of the authors. The s/Unviersity/University fix would be ok i 
-guess because it's a very clear typo, but the Marvell one is borderline (while 
-it too is probably a typo) i think it needs a signoff from those who put the 
-copyright notices there in that form.
-
-You could leave out those bits from the patch as well.
-
-Thanks,
-
-	Ingo
