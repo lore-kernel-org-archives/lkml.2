@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759383Ab1CaWIp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 18:08:45 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:11005 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab1CaWIo (ORCPT
+	id S1759391Ab1CaWLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 18:11:06 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:32063 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759364Ab1CaWLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 18:08:44 -0400
-Message-ID: <4D94FB6A.3050606@caviumnetworks.com>
-Date: Thu, 31 Mar 2011 15:08:42 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Thu, 31 Mar 2011 18:11:04 -0400
+From: Dmitry Torokhov <dtor@vmware.com>
+Organization: VMware, Inc.
+To: Bryan Schumaker <bjschuma@netapp.com>
+Subject: Re: 2.6.39-rc1 regression: NFS - unable to mount some shares (bisected)
+Date: Thu, 31 Mar 2011 15:11:01 -0700
+User-Agent: KMail/1.13.6 (Linux/2.6.38-rc6+; KDE/4.5.5; x86_64; ; )
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+References: <8A85A9B4-D801-476F-B280-CE2B1D04277B@vmware.com> <201103311019.52073.dtor@vmware.com> <4D94CDBC.4010000@netapp.com>
+In-Reply-To: <4D94CDBC.4010000@netapp.com>
 MIME-Version: 1.0
-To: Aakash Goenka <aakash.goenka@gmail.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] kernel: Fix style problems in fork.c
-References: <AANLkTi=jHAJ8H0penc8Tkz6w2ihaP3CrkZoQAB9L1G2T@mail.gmail.com>
-In-Reply-To: <AANLkTi=jHAJ8H0penc8Tkz6w2ihaP3CrkZoQAB9L1G2T@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 31 Mar 2011 22:08:43.0358 (UTC) FILETIME=[32CB87E0:01CBEFF0]
+Message-Id: <201103311511.02070.dtor@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 02:48 PM, Aakash Goenka wrote:
->   Fixes most style errors and warnings.
+On Thursday, March 31, 2011 11:53:48 am Bryan Schumaker wrote:
+> Hi
+> 
+> If you apply this patch, does it fix the problem?
 
-Whatever, but there are some real problems with this that I see.
+Yes, it does!
 
+Thank you for your help.
 
->   Signed-off-by: Aakash Goenka<aakash.goenka@gmail.com>
->
-
-Should there really be spaces before that SOB?
-
-> ---
->   kernel/fork.c |   96 ++++++++++++++++++++++++++++++++++-----------------------
->   1 files changed, 57 insertions(+), 39 deletions(-)
-[...]
->
-> -	/* One for us, one for whoever does the "release_task()" (usually parent) */
-> -	atomic_set(&tsk->usage,2);
-> +	/* One for us, one for whoever does the
-> +	 * "release_task()" (usually parent)
-> +	 */
-
-Except that change doesn't even follow the guidelines.
-
-> +	atomic_set(&tsk->usage, 2);
->   	atomic_set(&tsk->fs_excl, 0);
->   #ifdef CONFIG_BLK_DEV_IO_TRACE
->   	tsk->btrace_seq = 0;
-> @@ -355,7 +357,8 @@ static int dup_mmap(struct mm_struct *mm, struct
-> mm_struct *oldmm)
->   		}
->   		charge = 0;
->   		if (mpnt->vm_flags&  VM_ACCOUNT) {
-> -			unsigned int len = (mpnt->vm_end - mpnt->vm_start)>>  PAGE_SHIFT;
-> +			unsigned int len =
-> +			    (mpnt->vm_end - mpnt->vm_start)>>  PAGE_SHIFT;
-
-You have to ask yourself, Is this one really a change for the better?
-
-[...]
->
->   	/* ok, now we should be set up.. */
-> -	p->exit_signal = (clone_flags&  CLONE_THREAD) ? -1 : (clone_flags&  CSIGNAL);
-> +	p->exit_signal = (clone_flags&  CLONE_THREAD) ?
-> +			  -1 : (clone_flags&  CSIGNAL);
-
-Same thing.
-
-.
-.
-.
+-- 
+Dmitry
