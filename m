@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746Ab1CaRTy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 13:19:54 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:38441 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758710Ab1CaRTx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 13:19:53 -0400
-From: Dmitry Torokhov <dtor@vmware.com>
-Organization: VMware, Inc.
-To: Bryan Schumaker <bjschuma@netapp.com>
-Subject: Re: 2.6.39-rc1 regression: NFS - unable to mount some shares (bisected)
-Date: Thu, 31 Mar 2011 10:19:51 -0700
-User-Agent: KMail/1.13.6 (Linux/2.6.38-rc6+; KDE/4.5.5; x86_64; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-References: <8A85A9B4-D801-476F-B280-CE2B1D04277B@vmware.com> <20110331165035.GA6778@dtor-ws.eng.vmware.com> <4D94B6BD.3010409@netapp.com>
-In-Reply-To: <4D94B6BD.3010409@netapp.com>
+	id S1758749Ab1CaRUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 13:20:47 -0400
+Received: from void.printf.net ([89.145.121.20]:57351 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753381Ab1CaRUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 13:20:45 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Manoj <manoj.iyer@canonical.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: SDHCI: Ricoh [1180:e823] unable to mount MMC cards.
+References: <4D93AD5C.1070308@canonical.com>
+	<m34o6k43c4.fsf@pullcord.laptop.org> <4D93BDA9.1020107@canonical.com>
+	<m3vcz02mi1.fsf@pullcord.laptop.org> <4D948BC4.6020904@canonical.com>
+	<m3sju3z6yc.fsf@pullcord.laptop.org> <4D949298.4000701@canonical.com>
+	<m3oc4rz5kp.fsf@pullcord.laptop.org> <4D94A510.4040509@canonical.com>
+	<m3fwq3z1yu.fsf@pullcord.laptop.org> <4D94B552.8020108@canonical.com>
+Date: Thu, 31 Mar 2011 13:26:36 -0400
+In-Reply-To: <4D94B552.8020108@canonical.com> (Manoj's message of "Thu, 31 Mar
+	2011 12:09:38 -0500")
+Message-ID: <m3zkoburoz.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103311019.52073.dtor@vmware.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 31, 2011 10:15:41 am Bryan Schumaker wrote:
-> Thanks for the log and extra info.  What setting does the server use to
-> export /toolchain?  You can usually find this in /etc/exports, but it
-> may be different for NIS.  I would like to set up my NFS server in a
-> similar way so I can try to reproduce what you're seeing.
-> 
+Hi,
 
-Bryan,
+On Thu, Mar 31 2011, Manoj wrote:
+> Sorry about that... dmesg is attached.
 
-Unfortunately I do not have shell access to the NFS server. I can only 
-provide data that can be collected from the client.
+Thanks.  I see that the Ricoh code didn't run and that the PCI ID in
+the patch is wrong; in include/linux/pci_ids.h, it should be:
 
-[dtor@dtor-ws linus]$ showmount --exports build-toolchain
-Export list for build-toolchain:
-/apps      *
-/trees     *
-/toolchain *
+#define PCI_DEVICE_ID_RICOH_R5C823     0xe823
 
-Thanks,
-Dmitry
+So, please retry with the "e" there in place and resend full dmesg.
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
