@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab1CaU0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 16:26:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47750 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab1CaU0r (ORCPT
+	id S1755384Ab1CaU2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 16:28:53 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:52043 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab1CaU2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 16:26:47 -0400
-From: Omar Ramirez Luna <omar.ramirez@ti.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
-        lak <linux-arm-kernel@lists.infradead.org>,
-        lk <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: BUG() dies silently
-Date: Thu, 31 Mar 2011 14:15:23 -0600
-Message-Id: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 31 Mar 2011 16:28:51 -0400
+Subject: Re: [PATCH 05/12] mm: alloc_contig_range() added
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
+In-Reply-To: <op.vs7umufd3l0zgt@mnazarewicz-glaptop>
+References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
+	 <1301577368-16095-6-git-send-email-m.szyprowski@samsung.com>
+	 <1301587361.31087.1040.camel@nimitz>
+	 <op.vs7umufd3l0zgt@mnazarewicz-glaptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 31 Mar 2011 13:28:42 -0700
+Message-ID: <1301603322.31087.1196.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some cases where the code generated for BUG() results
-into an infinite while loop without causing a null dereference,
-this ends on a kernel being stuck on a loop and the user without
-a clue of what happened.
+On Thu, 2011-03-31 at 18:26 +0200, Michal Nazarewicz wrote:
+> > On Thu, 2011-03-31 at 15:16 +0200, Marek Szyprowski wrote:
+> >> +       ret = 0;
+> >> +       while (!PageBuddy(pfn_to_page(start & (~0UL << ret))))
+> >> +               if (WARN_ON(++ret >= MAX_ORDER))
+> >> +                       return -EINVAL;
+> 
+> On Thu, 31 Mar 2011 18:02:41 +0200, Dave Hansen wrote:
+> > Holy cow, that's dense.  Is there really no more straightforward way to
+> > do that?
+> 
+> Which part exactly is dense?  What would be qualify as a more
+> straightforward way?
 
-E.g.: lib/scatterlist.c : __sg_alloc_table
+I'm still not 100% sure what it's trying to do.  It looks like it
+attempts to check all of "start"'s buddy pages.
 
-        BUG_ON(nents > max_ents);
- 438:   9a000000        bls     440 <__sg_alloc_table+0x20>
- 43c:   eafffffe        b       43c <__sg_alloc_table+0x1c>
+unsigned long find_buddy(unsigned long pfn, int buddy)
+{
+	unsigned long page_idx = pfn & ((1 << MAX_ORDER) - 1); // You had a macro for this I think
+	unsigned long buddy_idx = __find_buddy_index(page_idx, order);
+	return page_idx + buddy_idx;
+}
 
-Adding volatile makes the compiler to avoid optimizations on this
-code, which makes the panic to occur:
+Is something like this equivalent?
 
-        BUG_ON(nents > max_ents);
- 438:   9a000002        bls     448 <__sg_alloc_table+0x28>
- 43c:   e3a03000        mov     r3, #0
- 440:   e5833000        str     r3, [r3]
- 444:   eafffffc        b       43c <__sg_alloc_table+0x1c>
+int order;
+for (order = 0; order <= MAX_ORDER; order++) {
+	unsigned long buddy_pfn = find_buddy(start, order);
+	struct page *buddy = pfn_to_page(buddy_pfn);
+	if (PageBuddy(buddy)
+		break;
+	WARN();
+	return -EINVAL;
+}
 
-Seen with gnu/linux cs arm-2010q1-202 and arm2010.09-50.
+I'm wondering also if you can share some code with __rmqueue().
 
-Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
----
+> > In any case, please pull the ++ret bit out of the WARN_ON().  Some
+> > people like to do:
+> >
+> > #define WARN_ON(...) do{}while(0)
+> >
+> > to save space on some systems.
+> 
+> I don't think that's the case.  Even if WARN_ON() decides not to print
+> a warning, it will still return the value of the argument.  If not,
+> a lot of code will brake.
 
-If needed I can change:
-./arch/arm/mach-clps711x/include/mach/io.h:
-	#define __raw_readsb(p,d,l)  do { *(int *)0 = 0; } while (0)
-./arch/arm/mach-clps711x/include/mach/io.h:
-	#define __raw_readsl(p,d,l)  do { *(int *)0 = 0; } while (0)
-./arch/arm/mach-clps711x/include/mach/io.h:
-	#define __raw_writesb(p,d,l) do { *(int *)0 = 0; } while (0)
-./arch/arm/mach-clps711x/include/mach/io.h:
-	#define __raw_writesl(p,d,l) do { *(int *)0 = 0; } while (0)
-./arch/arm/kernel/traps.c:      *(int *)0 = 0;
+Bah, sorry.  I'm confusing WARN_ON() and WARN().
 
-
- arch/arm/include/asm/bug.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
-index 4d88425..a58d863 100644
---- a/arch/arm/include/asm/bug.h
-+++ b/arch/arm/include/asm/bug.h
-@@ -12,7 +12,7 @@ extern void __bug(const char *file, int line) __attribute__((noreturn));
- #else
- 
- /* this just causes an oops */
--#define BUG()		do { *(int *)0 = 0; } while (1)
-+#define BUG()		do { *(volatile int *)0 = 0; } while(1)
- 
- #endif
- 
--- 
-1.7.1
+-- Dave
 
