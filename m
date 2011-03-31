@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878Ab1CaOJh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:09:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44486 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757845Ab1CaOJg (ORCPT
+	id S1757887Ab1CaOLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:11:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60286 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179Ab1CaOLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:09:36 -0400
+	Thu, 31 Mar 2011 10:11:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=oaUmJILka7OfjiV33JU9XvC/hoQZ/TbEzwG55xk3FLohbRJ0iYi7hN+4XhxdvRXfGN
-         71rrvOWIKDlI7y6ubKFyRFIIHe+rfi2O8oLjtfH157LiEXh3Tlet5ISvXTFit9RKWFcm
-         OXqj6dTXuisILoMNfpXUJWgT7KX0y7v8SZO4k=
-Message-ID: <4D948B1C.7080806@suse.cz>
-Date: Thu, 31 Mar 2011 16:09:32 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xf83G37YyvQOxoBqlGX/wLgDoGb2bTd4gUTcuE2cTE+o/imm1dHFQJxLYS1oPV1EJE
+         Xt6du+2xiMepdkQXoKFQTHUtt5KrtDBAX2b5vMvu1GJ71Tk2GU2OehkT8xH6VW+dwRda
+         dLSdOdsGoFYJH+gjNcTsOjo8eP/LvduxL9mGs=
+Date: Thu, 31 Mar 2011 17:17:53 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jffs2: unused variables cleanup in jffs2_lookup and
+ jffs2_readdir
+Message-ID: <20110331141753.GB4144@swordfish.minsk.epam.com>
+References: <20110322121102.GC5086@swordfish.minsk.epam.com>
+ <1301579908.2828.83.camel@localhost>
 MIME-Version: 1.0
-To: Russell King <rmk@arm.linux.org.uk>
-CC: Arnd Bergmann <arnd@arndb.de>, Arend van Spriel <arend@broadcom.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        devel@linuxdriverproject.org, gregkh@suse.de,
-        linux-wireless@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH 1/1] drivers: brcmaxi: provide amba axi functionality
- in separate module
-References: <1301391619-4499-1-git-send-email-arend@broadcom.com> <1301391619-4499-2-git-send-email-arend@broadcom.com> <4D91B856.8040302@suse.cz> <201103301453.48607.arnd@arndb.de> <4D948624.3040605@suse.cz> <20110331135126.GC19540@flint.arm.linux.org.uk>
-In-Reply-To: <20110331135126.GC19540@flint.arm.linux.org.uk>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gatW/ieO32f1wygP"
+Content-Disposition: inline
+In-Reply-To: <1301579908.2828.83.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 03:51 PM, Russell King wrote:
-> On Thu, Mar 31, 2011 at 03:48:20PM +0200, Jiri Slaby wrote:
->> How it can? Packed only tells the compiler to have one byte alignment
->> steps. And it should not matter here as all the members are 32-bit long.
-> 
-> It also tells the compiler that it may be misaligned, so to avoid
-> alignment faults it will use byte loads/stores.
 
-No, it should not (if offsetof % sizeof == 0). Otherwise it's a bug in
-the compiler.
+--gatW/ieO32f1wygP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Am I missing something?
+On (03/31/11 16:58), Artem Bityutskiy wrote:
+> On Tue, 2011-03-22 at 14:11 +0200, Sergey Senozhatsky wrote:
+> > jffs2: cleanup unused jffs2_sb_info *c variable and JFFS2_SB_INFO call =
+=66rom jffs2_lookup=20
+> > and jffs2_readdir
+> >=20
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+>=20
+> I amended the commit message and pushed this to l2-mtd-2.6.git, thanks.
+>=20
 
-thanks,
--- 
-js
-suse labs
+Sorry, next time I'll be more accurate.
+
+Thanks,
+	Sergey
+
+--gatW/ieO32f1wygP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAk2UjREACgkQfKHnntdSXjTTjQQA5F4KGqLhvbeo2SedRfSIODKD
+lmHXeQBvwYvcUvk75RG0MM+KIs8U3qfxxkvBisPnKDD1qAiwqqAclGbxxJBokHEH
+Enq4BNlu6X/LnHUgoaVEXLwyWb+wxaRAwU61gDMayD7W8o5lBuCb4UDmCi7aIFgx
+TigFCJwX/LDyVAHrjik=
+=JZ2r
+-----END PGP SIGNATURE-----
+
+--gatW/ieO32f1wygP--
