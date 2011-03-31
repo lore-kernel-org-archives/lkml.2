@@ -1,43 +1,737 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab1CaQqo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:46:44 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59851 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab1CaQqn (ORCPT
+	id S1758240Ab1CaQsK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:48:10 -0400
+Received: from mail-ww0-f66.google.com ([74.125.82.66]:37528 "EHLO
+	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab1CaQsG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:46:43 -0400
-Date: Thu, 31 Mar 2011 17:45:39 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: david@lang.hm
-Cc: Ingo Molnar <mingo@elte.hu>, Nicolas Pitre <nico@fluxnic.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110331164539.GB19452@n2100.arm.linux.org.uk>
-References: <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu> <20110331083044.GB14323@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1103310855450.29543@asgard.lang.hm>
+	Thu, 31 Mar 2011 12:48:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vBiLjndu6FN0GyB5f6ujAciz5d6BUX8v+zTjLLT5P0NP1zted7vAWyeKu0X5S5s2wb
+         eYyMCisfG3U3cgaHeHywT4RX7gGIfqXm+wpB/VvKXd1nfQsYMFD9ndfJkk/mhIOufXL3
+         8LSR8SAR+YgdQkc5q0ytegFsuduN2pUbwjgyk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103310855450.29543@asgard.lang.hm>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1301158345-22206-4-git-send-email-aghayal@codeaurora.org>
+References: <1301158345-22206-1-git-send-email-aghayal@codeaurora.org>
+	<1301158345-22206-4-git-send-email-aghayal@codeaurora.org>
+Date: Fri, 1 Apr 2011 00:48:03 +0800
+Message-ID: <AANLkTi=Wteb54qBkLwRTOBr81=3da_FExOmUYE9-3-yX@mail.gmail.com>
+Subject: Re: [rtc-linux] [PATCH 3/3] drivers: rtc: Add support for Qualcomm
+ PMIC8xxx RTC
+From: Wan ZongShun <mcuos.com@gmail.com>
+To: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>
+Cc: Anirudh Ghayal <aghayal@codeaurora.org>, linux-input@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 09:03:28AM -0700, david@lang.hm wrote:
-> In this case I owe you and Nicolas an apology.
+Hi Anirudh,
 
-Thanks.
+Some advice below:
 
-> it's not the total amount of code, and it's not even the total amount of  
-> change to the code that's the issue.
+2011/3/27 Anirudh Ghayal <aghayal@codeaurora.org>:
+> PMIC8xxx is Qualcomm's power management IC. A
+> 32-bit RTC is housed inside this PMIC. The RTC driver
+> uses SSBI to communicate with the RTC module.
+>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: Lars-Peter Clausen <lars@metafoo.de>
+> Signed-off-by: Anirudh Ghayal <aghayal@codeaurora.org>
+> ---
+>  drivers/rtc/Kconfig            |    9 +
+>  drivers/rtc/Makefile           |    1 +
+>  drivers/rtc/rtc-pm8xxx.c       |  567 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/pm8xxx/rtc.h |   25 ++
+>  4 files changed, 602 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/rtc/rtc-pm8xxx.c
+>  create mode 100644 include/linux/mfd/pm8xxx/rtc.h
+>
+> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+> index e187887..a66672a 100644
+> --- a/drivers/rtc/Kconfig
+> +++ b/drivers/rtc/Kconfig
+> @@ -995,4 +995,13 @@ config RTC_DRV_TEGRA
+>          This drive can also be built as a module. If so, the module
+>          will be called rtc-tegra.
+>
+> +config RTC_DRV_PM8XXX
+> +       tristate "Qualcomm PMIC8XXX RTC"
+> +       depends on MFD_PM8XXX
+> +       help
+> +         Say Y here if you want to support the Qualcomm PMIC8XXX RTC.
+> +
+> +         To compile this driver as a module, choose M here: the
+> +         module will be called rtc-pm8xxx.
+> +
+>  endif # RTC_CLASS
+> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+> index ca91c3c..ff40366 100644
+> --- a/drivers/rtc/Makefile
+> +++ b/drivers/rtc/Makefile
+> @@ -72,6 +72,7 @@ obj-$(CONFIG_RTC_DRV_PCF8563) += rtc-pcf8563.o
+>  obj-$(CONFIG_RTC_DRV_PCF8583)  += rtc-pcf8583.o
+>  obj-$(CONFIG_RTC_DRV_PCF2123)  += rtc-pcf2123.o
+>  obj-$(CONFIG_RTC_DRV_PCF50633) += rtc-pcf50633.o
+> +obj-$(CONFIG_RTC_DRV_PM8XXX)    += rtc-pm8xxx.o
+>  obj-$(CONFIG_RTC_DRV_PL030)    += rtc-pl030.o
+>  obj-$(CONFIG_RTC_DRV_PL031)    += rtc-pl031.o
+>  obj-$(CONFIG_RTC_DRV_PS3)      += rtc-ps3.o
+> diff --git a/drivers/rtc/rtc-pm8xxx.c b/drivers/rtc/rtc-pm8xxx.c
+> new file mode 100644
+> index 0000000..ce2dad3
+> --- /dev/null
+> +++ b/drivers/rtc/rtc-pm8xxx.c
+> @@ -0,0 +1,567 @@
+> +/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#define pr_fmt(fmt) "%s: " fmt, __func__
+> +
 
-I think you're not entirely correct - have a look at Linus' message where
-there's a comparison of the size of arch/arm with other architectures, and
-you'll find that it is partly about size of source code.
+ why add pr_fmt here?
+
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/rtc.h>
+> +#include <linux/pm.h>
+> +#include <linux/slab.h>
+> +#include<linux/spinlock.h>
+> +
+> +#include <linux/mfd/pm8xxx/core.h>
+> +#include <linux/mfd/pm8xxx/rtc.h>
+> +
+> +/* RTC Register offsets from RTC CTRL REG */
+> +#define PM8XXX_ALARM_CTRL_OFFSET 0x01
+> +#define PM8XXX_RTC_WRITE_OFFSET 0x02
+> +#define PM8XXX_RTC_READ_OFFSET 0x06
+> +#define PM8XXX_ALARM_RW_OFFSET 0x0A
+> +
+> +/* RTC_CTRL register bit fields */
+> +#define PM8xxx_RTC_ENABLE      BIT(7)
+> +#define PM8xxx_RTC_ALARM_ENABLE        BIT(1)
+> +#define PM8xxx_RTC_ALARM_CLEAR  BIT(0)
+> +
+> +#define NUM_8_BIT_RTC_REGS     0x4
+> +
+> +/**
+> + * struct pm8xxx_rtc - rtc driver internal structure
+> + * @rtc: rtc device for this driver
+> + * @rtc_alarm_irq: rtc alarm irq number
+> + */
+> +struct pm8xxx_rtc {
+> +       struct rtc_device *rtc;
+> +       int rtc_alarm_irq;
+> +       int rtc_base;
+> +       int rtc_read_base;
+> +       int rtc_write_base;
+> +       int alarm_rw_base;
+> +       u8  ctrl_reg;
+> +       struct device *parent;
+> +       spinlock_t ctrl_reg_lock;
+> +};
+> +
+> +/*
+> + * The RTC registers need to be read/written one byte at a time. This is a
+> + * hardware limitation.
+> + */
+> +static int pm8xxx_read_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
+> +                       int base, int count)
+> +{
+> +       int i, rc;
+> +
+> +       for (i = 0; i < count; i++) {
+> +               rc = pm8xxx_readb(rtc_dd->parent, base + i, &rtc_val[i]);
+> +               if (rc < 0) {
+> +                       pr_err("PM8xxx read failed\n");
+
+All pr_err are not so good, please try to use dev_err.
+
+> +                       return rc;
+> +               }
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static int pm8xxx_write_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
+> +                       int base, int count)
+> +{
+> +       int i, rc;
+> +
+> +       for (i = 0; i < count; i++) {
+> +               rc = pm8xxx_writeb(rtc_dd->parent, base + i, rtc_val[i]);
+> +               if (rc < 0) {
+> +                       pr_err("PM8xxx write failed\n");
+> +                       return rc;
+> +               }
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +
+> +/*
+> + * Steps to write the RTC registers.
+> + * 1. Disable alarm if enabled.
+> + * 2. Write 0x00 to LSB.
+> + * 3. Write Byte[1], Byte[2], Byte[3] then Byte[0].
+> + * 4. Enable alarm if disabled in step 1.
+> + */
+> +static int
+> +pm8xxx_rtc_set_time(struct device *dev, struct rtc_time *tm)
+> +{
+> +       int rc;
+> +       unsigned long secs, irq_flags;
+> +       u8 value[4], reg = 0, alarm_enabled = 0, ctrl_reg;
+> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
+> +
+> +       rtc_tm_to_time(tm, &secs);
+> +
+> +       value[0] = secs & 0xFF;
+> +       value[1] = (secs >> 8) & 0xFF;
+> +       value[2] = (secs >> 16) & 0xFF;
+> +       value[3] = (secs >> 24) & 0xFF;
+> +
+> +       dev_dbg(dev, "Seconds value to be written to RTC = %lu\n", secs);
+> +
+> +       spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
+> +       ctrl_reg = rtc_dd->ctrl_reg;
+> +
+> +       if (ctrl_reg & PM8xxx_RTC_ALARM_ENABLE) {
+> +               alarm_enabled = 1;
+> +               ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
+> +               rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
+> +                                                                       1);
+> +               if (rc < 0) {
+> +                       dev_err(dev, "PM8xxx write failed\n");
+> +                       goto rtc_rw_fail;
+> +               }
+> +       } else
+> +               spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
+> +
+> +       /* Write Byte[1], Byte[2], Byte[3], Byte[0] */
+> +       /* Write 0 to Byte[0] */
+> +       reg = 0;
+> +       rc = pm8xxx_write_wrapper(rtc_dd, &reg, rtc_dd->rtc_write_base, 1);
+> +       if (rc < 0) {
+> +               dev_err(dev, "PM8xxx write failed\n");
+> +               goto rtc_rw_fail;
+> +       }
+> +
+> +       /* Write Byte[1], Byte[2], Byte[3] */
+> +       rc = pm8xxx_write_wrapper(rtc_dd, value + 1,
+> +                                       rtc_dd->rtc_write_base + 1, 3);
+> +       if (rc < 0) {
+> +               dev_err(dev, "Write to RTC registers failed\n");
+> +               goto rtc_rw_fail;
+> +       }
+> +
+> +       /* Write Byte[0] */
+> +       rc = pm8xxx_write_wrapper(rtc_dd, value, rtc_dd->rtc_write_base, 1);
+> +       if (rc < 0) {
+> +               dev_err(dev, "Write to RTC register failed\n");
+> +               goto rtc_rw_fail;
+> +       }
+> +
+> +       if (alarm_enabled) {
+> +               ctrl_reg |= PM8xxx_RTC_ALARM_ENABLE;
+> +               rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
+> +                                                                       1);
+> +               if (rc < 0) {
+> +                       dev_err(dev, "PM8xxx write failed\n");
+> +                       goto rtc_rw_fail;
+> +               }
+> +       }
+> +
+> +       rtc_dd->ctrl_reg = ctrl_reg;
+> +
+> +rtc_rw_fail:
+> +       if (alarm_enabled)
+> +               spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
+> +
+> +       return rc;
+> +}
+> +
+> +static int
+> +pm8xxx_rtc_read_time(struct device *dev, struct rtc_time *tm)
+> +{
+> +       int rc;
+> +       u8 value[4], reg;
+> +       unsigned long secs;
+> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
+> +
+> +       rc = pm8xxx_read_wrapper(rtc_dd, value, rtc_dd->rtc_read_base,
+> +                                                       NUM_8_BIT_RTC_REGS);
+> +       if (rc < 0) {
+> +               dev_err(dev, "RTC time read failed\n");
+> +               return rc;
+> +       }
+> +
+> +       /*
+> +        * Read the LSB again and check if there has been a carry over.
+> +        * If there is, redo the read operation.
+> +        */
+> +       rc = pm8xxx_read_wrapper(rtc_dd, &reg, rtc_dd->rtc_read_base, 1);
+> +       if (rc < 0) {
+> +               dev_err(dev, "PM8xxx read failed\n");
+> +               return rc;
+> +       }
+> +
+> +       if (unlikely(reg < value[0])) {
+> +               rc = pm8xxx_read_wrapper(rtc_dd, value,
+> +                               rtc_dd->rtc_read_base, NUM_8_BIT_RTC_REGS);
+> +               if (rc < 0) {
+> +                       dev_err(dev, "RTC time read failed\n");
+> +                       return rc;
+> +               }
+> +       }
+> +
+> +       secs = value[0] | (value[1] << 8) | (value[2] << 16) \
+> +                                               | (value[3] << 24);
+> +
+> +       rtc_time_to_tm(secs, tm);
+> +
+> +       rc = rtc_valid_tm(tm);
+> +       if (rc < 0) {
+> +               dev_err(dev, "Invalid time read from PM8xxx\n");
+> +               return rc;
+> +       }
+> +
+> +       dev_dbg(dev, "secs = %lu, h:m:s == %d:%d:%d, d/m/y = %d/%d/%d\n",
+> +                       secs, tm->tm_hour, tm->tm_min, tm->tm_sec,
+> +                       tm->tm_mday, tm->tm_mon, tm->tm_year);
+> +
+> +       return 0;
+> +}
+> +
+> +static int
+> +pm8xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
+> +{
+> +       int rc;
+> +       u8 value[4], ctrl_reg;
+> +       unsigned long secs, secs_rtc, irq_flags;
+> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
+> +       struct rtc_time rtc_tm;
+> +
+> +       rtc_tm_to_time(&alarm->time, &secs);
+> +
+> +       /*
+> +        * Read the current RTC time and verify if the alarm time is in the
+> +        * past. If yes, return invalid.
+> +        */
+> +       rc = pm8xxx_rtc_read_time(dev, &rtc_tm);
+> +       if (rc < 0) {
+> +               dev_err(dev, "Unamble to read RTC time\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       rtc_tm_to_time(&rtc_tm, &secs_rtc);
+> +       if (secs < secs_rtc) {
+> +               dev_err(dev, "Trying to set alarm in the past\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       value[0] = secs & 0xFF;
+> +       value[1] = (secs >> 8) & 0xFF;
+> +       value[2] = (secs >> 16) & 0xFF;
+> +       value[3] = (secs >> 24) & 0xFF;
+> +
+> +       spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
+> +
+> +       rc = pm8xxx_write_wrapper(rtc_dd, value, rtc_dd->alarm_rw_base,
+> +                                                       NUM_8_BIT_RTC_REGS);
+> +       if (rc < 0) {
+> +               dev_err(dev, "Write to RTC ALARM registers failed\n");
+> +               goto rtc_rw_fail;
+> +       }
+> +
+> +       ctrl_reg = rtc_dd->ctrl_reg;
+> +       ctrl_reg = (alarm->enabled) ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
+> +                                       (ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
+> +
+> +       rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
+> +       if (rc < 0) {
+> +               dev_err(dev, "PM8xxx write failed\n");
+> +               goto rtc_rw_fail;
+> +       }
+> +
+> +       rtc_dd->ctrl_reg = ctrl_reg;
+> +
+> +       dev_dbg(dev, "Alarm Set for h:r:s=%d:%d:%d, d/m/y=%d/%d/%d\n",
+> +                       alarm->time.tm_hour, alarm->time.tm_min,
+> +                       alarm->time.tm_sec, alarm->time.tm_mday,
+> +                       alarm->time.tm_mon, alarm->time.tm_year);
+> +rtc_rw_fail:
+> +       spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
+> +       return rc;
+> +}
+> +
+> +static int
+> +pm8xxx_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
+> +{
+> +       int rc;
+> +       u8 value[4];
+> +       unsigned long secs;
+> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
+> +
+> +       rc = pm8xxx_read_wrapper(rtc_dd, value, rtc_dd->alarm_rw_base,
+> +                       NUM_8_BIT_RTC_REGS);
+> +       if (rc < 0) {
+> +               dev_err(dev, "RTC alarm time read failed\n");
+> +               return rc;
+> +       }
+> +
+> +       secs = value[0] | (value[1] << 8) | (value[2] << 16) | \
+> +                                                (value[3] << 24);
+> +
+> +       rtc_time_to_tm(secs, &alarm->time);
+> +
+> +       rc = rtc_valid_tm(&alarm->time);
+> +       if (rc < 0) {
+> +               dev_err(dev, "Invalid time read from PM8xxx\n");
+> +               return rc;
+> +       }
+> +
+> +       dev_dbg(dev, "Alarm set for - h:r:s=%d:%d:%d, d/m/y=%d/%d/%d\n",
+> +               alarm->time.tm_hour, alarm->time.tm_min,
+> +                               alarm->time.tm_sec, alarm->time.tm_mday,
+> +                               alarm->time.tm_mon, alarm->time.tm_year);
+> +
+> +       return 0;
+> +}
+> +
+> +
+> +static int
+> +pm8xxx_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+> +{
+> +       int rc;
+> +       unsigned long irq_flags;
+> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
+> +       u8 ctrl_reg;
+> +
+> +       spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
+> +       ctrl_reg = rtc_dd->ctrl_reg;
+> +       ctrl_reg = (enabled) ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
+> +                               (ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
+> +
+> +       rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
+> +       if (rc < 0) {
+> +               dev_err(dev, "PM8xxx write failed\n");
+> +               goto rtc_rw_fail;
+> +       }
+> +
+> +       rtc_dd->ctrl_reg = ctrl_reg;
+> +
+> +rtc_rw_fail:
+> +       spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
+> +       return rc;
+> +}
+> +
+> +static struct rtc_class_ops pm8xxx_rtc_ops = {
+> +       .read_time      = pm8xxx_rtc_read_time,
+> +       .set_alarm      = pm8xxx_rtc_set_alarm,
+> +       .read_alarm     = pm8xxx_rtc_read_alarm,
+> +       .alarm_irq_enable = pm8xxx_rtc_alarm_irq_enable,
+> +};
+> +
+> +static irqreturn_t pm8xxx_alarm_trigger(int irq, void *dev_id)
+> +{
+> +       struct pm8xxx_rtc *rtc_dd = dev_id;
+> +       u8 ctrl_reg;
+> +       int rc;
+> +       unsigned long irq_flags;
+> +
+> +       rtc_update_irq(rtc_dd->rtc, 1, RTC_IRQF | RTC_AF);
+> +
+> +       spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
+> +
+> +       /* Clear the alarm enable bit */
+> +       ctrl_reg = rtc_dd->ctrl_reg;
+> +       ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
+> +
+> +       rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
+> +       if (rc < 0) {
+> +               spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
+> +               pr_err("PM8xxx write failed!\n");
+> +               goto rtc_alarm_handled;
+> +       }
+> +
+> +       rtc_dd->ctrl_reg = ctrl_reg;
+> +       spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
+> +
+> +       /* Clear RTC alarm register */
+> +       rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base +
+> +                                               PM8XXX_ALARM_CTRL_OFFSET, 1);
+> +       if (rc < 0) {
+> +               pr_err("PM8xxx write failed!\n");
+> +               goto rtc_alarm_handled;
+> +       }
+> +
+> +       ctrl_reg &= ~PM8xxx_RTC_ALARM_CLEAR;
+> +       rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base +
+> +                                               PM8XXX_ALARM_CTRL_OFFSET, 1);
+> +       if (rc < 0)
+> +               pr_err("PM8xxx write failed!\n");
+> +
+> +rtc_alarm_handled:
+> +       return IRQ_HANDLED;
+> +}
+> +
+> +static int __devinit pm8xxx_rtc_probe(struct platform_device *pdev)
+> +{
+> +       int rc;
+> +       u8 ctrl_reg;
+> +       bool rtc_write_enable = false;
+> +       struct pm8xxx_rtc *rtc_dd;
+> +       struct resource *rtc_resource;
+> +       const struct pm8xxx_rtc_platform_data *pdata =
+> +               pdev->dev.platform_data;
+> +
+> +       if (pdata != NULL)
+> +               rtc_write_enable = pdata->rtc_write_enable;
+> +
+> +       rtc_dd = kzalloc(sizeof(*rtc_dd), GFP_KERNEL);
+> +       if (rtc_dd == NULL) {
+> +               dev_err(&pdev->dev, "Unable to allocate memory!\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       /* Initialise spinlock to protect RTC cntrol register */
+> +       spin_lock_init(&rtc_dd->ctrl_reg_lock);
+> +
+> +       rtc_dd->rtc_alarm_irq = platform_get_irq(pdev, 0);
+> +       if (!rtc_dd->rtc_alarm_irq) {
+> +               dev_err(&pdev->dev, "Alarm IRQ resource absent!\n");
+> +               rc = -ENXIO;
+> +               goto fail_rtc_enable;
+> +       }
+> +
+
+In fact, the 'platform_get_irq' maybe return -ENXIO, so you should use
+the 'if (rtc_dd->rtc_alarm_irq < 0)' instead of  '!' to judge
+the get irq action.
+
+> +       rtc_resource = platform_get_resource_byname(pdev, IORESOURCE_IO,
+> +                                                       "pmic_rtc_base");
+> +       if (rtc_resource)
+> +               rtc_dd->rtc_base = rtc_resource->start;
+> +       if (!rtc_dd->rtc_base) {
+> +               dev_err(&pdev->dev, "RTC IO resource absent!\n");
+> +               rc = -ENXIO;
+> +               goto fail_rtc_enable;
+> +       }
+
+
+      rtc_resource = platform_get_resource_byname(pdev, IORESOURCE_IO,
+                                                       "pmic_rtc_base");
+       if !(rtc_resource && rtc_resource->start) {
+               dev_err(&pdev->dev, "RTC IO resource absent!\n");
+               rc = -ENXIO;
+               goto fail_rtc_enable;
+       }
+     rtc_dd->rtc_base = rtc_resource->start;
+
+Do you think above code style is better?
+
+> +
+> +       /* Setup RTC register addresses */
+> +       rtc_dd->rtc_write_base = rtc_dd->rtc_base + PM8XXX_RTC_WRITE_OFFSET;
+> +       rtc_dd->rtc_read_base = rtc_dd->rtc_base + PM8XXX_RTC_READ_OFFSET;
+> +       rtc_dd->alarm_rw_base = rtc_dd->rtc_base + PM8XXX_ALARM_RW_OFFSET;
+> +
+> +       rtc_dd->parent = pdev->dev.parent;
+> +
+> +       /* Check if the RTC is on, else turn it on */
+> +       rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
+> +       if (rc < 0) {
+> +               dev_err(&pdev->dev, "PM8xxx read failed!\n");
+> +               goto fail_rtc_enable;
+> +       }
+> +
+> +       if (!(ctrl_reg & PM8xxx_RTC_ENABLE)) {
+> +               ctrl_reg |= PM8xxx_RTC_ENABLE;
+> +               rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
+> +                                                                       1);
+> +               if (rc < 0) {
+> +                       dev_err(&pdev->dev, "PM8xxx write failed!\n");
+> +                       goto fail_rtc_enable;
+> +               }
+> +       }
+> +
+> +       rtc_dd->ctrl_reg = ctrl_reg;
+> +       if (rtc_write_enable == true)
+> +               pm8xxx_rtc_ops.set_time = pm8xxx_rtc_set_time,
+> +
+> +       platform_set_drvdata(pdev, rtc_dd);
+> +
+> +       /* Register the RTC device */
+> +       rtc_dd->rtc = rtc_device_register("pm8xxx_rtc", &pdev->dev,
+> +                               &pm8xxx_rtc_ops, THIS_MODULE);
+> +       if (IS_ERR(rtc_dd->rtc)) {
+> +               dev_err(&pdev->dev, "%s: RTC registration failed (%ld)\n",
+> +                                       __func__, PTR_ERR(rtc_dd->rtc));
+> +               rc = PTR_ERR(rtc_dd->rtc);
+> +               goto fail_rtc_enable;
+> +       }
+> +
+> +       /* Request the alarm IRQ */
+> +       rc = request_any_context_irq(rtc_dd->rtc_alarm_irq,
+> +                                pm8xxx_alarm_trigger, IRQF_TRIGGER_RISING,
+> +                                "pm8xxx_rtc_alarm", rtc_dd);
+> +       if (rc < 0) {
+> +               dev_err(&pdev->dev, "Request IRQ failed (%d)\n", rc);
+> +               goto fail_req_irq;
+> +       }
+> +
+> +       device_init_wakeup(&pdev->dev, 1);
+> +
+> +       dev_dbg(&pdev->dev, "Probe success !!\n");
+> +
+> +       return 0;
+> +
+> +fail_req_irq:
+> +       rtc_device_unregister(rtc_dd->rtc);
+> +fail_rtc_enable:
+> +       platform_set_drvdata(pdev, NULL);
+> +       kfree(rtc_dd);
+> +       return rc;
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +static int pm8xxx_rtc_resume(struct device *dev)
+> +{
+> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
+> +
+> +       if (device_may_wakeup(dev))
+> +               disable_irq_wake(rtc_dd->rtc_alarm_irq);
+> +
+> +       return 0;
+> +}
+> +
+> +static int pm8xxx_rtc_suspend(struct device *dev)
+> +{
+> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
+> +
+> +       if (device_may_wakeup(dev))
+> +               enable_irq_wake(rtc_dd->rtc_alarm_irq);
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct dev_pm_ops pm8xxx_rtc_pm_ops = {
+> +       .suspend = pm8xxx_rtc_suspend,
+> +       .resume = pm8xxx_rtc_resume,
+> +};
+> +#endif
+> +static int __devexit pm8xxx_rtc_remove(struct platform_device *pdev)
+> +{
+> +       struct pm8xxx_rtc *rtc_dd = platform_get_drvdata(pdev);
+> +
+> +       device_init_wakeup(&pdev->dev, 0);
+> +       free_irq(rtc_dd->rtc_alarm_irq, rtc_dd);
+> +       rtc_device_unregister(rtc_dd->rtc);
+> +       platform_set_drvdata(pdev, NULL);
+> +       kfree(rtc_dd);
+> +
+> +       return 0;
+> +}
+> +
+> +static struct platform_driver pm8xxx_rtc_driver = {
+> +       .probe          = pm8xxx_rtc_probe,
+> +       .remove         = __devexit_p(pm8xxx_rtc_remove),
+> +       .driver = {
+> +               .name   = PM8XXX_RTC_DEV_NAME,
+> +               .owner  = THIS_MODULE,
+> +#ifdef CONFIG_PM
+> +               .pm     = &pm8xxx_rtc_pm_ops,
+> +#endif
+> +       },
+> +};
+> +
+> +static int __init pm8xxx_rtc_init(void)
+> +{
+> +       return platform_driver_register(&pm8xxx_rtc_driver);
+> +}
+> +module_init(pm8xxx_rtc_init);
+> +
+> +static void __exit pm8xxx_rtc_exit(void)
+> +{
+> +       platform_driver_unregister(&pm8xxx_rtc_driver);
+> +}
+> +module_exit(pm8xxx_rtc_exit);
+> +
+> +MODULE_ALIAS("platform:rtc-pm8xxx");
+> +MODULE_DESCRIPTION("PMIC8xxx RTC driver");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_AUTHOR("Anirudh Ghayal <aghayal@codeaurora.org>");
+> diff --git a/include/linux/mfd/pm8xxx/rtc.h b/include/linux/mfd/pm8xxx/rtc.h
+> new file mode 100644
+> index 0000000..2528e1d
+> --- /dev/null
+> +++ b/include/linux/mfd/pm8xxx/rtc.h
+> @@ -0,0 +1,25 @@
+> +/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#ifndef __RTC_PM8XXX_H__
+> +#define __RTC_PM8XXX_H__
+> +
+> +#define PM8XXX_RTC_DEV_NAME     "rtc-pm8xxx"
+> +/**
+> + * struct pm8058_rtc_pdata - RTC driver platform data
+> + * @rtc_write_enable: variable stating RTC write capability
+> + */
+> +struct pm8xxx_rtc_platform_data {
+> +       bool rtc_write_enable;
+> +};
+> +
+> +#endif /* __RTC_PM8XXX_H__ */
+> --
+> 1.7.3.5
+>
+> --
+> You received this message because you are subscribed to "rtc-linux".
+> Membership options at http://groups.google.com/group/rtc-linux .
+> Please read http://groups.google.com/group/rtc-linux/web/checklist
+> before submitting a driver.
+
+
+
+-- 
+*linux-arm-kernel mailing list
+mail addr:linux-arm-kernel@lists.infradead.org
+you can subscribe by:
+http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+* linux-arm-NUC900 mailing list
+mail addr:NUC900@googlegroups.com
+main web: https://groups.google.com/group/NUC900
+you can subscribe it by sending me mail:
+mcuos.com@gmail.com
