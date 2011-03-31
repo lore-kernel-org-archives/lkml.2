@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758296Ab1CaPYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:24:08 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48692 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758264Ab1CaPYE (ORCPT
+	id S1758284Ab1CaPZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:25:16 -0400
+Received: from ebb06.tieto.com ([131.207.168.38]:53705 "EHLO ebb06.tieto.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758239Ab1CaPZO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:24:04 -0400
-Date: Thu, 31 Mar 2011 16:24:38 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ramya Desai <ramya.desai@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: GPL License Query on a Plain Linux Application
-Message-ID: <20110331162438.3225d7a4@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTi=aT2-ugOhDdSuh241PF-Sz-fFL1BkCUahoq0+o@mail.gmail.com>
-References: <AANLkTi=aT2-ugOhDdSuh241PF-Sz-fFL1BkCUahoq0+o@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Mar 2011 11:25:14 -0400
+X-AuditID: 83cfa826-b7c9dae000006cef-a1-4d949cd814d4
+From: <Waldemar.Rymarkiewicz@tieto.com>
+To: <sameo@linux.intel.com>
+CC: <arnd@arndb.de>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hthebaud@insidefr.com>,
+        <matti.j.aaltonen@nokia.com>, <alan@lxorguk.ukuu.org.uk>,
+        <Sebastian.Chlad@tieto.com>
+Date: Thu, 31 Mar 2011 18:24:50 +0300
+Subject: RE: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Thread-Topic: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Thread-Index: Acvvtatsmb3B/9MyQ3CkXgLwe/HTPAAACoPg
+Message-ID: <99B09243E1A5DA4898CDD8B7001114481085F0FE7C@EXMB04.eu.tieto.com>
+References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
+ <20110325142648.GC3879@sortiz-mobl>
+ <99B09243E1A5DA4898CDD8B7001114481085E2375D@EXMB04.eu.tieto.com>
+ <201103291305.02293.arnd@arndb.de> <20110331141650.GB2704@sortiz-mobl>
+ <99B09243E1A5DA4898CDD8B7001114481085F0FE5A@EXMB04.eu.tieto.com>
+ <20110331150939.GC2704@sortiz-mobl>
+In-Reply-To: <20110331150939.GC2704@sortiz-mobl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011 20:49:34 +0530
-Ramya Desai <ramya.desai@gmail.com> wrote:
+Hi Samuel,
 
-> Dear All,
-> 
-> I have written an application where it uses plain system calls like
-> open, read, write etc. and runs in the user space. My question here,
-> is this application comes under GPL?
+>That's the Bluetooth approach, and it works just fine as well.
+>However, the netlink option for sending commands and receiving 
+>answers to/from a subsystem sounds more appropriate, at least to me.
 
-This is a technical not a legal list - I would ask the Linux Foundation
-if you want a legal answer.
+I haven't used netlink in practice, so just wondering why netlink. I assume, then, it's more suitable :)
 
-In general though your question seems really to be "is my application a
-derivative work of the kernel". That would be a surprising interpretation
-(speaking as a non-lawyer) but also one the community wanted to be sure
-never occurred. Hence the COPYING file for the kernel itself states:
-
-   NOTE! This copyright does *not* cover user programs that use kernel
- services by normal system calls - this is merely considered normal use
- of the kernel, and does *not* fall under the heading of "derived work".
- Also note that the GPL below is copyrighted by the Free Software
- Foundation, but the instance of code that it refers to (the Linux
- kernel) is copyrighted by me and others who actually wrote it.
-
-
-Alan
+Waldek
