@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759231Ab1CaTXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 15:23:39 -0400
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:56924 "HELO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753685Ab1CaTXh convert rfc822-to-8bit (ORCPT
+	id S1759224Ab1CaTYg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 15:24:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37176 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759000Ab1CaTYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 15:23:37 -0400
-X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Mar 2011 15:23:37 EDT
-From: Ping Cheng <pingc@wacom.com>
-To: Manoj <manoj.iyer@canonical.com>, Chris Bagwell <chris@cnpbagwell.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] add support for Lenovo tablet ID (0xE6)
-Date: Thu, 31 Mar 2011 19:17:35 +0000
-Message-ID: <C6AE45FA1D5BD74994491BCF5D47EED9039C3A@Exchange1.wacom.com>
-References: <1301592052-4064-1-git-send-email-manoj.iyer@canonical.com>
-	<1301592052-4064-2-git-send-email-manoj.iyer@canonical.com>
-	<20110331174334.GA414@core.coreip.homeip.net>
-	<AANLkTi=a1eZS2fjxKYzf1RsE=6n9wZwUTPs8v84zb6p_@mail.gmail.com>
-	<20110331180632.GB414@core.coreip.homeip.net>
- <AANLkTinB6GnF4gsX=-hXSLy9M1pUG1Y4W-sD_=4jdODi@mail.gmail.com>
- <4D94C7B3.4040307@canonical.com>
-In-Reply-To: <4D94C7B3.4040307@canonical.com>
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 Mar 2011 15:24:34 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=XYJHFtupD_QA:10 a=Rgs1teazUoIA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=hs8CJ8QxOCh61bsauqwA:9 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Thu, 31 Mar 2011 15:24:30 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
+Subject: Re: [PATCH 04/12] mm: alloc_contig_freed_pages() added
+Message-ID: <20110331192429.GD14441@home.goodmis.org>
+References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
+ <1301577368-16095-5-git-send-email-m.szyprowski@samsung.com>
+ <1301587083.31087.1032.camel@nimitz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301587083.31087.1032.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Ping Cheng <pingc@wacom.com>.
+On Thu, Mar 31, 2011 at 08:58:03AM -0700, Dave Hansen wrote:
+> On Thu, 2011-03-31 at 15:16 +0200, Marek Szyprowski wrote:
+> > 
+> > +unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
+> > +                                      gfp_t flag)
+> > +{
+> > +       unsigned long pfn = start, count;
+> > +       struct page *page;
+> > +       struct zone *zone;
+> > +       int order;
+> > +
+> > +       VM_BUG_ON(!pfn_valid(start));
+> 
+> This seems kinda mean.  Could we return an error?  I understand that
+> this is largely going to be an early-boot thing, but surely trying to
+> punt on crappy input beats a full-on BUG().
+> 
+> 	if (!pfn_valid(start))
+> 		return -1;
 
-Yes, please use E3 resolutions. The X and Y values should be from your tablet though.
+But still keep the warning?
 
-Thank you.
+	if (WARN_ON(!pfn_valid(start))
+		return -1;
 
-Ping
+-- Steve
 
------Original Message-----
-From: Manoj [mailto:manoj.iyer@canonical.com] 
-Sent: Thursday, March 31, 2011 11:28 AM
-To: Chris Bagwell
-Cc: Dmitry Torokhov; linux-kernel@vger.kernel.org; Ping Cheng
-Subject: Re: [PATCH] add support for Lenovo tablet ID (0xE6)
-
-
-> Ah, yes.  There it is.
->
-> The for-linus and next branches are quite different in this area of 
-> file.  The patch of this email would not apply cleanly to for-linus.
->
-> My suggestion is to use value of 0xE3 for which ever branch this is 
-> merged to... but best for Ping to ack.
-
-Chris,
-
-Just to confirm, so base the patch on the for-linus tree and use the values as in 0xE3? is that correct? I will put Ping to ack as well.
-
->
-> Chris
->
