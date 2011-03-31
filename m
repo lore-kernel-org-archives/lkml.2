@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758818Ab1CaSAm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 14:00:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63939 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758648Ab1CaSAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 14:00:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,276,1299484800"; 
-   d="scan'208";a="727577218"
-From: kristen@linux.intel.com
-To: vinod.koul@intel.com
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com,
-        Kristen Carlson Accardi <kristen@linux.intel.com>
-Subject: [PATCH] intel_mid_dma: fix runtime pm issues
-Date: Thu, 31 Mar 2011 11:02:43 -0700
-Message-Id: <1301594563-19171-1-git-send-email-kristen@linux.intel.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1758831Ab1CaSC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 14:02:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34779 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758792Ab1CaSCz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 14:02:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=Hy5WMeXuPMlbmdZl6aMnCWFF2Chn/NYopHe+KrmGV404dWjuHIAfRgteiCJZ6qPOsH
+         m9KN3MygJu9ap++q9Wws/Rz9lJqKVh3+A0MPQ/kycGLa3FYp0NbElCmrpZWTLUk5C8ah
+         sYBN37nhaWxI0ovVYGI9+doAlba8z4EOTJS4Q=
+From: Tejun Heo <tj@kernel.org>
+To: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com,
+        cl@linux-foundation.org, yinghai@kernel.org
+Cc: torvalds@linux-foundation.org, aarcange@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCHSET tip:x86/mm] Remove DISCONTIGMEM support from x86-32
+Date: Thu, 31 Mar 2011 20:02:42 +0200
+Message-Id: <1301594566-10139-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kristen Carlson Accardi <kristen@linux.intel.com>
+Hello,
 
-Use the correct api in probe to enable runtime pm for this driver.
-Additionally, do not just call legacy suspend for runtime_suspend,
-as this duplicates some work the pci core does for you.
+This patchset removes DISCONTIGMEM support from x86-32 leaving it with
+FLATMEM for UMA and SPARSEMEM for NUMA.  At this point, DISCONTIGMEM
+doesn't really have much benefit over SPARSEMEM.  The only remaining
+benefit is that it can have finer granularity with memsections
+regardless of the number of bits available in page->flags.
 
-Signed-off-by: Kristen Carlson Accardi <kristen@linux.intel.com>
----
- drivers/dma/intel_mid_dma.c |   17 +++++++++++++----
- 1 files changed, 13 insertions(+), 4 deletions(-)
+There are two obstacles to removing DISCONTIGMEM support in x86-32.
+One is that ARCH_SUPPORTS_MEMORY_FAILURE is dependent on !SPARSEMEM,
+so if a NUMA kernel wants to use memory failure, it has to use
+DISCONTIGMEM.  At least SLE11SP1 kernel seems to have chosen that
+route.
 
-diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
-index 798f46a..f153adf 100644
---- a/drivers/dma/intel_mid_dma.c
-+++ b/drivers/dma/intel_mid_dma.c
-@@ -1292,8 +1292,7 @@ static int __devinit intel_mid_dma_probe(struct pci_dev *pdev,
- 	if (err)
- 		goto err_dma;
- 
--	pm_runtime_set_active(&pdev->dev);
--	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_put_noidle(&pdev->dev);
- 	pm_runtime_allow(&pdev->dev);
- 	return 0;
- 
-@@ -1322,6 +1321,9 @@ err_enable_device:
- static void __devexit intel_mid_dma_remove(struct pci_dev *pdev)
- {
- 	struct middma_device *device = pci_get_drvdata(pdev);
-+
-+	pm_runtime_get_noresume(&pdev->dev);
-+	pm_runtime_forbid(&pdev->dev);
- 	middma_shutdown(pdev);
- 	pci_dev_put(pdev);
- 	kfree(device);
-@@ -1385,13 +1387,20 @@ int dma_resume(struct pci_dev *pci)
- static int dma_runtime_suspend(struct device *dev)
- {
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
--	return dma_suspend(pci_dev, PMSG_SUSPEND);
-+	struct middma_device *device = pci_get_drvdata(pci_dev);
-+
-+	device->state = SUSPENDED;
-+	return 0;
- }
- 
- static int dma_runtime_resume(struct device *dev)
- {
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
--	return dma_resume(pci_dev);
-+	struct middma_device *device = pci_get_drvdata(pci_dev);
-+
-+	device->state = RUNNING;
-+	iowrite32(REG_BIT0, device->dma_base + DMA_CFG);
-+	return 0;
- }
- 
- static int dma_runtime_idle(struct device *dev)
+This is solved by reducing the number of page->flags bits used for
+memsection selection by one, which I think is the right thing to do
+regardless of this change.  Please read the patch description on the
+second patch for details.
+
+The other obstable is that due to the limited number of page->flags
+bits available and the relatively large physical address area when PAE
+is enabled, the granularity of sparse memsections is somewhat coarse.
+It was originally 512MiB but increased to 1GiB with the second patch.
+
+For unaligned memsections, this can result in some amount of wasted
+struct page allocations, which I think shouldn't be a problem but not
+completely sure and thus the RFC status.
+
+This patchset contains the following four patches.
+
+ 0001-x86-Clean-up-memory-model-related-configs-in-arch-x8.patch
+ 0002-x86-32-Increment-SECTION_SIZE_BITS-to-30-when-X86_PA.patch
+ 0003-x86-32-Remove-restrictions-on-ARCH_SUPPORTS_MEMORY_F.patch
+ 0004-x86-32-NUMA-Remove-support-for-DISCONTIGMEM.patch
+
+0001 is a cleanup which I'll probably queue regardless of this series
+unless there are objections.  0002-0003 solve the first obstacle
+described above and 0004 removes DISCONTIGMEM.
+
+The patchset is also available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86_32-remove-DISCONTIGMEM
+
+diffstat follows.
+
+ arch/x86/Kconfig                  |   49 +++++++++------------------------
+ arch/x86/include/asm/mmzone_32.h  |   48 --------------------------------
+ arch/x86/include/asm/pgtable_32.h |    5 ---
+ arch/x86/include/asm/sparsemem.h  |    2 -
+ arch/x86/mm/numa_32.c             |   56 ++++----------------------------------
+ 5 files changed, 22 insertions(+), 138 deletions(-)
+
+Thanks.
+
 -- 
-1.7.3.1
-
+tejun
