@@ -1,170 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758521Ab1CaPuq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:50:46 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37782 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758424Ab1CaPup (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 31 Mar 2011 11:50:45 -0400
-Date: Thu, 31 Mar 2011 11:49:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Thomas Hellstrom <thomas@shipmail.org>
-Cc: Jerome Glisse <j.glisse@gmail.com>, linux-kernel@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: Re: [PATCH] cleanup: Add 'struct dev' in the TTM layer to be
- passed in for DMA API calls.
-Message-ID: <20110331154954.GA7695@dumpdata.com>
-References: <20110322143137.GA25113@dumpdata.com>
- <4D89AB8F.6020500@shipmail.org>
- <20110323125105.GA6599@dumpdata.com>
- <4D89F2DE.7020209@shipmail.org>
- <20110323145246.GA7546@dumpdata.com>
- <4D8AF834.8040700@shipmail.org>
- <20110324142509.GA32416@dumpdata.com>
- <AANLkTinUGjwTzMFbHHckkiuCQ8sF+i5iMQsXesG34f6U@mail.gmail.com>
- <20110324162135.GA835@dumpdata.com>
- <4D8CF46F.2070206@shipmail.org>
+	id S1758537Ab1CaPuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:50:52 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36324 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758475Ab1CaPus (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:50:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=qGRKvIyN5OlSV+yTFAwkPEwYwEuNRXzETd1DqgmYZtc4xAQ/Vvn721ahVe/yoqwMuW
+         C3qhTExWSgnyCI9SoVRS6NCvU86yu3qifQV5h8YwMCaxaG3ovkRct9CJf3N2TsMazpyk
+         go88JFvg+UoCQwfZgnF//u4uQcZE1kPFq+Yz0=
+Message-ID: <4D94A2D3.3020707@gmail.com>
+Date: Thu, 31 Mar 2011 08:50:43 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110316 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D8CF46F.2070206@shipmail.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4D94A2A6.00B4:SCFSTAT5015188,ss=1,fgs=0
+To: Avi Kivity <avi@redhat.com>
+CC: trivial@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]arch:x86:kvm:i8254.h Fix typo in kvm_pit
+References: <1301501942-3937-1-git-send-email-justinmattock@gmail.com> <4D9359CC.6050508@redhat.com> <4D935AC3.2030509@gmail.com> <4D93659F.2020900@redhat.com> <4D936B7F.40407@gmail.com> <4D944764.4040202@redhat.com>
+In-Reply-To: <4D944764.4040202@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >I can start this next week if you guys are comfortable with this idea.
-> >
-> >
-> 
-> Konrad,
-> 
-> 1) A couple of questions first. Where are the memory pools going to
-> end up in this design. Could you draft an API? How is page
-> accounting going to be taken care of? How do we differentiate
-> between running on bare metal and running on a hypervisor?
+On 03/31/2011 02:20 AM, Avi Kivity wrote:
+> On 03/30/2011 07:42 PM, Justin P. Mattock wrote:
+>> On 03/30/2011 10:17 AM, Avi Kivity wrote:
+>>> On 03/30/2011 06:30 PM, Justin P. Mattock wrote:
+>>>> On 03/30/2011 09:26 AM, Avi Kivity wrote:
+>>>>> On 03/30/2011 06:19 PM, Justin P. Mattock wrote:
+>>>>>> The below patch changes base_addresss to base_address.
+>>>>>> Note: I have grepped for base_addresss and nothing shows up,
+>>>>>> grepping for base_address gets me lots of output, telling me that
+>>>>>> this is a typo, but could be wrong.
+>>>>>>
+>>>>>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>>>>
+>>>>>> ---
+>>>>>> arch/x86/kvm/i8254.h | 2 +-
+>>>>>> 1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/x86/kvm/i8254.h b/arch/x86/kvm/i8254.h
+>>>>>> index 46d08ca..c2fa48b 100644
+>>>>>> --- a/arch/x86/kvm/i8254.h
+>>>>>> +++ b/arch/x86/kvm/i8254.h
+>>>>>> @@ -33,7 +33,7 @@ struct kvm_kpit_state {
+>>>>>> };
+>>>>>>
+>>>>>> struct kvm_pit {
+>>>>>> - unsigned long base_addresss;
+>>>>>> + unsigned long base_address;
+>>>>>> struct kvm_io_device dev;
+>>>>>> struct kvm_io_device speaker_dev;
+>>>>>> struct kvm *kvm;
+>>>>>
+>>>>> Why not remove the variable completely?
+>>>>>
+>>>>
+>>>> didnt even think to completely remove the variable(figured it was used
+>>>> somewhere).I will look at that and resend with removal of the variable
+>>>> for you..
+>>>
+>>> Well if it was used, you ought to have changed all of the users, no?
+>>>
+>>
+>> at the moment I see:
+>> (keep in mind my reading skills only go so far!)
+>>
+>> grep -Re base_address kvm/* -n
+>> kvm/ioapic.c:276: return ((addr >= ioapic->base_address &&
+>> kvm/ioapic.c:277: (addr < ioapic->base_address + IOAPIC_MEM_LENGTH)));
+>> kvm/ioapic.c:371: ioapic->base_address = IOAPIC_DEFAULT_BASE_ADDRESS;
+>> kvm/ioapic.h:38: u64 base_address;
+>>
+>> so changing base_addresss; to base_address; gets kvm_ioapic_reset to
+>> function correctly as well as ioapic_in_range?
+>> (but could be wrong)
+>>
+>
+> Can you explain how kvm_ioapic_reset() would be affected by the change?
+>
+> Really, you need to understand what you're doing before sending patches.
+>
 
-My thought was that the memory pool's wouldn't be affected. Instead
-of all of the calls to alloc_page/__free_page (and dma_alloc_coherent/
-dma_free_coherent) would go through this API calls.
+well looking at the code:
+virt/kvm/ioapic.c @@276
 
-What I thought off are three phases:
+static inline int ioapic_in_range(struct kvm_ioapic *ioapic, gpa_t addr)
+{
+	return ((addr >= ioapic->base_address &&
+		 (addr < ioapic->base_address + IOAPIC_MEM_LENGTH)));
+}
 
- 1). Get in the patch that passed in 'struct dev' to the dma_alloc_coherent
-  for 2.6.39 so that PowerPC folks can use the it with radeon cards. My
-  understanding is that the work you plan on to isn't going in 2.6.39
-  but rather in 2.6.40 - and if get my stuff ready (the other phases)
-  we can work out the kinks together. This way also the 'struct dev'
-  is passed in the TTM layer.
+I see: base_address in there but looking more at the code its for 
+something completely different..
 
- 2). Encapsulate the 'struct page *' and 'dma_addr_t *dma_address' from
-   'struct ttm_tt' in its own structure ('struct ttm_tt_page'?) along
-    with the a struct list_head (this is b/c most of the code in that
-    layer uses the 'page->lru' to key off, but if we are using a tuple
-    we could get un-sync with which dma_addr_t the page is associated with).
-
-     During startup we would allocate this 'struct ttm_tt_page' the
-     same way we create 'struct page **' and 'dma_addr_t *dma_address'
-    (meaning in ttm_tt_alloc_page_directory utilize drm_calloc_large)
-
- 3). Provide an 'struct ttm_page_alloc_ops' that has two implementors.
-   The struct would look like this:
-
-    struct ttm_page_alloc_ops {
-	bool (*probe) (struct dev *dev);
-        struct ttm_tt_page (*alloc) (struct dev *dev, gfp_t gfp_flags);
-	void (*free) (struct ttm_tt_page *page);
-    }
-   The ttm_page_alloc.c would have these defined:
-
-struct ttm_page_alloc_ops *alloc_backend = &ttm_page_alloc_generic;
-static struct ttm_page_alloc_ops *alloc_backends[] = {
-	&ttm_page_alloc_dma,
-	&ttm_page_alloc_generic,
-	NULL,
-};
-
-
-   And the ttm_page_alloc_init function would iterate over it
-	 for (i = 0; alloc_backends[i]; ++i) {
-		if (alloc_backends[i]->probe(dev)) {
-			alloc_backend = alloc_backends[i];
-			break;
-		}
-	}
-
-  
-   3.1). Implement the ttm_page_alloc_generic calls, which would:
-
-	probe() would return 1, alloc() would return a struct ttm_tt_page
-        with the 'page' pointing to what 'alloc_page()' returned. And 'dma_address'
-        would contain DMA_ADDRESS_BAD. free() would just call __free_page.
-
-   3.2). The ttm_page_alloc_dma would be more complex.
-
-	probe() would squirell the 'struct dev' away. And if
-	it detected it is running under Xen (if (xen_domain_pv())) return true.
-
-	alloc_page() would pretty much do what ttm_put_pages() does right now
-	and save on its own list the 'struct page *' address and as well
-	with what 'struct dev' it is associated.
-
-	The free() would use the list to figure out which 'struct dev' to use
-	for the passed in 'struct ttm_page_tt' and use all of that data
-	to call 'dma_free_coherent' with the right arguments.
-	
-   4). All of the calls in for alloc_page/__free_page would be
-       swapped with alloc_backend->alloc, or alloc_backend->free.
-
-   5). Test, test, test..
- 
-Ok, that is actually five phases. Please poke at it and see if there is
-some other case I had forgotten.
- 				      
-> 
-> 2) When a page changes caching policy, I guess that needs to be
-> propagated to any physical hypervisor mappings of that page. We
-
-Right, that is OK. the set_pages_wb and its friends end up modifying
-the PTE's at some point. And right now, if you compile the kernel with
-CONFIG_PVOPS (which you need to have it working under a Xen hypervisor
-as a PV guest), the modifications to the PTE calls end up calling the
-right hypervisors PTE modification code. In Xen it would be xen_make_pte
-- which sets the right attributes.
- 
-> don't allow for different maps with different caching policies in
-> the general case.
-> 
-> 3) TTM needs to be able to query the bo whether its pages can be
-> a) moved between devices (I guess this is the case for coherent
-> pages with a phony device).
-
-The device wouldn't be phony anymore. It would be the real physical
-device. So whatever code does it ought to work.
-
-> b) inserted into the swap cache (I guess this is in general not the
-> case for coherent pages).
-
-It might still be the case. Under what conditions is this triggered?
-How can I test this easily?
-> 
-> 4) We'll probably need to move ttm page alloc and put and the query
-> in 3) to the ttm backend. The backend can then hide things like DMA
-> address and device-specific memory to the rest of TTM as long as the
-> query in 3) is exposed, so the rest of TTM doesn't need to care. The
-> backend can then plug in whatever memory allocation utility function
-> it wants.
-
-<nods> I think the draft I mentioned covers that.
-> 
-> 5) For the future we should probably make TTM support non-coherent
-> memory if needed, with appropriate flushes and sync for device /
-> cpu. However, that's something we can look at later
-
-OK. I am up for doing that when the time will come for it.
+Justin P. Mattock
