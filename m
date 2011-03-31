@@ -1,33 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933808Ab1CaBhy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 21:37:54 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57794 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932577Ab1CaBhx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 21:37:53 -0400
-Date: Thu, 31 Mar 2011 03:37:50 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: Zdenek Kabelac <zdenek.kabelac@gmail.com>, paulmck@linux.vnet.ibm.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mce: fix RCU lockdep from mce_log()
-Message-ID: <20110331013750.GJ21838@one.firstfloor.org>
-References: <1288993499.2065.4.camel@cowboy> <20101106185350.GA23824@basil.fritz.box> <20101107133950.GV15561@linux.vnet.ibm.com> <1289215819.2318.3.camel@cowboy> <20101108131708.GC2580@linux.vnet.ibm.com> <AANLkTikkQ6TdNzkBb6cusFTek7_y=bM1N=+X5zmp3eYY@mail.gmail.com> <1301534041.2140.3.camel@offworld>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301534041.2140.3.camel@offworld>
-User-Agent: Mutt/1.4.2.2i
+	id S933824Ab1CaBiD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 21:38:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60872 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933810Ab1CaBh7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 21:37:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTik-BFTzyPLuYVdhCJPocc0wPY0rKvO7BQS4Fg1S@mail.gmail.com>
+References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+ <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de>
+ <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+ <20110331001502.GB6680@n2100.arm.linux.org.uk> <AANLkTinE7EDbV8hrYZWBxgvwOxdPMLoS0Y57PSm04rvM@mail.gmail.com>
+ <AANLkTik-BFTzyPLuYVdhCJPocc0wPY0rKvO7BQS4Fg1S@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 30 Mar 2011 18:37:09 -0700
+Message-ID: <AANLkTikd_JRxmB_OWZqq178=K3bnxhdDqcNbgFNRtTyU@mail.gmail.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+To: Bill Gatliff <bgat@billgatliff.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'm still quite interested in getting this fixed, I run into it several
-> times a day.
+On Wed, Mar 30, 2011 at 6:15 PM, Bill Gatliff <bgat@billgatliff.com> wrote:
+>
+> I'm not sure this metric is completely fair to ARM.  If you want to
+> level the field, I think you have to divide each result by the number
+> of SoC's
 
-Paul needs to send his fix to the x86 maintainers. They were not cc'ed
-so never saw this.
+But that's the problem with ARM. Hardware companies that do one-off
+stuff, with no sense of compatibility.
 
--Andi
+And calling it an "opportunity" is just stupid.
+
+There's nothing good about causing extra work just because ARM hasn't
+had the sense to standardize on one (or a couple) of interrupt
+controllers etc.
+
+                   Linus
