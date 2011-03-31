@@ -1,145 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758054Ab1CaOwI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:52:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:39115 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758041Ab1CaOwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:52:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,275,1299484800"; 
-   d="scan'208";a="411724168"
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-In-Reply-To: <1301582056.2271.15.camel@localhost>
-References: <1301391136.14111.98.camel@minggr.sh.intel.com>
-	 <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost>
-	 <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop>
-	 <1301418533.2250.419.camel@laptop>
-	 <20110329174556.GC24129@ghostprotocols.net>  <4D92818A.8020405@hitachi.com>
-	 <1301561155.14111.288.camel@minggr.sh.intel.com>
-	 <1301580117.4859.286.camel@twins>  <1301582056.2271.15.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 31 Mar 2011 22:51:55 +0800
-Message-Id: <1301583115.2271.27.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1758085Ab1CaOwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:52:55 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:57377 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758015Ab1CaOwv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 10:52:51 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+From: Jonathan Cameron <jic23@cam.ac.uk>
+To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, tglx@linutronix.de, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [RFC PATCH 00/21] IIO: Channel registration rework, buffer chardev combining and rewrite of triggers as 'virtual' irq_chips.
+Date: Thu, 31 Mar 2011 15:53:54 +0100
+Message-Id: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-31 at 22:34 +0800, Lin Ming wrote:
-> On Thu, 2011-03-31 at 22:01 +0800, Peter Zijlstra wrote:
-> > On Thu, 2011-03-31 at 16:45 +0800, Lin Ming wrote:
-> > > I am considering if it is possible to do "instruction unwind" to get a
-> > > map from (temporarily used) register to a specific member of a data
-> > > structure pointed by a pointer.
-> > > 
-> > > 4004a0:         movq    -8(%rbp), %rax    /* load foo arg from stack
-> > > */
-> > > 4004a4:         movq    24(%rax), %rax    /* load foo->bar */
-> > > 4004a8:         movq    -16(%rbp), %rdx   /* load tmp arg from stack
-> > > */
-> > > 4004ac:         movl    32(%rdx), %edx    /* load tmp->blah */
-> > > 4004af:         movl    %edx, 20(%rax)    /* store bar->fubar */ 
-> > > 
-> > > foo: -8(%rbp)
-> > > tmp: -16(%rbp)
-> > > 
-> > > Assume we are now at ip 4004af, from the instruction decoder, we know
-> > > it's a store operation, and we want to find out what %rax is.
-> > > 
-> > > 1. unwind to 4004ac
-> > >    Ignore this, because it does not touch %rax
-> > > 
-> > > 2. unwind to 4004a8
-> > >    Ignore this, because it does not touch %rax
-> > > 
-> > > 3. unwind to 4004a4
-> > >    20(%rax) => 20(24(%rax)), continue to unwind because we still
-> > >    have no idea what %rax is
-> > > 
-> > > 4. unwind to 4004a0
-> > >    20(24(%rax)) => 20(24(-8(%rbp))), stop unwind, because we now know
-> > >    -8(%rbp) is foo.
-> > > 
-> > > So the original 20(%rax) is replace as 20(24(-8(%rbp))), and it means
-> > > foo->bar->fubar
-> > > 
-> > > Does this make sense? 
-> > 
-> > Yes and no, the problem is that you cannot unwind an x86 instruction
-> > stream. Therefore its easier to start at the beginning of a function
-> > where DWARF should be able to tell you everything you need and then do a
-> > single fwd scan to propagate the information until you reach the point
-> > of interest.
-> 
-> I'm afraid that fwd scan may not work, because of branch instruction.
-> 
-> void foo(struct foo *foo, struct tmp *tmp, int flag)
-> { 
->         if (flag)
->                 foo->bar->fubar = tmp->blah;   
->         else    
->                 tmp->blah = foo->bar->fubar;
-> }
-> 
-> ===>
-> 
-> void foo(struct foo *foo, struct tmp *tmp, int flag)
-> {
->   400494:       55                      push   %rbp
->   400495:       48 89 e5                mov    %rsp,%rbp
->   400498:       48 89 7d f8             mov    %rdi,-0x8(%rbp)
->   40049c:       48 89 75 f0             mov    %rsi,-0x10(%rbp)
->   4004a0:       89 55 ec                mov    %edx,-0x14(%rbp)
->         if (flag)
->   4004a3:       83 7d ec 00             cmpl   $0x0,-0x14(%rbp)
->   4004a7:       74 14                   je     4004bd <foo+0x29>
->                 foo->bar->fubar = tmp->blah;
->   4004a9:       48 8b 45 f8             mov    -0x8(%rbp),%rax
->   4004ad:       48 8b 40 18             mov    0x18(%rax),%rax
->   4004b1:       48 8b 55 f0             mov    -0x10(%rbp),%rdx
->   4004b5:       8b 52 20                mov    0x20(%rdx),%edx
->   4004b8:       89 50 14                mov    %edx,0x14(%rax)
->   4004bb:       eb 12                   jmp    4004cf <foo+0x3b>
->         else
->                 tmp->blah = foo->bar->fubar;
->   4004bd:       48 8b 45 f8             mov    -0x8(%rbp),%rax
->   4004c1:       48 8b 40 18             mov    0x18(%rax),%rax
->   4004c5:       8b 50 14                mov    0x14(%rax),%edx
->   4004c8:       48 8b 45 f0             mov    -0x10(%rbp),%rax
->   4004cc:       89 50 20                mov    %edx,0x20(%rax)
-> }
->   4004cf:       c9                      leaveq
->   4004d0:       c3                      retq
-> 
-> Assume we are at ip 4004c5, the fwd scan from the beginning of
-> function(400494) to 4004c5 will not get what we want about %rax.
+Dear All,
 
-In contrast, we can scan from 4004c5 toward to the beginning of the
-function to get the info about 0x14(%rax)
+I'm afraid what in many ways makes sense as three separate
+series have gotten rather intertwined.  I can probably unpick
+them but it will involve a lot of intermediate code in
+lis3l02dq (which is our fiddly example for this set) that I'd
+rather avoid.  Hence lets have a guide to what various people
+might be interested in:
 
-We already know foo is -0x8(%rbp)
+1) Channel registration rework (this has previous been in linux-iio
+   but really comes into it's own after we remove various special
+   cases later in this code).
 
-Scan 4004c1: 0x14(%rax) -> 0x14(0x18(%rax))
-Scan 4004bd: 0x14(0x18(%rax)) -> 0x14(0x18(-0x8(%rbp))), stop scan
-because we already know -0x8(%rbp) is foo.
+   Patches 1, 2, 3, 21
+   (8) - cleanups Arnd Bergmann pointed out in passing.
+   
+2) Flattening together of (some) of the chardevs (buffer related ones).
+   As Arnd pointed out, there is really a use case for having multiple
+   watershed type events from ring buffers.  Much better to have a
+   single one (be that at a controllable point).  Firstly this removes
+   the need for the event escalation code.  Second, this single 'event'
+   can then be indicated to user space purely using polling on the
+   access chrdev.  This approach does need an additional attribute to
+   tell user space what the poll succeeding indicates (tbd).
 
-And with other dwarf info, we finally know 0x14(%rax) at ip 4004c5 means
-foo->bar->fubar.
+   I haven't for now merged the ring handling with the more general
+   event handling as Arnd suggested.  This is for two reasons
+   1) It's much easier to debug this done in a couple of steps
+   2) The approach Arnd suggested may work well, but it is rather
+   different to how other bits of the kernel pass event type data
+   to user space.  It's an interesting idea, but I'd rather any
+   discussion of that approach was separate from the obviously
+   big gains seen here.
 
-Lin Ming
+   Patches 4, 5, 6, 7, 17
 
-> 
-> Lin Ming
+3) Reworking the triggering infrastructure to use 'virtual' irq_chips
+   This approach was suggested by Thomas Gleixner.
 
+   Before we had explicit trigger consumer lists.  This made for a very
+   clunky implementation when we considered moving things over to
+   threaded interrupts.  Thomas pointed out we were reinventing the
+   wheel and suggested more or less what we have here (I hope ;)
+
+   Patches 9 and 10 are minor rearrangements of code in the one
+   driver I know of where the physical interrupt line for events
+   is the same as that for data ready signals (though not at the
+   same time).
+
+   In a rare situation we have complete control of these virtual
+   interrupts within the subsystem.  As such we want to be able to
+   continue to build the subsystem as a module.  This requires a
+   couple of additional exports in the generic irq core code and
+   also arm (for my test board anyway).
+   Patches 13 and 14 make these changes.  I hope they won't prove
+   to controversial.
+
+   Patch 15 adds a board info built in element to the IIO subsystem
+   so we have a means of platform data telling us what interrupt
+   numbers are available for us to play with.  Does anyone have
+   a better way of doing this?  Patch 16 is an example of what
+   needs to go in board files.
+
+   18, 19 move lis3l02dq over to the threaded interrupts.
+
+   20 rips out the old approach.  Until this patch current drivers
+   using the old system should still work. I make no guarantees
+   about combining consumers of both types though!
+
+
+Note that this series sits on top of the cleanup series:
+[PATCH 0/8] staging:iio:mixed bag of fixes and cleanups
+http://marc.info/?l=linux-iio&m=130039556909192&w=2
+on top of staging-next (which right now might mean mainline is
+also fine).
+
+There are clearly corners to be cleaned up and exact interfaces
+elements to be pinned down, but I'd like to get some opinions
+on what we have here.
+
+All comments welcomed!
+
+Note, wrt to the recent discussion on a strategy for moving IIO
+out of staging, my intent is to pin down these big changes before
+we attempt to move these elements out.  Note that the initial
+steps of that move may occur in parallel with these changes.
+
+Some of these patches may only be applied during that move as
+that is a sensible point to update and test every driver.
+
+Thanks to Arnd and Thomas for their contributions to this.
+
+Jonathan      
+
+Jonathan Cameron (21):
+  staging:iio: allow channels to be set up using a table of
+    iio_channel_spec structures.
+  staging:iio:lis3l02dq - experimental move to new channel_spec
+    approach.
+  staging:iio:max1363 - experimental move to channel_spec registration.
+  staging:iio: remove ability to escalate events.
+  staging:iio: Add polling of events on the ring access chrdev.
+  staging:iio: remove legacy event chrdev for the buffers
+  staging:iio: Buffer device flattening.
+  staging:iio:lis3l02dq: General cleanup
+  staging:iio: Push interrupt setup down into the drivers for event
+    lines.
+  staging:iio: lis3l02dq - separate entirely interrupt handling for
+    thesholds from that for the datardy signal.
+  staging:iio: Remove legacy event handling.
+  staging:iio:lis3l02dq make threshold interrupt threaded.
+  arm: irq: export set flags
+  irq: export handle_simple_irq and irq_to_desc to allow for virtual
+    irqs in IIO
+  staging:iio: Add infrastructure for irq_chip based triggers
+  stargate2 - add an IIO interrupt pool
+  staging:iio:Documentation generic_buffer.c update to new abi for
+    buffers.
+  staging:iio:ring_sw add function needed for threaded irq.
+  staging:iio:lis3l02dq move to threaded trigger handling.
+  staging:iio:trigger remove legacy pollfunc elements.
+  staging:iio: rip out scan_el attributes.  Now handled as
+    iio_dev_attrs like everything else.
+
+ arch/arm/kernel/irq.c                              |    1 +
+ arch/arm/mach-pxa/stargate2.c                      |    6 +-
+ drivers/staging/Makefile                           |    2 +-
+ drivers/staging/iio/Documentation/generic_buffer.c |   53 +-
+ drivers/staging/iio/Kconfig                        |   12 +
+ drivers/staging/iio/Makefile                       |    2 +
+ drivers/staging/iio/accel/lis3l02dq.h              |   25 +-
+ drivers/staging/iio/accel/lis3l02dq_core.c         |  700 +++++-------
+ drivers/staging/iio/accel/lis3l02dq_ring.c         |  421 +++----
+ drivers/staging/iio/adc/max1363.h                  |    8 +-
+ drivers/staging/iio/adc/max1363_core.c             | 1277 ++++++++------------
+ drivers/staging/iio/adc/max1363_ring.c             |    1 -
+ drivers/staging/iio/chrdev.h                       |   33 +-
+ drivers/staging/iio/iio-board-info.h               |   24 +
+ drivers/staging/iio/iio-core.h                     |   13 +
+ drivers/staging/iio/iio.h                          |  250 +++--
+ drivers/staging/iio/industrialio-board-info.c      |   25 +
+ drivers/staging/iio/industrialio-core.c            |  724 ++++++++---
+ drivers/staging/iio/industrialio-ring.c            |  315 +++---
+ drivers/staging/iio/industrialio-trigger.c         |  150 ++--
+ drivers/staging/iio/ring_generic.h                 |   79 +-
+ drivers/staging/iio/ring_sw.c                      |   42 +-
+ drivers/staging/iio/ring_sw.h                      |    1 +
+ drivers/staging/iio/sysfs.h                        |  152 +--
+ drivers/staging/iio/trigger.h                      |   68 +-
+ kernel/irq/chip.c                                  |    1 +
+ kernel/irq/irqdesc.c                               |    1 +
+ 27 files changed, 2116 insertions(+), 2270 deletions(-)
+ create mode 100644 drivers/staging/iio/iio-board-info.h
+ create mode 100644 drivers/staging/iio/iio-core.h
+ create mode 100644 drivers/staging/iio/industrialio-board-info.c
+
+-- 
+1.7.3.4
 
