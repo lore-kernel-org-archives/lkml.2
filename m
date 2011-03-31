@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab1CaL5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 07:57:32 -0400
-Received: from smtprelay06.ispgateway.de ([80.67.31.96]:40208 "EHLO
-	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab1CaL5b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 07:57:31 -0400
-Message-ID: <4D946C73.4090402@ladisch.de>
-Date: Thu, 31 Mar 2011 13:58:43 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1757305Ab1CaMEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 08:04:38 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57487 "EHLO linutronix.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552Ab1CaMEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 08:04:37 -0400
+Date: Thu, 31 Mar 2011 14:04:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Ingo Molnar <mingo@elte.hu>, Nicolas Pitre <nico@fluxnic.net>,
+        david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+In-Reply-To: <20110331083044.GB14323@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1103311359320.22418@localhost6.localdomain6>
+References: <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home>
+ <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu>
+ <20110331083044.GB14323@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Christopher K." <c.krooss@googlemail.com>
-CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: Linux 2.6.38 freeze because of sound/core/pcm_lib.c commit 59ff878ffb26bc0be812ca8295799164f413ae88
-References: <AANLkTin17=rCU4eDGYtnVFZ1ffbUn+var4Q_AQUuGKaw@mail.gmail.com>
-In-Reply-To: <AANLkTin17=rCU4eDGYtnVFZ1ffbUn+var4Q_AQUuGKaw@mail.gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christopher K. wrote:
-> Kernel 2.6.38 has been freezing ever since rc1 on my asus p7p55d.
-> After booting up, the kernel seems to use a lot of cpu-time and after
-> 20-30 seconds
-> the system comes to a complete halt.
-> 
-> I just finished bisecting 2.6.37 - 2.6.38-rc1 and found this commit to
-> be responsible:
-> 
-> 59ff878ffb26bc0be812ca8295799164f413ae88
+On Thu, 31 Mar 2011, Russell King - ARM Linux wrote:
 
-Please try this patch:
+> On Thu, Mar 31, 2011 at 10:06:34AM +0200, Ingo Molnar wrote:
+> > Having strong, effective platform abstractions inside the kernel really helps 
+> > even if the hardware space itself is inevitably fragmented: both powerpc and 
+> > x86 has shown that. Until you realize and appreciate that you really have not 
+> > understood the problem i think.
+> 
+> No, I think it is the other way around.  Folk like me and Nicolas over
+> the last ten years have put considerable amounts of effort into trying
+> to keep the ARM support code as clean and maintainable as possible.
+> 
+> That is true of the common ARM stuff, but there's no way we can do this
+> for all SoC support - there aren't the hours in the day to provide such
 
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -425,6 +425,8 @@ static int snd_pcm_hw_params(struct snd_
- 	runtime->no_period_wakeup =
- 			(params->info & SNDRV_PCM_INFO_NO_PERIOD_WAKEUP) &&
- 			(params->flags & SNDRV_PCM_HW_PARAMS_NO_PERIOD_WAKEUP);
-+	runtime->hw_ptr_buffer_jiffies =
-+			max(1uL, (runtime->buffer_size * HZ) / runtime->rate);
- 
- 	bits = snd_pcm_format_physical_width(runtime->format);
- 	runtime->sample_bits = bits;
-@@ -866,8 +868,6 @@ static void snd_pcm_post_start(struct sn
- 	struct snd_pcm_runtime *runtime = substream->runtime;
- 	snd_pcm_trigger_tstamp(substream);
- 	runtime->hw_ptr_jiffies = jiffies;
--	runtime->hw_ptr_buffer_jiffies = (runtime->buffer_size * HZ) / 
--							    runtime->rate;
- 	runtime->status->state = state;
- 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
- 	    runtime->silence_size > 0)
+That's what I said. You and Nicholas wont scale.
+
+> a wide oversight.  That's why we have SoC maintainers, and the SoC
+> maintainers have the responsibility to sort out their own sub-trees.
+
+But the current SoC maintainer model does not work either. The SoC
+maintainers care about their sandbox and have exactly zero incentive
+to look at the overall picture, e.g reuse of code for the same IP
+blocks, better abstraction mechanisms etc. 
+
+Therefor you need a team of experienced kernel developers which are
+NOT associated with a particular vendor who are able to tame that SoC
+crowd and work closely with you and Nicholas to keep stuff in sync.
+
+Thanks,
+
+	tglx
