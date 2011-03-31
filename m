@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab1CaMEi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 08:04:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57487 "EHLO linutronix.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552Ab1CaMEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 08:04:37 -0400
-Date: Thu, 31 Mar 2011 14:04:16 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Ingo Molnar <mingo@elte.hu>, Nicolas Pitre <nico@fluxnic.net>,
-        david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-In-Reply-To: <20110331083044.GB14323@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.00.1103311359320.22418@localhost6.localdomain6>
-References: <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home>
- <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu>
- <20110331083044.GB14323@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757386Ab1CaMFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 08:05:44 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:42275 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531Ab1CaMFn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 08:05:43 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: sedat.dilek@gmail.com
+Cc: Florian Mickler <florian@mickler.org>, Paul Bolle <pebolle@tiscali.nl>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        kurup_avinash@yahoo.com, maciej.rutecki@gmail.com, mingo@elte.hu,
+        rjw@sisk.pl, zersaa@gmail.com, stable@kernel.org
+Subject: Re: [PATCH][POKE] Skip looking for ioapic overrides when ioapics are not present
+References: <1301558489-4198-1-git-send-email-florian@mickler.org>
+	<1301561386.1904.15.camel@t41.thuisdomein>
+	<20110331125305.1e8c70ba@schatten.dmk.lab>
+	<AANLkTikmWDu7FZ2A7_CWGCuAeKOeK4x+u8vctCro0mSN@mail.gmail.com>
+Date: Thu, 31 Mar 2011 05:05:30 -0700
+In-Reply-To: <AANLkTikmWDu7FZ2A7_CWGCuAeKOeK4x+u8vctCro0mSN@mail.gmail.com>
+	(Sedat Dilek's message of "Thu, 31 Mar 2011 13:01:18 +0200")
+Message-ID: <m1ipuzfqb9.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19WdcOYRk6V5SiasYUdaG4ZW9+RbYwLSM4=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011, Russell King - ARM Linux wrote:
+Sedat Dilek <sedat.dilek@googlemail.com> writes:
 
-> On Thu, Mar 31, 2011 at 10:06:34AM +0200, Ingo Molnar wrote:
-> > Having strong, effective platform abstractions inside the kernel really helps 
-> > even if the hardware space itself is inevitably fragmented: both powerpc and 
-> > x86 has shown that. Until you realize and appreciate that you really have not 
-> > understood the problem i think.
-> 
-> No, I think it is the other way around.  Folk like me and Nicolas over
-> the last ten years have put considerable amounts of effort into trying
-> to keep the ARM support code as clean and maintainable as possible.
-> 
-> That is true of the common ARM stuff, but there's no way we can do this
-> for all SoC support - there aren't the hours in the day to provide such
+> On Thu, Mar 31, 2011 at 12:53 PM, Florian Mickler <florian@mickler.org> wrote:
+>> On Thu, 31 Mar 2011 10:48:43 +0200
+>> Paul Bolle <pebolle@tiscali.nl> wrote:
+>>
+>>> On Thu, 2011-03-31 at 10:01 +0200, Florian Mickler wrote:
+>>> > diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+>>> > index 68df09b..3940103 100644
+>>> > --- a/arch/x86/kernel/apic/io_apic.c
+>>> > +++ b/arch/x86/kernel/apic/io_apic.c
+>>> > @@ -3789,6 +3789,9 @@ int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
+>>> >  {
+>>> >     int ioapic, pin, idx;
+>>> >
+>>> > +   if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+>>> > +           return -1;
+>>> > +
+>>> >     if (skip_ioapic_setup)
+>>> >             return -1;
+>>> >
+>>>
+>>> Seems to have the same goal as commit
+>>> 678301ecadec24ff77ab310eebf8a32ccddb1850 ("x86, ioapic: Don't warn about
+>>> non-existing IOAPICs if we have none"), which got merged in the v2.6.38
+>>> cycle (authored by me, signed off by Ingo Molnar). Maybe Eric's patch is
+>>> more correct. I can't say as I was happy with the effect of my patch
+>>> (ie, make an uninteresting error disappear) and didn't investigate any
+>>> further. I have also no desire to dive into this matter again.
 
-That's what I said. You and Nicholas wont scale.
+Yes. My patch is more correct.  We really do want the warning if we have
+0 ioapics and we expect to be using ioapics.  It doesn't make sense to
+suppress the warning unless we aren't in ioapic mode.
 
-> a wide oversight.  That's why we have SoC maintainers, and the SoC
-> maintainers have the responsibility to sort out their own sub-trees.
+I don't have a clue why my patch got lost, but can we please get it
+applied?
 
-But the current SoC maintainer model does not work either. The SoC
-maintainers care about their sandbox and have exactly zero incentive
-to look at the overall picture, e.g reuse of code for the same IP
-blocks, better abstraction mechanisms etc. 
+>> Thanks for letting me know. Sedat, did you actually test with 2.6.38?
+>>
+>> Regards,
+>> Flo
 
-Therefor you need a team of experienced kernel developers which are
-NOT associated with a particular vendor who are able to tame that SoC
-crowd and work closely with you and Nicholas to keep stuff in sync.
+> I have and had this patch in my own patch-series *before* Debian
+> included it (IIRC right after Eric committed it to LKML).
+> To answer your question: Yes.
+> I have the patch also in my current linux-next kernels
+> (next-20110331).
 
-Thanks,
-
-	tglx
+Eric
