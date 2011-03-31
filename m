@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab1CaMn6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 08:43:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43832 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab1CaMn5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 08:43:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IJIIpKL8YksVi60JoTCVVLi3y4jf6SBuY/O9RfL++8u/YbsfmsPnj1FINAUVPjWB+1
-         BrlthSgYXkMs5mhj10H6DjW7NALwn1S3hlJpphrfnlkhydt4/woReydUAxkKyQ1b+ZE4
-         g6wCJedO48IE2h72DxqkCbBEIdSPNoPXhhNBk=
-Date: Thu, 31 Mar 2011 14:43:52 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Tvrtko Ursulin <tvrtko@ursulin.net>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: 2.6.38 hangs on boot until key is pressed
-Message-ID: <20110331124352.GA14693@alberich.amd.com>
-References: <1301253485.2500.2.camel@deuteros>
- <20110330155350.GA31845@alberich.amd.com>
- <1301509097.2538.4.camel@deuteros>
+	id S1757249Ab1CaMoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 08:44:12 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38391 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757082Ab1CaMoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 08:44:09 -0400
+Date: Thu, 31 Mar 2011 14:43:27 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: sedat.dilek@gmail.com, Florian Mickler <florian@mickler.org>,
+        Paul Bolle <pebolle@tiscali.nl>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, kurup_avinash@yahoo.com,
+        maciej.rutecki@gmail.com, rjw@sisk.pl, zersaa@gmail.com,
+        stable@kernel.org
+Subject: Re: [PATCH][POKE] Skip looking for ioapic overrides when ioapics are
+ not present
+Message-ID: <20110331124327.GA20112@elte.hu>
+References: <1301558489-4198-1-git-send-email-florian@mickler.org>
+ <1301561386.1904.15.camel@t41.thuisdomein>
+ <20110331125305.1e8c70ba@schatten.dmk.lab>
+ <AANLkTikmWDu7FZ2A7_CWGCuAeKOeK4x+u8vctCro0mSN@mail.gmail.com>
+ <m1ipuzfqb9.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301509097.2538.4.camel@deuteros>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <m1ipuzfqb9.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 07:18:17PM +0100, Tvrtko Ursulin wrote:
-> On Wed, 2011-03-30 at 17:53 +0200, Andreas Herrmann wrote:
-> > On Sun, Mar 27, 2011 at 08:18:05PM +0100, Tvrtko Ursulin wrote:
-> > > 
-> > > Hi all,
-> > > 
-> > > It always happens at the same spot. 2.6.37 is fine with almost
-> > > identical .config. Dmesg and config attached.
-> > 
-> > 
-> > Hi,
-> > 
-> > can you please send dmesg when 2.6.37 is booted.
-> > Also output of "lspci -nnxxxx" would be of interest.
 
-Sorry, forgot to say that lspci -nnxxxx should also be run as root.
-(To get complete PCI config space.)
+* Eric W. Biederman <ebiederm@xmission.com> wrote:
 
-> > dmidecode (as root) would also help.
-> 
-> Attached.
+> I don't have a clue why my patch got lost, [...]
 
-Thanks.
+It was not lost, it broke the build. You were notified but never followed up 
+with a working patch:
 
-> > Does it help to disable C1e in your BIOS (if there is such an option)?
-> > If there is no such option please try to boot 2.6.38.1 with idle=mwait
-> > on the command line.
-> 
-> Both tests (on their own) booted without hanging.
+  https://lkml.org/lkml/2010/10/2/91
 
-Ok.
-
-This reminds me on some Gigabyte mainboards (for which we couldn't
-root cause the problem). The workaround for those boards was to boot
-with acpi_skip_timer_override.
-
-The Gigabyte mainboards had some odd lapic_id settings and yours too:
-
-> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x01] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x02] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x03] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x84] disabled)   <====
-> [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x85] disabled)   <====
-> [    0.000000] ACPI: IOAPIC (id[0x04] address[0xfec00000] gsi_base[0])
-> [    0.000000] IOAPIC[0]: apic_id 4, version 33, address 0xfec00000, GSI 0-23
-
-This should rather look like
-
-[    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
-[    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x01] enabled)
-[    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x02] enabled)
-[    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x03] enabled)
-[    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x04] enabled)
-[    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x05] enabled)
-[    0.000000] ACPI: IOAPIC (id[0x06] address[0xfec00000] gsi_base[0])
-[    0.000000] IOAPIC[0]: apic_id 6, version 33, address 0xfec00000, GSI 0-23
-
-(That's from my system -- also ASUSTek, but different model.)
-
-So can you please provide "lspci -xxxx" (as root) and try another test
--- boot .38 with acpi_skip_timer_override kernel parameter.
-
-And please add also "apic=debug show_lapic=all" and provide dmesg
-of that test run.
-
+and a different patch was applied to get rid of the warning messages. We can 
+apply your patch (and that patch can undo the other fix), but it has to build, 
+obviously.
 
 Thanks,
-Andreas
+
+	Ingo
