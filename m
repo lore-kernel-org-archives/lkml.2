@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758531Ab1CaQNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:13:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51976 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757757Ab1CaQNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:13:44 -0400
-Date: Thu, 31 Mar 2011 12:13:26 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: excessive kworker activity when idle. (was Re: vma corruption in
- today's -git)
-Message-ID: <20110331161325.GA2327@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Tejun Heo <tj@kernel.org>
-References: <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
- <20110331030917.GB26057@redhat.com>
- <AANLkTikYAAYcYxTdKAxQjDxVQ7qrZGEfXg+gpfwcj1=-@mail.gmail.com>
- <20110331035511.GA1255@redhat.com>
- <AANLkTikP5edK=YSRx7zuNqyfwez8qEHpFumYun6GOPxu@mail.gmail.com>
- <20110331145850.GA10163@redhat.com>
- <20110331150344.GB10163@redhat.com>
- <AANLkTimAGbzYe7PNG1xhjsA12zErpRasTso711cq8UHq@mail.gmail.com>
- <20110331154941.GA32045@redhat.com>
- <AANLkTik=WBy7CRQSENiiRfi2BFtwL5iT9d3RBK4uZz1d@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik=WBy7CRQSENiiRfi2BFtwL5iT9d3RBK4uZz1d@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758629Ab1CaQOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:14:09 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:36616 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758568Ab1CaQOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 12:14:07 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=lI+DYKk20cUGzg/lTP5rW8KPmaDonoTi6Jfc8ab4XnRy7FQhlCBKwRf6g3IE+aWspH/etHShkq43eoaRwyZzVXj8SCHIXVX+N2oo2/IzrMuufBT5J7YYfd+y1+OkCnv5;
+Date: Thu, 31 Mar 2011 09:14:01 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        bp@amd64.org, tglx@linutronix.de, borislav.petkov@amd.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, amd-nb: Rename CPU PCI id define for F4
+Message-ID: <20110331091401.64f2c81c@jbarnes-desktop>
+In-Reply-To: <20110331160552.GD9827@elte.hu>
+References: <20110330183447.GA3668@aftab>
+	<tip-cb6c8520f6f6bba7b7e1a6de3360a8edfd8243b6@git.kernel.org>
+	<20110331090039.12358ee6@jbarnes-desktop>
+	<20110331160552.GD9827@elte.hu>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 08:58:14AM -0700, Linus Torvalds wrote:
- > On Thu, Mar 31, 2011 at 8:49 AM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > That's a recent change though, and I first saw this back in November.
- > 
- > So your November report said that you could see "thousands" of these a
- > second. But maybe it didn't use up all CPU until recently?
+On Thu, 31 Mar 2011 18:05:52 +0200
+Ingo Molnar <mingo@elte.hu> wrote:
 
->From memory, I noticed it back then in the same way "hey, why is the laptop getting hot". 
+> 
+> * Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> 
+> > On Thu, 31 Mar 2011 07:04:41 GMT
+> > tip-bot for Borislav Petkov <bp@amd64.org> wrote:
+> > 
+> > > Commit-ID:  cb6c8520f6f6bba7b7e1a6de3360a8edfd8243b6
+> > > Gitweb:     http://git.kernel.org/tip/cb6c8520f6f6bba7b7e1a6de3360a8edfd8243b6
+> > > Author:     Borislav Petkov <bp@amd64.org>
+> > > AuthorDate: Wed, 30 Mar 2011 20:34:47 +0200
+> > > Committer:  Ingo Molnar <mingo@elte.hu>
+> > > CommitDate: Thu, 31 Mar 2011 08:51:38 +0200
+> > > 
+> > > x86, amd-nb: Rename CPU PCI id define for F4
+> > > 
+> > > With increasing number of PCI function ids, add the PCI function
+> > > id in the define name instead of its symbolic name in the BKDG
+> > > for more clarity. This renames function 4 define.
+> > > 
+> > 
+> > I guess I don't see how a rename is urgent, but you can add my
+> > Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+> 
+> The new ID went upstream via cb293250c71f in the merge window, so i wanted to 
+> shorten the life-time of the obsoleted name - that will also reduce the chance 
+> of any conflicts.
 
- > Especially if you have a high CONFIG_HZ value, you'd still see a
- > thousand flushes a second even with the old "delay a bit". So it would
- > use a fair amount of CPU, and certainly waste a lot of power. But it
- > wouldn't pin the CPU entirely.
+Sounds good, thanks.
 
-HZ=1000 here, so yeah that makes sense. 
-
- > With that commit f23eb2b2b285, the buggy case would become basically
- > totally CPU-bound.
- > 
- > I dunno. Right now 'trinity' just ends up printing out a lot of system
- > call errors for me. I assume that's its normal behavior?
-
-yep. it's throwing semi-random junk and seeing what sticks.
-99% of the time, it ends up with an -EINVAL or something providing
-the syscalls have sufficient checks in place.  We're pretty solid there
-these days. (Though I still need to finish adding more annotations of some
-of the syscall arguments just to be sure we're passing semi-sane things
-to get deeper into the syscalls)
-
-What still seems to throw a curve-ball though is the case where calling
-a syscall generates some state. Due to the random nature of the program,
-we never have a balanced alloc/free, so lists can grow quite large etc.
-I'm wondering if something has created a livelock situation, where some queue
-has grown to the point that we're generating new work before we can
-process the backlog.
-
-The downside of using randomness of course is with bugs like this, there's
-no easy way to figure out wtf happened to get it into this state
-other than poring over huge logfiles of all the syscalls that were made.
-
-
-I'm happily ignorant of most of the inner workings of the tty layer.
-I don't see anything useful in procfs/sysfs/debugfs. Is there anything
-useful I can do with the trace tools to try and find out things like
-the length of queues ?
-
-	Dave
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
