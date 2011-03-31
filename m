@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964831Ab1CaLcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 07:32:17 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57911 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab1CaLcQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 07:32:16 -0400
-Subject: Re: [RFC PATCH 1/5] Move task's RCU code to rcupdate.h
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Dipankar Sarma <dipankar@in.ibm.com>,
-        Jan Beulich <jbeulich@novell.com>, David Howells <dhowells@redhat.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <clameter@sgi.com>, Sam Ravnborg <sam@ravnborg.org>
-In-Reply-To: <4D8FF93B.7010109@cn.fujitsu.com>
-References: <4D8FF8AD.5080607@cn.fujitsu.com>
-	 <4D8FF93B.7010109@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 31 Mar 2011 13:31:36 +0200
-Message-ID: <1301571096.4859.243.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S964898Ab1CaLc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 07:32:26 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:1498 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964839Ab1CaLcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 07:32:24 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Subject: Re: [PATCH 0/1] new module for amba axi on-chip interconnect
+Date: Thu, 31 Mar 2011 13:32:08 +0200
+To: "Greg KH" <greg@kroah.com>
+cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.arm.linux.org.uk,
+        =?utf-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
+        "Jonas Gorski" <jonas.gorski@gmail.com>, arend@broadcom.com
+MIME-Version: 1.0
+From: "Arend van Spriel" <arend@broadcom.com>
+Organization: Broadcom
+Message-ID: <op.vs7gzu193ri7v4@arend-laptop>
+User-Agent: Opera Mail/11.01 (Linux)
+X-WSS-ID: 618AB9693CK9000362-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed;
+ delsp=yes
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-28 at 10:58 +0800, Lai Jiangshan wrote:
-> +struct task_rcu_struct {
-> +#ifdef CONFIG_PREEMPT_RCU
-> +       int rcu_read_lock_nesting;
-> +       char rcu_read_unlock_special;
+On Tue, Mar 29, 2011 at 06:14:53 -0700, Greg KH wrote:
+> I thought this was going under drivers/staging/  What changed your mind?
+> What other drivers are going to use this, I thought the current broadcom
+> drivers in drivers/net/wireless were not going to need this.
 
-Is there a good reason that's a char? It'll leave a 3 byte hole in this
-location.
+Last time you asked me whether it was necessary to have this in staging.  
+For this module I (think I) followed the kernel coding style and tried to  
+cover most of the SubmitChecklist (if applicable). If I should reconsider  
+that is fine by me.
 
-> +       struct list_head rcu_node_entry;
-> +#ifdef CONFIG_TREE_PREEMPT_RCU
-> +       struct rcu_node *rcu_blocked_node;
-> +#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> +#ifdef CONFIG_RCU_BOOST
-> +       struct rt_mutex *rcu_boost_mutex;
-> +#endif /* #ifdef CONFIG_RCU_BOOST */
-> +#endif /* #ifdef CONFIG_PREEMPT_RCU */
-> +}; 
+The request for supporting amba axi scanning was raised by Jonas Gorski on  
+Mon 17 Jan 2011 "Merging SSB and HND/AI support" on linux-wireless list.  
+He was looking for this in the context of SoC router chips offering core  
+discovery by so-called DMP plugin which ARM provides for SoC's using the  
+AMBA AXI interconnect.
+
+Gr. AvS
+-- 
+"The most merciful thing in the world, I think, is the inability of the  
+human
+mind to correlate all its contents." - "The Call of Cthulhu"
+
