@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab1CaDJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 23:09:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755362Ab1CaDJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 23:09:25 -0400
-Date: Wed, 30 Mar 2011 23:09:18 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: excessive kworker activity when idle. (was Re: vma corruption in
- today's -git)
-Message-ID: <20110331030917.GB26057@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20110329040939.GA32764@redhat.com>
- <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
+	id S933742Ab1CaDJc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 23:09:32 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:28792 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932389Ab1CaDJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 23:09:29 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkIFABDuk015LK5JTmdsb2JhbAClVgsBARsFAyMliHm1WA2FXQSTBQ
+Date: Thu, 31 Mar 2011 14:09:26 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Sage Weil <sage@newdream.net>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mszeredi@suse.cz
+Subject: Re: [PATCH 4/7] vfs: push dentry_unhash on rename_dir into file
+ systems
+Message-ID: <20110331030926.GB30279@dastard>
+References: <1301522968-4382-1-git-send-email-sage@newdream.net>
+ <1301522968-4382-5-git-send-email-sage@newdream.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1301522968-4382-5-git-send-email-sage@newdream.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 09:22:25PM -0700, Linus Torvalds wrote:
- > On Mon, Mar 28, 2011 at 9:09 PM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > I ran perf top, and got this ..
- > >
- > >  BUG: unable to handle kernel paging request at fffffffffffffff3
- > 
- > Should be fixed by commit 76597cd31470.
- > 
- > Except that was already committed yesterday. When did you pull?
+On Wed, Mar 30, 2011 at 03:09:25PM -0700, Sage Weil wrote:
+> Only a few file systems need this.  Start by pushing it down into each
+> rename method so that it can be dealt with on a per-fs basis.
 
-It did fix it, I must have missed that commit.
+What is the criteria for a filesystem needing this?
 
-But rerunning the same tests on current head (6aba74f2791287ec407e0f92487a725a25908067)
-I can still reproduce the problem where kworker threads go nutso
-when the machine should be completely idle.
+> Signed-off-by: Sage Weil <sage@newdream.net>
+> ---
+>  fs/9p/vfs_inode.c       |    3 +++
+>  fs/affs/namei.c         |    3 +++
+>  fs/afs/dir.c            |    3 +++
+>  fs/bfs/dir.c            |    3 +++
+>  fs/btrfs/inode.c        |    3 +++
+>  fs/ceph/dir.c           |    3 +++
+>  fs/cifs/inode.c         |    3 +++
+>  fs/coda/dir.c           |    3 +++
+>  fs/ecryptfs/inode.c     |    3 +++
+>  fs/exofs/namei.c        |    3 +++
+>  fs/ext2/namei.c         |    3 +++
+>  fs/ext3/namei.c         |    3 +++
+>  fs/ext4/namei.c         |    3 +++
+>  fs/fat/namei_msdos.c    |    3 +++
+>  fs/fat/namei_vfat.c     |    3 +++
+>  fs/fuse/dir.c           |    4 ++++
+>  fs/gfs2/ops_inode.c     |    3 +++
+>  fs/hfs/dir.c            |    3 +++
+>  fs/hostfs/hostfs_kern.c |    3 +++
+>  fs/hpfs/namei.c         |    4 ++++
+>  fs/jffs2/dir.c          |    3 +++
+>  fs/jfs/namei.c          |    3 +++
+>  fs/libfs.c              |    3 +++
+>  fs/logfs/dir.c          |    3 +++
+>  fs/minix/namei.c        |    3 +++
+>  fs/namei.c              |    5 +----
+>  fs/ncpfs/dir.c          |    3 +++
+>  fs/nfs/dir.c            |    3 +++
+>  fs/nilfs2/namei.c       |    3 +++
+>  fs/ocfs2/namei.c        |    3 +++
+>  fs/omfs/dir.c           |    3 +++
+>  fs/reiserfs/namei.c     |    3 +++
+>  fs/sysv/namei.c         |    3 +++
+>  fs/ubifs/dir.c          |    3 +++
+>  fs/udf/namei.c          |    3 +++
+>  fs/ufs/namei.c          |    3 +++
+>  36 files changed, 108 insertions(+), 4 deletions(-)
 
-top shows two kworker threads constantly at >80% cpu.
+You didn't push it down into XFS, hence my question....
 
-I can now profile it with perf though, so I'll dig deeper.
-I need to try a build with slab debug etc turned off, just to be sure that
-isn't throwing things into a spin.
+Cheers,
 
-	Dave
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
