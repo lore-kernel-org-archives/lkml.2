@@ -1,69 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759319Ab1CaT5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 15:57:10 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:56639 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759298Ab1CaT5I (ORCPT
+	id S1759328Ab1CaUCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 16:02:18 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:62579 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759247Ab1CaUCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 15:57:08 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=o84dTVGBihYbMwbrT0Cle2lp7hfi8k1BxJDHN5m3dxVcKzPLh4pKyN0W3KtZQhfESqpyXR/MbQYzmEyTmLDz/vR0qxONWCmmP7k01I7sRhskoAZm51op7/cLxgKK0LrX;
-Date: Thu, 31 Mar 2011 12:57:06 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Jeremy Jackson <jerj@coplanar.net>
-Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: signal to PID 1 from serial console like KeyboardRequest or CAD
-Message-Id: <20110331125706.9159a13d.rdunlap@xenotime.net>
-In-Reply-To: <4D8CD3D4.90900@coplanar.net>
-References: <4D8CD3D4.90900@coplanar.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.42.51 authed with rdunlap@xenotime.net}
+	Thu, 31 Mar 2011 16:02:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=n9q4OuTAicFI0fO86Es3Vg4qLQY9UtusN0pOu9xNGRgqI0D495Yjdb02ovAx30xCg5
+         MsH0SrKUO6N+DOdWIxt7zwn5tUsF1F0ac4VYZc036qvA8OE2v+0qgephmvLmWMm5qw4y
+         DadqzjyOWnxzQOmNSknbh6uKXAD7YxUQ9wI6M=
+MIME-Version: 1.0
+Date: Fri, 1 Apr 2011 01:32:14 +0530
+Message-ID: <AANLkTi=SegGu5ue=n23e1fhdoZ1jNyTardFJvtAo6vE1@mail.gmail.com>
+Subject: [PATCH] kernel: Fix style problems in time.c
+From: Aakash Goenka <aakash.goenka@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Jiri Kosina <jkosina@suse.cz>, Jesper Juhl <jj@chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Mar 2011 13:41:40 -0400 Jeremy Jackson wrote:
-
-> Hi,
-> 
-> Sent to linux-console with no reply for over a week...
-> 
-> I ran into a problem recently on a Linux server with a remote serial 
-> console.  /sbin/init (actually Upstart) was in a state where nothing 
-> (useful) was running.  I had to power cycle the machine to get back to 
-> the boot prompt.  This has the side-effect of triggering raid rebuilds.
-> 
-> It would be nice to have what Ctrl-Alt-Del does at the VGA console with 
-> PS/2 or USB keyboard. This sends a SIGINT to PID 1, and most distros 
-> have this set to do "shutdown -r now" which attempts a clean reboot.
-
-so C_A_D works at console via PS/2 or USB keyboard, but not on a remote
-serial console?  Could it be an issue with whatever remote/serial software
-you are using?
-
-> Once upon a time there was KeyboardRequest, which would send a SIGWINCH 
-> to PID 1 (when pressing Alt-UP_arrow?).  I don't see any sign of this 
-> feature in Linux 2.6.32 though.
-
-I couldn't find it in 2.4.37 either.
-
-Can 'loadkeys' help you any?
-
-> Looking at the Sysrq handlers in the kernel I don't see any keystrokes 
-> that send SIGINT to PID 1 either.
-> 
-> So, I'm wondering if it makes sense to add a Sysrq key to send a signal 
-> to PID1 ?
-
-Dmitry, any ideas?
-
+ Fixes most style errors and warnings. Only left out the ones about
+using include from linux directory instead of asm.
+ Signed-off-by: Aakash Goenka <aakash.goenka@gmail.com>
 
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ kernel/time.c |   41 +++++++++++++++++++----------------------
+ 1 files changed, 19 insertions(+), 22 deletions(-)
+
+diff --git a/kernel/time.c b/kernel/time.c
+index 8e8dc6d..0923dcf 100644
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -48,7 +48,6 @@
+  * programs who obtain this value by using gettimeofday.
+  */
+ struct timezone sys_tz;
+-
+ EXPORT_SYMBOL(sys_tz);
+
+ #ifdef __ARCH_WANT_SYS_TIME
+@@ -64,7 +63,7 @@ SYSCALL_DEFINE1(time, time_t __user *, tloc)
+ 	time_t i = get_seconds();
+
+ 	if (tloc) {
+-		if (put_user(i,tloc))
++		if (put_user(i, tloc))
+ 			return -EFAULT;
+ 	}
+ 	force_successful_syscall_return();
+@@ -172,8 +171,7 @@ int do_sys_settimeofday(const struct timespec *tv,
+const struct timezone *tz)
+ 				warp_clock();
+ 		}
+ 	}
+-	if (tv)
+-	{
++	if (tv) {
+ 		/* SMP safe, again the code in arch/foo/time.c should
+ 		 * globally block out interrupts when it runs.
+ 		 */
+@@ -212,7 +210,7 @@ SYSCALL_DEFINE1(adjtimex, struct timex __user *, txc_p)
+ 	 * structure. But bear in mind that the structures
+ 	 * may change
+ 	 */
+-	if(copy_from_user(&txc, txc_p, sizeof(struct timex)))
++	if (copy_from_user(&txc, txc_p, sizeof(struct timex)))
+ 		return -EFAULT;
+ 	ret = do_adjtimex(&txc);
+ 	return copy_to_user(txc_p, &txc, sizeof(struct timex)) ? -EFAULT : ret;
+@@ -289,13 +287,12 @@ struct timespec timespec_trunc(struct timespec
+t, unsigned gran)
+ 	 * Currently current_kernel_time() never returns better than
+ 	 * jiffies resolution. Exploit that.
+ 	 */
+-	if (gran <= jiffies_to_usecs(1) * 1000) {
++	if (gran <= jiffies_to_usecs(1) * 1000)
+ 		/* nothing */
+-	} else if (gran == 1000000000) {
++	else if (gran == 1000000000)
+ 		t.tv_nsec = 0;
+-	} else {
++	else
+ 		t.tv_nsec -= t.tv_nsec % gran;
+-	}
+ 	return t;
+ }
+ EXPORT_SYMBOL(timespec_trunc);
+@@ -317,13 +314,13 @@ EXPORT_SYMBOL(timespec_trunc);
+  */
+ unsigned long
+ mktime(const unsigned int year0, const unsigned int mon0,
+-       const unsigned int day, const unsigned int hour,
+-       const unsigned int min, const unsigned int sec)
++	const unsigned int day, const unsigned int hour,
++	const unsigned int min, const unsigned int sec)
+ {
+ 	unsigned int mon = mon0, year = year0;
+-
+ 	/* 1..12 -> 11,12,1..10 */
+-	if (0 >= (int) (mon -= 2)) {
++	mon -= 2;
++	if (0 >= (int) (mon)) {
+ 		mon += 12;	/* Puts Feb last since it has leap day */
+ 		year -= 1;
+ 	}
+@@ -335,9 +332,9 @@ mktime(const unsigned int year0, const unsigned int mon0,
+ 	  )*60 + min /* now have minutes */
+ 	)*60 + sec; /* finally seconds */
+ }
+-
+ EXPORT_SYMBOL(mktime);
+
++
+ /**
+  * set_normalized_timespec - set timespec sec and nsec parts and normalize
+  *
+@@ -505,7 +502,7 @@ timespec_to_jiffies(const struct timespec *value)
+ 	unsigned long sec = value->tv_sec;
+ 	long nsec = value->tv_nsec + TICK_NSEC - 1;
+
+-	if (sec >= MAX_SEC_IN_JIFFIES){
++	if (sec >= MAX_SEC_IN_JIFFIES) {
+ 		sec = MAX_SEC_IN_JIFFIES;
+ 		nsec = 0;
+ 	}
+@@ -548,7 +545,7 @@ timeval_to_jiffies(const struct timeval *value)
+ 	unsigned long sec = value->tv_sec;
+ 	long usec = value->tv_usec;
+
+-	if (sec >= MAX_SEC_IN_JIFFIES){
++	if (sec >= MAX_SEC_IN_JIFFIES) {
+ 		sec = MAX_SEC_IN_JIFFIES;
+ 		usec = 0;
+ 	}
+@@ -591,7 +588,7 @@ EXPORT_SYMBOL(jiffies_to_clock_t);
+
+ unsigned long clock_t_to_jiffies(unsigned long x)
+ {
+-#if (HZ % USER_HZ)==0
++#if (HZ % USER_HZ) == 0
+ 	if (x >= ~0UL / (HZ / USER_HZ))
+ 		return ~0UL;
+ 	return x * (HZ / USER_HZ);
+@@ -635,11 +632,11 @@ u64 nsec_to_clock_t(u64 x)
+ #elif (USER_HZ % 512) == 0
+ 	return div_u64(x * USER_HZ / 512, NSEC_PER_SEC / 512);
+ #else
+-	/*
+-         * max relative error 5.7e-8 (1.8s per year) for USER_HZ <= 1024,
+-         * overflow after 64.99 years.
+-         * exact for HZ=60, 72, 90, 120, 144, 180, 300, 600, 900, ...
+-         */
++	 /*
++	  * max relative error 5.7e-8 (1.8s per year) for USER_HZ <= 1024,
++	  * overflow after 64.99 years.
++	  * exact for HZ=60, 72, 90, 120, 144, 180, 300, 600, 900, ...
++	  */
+ 	return div_u64(x * 9, (9ull * NSEC_PER_SEC + (USER_HZ / 2)) / USER_HZ);
+ #endif
+ }
+-- 
+1.7.0.4
