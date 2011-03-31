@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758789Ab1CaRyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 13:54:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46797 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab1CaRyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 13:54:14 -0400
-Message-ID: <4D94BFC1.5070608@monstr.eu>
-Date: Thu, 31 Mar 2011 19:54:09 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1758795Ab1CaRzS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 13:55:18 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:53075 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639Ab1CaRzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 13:55:16 -0400
+Date: Thu, 31 Mar 2011 19:55:13 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Greg KH <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] uio: fix allocating minor id for uio device
+Message-ID: <20110331175513.GC2734@local>
+References: <AANLkTikKNOPi1ALD0vWiwPKDzUJSseuis63qYJKYkj6=@mail.gmail.com>
+ <20110328214504.GC2786@local>
+ <AANLkTi=AqMzS_cC1WRB+Knx1GT_Oha01kOyxC1TqyWxE@mail.gmail.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: devicetree-discuss@lists.ozlabs.org, john.williams@petalogix.com,
-        linux-kernel@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de
-Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
-References: <1301574600-4861-1-git-send-email-monstr@monstr.eu> <1301574600-4861-2-git-send-email-monstr@monstr.eu> <20110331164348.GI26709@ponder.secretlab.ca>
-In-Reply-To: <20110331164348.GI26709@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=AqMzS_cC1WRB+Knx1GT_Oha01kOyxC1TqyWxE@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
-> On Thu, Mar 31, 2011 at 02:30:00PM +0200, Michal Simek wrote:
->> Support OF support. "generic-uio" compatible property is used.
->>
->> Signed-off-by: Michal Simek <monstr@monstr.eu>
->> ---
->>  drivers/uio/uio_pdrv_genirq.c |   60 ++++++++++++++++++++++++++++++++++++++--
->>  1 files changed, 57 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
->> index 7174d51..9e89806 100644
->> --- a/drivers/uio/uio_pdrv_genirq.c
->> +++ b/drivers/uio/uio_pdrv_genirq.c
->> @@ -23,6 +23,10 @@
->>  #include <linux/pm_runtime.h>
->>  #include <linux/slab.h>
->>  
->> +#include <linux/of.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/of_address.h>
->> +
->>  #define DRIVER_NAME "uio_pdrv_genirq"
->>  
->>  struct uio_pdrv_genirq_platdata {
->> @@ -92,11 +96,44 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
->>  static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->>  {
->>  	struct uio_info *uioinfo = pdev->dev.platform_data;
->> -	struct uio_pdrv_genirq_platdata *priv;
->> +	struct uio_pdrv_genirq_platdata *priv = NULL;
->>  	struct uio_mem *uiomem;
->>  	int ret = -EINVAL;
->>  	int i;
->>  
->> +	if (!uioinfo) {
->> +		struct resource r_irq; /* Interrupt resources */
->> +		int rc = 0;
->> +
->> +		rc = of_address_to_resource(pdev->dev.of_node, 0,
->> +							&pdev->resource[0]);
->> +		if (rc) {
->> +			dev_err(&pdev->dev, "invalid address\n");
->> +			goto bad2;
->> +		}
->> +		pdev->num_resources = 1;
-> 
-> You shouldn't need this anymore.  Device tree sourced platform_devices
-> get their resource table populated automatically.  Also, drivers
-> should /never/ modify the resource values set in the device because it
-> messes up driver rebinding.
+On Thu, Mar 31, 2011 at 08:38:47PM +0800, Hillf Danton wrote:
+> The number of uio devices that could be used should be less than
+> UIO_MAX_DEVICES by design, and this work guards any cases in which id
+> more than UIO_MAX_DEVICES is utilized.
 
-done.
+Looks good.
+
+Thanks for your work,
+Hans
 
 > 
->> +
->> +		/* alloc uioinfo for one device */
->> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
->> +		if (!uioinfo) {
->> +			ret = -ENOMEM;
->> +			dev_err(&pdev->dev, "unable to kmalloc\n");
->> +			goto bad2;
->> +		}
->> +		uioinfo->name = pdev->dev.of_node->name;
->> +		/* Use version for storing full IP name for identification */
->> +		uioinfo->version = pdev->dev.of_node->full_name;
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+
+Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+
+> ---
 > 
-> Comment on the binding: You should probably use the first entry in the
-> compatible list for the name of the device.  Node names should be
-> generic and usually they will say what a device does, but not what a
-> device actually /is/ (this is the Generic Names recommended practice).
+> --- a/drivers/uio/uio.c	2011-01-05 08:50:20.000000000 +0800
+> +++ b/drivers/uio/uio.c	2011-03-31 20:43:44.000000000 +0800
+> @@ -381,7 +381,13 @@ static int uio_get_minor(struct uio_devi
+>  			retval = -ENOMEM;
+>  		goto exit;
+>  	}
+> -	idev->minor = id & MAX_ID_MASK;
+> +	if (id < UIO_MAX_DEVICES) {
+> +		idev->minor = id;
+> +	} else {
+> +		dev_err(idev->dev, "too many uio devices\n");
+> +		retval = -EINVAL;
+> +		idr_remove(&uio_idr, id);
+> +	}
+>  exit:
+>  	mutex_unlock(&minor_lock);
+>  	return retval;
 > 
-> Modern convention is to rely on the first compatible entry for
-> describing what ip block it is.
-
-Is it easy to way to find it out?
-
-M
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
