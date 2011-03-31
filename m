@@ -1,112 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759504Ab1CaXnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 19:43:00 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:36759 "HELO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751809Ab1CaXm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 19:42:58 -0400
-Message-ID: <4D951109.1040707@sgi.com>
-Date: Thu, 31 Mar 2011 18:40:57 -0500
-From: Mike Habeck <habeck@sgi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1759510Ab1CaXoB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 19:44:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34784 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751809Ab1CaXn7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 19:43:59 -0400
+Date: Fri, 1 Apr 2011 08:44:02 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Collins <collinsd@codeaurora.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm-owner@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: pm8921-regulator: Add regulator driver
+ for PM8921
+Message-ID: <20110331234359.GD21726@opensource.wolfsonmicro.com>
+References: <1301523361-5982-1-git-send-email-collinsd@codeaurora.org>
+ <1301523432-6017-1-git-send-email-collinsd@codeaurora.org>
+ <20110330234613.GA21487@opensource.wolfsonmicro.com>
+ <4D93DAD2.5080501@codeaurora.org>
 MIME-Version: 1.0
-To: Mike Travis <travis@sgi.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] Intel pci: Limit dmar_init_reserved_ranges
-References: <20110329233602.272459647@gulag1.americas.sgi.com> <20110329233602.735667875@gulag1.americas.sgi.com> <4D94FC21.6040601@sgi.com> <20110331225316.GC18712@sequoia.sous-sol.org> <4D950D52.8080100@sgi.com>
-In-Reply-To: <4D950D52.8080100@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D93DAD2.5080501@codeaurora.org>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 06:25 PM, Mike Travis wrote:
-> I'll probably need help from our Hardware PCI Engineer to help explain
-> this further, though here's a pointer to an earlier email thread:
->
-> http://marc.info/?l=linux-kernel&m=129259816925973&w=2
->
-> I'll also dig out the specs you're asking for.
->
-> Thanks,
-> Mike
->
-> Chris Wright wrote:
->> * Mike Travis (travis@sgi.com) wrote:
->>> Chris - did you have any comment on this patch?
->>
->> It doesn't actually look right to me. It means that particular range
->> is no longer reserved. But perhaps I've misunderstood something.
->>
->>> Mike Travis wrote:
->>>> dmar_init_reserved_ranges() reserves the card's MMIO ranges to
->>>> prevent handing out a DMA map that would overlap with the MMIO range.
->>>> The problem while the Nvidia GPU has 64bit BARs, it's capable of
->>>> receiving > 40bit PIOs, but can't generate > 40bit DMAs.
->>
->> I don't undertand what you mean here.
+On Wed, Mar 30, 2011 at 06:37:22PM -0700, David Collins wrote:
+> On 03/30/11 16:46, Mark Brown wrote:
 
-What Mike is getting at is there is no reason to reserve the MMIO
-range if it's greater than the dma_mask, given the MMIO range is
-outside of what the IOVA code will ever hand back to the IOMMU
-code.  In this case the nVidia card has a 64bit BAR and is assigned
-the MMIO range [0xf8200000000 - 0xf820fffffff].  But the Nvidia
-card can only generate a 40bit DMA (thus has a 40bit dma_mask). If
-the IOVA code honors the limit_pfn (i.e., dma_mask) passed in it
-will never hand back a >40bit address back to the IOMMU code. Thus
-there is no reason to reserve the cards MMIO range if it is greater
-than the dma_mask. (And that is what the patch is doing).
+> > Don't do this.  There's two problems with it.  One is that you're
+> > abusing a standard API for an unrelated purpose which will confuse
+> > anything that tries to use the API as normal, the other is that this
+> > sounds like a fairly widely supported feature (although normally one
+> > that is used with a GPIO on the CPU, there's a few examples of this in
+> > mainline).
 
-More below,,,
+> Could you point out an example of a better way to handle pin control?  I
+> agree that regulator_set_mode is not the way to do it.  Could some new
+> regulator framework API be created to handle it?  I'm not sure about the
+> best way to generalize the interface.
 
->>
->>>> So when the iommu code reserves these MMIO ranges a > 40bit
->>>> entry ends up getting in the rbtree. On a UV test system with
->>>> the Nvidia cards, the BARs are:
->>>>
->>>> 0001:36:00.0 VGA compatible controller: nVidia Corporation
->>>> GT200GL Region 0: Memory at 92000000 (32-bit, non-prefetchable)
->>>> [size=16M]
->>>> Region 1: Memory at f8200000000 (64-bit, prefetchable) [size=256M]
->>>> Region 3: Memory at 90000000 (64-bit, non-prefetchable) [size=32M]
->>>>
->>>> So this 44bit MMIO address 0xf8200000000 ends up in the rbtree. As DMA
->>>> maps get added and deleted from the rbtree we can end up getting a cached
->>>> entry to this 0xf8200000000 entry... this is what results in the code
->>>> handing out the invalid DMA map of 0xf81fffff000:
->>>>
->>>> [ 0xf8200000000-1 >> PAGE_SIZE << PAGE_SIZE ]
->>>>
->>>> The IOVA code needs to better honor the "limit_pfn" when allocating
->>>> these maps.
->>
->> This means we could get the MMIO address range (it's no longer reserved).
+The wm831x DCDCs and several of the Maxim PMICs have GPIO based control,
+though as indicated it's currently set up for CPU control rather than
+for control from an external device.  In the case of the wm831x this
+could be switched to and from hardware control at runtime though that's
+not a feature that's currently used.  There's also some devices which
+have seperate controls for different users that do contention control in
+hardware.
 
-Not true, the MMIO address is greater than the dma_mask (i.e., the
-limit_pfn passed into alloc_iova()) thus the IOVA code will never
-hand back that address range given it's greater than the dma_mask).
+Without actually knowing what the pin control implementation you have
+does and how it's used it's hard to suggest something specific.  I
+still don't have a good handle on what is voting, what is actually being
+controlled or how it interacts with software control by Linux.  We've
+jumped to discussion of the implementation without understanding the
+problem.  Could you perhaps go back to square one and explain what
+exactly you mean when you say "pin control"?
 
->> It seems to me the DMA transaction would then become a peer to peer
->> transaction if ACS is not enabled, which could show up as random register
->> write in that GPUs 256M BAR (i.e. broken).
->>
->> The iova allocation should not hand out an address bigger than the
->> dma_mask. What is the device's dma_mask?
+> >> REGULATOR_MODE_NORMAL  - remove a vote for pin control
+> >> REGULATOR_MODE_IDLE    - vote for pin control (ref-counted)
 
-Agree.  But there is a bug.  The IOVA doesn't validate the limit_pfn
-if it uses the cached entry.  One could argue that it should validate
-the limit_pfn, but then again a entry outside the limit_pfn should
-have never got into the rbtree...  (it got in due to the IOMMU's
-dmar_init_reserved_ranges() adding it).
+> > What is the voting that's been referred to here?
 
--mike
+> Voting here means calling regulator_set_mode(reg, REGULATOR_MODE_IDLE).
+> These calls into the pm8921-regulator driver set_mode call back function
+> are ref-counted to decide when to actually set pin control mode.
 
->>
->> thanks,
->> -chris
+OK, that's definitely not going to work well with set_mode() - it relies
+on nothing except drivers that know about your reference counting scheme
+ever calling set_mode() and the core code never learning how to do
+things like suppress duplicate sets.
 
+> > I know some devices do follow this pattern but it's simpler to just
+> > register the regulators that are physically present on the device
+> > unconditionally.
+
+> Regulator registration needs to continue being based on which regulators
+> are configured via the board file platform data because there will be need
+> in our system in the near future to use a different (shared) regulator
+> driver to access some of the same physical regulators.
+
+> We consider this to be the native PMIC 8921 regulator driver because it
+> accesses the PMIC directly.  There will be a subsequent PMIC 8921
+> regulator driver which issues requests to a separate processor which
+> aggregates our requests with those of other SOC processors.
+
+That's not an issue - the regulator API won't write to the regulators
+unless the machine driver explicitly tells it that this is OK so all
+that will happen is that we'll be able to read back the state of the
+regulators directly.  If your driver is modifying the state of the
+regulators without the API telling it to then we should fix that as the
+no-write behaviour is an important safety feature.
+
+> > This needs locking if any registers are shared between multiple
+> > regulators.
+
+> There are no registers shared between multiple regulators.  The mutex
+> locks held inside of the regulator framework should be sufficient.
+
+OK, a comment would help - this is a very common error in regulator
+drivers as many regulators put all the enable bits for the system in a
+single register.
+
+> >> +	if (min_uV < PLDO_LOW_UV_MIN || min_uV > PLDO_HIGH_UV_MAX) {
+> >> +		vreg_err(vreg, "requested voltage %d is outside of allowed "
+> >> +				"range.\n", min_uV);
+
+> > Don't split text over multiple lines, it's not helpful when grepping.
+
+> I can change this, I'll just have to be ready to ignore checkpatch.pl errors.
+
+checkpatch isn't always right on style issues.  In this particular case
+having the string on a line by itself will probably avoid the issue.
+
+> >> +	/* Round down for set points in the gaps between bands. */
+> >> +	if (uV > FTSMPS_BAND1_UV_MAX && uV < FTSMPS_BAND2_UV_MIN)
+> >> +		uV = FTSMPS_BAND1_UV_MAX;
+> >> +	else if (uV > FTSMPS_BAND2_UV_MAX
+> >> +			&& uV < FTSMPS_BAND3_UV_SETPOINT_MIN)
+> >> +		uV = FTSMPS_BAND2_UV_MAX;
+
+> > That seems broken - it means you'll go under voltage on what was
+> > requested.  You should ensure that you're always within the requested
+> > range so if the higher band minimum is in the range you should select
+> > that, otherwise you should error out.
+
+> This rounding is done to ensure that the calculations below always yield a
+> register program voltage that is valid.  I could change this to pick the
+> minimum of the higher band instead.
+
+Note the thing about rechecking against the bounds - you need to look at
+*both* limits.
+
+> In this example, consider the second condition which is checking for
+> min_uV in the range (1400000, 1500000).  What should the correct result be
+> if a consumer calls regulator_set_voltage(reg, 1450000, 1450000) (assuming
+> that it is the only consumer so far and that the constraints step for the
+> regulator allow the value)?  As the driver is written, it would set the
+> voltage to 1.4V.  However, I think that 1.5V is more reasonable.
+> Returning an error for this seems counter productive.
+
+The driver should return an error.  If the consumer wanted exactly 1.45V
+then that's what the system should deliver, if the consumer is happy
+with other voltages then it should say so.  The specification by range
+is there because some consumers are sensitive to particular voltages and
+need to get what they asked for, or they may have much more flexibility
+in one direction or the other (like DVFS where it's usually no problem
+to be overvoltage but being undervoltage will usually fail).  By
+allowing the consumer to specify a range we allow the consumer to
+control this, having the API or the drivers take guesses on behalf of
+the consumer means it's hard for a consumer driver to reliably
+interoperate with different regulators.
+
+The API provides a mechanism for enumerating the set of supported
+voltages (which IIRC you're not implementing - you should) which
+consumers can use to ensure good interoperation.
+
+> > This function is just a switch statement per regulator, may aswell expan
+> > ithere.  Or restructure things so that you've got a driver per regulator
+> > type - that would also mean you'd be able to get the device IDs to
+> > correspond to the regulator numbers which would probably be clearer.
+
+> I separated out the type specific init functions because they are
+> relatively lengthy and independent.  Wouldn't putting that code directly
+> into a switch statement in the probe function be hard to follow?
+
+Right, but the _init() function is basically just a switch statement
+which calls these functions AFAIR - inlining the switch statement
+doesn't mean inlining the functions too.
