@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab1CaG62 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 02:58:28 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58378 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756910Ab1CaG61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 02:58:27 -0400
-Date: Thu, 31 Mar 2011 08:58:05 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC 2/2] Make x86 calibrate_delay run in parallel.
-Message-ID: <20110331065805.GG5938@elte.hu>
-References: <20101215015840.390204279@gulag1.americas.sgi.com>
- <20101215015849.051095242@gulag1.americas.sgi.com>
- <AANLkTinoctZFKo4wBmrrdFggnjSj74QfqvEpz59sW15x@mail.gmail.com>
- <20110331065036.GC5938@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110331065036.GC5938@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1756917Ab1CaHCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 03:02:10 -0400
+Received: from vms173013pub.verizon.net ([206.46.173.13]:60411 "EHLO
+	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab1CaHCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 03:02:08 -0400
+Date: Thu, 31 Mar 2011 03:02:00 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Ingo Molnar <mingo@elte.hu>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 2/9] x86 idle: remove NOP cpuinfo_x86.hlt_works_ok flag
+In-reply-to: <20110331061247.GA24786@elte.hu>
+Message-id: <alpine.LFD.2.02.1103310252160.8569@x980>
+References: <67e90d97e0a77df4acd0c75e1bacc7714e011f3e.1301550524.git.len.brown@intel.com>
+ <b048802b0285a5ff28e74a4309d833116174904a.1301550524.git.len.brown@intel.com>
+ <20110331061247.GA24786@elte.hu>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@elte.hu> wrote:
-
-> 
-> * Yinghai Lu <yinghai@kernel.org> wrote:
-> 
-> > On Tue, Dec 14, 2010 at 5:58 PM,  <Robin@sgi.com> wrote:
-> > >
-> > > On a 4096 cpu machine, we noticed that 318 seconds were taken for bringing
-> > > up the cpus.  By specifying lpj=<value>, we reduced that to 75 seconds.
-> > > Andi Kleen suggested we rework the calibrate_delay calls to run in
-> > > parallel.  With that code in place, a test boot of the same machine took
-> > > 61 seconds to bring the cups up.  I am not sure how we beat the lpj=
-> > > case, but it did outperform.
-> > >
-> > > One thing to note is the total BogoMIPS value is also consistently higher.
-> > > I am wondering if this is an effect with the cores being in performance
-> > > mode.  I did notice that the parallel calibrate_delay calls did cause the
-> > > fans on the machine to ramp up to full speed where the normal sequential
-> > > calls did not cause them to budge at all.
+> > hlt_works_ok was X86_32 only, initialized to 1, and never cleared.
 > > 
-> > please check attached patch, that could calibrate correctly.
-> > 
-> > Thanks
-> > 
-> > Yinghai
+> > On 32-bit kernels, this deletes a line from /proc/cpuinfo: "hlt_bug : no"
 > 
-> > [PATCH -v2] x86: Make calibrate_delay run in parallel.
-> > 
-> > On a 4096 cpu machine, we noticed that 318 seconds were taken for bringing
-> > up the cpus.  By specifying lpj=<value>, we reduced that to 75 seconds.
-> > Andi Kleen suggested we rework the calibrate_delay calls to run in
-> > parallel.
+> I think you missed the valid usecase where an old CPU with broken halt is 
+> booted with the no-hlt boot parameter and does not want to crash in the HLT 
+> instruction.
 > 
-> The risk wit tat suggestion is that it will spectacularly miscalibrate on 
-> hyperthreading systems.
+> That "no-hlt" boot parameter does:
+> 
+>   arch/x86/kernel/cpu/bugs.c:     boot_cpu_data.hlt_works_ok = 0;
+> 
+> We can restrict compatibility, but *please* lets do it *explicitly*, not under 
+> some 'remove unused code' pretense ...
+> 
+> Could you please list all CPU models that are affected?
 
-s/wit tat/with that
+"no-hlt" existed only for 32-bit, and there were exactly zero
+automatic invocations of it.
 
-Thanks,
+"idle=poll" does the same thing -- sans change a line
+in /proc/cpuinfo.
 
-	Ingo
+Do we really need both?
+
+thanks,
+-Len
+
+
+
