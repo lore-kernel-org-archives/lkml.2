@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab1CaVOq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 17:14:46 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:37144 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753674Ab1CaVOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 17:14:45 -0400
-Subject: Re: [PATCH 04/12] mm: alloc_contig_freed_pages() added
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
-        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
-In-Reply-To: <op.vs77qfx03l0zgt@mnazarewicz-glaptop>
-References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
-	 <1301577368-16095-5-git-send-email-m.szyprowski@samsung.com>
-	 <1301587083.31087.1032.camel@nimitz>
-	 <op.vs77qfx03l0zgt@mnazarewicz-glaptop>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 31 Mar 2011 14:14:38 -0700
-Message-ID: <1301606078.31087.1275.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1758714Ab1CaVPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 17:15:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44747 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758335Ab1CaVPA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 17:15:00 -0400
+Message-ID: <4D94EEC3.2030206@oracle.com>
+Date: Thu, 31 Mar 2011 14:14:43 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Tristan Ye <tristan.ye@oracle.com>
+CC: ocfs2-devel@oss.oracle.com, josef@redhat.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        chris.mason@oracle.com, jlbec@evilplan.org, tm@tao.ma
+Subject: Re: [PATCH 1/3] VFS/ioctl: Add punching-hole support to ioctl().
+References: <1301556810-8438-1-git-send-email-tristan.ye@oracle.com>
+In-Reply-To: <1301556810-8438-1-git-send-email-tristan.ye@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D94EEC7.0027:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-31 at 23:09 +0200, Michal Nazarewicz wrote:
-> On Thu, 31 Mar 2011 17:58:03 +0200, Dave Hansen <dave@linux.vnet.ibm.com>  
-> wrote:
-> > On Thu, 2011-03-31 at 15:16 +0200, Marek Szyprowski wrote:
-> >> +unsigned long alloc_contig_freed_pages(unsigned long start, unsigned  
-> >> long end,
-> >> +                                      gfp_t flag)
-> >> +{
-> >> +       unsigned long pfn = start, count;
-> >> +       struct page *page;
-> >> +       struct zone *zone;
-> >> +       int order;
-> >> +
-> >> +       VM_BUG_ON(!pfn_valid(start));
-> >
-> > This seems kinda mean.  Could we return an error?  I understand that
-> > this is largely going to be an early-boot thing, but surely trying to
-> > punt on crappy input beats a full-on BUG().
-> 
-> Actually, I would have to check but I think that the usage of this function
-> (in this patchset) is that the caller expects the function to succeed.  It  
-> is quite a low-level function so before running it a lot of preparation is  
-> needed and the caller must make sure that several conditions are met.  I don't  
-> really see advantage of returning a value rather then BUG()ing.
-> 
-> Also, CMA does not call this function at boot time.
+Frankly I see no point extending the ioctl interface when we have
+a syscall interface.
 
-We BUG_ON() in bootmem.  Basically if we try to allocate an early-boot
-structure and fail, we're screwed.  We can't keep running without an
-inode hash, or a mem_map[].
-
-This looks like it's going to at least get partially used in drivers, at
-least from the examples.  Are these kinds of things that, if the driver
-fails to load, that the system is useless and hosed?  Or, is it
-something where we might limp along to figure out what went wrong before
-we reboot?
-
--- Dave
+On 03/31/2011 12:33 AM, Tristan Ye wrote:
+> We're currently support two paths from VFS to preallocate unwritten
+> extents(from FS_IOC_RESVSP, or fallocate()), likewise, behavior of
+> punching-hole should be treated as the same, this patch tries to teach
+> file_ioctl() to handle FS_IOC_UNRESVSP, underlying filesystem like ocfs2
+> is wise enough to do the rest of work;-)
+>
+> Signed-off-by: Tristan Ye<tristan.ye@oracle.com>
+> ---
+>   fs/ioctl.c             |   10 +++++++---
+>   include/linux/falloc.h |    2 ++
+>   2 files changed, 9 insertions(+), 3 deletions(-)
+>
+> diff --git a/fs/ioctl.c b/fs/ioctl.c
+> index 1d9b9fc..234e26f 100644
+> --- a/fs/ioctl.c
+> +++ b/fs/ioctl.c
+> @@ -422,7 +422,7 @@ EXPORT_SYMBOL(generic_block_fiemap);
+>    * Only the l_start, l_len and l_whence fields of the 'struct space_resv'
+>    * are used here, rest are ignored.
+>    */
+> -int ioctl_preallocate(struct file *filp, void __user *argp)
+> +int ioctl_preallocate(struct file *filp, void __user *argp, int mode)
+>   {
+>   	struct inode *inode = filp->f_path.dentry->d_inode;
+>   	struct space_resv sr;
+> @@ -443,7 +443,7 @@ int ioctl_preallocate(struct file *filp, void __user *argp)
+>   		return -EINVAL;
+>   	}
+>
+> -	return do_fallocate(filp, FALLOC_FL_KEEP_SIZE, sr.l_start, sr.l_len);
+> +	return do_fallocate(filp, mode, sr.l_start, sr.l_len);
+>   }
+>
+>   static int file_ioctl(struct file *filp, unsigned int cmd,
+> @@ -459,7 +459,11 @@ static int file_ioctl(struct file *filp, unsigned int cmd,
+>   		return put_user(i_size_read(inode) - filp->f_pos, p);
+>   	case FS_IOC_RESVSP:
+>   	case FS_IOC_RESVSP64:
+> -		return ioctl_preallocate(filp, p);
+> +		return ioctl_preallocate(filp, p, FALLOC_FL_KEEP_SIZE);
+> +	case FS_IOC_UNRESVSP:
+> +	case FS_IOC_UNRESVSP64:
+> +		return ioctl_preallocate(filp, p, FALLOC_FL_KEEP_SIZE |
+> +						  FALLOC_FL_PUNCH_HOLE);
+>   	}
+>
+>   	return vfs_ioctl(filp, cmd, arg);
+> diff --git a/include/linux/falloc.h b/include/linux/falloc.h
+> index 73e0b62..fd1e871 100644
+> --- a/include/linux/falloc.h
+> +++ b/include/linux/falloc.h
+> @@ -21,7 +21,9 @@ struct space_resv {
+>   };
+>
+>   #define FS_IOC_RESVSP		_IOW('X', 40, struct space_resv)
+> +#define FS_IOC_UNRESVSP		_IOW('X', 41, struct space_resv)
+>   #define FS_IOC_RESVSP64		_IOW('X', 42, struct space_resv)
+> +#define FS_IOC_UNRESVSP64	_IOW('X', 43, struct space_resv)
+>
+>   #endif /* __KERNEL__ */
+>
 
