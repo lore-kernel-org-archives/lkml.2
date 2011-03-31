@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758131Ab1CaOx2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:53:28 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:57448 "EHLO
+	id S1758144Ab1CaOx3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:53:29 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:57444 "EHLO
 	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758070Ab1CaOwz (ORCPT
+	with ESMTP id S1758069Ab1CaOwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Mar 2011 10:52:55 -0400
 X-Cam-AntiVirus: no malware found
@@ -13,9 +13,9 @@ X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
 From: Jonathan Cameron <jic23@cam.ac.uk>
 To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, tglx@linutronix.de, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 20/21] staging:iio:trigger remove legacy pollfunc elements.
-Date: Thu, 31 Mar 2011 15:54:14 +0100
-Message-Id: <1301583255-28468-21-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 19/21] staging:iio:lis3l02dq move to threaded trigger handling.
+Date: Thu, 31 Mar 2011 15:54:13 +0100
+Message-Id: <1301583255-28468-20-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
 References: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
@@ -25,212 +25,223 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/staging/iio/industrialio-trigger.c |   98 +++-------------------------
- drivers/staging/iio/trigger.h              |   28 +-------
- 2 files changed, 14 insertions(+), 112 deletions(-)
+ drivers/staging/iio/accel/lis3l02dq.h      |    2 -
+ drivers/staging/iio/accel/lis3l02dq_core.c |    2 -
+ drivers/staging/iio/accel/lis3l02dq_ring.c |   96 ++++++++++-----------------
+ 3 files changed, 36 insertions(+), 64 deletions(-)
 
-diff --git a/drivers/staging/iio/industrialio-trigger.c b/drivers/staging/iio/industrialio-trigger.c
-index 8100822..a350f25 100644
---- a/drivers/staging/iio/industrialio-trigger.c
-+++ b/drivers/staging/iio/industrialio-trigger.c
-@@ -164,21 +164,6 @@ static struct iio_trigger *iio_trigger_find_by_name(const char *name,
- void iio_trigger_poll(struct iio_trigger *trig, s64 time)
- {
- 	int i;
--	struct iio_poll_func *pf_cursor;
--
--	list_for_each_entry(pf_cursor, &trig->pollfunc_list, list) {
--		if (pf_cursor->poll_func_immediate) {
--			pf_cursor->poll_func_immediate(pf_cursor->private_data);
--			trig->use_count++;
--		}
--	}
--	list_for_each_entry(pf_cursor, &trig->pollfunc_list, list) {
--		if (pf_cursor->poll_func_main) {
--			pf_cursor->poll_func_main(pf_cursor->private_data,
--						  time);
--			trig->use_count++;
--		}
--	}
- 	for (i = 0; i < CONFIG_IIO_CONSUMERS_PER_TRIGGER; i++)
- 		if (trig->subirqs[i].enabled) {
- 			trig->use_count++;
-@@ -223,24 +208,13 @@ int iio_trigger_attach_poll_func(struct iio_trigger *trig,
- 				 struct iio_poll_func *pf)
- {
- 	int ret = 0;
--	unsigned long flags;
--
--	if (pf->handler) {
--		pf->irq = iio_trigger_get_irq(trig);
--		ret = request_threaded_irq(pf->irq, NULL, pf->handler,
--					   pf->type, pf->name,
--					   pf);
--	} else {
--		spin_lock_irqsave(&trig->pollfunc_list_lock, flags);
--		list_add_tail(&pf->list, &trig->pollfunc_list);
--		spin_unlock_irqrestore(&trig->pollfunc_list_lock, flags);
--	}
-+
-+	pf->irq = iio_trigger_get_irq(trig);
-+	ret = request_threaded_irq(pf->irq, NULL, pf->handler,
-+				   pf->type, pf->name,
-+				   pf);
- 	if (trig->set_trigger_state)
- 		ret = trig->set_trigger_state(trig, true);
--	if (ret) {
--		printk(KERN_ERR "set trigger state failed\n");
--		list_del(&pf->list);
--	}
+diff --git a/drivers/staging/iio/accel/lis3l02dq.h b/drivers/staging/iio/accel/lis3l02dq.h
+index 6d73325..e7f64bd 100644
+--- a/drivers/staging/iio/accel/lis3l02dq.h
++++ b/drivers/staging/iio/accel/lis3l02dq.h
+@@ -150,7 +150,6 @@ Form of high byte dependant on justification set in ctrl reg */
+  * struct lis3l02dq_state - device instance specific data
+  * @helper:		data and func pointer allowing generic functions
+  * @us:			actual spi_device
+- * @inter:		used to check if new interrupt has been triggered
+  * @trig:		data ready trigger registered with iio
+  * @tx:			transmit buffer
+  * @rx:			recieve buffer
+@@ -159,7 +158,6 @@ Form of high byte dependant on justification set in ctrl reg */
+ struct lis3l02dq_state {
+ 	struct iio_sw_ring_helper_state	help;
+ 	struct spi_device		*us;
+-	bool				inter;
+ 	struct iio_trigger		*trig;
+ 	u8				*tx;
+ 	u8				*rx;
+diff --git a/drivers/staging/iio/accel/lis3l02dq_core.c b/drivers/staging/iio/accel/lis3l02dq_core.c
+index 2bded87..46f0633 100644
+--- a/drivers/staging/iio/accel/lis3l02dq_core.c
++++ b/drivers/staging/iio/accel/lis3l02dq_core.c
+@@ -15,7 +15,6 @@
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
+-#include <linux/workqueue.h>
+ #include <linux/mutex.h>
+ #include <linux/device.h>
+ #include <linux/kernel.h>
+@@ -726,7 +725,6 @@ static int __devinit lis3l02dq_probe(struct spi_device *spi)
+ 	}
  
- 	return ret;
+ 	if (spi->irq && gpio_is_valid(irq_to_gpio(spi->irq)) > 0) {
+-		st->inter = 0;
+ 		ret = lis3l02dq_probe_trigger(st->help.indio_dev);
+ 		if (ret)
+ 			goto error_uninitialize_ring;
+diff --git a/drivers/staging/iio/accel/lis3l02dq_ring.c b/drivers/staging/iio/accel/lis3l02dq_ring.c
+index 9b15cad..04a0265 100644
+--- a/drivers/staging/iio/accel/lis3l02dq_ring.c
++++ b/drivers/staging/iio/accel/lis3l02dq_ring.c
+@@ -29,31 +29,10 @@ static inline u16 combine_8_to_16(u8 lower, u8 upper)
  }
-@@ -249,46 +223,11 @@ EXPORT_SYMBOL(iio_trigger_attach_poll_func);
- int iio_trigger_dettach_poll_func(struct iio_trigger *trig,
- 				  struct iio_poll_func *pf)
- {
--	struct iio_poll_func *pf_cursor;
--	unsigned long flags;
--	int ret = -EINVAL;
--
--	if (pf->handler) {
--		ret = trig->set_trigger_state(trig, false);
--		if (ret)
--			goto error_ret;
--		iio_trigger_put_irq(trig, pf->irq);
--		free_irq(pf->irq, pf);
--	} else {
--		spin_lock_irqsave(&trig->pollfunc_list_lock, flags);
--		list_for_each_entry(pf_cursor, &trig->pollfunc_list, list)
--			if (pf_cursor == pf) {
--				ret = 0;
--				break;
--			}
--		if (!ret) {
--			if (list_is_singular(&trig->pollfunc_list)
--			    && trig->set_trigger_state) {
--				spin_unlock_irqrestore(&trig
--						       ->pollfunc_list_lock,
--						       flags);
--				/* May sleep hence cannot hold the spin lock */
--				ret = trig->set_trigger_state(trig, false);
--				if (ret)
--					goto error_ret;
--				spin_lock_irqsave(&trig->pollfunc_list_lock,
--						  flags);
--			}
--			/*
--			 * Now we can delete safe in the knowledge that, if
--			 * this is the last pollfunc then we have disabled
--			 * the trigger anyway and so nothing should be able
--			 * to call the pollfunc.
--			 */
--			list_del(&pf_cursor->list);
--		}
--		spin_unlock_irqrestore(&trig->pollfunc_list_lock, flags);
--	}
-+	int ret = trig->set_trigger_state(trig, false);
-+	if (ret)
-+		goto error_ret;
-+	iio_trigger_put_irq(trig, pf->irq);
-+	free_irq(pf->irq, pf);
  
- error_ret:
- 	return ret;
-@@ -412,9 +351,6 @@ struct iio_trigger *iio_allocate_trigger_named(const char *name)
- 		trig->dev.bus = &iio_bus_type;
- 		device_initialize(&trig->dev);
- 		dev_set_drvdata(&trig->dev, (void *)trig);
--		spin_lock_init(&trig->pollfunc_list_lock);
--		INIT_LIST_HEAD(&trig->list);
--		INIT_LIST_HEAD(&trig->pollfunc_list);
- 
- 		if (name) {
- 			mutex_init(&trig->pool_lock);
-@@ -477,20 +413,6 @@ int iio_device_unregister_trigger_consumer(struct iio_dev *dev_info)
- }
- EXPORT_SYMBOL(iio_device_unregister_trigger_consumer);
- 
--int iio_alloc_pollfunc(struct iio_dev *indio_dev,
--		       void (*immediate)(struct iio_dev *indio_dev),
--		       void (*main)(struct iio_dev *private_data, s64 time))
--{
--	indio_dev->pollfunc = kzalloc(sizeof(*indio_dev->pollfunc), GFP_KERNEL);
--	if (indio_dev->pollfunc == NULL)
--		return -ENOMEM;
--	indio_dev->pollfunc->poll_func_immediate = immediate;
--	indio_dev->pollfunc->poll_func_main = main;
--	indio_dev->pollfunc->private_data = indio_dev;
--	return 0;
--}
--EXPORT_SYMBOL(iio_alloc_pollfunc);
--
- int iio_triggered_ring_postenable(struct iio_dev *indio_dev)
- {
- 	return indio_dev->trig
-diff --git a/drivers/staging/iio/trigger.h b/drivers/staging/iio/trigger.h
-index 2e52004..f4a9b54 100644
---- a/drivers/staging/iio/trigger.h
-+++ b/drivers/staging/iio/trigger.h
-@@ -24,8 +24,6 @@ struct iio_subirq {
-  * @private_data:	[DRIVER] device specific data
-  * @list:		[INTERN] used in maintenance of global trigger list
-  * @alloc_list:		[DRIVER] used for driver specific trigger list
-- * @pollfunc_list_lock:	[INTERN] protection of the polling function list
-- * @pollfunc_list:	[INTERN] list of functions to run on trigger.
-  * @control_attrs:	[DRIVER] sysfs attributes relevant to trigger type
-  * @owner:		[DRIVER] used to monitor usage count of the trigger.
-  * @use_count:		use count for the trigger
-@@ -41,8 +39,6 @@ struct iio_trigger {
- 	void				*private_data;
- 	struct list_head		list;
- 	struct list_head		alloc_list;
--	spinlock_t			pollfunc_list_lock;
--	struct list_head		pollfunc_list;
- 	const struct attribute_group	*control_attrs;
- 	struct module			*owner;
- 	int use_count;
-@@ -151,36 +147,20 @@ static inline void iio_trigger_put_irq(struct iio_trigger *trig, int irq)
  /**
-  * struct iio_poll_func - poll function pair
-  *
-- * @list:			associate this with a triggers pollfunc_list
-  * @private_data:		data specific to device (passed into poll func)
-- * @poll_func_immediate:	function in here is run first. They should be
-- *				extremely lightweight.  Typically used for latch
-- *				control on sensor supporting it.
-- * @poll_func_main:		function in here is run after all immediates.
-- *				Reading from sensor etc typically involves
-- *				scheduling from here.
-- *
-- * The two stage approach used here is only important when multiple sensors are
-- * being triggered by a single trigger. This really comes into its own with
-- * simultaneous sampling devices where a simple latch command can be used to
-- * make the device store the values on all inputs.
-+ * @handler:			the function that is actually run on trigger
-+ * @type:			the type of interrupt (basically if oneshot)
-+ * @irq:			the corresponding irq as allocated from the
-+ *				trigger pool
+- * lis3l02dq_poll_func_th() top half interrupt handler called by trigger
+- * @private_data:	iio_dev
+- **/
+-static void lis3l02dq_poll_func_th(struct iio_dev *indio_dev, s64 time)
+-{
+-	struct iio_sw_ring_helper_state *h
+-		= iio_dev_get_devdata(indio_dev);
+-	struct lis3l02dq_state *st = lis3l02dq_h_to_s(h);
+-	/* in this case we need to slightly extend the helper function */
+-	iio_sw_poll_func_th(indio_dev, time);
+-
+-	/* Indicate that this interrupt is being handled */
+-	/* Technically this is trigger related, but without this
+-	 * handler running there is currently now way for the interrupt
+-	 * to clear.
+-	 */
+-	st->inter = 1;
+-}
+-
+-/**
+  * lis3l02dq_data_rdy_trig_poll() the event handler for the data rdy trig
   **/
- struct iio_poll_func {
--	struct				list_head list;
- 	void				*private_data;
--	void (*poll_func_immediate)(struct iio_dev *indio_dev);
--	void (*poll_func_main)(struct iio_dev *private_data, s64 time);
--
- 	irqreturn_t (*handler)(int irq, void *p);
- 	int type;
- 	char *name;
- 	int irq;
- };
+ static irqreturn_t lis3l02dq_data_rdy_trig_poll(int irq, void *private)
+ {
+-	disable_irq_nosync(irq);
+ 	iio_trigger_poll(private, iio_get_time_ns());
  
--int iio_alloc_pollfunc(struct iio_dev *indio_dev,
--		       void (*immediate)(struct iio_dev *indio_dev),
--		       void (*main)(struct iio_dev *private_data, s64 time));
--
- /*
-  * Two functions for common case where all that happens is a pollfunc
-  * is attached and detached from a trigger
+ 	return IRQ_HANDLED;
+@@ -153,15 +132,16 @@ static int lis3l02dq_read_all(struct lis3l02dq_state *st, u8 *rx_array)
+ 	return ret;
+ }
+ 
+-static void lis3l02dq_trigger_bh_to_ring(struct work_struct *work_s)
++static irqreturn_t lis3l02dq_trigger_handler(int irq, void *p)
+ {
+-	struct iio_sw_ring_helper_state *h
+-		= container_of(work_s, struct iio_sw_ring_helper_state,
+-			work_trigger_to_ring);
+-	struct lis3l02dq_state *st = lis3l02dq_h_to_s(h);
++	struct iio_poll_func *pf = p;
++	struct iio_dev *indio_dev = pf->private_data;
++	struct iio_sw_ring_helper_state *h = iio_dev_get_devdata(indio_dev);
+ 
+-	st->inter = 0;
+-	iio_sw_trigger_bh_to_ring(work_s);
++	h->last_timestamp = iio_get_time_ns();
++	iio_sw_trigger_to_ring(h);
++
++	return IRQ_HANDLED;
+ }
+ 
+ static int lis3l02dq_get_ring_element(struct iio_sw_ring_helper_state *h,
+@@ -271,10 +251,10 @@ static int lis3l02dq_data_rdy_trigger_set_state(struct iio_trigger *trig,
+ 	u8 t;
+ 	__lis3l02dq_write_data_ready_config(&st->help.indio_dev->dev, state);
+ 	if (state == false) {
+-		/* possible quirk with handler currently worked around
+-		   by ensuring the work queue is empty */
+-		flush_scheduled_work();
+-		/* Clear any outstanding ready events */
++		/*
++		 * A possible quirk with teh handler is currently worked around
++		 *  by ensuring outstanding read events are cleared.
++		 */
+ 		ret = lis3l02dq_read_all(st, NULL);
+ 	}
+ 	lis3l02dq_spi_read_reg_8(st->help.indio_dev,
+@@ -297,32 +277,15 @@ static const struct attribute_group lis3l02dq_trigger_attr_group = {
+ /**
+  * lis3l02dq_trig_try_reen() try renabling irq for data rdy trigger
+  * @trig:	the datardy trigger
+- *
+- * As the trigger may occur on any data element being updated it is
+- * really rather likely to occur during the read from the previous
+- * trigger event.  The only way to discover if this has occured on
+- * boards not supporting level interrupts is to take a look at the line.
+- * If it is indicating another interrupt and we don't seem to have a
+- * handler looking at it, then we need to notify the core that we need
+- * to tell the triggering core to try reading all these again.
+- **/
++ */
+ static int lis3l02dq_trig_try_reen(struct iio_trigger *trig)
+ {
+ 	struct lis3l02dq_state *st = trig->private_data;
+-	enable_irq(st->us->irq);
+ 	/* If gpio still high (or high again) */
++	/* In theory possible we will need to do this several times */
+ 	if (gpio_get_value(irq_to_gpio(st->us->irq)))
+-		if (st->inter == 0) {
+-			/* already interrupt handler dealing with it */
+-			disable_irq_nosync(st->us->irq);
+-			if (st->inter == 1) {
+-				/* interrupt handler snuck in between test
+-				 * and disable */
+-				enable_irq(st->us->irq);
+-				return 0;
+-			}
+-			return -EAGAIN;
+-		}
++		lis3l02dq_read_all(st, NULL);
++
+ 	/* irq reenabled so success! */
+ 	return 0;
+ }
+@@ -333,14 +296,16 @@ int lis3l02dq_probe_trigger(struct iio_dev *indio_dev)
+ 	struct iio_sw_ring_helper_state *h
+ 		= iio_dev_get_devdata(indio_dev);
+ 	struct lis3l02dq_state *st = lis3l02dq_h_to_s(h);
++	char *name;
+ 
+-	st->trig = iio_allocate_trigger();
++	name = kasprintf(GFP_KERNEL,
++			 "lis3l02dq-dev%d",
++			 indio_dev->id);
++	st->trig = iio_allocate_trigger_named(name);
+ 	if (!st->trig)
+ 		return -ENOMEM;
+ 
+-	st->trig->name = kasprintf(GFP_KERNEL,
+-				   "lis3l02dq-dev%d",
+-				   indio_dev->id);
++	st->trig->name = name;
+ 	if (!st->trig->name) {
+ 		ret = -ENOMEM;
+ 		goto error_free_trig;
+@@ -379,6 +344,7 @@ void lis3l02dq_remove_trigger(struct iio_dev *indio_dev)
+ 
+ void lis3l02dq_unconfigure_ring(struct iio_dev *indio_dev)
+ {
++	kfree(indio_dev->pollfunc->name);
+ 	kfree(indio_dev->pollfunc);
+ 	lis3l02dq_free_buf(indio_dev->ring);
+ }
+@@ -458,7 +424,7 @@ int lis3l02dq_configure_ring(struct iio_dev *indio_dev)
+ 	int ret;
+ 	struct iio_sw_ring_helper_state *h = iio_dev_get_devdata(indio_dev);
+ 	struct iio_ring_buffer *ring;
+-	INIT_WORK(&h->work_trigger_to_ring, lis3l02dq_trigger_bh_to_ring);
++
+ 	h->get_ring_element = &lis3l02dq_get_ring_element;
+ 
+ 	ring = lis3l02dq_alloc_buf(indio_dev);
+@@ -481,9 +447,19 @@ int lis3l02dq_configure_ring(struct iio_dev *indio_dev)
+ 	iio_scan_mask_set(ring, 1);
+ 	iio_scan_mask_set(ring, 2);
+ 
+-	ret = iio_alloc_pollfunc(indio_dev, NULL, &lis3l02dq_poll_func_th);
+-	if (ret)
++	/* Functions are NULL as we set handler below */
++	indio_dev->pollfunc = kzalloc(sizeof(*indio_dev->pollfunc), GFP_KERNEL);
++
++	if (indio_dev->pollfunc == NULL) {
++		ret = -ENOMEM;
+ 		goto error_iio_sw_rb_free;
++	}
++	indio_dev->pollfunc->private_data = indio_dev;
++	indio_dev->pollfunc->handler = &lis3l02dq_trigger_handler;
++	indio_dev->pollfunc->type = IRQF_ONESHOT;
++	indio_dev->pollfunc->name
++		= kasprintf(GFP_KERNEL, "lis3l02dq_consumer%d", indio_dev->id);
++
+ 	indio_dev->modes |= INDIO_RING_TRIGGERED;
+ 	return 0;
+ 
 -- 
 1.7.3.4
 
