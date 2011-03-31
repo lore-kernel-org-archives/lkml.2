@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab1CaCis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 22:38:48 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60297 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418Ab1CaCir convert rfc822-to-8bit (ORCPT
+	id S1756808Ab1CaCjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 22:39:12 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:63995 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756797Ab1CaCjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 22:38:47 -0400
-References: <201103292143.12777.rjw@sisk.pl> <201103302355.38136.rjw@sisk.pl> <AANLkTiksT50imm3yQJPrRTqp732=jNYqnNdyvGhGbyHQ@mail.gmail.com> <201103310039.34128.rjw@sisk.pl>
-In-Reply-To: <201103310039.34128.rjw@sisk.pl>
-Mime-Version: 1.0 (iPhone Mail 8G4)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <1A1D7947-0B6F-4847-BCA5-7FCE76B36C2F@cs.ubc.ca>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Shriram Rajagopalan <rshriram@cs.ubc.ca>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-X-Mailer: iPhone Mail (8G4)
-From: Shriram Rajagopalan <rshriram@cs.ubc.ca>
-Subject: Re: [GIT PULL] Power management Kconfig modification for 2.6.39
-Date: Wed, 30 Mar 2011 22:38:42 -0400
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Wed, 30 Mar 2011 22:39:07 -0400
+Date: Wed, 30 Mar 2011 22:38:47 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Travis <travis@sgi.com>, David Rientjes <rientjes@google.com>,
+        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 4/4] x86: Minimize SRAT messages
+In-reply-to: <20110301075128.GC12384@elte.hu>
+Message-id: <alpine.LFD.2.02.1103302237200.1920@x980>
+References: <20110225180633.857892225@gulag1.americas.sgi.com>
+ <20110225180634.422972243@gulag1.americas.sgi.com>
+ <20110227120348.GE16453@elte.hu> <4D6BFA76.2060208@sgi.com>
+ <20110301075128.GC12384@elte.hu>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-30, at 6:39 PM, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+Hi Mike,
 
-> On Thursday, March 31, 2011, Linus Torvalds wrote:
->> On Wed, Mar 30, 2011 at 2:55 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>> That, in fact, is not necessary.  Moreover, it turns out that the patch size
->>> is not much different, because only a few subsystems use CONFIG_HIBERNATION
->>> directly.
->>> 
->>> The patch below has only been slightly tested, in particular I'd like the Xen
->>> people to check if it works for them.
->> 
->> Ok, this seems to make much more sense. Just from a quick scan, the
->> places where you changed things to
->> 
->>  #ifdef CONFIG_HIBERNATE_CALLBACKS
->> 
->> really do seem to be about the freeze/thaw callbacks. So now the patch
->> looks more logical to me. And it obviously doesn't change the
->> user-visible questions.
->> 
->> Thank you,
-> 
-> Thanks for the review!
-> 
-> @Shriram: Can you please test if the new patch works with your other Xen
-> patches?
-> 
-> Rafael
-> 
-Yep. Surely. Will get back to you in a couple of days. 
+How about a patch to stuff the srat info into a debugfs file,
+and another patch to delete the console printk entirely?
 
-Shriram
+thanks,
+Len Brown, Intel Open Source Technology Center
+
