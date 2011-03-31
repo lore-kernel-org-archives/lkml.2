@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933851Ab1CaBvY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 21:51:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54102 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933637Ab1CaBvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 21:51:23 -0400
-Message-ID: <4D93DE91.1050606@cn.fujitsu.com>
-Date: Thu, 31 Mar 2011 09:53:21 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S964952Ab1CaB5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 21:57:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48139 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755494Ab1CaB5I convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 21:57:08 -0400
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Michal Marek <mmarek@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
-References: <4D924FEE.8040804@linux.intel.com> <20110329214704.GM2261@linux.vnet.ibm.com> <4D9256AF.5000308@linux.intel.com> <20110330004725.GO2261@linux.vnet.ibm.com> <4D92BECA.50802@cn.fujitsu.com> <4D92DA32.2010809@cn.fujitsu.com> <20110330105505.GA3195@sepie.suse.cz> <1301482656.4859.171.camel@twins> <4D931814.9090100@suse.cz> <4D93D29C.5010702@cn.fujitsu.com> <20110331012155.GZ2255@linux.vnet.ibm.com>
-In-Reply-To: <20110331012155.GZ2255@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-31 09:49:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-31 09:49:48,
-	Serialize complete at 2011-03-31 09:49:48
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTimS_8BnBz9MSdxYJVL6oreEpH=W61BsyuX2G+Xz@mail.gmail.com>
+References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+ <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de>
+ <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+ <20110331001502.GB6680@n2100.arm.linux.org.uk> <AANLkTinE7EDbV8hrYZWBxgvwOxdPMLoS0Y57PSm04rvM@mail.gmail.com>
+ <AANLkTik-BFTzyPLuYVdhCJPocc0wPY0rKvO7BQS4Fg1S@mail.gmail.com>
+ <AANLkTikd_JRxmB_OWZqq178=K3bnxhdDqcNbgFNRtTyU@mail.gmail.com> <AANLkTimS_8BnBz9MSdxYJVL6oreEpH=W61BsyuX2G+Xz@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 30 Mar 2011 18:56:19 -0700
+Message-ID: <AANLkTimtO7vR2AQvJj1hHMqHCDqtoiJX_eENE9o3dPpV@mail.gmail.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+To: Bill Gatliff <bgat@billgatliff.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 09:21 AM, Paul E. McKenney wrote:
-> On Thu, Mar 31, 2011 at 09:02:20AM +0800, Lai Jiangshan wrote:
->> On 03/30/2011 07:46 PM, Michal Marek wrote:
->>> On 30.3.2011 12:57, Peter Zijlstra wrote:
->>>> On Wed, 2011-03-30 at 12:55 +0200, Michal Marek wrote:
->>>>> Subject: [PATCH] headers: Allow for lightweight inclusion of task_struct definition
->>>>>
->>>>> Factor out a couple of type definitions to <header>_types.h to allow
->>>>> using task_struct without pulling tons of new dependencies via sched.h.
->>>>
->>>> Urgh, not pretty.. so why not clean up sched.h properly? There's way too
->>>> much cruft in there.
->>>
->>> It was a proof-of-concept to show that it is doable to have proper
->>> definition of task_struct in rcupdate.h. Not an entry for any code
->>> beauty contest.
->>>
->>> Michal
->>>
->>
->> I like this cleanup, could you continue for this hard job? I will help you if required.
->>
->> Ingo & Peter - will you accept the patches when it is done.
->>
->> Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> 
-> I certainly like the idea of being able to inline TREE_PREEMPT_RCU's
-> rcu_read_lock() and rcu_read_unlock() using normal C code!
-> 
-> 							Thanx, Paul
-> 
+On Wed, Mar 30, 2011 at 6:44 PM, Bill Gatliff <bgat@billgatliff.com> wrote:
+>
+> In the meantime, we have to live with the chips that exist and the
+> ones coming down the pipe.  Until ARM and all their licensees start
+> consulting us on such matters, we'll just have to find a way to deal
+> with what we're given after the fact.
 
-kernel-offset.c can be merged to some branch of your tree for
-testing inlined TREE_PREEMPT_RCU's rcu_read_lock() and rcu_read_unlock()
-before the kernel headers splitting is done.
+Yes. But:
 
-Can the [patch 1/5] be merged to mainline earlier? could you add it to origin/rcu/next?
+ (a) we don't have to be stupid and think it's a good design and an
+"opportunity" like you do.
 
-Thanks,
-Lai
+and
+
+ (b) the kernel source code doesn't have to be the mess of code that
+it is. Those things should be abstracted out somehow (and yes,
+devicetree is hopefully one way)
+
+I really don't understand why you seem to be arguing against trying to
+fix a real problem, and why you also seem to be arguing that the messy
+ARM situation is somehow "good". I find your attitude about the lack
+of platform being "good" be to incomprehensibly stupid. There is
+absolutely _no_ advantage to anybody from the crazy arm fragmentation.
+
+I know, I know, a lot of companies make money supporting the whole
+crazy mess. I guess that can make people confused and think that being
+messy is good, and could be seen as an advantage.
+
+But most embedded companies seem to have realized that they should
+move up the stack, rather than worry about some crazy GPIO or stupid
+driver details.
+
+                Linus
