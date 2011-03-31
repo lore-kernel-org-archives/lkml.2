@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965063Ab1CaSVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 14:21:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58433 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab1CaSVK convert rfc822-to-8bit (ORCPT
+	id S1758927Ab1CaSXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 14:23:25 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:56586 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753656Ab1CaSXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 14:21:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110331180632.GB414@core.coreip.homeip.net>
-References: <1301592052-4064-1-git-send-email-manoj.iyer@canonical.com>
-	<1301592052-4064-2-git-send-email-manoj.iyer@canonical.com>
-	<20110331174334.GA414@core.coreip.homeip.net>
-	<AANLkTi=a1eZS2fjxKYzf1RsE=6n9wZwUTPs8v84zb6p_@mail.gmail.com>
-	<20110331180632.GB414@core.coreip.homeip.net>
-Date: Thu, 31 Mar 2011 13:21:09 -0500
-Message-ID: <AANLkTinB6GnF4gsX=-hXSLy9M1pUG1Y4W-sD_=4jdODi@mail.gmail.com>
-Subject: Re: [PATCH] add support for Lenovo tablet ID (0xE6)
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
-        pingc@wacom.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 Mar 2011 14:23:24 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 31 Mar 2011 14:23:13 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, david@lang.hm,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+In-reply-to: <alpine.LFD.2.00.1103311826070.22418@localhost6.localdomain6>
+Message-id: <alpine.LFD.2.00.1103311400190.28032@xanadu.home>
+References: <201103301906.42429.arnd@arndb.de>
+ <alpine.LFD.2.00.1103311359320.22418@localhost6.localdomain6>
+ <87d3l7jqpr.fsf@ti.com> <201103311723.02301.arnd@arndb.de>
+ <alpine.LFD.2.00.1103311826070.22418@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 1:07 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Thu, Mar 31, 2011 at 12:58:57PM -0500, Chris Bagwell wrote:
->> On Thu, Mar 31, 2011 at 12:43 PM, Dmitry Torokhov
->> <dmitry.torokhov@gmail.com> wrote:
->> > On Thu, Mar 31, 2011 at 12:20:52PM -0500, Manoj Iyer wrote:
->> >> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
->> >> ---
->> >>  drivers/input/tablet/wacom_wac.c |    3 +++
->> >>  1 files changed, 3 insertions(+), 0 deletions(-)
->> >>
->> >> diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
->> >> index 5597637..f751224 100644
->> >> --- a/drivers/input/tablet/wacom_wac.c
->> >> +++ b/drivers/input/tablet/wacom_wac.c
->> >> @@ -1364,6 +1364,8 @@ static const struct wacom_features wacom_features_0xE2 =
->> >>       { "Wacom ISDv4 E2",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG };
->> >>  static const struct wacom_features wacom_features_0xE3 =
->> >>       { "Wacom ISDv4 E3",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG };
->> >> +static const struct wacom_features wacom_features_0xE6 =
->> >> +     { "ISD-V4",               WACOM_PKGLEN_TPC2FG,    27760, 15694,  255,  0, TABLETPC2FG };
->> >
->> > Manoj, shouldn't we call it "Wacom ISDv4 E6" to be consistent?
->>
->> I think its best to rename to be consistent with others in series.
->>
->> >
->> > Ping, is resolution the same as with other "ISDv4"s?
->>
->> My guess is yes.
->>
->> Note: There is a patch from Ping that you recently accepted but I do
->> not see on a branch yet (maybe I'm looking in wrong place).
->
-> If we are talking about the same thing it shoudl be in my 'for-linus'
-> branch.
->
+On Thu, 31 Mar 2011, Thomas Gleixner wrote:
 
-Ah, yes.  There it is.
+> Start off with such a trivial, but immense effective cleanup and see
+> what it helps to share code even accross SoC vendors. They all glue
+> together random IP blocks from the market and there are not soo many
+> sources which are relevant. This makes sense in all aspects:
+> 
+>       1) less and better code
+>       2) faster setup for new SoCs
+>       3) shared benefit for all vendors
 
-The for-linus and next branches are quite different in this area of
-file.  The patch of this email would not apply cleanly to for-linus.
+If this was always true.  Someone commented on the fact that the IP 
+block providing USB on OMAP is shared with a couple other platforms.  
+But about 2600 lines of pure glue is still necessary around the common 
+driver to make it work for everyone.  I'm not saying that separate 
+drivers are called for here, simply that hardware people _will_ screw it 
+up, especially when they are hooking it up to a non-standard 
+SOC-specific bus.
 
-My suggestion is to use value of 0xE3 for which ever branch this is
-merged to... but best for Ping to ack.
+Another example: there used to be many different IP blocks providing 
+MMC/SD/SDIO support that people were adding to their SOCs.  Each SOC 
+would have its own reinvention of the wheel but they were all different 
+but simple wheels, and drivers for them were obvious and straight 
+forward.  Then came the SDHCI "standard".  At first few implementation 
+existed so the sdhci driver was, too, rather straight forward.  But 
+hardware manufacturers thought (rightfully) that this would be a good 
+idea to use that standard instead of using their custom simple wheel.  
+And so they did, releasing new SOC revision with the old wheel replaced 
+by a square implementation of the sdhci one.  Today the sdhci driver is 
+literally bastardized by all the quirks needed to work around all the 
+different and creative bugs or even standard misinterpretation of the 
+standard out there in the field.  And in many cases the sdhci version is 
+even _less_ functional than the custom and already supported 
+implementation it replaced.
 
-Chris
+And what would the hardware guys tell you?  That software is cheap.
+
+
+Nicolas
