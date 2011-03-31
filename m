@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab1CaOx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:53:29 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:57444 "EHLO
+	id S1758118Ab1CaOx0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:53:26 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:57454 "EHLO
 	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758069Ab1CaOwz (ORCPT
+	with ESMTP id S1758071Ab1CaOwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Mar 2011 10:52:55 -0400
 X-Cam-AntiVirus: no malware found
@@ -13,9 +13,9 @@ X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
 From: Jonathan Cameron <jic23@cam.ac.uk>
 To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, tglx@linutronix.de, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 19/21] staging:iio:lis3l02dq move to threaded trigger handling.
-Date: Thu, 31 Mar 2011 15:54:13 +0100
-Message-Id: <1301583255-28468-20-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 21/21] staging:iio: rip out scan_el attributes.  Now handled as iio_dev_attrs like everything else.
+Date: Thu, 31 Mar 2011 15:54:15 +0100
+Message-Id: <1301583255-28468-22-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
 References: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
@@ -23,225 +23,228 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Drivers have no need to use this functionality any more and we save a lot of
+code by getting rid of it.
+
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/staging/iio/accel/lis3l02dq.h      |    2 -
- drivers/staging/iio/accel/lis3l02dq_core.c |    2 -
- drivers/staging/iio/accel/lis3l02dq_ring.c |   96 ++++++++++-----------------
- 3 files changed, 36 insertions(+), 64 deletions(-)
+ drivers/staging/iio/industrialio-ring.c |  101 ++++++++-----------------------
+ drivers/staging/iio/ring_generic.h      |   24 -------
+ 2 files changed, 26 insertions(+), 99 deletions(-)
 
-diff --git a/drivers/staging/iio/accel/lis3l02dq.h b/drivers/staging/iio/accel/lis3l02dq.h
-index 6d73325..e7f64bd 100644
---- a/drivers/staging/iio/accel/lis3l02dq.h
-+++ b/drivers/staging/iio/accel/lis3l02dq.h
-@@ -150,7 +150,6 @@ Form of high byte dependant on justification set in ctrl reg */
-  * struct lis3l02dq_state - device instance specific data
-  * @helper:		data and func pointer allowing generic functions
-  * @us:			actual spi_device
-- * @inter:		used to check if new interrupt has been triggered
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-  * @rx:			recieve buffer
-@@ -159,7 +158,6 @@ Form of high byte dependant on justification set in ctrl reg */
- struct lis3l02dq_state {
- 	struct iio_sw_ring_helper_state	help;
- 	struct spi_device		*us;
--	bool				inter;
- 	struct iio_trigger		*trig;
- 	u8				*tx;
- 	u8				*rx;
-diff --git a/drivers/staging/iio/accel/lis3l02dq_core.c b/drivers/staging/iio/accel/lis3l02dq_core.c
-index 2bded87..46f0633 100644
---- a/drivers/staging/iio/accel/lis3l02dq_core.c
-+++ b/drivers/staging/iio/accel/lis3l02dq_core.c
-@@ -15,7 +15,6 @@
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/gpio.h>
--#include <linux/workqueue.h>
- #include <linux/mutex.h>
- #include <linux/device.h>
- #include <linux/kernel.h>
-@@ -726,7 +725,6 @@ static int __devinit lis3l02dq_probe(struct spi_device *spi)
- 	}
- 
- 	if (spi->irq && gpio_is_valid(irq_to_gpio(spi->irq)) > 0) {
--		st->inter = 0;
- 		ret = lis3l02dq_probe_trigger(st->help.indio_dev);
- 		if (ret)
- 			goto error_uninitialize_ring;
-diff --git a/drivers/staging/iio/accel/lis3l02dq_ring.c b/drivers/staging/iio/accel/lis3l02dq_ring.c
-index 9b15cad..04a0265 100644
---- a/drivers/staging/iio/accel/lis3l02dq_ring.c
-+++ b/drivers/staging/iio/accel/lis3l02dq_ring.c
-@@ -29,31 +29,10 @@ static inline u16 combine_8_to_16(u8 lower, u8 upper)
+diff --git a/drivers/staging/iio/industrialio-ring.c b/drivers/staging/iio/industrialio-ring.c
+index 07d64bc..815be33 100644
+--- a/drivers/staging/iio/industrialio-ring.c
++++ b/drivers/staging/iio/industrialio-ring.c
+@@ -193,53 +193,6 @@ static ssize_t iio_show_fixed_type(struct device *dev,
+ 		       this_attr->c->scan_type.shift);
  }
  
- /**
-- * lis3l02dq_poll_func_th() top half interrupt handler called by trigger
-- * @private_data:	iio_dev
-- **/
--static void lis3l02dq_poll_func_th(struct iio_dev *indio_dev, s64 time)
+-static int __iio_add_chan_scan_elattr(const char *postfix,
+-				      const char *group,
+-				      struct iio_chan_spec *chan,
+-				      struct device *dev,
+-				      struct list_head *attr_list)
 -{
--	struct iio_sw_ring_helper_state *h
--		= iio_dev_get_devdata(indio_dev);
--	struct lis3l02dq_state *st = lis3l02dq_h_to_s(h);
--	/* in this case we need to slightly extend the helper function */
--	iio_sw_poll_func_th(indio_dev, time);
+-	int ret;
+-	struct iio_scan_el *scan_el;
 -
--	/* Indicate that this interrupt is being handled */
--	/* Technically this is trigger related, but without this
--	 * handler running there is currently now way for the interrupt
--	 * to clear.
--	 */
--	st->inter = 1;
+-	scan_el = kzalloc(sizeof *scan_el, GFP_KERNEL);
+-	if (scan_el == NULL) {
+-		ret = -ENOMEM;
+-		goto error_ret;
+-	}
+-	if (chan->type != IIO_TIMESTAMP)
+-		ret = __iio_device_attr_init(&scan_el->dev_attr, postfix, chan,
+-					     iio_scan_el_show,
+-					     iio_scan_el_store, 0);
+-	else /*
+-	      * Timestamp handled separately because it simplifies a lot of
+-	      * drivers by ensuring they don't have to know its magic index
+-	      */
+-		ret = __iio_device_attr_init(&scan_el->dev_attr, postfix, chan,
+-					     iio_scan_el_ts_show,
+-					     iio_scan_el_ts_store, 0);
+-	if (ret)
+-		goto error_free_scan_el;
+-
+-	scan_el->number = chan->scan_index;
+-
+-	ret = sysfs_add_file_to_group(&dev->kobj,
+-				      &scan_el->dev_attr.attr,
+-				      group);
+-	if (ret < 0)
+-		goto error_device_attr_deinit;
+-
+-	list_add(&scan_el->l, attr_list);
+-
+-	return 0;
+-error_device_attr_deinit:
+-	__iio_device_attr_deinit(&scan_el->dev_attr);
+-error_free_scan_el:
+-	kfree(scan_el);
+-error_ret:
+-	return ret;
 -}
 -
--/**
-  * lis3l02dq_data_rdy_trig_poll() the event handler for the data rdy trig
-  **/
- static irqreturn_t lis3l02dq_data_rdy_trig_poll(int irq, void *private)
+ static int iio_ring_add_channel_sysfs(struct iio_ring_buffer *ring,
+ 				      struct iio_chan_spec *chan)
  {
--	disable_irq_nosync(irq);
- 	iio_trigger_poll(private, iio_get_time_ns());
+@@ -268,23 +221,28 @@ static int iio_ring_add_channel_sysfs(struct iio_ring_buffer *ring,
+ 	if (ret)
+ 		goto error_ret;
  
- 	return IRQ_HANDLED;
-@@ -153,15 +132,16 @@ static int lis3l02dq_read_all(struct lis3l02dq_state *st, u8 *rx_array)
+-	ret = __iio_add_chan_scan_elattr("en", "scan_elements",
+-					 chan, &ring->dev,
+-					 &ring->scan_el_en_attr_list);
+-
++	if (chan->type != IIO_TIMESTAMP)
++		ret = __iio_add_chan_devattr("en", "scan_elements",
++					     chan,
++					     &iio_scan_el_show,
++					     &iio_scan_el_store,
++					     chan->scan_index,
++					     0,
++					     &ring->dev,
++					     &ring->scan_el_dev_attr_list);
++	else
++		ret = __iio_add_chan_devattr("en", "scan_elements",
++					     chan,
++					     &iio_scan_el_ts_show,
++					     &iio_scan_el_ts_store,
++					     chan->scan_index,
++					     0,
++					     &ring->dev,
++					     &ring->scan_el_dev_attr_list);
+ error_ret:
  	return ret;
  }
  
--static void lis3l02dq_trigger_bh_to_ring(struct work_struct *work_s)
-+static irqreturn_t lis3l02dq_trigger_handler(int irq, void *p)
+-static void iio_ring_remove_and_free_scan_el_attr(struct iio_ring_buffer *ring,
+-						  struct iio_scan_el *p)
+-{
+-	sysfs_remove_file_from_group(&ring->dev.kobj,
+-				     &p->dev_attr.attr, "scan_elements");
+-	kfree(p->dev_attr.attr.name);
+-	kfree(p);
+-}
+-
+ static void iio_ring_remove_and_free_scan_dev_attr(struct iio_ring_buffer *ring,
+ 						   struct iio_dev_attr *p)
  {
--	struct iio_sw_ring_helper_state *h
--		= container_of(work_s, struct iio_sw_ring_helper_state,
--			work_trigger_to_ring);
--	struct lis3l02dq_state *st = lis3l02dq_h_to_s(h);
-+	struct iio_poll_func *pf = p;
-+	struct iio_dev *indio_dev = pf->private_data;
-+	struct iio_sw_ring_helper_state *h = iio_dev_get_devdata(indio_dev);
+@@ -306,15 +264,10 @@ static struct attribute_group iio_scan_el_dummy_group = {
+ static void __iio_ring_attr_cleanup(struct iio_ring_buffer *ring)
+ {
+ 	struct iio_dev_attr *p, *n;
+-	struct iio_scan_el *q, *m;
+-	int anydynamic = !(list_empty(&ring->scan_el_dev_attr_list) &&
+-			   list_empty(&ring->scan_el_en_attr_list));
++	int anydynamic = !list_empty(&ring->scan_el_dev_attr_list);
+ 	list_for_each_entry_safe(p, n,
+ 				 &ring->scan_el_dev_attr_list, l)
+ 		iio_ring_remove_and_free_scan_dev_attr(ring, p);
+-	list_for_each_entry_safe(q, m,
+-				 &ring->scan_el_en_attr_list, l)
+-		iio_ring_remove_and_free_scan_el_attr(ring, q);
  
--	st->inter = 0;
--	iio_sw_trigger_bh_to_ring(work_s);
-+	h->last_timestamp = iio_get_time_ns();
-+	iio_sw_trigger_to_ring(h);
-+
-+	return IRQ_HANDLED;
- }
- 
- static int lis3l02dq_get_ring_element(struct iio_sw_ring_helper_state *h,
-@@ -271,10 +251,10 @@ static int lis3l02dq_data_rdy_trigger_set_state(struct iio_trigger *trig,
- 	u8 t;
- 	__lis3l02dq_write_data_ready_config(&st->help.indio_dev->dev, state);
- 	if (state == false) {
--		/* possible quirk with handler currently worked around
--		   by ensuring the work queue is empty */
--		flush_scheduled_work();
--		/* Clear any outstanding ready events */
-+		/*
-+		 * A possible quirk with teh handler is currently worked around
-+		 *  by ensuring outstanding read events are cleared.
-+		 */
- 		ret = lis3l02dq_read_all(st, NULL);
+ 	if (ring->scan_el_attrs)
+ 		sysfs_remove_group(&ring->dev.kobj,
+@@ -352,7 +305,6 @@ int iio_ring_buffer_register_ex(struct iio_ring_buffer *ring, int id,
  	}
- 	lis3l02dq_spi_read_reg_8(st->help.indio_dev,
-@@ -297,32 +277,15 @@ static const struct attribute_group lis3l02dq_trigger_attr_group = {
- /**
-  * lis3l02dq_trig_try_reen() try renabling irq for data rdy trigger
-  * @trig:	the datardy trigger
-- *
-- * As the trigger may occur on any data element being updated it is
-- * really rather likely to occur during the read from the previous
-- * trigger event.  The only way to discover if this has occured on
-- * boards not supporting level interrupts is to take a look at the line.
-- * If it is indicating another interrupt and we don't seem to have a
-- * handler looking at it, then we need to notify the core that we need
-- * to tell the triggering core to try reading all these again.
-- **/
-+ */
- static int lis3l02dq_trig_try_reen(struct iio_trigger *trig)
+ 
+ 	INIT_LIST_HEAD(&ring->scan_el_dev_attr_list);
+-	INIT_LIST_HEAD(&ring->scan_el_en_attr_list);
+ 	if (channels) {
+ 		/* new magic */
+ 		for (i = 0; i < num_channels; i++) {
+@@ -554,9 +506,9 @@ ssize_t iio_scan_el_show(struct device *dev,
  {
- 	struct lis3l02dq_state *st = trig->private_data;
--	enable_irq(st->us->irq);
- 	/* If gpio still high (or high again) */
-+	/* In theory possible we will need to do this several times */
- 	if (gpio_get_value(irq_to_gpio(st->us->irq)))
--		if (st->inter == 0) {
--			/* already interrupt handler dealing with it */
--			disable_irq_nosync(st->us->irq);
--			if (st->inter == 1) {
--				/* interrupt handler snuck in between test
--				 * and disable */
--				enable_irq(st->us->irq);
--				return 0;
--			}
--			return -EAGAIN;
--		}
-+		lis3l02dq_read_all(st, NULL);
-+
- 	/* irq reenabled so success! */
- 	return 0;
- }
-@@ -333,14 +296,16 @@ int lis3l02dq_probe_trigger(struct iio_dev *indio_dev)
- 	struct iio_sw_ring_helper_state *h
- 		= iio_dev_get_devdata(indio_dev);
- 	struct lis3l02dq_state *st = lis3l02dq_h_to_s(h);
-+	char *name;
- 
--	st->trig = iio_allocate_trigger();
-+	name = kasprintf(GFP_KERNEL,
-+			 "lis3l02dq-dev%d",
-+			 indio_dev->id);
-+	st->trig = iio_allocate_trigger_named(name);
- 	if (!st->trig)
- 		return -ENOMEM;
- 
--	st->trig->name = kasprintf(GFP_KERNEL,
--				   "lis3l02dq-dev%d",
--				   indio_dev->id);
-+	st->trig->name = name;
- 	if (!st->trig->name) {
- 		ret = -ENOMEM;
- 		goto error_free_trig;
-@@ -379,6 +344,7 @@ void lis3l02dq_remove_trigger(struct iio_dev *indio_dev)
- 
- void lis3l02dq_unconfigure_ring(struct iio_dev *indio_dev)
- {
-+	kfree(indio_dev->pollfunc->name);
- 	kfree(indio_dev->pollfunc);
- 	lis3l02dq_free_buf(indio_dev->ring);
- }
-@@ -458,7 +424,7 @@ int lis3l02dq_configure_ring(struct iio_dev *indio_dev)
  	int ret;
- 	struct iio_sw_ring_helper_state *h = iio_dev_get_devdata(indio_dev);
- 	struct iio_ring_buffer *ring;
--	INIT_WORK(&h->work_trigger_to_ring, lis3l02dq_trigger_bh_to_ring);
-+
- 	h->get_ring_element = &lis3l02dq_get_ring_element;
+ 	struct iio_ring_buffer *ring = dev_get_drvdata(dev);
+-	struct iio_scan_el *this_el = to_iio_scan_el(attr);
++	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
  
- 	ring = lis3l02dq_alloc_buf(indio_dev);
-@@ -481,9 +447,19 @@ int lis3l02dq_configure_ring(struct iio_dev *indio_dev)
- 	iio_scan_mask_set(ring, 1);
- 	iio_scan_mask_set(ring, 2);
+-	ret = iio_scan_mask_query(ring, this_el->number);
++	ret = iio_scan_mask_query(ring, this_attr->address);
+ 	if (ret < 0)
+ 		return ret;
+ 	return sprintf(buf, "%d\n", ret);
+@@ -572,7 +524,7 @@ ssize_t iio_scan_el_store(struct device *dev,
+ 	bool state;
+ 	struct iio_ring_buffer *ring = dev_get_drvdata(dev);
+ 	struct iio_dev *indio_dev = ring->indio_dev;
+-	struct iio_scan_el *this_el = to_iio_scan_el(attr);
++	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
  
--	ret = iio_alloc_pollfunc(indio_dev, NULL, &lis3l02dq_poll_func_th);
--	if (ret)
-+	/* Functions are NULL as we set handler below */
-+	indio_dev->pollfunc = kzalloc(sizeof(*indio_dev->pollfunc), GFP_KERNEL);
+ 	state = !(buf[0] == '0');
+ 	mutex_lock(&indio_dev->mlock);
+@@ -580,20 +532,19 @@ ssize_t iio_scan_el_store(struct device *dev,
+ 		ret = -EBUSY;
+ 		goto error_ret;
+ 	}
+-	ret = iio_scan_mask_query(ring, this_el->number);
++	ret = iio_scan_mask_query(ring, this_attr->address);
+ 	if (ret < 0)
+ 		goto error_ret;
+ 	if (!state && ret) {
+-		ret = iio_scan_mask_clear(ring, this_el->number);
++		ret = iio_scan_mask_clear(ring, this_attr->address);
+ 		if (ret)
+ 			goto error_ret;
+ 	} else if (state && !ret) {
+-		ret = iio_scan_mask_set(ring, this_el->number);
++		ret = iio_scan_mask_set(ring, this_attr->address);
+ 		if (ret)
+ 			goto error_ret;
+ 	}
+-	if (this_el->set_state)
+-		ret = this_el->set_state(this_el, indio_dev, state);
 +
-+	if (indio_dev->pollfunc == NULL) {
-+		ret = -ENOMEM;
- 		goto error_iio_sw_rb_free;
-+	}
-+	indio_dev->pollfunc->private_data = indio_dev;
-+	indio_dev->pollfunc->handler = &lis3l02dq_trigger_handler;
-+	indio_dev->pollfunc->type = IRQF_ONESHOT;
-+	indio_dev->pollfunc->name
-+		= kasprintf(GFP_KERNEL, "lis3l02dq_consumer%d", indio_dev->id);
-+
- 	indio_dev->modes |= INDIO_RING_TRIGGERED;
- 	return 0;
+ error_ret:
+ 	mutex_unlock(&indio_dev->mlock);
  
+diff --git a/drivers/staging/iio/ring_generic.h b/drivers/staging/iio/ring_generic.h
+index ba441d9..801ec34 100644
+--- a/drivers/staging/iio/ring_generic.h
++++ b/drivers/staging/iio/ring_generic.h
+@@ -109,7 +109,6 @@ struct iio_ring_buffer {
+ 	int				(*postdisable)(struct iio_dev *);
+ 
+ 	struct list_head scan_el_dev_attr_list;
+-	struct list_head scan_el_en_attr_list;
+ 
+ 	wait_queue_head_t pollq;
+ 	bool stufftoread;
+@@ -138,29 +137,6 @@ static inline void __iio_update_ring_buffer(struct iio_ring_buffer *ring,
+ }
+ 
+ /**
+- * struct iio_scan_el - an individual element of a scan
+- * @dev_attr:		control attribute (if directly controllable)
+- * @number:		unique identifier of element (used for bit mask)
+- * @label:		useful data for the scan el (often reg address)
+- * @set_state:		for some devices datardy signals are generated
+- *			for any enabled lines.  This allows unwanted lines
+- *			to be disabled and hence not get in the way.
+- **/
+-struct iio_scan_el {
+-	struct device_attribute		dev_attr;
+-	unsigned int			number;
+-	unsigned int			label;
+-	struct list_head l;
+-
+-	int (*set_state)(struct iio_scan_el *scanel,
+-			 struct iio_dev *dev_info,
+-			 bool state);
+-};
+-
+-#define to_iio_scan_el(_dev_attr)				\
+-	container_of(_dev_attr, struct iio_scan_el, dev_attr);
+-
+-/**
+  * iio_scan_el_store() - sysfs scan element selection interface
+  * @dev: the target device
+  * @attr: the device attribute that is being processed
 -- 
 1.7.3.4
 
