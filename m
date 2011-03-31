@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758601Ab1CaQAt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:00:49 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:32846 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753342Ab1CaQAs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:00:48 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=O2SS8i6aQzqZ/9QlTVeklFXxQVMAsCG9/CEsW6AwcaKBr5aFGuHxq4bvVIKd2ypUxt7b/IyJT3F9nWmb9ViCxcPBzmv2Mh8aOoZ1Bhc9UmOSi0OEuj/7f07orpikKZqI;
-Date: Thu, 31 Mar 2011 09:00:39 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bp@amd64.org, jbarnes@virtuousgeek.org, tglx@linutronix.de,
-        borislav.petkov@amd.com, mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, amd-nb: Rename CPU PCI id define for F4
-Message-ID: <20110331090039.12358ee6@jbarnes-desktop>
-In-Reply-To: <tip-cb6c8520f6f6bba7b7e1a6de3360a8edfd8243b6@git.kernel.org>
-References: <20110330183447.GA3668@aftab>
-	<tip-cb6c8520f6f6bba7b7e1a6de3360a8edfd8243b6@git.kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	id S1758583Ab1CaQC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:02:56 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:39085 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758286Ab1CaQCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 12:02:54 -0400
+Subject: Re: [PATCH 05/12] mm: alloc_contig_range() added
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
+In-Reply-To: <1301577368-16095-6-git-send-email-m.szyprowski@samsung.com>
+References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
+	 <1301577368-16095-6-git-send-email-m.szyprowski@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 31 Mar 2011 09:02:41 -0700
+Message-ID: <1301587361.31087.1040.camel@nimitz>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011 07:04:41 GMT
-tip-bot for Borislav Petkov <bp@amd64.org> wrote:
+On Thu, 2011-03-31 at 15:16 +0200, Marek Szyprowski wrote:
+> +       ret = 0;
+> +       while (!PageBuddy(pfn_to_page(start & (~0UL << ret))))
+> +               if (WARN_ON(++ret >= MAX_ORDER))
+> +                       return -EINVAL; 
 
-> Commit-ID:  cb6c8520f6f6bba7b7e1a6de3360a8edfd8243b6
-> Gitweb:     http://git.kernel.org/tip/cb6c8520f6f6bba7b7e1a6de3360a8edfd8243b6
-> Author:     Borislav Petkov <bp@amd64.org>
-> AuthorDate: Wed, 30 Mar 2011 20:34:47 +0200
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Thu, 31 Mar 2011 08:51:38 +0200
-> 
-> x86, amd-nb: Rename CPU PCI id define for F4
-> 
-> With increasing number of PCI function ids, add the PCI function
-> id in the define name instead of its symbolic name in the BKDG
-> for more clarity. This renames function 4 define.
-> 
+Holy cow, that's dense.  Is there really no more straightforward way to
+do that?
 
-I guess I don't see how a rename is urgent, but you can add my
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+In any case, please pull the ++ret bit out of the WARN_ON().  Some
+people like to do:
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+#define WARN_ON(...) do{}while(0)
+
+to save space on some systems.  
+
+-- Dave
+
