@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964987Ab1CaSUz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 14:20:55 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:58469 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758903Ab1CaSUx (ORCPT
+	id S965063Ab1CaSVN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 14:21:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58433 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab1CaSVK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 14:20:53 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=ns8sHeh0aYzOj8ZolrWHS7+3YklK6Mt0Pfxw06ty78x+g7DsAiUElGStCSByYBjv6a0oXuqkSe6OU3Q84UVKQ+FYog3AT3nQHlOzU8TjAkhTcHlU5HVJo4dy1zZymIXO;
-Date: Thu, 31 Mar 2011 11:20:51 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Sylvestre Ledru <sylvestre.ledru@scilab.org>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Fix a typo 'an hardware => a hardware'
-Message-Id: <20110331112051.082fe0c3.rdunlap@xenotime.net>
-In-Reply-To: <1301595039.27408.14.camel@losinj.inria.fr>
-References: <1301595039.27408.14.camel@losinj.inria.fr>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.42.51 authed with rdunlap@xenotime.net}
+	Thu, 31 Mar 2011 14:21:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110331180632.GB414@core.coreip.homeip.net>
+References: <1301592052-4064-1-git-send-email-manoj.iyer@canonical.com>
+	<1301592052-4064-2-git-send-email-manoj.iyer@canonical.com>
+	<20110331174334.GA414@core.coreip.homeip.net>
+	<AANLkTi=a1eZS2fjxKYzf1RsE=6n9wZwUTPs8v84zb6p_@mail.gmail.com>
+	<20110331180632.GB414@core.coreip.homeip.net>
+Date: Thu, 31 Mar 2011 13:21:09 -0500
+Message-ID: <AANLkTinB6GnF4gsX=-hXSLy9M1pUG1Y4W-sD_=4jdODi@mail.gmail.com>
+Subject: Re: [PATCH] add support for Lenovo tablet ID (0xE6)
+From: Chris Bagwell <chris@cnpbagwell.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
+        pingc@wacom.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011 20:10:39 +0200 Sylvestre Ledru wrote:
+On Thu, Mar 31, 2011 at 1:07 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Thu, Mar 31, 2011 at 12:58:57PM -0500, Chris Bagwell wrote:
+>> On Thu, Mar 31, 2011 at 12:43 PM, Dmitry Torokhov
+>> <dmitry.torokhov@gmail.com> wrote:
+>> > On Thu, Mar 31, 2011 at 12:20:52PM -0500, Manoj Iyer wrote:
+>> >> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+>> >> ---
+>> >>  drivers/input/tablet/wacom_wac.c |    3 +++
+>> >>  1 files changed, 3 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+>> >> index 5597637..f751224 100644
+>> >> --- a/drivers/input/tablet/wacom_wac.c
+>> >> +++ b/drivers/input/tablet/wacom_wac.c
+>> >> @@ -1364,6 +1364,8 @@ static const struct wacom_features wacom_features_0xE2 =
+>> >>       { "Wacom ISDv4 E2",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG };
+>> >>  static const struct wacom_features wacom_features_0xE3 =
+>> >>       { "Wacom ISDv4 E3",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG };
+>> >> +static const struct wacom_features wacom_features_0xE6 =
+>> >> +     { "ISD-V4",               WACOM_PKGLEN_TPC2FG,    27760, 15694,  255,  0, TABLETPC2FG };
+>> >
+>> > Manoj, shouldn't we call it "Wacom ISDv4 E6" to be consistent?
+>>
+>> I think its best to rename to be consistent with others in series.
+>>
+>> >
+>> > Ping, is resolution the same as with other "ISDv4"s?
+>>
+>> My guess is yes.
+>>
+>> Note: There is a patch from Ping that you recently accepted but I do
+>> not see on a branch yet (maybe I'm looking in wrong place).
+>
+> If we are talking about the same thing it shoudl be in my 'for-linus'
+> branch.
+>
 
-> Hello,
-> 
-> Here is a patch which fixes an other minor typo issue.
+Ah, yes.  There it is.
 
-Hi Sylvestre,
+The for-linus and next branches are quite different in this area of
+file.  The patch of this email would not apply cleanly to for-linus.
 
-I merged your earlier patch because it mostly modified Documentation/,
-which I maintain.  Since these 2 patches are not like that, please send
-them to the trivial patch maintainer.
+My suggestion is to use value of 0xE3 for which ever branch this is
+merged to... but best for Ping to ack.
 
----
-~Randy
+Chris
