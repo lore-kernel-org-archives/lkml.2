@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691Ab1CaNjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 09:39:54 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55323 "EHLO linutronix.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752620Ab1CaNjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 09:39:53 -0400
-Date: Thu, 31 Mar 2011 15:39:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Bill Gatliff <bgat@billgatliff.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-In-Reply-To: <AANLkTikd_JRxmB_OWZqq178=K3bnxhdDqcNbgFNRtTyU@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1103311411090.22418@localhost6.localdomain6>
-References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com> <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
- <20110331001502.GB6680@n2100.arm.linux.org.uk> <AANLkTinE7EDbV8hrYZWBxgvwOxdPMLoS0Y57PSm04rvM@mail.gmail.com> <AANLkTik-BFTzyPLuYVdhCJPocc0wPY0rKvO7BQS4Fg1S@mail.gmail.com> <AANLkTikd_JRxmB_OWZqq178=K3bnxhdDqcNbgFNRtTyU@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757595Ab1CaNr0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 09:47:26 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:52251 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643Ab1CaNrZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 09:47:25 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-327262446-1301574738=:22418"
-Content-ID: <alpine.LFD.2.00.1103311534310.22418@localhost6.localdomain6>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20110331132328.GB2202@pengutronix.de>
+References: <1301574600-4861-1-git-send-email-monstr@monstr.eu>
+ <1301574600-4861-2-git-send-email-monstr@monstr.eu> <20110331124925.GA2202@pengutronix.de>
+ <AANLkTi=sG6oVNifwLLi8jjKQXjR6kXZx43NxtFfoPumy@mail.gmail.com> <20110331132328.GB2202@pengutronix.de>
+From: John Williams <john.williams@petalogix.com>
+Date: Thu, 31 Mar 2011 23:47:04 +1000
+Message-ID: <AANLkTikCEYK5K3sQ1rgVK6qMvizQYUn=xsiSPedNRn9A@mail.gmail.com>
+Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Michal Simek <monstr@monstr.eu>, devicetree-discuss@lists.ozlabs.org,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        hjk@linutronix.de, gregkh@suse.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, Mar 31, 2011 at 11:23 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+>
+>>    Maybe I misunderstand you, in my view it is the responsibility of <vendor>
+>>    to create their DTS files to indicate they want <special-card1> to bind to
+>>    generic-uio.
+>
+> Device tree is a OS-neutral hardware description language. "generic-uio"
+> is neither OS-neutral nor a hardware description. devicetree.org has
+> more information about this.
 
----1463795968-327262446-1301574738=:22418
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.LFD.2.00.1103311534311.22418@localhost6.localdomain6>
+If we are trying to be pure, I might argue we are not changing the DTS
+language, but rather just add support in Linux for a particular
+use-case.  There is no violation of DTS syntax.
 
-On Wed, 30 Mar 2011, Linus Torvalds wrote:
+It might be *recommended* that device trees describe only hardware,
+although as Michal points out there is already precedent in the
+'chosen' node where this is clearly violated, but in a way that is
+compatible with DTS syntax.
 
-> On Wed, Mar 30, 2011 at 6:15 PM, Bill Gatliff <bgat@billgatliff.com> wrote:
-> >
-> > I'm not sure this metric is completely fair to ARM. �If you want to
-> > level the field, I think you have to divide each result by the number
-> > of SoC's
-> 
-> But that's the problem with ARM. Hardware companies that do one-off
-> stuff, with no sense of compatibility.
-> 
-> And calling it an "opportunity" is just stupid.
-> 
-> There's nothing good about causing extra work just because ARM hasn't
-> had the sense to standardize on one (or a couple) of interrupt
-> controllers etc.
+Is it forbidden to have DTS descriptions of purely virtual devices, as
+would be present if you boot a DTS-driven kernel inside a VM
+environment, which provides only virtual implementations of various
+devices (ethernet etc)?
 
-Well, ARM is not the only one there, it's the top one, but mips and
-power are not less crazy. Here are the top five architectures counted
-in number of irq_chip implementations.
+'vmware,virt-enet' or whatever?
 
-      arch/arm     139
-      arch/mips    75
-      arch/powerpc 44
-      arch/alpha   21
-      arch/x86     15
+>>    Our use-case is pretty clear, in FPGA-based systems it is common to create
+>>    arbitrary devices that developers just want to control from userspace,
+>>    with simple IRQ and IO capabilities (DMA can come later :). �They don't
+>>    need to bind to other kernel APIs or subsystems, and don't want to invest
+>>    in one-off kernel drivers that simply will never go upstream.
+>
+> For that, the new_compatible-file would be suitable, I think.
 
-Thanks,
+# echo "generic-uio" > /sys/class/uio/<something>
 
-	tglx
----1463795968-327262446-1301574738=:22418--
+?
+
+>>    UIO is perfect, and simply tagging the device as generic-uio in the DTS is
+>>    so simple, clean, and elegant.
+>
+> Simple, yes (I do understand I wrote the first approach ;)) . Elegant,
+> not really, because it breaks core conventions of the device tree. For
+> your case it is a very conveniant hack, but it is still a hack.
+
+Being useful seems like a high priority in the kernel, I'm not ashamed of it! :)
+
+Regards,
+
+John
