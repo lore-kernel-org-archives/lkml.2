@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390Ab1CaMmh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 08:42:37 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56836 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752409Ab1CaMmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 08:42:35 -0400
-Date: Thu, 31 Mar 2011 12:42:19 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, tglx@linutronix.de,
-        oleg@redhat.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, tglx@linutronix.de,
-        oleg@redhat.com, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Fix task_struct reference leak
-Message-ID: <tip-fd1edb3aa2c1d92618d8f0c6d15d44ea41fcac6a@git.kernel.org>
-Git-Commit-ID: fd1edb3aa2c1d92618d8f0c6d15d44ea41fcac6a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756336Ab1CaMn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 08:43:58 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43832 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab1CaMn5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 08:43:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IJIIpKL8YksVi60JoTCVVLi3y4jf6SBuY/O9RfL++8u/YbsfmsPnj1FINAUVPjWB+1
+         BrlthSgYXkMs5mhj10H6DjW7NALwn1S3hlJpphrfnlkhydt4/woReydUAxkKyQ1b+ZE4
+         g6wCJedO48IE2h72DxqkCbBEIdSPNoPXhhNBk=
+Date: Thu, 31 Mar 2011 14:43:52 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Tvrtko Ursulin <tvrtko@ursulin.net>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: 2.6.38 hangs on boot until key is pressed
+Message-ID: <20110331124352.GA14693@alberich.amd.com>
+References: <1301253485.2500.2.camel@deuteros>
+ <20110330155350.GA31845@alberich.amd.com>
+ <1301509097.2538.4.camel@deuteros>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 31 Mar 2011 12:42:20 +0000 (UTC)
+In-Reply-To: <1301509097.2538.4.camel@deuteros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fd1edb3aa2c1d92618d8f0c6d15d44ea41fcac6a
-Gitweb:     http://git.kernel.org/tip/fd1edb3aa2c1d92618d8f0c6d15d44ea41fcac6a
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon, 28 Mar 2011 13:13:56 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 31 Mar 2011 13:02:56 +0200
+On Wed, Mar 30, 2011 at 07:18:17PM +0100, Tvrtko Ursulin wrote:
+> On Wed, 2011-03-30 at 17:53 +0200, Andreas Herrmann wrote:
+> > On Sun, Mar 27, 2011 at 08:18:05PM +0100, Tvrtko Ursulin wrote:
+> > > 
+> > > Hi all,
+> > > 
+> > > It always happens at the same spot. 2.6.37 is fine with almost
+> > > identical .config. Dmesg and config attached.
+> > 
+> > 
+> > Hi,
+> > 
+> > can you please send dmesg when 2.6.37 is booted.
+> > Also output of "lspci -nnxxxx" would be of interest.
 
-perf: Fix task_struct reference leak
+Sorry, forgot to say that lspci -nnxxxx should also be run as root.
+(To get complete PCI config space.)
 
-sys_perf_event_open() had an imbalance in the number of task refs it
-took causing memory leakage
+> > dmidecode (as root) would also help.
+> 
+> Attached.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: stable@kernel.org # .37+
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/perf_event.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Thanks.
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 2616909..27960f1 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -6531,6 +6531,11 @@ SYSCALL_DEFINE5(perf_event_open,
- 		goto err_alloc;
- 	}
- 
-+	if (task) {
-+		put_task_struct(task);
-+		task = NULL;
-+	}
-+
- 	/*
- 	 * Look up the group leader (we will attach this event to it):
- 	 */
+> > Does it help to disable C1e in your BIOS (if there is such an option)?
+> > If there is no such option please try to boot 2.6.38.1 with idle=mwait
+> > on the command line.
+> 
+> Both tests (on their own) booted without hanging.
+
+Ok.
+
+This reminds me on some Gigabyte mainboards (for which we couldn't
+root cause the problem). The workaround for those boards was to boot
+with acpi_skip_timer_override.
+
+The Gigabyte mainboards had some odd lapic_id settings and yours too:
+
+> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x01] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x02] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x03] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x84] disabled)   <====
+> [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x85] disabled)   <====
+> [    0.000000] ACPI: IOAPIC (id[0x04] address[0xfec00000] gsi_base[0])
+> [    0.000000] IOAPIC[0]: apic_id 4, version 33, address 0xfec00000, GSI 0-23
+
+This should rather look like
+
+[    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x01] enabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x02] enabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x03] enabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x04] enabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x05] enabled)
+[    0.000000] ACPI: IOAPIC (id[0x06] address[0xfec00000] gsi_base[0])
+[    0.000000] IOAPIC[0]: apic_id 6, version 33, address 0xfec00000, GSI 0-23
+
+(That's from my system -- also ASUSTek, but different model.)
+
+So can you please provide "lspci -xxxx" (as root) and try another test
+-- boot .38 with acpi_skip_timer_override kernel parameter.
+
+And please add also "apic=debug show_lapic=all" and provide dmesg
+of that test run.
+
+
+Thanks,
+Andreas
