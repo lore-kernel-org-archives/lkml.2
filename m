@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758881Ab1CaSM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 14:12:57 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:49626 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab1CaSM4 (ORCPT
+	id S1758895Ab1CaSPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 14:15:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53464 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab1CaSPp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 14:12:56 -0400
-Date: Thu, 31 Mar 2011 20:12:54 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Nicolas Pitre <nico@fluxnic.net>,
-        Dave Airlie <airlied@gmail.com>, david@lang.hm,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110331181254.GA21981@merkur.ravnborg.org>
-References: <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <AANLkTikV5OMifKjWRVdtJLEcxcZ56jrjWLYJBX89pHQ0@mail.gmail.com> <alpine.LFD.2.00.1103310012500.28032@xanadu.home> <20110331105440.42692165@lxorguk.ukuu.org.uk> <20110331105000.GC14323@n2100.arm.linux.org.uk> <1301575101.10659.132.camel@e102109-lin.cambridge.arm.com> <20110331130123.GB17547@n2100.arm.linux.org.uk>
+	Thu, 31 Mar 2011 14:15:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=u/PBQNVB+R2LSAYMASAZRFVkuGfnXcMT6CbBlYYVfMruAFnnhasveVa3P0+ld6kDRx
+         p2XjOSP2hJldhLLrPJnpW1e6J2nz1kf8zcIff4d7H5+ecnz0+KZFnzQBJWe+FSIe7I2R
+         sq0UK5Ou4Vjg7jlsA8j/K6/Kq9YOen5Y2rbwI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110331130123.GB17547@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110331163916.2C6D.A69D9226@jp.fujitsu.com>
+References: <4D9281B8.1090904@sgi.com> <20110329181346.d2e1fb3c.akpm@linux-foundation.org>
+ <20110331163916.2C6D.A69D9226@jp.fujitsu.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 31 Mar 2011 14:15:24 -0400
+Message-ID: <AANLkTinrDjgb9PSuWVjk+dTSp1Te0284MuMHWc+jL_bf@mail.gmail.com>
+Subject: Re: [PATCH] bitmap, irq: Add smp_affinity_list interface to /proc/irq
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mike Travis <travis@sgi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And since Linus' whinge about ARM defconfigs, I really *hate* merging
-> anything with *any* defconfig changes in - as a result, I don't
-> particularly want to deal with ARM defconfig changes anymore.
+On Thu, Mar 31, 2011 at 03:37, KOSAKI Motohiro wrote:
+>> > [If it was up to me, I'd eliminate the bitmask interfaces and just keep the
+>> > list interfaces.  That's the stupid interface that's not needed, and far more
+>> > shortsighted.]
+>>
+>> Agree.
+>>
+>> It's not impossible to remove those interfaces.  My preferred approach
+>> is to add a once-per-boot warning printk if anyone uses the old
+>> interface and to remove the thing altogether in three or five years.
+>>
+>> That reminds me.  It's been like ten years.  Someone please delete sys_bdflush().
+>
+> This?
+>
+> But to be honest, this long diffstat seems tell me the worth is doubious. ;-)
 
-I thought we solved this with the introduction of "make savedefconfig"
-that created much much smaller defconfig.
-At least the defconfigs should be down in the noise level in the
-diffstats.
-
-We can always argue about the usefullness of the 100+ defconfigs,
-that is still unreadable.
-But at least they no longer dominate the diffs (if people remember
-to use "make savedefconfig".
-
-	Sam
+you dont need to update the arches.  just leave the compat option in
+kernel/sys_ni.c.  there is really no overhead at runtime as the func
+is aliased to the ENOSYS stub.
+-mike
