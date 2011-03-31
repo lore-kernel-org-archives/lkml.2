@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757733Ab1CaNxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 09:53:09 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:57537 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757624Ab1CaNxH (ORCPT
+	id S1757760Ab1CaNym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 09:54:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58226 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757711Ab1CaNyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 09:53:07 -0400
+	Thu, 31 Mar 2011 09:54:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: dedekind1@gmail.com
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Date: Thu, 31 Mar 2011 15:54:25 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>
+References: <20110317183048.GW7258@atomide.com> <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6> <1301569200.2828.42.camel@localhost>
+In-Reply-To: <1301569200.2828.42.camel@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20110331062949.GA29526@elte.hu>
-References: <20110331032307.GA27999@vigoh> <20110331062949.GA29526@elte.hu>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Thu, 31 Mar 2011 10:52:46 -0300
-Message-ID: <AANLkTinRvCcY5kC+jeHgWp2RH7nzgexXKcRGb1SwhsE_@mail.gmail.com>
-Subject: Re: [GIT PULL] Fix common misspellings
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        lucas.de.marchi@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103311554.25863.arnd@arndb.de>
+X-Provags-ID: V02:K0:XOxzKHbQwAYs2YShzxQwOcuk604lraRFDrOKrMcYxTA
+ f1+/6V1THL/rngMvdt7H1e0II2SmvWL3Gpt4HL7vBYPrLQkBSW
+ /gpbRk2OdE+H4M4ANdHPpcq6Dk1+XTR2Rtu9VkxAZ22R0tWfQG
+ YG+3uHAzqs/K+Ub1h1+boEvzZJj0pqjzbiOlktE8EqHcl70jXR
+ rhJpkXeATwuGxbq0S2eHQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Thursday 31 March 2011, Artem Bityutskiy wrote:
+> On Wed, 2011-03-30 at 23:10 +0200, Thomas Gleixner wrote:
+> > The only problem is to find a person, who is willing to do that, has
+> > enough experience, broad shoulders and a strong accepted voice. Not to
+> > talk about finding someone who is willing to pay a large enough
+> > compensation for pain and suffering. 
+> 
+> If I understand correctly, this is exactly what Linaro would need to do.
 
-On Thu, Mar 31, 2011 at 3:29 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> I've gone over your changes and noticed one very small thing, you've changed
-> copyright strings as well:
->
-> - * Copyright (C) 2007 Marvell Internation Ltd.
-> + * Copyright (C) 2007 Marvell International Ltd.
-> - * Copyright (C) 2007 Marvell Internation Ltd.
-> + * Copyright (C) 2007 Marvell International Ltd.
-> - * Copyright (C) 2007 Marvell Internation Ltd.
-> + * Copyright (C) 2007 Marvell International Ltd.
-> - * Copyright (C) 2007-2008 Marvell Internation Ltd.
-> + * Copyright (C) 2007-2008 Marvell International Ltd.
-> - * Copyright (C) 2007 Marvell Internation Ltd.
-> + * Copyright (C) 2007 Marvell International Ltd.
-> - * Copyright (C) 2007 Marvell Internation Ltd.
-> + * Copyright (C) 2007 Marvell International Ltd.
-> - * Copyright (C) 2007 Marvell Internation Ltd.
-> + * Copyright (C) 2007 Marvell International Ltd.
-> - * Copyright (c) 2002 The Regents of the Unviersity of Michigan
-> + * Copyright (c) 2002 The Regents of the University of Michigan
->
-> While all the fixes are correct, i'd advise against changing copyright notices
-> without the SOB of the authors. The s/Unviersity/University fix would be ok i
-> guess because it's a very clear typo, but the Marvell one is borderline (while
-> it too is probably a typo) i think it needs a signoff from those who put the
-> copyright notices there in that form.
->
-> You could leave out those bits from the patch as well.
+Absolutely. Getting the work done that each of the SoC vendors needs but
+none of them would do on their own is the main reason why Linaro is there,
+so if we can agree what needs to be done, I'm sure we can find someone
+to do it.
 
-Ok. I saw these when manually reviewing and a 'git grep "Marvell
-International Ltd"'  revealed a lot of places using "the right form",
-so I assumed they were in fact typos.
-
-I'll remove them for now, and send a separate patch later asking for
-the required s-o-b.
-
-
-thanks
-Lucas De Marchi
+	Arnd
