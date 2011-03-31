@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab1CaEhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 00:37:17 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:52516 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab1CaEhP (ORCPT
+	id S1753240Ab1CaEim (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 00:38:42 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:55067 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab1CaEil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 00:37:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:in-reply-to:message-id:references:mime-version:
-	content-type; q=dns; s=newdream.net; b=AcqXKRuoTqmn5fChd9v37kOU8
-	2by4lAnIORtjLMMN/lYlKsYn2rlvfSj7m4tQ0CoAbcjf3au2WwXsfrsdlD9YOxUD
-	ksdBLkyhDNhwziAlc07o3klPGbxSqqgqTE7TyDLlKXgwpI+h55tchwZ9sWtgbos4
-	VkMUM+KqHGrvDIgRLA=
-Date: Wed, 30 Mar 2011 21:40:15 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Dave Chinner <david@fromorbit.com>
-cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mszeredi@suse.cz
-Subject: Re: [PATCH 4/7] vfs: push dentry_unhash on rename_dir into file
- systems
-In-Reply-To: <20110331030926.GB30279@dastard>
-Message-ID: <Pine.LNX.4.64.1103302133090.6767@cobra.newdream.net>
-References: <1301522968-4382-1-git-send-email-sage@newdream.net>
- <1301522968-4382-5-git-send-email-sage@newdream.net> <20110331030926.GB30279@dastard>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 31 Mar 2011 00:38:41 -0400
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_VbucNmY7XEIiiv8ksBGlZg)"
+Date: Thu, 31 Mar 2011 00:38:39 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Dave Airlie <airlied@gmail.com>
+Cc: david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+In-reply-to: <AANLkTikV5OMifKjWRVdtJLEcxcZ56jrjWLYJBX89pHQ0@mail.gmail.com>
+Message-id: <alpine.LFD.2.00.1103310012500.28032@xanadu.home>
+References: <20110317183048.GW7258@atomide.com>
+ <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+ <20110318101512.GA15375@n2100.arm.linux.org.uk>
+ <201103301906.42429.arnd@arndb.de>
+ <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+ <alpine.LFD.2.00.1103301531420.28032@xanadu.home>
+ <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
+ <alpine.LFD.2.00.1103301814250.28032@xanadu.home>
+ <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm>
+ <alpine.LFD.2.00.1103302255280.28032@xanadu.home>
+ <AANLkTikV5OMifKjWRVdtJLEcxcZ56jrjWLYJBX89pHQ0@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011, Dave Chinner wrote:
-> On Wed, Mar 30, 2011 at 03:09:25PM -0700, Sage Weil wrote:
-> > Only a few file systems need this.  Start by pushing it down into each
-> > rename method so that it can be dealt with on a per-fs basis.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--Boundary_(ID_VbucNmY7XEIiiv8ksBGlZg)
+Content-type: TEXT/PLAIN; charset=ISO-8859-1
+Content-transfer-encoding: 8BIT
+
+On Thu, 31 Mar 2011, Dave Airlie wrote:
+
+> > As long as SOC vendors keep producing wildly different architectures
+> > besides the core CPU we'll have this problem.  Denying the reality won't
+> > make that problem go away either.  And device tree won't stop those
+> > vendor from still trying to do things differently (better?) because they
+> > are not constrained by having to ensure this single proprietary software
+> > stack still boot.
 > 
-> What is the criteria for a filesystem needing this?
+> So you are saying the only way to get the Linux ARM shit cleaned up is
+> to hope Microsoft succeeds in making Windows a success on ARM?
 
-As I understand it, it's normally just a question of whether the FS can 
-handle references to the directory's struct inode and dentry after they've 
-been unlinked.  A few file systems bail out of rmdir/rename if 
-!d_unhashed(dentry) (dentry_unhash() doesn't unhash if there are any other 
-dentry references).
+Absolutely.  On Intel, it is (still) Windows the reference.  If Windows 
+doesn't boot on your motherboard you have a problem.  So motherboard 
+vendors won't make crazy incompatible things.  They are constrained to 
+fix their hardware because they just cannot alter Windows to suit their 
+hardware differences.  That really helps keeping actual differences to a 
+minimum and only to things that are not fundamental. So Windows really 
+helped making a uniform hardware platform on X86.
 
-All but a handful of file systems should be able to drop the dentry_unhash 
-entirely.
+On ARM you have no prepackaged "real" Windows.  That let hardware people 
+try things.  So they do change the hardware platform all the time to 
+gain some edge.  And this is no problem for them because most of the 
+time they have access to the OS source code and they modify it 
+themselves directly. No wonder why Linux is so popular on ARM. I'm sure 
+hardware designers really enjoy this freedom.  We software developers 
+would much prefer if the whole hardware platform was standardized and 
+set in stone.  That would certainly make our lives so much better and 
+then we would have spare cycles to actually abstract all those GPIO 
+drivers even further.  But that would benefit Windows on ARM quite 
+significantly too.
 
-> > Signed-off-by: Sage Weil <sage@newdream.net>
-> > ---
-> >  fs/9p/vfs_inode.c       |    3 +++
-> >  fs/affs/namei.c         |    3 +++
-> >  fs/afs/dir.c            |    3 +++
-> >  fs/bfs/dir.c            |    3 +++
-> >  fs/btrfs/inode.c        |    3 +++
-> >  fs/ceph/dir.c           |    3 +++
-> >  fs/cifs/inode.c         |    3 +++
-> >  fs/coda/dir.c           |    3 +++
-> >  fs/ecryptfs/inode.c     |    3 +++
-> >  fs/exofs/namei.c        |    3 +++
-> >  fs/ext2/namei.c         |    3 +++
-> >  fs/ext3/namei.c         |    3 +++
-> >  fs/ext4/namei.c         |    3 +++
-> >  fs/fat/namei_msdos.c    |    3 +++
-> >  fs/fat/namei_vfat.c     |    3 +++
-> >  fs/fuse/dir.c           |    4 ++++
-> >  fs/gfs2/ops_inode.c     |    3 +++
-> >  fs/hfs/dir.c            |    3 +++
-> >  fs/hostfs/hostfs_kern.c |    3 +++
-> >  fs/hpfs/namei.c         |    4 ++++
-> >  fs/jffs2/dir.c          |    3 +++
-> >  fs/jfs/namei.c          |    3 +++
-> >  fs/libfs.c              |    3 +++
-> >  fs/logfs/dir.c          |    3 +++
-> >  fs/minix/namei.c        |    3 +++
-> >  fs/namei.c              |    5 +----
-> >  fs/ncpfs/dir.c          |    3 +++
-> >  fs/nfs/dir.c            |    3 +++
-> >  fs/nilfs2/namei.c       |    3 +++
-> >  fs/ocfs2/namei.c        |    3 +++
-> >  fs/omfs/dir.c           |    3 +++
-> >  fs/reiserfs/namei.c     |    3 +++
-> >  fs/sysv/namei.c         |    3 +++
-> >  fs/ubifs/dir.c          |    3 +++
-> >  fs/udf/namei.c          |    3 +++
-> >  fs/ufs/namei.c          |    3 +++
-> >  36 files changed, 108 insertions(+), 4 deletions(-)
-> 
-> You didn't push it down into XFS, hence my question....
 
-Whoops... I was grepping for .rmdir and .rename in fs/*.c.  I'll fix it 
-up.
+Nicolas
 
-sage
+--Boundary_(ID_VbucNmY7XEIiiv8ksBGlZg)--
