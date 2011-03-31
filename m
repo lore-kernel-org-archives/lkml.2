@@ -1,175 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab1CaLJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 07:09:51 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:59011 "EHLO mx1.fusionio.com"
+	id S1757338Ab1CaLNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 07:13:43 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:44760 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab1CaLJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 07:09:48 -0400
-X-ASG-Debug-ID: 1301569787-03d6a573292bfb0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D9460F8.7080606@fusionio.com>
-Date: Thu, 31 Mar 2011 13:09:44 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1751965Ab1CaLNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 07:13:42 -0400
+Date: Thu, 31 Mar 2011 13:13:23 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Robin Holt <holt@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Yinghai Lu <yinghai@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC 2/2] Make x86 calibrate_delay run in parallel.
+Message-ID: <20110331111323.GA24672@elte.hu>
+References: <20101215015840.390204279@gulag1.americas.sgi.com>
+ <20101215015849.051095242@gulag1.americas.sgi.com>
+ <AANLkTinoctZFKo4wBmrrdFggnjSj74QfqvEpz59sW15x@mail.gmail.com>
+ <20110331065036.GC5938@elte.hu>
+ <20110331065805.GG5938@elte.hu>
+ <20110331093723.GE24046@sgi.com>
+ <20110331095705.GA23319@elte.hu>
+ <4D9457BF.1040601@redhat.com>
+ <20110331104601.GA8577@elte.hu>
+ <4D945C4D.5090104@redhat.com>
 MIME-Version: 1.0
-To: Rob Landley <rlandley@parallels.com>
-CC: Pete Clements <clem@clem.clem-digital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
-References: <201103291551.p2TFpDqZ001692@clem.clem-digital.net> <4D92C874.7040104@parallels.com> <4D931634.5030807@fusionio.com> <4D933584.5050005@parallels.com> <4D94432D.5080601@fusionio.com> <4D944544.9040705@parallels.com> <4D945247.4080404@fusionio.com> <4D945976.8000401@fusionio.com> <4D945BAD.10309@parallels.com>
-X-ASG-Orig-Subj: Re: Commit 7eaceaccab5f40 causing boot hang.
-In-Reply-To: <4D945BAD.10309@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1301569787
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59495
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D945C4D.5090104@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-31 12:47, Rob Landley wrote:
-> On 03/31/2011 05:37 AM, Jens Axboe wrote:
->> On 2011-03-31 12:07, Jens Axboe wrote:
->>> On 2011-03-31 11:11, Rob Landley wrote:
->>>> On 03/31/2011 04:02 AM, Jens Axboe wrote:
->>>>> On 2011-03-30 15:52, Rob Landley wrote:
->>>>>> On 03/30/2011 06:38 AM, Jens Axboe wrote:
->>>>>>> On 2011-03-30 08:06, Rob Landley wrote:
->>>>>>>> On 03/29/2011 10:51 AM, Pete Clements wrote:
->>>>>>>>> Quoting Jens Axboe
->>>>>>>>>   > 
->>>>>>>>>   > On 2011-03-29 16:13, Rob Landley wrote:
->>>>>>>>>   > > On 03/29/2011 08:59 AM, Jens Axboe wrote:
->>>>>>>>>   > >> On 2011-03-29 10:52, Rob Landley wrote:
->>>>>>>>>   > >>> I'm booting all this under kvm or qemu, by the way:
->>>>>>>>>   > >>>
->>>>>>>>>   > >>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
->>>>>>>>>   > >>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
->>>>>>>>>   > >>>
->>>>>>>>>   > >>> Sometimes with init=/bin/bash in that last quoted bit.  The root
->>>>>>>>>   > >>> filesystem's debian sid but that's probably not relevant because it
->>>>>>>>>   > >>> worked fine with .38.
->>>>>>>>>   > >>
->>>>>>>>>   > >> Does this help?
->>>>>>>>>   > >>
->>>>>>>>>   > >> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
->>>>>>>>>   > >> index 0e406d73..ca27d30 100644
->>>>>>>>>   > >> --- a/drivers/ide/ide-io.c
->>>>>>>>>   > >> +++ b/drivers/ide/ide-io.c
->>>>>>>>>   > >> @@ -570,8 +570,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->>>>>>>>>   > >>  	spin_unlock_irqrestore(q->queue_lock, flags);
->>>>>>>>>   > >>  
->>>>>>>>>   > >>  	/* Use 3ms as that was the old plug delay */
->>>>>>>>>   > >> -	if (rq)
->>>>>>>>>   > >> -		blk_delay_queue(q, 3);
->>>>>>>>>   > >> +	blk_delay_queue(q, 3);
->>>>>>>>>   > >>  }
->>>>>>>>>   > >>  
->>>>>>>>>   > >>  static int drive_is_ready(ide_drive_t *drive)
->>>>>>>>>   > >>
->>>>>>>>>   > > 
->>>>>>>>>   > > Nope, still hung the same way.
->>>>>>>>>   > 
->>>>>>>>>   > Funky. I'll try and reproduce this tonight.
->>>>>>>>>   > 
->>>>>>>>>   > -- 
->>>>>>>>>   > Jens Axboe
->>>>>>>>>   > 
->>>>>>>>>
->>>>>>>>> I have had a similiar problem (reported earlier) unable to boot.
->>>>>>>>> With git15-18 hung with IDE drives (hda), git19-21 moved the hang down to
->>>>>>>>> the IDE CDROM (hdc). Applied the above patch and now booted into git21 without
->>>>>>>>> any hang and all appears ok.
->>>>>>>>
->>>>>>>> It may have made it better for me, it's hard to tell.
->>>>>>>>
->>>>>>>> I did a fresh pull, re-applied the patch, and tried again with
->>>>>>>> init=/bin/sh and it booted to the shell prompt... which then hung when I
->>>>>>>> did "ls -l /".
->>>>>>>>
->>>>>>>> If I let it boot normally, init announces itself, gives a spurious
->>>>>>>> warning about a fstab field (which it's been doing for a while, my fault
->>>>>>>> but harmless), then hangs.
->>>>>>>>
->>>>>>>>> This is i386, UP.
->>>>>>>>
->>>>>>>> I'm doing x86-64 SMP.
->>>>>>>
->>>>>>> I think we have the same issue the other location. How about this, then:
->>>>>>>
->>>>>>> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
->>>>>>> index 0e406d73..4978ec3 100644
->>>>>>> --- a/drivers/ide/ide-io.c
->>>>>>> +++ b/drivers/ide/ide-io.c
->>>>>>> @@ -549,12 +549,11 @@ plug_device:
->>>>>>>  	spin_unlock_irq(&hwif->lock);
->>>>>>>  	ide_unlock_host(host);
->>>>>>>  plug_device_2:
->>>>>>> +	blk_delay_queue(q, queue_run_ms);
->>>>>>>  	spin_lock_irq(q->queue_lock);
->>>>>>>  
->>>>>>> -	if (rq) {
->>>>>>> +	if (rq)
->>>>>>>  		blk_requeue_request(q, rq);
->>>>>>> -		blk_delay_queue(q, queue_run_ms);
->>>>>>> -	}
->>>>>>>  }
->>>>>>>  
->>>>>>>  void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->>>>>>> @@ -570,8 +569,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
->>>>>>>  	spin_unlock_irqrestore(q->queue_lock, flags);
->>>>>>>  
->>>>>>>  	/* Use 3ms as that was the old plug delay */
->>>>>>> -	if (rq)
->>>>>>> -		blk_delay_queue(q, 3);
->>>>>>> +	blk_delay_queue(q, 3);
->>>>>>>  }
->>>>>>>  
->>>>>>>  static int drive_is_ready(ide_drive_t *drive)
->>>>>>>
->>>>>>
->>>>>> Did a fresh pull and applied that patch.  (It conflicts with your
->>>>>> previous one, but looks like it includes it.)
->>>>>>
->>>>>> Now it hangs after the "EXT3-fs: barriers not enabled" line, doesn't
->>>>>> make it to init.
->>>>>
->>>>> I have tried hard to reproduce this, but even stock 2.6.39-rc1 works
->>>>> fine for me here. Setup a KVM image with a debian 6 install, then
->>>>> converted it to IDE and booting it with a custom kernel like you are.
->>>>> Works fine, boots and I can do disk activity tests and it all works.
->>>>>
->>>>> Can you send me your .config?
->>>>
->>>> It was attached to the first message in this series, here it is again.
->>>>
->>>> I update it via "make oldconfig" and hold down return.
->>>>
->>>> I boot it via:
->>>>
->>>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
->>>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
->>>
->>> Much better, I see the hang now! Now to try and diagnose...
->>
->> It seems to hard hang, looks very odd:
-> 
-> I should have mentioned that: when it hangs, you can't page back up in
-> the console display anymore.
 
-Data point - only seems to happen on UP. If you add -smp X to kvm, then
-it boots and works just fine. It smells oddly like some sort of irq
-event.
+* Avi Kivity <avi@redhat.com> wrote:
 
--- 
-Jens Axboe
+> How important is udelay() for hardware timing these days, btw?
 
+Seems popular enough:
+
+  earth4:~/tip> git grep -w udelay drivers/ | wc -l
+  4843
+
+And while it's probably less important than it used to be, we cannot really 
+know for sure. This is one of the rare occasions where some modest amount of 
+fear, uncertainty and doubt is justified.
+
+Thanks,
+
+	Ingo
