@@ -1,90 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab1CaRrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 13:47:12 -0400
-Received: from mail.aknet.ru ([78.158.192.28]:53221 "EHLO mail.aknet.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757702Ab1CaRrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 13:47:10 -0400
-Message-ID: <4D94BE19.7050001@aknet.ru>
-Date: Thu, 31 Mar 2011 21:47:05 +0400
-From: Stas Sergeev <stsp@aknet.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1758789Ab1CaRyP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 13:54:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46797 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab1CaRyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 13:54:14 -0400
+Message-ID: <4D94BFC1.5070608@monstr.eu>
+Date: Thu, 31 Mar 2011 19:54:09 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [path][rfc] add PR_DETACH prctl command
-References: <4D6510A3.90905@aknet.ru> <20110223191442.GA717@redhat.com> <4D656F87.3090005@aknet.ru> <20110224132906.GA15733@redhat.com> <4D6675B0.2010700@aknet.ru> <20110224153221.GA22770@redhat.com> <4D94A788.1050806@aknet.ru> <20110331170244.GA13271@redhat.com>
-In-Reply-To: <20110331170244.GA13271@redhat.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: devicetree-discuss@lists.ozlabs.org, john.williams@petalogix.com,
+        linux-kernel@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de
+Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
+References: <1301574600-4861-1-git-send-email-monstr@monstr.eu> <1301574600-4861-2-git-send-email-monstr@monstr.eu> <20110331164348.GI26709@ponder.secretlab.ca>
+In-Reply-To: <20110331164348.GI26709@ponder.secretlab.ca>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-31.03.2011 21:02, Oleg Nesterov wrote:
-> I only looked at sys_prctl() code, and almost every line looks wrong.
-Well, the lines you pointed, were also in the
-previous patch, and, as you didn't complained
-back then, I thought they were fine. :)
+Grant Likely wrote:
+> On Thu, Mar 31, 2011 at 02:30:00PM +0200, Michal Simek wrote:
+>> Support OF support. "generic-uio" compatible property is used.
+>>
+>> Signed-off-by: Michal Simek <monstr@monstr.eu>
+>> ---
+>>  drivers/uio/uio_pdrv_genirq.c |   60 ++++++++++++++++++++++++++++++++++++++--
+>>  1 files changed, 57 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+>> index 7174d51..9e89806 100644
+>> --- a/drivers/uio/uio_pdrv_genirq.c
+>> +++ b/drivers/uio/uio_pdrv_genirq.c
+>> @@ -23,6 +23,10 @@
+>>  #include <linux/pm_runtime.h>
+>>  #include <linux/slab.h>
+>>  
+>> +#include <linux/of.h>
+>> +#include <linux/of_platform.h>
+>> +#include <linux/of_address.h>
+>> +
+>>  #define DRIVER_NAME "uio_pdrv_genirq"
+>>  
+>>  struct uio_pdrv_genirq_platdata {
+>> @@ -92,11 +96,44 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
+>>  static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>>  {
+>>  	struct uio_info *uioinfo = pdev->dev.platform_data;
+>> -	struct uio_pdrv_genirq_platdata *priv;
+>> +	struct uio_pdrv_genirq_platdata *priv = NULL;
+>>  	struct uio_mem *uiomem;
+>>  	int ret = -EINVAL;
+>>  	int i;
+>>  
+>> +	if (!uioinfo) {
+>> +		struct resource r_irq; /* Interrupt resources */
+>> +		int rc = 0;
+>> +
+>> +		rc = of_address_to_resource(pdev->dev.of_node, 0,
+>> +							&pdev->resource[0]);
+>> +		if (rc) {
+>> +			dev_err(&pdev->dev, "invalid address\n");
+>> +			goto bad2;
+>> +		}
+>> +		pdev->num_resources = 1;
+> 
+> You shouldn't need this anymore.  Device tree sourced platform_devices
+> get their resource table populated automatically.  Also, drivers
+> should /never/ modify the resource values set in the device because it
+> messes up driver rebinding.
 
->> +			if (notif != DEATH_REAP) {
->> +				list_add_tail(&me->detached_sibling,
->> +					&me->real_parent->detached_children);
->> +				me->exit_state = EXIT_DETACHED;
-> No, no, we can't set ->exit_state != 0. This means the task is dead.
-Does this really break things? I mean, there are
-probably no checks like "if (task->exit_state)", every
-time the exact value is checked. And EXIT_DETACHED
-is only set for the short period: the wait() from parent
-(either new or old) will remove it.
+done.
 
->> +			/* detaching makes us a group leader */
->> +			me->group_leader = me;
-> How? Now, we can't change ->group_leader, this is simply not possible
-> and very wrong. If nothing else, think about tid/tgid, but there are
-> a lot more problems.
-OK, thats why in the previous patch I was allowing only
-the group leader to detach, but you complained. Should
-I return that back?
+> 
+>> +
+>> +		/* alloc uioinfo for one device */
+>> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+>> +		if (!uioinfo) {
+>> +			ret = -ENOMEM;
+>> +			dev_err(&pdev->dev, "unable to kmalloc\n");
+>> +			goto bad2;
+>> +		}
+>> +		uioinfo->name = pdev->dev.of_node->name;
+>> +		/* Use version for storing full IP name for identification */
+>> +		uioinfo->version = pdev->dev.of_node->full_name;
+> 
+> Comment on the binding: You should probably use the first entry in the
+> compatible list for the name of the device.  Node names should be
+> generic and usually they will say what a device does, but not what a
+> device actually /is/ (this is the Generic Names recommended practice).
+> 
+> Modern convention is to rely on the first compatible entry for
+> describing what ip block it is.
 
->> +			while_each_thread(me, p) {
->> +				if (p->real_parent != old_parent)
->> +					continue;
->> +				if (!ptrace_reparented(p))
->> +					p->parent = init_pid_ns.child_reaper;
->> +				p->real_parent = init_pid_ns.child_reaper;
-> The same problems as above, pluse "p->real_parent != old_parent" looks
-> bogus.
-Just an extra care. Should I just remove that check?
+Is it easy to way to find it out?
 
-> Well. Once again, I never argue with new features, but you need to
-> convince lkml. Probably it is simple to implement PR_DETACH so that
-> the task just "disappears" from the old_parent's radar.
-Yes, that worked for me too:
-https://lkml.org/lkml/2010/12/25/37
-Yes, I know there are bugs too. :) But, at least the patch
-is just few lines.
+M
 
-> Otherwise
-> we need more complications, but I'd rather add the fake TASK_ZOMBIE
-> task_struct for that. This will be much, much simply although not
-> pretty anyway.
-Well, maybe the patch looks more complex than it actually is.
-How it works:
-- num_waiters is set to 1 by fork(). Then PR_DETACH may increment
-it if the old parent does not ignore the SIGCHLD. Both the
-wait_task_zombie() and wait_task_detached() do decrement that
-counter, and when it is zero, the task is reaped. Also, if the old
-parent terminates without wait(), it decrements that counter, and,
-if needed, reaps the task.
-- exit_state is set to EXIT_DETACHED if the parent doesn't ignore
-SIGCHLD. Then, if old parent wait()s, exit_state gets reset to 0. But
-if the process exits, exit_state gets set to EXIT_ZOMBIE, and then,
-by the use of the num_waiters counter, I make sure both parents
-waited, before releasing the task.
-There were some rearrangements in the exit.c code, that are
-not directly related to the new feature. I can split them to the
-separate patches, if that will help.
 
-As for convincing LKML... Well, when the code is right, maybe. :))
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
