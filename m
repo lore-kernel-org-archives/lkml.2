@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab1CaGD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 02:03:58 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:49272 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab1CaGDy (ORCPT
+	id S932894Ab1CaGEZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 02:04:25 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:44960 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756451Ab1CaGDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 02:03:54 -0400
+	Thu, 31 Mar 2011 02:03:52 -0400
 From: Len Brown <lenb@kernel.org>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 9/9] x86 idle: delete mwait_idle()
-Date: Thu, 31 Mar 2011 02:03:24 -0400
-Message-id: <9797d1edfe558e20297785ce5b4e26339b74ea2c.1301550524.git.len.brown@intel.com>
+Subject: [PATCH 8/9] x86 idle: move mwait_idle_with_hints() to where it is used
+Date: Thu, 31 Mar 2011 02:03:23 -0400
+Message-id: <4d2078e66b3a1ccde091c952449bcd780fe53de4.1301550524.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.4.2.406.gbe91
 In-reply-to: <1301551404-8263-1-git-send-email-lenb@kernel.org>
 References: <1300950508-22746-1-git-send-email-lenb@kernel.org>
@@ -27,141 +27,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-For ACPI mode, mwait_with_hints() in cstate.c is used instead of
-process.c's mwait_idle().
-
-For INTEL_IDLE mode, the mwait in intel_idle() is used instead of
-process.c's mwait_idle().
-
-So delete process.c's mwait_idle().
-This will change the behaviour of SMP sysgtems that are
-running !ACPI and !INTEL_IDLE kernels -- they will use
-HALT instead of MWAIT.
-
-This deletes the "idle=mwait" parameter, and thus the
-boot_option_idle_override == IDLE_FORCE_MWAIT flag.
+no functional change
 
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- Documentation/kernel-parameters.txt |    7 +------
- arch/x86/include/asm/processor.h    |    2 +-
- arch/x86/kernel/process.c           |   34 +---------------------------------
- drivers/acpi/processor_idle.c       |    1 -
- 4 files changed, 3 insertions(+), 41 deletions(-)
+ arch/x86/include/asm/processor.h |    2 --
+ arch/x86/kernel/acpi/cstate.c    |   24 ++++++++++++++++++++++++
+ arch/x86/kernel/process.c        |   23 -----------------------
+ 3 files changed, 24 insertions(+), 25 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index e6b4843..ce9624a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -917,16 +917,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Claim all unknown PCI IDE storage controllers.
- 
- 	idle=		[X86]
--			Format: idle=poll, idle=mwait, idle=halt, idle=nomwait
-+			Format: idle=poll, idle=halt, idle=nomwait
- 			Poll forces a polling idle loop that can slightly
- 			improve the performance of waking up a idle CPU, but
- 			will use a lot of power and make the system run hot.
- 			Not recommended.
--			idle=mwait: On systems which support MONITOR/MWAIT but
--			the kernel chose to not use it because it doesn't save
--			as much power as a normal idle loop, use the
--			MONITOR/MWAIT idle loop anyways. Performance should be
--			the same as idle=poll.
- 			idle=halt: Halt is forced to be used for CPU idle.
- 			In such case C2/C3 won't be used again.
- 			idle=nomwait: Disable mwait for CPU C-states
 diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 3b288ca..0d8d2a4 100644
+index 8776232..3b288ca 100644
 --- a/arch/x86/include/asm/processor.h
 +++ b/arch/x86/include/asm/processor.h
-@@ -752,7 +752,7 @@ extern unsigned long		boot_option_idle_override;
- extern bool			c1e_detected;
+@@ -745,8 +745,6 @@ static inline void __sti_mwait(unsigned long eax, unsigned long ecx)
+ 		     :: "a" (eax), "c" (ecx));
+ }
  
- enum idle_boot_override {IDLE_NO_OVERRIDE=0, IDLE_HALT, IDLE_NOMWAIT,
--			 IDLE_POLL, IDLE_FORCE_MWAIT};
-+			 IDLE_POLL};
+-extern void mwait_idle_with_hints(unsigned long eax, unsigned long ecx);
+-
+ extern void select_idle_routine(const struct cpuinfo_x86 *c);
+ extern void init_c1e_mask(void);
  
- extern void enable_sep_cpu(void);
- extern int sysenter_setup(void);
+diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
+index 5812404..c49281e 100644
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -149,6 +149,30 @@ int acpi_processor_ffh_cstate_probe(unsigned int cpu,
+ }
+ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
+ 
++/*
++ * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
++ * which can obviate IPI to trigger checking of need_resched.
++ * We execute MONITOR against need_resched and enter optimized wait state
++ * through MWAIT. Whenever someone changes need_resched, we would be woken
++ * up from MWAIT (without an IPI).
++ *
++ * New with Core Duo processors, MWAIT can take some hints based on CPU
++ * capability.
++ */
++static void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
++{
++	if (!need_resched()) {
++		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
++			clflush((void *)&current_thread_info()->flags);
++
++		__monitor((void *)&current_thread_info()->flags, 0, 0);
++		smp_mb();
++		if (!need_resched())
++			__mwait(ax, cx);
++	}
++}
++
++
+ void acpi_processor_ffh_cstate_enter(struct acpi_processor_cx *cx)
+ {
+ 	unsigned int cpu = smp_processor_id();
 diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 9f08e7b..4b93d50 100644
+index 9d485d9..9f08e7b 100644
 --- a/arch/x86/kernel/process.c
 +++ b/arch/x86/kernel/process.c
-@@ -399,27 +399,6 @@ void cpu_idle_wait(void)
+@@ -399,29 +399,6 @@ void cpu_idle_wait(void)
  }
  EXPORT_SYMBOL_GPL(cpu_idle_wait);
  
--/* Default MONITOR/MWAIT with no hints, used for default C1 state */
--static void mwait_idle(void)
+-/*
+- * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
+- * which can obviate IPI to trigger checking of need_resched.
+- * We execute MONITOR against need_resched and enter optimized wait state
+- * through MWAIT. Whenever someone changes need_resched, we would be woken
+- * up from MWAIT (without an IPI).
+- *
+- * New with Core Duo processors, MWAIT can take some hints based on CPU
+- * capability.
+- */
+-void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
 -{
 -	if (!need_resched()) {
--		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
--		trace_cpu_idle(1, smp_processor_id());
 -		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
 -			clflush((void *)&current_thread_info()->flags);
 -
 -		__monitor((void *)&current_thread_info()->flags, 0, 0);
 -		smp_mb();
 -		if (!need_resched())
--			__sti_mwait(0, 0);
--		else
--			local_irq_enable();
--		trace_power_end(smp_processor_id());
--		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
--	} else
--		local_irq_enable();
+-			__mwait(ax, cx);
+-	}
 -}
 -
- /*
-  * On SMP it's slightly faster (but much more power-consuming!)
-  * to poll the ->work.need_resched flag instead of waiting for the
-@@ -457,9 +436,6 @@ int mwait_usable(const struct cpuinfo_x86 *c)
+ /* Default MONITOR/MWAIT with no hints, used for default C1 state */
+ static void mwait_idle(void)
  {
- 	u32 eax, ebx, ecx, edx;
- 
--	if (boot_option_idle_override == IDLE_FORCE_MWAIT)
--		return 1;
--
- 	if (c->cpuid_level < MWAIT_INFO)
- 		return 0;
- 
-@@ -548,13 +524,7 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
- 	if (pm_idle)
- 		return;
- 
--	if (cpu_has(c, X86_FEATURE_MWAIT) && mwait_usable(c)) {
--		/*
--		 * One CPU supports mwait => All CPUs supports mwait
--		 */
--		printk(KERN_INFO "using mwait in idle threads.\n");
--		pm_idle = mwait_idle;
--	} else if (cpu_has_amd_erratum(amd_erratum_400)) {
-+	if (cpu_has_amd_erratum(amd_erratum_400)) {
- 		/* E400: APIC timer interrupt does not wake up CPU from C1e */
- 		printk(KERN_INFO "using C1E aware idle routine\n");
- 		pm_idle = c1e_idle;
-@@ -578,8 +548,6 @@ static int __init idle_setup(char *str)
- 		printk("using polling idle threads.\n");
- 		pm_idle = poll_idle;
- 		boot_option_idle_override = IDLE_POLL;
--	} else if (!strcmp(str, "mwait")) {
--		boot_option_idle_override = IDLE_FORCE_MWAIT;
- 	} else if (!strcmp(str, "halt")) {
- 		/*
- 		 * When the boot option of idle=halt is added, halt is
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index d615b7d..a15390c 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -82,7 +82,6 @@ module_param(latency_factor, uint, 0644);
- static int disabled_by_idle_boot_param(void)
- {
- 	return boot_option_idle_override == IDLE_POLL ||
--		boot_option_idle_override == IDLE_FORCE_MWAIT ||
- 		boot_option_idle_override == IDLE_HALT;
- }
- 
 -- 
 1.7.4.2.406.gbe91
 
