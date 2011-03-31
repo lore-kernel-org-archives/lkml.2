@@ -1,124 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137Ab1CaQl1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:41:27 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56704 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757816Ab1CaQlZ (ORCPT
+	id S1758152Ab1CaQnx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:43:53 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51691 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367Ab1CaQnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:41:25 -0400
-Date: Thu, 31 Mar 2011 09:41:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, dave@gnu.org, tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [tip:x86/urgent] x86, mce: Fix RCU lockdep from mce_poll()
-Message-ID: <20110331164107.GH2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1301537604.2140.21.camel@offworld>
- <tip-706453b0d1fabf4dccbcffa29356d0dd6ab9afb9@git.kernel.org>
- <AANLkTi=wZMCS_j+VAb4BpBJvoeh_cQpWVXgpdJ-tEmXN@mail.gmail.com>
+	Thu, 31 Mar 2011 12:43:51 -0400
+Date: Thu, 31 Mar 2011 10:43:48 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Michal Simek <monstr@monstr.eu>
+Cc: devicetree-discuss@lists.ozlabs.org, john.williams@petalogix.com,
+        linux-kernel@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de
+Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
+Message-ID: <20110331164348.GI26709@ponder.secretlab.ca>
+References: <1301574600-4861-1-git-send-email-monstr@monstr.eu>
+ <1301574600-4861-2-git-send-email-monstr@monstr.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=wZMCS_j+VAb4BpBJvoeh_cQpWVXgpdJ-tEmXN@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1301574600-4861-2-git-send-email-monstr@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 12:03:48PM +0200, Zdenek Kabelac wrote:
-> However on my machine - I do not a see a difference ?
+On Thu, Mar 31, 2011 at 02:30:00PM +0200, Michal Simek wrote:
+> Support OF support. "generic-uio" compatible property is used.
 > 
-> I've this patch applied - and it still gives me the same error.
-> (using 6aba74f2791287ec407e0f92487a725a25908067 and this patch)
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
+> ---
+>  drivers/uio/uio_pdrv_genirq.c |   60 ++++++++++++++++++++++++++++++++++++++--
+>  1 files changed, 57 insertions(+), 3 deletions(-)
 > 
-> Here are my RCU config options:
+> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> index 7174d51..9e89806 100644
+> --- a/drivers/uio/uio_pdrv_genirq.c
+> +++ b/drivers/uio/uio_pdrv_genirq.c
+> @@ -23,6 +23,10 @@
+>  #include <linux/pm_runtime.h>
+>  #include <linux/slab.h>
+>  
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/of_address.h>
+> +
+>  #define DRIVER_NAME "uio_pdrv_genirq"
+>  
+>  struct uio_pdrv_genirq_platdata {
+> @@ -92,11 +96,44 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
+>  static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  {
+>  	struct uio_info *uioinfo = pdev->dev.platform_data;
+> -	struct uio_pdrv_genirq_platdata *priv;
+> +	struct uio_pdrv_genirq_platdata *priv = NULL;
+>  	struct uio_mem *uiomem;
+>  	int ret = -EINVAL;
+>  	int i;
+>  
+> +	if (!uioinfo) {
+> +		struct resource r_irq; /* Interrupt resources */
+> +		int rc = 0;
+> +
+> +		rc = of_address_to_resource(pdev->dev.of_node, 0,
+> +							&pdev->resource[0]);
+> +		if (rc) {
+> +			dev_err(&pdev->dev, "invalid address\n");
+> +			goto bad2;
+> +		}
+> +		pdev->num_resources = 1;
+
+You shouldn't need this anymore.  Device tree sourced platform_devices
+get their resource table populated automatically.  Also, drivers
+should /never/ modify the resource values set in the device because it
+messes up driver rebinding.
+
+> +
+> +		/* alloc uioinfo for one device */
+> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+> +		if (!uioinfo) {
+> +			ret = -ENOMEM;
+> +			dev_err(&pdev->dev, "unable to kmalloc\n");
+> +			goto bad2;
+> +		}
+> +		uioinfo->name = pdev->dev.of_node->name;
+> +		/* Use version for storing full IP name for identification */
+> +		uioinfo->version = pdev->dev.of_node->full_name;
+
+Comment on the binding: You should probably use the first entry in the
+compatible list for the name of the device.  Node names should be
+generic and usually they will say what a device does, but not what a
+device actually /is/ (this is the Generic Names recommended practice).
+
+Modern convention is to rely on the first compatible entry for
+describing what ip block it is.
+
+
+> +
+> +		/* Get IRQ for the device */
+> +		rc = of_irq_to_resource(pdev->dev.of_node, 0, &r_irq);
+
+Ditto here, the pdev should already have the irq resource populated.
+
+> +		if (rc == NO_IRQ)
+> +			dev_err(&pdev->dev, "no IRQ found\n");
+> +		else {
+> +			uioinfo->irq = r_irq.start;
+> +			dev_info(&pdev->dev, "irq %d\n", (u32)uioinfo->irq);
+> +		}
+> +	}
+> +
+>  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+>  		dev_err(&pdev->dev, "missing platform_data\n");
+>  		goto bad0;
+> @@ -176,10 +213,15 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  
+>  	platform_set_drvdata(pdev, priv);
+>  	return 0;
+> - bad1:
+> +
+> +bad1:
+>  	kfree(priv);
+>  	pm_runtime_disable(&pdev->dev);
+> - bad0:
+> +bad0:
+> +	/* kfree uioinfo for CONFIG_OF */
+> +	if (!pdev->dev.platform_data)
+> +		kfree(uioinfo);
+> +bad2:
+>  	return ret;
+>  }
+>  
+> @@ -215,6 +257,17 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
+>  	.runtime_resume = uio_pdrv_genirq_runtime_nop,
+>  };
+>  
+> +#ifdef CONFIG_OF
+> +/* Match table for of_platform binding */
+> +static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+> +	{ .compatible = "generic-uio", },
+> +	{ /* end of list */ },
+> +};
+> +MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
+> +#else
+> +# define uio_of_genirq_match NULL
+> +#endif
+> +
+>  static struct platform_driver uio_pdrv_genirq = {
+>  	.probe = uio_pdrv_genirq_probe,
+>  	.remove = uio_pdrv_genirq_remove,
+> @@ -222,6 +275,7 @@ static struct platform_driver uio_pdrv_genirq = {
+>  		.name = DRIVER_NAME,
+>  		.owner = THIS_MODULE,
+>  		.pm = &uio_pdrv_genirq_dev_pm_ops,
+> +		.of_match_table = uio_of_genirq_match,
+>  	},
+>  };
+>  
+> -- 
+> 1.5.5.6
 > 
-> # grep RCU .config
-> # RCU Subsystem
-> CONFIG_TREE_PREEMPT_RCU=y
-> CONFIG_PREEMPT_RCU=y
-> CONFIG_RCU_TRACE=y
-> CONFIG_RCU_FANOUT=64
-> # CONFIG_RCU_FANOUT_EXACT is not set
-> CONFIG_TREE_RCU_TRACE=y
-> CONFIG_PROVE_RCU=y
-> # CONFIG_PROVE_RCU_REPEATEDLY is not set
-> # CONFIG_SPARSE_RCU_POINTER is not set
-> # CONFIG_RCU_TORTURE_TEST is not set
-> CONFIG_RCU_CPU_STALL_DETECTOR=y
-> CONFIG_RCU_CPU_STALL_TIMEOUT=60
-> CONFIG_RCU_CPU_STALL_DETECTOR_RUNNABLE=y
-> CONFIG_RCU_CPU_STALL_VERBOSE=y
-
-What idiot created that patch, anyway???  ;-)
-
-Here is a patch that is much more likely to do something useful.
-Could you please test it?  It is on top of the patch you just tested.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: create new rcu_access_index() and use in mce
-
-The MCE subsystem needs to sample an RCU-protected index outside of
-any protection for that index.  If this was a pointer, we would use
-rcu_access_pointer(), but there is no corresponding rcu_access_index().
-This commit therefore creates an rcu_access_index() and applies it
-to MCE.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index a2d664f..3385ea2 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1626,7 +1626,7 @@ out:
- static unsigned int mce_poll(struct file *file, poll_table *wait)
- {
- 	poll_wait(file, &mce_wait, wait);
--	if (rcu_dereference_index_check(mcelog.next, rcu_read_lock_sched_held()))
-+	if (rcu_access_index(mcelog.next))
- 		return POLLIN | POLLRDNORM;
- 	if (!mce_apei_read_done && apei_check_mce())
- 		return POLLIN | POLLRDNORM;
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index af56148..ff422d2 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -339,6 +339,12 @@ extern int rcu_my_thread_group_empty(void);
- 		((typeof(*p) __force __kernel *)(p)); \
- 	})
- 
-+#define __rcu_access_index(p, space) \
-+	({ \
-+		typeof(p) _________p1 = ACCESS_ONCE(p); \
-+		rcu_dereference_sparse(p, space); \
-+		(_________p1); \
-+	})
- #define __rcu_dereference_index_check(p, c) \
- 	({ \
- 		typeof(p) _________p1 = ACCESS_ONCE(p); \
-@@ -429,6 +435,20 @@ extern int rcu_my_thread_group_empty(void);
- #define rcu_dereference_raw(p) rcu_dereference_check(p, 1) /*@@@ needed? @@@*/
- 
- /**
-+ * rcu_access_index() - fetch RCU index with no dereferencing
-+ * @p: The index to read
-+ *
-+ * Return the value of the specified RCU-protected index, but omit the
-+ * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
-+ * when the value of this index is accessed, but the index is not
-+ * dereferenced, for example, when testing an RCU-protected index against
-+ * -1.  Although rcu_access_index() may also be used in cases where
-+ * update-side locks prevent the value of the index from changing, you
-+ * should instead use rcu_dereference_index_protected() for this use case.
-+ */
-+#define rcu_access_index(p) __rcu_access_index((p), __rcu)
-+
-+/**
-  * rcu_dereference_index_check() - rcu_dereference for indices with debug checking
-  * @p: The pointer to read, prior to dereferencing
-  * @c: The conditions under which the dereference will take place
