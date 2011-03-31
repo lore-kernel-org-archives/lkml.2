@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab1CaNXi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 09:23:38 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57115 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab1CaNXh (ORCPT
+	id S1757523Ab1CaNZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 09:25:28 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:62913 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757193Ab1CaNZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 09:23:37 -0400
-Date: Thu, 31 Mar 2011 15:23:28 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: John Williams <john.williams@petalogix.com>
-Cc: Michal Simek <monstr@monstr.eu>, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        hjk@linutronix.de, gregkh@suse.de
-Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
-Message-ID: <20110331132328.GB2202@pengutronix.de>
-References: <1301574600-4861-1-git-send-email-monstr@monstr.eu>
- <1301574600-4861-2-git-send-email-monstr@monstr.eu>
- <20110331124925.GA2202@pengutronix.de>
- <AANLkTi=sG6oVNifwLLi8jjKQXjR6kXZx43NxtFfoPumy@mail.gmail.com>
+	Thu, 31 Mar 2011 09:25:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=ZA2COI4EZ6n1k/lJL+MpyQhHByTbTTBdrMzCJhcVOh/xbRnjVg3WeJ4Mt+BwFi42pq
+         MbJIyX9Fr67SlcVw4k6kKAwKMq7zbKNhWgFnkwfxnpBpRVvXVAsfBv5DykMaTLmouLIu
+         3sUUMPT3Z15kW+XYNZ21F0NgXYtRjszj0wICQ=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hHWLQfXTYDoKhP50"
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=sG6oVNifwLLi8jjKQXjR6kXZx43NxtFfoPumy@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20110331151627.58092365@schatten.dmk.lab>
+References: <1301558489-4198-1-git-send-email-florian@mickler.org>
+	<1301561386.1904.15.camel@t41.thuisdomein>
+	<20110331125305.1e8c70ba@schatten.dmk.lab>
+	<AANLkTikmWDu7FZ2A7_CWGCuAeKOeK4x+u8vctCro0mSN@mail.gmail.com>
+	<20110331151627.58092365@schatten.dmk.lab>
+Date: Thu, 31 Mar 2011 15:25:25 +0200
+Message-ID: <AANLkTikC5KC3-DBrtoSSEn4BzQaLyAgBtOHgfAzvnckj@mail.gmail.com>
+Subject: Re: [PATCH][POKE] Skip looking for ioapic overrides when ioapics are
+ not present
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: Paul Bolle <pebolle@tiscali.nl>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
+        maciej.rutecki@gmail.com, mingo@elte.hu, rjw@sisk.pl, zersaa@gmail.com,
+        stable@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 31, 2011 at 3:16 PM, Florian Mickler <florian@mickler.org> wrote:
+> On Thu, 31 Mar 2011 13:01:18 +0200
+> Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>
+>> >
+>> > Thanks for letting me know. Sedat, did you actually test with 2.6.38?
+>> >
+>> > Regards,
+>> > Flo
+>>
+>> I have and had this patch in my own patch-series *before* Debian
+>> included it (IIRC right after Eric committed it to LKML).
+>> To answer your question: Yes.
+>> I have the patch also in my current linux-next kernels (next-20110331).
+>>
+>> - Sedat -
+>
+> Sorry, I meant tested _without_ the patch. (i.e. does Paul's patch work
+> or not for you...) And double sorry, if you did already test
+> vanilla 2.6.38. Tripple sorry if you already wrote that you did test
+> _without_ the patch and it is still needed... I guess in that case I
+> should just ditch my copy of 'speed-reading for dummies' ... :) )
+>
 
---hHWLQfXTYDoKhP50
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+No worries, no sorries needed for this (I know you fight to get things done).
+I can't really say what is w/o Eric's patch.
+As I replied to the BR #17772:
+I added "lapic" boot-parameter as a result of a perf/NMI patch.
+With both things "WorksForMe" I headed to other stuff in kernel development :-).
+I was not aware that there was further discussion on the initial patch.
 
+> But anyhow, Eric already stepped up and said that the current state is
+> supoptimal, so it doesn't matter if vanilla 2.6.38 (without Eric's
+> patch) fixes it for you since it looks like Eric's patch should go in
+> nevertheless.
+>
 
->    Maybe I misunderstand you, in my view it is the responsibility of <ven=
-dor>
->    to create their DTS files to indicate they want <special-card1> to bin=
-d to
->    generic-uio.
+I am as always open for testing if there is a new patch around, just
+let me know.
 
-Device tree is a OS-neutral hardware description language. "generic-uio"
-is neither OS-neutral nor a hardware description. devicetree.org has
-more information about this.
-
->    Our use-case is pretty clear, in FPGA-based systems it is common to cr=
-eate
->    arbitrary devices that developers just want to control from userspace,
->    with simple IRQ and IO capabilities (DMA can come later :). =EF=BF=BDT=
-hey don't
->    need to bind to other kernel APIs or subsystems, and don't want to inv=
-est
->    in one-off kernel drivers that simply will never go upstream.
-
-For that, the new_compatible-file would be suitable, I think.
-
->    UIO is perfect, and simply tagging the device as generic-uio in the DT=
-S is
->    so simple, clean, and elegant.
-
-Simple, yes (I do understand I wrote the first approach ;)) . Elegant,
-not really, because it breaks core conventions of the device tree. For
-your case it is a very conveniant hack, but it is still a hack.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---hHWLQfXTYDoKhP50
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk2UgFAACgkQD27XaX1/VRuEugCgjLO3U70anQaSTbTP6iHZhLe0
-53AAoMLdNVxGaWW5c/OogxM1oGWLO7Lv
-=HpOQ
------END PGP SIGNATURE-----
-
---hHWLQfXTYDoKhP50--
+- Sedat -
