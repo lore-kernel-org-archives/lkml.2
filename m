@@ -1,247 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979Ab1CaNSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 09:18:24 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:22671 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757516Ab1CaNQV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 09:16:21 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Thu, 31 Mar 2011 15:16:04 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 08/12] mm: MIGRATE_CMA isolation functions added
-In-reply-to: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
-        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
-Message-id: <1301577368-16095-9-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.2.3
-References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
+	id S964881Ab1CaNSj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 09:18:39 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:41488 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933355Ab1CaNSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 09:18:37 -0400
+X-ASG-Debug-ID: 1301577515-03d6a5652c2c6c0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D947F29.5050203@fusionio.com>
+Date: Thu, 31 Mar 2011 15:18:33 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+CC: Tejun Heo <tj@kernel.org>, Rob Landley <rlandley@parallels.com>,
+        Pete Clements <clem@clem.clem-digital.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
+References: <201103291551.p2TFpDqZ001692@clem.clem-digital.net> <4D92C874.7040104@parallels.com> <4D931634.5030807@fusionio.com> <4D933584.5050005@parallels.com> <4D94432D.5080601@fusionio.com> <4D944544.9040705@parallels.com> <4D945247.4080404@fusionio.com> <4D945976.8000401@fusionio.com> <20110331121100.GD3385@htj.dyndns.org> <4D9474AA.4070402@fusionio.com> <4D947D12.6070505@rsk.demon.co.uk>
+X-ASG-Orig-Subj: Re: Commit 7eaceaccab5f40 causing boot hang.
+In-Reply-To: <4D947D12.6070505@rsk.demon.co.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301577515
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.12
+X-Barracuda-Spam-Status: No, SCORE=0.12 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=CN_BODY_332
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59503
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.12 CN_BODY_332            BODY: CN_BODY_332
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+On 2011-03-31 15:09, Richard Kennedy wrote:
+> On 31/03/11 13:33, Jens Axboe wrote:
+>> On 2011-03-31 14:11, Tejun Heo wrote:
+>>> Hello,
+>>>
+>>> On Thu, Mar 31, 2011 at 12:37:42PM +0200, Jens Axboe wrote:
+>>>> It seems to hard hang, looks very odd:
+>>>>
+>>>> [   84.056007] BUG: soft lockup - CPU#0 stuck for 67s! [kworker/0:2:743]
+>>>> [   84.056008] Modules linked in:
+>>>> [   84.056008] irq event stamp: 334859658
+>>>> [   84.056008] hardirqs last  enabled at (334859657): [<ffffffff815c40c7>] _raw_spin_unlock_irq+0x2b/0x30
+>>>> [   84.056008] hardirqs last disabled at (334859658): [<ffffffff815c42e7>] save_args+0x67/0x70
+>>>> [   84.056008] softirqs last  enabled at (334855538): [<ffffffff81044819>] __do_softirq+0x1a3/0x1c2
+>>>> [   84.056008] softirqs last disabled at (334855525): [<ffffffff815cb9cc>] call_softirq+0x1c/0x30
+>>>> [   84.056008] CPU 0 
+>>>> [   84.056008] Modules linked in:
+>>>> [   84.056008] 
+>>>> [   84.056008] Pid: 743, comm: kworker/0:2 Not tainted 2.6.39-rc1+ #12 Bochs Bochs
+>>>> [   84.056008] RIP: 0010:[<ffffffff815c40c9>]  [<ffffffff815c40c9>] _raw_spin_unlock_irq+0x2d/0x30
+>>>> [   84.056008] RSP: 0018:ffff88003d343d98  EFLAGS: 00000202
+>>>> [   84.056008] RAX: 0000000013f58d89 RBX: 0000000000000006 RCX: ffff88003d2c5998
+>>>> [   84.056008] RDX: 0000000000000006 RSI: ffff88003d343da0 RDI: ffff88003db19508
+>>>> [   84.056008] RBP: ffff88003d343da0 R08: ffff88003fc15c00 R09: 0000000000000001
+>>>> [   84.056008] R10: ffffffff81e0d040 R11: ffff88003d343d60 R12: ffffffff815cb18e
+>>>> [   84.056008] R13: 0000000000000001 R14: ffff88003d2c5998 R15: ffffffff81069aec
+>>>> [   84.056008] FS:  0000000000000000(0000) GS:ffff88003fc00000(0000) knlGS:0000000000000000
+>>>> [   84.056008] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>>>> [   84.056008] CR2: 000000000060d828 CR3: 000000003d3f8000 CR4: 00000000000006f0
+>>>> [   84.056008] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>>>> [   84.056008] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>>>> [   84.056008] Process kworker/0:2 (pid: 743, threadinfo ffff88003d342000, task ffff88003db18f60)
+>>>> [   84.056008] Stack:
+>>>> [   84.056008]  ffff88003d2c5870 ffff88003d343dc0 ffffffff812171d3 ffff88003fc15c00
+>>>> [   84.056008]  ffff88003d31e6c0 ffff88003d343e50 ffffffff81053e99 ffffffff81053e0b
+>>>> [   84.056008]  ffff88003d342010 ffff88003db18f60 0000000000000046 ffff88003fc15c05
+>>>> [   84.056008] Call Trace:
+>>>> [   84.056008]  [<ffffffff812171d3>] blk_delay_work+0x32/0x36
+>>>> [   84.056008]  [<ffffffff81053e99>] process_one_work+0x230/0x397
+>>>> [   84.056008]  [<ffffffff81053e0b>] ? process_one_work+0x1a2/0x397
+>>>> [   84.056008]  [<ffffffff8105612a>] worker_thread+0x136/0x255
+>>>> [   84.056008]  [<ffffffff81055ff4>] ? manage_workers+0x190/0x190
+>>>> [   84.056008]  [<ffffffff8105974a>] kthread+0x7d/0x85
+>>>> [   84.056008]  [<ffffffff815cb8d4>] kernel_thread_helper+0x4/0x10
+>>>> [   84.056008]  [<ffffffff815c4440>] ? retint_restore_args+0xe/0xe
+>>>> [   84.056008]  [<ffffffff810596cd>] ? __init_kthread_worker+0x56/0x56
+>>>> [   84.056008]  [<ffffffff815cb8d0>] ? gs_change+0xb/0xb
+>>>> [   84.056008] Code: 01 00 00 00 48 89 e5 53 48 89 fb 48 83 c7 18 48 83 ec 08 48 8b 55 08 e8 11 7b aa ff 48 89 df e8 03 05 c7 ff e8 f3 5e aa ff fb 5e <5b> c9 c3 55 48 89 e5 41 54 49 89 fc 48 8b 55 08 48 83 c7 18 53 
+>>>
+>>> Is CONFIG_PREEMPT[_VOLUNTARY] set?  The soft lockup detection works by
+>>> checking whether a high pri RT task is scheduled periodically and busy
+>>> looping in kernel code with preemption disabled or CONFIG_PREEMPT
+>>> disabled would trigger it.  The backtrace doesn't mean the CPU is
+>>> stuck there not progressing.  It just shows where the CPU is at the
+>>> moment of triggering and the softlockup triggering itself indicates
+>>> that IRQ and bottom halves are running fine.
+>>>
+>>> I think more likely failure mode is something is looping in block path
+>>> expecting someone else to do something but as it is busy looping and
+>>> preemption isn't enabled the someone else can't proceed.  We had a
+>>> similar problem in md lately.
+>>>
+>>>  http://thread.gmane.org/gmane.linux.raid/33020
+>>
+>> I think this sound exactly right, and also explains why SMP works. And
+>> yes CONFIG_PREEMPT_VOLUNTARY=y is set.
+>>
+>>> If this is the case, a good way to debug would be triggering sysrq-l
+>>> multiple times while the machine is hung and see where the CPU is busy
+>>> looping.
+>>
+>> Doesn't respond to sysrq. I'll poke around.
+>>
+> 
+> Hi Jens,
+> 
+> I'm seeing a problem with fio never completing when writing to 2 disks
+> simultaneously. In my test case I'm writing 2Gb to both a LVM volume & a
+> pata drive on x86_64 on a AMD X2. Could this be a related issue?
+> 
+> I'm not getting anything reported in the log, lockup detection doesn't
+> report anything either. The write seems to have finished (the disk light
+> activity has stopped) and the cpu cores are both below 10% usage, but
+> fio never returns. The test does complete some times, but it seems to be
+> one 1 in 4.
 
-This commit changes various functions that change pages and
-pageblocks migrate type between MIGRATE_ISOLATE and
-MIGRATE_MOVABLE in such a way as to allow to work with
-MIGRATE_CMA migrate type.
+So when you say PATA, it's /dev/hdaX something as well?
 
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: Michal Nazarewicz <mina86@mina86.com>
----
- include/linux/page-isolation.h |   40 +++++++++++++++++++++++++++-------------
- mm/page_alloc.c                |   19 ++++++++++++-------
- mm/page_isolation.c            |   15 ++++++++-------
- 3 files changed, 47 insertions(+), 27 deletions(-)
+> I'm going to try tracing it and see if I can spot where it's stuck.
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index c5d1a7c..177b307 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -3,39 +3,53 @@
- 
- /*
-  * Changes migrate type in [start_pfn, end_pfn) to be MIGRATE_ISOLATE.
-- * If specified range includes migrate types other than MOVABLE,
-+ * If specified range includes migrate types other than MOVABLE or CMA,
-  * this will fail with -EBUSY.
-  *
-  * For isolating all pages in the range finally, the caller have to
-  * free all pages in the range. test_page_isolated() can be used for
-  * test it.
-  */
--extern int
--start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn);
-+int __start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
-+			       unsigned migratetype);
-+
-+static inline int
-+start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	return __start_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
-+}
-+
-+int __undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
-+			      unsigned migratetype);
- 
- /*
-  * Changes MIGRATE_ISOLATE to MIGRATE_MOVABLE.
-  * target range is [start_pfn, end_pfn)
-  */
--extern int
--undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn);
-+static inline int
-+undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	return __undo_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
-+}
- 
- /*
-- * test all pages in [start_pfn, end_pfn)are isolated or not.
-+ * Test all pages in [start_pfn, end_pfn) are isolated or not.
-  */
--extern int
--test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
-+int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
- 
- /*
-- * Internal funcs.Changes pageblock's migrate type.
-- * Please use make_pagetype_isolated()/make_pagetype_movable().
-+ * Internal functions. Changes pageblock's migrate type.
-  */
--extern int set_migratetype_isolate(struct page *page);
--extern void unset_migratetype_isolate(struct page *page);
-+int set_migratetype_isolate(struct page *page);
-+void __unset_migratetype_isolate(struct page *page, unsigned migratetype);
-+static inline void unset_migratetype_isolate(struct page *page)
-+{
-+	__unset_migratetype_isolate(page, MIGRATE_MOVABLE);
-+}
- extern unsigned long alloc_contig_freed_pages(unsigned long start,
- 					      unsigned long end, gfp_t flag);
- extern int alloc_contig_range(unsigned long start, unsigned long end,
--			      gfp_t flags);
-+			      gfp_t flags, unsigned migratetype);
- extern void free_contig_pages(struct page *page, int nr_pages);
- 
- /*
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 24f795e..5f4232d 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5586,7 +5586,7 @@ out:
- 	return ret;
- }
- 
--void unset_migratetype_isolate(struct page *page)
-+void __unset_migratetype_isolate(struct page *page, unsigned migratetype)
- {
- 	struct zone *zone;
- 	unsigned long flags;
-@@ -5594,8 +5594,8 @@ void unset_migratetype_isolate(struct page *page)
- 	spin_lock_irqsave(&zone->lock, flags);
- 	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
- 		goto out;
--	set_pageblock_migratetype(page, MIGRATE_MOVABLE);
--	move_freepages_block(zone, page, MIGRATE_MOVABLE);
-+	set_pageblock_migratetype(page, migratetype);
-+	move_freepages_block(zone, page, migratetype);
- out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
- }
-@@ -5700,6 +5700,10 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-  * @start:	start PFN to allocate
-  * @end:	one-past-the-last PFN to allocate
-  * @flags:	flags passed to alloc_contig_freed_pages().
-+ * @migratetype:	migratetype of the underlaying pageblocks (either
-+ *			#MIGRATE_MOVABLE or #MIGRATE_CMA).  All pageblocks
-+ *			in range must have the same migratetype and it must
-+ *			be either of the two.
-  *
-  * The PFN range does not have to be pageblock or MAX_ORDER_NR_PAGES
-  * aligned, hovewer it's callers responsibility to guarantee that we
-@@ -5711,7 +5715,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-  * need to be freed with free_contig_pages().
-  */
- int alloc_contig_range(unsigned long start, unsigned long end,
--		       gfp_t flags)
-+		       gfp_t flags, unsigned migratetype)
- {
- 	unsigned long _start, _end;
- 	int ret;
-@@ -5739,8 +5743,8 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	 * them.
- 	 */
- 
--	ret = start_isolate_page_range(pfn_to_maxpage(start),
--				       pfn_to_maxpage_up(end));
-+	ret = __start_isolate_page_range(pfn_to_maxpage(start),
-+					 pfn_to_maxpage_up(end), migratetype);
- 	if (ret)
- 		goto done;
- 
-@@ -5778,7 +5782,8 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 
- 	ret = 0;
- done:
--	undo_isolate_page_range(pfn_to_maxpage(start), pfn_to_maxpage_up(end));
-+	__undo_isolate_page_range(pfn_to_maxpage(start), pfn_to_maxpage_up(end),
-+				  migratetype);
- 	return ret;
- }
- 
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 8a3122c..d36f082 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -23,10 +23,11 @@ __first_valid_page(unsigned long pfn, unsigned long nr_pages)
- }
- 
- /*
-- * start_isolate_page_range() -- make page-allocation-type of range of pages
-+ * __start_isolate_page_range() -- make page-allocation-type of range of pages
-  * to be MIGRATE_ISOLATE.
-  * @start_pfn: The lower PFN of the range to be isolated.
-  * @end_pfn: The upper PFN of the range to be isolated.
-+ * @migratetype: migrate type to set in error recovery.
-  *
-  * Making page-allocation-type to be MIGRATE_ISOLATE means free pages in
-  * the range will never be allocated. Any free pages and pages freed in the
-@@ -35,8 +36,8 @@ __first_valid_page(unsigned long pfn, unsigned long nr_pages)
-  * start_pfn/end_pfn must be aligned to pageblock_order.
-  * Returns 0 on success and -EBUSY if any part of range cannot be isolated.
-  */
--int
--start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
-+int __start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
-+			       unsigned migratetype)
- {
- 	unsigned long pfn;
- 	unsigned long undo_pfn;
-@@ -59,7 +60,7 @@ undo:
- 	for (pfn = start_pfn;
- 	     pfn < undo_pfn;
- 	     pfn += pageblock_nr_pages)
--		unset_migratetype_isolate(pfn_to_page(pfn));
-+		__unset_migratetype_isolate(pfn_to_page(pfn), migratetype);
- 
- 	return -EBUSY;
- }
-@@ -67,8 +68,8 @@ undo:
- /*
-  * Make isolated pages available again.
-  */
--int
--undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
-+int __undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
-+			      unsigned migratetype)
- {
- 	unsigned long pfn;
- 	struct page *page;
-@@ -80,7 +81,7 @@ undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
- 		page = __first_valid_page(pfn, pageblock_nr_pages);
- 		if (!page || get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
- 			continue;
--		unset_migratetype_isolate(page);
-+		__unset_migratetype_isolate(page, migratetype);
- 	}
- 	return 0;
- }
+Thanks, that would be nice.
+
 -- 
-1.7.1.569.g6f426
+Jens Axboe
+
