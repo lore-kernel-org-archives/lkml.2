@@ -1,67 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab1CaOVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:21:45 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48548 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752952Ab1CaOVo (ORCPT
+	id S1757964Ab1CaOWI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:22:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24479 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752952Ab1CaOWF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:21:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:x-url:user-agent;
-        b=ia40kCYvy6OkTcGxD4q/hRYtg00h0YS+fMtfkJdI8AT3QPBrJNq7bZh6uNrVQvVJSY
-         ukDxvpP1LHjURg30MOzaf5pPYj+ha8T0AWcFpoFyv3qeOHtPIrWHDOM2d/daeaGR1ZAP
-         9wZswBKcU85dn9GGogtAhsR93vcOWL3e8BdT4=
-Date: Thu, 31 Mar 2011 11:21:35 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: excessive kworker activity when idle. (was Re: vma corruption in
- today's -git)
-Message-ID: <20110331142135.GB25095@ghostprotocols.net>
-References: <20110329040939.GA32764@redhat.com>
- <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
- <20110331030917.GB26057@redhat.com>
- <AANLkTikYAAYcYxTdKAxQjDxVQ7qrZGEfXg+gpfwcj1=-@mail.gmail.com>
- <20110331035511.GA1255@redhat.com>
- <AANLkTikP5edK=YSRx7zuNqyfwez8qEHpFumYun6GOPxu@mail.gmail.com>
+	Thu, 31 Mar 2011 10:22:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,275,1299484800"; 
+   d="scan'208";a="411707960"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
+        "gregkh@suse.de" <gregkh@suse.de>, "mingo@elte.hu" <mingo@elte.hu>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "Li, Xin" <xin.li@intel.com>
+Date: Thu, 31 Mar 2011 22:21:44 +0800
+Subject: [PATCH 4/7,v10] NUMA Hotplug Emulator: Abstract cpu register
+ functions
+Thread-Topic: [PATCH 4/7,v10] NUMA Hotplug Emulator: Abstract cpu register
+ functions
+Thread-Index: AcvvrvZ3EjsUYWwCShG/IE1AnHQMaw==
+Message-ID: <749B9D3DBF0F054390025D9EAFF47F224A3D6C3E@shsmsx501.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikP5edK=YSRx7zuNqyfwez8qEHpFumYun6GOPxu@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Mar 30, 2011 at 10:32:11PM -0700, Linus Torvalds escreveu:
-> On Wed, Mar 30, 2011 at 8:55 PM, Dave Jones <davej@redhat.com> wrote:
-> > I tried that, and wasn't particularly enlightened.
-> >
-> > +      6.53%  kworker/1:2  [kernel.kallsyms]  [k] read_hpet
-> > +      4.83%  kworker/0:0  [kernel.kallsyms]  [k] read_hpet
-> 
-> Go into those, deeper into the callchain. That's how to see what the
-> upper-level problem is - by seeing who actually calls it. The leafs
-> themselves (where the time is obviously spent) don't tend to be very
-> informative, no.
+From: Shaohui Zheng <shaohui.zheng@intel.com>
 
-Yeah, please press 'E' since you're using the TUI, where you can expand
-collapse callchains in all its levels.
+Abstract cpu register functions, provide a more flexible interface
+register_cpu_node, the new interface provides convenience to add cpu
+to a specified node, we can use it to add a cpu to a fake node.
 
-Pressing 'E' will expand all of them, 'C' will collapse it all. Enter on
-lines with a '+' will expand just that one, etc.
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+Signed-off-by: Yang Zhang <yang.z.zhang@Intel.com>
+---
+ arch/x86/include/asm/cpu.h |    1 +
+ arch/x86/kernel/topology.c |    9 +++++++++
+ drivers/base/cpu.c         |    9 +++++----
+ include/linux/cpu.h        |    8 +++++++-
+ 4 files changed, 22 insertions(+), 5 deletions(-)
 
-Press 'h' to get more help.
+diff --git a/arch/x86/include/asm/cpu.h linux-hpe4/arch/x86/include/asm/cpu.h
+index 4564c8e..cbb062f 100644
+--- a/arch/x86/include/asm/cpu.h
++++ linux-hpe4/arch/x86/include/asm/cpu.h
+@@ -27,6 +27,7 @@ struct x86_cpu {
 
-Or use 'perf report --stdio' and you'll get it all expanded and in plain
-text.
- 
-- Arnaldo
+ #ifdef CONFIG_HOTPLUG_CPU
+ extern int arch_register_cpu(int num);
++extern int arch_register_cpu_node(int num, int nid);
+ extern void arch_unregister_cpu(int);
+ #endif
+
+diff --git a/arch/x86/kernel/topology.c linux-hpe4/arch/x86/kernel/topology.c
+index 7e45159..1e53227 100644
+--- a/arch/x86/kernel/topology.c
++++ linux-hpe4/arch/x86/kernel/topology.c
+@@ -52,6 +52,15 @@ int __ref arch_register_cpu(int num)
+ }
+ EXPORT_SYMBOL(arch_register_cpu);
+
++int __ref arch_register_cpu_node(int num, int nid)
++{
++       if (num)
++               per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
++
++       return register_cpu_node(&per_cpu(cpu_devices, num).cpu, num, nid);
++}
++EXPORT_SYMBOL(arch_register_cpu_node);
++
+ void arch_unregister_cpu(int num)
+ {
+        unregister_cpu(&per_cpu(cpu_devices, num).cpu);
+diff --git a/drivers/base/cpu.c linux-hpe4/drivers/base/cpu.c
+index 251acea..6b791ae 100644
+--- a/drivers/base/cpu.c
++++ linux-hpe4/drivers/base/cpu.c
+@@ -208,17 +208,18 @@ static ssize_t print_cpus_offline(struct sysdev_class *class,
+ static SYSDEV_CLASS_ATTR(offline, 0444, print_cpus_offline, NULL);
+
+ /*
+- * register_cpu - Setup a sysfs device for a CPU.
++ * register_cpu_node - Setup a sysfs device for a CPU.
+  * @cpu - cpu->hotpluggable field set to 1 will generate a control file in
+  *       sysfs for this CPU.
+  * @num - CPU number to use when creating the device.
++ * @nid - Node ID to use, if any.
+  *
+  * Initialize and register the CPU device.
+  */
+-int __cpuinit register_cpu(struct cpu *cpu, int num)
++int __cpuinit register_cpu_node(struct cpu *cpu, int num, int nid)
+ {
+        int error;
+-       cpu->node_id = cpu_to_node(num);
++       cpu->node_id = nid;
+        cpu->sysdev.id = num;
+        cpu->sysdev.cls = &cpu_sysdev_class;
+
+@@ -229,7 +230,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+        if (!error)
+                per_cpu(cpu_sys_devices, num) = &cpu->sysdev;
+        if (!error)
+-               register_cpu_under_node(num, cpu_to_node(num));
++               register_cpu_under_node(num, nid);
+
+ #ifdef CONFIG_KEXEC
+        if (!error)
+diff --git a/include/linux/cpu.h linux-hpe4/include/linux/cpu.h
+index 5f09323..014856d 100644
+--- a/include/linux/cpu.h
++++ linux-hpe4/include/linux/cpu.h
+@@ -25,7 +25,13 @@ struct cpu {
+        struct sys_device sysdev;
+ };
+
+-extern int register_cpu(struct cpu *cpu, int num);
++extern int register_cpu_node(struct cpu *cpu, int num, int nid);
++
++static inline int register_cpu(struct cpu *cpu, int num)
++{
++       return register_cpu_node(cpu, num, cpu_to_node(num));
++}
++
+ extern struct sys_device *get_cpu_sysdev(unsigned cpu);
+
+ extern int cpu_add_sysdev_attr(struct sysdev_attribute *attr);
+--
+1.7.1.1
+--
+best regards
+yang
+
+
