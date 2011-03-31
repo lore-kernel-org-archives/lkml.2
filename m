@@ -1,72 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab1CaSKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 14:10:18 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:34629 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab1CaSKP convert rfc822-to-8bit (ORCPT
+	id S1758909Ab1CaSKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 14:10:44 -0400
+Received: from santostefano.inria.fr ([193.51.192.151]:37597 "HELO
+	santostefano.inria.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758792Ab1CaSKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 14:10:15 -0400
-X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Mar 2011 14:10:14 EDT
-Message-ID: <4D94C155.2090406@ahsoftware.de>
-Date: Thu, 31 Mar 2011 20:00:53 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: david@lang.hm, Nicolas Pitre <nico@fluxnic.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-References: <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com> <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <20110331080954.GA14323@n2100.arm.linux.org.uk>
-In-Reply-To: <20110331080954.GA14323@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 Mar 2011 14:10:41 -0400
+Subject: [PATCH 2/2] Fix a typo 'an hardware => a hardware'
+From: Sylvestre Ledru <sylvestre.ledru@scilab.org>
+To: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Sylvestre Ledru <sylvestre.ledru@scilab.org>
+Content-Type: multipart/mixed; boundary="=-CTM/qZNG3O/M+4CoKCwJ"
+Date: Thu, 31 Mar 2011 20:10:39 +0200
+Message-ID: <1301595039.27408.14.camel@losinj.inria.fr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+--=-CTM/qZNG3O/M+4CoKCwJ
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+
 Hello,
 
-Am 31.03.2011 10:09, schrieb Russell King - ARM Linux:
+Here is a patch which fixes an other minor typo issue.
 
-> We also need the various SoC designers and ARM architecture people to
-> realise that what the hardware situation is rediculous; I have commented
-> about this lack of standardisation to ARM in past years.  ARM have had
-> a standard set of peripherals for ten years, but the SoC people haven't
-> really taken them up - and when they do, they seem to always introduce
-> their own tweaks, sometimes with no way to detect those tweaks.
+Thanks
+Sylvestre 
 
-As a user of several ARM boards I fully agree. I've come to the 
-conclusion that if device tree or something similiar won't come up, 
-which offers a vendor independent description of the hardware, the ARM 
-market (at least with Linux as an OS) won't function. It's already 
-almost impossible to update an old vendor kernel to a mainline kernel 
-version without having schematics. Up to now this isn't a big problem 
-because most ARM-HW people are playing with are developer boards, but 
-thats already changing and more and more stuff will come without schematics.
-And without the help of something like the x86 BIOS (or DT for ARM) you 
-are just lost using an ARM-HW where you don't have the schematics, when 
-you don't want to use the vendor provided kernel sources (for which you 
-almost never get e.g. any security fixes). Finding all the small knobs 
-to turn out of vendor provided kernel sources is a pain and just a waste 
-of time you almost never can't finish before the HW in question got 
-obsolete.
 
-Just my 2¢ on that topic from a somewhat user point of view from one who 
-isn't really involved that much in kernel development.
+--=-CTM/qZNG3O/M+4CoKCwJ
+Content-Disposition: attachment; filename="0002-Fix-a-typo-an-hardware-a-hardware.patch"
+Content-Type: text/x-patch; name="0002-Fix-a-typo-an-hardware-a-hardware.patch"; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 
-At least I find such a rant from Linus from time to time a good thing. 
-Sometimes it helps if someone speaks out loud whats wrong. And if Linus 
-wouldn't be that one, who else would be courageous enough to do that? I 
-wouldn't (and I can't, I have to thank all kernel developers for their 
-hard work).
+>From bcb06f53e88c5a767a63b04528c2c6799811abe4 Mon Sep 17 00:00:00 2001
+From: Sylvestre Ledru <sylvestre.ledru@scilab.org>
+Date: Thu, 31 Mar 2011 18:02:59 +0200
+Subject: [PATCH 2/2] Fix a typo 'an hardware => a hardware'
 
-Regards,
+Signed-off-by: Sylvestre Ledru <sylvestre.ledru@scilab.org>
+---
+ arch/alpha/include/asm/dma.h            |    4 ++--
+ drivers/hwspinlock/omap_hwspinlock.c    |    2 +-
+ drivers/message/i2o/Kconfig             |    2 +-
+ drivers/net/wireless/rt2x00/rt2400pci.c |    2 +-
+ drivers/net/wireless/rt2x00/rt2500pci.c |    2 +-
+ drivers/net/wireless/rt2x00/rt2500usb.c |    2 +-
+ drivers/platform/x86/asus-laptop.c      |    4 ++--
+ drivers/scsi/pm8001/pm8001_init.c       |    2 +-
+ drivers/video/s3c-fb.c                  |    2 +-
+ include/linux/mtd/nand.h                |    2 +-
+ include/linux/oprofile.h                |    2 +-
+ 11 files changed, 13 insertions(+), 13 deletions(-)
 
-Alexander
+diff --git a/arch/alpha/include/asm/dma.h b/arch/alpha/include/asm/dma.h
+index 87cfdbd..d7bb2c3 100644
+--- a/arch/alpha/include/asm/dma.h
++++ b/arch/alpha/include/asm/dma.h
+@@ -87,12 +87,12 @@
+ #define ALPHA_XL_MAX_ISA_DMA_ADDRESS		0x04000000UL
+ 
+ /* The maximum address for ISA DMA transfer on RUFFIAN,
+-   due to an hardware SIO limitation, is 16MB.
++   due to a hardware SIO limitation, is 16MB.
+ */
+ #define ALPHA_RUFFIAN_MAX_ISA_DMA_ADDRESS	0x01000000UL
+ 
+ /* The maximum address for ISA DMA transfer on SABLE, and some ALCORs,
+-   due to an hardware SIO chip limitation, is 2GB.
++   due to a hardware SIO chip limitation, is 2GB.
+ */
+ #define ALPHA_SABLE_MAX_ISA_DMA_ADDRESS		0x80000000UL
+ #define ALPHA_ALCOR_MAX_ISA_DMA_ADDRESS		0x80000000UL
+diff --git a/drivers/hwspinlock/omap_hwspinlock.c b/drivers/hwspinlock/omap_hwspinlock.c
+index a8f0273..6eeb3f5 100644
+--- a/drivers/hwspinlock/omap_hwspinlock.c
++++ b/drivers/hwspinlock/omap_hwspinlock.c
+@@ -77,7 +77,7 @@ static void omap_hwspinlock_unlock(struct hwspinlock *lock)
+  * just over half of the time that a requester would be
+  * expected to hold the lock.
+  *
+- * The number below is taken from an hardware specs example,
++ * The number below is taken from a hardware specs example,
+  * obviously it is somewhat arbitrary.
+  */
+ static void omap_hwspinlock_relax(struct hwspinlock *lock)
+diff --git a/drivers/message/i2o/Kconfig b/drivers/message/i2o/Kconfig
+index 5afa0e3..a21ce63 100644
+--- a/drivers/message/i2o/Kconfig
++++ b/drivers/message/i2o/Kconfig
+@@ -5,7 +5,7 @@ menuconfig I2O
+ 	---help---
+ 	  The Intelligent Input/Output (I2O) architecture allows hardware
+ 	  drivers to be split into two parts: an operating system specific
+-	  module called the OSM and an hardware specific module called the
++	  module called the OSM and a hardware specific module called the
+ 	  HDM. The OSM can talk to a whole range of HDM's, and ideally the
+ 	  HDM's are not OS dependent. This allows for the same HDM driver to
+ 	  be used under different operating systems if the relevant OSM is in
+diff --git a/drivers/net/wireless/rt2x00/rt2400pci.c b/drivers/net/wireless/rt2x00/rt2400pci.c
+index 329f328..603964c 100644
+--- a/drivers/net/wireless/rt2x00/rt2400pci.c
++++ b/drivers/net/wireless/rt2x00/rt2400pci.c
+@@ -1531,7 +1531,7 @@ static int rt2400pci_init_eeprom(struct rt2x00_dev *rt2x00dev)
+ #endif /* CONFIG_RT2X00_LIB_LEDS */
+ 
+ 	/*
+-	 * Detect if this device has an hardware controlled radio.
++	 * Detect if this device has a hardware controlled radio.
+ 	 */
+ 	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO))
+ 		__set_bit(CONFIG_SUPPORT_HW_BUTTON, &rt2x00dev->flags);
+diff --git a/drivers/net/wireless/rt2x00/rt2500pci.c b/drivers/net/wireless/rt2x00/rt2500pci.c
+index 5827787..b6360a7 100644
+--- a/drivers/net/wireless/rt2x00/rt2500pci.c
++++ b/drivers/net/wireless/rt2x00/rt2500pci.c
+@@ -1682,7 +1682,7 @@ static int rt2500pci_init_eeprom(struct rt2x00_dev *rt2x00dev)
+ #endif /* CONFIG_RT2X00_LIB_LEDS */
+ 
+ 	/*
+-	 * Detect if this device has an hardware controlled radio.
++	 * Detect if this device has a hardware controlled radio.
+ 	 */
+ 	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO))
+ 		__set_bit(CONFIG_SUPPORT_HW_BUTTON, &rt2x00dev->flags);
+diff --git a/drivers/net/wireless/rt2x00/rt2500usb.c b/drivers/net/wireless/rt2x00/rt2500usb.c
+index 979fe65..a9c47a4 100644
+--- a/drivers/net/wireless/rt2x00/rt2500usb.c
++++ b/drivers/net/wireless/rt2x00/rt2500usb.c
+@@ -1516,7 +1516,7 @@ static int rt2500usb_init_eeprom(struct rt2x00_dev *rt2x00dev)
+ #endif /* CONFIG_RT2X00_LIB_LEDS */
+ 
+ 	/*
+-	 * Detect if this device has an hardware controlled radio.
++	 * Detect if this device has a hardware controlled radio.
+ 	 */
+ 	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO))
+ 		__set_bit(CONFIG_SUPPORT_HW_BUTTON, &rt2x00dev->flags);
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index c53b3ff..55bd9dd 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -641,7 +641,7 @@ static ssize_t show_infos(struct device *dev,
+ 		len += sprintf(page + len, "SFUN value         : %#x\n",
+ 			       (uint) temp);
+ 	/*
+-	 * The HWRS method return informations about the hardware.
++	 * The HWRS method returns information about the hardware.
+ 	 * 0x80 bit is for WLAN, 0x100 for Bluetooth.
+ 	 * The significance of others is yet to be found.
+ 	 * If we don't find the method, we assume the device are present.
+@@ -1334,7 +1334,7 @@ static int asus_laptop_get_info(struct asus_laptop *asus)
+ 		pr_notice("  %s model detected\n", string);
+ 
+ 	/*
+-	 * The HWRS method return informations about the hardware.
++	 * The HWRS method returns information about the hardware.
+ 	 * 0x80 bit is for WLAN, 0x100 for Bluetooth,
+ 	 * 0x40 for WWAN, 0x10 for WIMAX.
+ 	 * The significance of others is yet to be found.
+diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
+index 002360d..cabb568 100644
+--- a/drivers/scsi/pm8001/pm8001_init.c
++++ b/drivers/scsi/pm8001/pm8001_init.c
+@@ -614,7 +614,7 @@ intx:
+  * @ent: pci device id
+  *
+  * This function is the main initialization function, when register a new
+- * pci driver it is invoked, all struct an hardware initilization should be done
++ * pci driver it is invoked, all struct a hardware initilization should be done
+  * here, also, register interrupt
+  */
+ static int __devinit pm8001_pci_probe(struct pci_dev *pdev,
+diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
+index 6817d18..116d3a4 100644
+--- a/drivers/video/s3c-fb.c
++++ b/drivers/video/s3c-fb.c
+@@ -1161,7 +1161,7 @@ static void s3c_fb_release_win(struct s3c_fb *sfb, struct s3c_fb_win *win)
+ }
+ 
+ /**
+- * s3c_fb_probe_win() - register an hardware window
++ * s3c_fb_probe_win() - register a hardware window
+  * @sfb: The base resources for the hardware
+  * @variant: The variant information for this window.
+  * @res: Pointer to where to place the resultant window.
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index ae67ef5..ec88c09 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -342,7 +342,7 @@ struct nand_hw_control {
+  * @layout:	ECC layout control struct pointer
+  * @priv:	pointer to private ecc control data
+  * @hwctl:	function to control hardware ecc generator. Must only
+- *		be provided if an hardware ECC is available
++ *		be provided if a hardware ECC is available
+  * @calculate:	function for ecc calculation or readback from ecc hardware
+  * @correct:	function for ecc correction, matching to ecc generator (sw/hw)
+  * @read_page_raw:	function to read a raw page without ECC
+diff --git a/include/linux/oprofile.h b/include/linux/oprofile.h
+index 7f5cfd3..3cf9881 100644
+--- a/include/linux/oprofile.h
++++ b/include/linux/oprofile.h
+@@ -107,7 +107,7 @@ void oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
+ 				unsigned long event, int is_kernel);
+ 
+ /**
+- * Add an hardware sample.
++ * Add a hardware sample.
+  */
+ void oprofile_add_ext_hw_sample(unsigned long pc, struct pt_regs * const regs,
+ 	unsigned long event, int is_kernel,
+-- 
+1.7.4.1
+
+
+--=-CTM/qZNG3O/M+4CoKCwJ--
 
