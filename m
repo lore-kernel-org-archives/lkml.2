@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab1CaPJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:09:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36076 "EHLO mail.zytor.com"
+	id S1758218Ab1CaPJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:09:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61799 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752278Ab1CaPJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:09:40 -0400
-Message-ID: <4D949918.8010109@zytor.com>
-Date: Thu, 31 Mar 2011 08:09:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-1.fc15 Thunderbird/3.1.9
+	id S1758185Ab1CaPJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:09:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,275,1299484800"; 
+   d="scan'208";a="727502570"
+Date: Thu, 31 Mar 2011 17:09:40 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Waldemar.Rymarkiewicz@tieto.com
+Cc: arnd@arndb.de, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hthebaud@insidefr.com, matti.j.aaltonen@nokia.com,
+        alan@lxorguk.ukuu.org.uk, Sebastian.Chlad@tieto.com
+Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Message-ID: <20110331150939.GC2704@sortiz-mobl>
+References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
+ <20110325142648.GC3879@sortiz-mobl>
+ <99B09243E1A5DA4898CDD8B7001114481085E2375D@EXMB04.eu.tieto.com>
+ <201103291305.02293.arnd@arndb.de>
+ <20110331141650.GB2704@sortiz-mobl>
+ <99B09243E1A5DA4898CDD8B7001114481085F0FE5A@EXMB04.eu.tieto.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Ingo Molnar <mingo@elte.hu>, Len Brown <lenb@kernel.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        Len Brown <len.brown@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/9] x86 idle: remove NOP cpuinfo_x86.hlt_works_ok flag
-References: <67e90d97e0a77df4acd0c75e1bacc7714e011f3e.1301550524.git.len.brown@intel.com>	<b048802b0285a5ff28e74a4309d833116174904a.1301550524.git.len.brown@intel.com>	<20110331061247.GA24786@elte.hu>	<alpine.LFD.2.02.1103310252160.8569@x980>	<20110331081800.GH5938@elte.hu>	<20110331102355.17d30a38@lxorguk.ukuu.org.uk>	<20110331092721.GA16570@elte.hu>	<20110331103320.5a72ff8c@lxorguk.ukuu.org.uk>	<20110331093528.GA19288@elte.hu>	<4D948D86.2050607@zytor.com> <20110331154103.70d88899@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110331154103.70d88899@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <99B09243E1A5DA4898CDD8B7001114481085F0FE5A@EXMB04.eu.tieto.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 07:41 AM, Alan Cox wrote:
->>
->> What it was was bad power supplies or low-capacitance, high-inductance
->> power distribution that happened to work with MS-DOS which always burned
->> the CPU at 100% and therefore left the power draw relatively consistent
->> current.  A proper OS putting the CPU in HLT produced a lot more high
->> frequency noise on the power busses, with disastrous results without
->> proper bypass.
-> 
-> And also chipset errata in some cases - eg some revisions of the CS5510
-> hung the box solid if a CPU hlt occurred during an IDE transfer. I don't
-> think any CS5510s are still around although I've had mail from someone
-> with a CS5520 in use not that long ago so who knows!
-> 
-> The joy of ancient history.
+Hi Waldemar,
 
-Ah, yes, I guess there was a special cycle on the bus which the chipset
-could misinterpret.
+On Thu, Mar 31, 2011 at 05:42:21PM +0300, Waldemar.Rymarkiewicz@tieto.com wrote:
+> >My idea of an initial NFC subsystem architecture was actually 
+> >the following
+> >one:
+> >- A core NFC layer against which NFC drivers would register.
+> >- A netlink socket for handling the HCI commands. That would 
+> >put a big part of the NFC HCI layer in kernel land and could 
+> >potentially simplify the existing NFC stacks.
+> 
+> Shouldn't be better to add a new AF_NFC sock family and then register new LLCP and HCI protocols?
+> 
+That's the Bluetooth approach, and it works just fine as well.
+However, the netlink option for sending commands and receiving answers to/from
+a subsystem sounds more appropriate, at least to me.
 
-	-hpa
+Cheers,
+Samuel.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
