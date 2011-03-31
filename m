@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759430Ab1CaW1G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 18:27:06 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:56405 "EHLO e8.ny.us.ibm.com"
+	id S1759432Ab1CaWar (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 18:30:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41785 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751664Ab1CaW1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 18:27:03 -0400
-Subject: Re: [PATCH 04/12] mm: alloc_contig_freed_pages() added
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
-        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
-In-Reply-To: <op.vs8awkrx3l0zgt@mnazarewicz-glaptop>
-References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
-	 <1301577368-16095-5-git-send-email-m.szyprowski@samsung.com>
-	 <1301587083.31087.1032.camel@nimitz>
-	 <op.vs77qfx03l0zgt@mnazarewicz-glaptop>
-	 <1301606078.31087.1275.camel@nimitz>
-	 <op.vs8awkrx3l0zgt@mnazarewicz-glaptop>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 31 Mar 2011 15:26:51 -0700
-Message-ID: <1301610411.30870.29.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1751664Ab1CaWaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 18:30:46 -0400
+Date: Thu, 31 Mar 2011 18:30:34 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: axboe@kernel.dk
+Subject: GPF in __call_for_each_cic
+Message-ID: <20110331223034.GA31371@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, axboe@kernel.dk
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 00:18 +0200, Michal Nazarewicz wrote:
-> On Thu, 31 Mar 2011 23:14:38 +0200, Dave Hansen wrote:
-> > We BUG_ON() in bootmem.  Basically if we try to allocate an early-boot
-> > structure and fail, we're screwed.  We can't keep running without an
-> > inode hash, or a mem_map[].
-> >
-> > This looks like it's going to at least get partially used in drivers, at
-> > least from the examples.  Are these kinds of things that, if the driver
-> > fails to load, that the system is useless and hosed?  Or, is it
-> > something where we might limp along to figure out what went wrong before
-> > we reboot?
-> 
-> Bug in the above place does not mean that we could not allocate memory.  It
-> means caller is broken.
+Just hit this on current git head.
 
-Could you explain that a bit?
+	Dave
 
-Is this a case where a device is mapped to a very *specific* range of
-physical memory and no where else?  What are the reasons for not marking
-it off limits at boot?  I also saw some bits of isolation and migration
-in those patches.  Can't the migration fail?  
-
--- Dave
+ general protection fault: 0000 [#1] SMP 
+ last sysfs file: /sys/devices/system/cpu/cpu1/cache/index2/shared_cpu_map
+ CPU 0 
+ Modules linked in: cmtp kernelcapi can_bcm rfcomm sctp libcrc32c hidp bnep af_802154 ipx p8022 p8023 rds phonet decnet pppoe pppox ppp_generic slhc appletalk psnap llc af_key can rose ax25 irda crc_ccitt atm tun tcp_lp nfs fscache fuse nfsd lockd nfs_acl auth_rpcgss sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6 uinput arc4 iwlagn mac80211 snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_usb_audio snd_hda_codec btusb bluetooth snd_seq uvcvideo snd_pcm dell_wmi cfg80211 sparse_keymap snd_hwdep zaurus snd_usbmidi_lib videodev dell_laptop snd_rawmidi snd_timer cdc_ether dcdbas snd_seq_device usbnet microcode v4l2_compat_ioctl32 mii cdc_acm snd cdc_wdm iTCO_wdt joydev tg3 rfkill i2c_i801 pcspkr iTCO_vendor_support soundcore snd_page_alloc wmi i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
+ 
+ Pid: 14365, comm: trinity Not tainted 2.6.38-09065-g89078d5-dirty #6 Dell Inc. Adamo 13   /0N70T0
+ RIP: 0010:[<ffffffff8125703b>]  [<ffffffff8125703b>] __call_for_each_cic+0x32/0x51
+ RSP: 0018:ffff880007c05e28  EFLAGS: 00010202
+ RAX: 0000000000000001 RBX: ffff88010e48abd0 RCX: 0000042c0d869707
+ RDX: 0000000000000246 RSI: ffffffff81a268f0 RDI: 0000000000000246
+ RBP: ffff880007c05e48 R08: 0000000000000286 R09: 0000000000000001
+ R10: ffff88010e48abf8 R11: ffffffff8125893b R12: ffffffff8125708a
+ R13: 6b6b6b6b6b6b6b6b R14: ffff880007c05c08 R15: 0000000000000001
+ FS:  0000000000000000(0000) GS:ffff88013fa00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 000000000157ea88 CR3: 0000000001a03000 CR4: 00000000000406f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process trinity (pid: 14365, threadinfo ffff880007c04000, task ffff88007c99a3b0)
+ Stack:
+  ffff880007c05c08 ffff88010e48abd0 ffff88007c99a3b0 ffff88007c99a980
+  ffff880007c05e58 ffffffff8125706f ffff880007c05e78 ffffffff8124c70c
+  ffff880007c05e78 ffff88010e48abd0 ffff880007c05ea8 ffffffff8124c798
+ Call Trace:
+  [<ffffffff8125706f>] cfq_free_io_context+0x15/0x17
+  [<ffffffff8124c70c>] put_io_context+0x44/0x61
+  [<ffffffff8124c798>] exit_io_context+0x6f/0x77
+  [<ffffffff8105e9c6>] do_exit+0x759/0x780
+  [<ffffffff814cdaf7>] ? schedule+0x6d9/0x70b
+  [<ffffffff8105ec67>] do_group_exit+0x88/0xb6
+  [<ffffffff8105ecac>] sys_exit_group+0x17/0x1b
+  [<ffffffff814d6bc2>] system_call_fastpath+0x16/0x1b
+ Code: 54 53 48 83 ec 08 0f 1f 44 00 00 4c 8b af 80 00 00 00 48 89 fb 49 89 f4 e8 e3 db e1 ff 85 c0 74 05 e8 ac ff ff ff 4d 85 ed 74 17 
+  8b 45 00 49 8d 75 b0 48 89 df 0f 18 08 41 ff d4 4d 8b 6d 00 
+ RIP  [<ffffffff8125703b>] __call_for_each_cic+0x32/0x51
+  RSP <ffff880007c05e28>
+ ---[ end trace 044e02f5767b491a ]---
+ Fixing recursive fault but reboot is needed!
 
