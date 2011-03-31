@@ -1,73 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964786Ab1CaJsb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 05:48:31 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49121 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752289Ab1CaJsa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 05:48:30 -0400
-Date: Thu, 31 Mar 2011 10:45:49 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Len Brown <lenb@kernel.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH 0/9] x86 idle cruft removal - v2
-Message-ID: <20110331104549.3065ab29@lxorguk.ukuu.org.uk>
-In-Reply-To: <1301551404-8263-1-git-send-email-lenb@kernel.org>
-References: <1300950508-22746-1-git-send-email-lenb@kernel.org>
-	<1301551404-8263-1-git-send-email-lenb@kernel.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933221Ab1CaJxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 05:53:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55461 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752884Ab1CaJxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 05:53:08 -0400
+Date: Thu, 31 Mar 2011 11:53:06 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>
+Cc: Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/3] Implementation of cgroup isolation
+Message-ID: <20110331095306.GA30290@tiehlicka.suse.cz>
+References: <20110328093957.089007035@suse.cz>
+ <20110328200332.17fb4b78.kamezawa.hiroyu@jp.fujitsu.com>
+ <4D920066.7000609@gmail.com>
+ <20110330081853.GC15394@tiehlicka.suse.cz>
+ <BANLkTinTKyqv11JPwQ1GszYv5e3xOM=b8A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinTKyqv11JPwQ1GszYv5e3xOM=b8A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [PATCH 6/9] x86 idle APM: delete apm_cpu_idle(), and its use of pm_idle
-> [PATCH 7/9] x86 idle: do not EXPORT_SYMBOL pm_idle and default_idle
+On Wed 30-03-11 10:59:21, Ying Han wrote:
+> On Wed, Mar 30, 2011 at 1:18 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Tue 29-03-11 21:23:10, Balbir Singh wrote:
+> >> On 03/28/11 16:33, KAMEZAWA Hiroyuki wrote:
+> >> > On Mon, 28 Mar 2011 11:39:57 +0200
+> >> > Michal Hocko <mhocko@suse.cz> wrote:
+> > [...]
+> >> > Isn't it the same result with the case where no cgroup is used ?
+> >> > What is the problem ?
+> >> > Why it's not a problem of configuration ?
+> >> > IIUC, you can put all logins to some cgroup by using cgroupd/libgcgroup.
+> >> >
+> >>
+> >> I agree with Kame, I am still at loss in terms of understand the use
+> >> case, I should probably see the rest of the patches
+> >
+> > OK, it looks that I am really bad at explaining the usecase. Let's try
+> > it again then (hopefully in a better way).
+> >
+> > Consider a service which serves requests based on the in-memory
+> > precomputed or preprocessed data.
+> > Let's assume that getting data into memory is rather costly operation
+> > which considerably increases latency of the request processing. Memory
+> > access can be considered random from the system POV because we never
+> > know which requests will come from outside.
+> > This workflow will benefit from having the memory resident as long as
+> > and as much as possible because we have higher chances to be used more
+> > often and so the initial costs would pay off.
+> > Why is mlock not the right thing to do here? Well, if the memory would
+> > be locked and the working set would grow (again this depends on the
+> > incoming requests) then the application would have to unlock some
+> > portions of the memory or to risk OOM because it basically cannot
+> > overcommit.
+> > On the other hand, if the memory is not mlocked and there is a global
+> > memory pressure we can have some part of the costly memory swapped or
+> > paged out which will increase requests latencies. If the application is
+> > placed into an isolated cgroup, though, the global (or other cgroups)
+> > activity doesn't influence its cgroup thus the working set of the
+> > application.
+> 
+> > If we compare that to mlock we will benefit from per-group reclaim when
+> > we get over the limit (or soft limit). So we do not start evicting the
+> > memory unless somebody makes really pressure on the _application_.
+> > Cgroup limits would, of course, need to be selected carefully.
+> >
+> > There might be other examples when simply kernel cannot know which
+> > memory is important for the process and the long unused memory is not
+> > the ideal choice.
+> 
+> Michal,
+> 
+> Reading through your example, sounds to me you can accomplish the
+> "guarantee" of the high priority service using existing
+> memcg mechanisms.
+> 
+> Assume you have the service named cgroup-A which needs memory
+> "guarantee". Meantime we want to launch cgroup-B with no memory
+> "guarantee". What you want is to have cgroup-B uses the slack memory
+> (not being allocated by cgroup-A), but also volunteer to give up under
+> system memory pressure.
 
-I thought someone had agreed to look after APM ?
+This would require a "guarantee" that no pages are reclaimed from a
+group if that group is under its soft limit, right? I am thinking if we
+can achieve that without too many corner cases when cgroups (process's
+accounted memory) don't leave out much for other memory used by the
+kernel.
+That was my concern so I made that isolation rather opt-in without
+modifying the current reclaim logic too much (there are, of course,
+parts that can be improved).
 
-I'm also curious why you write
+> So continue w/ my previous post, you can consider the following
+> configuration in 32G machine. We can only have resident size of
+> cgroup-A as much as the machine capacity.
+> 
+> cgroup-A :  limit_in_bytes =32G soft_limit_in_bytes = 32G
+> cgroup-B : limit_in_bytes =20G  soft_limit_in_bytes = 0G
+> 
+> To be a little bit extreme, there shouldn't be memory pressure on
+> cgroup-A unless it grows above the machine capacity. If the global
+> memory contention is triggered by cgroup-B, we should steal pages from
+> it always.
+> 
+> However, the current implementation of soft_limit needs to be improved
+> for the example above. Especially when we start having lots of cgroups
+> running w/ different limit setting, we need to have soft_limit being
+> efficient and we can eliminate the global lru scanning. 
 
-"There is some doubt whether the APM idle feature
-to call into the BIOS from the idle loop is reliable.
-Certainly it was known to fail on some machines,
-but more importantly, APM machines have not shipped
-for a decade and so finding machines to test the code
-is problematic."
+Lots of groups is really an issue because we can end up in a situation
+when everybody is under the limit while there is not much memory left
+for the kernel. Maybe sum(soft_limit) < kernel_treshold condition would
+solve this.
 
-We don't care if it doesn't work on a few machines (in fact we have
-a table to avoid that), we care that it *DOES* work on lots.
+> The later one breaks the isolation.
 
-Removing it probably isn't a bad thing long term, but it's not appeared in
-the deprecated list and has not been there for several releases so it is
-not eligible for removal at this point.
+Sorry, I don't understand. Why would elimination of the global lru
+scanning break isolation? Or am I misreading you?
 
-People spent years getting Linux to support all this hardware and
-throwing bits out left right and centre to tidy up your current project
-is not the way it should be done.
-
-So can we do this properly please. We have a process for good reason.
-
-Deprecate it properly
-
-Add a printk/WARN_ON() indicating to the user it is deprecated but we
-will continue, and then give it a couple of releaes. Kerneloops.org will
-help answer whether that WARN_ON was hit.
-
-And in the meantime just progress the rest of the work with it present.
-If you break APM support by accident doing that then either
-
-a) someone will jump up and down and yell regression - and debug it for
-you
-
-or
-
-b) there will be silence because nobody noticed it broke
-
-
-Alan
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
