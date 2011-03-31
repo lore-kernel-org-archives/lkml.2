@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab1CaGDm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 02:03:42 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:44444 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab1CaGDl (ORCPT
+	id S1755840Ab1CaGDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 02:03:46 -0400
+Received: from vms173019pub.verizon.net ([206.46.173.19]:43984 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab1CaGDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 02:03:41 -0400
+	Thu, 31 Mar 2011 02:03:43 -0400
 From: Len Brown <lenb@kernel.org>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 2/9] x86 idle: remove NOP cpuinfo_x86.hlt_works_ok flag
-Date: Thu, 31 Mar 2011 02:03:17 -0400
-Message-id: <b048802b0285a5ff28e74a4309d833116174904a.1301550524.git.len.brown@intel.com>
+Subject: [PATCH 3/9] x86 idle: remove NOP halt_works()
+Date: Thu, 31 Mar 2011 02:03:18 -0400
+Message-id: <59c5d1540292b8c392d0a917e5f95da0297eef75.1301550524.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.4.2.406.gbe91
 In-reply-to: <1301551404-8263-1-git-send-email-lenb@kernel.org>
 References: <1300950508-22746-1-git-send-email-lenb@kernel.org>
@@ -27,122 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-hlt_works_ok was X86_32 only, initialized to 1, and never cleared.
-
-On 32-bit kernels, this deletes a line from /proc/cpuinfo: "hlt_bug : no"
+no functional change
 
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
  arch/x86/include/asm/processor.h |    5 -----
- arch/x86/kernel/cpu/bugs.c       |    5 +----
- arch/x86/kernel/cpu/proc.c       |    2 --
- arch/x86/kernel/process.c        |    2 +-
- arch/x86/kernel/setup.c          |    4 ++--
- arch/x86/xen/setup.c             |    3 ---
- 6 files changed, 4 insertions(+), 17 deletions(-)
+ arch/x86/kernel/process.c        |    3 +--
+ 2 files changed, 1 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 45636ce..b5c83f1 100644
+index b5c83f1..8776232 100644
 --- a/arch/x86/include/asm/processor.h
 +++ b/arch/x86/include/asm/processor.h
-@@ -67,7 +67,6 @@ struct cpuinfo_x86 {
- 	char			wp_works_ok;	/* It doesn't on 386's */
+@@ -147,11 +147,6 @@ DECLARE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
  
- 	/* Problems on some 486Dx4's and old 386's: */
--	char			hlt_works_ok;
- 	char			hard_math;
- 	char			rfu;
- 	char			fdiv_bug;
-@@ -150,11 +149,7 @@ extern const struct seq_operations cpuinfo_op;
+ extern const struct seq_operations cpuinfo_op;
  
- static inline int hlt_works(int cpu)
- {
--#ifdef CONFIG_X86_32
--	return cpu_data(cpu).hlt_works_ok;
--#else
- 	return 1;
--#endif
- }
- 
+-static inline int hlt_works(int cpu)
+-{
+-	return 1;
+-}
+-
  #define cache_line_size()	(boot_cpu_data.x86_cache_alignment)
-diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
-index 4c91631..b5e2910 100644
---- a/arch/x86/kernel/cpu/bugs.c
-+++ b/arch/x86/kernel/cpu/bugs.c
-@@ -82,10 +82,7 @@ static void __init check_hlt(void)
- 		return;
  
- 	printk(KERN_INFO "Checking 'hlt' instruction... ");
--	if (!boot_cpu_data.hlt_works_ok) {
--		printk("disabled\n");
--		return;
--	}
-+
- 	halt();
- 	halt();
- 	halt();
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index 62ac8cb..203feb7 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -33,7 +33,6 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
- 	int fpu_exception = c->hard_math && (ignore_fpu_irq || cpu_has_fpu);
- 	seq_printf(m,
- 		   "fdiv_bug\t: %s\n"
--		   "hlt_bug\t\t: %s\n"
- 		   "f00f_bug\t: %s\n"
- 		   "coma_bug\t: %s\n"
- 		   "fpu\t\t: %s\n"
-@@ -41,7 +40,6 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
- 		   "cpuid level\t: %d\n"
- 		   "wp\t\t: %s\n",
- 		   c->fdiv_bug ? "yes" : "no",
--		   c->hlt_works_ok ? "no" : "yes",
- 		   c->f00f_bug ? "yes" : "no",
- 		   c->coma_bug ? "yes" : "no",
- 		   c->hard_math ? "yes" : "no",
+ extern void cpu_detect(struct cpuinfo_x86 *c);
 diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index ff45541..4966c7e 100644
+index 4966c7e..cd461c3 100644
 --- a/arch/x86/kernel/process.c
 +++ b/arch/x86/kernel/process.c
-@@ -362,7 +362,7 @@ EXPORT_SYMBOL(enable_hlt);
+@@ -414,8 +414,7 @@ void stop_this_cpu(void *dummy)
+ 	disable_local_APIC();
  
- static inline int hlt_use_halt(void)
- {
--	return (!hlt_counter && boot_cpu_data.hlt_works_ok);
-+	return (!hlt_counter);
+ 	for (;;) {
+-		if (hlt_works(smp_processor_id()))
+-			halt();
++		halt();
+ 	}
  }
- #else
- static inline int hlt_use_halt(void)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index d3cfe26..fab5631 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -175,9 +175,9 @@ static struct resource bss_resource = {
- 
- #ifdef CONFIG_X86_32
- /* cpu data as detected by the assembly code in head.S */
--struct cpuinfo_x86 new_cpu_data __cpuinitdata = {0, 0, 0, 0, -1, 1, 0, 0, -1};
-+struct cpuinfo_x86 new_cpu_data __cpuinitdata = {0, 0, 0, 0, -1, 0, 0, -1};
- /* common cpu data for all cpus */
--struct cpuinfo_x86 boot_cpu_data __read_mostly = {0, 0, 0, 0, -1, 1, 0, 0, -1};
-+struct cpuinfo_x86 boot_cpu_data __read_mostly = {0, 0, 0, 0, -1, 0, 0, -1};
- EXPORT_SYMBOL(boot_cpu_data);
- static void set_mca_bus(int x)
- {
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index a8a66a5..97d2fbd 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -351,9 +351,6 @@ void __init xen_arch_setup(void)
- 	       COMMAND_LINE_SIZE : MAX_GUEST_CMDLINE);
- 
- 	/* Set up idle, making sure it calls safe_halt() pvop */
--#ifdef CONFIG_X86_32
--	boot_cpu_data.hlt_works_ok = 1;
--#endif
- 	pm_idle = default_idle;
- 	boot_option_idle_override = IDLE_HALT;
  
 -- 
 1.7.4.2.406.gbe91
