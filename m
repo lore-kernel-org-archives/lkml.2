@@ -1,70 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab1CaOQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:16:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32402 "EHLO mga09.intel.com"
+	id S1757927Ab1CaOTI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:19:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:22911 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753179Ab1CaOQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:16:55 -0400
+	id S1752823Ab1CaOTH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 10:19:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,275,1299484800"; 
-   d="scan'208";a="727483573"
-Date: Thu, 31 Mar 2011 16:16:51 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Waldemar.Rymarkiewicz@tieto.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hthebaud@insidefr.com,
-        matti.j.aaltonen@nokia.com, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Message-ID: <20110331141650.GB2704@sortiz-mobl>
-References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
- <20110325142648.GC3879@sortiz-mobl>
- <99B09243E1A5DA4898CDD8B7001114481085E2375D@EXMB04.eu.tieto.com>
- <201103291305.02293.arnd@arndb.de>
+   d="scan'208";a="673740267"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
+        "gregkh@suse.de" <gregkh@suse.de>, "mingo@elte.hu" <mingo@elte.hu>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "Li, Xin" <xin.li@intel.com>
+Date: Thu, 31 Mar 2011 22:18:43 +0800
+Subject: [PATCH 2/7,v10] NUMA Hotplug Emulator: Add numa=possible option
+Thread-Topic: [PATCH 2/7,v10] NUMA Hotplug Emulator: Add numa=possible option
+Thread-Index: Acvvroor9YnjykWZQCSvJnmJBUkBfQ==
+Message-ID: <749B9D3DBF0F054390025D9EAFF47F224A3D6C3A@shsmsx501.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103291305.02293.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 01:05:02PM +0200, Arnd Bergmann wrote:
-> On Tuesday 29 March 2011, Waldemar.Rymarkiewicz@tieto.com wrote:
-> > >Yes, NFC seems to be a good fit for a new socket family. 
-> > >Especially if we ever want to have a proper NFC p2p support 
-> > >from the kernel.
-> > >Sending HCI commands should be done through a dedicated 
-> > >netlink socket too.
-> > >
-> > >I am currently strting to work on such solution, and I hope to 
-> > >be able to come up with a basic prototype for it in a few weeks.
-> > 
-> > What about common drivers interface in this case.
-> > Should we go for common /dev/nfcX interface as well?
-> 
-> I fear there can only be one. A good implementation of a socket
-> interface would mean that there is no need for a character device.
-My idea of an initial NFC subsystem architecture was actually the following
-one:
-- A core NFC layer against which NFC drivers would register.
-- A netlink socket for handling the HCI commands. That would put a big part of
-the NFC HCI layer in kernel land and could potentially simplify the existing
-NFC stacks.
-- A socket family for the LLCP abstraction, a.k.a. NFC peer to peer mode.
+From:  David Rientjes <rientjes@google.com>
 
-We can start working on the first 2 items and leave the last one as a future
-enhancement, since what NFC is currently mostly used for is tag
-reading/writing and smartcard emulation.
+Adds a numa=possible=<N> command line option to set an additional N nodes
+as being possible for memory hotplug.  This set of possible nodes
+controls nr_node_ids and the sizes of several dynamically allocated node
+arrays.
 
-Basically, we'd replace the current character device option with a netlink
-one, allowing for a single kernel entry point for multiple applications
-willing to do NFC.
+This allows memory hotplug to create new nodes for newly added memory
+rather than binding it to existing nodes.
 
-Cheers,
-Samuel.
+The first use-case for this will be node hotplug emulation which will use
+these possible nodes to create new nodes to test the memory hotplug
+callbacks and surrounding memory hotplug code.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+CC: Haicheng Li <haicheng.li@intel.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+Signed-off-by: Yang Zhang <yang.z.zhang@Intel.com>
+---
+ arch/x86/mm/numa.c           |    3 +++
+ arch/x86/mm/numa_64.c        |    2 +-
+ arch/x86/mm/numa_emulation.c |   33 +++++++++++++++++++++++++--------
+ arch/x86/mm/numa_internal.h  |    1 +
+ 4 files changed, 30 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/mm/numa.c linux-hpe4/arch/x86/mm/numa.c
+index 9559d36..633f1a5 100644
+--- a/arch/x86/mm/numa.c
++++ linux-hpe4/arch/x86/mm/numa.c
+@@ -6,6 +6,7 @@
+ #include <asm/acpi.h>
+
+ int __initdata numa_off;
++int __initdata numa_possible_nodes;
+
+ static __init int numa_setup(char *opt)
+ {
+@@ -16,6 +17,8 @@ static __init int numa_setup(char *opt)
+ #ifdef CONFIG_NUMA_EMU
+        if (!strncmp(opt, "fake=", 5))
+                numa_emu_cmdline(opt + 5);
++       if (!strncmp(opt, "possible=", 9))
++               numa_possible_nodes = simple_strtoul(opt + 9, NULL, 0);
+ #endif
+ #ifdef CONFIG_ACPI_NUMA
+        if (!strncmp(opt, "noacpi", 6))
+diff --git a/arch/x86/mm/numa_64.c linux-hpe4/arch/x86/mm/numa_64.c
+index 9ec0f20..c3f8050 100644
+--- a/arch/x86/mm/numa_64.c
++++ linux-hpe4/arch/x86/mm/numa_64.c
+@@ -522,7 +522,7 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+        int i, nid;
+
+        /* Account for nodes with cpus and no memory */
+-       node_possible_map = numa_nodes_parsed;
++       nodes_or(node_possible_map, node_possible_map, numa_nodes_parsed);
+        numa_nodemask_from_meminfo(&node_possible_map, mi);
+        if (WARN_ON(nodes_empty(node_possible_map)))
+                return -EINVAL;
+diff --git a/arch/x86/mm/numa_emulation.c linux-hpe4/arch/x86/mm/numa_emulation.c
+index 3696be0..c2309e5 100644
+--- a/arch/x86/mm/numa_emulation.c
++++ linux-hpe4/arch/x86/mm/numa_emulation.c
+@@ -305,7 +305,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+        int i, j, ret;
+
+        if (!emu_cmdline)
+-               goto no_emu;
++               goto check_dynamic_emu;
+
+        memset(&ei, 0, sizeof(ei));
+        pi = *numa_meminfo;
+@@ -331,11 +331,11 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+        }
+
+        if (ret < 0)
+-               goto no_emu;
++               goto out;
+
+        if (numa_cleanup_meminfo(&ei) < 0) {
+                pr_warning("NUMA: Warning: constructed meminfo invalid, disabling emulation\n");
+-               goto no_emu;
++               goto out;
+        }
+
+        /* copy the physical distance table */
+@@ -347,7 +347,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+                                              phys_size, PAGE_SIZE);
+                if (phys == MEMBLOCK_ERROR) {
+                        pr_warning("NUMA: Warning: can't allocate copy of distance table, disabling emulation\n");
+-                       goto no_emu;
++                       goto out;
+                }
+                memblock_x86_reserve_range(phys, phys + phys_size, "TMP NUMA DIST");
+                phys_dist = __va(phys);
+@@ -368,7 +368,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+        }
+        if (dfl_phys_nid == NUMA_NO_NODE) {
+                pr_warning("NUMA: Warning: can't determine default physical node, disabling emulation\n");
+-               goto no_emu;
++               goto out;
+        }
+
+        /* commit */
+@@ -418,10 +418,27 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+        /* free the copied physical distance table */
+        if (phys_dist)
+                memblock_x86_free_range(__pa(phys_dist), __pa(phys_dist) + phys_size);
+-       return;
+
+-no_emu:
+-       /* No emulation.  Build identity emu_nid_to_phys[] for numa_add_cpu() */
++check_dynamic_emu:
++       if (!numa_possible_nodes)
++               goto out;
++       for (i = 0; i < numa_possible_nodes; i++) {
++               int nid;
++
++               nid = first_unset_node(node_possible_map);
++               if (nid == MAX_NUMNODES)
++                       break;
++               node_set(nid, node_possible_map);
++       }
++       /* static emulation have built the emu_nid_to_phys[] */
++       if (emu_cmdline)
++               return;
++
++out:
++       /*
++        * No emulation or using dynamic emulation. Build
++        * identity emu_nid_to_phys[] for numa_add_cpu()
++        */
+        for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
+                emu_nid_to_phys[i] = i;
+ }
+diff --git a/arch/x86/mm/numa_internal.h linux-hpe4/arch/x86/mm/numa_internal.h
+index ef2d973..7766f04 100644
+--- a/arch/x86/mm/numa_internal.h
++++ linux-hpe4/arch/x86/mm/numa_internal.h
+@@ -18,6 +18,7 @@ struct numa_meminfo {
+ void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi);
+ int __init numa_cleanup_meminfo(struct numa_meminfo *mi);
+ void __init numa_reset_distance(void);
++extern int numa_possible_nodes;
+
+ #ifdef CONFIG_NUMA_EMU
+ void __init numa_emulation(struct numa_meminfo *numa_meminfo,
+--
+1.7.1.1
+--
+best regards
+yang
+
+
