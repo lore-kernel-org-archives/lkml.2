@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab1CaP2G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:28:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42715 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab1CaP2D (ORCPT
+	id S1758343Ab1CaP3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:29:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52663 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab1CaP27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:28:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=HAbbxUs4ZaEMvVBUPRHEifv8WRUeZYM8shsANCSnZturu1efjnROUwwpVUFXr7SHKw
-         DAzqJL7dH1ukhb5DI0WjVxjPJWa5WWnaRjnDH1cxYi6HO18GbuxzDCm9NcNB1vn5Gqb/
-         LOD0h6v2/Bud2GNYb92yMfdUR1F0W4qZyCMYo=
+	Thu, 31 Mar 2011 11:28:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [RFC PATCH 00/21] IIO: Channel registration rework, buffer chardev combining and rewrite of triggers as 'virtual' irq_chips.
+Date: Thu, 31 Mar 2011 17:28:49 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+References: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
+In-Reply-To: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
 MIME-Version: 1.0
-Date: Thu, 31 Mar 2011 17:28:03 +0200
-Message-ID: <AANLkTimPAX+BnXhtV0R=he80DBrQFMLgjobUwKfnWJuZ@mail.gmail.com>
-Subject: gcc 4.6.0 breaks User Mode Linux
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: user-mode-linux-devel@lists.sourceforge.net, jdike@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103311728.50077.arnd@arndb.de>
+X-Provags-ID: V02:K0:h1l/Y2GxpvGJmeaoNwsRGw3f2OmSKmiEm/i99uQ4uIh
+ hVhT+9WkpajWyKHlwgEbsJChkFP5/3qxEyAAuebl8aS/JFVVhN
+ Uc4l+pJaYGTF/kmAyJxZq054zCkvY9zK332yOUQqd5UZIVWSzS
+ gBB/FVt6+Qrgeh0bCiNPpYfF5MKM4SNuOtmtSEvUPuDIClaPeY
+ iQdq9F+qc3LoYJHwHCC4g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thursday 31 March 2011, Jonathan Cameron wrote:
+> I'm afraid what in many ways makes sense as three separate
+> series have gotten rather intertwined.  I can probably unpick
+> them but it will involve a lot of intermediate code in
+> lis3l02dq (which is our fiddly example for this set) that I'd
+> rather avoid.  Hence lets have a guide to what various people
+> might be interested in:
 
-The um kernel (Linus's tree as of today) crashes very early during boot-up.
+Hi Jonathan,
 
----cut---
-$ ./linux
-Locating the bottom of the address space ... 0x10000
-Locating the top of the address space ... 0xc0000000
-Core dump limits :
-        soft - 0
-        hard - NONE
-Checking that ptrace can change system call numbers...OK
-Checking syscall emulation patch for ptrace...OK
-Checking advanced syscall emulation patch for ptrace...OK
-Checking for tmpfs mount on /dev/shm...nothing mounted on /dev/shm
-Checking PROT_EXEC mmap in /tmp/...OK
-Checking for the skas3 patch in the host:
-  - /proc/mm...not found: No such file or directory
-  - PTRACE_FAULTINFO...not found
-  - PTRACE_LDT...not found
-UML running in SKAS0 mode
-Aborted
----cut---
+Great to see your progress here. Unfortunately I currently don't
+have much time to look at the patches in the necessary depth,
+since I'll be travelling for the next two weeks up till ELC
+in San Francisco. I might find some time to look at the patches,
+but don't promise anything now, so please remind me later
+if you want specific feedback.
 
-Here the gdb backtrace:
----cut---
-Program received signal SIGILL, Illegal instruction.
-kmem_cache_create (name=0x81efe77 "pid", size=44, align=4,
-flags=270336, ctor=0) at mm/slab.c:2181
-2181                    BUG();
-(gdb) bt
-#0  kmem_cache_create (name=0x81efe77 "pid", size=44, align=4,
-flags=270336, ctor=0) at mm/slab.c:2181
-#1  0x0804c902 in pidmap_init () at kernel/pid.c:565
-#2  0x080494e9 in start_kernel () at init/main.c:591
-#3  0x0804a539 in start_kernel_proc (unused=0x0) at
-arch/um/kernel/skas/process.c:46
-#4  0x08063ec2 in run_kernel_thread (fn=0x804a50f <start_kernel_proc>,
-arg=0x0, jmp_ptr=0x823e7dc)
-    at arch/um/os-Linux/process.c:267
-#5  0x08057717 in new_thread_handler () at arch/um/kernel/process.c:153
-#6  0x00000000 in ?? ()
----cut---
-
-BUG() was trigged by in_interrupt() at mm/slab.c:2181.
-in_interrupt() returns misleadingly a non-zero value.
-My first idea was that in_interrupt() returns always a non-zero value,
-but this is not the case.
-preempt_count() seems broken in some way.
-
-I can reproduce this issue using gcc 4.6.0 on x86 and x86_64 hosts.
-Now I'm wondering whether this is a gcc or a uml bug.
-
-Any ideas where to start?
-
--- 
-Thanks,
-//richard
+	Arnd
