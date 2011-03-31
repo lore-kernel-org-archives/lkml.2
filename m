@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab1CaPhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:37:52 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:51298 "HELO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1758200Ab1CaPhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:37:50 -0400
-Message-ID: <4D949FCA.70503@sgi.com>
-Date: Thu, 31 Mar 2011 08:37:46 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1758448Ab1CaPhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:37:55 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:52579 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758433Ab1CaPhx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:37:53 -0400
+Date: Thu, 31 Mar 2011 12:37:48 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: Re: [PATCH] [0/275] 2.6.35.12 longterm review
+Message-ID: <20110331153747.GA3057@herton-IdeaPad-Y430>
+References: <20110330203.501921634@firstfloor.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
-        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/2] printk: Allocate kernel log buffer earlier v2
-References: <20110225180634.017570095@gulag1.americas.sgi.com> <20110227120949.GF16453@elte.hu> <20110227121518.GA19165@elte.hu> <4D6AFBB0.70401@kernel.org> <4D6BF63D.2020404@sgi.com> <AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com> <4D6BFF46.3050001@sgi.com> <AANLkTi=Xf5RaF559QsRNijmG0YP7amkG569NZFhpt4QY@mail.gmail.com> <4D93CDD7.8000708@sgi.com> <4D93D180.6020300@sgi.com> <20110331064820.GB5938@elte.hu>
-In-Reply-To: <20110331064820.GB5938@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110330203.501921634@firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 30, 2011 at 02:03:53PM -0700, Andi Kleen wrote:
+> 
+> This is the start of the longterm review cycle for the 2.6.35.12 release.
+> There are a large number of patches in this series, all will be posted as a 
+> response to this one.  If anyone has any issues with these being applied, 
+> please let me know.  If anyone is a maintainer of the proper subsystem, and
+> wants to add a Signed-off-by: line to the patch, please respond with it.
+> 
+> The full quilt queue can be found at
+> git://git.kernel.org/pub/scm/linux/kernel/git/longterm/longterm-queue-2.6.35
+> 
+> Responses should be made within 48 hours.
 
+Can you include in this series also the following upstream patch?:
+commit 7a89e4c "USB: serial: option: Apply OPTION_BLACKLIST_SENDSETUP
+also for ZTE MF626"
 
-Ingo Molnar wrote:
-> * Mike Travis <travis@sgi.com> wrote:
-> 
->> Subject: printk: Allocate kernel log buffer earlier v2
->>
->> On larger systems, because of the numerous ACPI, Bootmem and EFI
->> messages, the static log buffer overflows before the larger one
->> specified by the log_buf_len param is allocated.  Minimize the
->> overflow by allocating the new log buffer as soon as possible.
->>
->> The allocation method is passed in as an argument to make
->> backporting to "pre-memblock" kernels easier.
-> 
-> Hm, all that allocation pointer magic looks a tad too complex and non-obvious.
-> 
-> Why not just make it as simple and obvious as possible for the current kernel - 
-> and we can still mark it -stable and you backport it to the non-memblock 
-> kernel? That keeps compatibility complexity out of upstream ...
-> 
-> Thanks,
-> 
-> 	Ingo
+It affects also .35, I thought it was going in in this .35 update too as
+it's Cc: stable, but if it's already queued for the next .35 update then
+please disregard this.
 
-Sure, I can do that.
+> 
+> -Andi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-THanks,
-Mike
+-- 
+[]'s
+Herton
