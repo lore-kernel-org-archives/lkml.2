@@ -1,102 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758867Ab1CaSUr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 14:20:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4714 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752454Ab1CaSUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 14:20:45 -0400
-From: Amit Shah <amit.shah@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Amit Shah <amit.shah@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH] sr: Ensure disk is revalidated when media changes
-Date: Thu, 31 Mar 2011 23:50:04 +0530
-Message-Id: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
+	id S964987Ab1CaSUz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 14:20:55 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:58469 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758903Ab1CaSUx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 14:20:53 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=ns8sHeh0aYzOj8ZolrWHS7+3YklK6Mt0Pfxw06ty78x+g7DsAiUElGStCSByYBjv6a0oXuqkSe6OU3Q84UVKQ+FYog3AT3nQHlOzU8TjAkhTcHlU5HVJo4dy1zZymIXO;
+Date: Thu, 31 Mar 2011 11:20:51 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Sylvestre Ledru <sylvestre.ledru@scilab.org>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Fix a typo 'an hardware => a hardware'
+Message-Id: <20110331112051.082fe0c3.rdunlap@xenotime.net>
+In-Reply-To: <1301595039.27408.14.camel@losinj.inria.fr>
+References: <1301595039.27408.14.camel@losinj.inria.fr>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.42.51 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the first GET_EVENT_STATUS_NOTIFICATION command, any new media
-notification is reset by the device.  The following is then noticed:
+On Thu, 31 Mar 2011 20:10:39 +0200 Sylvestre Ledru wrote:
 
-1. insert a CD of a particular size
-2. mount it
-3. note /sys/block/sr0/size
-4. unmount cd
-5. replace cd with a size greater than previous one
-6. mount it
-7. /sys/block/sr0/size isn't updated
-8. copy all files from cd to somewhere; IO errors will pop up where the
-   files lie beyond previous CD's geometry
+> Hello,
+> 
+> Here is a patch which fixes an other minor typo issue.
 
-The cause is:
+Hi Sylvestre,
 
- cdrom_open()
-     open_for_data()
-         cdo->drive_status() = sr_drive_status()
-             cdrom_get_media_event()
-             --> GPCMD_GET_EVENT_STATUS_NOTIFICATION
-         --> med.media_present is true, return CDS_DISK_OK
-     (success)
- check_disk_change()
-    ... -> 2nd call to GPCMD_GET_EVENT_STATUS_NOTIFICATION
+I merged your earlier patch because it mostly modified Documentation/,
+which I maintain.  Since these 2 patches are not like that, please send
+them to the trivial patch maintainer.
 
-at this point the device has already reset the new media event and the
-call to revalidate_disk() in check_disk_change() is never made.
-
-All of this is noticed in a qemu-kvm virtual machine where two CD images
-are created from two files different in size.
-
-CC: Jens Axboe <axboe@kernel.dk>
-CC: "James E.J. Bottomley" <James.Bottomley@suse.de>
-CC: linux-scsi@vger.kernel.org
-CC: Markus Armbruster <armbru@redhat.com>
-CC: Stefan Hajnoczi <stefanha@gmail.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
-Needless to say this is based on my limited research of the flow of
-data and events.  I think sr_ioctl is the best place to handle this
-revalidation as that's where the information gets lost.  If there's a
-better or a more generic place where this needs to be done, please
-point me to it.
-
-Also, qemu upstream doesn't yet support GET_EVENT_STATUS_NOTIFICATION,
-I have a scratch implementation that I'm testing against.
-
-
- drivers/scsi/sr_ioctl.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/scsi/sr_ioctl.c b/drivers/scsi/sr_ioctl.c
-index 8be3055..0651448 100644
---- a/drivers/scsi/sr_ioctl.c
-+++ b/drivers/scsi/sr_ioctl.c
-@@ -316,12 +316,19 @@ int sr_drive_status(struct cdrom_device_info *cdi, int slot)
- 		return CDS_DRIVE_NOT_READY;
- 
- 	if (!cdrom_get_media_event(cdi, &med)) {
--		if (med.media_present)
-+		if (med.media_present) {
-+			/*
-+			 * New media was inserted; ensure disk data is
-+			 * revalidated.
-+			 */
-+			if (cdi->disk->fops->revalidate_disk)
-+				cdi->disk->fops->revalidate_disk(cdi->disk);
- 			return CDS_DISC_OK;
--		else if (med.door_open)
-+		} else if (med.door_open) {
- 			return CDS_TRAY_OPEN;
--		else
-+		} else {
- 			return CDS_NO_DISC;
-+		}
- 	}
- 
- 	/*
--- 
-1.7.4
-
+~Randy
