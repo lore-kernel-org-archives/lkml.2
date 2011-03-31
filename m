@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab1CaAwn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 20:52:43 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55255
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756556Ab1CaAwl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 20:52:41 -0400
-Date: Wed, 30 Mar 2011 17:52:02 -0700 (PDT)
-Message-Id: <20110330.175202.235689626.davem@davemloft.net>
-To: davej@redhat.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: loading sctp fails an order 10 allocation.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110330234020.GA24517@redhat.com>
-References: <20110330234020.GA24517@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S933151Ab1CaA4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 20:56:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60013 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756556Ab1CaA4g convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Mar 2011 20:56:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110331001502.GB6680@n2100.arm.linux.org.uk>
+References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+ <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de>
+ <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com> <20110331001502.GB6680@n2100.arm.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 30 Mar 2011 17:55:45 -0700
+Message-ID: <AANLkTinE7EDbV8hrYZWBxgvwOxdPMLoS0Y57PSm04rvM@mail.gmail.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Jones <davej@redhat.com>
-Date: Wed, 30 Mar 2011 19:40:21 -0400
+On Wed, Mar 30, 2011 at 5:15 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+>
+> In this merge window, I deleted at least 6000 lines from arch/arm, and
+> by quoting diffstat percentages, you're using that against the ARM
+> community.  Why did I bother (that's not a question).
 
-> modprobe sctp on my laptop does this which looks crazy..
- ...
-> it doesn't look like the hashtable allocation code has changed in ages, so I'm 
-> not sure why I've never triggered this before.
+Umm. The actual stats are still:
 
-I decided to take a break from watching Charlie Sheen dubstep remixes
-in a loop on youtube to look at this bug.
+ 1349 files changed, 62230 insertions(+), 33993 deletions(-)
 
-This situation is amusing because SCTP actually tries to allocate an
-initially smaller hash table than, for example, the DCCP module does.
+which is sad. And the end result speaks for itself: this is lines per
+architecture:
 
-But DCCP won't show the behavior you see.
+  ...
+  124022 total arch/sh
+  124418 total arch/sparc
+  181997 total arch/m68k
+  246717 total arch/mips
+  254785 total arch/x86
+  370912 total arch/powerpc
+  732732 total arch/arm
 
-The thing that's different is that SCTP forgets to pass __GFP_NOWARN
-to the allocation.  The code there is able to handle failures just
-fine and simply tries to progressively grab a smaller table when that
-happens.
+notice how ARM ends up being in a class of its own. This is a PROBLEM.
 
-I'll commit the following to net-2.6, thanks.
+And ARM fanbois can say "oh, but arm is special" all they want, but
+they need to realize that the lack of common platform for ARM is a
+real major issue. It's not a "feature", and I'm sorry, but anybody who
+calls x86 "peanuts" is a moron and should be ashamed of himself.
+Instead of trying to feel superior, those people should feel like
+pariah.
 
-Now back to Adonis dubsteps...
+The fact that x86 has a platform, and people have cared about
+compatibility, and actually gets things to work with less code is a
+good thing. I know ARM people who think that x86 is an "ugly"
+architecture. But the fact is, of all the architectures out there, ARM
+right now is the ugliest BY FAR. Exactly because of people who don't
+seem to understand that this kind of crap is a problem.
 
---------------------
-sctp: Pass __GFP_NOWARN to hash table allocation attempts.
-
-Like DCCP and other similar pieces of code, there are mechanisms
-here to try allocating smaller hash tables if the allocation
-fails.  So pass in __GFP_NOWARN like the others do instead of
-emitting a scary message.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/sctp/protocol.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
-index 152976e..d5bf91d 100644
---- a/net/sctp/protocol.c
-+++ b/net/sctp/protocol.c
-@@ -1205,7 +1205,7 @@ SCTP_STATIC __init int sctp_init(void)
- 		if ((sctp_assoc_hashsize > (64 * 1024)) && order > 0)
- 			continue;
- 		sctp_assoc_hashtable = (struct sctp_hashbucket *)
--					__get_free_pages(GFP_ATOMIC, order);
-+			__get_free_pages(GFP_ATOMIC|__GFP_NOWARN, order);
- 	} while (!sctp_assoc_hashtable && --order > 0);
- 	if (!sctp_assoc_hashtable) {
- 		pr_err("Failed association hash alloc\n");
-@@ -1238,7 +1238,7 @@ SCTP_STATIC __init int sctp_init(void)
- 		if ((sctp_port_hashsize > (64 * 1024)) && order > 0)
- 			continue;
- 		sctp_port_hashtable = (struct sctp_bind_hashbucket *)
--					__get_free_pages(GFP_ATOMIC, order);
-+			__get_free_pages(GFP_ATOMIC|__GFP_NOWARN, order);
- 	} while (!sctp_port_hashtable && --order > 0);
- 	if (!sctp_port_hashtable) {
- 		pr_err("Failed bind hash alloc\n");
--- 
-1.7.4.2
-
+                    Linus
