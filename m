@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759484Ab1CaXZL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 19:25:11 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:45510 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751664Ab1CaXZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 19:25:09 -0400
-Message-ID: <4D950D52.8080100@sgi.com>
-Date: Thu, 31 Mar 2011 16:25:06 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1759488Ab1CaXaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 19:30:14 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:55354 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab1CaXaM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 19:30:12 -0400
+Date: Thu, 31 Mar 2011 16:30:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Michal Marek <mmarek@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+Message-ID: <20110331233004.GP2258@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D9256AF.5000308@linux.intel.com>
+ <20110330004725.GO2261@linux.vnet.ibm.com>
+ <4D92BECA.50802@cn.fujitsu.com>
+ <4D92DA32.2010809@cn.fujitsu.com>
+ <20110330105505.GA3195@sepie.suse.cz>
+ <1301482656.4859.171.camel@twins>
+ <4D931814.9090100@suse.cz>
+ <4D93D29C.5010702@cn.fujitsu.com>
+ <20110331012155.GZ2255@linux.vnet.ibm.com>
+ <4D93DE91.1050606@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Mike Habeck <habeck@sgi.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] Intel pci: Limit dmar_init_reserved_ranges
-References: <20110329233602.272459647@gulag1.americas.sgi.com> <20110329233602.735667875@gulag1.americas.sgi.com> <4D94FC21.6040601@sgi.com> <20110331225316.GC18712@sequoia.sous-sol.org>
-In-Reply-To: <20110331225316.GC18712@sequoia.sous-sol.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D93DE91.1050606@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll probably need help from our Hardware PCI Engineer to help explain
-this further, though here's a pointer to an earlier email thread:
+On Thu, Mar 31, 2011 at 09:53:21AM +0800, Lai Jiangshan wrote:
+> On 03/31/2011 09:21 AM, Paul E. McKenney wrote:
+> > On Thu, Mar 31, 2011 at 09:02:20AM +0800, Lai Jiangshan wrote:
+> >> On 03/30/2011 07:46 PM, Michal Marek wrote:
+> >>> On 30.3.2011 12:57, Peter Zijlstra wrote:
+> >>>> On Wed, 2011-03-30 at 12:55 +0200, Michal Marek wrote:
+> >>>>> Subject: [PATCH] headers: Allow for lightweight inclusion of task_struct definition
+> >>>>>
+> >>>>> Factor out a couple of type definitions to <header>_types.h to allow
+> >>>>> using task_struct without pulling tons of new dependencies via sched.h.
+> >>>>
+> >>>> Urgh, not pretty.. so why not clean up sched.h properly? There's way too
+> >>>> much cruft in there.
+> >>>
+> >>> It was a proof-of-concept to show that it is doable to have proper
+> >>> definition of task_struct in rcupdate.h. Not an entry for any code
+> >>> beauty contest.
+> >>>
+> >>> Michal
+> >>>
+> >>
+> >> I like this cleanup, could you continue for this hard job? I will help you if required.
+> >>
+> >> Ingo & Peter - will you accept the patches when it is done.
+> >>
+> >> Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > 
+> > I certainly like the idea of being able to inline TREE_PREEMPT_RCU's
+> > rcu_read_lock() and rcu_read_unlock() using normal C code!
+> > 
+> > 							Thanx, Paul
+> > 
+> 
+> kernel-offset.c can be merged to some branch of your tree for
+> testing inlined TREE_PREEMPT_RCU's rcu_read_lock() and rcu_read_unlock()
+> before the kernel headers splitting is done.
+> 
+> Can the [patch 1/5] be merged to mainline earlier? could you add it to origin/rcu/next?
 
-http://marc.info/?l=linux-kernel&m=129259816925973&w=2
+Let's first settle on the overall direction, on the off-chance that someone
+comes up with an approach that doesn't require task_rcu_struct, or that
+requires it to be located somewhere other than include/linux/rcupdate.h.
 
-I'll also dig out the specs you're asking for.
-
-Thanks,
-Mike
-
-Chris Wright wrote:
-> * Mike Travis (travis@sgi.com) wrote:
->> Chris - did you have any comment on this patch?
-> 
-> It doesn't actually look right to me.  It means that particular range
-> is no longer reserved.  But perhaps I've misunderstood something.
-> 
->> Mike Travis wrote:
->>>    dmar_init_reserved_ranges() reserves the card's MMIO ranges to
->>>    prevent handing out a DMA map that would overlap with the MMIO range.
->>>    The problem while the Nvidia GPU has 64bit BARs, it's capable of
->>>    receiving > 40bit PIOs, but can't generate > 40bit DMAs.
-> 
-> I don't undertand what you mean here.
-> 
->>>    So when the iommu code reserves these MMIO ranges a > 40bit
->>>    entry ends up getting in the rbtree.  On a UV test system with
->>>    the Nvidia cards, the BARs are:
->>>
->>>      0001:36:00.0 VGA compatible controller: nVidia Corporation
->>> GT200GL 	  Region 0: Memory at 92000000 (32-bit, non-prefetchable)
->>> [size=16M]
->>> 	  Region 1: Memory at f8200000000 (64-bit, prefetchable) [size=256M]
->>> 	  Region 3: Memory at 90000000 (64-bit, non-prefetchable) [size=32M]
->>>
->>>    So this 44bit MMIO address 0xf8200000000 ends up in the rbtree.  As DMA
->>>    maps get added and deleted from the rbtree we can end up getting a cached
->>>    entry to this 0xf8200000000 entry... this is what results in the code
->>>    handing out the invalid DMA map of 0xf81fffff000:
->>>
->>> 	    [ 0xf8200000000-1 >> PAGE_SIZE << PAGE_SIZE ]
->>>
->>>    The IOVA code needs to better honor the "limit_pfn" when allocating
->>>    these maps.
-> 
-> This means we could get the MMIO address range (it's no longer reserved).
-> It seems to me the DMA transaction would then become a peer to peer
-> transaction if ACS is not enabled, which could show up as random register
-> write in that GPUs 256M BAR (i.e. broken).
-> 
-> The iova allocation should not hand out an address bigger than the
-> dma_mask.  What is the device's dma_mask?
-> 
-> thanks,
-> -chris
+							Thanx, Paul
