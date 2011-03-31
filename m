@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965137Ab1CaTzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 15:55:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44720 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759254Ab1CaTzY (ORCPT
+	id S1759319Ab1CaT5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 15:57:10 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:56639 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1759298Ab1CaT5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 15:55:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=ZCL8I+lF+32chS31fqozr7MU4YYV+iq4xm7JhhSziCHUtcmeq/S98Or3hyPXP5OOko
-         7Cyvlj0u9WTFmDVzfG6Mj+78c9U4cCPkgfzDM+ShH4TO7uoyRuudh4pUI4i17xX5T1qu
-         ceWTw+GDqeqp8Oqt+z9E9mKyx/tk2l6HQNjFg=
-MIME-Version: 1.0
-In-Reply-To: <1301601122-25431-2-git-send-email-vapier@gentoo.org>
-References: <1301601122-25431-1-git-send-email-vapier@gentoo.org> <1301601122-25431-2-git-send-email-vapier@gentoo.org>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 31 Mar 2011 15:55:03 -0400
-X-Google-Sender-Auth: 4CVfcKDMHMmvs_EcPM4WrD4OH-0
-Message-ID: <AANLkTikkaNDYC6bbihTTa4+LjXeUJkTKqBj1W65=fnqm@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [PATCH 2/2] Blackfin: use new common
- PERCPU_INPUT define
-To: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 31 Mar 2011 15:57:08 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=o84dTVGBihYbMwbrT0Cle2lp7hfi8k1BxJDHN5m3dxVcKzPLh4pKyN0W3KtZQhfESqpyXR/MbQYzmEyTmLDz/vR0qxONWCmmP7k01I7sRhskoAZm51op7/cLxgKK0LrX;
+Date: Thu, 31 Mar 2011 12:57:06 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Jeremy Jackson <jerj@coplanar.net>
+Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: signal to PID 1 from serial console like KeyboardRequest or CAD
+Message-Id: <20110331125706.9159a13d.rdunlap@xenotime.net>
+In-Reply-To: <4D8CD3D4.90900@coplanar.net>
+References: <4D8CD3D4.90900@coplanar.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.42.51 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 15:52, Mike Frysinger wrote:
-> The Blackfin percpu input sections are outdated, so rather than update
-> them, drop them completely and use the new common define.
+On Fri, 25 Mar 2011 13:41:40 -0400 Jeremy Jackson wrote:
 
-Tejun: btw, i'm not expecting you to merge this one.  it's just an
-example of why we need this common code change.  once the
-vmlinux.lds.h patch is merged, i can run this through my tree like
-normal.
--mike
+> Hi,
+> 
+> Sent to linux-console with no reply for over a week...
+> 
+> I ran into a problem recently on a Linux server with a remote serial 
+> console.  /sbin/init (actually Upstart) was in a state where nothing 
+> (useful) was running.  I had to power cycle the machine to get back to 
+> the boot prompt.  This has the side-effect of triggering raid rebuilds.
+> 
+> It would be nice to have what Ctrl-Alt-Del does at the VGA console with 
+> PS/2 or USB keyboard. This sends a SIGINT to PID 1, and most distros 
+> have this set to do "shutdown -r now" which attempts a clean reboot.
+
+so C_A_D works at console via PS/2 or USB keyboard, but not on a remote
+serial console?  Could it be an issue with whatever remote/serial software
+you are using?
+
+> Once upon a time there was KeyboardRequest, which would send a SIGWINCH 
+> to PID 1 (when pressing Alt-UP_arrow?).  I don't see any sign of this 
+> feature in Linux 2.6.32 though.
+
+I couldn't find it in 2.4.37 either.
+
+Can 'loadkeys' help you any?
+
+> Looking at the Sysrq handlers in the kernel I don't see any keystrokes 
+> that send SIGINT to PID 1 either.
+> 
+> So, I'm wondering if it makes sense to add a Sysrq key to send a signal 
+> to PID1 ?
+
+Dmitry, any ideas?
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
