@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933907Ab1CaKMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 06:12:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59774 "EHLO linutronix.de"
+	id S933885Ab1CaKQu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 06:16:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34335 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757166Ab1CaKMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 06:12:07 -0400
-Date: Thu, 31 Mar 2011 12:11:53 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Nicolas Pitre <nico@fluxnic.net>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-In-Reply-To: <alpine.LFD.2.00.1103302319290.28032@xanadu.home>
-Message-ID: <alpine.LFD.2.00.1103310928240.22418@localhost6.localdomain6>
-References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com> <20110318101512.GA15375@n2100.arm.linux.org.uk> <201103301906.42429.arnd@arndb.de> <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
- <20110331001502.GB6680@n2100.arm.linux.org.uk> <AANLkTinE7EDbV8hrYZWBxgvwOxdPMLoS0Y57PSm04rvM@mail.gmail.com> <alpine.LFD.2.00.1103302319290.28032@xanadu.home>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S933017Ab1CaKQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 06:16:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,274,1299484800"; 
+   d="scan'208";a="621553910"
+Date: Thu, 31 Mar 2011 10:58:11 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH] vt: avoid BUG_ON in con_shutdown when con_open returns
+ with error
+Message-ID: <20110331105811.5d989e86@bob.linux.org.uk>
+In-Reply-To: <1301524178-7925-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1301524178-7925-1-git-send-email-herton.krzesinski@canonical.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B1;2401;0cOn Thu, 31 Mar 2011, Nicolas Pitre wrote:
-> On Wed, 30 Mar 2011, Linus Torvalds wrote:
-> > And ARM fanbois can say "oh, but arm is special" all they want, but
-> > they need to realize that the lack of common platform for ARM is a
-> > real major issue. It's not a "feature", and I'm sorry, but anybody who
-> > calls x86 "peanuts" is a moron and should be ashamed of himself.
-> > Instead of trying to feel superior, those people should feel like
-> > pariah.
-> 
-> Oh come on.  You just provided actual numbers above showing that ARM is 
-> simply fscked up (your words) compared to X86.  I would be curious to 
-> know what people like tglx who did significant work on both 
-> architectures actually think of X86 relative to ARM when it comes to 
-> kernel maintenance.
+O
+> +static inline void con_ops_set_shutdown(void);
+>  static int con_open(struct tty_struct *, struct file *);
+>  static void vc_init(struct vc_data *vc, unsigned int rows,
+>  		    unsigned int cols, int do_clear);
+> @@ -2806,6 +2807,14 @@ static int con_open(struct tty_struct *tty,
+> struct file *filp) tty->driver_data = vc;
+>  			vc->port.tty = tty;
+>  
+> +			/* We must set shutdown only here, otherwise
+> +			 * we returned from con_open with error,
+> which
+> +			 * will make tty core call tty_release, that
+> +			 * in its call path makes con_shutdown being
+> +			 * called without tty->driver_data being set,
+> +			 * triggering the BUG_ON there */
+> +			con_ops_set_shutdown();
 
-To be honest both suck in their own way. The only reason why x86 is
-slightly less horrible is the fact that it's better architectured at
-the hardware level.
+No we cannot go around patching the tty_operations - they are not
+locked for one.
 
-But I see the same mess coming in with all those wonderful Atom based
-SoCs on the horizon, which are nothing else than any other random ARM
-SoC, just that they glue an x86 core into the same cheepo random IP
-peripherals conglomerate. In fact some of those chip have been ARM
-powered before they got an x86 injected.
-
-And worse: the Intel folks went there and wrote a new driver for an IP
-block which had already an "ARM associated" driver.
-
-So I say that it is not only an ARM problem, it's a general problem
-that people do not realize that the IP cores are reused all over the
-place and across architectures.
-
-I'm pretty sure after I went through all the irq code recently that
-lots of those ARM SoCs from vendors across the board could share a lot
-of driver code if someone would actually sit down and analyse the
-situation. Right now we have nobody who has the time and the stomach
-to go through this and at the same time prevent that more copied
-crappola is hitting the tree.
-
-I'm sure that device tree is part of the solution, but that only helps
-if we find a way to prevent duplicate drivers in the first place.
-
-Thanks,
-
-	tglx
+Probably this is one case where making con_shutdown() check is the
+right answer.
