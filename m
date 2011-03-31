@@ -1,69 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553Ab1CaQRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:17:09 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49987 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab1CaQRH convert rfc822-to-8bit (ORCPT
+	id S1758646Ab1CaQSF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:18:05 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44200 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758297Ab1CaQSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:17:07 -0400
+	Thu, 31 Mar 2011 12:18:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=oCCkeyooUg+U5NhsJq1n2iVIQRtAym00HmHkJ64gX0rilHICgYvjcoQmDKRWfrUoEn
-         BrRfIX9WXpbDezwcHxKRucVykS6LRztIcwoZ5sIpBdIDGO09YIN9uXm1WDH5PzH2iPF8
-         MuUWzDFR5YnGI538UuEQSQr1qwTHqhKHXTkA0=
-MIME-Version: 1.0
-In-Reply-To: <4D949C87.1000001@sgi.com>
-References: <20110225180633.857892225@gulag1.americas.sgi.com>
-	<20110225180634.017570095@gulag1.americas.sgi.com>
-	<20110227120949.GF16453@elte.hu>
-	<20110227121518.GA19165@elte.hu>
-	<4D6AFBB0.70401@kernel.org>
-	<4D6BF63D.2020404@sgi.com>
-	<AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com>
-	<4D6BFF46.3050001@sgi.com>
-	<AANLkTi=Xf5RaF559QsRNijmG0YP7amkG569NZFhpt4QY@mail.gmail.com>
-	<4D93CDD7.8000708@sgi.com>
-	<AANLkTi=eRgp0wqpwq-W=E7ptrnQuM837+J+enEA2wey-@mail.gmail.com>
-	<4D949C87.1000001@sgi.com>
-Date: Thu, 31 Mar 2011 09:17:05 -0700
-X-Google-Sender-Auth: 3eCw6KoNMXT2t_h1jrFI5W8yjH8
-Message-ID: <AANLkTikCEnWjgqSaXnMWTEhzqK9h9Sra5_XRkAQwjZrd@mail.gmail.com>
-Subject: Re: [PATCH 1/2] memblock: add error return when CONFIG_HAVE_MEMBLOCK
- is not set
-From: Yinghai Lu <yinghai@kernel.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Ingo Molnar <mingo@elte.hu>, David Rientjes <rientjes@google.com>,
-        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:date:from:to:cc:message-id:in-reply-to:references;
+        b=MqhlAod2C8vYtGuXu0kPcNnZ0/hQsFTt3/xqgm8dio0DQjLLMgUPmbSal4flVNUvkf
+         xaBTTp6ZLO26O2+RM25Oam/HbTCyeoKvwgyvPWsib/uTN0bg6Dx3CZhntg/rTMZ1qnUl
+         zRjkaUOviGf3Ljorf4FdA1umOV69cjNNmmCtc=
+Subject: Re: [PATCH] Use the environment variable PYTHON if defined
+Date: Thu, 31 Mar 2011 15:37:40 +0000
+From: Michael Witten <mfwitten@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Raghavendra D Prabhu <rprabhu@wnohang.net>, linux-kernel@vger.kernel.org
+Message-ID: <3a97df19-e376-412a-95be-37ffde765cc3-mfwitten@gmail.com>
+In-Reply-To: <20110329204024.GA20824@ghostprotocols.net>
+References: <20110326224408.GA1336@Xye>
+            <20110328144721.GB17872@ghostprotocols.net>
+            <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com>
+            <20110329181524.GA5140@Xye>
+            <AANLkTi=3Wq3Xt-QFR-FLRQ1kBjpWjaBZNFpOiE_T15WH@mail.gmail.com>
+            <20110329204024.GA20824@ghostprotocols.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 8:23 AM, Mike Travis <travis@sgi.com> wrote:
->
+On Tue, 2011-03-29 17:40:25 -0300, Arnaldo Carvalho de Melo wrote:
+>Em Tue, Mar 29, 2011 at 02:15:30PM -0500, Michael Witten escreveu:
+>> On Tue, Mar 29, 2011 at 13:15, Raghavendra D Prabhu <rprabhu@wnohang.net> wrote:
+>>> the patch submitted by Michael seems to be taking care of far
+>>> more cases than mine, so that is much better.
 >>
->> setup_log_buf will pass function pointer, So this one is not needed,
->> right?
+>> One major issue with my current patch is that I opted to stop the
+>> build with an error message even when using the default python command
+>> names; is this undesirable? Is it better to fail silently as before
+>> (via the somewhat cryptic Python.h message), or is it better to force
+>> the user to specify that no python support should be built?
 >
-> The other function would need the #ifdef CONFIG_HAVE_MEMBLOCK before calling
-> memblock_alloc which I thought was the point of this patch?  Note we still
-> have the last fallback of using alloc_boot_mem in kernel/init.c.
+> I think that the best course of action is to emit a warning and go, i.e.
+> we don't have to make it harder for people that don't want $FOO support
+> to make that clear.
 
-before that patch, it already use bootmem allocation.
+The following patch implements the above requested behavior,
+and it is also a bit more robust than the previous patch.
 
-So should be ok to drop this one.
+However, consider running this command:
 
-Thanks
+ make clean NO_LIBPYTHON=1
 
-Yinghai
+and the resulting output:
+
+  Python support won't be built
+  PERF_VERSION = 2.6.38.8823.gf4ad7d
+  Python support won't be built
+  rm -f {*.o,*/*.o,*/*/*.o,*/*/*/*.o,libperf.a,perf-archive}
+  rm -f perf perf-archive perf
+  rm -f *.spec *.pyc *.pyo */*.pyc */*.pyo common-cmds.h TAGS tags cscope*
+  make -C Documentation/ clean
+  make[1]: Entering directory `/usr/src/vanilla/git/linux-2.6/repo/tools/perf/Documentation'
+  Python support won't be built
+  make[2]: Entering directory `/usr/src/vanilla/git/linux-2.6/repo/tools/perf'
+  make[2]: `PERF-VERSION-FILE' is up to date.
+  make[2]: Leaving directory `/usr/src/vanilla/git/linux-2.6/repo/tools/perf'
+  rm -f *.xml *.xml+ *.html *.html+ *.1 *.5 *.7
+  rm -f *.texi *.texi+ *.texi++ perf.info perfman.info
+  rm -f howto-index.txt howto/*.html doc.dep
+  rm -f technical/api-*.html technical/api-index.txt
+  rm -f cmds-ancillaryinterrogators.txt cmds-ancillarymanipulators.txt cmds-mainporcelain.txt cmds-plumbinginterrogators.txt cmds-plumbingmanipulators.txt cmds-synchingrepositories.txt cmds-synchelpers.txt cmds-purehelpers.txt cmds-foreignscminterface.txt *.made
+  make[1]: Leaving directory `/usr/src/vanilla/git/linux-2.6/repo/tools/perf/Documentation'
+  rm -f PERF-VERSION-FILE PERF-CFLAGS
+  '/usr/bin/python' util/setup.py clean --build-lib='python' --build-temp='python/temp'
+  running clean
+
+You'll notice that the line:
+
+  Python support won't be built
+
+is repeated thrice. This is annoying, but I think it
+could be fixed by restructuring the Makefile to avoid
+unnecessary re-processing by GNU Make; as a boon, if
+such a restructuring is possible, then it would also
+improve the efficiency of running `make'.
+
+Thus, I wouldn't worry about it now.
+
+Sincerely,
+Michael Witten
+
+8<--------8<--------8<--------8<--------8<--------8<--------8<--------8<------
+Subject: [PATCH] perf tools: Makefile: PYTHON{,_CONFIG} to bandage python3 incompatibility
+Date: Thu, 31 Mar 2011 13:52:07 +0000
+Currently, python3 is not supported by perf's code; this
+can cause the build to fail for systems that have python3
+installed as the default python:
+
+  python{,-config}
+
+The Correct Solution is to write compatibility code so that
+python3 works out-of-the-box.
+
+However, users often have an ancillary python2 installed:
+
+  python2{,-config}
+
+Therefore, a quick fix is to allow the user to specify those
+ancillary paths as the python binaries that Makefile should
+use, thereby avoiding python3 altogether; as an added benefit,
+python may be installed in non-standard locations without
+the need for updating any PATH variable.
+
+This commit adds the ability to set PYTHON and/or PYTHON_CONFIG
+either as environment variables or as make variables on the
+command line; the paths may be relative, and usually only
+PYTHON is necessary in order for PYTHON_CONFIG to be defined
+implicitly. Some rudimentary error checking is performed when
+the user explicitly specifies a value for any of these variables.
+
+Thanks to:
+
+  Raghavendra D Prabhu <rprabhu@wnohang.net>
+
+for motivating this patch.
+
+See:
+
+  Message-ID: <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com>
+
+Signed-off-by: Michael Witten <mfwitten@gmail.com>
+---
+ tools/perf/Makefile          |   77 ++++++++++++++++++++++++++++++-----------
+ tools/perf/feature-tests.mak |   46 +++++++++++++++++++++++++
+ 2 files changed, 102 insertions(+), 21 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 158c30e..3ef8a28 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -13,6 +13,12 @@ endif
+ 
+ # Define V to have a more verbose compile.
+ #
++# Define PYTHON to point to the python binary if the default
++# `python' is not correct; for example: PYTHON=python2
++#
++# Define PYTHON_CONFIG to point to the python-config binary if
++# the default `$(PYTHON)-config' is not correct.
++#
+ # Define ASCIIDOC8 if you want to format documentation with AsciiDoc 8
+ #
+ # Define DOCBOOK_XSL_172 if you want to format man pages with DocBook XSL v1.72.
+@@ -165,8 +171,9 @@ grep-libs = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
+ 
+ $(OUTPUT)python/perf.so: $(PYRF_OBJS)
+-	$(QUIET_GEN)python util/setup.py --quiet  build_ext --build-lib='$(OUTPUT)python' \
+-						--build-temp='$(OUTPUT)python/temp'
++	$(QUIET_GEN)'$(PYTHON)' util/setup.py --quiet  build_ext            \
++	                                      --build-lib='$(OUTPUT)python' \
++	                                      --build-temp='$(OUTPUT)python/temp'
+ #
+ # No Perl scripts right now:
+ #
+@@ -471,24 +478,53 @@ else
+ 	endif
+ endif
+ 
+-ifdef NO_LIBPYTHON
+-	BASIC_CFLAGS += -DNO_LIBPYTHON
+-else
+-       PYTHON_EMBED_LDOPTS = $(shell python-config --ldflags 2>/dev/null)
+-       PYTHON_EMBED_LDFLAGS = $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
+-       PYTHON_EMBED_LIBADD = $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
+-	PYTHON_EMBED_CCOPTS = `python-config --cflags 2>/dev/null`
+-	FLAGS_PYTHON_EMBED=$(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
+-	ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
+-		msg := $(warning No Python.h found, install python-dev[el] to have python support in 'perf script' and to build the python bindings)
+-		BASIC_CFLAGS += -DNO_LIBPYTHON
+-	else
+-               ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
+-               EXTLIBS += $(PYTHON_EMBED_LIBADD)
+-		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
+-		LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
+-		LANG_BINDINGS += $(OUTPUT)python/perf.so
+-	endif
+-endif
++disable-python = $(eval $(call disable-python_code,$(1)))
++define disable-python_code
++  BASIC_CFLAGS += -DNO_LIBPYTHON
++  $(if $(1),$(warning No $(1) was found))
++  $(info Python support won't be built)
++endef
++
++override PYTHON := \
++  $(call get-executable-or-default,PYTHON,python)
++
++ifndef PYTHON
++  $(call disable-python,python interpreter)
++  python-clean=
++else
++
++  python-clean = '$(PYTHON)' util/setup.py clean \
++    --build-lib='$(OUTPUT)python'                \
++    --build-temp='$(OUTPUT)python/temp'
++
++  ifdef NO_LIBPYTHON
++    $(call disable-python)
++  else
++
++    override PYTHON_CONFIG := \
++      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
++
++    ifndef PYTHON_CONFIG
++      $(call disable-python,python-config tool)
++    else
++
++      PYTHON_EMBED_LDOPTS  = $(shell sh -c "'$(PYTHON_CONFIG)' --ldflags 2>/dev/null")
++      PYTHON_EMBED_LDFLAGS = $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
++      PYTHON_EMBED_LIBADD  = $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
++      PYTHON_EMBED_CCOPTS  = $(shell sh -c "'$(PYTHON_CONFIG)' --cflags 2>/dev/null")
++      FLAGS_PYTHON_EMBED   = $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
++
++      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
++        $(call disable-python,Python.h)
++      else
++        ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
++        EXTLIBS += $(PYTHON_EMBED_LIBADD)
++        LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
++        LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
++        LANG_BINDINGS += $(OUTPUT)python/perf.so
++      endif
++    endif
++  endif
++endif
+ 
+ ifdef NO_DEMANGLE
+@@ -829,8 +865,7 @@ clean:
+ 	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
+ 	$(MAKE) -C Documentation/ clean
+ 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
+-	@python util/setup.py clean --build-lib='$(OUTPUT)python' \
+-				   --build-temp='$(OUTPUT)python/temp'
++	$(python-clean)
+ 
+ .PHONY: all install clean strip
+ .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
+index b041ca6..01e1fb1 100644
+--- a/tools/perf/feature-tests.mak
++++ b/tools/perf/feature-tests.mak
+@@ -128,3 +128,49 @@ try-cc = $(shell sh -c						  \
+ 	 echo "$(1)" |						  \
+ 	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
+ 	 rm -f "$$TMP"')
++
++# is-absolute
++# Usage: bool-value = $(call is-absolute,path)
++#
++define is-absolute
++$(shell sh -c "echo '$(1)' | grep ^/")
++endef
++
++# lookup
++# Usage: absolute-executable-path-or-empty = $(call lookup,path)
++#
++define lookup
++$(shell sh -c "command -v '$(1)'")
++endef
++
++# is-executable
++# Usage: bool-value = $(call is-executable,path)
++#
++define is-executable
++$(shell sh -c "test -f '$(1)' -a -x '$(1)' && echo y")
++endef
++
++# get-executable
++# Usage: absolute-executable-path-or-empty = $(call get-executable,path)
++#
++# The goal is to get an absolute path for an executable;
++# the `command -v' is defined by POSIX, but it's not
++# necessarily very portable, so it's only used if
++# relative path resolution is requested, as determined
++# by the presence of a leading `/'.
++#
++define get-executable
++$(if $(1),$(if $(call is-absolute,$(1)),$(if $(call is-executable,$(1)),$(1)),$(call lookup,$(1))))
++endef
++
++# get-supplied-or-default-executable
++# Usage: absolute-executable-path-or-empty = $(call get-executable-or-default,variable,default)
++#
++define get-executable-or-default
++$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2)))
++endef
++define _ge_attempt
++$(or $(call get-executable,$(1)),$(call _gea_warn,$(1)),$(call _gea_err,$(2)))
++endef
++_gea_warn = $(warning The path '$(1)' is not executable.)
++_gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
+-- 
+1.7.4.18.g68fe8
+
