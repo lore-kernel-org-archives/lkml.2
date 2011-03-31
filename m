@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758561Ab1CaPyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:54:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48550 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758549Ab1CaPyU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:54:20 -0400
+	id S1758548Ab1CaP4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:56:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39172 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758507Ab1CaP4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 11:56:43 -0400
+Message-ID: <4D94A417.80508@kernel.org>
+Date: Thu, 31 Mar 2011 08:56:07 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <20110331040818.GB1255@redhat.com>
-References: <20110329040939.GA32764@redhat.com> <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
- <20110331030917.GB26057@redhat.com> <20110331033432.GA434@redhat.com>
- <AANLkTimPi-Vbi3DNLEeShCpfOJEuUZo3--3CQ_BMgJiS@mail.gmail.com> <20110331040818.GB1255@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 31 Mar 2011 08:53:26 -0700
-Message-ID: <AANLkTi=uef63-mHHgHFU14H_Rhytcyc2p34Av6Ms6n3D@mail.gmail.com>
-Subject: Re: excessive kworker activity when idle. (was Re: vma corruption in
- today's -git)
-To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH tip:x86/mm] x86-64, NUMA: Remove custom phys_to_nid()
+ implementation
+References: <20110331135744.GE3385@htj.dyndns.org>
+In-Reply-To: <20110331135744.GE3385@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D94A426.007D,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And with your fixed trinity thing, I can now do this:
-
-On Wed, Mar 30, 2011 at 9:08 PM, Dave Jones <davej@redhat.com> wrote:
+On 03/31/2011 06:57 AM, Tejun Heo wrote:
+> phys_to_nid() maps physical address to NUMA node id.  This is
+> implemented by building perfect hash in compute_hash_shift() during
+> initialization.
 >
-> git clone git://git.codemonkey.org.uk/trinity
-> cd trinity ; make
-> ./trinity --mode=random -i
+> However, with SPARSE memory model, the nid is encoded in page flags.
+> The perfect hash implementation was for DISCONTIG memory model which
+> got removed years ago by b263295dbf (x86: 64-bit, make sparsemem
+> vmemmap the only memory model).
 >
-> let it run for a while, then kill it.   kworker should then go nuts.
+> So, the perfect hash ends up being used only during initialization
+> when the core SPARSE code already provides perfectly acceptable
+> generic early_pfn_to_nid() implementation.
+>
+> Drop phys_to_nid() and use the generic ealry_pfn_to_nid() instead.
+>
+> Signed-off-by: Tejun Heo<tj@kernel.org>
+> Cc: Christoph Lameter<cl@linux-foundation.org>
+> Cc: Ingo Molnar<mingo@redhat.com>
+> Cc: Yinghai Lu<yinghai@kernel.org>
+> Cc: "H. Peter Anvin"<hpa@zytor.com>
+> Cc: Thomas Gleixner<tglx@linutronix.de>
+> ---
+> If no one objects, will route through x86-mm.  Thanks.
+>
+>   arch/x86/Kconfig                 |    4 -
+>   arch/x86/include/asm/mmzone_64.h |   23 -------
+>   arch/x86/mm/numa_64.c            |  123 ---------------------------------------
+>   3 files changed, 1 insertion(+), 149 deletions(-)
 
-I really thought "hey, that reproduced it", because "top" did indeed
-show kworker going nuts after a while. And perf did show it doing all
-that
+good finding.
 
-                   |          queue_work
-                   |          schedule_work
-                   |          flush_to_ldisc
-
-that looks like the re-scheduling.
-
-But when I killed trinity, kworker immediately calmed down too.
-
-Which I'd actually expect, since any tty it is using (and making cause
-problem) should calm down when it's closed - even if it was stuck
-before.
-
-But maybe I haven't triggered just the right condition to actually get
-it into some really infinite case.
-
-Regardless, I'll put my money where my mouth is, and try to remove the
-crazy re-flush thing.
-
-                                         Linus
+Acked-by: Yinghai Lu <yinghai@kernel.org>
