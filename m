@@ -1,52 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab1CaIzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 04:55:51 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:33262 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753Ab1CaIzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 04:55:50 -0400
-Date: Thu, 31 Mar 2011 17:55:45 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CREDITS: Leonard N. Zubkoff is no longer second last
-Message-ID: <20110331085545.GC2857@verge.net.au>
-References: <1301555880-12117-1-git-send-email-horms@verge.net.au>
- <alpine.LNX.2.00.1103311020330.26754@pobox.suse.cz>
+	id S1756269Ab1CaJCn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 05:02:43 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:46809 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753909Ab1CaJCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 05:02:41 -0400
+X-ASG-Debug-ID: 1301562159-03d6a569fb2a520001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D94432D.5080601@fusionio.com>
+Date: Thu, 31 Mar 2011 11:02:37 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1103311020330.26754@pobox.suse.cz>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Rob Landley <rlandley@parallels.com>
+CC: Pete Clements <clem@clem.clem-digital.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
+References: <201103291551.p2TFpDqZ001692@clem.clem-digital.net> <4D92C874.7040104@parallels.com> <4D931634.5030807@fusionio.com> <4D933584.5050005@parallels.com>
+X-ASG-Orig-Subj: Re: Commit 7eaceaccab5f40 causing boot hang.
+In-Reply-To: <4D933584.5050005@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301562159
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59487
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 10:21:33AM +0200, Jiri Kosina wrote:
-> On Thu, 31 Mar 2011, Simon Horman wrote:
+On 2011-03-30 15:52, Rob Landley wrote:
+> On 03/30/2011 06:38 AM, Jens Axboe wrote:
+>> On 2011-03-30 08:06, Rob Landley wrote:
+>>> On 03/29/2011 10:51 AM, Pete Clements wrote:
+>>>> Quoting Jens Axboe
+>>>>   > 
+>>>>   > On 2011-03-29 16:13, Rob Landley wrote:
+>>>>   > > On 03/29/2011 08:59 AM, Jens Axboe wrote:
+>>>>   > >> On 2011-03-29 10:52, Rob Landley wrote:
+>>>>   > >>> I'm booting all this under kvm or qemu, by the way:
+>>>>   > >>>
+>>>>   > >>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
+>>>>   > >>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
+>>>>   > >>>
+>>>>   > >>> Sometimes with init=/bin/bash in that last quoted bit.  The root
+>>>>   > >>> filesystem's debian sid but that's probably not relevant because it
+>>>>   > >>> worked fine with .38.
+>>>>   > >>
+>>>>   > >> Does this help?
+>>>>   > >>
+>>>>   > >> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
+>>>>   > >> index 0e406d73..ca27d30 100644
+>>>>   > >> --- a/drivers/ide/ide-io.c
+>>>>   > >> +++ b/drivers/ide/ide-io.c
+>>>>   > >> @@ -570,8 +570,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
+>>>>   > >>  	spin_unlock_irqrestore(q->queue_lock, flags);
+>>>>   > >>  
+>>>>   > >>  	/* Use 3ms as that was the old plug delay */
+>>>>   > >> -	if (rq)
+>>>>   > >> -		blk_delay_queue(q, 3);
+>>>>   > >> +	blk_delay_queue(q, 3);
+>>>>   > >>  }
+>>>>   > >>  
+>>>>   > >>  static int drive_is_ready(ide_drive_t *drive)
+>>>>   > >>
+>>>>   > > 
+>>>>   > > Nope, still hung the same way.
+>>>>   > 
+>>>>   > Funky. I'll try and reproduce this tonight.
+>>>>   > 
+>>>>   > -- 
+>>>>   > Jens Axboe
+>>>>   > 
+>>>>
+>>>> I have had a similiar problem (reported earlier) unable to boot.
+>>>> With git15-18 hung with IDE drives (hda), git19-21 moved the hang down to
+>>>> the IDE CDROM (hdc). Applied the above patch and now booted into git21 without
+>>>> any hang and all appears ok.
+>>>
+>>> It may have made it better for me, it's hard to tell.
+>>>
+>>> I did a fresh pull, re-applied the patch, and tried again with
+>>> init=/bin/sh and it booted to the shell prompt... which then hung when I
+>>> did "ls -l /".
+>>>
+>>> If I let it boot normally, init announces itself, gives a spurious
+>>> warning about a fstab field (which it's been doing for a while, my fault
+>>> but harmless), then hangs.
+>>>
+>>>> This is i386, UP.
+>>>
+>>> I'm doing x86-64 SMP.
+>>
+>> I think we have the same issue the other location. How about this, then:
+>>
+>> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
+>> index 0e406d73..4978ec3 100644
+>> --- a/drivers/ide/ide-io.c
+>> +++ b/drivers/ide/ide-io.c
+>> @@ -549,12 +549,11 @@ plug_device:
+>>  	spin_unlock_irq(&hwif->lock);
+>>  	ide_unlock_host(host);
+>>  plug_device_2:
+>> +	blk_delay_queue(q, queue_run_ms);
+>>  	spin_lock_irq(q->queue_lock);
+>>  
+>> -	if (rq) {
+>> +	if (rq)
+>>  		blk_requeue_request(q, rq);
+>> -		blk_delay_queue(q, queue_run_ms);
+>> -	}
+>>  }
+>>  
+>>  void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
+>> @@ -570,8 +569,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
+>>  	spin_unlock_irqrestore(q->queue_lock, flags);
+>>  
+>>  	/* Use 3ms as that was the old plug delay */
+>> -	if (rq)
+>> -		blk_delay_queue(q, 3);
+>> +	blk_delay_queue(q, 3);
+>>  }
+>>  
+>>  static int drive_is_ready(ide_drive_t *drive)
+>>
 > 
-> > Signed-off-by: Simon Horman <horms@verge.net.au>
-> > ---
-> >  CREDITS |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/CREDITS b/CREDITS
-> > index 1d39a6d..20476c0 100644
-> > --- a/CREDITS
-> > +++ b/CREDITS
-> > @@ -3938,5 +3938,5 @@ S: France
-> >  # Don't add your name here, unless you really _are_ after Marc
-> >  # alphabetically. Leonard used to be very proud of being the 
-> >  # last entry, and he'll get positively pissed if he can't even
-> > -# be second-to-last.  (and this file really _is_ supposed to be
-> > +# be third last.  (and this file really _is_ supposed to be
-> >  # in alphabetic order)
+> Did a fresh pull and applied that patch.  (It conflicts with your
+> previous one, but looks like it includes it.)
 > 
-> Well, dunno ... since Lenoard Zubkoff has passed away quite some time ago, 
-> maybe this whole paragraph could just be removed.
+> Now it hangs after the "EXT3-fs: barriers not enabled" line, doesn't
+> make it to init.
 
-My logic was the reverse, but I don't feel strongly about it.
+I have tried hard to reproduce this, but even stock 2.6.39-rc1 works
+fine for me here. Setup a KVM image with a debian 6 install, then
+converted it to IDE and booting it with a custom kernel like you are.
+Works fine, boots and I can do disk activity tests and it all works.
+
+Can you send me your .config?
+
+-- 
+Jens Axboe
 
