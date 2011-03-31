@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933885Ab1CaKQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 06:16:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34335 "EHLO mga09.intel.com"
+	id S933900Ab1CaKRD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 06:17:03 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:44388 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933017Ab1CaKQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 06:16:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,274,1299484800"; 
-   d="scan'208";a="621553910"
-Date: Thu, 31 Mar 2011 10:58:11 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] vt: avoid BUG_ON in con_shutdown when con_open returns
- with error
-Message-ID: <20110331105811.5d989e86@bob.linux.org.uk>
-In-Reply-To: <1301524178-7925-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1301524178-7925-1-git-send-email-herton.krzesinski@canonical.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933887Ab1CaKRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 06:17:00 -0400
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>
+Cc: "'Paul Mundt'" <lethal@linux-sh.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>
+References: <01eb01cbeeb7$30390460$90ab0d20$@mprc.pku.edu.cn> <201103301417.20027.arnd@arndb.de> <alpine.LFD.2.00.1103301421390.22418@localhost6.localdomain6> <201103301440.03479.arnd@arndb.de>
+In-Reply-To: <201103301440.03479.arnd@arndb.de>
+Subject: RE: [PATCH] unicore32 fix: remove arch-specific futex support
+Date: Thu, 31 Mar 2011 18:16:20 +0800
+Message-ID: <004301cbef8c$b0bf0640$123d12c0$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQKI+b6m1CyJqXYj5hUyo+RnqBvTZgGkwykXAp/ha8wBh0wlqpKexHwg
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-O
-> +static inline void con_ops_set_shutdown(void);
->  static int con_open(struct tty_struct *, struct file *);
->  static void vc_init(struct vc_data *vc, unsigned int rows,
->  		    unsigned int cols, int do_clear);
-> @@ -2806,6 +2807,14 @@ static int con_open(struct tty_struct *tty,
-> struct file *filp) tty->driver_data = vc;
->  			vc->port.tty = tty;
->  
-> +			/* We must set shutdown only here, otherwise
-> +			 * we returned from con_open with error,
-> which
-> +			 * will make tty core call tty_release, that
-> +			 * in its call path makes con_shutdown being
-> +			 * called without tty->driver_data being set,
-> +			 * triggering the BUG_ON there */
-> +			con_ops_set_shutdown();
 
-No we cannot go around patching the tty_operations - they are not
-locked for one.
 
-Probably this is one case where making con_shutdown() check is the
-right answer.
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Wednesday, March 30, 2011 8:40 PM
+> To: Thomas Gleixner
+> Cc: Guan Xuetao; Paul Mundt; linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org
+> Subject: Re: [PATCH] unicore32 fix: remove arch-specific futex support
+> 
+> On Wednesday 30 March 2011, Thomas Gleixner wrote:
+> > The problem is that you need cmpxchg in user space as well.
+> >
+> > ARM does this with some syscall magic for machines which do not have
+> > cmpxchg.
+> 
+> Ah, right. I wonder how sh does it.
+> 
+> I also remember that the original unicore32 ABI had support for a cmpxchg
+> system call, but that was removed with the move to the generic syscall
+> table.
+> 
+> It is of course possible to add it back using the __NR_arch_specific_syscall
+> entry point.
+> 
+> 	Arnd
+
+For cmpxchg, we have both system call and kuser_cmpxchg supports in old abi
+which are similar to arm.
+The performance of system call version is too poor,  so it could be only used for test.
+
+Thanks & Regards
+
+Guan Xuetao
+
