@@ -1,59 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab1CaItt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 04:49:49 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:60576 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab1CaItr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 04:49:47 -0400
-Subject: Re: [PATCH][POKE] Skip looking for ioapic overrides when ioapics
- are not present
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Florian Mickler <florian@mickler.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
-        maciej.rutecki@gmail.com, mingo@elte.hu, rjw@sisk.pl,
-        sedat.dilek@gmail.com, zersaa@gmail.com, stable@kernel.org
-Date: Thu, 31 Mar 2011 10:48:43 +0200
-In-Reply-To: <1301558489-4198-1-git-send-email-florian@mickler.org>
-References: <1301558489-4198-1-git-send-email-florian@mickler.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 2.91.92 (2.91.92-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1301561386.1904.15.camel@t41.thuisdomein>
+	id S933105Ab1CaIuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 04:50:00 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:36016 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933027Ab1CaItz (ORCPT
+	<rfc822;groupwise-jlee@novell.com:8:1>);
+	Thu, 31 Mar 2011 04:49:55 -0400
+Message-Id: <4D94DADF020000230002AA96@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Thu, 31 Mar 2011 02:49:51 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <florian@mickler.org>
+Cc: <corentincj@iksaif.net>, <stable@kernel.org>, <dtor@mail.ru>,
+        <mjg@redhat.com>, <johannes@sipsolutions.net>,
+        <carlos@strangeworlds.co.uk>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] acer-wmi: does not set persistence state by
+ rfkill_init_sw_state
+References: <1301516277-1752-1-git-send-email-florian@mickler.org>
+ <20110331103054.73438ab5@schatten.dmk.lab>
+In-Reply-To: <20110331103054.73438ab5@schatten.dmk.lab>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Something, somewhere, chocked on that "[.34+]@schatten.dmk.lab" address
-that was in the CC list, so I removed it. Invalid address? Invalid TLD?)
+於 四，2011-03-31 於 10:30 +0200，Florian Mickler 提到：
+> On Wed, 30 Mar 2011 22:17:57 +0200
+> Florian Mickler <florian@mickler.org> wrote:
+> 
+> > From: Lee, Chun-Yi <joeyli.kernel@gmail.com>
+> > 
+> > Acer BIOS keeps devices state when system reboot, but reset to default
+> > device states (Wlan on, Bluetooth off, wwan on) if system cold boot.
+> > That means BIOS's initial state is not always real persistence.
+> > 
+> > So, removed rfkill_init_sw_state because it sets initial state to
+> > persistence then replicate to other new killswitch when rfkill-input
+> > enabled.
+> > After removed it, acer-wmi set initial soft-block state after rfkill
+> > register, and doesn't allow set_block until rfkill initial finished.
+> > 
+> > Reference: bko#31002
+> > 	https://bugzilla.kernel.org/show_bug.cgi?id=31002
+> > 
+> > Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+> > Cc: Matthew Garrett <mjg@redhat.com>
+> > Cc: Dmitry Torokhov <dtor@mail.ru>
+> > Cc: Corentin Chary <corentincj@iksaif.net>
+> > Cc: Johannes Berg <johannes@sipsolutions.net>
+> > Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+> > Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> > Tested-by: OldÅich JedliÄka <oldium.pro@seznam.cz>
+> > Signed-off-by: Florian Mickler <florian@mickler.org>
+> > ---
+> > 
+> > This fixes a regression, but no stable annotation was given...
+> > 
+> > Oversight? Matthew/Chun-Yi please take a look. 
+> > 
+> 
+> I forgot: This is upstream
+> commit 8215af019040ce9182728afee9642d8fdeb17f59 .
+> 
+> As for the Tested-by:, I think that's borked in git. At least I can't
+> get it out of git correctly. It should be:
+> Tested-by: Oldřich Jedlička <oldium.pro@seznam.cz> 
+> 
+> Thanks,
+> Flo
+> 
 
-On Thu, 2011-03-31 at 10:01 +0200, Florian Mickler wrote:
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 68df09b..3940103 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -3789,6 +3789,9 @@ int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
->  {
->  	int ioapic, pin, idx;
->  
-> +	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
-> +		return -1;
-> +
->  	if (skip_ioapic_setup)
->  		return -1;
->  
-
-Seems to have the same goal as commit
-678301ecadec24ff77ab310eebf8a32ccddb1850 ("x86, ioapic: Don't warn about
-non-existing IOAPICs if we have none"), which got merged in the v2.6.38
-cycle (authored by me, signed off by Ingo Molnar). Maybe Eric's patch is
-more correct. I can't say as I was happy with the effect of my patch
-(ie, make an uninteresting error disappear) and didn't investigate any
-further. I have also no desire to dive into this matter again.
+Oldřich's name is good in my patch, just like the following attached,
+but I don't know how to fix it in git tree:
 
 
-Paul
+>From 09bb9cac4345b0ca69216fd2cae17f20e145128b Mon Sep 17 00:00:00 2001
+From: Lee, Chun-Yi <jlee@novell.com>
+Date: Mon, 28 Mar 2011 14:49:15 +0800
+Subject: [PATCH] acer-wmi: does not set persistence state by rfkill_init_sw_state
+
+Acer BIOS keeps devices state when system reboot, but reset to default
+device states (Wlan on, Bluetooth off, wwan on) if system cold boot.
+That means BIOS's initial state is not always real persistence.
+
+So, removed rfkill_init_sw_state because it sets initial state to
+persistence then replicate to other new killswitch when rfkill-input
+enabled.
+After removed it, acer-wmi set initial soft-block state after rfkill
+register, and doesn't allow set_block until rfkill initial finished.
+
+Reference: bko#31002
+	https://bugzilla.kernel.org/show_bug.cgi?id=31002
+
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: Oldřich Jedlička <oldium.pro@seznam.cz>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+---
+ drivers/platform/x86/acer-wmi.c |   19 ++++++++++++++-----
+ 1 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index 5839fac..5b38ae4 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -222,6 +222,7 @@ struct acer_debug {
+ static struct rfkill *wireless_rfkill;
+ static struct rfkill *bluetooth_rfkill;
+ static struct rfkill *threeg_rfkill;
++static bool rfkill_inited;
+ 
+ /* Each low-level interface must define at least some of the following */
+ struct wmi_interface {
+@@ -1162,9 +1163,13 @@ static int acer_rfkill_set(void *data, bool blocked)
+ {
+ 	acpi_status status;
+ 	u32 cap = (unsigned long)data;
+-	status = set_u32(!blocked, cap);
+-	if (ACPI_FAILURE(status))
+-		return -ENODEV;
++
++	if (rfkill_inited) {
++		status = set_u32(!blocked, cap);
++		if (ACPI_FAILURE(status))
++			return -ENODEV;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -1188,14 +1193,16 @@ static struct rfkill *acer_rfkill_register(struct device *dev,
+ 		return ERR_PTR(-ENOMEM);
+ 
+ 	status = get_device_status(&state, cap);
+-	if (ACPI_SUCCESS(status))
+-		rfkill_init_sw_state(rfkill_dev, !state);
+ 
+ 	err = rfkill_register(rfkill_dev);
+ 	if (err) {
+ 		rfkill_destroy(rfkill_dev);
+ 		return ERR_PTR(err);
+ 	}
++
++	if (ACPI_SUCCESS(status))
++		rfkill_set_sw_state(rfkill_dev, !state);
++
+ 	return rfkill_dev;
+ }
+ 
+@@ -1230,6 +1237,8 @@ static int acer_rfkill_init(struct device *dev)
+ 		}
+ 	}
+ 
++	rfkill_inited = true;
++
+ 	schedule_delayed_work(&acer_rfkill_work, round_jiffies_relative(HZ));
+ 
+ 	return 0;
+-- 
+1.6.0.2
+
+
+
 
