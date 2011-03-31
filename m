@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759452Ab1CaWvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 18:51:38 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52479 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605Ab1CaWvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 18:51:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:organization:message-id:in-reply-to
-         :user-agent;
-        b=jj928NlbwBr+mARkEoXnUt0Uq97ED+HT+koDYmkX4FI6pKdNz82FhL1O0SHgTeJczf
-         FCmnuWr5UtSN5LXKJ5rCk6tuGrJ9nXE8ZoyowOf3DAsD/3m0/Qu9EJc5Bu2G2mUeV9U+
-         HP9fldOSUhjmz/DJicDMb9UvPQYH8wAThQFgQ=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Dave Hansen" <dave@linux.vnet.ibm.com>
-Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Ankita Garg" <ankita@in.ibm.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>,
-        "Johan MOSSBERG" <johan.xx.mossberg@stericsson.com>,
-        "Mel Gorman" <mel@csn.ul.ie>, "Pawel Osciak" <pawel@osciak.com>
-Subject: Re: [PATCH 04/12] mm: alloc_contig_freed_pages() added
-References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
- <1301577368-16095-5-git-send-email-m.szyprowski@samsung.com>
- <1301587083.31087.1032.camel@nimitz> <op.vs77qfx03l0zgt@mnazarewicz-glaptop>
- <1301606078.31087.1275.camel@nimitz> <op.vs8awkrx3l0zgt@mnazarewicz-glaptop>
- <1301610411.30870.29.camel@nimitz>
-Date: Fri, 01 Apr 2011 00:51:32 +0200
+	id S1759460Ab1CaWyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 18:54:07 -0400
+Received: from sous-sol.org ([216.99.217.87]:37217 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759401Ab1CaWyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 18:54:05 -0400
+Date: Thu, 31 Mar 2011 15:53:16 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Mike Travis <travis@sgi.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Chris Wright <chrisw@sous-sol.org>, Mike Habeck <habeck@sgi.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Intel pci: Limit dmar_init_reserved_ranges
+Message-ID: <20110331225316.GC18712@sequoia.sous-sol.org>
+References: <20110329233602.272459647@gulag1.americas.sgi.com>
+ <20110329233602.735667875@gulag1.americas.sgi.com>
+ <4D94FC21.6040601@sgi.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Organization: Google
-Message-ID: <op.vs8cf5xd3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <1301610411.30870.29.camel@nimitz>
-User-Agent: Opera Mail/11.01 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D94FC21.6040601@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 01 Apr 2011 00:26:51 +0200, Dave Hansen <dave@linux.vnet.ibm.com>  
-wrote:
+* Mike Travis (travis@sgi.com) wrote:
+> Chris - did you have any comment on this patch?
 
-> On Fri, 2011-04-01 at 00:18 +0200, Michal Nazarewicz wrote:
->> On Thu, 31 Mar 2011 23:14:38 +0200, Dave Hansen wrote:
->> > We BUG_ON() in bootmem.  Basically if we try to allocate an early-boot
->> > structure and fail, we're screwed.  We can't keep running without an
->> > inode hash, or a mem_map[].
->> >
->> > This looks like it's going to at least get partially used in drivers,  
->> at
->> > least from the examples.  Are these kinds of things that, if the  
->> driver
->> > fails to load, that the system is useless and hosed?  Or, is it
->> > something where we might limp along to figure out what went wrong  
->> before
->> > we reboot?
->>
->> Bug in the above place does not mean that we could not allocate  
->> memory.  It means caller is broken.
->
-> Could you explain that a bit?
->
-> Is this a case where a device is mapped to a very *specific* range of
-> physical memory and no where else?  What are the reasons for not marking
-> it off limits at boot?  I also saw some bits of isolation and migration
-> in those patches.  Can't the migration fail?
+It doesn't actually look right to me.  It means that particular range
+is no longer reserved.  But perhaps I've misunderstood something.
 
-The function is called from alloc_contig_range() (see patch 05/12) which
-makes sure that the PFN is valid.  Situation where there is not enough
-space is caught earlier in alloc_contig_range().
+> Mike Travis wrote:
+> >    dmar_init_reserved_ranges() reserves the card's MMIO ranges to
+> >    prevent handing out a DMA map that would overlap with the MMIO range.
+> >    The problem while the Nvidia GPU has 64bit BARs, it's capable of
+> >    receiving > 40bit PIOs, but can't generate > 40bit DMAs.
 
-alloc_contig_freed_pages() must be given a valid PFN range such that all
-the pages in that range are free (as in are within the region tracked by
-page allocator) and of MIGRATETYPE_ISOLATE so that page allocator won't
-touch them.
+I don't undertand what you mean here.
 
-That's why invalid PFN is a bug in the caller and not an exception that
-has to be handled.
+> >    So when the iommu code reserves these MMIO ranges a > 40bit
+> >    entry ends up getting in the rbtree.  On a UV test system with
+> >    the Nvidia cards, the BARs are:
+> >
+> >      0001:36:00.0 VGA compatible controller: nVidia Corporation
+> >GT200GL 	  Region 0: Memory at 92000000 (32-bit, non-prefetchable)
+> >[size=16M]
+> >	  Region 1: Memory at f8200000000 (64-bit, prefetchable) [size=256M]
+> >	  Region 3: Memory at 90000000 (64-bit, non-prefetchable) [size=32M]
+> >
+> >    So this 44bit MMIO address 0xf8200000000 ends up in the rbtree.  As DMA
+> >    maps get added and deleted from the rbtree we can end up getting a cached
+> >    entry to this 0xf8200000000 entry... this is what results in the code
+> >    handing out the invalid DMA map of 0xf81fffff000:
+> >
+> >	    [ 0xf8200000000-1 >> PAGE_SIZE << PAGE_SIZE ]
+> >
+> >    The IOVA code needs to better honor the "limit_pfn" when allocating
+> >    these maps.
 
-Also, the function is not called during boot time.  It is called while
-system is already running.
+This means we could get the MMIO address range (it's no longer reserved).
+It seems to me the DMA transaction would then become a peer to peer
+transaction if ACS is not enabled, which could show up as random register
+write in that GPUs 256M BAR (i.e. broken).
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+The iova allocation should not hand out an address bigger than the
+dma_mask.  What is the device's dma_mask?
+
+thanks,
+-chris
