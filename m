@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507Ab1CaGOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 02:14:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4654 "EHLO mga01.intel.com"
+	id S933528Ab1CaGOn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 02:14:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40065 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933358Ab1CaGOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 02:14:21 -0400
+	id S1752723Ab1CaGOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 02:14:41 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,273,1299484800"; 
-   d="scan'208";a="903897950"
-Subject: Re: [PATCH 0/4] use BUG_ON correctly, v4
+X-IronPort-AV: E=Sophos;i="4.63,274,1299484800"; 
+   d="scan'208";a="727303732"
+Subject: Re: [PATCH] dmaengine/dw_dmac fix: dwc_scan_descriptors must
+ compare first desc address also with llp
 From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Coly Li <bosong.ly@taobao.com>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Wang Cong <xiyou.wangcong@gmail.com>, Dan <dan.j.williams@intel.com>
-In-Reply-To: <1301160415-24569-1-git-send-email-bosong.ly@taobao.com>
-References: <1301160415-24569-1-git-send-email-bosong.ly@taobao.com>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        jamie@jamieiles.com, shiraz.hashim@st.com, armando.visconti@st.com,
+        ajay.khandelwal@st.com, amit.goel@st.com, viresh.linux@gmail.com
+In-Reply-To: <d8ab376fabe638f25a66be559e64cc043e8d1dd4.1300946288.git.viresh.kumar@st.com>
+References: <d8ab376fabe638f25a66be559e64cc043e8d1dd4.1300946288.git.viresh.kumar@st.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 31 Mar 2011 11:14:26 +0530
-Message-ID: <1301550266.18522.6.camel@vkoul-udesk3>
+Date: Thu, 31 Mar 2011 11:14:56 +0530
+Message-ID: <1301550296.18522.7.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -27,37 +28,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-03-27 at 01:26 +0800, Coly Li wrote:
-> Most of BUG_ON() implementations use unlikely() internally for better
-> branch prediction results. The following method to use BUG_ON() with
-> an explicit unlikely() doesn't make things better and is unwelcome:
-> 	BUG_ON(unlikely(condition));
-> Source code should use BUG_ON() just with condition code.
+On Thu, 2011-03-24 at 11:32 +0530, Viresh Kumar wrote:
+> dwc_scan_descriptors scans all descriptors from active_list in case transfer is
+> not completed.  It compares first_desc->lli.llp, and then all childrens of its
+> tx_list. But it doesn't compare its own address, i.e. first_desc->txd.phys, as
+> this is what we have initially programmed into the controller register. So this
+> causes dma to stop and finish a transfer, which was never started. And thus
+> fail.
 > 
-> For arch implementation of BUG_ON(), there are feed backs for v2 patch
-> set from MIPS and PowerPC developers than neither explicit no implicit
-> unlikely() does help anything.
-> 
-> Therefore using unlikely() explicit with BUG_ON() is always a bug. This
-> patch set removes all incorrect BUG_ON() usage.
-> 
-> Patch "Staging: wl_cfg80211.c: use BUG_ON correctly" is merged into
-> upstream (commit d7ddd169), no longer in v4 patch set. For v4 
-> patch set, proper maintainers are added into Cc list by the help of
-> scripts/get_maintainer.pl.
-> 
-> Cc: Greg KH <gregkh@suse.de>
-> Cc: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Wang Cong <xiyou.wangcong@gmail.com>
-> Signed-off-by: Coly Li <bosong.ly@taobao.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 > ---
->  drivers/dma/iop-adma.c    |    6 +++---
->  drivers/dma/mv_xor.c      |    6 +++---
->  drivers/dma/ppc4xx/adma.c |    8 ++++----
->  drivers/scsi/scsi_lib.c   |    4 ++--
->  4 files changed, 12 insertions(+), 12 deletions(-)
-Thanks, Applied first 3 patches. 4th one should go to scsi folks.
-It would help if you can split patch series per subsystem.
+>  drivers/dma/dw_dmac.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index b95e6d3..1bd4803 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -304,6 +304,11 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+>  	dev_vdbg(chan2dev(&dwc->chan), "scan_descriptors: llp=0x%x\n", llp);
+>  
+>  	list_for_each_entry_safe(desc, _desc, &dwc->active_list, desc_node) {
+> +		/* check first descriptors addr */
+> +		if (desc->txd.phys == llp)
+> +			return;
+> +
+> +		/* check first descriptors llp */
+>  		if (desc->lli.llp == llp)
+>  			/* This one is currently in progress */
+>  			return;
+
+Applied, Thanks
 
 -- 
 ~Vinod
