@@ -1,127 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab1CaRDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 13:03:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50826 "EHLO mx1.redhat.com"
+	id S1758695Ab1CaRDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 13:03:32 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:57107 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758491Ab1CaRDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 13:03:05 -0400
-Date: Thu, 31 Mar 2011 19:02:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stas Sergeev <stsp@aknet.ru>
-Cc: Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [path][rfc] add PR_DETACH prctl command
-Message-ID: <20110331170244.GA13271@redhat.com>
-References: <4D6510A3.90905@aknet.ru> <20110223191442.GA717@redhat.com> <4D656F87.3090005@aknet.ru> <20110224132906.GA15733@redhat.com> <4D6675B0.2010700@aknet.ru> <20110224153221.GA22770@redhat.com> <4D94A788.1050806@aknet.ru>
+	id S1753253Ab1CaRDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 13:03:31 -0400
+Date: Thu, 31 Mar 2011 19:03:21 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, devicetree-discuss@lists.ozlabs.org,
+        grant.likely@secretlab.ca, john.williams@petalogix.com,
+        linux-kernel@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de
+Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
+Message-ID: <20110331170321.GA2734@local>
+References: <1301574600-4861-1-git-send-email-monstr@monstr.eu>
+ <1301574600-4861-2-git-send-email-monstr@monstr.eu>
+ <20110331124925.GA2202@pengutronix.de>
+ <4D948189.9070606@monstr.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D94A788.1050806@aknet.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D948189.9070606@monstr.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stas,
+On Thu, Mar 31, 2011 at 03:28:41PM +0200, Michal Simek wrote:
+> >>+		uioinfo->name = pdev->dev.of_node->name;
+> >>+		/* Use version for storing full IP name for identification */
+> >>+		uioinfo->version = pdev->dev.of_node->full_name;
+> >
+> >I don't think this is apropriate, but will leave that to Hans.
+> 
+> I was thinking what to add and I choose full_name because I can read
+> this value and identify which UIO is this device.
+> I know that there should be version but there is no version string in DTS.
 
-On 03/31, Stas Sergeev wrote:
->
-> I found some time to get back to that patch and
-> to address all of the problems you pointed.
-> What do you think about the attached patch?
-> I didn't expect it would became that big.
+The purpose of uio_info->version is to give the userspace part of the driver
+additional information. Kernel part and userspace part might be developed
+independently, and there should be a chance for the userspace part to find
+out if a certain feature is already supported by the kernel part without
+having to do dirty kernel version checks.
 
-	 fs/proc/array.c               |    7 -
-	 include/asm-generic/siginfo.h |    3 
-	 include/linux/init_task.h     |    2 
-	 include/linux/prctl.h         |    2 
-	 include/linux/sched.h         |   21 +++-
-	 kernel/exit.c                 |  200 +++++++++++++++++++++++++++++++++++-------
-	 kernel/fork.c                 |    4 
-	 kernel/signal.c               |   59 +++++++-----
-	 kernel/sys.c                  |   45 +++++++++
-	 9 files changed, 281 insertions(+), 62 deletions(-)
+So, uio_info->version is an information about the driver, not the hardware.
 
-Eek! Not only it is big. It is complex and changes a lot of core
-kernel code.
+Example: You write a UIO driver for a chip you use in a project. You don't
+need all the functionality of that chip. One year later you need additional
+chip functionality, and it turns out that you have to do certain
+initializations in the kernel part. Your new userspace will need the new
+kernel driver, but there are lots of older kernels around in your customers
+devices. In that case, your userspace part can simply check the version
+string in sysfs and require at least your new version.
 
-Sorry Stas, I am not going to try to review it carefully. As I said,
-you need to convince lkml we need this feature first. And iirc you
-are not going to suggest this change for everyone.
+> 
+> >
+> >>+		/* Get IRQ for the device */
+> >>+		rc = of_irq_to_resource(pdev->dev.of_node, 0, &r_irq);
+> >>+		if (rc == NO_IRQ)
+> >>+			dev_err(&pdev->dev, "no IRQ found\n");
+> >
+> >No error, I think. Sometimes just mmaping the registers is enough.
+> 
+> OK. Let's changed it to dev_info if you like.
 
-I guess, the main complication is that you are trying to ensure the
-old parent can do wait() without -ECHLD... This complicates everything
-soooooooooo much. I _feel_ this can be simplified.... but in any case
-we need the nasty complications. And for what?
+The correct thing is to set uio_info->irq to UIO_IRQ_NONE.
 
-
-I only looked at sys_prctl() code, and almost every line looks wrong.
-Hmm... in fact, the changes in exit.c look wrong too, but I didn't really
-try to understand them.
-
-> @@ -1736,6 +1737,50 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
->  			else
->  				error = PR_MCE_KILL_DEFAULT;
->  			break;
-> +		case PR_DETACH: {
-> +			struct task_struct *p, *old_parent;
-> +			int notif = DEATH_REAP;
-> +			error = -EPERM;
-> +			/* not detaching from init */
-> +			if (me->real_parent == init_pid_ns.child_reaper)
-
-2 problems. You shouldn't use init_pid_ns, you need the task's namespace.
-Also, the task can be the child of /sbin/init's sub-thread.
-
-> +			write_lock_irq(&tasklist_lock);
-> +			old_parent = me->real_parent;
-> +			me->detach_code = arg2 << 8;
-> +			if (!task_detached(me))
-> +				notif = do_signal_parent(me, me->exit_signal,
-> +					CLD_DETACHED, arg2);
-
-This is simply wrong. We reparent the whole thread group, we should
-always notify the old parent. Or never. but this shouldn't depend on
-the thread.
-
-> +			if (notif != DEATH_REAP) {
-> +				list_add_tail(&me->detached_sibling,
-> +					&me->real_parent->detached_children);
-> +				me->exit_state = EXIT_DETACHED;
-
-No, no, we can't set ->exit_state != 0. This means the task is dead.
-
-> +			if (!ptrace_reparented(me))
-> +				me->parent = init_pid_ns.child_reaper;
-
-Again, this shouldn't use init_pid_ns.child_reaper. But the main problem,
-you can't trust ptrace_reparented(). What if the old parent ptraces this
-task?
-
-> +			/* detaching makes us a group leader */
-> +			me->group_leader = me;
-
-How? Now, we can't change ->group_leader, this is simply not possible
-and very wrong. If nothing else, think about tid/tgid, but there are
-a lot more problems.
-
-> +			while_each_thread(me, p) {
-> +				if (p->real_parent != old_parent)
-> +					continue;
-> +				if (!ptrace_reparented(p))
-> +					p->parent = init_pid_ns.child_reaper;
-> +				p->real_parent = init_pid_ns.child_reaper;
-
-The same problems as above, pluse "p->real_parent != old_parent" looks
-bogus.
-
-
-Well. Once again, I never argue with new features, but you need to
-convince lkml. Probably it is simple to implement PR_DETACH so that
-the task just "disappears" from the old_parent's radar. Otherwise
-we need more complications, but I'd rather add the fake TASK_ZOMBIE
-task_struct for that. This will be much, much simply although not
-pretty anyway.
-
-Oleg.
+Thanks,
+Hans
 
