@@ -1,120 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1CaEXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 00:23:49 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.181]:6656
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752532Ab1CaEXr (ORCPT
+	id S1752839Ab1CaEhR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 00:37:17 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:52516 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab1CaEhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 00:23:47 -0400
-X-SpamScore: -16
-X-BigFish: VS-16(zzdf9M1432N98dNzz1202hzz1497iz2dh2a8h637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 31 Mar 2011 12:25:08 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
-        <linaro-dev@lists.linaro.org>, <patches@linaro.org>
-Subject: Re: [PATCH 0/5] consolidate sdhci pltfm & OF drivers and get them
- self registered
-Message-ID: <20110331042507.GA21846@S2100-06.ap.freescale.net>
-References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
+	Thu, 31 Mar 2011 00:37:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=AcqXKRuoTqmn5fChd9v37kOU8
+	2by4lAnIORtjLMMN/lYlKsYn2rlvfSj7m4tQ0CoAbcjf3au2WwXsfrsdlD9YOxUD
+	ksdBLkyhDNhwziAlc07o3klPGbxSqqgqTE7TyDLlKXgwpI+h55tchwZ9sWtgbos4
+	VkMUM+KqHGrvDIgRLA=
+Date: Wed, 30 Mar 2011 21:40:15 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Dave Chinner <david@fromorbit.com>
+cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mszeredi@suse.cz
+Subject: Re: [PATCH 4/7] vfs: push dentry_unhash on rename_dir into file
+ systems
+In-Reply-To: <20110331030926.GB30279@dastard>
+Message-ID: <Pine.LNX.4.64.1103302133090.6767@cobra.newdream.net>
+References: <1301522968-4382-1-git-send-email-sage@newdream.net>
+ <1301522968-4382-5-git-send-email-sage@newdream.net> <20110331030926.GB30279@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 04:48:46PM +0800, Shawn Guo wrote:
-> Here are what the patch set does.
+On Thu, 31 Mar 2011, Dave Chinner wrote:
+> On Wed, Mar 30, 2011 at 03:09:25PM -0700, Sage Weil wrote:
+> > Only a few file systems need this.  Start by pushing it down into each
+> > rename method so that it can be dealt with on a per-fs basis.
 > 
-> * Remove .probe and .remove hooks from sdhci-pltfm.c and make it be
->   a pure common helper function providers.
-> * Add .probe and .remove hooks for sdhci pltfm drivers sdhci-cns3xxx,
->   sdhci-dove, sdhci-tegra, and sdhci-esdhc-imx to make them self
->   registered with calling helper functions created above.
-> * Migrate the use of sdhci_of_host and sdhci_of_data to
->   sdhci_pltfm_host and sdhci_pltfm_data, so that OF version host and
->   data structure works can be saved, and pltfm version works for both
->   cases.
-> * Add OF common helper stuff into sdhci-pltfm.c, and make OF version
->   sdhci drivers sdhci-of-esdhc and sdhci-of-hlwd become self
->   registered as well, so that sdhci-of-core.c and sdhci-of.h can be
->   removed.
-> * Consolidate the OF and pltfm esdhc drivers into one with sharing
->   the same pair of .probe and .remove hooks.  As a result,
->   sdhci-esdhc-imx.c and sdhci-of-esdhc.c go away, while
->   sdhci-esdhc.c comes in and works for both MPCxxx and i.MX.
-> * Eliminate include/linux/mmc/sdhci-pltfm.h with moving stuff into
->   drivers/mmc/host/sdhci-pltfm.h.
-> 
-> And the benefits we gain from the changes are:
-> 
-> * Get the sdhci device driver follow the Linux trend that driver
->   makes the registration by its own.
-> * sdhci-pltfm.c becomes simple and clean as it only has common helper
->   stuff there now.
-> * All sdhci device specific things are going back its own driver.
-> * The dt and non-dt drivers are consolidated to use the same pair of
->   .probe and .remove hooks.
-> * SDHCI driver for Freescale eSDHC controller found on both MPCxxx
->   and i.MX platforms is consolidated to use the same one .probe
->   function.
-> 
-> The patch set works against the tree below, and was only tested on
-> i.mx51 babbage board, all other targets were build tested.
-> 
->   git://git.secretlab.ca/git/linux-2.6.git devicetree/test
-> 
-> Comments are welcomed and appreciated.
-> 
-> Regards,
-> Shawn
-> 
-> PS: The first patch is a squashing of the patch set below, which was
-> posted for review a few days back.
-> 
->   [PATCH 0/5] make sdhci device drivers self registered
-> 
-> Some patches in this series are relatively large, involving more
-> changes than expected, I chose to not split considering they are
-> logically integral, and doing so can reduce the patch quantity much,
-> and make bisect much easier.  But sorry for that it makes reviewers'
-> life harder.
-> 
-> Shawn Guo (5):
->       mmc: sdhci: make sdhci-pltfm device drivers self registered
->       mmc: sdhci: eliminate sdhci_of_host and sdhci_of_data
->       mmc: sdhci: make sdhci-of device drivers self registered
->       mmc: sdhci: consolidate sdhci-of-esdhc and sdhci-esdhc-imx
->       mmc: sdhci: merge two sdhci-pltfm.h into one
-> 
->  drivers/mmc/host/Kconfig           |   71 ++++---
->  drivers/mmc/host/Makefile          |   17 +-
->  drivers/mmc/host/sdhci-cns3xxx.c   |   68 ++++++-
->  drivers/mmc/host/sdhci-dove.c      |   69 ++++++-
->  drivers/mmc/host/sdhci-esdhc-imx.c |  149 -------------
->  drivers/mmc/host/sdhci-esdhc.c     |  412 ++++++++++++++++++++++++++++++++++++
->  drivers/mmc/host/sdhci-of-core.c   |  247 ---------------------
->  drivers/mmc/host/sdhci-of-esdhc.c  |   89 --------
->  drivers/mmc/host/sdhci-of-hlwd.c   |   89 +++++++-
->  drivers/mmc/host/sdhci-of.h        |   42 ----
->  drivers/mmc/host/sdhci-pltfm.c     |  251 +++++++++-------------
->  drivers/mmc/host/sdhci-pltfm.h     |   36 +++-
->  drivers/mmc/host/sdhci-tegra.c     |  187 ++++++++++-------
->  include/linux/mmc/sdhci-pltfm.h    |   35 ---
->  14 files changed, 912 insertions(+), 850 deletions(-)
-> --
+> What is the criteria for a filesystem needing this?
 
-Any comments?  Is this the right direction to move?
+As I understand it, it's normally just a question of whether the FS can 
+handle references to the directory's struct inode and dentry after they've 
+been unlinked.  A few file systems bail out of rmdir/rename if 
+!d_unhashed(dentry) (dentry_unhash() doesn't unhash if there are any other 
+dentry references).
 
--- 
-Regards,
-Shawn
+All but a handful of file systems should be able to drop the dentry_unhash 
+entirely.
 
+> > Signed-off-by: Sage Weil <sage@newdream.net>
+> > ---
+> >  fs/9p/vfs_inode.c       |    3 +++
+> >  fs/affs/namei.c         |    3 +++
+> >  fs/afs/dir.c            |    3 +++
+> >  fs/bfs/dir.c            |    3 +++
+> >  fs/btrfs/inode.c        |    3 +++
+> >  fs/ceph/dir.c           |    3 +++
+> >  fs/cifs/inode.c         |    3 +++
+> >  fs/coda/dir.c           |    3 +++
+> >  fs/ecryptfs/inode.c     |    3 +++
+> >  fs/exofs/namei.c        |    3 +++
+> >  fs/ext2/namei.c         |    3 +++
+> >  fs/ext3/namei.c         |    3 +++
+> >  fs/ext4/namei.c         |    3 +++
+> >  fs/fat/namei_msdos.c    |    3 +++
+> >  fs/fat/namei_vfat.c     |    3 +++
+> >  fs/fuse/dir.c           |    4 ++++
+> >  fs/gfs2/ops_inode.c     |    3 +++
+> >  fs/hfs/dir.c            |    3 +++
+> >  fs/hostfs/hostfs_kern.c |    3 +++
+> >  fs/hpfs/namei.c         |    4 ++++
+> >  fs/jffs2/dir.c          |    3 +++
+> >  fs/jfs/namei.c          |    3 +++
+> >  fs/libfs.c              |    3 +++
+> >  fs/logfs/dir.c          |    3 +++
+> >  fs/minix/namei.c        |    3 +++
+> >  fs/namei.c              |    5 +----
+> >  fs/ncpfs/dir.c          |    3 +++
+> >  fs/nfs/dir.c            |    3 +++
+> >  fs/nilfs2/namei.c       |    3 +++
+> >  fs/ocfs2/namei.c        |    3 +++
+> >  fs/omfs/dir.c           |    3 +++
+> >  fs/reiserfs/namei.c     |    3 +++
+> >  fs/sysv/namei.c         |    3 +++
+> >  fs/ubifs/dir.c          |    3 +++
+> >  fs/udf/namei.c          |    3 +++
+> >  fs/ufs/namei.c          |    3 +++
+> >  36 files changed, 108 insertions(+), 4 deletions(-)
+> 
+> You didn't push it down into XFS, hence my question....
+
+Whoops... I was grepping for .rmdir and .rename in fs/*.c.  I'll fix it 
+up.
+
+sage
