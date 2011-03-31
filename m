@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab1CaIHN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 04:07:13 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:48990 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757146Ab1CaIHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 04:07:06 -0400
-Date: Thu, 31 Mar 2011 10:06:34 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110331080634.GA18022@elte.hu>
-References: <20110318101512.GA15375@n2100.arm.linux.org.uk>
- <201103301906.42429.arnd@arndb.de>
- <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
- <alpine.LFD.2.00.1103301531420.28032@xanadu.home>
- <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
- <alpine.LFD.2.00.1103301814250.28032@xanadu.home>
- <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm>
- <alpine.LFD.2.00.1103302255280.28032@xanadu.home>
- <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm>
- <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1757205Ab1CaIIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 04:08:07 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38402 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757164Ab1CaIHn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 04:07:43 -0400
+Subject: Re: [PATCH 2/2] perf: Mmap 512 kiB by default
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+In-Reply-To: <1301535324-9735-1-git-send-email-fweisbec@gmail.com>
+References: <1301496028.4859.183.camel@twins>
+	 <1301535324-9735-1-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 Mar 2011 10:09:52 +0200
+Message-ID: <1301558992.2250.489.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Nicolas Pitre <nico@fluxnic.net> wrote:
-
-> On Wed, 30 Mar 2011, david@lang.hm wrote:
+On Thu, 2011-03-31 at 03:35 +0200, Frederic Weisbecker wrote:
+> The default setting of perf record is to mmap 128 pages if the user
+> did not override with -m.
+> However the page size may vary accross different architecture
+> settings, giving different default size between each.
 > 
-> > back in the early days of the PCs, different systems from different vendors
-> > had different bus types, peripherals at different addresses, etc. that didn't
-> > make all of those vendors systems different architectures, instead those
-> > things were varients of the x86 architecture.
+> Moreover the kernel side still has a default max number of mlocked
+> pages of 512 kiB + 1 page for unprivileged users. 128 + 1 pages
+> with page size > 4096 overlaps this threshold.
 > 
-> Most of them didn't survive.  That really helps.
+> Thus, better adapt to this limitation and set the default number of
+> pages to fit those 512 kiB + 1 page.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>  tools/perf/builtin-record.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index 6febcc1..a7e14bd 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -41,7 +41,7 @@ static u64			user_interval			= ULLONG_MAX;
+>  static u64			default_interval		=      0;
+>  
+>  static unsigned int		page_size;
+> -static unsigned int		mmap_pages			=    128;
+> +static unsigned int		mmap_pages			= UINT_MAX;
+>  static unsigned int		user_freq 			= UINT_MAX;
+>  static int			freq				=   1000;
+>  static int			output;
+> @@ -506,6 +506,10 @@ static int __cmd_record(int argc, const char **argv)
+>  	if (have_tracepoints(&evsel_list->entries))
+>  		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
+>  
+> +	/* 512 kiB: default amount of unprivileged mlocked memory */
+> +	if (mmap_pages == UINT_MAX)
+> +		mmap_pages = (512 * 1024) / page_size;
+> +
+>  	if (forks) {
+>  		child_pid = fork();
+>  		if (child_pid < 0) {
 
-That's not the point, 99% of the current ARM boards will not 'survive' either, 
-10-20 years down the road.
+Ok, these two patches look good, I'll queue them. However a follow up
+might be to change the perf-record parameter from nr_pages to kb, which
+is a much more user friendly interface anyway ;-)
 
-I think you missed David's main point: life inevitably went on and few of the 
-old x86 hardware 'survived' physically, but past hardware versions have not 
-littered the kernel source with half a million lines of source code in the 
-process ...
 
-Having strong, effective platform abstractions inside the kernel really helps 
-even if the hardware space itself is inevitably fragmented: both powerpc and 
-x86 has shown that. Until you realize and appreciate that you really have not 
-understood the problem i think.
 
-Thanks,
-
-	Ingo
