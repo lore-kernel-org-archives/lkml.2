@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab1CaGDq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 02:03:46 -0400
-Received: from vms173019pub.verizon.net ([206.46.173.19]:43984 "EHLO
-	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab1CaGDn (ORCPT
+	id S1756339Ab1CaGDu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 02:03:50 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:41797 "EHLO
+	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab1CaGDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 02:03:43 -0400
+	Thu, 31 Mar 2011 02:03:46 -0400
 From: Len Brown <lenb@kernel.org>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 3/9] x86 idle: remove NOP halt_works()
-Date: Thu, 31 Mar 2011 02:03:18 -0400
-Message-id: <59c5d1540292b8c392d0a917e5f95da0297eef75.1301550524.git.len.brown@intel.com>
+Subject: [PATCH 1/9] x86 idle: remove "no-hlt" cmdline param
+Date: Thu, 31 Mar 2011 02:03:16 -0400
+Message-id: <67e90d97e0a77df4acd0c75e1bacc7714e011f3e.1301550524.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.4.2.406.gbe91
 In-reply-to: <1301551404-8263-1-git-send-email-lenb@kernel.org>
 References: <1300950508-22746-1-git-send-email-lenb@kernel.org>
  <1301551404-8263-1-git-send-email-lenb@kernel.org>
-In-reply-to: <67e90d97e0a77df4acd0c75e1bacc7714e011f3e.1301550524.git.len.brown@intel.com>
-References: <67e90d97e0a77df4acd0c75e1bacc7714e011f3e.1301550524.git.len.brown@intel.com>
 X-Patchwork-Hint: ignore
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-no functional change
+The X86_32-only "no-hlt" option was the functional equivalent of
+"idle=poll" for the idle loop.
+
+It would also set the X86_32-only "hlt_bug" line in the /proc/cpuinfo,
+and cause halt to be skipped in stop_this_cpu().
 
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/x86/include/asm/processor.h |    5 -----
- arch/x86/kernel/process.c        |    3 +--
- 2 files changed, 1 insertions(+), 7 deletions(-)
+ Documentation/kernel-parameters.txt |    4 ----
+ arch/x86/kernel/cpu/bugs.c          |    8 --------
+ 2 files changed, 0 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index b5c83f1..8776232 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -147,11 +147,6 @@ DECLARE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index f4a04c0..e6b4843 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1666,10 +1666,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			wfi(ARM) instruction doesn't work correctly and not to
+ 			use it. This is also useful when using JTAG debugger.
  
- extern const struct seq_operations cpuinfo_op;
+-	no-hlt		[BUGS=X86-32] Tells the kernel that the hlt
+-			instruction doesn't work correctly and not to
+-			use it.
+-
+ 	no_file_caps	Tells the kernel not to honor file capabilities.  The
+ 			only way then for a file to be executed with privilege
+ 			is to be setuid root or executed by root.
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index c39576c..4c91631 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -17,14 +17,6 @@
+ #include <asm/paravirt.h>
+ #include <asm/alternative.h>
  
--static inline int hlt_works(int cpu)
+-static int __init no_halt(char *s)
 -{
+-	boot_cpu_data.hlt_works_ok = 0;
 -	return 1;
 -}
 -
- #define cache_line_size()	(boot_cpu_data.x86_cache_alignment)
- 
- extern void cpu_detect(struct cpuinfo_x86 *c);
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 4966c7e..cd461c3 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -414,8 +414,7 @@ void stop_this_cpu(void *dummy)
- 	disable_local_APIC();
- 
- 	for (;;) {
--		if (hlt_works(smp_processor_id()))
--			halt();
-+		halt();
- 	}
- }
- 
+-__setup("no-hlt", no_halt);
+-
+ static int __init no_387(char *s)
+ {
+ 	boot_cpu_data.hard_math = 0;
 -- 
 1.7.4.2.406.gbe91
 
