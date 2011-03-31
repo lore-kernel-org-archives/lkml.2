@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab1CaOyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:54:19 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:57439 "EHLO
+	id S1758158Ab1CaOyW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:54:22 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:57433 "EHLO
 	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758067Ab1CaOwy (ORCPT
+	with ESMTP id S1758014Ab1CaOwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Mar 2011 10:52:54 -0400
 X-Cam-AntiVirus: no malware found
@@ -13,9 +13,9 @@ X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
 From: Jonathan Cameron <jic23@cam.ac.uk>
 To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, tglx@linutronix.de, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 17/21] staging:iio:Documentation generic_buffer.c update to new abi for buffers.
-Date: Thu, 31 Mar 2011 15:54:11 +0100
-Message-Id: <1301583255-28468-18-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 15/21] staging:iio: Add infrastructure for irq_chip based triggers
+Date: Thu, 31 Mar 2011 15:54:09 +0100
+Message-Id: <1301583255-28468-16-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
 References: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
@@ -23,132 +23,528 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial space before newline fix incorporated.
-
-Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/staging/iio/Documentation/generic_buffer.c |   53 +++++--------------
- 1 files changed, 14 insertions(+), 39 deletions(-)
+ drivers/staging/Makefile                      |    2 +-
+ drivers/staging/iio/Kconfig                   |   12 ++
+ drivers/staging/iio/Makefile                  |    2 +
+ drivers/staging/iio/iio-board-info.h          |   24 ++++
+ drivers/staging/iio/iio-core.h                |   13 ++
+ drivers/staging/iio/iio.h                     |   13 ++
+ drivers/staging/iio/industrialio-board-info.c |   25 ++++
+ drivers/staging/iio/industrialio-core.c       |   28 +++++
+ drivers/staging/iio/industrialio-trigger.c    |  146 ++++++++++++++++++++-----
+ drivers/staging/iio/trigger.h                 |   40 +++++++-
+ 10 files changed, 275 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/staging/iio/Documentation/generic_buffer.c b/drivers/staging/iio/Documentation/generic_buffer.c
-index eb72e95..3c41d7d 100644
---- a/drivers/staging/iio/Documentation/generic_buffer.c
-+++ b/drivers/staging/iio/Documentation/generic_buffer.c
-@@ -27,6 +27,7 @@
- #include <sys/dir.h>
- #include <linux/types.h>
- #include <string.h>
-+#include <poll.h>
- #include "iio_utils.h"
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index cfd13cd..ee7594c 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -42,7 +42,7 @@ obj-$(CONFIG_HYPERV)		+= hv/
+ obj-$(CONFIG_VME_BUS)		+= vme/
+ obj-$(CONFIG_MRST_RAR_HANDLER)	+= memrar/
+ obj-$(CONFIG_DX_SEP)            += sep/
+-obj-$(CONFIG_IIO)		+= iio/
++obj-y				+= iio/
+ obj-$(CONFIG_CS5535_GPIO)	+= cs5535_gpio/
+ obj-$(CONFIG_ZRAM)		+= zram/
+ obj-$(CONFIG_XVMALLOC)		+= zram/
+diff --git a/drivers/staging/iio/Kconfig b/drivers/staging/iio/Kconfig
+index 6775bf9..df9aa08 100644
+--- a/drivers/staging/iio/Kconfig
++++ b/drivers/staging/iio/Kconfig
+@@ -12,6 +12,10 @@ menuconfig IIO
+ 	  Documentation/industrialio for more information.
+ if IIO
+ 
++config IIO_BOARDINFO
++       boolean
++       default y
++
+ config IIO_RING_BUFFER
+ 	bool "Enable ring buffer support within IIO"
+ 	help
+@@ -42,12 +46,20 @@ endif # IIO_RINGBUFFER
+ 
+ config IIO_TRIGGER
+ 	boolean "Enable triggered sampling support"
++	depends on IIO_BOARDINFO
+ 	help
+ 	  Provides IIO core support for triggers.  Currently these
+ 	  are used to initialize capture of samples to push into
+ 	  ring buffers.  The triggers are effectively a 'capture
+ 	  data now' interrupt.
+ 
++config IIO_CONSUMERS_PER_TRIGGER
++       int "Maximum number of consumers per trigger"
++       depends on IIO_TRIGGER
++       default "2"
++       help
++	This value controls the maximum number of consumers that a
++	given trigger may handle. Default is 2.
+ 
+ source "drivers/staging/iio/accel/Kconfig"
+ source "drivers/staging/iio/adc/Kconfig"
+diff --git a/drivers/staging/iio/Makefile b/drivers/staging/iio/Makefile
+index bb5c95c..37b4d12 100644
+--- a/drivers/staging/iio/Makefile
++++ b/drivers/staging/iio/Makefile
+@@ -2,6 +2,8 @@
+ # Makefile for the industrial I/O core.
+ #
+ 
++obj-$(CONFIG_IIO_BOARDINFO) += industrialio-board-info.o
++
+ obj-$(CONFIG_IIO) += industrialio.o
+ industrialio-y := industrialio-core.o
+ industrialio-$(CONFIG_IIO_RING_BUFFER) += industrialio-ring.o
+diff --git a/drivers/staging/iio/iio-board-info.h b/drivers/staging/iio/iio-board-info.h
+new file mode 100644
+index 0000000..c608a4d
+--- /dev/null
++++ b/drivers/staging/iio/iio-board-info.h
+@@ -0,0 +1,24 @@
++/*
++ * Board information for IIO.
++ *
++ * Copyright (c) 2011 Jonathan Cameron <jic23@cam.ac.uk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifdef CONFIG_IIO_BOARDINFO
++
++/**
++ * iio_set_irq_pool() - provid iio with a pool of virtaul interrupts to use
++ * @start: start of the pool
++ * @num: number of interupts in the pool
++ **/
++void iio_set_irq_pool(int start, int num);
++
++#else
++
++static inline void iio_set_irq_pool(int start, int num) {};
++
++#endif
+diff --git a/drivers/staging/iio/iio-core.h b/drivers/staging/iio/iio-core.h
+new file mode 100644
+index 0000000..2c4f433
+--- /dev/null
++++ b/drivers/staging/iio/iio-core.h
+@@ -0,0 +1,13 @@
++/*
++ * IIO core header. Should never be included by drivers.
++ *
++ * Copyright (c) 2011 Jonathan Cameron <jic23@cam.ac.uk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#define IIO_MAX_POOL 128
++extern int __iio_irqstart;
++extern int __iio_irqnum;
+diff --git a/drivers/staging/iio/iio.h b/drivers/staging/iio/iio.h
+index fb6caae..add0659 100644
+--- a/drivers/staging/iio/iio.h
++++ b/drivers/staging/iio/iio.h
+@@ -304,6 +304,19 @@ extern dev_t iio_devt;
+ extern struct bus_type iio_bus_type;
  
  /**
-@@ -135,7 +136,7 @@ int main(int argc, char **argv)
- 	ssize_t read_size;
- 	struct iio_event_data dat;
- 	int dev_num, trig_num;
--	char *buffer_access, *buffer_event;
-+	char *buffer_access;
- 	int scan_size;
- 	int noevents = 0;
- 	char *dummy;
-@@ -210,7 +211,7 @@ int main(int argc, char **argv)
- 	 */
- 	ret = build_channel_array(dev_dir_name, &infoarray, &num_channels);
++ * iio_irq_pool_get_range() - get a set of irqs from the pool
++ * @num: number of interrupts requested
++ **/
++int iio_irq_pool_get_range(int num);
++
++/**
++ * iio_irq_pool_put_range()
++ * @start: first irq to return to the pool
++ * @num: number to return
++ **/
++void iio_irq_pool_put_range(int start, int num);
++
++/**
+  * iio_put_device() - reference counted deallocation of struct device
+  * @dev: the iio_device containing the device
+  **/
+diff --git a/drivers/staging/iio/industrialio-board-info.c b/drivers/staging/iio/industrialio-board-info.c
+new file mode 100644
+index 0000000..28f9156
+--- /dev/null
++++ b/drivers/staging/iio/industrialio-board-info.c
+@@ -0,0 +1,25 @@
++/* IIO Board info
++ *
++ * Copyright (c) 2011 Jonathan Cameron
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include "iio-core.h"
++
++int __iio_irqstart;
++EXPORT_SYMBOL(__iio_irqstart);
++int __iio_irqnum;
++EXPORT_SYMBOL(__iio_irqnum);
++
++void __init iio_set_irq_pool(int start, int num)
++{
++	__iio_irqstart = start;
++	__iio_irqnum = num;
++	if (num > IIO_MAX_POOL)
++		__iio_irqnum = IIO_MAX_POOL;
++}
+diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
+index 0473f55..39b987d 100644
+--- a/drivers/staging/iio/industrialio-core.c
++++ b/drivers/staging/iio/industrialio-core.c
+@@ -23,6 +23,7 @@
+ #include <linux/cdev.h>
+ #include <linux/slab.h>
+ #include "iio.h"
++#include "iio-core.h"
+ #include "trigger_consumer.h"
+ 
+ #define IIO_ID_PREFIX "device"
+@@ -35,6 +36,33 @@ static DEFINE_IDA(iio_chrdev_ida);
+ /* Lock used to protect both of the above */
+ static DEFINE_SPINLOCK(iio_ida_lock);
+ 
++static DEFINE_MUTEX(iio_irq_pool_lock);
++static unsigned long iio_irq_pool_mask[BITS_TO_LONGS(IIO_MAX_POOL)] = {};
++
++int iio_irq_pool_get_range(int num)
++{
++	int ret;
++
++	mutex_lock(&iio_irq_pool_lock);
++	ret = bitmap_find_free_region(iio_irq_pool_mask,
++				      __iio_irqnum, ilog2(num));
++	if (ret >= 0)
++		ret += __iio_irqstart;
++	mutex_unlock(&iio_irq_pool_lock);
++
++	return ret;
++}
++EXPORT_SYMBOL(iio_irq_pool_get_range);
++
++void iio_irq_pool_put_range(int start, int num)
++{
++	mutex_lock(&iio_irq_pool_lock);
++	bitmap_release_region(iio_irq_pool_mask,
++			      start - __iio_irqstart, ilog2(num));
++	mutex_unlock(&iio_irq_pool_lock);
++}
++EXPORT_SYMBOL(iio_irq_pool_put_range);
++
+ dev_t iio_devt;
+ EXPORT_SYMBOL(iio_devt);
+ 
+diff --git a/drivers/staging/iio/industrialio-trigger.c b/drivers/staging/iio/industrialio-trigger.c
+index 083847c..8100822 100644
+--- a/drivers/staging/iio/industrialio-trigger.c
++++ b/drivers/staging/iio/industrialio-trigger.c
+@@ -163,6 +163,7 @@ static struct iio_trigger *iio_trigger_find_by_name(const char *name,
+ 
+ void iio_trigger_poll(struct iio_trigger *trig, s64 time)
+ {
++	int i;
+ 	struct iio_poll_func *pf_cursor;
+ 
+ 	list_for_each_entry(pf_cursor, &trig->pollfunc_list, list) {
+@@ -178,6 +179,11 @@ void iio_trigger_poll(struct iio_trigger *trig, s64 time)
+ 			trig->use_count++;
+ 		}
+ 	}
++	for (i = 0; i < CONFIG_IIO_CONSUMERS_PER_TRIGGER; i++)
++		if (trig->subirqs[i].enabled) {
++			trig->use_count++;
++			generic_handle_irq(trig->subirq_base + i);
++		}
+ }
+ EXPORT_SYMBOL(iio_trigger_poll);
+ 
+@@ -219,16 +225,23 @@ int iio_trigger_attach_poll_func(struct iio_trigger *trig,
+ 	int ret = 0;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&trig->pollfunc_list_lock, flags);
+-	list_add_tail(&pf->list, &trig->pollfunc_list);
+-	spin_unlock_irqrestore(&trig->pollfunc_list_lock, flags);
+-
++	if (pf->handler) {
++		pf->irq = iio_trigger_get_irq(trig);
++		ret = request_threaded_irq(pf->irq, NULL, pf->handler,
++					   pf->type, pf->name,
++					   pf);
++	} else {
++		spin_lock_irqsave(&trig->pollfunc_list_lock, flags);
++		list_add_tail(&pf->list, &trig->pollfunc_list);
++		spin_unlock_irqrestore(&trig->pollfunc_list_lock, flags);
++	}
+ 	if (trig->set_trigger_state)
+ 		ret = trig->set_trigger_state(trig, true);
  	if (ret) {
--		printf("Problem reading scan element information \n");
-+		printf("Problem reading scan element information\n");
- 		goto error_free_triggername;
+ 		printk(KERN_ERR "set trigger state failed\n");
+ 		list_del(&pf->list);
  	}
- 
-@@ -251,54 +252,32 @@ int main(int argc, char **argv)
- 	}
- 
- 	ret = asprintf(&buffer_access,
--		       "/dev/device%d:buffer0:access0",
-+		       "/dev/device%d:buffer0",
- 		       dev_num);
- 	if (ret < 0) {
- 		ret = -ENOMEM;
- 		goto error_free_data;
- 	}
- 
--	ret = asprintf(&buffer_event, "/dev/device%d:buffer0:event0", dev_num);
--	if (ret < 0) {
--		ret = -ENOMEM;
--		goto error_free_buffer_access;
--	}
- 	/* Attempt to open non blocking the access dev */
- 	fp = open(buffer_access, O_RDONLY | O_NONBLOCK);
- 	if (fp == -1) { /*If it isn't there make the node */
- 		printf("Failed to open %s\n", buffer_access);
- 		ret = -errno;
--		goto error_free_buffer_event;
--	}
--	/* Attempt to open the event access dev (blocking this time) */
--	fp_ev = fopen(buffer_event, "rb");
--	if (fp_ev == NULL) {
--		printf("Failed to open %s\n", buffer_event);
--		ret = -errno;
--		goto error_close_buffer_access;
-+		goto error_free_buffer_access;
- 	}
- 
- 	/* Wait for events 10 times */
- 	for (j = 0; j < num_loops; j++) {
- 		if (!noevents) {
--			read_size = fread(&dat,
--					1,
--					sizeof(struct iio_event_data),
--					fp_ev);
--			switch (dat.id) {
--			case IIO_EVENT_CODE_RING_100_FULL:
--				toread = buf_len;
--				break;
--			case IIO_EVENT_CODE_RING_75_FULL:
--				toread = buf_len*3/4;
--				break;
--			case IIO_EVENT_CODE_RING_50_FULL:
--				toread = buf_len/2;
--				break;
--			default:
--				printf("Unexpecteded event code\n");
--				continue;
--			}
-+			struct pollfd pfd = {
-+				.fd = fp,
-+				.events = POLLIN,
-+			};
 +
-+			poll(&pfd, 1, -1);
-+			toread = buf_len;
+ 	return ret;
+ }
+ EXPORT_SYMBOL(iio_trigger_attach_poll_func);
+@@ -240,31 +253,42 @@ int iio_trigger_dettach_poll_func(struct iio_trigger *trig,
+ 	unsigned long flags;
+ 	int ret = -EINVAL;
+ 
+-	spin_lock_irqsave(&trig->pollfunc_list_lock, flags);
+-	list_for_each_entry(pf_cursor, &trig->pollfunc_list, list)
+-		if (pf_cursor == pf) {
+-			ret = 0;
+-			break;
++	if (pf->handler) {
++		ret = trig->set_trigger_state(trig, false);
++		if (ret)
++			goto error_ret;
++		iio_trigger_put_irq(trig, pf->irq);
++		free_irq(pf->irq, pf);
++	} else {
++		spin_lock_irqsave(&trig->pollfunc_list_lock, flags);
++		list_for_each_entry(pf_cursor, &trig->pollfunc_list, list)
++			if (pf_cursor == pf) {
++				ret = 0;
++				break;
++			}
++		if (!ret) {
++			if (list_is_singular(&trig->pollfunc_list)
++			    && trig->set_trigger_state) {
++				spin_unlock_irqrestore(&trig
++						       ->pollfunc_list_lock,
++						       flags);
++				/* May sleep hence cannot hold the spin lock */
++				ret = trig->set_trigger_state(trig, false);
++				if (ret)
++					goto error_ret;
++				spin_lock_irqsave(&trig->pollfunc_list_lock,
++						  flags);
++			}
++			/*
++			 * Now we can delete safe in the knowledge that, if
++			 * this is the last pollfunc then we have disabled
++			 * the trigger anyway and so nothing should be able
++			 * to call the pollfunc.
++			 */
++			list_del(&pf_cursor->list);
+ 		}
+-	if (!ret) {
+-		if (list_is_singular(&trig->pollfunc_list)
+-		    && trig->set_trigger_state) {
+-			spin_unlock_irqrestore(&trig->pollfunc_list_lock,
+-					       flags);
+-			/* May sleep hence cannot hold the spin lock */
+-			ret = trig->set_trigger_state(trig, false);
+-			if (ret)
+-				goto error_ret;
+-			spin_lock_irqsave(&trig->pollfunc_list_lock, flags);
+-		}
+-		/*
+-		 * Now we can delete safe in the knowledge that, if this is
+-		 * the last pollfunc then we have disabled the trigger anyway
+-		 * and so nothing should be able to call the pollfunc.
+-		 */
+-		list_del(&pf_cursor->list);
++		spin_unlock_irqrestore(&trig->pollfunc_list_lock, flags);
+ 	}
+-	spin_unlock_irqrestore(&trig->pollfunc_list_lock, flags);
+ 
+ error_ret:
+ 	return ret;
+@@ -337,6 +361,21 @@ static const struct attribute_group iio_trigger_consumer_attr_group = {
+ static void iio_trig_release(struct device *device)
+ {
+ 	struct iio_trigger *trig = to_iio_trigger(device);
++	int i;
 +
- 		} else {
- 			usleep(timedelay);
- 			toread = 64;
-@@ -320,22 +299,18 @@ int main(int argc, char **argv)
- 	/* Stop the ring buffer */
- 	ret = write_sysfs_int("enable", buf_dir_name, 0);
- 	if (ret < 0)
--		goto error_close_buffer_event;
-+		goto error_close_buffer_access;
++	if (trig->subirq_base) {
++		for (i = 0; i < CONFIG_IIO_CONSUMERS_PER_TRIGGER; i++) {
++			set_irq_flags(trig->subirq_base + i, 0);
++			irq_set_chip(trig->subirq_base + i,
++				     NULL);
++			irq_set_handler(trig->subirq_base + i,
++					NULL);
++		}
++
++		kfree(trig->subirq_chip.name);
++		iio_irq_pool_put_range(trig->subirq_base,
++				       CONFIG_IIO_CONSUMERS_PER_TRIGGER);
++	}
+ 	kfree(trig);
+ 	iio_put();
+ }
+@@ -345,11 +384,30 @@ static struct device_type iio_trig_type = {
+ 	.release = iio_trig_release,
+ };
  
- 	/* Disconnect from the trigger - just write a dummy name.*/
- 	write_sysfs_string("trigger/current_trigger",
- 			dev_dir_name, "NULL");
+-struct iio_trigger *iio_allocate_trigger(void)
++static void iio_trig_subirqmask(struct irq_data *d)
++{
++	struct irq_chip *chip = irq_data_get_irq_chip(d);
++	struct iio_trigger *trig
++		= container_of(chip,
++			       struct iio_trigger, subirq_chip);
++	trig->subirqs[d->irq - trig->subirq_base].enabled = false;
++}
++
++static void iio_trig_subirqunmask(struct irq_data *d)
++{
++	struct irq_chip *chip = irq_data_get_irq_chip(d);
++	struct iio_trigger *trig
++		= container_of(chip,
++			       struct iio_trigger, subirq_chip);
++	trig->subirqs[d->irq - trig->subirq_base].enabled = true;
++}
++
++struct iio_trigger *iio_allocate_trigger_named(const char *name)
+ {
+ 	struct iio_trigger *trig;
+ 	trig = kzalloc(sizeof *trig, GFP_KERNEL);
+ 	if (trig) {
++		int i;
+ 		trig->dev.type = &iio_trig_type;
+ 		trig->dev.bus = &iio_bus_type;
+ 		device_initialize(&trig->dev);
+@@ -357,10 +415,42 @@ struct iio_trigger *iio_allocate_trigger(void)
+ 		spin_lock_init(&trig->pollfunc_list_lock);
+ 		INIT_LIST_HEAD(&trig->list);
+ 		INIT_LIST_HEAD(&trig->pollfunc_list);
++
++		if (name) {
++			mutex_init(&trig->pool_lock);
++			trig->subirq_base
++				= iio_irq_pool_get_range(
++					CONFIG_IIO_CONSUMERS_PER_TRIGGER);
++			if (trig->subirq_base < 0) {
++				kfree(trig);
++				return NULL;
++			}
++			trig->subirq_chip.name = kstrdup(name, GFP_KERNEL);
++			if (trig->subirq_chip.name == NULL) {
++				kfree(trig);
++				return NULL;
++			}
++			trig->subirq_chip.irq_mask = &iio_trig_subirqmask;
++			trig->subirq_chip.irq_unmask = &iio_trig_subirqunmask;
++			for (i = 0; i < CONFIG_IIO_CONSUMERS_PER_TRIGGER; i++) {
++				irq_set_chip(trig->subirq_base + i,
++					     &trig->subirq_chip);
++				irq_set_handler(trig->subirq_base + i,
++						&handle_simple_irq);
++				set_irq_flags(trig->subirq_base + i,
++					      IRQF_VALID);
++			}
++		}
+ 		iio_get();
+ 	}
+ 	return trig;
+ }
++EXPORT_SYMBOL(iio_allocate_trigger_named);
++
++struct iio_trigger *iio_allocate_trigger(void)
++{
++	return iio_allocate_trigger_named(NULL);
++}
+ EXPORT_SYMBOL(iio_allocate_trigger);
  
--error_close_buffer_event:
--	fclose(fp_ev);
- error_close_buffer_access:
- 	close(fp);
- error_free_data:
- 	free(data);
- error_free_buffer_access:
- 	free(buffer_access);
--error_free_buffer_event:
--	free(buffer_event);
- error_free_buf_dir_name:
- 	free(buf_dir_name);
- error_free_triggername:
+ void iio_free_trigger(struct iio_trigger *trig)
+diff --git a/drivers/staging/iio/trigger.h b/drivers/staging/iio/trigger.h
+index c6ab32f..2e52004 100644
+--- a/drivers/staging/iio/trigger.h
++++ b/drivers/staging/iio/trigger.h
+@@ -6,9 +6,15 @@
+  * under the terms of the GNU General Public License version 2 as published by
+  * the Free Software Foundation.
+  */
++#include <linux/irq.h>
++
+ #ifndef _IIO_TRIGGER_H_
+ #define _IIO_TRIGGER_H_
+ 
++struct iio_subirq {
++	bool enabled;
++};
++
+ /**
+  * struct iio_trigger - industrial I/O trigger device
+  *
+@@ -43,6 +49,13 @@ struct iio_trigger {
+ 
+ 	int (*set_trigger_state)(struct iio_trigger *trig, bool state);
+ 	int (*try_reenable)(struct iio_trigger *trig);
++
++	struct irq_chip			subirq_chip;
++	int				subirq_base;
++
++	struct iio_subirq subirqs[CONFIG_IIO_CONSUMERS_PER_TRIGGER];
++	unsigned long pool[BITS_TO_LONGS(CONFIG_IIO_CONSUMERS_PER_TRIGGER)];
++	struct mutex			pool_lock;
+ };
+ 
+ static inline struct iio_trigger *to_iio_trigger(struct device *d)
+@@ -114,6 +127,27 @@ int iio_trigger_dettach_poll_func(struct iio_trigger *trig,
+ void iio_trigger_poll(struct iio_trigger *trig, s64 time);
+ void iio_trigger_notify_done(struct iio_trigger *trig);
+ 
++static inline int iio_trigger_get_irq(struct iio_trigger *trig)
++{
++	int ret;
++	mutex_lock(&trig->pool_lock);
++	ret = bitmap_find_free_region(trig->pool,
++				      CONFIG_IIO_CONSUMERS_PER_TRIGGER,
++				      ilog2(1));
++	mutex_unlock(&trig->pool_lock);
++	if (ret >= 0)
++		ret += trig->subirq_base;
++
++	return ret;
++};
++
++static inline void iio_trigger_put_irq(struct iio_trigger *trig, int irq)
++{
++	mutex_lock(&trig->pool_lock);
++	clear_bit(irq - trig->subirq_base, trig->pool);
++	mutex_unlock(&trig->pool_lock);
++};
++
+ /**
+  * struct iio_poll_func - poll function pair
+  *
+@@ -137,6 +171,10 @@ struct iio_poll_func {
+ 	void (*poll_func_immediate)(struct iio_dev *indio_dev);
+ 	void (*poll_func_main)(struct iio_dev *private_data, s64 time);
+ 
++	irqreturn_t (*handler)(int irq, void *p);
++	int type;
++	char *name;
++	int irq;
+ };
+ 
+ int iio_alloc_pollfunc(struct iio_dev *indio_dev,
+@@ -151,7 +189,7 @@ int iio_triggered_ring_postenable(struct iio_dev *indio_dev);
+ int iio_triggered_ring_predisable(struct iio_dev *indio_dev);
+ 
+ struct iio_trigger *iio_allocate_trigger(void);
+-
++struct iio_trigger *iio_allocate_trigger_named(const char *name);
+ void iio_free_trigger(struct iio_trigger *trig);
+ 
+ #endif /* _IIO_TRIGGER_H_ */
 -- 
 1.7.3.4
 
