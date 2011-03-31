@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757887Ab1CaOLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:11:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60286 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179Ab1CaOLK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:11:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xf83G37YyvQOxoBqlGX/wLgDoGb2bTd4gUTcuE2cTE+o/imm1dHFQJxLYS1oPV1EJE
-         Xt6du+2xiMepdkQXoKFQTHUtt5KrtDBAX2b5vMvu1GJ71Tk2GU2OehkT8xH6VW+dwRda
-         dLSdOdsGoFYJH+gjNcTsOjo8eP/LvduxL9mGs=
-Date: Thu, 31 Mar 2011 17:17:53 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] jffs2: unused variables cleanup in jffs2_lookup and
- jffs2_readdir
-Message-ID: <20110331141753.GB4144@swordfish.minsk.epam.com>
-References: <20110322121102.GC5086@swordfish.minsk.epam.com>
- <1301579908.2828.83.camel@localhost>
+	id S1757899Ab1CaOLc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:11:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179Ab1CaOLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 10:11:30 -0400
+Date: Thu, 31 Mar 2011 16:10:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx
+	value
+Message-ID: <20110331141040.GA5960@redhat.com>
+References: <20110326173545.GA22919@redhat.com> <1301164168.2250.370.camel@laptop> <20110328133033.GA8254@redhat.com> <1301324275.4859.25.camel@twins> <1301327368.4859.28.camel@twins> <20110328165648.GA9304@redhat.com> <20110330130951.GA2124@jolsa.brq.redhat.com> <1301496684.4859.192.camel@twins> <20110331132815.GA4267@redhat.com> <1301579484.4859.277.camel@twins>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gatW/ieO32f1wygP"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301579908.2828.83.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1301579484.4859.277.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/31, Peter Zijlstra wrote:
+>
+> On Thu, 2011-03-31 at 15:28 +0200, Oleg Nesterov wrote:
+> >
+> > OK, synchronize_sched() can't work. How about
+> >
+> > 	static int force_perf_event_task_sched_out(void *unused)
+> > 	{
+> > 		struct task_struct *curr = current;
+> >
+> > 		__perf_event_task_sched_out(curr, task_rq(curr)->idle);
+>
+> I'd call task_ctx_sched_out() there,
 
---gatW/ieO32f1wygP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Perhaps... but then we miss perf_cgroup_sched_out(). Anyway, I think
+it is better to not optimize this code. If __perf_event_task_sched_in()
+was called, it should be paired with __perf_event_task_sched_out().
 
-On (03/31/11 16:58), Artem Bityutskiy wrote:
-> On Tue, 2011-03-22 at 14:11 +0200, Sergey Senozhatsky wrote:
-> > jffs2: cleanup unused jffs2_sb_info *c variable and JFFS2_SB_INFO call =
-=66rom jffs2_lookup=20
-> > and jffs2_readdir
-> >=20
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
->=20
-> I amended the commit message and pushed this to l2-mtd-2.6.git, thanks.
->=20
+> we can't actually use struct rq
+> outside of sched.c
 
-Sorry, next time I'll be more accurate.
+Yes, this should live in sched.c
 
-Thanks,
-	Sergey
+> and we know we'll not swap contexts with the idle
+> thread.
 
---gatW/ieO32f1wygP
-Content-Type: application/pgp-signature
+Yes, that is why it uses next = rq->idle.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> Anyway, I _think_ we can do better..
 
-iJwEAQECAAYFAk2UjREACgkQfKHnntdSXjTTjQQA5F4KGqLhvbeo2SedRfSIODKD
-lmHXeQBvwYvcUvk75RG0MM+KIs8U3qfxxkvBisPnKDD1qAiwqqAclGbxxJBokHEH
-Enq4BNlu6X/LnHUgoaVEXLwyWb+wxaRAwU61gDMayD7W8o5lBuCb4UDmCi7aIFgx
-TigFCJwX/LDyVAHrjik=
-=JZ2r
------END PGP SIGNATURE-----
+Yes, agreed. As I said, I don't like this too much.
 
---gatW/ieO32f1wygP--
+Oleg.
+
