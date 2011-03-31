@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab1CaU65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 16:58:57 -0400
-Received: from mail.aknet.ru ([78.158.192.28]:36102 "EHLO mail.aknet.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754888Ab1CaU64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 16:58:56 -0400
-Message-ID: <4D94EAEE.2010505@aknet.ru>
-Date: Fri, 01 Apr 2011 00:58:22 +0400
-From: Stas Sergeev <stsp@aknet.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1756899Ab1CaVJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 17:09:48 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34291 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210Ab1CaVJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 17:09:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:organization:message-id:in-reply-to
+         :user-agent;
+        b=ULdkstQAZBn228xsw0haCh1NJOMPsGDs81Dhtk9fncRQgkgPnXNjrNhn707msqwpl2
+         dTTS7oEdPlDifxo9kA4tjebeJfQ9BbnQ1HCcpsNfnoJx+XqfkQFx7dpBNW8y3Ztu5d0K
+         mmVb842fChHFT9ZKG9gps/cHiRV3zW+LB77j4=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Dave Hansen" <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Ankita Garg" <ankita@in.ibm.com>,
+        "Daniel Walker" <dwalker@codeaurora.org>,
+        "Johan MOSSBERG" <johan.xx.mossberg@stericsson.com>,
+        "Mel Gorman" <mel@csn.ul.ie>, "Pawel Osciak" <pawel@osciak.com>
+Subject: Re: [PATCH 04/12] mm: alloc_contig_freed_pages() added
+References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
+ <1301577368-16095-5-git-send-email-m.szyprowski@samsung.com>
+ <1301587083.31087.1032.camel@nimitz>
+Date: Thu, 31 Mar 2011 23:09:42 +0200
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [path][rfc] add PR_DETACH prctl command
-References: <4D6510A3.90905@aknet.ru> <20110223191442.GA717@redhat.com> <4D656F87.3090005@aknet.ru> <20110224132906.GA15733@redhat.com> <4D6675B0.2010700@aknet.ru> <20110224153221.GA22770@redhat.com> <4D94A788.1050806@aknet.ru> <20110331170244.GA13271@redhat.com> <4D94BE19.7050001@aknet.ru> <20110331181816.GA17101@redhat.com>
-In-Reply-To: <20110331181816.GA17101@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Organization: Google
+Message-ID: <op.vs77qfx03l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1301587083.31087.1032.camel@nimitz>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-31.03.2011 22:18, Oleg Nesterov wrote:
-> >  +			if (me->real_parent == init_pid_ns.child_reaper)
->  Also, the task can be the child of /sbin/init's sub-thread.
-Hmm, how to check then? Should I add the "exact_parent" just
-for that? Or traverse the sibling list? How bad. :(
+On Thu, 31 Mar 2011 17:58:03 +0200, Dave Hansen <dave@linux.vnet.ibm.com>  
+wrote:
 
-
-> There are. zap_other_threads() for example. More importantly, we
-> can have more of them. exit_state != 0 means: this task has passed
-> exit_notify(), we shouldn't break this.
-OK.
-
-> Ah, I _seem_ to recall... Yes, it seems strange that only group leader
-> can do PR_DETACH. If we implement this, I think any thread should be
-> allowed to call prctl(DETACH). But why do we need to change the leader?
-OK, I didn't know it is safe to leave it unchanged.
-
- > I didn't look at the patch above, but probably it makes more sense.
- > At least for the start.
-IIRC strace didn't like the fact that wait() fails, and that's
-why I started to add the complexity.
-
-> I didn't mean it is very hard to understand the intent. What is
-> really hard (at least to me) to see if it is correct or not.
-OK, I'll try to break it into a small chunks then.
-But the fact that such a seemingly simple functionality
-requires so many changes, is IMHO bad by itself. And it
-is also non-trivial to implement mostly because of the
-ptrace hooks that are everywhere. Some cleanups are
-certainly needed in that area. :)
-
-> So, just in case, I have to admit: yes, personally I dislike this
-> new feature ;)
-Do you dislike a feature by itself, or by its implementation?
-The feature by itself does nothing but to allow the daemon()
-to work with threads, which can't be bad IMO, and, in some
-cases, the inability to do so is difficult to work around. Of course,
-these cases have nothing to do with the good design, but rather
-with the vendor-provided poorly-coded drivers and libs. In all
-the better cases you have the trivial workarounds, but why to
-search for the workarounds at all, in the first place? Why not
-to have the daemon() to "just work" with threads? :)
-
-> >  As for convincing LKML... Well, when the code is right, maybe. :))
-> Maybe ;)
+> On Thu, 2011-03-31 at 15:16 +0200, Marek Szyprowski wrote:
+>>
+>> +unsigned long alloc_contig_freed_pages(unsigned long start, unsigned  
+>> long end,
+>> +                                      gfp_t flag)
+>> +{
+>> +       unsigned long pfn = start, count;
+>> +       struct page *page;
+>> +       struct zone *zone;
+>> +       int order;
+>> +
+>> +       VM_BUG_ON(!pfn_valid(start));
 >
-> But, otoh. It is quite possible you will get the quick nack...
-Well, with such a rate of additions into a thread_struct, I'll
-probably nack it myself soon, but again, I am surprised that
-such a simple task requires so many untrivial changes.
+> This seems kinda mean.  Could we return an error?  I understand that
+> this is largely going to be an early-boot thing, but surely trying to
+> punt on crappy input beats a full-on BUG().
+
+Actually, I would have to check but I think that the usage of this function
+(in this patchset) is that the caller expects the function to succeed.  It  
+is
+quite a low-level function so before running it a lot of preparation is  
+needed
+and the caller must make sure that several conditions are met.  I don't  
+really
+see advantage of returning a value rather then BUG()ing.
+
+Also, CMA does not call this function at boot time.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
