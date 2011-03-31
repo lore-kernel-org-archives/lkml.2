@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab1CaKbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 06:31:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25585 "EHLO mx1.redhat.com"
+	id S933891Ab1CaKct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 06:32:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9138 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133Ab1CaKbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 06:31:17 -0400
-Message-ID: <4D9457BF.1040601@redhat.com>
-Date: Thu, 31 Mar 2011 12:30:23 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1752133Ab1CaKcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 06:32:47 -0400
+Date: Thu, 31 Mar 2011 12:32:30 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH,RFC] perf: panic due to inclied cpu context task_ctx value
+Message-ID: <20110331103230.GA2011@jolsa.brq.redhat.com>
+References: <20110326173545.GA22919@redhat.com>
+ <1301164168.2250.370.camel@laptop>
+ <20110328133033.GA8254@redhat.com>
+ <1301324275.4859.25.camel@twins>
+ <1301327368.4859.28.camel@twins>
+ <20110328165648.GA9304@redhat.com>
+ <20110330130951.GA2124@jolsa.brq.redhat.com>
+ <1301496684.4859.192.camel@twins>
+ <20110330163730.GA6038@redhat.com>
+ <1301520405.4859.213.camel@twins>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Robin Holt <holt@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Yinghai Lu <yinghai@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC 2/2] Make x86 calibrate_delay run in parallel.
-References: <20101215015840.390204279@gulag1.americas.sgi.com> <20101215015849.051095242@gulag1.americas.sgi.com> <AANLkTinoctZFKo4wBmrrdFggnjSj74QfqvEpz59sW15x@mail.gmail.com> <20110331065036.GC5938@elte.hu> <20110331065805.GG5938@elte.hu> <20110331093723.GE24046@sgi.com> <20110331095705.GA23319@elte.hu>
-In-Reply-To: <20110331095705.GA23319@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301520405.4859.213.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 11:57 AM, Ingo Molnar wrote:
-> >
-> >  I am not trying to be argumentative.  I never got an understanding of
-> >  what was going wrong with that earlier patch and am hoping for some
-> >  understanding now.
->
-> Well, if calibrate_delay() calls run in parallel then different hyperthreads
-> will impact each other.
+On Wed, Mar 30, 2011 at 11:26:45PM +0200, Peter Zijlstra wrote:
+> On Wed, 2011-03-30 at 18:37 +0200, Oleg Nesterov wrote:
+> > > +static void perf_sched_events_dec(void)
+> > > +{
+> > > +     jump_label_dec(&perf_sched_events_in);
+> > > +     JUMP_LABEL(&perf_sched_events_in, no_sync);
+> > > +     synchronize_sched();
+> > > +no_sync:
+> > > +     jump_label_dec(&perf_sched_events_out);
+> > > +}
+> > 
+> > Nice! I didn't realize we can simply use JUMP_LABEL() directly and then
+> > the code doesn't depend on HAVE_JUMP_LABEL. 
+> 
+> Yeah, avoids having to sprinkle tons of #ifdef goo around ;-)
+> 
+> Anyway how about we do the partial revert below that should get us back
+> to a working kernel and is a nice small patch to send -stable wards.
+> 
+> After that we can try and be clever with clearing ->task_ctx from things
+> like remove_from_context and the like.
+> 
+> 
+> ---
+>  include/linux/perf_event.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 311b4dc..04d75a8 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -1086,7 +1086,7 @@ void perf_event_task_sched_out(struct task_struct *task, struct task_struct *nex
+>  {
+>  	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, 1, NULL, 0);
+>  
+> -	COND_STMT(&perf_sched_events, __perf_event_task_sched_out(task, next));
+> +	__perf_event_task_sched_out(task, next);
+>  }
+>  
+>  extern void perf_event_mmap(struct vm_area_struct *vma);
+> 
+works for me, passed my tests ;)
 
-It's different but not more wrong.  If delay() later runs on a thread 
-whose sibling is busy, it will in fact give more accurate results.
-
-> >  Why does it spectacularly miscalibrate?  Can anything be done to correct
-> >  that miscalibration?  Doesn't this patch indicate another problem with
-> >  the calibration for hotplug cpus?  Isn't there already a problem if
-> >  you boot a cpu normally, then hot-remove a hyperthread of a cpu, run a
-> >  userland task which fully loads up all the cores on that socket, then
-> >  hot-add that hyperthread back in?  If the lpj value is that volatile,
-> >  what value does it really have?
->
-> The typical CPU hotplug usecase is suspend/resume, where we bring down the CPUs
-> in a more or less controlled manner.
->
-> Yes, you could achieve something similar by frobbing /sys/*/*/online but that's
-> a big difference to *always* running the calibration loops in parallel.
->
-> I'd argue for the opposite direction: only calibrate a physical CPU once per
-> CPU per bootup - this would also make CPU hotplug faster btw.
->
-> ( Virtual CPUs (KVM, etc.) need a recalibration per bringup, because the new
->    CPU could be running on different hardware - but that's a detail: 4096 UV
->    CPUs are not in this category. )
-
-Virtual cpus change their performance dynamically due to overcommit, 
-live migration, the host scheduler rearranging them, etc.
-
-> Really, there's no good reason why every CPU should be calibrated on a system
-> running identical CPUs, right? Mixed-frequency systems are rather elusive on
-> x86.
-
-Good point.  And udelay() users are probably not sensitive to accuracy 
-anyway (which changes with load and thermal conditions).
-
--- 
-error compiling committee.c: too many arguments to function
-
+jirka
