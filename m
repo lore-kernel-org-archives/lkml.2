@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab1CaJPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 05:15:09 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55230 "EHLO mx2.mail.elte.hu"
+	id S1756343Ab1CaJR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 05:17:27 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:52517 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752491Ab1CaJPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 05:15:07 -0400
-Date: Thu, 31 Mar 2011 11:14:56 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
-        rja@sgi.com
-Subject: Re: [PATCH v2] x86: UV kdump reboot fix
-Message-ID: <20110331091456.GB8296@elte.hu>
-References: <E1Q4xxV-0004MJ-Pa@eag09.americas.sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1Q4xxV-0004MJ-Pa@eag09.americas.sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754083Ab1CaJR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 05:17:26 -0400
+Date: Thu, 31 Mar 2011 11:16:59 +0200
+From: Florian Mickler <florian@mickler.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Manjunatha Halli <manjunatha_halli@ti.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [BUG] NULL pointer dereference in dev_get_drvdata
+Message-ID: <20110331111659.0c77abbe@schatten.dmk.lab>
+In-Reply-To: <4D93508D.30701@gmail.com>
+References: <1301448497.14261.319.camel@gandalf.stny.rr.com>
+	<4D93508D.30701@gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 30 Mar 2011 08:47:25 -0700
+"Justin P. Mattock" <justinmattock@gmail.com> wrote:
 
-* Cliff Wickman <cpw@sgi.com> wrote:
 
-> From: Cliff Wickman <cpw@sgi.com>
 > 
-> After a crash dump on an SGI Altix UV system the crash kernel fails to
-> cause a reboot.  EFI mode is disabled in the kdump kernel, so only the
-> reboot_type of BOOT_ACPI works.
+> strange thing with this, is one instance my screen went black, then 
+> something similar showed up on screen but then the screen kind of went 
+> back to normal(was able to move the mouse, but most of everything was 
+> frozen), another instance was shutting down the system pics are here:
 > 
-> native_machine_restart() is the generic restart function.  This patch
-> overrides the generic version with a UV-specific version.
-> (an earlier (6Dec2010) version of this patch was nack'd as it patched
->  native_machine_restart() with special case is_uv_system() kludge)
+> http://www.flickr.com/photos/44066293@N08/5573957179/
+> http://www.flickr.com/photos/44066293@N08/5574543648/
+> (not the best camara used)
+> 
+> this does not fire off all the time, but it does.
+> (I will keep my eye out with this one).
+> 
+> Justin P. Mattock
+> 
 
-It was NAKed because a special case is_uv_system() kludge was put into
-*generic x86 code*.
+even with that resolution (240x320, that's a joke, right? do I need to
+login or something like that?) I see that your stacktrace is
+different. 
 
-Kludging the generic code some more:
+The stacktrace is the cascade of function-calls that lead to the
+execution of the current code. A null-pointer in the driver-core
+normally means that someone on the calling site did something wrong. 
+So in order to fix the bug, you have to look at the stack trace and
+check how that null pointer got handed down to that function. 
 
- >  arch/x86/include/asm/uv/uv.h       |    1 +
- >  arch/x86/kernel/apic/x2apic_uv_x.c |   18 ++++++++++++++++++
- >  arch/x86/kernel/reboot.c           |    2 +-
- >  3 files changed, 20 insertions(+), 1 deletion(-)
+If you have 2 drivers. Both seperately calling the same function with a
+nullpointer you have 2 seperate issues that trigger the same thing
+(null pointer exception) in the same function. so it is not sufficient
+to look at where the bug happened, you also need to check what is the
+cause. 
 
-Does not help either.
-
-The clean solution would be to add the reboot_type setting to an UV specific 
-initialization function. That way only UV is affected and there's no extra 
-kludge either, as reboot_type is already global.
-
-Thanks,
-
-	Ingo
+Regards,
+Flo
