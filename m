@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab1CaUyI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 16:54:08 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59381 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab1CaUyE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 16:54:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=UFSPr0Pi6RtyAQcjzZGzzIhg3RnRO/zSlV+lmhvA8pMKRcE4JADX4XLpL4mDEOCC85
-         BRORtF0bOQWyEwDjlTACRJW3yoWRH/sKkFv2wNY3oqGJt/3IARq0mpNqc0yKIFwpJgDq
-         vG8pyBZ9CNJuIDOSr4Ahfkmqt4cSYg/SDMiMI=
-Message-ID: <4D94E9E7.2050600@suse.cz>
-Date: Thu, 31 Mar 2011 22:53:59 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1756766Ab1CaU65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 16:58:57 -0400
+Received: from mail.aknet.ru ([78.158.192.28]:36102 "EHLO mail.aknet.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754888Ab1CaU64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 16:58:56 -0400
+Message-ID: <4D94EAEE.2010505@aknet.ru>
+Date: Fri, 01 Apr 2011 00:58:22 +0400
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Jack Stone <jwjstone@fastmail.fm>, Mac <kmac@poczta.fm>,
-        linux-kernel@vger.kernel.org, linux-ppp@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: 'scheduling while atomic' during ppp connection on 2.6.37.1 and
- 2.6.38
-References: <fuopaigyaypsqveewtjx@pwmq>	<4D864A82.4090104@fastmail.fm>	<20110320215826.79cadfe2@lxorguk.ukuu.org.uk>	<4D87173D.50906@suse.cz> <20110321110214.5174f1b2@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110321110214.5174f1b2@lxorguk.ukuu.org.uk>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command
+References: <4D6510A3.90905@aknet.ru> <20110223191442.GA717@redhat.com> <4D656F87.3090005@aknet.ru> <20110224132906.GA15733@redhat.com> <4D6675B0.2010700@aknet.ru> <20110224153221.GA22770@redhat.com> <4D94A788.1050806@aknet.ru> <20110331170244.GA13271@redhat.com> <4D94BE19.7050001@aknet.ru> <20110331181816.GA17101@redhat.com>
+In-Reply-To: <20110331181816.GA17101@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2011 12:02 PM, Alan Cox wrote:
->> Anyway is the test needed at all? I.e. could
->> tty->ops->write/chars_in_buffer/ntty_write_room be called with
->> port->port.count == 0 at all?
-> 
-> I'm not entirely sure what the Nozomi driver is trying to do. Generally
-> any case a driver is looking at port->port.count it's a bug and should
-> not matter with the tty krefs. However the chances are it should be
-> testing *something* instead in this case.
+31.03.2011 22:18, Oleg Nesterov wrote:
+> >  +			if (me->real_parent == init_pid_ns.child_reaper)
+>  Also, the task can be the child of /sbin/init's sub-thread.
+Hmm, how to check then? Should I add the "exact_parent" just
+for that? Or traverse the sibling list? How bad. :(
 
-Well, I looked into the history of the driver and into the driver
-itself. What I've found out is:
 
-* tty_sem is useless now. It was used to protect port->tty_open_count
-which was later switched to port->port.count. The lock should have been
-switched to port->lock at that time too.
+> There are. zap_other_threads() for example. More importantly, we
+> can have more of them. exit_state != 0 means: this task has passed
+> exit_notify(), we shouldn't break this.
+OK.
 
-* the port->port.count == 0 tests are an illusion of protection against
-race with hup.
+> Ah, I _seem_ to recall... Yes, it seems strange that only group leader
+> can do PR_DETACH. If we implement this, I think any thread should be
+> allowed to call prctl(DETACH). But why do we need to change the leader?
+OK, I didn't know it is safe to leave it unchanged.
 
-IOW both of them are crap nowadays. The former doesn't protect anything,
-the latter is not protected by anything.
+ > I didn't look at the patch above, but probably it makes more sense.
+ > At least for the start.
+IIRC strace didn't like the fact that wait() fails, and that's
+why I started to add the complexity.
 
-What is the proper way to avoid a race with HUP in tty->ops->write,
-chars_in_buffer, ntty_write_room and possibly others?
+> I didn't mean it is very hard to understand the intent. What is
+> really hard (at least to me) to see if it is correct or not.
+OK, I'll try to break it into a small chunks then.
+But the fact that such a seemingly simple functionality
+requires so many changes, is IMHO bad by itself. And it
+is also non-trivial to implement mostly because of the
+ptrace hooks that are everywhere. Some cleanups are
+certainly needed in that area. :)
 
-I looked into the drivers, moxa tests tty->driver_data (why? [1]), mxser
-does nothing as well as rocket and many others. What is the reference
-driver I should look into?
+> So, just in case, I have to admit: yes, personally I dislike this
+> new feature ;)
+Do you dislike a feature by itself, or by its implementation?
+The feature by itself does nothing but to allow the daemon()
+to work with threads, which can't be bad IMO, and, in some
+cases, the inability to do so is difficult to work around. Of course,
+these cases have nothing to do with the good design, but rather
+with the vendor-provided poorly-coded drivers and libs. In all
+the better cases you have the trivial workarounds, but why to
+search for the workarounds at all, in the first place? Why not
+to have the daemon() to "just work" with threads? :)
 
-[1] Perhaps leftover from when moxa_shutdown used to NULL it.
-
-I don't see why the driver should care at all. It has a tty,
-tty->driver_data and thus all the HW info. So it should ignore the race,
-i.e. test nothing, right?
-
-thanks,
--- 
-js
-suse labs
+> >  As for convincing LKML... Well, when the code is right, maybe. :))
+> Maybe ;)
+>
+> But, otoh. It is quite possible you will get the quick nack...
+Well, with such a rate of additions into a thread_struct, I'll
+probably nack it myself soon, but again, I am surprised that
+such a simple task requires so many untrivial changes.
