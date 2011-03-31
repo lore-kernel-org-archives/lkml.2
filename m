@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964818Ab1CaICj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 04:02:39 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:46015 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab1CaICb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 04:02:31 -0400
-From: Florian Mickler <florian@mickler.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Florian Mickler <florian@mickler.org>, kurup_avinash@yahoo.com,
-        maciej.rutecki@gmail.com, mingo@elte.hu, rjw@sisk.pl,
-        sedat.dilek@gmail.com, zersaa@gmail.com, stable@kernel.org,
-        "[.34+]"@schatten.dmk.lab
-Subject: [PATCH][POKE] Skip looking for ioapic overrides when ioapics are not present
-Date: Thu, 31 Mar 2011 10:01:29 +0200
-Message-Id: <1301558489-4198-1-git-send-email-florian@mickler.org>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S964867Ab1CaICx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 04:02:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47453 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964828Ab1CaICo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 04:02:44 -0400
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        paulmck@linux.vnet.ibm.com, Jan Beulich <JBeulich@novell.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <4D93D29C.5010702@cn.fujitsu.com>
+References: <4D8FF9BC.7050609@cn.fujitsu.com>
+	 <4D90647902000078000389CB@vpn.id2.novell.com>
+	 <4D924BAF.1020906@linux.intel.com>
+	 <20110329213130.GK2261@linux.vnet.ibm.com>
+	 <4D924FEE.8040804@linux.intel.com>
+	 <20110329214704.GM2261@linux.vnet.ibm.com>
+	 <4D9256AF.5000308@linux.intel.com>
+	 <20110330004725.GO2261@linux.vnet.ibm.com> <4D92BECA.50802@cn.fujitsu.com>
+	 <4D92DA32.2010809@cn.fujitsu.com>  <20110330105505.GA3195@sepie.suse.cz>
+	 <1301482656.4859.171.camel@twins> <4D931814.9090100@suse.cz>
+	 <4D93D29C.5010702@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 Mar 2011 10:04:51 +0200
+Message-ID: <1301558691.2250.486.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@xmission.com>
-
-Avinash Kurup <kurup.avinash@gmail.com> writes:
-
-> Hi Eric,
->     I get the following errors while booting into 2.6.35-rc1. I did not
-> get these in 2.6.34 . The computer however boots and works fine, So its not
-> serious but the following errors are displayed in dmesg.
->
-> [    0.089969] ERROR: Unable to locate IOAPIC for GSI 13
-> [    0.090556] ERROR: Unable to locate IOAPIC for GSI 8
-> [    0.091104] ERROR: Unable to locate IOAPIC for GSI 12
-> [    0.091375] ERROR: Unable to locate IOAPIC for GSI 1
-> [    0.093195] ERROR: Unable to locate IOAPIC for GSI 4
-> [    0.094342] ERROR: Unable to locate IOAPIC for GSI 10
-> [    0.096335] ERROR: Unable to locate IOAPIC for GSI 6
-
-The new warning originates from acpi_get_override_irq, which I changed to
-use helper functions that warn when they fail.
-
-When IOAPICs and ACPI are enabled in a kernel and run on ACPI hardware
-that doesn't use the ioapics the pnp acpi code calls this function,
-looking for ACPI irq overrides.  ACPI irq overrides exist only in the
-ioapic case so this function will never succeed.  So make the function
-fail fast so we don't call into help functions that legitimately
-complain when they fail.
-
-[I submit this as the corresponding bug report is still not closed, the patch 
-not merged, distributions applying this patch, it is tested to work and I found
-nowhere any resoning as to why this should be out of tree. I just guessed on
-the stable tag and number. -Florian] 
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=17772
-Tested-by: Avinash Kurup <kurup.avinash@gmail.com>
-Tested-by: zersaa@gmail.com
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Florian Mickler <florian@mickler.org>
-CC: kurup_avinash@yahoo.com
-CC: maciej.rutecki@gmail.com
-CC: mingo@elte.hu
-CC: rjw@sisk.pl
-CC: sedat.dilek@gmail.com
-CC: zersaa@gmail.com
-CC: akpm@linux-foundation.org
-CC: stable@kernel.org [.34+]
-
----
-
- arch/x86/kernel/apic/io_apic.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 68df09b..3940103 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3789,6 +3789,9 @@ int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
- {
- 	int ioapic, pin, idx;
- 
-+	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
-+		return -1;
-+
- 	if (skip_ioapic_setup)
- 		return -1;
- 
--- 
-1.7.4.1
+On Thu, 2011-03-31 at 09:02 +0800, Lai Jiangshan wrote:
+> I like this cleanup, could you continue for this hard job? I will help
+> you if required.
+> 
+> Ingo & Peter - will you accept the patches when it is done.
+> 
+No, like I said, I think the proposed patch is utterly horrid.
 
