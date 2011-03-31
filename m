@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab1CaUfd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 16:35:33 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:58191 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755317Ab1CaUfc (ORCPT
+	id S1756818Ab1CaUfu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 16:35:50 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58862 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755317Ab1CaUfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 16:35:32 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Ingo Molnar <mingo@elte.hu>, Nicolas Pitre <nico@fluxnic.net>,
-        david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
+	Thu, 31 Mar 2011 16:35:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=kbozPcWEk9wVZb7emSWx48BJQS=7Uzaya9Lor@mail.gmail.com>
+References: <alpine.LFD.2.00.1103301531420.28032@xanadu.home>
+ <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
+ <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm>
+ <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm>
+ <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu>
+ <20110331083044.GB14323@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1103310855450.29543@asgard.lang.hm>
+ <20110331164539.GB19452@n2100.arm.linux.org.uk> <AANLkTi=tyifvJU-hhdd7gT74GMctrCbQBdUAoEaRXOCy@mail.gmail.com>
+ <alpine.LFD.2.00.1103311429590.28032@xanadu.home> <AANLkTi=kbozPcWEk9wVZb7emSWx48BJQS=7Uzaya9Lor@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 31 Mar 2011 13:28:45 -0700
+Message-ID: <AANLkTikmtXVqAoDmW-fL2emGg9Oh6PMmhZa6em6=WZKc@mail.gmail.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, david@lang.hm,
+        Ingo Molnar <mingo@elte.hu>, Arnd Bergmann <arnd@arndb.de>,
         Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
         lkml <linux-kernel@vger.kernel.org>,
         linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
         Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Organization: Texas Instruments, Inc.
-References: <201103301906.42429.arnd@arndb.de>
-	<alpine.LFD.2.00.1103311359320.22418@localhost6.localdomain6>
-	<87d3l7jqpr.fsf@ti.com> <201103311723.02301.arnd@arndb.de>
-Date: Thu, 31 Mar 2011 13:35:26 -0700
-In-Reply-To: <201103311723.02301.arnd@arndb.de> (Arnd Bergmann's message of
-	"Thu, 31 Mar 2011 17:23:01 +0200")
-Message-ID: <87y63vav01.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
-
-> On Thursday 31 March 2011, Kevin Hilman wrote:
->> Some SoCs families (like OMAP) have huge amount of diversity even within
->> the SoC family, so better abstractions and generic infrastrucure
->> improvements are an obvious win, even staying within the SoC.
+On Thu, Mar 31, 2011 at 1:05 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> But that's the point. The incentive is there for managing the infrastructure
-> within the SoC, but not across SoCs. 
-
-OK, but the rest of my thread went on to describe how at least a few ARM
-SoC maintainers are actually actively working infrastructure that is
-cross SoC, like runtime PM.  It might start because of an abstraction
-within an SoC family like supporting both SH and SH-mobile, or
-OMAP[12345], but it does sometimes result in not only cross-SoC code but
-cross-platform frameworks.
-
-Admiteddly, the percentage of ARM SoC developers actively working on
-these common, cross-platform infrastructure layers is rather small, but
-at least it is non-zero. :)    
-
-> Allow me to use OMAP as a bad example while pointing out that it's
-> really one of the best supported platforms we currently have, while
-> the others are usually much worse in terms of working with the
-> community (or at least they are behind on the learning curve but
-> getting there):
+> Umm. The whole "number of lines of code" thing has become a total red herring.
 >
-> * OMAP2 introduced the hwmod concept as an attempt to reduce duplication
- >   between board code, but the code was done on the mach-omap2 level
->   instead of finding a way to make it work across SOC vendors, or using
->   an existing solution.
+> THAT IS NOT WHY I STARTED TO COMPLAIN!
+>
+> The reason I point out the number of lines of code is because it's one
+> of the more obvious _symptoms_ of the problem.
+>
+> But trust me, if you start doing a better job at platform code, I
+> won't be complaining when I get lots of deleted code, or when I start
+> getting devicetree descriptions instead of new drivers.
 
-Well, before deciding whether something like hwmod should be a cross-SoC
-abstraction, it's important to be clear about what level of abstraction
-is needed, or practical for a given feature.  For power management, we
-already have (and use) existing abstractions for the drivers.  The clock
-framework, system PM and runtime PM framework are all existing
-abstraction layers for drivers.
+So if you don't like lines of code, how about just "number of files touched".
 
-Remember that power management is one of those areas that ARM SoC
-vendors like to "differentiate" on, so the hardware is vastly different
-between ARM vendors.  Having worked on embedded Linux power management
-for a while now, I currently do not think any cross-SoC abstractions
-below the clock framework or runtime PM are worth it.  I'm certainly
-willing to be pursuaded otherwise, but currently don't see the
-usefulness.
+This is Thomas this merge window. Remember: he's traditionally doing
+timers and interrupts and stuff.  Do:
 
-With that as background, hwmod was never inteded as something to be
-cross-SoC.  If you look at the data that's in an omap_hwmod, it's
-entirely OMAP hardware specific, and mostly focused on power management
-hardware details, register descriptions, feature capabilities etc.  This
-allows the OMAP PM core code to be generalized and work across all SoCs
-in the OMAP family.  But again, it was intended for OMAP PM core code.
-At that level, there really isn't much to share with other SoCs since
-the PM hardware for the various SoC vendors is so "differentiated"
-(a.k.a fsck'd up in extremely different ways.)
+ git log --author=tglx v2.6.38.. --oneline --numstat |
+    cut -f3- | grep -v ' ' | cut -d/ -f1-2 |
+    sort | uniq -c | sort -n | tail
 
-Kevin
+and see another example of arm standing out (ok, so "kernel/irq" also
+stands out in this case, but you'd kind of _expect_ that, when the
+whole series is about irq controllers, wouldn't you?)
+
+And no, mips doesn't look so hot either.
+
+Anyway, the point is, there are many ways to show the whole "arm is a
+maintenance problem" issue. Don't get too hung up about number of
+lines changed. It's just the simplest kind of thing where the tools
+give answers very quickly without the above kinds of games.
+
+Btw, the reason why the subject line on this rant is what it is, is
+that during this merge window, arm was also one of the more annoying
+to merge. And NO, that does NOT mean that I want you guys to merge
+things behind my back just to hide the problem. I'm just saying that
+it's another facet of this whole issue. Not that I can't do merges,
+but that ARM simply ends up having these issues that others don't.
+
+                          Linus
