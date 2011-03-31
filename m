@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933915Ab1CaKxd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 06:53:33 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:33906 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476Ab1CaKxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 06:53:32 -0400
-Date: Thu, 31 Mar 2011 12:53:05 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
-        maciej.rutecki@gmail.com, mingo@elte.hu, rjw@sisk.pl,
-        sedat.dilek@gmail.com, zersaa@gmail.com, stable@kernel.org
-Subject: Re: [PATCH][POKE] Skip looking for ioapic overrides when ioapics
- are not present
-Message-ID: <20110331125305.1e8c70ba@schatten.dmk.lab>
-In-Reply-To: <1301561386.1904.15.camel@t41.thuisdomein>
-References: <1301558489-4198-1-git-send-email-florian@mickler.org>
-	<1301561386.1904.15.camel@t41.thuisdomein>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933919Ab1CaK5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 06:57:31 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57496 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757243Ab1CaK5a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 06:57:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=qUfeEJAyKxYHc0eqNqUbJjuHOjkCDONdu6WHDX5Tt1q/5rKRdS38FDUDnaYCrb/D4h
+         iUe5Edv++TxF3sQIwbYmRiMcHb9AfO9WYH8TynPL5ir+AFwH4iBYrr+SAvOHyoBxkqB6
+         x/P9c4AAiMtp8XamGdxalGqT0+Znr5rY1CvQ8=
+Message-ID: <4D945E14.1060708@gmail.com>
+Date: Thu, 31 Mar 2011 12:57:24 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Roland Dreier <roland@purestorage.com>
+CC: Klaus Dittrich <kladit@arcor.de>, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.37.6 2.6.38.2 tst-aio4.c
+References: <4D90CDDE.1020500@df1tl.local.here> <AANLkTikzU=zNrjs=mnLnxm3SUBAyVpWF5UmkJvXFnF-G@mail.gmail.com> <4D91ED6B.5020100@gmail.com> <AANLkTi=bgjiyEjZ+L2eOMmJ1us6pB83tnK3pS0jQHO6G@mail.gmail.com>
+In-Reply-To: <AANLkTi=bgjiyEjZ+L2eOMmJ1us6pB83tnK3pS0jQHO6G@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011 10:48:43 +0200
-Paul Bolle <pebolle@tiscali.nl> wrote:
+On 03/29/2011 11:07 PM, Roland Dreier wrote:
+>> Is there a patch for this already?
+> 
+> Yes, it is 243b422af9ea in Linus's tree.
 
-> On Thu, 2011-03-31 at 10:01 +0200, Florian Mickler wrote:
-> > diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> > index 68df09b..3940103 100644
-> > --- a/arch/x86/kernel/apic/io_apic.c
-> > +++ b/arch/x86/kernel/apic/io_apic.c
-> > @@ -3789,6 +3789,9 @@ int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
-> >  {
-> >  	int ioapic, pin, idx;
-> >  
-> > +	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
-> > +		return -1;
-> > +
-> >  	if (skip_ioapic_setup)
-> >  		return -1;
-> >  
-> 
-> Seems to have the same goal as commit
-> 678301ecadec24ff77ab310eebf8a32ccddb1850 ("x86, ioapic: Don't warn about
-> non-existing IOAPICs if we have none"), which got merged in the v2.6.38
-> cycle (authored by me, signed off by Ingo Molnar). Maybe Eric's patch is
-> more correct. I can't say as I was happy with the effect of my patch
-> (ie, make an uninteresting error disappear) and didn't investigate any
-> further. I have also no desire to dive into this matter again.
-> 
-> 
-> Paul
-> 
+Thanks. (Queued up for suse kernels.)
 
-Thanks for letting me know. Sedat, did you actually test with 2.6.38?
-
-Regards,
-Flo
+-- 
+js
