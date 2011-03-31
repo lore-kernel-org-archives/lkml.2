@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933749Ab1CaJye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 05:54:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64053 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933017Ab1CaJyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 05:54:33 -0400
-Message-ID: <4D944E60.8080704@cn.fujitsu.com>
-Date: Thu, 31 Mar 2011 17:50:24 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        paulmck@linux.vnet.ibm.com, Jan Beulich <JBeulich@novell.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
-References: <4D8FF9BC.7050609@cn.fujitsu.com>	 <4D90647902000078000389CB@vpn.id2.novell.com>	 <4D924BAF.1020906@linux.intel.com>	 <20110329213130.GK2261@linux.vnet.ibm.com>	 <4D924FEE.8040804@linux.intel.com>	 <20110329214704.GM2261@linux.vnet.ibm.com>	 <4D9256AF.5000308@linux.intel.com>	 <20110330004725.GO2261@linux.vnet.ibm.com> <4D92BECA.50802@cn.fujitsu.com>	 <4D92DA32.2010809@cn.fujitsu.com>  <20110330105505.GA3195@sepie.suse.cz>	 <1301482656.4859.171.camel@twins> <4D931814.9090100@suse.cz>	 <4D93D29C.5010702@cn.fujitsu.com> <1301558691.2250.486.camel@laptop>
-In-Reply-To: <1301558691.2250.486.camel@laptop>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-31 17:46:45,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-31 17:52:59,
-	Serialize complete at 2011-03-31 17:52:59
+	id S933874Ab1CaJzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 05:55:17 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49178 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933017Ab1CaJzO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 05:55:14 -0400
+Date: Thu, 31 Mar 2011 10:54:40 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Dave Airlie <airlied@gmail.com>, david@lang.hm,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Message-ID: <20110331105440.42692165@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.LFD.2.00.1103310012500.28032@xanadu.home>
+References: <20110317183048.GW7258@atomide.com>
+	<AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+	<20110318101512.GA15375@n2100.arm.linux.org.uk>
+	<201103301906.42429.arnd@arndb.de>
+	<AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+	<alpine.LFD.2.00.1103301531420.28032@xanadu.home>
+	<AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
+	<alpine.LFD.2.00.1103301814250.28032@xanadu.home>
+	<alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm>
+	<alpine.LFD.2.00.1103302255280.28032@xanadu.home>
+	<AANLkTikV5OMifKjWRVdtJLEcxcZ56jrjWLYJBX89pHQ0@mail.gmail.com>
+	<alpine.LFD.2.00.1103310012500.28032@xanadu.home>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 04:04 PM, Peter Zijlstra wrote:
-> On Thu, 2011-03-31 at 09:02 +0800, Lai Jiangshan wrote:
->> I like this cleanup, could you continue for this hard job? I will help
->> you if required.
->>
->> Ingo & Peter - will you accept the patches when it is done.
->>
-> No, like I said, I think the proposed patch is utterly horrid.
-> 
+> Absolutely.  On Intel, it is (still) Windows the reference.  If Windows 
+> doesn't boot on your motherboard you have a problem.  So motherboard 
+> vendors won't make crazy incompatible things.  They are constrained to 
 
-But how about my kernel-offset.c patch? It is clean & simple,
-it just seems not so normal.
+OLPC, Moorestown ?
 
-If the proposed splitting patch is horrid, I think we will try to
-update it as you expect.
+> fix their hardware because they just cannot alter Windows to suit their 
+> hardware differences.  That really helps keeping actual differences to a 
+> minimum and only to things that are not fundamental. So Windows really 
+> helped making a uniform hardware platform on X86.
 
-If splitting sched.h is wrong, I will try to persuade more people
-accept the kernel-offset.c patch.
+That and the fact the Microsoft driver validation has driven a lot of
+standardisation along the "we could write a driver and go through WHQL
+and ... and ..." or we could just use a standard interface.
+
+Thing is though - the x86 platform does change, modern PC systems are
+very different to old ones (different IRQ controllers, different power
+management, different processor features, different bus interfaces,
+different firmware, ...) but someone bothered to make these
+*discoverable*.
+
+If I boot a Linux kernel on an AMD K6 I'm running with an 8259 interrupt
+controller, 8254/5 supporting I/O, a PC style keyboard controller,
+graphics via PCI or maybe AGP using memory on the card mostly, a one
+command at a time ATA interface based on WD1010 registers, APM based
+firmware that implements an extended version of the PC BIOS.
+
+If I boot it on a current PC I'm booting on a multiprocessor system with
+different timers, totally different IRQ controllers, different keyboard
+controllers (USB), PCI Express, an IOMMU, NCQ SATA, ACPI, graphics
+running in shared host memory able to give/take pages from the host,
+extra instructions, etc etc
+
+And the same kernel boots just fine on both just fine.
