@@ -1,84 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368Ab1CaUHT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 16:07:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54901 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759349Ab1CaUHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 16:07:17 -0400
-Date: Thu, 31 Mar 2011 20:06:56 GMT
-From: tip-bot for Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cpw@sgi.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <E1Q5Iuo-00013b-UK@eag09.americas.sgi.com>
-References: <E1Q5Iuo-00013b-UK@eag09.americas.sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, UV: Fix kdump reboot
-Message-ID: <tip-818987e9a19c52240ba9b1c20f28f047eef76072@git.kernel.org>
-Git-Commit-ID: 818987e9a19c52240ba9b1c20f28f047eef76072
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753225Ab1CaUNf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 16:13:35 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:47352 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751950Ab1CaUNe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 16:13:34 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: OP3kMjoVM1ntkKZ85RJuFRpgO0JUHH11FhXlIVtHfC.i3JE
+ .X8uxmoHqr91HiaE54DOwF1Yx3hV.kcaiu3VRLwarcDieRmimYMyKpQ6GDSh
+ 7YfUrd4kik6a3y1sP8HbkU9NI6Jjs0KP.N4oCT0wkTsjW8cQv9wsjEb.2AGC
+ fOYGcUSPL2jswP.ROYGrYbx7jqNyp_H_Sl_VH2QBUqPhKF2s0RIXUdFMqXV.
+ qdKzqbLAD1S5kMREEZNz9EBewSTzm0cRBJgdxo1TBtg5.BcLDFVp0yWKJDly
+ zKgw195dis0IY9xC5qJPKQczukZji4tO.yZI8vFBBQ18ACr4E
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 31 Mar 2011 15:13:30 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, npiggin@kernel.dk, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
+In-Reply-To: <20110331144145.0ECA.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1103311451530.28364@router.home>
+References: <20110330052819.8212.1359.stgit@localhost6.localdomain6> <20110331144145.0ECA.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 31 Mar 2011 20:06:56 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  818987e9a19c52240ba9b1c20f28f047eef76072
-Gitweb:     http://git.kernel.org/tip/818987e9a19c52240ba9b1c20f28f047eef76072
-Author:     Cliff Wickman <cpw@sgi.com>
-AuthorDate: Thu, 31 Mar 2011 09:32:02 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 31 Mar 2011 18:44:03 +0200
+On Thu, 31 Mar 2011, KOSAKI Motohiro wrote:
 
-x86, UV: Fix kdump reboot
+> 1) zone reclaim doesn't work if the system has multiple node and the
+>    workload is file cache oriented (eg file server, web server, mail server, et al).
+>    because zone recliam make some much free pages than zone->pages_min and
+>    then new page cache request consume nearest node memory and then it
+>    bring next zone reclaim. Then, memory utilization is reduced and
+>    unnecessary LRU discard is increased dramatically.
 
-After a crash dump on an SGI Altix UV system the crash kernel
-fails to cause a reboot.  EFI mode is disabled in the kdump
-kernel, so only the reboot_type of BOOT_ACPI works.
+That is only true if the webserver only allocates from a single node. If
+the allocation load is balanced then it will be fine. It is useful to
+reclaim pages from the node where we allocate memory since that keeps the
+dataset node local.
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Cc: rja@sgi.com
-LKML-Reference: <E1Q5Iuo-00013b-UK@eag09.americas.sgi.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/apic/x2apic_uv_x.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+>    SGI folks added CPUSET specific solution in past. (cpuset.memory_spread_page)
+>    But global recliam still have its issue. zone recliam is HPC workload specific
+>    feature and HPC folks has no motivation to don't use CPUSET.
 
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index d2cf39b..33b10a0 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -24,6 +24,7 @@
- #include <linux/pci.h>
- #include <linux/kdebug.h>
- #include <linux/delay.h>
-+#include <linux/crash_dump.h>
- 
- #include <asm/uv/uv_mmrs.h>
- #include <asm/uv/uv_hub.h>
-@@ -35,6 +36,7 @@
- #include <asm/ipi.h>
- #include <asm/smp.h>
- #include <asm/x86_init.h>
-+#include <asm/emergency-restart.h>
- 
- DEFINE_PER_CPU(int, x2apic_extra_bits);
- 
-@@ -811,4 +813,11 @@ void __init uv_system_init(void)
- 
- 	/* register Legacy VGA I/O redirection handler */
- 	pci_register_set_vga_state(uv_set_vga_state);
-+
-+	/*
-+	 * For a kdump kernel the reset must be BOOT_ACPI, not BOOT_EFI, as
-+	 * EFI is not enabled in the kdump kernel.
-+	 */
-+	if (is_kdump_kernel())
-+		reboot_type = BOOT_ACPI;
- }
+The spreading can also be done via memory policies. But that is only
+required if the application has an unbalanced allocation behavior.
+
+> 2) Before 2.6.27, VM has only one LRU and calc_reclaim_mapped() is used to
+>    decide to filter out mapped pages. It made a lot of problems for DB servers
+>    and large application servers. Because, if the system has a lot of mapped
+>    pages, 1) LRU was churned and then reclaim algorithm become lotree one. 2)
+>    reclaim latency become terribly slow and hangup detectors misdetect its
+>    state and start to force reboot. That was big problem of RHEL5 based banking
+>    system.
+>    So, sc->may_unmap should be killed in future. Don't increase uses.
+
+Because a bank could not configure its system properly we need to get rid
+of may_unmap? Maybe raise min_unmapped_ratio instead and take care that
+either the allocation load is balanced or a round robin scheme is
+used by the app?
+
+> And, this patch introduce new allocator fast path overhead. I haven't seen
+> any justification for it.
+
+We could do the triggering differently.
+
+> In other words, you have to kill following three for getting ack 1) zone
+> reclaim oriented reclaim 2) filter based LRU scanning (eg sc->may_unmap)
+> 3) fastpath overhead. In other words, If you want a feature for vm guest,
+> Any hardcoded machine configration assumption and/or workload assumption
+> are wrong.
+
+It would be good if you could come up with a new reclaim scheme that
+avoids the need for zone reclaim and still allows one to take advantage of
+memory distances. I agree that the current scheme sometimes requires
+tuning too many esoteric knobs to get useful behavior.
+
+> But, I agree that now we have to concern slightly large VM change parhaps
+> (or parhaps not). Ok, it's good opportunity to fill out some thing.
+> Historically, Linux MM has "free memory are waste memory" policy, and It
+> worked completely fine. But now we have a few exceptions.
+>
+> 1) RT, embedded and finance systems. They really hope to avoid reclaim
+>    latency (ie avoid foreground reclaim completely) and they can accept
+>    to make slightly much free pages before memory shortage.
+
+In general we need a mechanism to ensure we can avoid reclaim during
+critical sections of application. So some way to give some hints to the
+machine to free up lots of memory (/proc/sys/vm/dropcaches is far too
+drastic) may be useful.
+
+> And, now we have four proposal of utilization related issues.
+>
+> 1) cleancache (from Oracle)
+> 2) VirtFS (from IBM)
+> 3) kstaled (from Google)
+> 4) unmapped page reclaim (from you)
+>
+> Probably, we can't merge all of them and we need to consolidate some
+> requirement and implementations.
+
+Well all these approaches show that we have major issues with reclaim and
+large memory. Things get overly complicated. Time for a new approach that
+integrates all the goals that these try to accomplish?
+
+> Personally I think cleancache or other multi level page cache framework
+> looks promising. but another solution is also acceptable. Anyway, I hope
+> to everyone back 1000feet bird eye at once and sorting out all requiremnt
+> with all related person.
+
+Would be good if you could takle that problem.
