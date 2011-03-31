@@ -1,62 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678Ab1CaNQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 09:16:57 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:33355 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757640Ab1CaNQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 09:16:54 -0400
-Date: Thu, 31 Mar 2011 15:16:27 +0200
-From: Florian Mickler <florian@mickler.org>
-To: sedat.dilek@gmail.com
-Cc: sedat.dilek@googlemail.com, Paul Bolle <pebolle@tiscali.nl>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
-        maciej.rutecki@gmail.com, mingo@elte.hu, rjw@sisk.pl, zersaa@gmail.com,
-        stable@kernel.org
-Subject: Re: [PATCH][POKE] Skip looking for ioapic overrides when ioapics
- are not present
-Message-ID: <20110331151627.58092365@schatten.dmk.lab>
-In-Reply-To: <AANLkTikmWDu7FZ2A7_CWGCuAeKOeK4x+u8vctCro0mSN@mail.gmail.com>
-References: <1301558489-4198-1-git-send-email-florian@mickler.org>
-	<1301561386.1904.15.camel@t41.thuisdomein>
-	<20110331125305.1e8c70ba@schatten.dmk.lab>
-	<AANLkTikmWDu7FZ2A7_CWGCuAeKOeK4x+u8vctCro0mSN@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757601Ab1CaNQb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 09:16:31 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:22671 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757515Ab1CaNQZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 09:16:25 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Thu, 31 Mar 2011 15:16:08 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH 12/12] ARM: S5PC110: Added CMA regions to Aquila and Goni	boards
+In-reply-to: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
+Message-id: <1301577368-16095-13-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.2.3
+References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011 13:01:18 +0200
-Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+This commit adds CMA memory regions to Aquila and Goni boards.
 
-> >
-> > Thanks for letting me know. Sedat, did you actually test with 2.6.38?
-> >
-> > Regards,
-> > Flo
-> 
-> I have and had this patch in my own patch-series *before* Debian
-> included it (IIRC right after Eric committed it to LKML).
-> To answer your question: Yes.
-> I have the patch also in my current linux-next kernels (next-20110331).
-> 
-> - Sedat -
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/mach-s5pv210/mach-aquila.c |   31 +++++++++++++++++++++++++++++++
+ arch/arm/mach-s5pv210/mach-goni.c   |   31 +++++++++++++++++++++++++++++++
+ 2 files changed, 62 insertions(+), 0 deletions(-)
 
-Sorry, I meant tested _without_ the patch. (i.e. does Paul's patch work
-or not for you...) And double sorry, if you did already test
-vanilla 2.6.38. Tripple sorry if you already wrote that you did test
-_without_ the patch and it is still needed... I guess in that case I
-should just ditch my copy of 'speed-reading for dummies' ... :) ) 
-
-But anyhow, Eric already stepped up and said that the current state is
-supoptimal, so it doesn't matter if vanilla 2.6.38 (without Eric's
-patch) fixes it for you since it looks like Eric's patch should go in
-nevertheless. 
-
-Thanks,
-Flo
+diff --git a/arch/arm/mach-s5pv210/mach-aquila.c b/arch/arm/mach-s5pv210/mach-aquila.c
+index 4e1d8ff..de3c41f 100644
+--- a/arch/arm/mach-s5pv210/mach-aquila.c
++++ b/arch/arm/mach-s5pv210/mach-aquila.c
+@@ -21,6 +21,7 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/input.h>
+ #include <linux/gpio.h>
++#include <linux/cma.h>
  
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -642,6 +643,35 @@ static void __init aquila_sound_init(void)
+ 	__raw_writel(__raw_readl(S5P_OTHERS) | (0x3 << 8), S5P_OTHERS);
+ }
+ 
++static void __init aquila_reserve(void)
++{
++	static struct cma_region regions[] = {
++		{
++			.name		= "fw",
++			.size		=  16 << 20,
++			.alignment	= 128 << 10,
++			.start		= 0x32000000,
++		},
++		{
++			.name		= "b1",
++			.size		=  32 << 20,
++			.start		= 0x33000000,
++		},
++		{
++			.name		= "b2",
++			.size		=  32 << 20,
++			.start		= 0x44000000,
++		},
++		{ }
++	};
++
++	static const char map[] __initconst =
++		"s5p-mfc/f=fw;s5p-mfc/a=b1;s5p-mfc/b=b2;*=b1,b2";
++
++	cma_set_defaults(regions, map);
++	cma_early_regions_reserve(NULL);
++}
++
+ static void __init aquila_map_io(void)
+ {
+ 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
+@@ -683,4 +713,5 @@ MACHINE_START(AQUILA, "Aquila")
+ 	.map_io		= aquila_map_io,
+ 	.init_machine	= aquila_machine_init,
+ 	.timer		= &s5p_timer,
++	.reserve	= aquila_reserve,
+ MACHINE_END
+diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
+index 31d5aa7..24f3f5c 100644
+--- a/arch/arm/mach-s5pv210/mach-goni.c
++++ b/arch/arm/mach-s5pv210/mach-goni.c
+@@ -26,6 +26,7 @@
+ #include <linux/input.h>
+ #include <linux/gpio.h>
+ #include <linux/interrupt.h>
++#include <linux/cma.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -833,6 +834,35 @@ static void __init goni_sound_init(void)
+ 	__raw_writel(__raw_readl(S5P_OTHERS) | (0x3 << 8), S5P_OTHERS);
+ }
+ 
++static void __init goni_reserve(void)
++{
++	static struct cma_region regions[] = {
++		{
++			.name		= "fw",
++			.size		=  16 << 20,
++			.alignment	= 128 << 10,
++			.start		= 0x31000000,
++		},
++		{
++			.name		= "b1",
++			.size		=  32 << 20,
++			.start		= 0x33000000,
++		},
++		{
++			.name		= "b2",
++			.size		=  32 << 20,
++			.start		= 0x44000000,
++		},
++		{ }
++	};
++
++	static const char map[] __initconst =
++		"s5p-mfc/f=fw;s5p-mfc/a=b1;s5p-mfc/b=b2;*=b1,b2";
++
++	cma_set_defaults(regions, map);
++	cma_early_regions_reserve(NULL);
++}
++
+ static void __init goni_map_io(void)
+ {
+ 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
+@@ -893,4 +923,5 @@ MACHINE_START(GONI, "GONI")
+ 	.map_io		= goni_map_io,
+ 	.init_machine	= goni_machine_init,
+ 	.timer		= &s5p_timer,
++	.reserve	= goni_reserve,
+ MACHINE_END
+-- 
+1.7.1.569.g6f426
