@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759154Ab1CaSwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 14:52:55 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:51270 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759132Ab1CaSwy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 14:52:54 -0400
-Date: Thu, 31 Mar 2011 20:52:53 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: Re: [PATCH] [0/275] 2.6.35.12 longterm review
-Message-ID: <20110331185253.GN21838@one.firstfloor.org>
-References: <20110330203.501921634@firstfloor.org> <20110331153747.GA3057@herton-IdeaPad-Y430>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110331153747.GA3057@herton-IdeaPad-Y430>
-User-Agent: Mutt/1.4.2.2i
+	id S1759158Ab1CaSxi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 14:53:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759072Ab1CaSxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 14:53:35 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <16158.1301597440@redhat.com>
+References: <16158.1301597440@redhat.com> <4D82DB5B.9000302@cn.fujitsu.com>
+Cc: dhowells@redhat.com, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, James Morris <jmorris@namei.org>,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 31/36] security,rcu: convert call_rcu(user_update_rcu_disposal) to kfree_rcu()
+Date: Thu, 31 Mar 2011 19:53:14 +0100
+Message-ID: <16214.1301597594@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can you include in this series also the following upstream patch?:
-> commit 7a89e4c "USB: serial: option: Apply OPTION_BLACKLIST_SENDSETUP
-> also for ZTE MF626"
-> 
-> It affects also .35, I thought it was going in in this .35 update too as
-> it's Cc: stable, but if it's already queued for the next .35 update then
-> please disregard this.
+David Howells <dhowells@redhat.com> wrote:
 
-It's not queued yet, but I should pick it up with the next update.
-For this one it's too late.
-Thanks,
--Andi
+> > The rcu callback user_update_rcu_disposal() just calls a kfree(),
+> > so we use kfree_rcu() instead of the call_rcu(user_update_rcu_disposal).
+> > 
+> > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> 
+> Nice idea, but how do you handle the container_of()?
+
+Actually, you simply assume that the rcu_head is at the front of the struct,
+right?  If you do that, you should alter the comment on struct
+user_key_payload in keys/user-type.h to note that this must be at the front.
+
+David
