@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab1CaAw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 20:52:29 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34494 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730Ab1CaAw2 (ORCPT
+	id S1756709Ab1CaAwn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 20:52:43 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55255
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756556Ab1CaAwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 20:52:28 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110330233050.GG21838@one.firstfloor.org>
-References: <20110330144507.2c0ecf73.akpm@linux-foundation.org> <20110330233050.GG21838@one.firstfloor.org>
-Message-Id: <20110331095251.0EC3.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Wed, 30 Mar 2011 20:52:41 -0400
+Date: Wed, 30 Mar 2011 17:52:02 -0700 (PDT)
+Message-Id: <20110330.175202.235689626.davem@davemloft.net>
+To: davej@redhat.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: loading sctp fails an order 10 allocation.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110330234020.GA24517@redhat.com>
+References: <20110330234020.GA24517@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Thu, 31 Mar 2011 09:52:24 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Do we still want it?  Are we sure we don't want the per-zone numbers?
-> 
-> At least I still want it and Dave Hansen did too.
-> 
-> I don't need per zone personally and I remember a strong request from 
-> anyone.  Or was there one?
+From: Dave Jones <davej@redhat.com>
+Date: Wed, 30 Mar 2011 19:40:21 -0400
 
-If my remember is correct, Only /me puted weak request of per-zone number.
-To be honest, myself never use this counter, my question was just curious.
-Then, I'm ok if Andi didn't hit any issue.
+> modprobe sctp on my laptop does this which looks crazy..
+ ...
+> it doesn't look like the hashtable allocation code has changed in ages, so I'm 
+> not sure why I've never triggered this before.
 
-Andi, But, if anyone will put numa request or numa related bug report 
-in future, Perhaps I might convert it per-zone one. Is this ok?
+I decided to take a break from watching Charlie Sheen dubstep remixes
+in a loop on youtube to look at this bug.
 
+This situation is amusing because SCTP actually tries to allocate an
+initially smaller hash table than, for example, the DCCP module does.
 
+But DCCP won't show the behavior you see.
+
+The thing that's different is that SCTP forgets to pass __GFP_NOWARN
+to the allocation.  The code there is able to handle failures just
+fine and simply tries to progressively grab a smaller table when that
+happens.
+
+I'll commit the following to net-2.6, thanks.
+
+Now back to Adonis dubsteps...
+
+--------------------
+sctp: Pass __GFP_NOWARN to hash table allocation attempts.
+
+Like DCCP and other similar pieces of code, there are mechanisms
+here to try allocating smaller hash tables if the allocation
+fails.  So pass in __GFP_NOWARN like the others do instead of
+emitting a scary message.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/sctp/protocol.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index 152976e..d5bf91d 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -1205,7 +1205,7 @@ SCTP_STATIC __init int sctp_init(void)
+ 		if ((sctp_assoc_hashsize > (64 * 1024)) && order > 0)
+ 			continue;
+ 		sctp_assoc_hashtable = (struct sctp_hashbucket *)
+-					__get_free_pages(GFP_ATOMIC, order);
++			__get_free_pages(GFP_ATOMIC|__GFP_NOWARN, order);
+ 	} while (!sctp_assoc_hashtable && --order > 0);
+ 	if (!sctp_assoc_hashtable) {
+ 		pr_err("Failed association hash alloc\n");
+@@ -1238,7 +1238,7 @@ SCTP_STATIC __init int sctp_init(void)
+ 		if ((sctp_port_hashsize > (64 * 1024)) && order > 0)
+ 			continue;
+ 		sctp_port_hashtable = (struct sctp_bind_hashbucket *)
+-					__get_free_pages(GFP_ATOMIC, order);
++			__get_free_pages(GFP_ATOMIC|__GFP_NOWARN, order);
+ 	} while (!sctp_port_hashtable && --order > 0);
+ 	if (!sctp_port_hashtable) {
+ 		pr_err("Failed bind hash alloc\n");
+-- 
+1.7.4.2
 
