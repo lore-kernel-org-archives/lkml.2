@@ -1,737 +1,487 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758240Ab1CaQsK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:48:10 -0400
-Received: from mail-ww0-f66.google.com ([74.125.82.66]:37528 "EHLO
-	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab1CaQsG convert rfc822-to-8bit (ORCPT
+	id S1758201Ab1CaQuh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:50:37 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:9322 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751434Ab1CaQuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:48:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vBiLjndu6FN0GyB5f6ujAciz5d6BUX8v+zTjLLT5P0NP1zted7vAWyeKu0X5S5s2wb
-         eYyMCisfG3U3cgaHeHywT4RX7gGIfqXm+wpB/VvKXd1nfQsYMFD9ndfJkk/mhIOufXL3
-         8LSR8SAR+YgdQkc5q0ytegFsuduN2pUbwjgyk=
+	Thu, 31 Mar 2011 12:50:35 -0400
+Date: Thu, 31 Mar 2011 09:50:35 -0700
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Bryan Schumaker <bjschuma@netapp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: 2.6.39-rc1 regression: NFS - unable to mount some shares
+ (bisected)
+Message-ID: <20110331165035.GA6778@dtor-ws.eng.vmware.com>
+References: <8A85A9B4-D801-476F-B280-CE2B1D04277B@vmware.com>
+ <20110331162338.GA32296@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <1301158345-22206-4-git-send-email-aghayal@codeaurora.org>
-References: <1301158345-22206-1-git-send-email-aghayal@codeaurora.org>
-	<1301158345-22206-4-git-send-email-aghayal@codeaurora.org>
-Date: Fri, 1 Apr 2011 00:48:03 +0800
-Message-ID: <AANLkTi=Wteb54qBkLwRTOBr81=3da_FExOmUYE9-3-yX@mail.gmail.com>
-Subject: Re: [rtc-linux] [PATCH 3/3] drivers: rtc: Add support for Qualcomm
- PMIC8xxx RTC
-From: Wan ZongShun <mcuos.com@gmail.com>
-To: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>
-Cc: Anirudh Ghayal <aghayal@codeaurora.org>, linux-input@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110331162338.GA32296@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anirudh,
+On Thu, Mar 31, 2011 at 09:23:38AM -0700, Dmitry Torokhov wrote:
+> Hi Bryan,
+> 
+> On Wed, Mar 30, 2011 at 03:31:44PM -0700, Dmitry Torokhov wrote:
+> > Hi Bryan,
+> > 
+> > It is actually one of autofs + NIS, mounts that is failing.
+> > 
+> 
+> Some more data about NFS problemi I am seeing. With an older kernel I
+> get:
+> 
+> [dtor@dtor-d630 ~]$ sudo mount -v build-toolchain:/toolchain /mnt/
+> mount: no type was given - I'll assume nfs because of the colon
+> mount.nfs: timeout set for Thu Mar 31 09:17:38 2011
+> mount.nfs: trying text-based options 'vers=4,addr=10.17.52.98,clientaddr=10.20.94.47'
+> mount.nfs: mount(2): Operation not permitted
+> mount.nfs: trying text-based options 'addr=10.17.52.98'
+> mount.nfs: prog 100003, trying vers=3, prot=6
+> mount.nfs: trying 10.17.52.98 prog 100003 vers 3 prot TCP port 2049
+> mount.nfs: prog 100005, trying vers=3, prot=17
+> mount.nfs: trying 10.17.52.98 prog 100005 vers 3 prot UDP port 693
+> build-toolchain:/toolchain on /mnt type nfs (rw)
+> 
+> The failing kernel does it like this:
+> 
+> [dtor@dtor-ws ~]$ sudo mount -v build-toolchain:/toolchain /mnt
+> mount: no type was given - I'll assume nfs because of the colon
+> mount.nfs: timeout set for Thu Mar 31 09:14:22 2011
+> mount.nfs: trying text-based options 'vers=4,addr=10.17.52.98,clientaddr=10.20.94.123'
+> mount.nfs: mount(2): Resource temporarily unavailable
+> mount.nfs: Resource temporarily unavailable
+> 
+> And I can mount it successfully if I explicitly request V3:
+> 
+> [dtor@dtor-ws ~]$ sudo mount -v -o nfsvers=3 build-toolchain:/toolchain /mnt/
+> mount: no type was given - I'll assume nfs because of the colon
+> mount.nfs: timeout set for Thu Mar 31 09:22:57 2011
+> mount.nfs: trying text-based options 'nfsvers=3,addr=10.17.52.98'
+> mount.nfs: prog 100003, trying vers=3, prot=6
+> mount.nfs: trying 10.17.52.98 prog 100003 vers 3 prot TCP port 2049
+> mount.nfs: prog 100005, trying vers=3, prot=17
+> mount.nfs: trying 10.17.52.98 prog 100005 vers 3 prot UDP port 693
+> build-toolchain:/toolchain on /mnt type nfs (rw,nfsvers=3)
+> 
+> The mounts that succeed automatically with the newer kernel do like
+> this:
+> 
+> [dtor@dtor-ws ~]$ sudo mount -v pa-home:/home2 /mnt/
+> mount: no type was given - I'll assume nfs because of the colon
+> mount.nfs: timeout set for Thu Mar 31 09:20:01 2011
+> mount.nfs: trying text-based options 'vers=4,addr=10.17.4.25,clientaddr=10.20.94.123'
+> mount.nfs: mount(2): Protocol not supported
+> mount.nfs: trying text-based options 'addr=10.17.4.25'
+> mount.nfs: prog 100003, trying vers=3, prot=6
+> mount.nfs: trying 10.17.4.25 prog 100003 vers 3 prot TCP port 2049
+> mount.nfs: prog 100005, trying vers=3, prot=17
+> mount.nfs: trying 10.17.4.25 prog 100005 vers 3 prot UDP port 1234
+> pa-home:/home2 on /mnt type nfs (rw)
+> 
+> I am not sure why in failing case we are seeing "resource temporarily
+> unavailable" instead of "protocol not supported".
+> 
 
-Some advice below:
+And here is the kernel log with debuggig enabled. Sorry for multiple
+posts BTW.
 
-2011/3/27 Anirudh Ghayal <aghayal@codeaurora.org>:
-> PMIC8xxx is Qualcomm's power management IC. A
-> 32-bit RTC is housed inside this PMIC. The RTC driver
-> uses SSBI to communicate with the RTC module.
->
-> Cc: Alessandro Zummo <a.zummo@towertech.it>
-> Cc: Lars-Peter Clausen <lars@metafoo.de>
-> Signed-off-by: Anirudh Ghayal <aghayal@codeaurora.org>
-> ---
->  drivers/rtc/Kconfig            |    9 +
->  drivers/rtc/Makefile           |    1 +
->  drivers/rtc/rtc-pm8xxx.c       |  567 ++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/pm8xxx/rtc.h |   25 ++
->  4 files changed, 602 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/rtc/rtc-pm8xxx.c
->  create mode 100644 include/linux/mfd/pm8xxx/rtc.h
->
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> index e187887..a66672a 100644
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -995,4 +995,13 @@ config RTC_DRV_TEGRA
->          This drive can also be built as a module. If so, the module
->          will be called rtc-tegra.
->
-> +config RTC_DRV_PM8XXX
-> +       tristate "Qualcomm PMIC8XXX RTC"
-> +       depends on MFD_PM8XXX
-> +       help
-> +         Say Y here if you want to support the Qualcomm PMIC8XXX RTC.
-> +
-> +         To compile this driver as a module, choose M here: the
-> +         module will be called rtc-pm8xxx.
-> +
->  endif # RTC_CLASS
-> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-> index ca91c3c..ff40366 100644
-> --- a/drivers/rtc/Makefile
-> +++ b/drivers/rtc/Makefile
-> @@ -72,6 +72,7 @@ obj-$(CONFIG_RTC_DRV_PCF8563) += rtc-pcf8563.o
->  obj-$(CONFIG_RTC_DRV_PCF8583)  += rtc-pcf8583.o
->  obj-$(CONFIG_RTC_DRV_PCF2123)  += rtc-pcf2123.o
->  obj-$(CONFIG_RTC_DRV_PCF50633) += rtc-pcf50633.o
-> +obj-$(CONFIG_RTC_DRV_PM8XXX)    += rtc-pm8xxx.o
->  obj-$(CONFIG_RTC_DRV_PL030)    += rtc-pl030.o
->  obj-$(CONFIG_RTC_DRV_PL031)    += rtc-pl031.o
->  obj-$(CONFIG_RTC_DRV_PS3)      += rtc-ps3.o
-> diff --git a/drivers/rtc/rtc-pm8xxx.c b/drivers/rtc/rtc-pm8xxx.c
-> new file mode 100644
-> index 0000000..ce2dad3
-> --- /dev/null
-> +++ b/drivers/rtc/rtc-pm8xxx.c
-> @@ -0,0 +1,567 @@
-> +/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#define pr_fmt(fmt) "%s: " fmt, __func__
-> +
+[ 2679.038558] NFS: nfs mount opts='vers=4,addr=10.17.52.98,clientaddr=10.20.94.123'
+[ 2679.038910] NFS:   parsing nfs mount option 'vers=4'
+[ 2679.039126] NFS:   parsing nfs mount option 'addr=10.17.52.98'
+[ 2679.039307] NFS:   parsing nfs mount option 'clientaddr=10.20.94.123'
+[ 2679.039490] NFS: MNTPATH: '/toolchain'
+[ 2679.039659] --> nfs4_try_mount()
+[ 2679.039837] --> nfs4_create_server()
+[ 2679.040198] --> nfs4_init_server()
+[ 2679.040365] --> nfs4_set_client()
+[ 2679.040559] --> nfs_get_client(build-toolchain,v4)
+[ 2679.040733] RPC:       looking up machine cred
+[ 2679.040909] NFS: get client cookie (0xffff8800685c3c00/0xffff88007a2c2e10)
+[ 2679.041143] RPC:       set up xprt to 10.17.52.98 (port 2049) via tcp
+[ 2679.041324] RPC:       created transport ffff88007a346000 with 16 slots
+[ 2679.041501] RPC:       creating nfs client for build-toolchain (xprt ffff88007a346000)
+[ 2679.041895] RPC:       creating UNIX authenticator for client ffff880067dfde00
+[ 2679.042273] RPC:       new task initialized, procpid 6568
+[ 2679.042447] RPC:       allocated task ffff880060c6d100
+[ 2679.042618] RPC:  1843 __rpc_execute flags=0x680
+[ 2679.042787] RPC:  1843 call_start nfs4 proc NULL (sync)
+[ 2679.042957] RPC:  1843 call_reserve (status 0)
+[ 2679.048338] RPC:  1843 reserved req ffff88007a2d6000 xid 094bb2b3
+[ 2679.048513] RPC:  1843 call_reserveresult (status 0)
+[ 2679.048688] RPC:  1843 call_refresh (status 0)
+[ 2679.048860] RPC:  1843 holding NULL cred ffffffffa025da80
+[ 2679.049060] RPC:  1843 refreshing NULL cred ffffffffa025da80
+[ 2679.049243] RPC:  1843 call_refreshresult (status 0)
+[ 2679.049426] RPC:  1843 call_allocate (status 0)
+[ 2679.049635] RPC:  1843 allocated buffer of size 96 at ffff88007a343800
+[ 2679.049819] RPC:  1843 call_bind (status 0)
+[ 2679.049990] RPC:  1843 call_connect xprt ffff88007a346000 is not connected
+[ 2679.050200] RPC:  1843 xprt_connect xprt ffff88007a346000 is not connected
+[ 2679.050379] RPC:  1843 sleep_on(queue "xprt_pending" time 4297346346)
+[ 2679.050556] RPC:  1843 added to queue ffff88007a346320 "xprt_pending"
+[ 2679.050732] RPC:  1843 setting alarm for 60000 ms
+[ 2679.050901] RPC:       xs_connect scheduled xprt ffff88007a346000
+[ 2679.051114] RPC:  1843 sync task going to sleep
+[ 2679.051312] RPC:       xs_bind 0.0.0.0:1013: ok (0)
+[ 2679.051486] RPC:       worker connecting xprt ffff88007a346000 via tcp to 10.17.52.98 (port 2049)
+[ 2679.051857] RPC:       ffff88007a346000 connect status 115 connected 0 sock state 2
+[ 2679.052997] RPC:       xs_tcp_state_change client ffff88007a346000...
+[ 2679.053190] RPC:       state 1 conn 0 dead 0 zapped -1 sk_shutdown 0
+[ 2679.053361] RPC:  1843 __rpc_wake_up_task (now 4297346349)
+[ 2679.053529] RPC:  1843 disabling timer
+[ 2679.053696] RPC:  1843 removed from queue ffff88007a346320 "xprt_pending"
+[ 2679.053870] RPC:       __rpc_wake_up_task done
+[ 2679.053961] RPC:  1843 sync task resuming
+[ 2679.053961] RPC:  1843 xprt_connect_status: retrying
+[ 2679.053961] RPC:  1843 call_connect_status (status -11)
+[ 2679.053961] RPC:  1843 call_transmit (status 0)
+[ 2679.053961] RPC:  1843 xprt_prepare_transmit
+[ 2679.053961] RPC:  1843 rpc_xdr_encode (status 0)
+[ 2679.055137] RPC:  1843 marshaling NULL cred ffffffffa025da80
+[ 2679.055311] RPC:  1843 using AUTH_NULL cred ffffffffa025da80 to wrap rpc data
+[ 2679.055488] RPC:  1843 xprt_transmit(44)
+[ 2679.055687] RPC:       xs_tcp_send_request(44) = 44
+[ 2679.055866] RPC:  1843 xmit complete
+[ 2679.056068] RPC:  1843 sleep_on(queue "xprt_pending" time 4297346352)
+[ 2679.056245] RPC:  1843 added to queue ffff88007a346320 "xprt_pending"
+[ 2679.056421] RPC:  1843 setting alarm for 60000 ms
+[ 2679.056590] RPC:       wake_up_next(ffff88007a346258 "xprt_resend")
+[ 2679.056761] RPC:       wake_up_next(ffff88007a346190 "xprt_sending")
+[ 2679.056932] RPC:  1843 sync task going to sleep
+[ 2679.057243] RPC:       xs_tcp_data_ready...
+[ 2679.057412] RPC:       xs_tcp_data_recv started
+[ 2679.057580] RPC:       reading TCP record fragment of length 24
+[ 2679.057749] RPC:       reading XID (4 bytes)
+[ 2679.057916] RPC:       reading request with XID 094bb2b3
+[ 2679.058122] RPC:       reading CALL/REPLY flag (4 bytes)
+[ 2679.058299] RPC:       read reply XID 094bb2b3
+[ 2679.058467] RPC:       XID 094bb2b3 read 16 bytes
+[ 2679.058635] RPC:       xprt = ffff88007a346000, tcp_copied = 24, tcp_offset = 24, tcp_reclen = 24
+[ 2679.058966] RPC:  1843 xid 094bb2b3 complete (24 bytes received)
+[ 2679.059166] RPC:  1843 __rpc_wake_up_task (now 4297346355)
+[ 2679.059341] RPC:  1843 disabling timer
+[ 2679.059507] RPC:  1843 removed from queue ffff88007a346320 "xprt_pending"
+[ 2679.059684] RPC:       __rpc_wake_up_task done
+[ 2679.059700] RPC:  1843 sync task resuming
+[ 2679.059709] RPC:  1843 call_status (status 24)
+[ 2679.059714] RPC:  1843 call_decode (status 24)
+[ 2679.059722] RPC:  1843 validating NULL cred ffffffffa025da80
+[ 2679.059729] RPC:  1843 using AUTH_NULL cred ffffffffa025da80 to unwrap rpc data
+[ 2679.059734] RPC:  1843 call_decode result 0
+[ 2679.059739] RPC:  1843 return 0, status 0
+[ 2679.059742] RPC:  1843 release task
+[ 2679.061339] RPC:       xs_tcp_data_recv done
+[ 2679.061344] RPC:       freeing buffer of size 96 at ffff88007a343800
+[ 2679.061353] RPC:  1843 release request ffff88007a2d6000
+[ 2679.061358] RPC:       wake_up_next(ffff88007a3463e8 "xprt_backlog")
+[ 2679.061364] RPC:       rpc_release_client(ffff880067dfde00)
+[ 2679.061370] RPC:  1843 freeing task
+[ 2679.061477] svc: initialising pool 0 for NFSv4 callback
+[ 2679.061484] RPC:       unregistering [1073741824, 4, ''] with local rpcbind
+[ 2679.061492] RPC:       new task initialized, procpid 6568
+[ 2679.061496] RPC:       allocated task ffff88007a80e400
+[ 2679.061502] RPC:  1844 __rpc_execute flags=0x680
+[ 2679.061508] RPC:  1844 call_start rpcbind4 proc UNSET (sync)
+[ 2679.061514] RPC:  1844 call_reserve (status 0)
+[ 2679.061520] RPC:  1844 reserved req ffff88011a39e000 xid c856cbbf
+[ 2679.061525] RPC:  1844 call_reserveresult (status 0)
+[ 2679.061529] RPC:  1844 call_refresh (status 0)
+[ 2679.061533] RPC:  1844 looking up UNIX cred
+[ 2679.061536] RPC:       looking up UNIX cred
+[ 2679.061543] RPC:  1844 refreshing UNIX cred ffff880078fb6300
+[ 2679.061548] RPC:  1844 call_refreshresult (status 0)
+[ 2679.061552] RPC:  1844 call_allocate (status 0)
+[ 2679.061558] RPC:  1844 allocated buffer of size 488 at ffff88007aaa9000
+[ 2679.061563] RPC:  1844 call_bind (status 0)
+[ 2679.061568] RPC:  1844 call_connect xprt ffff88011a1e0000 is not connected
+[ 2679.061574] RPC:  1844 xprt_connect xprt ffff88011a1e0000 is not connected
+[ 2679.061580] RPC:  1844 sleep_on(queue "xprt_pending" time 4297346357)
+[ 2679.061586] RPC:  1844 added to queue ffff88011a1e0320 "xprt_pending"
+[ 2679.061590] RPC:  1844 setting alarm for 60000 ms
+[ 2679.061596] RPC:       xs_connect scheduled xprt ffff88011a1e0000
+[ 2679.061611] RPC:  1844 sync task going to sleep
+[ 2679.061624] RPC:       disconnecting xprt ffff88011a1e0000 to reuse port
+[ 2679.061636] RPC:       xs_error_report client ffff88011a1e0000...
+[ 2679.061639] RPC:       error 0
+[ 2679.061643] RPC:  1844 __rpc_wake_up_task (now 4297346357)
+[ 2679.061646] RPC:  1844 disabling timer
+[ 2679.061651] RPC:  1844 removed from queue ffff88011a1e0320 "xprt_pending"
+[ 2679.061660] RPC:       __rpc_wake_up_task done
+[ 2679.061666] RPC:       disconnected transport ffff88011a1e0000
+[ 2679.061672] RPC:       worker connecting xprt ffff88011a1e0000 via tcp to 127.0.0.1 (port 111)
+[ 2679.061810] RPC:       xs_tcp_state_change client ffff88011a1e0000...
+[ 2679.061816] RPC:       state 1 conn 0 dead 0 zapped -1 sk_shutdown 0
+[ 2679.061875] RPC:       ffff88011a1e0000 connect status 115 connected 1 sock state 1
+[ 2679.062854] RPC:  1844 sync task resuming
+[ 2679.062859] RPC:  1844 xprt_connect_status: retrying
+[ 2679.062863] RPC:  1844 call_connect_status (status -11)
+[ 2679.062868] RPC:  1844 call_transmit (status 0)
+[ 2679.062872] RPC:  1844 xprt_prepare_transmit
+[ 2679.062876] RPC:  1844 rpc_xdr_encode (status 0)
+[ 2679.062881] RPC:  1844 marshaling UNIX cred ffff880078fb6300
+[ 2679.062888] RPC:  1844 using AUTH_UNIX cred ffff880078fb6300 to wrap rpc data
+[ 2679.062895] RPC:  1844 encoding RPCB_UNSET call (1073741824, 4, '', '')
+[ 2679.062900] RPC:  1844 xprt_transmit(140)
+[ 2679.063269] RPC:       xs_tcp_data_ready...
+[ 2679.063274] RPC:       xs_tcp_data_recv started
+[ 2679.063279] RPC:       reading TCP record fragment of length 28
+[ 2679.063283] RPC:       reading XID (4 bytes)
+[ 2679.063288] RPC:       reading request with XID c856cbbf
+[ 2679.063292] RPC:       reading CALL/REPLY flag (4 bytes)
+[ 2679.063296] RPC:       read reply XID c856cbbf
+[ 2679.063302] RPC:       XID c856cbbf read 20 bytes
+[ 2679.063307] RPC:       xprt = ffff88011a1e0000, tcp_copied = 28, tcp_offset = 28, tcp_reclen = 28
+[ 2679.063313] RPC:  1844 xid c856cbbf complete (28 bytes received)
+[ 2679.063319] RPC:       xs_tcp_data_recv done
+[ 2679.063334] RPC:       xs_tcp_send_request(140) = 140
+[ 2679.063338] RPC:  1844 xmit complete
+[ 2679.063344] RPC:       wake_up_next(ffff88011a1e0258 "xprt_resend")
+[ 2679.063349] RPC:       wake_up_next(ffff88011a1e0190 "xprt_sending")
+[ 2679.063354] RPC:  1844 call_status (status 28)
+[ 2679.063358] RPC:  1844 call_decode (status 28)
+[ 2679.063363] RPC:  1844 validating UNIX cred ffff880078fb6300
+[ 2679.063368] RPC:  1844 using AUTH_UNIX cred ffff880078fb6300 to unwrap rpc data
+[ 2679.063373] RPC:  1844 RPCB_UNSET call succeeded
+[ 2679.063377] RPC:  1844 call_decode result 0
+[ 2679.063381] RPC:  1844 return 0, status 0
+[ 2679.063384] RPC:  1844 release task
+[ 2679.063390] RPC:       freeing buffer of size 488 at ffff88007aaa9000
+[ 2679.063396] RPC:  1844 release request ffff88011a39e000
+[ 2679.063400] RPC:       wake_up_next(ffff88011a1e03e8 "xprt_backlog")
+[ 2679.063405] RPC:       rpc_release_client(ffff88011a88cc00)
+[ 2679.063410] RPC:  1844 freeing task
+[ 2679.063417] svc: __svc_unregister(NFSv4 callbackv4), error 0
+[ 2679.063423] svc: creating transport tcp[0]
+[ 2679.063431] svc: svc_create_socket(NFSv4 callback, 6, 0.0.0.0, port=0)
+[ 2679.063468] svc: svc_setup_socket ffff880068ace940
+[ 2679.063474] setting up TCP socket for listening
+[ 2679.063479] svc: svc_setup_socket created ffff880060cd3c00 (inet ffff880060c95100)
+[ 2679.063484] NFS: Callback listener port = 49824 (af 2)
+[ 2679.063488] svc: creating transport tcp[0]
+[ 2679.063494] svc: svc_create_socket(NFSv4 callback, 6, 0000:0000:0000:0000:0000:0000:0000:0000, port=0)
+[ 2679.063530] svc: svc_setup_socket ffff880068acf440
+[ 2679.063535] setting up TCP socket for listening
+[ 2679.063539] svc: svc_setup_socket created ffff880060cd4000 (inet ffff88007a1132c0)
+[ 2679.063544] NFS: Callback listener port = 56626 (af 10)
+[ 2679.063680] svc: svc_destroy(NFSv4 callback, 2)
+[ 2679.063686] --> nfs_get_client() = ffff8800685c3c00 [new]
+[ 2679.063691] <-- nfs4_set_client() = 0 [new ffff8800685c3c00]
+[ 2679.063750] <-- nfs4_init_server() = 0
+[ 2679.063755] --> nfs4_get_rootfh()
+[ 2679.063761] RPC:       creating UNIX authenticator for client ffff880060cb9c00
+[ 2679.063770] RPC:       new task initialized, procpid 6568
+[ 2679.063774] RPC:       allocated task ffff88007a80e400
+[ 2679.063778] RPC:  1845 __rpc_execute flags=0x80
+[ 2679.063783] RPC:  1845 call_start nfs4 proc LOOKUP_ROOT (sync)
+[ 2679.063788] RPC:  1845 call_reserve (status 0)
+[ 2679.063793] RPC:  1845 reserved req ffff88007a2d6000 xid 0a4bb2b3
+[ 2679.063797] RPC:  1845 call_reserveresult (status 0)
+[ 2679.063802] RPC:  1845 call_refresh (status 0)
+[ 2679.063805] RPC:  1845 looking up UNIX cred
+[ 2679.063809] RPC:       looking up UNIX cred
+[ 2679.063814] RPC:  1845 refreshing UNIX cred ffff880078fb6300
+[ 2679.063818] RPC:  1845 call_refreshresult (status 0)
+[ 2679.063823] RPC:  1845 call_allocate (status 0)
+[ 2679.063828] RPC:  1845 allocated buffer of size 1064 at ffff880078e61800
+[ 2679.063832] RPC:  1845 call_bind (status 0)
+[ 2679.063837] RPC:  1845 call_connect xprt ffff88007a346000 is connected
+[ 2679.063841] RPC:  1845 call_transmit (status 0)
+[ 2679.063845] RPC:  1845 xprt_prepare_transmit
+[ 2679.063849] RPC:  1845 rpc_xdr_encode (status 0)
+[ 2679.063854] RPC:  1845 marshaling UNIX cred ffff880078fb6300
+[ 2679.063859] RPC:  1845 using AUTH_UNIX cred ffff880078fb6300 to wrap rpc data
+[ 2679.063865] encode_compound: tag=
+[ 2679.063870] RPC:  1845 xprt_transmit(152)
+[ 2679.088332] svc: server ffff88007a48e000 waiting for data (to = 9223372036854775807)
+[ 2679.088703] RPC:       xs_tcp_send_request(152) = 152
+[ 2679.088880] RPC:  1845 xmit complete
+[ 2679.089101] RPC:  1845 sleep_on(queue "xprt_pending" time 4297346385)
+[ 2679.089293] RPC:  1845 added to queue ffff88007a346320 "xprt_pending"
+[ 2679.089472] RPC:  1845 setting alarm for 60000 ms
+[ 2679.089649] RPC:       wake_up_next(ffff88007a346258 "xprt_resend")
+[ 2679.089820] RPC:       wake_up_next(ffff88007a346190 "xprt_sending")
+[ 2679.089991] RPC:  1845 sync task going to sleep
+[ 2679.090050] RPC:       xs_tcp_data_ready...
+[ 2679.090055] RPC:       xs_tcp_data_recv started
+[ 2679.090059] RPC:       reading TCP record fragment of length 44
+[ 2679.090063] RPC:       reading XID (4 bytes)
+[ 2679.090067] RPC:       reading reply for XID 0a4bb2b3
+[ 2679.090071] RPC:       reading CALL/REPLY flag (4 bytes)
+[ 2679.090075] RPC:       read reply XID 0a4bb2b3
+[ 2679.090080] RPC:       XID 0a4bb2b3 read 36 bytes
+[ 2679.090085] RPC:       xprt = ffff88007a346000, tcp_copied = 44, tcp_offset = 44, tcp_reclen = 44
+[ 2679.090091] RPC:  1845 xid 0a4bb2b3 complete (44 bytes received)
+[ 2679.090098] RPC:  1845 __rpc_wake_up_task (now 4297346386)
+[ 2679.090102] RPC:  1845 disabling timer
+[ 2679.090107] RPC:  1845 removed from queue ffff88007a346320 "xprt_pending"
+[ 2679.090111] RPC:       __rpc_wake_up_task done
+[ 2679.090114] RPC:       xs_tcp_data_recv done
+[ 2679.092850] RPC:  1845 sync task resuming
+[ 2679.093042] RPC:  1845 call_status (status 44)
+[ 2679.093222] RPC:  1845 call_decode (status 44)
+[ 2679.093389] RPC:  1845 validating UNIX cred ffff880078fb6300
+[ 2679.093561] RPC:  1845 using AUTH_UNIX cred ffff880078fb6300 to unwrap rpc data
+[ 2679.093890] RPC:  1845 call_decode result -1
+[ 2679.094093] RPC:  1845 return 0, status -1
+[ 2679.094266] RPC:  1845 release task
+[ 2679.094437] RPC:       freeing buffer of size 1064 at ffff880078e61800
+[ 2679.094608] RPC:  1845 release request ffff88007a2d6000
+[ 2679.094776] RPC:       wake_up_next(ffff88007a3463e8 "xprt_backlog")
+[ 2679.094945] RPC:       rpc_release_client(ffff880060cb9c00)
+[ 2679.095151] RPC:  1845 freeing task
+[ 2679.095329] RPC:       new task initialized, procpid 6568
+[ 2679.095499] RPC:       allocated task ffff88007a80e400
+[ 2679.095669] RPC:  1846 __rpc_execute flags=0x80
+[ 2679.095837] RPC:  1846 call_start nfs4 proc LOOKUP_ROOT (sync)
+[ 2679.096041] RPC:  1846 call_reserve (status 0)
+[ 2679.096215] RPC:  1846 reserved req ffff88007a2d6000 xid 0b4bb2b3
+[ 2679.096386] RPC:  1846 call_reserveresult (status 0)
+[ 2679.096554] RPC:  1846 call_refresh (status 0)
+[ 2679.096722] RPC:  1846 looking up NULL cred
+[ 2679.096888] RPC:       looking up NULL cred
+[ 2679.097091] RPC:  1846 refreshing NULL cred ffffffffa025da80
+[ 2679.097268] RPC:  1846 call_refreshresult (status 0)
+[ 2679.097438] RPC:  1846 call_allocate (status 0)
+[ 2679.097606] RPC:  1846 allocated buffer of size 764 at ffff880078e61800
+[ 2679.097779] RPC:  1846 call_bind (status 0)
+[ 2679.097945] RPC:  1846 call_connect xprt ffff88007a346000 is connected
+[ 2679.098152] RPC:  1846 call_transmit (status 0)
+[ 2679.098325] RPC:  1846 xprt_prepare_transmit
+[ 2679.098494] RPC:  1846 rpc_xdr_encode (status 0)
+[ 2679.098661] RPC:  1846 marshaling NULL cred ffffffffa025da80
+[ 2679.098832] RPC:  1846 using AUTH_NULL cred ffffffffa025da80 to wrap rpc data
+[ 2679.099032] encode_compound: tag=
+[ 2679.099202] RPC:  1846 xprt_transmit(80)
+[ 2679.099396] RPC:       xs_tcp_send_request(80) = 80
+[ 2679.099564] RPC:  1846 xmit complete
+[ 2679.099730] RPC:  1846 sleep_on(queue "xprt_pending" time 4297346395)
+[ 2679.099902] RPC:  1846 added to queue ffff88007a346320 "xprt_pending"
+[ 2679.100111] RPC:  1846 setting alarm for 60000 ms
+[ 2679.100293] RPC:       wake_up_next(ffff88007a346258 "xprt_resend")
+[ 2679.100466] RPC:       wake_up_next(ffff88007a346190 "xprt_sending")
+[ 2679.100636] RPC:  1846 sync task going to sleep
+[ 2679.101060] RPC:       xs_tcp_data_ready...
+[ 2679.101235] RPC:       xs_tcp_data_recv started
+[ 2679.101403] RPC:       reading TCP record fragment of length 44
+[ 2679.101573] RPC:       reading XID (4 bytes)
+[ 2679.101740] RPC:       reading reply for XID 0b4bb2b3
+[ 2679.101908] RPC:       reading CALL/REPLY flag (4 bytes)
+[ 2679.102031] RPC:       read reply XID 0b4bb2b3
+[ 2679.102031] RPC:       XID 0b4bb2b3 read 36 bytes
+[ 2679.102031] RPC:       xprt = ffff88007a346000, tcp_copied = 44, tcp_offset = 44, tcp_reclen = 44
+[ 2679.102031] RPC:  1846 xid 0b4bb2b3 complete (44 bytes received)
+[ 2679.102031] RPC:  1846 __rpc_wake_up_task (now 4297346398)
+[ 2679.102031] RPC:  1846 disabling timer
+[ 2679.102031] RPC:  1846 removed from queue ffff88007a346320 "xprt_pending"
+[ 2679.102031] RPC:       __rpc_wake_up_task done
+[ 2679.103470] RPC:  1846 sync task resuming
+[ 2679.103475] RPC:  1846 call_status (status 44)
+[ 2679.103479] RPC:  1846 call_decode (status 44)
+[ 2679.103484] RPC:  1846 validating NULL cred ffffffffa025da80
+[ 2679.103489] RPC:  1846 using AUTH_NULL cred ffffffffa025da80 to unwrap rpc data
+[ 2679.103494] RPC:  1846 call_decode result -1
+[ 2679.103498] RPC:  1846 return 0, status -1
+[ 2679.103501] RPC:  1846 release task
+[ 2679.102031] RPC:       xs_tcp_data_recv done
+[ 2679.105115] RPC:       freeing buffer of size 764 at ffff880078e61800
+[ 2679.105121] RPC:  1846 release request ffff88007a2d6000
+[ 2679.105126] RPC:       wake_up_next(ffff88007a3463e8 "xprt_backlog")
+[ 2679.105131] RPC:       rpc_release_client(ffff880060cb9c00)
+[ 2679.105135] RPC:  1846 freeing task
+[ 2679.105140] nfs4_get_rootfh: getroot error = 11
+[ 2679.105144] <-- nfs4_get_rootfh() = -11
+[ 2679.105147] --> nfs_free_server()
+[ 2679.116035] RPC:       shutting down nfs client for build-toolchain
+[ 2679.116209] RPC:       rpc_release_client(ffff880060cb9c00)
+[ 2679.116378] RPC:       destroying nfs client for build-toolchain
+[ 2679.116588] RPC:       rpc_release_client(ffff880067dfde00)
+[ 2679.116762] --> nfs_put_client({1})
+[ 2679.116929] --> nfs_free_client(4)
+[ 2679.117134] svc: server ffff88007a48e000, no data yet
+[ 2679.117359] svc: svc_destroy(NFSv4 callback, 1)
+[ 2679.117529] svc: svc_delete_xprt(ffff880060cd4000)
+[ 2679.117696] svc: svc_tcp_sock_detach(ffff880060cd4000)
+[ 2679.117865] svc: svc_sock_detach(ffff880060cd4000)
+[ 2679.118074] svc: svc_sock_free(ffff880060cd4000)
+[ 2679.118266] svc: svc_delete_xprt(ffff880060cd3c00)
+[ 2679.118433] svc: svc_tcp_sock_detach(ffff880060cd3c00)
+[ 2679.118602] svc: svc_sock_detach(ffff880060cd3c00)
+[ 2679.118771] svc: svc_sock_free(ffff880060cd3c00)
+[ 2679.118946] RPC:       unregistering [1073741824, 4, ''] with local rpcbind
+[ 2679.119157] RPC:       new task initialized, procpid 6568
+[ 2679.119333] RPC:       allocated task ffff88007a80e400
+[ 2679.119504] RPC:  1847 __rpc_execute flags=0x680
+[ 2679.119672] RPC:  1847 call_start rpcbind4 proc UNSET (sync)
+[ 2679.119842] RPC:  1847 call_reserve (status 0)
+[ 2679.120039] RPC:  1847 reserved req ffff88011a39e000 xid c956cbbf
+[ 2679.120217] RPC:  1847 call_reserveresult (status 0)
+[ 2679.120387] RPC:  1847 call_refresh (status 0)
+[ 2679.120554] RPC:  1847 looking up UNIX cred
+[ 2679.120720] RPC:       looking up UNIX cred
+[ 2679.120888] RPC:  1847 refreshing UNIX cred ffff880078fb6300
+[ 2679.121093] RPC:  1847 call_refreshresult (status 0)
+[ 2679.121269] RPC:  1847 call_allocate (status 0)
+[ 2679.121439] RPC:  1847 allocated buffer of size 488 at ffff880078e66800
+[ 2679.121611] RPC:  1847 call_bind (status 0)
+[ 2679.121778] RPC:  1847 call_connect xprt ffff88011a1e0000 is connected
+[ 2679.121950] RPC:  1847 call_transmit (status 0)
+[ 2679.122153] RPC:  1847 xprt_prepare_transmit
+[ 2679.122327] RPC:  1847 rpc_xdr_encode (status 0)
+[ 2679.122498] RPC:  1847 marshaling UNIX cred ffff880078fb6300
+[ 2679.122669] RPC:  1847 using AUTH_UNIX cred ffff880078fb6300 to wrap rpc data
+[ 2679.122843] RPC:  1847 encoding RPCB_UNSET call (1073741824, 4, '', '')
+[ 2679.123040] RPC:  1847 xprt_transmit(140)
+[ 2679.123253] RPC:       xs_tcp_send_request(140) = 140
+[ 2679.123425] RPC:  1847 xmit complete
+[ 2679.123594] RPC:       xs_tcp_data_ready...
+[ 2679.123599] RPC:       xs_tcp_data_recv started
+[ 2679.123604] RPC:       reading TCP record fragment of length 28
+[ 2679.123608] RPC:       reading XID (4 bytes)
+[ 2679.123613] RPC:       reading reply for XID c956cbbf
+[ 2679.123617] RPC:       reading CALL/REPLY flag (4 bytes)
+[ 2679.123621] RPC:       read reply XID c956cbbf
+[ 2679.123626] RPC:       XID c956cbbf read 20 bytes
+[ 2679.123631] RPC:       xprt = ffff88011a1e0000, tcp_copied = 28, tcp_offset = 28, tcp_reclen = 28
+[ 2679.123637] RPC:  1847 xid c956cbbf complete (28 bytes received)
+[ 2679.123644] RPC:       xs_tcp_data_recv done
+[ 2679.125634] RPC:       wake_up_next(ffff88011a1e0258 "xprt_resend")
+[ 2679.125817] RPC:       wake_up_next(ffff88011a1e0190 "xprt_sending")
+[ 2679.125990] RPC:  1847 call_status (status 28)
+[ 2679.126193] RPC:  1847 call_decode (status 28)
+[ 2679.131579] RPC:  1847 validating UNIX cred ffff880078fb6300
+[ 2679.131750] RPC:  1847 using AUTH_UNIX cred ffff880078fb6300 to unwrap rpc data
+[ 2679.132108] RPC:  1847 RPCB_UNSET call succeeded
+[ 2679.132281] RPC:  1847 call_decode result 0
+[ 2679.132448] RPC:  1847 return 0, status 0
+[ 2679.132613] RPC:  1847 release task
+[ 2679.132780] RPC:       freeing buffer of size 488 at ffff880078e66800
+[ 2679.132951] RPC:  1847 release request ffff88011a39e000
+[ 2679.133151] RPC:       wake_up_next(ffff88011a1e03e8 "xprt_backlog")
+[ 2679.133329] RPC:       rpc_release_client(ffff88011a88cc00)
+[ 2679.133501] RPC:  1847 freeing task
+[ 2679.133667] svc: __svc_unregister(NFSv4 callbackv4), error 0
+[ 2679.133853] NFS: releasing client cookie (0xffff8800685c3c00/0xffff88007a2c2e10)
+[ 2679.134228] RPC:       shutting down nfs client for build-toolchain
+[ 2679.134405] RPC:       rpc_release_client(ffff880067dfde00)
+[ 2679.134574] RPC:       destroying nfs client for build-toolchain
+[ 2679.134771] RPC:       destroying transport ffff88007a346000
+[ 2679.134948] RPC:       xs_destroy xprt ffff88007a346000
+[ 2679.135156] RPC:       xs_close xprt ffff88007a346000
+[ 2679.135358] RPC:       disconnected transport ffff88007a346000
+[ 2679.135535] <-- nfs_free_client()
+[ 2679.135716] <-- nfs_free_server()
+[ 2679.135880] <-- nfs4_create_server() = error -11
+[ 2679.136096] <-- nfs4_try_mount() = -11 [error]
 
- why add pr_fmt here?
-
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/rtc.h>
-> +#include <linux/pm.h>
-> +#include <linux/slab.h>
-> +#include<linux/spinlock.h>
-> +
-> +#include <linux/mfd/pm8xxx/core.h>
-> +#include <linux/mfd/pm8xxx/rtc.h>
-> +
-> +/* RTC Register offsets from RTC CTRL REG */
-> +#define PM8XXX_ALARM_CTRL_OFFSET 0x01
-> +#define PM8XXX_RTC_WRITE_OFFSET 0x02
-> +#define PM8XXX_RTC_READ_OFFSET 0x06
-> +#define PM8XXX_ALARM_RW_OFFSET 0x0A
-> +
-> +/* RTC_CTRL register bit fields */
-> +#define PM8xxx_RTC_ENABLE      BIT(7)
-> +#define PM8xxx_RTC_ALARM_ENABLE        BIT(1)
-> +#define PM8xxx_RTC_ALARM_CLEAR  BIT(0)
-> +
-> +#define NUM_8_BIT_RTC_REGS     0x4
-> +
-> +/**
-> + * struct pm8xxx_rtc - rtc driver internal structure
-> + * @rtc: rtc device for this driver
-> + * @rtc_alarm_irq: rtc alarm irq number
-> + */
-> +struct pm8xxx_rtc {
-> +       struct rtc_device *rtc;
-> +       int rtc_alarm_irq;
-> +       int rtc_base;
-> +       int rtc_read_base;
-> +       int rtc_write_base;
-> +       int alarm_rw_base;
-> +       u8  ctrl_reg;
-> +       struct device *parent;
-> +       spinlock_t ctrl_reg_lock;
-> +};
-> +
-> +/*
-> + * The RTC registers need to be read/written one byte at a time. This is a
-> + * hardware limitation.
-> + */
-> +static int pm8xxx_read_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
-> +                       int base, int count)
-> +{
-> +       int i, rc;
-> +
-> +       for (i = 0; i < count; i++) {
-> +               rc = pm8xxx_readb(rtc_dd->parent, base + i, &rtc_val[i]);
-> +               if (rc < 0) {
-> +                       pr_err("PM8xxx read failed\n");
-
-All pr_err are not so good, please try to use dev_err.
-
-> +                       return rc;
-> +               }
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static int pm8xxx_write_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
-> +                       int base, int count)
-> +{
-> +       int i, rc;
-> +
-> +       for (i = 0; i < count; i++) {
-> +               rc = pm8xxx_writeb(rtc_dd->parent, base + i, rtc_val[i]);
-> +               if (rc < 0) {
-> +                       pr_err("PM8xxx write failed\n");
-> +                       return rc;
-> +               }
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +
-> +/*
-> + * Steps to write the RTC registers.
-> + * 1. Disable alarm if enabled.
-> + * 2. Write 0x00 to LSB.
-> + * 3. Write Byte[1], Byte[2], Byte[3] then Byte[0].
-> + * 4. Enable alarm if disabled in step 1.
-> + */
-> +static int
-> +pm8xxx_rtc_set_time(struct device *dev, struct rtc_time *tm)
-> +{
-> +       int rc;
-> +       unsigned long secs, irq_flags;
-> +       u8 value[4], reg = 0, alarm_enabled = 0, ctrl_reg;
-> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +
-> +       rtc_tm_to_time(tm, &secs);
-> +
-> +       value[0] = secs & 0xFF;
-> +       value[1] = (secs >> 8) & 0xFF;
-> +       value[2] = (secs >> 16) & 0xFF;
-> +       value[3] = (secs >> 24) & 0xFF;
-> +
-> +       dev_dbg(dev, "Seconds value to be written to RTC = %lu\n", secs);
-> +
-> +       spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +       ctrl_reg = rtc_dd->ctrl_reg;
-> +
-> +       if (ctrl_reg & PM8xxx_RTC_ALARM_ENABLE) {
-> +               alarm_enabled = 1;
-> +               ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
-> +               rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
-> +                                                                       1);
-> +               if (rc < 0) {
-> +                       dev_err(dev, "PM8xxx write failed\n");
-> +                       goto rtc_rw_fail;
-> +               }
-> +       } else
-> +               spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +
-> +       /* Write Byte[1], Byte[2], Byte[3], Byte[0] */
-> +       /* Write 0 to Byte[0] */
-> +       reg = 0;
-> +       rc = pm8xxx_write_wrapper(rtc_dd, &reg, rtc_dd->rtc_write_base, 1);
-> +       if (rc < 0) {
-> +               dev_err(dev, "PM8xxx write failed\n");
-> +               goto rtc_rw_fail;
-> +       }
-> +
-> +       /* Write Byte[1], Byte[2], Byte[3] */
-> +       rc = pm8xxx_write_wrapper(rtc_dd, value + 1,
-> +                                       rtc_dd->rtc_write_base + 1, 3);
-> +       if (rc < 0) {
-> +               dev_err(dev, "Write to RTC registers failed\n");
-> +               goto rtc_rw_fail;
-> +       }
-> +
-> +       /* Write Byte[0] */
-> +       rc = pm8xxx_write_wrapper(rtc_dd, value, rtc_dd->rtc_write_base, 1);
-> +       if (rc < 0) {
-> +               dev_err(dev, "Write to RTC register failed\n");
-> +               goto rtc_rw_fail;
-> +       }
-> +
-> +       if (alarm_enabled) {
-> +               ctrl_reg |= PM8xxx_RTC_ALARM_ENABLE;
-> +               rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
-> +                                                                       1);
-> +               if (rc < 0) {
-> +                       dev_err(dev, "PM8xxx write failed\n");
-> +                       goto rtc_rw_fail;
-> +               }
-> +       }
-> +
-> +       rtc_dd->ctrl_reg = ctrl_reg;
-> +
-> +rtc_rw_fail:
-> +       if (alarm_enabled)
-> +               spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +
-> +       return rc;
-> +}
-> +
-> +static int
-> +pm8xxx_rtc_read_time(struct device *dev, struct rtc_time *tm)
-> +{
-> +       int rc;
-> +       u8 value[4], reg;
-> +       unsigned long secs;
-> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +
-> +       rc = pm8xxx_read_wrapper(rtc_dd, value, rtc_dd->rtc_read_base,
-> +                                                       NUM_8_BIT_RTC_REGS);
-> +       if (rc < 0) {
-> +               dev_err(dev, "RTC time read failed\n");
-> +               return rc;
-> +       }
-> +
-> +       /*
-> +        * Read the LSB again and check if there has been a carry over.
-> +        * If there is, redo the read operation.
-> +        */
-> +       rc = pm8xxx_read_wrapper(rtc_dd, &reg, rtc_dd->rtc_read_base, 1);
-> +       if (rc < 0) {
-> +               dev_err(dev, "PM8xxx read failed\n");
-> +               return rc;
-> +       }
-> +
-> +       if (unlikely(reg < value[0])) {
-> +               rc = pm8xxx_read_wrapper(rtc_dd, value,
-> +                               rtc_dd->rtc_read_base, NUM_8_BIT_RTC_REGS);
-> +               if (rc < 0) {
-> +                       dev_err(dev, "RTC time read failed\n");
-> +                       return rc;
-> +               }
-> +       }
-> +
-> +       secs = value[0] | (value[1] << 8) | (value[2] << 16) \
-> +                                               | (value[3] << 24);
-> +
-> +       rtc_time_to_tm(secs, tm);
-> +
-> +       rc = rtc_valid_tm(tm);
-> +       if (rc < 0) {
-> +               dev_err(dev, "Invalid time read from PM8xxx\n");
-> +               return rc;
-> +       }
-> +
-> +       dev_dbg(dev, "secs = %lu, h:m:s == %d:%d:%d, d/m/y = %d/%d/%d\n",
-> +                       secs, tm->tm_hour, tm->tm_min, tm->tm_sec,
-> +                       tm->tm_mday, tm->tm_mon, tm->tm_year);
-> +
-> +       return 0;
-> +}
-> +
-> +static int
-> +pm8xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-> +{
-> +       int rc;
-> +       u8 value[4], ctrl_reg;
-> +       unsigned long secs, secs_rtc, irq_flags;
-> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +       struct rtc_time rtc_tm;
-> +
-> +       rtc_tm_to_time(&alarm->time, &secs);
-> +
-> +       /*
-> +        * Read the current RTC time and verify if the alarm time is in the
-> +        * past. If yes, return invalid.
-> +        */
-> +       rc = pm8xxx_rtc_read_time(dev, &rtc_tm);
-> +       if (rc < 0) {
-> +               dev_err(dev, "Unamble to read RTC time\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       rtc_tm_to_time(&rtc_tm, &secs_rtc);
-> +       if (secs < secs_rtc) {
-> +               dev_err(dev, "Trying to set alarm in the past\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       value[0] = secs & 0xFF;
-> +       value[1] = (secs >> 8) & 0xFF;
-> +       value[2] = (secs >> 16) & 0xFF;
-> +       value[3] = (secs >> 24) & 0xFF;
-> +
-> +       spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +
-> +       rc = pm8xxx_write_wrapper(rtc_dd, value, rtc_dd->alarm_rw_base,
-> +                                                       NUM_8_BIT_RTC_REGS);
-> +       if (rc < 0) {
-> +               dev_err(dev, "Write to RTC ALARM registers failed\n");
-> +               goto rtc_rw_fail;
-> +       }
-> +
-> +       ctrl_reg = rtc_dd->ctrl_reg;
-> +       ctrl_reg = (alarm->enabled) ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
-> +                                       (ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
-> +
-> +       rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-> +       if (rc < 0) {
-> +               dev_err(dev, "PM8xxx write failed\n");
-> +               goto rtc_rw_fail;
-> +       }
-> +
-> +       rtc_dd->ctrl_reg = ctrl_reg;
-> +
-> +       dev_dbg(dev, "Alarm Set for h:r:s=%d:%d:%d, d/m/y=%d/%d/%d\n",
-> +                       alarm->time.tm_hour, alarm->time.tm_min,
-> +                       alarm->time.tm_sec, alarm->time.tm_mday,
-> +                       alarm->time.tm_mon, alarm->time.tm_year);
-> +rtc_rw_fail:
-> +       spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +       return rc;
-> +}
-> +
-> +static int
-> +pm8xxx_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-> +{
-> +       int rc;
-> +       u8 value[4];
-> +       unsigned long secs;
-> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +
-> +       rc = pm8xxx_read_wrapper(rtc_dd, value, rtc_dd->alarm_rw_base,
-> +                       NUM_8_BIT_RTC_REGS);
-> +       if (rc < 0) {
-> +               dev_err(dev, "RTC alarm time read failed\n");
-> +               return rc;
-> +       }
-> +
-> +       secs = value[0] | (value[1] << 8) | (value[2] << 16) | \
-> +                                                (value[3] << 24);
-> +
-> +       rtc_time_to_tm(secs, &alarm->time);
-> +
-> +       rc = rtc_valid_tm(&alarm->time);
-> +       if (rc < 0) {
-> +               dev_err(dev, "Invalid time read from PM8xxx\n");
-> +               return rc;
-> +       }
-> +
-> +       dev_dbg(dev, "Alarm set for - h:r:s=%d:%d:%d, d/m/y=%d/%d/%d\n",
-> +               alarm->time.tm_hour, alarm->time.tm_min,
-> +                               alarm->time.tm_sec, alarm->time.tm_mday,
-> +                               alarm->time.tm_mon, alarm->time.tm_year);
-> +
-> +       return 0;
-> +}
-> +
-> +
-> +static int
-> +pm8xxx_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
-> +{
-> +       int rc;
-> +       unsigned long irq_flags;
-> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +       u8 ctrl_reg;
-> +
-> +       spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +       ctrl_reg = rtc_dd->ctrl_reg;
-> +       ctrl_reg = (enabled) ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
-> +                               (ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
-> +
-> +       rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-> +       if (rc < 0) {
-> +               dev_err(dev, "PM8xxx write failed\n");
-> +               goto rtc_rw_fail;
-> +       }
-> +
-> +       rtc_dd->ctrl_reg = ctrl_reg;
-> +
-> +rtc_rw_fail:
-> +       spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +       return rc;
-> +}
-> +
-> +static struct rtc_class_ops pm8xxx_rtc_ops = {
-> +       .read_time      = pm8xxx_rtc_read_time,
-> +       .set_alarm      = pm8xxx_rtc_set_alarm,
-> +       .read_alarm     = pm8xxx_rtc_read_alarm,
-> +       .alarm_irq_enable = pm8xxx_rtc_alarm_irq_enable,
-> +};
-> +
-> +static irqreturn_t pm8xxx_alarm_trigger(int irq, void *dev_id)
-> +{
-> +       struct pm8xxx_rtc *rtc_dd = dev_id;
-> +       u8 ctrl_reg;
-> +       int rc;
-> +       unsigned long irq_flags;
-> +
-> +       rtc_update_irq(rtc_dd->rtc, 1, RTC_IRQF | RTC_AF);
-> +
-> +       spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +
-> +       /* Clear the alarm enable bit */
-> +       ctrl_reg = rtc_dd->ctrl_reg;
-> +       ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
-> +
-> +       rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-> +       if (rc < 0) {
-> +               spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +               pr_err("PM8xxx write failed!\n");
-> +               goto rtc_alarm_handled;
-> +       }
-> +
-> +       rtc_dd->ctrl_reg = ctrl_reg;
-> +       spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +
-> +       /* Clear RTC alarm register */
-> +       rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base +
-> +                                               PM8XXX_ALARM_CTRL_OFFSET, 1);
-> +       if (rc < 0) {
-> +               pr_err("PM8xxx write failed!\n");
-> +               goto rtc_alarm_handled;
-> +       }
-> +
-> +       ctrl_reg &= ~PM8xxx_RTC_ALARM_CLEAR;
-> +       rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base +
-> +                                               PM8XXX_ALARM_CTRL_OFFSET, 1);
-> +       if (rc < 0)
-> +               pr_err("PM8xxx write failed!\n");
-> +
-> +rtc_alarm_handled:
-> +       return IRQ_HANDLED;
-> +}
-> +
-> +static int __devinit pm8xxx_rtc_probe(struct platform_device *pdev)
-> +{
-> +       int rc;
-> +       u8 ctrl_reg;
-> +       bool rtc_write_enable = false;
-> +       struct pm8xxx_rtc *rtc_dd;
-> +       struct resource *rtc_resource;
-> +       const struct pm8xxx_rtc_platform_data *pdata =
-> +               pdev->dev.platform_data;
-> +
-> +       if (pdata != NULL)
-> +               rtc_write_enable = pdata->rtc_write_enable;
-> +
-> +       rtc_dd = kzalloc(sizeof(*rtc_dd), GFP_KERNEL);
-> +       if (rtc_dd == NULL) {
-> +               dev_err(&pdev->dev, "Unable to allocate memory!\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       /* Initialise spinlock to protect RTC cntrol register */
-> +       spin_lock_init(&rtc_dd->ctrl_reg_lock);
-> +
-> +       rtc_dd->rtc_alarm_irq = platform_get_irq(pdev, 0);
-> +       if (!rtc_dd->rtc_alarm_irq) {
-> +               dev_err(&pdev->dev, "Alarm IRQ resource absent!\n");
-> +               rc = -ENXIO;
-> +               goto fail_rtc_enable;
-> +       }
-> +
-
-In fact, the 'platform_get_irq' maybe return -ENXIO, so you should use
-the 'if (rtc_dd->rtc_alarm_irq < 0)' instead of  '!' to judge
-the get irq action.
-
-> +       rtc_resource = platform_get_resource_byname(pdev, IORESOURCE_IO,
-> +                                                       "pmic_rtc_base");
-> +       if (rtc_resource)
-> +               rtc_dd->rtc_base = rtc_resource->start;
-> +       if (!rtc_dd->rtc_base) {
-> +               dev_err(&pdev->dev, "RTC IO resource absent!\n");
-> +               rc = -ENXIO;
-> +               goto fail_rtc_enable;
-> +       }
-
-
-      rtc_resource = platform_get_resource_byname(pdev, IORESOURCE_IO,
-                                                       "pmic_rtc_base");
-       if !(rtc_resource && rtc_resource->start) {
-               dev_err(&pdev->dev, "RTC IO resource absent!\n");
-               rc = -ENXIO;
-               goto fail_rtc_enable;
-       }
-     rtc_dd->rtc_base = rtc_resource->start;
-
-Do you think above code style is better?
-
-> +
-> +       /* Setup RTC register addresses */
-> +       rtc_dd->rtc_write_base = rtc_dd->rtc_base + PM8XXX_RTC_WRITE_OFFSET;
-> +       rtc_dd->rtc_read_base = rtc_dd->rtc_base + PM8XXX_RTC_READ_OFFSET;
-> +       rtc_dd->alarm_rw_base = rtc_dd->rtc_base + PM8XXX_ALARM_RW_OFFSET;
-> +
-> +       rtc_dd->parent = pdev->dev.parent;
-> +
-> +       /* Check if the RTC is on, else turn it on */
-> +       rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-> +       if (rc < 0) {
-> +               dev_err(&pdev->dev, "PM8xxx read failed!\n");
-> +               goto fail_rtc_enable;
-> +       }
-> +
-> +       if (!(ctrl_reg & PM8xxx_RTC_ENABLE)) {
-> +               ctrl_reg |= PM8xxx_RTC_ENABLE;
-> +               rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
-> +                                                                       1);
-> +               if (rc < 0) {
-> +                       dev_err(&pdev->dev, "PM8xxx write failed!\n");
-> +                       goto fail_rtc_enable;
-> +               }
-> +       }
-> +
-> +       rtc_dd->ctrl_reg = ctrl_reg;
-> +       if (rtc_write_enable == true)
-> +               pm8xxx_rtc_ops.set_time = pm8xxx_rtc_set_time,
-> +
-> +       platform_set_drvdata(pdev, rtc_dd);
-> +
-> +       /* Register the RTC device */
-> +       rtc_dd->rtc = rtc_device_register("pm8xxx_rtc", &pdev->dev,
-> +                               &pm8xxx_rtc_ops, THIS_MODULE);
-> +       if (IS_ERR(rtc_dd->rtc)) {
-> +               dev_err(&pdev->dev, "%s: RTC registration failed (%ld)\n",
-> +                                       __func__, PTR_ERR(rtc_dd->rtc));
-> +               rc = PTR_ERR(rtc_dd->rtc);
-> +               goto fail_rtc_enable;
-> +       }
-> +
-> +       /* Request the alarm IRQ */
-> +       rc = request_any_context_irq(rtc_dd->rtc_alarm_irq,
-> +                                pm8xxx_alarm_trigger, IRQF_TRIGGER_RISING,
-> +                                "pm8xxx_rtc_alarm", rtc_dd);
-> +       if (rc < 0) {
-> +               dev_err(&pdev->dev, "Request IRQ failed (%d)\n", rc);
-> +               goto fail_req_irq;
-> +       }
-> +
-> +       device_init_wakeup(&pdev->dev, 1);
-> +
-> +       dev_dbg(&pdev->dev, "Probe success !!\n");
-> +
-> +       return 0;
-> +
-> +fail_req_irq:
-> +       rtc_device_unregister(rtc_dd->rtc);
-> +fail_rtc_enable:
-> +       platform_set_drvdata(pdev, NULL);
-> +       kfree(rtc_dd);
-> +       return rc;
-> +}
-> +
-> +#ifdef CONFIG_PM
-> +static int pm8xxx_rtc_resume(struct device *dev)
-> +{
-> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +
-> +       if (device_may_wakeup(dev))
-> +               disable_irq_wake(rtc_dd->rtc_alarm_irq);
-> +
-> +       return 0;
-> +}
-> +
-> +static int pm8xxx_rtc_suspend(struct device *dev)
-> +{
-> +       struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +
-> +       if (device_may_wakeup(dev))
-> +               enable_irq_wake(rtc_dd->rtc_alarm_irq);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct dev_pm_ops pm8xxx_rtc_pm_ops = {
-> +       .suspend = pm8xxx_rtc_suspend,
-> +       .resume = pm8xxx_rtc_resume,
-> +};
-> +#endif
-> +static int __devexit pm8xxx_rtc_remove(struct platform_device *pdev)
-> +{
-> +       struct pm8xxx_rtc *rtc_dd = platform_get_drvdata(pdev);
-> +
-> +       device_init_wakeup(&pdev->dev, 0);
-> +       free_irq(rtc_dd->rtc_alarm_irq, rtc_dd);
-> +       rtc_device_unregister(rtc_dd->rtc);
-> +       platform_set_drvdata(pdev, NULL);
-> +       kfree(rtc_dd);
-> +
-> +       return 0;
-> +}
-> +
-> +static struct platform_driver pm8xxx_rtc_driver = {
-> +       .probe          = pm8xxx_rtc_probe,
-> +       .remove         = __devexit_p(pm8xxx_rtc_remove),
-> +       .driver = {
-> +               .name   = PM8XXX_RTC_DEV_NAME,
-> +               .owner  = THIS_MODULE,
-> +#ifdef CONFIG_PM
-> +               .pm     = &pm8xxx_rtc_pm_ops,
-> +#endif
-> +       },
-> +};
-> +
-> +static int __init pm8xxx_rtc_init(void)
-> +{
-> +       return platform_driver_register(&pm8xxx_rtc_driver);
-> +}
-> +module_init(pm8xxx_rtc_init);
-> +
-> +static void __exit pm8xxx_rtc_exit(void)
-> +{
-> +       platform_driver_unregister(&pm8xxx_rtc_driver);
-> +}
-> +module_exit(pm8xxx_rtc_exit);
-> +
-> +MODULE_ALIAS("platform:rtc-pm8xxx");
-> +MODULE_DESCRIPTION("PMIC8xxx RTC driver");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_AUTHOR("Anirudh Ghayal <aghayal@codeaurora.org>");
-> diff --git a/include/linux/mfd/pm8xxx/rtc.h b/include/linux/mfd/pm8xxx/rtc.h
-> new file mode 100644
-> index 0000000..2528e1d
-> --- /dev/null
-> +++ b/include/linux/mfd/pm8xxx/rtc.h
-> @@ -0,0 +1,25 @@
-> +/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#ifndef __RTC_PM8XXX_H__
-> +#define __RTC_PM8XXX_H__
-> +
-> +#define PM8XXX_RTC_DEV_NAME     "rtc-pm8xxx"
-> +/**
-> + * struct pm8058_rtc_pdata - RTC driver platform data
-> + * @rtc_write_enable: variable stating RTC write capability
-> + */
-> +struct pm8xxx_rtc_platform_data {
-> +       bool rtc_write_enable;
-> +};
-> +
-> +#endif /* __RTC_PM8XXX_H__ */
-> --
-> 1.7.3.5
->
-> --
-> You received this message because you are subscribed to "rtc-linux".
-> Membership options at http://groups.google.com/group/rtc-linux .
-> Please read http://groups.google.com/group/rtc-linux/web/checklist
-> before submitting a driver.
-
-
+Thanks.
 
 -- 
-*linux-arm-kernel mailing list
-mail addr:linux-arm-kernel@lists.infradead.org
-you can subscribe by:
-http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-* linux-arm-NUC900 mailing list
-mail addr:NUC900@googlegroups.com
-main web: https://groups.google.com/group/NUC900
-you can subscribe it by sending me mail:
-mcuos.com@gmail.com
+Dmitry
