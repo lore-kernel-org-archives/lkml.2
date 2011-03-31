@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab1CaCDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Mar 2011 22:03:32 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:40548 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432Ab1CaCDb (ORCPT
+	id S1756725Ab1CaCNk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Mar 2011 22:13:40 -0400
+Received: from caiajhbdccac.dreamhost.com ([208.97.132.202]:58919 "EHLO
+	homiemail-a5.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755418Ab1CaCNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Mar 2011 22:03:31 -0400
-Date: Wed, 30 Mar 2011 22:02:58 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, venki@google.com,
-        ak@linux.intel.com, suresh.b.siddha@intel.com, sfr@canb.auug.org.au,
-        peterz@infradead.org, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        arjan@linux.intel.com, Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-Subject: Re: [Xen-devel] Re: [RFC PATCH V4 4/5] cpuidle: driver for xen
-In-reply-to: <4D8CA902.7090907@goop.org>
-Message-id: <alpine.LFD.2.02.1103302159010.1920@x980>
-References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
- <20110322123324.28725.3131.stgit@tringupt.in.ibm.com>
- <20110322145054.GB26952@dumpdata.com> <4D89C40B.4020809@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1103231659210.12911@x980>
- <20110324120522.GB29294@dumpdata.com> <4D8CA902.7090907@goop.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 30 Mar 2011 22:13:39 -0400
+Subject: [PATCH] mce: fix RCU lockdep from mce_poll()
+From: Davidlohr Bueso <dave@gnu.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>
+In-Reply-To: <20110331013750.GJ21838@one.firstfloor.org>
+References: <1288993499.2065.4.camel@cowboy>
+	 <20101106185350.GA23824@basil.fritz.box>
+	 <20101107133950.GV15561@linux.vnet.ibm.com>
+	 <1289215819.2318.3.camel@cowboy> <20101108131708.GC2580@linux.vnet.ibm.com>
+	 <AANLkTikkQ6TdNzkBb6cusFTek7_y=bM1N=+X5zmp3eYY@mail.gmail.com>
+	 <1301534041.2140.3.camel@offworld>
+	 <20110331013750.GJ21838@one.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Mar 2011 23:13:24 -0300
+Message-ID: <1301537604.2140.21.camel@offworld>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Is a CONFIG_XEN kernel supposed to use just HLT in idle?
-> > For right now..
-> 
-> For always, I should think.
+Based on the following message
 
-Yay!
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+arch/x86/kernel/cpu/mcheck/mce.c:1628 invoked rcu_dereference_check() without protection!
 
-> >> xen_arch_setup() does this:
-> >>
-> >>         pm_idle = default_idle;
-> >>         boot_option_idle_override = IDLE_HALT;
-> >>
-> >> which has that effect.  I guess this makes sense b/c the
-> >> CONFIG_XEN kernel is Dom0 and the real C-sates are done
-> >> by the hypervisor?
-> > Correct. There are some patches that make the C-states 
-> > be visible in the Linux kernel, but that hasn't been ported
-> > over yet.
-> 
-> All we need is for the idle CPU to block in the hypervisor; a plain
-> "hlt" is always going to be sufficient (which is overridden as a pvop
-> into a sched_idle hypercall).
-> 
-> Xen will choose an appropriate power state for the physical cpus
-> depending on the overall busyness of the system (which any individual
-> virtual machine can't determine).
+other info that might help us debug this:
 
-Okay, knowing that the Dom0 kernel
+rcu_scheduler_active = 1, debug_locks = 1
+no locks held by mcelog/2350.
 
-1. can boot in non-xen mode on bare hardware and run cpuidle
-2. needs just HLT when booted in xen mode
+stack backtrace:
+Pid: 2350, comm: mcelog Tainted: G        W   2.6.37-rc1+ #7
+Call Trace:
+ [<ffffffff8108e6d4>] lockdep_rcu_dereference+0xa4/0xc0
+ [<ffffffff810189e9>] mce_poll+0xa9/0xd0
+ [<ffffffff81160585>] do_sys_poll+0x275/0x550
+ [<ffffffff8115f0e0>] ? __pollwait+0x0/0xf0
+ [<ffffffff8115f1d0>] ? pollwake+0x0/0x60
+ [<ffffffff8115f1d0>] ? pollwake+0x0/0x60
+ [<ffffffff8130431c>] ? rcu_read_lock_held+0x2c/0x30
+ [<ffffffff8130549a>] ? radix_tree_lookup_element+0xda/0x100
+ [<ffffffff81121f08>] ? __do_fault+0x128/0x470
+ [<ffffffff81100bdb>] ? filemap_fault+0xdb/0x4e0
+ [<ffffffff810ffe75>] ? unlock_page+0x25/0x30
+ [<ffffffff81069ddf>] ? sigprocmask+0x3f/0x100
+ [<ffffffff8183672b>] ? _raw_spin_unlock_irq+0x2b/0x60
+ [<ffffffff8108fefd>] ? trace_hardirqs_on_caller+0x13d/0x180
+ [<ffffffff8108ff4d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff8183672b>] ? _raw_spin_unlock_irq+0x2b/0x60
+ [<ffffffff811608a7>] sys_ppoll+0x47/0x190
+ [<ffffffff8108fefd>] ? trace_hardirqs_on_caller+0x13d/0x180
+ [<ffffffff81835d39>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff810030eb>] system_call_fastpath+0x16/0x1b
 
-will help us keep things simple.
+This code is simply checking the value of the pointer, and therefore need not protect any actual dereferences.
+Replace rcu_dereference_check_mce() with rcu_dereference_index_check().
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+This patch reflects the summary of the activity in https://lkml.org/lkml/2010/11/5/236
+
+ arch/x86/kernel/cpu/mcheck/mce.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 5a05ef6..6cad5dc 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1626,7 +1626,8 @@ out:
+ static unsigned int mce_poll(struct file *file, poll_table *wait)
+ {
+ 	poll_wait(file, &mce_wait, wait);
+-	if (rcu_dereference_check_mce(mcelog.next))
++	if (rcu_dereference_index_check(mcelog.next,
++					rcu_read_lock_sched_held()))
+ 		return POLLIN | POLLRDNORM;
+ 	if (!mce_apei_read_done && apei_check_mce())
+ 		return POLLIN | POLLRDNORM;
+-- 
+1.7.1
+
+
+
