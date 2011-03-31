@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab1CaMwW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 08:52:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46543 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab1CaMwV (ORCPT
+	id S1757434Ab1CaNCh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 09:02:37 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36678 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755627Ab1CaNCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 08:52:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RwfIk2p81vRM3bh1Yfds5kyLT14VbcoslD4FrJyoc3CLCW+4uh8RNp4UQ4mVZELheP
-         hJsVBB1Sx5q3r1j8Pnr7up68J4FEsDzcBOUb40spRbvkmyHXfNaFQ1tNsAUu0CdZpBEp
-         J1DBNZ6zVnztr1eqkdiCdhdYQLoDA2xMLTuK0=
-Date: Thu, 31 Mar 2011 14:52:17 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Tvrtko Ursulin <tvrtko@ursulin.net>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: 2.6.38 hangs on boot until key is pressed
-Message-ID: <20110331125217.GB14693@alberich.amd.com>
-References: <1301253485.2500.2.camel@deuteros>
- <20110330155350.GA31845@alberich.amd.com>
- <1301509097.2538.4.camel@deuteros>
- <20110331124352.GA14693@alberich.amd.com>
+	Thu, 31 Mar 2011 09:02:36 -0400
+Date: Thu, 31 Mar 2011 14:01:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Nicolas Pitre <nico@fluxnic.net>,
+        Dave Airlie <airlied@gmail.com>, david@lang.hm,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Message-ID: <20110331130123.GB17547@n2100.arm.linux.org.uk>
+References: <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com> <alpine.LFD.2.00.1103301814250.28032@xanadu.home> <alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm> <alpine.LFD.2.00.1103302255280.28032@xanadu.home> <AANLkTikV5OMifKjWRVdtJLEcxcZ56jrjWLYJBX89pHQ0@mail.gmail.com> <alpine.LFD.2.00.1103310012500.28032@xanadu.home> <20110331105440.42692165@lxorguk.ukuu.org.uk> <20110331105000.GC14323@n2100.arm.linux.org.uk> <1301575101.10659.132.camel@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110331124352.GA14693@alberich.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1301575101.10659.132.camel@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 02:43:52PM +0200, Andreas Herrmann wrote:
-> On Wed, Mar 30, 2011 at 07:18:17PM +0100, Tvrtko Ursulin wrote:
-> > On Wed, 2011-03-30 at 17:53 +0200, Andreas Herrmann wrote:
-> > > On Sun, Mar 27, 2011 at 08:18:05PM +0100, Tvrtko Ursulin wrote:
-> > > > 
-> > > > Hi all,
-> > > > 
-> > > > It always happens at the same spot. 2.6.37 is fine with almost
-> > > > identical .config. Dmesg and config attached.
-> > > 
-> > > 
-> > > Hi,
-> > > 
-> > > can you please send dmesg when 2.6.37 is booted.
-> > > Also output of "lspci -nnxxxx" would be of interest.
+On Thu, Mar 31, 2011 at 01:38:21PM +0100, Catalin Marinas wrote:
+> On Thu, 2011-03-31 at 11:50 +0100, Russell King - ARM Linux wrote:
+> > Given this thread, I've lost the motivation to continue with it because
+> > it's just going to cause more 'pointless churn' and end up annoying
+> > Linus even more.
 > 
-> Sorry, forgot to say that lspci -nnxxxx should also be run as root.
-> (To get complete PCI config space.)
+> I don't think the criticism was directed at the core ARM code that you
+> maintain (Ingo and others even praised it). I also don't think that you
+> stopping maintaining it would help in any way with this situation.
 > 
-> > > dmidecode (as root) would also help.
-> > 
-> > Attached.
-> 
-> Thanks.
-> 
-> > > Does it help to disable C1e in your BIOS (if there is such an option)?
-> > > If there is no such option please try to boot 2.6.38.1 with idle=mwait
-> > > on the command line.
-> > 
-> > Both tests (on their own) booted without hanging.
-> 
-> Ok.
-> 
-> This reminds me on some Gigabyte mainboards (for which we couldn't
-> root cause the problem). The workaround for those boards was to boot
-> with acpi_skip_timer_override.
-> 
-> The Gigabyte mainboards had some odd lapic_id settings and yours too:
-> 
-> > [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
-> > [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x01] enabled)
-> > [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x02] enabled)
-> > [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x03] enabled)
-> > [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x84] disabled)   <====
-> > [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x85] disabled)   <====
-> > [    0.000000] ACPI: IOAPIC (id[0x04] address[0xfec00000] gsi_base[0])
-> > [    0.000000] IOAPIC[0]: apic_id 4, version 33, address 0xfec00000, GSI 0-23
-> 
-> This should rather look like
+> We probably shouldn't take criticism personally. Linus has some points
+> which the ARM community is aware of already since there is ongoing work
+> for consolidating the platform code (recent v2p patches, SMP-on-UP, FDT
+> and probably more will come) only that this won't happen overnight. If
+> you stop merging any of these, there's definitely no way out (other than
+> doing the work separately for the next two years and replacing the
+> arch/arm in a single pull request).
 
-Sorry, forget this statement. You have a quad-core and not a six-core
-CPU so this setting seems to be ok. (But it's still worth to try the
-acpi_skip_timer_override option.)
+But are we going to be allowed to continue this effort without being
+constantly blamed for "pointless churn" all the time?  I don't think
+so, so it may well be better to give up with pushing stuff into mainline
+for two years, and then do a massive re-merge as a single major "replace
+everything".
 
+I don't like the idea, but I don't see much alternative.
 
-Andreas
+And since Linus' whinge about ARM defconfigs, I really *hate* merging
+anything with *any* defconfig changes in - as a result, I don't
+particularly want to deal with ARM defconfig changes anymore.  I'm sure
+they'll make Linus explode about it again in the near future.  That's
+why this time around, I kept them in a separate branch in case Linus
+refused to pull them.
+
+And again, as a result of this thread I've given up for the time being
+on the idea of continuing to consolidate the ARM Integrator/Versatile/
+Realview/Versatile Express code.  I just don't see the point of wasting
+time trying to consolidate stuff if it's just going to be used against
+us in terms of diffstat percentages and churn complaints.
+
+Just look at the removal of AAEC2000, LH7A40x and 2000 lines from the
+mach-types file removed 6000 lines, which in itself is about the number
+of lines of change submitted during the last merge window for any one
+non-ARM architecture.  At this point in time with this complaint, I've
+absolutely no idea why I bothered to do that.  I should've left it well
+alone and then the diffstat percentage would've been smaller.  After
+all, it's "pointless churn".
+
+Yes, I'm severely hacked off and fed up with this.   Whatever we do will
+ultimately be used against us in one way or another.
