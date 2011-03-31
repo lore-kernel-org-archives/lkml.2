@@ -1,64 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab1CaHKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 03:10:01 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:44240 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753081Ab1CaHKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 03:10:00 -0400
-X-Sasl-enc: SUsJYVtbV/9stb5JuzyimRs4+sMlccNfWE5RHIFbnuDz 1301555399
-Message-ID: <4D942914.3020404@ladisch.de>
-Date: Thu, 31 Mar 2011 09:11:16 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Kelly Anderson <kelly@silka.with-linux.com>
-CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: 2.6.38+ hard lockup in pcm_lib.c
-References: <4D9314A1.7030106@silka.with-linux.com>
-In-Reply-To: <4D9314A1.7030106@silka.with-linux.com>
-Content-Type: text/plain; charset=us-ascii
+	id S1757011Ab1CaHK0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 03:10:26 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:41175 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756999Ab1CaHKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 03:10:24 -0400
+Date: Thu, 31 Mar 2011 09:05:24 +0200
+From: Michael Leun <lkml20101129@newton.leun.net>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mike Pagano <mpagano@gentoo.org>
+Subject: Re: 2.6.38.2 breaks suspend to disk
+Message-ID: <20110331090524.07ad0069@xenia.leun.net>
+In-Reply-To: <4D940DD0.7000704@kernel.org>
+References: <20110330203215.0a1a41a7@xenia.leun.net>
+	<4D940DD0.7000704@kernel.org>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kelly Anderson wrote:
-> I had a consistent hard-lockup on one of my machines, an Amd X6, just
-> after Kdm loaded the desktop (most certainly when it decides to start
-> talking to the sound card).  Everything was dead, even ssh access to the
-> computer.  I git bisected it until I found the commit that was causing
-> it.  After reverting the patch everything is fine.
+On Wed, 30 Mar 2011 22:14:56 -0700
+Yinghai Lu <yinghai@kernel.org> wrote:
+
+> On 03/30/2011 11:32 AM, Michael Leun wrote:
+> > Hi,
+> >
+> > suspend to disk works with 2.6.38.1 but does not with 2.6.38.2 on my
+> > acer 1825ptz. Machine freezes after resume.
+> >
+> > git bisect yields:
+> >
+> > ml@jill:/usr/src/kernel/b/linux-2.6.38.y>  git bisect bad
+> > ff518ea26654e05d325d996f6e3a7f5f569cc2d5 is the first bad commit
+> > commit ff518ea26654e05d325d996f6e3a7f5f569cc2d5
+> > Author: Yinghai Lu<yinghai@kernel.org>
+> > Date:   Fri Feb 18 11:30:30 2011 +0000
+> >
+> >      x86: Cleanup highmap after brk is concluded
+> >
+> >      commit e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e upstream.
+> >
+> >      Now cleanup_highmap actually is in two steps: one is early in
+> > head64.c and only clears above _end; a second one is in
+> > init_memory_mapping() and tries to clean from _brk_end to _end.
+> >      It should check if those boundaries are PMD_SIZE aligned but
+> > currently does not.
+> >      Also init_memory_mapping() is called several times for numa or
+> > memory hotplug, so we really should not handle initial kernel
+> > mappings there.
+> >
+> >      This patch moves cleanup_highmap() down after _brk_end is
+> > settled so we can do everything in one step.
+> >      Also we honor max_pfn_mapped in the implementation of
+> > cleanup_highmap.
+> >
+> >      Signed-off-by: Yinghai Lu<yinghai@kernel.org>
+> >      Signed-off-by: Stefano
+> > Stabellini<stefano.stabellini@eu.citrix.com>
+> > LKML-Reference:<alpine.DEB.2.00.1103171739050.3382@kaball-desktop>
+> > Signed-off-by: H. Peter Anvin<hpa@zytor.com> Signed-off-by: Greg
+> > Kroah-Hartman<gregkh@suse.de>
+> >
+> > :040000 040000 b5ed0c2971ba1162c7cd289dd351d1700eb52fbc
+> > 8f830fdb43fa30ddebb485e6f6455d669300874b M      arch
+> >
 > 
-> commit 59ff878ffb26bc0be812ca8295799164f413ae88
-> Author: Clemens Ladisch
-> Date:   Thu Nov 18 09:43:52 2010 +0100
+> can you please try following partial reverting patch?
 > 
->      ALSA: pcm: detect xruns in no-period-wakeup mode
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 7942335..07688d1 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -302,11 +302,11 @@ void __init init_extra_mapping_uc(unsigned long
+> phys, unsigned long size) void __init cleanup_highmap(void)
+>   {
+>   	unsigned long vaddr = __START_KERNEL_map;
+> -	unsigned long vaddr_end = __START_KERNEL_map +
+> (max_pfn_mapped << PAGE_SHIFT); unsigned long end = roundup((unsigned
+> long)_brk_end, PMD_SIZE) - 1; pmd_t *pmd = level2_kernel_pgt;
+> +	pmd_t *last_pmd = pmd + PTRS_PER_PMD;
+>   
+> -	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr +=
+> PMD_SIZE) {
+> +	for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
+>   		if (pmd_none(*pmd))
+>   			continue;
+>   		if (vaddr < (unsigned long) _text || vaddr > end)
+> 
 
-This looks as if you get an infinite loop, probably because
-hw_ptr_buffer_jiffies is zero.
+Nope, unfortunately this does not change anything (neither when
+applying ontop of the tree resulting from bisecting, nor ontop
+2.6.38.2).
 
-Please try this patch:
+Just to make shure there was no mistake when bisecting I did
 
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -425,6 +425,8 @@ static int snd_pcm_hw_params(struct snd_
- 	runtime->no_period_wakeup =
- 			(params->info & SNDRV_PCM_INFO_NO_PERIOD_WAKEUP) &&
- 			(params->flags & SNDRV_PCM_HW_PARAMS_NO_PERIOD_WAKEUP);
-+	runtime->hw_ptr_buffer_jiffies =
-+			max(1uL, (runtime->buffer_size * HZ) / runtime->rate);
- 
- 	bits = snd_pcm_format_physical_width(runtime->format);
- 	runtime->sample_bits = bits;
-@@ -866,8 +868,6 @@ static void snd_pcm_post_start(struct sn
- 	struct snd_pcm_runtime *runtime = substream->runtime;
- 	snd_pcm_trigger_tstamp(substream);
- 	runtime->hw_ptr_jiffies = jiffies;
--	runtime->hw_ptr_buffer_jiffies = (runtime->buffer_size * HZ) / 
--							    runtime->rate;
- 	runtime->status->state = state;
- 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
- 	    runtime->silence_size > 0)
+patch -R -p1 <~/linux-2.6.38.y.git-ff518ea26654e05d325d996f6e3a7f5f569cc2d5.txt
+
+and then indeed it worked again.
+
+-- 
+MfG,
+
+Michael Leun
+
