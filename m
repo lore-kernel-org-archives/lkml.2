@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758754Ab1CaRWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 13:22:21 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:49513 "EHLO
+	id S1758725Ab1CaRWU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 13:22:20 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:49516 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab1CaRWT (ORCPT
+	with ESMTP id S1752967Ab1CaRWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Mar 2011 13:22:19 -0400
 From: Manoj Iyer <manoj.iyer@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, pingc@wacom.com, chris@cnpbagwell.com
 Subject: [PATCH] add support for Lenovo tablet ID (0xE6)
-Date: Thu, 31 Mar 2011 12:20:51 -0500
-Message-Id: <1301592052-4064-1-git-send-email-manoj.iyer@canonical.com>
+Date: Thu, 31 Mar 2011 12:20:52 -0500
+Message-Id: <1301592052-4064-2-git-send-email-manoj.iyer@canonical.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1301592052-4064-1-git-send-email-manoj.iyer@canonical.com>
+References: <1301592052-4064-1-git-send-email-manoj.iyer@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please consider this patch to wacom for Lenovo x220.
+Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+---
+ drivers/input/tablet/wacom_wac.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Patch enables wacom touch screen on Lenovo x220. Values are as per 
-reported in Xorg.0.log and attached here.
-
-[    12.877] (II) config/udev: Adding input device Wacom ISDv4 E6 Pen (/dev/input/event6)
-[    12.877] (**) Wacom ISDv4 E6 Pen: Applying InputClass "evdev tablet catchall"
-[    12.877] (**) Wacom ISDv4 E6 Pen: Applying InputClass "Wacom class"
-[    12.877] (II) LoadModule: "wacom"
-[    12.878] (II) Loading /usr/lib/xorg/modules/input/wacom_drv.so
-[    12.878] (II) Module wacom: vendor="X.Org Foundation"
-[    12.878] 	compiled for 1.9.0, module version = 0.10.8
-[    12.878] 	Module class: X.Org XInput Driver
-[    12.878] 	ABI class: X.Org XInput driver, version 11.0
-[    12.878] (**) Option "Device" "/dev/input/event6"
-[    12.892] (II) Wacom ISDv4 E6 Pen: type not specified, assuming 'stylus'.
-[    12.892] (II) Wacom ISDv4 E6 Pen: other types will be automatically added.
-[    12.892] (**) Wacom ISDv4 E6 Pen stylus: always reports core events
-[    12.892] (--) Wacom ISDv4 E6 Pen stylus: using pressure threshold of 27 for button 1
-[    12.892] (--) Wacom ISDv4 E6 Pen stylus: Wacom USB TabletPC tablet maxX=27760 maxY=15694 maxZ=255 resX=1016 resY=1016  tilt=disabled
-[    12.892] (II) Wacom ISDv4 E6 Pen stylus: hotplugging dependent devices.
-[    12.892] (**) Wacom ISDv4 E6 Pen eraser: Applying InputClass "evdev tablet catchall"
-[    12.892] (**) Wacom ISDv4 E6 Pen eraser: Applying InputClass "Wacom class"
-[    12.892] (**) Option "Device" "/dev/input/event6"
-[    12.920] (**) Wacom ISDv4 E6 Pen eraser: always reports core events
-[    12.920] (--) Wacom ISDv4 E6 Pen eraser: Wacom USB TabletPC tablet maxX=27760 maxY=15694 maxZ=255 resX=1016 resY=1016  tilt=disabled
-[    12.936] (II) XINPUT: Adding extended input device "Wacom ISDv4 E6 Pen eraser" (type: ERASER)
-[    12.936] (--) Wacom ISDv4 E6 Pen eraser: top X=0 top Y=0 bottom X=27760 bottom Y=15694 resol X=1016 resol Y=1016
-[    12.988] (II) Wacom ISDv4 E6 Pen stylus: hotplugging completed.
-[    13.036] (II) XINPUT: Adding extended input device "Wacom ISDv4 E6 Pen stylus" (type: STYLUS)
-[    13.036] (--) Wacom ISDv4 E6 Pen stylus: top X=0 top Y=0 bottom X=27760 bottom Y=15694 resol X=1016 resol Y=1016
-[    13.036] (II) config/udev: Adding input device Wacom ISDv4 E6 Pen (/dev/input/mouse0)
-[    13.036] (II) No input driver/identifier specified (ignoring)
-[    13.036] (II) config/udev: Adding input device Wacom ISDv4 E6 Finger (/dev/input/event7)
-[    13.036] (**) Wacom ISDv4 E6 Finger: Applying InputClass "evdev touchscreen catchall"
-[    13.036] (**) Wacom ISDv4 E6 Finger: Applying InputClass "Wacom class"
-[    13.036] (**) Option "Device" "/dev/input/event7"
-[    13.068] (II) Wacom ISDv4 E6 Finger: type not specified, assuming 'touch'.
-[    13.068] (II) Wacom ISDv4 E6 Finger: other types will be automatically added.
-[    13.068] (**) Wacom ISDv4 E6 Finger touch: always reports core events
-[    13.068] (--) Wacom ISDv4 E6 Finger touch: using pressure threshold of 27 for button 1
-[    13.068] (--) Wacom ISDv4 E6 Finger touch: Wacom USB TabletPC tablet maxX=0 maxY=0 maxZ=255 resX=1016 resY=1016  tilt=disabled
-[    13.068] (II) Wacom ISDv4 E6 Finger touch: hotplugging dependent devices.
-[    13.068] (II) Wacom ISDv4 E6 Finger touch: hotplugging completed.
-[    13.132] (II) XINPUT: Adding extended input device "Wacom ISDv4 E6 Finger touch" (type: TOUCH)
-[    13.132] (--) Wacom ISDv4 E6 Finger touch: top X=0 top Y=0 bottom X=2776 bottom Y=1549 resol X=1016 resol Y=1016
-[    13.228] (II) config/udev: Adding input device Wacom ISDv4 E6 Finger (/dev/input/mouse1)
-
-
+diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+index 5597637..f751224 100644
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -1364,6 +1364,8 @@ static const struct wacom_features wacom_features_0xE2 =
+ 	{ "Wacom ISDv4 E2",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG };
+ static const struct wacom_features wacom_features_0xE3 =
+ 	{ "Wacom ISDv4 E3",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG };
++static const struct wacom_features wacom_features_0xE6 =
++	{ "ISD-V4",       	  WACOM_PKGLEN_TPC2FG,    27760, 15694,  255,  0, TABLETPC2FG };
+ static const struct wacom_features wacom_features_0x47 =
+ 	{ "Wacom Intuos2 6x8",    WACOM_PKGLEN_INTUOS,    20320, 16240, 1023, 31, INTUOS };
+ static struct wacom_features wacom_features_0xD0 =
+@@ -1474,6 +1476,7 @@ const struct usb_device_id wacom_ids[] = {
+ 	{ USB_DEVICE_WACOM(0x9F) },
+ 	{ USB_DEVICE_WACOM(0xE2) },
+ 	{ USB_DEVICE_WACOM(0xE3) },
++	{ USB_DEVICE_WACOM(0xE6) },
+ 	{ USB_DEVICE_WACOM(0x47) },
+ 	{ USB_DEVICE_LENOVO(0x6004) },
+ 	{ }
+-- 
+1.7.1
 
