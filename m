@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757862Ab1CaOC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:02:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49711 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757795Ab1CaOC0 convert rfc822-to-8bit (ORCPT
+	id S1757878Ab1CaOJh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:09:37 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44486 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757845Ab1CaOJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:02:26 -0400
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-In-Reply-To: <1301561155.14111.288.camel@minggr.sh.intel.com>
-References: <1301391136.14111.98.camel@minggr.sh.intel.com>
-	 <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost>
-	 <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop>
-	 <1301418533.2250.419.camel@laptop>
-	 <20110329174556.GC24129@ghostprotocols.net>  <4D92818A.8020405@hitachi.com>
-	 <1301561155.14111.288.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 31 Mar 2011 16:01:57 +0200
-Message-ID: <1301580117.4859.286.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 31 Mar 2011 10:09:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=oaUmJILka7OfjiV33JU9XvC/hoQZ/TbEzwG55xk3FLohbRJ0iYi7hN+4XhxdvRXfGN
+         71rrvOWIKDlI7y6ubKFyRFIIHe+rfi2O8oLjtfH157LiEXh3Tlet5ISvXTFit9RKWFcm
+         OXqj6dTXuisILoMNfpXUJWgT7KX0y7v8SZO4k=
+Message-ID: <4D948B1C.7080806@suse.cz>
+Date: Thu, 31 Mar 2011 16:09:32 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Russell King <rmk@arm.linux.org.uk>
+CC: Arnd Bergmann <arnd@arndb.de>, Arend van Spriel <arend@broadcom.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        devel@linuxdriverproject.org, gregkh@suse.de,
+        linux-wireless@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [PATCH 1/1] drivers: brcmaxi: provide amba axi functionality
+ in separate module
+References: <1301391619-4499-1-git-send-email-arend@broadcom.com> <1301391619-4499-2-git-send-email-arend@broadcom.com> <4D91B856.8040302@suse.cz> <201103301453.48607.arnd@arndb.de> <4D948624.3040605@suse.cz> <20110331135126.GC19540@flint.arm.linux.org.uk>
+In-Reply-To: <20110331135126.GC19540@flint.arm.linux.org.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-31 at 16:45 +0800, Lin Ming wrote:
-> I am considering if it is possible to do "instruction unwind" to get a
-> map from (temporarily used) register to a specific member of a data
-> structure pointed by a pointer.
+On 03/31/2011 03:51 PM, Russell King wrote:
+> On Thu, Mar 31, 2011 at 03:48:20PM +0200, Jiri Slaby wrote:
+>> How it can? Packed only tells the compiler to have one byte alignment
+>> steps. And it should not matter here as all the members are 32-bit long.
 > 
-> 4004a0:         movq    -8(%rbp), %rax    /* load foo arg from stack
-> */
-> 4004a4:         movq    24(%rax), %rax    /* load foo->bar */
-> 4004a8:         movq    -16(%rbp), %rdx   /* load tmp arg from stack
-> */
-> 4004ac:         movl    32(%rdx), %edx    /* load tmp->blah */
-> 4004af:         movl    %edx, 20(%rax)    /* store bar->fubar */ 
-> 
-> foo: -8(%rbp)
-> tmp: -16(%rbp)
-> 
-> Assume we are now at ip 4004af, from the instruction decoder, we know
-> it's a store operation, and we want to find out what %rax is.
-> 
-> 1. unwind to 4004ac
->    Ignore this, because it does not touch %rax
-> 
-> 2. unwind to 4004a8
->    Ignore this, because it does not touch %rax
-> 
-> 3. unwind to 4004a4
->    20(%rax) => 20(24(%rax)), continue to unwind because we still
->    have no idea what %rax is
-> 
-> 4. unwind to 4004a0
->    20(24(%rax)) => 20(24(-8(%rbp))), stop unwind, because we now know
->    -8(%rbp) is foo.
-> 
-> So the original 20(%rax) is replace as 20(24(-8(%rbp))), and it means
-> foo->bar->fubar
-> 
-> Does this make sense? 
+> It also tells the compiler that it may be misaligned, so to avoid
+> alignment faults it will use byte loads/stores.
 
-Yes and no, the problem is that you cannot unwind an x86 instruction
-stream. Therefore its easier to start at the beginning of a function
-where DWARF should be able to tell you everything you need and then do a
-single fwd scan to propagate the information until you reach the point
-of interest.
+No, it should not (if offsetof % sizeof == 0). Otherwise it's a bug in
+the compiler.
+
+Am I missing something?
+
+thanks,
+-- 
+js
+suse labs
