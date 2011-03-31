@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab1CaGQi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 02:16:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56513 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab1CaGQg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 02:16:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ZwQi4f6WDIhmKGSlo8dSB62idlcYg1jvs62bVC8g2kCnKXrSvEOyA4176ql1/zaIlk
-         hhsD6uPisUgoNLvrK4ptq52MFlaKFUn0Po1r0MEIG3gJTl7O+URyLTJi4aZocXfRxjwS
-         wgU8VUIvrjWWZqqxhiVlseBtWwQ8DCyeacGmg=
+	id S1756603Ab1CaGaF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 02:30:05 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49651 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751302Ab1CaGaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 02:30:04 -0400
+Date: Thu, 31 Mar 2011 08:29:49 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        lucas.de.marchi@gmail.com
+Subject: Re: [GIT PULL] Fix common misspellings
+Message-ID: <20110331062949.GA29526@elte.hu>
+References: <20110331032307.GA27999@vigoh>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimuDf+Qo0e_sVuNX5DavOBSu+Gr-VryeD9aSw_9@mail.gmail.com>
-References: <1301050810-11329-1-git-send-email-akinobu.mita@gmail.com>
-	<AANLkTikKA2MY6nf+LLyJbNQffX=qYY3eZdpNmwVQc21u@mail.gmail.com>
-	<m2sju4jrov.fsf@igel.home>
-	<AANLkTimuDf+Qo0e_sVuNX5DavOBSu+Gr-VryeD9aSw_9@mail.gmail.com>
-Date: Thu, 31 Mar 2011 08:16:35 +0200
-X-Google-Sender-Auth: EWWu3_xZrwWoxPlSCmccav6MFks
-Message-ID: <AANLkTi=kamiujNVhVgjPLjyPnEw0gSgNn=28QVmsP-5j@mail.gmail.com>
-Subject: Re: [PATCH] m68k: fix find_next bitops
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Roman Zippel <zippel@linux-m68k.org>,
-        linux-m68k@vger.kernel.org,
-        Michael Schmitz <schmitzmic@googlemail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110331032307.GA27999@vigoh>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 08:02, Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> 2011/3/31 Andreas Schwab <schwab@linux-m68k.org>:
->> Geert Uytterhoeven <geert@linux-m68k.org> writes:
->>
->>> Andreas, do you think it's worth keeping (and fixing) the m68k "optimized"
->>> versions?
->>
->> Should be easy to add the required offset >= size checks.
->
-> OK, I'll try to fix the optimized version.
-> Or, could someone who can test on the real hardware fix this problem?
 
-I'll have a look...
+hi Lucas,
 
-Gr{oetje,eeting}s,
+* Lucas De Marchi <lucas.demarchi@profusion.mobi> wrote:
 
-                        Geert
+> 
+> Hi Linus,
+> 
+> Please pull the following fix for common misspellings in kernel code:
+> 
+> git://git.profusion.mobi/users/lucas/linux-2.6.git for-linus
+> 
+> I was doing it in a per maintainer basis, but as noted by Ingo, this was not
+> working out.
+> 
+> There's only one big patch that fixes misspellings in
+>  * Documentation
+>  * Comments
+>  * Strings that are used only in printk and the like
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+I've gone over your changes and noticed one very small thing, you've changed 
+copyright strings as well:
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+- * Copyright (C) 2007 Marvell Internation Ltd.
++ * Copyright (C) 2007 Marvell International Ltd.
+- * Copyright (C) 2007 Marvell Internation Ltd.
++ * Copyright (C) 2007 Marvell International Ltd.
+- * Copyright (C) 2007 Marvell Internation Ltd.
++ * Copyright (C) 2007 Marvell International Ltd.
+- * Copyright (C) 2007-2008 Marvell Internation Ltd.
++ * Copyright (C) 2007-2008 Marvell International Ltd.
+- * Copyright (C) 2007 Marvell Internation Ltd.
++ * Copyright (C) 2007 Marvell International Ltd.
+- * Copyright (C) 2007 Marvell Internation Ltd.
++ * Copyright (C) 2007 Marvell International Ltd.
+- * Copyright (C) 2007 Marvell Internation Ltd.
++ * Copyright (C) 2007 Marvell International Ltd.
+- * Copyright (c) 2002 The Regents of the Unviersity of Michigan
++ * Copyright (c) 2002 The Regents of the University of Michigan
+
+While all the fixes are correct, i'd advise against changing copyright notices 
+without the SOB of the authors. The s/Unviersity/University fix would be ok i 
+guess because it's a very clear typo, but the Marvell one is borderline (while 
+it too is probably a typo) i think it needs a signoff from those who put the 
+copyright notices there in that form.
+
+You could leave out those bits from the patch as well.
+
+Thanks,
+
+	Ingo
