@@ -1,276 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758387Ab1CaPei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 11:34:38 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42215 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab1CaPeg (ORCPT
+	id S1758398Ab1CaPfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 11:35:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57562 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab1CaPfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 11:34:36 -0400
-Date: Thu, 31 Mar 2011 09:34:33 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
-        patches@linaro.org, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 2/5] mmc: sdhci: eliminate sdhci_of_host and sdhci_of_data
-Message-ID: <20110331153433.GA26709@ponder.secretlab.ca>
-References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
- <1301042931-4869-3-git-send-email-shawn.guo@linaro.org>
+	Thu, 31 Mar 2011 11:35:52 -0400
+Date: Thu, 31 Mar 2011 12:35:44 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "2nddept-manager@sdl.hitachi.co.jp" 
+	<2nddept-manager@sdl.hitachi.co.jp>
+Subject: Re: [RFC PATCH] perf report: add sort by file lines
+Message-ID: <20110331153544.GC25095@ghostprotocols.net>
+References: <1301392457.4859.74.camel@twins>
+ <1301417155.3620.8.camel@localhost>
+ <1301418183.2250.416.camel@laptop>
+ <1301418404.2250.417.camel@laptop>
+ <1301418533.2250.419.camel@laptop>
+ <20110329174556.GC24129@ghostprotocols.net>
+ <4D92818A.8020405@hitachi.com>
+ <1301561155.14111.288.camel@minggr.sh.intel.com>
+ <20110331134638.GA25095@ghostprotocols.net>
+ <1301581176.2271.9.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301042931-4869-3-git-send-email-shawn.guo@linaro.org>
+In-Reply-To: <1301581176.2271.9.camel@localhost>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 04:48:48PM +0800, Shawn Guo wrote:
-> The patch is to migrate the use of sdhci_of_host and sdhci_of_data
-> to sdhci_pltfm_host and sdhci_pltfm_data, so that the former pair can
-> be eliminated.
+Em Thu, Mar 31, 2011 at 10:19:36PM +0800, Lin Ming escreveu:
+> On Thu, 2011-03-31 at 21:46 +0800, Arnaldo Carvalho de Melo wrote:
+> > I think it does, so we do just like with annotation, but parsing objdump
+> > -S output, is that what you're planning?
 > 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> I mean to use libopcodes to decode the instructions.
+> But to parse objdump -S output maybe a better and simpler idea.
 
-Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
+When we started working on code annotation I thought about using a
+library, but after a while, no, not really, better to parse a tool
+output like Ingo did in the first usable version of perf annotate.
 
-> ---
->  drivers/mmc/host/sdhci-of-core.c  |   30 +++++++++++++++---------------
->  drivers/mmc/host/sdhci-of-esdhc.c |   36 +++++++++++++++++++-----------------
->  drivers/mmc/host/sdhci-of-hlwd.c  |   20 +++++++++++---------
->  drivers/mmc/host/sdhci-of.h       |   15 +++------------
->  drivers/mmc/host/sdhci-pltfm.h    |    4 ++++
->  5 files changed, 52 insertions(+), 53 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci-of-core.c b/drivers/mmc/host/sdhci-of-core.c
-> index dd84124..a6c0132 100644
-> --- a/drivers/mmc/host/sdhci-of-core.c
-> +++ b/drivers/mmc/host/sdhci-of-core.c
-> @@ -59,7 +59,7 @@ void sdhci_be32bs_writel(struct sdhci_host *host, u32 val, int reg)
->  
->  void sdhci_be32bs_writew(struct sdhci_host *host, u16 val, int reg)
->  {
-> -	struct sdhci_of_host *of_host = sdhci_priv(host);
-> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
->  	int base = reg & ~0x3;
->  	int shift = (reg & 0x2) * 8;
->  
-> @@ -69,10 +69,10 @@ void sdhci_be32bs_writew(struct sdhci_host *host, u16 val, int reg)
->  		 * Postpone this write, we must do it together with a
->  		 * command write that is down below.
->  		 */
-> -		of_host->xfer_mode_shadow = val;
-> +		pltfm_host->xfer_mode_shadow = val;
->  		return;
->  	case SDHCI_COMMAND:
-> -		sdhci_be32bs_writel(host, val << 16 | of_host->xfer_mode_shadow,
-> +		sdhci_be32bs_writel(host, val << 16 | pltfm_host->xfer_mode_shadow,
->  				    SDHCI_TRANSFER_MODE);
->  		return;
->  	}
-> @@ -128,9 +128,9 @@ static int __devinit sdhci_of_probe(struct platform_device *ofdev,
->  				 const struct of_device_id *match)
->  {
->  	struct device_node *np = ofdev->dev.of_node;
-> -	struct sdhci_of_data *sdhci_of_data = match->data;
-> +	struct sdhci_pltfm_data *pdata = match->data;
->  	struct sdhci_host *host;
-> -	struct sdhci_of_host *of_host;
-> +	struct sdhci_pltfm_host *pltfm_host;
->  	const __be32 *clk;
->  	int size;
->  	int ret;
-> @@ -138,11 +138,11 @@ static int __devinit sdhci_of_probe(struct platform_device *ofdev,
->  	if (!of_device_is_available(np))
->  		return -ENODEV;
->  
-> -	host = sdhci_alloc_host(&ofdev->dev, sizeof(*of_host));
-> +	host = sdhci_alloc_host(&ofdev->dev, sizeof(*pltfm_host));
->  	if (IS_ERR(host))
->  		return -ENOMEM;
->  
-> -	of_host = sdhci_priv(host);
-> +	pltfm_host = sdhci_priv(host);
->  	dev_set_drvdata(&ofdev->dev, host);
->  
->  	host->ioaddr = of_iomap(np, 0);
-> @@ -158,9 +158,9 @@ static int __devinit sdhci_of_probe(struct platform_device *ofdev,
->  	}
->  
->  	host->hw_name = dev_name(&ofdev->dev);
-> -	if (sdhci_of_data) {
-> -		host->quirks = sdhci_of_data->quirks;
-> -		host->ops = &sdhci_of_data->ops;
-> +	if (pdata) {
-> +		host->quirks = pdata->quirks;
-> +		host->ops = &pdata->ops;
->  	}
->  
->  	if (of_get_property(np, "sdhci,auto-cmd12", NULL))
-> @@ -175,7 +175,7 @@ static int __devinit sdhci_of_probe(struct platform_device *ofdev,
->  
->  	clk = of_get_property(np, "clock-frequency", &size);
->  	if (clk && size == sizeof(*clk) && *clk)
-> -		of_host->clock = be32_to_cpup(clk);
-> +		pltfm_host->clock = be32_to_cpup(clk);
->  
->  	ret = sdhci_add_host(host);
->  	if (ret)
-> @@ -205,12 +205,12 @@ static int __devexit sdhci_of_remove(struct platform_device *ofdev)
->  
->  static const struct of_device_id sdhci_of_match[] = {
->  #ifdef CONFIG_MMC_SDHCI_OF_ESDHC
-> -	{ .compatible = "fsl,mpc8379-esdhc", .data = &sdhci_esdhc, },
-> -	{ .compatible = "fsl,mpc8536-esdhc", .data = &sdhci_esdhc, },
-> -	{ .compatible = "fsl,esdhc", .data = &sdhci_esdhc, },
-> +	{ .compatible = "fsl,mpc8379-esdhc", .data = &sdhci_esdhc_pdata, },
-> +	{ .compatible = "fsl,mpc8536-esdhc", .data = &sdhci_esdhc_pdata, },
-> +	{ .compatible = "fsl,esdhc", .data = &sdhci_esdhc_pdata, },
->  #endif
->  #ifdef CONFIG_MMC_SDHCI_OF_HLWD
-> -	{ .compatible = "nintendo,hollywood-sdhci", .data = &sdhci_hlwd, },
-> +	{ .compatible = "nintendo,hollywood-sdhci", .data = &sdhci_hlwd_pdata, },
->  #endif
->  	{ .compatible = "generic-sdhci", },
->  	{},
-> diff --git a/drivers/mmc/host/sdhci-of-esdhc.c b/drivers/mmc/host/sdhci-of-esdhc.c
-> index fcd0e1f..702a98b 100644
-> --- a/drivers/mmc/host/sdhci-of-esdhc.c
-> +++ b/drivers/mmc/host/sdhci-of-esdhc.c
-> @@ -60,30 +60,32 @@ static int esdhc_of_enable_dma(struct sdhci_host *host)
->  
->  static unsigned int esdhc_of_get_max_clock(struct sdhci_host *host)
->  {
-> -	struct sdhci_of_host *of_host = sdhci_priv(host);
-> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
->  
-> -	return of_host->clock;
-> +	return pltfm_host->clock;
->  }
->  
->  static unsigned int esdhc_of_get_min_clock(struct sdhci_host *host)
->  {
-> -	struct sdhci_of_host *of_host = sdhci_priv(host);
-> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
->  
-> -	return of_host->clock / 256 / 16;
-> +	return pltfm_host->clock / 256 / 16;
->  }
->  
-> -struct sdhci_of_data sdhci_esdhc = {
-> +static struct sdhci_ops sdhci_esdhc_ops = {
-> +	.read_l = sdhci_be32bs_readl,
-> +	.read_w = esdhc_readw,
-> +	.read_b = sdhci_be32bs_readb,
-> +	.write_l = sdhci_be32bs_writel,
-> +	.write_w = esdhc_writew,
-> +	.write_b = esdhc_writeb,
-> +	.set_clock = esdhc_set_clock,
-> +	.enable_dma = esdhc_of_enable_dma,
-> +	.get_max_clock = esdhc_of_get_max_clock,
-> +	.get_min_clock = esdhc_of_get_min_clock,
-> +};
-> +
-> +struct sdhci_pltfm_data sdhci_esdhc_pdata = {
->  	.quirks = ESDHC_DEFAULT_QUIRKS,
-> -	.ops = {
-> -		.read_l = sdhci_be32bs_readl,
-> -		.read_w = esdhc_readw,
-> -		.read_b = sdhci_be32bs_readb,
-> -		.write_l = sdhci_be32bs_writel,
-> -		.write_w = esdhc_writew,
-> -		.write_b = esdhc_writeb,
-> -		.set_clock = esdhc_set_clock,
-> -		.enable_dma = esdhc_of_enable_dma,
-> -		.get_max_clock = esdhc_of_get_max_clock,
-> -		.get_min_clock = esdhc_of_get_min_clock,
-> -	},
-> +	.ops = &sdhci_esdhc_ops,
->  };
-> diff --git a/drivers/mmc/host/sdhci-of-hlwd.c b/drivers/mmc/host/sdhci-of-hlwd.c
-> index 68ddb75..380e896 100644
-> --- a/drivers/mmc/host/sdhci-of-hlwd.c
-> +++ b/drivers/mmc/host/sdhci-of-hlwd.c
-> @@ -51,15 +51,17 @@ static void sdhci_hlwd_writeb(struct sdhci_host *host, u8 val, int reg)
->  	udelay(SDHCI_HLWD_WRITE_DELAY);
->  }
->  
-> -struct sdhci_of_data sdhci_hlwd = {
-> +static struct sdhci_ops sdhci_hlwd_ops = {
-> +	.read_l = sdhci_be32bs_readl,
-> +	.read_w = sdhci_be32bs_readw,
-> +	.read_b = sdhci_be32bs_readb,
-> +	.write_l = sdhci_hlwd_writel,
-> +	.write_w = sdhci_hlwd_writew,
-> +	.write_b = sdhci_hlwd_writeb,
-> +};
-> +
-> +struct sdhci_pltfm_data sdhci_hlwd_pdata = {
->  	.quirks = SDHCI_QUIRK_32BIT_DMA_ADDR |
->  		  SDHCI_QUIRK_32BIT_DMA_SIZE,
-> -	.ops = {
-> -		.read_l = sdhci_be32bs_readl,
-> -		.read_w = sdhci_be32bs_readw,
-> -		.read_b = sdhci_be32bs_readb,
-> -		.write_l = sdhci_hlwd_writel,
-> -		.write_w = sdhci_hlwd_writew,
-> -		.write_b = sdhci_hlwd_writeb,
-> -	},
-> +	.ops = &sdhci_hlwd_ops,
->  };
-> diff --git a/drivers/mmc/host/sdhci-of.h b/drivers/mmc/host/sdhci-of.h
-> index ad09ad9..5bdb5e7 100644
-> --- a/drivers/mmc/host/sdhci-of.h
-> +++ b/drivers/mmc/host/sdhci-of.h
-> @@ -18,16 +18,7 @@
->  
->  #include <linux/types.h>
->  #include "sdhci.h"
-> -
-> -struct sdhci_of_data {
-> -	unsigned int quirks;
-> -	struct sdhci_ops ops;
-> -};
-> -
-> -struct sdhci_of_host {
-> -	unsigned int clock;
-> -	u16 xfer_mode_shadow;
-> -};
-> +#include "sdhci-pltfm.h"
->  
->  extern u32 sdhci_be32bs_readl(struct sdhci_host *host, int reg);
->  extern u16 sdhci_be32bs_readw(struct sdhci_host *host, int reg);
-> @@ -36,7 +27,7 @@ extern void sdhci_be32bs_writel(struct sdhci_host *host, u32 val, int reg);
->  extern void sdhci_be32bs_writew(struct sdhci_host *host, u16 val, int reg);
->  extern void sdhci_be32bs_writeb(struct sdhci_host *host, u8 val, int reg);
->  
-> -extern struct sdhci_of_data sdhci_esdhc;
-> -extern struct sdhci_of_data sdhci_hlwd;
-> +extern struct sdhci_pltfm_data sdhci_esdhc_pdata;
-> +extern struct sdhci_pltfm_data sdhci_hlwd_pdata;
->  
->  #endif /* __SDHCI_OF_H */
-> diff --git a/drivers/mmc/host/sdhci-pltfm.h b/drivers/mmc/host/sdhci-pltfm.h
-> index a3e4be0..12afe86 100644
-> --- a/drivers/mmc/host/sdhci-pltfm.h
-> +++ b/drivers/mmc/host/sdhci-pltfm.h
-> @@ -19,6 +19,10 @@
->  struct sdhci_pltfm_host {
->  	struct clk *clk;
->  	u32 scratchpad; /* to handle quirks across io-accessor calls */
-> +
-> +	/* migrate from sdhci_of_host */
-> +	unsigned int clock;
-> +	u16 xfer_mode_shadow;
->  };
->  
->  extern struct sdhci_host *sdhci_pltfm_init(struct platform_device *pdev,
-> -- 
-> 1.7.1
-> 
-> 
-> _______________________________________________
-> linaro-dev mailing list
-> linaro-dev@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-dev
+objdump output (and pahole, for data annotation) is very much set in
+stone after all those years, so we can just use it.
+
+> > After we have the members we can do data annotation, in much the same
+> > way we do with code annotation, i.e. augmenting pahole output.
+ 
+> What is data annotation? Is it to list the percentage of access for each
+> member of the structure? For example,
+ 
+> struct bar {
+>         int poekoe[5];      //10%
+>         int fubar;          //20%
+> };
+
+Exactly. Using different colors for percentage ranges, etc. Like code
+annotation right now.
+
+Done in perf report (static) zoomable, i.e. choosing a DSO and getting
+the hits originated from functions in it, or in a thread, or in both,
+like we have today for code annotation.
+
+And in 'perf top --tui' live data annotation. With the same set of
+zooming operations. So that one can see patterns of data structure
+access as a workload runs.
+
+- Arnaldo
