@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab1CaMJK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 08:09:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752244Ab1CaMJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 08:09:08 -0400
-Date: Thu, 31 Mar 2011 14:08:09 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH] dma-debug: print information about leaked entry
-Message-ID: <20110331120759.GA5230@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S964846Ab1CaMJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 08:09:27 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41823 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab1CaMJZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 08:09:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=K7VXTHHT5eeM7lsyFfgjWWemW0t12Ir/kO8jFt5ziIzHY5tltlGz4pnLuv7+tBFhcx
+         0yA7m4TTfhALuqHwB1w0Lxhh72e8o6KcJxVsZxs+b1VD2BzzEhVTkcdF4EilE+ZYJo+I
+         YUnfl32XYM2Rg1MV67JoXXGYQlbVXGY8C4IMk=
+Subject: Re: [PATCH] mtd: nand: Fixed null pointer dereference.
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Maarten ter Huurne <maarten@treewalker.org>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1300286875-21426-1-git-send-email-maarten@treewalker.org>
+References: <1300286875-21426-1-git-send-email-maarten@treewalker.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 Mar 2011 15:07:04 +0300
+Message-ID: <1301573224.2828.50.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When driver leak dma mapping, print additional information about one of
-leaked entries, to to help investigate problem. Patch should be useful
-for debugging drivers, which maps many different class of buffers.
+On Wed, 2011-03-16 at 15:47 +0100, Maarten ter Huurne wrote:
+> The "bd" argument of verify_bbt_descr() was dereferenced before it was checked for NULL.
+> 
+> Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
- lib/dma-debug.c |   18 +++++++++++++-----
- 1 files changed, 13 insertions(+), 5 deletions(-)
+Hi, this was fixed in upstream already by another person.
 
-diff --git a/lib/dma-debug.c b/lib/dma-debug.c
-index 4bfb047..db07bfd 100644
---- a/lib/dma-debug.c
-+++ b/lib/dma-debug.c
-@@ -649,7 +649,7 @@ out_err:
- 	return -ENOMEM;
- }
- 
--static int device_dma_allocations(struct device *dev)
-+static int device_dma_allocations(struct device *dev, struct dma_debug_entry **out_entry)
- {
- 	struct dma_debug_entry *entry;
- 	unsigned long flags;
-@@ -660,8 +660,10 @@ static int device_dma_allocations(struct device *dev)
- 	for (i = 0; i < HASH_SIZE; ++i) {
- 		spin_lock(&dma_entry_hash[i].lock);
- 		list_for_each_entry(entry, &dma_entry_hash[i].list, list) {
--			if (entry->dev == dev)
-+			if (entry->dev == dev) {
- 				count += 1;
-+				*out_entry = entry;
-+			}
- 		}
- 		spin_unlock(&dma_entry_hash[i].lock);
- 	}
-@@ -674,6 +676,7 @@ static int device_dma_allocations(struct device *dev)
- static int dma_debug_device_change(struct notifier_block *nb, unsigned long action, void *data)
- {
- 	struct device *dev = data;
-+	struct dma_debug_entry *uninitialized_var(entry);
- 	int count;
- 
- 	if (global_disable)
-@@ -681,12 +684,17 @@ static int dma_debug_device_change(struct notifier_block *nb, unsigned long acti
- 
- 	switch (action) {
- 	case BUS_NOTIFY_UNBOUND_DRIVER:
--		count = device_dma_allocations(dev);
-+		count = device_dma_allocations(dev, &entry);
- 		if (count == 0)
- 			break;
--		err_printk(dev, NULL, "DMA-API: device driver has pending "
-+		err_printk(dev, entry, "DMA-API: device driver has pending "
- 				"DMA allocations while released from device "
--				"[count=%d]\n", count);
-+				"[count=%d]\n"
-+				"One of leaked entries details: "
-+				"[device address=0x%016llx] [size=%llu bytes] "
-+				"[mapped with %s] [mapped as %s]\n",
-+			count, entry->dev_addr, entry->size,
-+			dir2name[entry->direction], type2name[entry->type]);
- 		break;
- 	default:
- 		break;
 -- 
-1.7.1
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
