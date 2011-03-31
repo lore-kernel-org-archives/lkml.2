@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab1CaF1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 01:27:12 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:54286 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013Ab1CaF1K (ORCPT
+	id S1754726Ab1CaF1q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 01:27:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60157 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab1CaF1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 01:27:10 -0400
-Date: Thu, 31 Mar 2011 10:57:03 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, npiggin@kernel.dk, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        cl@linux.com, kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
-Message-ID: <20110331052703.GJ2879@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20110330052819.8212.1359.stgit@localhost6.localdomain6>
- <20110330163607.0984b831.akpm@linux-foundation.org>
+	Thu, 31 Mar 2011 01:27:44 -0400
+Message-ID: <4D941084.5040700@kernel.org>
+Date: Wed, 30 Mar 2011 22:26:28 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110330163607.0984b831.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andi Kleen <andi@firstfloor.org>
+CC: stefano.stabellini@eu.citrix.com, ak@linux.intel.com, hpa@zytor.com,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: Re: [PATCH] [225/275] x86: Cleanup highmap after brk is concluded
+References: <20110330203.501921634@firstfloor.org> <20110330210750.9B0D63E1A05@tassilo.jf.intel.com>
+In-Reply-To: <20110330210750.9B0D63E1A05@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D941095.0073,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andrew Morton <akpm@linux-foundation.org> [2011-03-30 16:36:07]:
-
-> On Wed, 30 Mar 2011 11:00:26 +0530
-> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> 
-> > Data from the previous patchsets can be found at
-> > https://lkml.org/lkml/2010/11/30/79
-> 
-> It would be nice if the data for the current patchset was present in
-> the current patchset's changelog!
+On 03/30/2011 02:07 PM, Andi Kleen wrote:
+> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+> From: Yinghai Lu<yinghai@kernel.org>
+>
+> commit e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e upstream.
+>
+> Now cleanup_highmap actually is in two steps: one is early in head64.c
+> and only clears above _end; a second one is in init_memory_mapping() and
+> tries to clean from _brk_end to _end.
+> It should check if those boundaries are PMD_SIZE aligned but currently
+> does not.
+> Also init_memory_mapping() is called several times for numa or memory
+> hotplug, so we really should not handle initial kernel mappings there.
+>
+> This patch moves cleanup_highmap() down after _brk_end is settled so
+> we can do everything in one step.
+> Also we honor max_pfn_mapped in the implementation of cleanup_highmap.
 >
 
-Sure, since there were no major changes, I put in a URL. The main
-change was the documentation update. 
+gentoo guys reported this one cause resume freeze.
 
--- 
-	Three Cheers,
-	Balbir
+https://bugs.gentoo.org/show_bug.cgi?id=361159
+
