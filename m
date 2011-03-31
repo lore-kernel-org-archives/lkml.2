@@ -1,59 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933927Ab1CaLCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 07:02:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45315 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412Ab1CaLCV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 07:02:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=BzXmcmKfUELT6w+lwJwZDcQrYXvEB7PYmETua0nhnnS+KSieDF5zThVaoraCWeV46V
-         hQNZCw10DSjaIZ1Qs4fAxs2VW+sSV9bewrQIhMDd4vTH53kXnBpFZFGTexJJGIZ7o/rF
-         EDTA3fzXxXQ7IXDJqNk5TKUL+gQRG0I3RQV7g=
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6>
-References: <20110317183048.GW7258@atomide.com>
-	 <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
-	 <20110318101512.GA15375@n2100.arm.linux.org.uk>
-	 <201103301906.42429.arnd@arndb.de>
-	 <AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
-	 <alpine.LFD.2.00.1103302155270.22418@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 31 Mar 2011 14:00:00 +0300
-Message-ID: <1301569200.2828.42.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1757342Ab1CaLJv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 07:09:51 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:59011 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751202Ab1CaLJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 07:09:48 -0400
+X-ASG-Debug-ID: 1301569787-03d6a573292bfb0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D9460F8.7080606@fusionio.com>
+Date: Thu, 31 Mar 2011 13:09:44 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Rob Landley <rlandley@parallels.com>
+CC: Pete Clements <clem@clem.clem-digital.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
+References: <201103291551.p2TFpDqZ001692@clem.clem-digital.net> <4D92C874.7040104@parallels.com> <4D931634.5030807@fusionio.com> <4D933584.5050005@parallels.com> <4D94432D.5080601@fusionio.com> <4D944544.9040705@parallels.com> <4D945247.4080404@fusionio.com> <4D945976.8000401@fusionio.com> <4D945BAD.10309@parallels.com>
+X-ASG-Orig-Subj: Re: Commit 7eaceaccab5f40 causing boot hang.
+In-Reply-To: <4D945BAD.10309@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1301569787
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.59495
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-30 at 23:10 +0200, Thomas Gleixner wrote:
-> The only problem is to find a person, who is willing to do that, has
-> enough experience, broad shoulders and a strong accepted voice. Not to
-> talk about finding someone who is willing to pay a large enough
-> compensation for pain and suffering. 
+On 2011-03-31 12:47, Rob Landley wrote:
+> On 03/31/2011 05:37 AM, Jens Axboe wrote:
+>> On 2011-03-31 12:07, Jens Axboe wrote:
+>>> On 2011-03-31 11:11, Rob Landley wrote:
+>>>> On 03/31/2011 04:02 AM, Jens Axboe wrote:
+>>>>> On 2011-03-30 15:52, Rob Landley wrote:
+>>>>>> On 03/30/2011 06:38 AM, Jens Axboe wrote:
+>>>>>>> On 2011-03-30 08:06, Rob Landley wrote:
+>>>>>>>> On 03/29/2011 10:51 AM, Pete Clements wrote:
+>>>>>>>>> Quoting Jens Axboe
+>>>>>>>>>   > 
+>>>>>>>>>   > On 2011-03-29 16:13, Rob Landley wrote:
+>>>>>>>>>   > > On 03/29/2011 08:59 AM, Jens Axboe wrote:
+>>>>>>>>>   > >> On 2011-03-29 10:52, Rob Landley wrote:
+>>>>>>>>>   > >>> I'm booting all this under kvm or qemu, by the way:
+>>>>>>>>>   > >>>
+>>>>>>>>>   > >>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
+>>>>>>>>>   > >>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
+>>>>>>>>>   > >>>
+>>>>>>>>>   > >>> Sometimes with init=/bin/bash in that last quoted bit.  The root
+>>>>>>>>>   > >>> filesystem's debian sid but that's probably not relevant because it
+>>>>>>>>>   > >>> worked fine with .38.
+>>>>>>>>>   > >>
+>>>>>>>>>   > >> Does this help?
+>>>>>>>>>   > >>
+>>>>>>>>>   > >> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
+>>>>>>>>>   > >> index 0e406d73..ca27d30 100644
+>>>>>>>>>   > >> --- a/drivers/ide/ide-io.c
+>>>>>>>>>   > >> +++ b/drivers/ide/ide-io.c
+>>>>>>>>>   > >> @@ -570,8 +570,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
+>>>>>>>>>   > >>  	spin_unlock_irqrestore(q->queue_lock, flags);
+>>>>>>>>>   > >>  
+>>>>>>>>>   > >>  	/* Use 3ms as that was the old plug delay */
+>>>>>>>>>   > >> -	if (rq)
+>>>>>>>>>   > >> -		blk_delay_queue(q, 3);
+>>>>>>>>>   > >> +	blk_delay_queue(q, 3);
+>>>>>>>>>   > >>  }
+>>>>>>>>>   > >>  
+>>>>>>>>>   > >>  static int drive_is_ready(ide_drive_t *drive)
+>>>>>>>>>   > >>
+>>>>>>>>>   > > 
+>>>>>>>>>   > > Nope, still hung the same way.
+>>>>>>>>>   > 
+>>>>>>>>>   > Funky. I'll try and reproduce this tonight.
+>>>>>>>>>   > 
+>>>>>>>>>   > -- 
+>>>>>>>>>   > Jens Axboe
+>>>>>>>>>   > 
+>>>>>>>>>
+>>>>>>>>> I have had a similiar problem (reported earlier) unable to boot.
+>>>>>>>>> With git15-18 hung with IDE drives (hda), git19-21 moved the hang down to
+>>>>>>>>> the IDE CDROM (hdc). Applied the above patch and now booted into git21 without
+>>>>>>>>> any hang and all appears ok.
+>>>>>>>>
+>>>>>>>> It may have made it better for me, it's hard to tell.
+>>>>>>>>
+>>>>>>>> I did a fresh pull, re-applied the patch, and tried again with
+>>>>>>>> init=/bin/sh and it booted to the shell prompt... which then hung when I
+>>>>>>>> did "ls -l /".
+>>>>>>>>
+>>>>>>>> If I let it boot normally, init announces itself, gives a spurious
+>>>>>>>> warning about a fstab field (which it's been doing for a while, my fault
+>>>>>>>> but harmless), then hangs.
+>>>>>>>>
+>>>>>>>>> This is i386, UP.
+>>>>>>>>
+>>>>>>>> I'm doing x86-64 SMP.
+>>>>>>>
+>>>>>>> I think we have the same issue the other location. How about this, then:
+>>>>>>>
+>>>>>>> diff --git a/drivers/ide/ide-io.c b/drivers/ide/ide-io.c
+>>>>>>> index 0e406d73..4978ec3 100644
+>>>>>>> --- a/drivers/ide/ide-io.c
+>>>>>>> +++ b/drivers/ide/ide-io.c
+>>>>>>> @@ -549,12 +549,11 @@ plug_device:
+>>>>>>>  	spin_unlock_irq(&hwif->lock);
+>>>>>>>  	ide_unlock_host(host);
+>>>>>>>  plug_device_2:
+>>>>>>> +	blk_delay_queue(q, queue_run_ms);
+>>>>>>>  	spin_lock_irq(q->queue_lock);
+>>>>>>>  
+>>>>>>> -	if (rq) {
+>>>>>>> +	if (rq)
+>>>>>>>  		blk_requeue_request(q, rq);
+>>>>>>> -		blk_delay_queue(q, queue_run_ms);
+>>>>>>> -	}
+>>>>>>>  }
+>>>>>>>  
+>>>>>>>  void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
+>>>>>>> @@ -570,8 +569,7 @@ void ide_requeue_and_plug(ide_drive_t *drive, struct request *rq)
+>>>>>>>  	spin_unlock_irqrestore(q->queue_lock, flags);
+>>>>>>>  
+>>>>>>>  	/* Use 3ms as that was the old plug delay */
+>>>>>>> -	if (rq)
+>>>>>>> -		blk_delay_queue(q, 3);
+>>>>>>> +	blk_delay_queue(q, 3);
+>>>>>>>  }
+>>>>>>>  
+>>>>>>>  static int drive_is_ready(ide_drive_t *drive)
+>>>>>>>
+>>>>>>
+>>>>>> Did a fresh pull and applied that patch.  (It conflicts with your
+>>>>>> previous one, but looks like it includes it.)
+>>>>>>
+>>>>>> Now it hangs after the "EXT3-fs: barriers not enabled" line, doesn't
+>>>>>> make it to init.
+>>>>>
+>>>>> I have tried hard to reproduce this, but even stock 2.6.39-rc1 works
+>>>>> fine for me here. Setup a KVM image with a debian 6 install, then
+>>>>> converted it to IDE and booting it with a custom kernel like you are.
+>>>>> Works fine, boots and I can do disk activity tests and it all works.
+>>>>>
+>>>>> Can you send me your .config?
+>>>>
+>>>> It was attached to the first message in this series, here it is again.
+>>>>
+>>>> I update it via "make oldconfig" and hold down return.
+>>>>
+>>>> I boot it via:
+>>>>
+>>>> qemu-system-x86_64 -m 1024 -kernel arch/x86/boot/bzImage \
+>>>>   -hda ~/sid.ext3 -append "root=/dev/hda rw"
+>>>
+>>> Much better, I see the hang now! Now to try and diagnose...
+>>
+>> It seems to hard hang, looks very odd:
+> 
+> I should have mentioned that: when it hangs, you can't page back up in
+> the console display anymore.
 
-If I understand correctly, this is exactly what Linaro would need to do.
+Data point - only seems to happen on UP. If you add -smp X to kvm, then
+it boots and works just fine. It smells oddly like some sort of irq
+event.
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Jens Axboe
 
