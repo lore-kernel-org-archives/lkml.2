@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757347Ab1CaLSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 07:18:32 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59923 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab1CaLSb (ORCPT
+	id S964822Ab1CaLTm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 07:19:42 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38075 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab1CaLTk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 07:18:31 -0400
-MIME-Version: 1.0
-X-Originating-IP: [203.101.61.10]
-In-Reply-To: <20110331112559.090948a7@lxorguk.ukuu.org.uk>
-References: <AANLkTi=FrmB=u09wvLoXzQstnV3h-U58R728t3k6_-B-@mail.gmail.com>
-	<20110331112559.090948a7@lxorguk.ukuu.org.uk>
-Date: Thu, 31 Mar 2011 16:48:29 +0530
-Message-ID: <AANLkTimyVsoRYqoXWYMQz_AN3Uo31NBifmiwDUijWnvS@mail.gmail.com>
-Subject: Re: locks inside receive_buf
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 31 Mar 2011 07:19:40 -0400
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        paulmck@linux.vnet.ibm.com, Jan Beulich <JBeulich@novell.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <4D944E60.8080704@cn.fujitsu.com>
+References: <4D8FF9BC.7050609@cn.fujitsu.com>
+	 <4D90647902000078000389CB@vpn.id2.novell.com>
+	 <4D924BAF.1020906@linux.intel.com>
+	 <20110329213130.GK2261@linux.vnet.ibm.com>
+	 <4D924FEE.8040804@linux.intel.com>
+	 <20110329214704.GM2261@linux.vnet.ibm.com>
+	 <4D9256AF.5000308@linux.intel.com>
+	 <20110330004725.GO2261@linux.vnet.ibm.com> <4D92BECA.50802@cn.fujitsu.com>
+	 <4D92DA32.2010809@cn.fujitsu.com>  <20110330105505.GA3195@sepie.suse.cz>
+	 <1301482656.4859.171.camel@twins> <4D931814.9090100@suse.cz>
+	 <4D93D29C.5010702@cn.fujitsu.com> <1301558691.2250.486.camel@laptop>
+	 <4D944E60.8080704@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 31 Mar 2011 13:18:40 +0200
+Message-ID: <1301570320.4859.242.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 3:55 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Wed, 30 Mar 2011 17:51:27 +0530
-> Pavan Savoy <pavan_savoy@sify.com> wrote:
->
->> Hi,
->>
->> Does holding a lock make any sense inside the line discipline's
->> ops->receive_buf?
->> I see the locks being held and released - during some calls like
->> flush_to_ldisc, which end up calling receive_buf....
->>
->>
->> and yes, I would like to have a lock because, there are other
->> functions in my ldisc driver executed in process context ...
->> Is there some hints as to what should be the do's and don'ts inside
->> the ldisc ops functions ? (say tty_wakeup ...)
->
-> It's not well documented no. Your ld->receive_buf is single threaded and
-> runs from a sleeping context (but please don't sleep too long)
+On Thu, 2011-03-31 at 17:50 +0800, Lai Jiangshan wrote:
+> On 03/31/2011 04:04 PM, Peter Zijlstra wrote:
+> > On Thu, 2011-03-31 at 09:02 +0800, Lai Jiangshan wrote:
+> >> I like this cleanup, could you continue for this hard job? I will help
+> >> you if required.
+> >>
+> >> Ingo & Peter - will you accept the patches when it is done.
+> >>
+> > No, like I said, I think the proposed patch is utterly horrid.
+> > 
+> 
+> But how about my kernel-offset.c patch? It is clean & simple,
+> it just seems not so normal.
+> 
+> If the proposed splitting patch is horrid, I think we will try to
+> update it as you expect.
+> 
+> If splitting sched.h is wrong, I will try to persuade more people
+> accept the kernel-offset.c patch.
 
-Alright, so I see the work gets into the default kthread queue I suppose...?
-However, I am quite puzzled by this kind of OOPS (pasted below...)
+Well, I'm all for cleaning up sched.h, it includes way too much things
+not strongly related to kernel/sched*.c like a lot of the signal things
+and the misnamed signal_struct (should be called process_struct or
+somesuch).
 
-Where I know the TTY called my receive_buf (which is st_tty_receive) -
-which internally calls my parsing function st_int_recv() .....
-I was just wondering, whether it is worth making this internal parsing
-function a tasklet by itself ?
+That also causes the inversion between sched.h and wait.h
 
-I kind of do lot of stuff inside the st_int_recv() - including doing a
-tty->ops->write....
-copy in and out of skb queues - So are all this long enough sleeps?
+What I don't like is those _types.h headers, and definitely not the
+massive explosion of those as per the proposed patch.
 
-PC is at st_int_recv+0x2a0/0x354 [st_drv]
-LR is at schedule+0x414/0x4e8
-pc : [<bf000fc0>]    lr : [<c04c3ff0>]    psr: 80000013
-sp : efc55ed0  ip : efc55dc0  fp : efc55f0c
-r10: 00000008  r9 : eec4de60  r8 : 00000004
-r7 : 00000000  r6 : 00000007  r5 : ee77bc8f  r4 : ef0f3480
-r3 : 00000000  r2 : 00000000  r1 : 00000020  r0 : 0000001f
-Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c53c7d  Table: af3a004a  DAC: 00000015
-
-<snip...>
-
-Backtrace:
-[<bf000d20>] (st_int_recv+0x0/0x354 [st_drv]) from [<bf000170>]
-(st_tty_receive+0x70/0x9c [st_drv])
-[<bf000100>] (st_tty_receive+0x0/0x9c [st_drv]) from [<c02616b4>]
-(flush_to_ldisc+0xfc/0x170)
- r6:ef10e8f0 r5:ef10e8a4 r4:ef10e800
-[<c02615b8>] (flush_to_ldisc+0x0/0x170) from [<c009bf30>]
-(worker_thread+0x154/0x1e0)
-[<c009bddc>] (worker_thread+0x0/0x1e0) from [<c009fce0>] (kthread+0x84/0x8c)
-[<c009fc5c>] (kthread+0x0/0x8c) from [<c008d6bc>] (do_exit+0x0/0x5f0)
+Nor do I quite get why all that is needed, sched_types which would
+define task_struct still needs the new task_rcu_struct bits, and as per
+the patch you need to split the rcu headers into two. Once you've done
+that, I don't see why sched.h still needs splitting too.
 
 
-
-> The output path from user space will be in a sleeping context too, but
-> you can call the write method of the tty your driver is using from
-> interrupt context or holding a spinlock (eg from timers)
->
->
->
->
