@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab1CaSH5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 14:07:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37401 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab1CaSH4 (ORCPT
+	id S1758864Ab1CaSIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 14:08:07 -0400
+Received: from vms173019pub.verizon.net ([206.46.173.19]:53064 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758845Ab1CaSID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 14:07:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=FkjEgfpWlCPFF/nxvqur02M99ka7Lu8qp2C0hyc4OH8OE6GHCuxZZNYo8Cp84KV7za
-         ZF64Dc2rfIh+QEZ35CDPoe0ie8qutzrzOdexPk5GzS5g5eOqDwuUnRXH6CDqf9LZRIjS
-         xC6OQRMsia0tHeSQzBnx7D7dnHkD9weWtSPQI=
-Date: Thu, 31 Mar 2011 11:07:49 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Chris Bagwell <chris@cnpbagwell.com>
-Cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
-        pingc@wacom.com
-Subject: Re: [PATCH] add support for Lenovo tablet ID (0xE6)
-Message-ID: <20110331180632.GB414@core.coreip.homeip.net>
-References: <1301592052-4064-1-git-send-email-manoj.iyer@canonical.com>
- <1301592052-4064-2-git-send-email-manoj.iyer@canonical.com>
- <20110331174334.GA414@core.coreip.homeip.net>
- <AANLkTi=a1eZS2fjxKYzf1RsE=6n9wZwUTPs8v84zb6p_@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=a1eZS2fjxKYzf1RsE=6n9wZwUTPs8v84zb6p_@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 31 Mar 2011 14:08:03 -0400
+Date: Thu, 31 Mar 2011 14:07:40 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Ingo Molnar <mingo@elte.hu>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 2/9] x86 idle: remove NOP cpuinfo_x86.hlt_works_ok flag
+In-reply-to: <20110331081800.GH5938@elte.hu>
+Message-id: <alpine.LFD.2.02.1103311336320.9662@x980>
+References: <67e90d97e0a77df4acd0c75e1bacc7714e011f3e.1301550524.git.len.brown@intel.com>
+ <b048802b0285a5ff28e74a4309d833116174904a.1301550524.git.len.brown@intel.com>
+ <20110331061247.GA24786@elte.hu> <alpine.LFD.2.02.1103310252160.8569@x980>
+ <20110331081800.GH5938@elte.hu>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 12:58:57PM -0500, Chris Bagwell wrote:
-> On Thu, Mar 31, 2011 at 12:43 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > On Thu, Mar 31, 2011 at 12:20:52PM -0500, Manoj Iyer wrote:
-> >> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-> >> ---
-> >>  drivers/input/tablet/wacom_wac.c |    3 +++
-> >>  1 files changed, 3 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-> >> index 5597637..f751224 100644
-> >> --- a/drivers/input/tablet/wacom_wac.c
-> >> +++ b/drivers/input/tablet/wacom_wac.c
-> >> @@ -1364,6 +1364,8 @@ static const struct wacom_features wacom_features_0xE2 =
-> >>       { "Wacom ISDv4 E2",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG };
-> >>  static const struct wacom_features wacom_features_0xE3 =
-> >>       { "Wacom ISDv4 E3",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG };
-> >> +static const struct wacom_features wacom_features_0xE6 =
-> >> +     { "ISD-V4",               WACOM_PKGLEN_TPC2FG,    27760, 15694,  255,  0, TABLETPC2FG };
-> >
-> > Manoj, shouldn't we call it "Wacom ISDv4 E6" to be consistent?
+> > > > hlt_works_ok was X86_32 only, initialized to 1, and never cleared.
+> > > > 
+> > > > On 32-bit kernels, this deletes a line from /proc/cpuinfo: "hlt_bug : no"
+> > > 
+> > > I think you missed the valid usecase where an old CPU with broken halt is 
+> > > booted with the no-hlt boot parameter and does not want to crash in the HLT 
+> > > instruction.
+> > > 
+> > > That "no-hlt" boot parameter does:
+> > > 
+> > >   arch/x86/kernel/cpu/bugs.c:     boot_cpu_data.hlt_works_ok = 0;
+> > > 
+> > > We can restrict compatibility, but *please* lets do it *explicitly*, not under 
+> > > some 'remove unused code' pretense ...
+> > > 
+> > > Could you please list all CPU models that are affected?
+> > 
+> > "no-hlt" existed only for 32-bit, and there were exactly zero
+> > automatic invocations of it.
 > 
-> I think its best to rename to be consistent with others in series.
-> 
-> >
-> > Ping, is resolution the same as with other "ISDv4"s?
-> 
-> My guess is yes.
-> 
-> Note: There is a patch from Ping that you recently accepted but I do
-> not see on a branch yet (maybe I'm looking in wrong place).
+> Do we know whether a distro adds this to the boot line? Do we know about users 
+> relying on it.
 
-If we are talking about the same thing it shoudl be in my 'for-linus'
-branch.
+Impossible to know.
 
-Thanks.
+> > "idle=poll" does the same thing -- sans change a line
+> > in /proc/cpuinfo.
+> 
+> It also has an effect on halt/poweroff, right?
 
--- 
-Dmitry
+Yes, if somebody invokes kernel_halt(), then it
+uses stop_this_cpu(), which uses HLT unless this flag is cleared.
+
+The functional change of deleting "no-hlt", which was the only
+way to clear this flag, was in the previous patch, and so
+I should have mentioned it here.
+
+stop_this_cpu() is not in the poweroff path.
+
+It is a different topic, but I'd be curious to know why
+any users of the latest kernel on x86 might be invoking
+kernel_halt() instead of kernel_power_off().
+
+> > Do we really need both?
+> 
+> Probably not, as i said i do not disagree - i just think it should be more 
+> explicit. Make it a: "users of CPU models X beware" commit title, not 'remove 
+> inactive code' ...
+
+My intent was to make the functional change in 1/9
+and the NOP cleanup in 2/9.
+
+> So please list the affected hardware and list the affected boot parameter 
+> explicitly, in a well-titled commit that phases out this (very likely unused) 
+> compatibility hack and *document* the idle=poll workaround for ancient 
+> hardware.
+
+There is no known list of affected hardware.
+
+> There's still i386DX CPUs being manufactured these days - a 20+ years old CPU 
+> design is surprisingly resilient to spurious patent claims, for obvious 
+> reasons.
+> 
+> Really, there's no need to do things by stealth. There's few things worse than 
+> doing the right thing for the wrong reason - it becomes a bad habit of subtly 
+> broken thinking quickly.
+
+I agree completely, which is why I've sent this patch -- twice, so far --
+to 5000 of my closest friends, including you:-)
+
+thanks,
+-Len
