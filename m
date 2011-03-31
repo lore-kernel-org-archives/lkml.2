@@ -1,54 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab1CaEk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 00:40:59 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:57504 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab1CaEk5 (ORCPT
+	id S1753641Ab1CaEnM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 00:43:12 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34163
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752329Ab1CaEnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 00:40:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=s2H51wGkqE0y1T6a3UTOrtRTEXBL3OLPTHghyrBbIz+0UYgqqZeIrCfL7aJmGTxeUk
-         pC86uL0feL1oOpV2e+IjmYDvOGeHBjNiKU/Qn7NmTMojCN5sq7PddD4dy5w9Vjh0bZIh
-         51UKGBNE1Yq89k1HqW6fMbgEk5viqP8UDNJHE=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1103302237200.1920@x980>
-References: <20110225180633.857892225@gulag1.americas.sgi.com>
-	<20110225180634.422972243@gulag1.americas.sgi.com>
-	<20110227120348.GE16453@elte.hu>
-	<4D6BFA76.2060208@sgi.com>
-	<20110301075128.GC12384@elte.hu>
-	<alpine.LFD.2.02.1103302237200.1920@x980>
-Date: Wed, 30 Mar 2011 21:40:56 -0700
-X-Google-Sender-Auth: ySoTzHy94d7aZoYjlG9yb_PCbbM
-Message-ID: <AANLkTin51ecq4weuzGaQ91eFisWPSircWJGu-UnndiuN@mail.gmail.com>
-Subject: Re: [PATCH 4/4] x86: Minimize SRAT messages
-From: Yinghai Lu <yinghai@kernel.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        David Rientjes <rientjes@google.com>, Jack Steiner <steiner@sgi.com>,
-        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 31 Mar 2011 00:43:11 -0400
+Date: Wed, 30 Mar 2011 21:42:33 -0700 (PDT)
+Message-Id: <20110330.214233.43037529.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 1/3] net/r8169: add a new chip for RTL8105
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1300708230-1934-3-git-send-email-hayeswang@realtek.com>
+References: <1300708230-1934-1-git-send-email-hayeswang@realtek.com>
+	<1300708230-1934-3-git-send-email-hayeswang@realtek.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 7:38 PM, Len Brown <lenb@kernel.org> wrote:
-> Hi Mike,
->
-> How about a patch to stuff the srat info into a debugfs file,
-> and another patch to delete the console printk entirely?
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Mon, 21 Mar 2011 19:50:30 +0800
 
-with the patch using memblock for allocate log buf early. this patch
-is not needed.
+> Add a new chip for RTL8105 whose settings are the same with RTL_GIGA_MAC_VER_30.
+> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
-Thanks
-
-Yinghai
+Applied.
