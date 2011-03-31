@@ -1,49 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab1CaOmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:42:47 -0400
-Received: from ebb06.tieto.com ([131.207.168.38]:46670 "EHLO ebb06.tieto.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757466Ab1CaOmp convert rfc822-to-8bit (ORCPT
+	id S1758011Ab1CaOnU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:43:20 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:47602 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752695Ab1CaOnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:42:45 -0400
-X-AuditID: 83cfa826-b7c9dae000006cef-cc-4d9492e398ce
-From: <Waldemar.Rymarkiewicz@tieto.com>
-To: <sameo@linux.intel.com>, <arnd@arndb.de>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hthebaud@insidefr.com>, <matti.j.aaltonen@nokia.com>,
-        <alan@lxorguk.ukuu.org.uk>, <Sebastian.Chlad@tieto.com>
-Date: Thu, 31 Mar 2011 17:42:21 +0300
-Subject: RE: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Thread-Topic: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Thread-Index: AcvvrkuG1Wg3nf/2RAWa1PcyuYTJiwAAUMbg
-Message-ID: <99B09243E1A5DA4898CDD8B7001114481085F0FE5A@EXMB04.eu.tieto.com>
-References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
- <20110325142648.GC3879@sortiz-mobl>
- <99B09243E1A5DA4898CDD8B7001114481085E2375D@EXMB04.eu.tieto.com>
- <201103291305.02293.arnd@arndb.de> <20110331141650.GB2704@sortiz-mobl>
-In-Reply-To: <20110331141650.GB2704@sortiz-mobl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 Mar 2011 10:43:18 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, Nicolas Pitre <nico@fluxnic.net>,
+        david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Organization: Texas Instruments, Inc.
+References: <201103301906.42429.arnd@arndb.de>
+	<AANLkTim578-kwM14SJd06RW_QiC4WVCmFuG+ASgGC4sq@mail.gmail.com>
+	<alpine.LFD.2.00.1103301531420.28032@xanadu.home>
+	<AANLkTim6zg-U6HtAQbqnENqoK7x8erXSqOuTFVC0YE5r@mail.gmail.com>
+	<alpine.LFD.2.00.1103301814250.28032@xanadu.home>
+	<alpine.DEB.2.00.1103301728000.15330@asgard.lang.hm>
+	<alpine.LFD.2.00.1103302255280.28032@xanadu.home>
+	<alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm>
+	<alpine.LFD.2.00.1103310145390.28032@xanadu.home>
+	<20110331080634.GA18022@elte.hu>
+	<20110331083044.GB14323@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.00.1103311359320.22418@localhost6.localdomain6>
+Date: Thu, 31 Mar 2011 07:43:12 -0700
+In-Reply-To: <alpine.LFD.2.00.1103311359320.22418@localhost6.localdomain6>
+	(Thomas Gleixner's message of "Thu, 31 Mar 2011 14:04:16 +0200
+	(CEST)")
+Message-ID: <87d3l7jqpr.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->My idea of an initial NFC subsystem architecture was actually 
->the following
->one:
->- A core NFC layer against which NFC drivers would register.
->- A netlink socket for handling the HCI commands. That would 
->put a big part of the NFC HCI layer in kernel land and could 
->potentially simplify the existing NFC stacks.
+Thomas Gleixner <tglx@linutronix.de> writes:
 
-Shouldn't be better to add a new AF_NFC sock family and then register new LLCP and HCI protocols?
+> But the current SoC maintainer model does not work either. The SoC
+> maintainers care about their sandbox and have exactly zero incentive
+> to look at the overall picture, e.g reuse of code for the same IP
+> blocks, better abstraction mechanisms etc. 
 
-Waldek
+zero incentive?  that's a bit strong, IMO.
+
+That may be true for some SoCs, it's not really fair as a sweeping
+statement.
+
+Some SoCs families (like OMAP) have huge amount of diversity even within
+the SoC family, so better abstractions and generic infrastrucure
+improvements are an obvious win, even staying within the SoC.
+
+There are several examples of SoC maintainers looking at the overall
+picture and contributing to better abstractions and common
+infrastructure code.
+
+One is USB as Felipe already pointed out where the same USB OTG IP block
+(with vendor tweaks of course) is used across several completely
+different SoCs with common infrastructure code.
+
+Another example that I'm more familiar with is power management.  In
+OMAP land, we have been been very supportive and active in generic
+infrastructure improvements (like runtime PM.)  In fact runtime PM was
+born partially because one of the other ARM SoC maintainers (Magnus
+Damm, SH-mobile) proposed the idea as he was implementing PM for that
+SoC family.  We have been actively contributing to the runtime PM
+infrastructure with both code, testing, converting our drivers over to
+using runtime PM. and contributing back fixes and enhancements as we
+find problems or limitations.  In addition, personally, I have spent the
+last year evangelizing the importance of using common frameworks like
+runtime PM to the embedded community via talks at the Embedded Linux
+Conference (ELC, US and Europe.)  Especially as IP blocks are reused
+across SoC families, abstractions like runtime PM are the only way to
+keep the SoC specifics of PM out of the common driver.
+
+Yes, ARM SoC maintainers have to make up some ground.  But compare this
+to just a couple years ago where the common complaint was "why aren't
+embedded SoC people contributing code to mainline", and you'll see we
+have come a long way.
+
+Kevin
+
+Maintainer of parts of the ARM kernel:
+- TI Davinci SoC family
+- TI OMAP Power Management infrastructure
