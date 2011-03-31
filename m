@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758136Ab1CaO7c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 10:59:32 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:49652 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab1CaO7b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 10:59:31 -0400
-Date: Thu, 31 Mar 2011 07:59:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	id S933893Ab1CaO7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 10:59:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60610 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933166Ab1CaO7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 10:59:51 -0400
+Date: Thu, 31 Mar 2011 10:58:50 -0400
+From: Dave Jones <davej@redhat.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: excessive kworker activity when idle. (was Re: vma corruption
- in today's -git)
-Message-ID: <20110331145918.GE2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: excessive kworker activity when idle. (was Re: vma corruption in
+ today's -git)
+Message-ID: <20110331145850.GA10163@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Tejun Heo <tj@kernel.org>
 References: <20110329040939.GA32764@redhat.com>
  <AANLkTi=PHtUpb5oJ8_r1K1dvaUunhxv1MS3LLPM8V4Ci@mail.gmail.com>
  <20110331030917.GB26057@redhat.com>
- <20110331033432.GA434@redhat.com>
- <AANLkTimPi-Vbi3DNLEeShCpfOJEuUZo3--3CQ_BMgJiS@mail.gmail.com>
+ <AANLkTikYAAYcYxTdKAxQjDxVQ7qrZGEfXg+gpfwcj1=-@mail.gmail.com>
+ <20110331035511.GA1255@redhat.com>
+ <AANLkTikP5edK=YSRx7zuNqyfwez8qEHpFumYun6GOPxu@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimPi-Vbi3DNLEeShCpfOJEuUZo3--3CQ_BMgJiS@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikP5edK=YSRx7zuNqyfwez8qEHpFumYun6GOPxu@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 08:44:06PM -0700, Linus Torvalds wrote:
-> On Wed, Mar 30, 2011 at 8:34 PM, Dave Jones <davej@redhat.com> wrote:
-> >
-> > so 'perf kmem record sleep 5' shows hundreds of calls kmem_cache_free from
-> > the kworker processes. Called from shmem_i_callback, __d_free and file_free_rcu.
-> > My guess is that my fuzzing caused so many allocations that the rcu freeing is
-> > still ongoing an hour or so after the process has quit.  does that make any sense?
-> 
-> No, that shouldn't be the case. RCU freeing should go on for just a
-> few RCU periods, and be done. I think there is some "limit the work we
-> do for rcu each time" in order to not have bad latencies, but even so
-> that shouldn't take _that_ long. And as you say, you should see the
-> freeing in the slab stats.
-> 
-> So clearly there are shmem inodes being destroyed, but it shouldn't be
-> from an hour ago. I wonder if your system isn't as idle as you think
-> it is.
-> 
-> But I'm cc'ing Paul, maybe he'll disagree and say it's expected and
-> that the RCU batch size is really small. Or at least give some hint
-> about how to check the pending rcu state.
+On Wed, Mar 30, 2011 at 10:32:11PM -0700, Linus Torvalds wrote:
+ > On Wed, Mar 30, 2011 at 8:55 PM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > I tried that, and wasn't particularly enlightened.
+ > >
+ > > +      6.53%  kworker/1:2  [kernel.kallsyms]  [k] read_hpet
+ > > +      4.83%  kworker/0:0  [kernel.kallsyms]  [k] read_hpet
+ > 
+ > Go into those, deeper into the callchain. That's how to see what the
+ > upper-level problem is - by seeing who actually calls it. The leafs
+ > themselves (where the time is obviously spent) don't tend to be very
+ > informative, no.
+ 
+ok, a bit more interesting ?
 
-There is by default a ten-callback-per-softirq per-CPU limit (set by
-module parameter "blimit"), but if there are more than 10,000 callbacks
-queued (set by module parameter "qhimark"), RCU stops being Mr.  Nice Guy
-and just plows through the callbacks.
+-     17.67%  kworker/0:1  [kernel.kallsyms]  [k] read_hpet
+   - read_hpet                          
+      - 76.07% timekeeping_get_ns        
+         - ktime_get                      
+            - 64.02% tick_dev_program_event
+                 tick_program_event        
+                 hrtimer_interrupt          
+                 smp_apic_timer_interrupt    
+               + apic_timer_interrupt         
+            - 35.30% sched_clock_tick          
+                 scheduler_tick                 
+                 update_process_times            
+                 tick_sched_timer                 
+                 __run_hrtimer                     
+                 hrtimer_interrupt                  
+                 smp_apic_timer_interrupt            
+               - apic_timer_interrupt                 
+                  + 65.70% _raw_spin_unlock_irqrestore 
+                  + 27.33% _raw_spin_unlock_irq  
+                  + 1.16% lock_acquire            
+                  + 1.16% put_ldisc                
+                  + 1.16% process_one_work          
+                  + 1.16% lock_release               
+                  + 0.78% worker_thread               
+                  + 0.58% _raw_spin_lock_irqsave       
+            + 0.55% tick_sched_timer      
+      - 23.82% do_timer                    
+           tick_do_update_jiffies64         
+           tick_sched_timer                  
+           __run_hrtimer                      
+           hrtimer_interrupt                   
+           smp_apic_timer_interrupt             
+         - apic_timer_interrupt                  
+            + 63.46% _raw_spin_unlock_irqrestore  
+            + 22.98% _raw_spin_unlock_irq      
+            + 3.50% put_ldisc                   
+            + 3.28% lock_acquire                 
 
-I am having a really hard time believing that you could queue a batch of
-callbacks and still have RCU processing them an hour later.  But one way
-this can happen is if the callbacks requeue themselves, for example, if
-the RCU callback function contains a call to call_rcu().  I am not seeing
-that in the __d_free and file_free_rcu callbacks that Dave mentioned,
-but this does happen in some places in the Linux kernel.  And maybe such
-a place is being invoked in a non-obvious way.
 
-There is a debugfs file "rcu/rcudata" that reports the current RCU queue
-length that is enabled with CONFIG_RCU_TRACE.  Here is sample output:
 
-rcu_sched:
-  0 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=10951/1 dn=0 df=1101 of=0 ri=36 ql=0 b=10
-  1 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=16117/1 dn=0 df=1015 of=0 ri=0 ql=0 b=10
-  2 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=1445/1 dn=0 df=1839 of=0 ri=0 ql=0 b=10
-  3 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=6681/1 dn=0 df=1545 of=0 ri=0 ql=0 b=10
-  4 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=1003/1 dn=0 df=1992 of=0 ri=0 ql=0 b=10
-  5 c=17829 g=17830 pq=1 pqc=17829 qp=1 dt=3887/1 dn=0 df=3331 of=0 ri=4 ql=2 b=10
-  6 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=859/1 dn=0 df=3224 of=0 ri=0 ql=0 b=10
-  7 c=17829 g=17830 pq=0 pqc=17829 qp=1 dt=3761/1 dn=0 df=1818 of=0 ri=0 ql=2 b=10
-rcu_bh:
-  0 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=10951/1 dn=0 df=0 of=0 ri=0 ql=0 b=10
-  1 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=16117/1 dn=0 df=13 of=0 ri=0 ql=0 b=10
-  2 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=1445/1 dn=0 df=15 of=0 ri=0 ql=0 b=10
-  3 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=6681/1 dn=0 df=9 of=0 ri=0 ql=0 b=10
-  4 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=1003/1 dn=0 df=15 of=0 ri=0 ql=0 b=10
-  5 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=3887/1 dn=0 df=15 of=0 ri=0 ql=0 b=10
-  6 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=859/1 dn=0 df=15 of=0 ri=0 ql=0 b=10
-  7 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=3761/1 dn=0 df=15 of=0 ri=0 ql=0 b=10
+btw, I left this on overnight capturing the output of /proc/loadavg
+it didn't drop off at all, and this morning the laptop is almost too
+hot to hold.
 
-The "ql=" gives the per-CPU callback queue size.  For example, CPU 7 has
-two rcu_sched callbacks queued.  In CONFIG_TREE_PREEMPT_RCU builds, there
-will be an additional "rcu_preempt" section.  If you see some huge number
-after a "ql=", that would indicate a problem.  ;-)
+	Dave
 
-Does this help?
-
-							Thanx, Paul
