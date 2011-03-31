@@ -1,57 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab1CaMoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 08:44:12 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38391 "EHLO mx3.mail.elte.hu"
+	id S1757096Ab1CaMqJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 08:46:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65189 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757082Ab1CaMoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 08:44:09 -0400
-Date: Thu, 31 Mar 2011 14:43:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: sedat.dilek@gmail.com, Florian Mickler <florian@mickler.org>,
-        Paul Bolle <pebolle@tiscali.nl>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, kurup_avinash@yahoo.com,
-        maciej.rutecki@gmail.com, rjw@sisk.pl, zersaa@gmail.com,
-        stable@kernel.org
-Subject: Re: [PATCH][POKE] Skip looking for ioapic overrides when ioapics are
- not present
-Message-ID: <20110331124327.GA20112@elte.hu>
-References: <1301558489-4198-1-git-send-email-florian@mickler.org>
- <1301561386.1904.15.camel@t41.thuisdomein>
- <20110331125305.1e8c70ba@schatten.dmk.lab>
- <AANLkTikmWDu7FZ2A7_CWGCuAeKOeK4x+u8vctCro0mSN@mail.gmail.com>
- <m1ipuzfqb9.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
+	id S1752409Ab1CaMqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 08:46:08 -0400
+Date: Thu, 31 Mar 2011 08:46:07 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org, dzickus@redhat.com
+Cc: Prarit Bhargava <prarit@redhat.com>
+Message-Id: <20110331124607.13219.33332.sendpatchset@prarit.bos.redhat.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1ipuzfqb9.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Subject: [PATCH]: Use cmpxchg() in WARN_*_ONCE() functions
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+An issue popped up where WARN_ON_ONCE() was used in a callback function
+in smp_call_function().  This resulted in the WARN_ON executing multiple times
+when it should have only executed once.
 
-* Eric W. Biederman <ebiederm@xmission.com> wrote:
+We cannot use a lock in the WARN_*_ONCE functions because it is far too heavy
+for the code in question.  Don Zickus suggested using cmpxchg(), which resolves
+the problem of the multiple outputs.
 
-> I don't have a clue why my patch got lost, [...]
+The question surrounding cmpxchg(), of course, is one of performance.  It
+appears that, at least on x86, it isn't a concern.
 
-It was not lost, it broke the build. You were notified but never followed up 
-with a working patch:
+I ran the following test in a simple module:
 
-  https://lkml.org/lkml/2010/10/2/91
+void prarit_callback(void *info)
+{
+        WARN_ON_ONCE(1);
+}
 
-and a different patch was applied to get rid of the warning messages. We can 
-apply your patch (and that patch can undo the other fix), but it has to build, 
-obviously.
+        for (j = 0; j < 10; j++)
+                for (i = 0; i < 1000000; i++)
+                        prarit_callback(NULL);
 
-Thanks,
+With the current code in place an average of 10 runs was .219s.  Doing just
+a (!cmpxchg(&__warned, 0, 1)) the time jumps to .402s.  Adding in a check
+for the __warned flag, (!__warned && !cmpxchg(&__warned, 0, 1)), results in
+an average of .220s.
 
-	Ingo
+I then did
+
+        for (i = 0; i < 1000000; i++)
+                on_each_cpu(prarit_callback, NULL, 0);
+
+The current code, of course, explodes :).  That's the bug I'm trying to fix.
+What is interesting in this test, however, is the impact that checking the
+!__warned flag has [Aside: Checking the !__warned flag is an enhancement
+and is not explicitly required for this code].
+
+A run with just (!cmpxchg(&__warned, 0, 1)) results in an average of 21.323s,
+and a run with  (!__warned && !cmpxchg(&__warned, 0, 1)) results in an
+average of 20.233s.  Of course, the !__warned is not necessary for the code
+to work properly but it seems to be a significant impact to the time to run
+this code.
+
+P.
+
+WARN_ON_ONCE() is used in callback functions in smp_call_function().  This
+results in races through the WARN_ON() code.
+
+Use cmxchg() in the WARN_*_ON functions in order to guarantee single
+execution of the WARN_ONs.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+
+diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+index f2d2faf..cbefd54 100644
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -133,30 +133,32 @@ extern void warn_slowpath_null(const char *file, const int line);
+ #endif
+ 
+ #define WARN_ON_ONCE(condition)	({				\
+-	static bool __warned;					\
++	static int __warned;					\
+ 	int __ret_warn_once = !!(condition);			\
+ 								\
+ 	if (unlikely(__ret_warn_once))				\
+-		if (WARN_ON(!__warned)) 			\
+-			__warned = true;			\
++		if (!__warned && !cmpxchg(&__warned, 0, 1))	\
++			WARN_ON(1);				\
+ 	unlikely(__ret_warn_once);				\
+ })
+ 
+ #define WARN_ONCE(condition, format...)	({			\
+-	static bool __warned;					\
++	static int __warned;					\
+ 	int __ret_warn_once = !!(condition);			\
+ 								\
+ 	if (unlikely(__ret_warn_once))				\
+-		if (WARN(!__warned, format)) 			\
+-			__warned = true;			\
++		if (!__warned && !cmpxchg(&__warned, 0, 1))	\
++			WARN(1, format);			\
+ 	unlikely(__ret_warn_once);				\
+ })
+ 
+ #define WARN_TAINT_ONCE(condition, taint, format...)	({	\
+-	static bool __warned;					\
++	static int __warned;					\
+ 	int __ret_warn_once = !!(condition);			\
+ 								\
+ 	if (unlikely(__ret_warn_once))				\
++		if (!__warned && !cmpxchg(&__warned, 0, 1))	\
++			WARN_TAINT(1, taint, format);		\
+ 		if (WARN_TAINT(!__warned, taint, format))	\
+ 			__warned = true;			\
+ 	unlikely(__ret_warn_once);				\
