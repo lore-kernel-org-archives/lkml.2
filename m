@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758594Ab1CaQGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 12:06:09 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47075 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758205Ab1CaQGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 12:06:06 -0400
-Date: Thu, 31 Mar 2011 18:05:52 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bp@amd64.org, tglx@linutronix.de, borislav.petkov@amd.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, amd-nb: Rename CPU PCI id define for F4
-Message-ID: <20110331160552.GD9827@elte.hu>
-References: <20110330183447.GA3668@aftab>
- <tip-cb6c8520f6f6bba7b7e1a6de3360a8edfd8243b6@git.kernel.org>
- <20110331090039.12358ee6@jbarnes-desktop>
+	id S1758539Ab1CaQJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 12:09:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58352 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437Ab1CaQJM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 12:09:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=YTXJH7amLXqxAj20EfqTUE0joh9D9FKVBXCKYEx4AYTqh5+HnfVdRWfojbUdc9KdDi
+         Ry+KoFpIdfzeXmEAy8gZxrYp3/wkTPZDFyj07Ryc8dEaejDC+k5W9OParE5pjFBVNcia
+         LsLndMNJGu3t5ob6238ka2KZlr53SIvBWtlbY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110331090039.12358ee6@jbarnes-desktop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4D946C73.4090402@ladisch.de>
+References: <AANLkTin17=rCU4eDGYtnVFZ1ffbUn+var4Q_AQUuGKaw@mail.gmail.com>
+	<4D946C73.4090402@ladisch.de>
+Date: Thu, 31 Mar 2011 18:09:09 +0200
+Message-ID: <AANLkTinyRqEa_ML47DOqAJU8aLDEA12geiUUrPGjXHrN@mail.gmail.com>
+Subject: Re: Linux 2.6.38 freeze because of sound/core/pcm_lib.c commit 59ff878ffb26bc0be812ca8295799164f413ae88
+From: "Christopher K." <c.krooss@googlemail.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 31 March 2011 13:58, Clemens Ladisch <clemens@ladisch.de> wrote:
+> Please try this patch:
 
-* Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+I'm afraid the patch you provided did not change anything for me. I
+applied it to 2.6.38.2,
+still freezes 15 - 20 seconds after startup (Could be around the time
+pulseaudio initializes).
+Is there any way to provide you with more debug information?
 
-> On Thu, 31 Mar 2011 07:04:41 GMT
-> tip-bot for Borislav Petkov <bp@amd64.org> wrote:
-> 
-> > Commit-ID:  cb6c8520f6f6bba7b7e1a6de3360a8edfd8243b6
-> > Gitweb:     http://git.kernel.org/tip/cb6c8520f6f6bba7b7e1a6de3360a8edfd8243b6
-> > Author:     Borislav Petkov <bp@amd64.org>
-> > AuthorDate: Wed, 30 Mar 2011 20:34:47 +0200
-> > Committer:  Ingo Molnar <mingo@elte.hu>
-> > CommitDate: Thu, 31 Mar 2011 08:51:38 +0200
-> > 
-> > x86, amd-nb: Rename CPU PCI id define for F4
-> > 
-> > With increasing number of PCI function ids, add the PCI function
-> > id in the define name instead of its symbolic name in the BKDG
-> > for more clarity. This renames function 4 define.
-> > 
-> 
-> I guess I don't see how a rename is urgent, but you can add my
-> Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Onboard: VIA VT1828S
 
-The new ID went upstream via cb293250c71f in the merge window, so i wanted to 
-shorten the life-time of the obsoleted name - that will also reduce the chance 
-of any conflicts.
+HDA Intel 0000:00:1b.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
+HDA Intel 0000:00:1b.0: irq 47 for MSI/MSI-X
+HDA Intel 0000:00:1b.0: setting latency timer to 64
+nvidia: module license 'NVIDIA' taints kernel.
+hda-codec: no NID for mapping control Independent HP:0:0
+HDA Intel 0000:01:00.1: PCI INT B -> GSI 17 (level, low) -> IRQ 17
+hda_intel: Disable MSI for Nvidia chipset
+HDA Intel 0000:01:00.1: setting latency timer to 64
+...
+hda_intel: Disable MSI for Nvidia chipset
+nvidia 0000:01:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+nvidia 0000:01:00.0: setting latency timer to 64
+NVRM: loading NVIDIA UNIX x86_64 Kernel Module  270.30  Fri Feb 25
+14:34:55 PST 2011
 
-Thanks,
-
-	Ingo
+I use a Nvidia gtx 460, could it be related (as it features sound capabilities)?
+Using nouveau does not change anything, neither does 2.6.39-rc1.
