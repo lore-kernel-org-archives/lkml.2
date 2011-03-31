@@ -1,203 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab1CaEqt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 00:46:49 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49355 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab1CaEqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 00:46:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=GOM33S1YWbKh8EQu/2jcbQEj3TIg1vtrIaFCuHII7FUzo+maOMK+IS0ZZv/HTeejta
-         tX6zkoF9Fb8cumpkM2sYiqt4RVUFtxxIf7dXGSzw4PpI3vfb/7KRKaYl6tNXe6YeyUH1
-         Qnfq4DJPfuJ2S9jAvK8UO6SHBNd6bL6bRM2cQ=
-MIME-Version: 1.0
-In-Reply-To: <20101215015849.051095242@gulag1.americas.sgi.com>
-References: <20101215015840.390204279@gulag1.americas.sgi.com>
-	<20101215015849.051095242@gulag1.americas.sgi.com>
-Date: Wed, 30 Mar 2011 21:46:46 -0700
-X-Google-Sender-Auth: qhjZvWXKD6r8LLL9Ss_QkwBR1p8
-Message-ID: <AANLkTinoctZFKo4wBmrrdFggnjSj74QfqvEpz59sW15x@mail.gmail.com>
-Subject: Re: [RFC 2/2] Make x86 calibrate_delay run in parallel.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Content-Type: multipart/mixed; boundary=000e0cd40654146b15049fbffb1b
+	id S1753960Ab1CaExb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 00:53:31 -0400
+Received: from linux-sh.org ([111.68.239.195]:58343 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752023Ab1CaExa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 00:53:30 -0400
+Date: Thu, 31 Mar 2011 13:52:46 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] s3fb: fix Virge/GX2
+Message-ID: <20110331045234.GA15486@linux-sh.org>
+References: <201103292107.11969.linux@rainbow-software.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201103292107.11969.linux@rainbow-software.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd40654146b15049fbffb1b
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, Dec 14, 2010 at 5:58 PM,  <Robin@sgi.com> wrote:
->
-> On a 4096 cpu machine, we noticed that 318 seconds were taken for bringin=
-g
-> up the cpus. =A0By specifying lpj=3D<value>, we reduced that to 75 second=
-s.
-> Andi Kleen suggested we rework the calibrate_delay calls to run in
-> parallel. =A0With that code in place, a test boot of the same machine too=
-k
-> 61 seconds to bring the cups up. =A0I am not sure how we beat the lpj=3D
-> case, but it did outperform.
->
-> One thing to note is the total BogoMIPS value is also consistently higher=
-.
-> I am wondering if this is an effect with the cores being in performance
-> mode. =A0I did notice that the parallel calibrate_delay calls did cause t=
-he
-> fans on the machine to ramp up to full speed where the normal sequential
-> calls did not cause them to budge at all.
-
-please check attached patch, that could calibrate correctly.
-
-Thanks
-
-Yinghai
-
---000e0cd40654146b15049fbffb1b
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="Make-x86-calibrate_delay-run-in-parallel.patch"
-Content-Disposition: attachment; 
-	filename="Make-x86-calibrate_delay-run-in-parallel.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_glx7aicl0
-
-W1BBVENIIC12Ml0geDg2OiBNYWtlIGNhbGlicmF0ZV9kZWxheSBydW4gaW4gcGFyYWxsZWwuCgpP
-biBhIDQwOTYgY3B1IG1hY2hpbmUsIHdlIG5vdGljZWQgdGhhdCAzMTggc2Vjb25kcyB3ZXJlIHRh
-a2VuIGZvciBicmluZ2luZwp1cCB0aGUgY3B1cy4gIEJ5IHNwZWNpZnlpbmcgbHBqPTx2YWx1ZT4s
-IHdlIHJlZHVjZWQgdGhhdCB0byA3NSBzZWNvbmRzLgpBbmRpIEtsZWVuIHN1Z2dlc3RlZCB3ZSBy
-ZXdvcmsgdGhlIGNhbGlicmF0ZV9kZWxheSBjYWxscyB0byBydW4gaW4KcGFyYWxsZWwuCgotdjI6
-IGZyb20gWWluZ2hhaQogICAgIHR3byBwYXRoOiBvbmUgZm9yIGluaXRpYWwgYm9vdCBjcHVzLiBh
-bmQgb25lIGZvciBob3RwbHVnIGNwdXMKCWluaXRpYWwgcGF0aDoKCSAgYWZ0ZXIgYWxsIGNwdSBi
-b290IHVwLCBlbnRlciBpZGxlLCB1c2Ugc21wX2NhbGxfZnVuY3Rpb25fbWFueQoJICBsZXQgZXZl
-cnkgYXAgY2FsbCBfX2NhbGlicmF0ZV9kZWxheS4KICAgICAgICAgIFdlIGNhbiBub3QgcHV0IHRo
-YXQgY2FsaWJyYXRlX2RlbGF5IGFmdGVyIGxvY2FsX2lycV9lbmFibGUKICAgICAgICAgIGluIHN0
-YXJ0X3NlY29uZGFyeSgpLCBhdCB0aGF0IHRpbWUgdGhhdCBjcHUgY291bGQgYmUgaW52b2xlZAoJ
-ICB3aXRoIHBlcmZfZXZlbnQgd2l0aCBubWlfd2F0Y2hkb2cgZW5hYmxpbmcuIHRoYXQgd2lsbCBj
-YXVzZQoJICBzdHJhbmdlIGNhbGlicmF0aW5nIHJlc3VsdC4KICAgICBhZGQgX19jYWxpYnJhdGVf
-ZGVsYXkgaW5zdGVhZCBvZiBjaGFuZ2luZyBjYWxpYnJhdGVfZGVsYXkgYWxsIG92ZXIuCiAgICAg
-dXNlIGNwdV9jYWxpYnJhdGVkX2RlbGF5X21hc2sgaW5zdGVhZC4uLgogICAgIHVzZSBwcmludF9s
-cGogdG8gbWFrZSBwcmludCBsaW5lIGNvbXBsZXRlLgoKU2lnbmVkLW9mZi1ieTogUm9iaW4gSG9s
-dCA8aG9sdEBzZ2kuY29tPgpUbzogQW5kaSBLbGVlbiA8YW5kaUBmaXJzdGZsb29yLm9yZz4KQ2M6
-IFRob21hcyBHbGVpeG5lciA8dGdseEBsaW51dHJvbml4LmRlPgpDYzogSW5nbyBNb2xuYXIgPG1p
-bmdvQHJlZGhhdC5jb20+ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVs
-Lm9yZz4KCi0tLQogYXJjaC94ODYvaW5jbHVkZS9hc20vY3B1bWFzay5oIHwgICAgMSAKIGFyY2gv
-eDg2L2tlcm5lbC9jcHUvY29tbW9uLmMgICB8ICAgIDIgKwogYXJjaC94ODYva2VybmVsL3NtcGJv
-b3QuYyAgICAgIHwgICA1OCArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0t
-LQogaW5jbHVkZS9saW51eC9kZWxheS5oICAgICAgICAgIHwgICAgMSAKIGluaXQvY2FsaWJyYXRl
-LmMgICAgICAgICAgICAgICB8ICAgNDQgKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0tLQog
-NSBmaWxlcyBjaGFuZ2VkLCA3NSBpbnNlcnRpb25zKCspLCAzMSBkZWxldGlvbnMoLSkKCgotLQpJ
-bmRleDogbGludXgtMi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL2NwdW1hc2suaAo9PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9jcHVtYXNrLmgKKysrIGxp
-bnV4LTIuNi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9jcHVtYXNrLmgKQEAgLTYsNiArNiw3IEBACiBl
-eHRlcm4gY3B1bWFza192YXJfdCBjcHVfY2FsbGluX21hc2s7CiBleHRlcm4gY3B1bWFza192YXJf
-dCBjcHVfY2FsbG91dF9tYXNrOwogZXh0ZXJuIGNwdW1hc2tfdmFyX3QgY3B1X2luaXRpYWxpemVk
-X21hc2s7CitleHRlcm4gY3B1bWFza192YXJfdCBjcHVfY2FsaWJyYXRlZF9kZWxheV9tYXNrOwog
-ZXh0ZXJuIGNwdW1hc2tfdmFyX3QgY3B1X3NpYmxpbmdfc2V0dXBfbWFzazsKIAogZXh0ZXJuIHZv
-aWQgc2V0dXBfY3B1X2xvY2FsX21hc2tzKHZvaWQpOwpJbmRleDogbGludXgtMi42L2FyY2gveDg2
-L2tlcm5lbC9jcHUvY29tbW9uLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94
-ODYva2VybmVsL2NwdS9jb21tb24uYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9jcHUv
-Y29tbW9uLmMKQEAgLTQ1LDYgKzQ1LDcgQEAKIGNwdW1hc2tfdmFyX3QgY3B1X2luaXRpYWxpemVk
-X21hc2s7CiBjcHVtYXNrX3Zhcl90IGNwdV9jYWxsb3V0X21hc2s7CiBjcHVtYXNrX3Zhcl90IGNw
-dV9jYWxsaW5fbWFzazsKK2NwdW1hc2tfdmFyX3QgY3B1X2NhbGlicmF0ZWRfZGVsYXlfbWFzazsK
-IAogLyogcmVwcmVzZW50aW5nIGNwdXMgZm9yIHdoaWNoIHNpYmxpbmcgbWFwcyBjYW4gYmUgY29t
-cHV0ZWQgKi8KIGNwdW1hc2tfdmFyX3QgY3B1X3NpYmxpbmdfc2V0dXBfbWFzazsKQEAgLTU1LDYg
-KzU2LDcgQEAgdm9pZCBfX2luaXQgc2V0dXBfY3B1X2xvY2FsX21hc2tzKHZvaWQpCiAJYWxsb2Nf
-Ym9vdG1lbV9jcHVtYXNrX3ZhcigmY3B1X2luaXRpYWxpemVkX21hc2spOwogCWFsbG9jX2Jvb3Rt
-ZW1fY3B1bWFza192YXIoJmNwdV9jYWxsaW5fbWFzayk7CiAJYWxsb2NfYm9vdG1lbV9jcHVtYXNr
-X3ZhcigmY3B1X2NhbGxvdXRfbWFzayk7CisJYWxsb2NfYm9vdG1lbV9jcHVtYXNrX3ZhcigmY3B1
-X2NhbGlicmF0ZWRfZGVsYXlfbWFzayk7CiAJYWxsb2NfYm9vdG1lbV9jcHVtYXNrX3ZhcigmY3B1
-X3NpYmxpbmdfc2V0dXBfbWFzayk7CiB9CiAKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJu
-ZWwvc21wYm9vdC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5l
-bC9zbXBib290LmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvc21wYm9vdC5jCkBAIC01
-Miw2ICs1Miw3IEBACiAjaW5jbHVkZSA8bGludXgvZ2ZwLmg+CiAKICNpbmNsdWRlIDxhc20vYWNw
-aS5oPgorI2luY2x1ZGUgPGFzbS9jcHVtYXNrLmg+CiAjaW5jbHVkZSA8YXNtL2Rlc2MuaD4KICNp
-bmNsdWRlIDxhc20vbm1pLmg+CiAjaW5jbHVkZSA8YXNtL2lycS5oPgpAQCAtMjA3LDE1ICsyMDgs
-NyBAQCBzdGF0aWMgdm9pZCBfX2NwdWluaXQgc21wX2NhbGxpbih2b2lkKQogCSAqIE5lZWQgdG8g
-c2V0dXAgdmVjdG9yIG1hcHBpbmdzIGJlZm9yZSB3ZSBlbmFibGUgaW50ZXJydXB0cy4KIAkgKi8K
-IAlzZXR1cF92ZWN0b3JfaXJxKHNtcF9wcm9jZXNzb3JfaWQoKSk7Ci0JLyoKLQkgKiBHZXQgb3Vy
-IGJvZ29taXBzLgotCSAqCi0JICogTmVlZCB0byBlbmFibGUgSVJRcyBiZWNhdXNlIGl0IGNhbiB0
-YWtlIGxvbmdlciBhbmQgdGhlbgotCSAqIHRoZSBOTUkgd2F0Y2hkb2cgbWlnaHQga2lsbCB1cy4K
-LQkgKi8KLQlsb2NhbF9pcnFfZW5hYmxlKCk7Ci0JY2FsaWJyYXRlX2RlbGF5KCk7Ci0JbG9jYWxf
-aXJxX2Rpc2FibGUoKTsKKwogCXByX2RlYnVnKCJTdGFjayBhdCBhYm91dCAlcFxuIiwgJmNwdWlk
-KTsKIAogCS8qCkBAIC0xMDM3LDYgKzEwMzAsOCBAQCB2b2lkIF9faW5pdCBuYXRpdmVfc21wX3By
-ZXBhcmVfY3B1cyh1bnNpCiAJfQogCXNldF9jcHVfc2libGluZ19tYXAoMCk7CiAKKwkvKiBhbHJl
-YWR5IGNhbGxlZCBlYXJsaWVyIGZvciBib290IGNwdSAqLworCWNwdW1hc2tfc2V0X2NwdSgwLCBj
-cHVfY2FsaWJyYXRlZF9kZWxheV9tYXNrKTsKIAogCWlmIChzbXBfc2FuaXR5X2NoZWNrKG1heF9j
-cHVzKSA8IDApIHsKIAkJcHJpbnRrKEtFUk5fSU5GTyAiU01QIGRpc2FibGVkXG4iKTsKQEAgLTEx
-MjUsOCArMTEyMCw1MyBAQCB2b2lkIF9faW5pdCBuYXRpdmVfc21wX3ByZXBhcmVfYm9vdF9jcHUo
-CiAJcGVyX2NwdShjcHVfc3RhdGUsIG1lKSA9IENQVV9PTkxJTkU7CiB9CiAKK3N0YXRpYyB2b2lk
-IF9fY3B1aW5pdCBjYWxpYnJhdGVfZGVsYXlfZm4odm9pZCAqaW5mbykKK3sKKwlpbnQgY3B1ID0g
-c21wX3Byb2Nlc3Nvcl9pZCgpOworCisJY3B1X2RhdGEoY3B1KS5sb29wc19wZXJfamlmZnkgPSBf
-X2NhbGlicmF0ZV9kZWxheShjcHUsIGxvb3BzX3Blcl9qaWZmeSk7CisJY3B1bWFza19zZXRfY3B1
-KGNwdSwgY3B1X2NhbGlicmF0ZWRfZGVsYXlfbWFzayk7Cit9CisKKyNpZmRlZiBDT05GSUdfSE9U
-UExVR19DUFUKK3N0YXRpYyBpbnQgX19jcHVpbml0CitjYWxfY3B1X2NhbGxiYWNrKHN0cnVjdCBu
-b3RpZmllcl9ibG9jayAqbmZiLCB1bnNpZ25lZCBsb25nIGFjdGlvbiwgdm9pZCAqaGNwdSkKK3sK
-KwlpbnQgY3B1ID0gKHVuc2lnbmVkIGxvbmcpaGNwdTsKKworCXN3aXRjaCAoYWN0aW9uKSB7CisJ
-Y2FzZSBDUFVfT05MSU5FOgorCWNhc2UgQ1BVX09OTElORV9GUk9aRU46CisJCXNtcF9jYWxsX2Z1
-bmN0aW9uX3NpbmdsZShjcHUsIGNhbGlicmF0ZV9kZWxheV9mbiwgTlVMTCwgMSk7CisJCWJyZWFr
-OworCX0KKworCXJldHVybiBOT1RJRllfT0s7Cit9CisKK3N0YXRpYyBfX2NwdWluaXRkYXRhIHN0
-cnVjdCBub3RpZmllcl9ibG9jayBfX2NwdWluaXRkYXRhIGNhbF9jcHVfbmZiID0geworCS5ub3Rp
-Zmllcl9jYWxsID0gY2FsX2NwdV9jYWxsYmFjaworfTsKKworc3RhdGljIHZvaWQgX19pbml0IHJl
-Z2lzdGVyX2NhbF9jcHVfbmZiKHZvaWQpCit7CisJcmVnaXN0ZXJfY3B1X25vdGlmaWVyKCZjYWxf
-Y3B1X25mYik7Cit9CisjZWxzZQorc3RhdGljIHZvaWQgX19pbml0IHJlZ2lzdGVyX2NhbF9jcHVf
-bmZiKHZvaWQpCit7Cit9CisjZW5kaWYKKwogdm9pZCBfX2luaXQgbmF0aXZlX3NtcF9jcHVzX2Rv
-bmUodW5zaWduZWQgaW50IG1heF9jcHVzKQogeworCXNtcF9jYWxsX2Z1bmN0aW9uX21hbnkoY3B1
-X29ubGluZV9tYXNrLCBjYWxpYnJhdGVfZGVsYXlfZm4sIE5VTEwsIDApOworCXdoaWxlIChjcHVt
-YXNrX3dlaWdodChjcHVfY2FsaWJyYXRlZF9kZWxheV9tYXNrKSAhPSBudW1fb25saW5lX2NwdXMo
-KSkgeworCQljcHVfcmVsYXgoKTsKKwkJdG91Y2hfbm1pX3dhdGNoZG9nKCk7CisJfQorCXJlZ2lz
-dGVyX2NhbF9jcHVfbmZiKCk7CisKIAlwcl9kZWJ1ZygiQm9vdCBkb25lLlxuIik7CiAKIAlpbXBy
-ZXNzX2ZyaWVuZHMoKTsKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L2RlbGF5LmgKPT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvaW5jbHVkZS9saW51eC9kZWxheS5oCisrKyBsaW51
-eC0yLjYvaW5jbHVkZS9saW51eC9kZWxheS5oCkBAIC00Myw2ICs0Myw3IEBAIHN0YXRpYyBpbmxp
-bmUgdm9pZCBuZGVsYXkodW5zaWduZWQgbG9uZwogCiBleHRlcm4gdW5zaWduZWQgbG9uZyBscGpf
-ZmluZTsKIHZvaWQgY2FsaWJyYXRlX2RlbGF5KHZvaWQpOwordW5zaWduZWQgbG9uZyBfX2NhbGli
-cmF0ZV9kZWxheShpbnQgY3B1LCB1bnNpZ25lZCBsb25nIGxwaik7CiB2b2lkIG1zbGVlcCh1bnNp
-Z25lZCBpbnQgbXNlY3MpOwogdW5zaWduZWQgbG9uZyBtc2xlZXBfaW50ZXJydXB0aWJsZSh1bnNp
-Z25lZCBpbnQgbXNlY3MpOwogdm9pZCB1c2xlZXBfcmFuZ2UodW5zaWduZWQgbG9uZyBtaW4sIHVu
-c2lnbmVkIGxvbmcgbWF4KTsKSW5kZXg6IGxpbnV4LTIuNi9pbml0L2NhbGlicmF0ZS5jCj09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2luaXQvY2FsaWJyYXRlLmMKKysrIGxpbnV4LTIuNi9p
-bml0L2NhbGlicmF0ZS5jCkBAIC0xODMsMzIgKzE4MywzMiBAQCByZWNhbGlicmF0ZToKIAlyZXR1
-cm4gbHBqOwogfQogCi12b2lkIF9fY3B1aW5pdCBjYWxpYnJhdGVfZGVsYXkodm9pZCkKK3N0YXRp
-YyB2b2lkIF9fY3B1aW5pdCBwcmludF9scGooaW50IGNwdSwgY2hhciAqc3RyLCB1bnNpZ25lZCBs
-b25nIGxwaikKIHsKLQlzdGF0aWMgYm9vbCBwcmludGVkOworCXByX2luZm8oIkNQVSVkOiBDYWxp
-YnJhdGluZyBkZWxheSVzIgorCQkiJWx1LiUwMmx1IEJvZ29NSVBTIChscGo9JWx1KVxuIiwgY3B1
-LCBzdHIsCisJCWxwai8oNTAwMDAwL0haKSwgKGxwai8oNTAwMC9IWikpICUgMTAwLCBscGopOwor
-fQogCit1bnNpZ25lZCBsb25nIF9fY3B1aW5pdCBfX2NhbGlicmF0ZV9kZWxheShpbnQgY3B1LCB1
-bnNpZ25lZCBsb25nIGxwaikKK3sKIAlpZiAocHJlc2V0X2xwaikgewotCQlsb29wc19wZXJfamlm
-ZnkgPSBwcmVzZXRfbHBqOwotCQlpZiAoIXByaW50ZWQpCi0JCQlwcl9pbmZvKCJDYWxpYnJhdGlu
-ZyBkZWxheSBsb29wIChza2lwcGVkKSAiCi0JCQkJInByZXNldCB2YWx1ZS4uICIpOwotCX0gZWxz
-ZSBpZiAoKCFwcmludGVkKSAmJiBscGpfZmluZSkgewotCQlsb29wc19wZXJfamlmZnkgPSBscGpf
-ZmluZTsKLQkJcHJfaW5mbygiQ2FsaWJyYXRpbmcgZGVsYXkgbG9vcCAoc2tpcHBlZCksICIKLQkJ
-CSJ2YWx1ZSBjYWxjdWxhdGVkIHVzaW5nIHRpbWVyIGZyZXF1ZW5jeS4uICIpOwotCX0gZWxzZSBp
-ZiAoKGxvb3BzX3Blcl9qaWZmeSA9IGNhbGlicmF0ZV9kZWxheV9kaXJlY3QoKSkgIT0gMCkgewot
-CQlpZiAoIXByaW50ZWQpCi0JCQlwcl9pbmZvKCJDYWxpYnJhdGluZyBkZWxheSB1c2luZyB0aW1l
-ciAiCi0JCQkJInNwZWNpZmljIHJvdXRpbmUuLiAiKTsKKwkJbHBqID0gcHJlc2V0X2xwajsKKwkJ
-cHJpbnRfbHBqKGNwdSwgIiBsb29wIChza2lwcGVkKSBwcmVzZXQgdmFsdWUuLiIsIGxwaik7CisJ
-fSBlbHNlIGlmICgoY3B1ID09IDApICYmIGxwal9maW5lKSB7CisJCWxwaiA9IGxwal9maW5lOwor
-CQlwcmludF9scGooY3B1LCAiIGxvb3AgKHNraXBwZWQpLCB2YWx1ZSBjYWxjdWxhdGVkIHVzaW5n
-IHRpbWVyIGZyZXF1ZW5jeS4uICIsIGxwaik7CisJfSBlbHNlIGlmICgobHBqID0gY2FsaWJyYXRl
-X2RlbGF5X2RpcmVjdCgpKSAhPSAwKSB7CisJCXByaW50X2xwaihjcHUsICIgdXNpbmcgdGltZXIg
-c3BlY2lmaWMgcm91dGluZS4uICIsIGxwaik7CiAJfSBlbHNlIHsKLQkJaWYgKCFwcmludGVkKQot
-CQkJcHJfaW5mbygiQ2FsaWJyYXRpbmcgZGVsYXkgbG9vcC4uLiAiKTsKLQkJbG9vcHNfcGVyX2pp
-ZmZ5ID0gY2FsaWJyYXRlX2RlbGF5X2NvbnZlcmdlKCk7CisJCWxwaiA9IGNhbGlicmF0ZV9kZWxh
-eV9jb252ZXJnZSgpOworCQlwcmludF9scGooY3B1LCAiIGxvb3AgLi4uICIsIGxwaik7CiAJfQot
-CWlmICghcHJpbnRlZCkKLQkJcHJfY29udCgiJWx1LiUwMmx1IEJvZ29NSVBTIChscGo9JWx1KVxu
-IiwKLQkJCWxvb3BzX3Blcl9qaWZmeS8oNTAwMDAwL0haKSwKLQkJCShsb29wc19wZXJfamlmZnkv
-KDUwMDAvSFopKSAlIDEwMCwgbG9vcHNfcGVyX2ppZmZ5KTsKIAotCXByaW50ZWQgPSB0cnVlOwor
-CXJldHVybiBscGo7Cit9CisKK3ZvaWQgX19jcHVpbml0IGNhbGlicmF0ZV9kZWxheSh2b2lkKQor
-eworCWxvb3BzX3Blcl9qaWZmeSA9IF9fY2FsaWJyYXRlX2RlbGF5KDAsIGxvb3BzX3Blcl9qaWZm
-eSk7CiB9Cg==
---000e0cd40654146b15049fbffb1b--
+On Tue, Mar 29, 2011 at 09:07:08PM +0200, Ondrej Zary wrote:
+> Fix Virge/GX2 support in s3fb:
+> - fix IDs: 86C357 is GX2, 86C359 is GX2+, 86C356 probably does not exist
+> - add memory size detection
+> - drive it the same way as Trio3D/2X
+> 
+> The original IDs most likely came from S3 website which claims that:
+> - 356 is Virge/GX2 with ID=8A10, driver included in Windows 2K, XP
+> - 357 is Virge/GX2+ with ID=8A11, driver included in Windows ME
+> - 359 is Virge/GX2+ with ID=8A12, driver included in Windows ME
+> but:
+> - google search for 86C356 only reveals references to Trio3D (probably
+> because of a typo - Trio3D is 86C365)
+> - my card is clearly marked as 86C357, Virge/GX2 and has ID=8A10
+> - there is no driver for IDs 8A11 and 8A12 in Windows ME
+> - there is a driver for ID 8A10 in Windows ME that says it's GX2 (357)
+> 
+> Tested with #9 Reality 334 (86C357 Virge/GX2, ID=0x8A10).
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> 
+Applied, thanks.
