@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016Ab1DAPrZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:47:25 -0400
-Received: from ns2.coplanar.net ([199.27.182.4]:40330 "EHLO titan.coplanar.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751316Ab1DAPrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:47:24 -0400
-Message-ID: <4D95F37E.8080107@coplanar.net>
-Date: Fri, 01 Apr 2011 11:47:10 -0400
-From: Jeremy Jackson <jerj@coplanar.net>
-Organization: Coplanar Networks
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1757981Ab1DAPum (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:50:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56292 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab1DAPuk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 11:50:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Detlef Vollmann <dv@vollmann.ch>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Date: Fri, 1 Apr 2011 17:50:17 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, david@lang.hm,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <201104011659.40443.arnd@arndb.de> <4D95EF8E.9080902@vollmann.ch>
+In-Reply-To: <4D95EF8E.9080902@vollmann.ch>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: signal to PID 1 from serial console like KeyboardRequest or CAD
-References: <4D8CD3D4.90900@coplanar.net>	<20110331125706.9159a13d.rdunlap@xenotime.net>	<20110401053757.GA9866@core.coreip.homeip.net>	<4D95F1B0.9060304@coplanar.net> <20110401084218.d803b38d.rdunlap@xenotime.net>
-In-Reply-To: <20110401084218.d803b38d.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.4 (titan.coplanar.net [199.27.182.2]); Fri, 01 Apr 2011 11:47:21 -0400 (EDT)
+Message-Id: <201104011750.17344.arnd@arndb.de>
+X-Provags-ID: V02:K0:gr9k8EoUyuVVpA1fVkEJMZ1N9CcMrfGd+3TPWEnUDcU
+ gRx1gX38udt8TEGJ65ZHRfD7oPzxLL7Faxxy1oHKSMvJcN8l/L
+ 2zeHgE5wG2shHsRKeigg4VE0B0fWh8KAJN6ATGoIK6qt7fK1Zb
+ wqGlE/HSASzkOvPdZ+Bi+HkOXs2jN7qZhUKgguXd17dCQCsQsq
+ EHbWKRo4CNOYr9kbZhonA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2011 11:42 AM, Randy Dunlap wrote:
-> On Fri, 01 Apr 2011 11:39:28 -0400 Jeremy Jackson wrote:
->
->> On 04/01/2011 01:37 AM, Dmitry Torokhov wrote:
->>> On Thu, Mar 31, 2011 at 12:57:06PM -0700, Randy Dunlap wrote:
->>>> On Fri, 25 Mar 2011 13:41:40 -0400 Jeremy Jackson wrote:
->>>>
->>>>> Hi,
->>>>>
->>>>> Sent to linux-console with no reply for over a week...
->>>>>
->>>>> I ran into a problem recently on a Linux server with a remote serial
->>>>> console.  /sbin/init (actually Upstart) was in a state where nothing
->>>>> (useful) was running.  I had to power cycle the machine to get back to
->>>>> the boot prompt.  This has the side-effect of triggering raid rebuilds.
->>>>>
->>>>> It would be nice to have what Ctrl-Alt-Del does at the VGA console with
->>>>> PS/2 or USB keyboard. This sends a SIGINT to PID 1, and most distros
->>>>> have this set to do "shutdown -r now" which attempts a clean reboot.
->>>>
->>>> so C_A_D works at console via PS/2 or USB keyboard, but not on a remote
->>>> serial console?  Could it be an issue with whatever remote/serial software
->>>> you are using?
->>>
->>> I believe it is simply a matter of console keymap and assigning "boot"
->>> value to the desired combination.
->>
->> The VGA console/keyboard isn't an issue here, C_A_D works great.  The
->> problem is, that functionality isn't available when using *serial* console.
->
-> That's why I asked whether it could be an issue with the serial interface
-> software.  E.g., minicom handles/processes certain keystrokes, other apps do things
-> differently, etc...
+On Friday 01 April 2011, Detlef Vollmann wrote:
+> On 04/01/11 16:59, Arnd Bergmann wrote:
+> > On Friday 01 April 2011, Detlef Vollmann wrote:
+> >> On 04/01/11 15:54, Arnd Bergmann wrote:
+> >
+> >>> 9. All interesting work is going into a handful of platforms, all of which
+> >>>      are ARMv7 based.
+> >> Define interesting.
+> >
+> > The ones that are causing the churn that we're talking about.
+> > Platforms that have been working forever and only need to get
+> > the occasional bug fix are boring, i.e. not the problem.
+> In the ARM tree I only know mach-at91.
+> Atmel still introduces new SOCs based on ARM926EJ-S, and that makes
+> perfect sense for lots of applications.
 
-OK I guess I should clarify... when using Linux serial console, you can 
-send BREAK <letter> to use SysRq functions.  In minicom, META-F sends 
-break.  This works fine for all the existing functions linux offers, r = 
-reboot immediate, i = kill all tasks, etc.  But, there is no function 
-available to reboot *clean*, or to signal PID 1 (/sbin/init) to do same. 
-  So, minicom is working/configured properly, Linux just doesn't offer a 
-feature similar to C_A_D via serial.
+I thought new ones were generally Cortex-M3 based. Either way, even
+if there are exceptions, focusing on ARMv7 at first should give
+a good representation of the new development.
 
--- 
-Coplanar Networks
-http://www.coplanar.net
-(519)489-4903
+> >>> 12. Supporting many different boards with a single kernel binary is a
+> >>>       useful goal.
+> >> Generally not for embedded systems (for me, a mobile PDA/phone is just a
+> >> small computer with a crappy keyboard, but not an embedded system).
+> >
+> > True. For embedded, this would not be an important thing to do, but
+> > also not hurt.
+> It costs you flash space.
+
+Well, the idea was not to force everyone to enable all options. When this
+is done right, the kernel would not be any bigger.
+
+> >>> * Strictly no crap
+> >>>    * No board files
+> >> Where do you put code that needs to run very early (e.g. pinging the
+> >> watchdog)?
+> >
+> > Don't know. I'd hope we can get fast enough to the phase where device
+> > drivers get initialized.
+> Nope, never happened for me :-(
+> (Watchdog timeouts are often 1s or less.)
+
+1s is a long time. Most of the boot process is drivers anyway, so we
+just need to make sure that the watchdog is early enough.
+
+> > I believe that rule is generally accepted today, but we don't always
+> > enforce it.
+> Without device tree, Kconfig option is the only way that really
+> works today (no runtime HW detection, and same board ID with different
+> setups).
+
+I believe that has never been an accepted way of doing things, you are
+supposed to get a new board ID for every new board, hence the name ;-).
+
+	ARnd
