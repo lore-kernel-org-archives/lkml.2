@@ -1,150 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab1DATyu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 15:54:50 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:37041 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab1DATyt (ORCPT
+	id S1755018Ab1DATzX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 15:55:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32004 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857Ab1DATzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 15:54:49 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Fri, 01 Apr 2011 15:54:47 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Detlef Vollmann <dv@vollmann.ch>, Ingo Molnar <mingo@elte.hu>,
-        david@lang.hm, Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-In-reply-to: <201104011750.17344.arnd@arndb.de>
-Message-id: <alpine.LFD.2.00.1104011441150.28032@xanadu.home>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
- <201104011659.40443.arnd@arndb.de> <4D95EF8E.9080902@vollmann.ch>
- <201104011750.17344.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 1 Apr 2011 15:55:20 -0400
+Message-ID: <4D962D72.2010501@kernel.org>
+Date: Fri, 01 Apr 2011 12:54:26 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ingo Molnar <mingo@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Michael Leun <lkml20101129@newton.leun.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Mike Pagano <mpagano@gentoo.org>
+Subject: Re: 2.6.38.2 breaks suspend to disk
+References: <20110330203215.0a1a41a7@xenia.leun.net> <20110331090524.07ad0069@xenia.leun.net> <alpine.DEB.2.00.1103311546480.16492@kaball-desktop> <201103312348.53678.rjw@sisk.pl> <4D94FE37.8070109@kernel.org> <alpine.DEB.2.00.1104011230550.16492@kaball-desktop> <4D95F80D.7070201@kernel.org> <4D95FBDD.9050901@zytor.com> <alpine.DEB.2.00.1104011729000.16492@kaball-desktop> <4D961FBC.2030105@zytor.com> <4D962837.2070300@kernel.org> <4D96294B.5050909@zytor.com>
+In-Reply-To: <4D96294B.5050909@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D962D83.0015,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Apr 2011, Arnd Bergmann wrote:
+On 04/01/2011 12:36 PM, H. Peter Anvin wrote:
+> On 04/01/2011 12:32 PM, Yinghai Lu wrote:
+>>
+>> So for 32 bit, PAE support is not compiled in for old 486 cpus.
+>> mmu_cr4_feautres will be used to make sure head_32.S will not access cr4.
+>>
+>> that could be the reason why 32 bit does not do read back at beginning.
+>>
+>
+> Yes, but that doesn't explain why we shouldn't set new bits like NX and
+> PSE in this register.
 
-> On Friday 01 April 2011, Detlef Vollmann wrote:
-> > On 04/01/11 16:59, Arnd Bergmann wrote:
-> > > On Friday 01 April 2011, Detlef Vollmann wrote:
-> > >> On 04/01/11 15:54, Arnd Bergmann wrote:
-> > >
-> > >>> 9. All interesting work is going into a handful of platforms, all of which
-> > >>>      are ARMv7 based.
-> > >> Define interesting.
-> > >
-> > > The ones that are causing the churn that we're talking about.
-> > > Platforms that have been working forever and only need to get
-> > > the occasional bug fix are boring, i.e. not the problem.
-> > In the ARM tree I only know mach-at91.
-> > Atmel still introduces new SOCs based on ARM926EJ-S, and that makes
-> > perfect sense for lots of applications.
-> 
-> I thought new ones were generally Cortex-M3 based. Either way, even
-> if there are exceptions, focusing on ARMv7 at first should give
-> a good representation of the new development.
+ok, please check if you are happy with this one.
 
-The actual CPU core doesn't matter at all.  Whether it is ARM926EJ-S, 
-XScale, PJ4 or Cortex-A8/A9, _that_ is the part that is extremely well 
-maintained and abstracted already.  The focus should instead be put on 
-those platforms that are the most used irrespective of their cores.  And 
-by selecting the most used platforms, we have a greater chance to create 
-community momentum, and good examples will be spread more quickly.
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-> > >>> 12. Supporting many different boards with a single kernel binary is a
-> > >>>       useful goal.
-> > >> Generally not for embedded systems (for me, a mobile PDA/phone is just a
-> > >> small computer with a crappy keyboard, but not an embedded system).
-> > >
-> > > True. For embedded, this would not be an important thing to do, but
-> > > also not hurt.
-> > It costs you flash space.
-> 
-> Well, the idea was not to force everyone to enable all options. When this
-> is done right, the kernel would not be any bigger.
+[PATCH -v3] x86: Save cr4 to mmu_cr4_features at boot time
 
-With many SOCs each with their own peculiarities, the kernel would 
-obviously grow bigger.  But the major advantage of being _able_ to do 
-that is not ultimately to have only one kernel with multi-board support 
-even if in some context this has great value, but rather to enforce good 
-code reuse and abstraction.
+Save cr4 to mmu_cr4_features at boot time
 
-Russell suggested that we enable CONFIG_ARM_PATCH_PHYS_VIRT by 
-default.  This is already one way to remove one of the most 
-fundamental board specific piece of information that can be deduced at 
-run time instead of having compile time constants per SOC.
+Michael reported 2.6.38.2 hibernation is broken by one backported patch.
+it cause a freeze when resuming from hibernation
 
-I however don't think it is practical to go off in a separate 
-mach-nocrap space and do things in parallel.  Taking OMAP as an example, 
-there is already way too big of an infrastructure in place to simply 
-rewrite it in parallel to new OMAP versions coming up.
+| "x86: Cleanup highmap after brk is concluded"
+| commit id e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e.
 
-It would be more useful and scalable to simply sit down, look at the 
-current mess, and identify common patterns that can be easily factored 
-out into some shared library code, and all that would be left in the 
-board or SOC specific files eventually is the data to register with that 
-library code.  Nothing so complicated as grand plans or planification 
-that makes it look like a mountain.
+it turns out the mmu_cr4 save it lost somehow.
 
-Two patterns were identified so far, and they are:
+-v3: read back cr4 for 32bit too according to HPA
 
-1) GPIO drivers
+Bisected-and-tested-by: Michael Leun <lkml20101129@newton.leun.net>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-   As Linus observed, in the majority of the cases GPIOs are accessed 
-   through simple memory-mapped registers.  Some have absolute state 
-   registers, the others have separate clear/set registers.  Suffice to 
-   create two generic GPIO drivers each covering those two common cases, 
-   and those generic drivers would simply register with the higher level 
-   gpiolib code, and all the board code would have to do is to provide 
-   the data for those GPIOs (register offsets, number of GPIOs, etc.).  
-   Whether this data eventually comes from DT is an orthogonal issue.
+---
+  arch/x86/kernel/setup.c |   12 ++++++++++++
+  1 file changed, 12 insertions(+)
 
-2) IRQ chip drivers
-
-   Again, as Thomas observed, the same issue exists with the majority of 
-   the IRQ chip drivers.  Most of them follow a common simple pattern 
-   that can be abstracted in some generic library code due to their very 
-   similar mode of operation.  Writing a common driver would leave the 
-   board specific code with only a data table describing hardware 
-   registers.
-
-A good example of such rationalization that already happened is the 
-leds-gpio driver (./drivers/leds/leds-gpio.c), or similarly the 
-gpio-keys driver (drivers/input/keyboard/gpio_keys.c).  I remember when 
-those board files were implementing their own simple drivers hooking 
-directly to the input API or the LED API.
-
-After that let's take another identified common pattern and factorize it 
-out from board code.  That might be timers (see RMK's recent 
-sched_clock() rationalization).  That might be clocks (patches from 
-Jeremy Kerr exist and need merged). Etc.
-
-Eventually we won't be able to find any more identifiable patterns which 
-are factorisable, and what will be left in board files is only genuine 
-SOC differences.  And if all that is left is actually only data tables, 
-then maybe such board files could go entirely and that data be passed 
-via device tree, but that is still a long way off.
-
-I think what is needed here is a bunch of people willing to work on such 
-things, extracting those common patterns, and creating the 
-infrastructure to cover them.  Once that is in place then we will be in 
-a position to push back on code submissions that don't use that 
-infrastructure, and be on the lookout for new patterns to emerge.
-
-Just with the above I think there is sufficient work to keep us busy for 
-a while.
-
-
-Nicolas
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -219,6 +219,17 @@ unsigned long mmu_cr4_features;
+  unsigned long mmu_cr4_features = X86_CR4_PAE;
+  #endif
+  
++#if defined(CONFIG_X86_PAE) || defined(CONFIG_X86_64)
++static void __init read_back_mmu_cr4(void)
++{
++	mmu_cr4_features = read_cr4();
++}
++#else
++static void __init read_back_mmu_cr4(void)
++{
++}
++#endif
++
+  /* Boot loader ID and version as integers, for the benefit of proc_dointvec */
+  int bootloader_type, bootloader_version;
+  
+@@ -892,6 +903,7 @@ void __init setup_arch(char **cmdline_p)
+  
+  	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
+  #endif
++	read_back_mmu_cr4();
+  
+  	/*
+  	 * Find and reserve possible boot-time SMP configuration:
