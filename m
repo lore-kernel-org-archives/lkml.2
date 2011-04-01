@@ -1,117 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab1DAO7v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:59:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64097 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757388Ab1DAO7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:59:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Detlef Vollmann <dv@vollmann.ch>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Date: Fri, 1 Apr 2011 16:59:40 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, david@lang.hm,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <201104011554.07924.arnd@arndb.de> <4D95E112.4020400@vollmann.ch>
-In-Reply-To: <4D95E112.4020400@vollmann.ch>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1757712Ab1DAPBE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:01:04 -0400
+Received: from smtpbg55.qq.com ([64.71.138.44]:59198 "HELO smtpbg55.qq.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753134Ab1DAPBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 11:01:02 -0400
+X-QQ-mid: esmtp5t1301669983t252t10255
+X-QQ-SSF: 00000000000000F0FG500F000000000
+Date: Fri, 1 Apr 2011 22:59:52 +0800
+From: "Lina Lu" <lulina_nuaa@foxmail.com>
+To: "Vivek Goyal" <vgoyal@redhat.com>
+Cc: "linux kernel mailing list" <linux-kernel@vger.kernel.org>
+References: <201103302323256090890@foxmail.com>,
+ <201103312346349842625@foxmail.com>
+Subject: Re: Re: Re: cfq-iosched.c:Use cfqq->nr_sectors in charge the vdisktime
+Message-ID: <201104012259493129784@foxmail.com>
+X-mailer: Foxmail 6, 15, 201, 23 [cn]
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="gb2312"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104011659.40443.arnd@arndb.de>
-X-Provags-ID: V02:K0:XdU/OT+JE06YDPoNCbicJbudOimDso5E63T4kbSeIdW
- sy5gMqEHChRBDJR0GPKyIXvFRY5/KReufghPqe1aezSCpqKcsY
- jMN3FaFM31wQZ1DXed9LafXN182PxdAVKopRfSzGUe2MKaRqhD
- OTnNb3PSumotPu3DNF1mRKm1umMSWSQy/495n0u+02nbT4eX5Z
- ZhYZHDc2KkZNnSo7TO2tw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 April 2011, Detlef Vollmann wrote:
-> On 04/01/11 15:54, Arnd Bergmann wrote:
-
-> > 9. All interesting work is going into a handful of platforms, all of which
-> >     are ARMv7 based.
-> Define interesting.
-
-The ones that are causing the churn that we're talking about.
-Platforms that have been working forever and only need to get
-the occasional bug fix are boring, i.e. not the problem.
- 
-> > 12. Supporting many different boards with a single kernel binary is a
-> >      useful goal.
-> Generally not for embedded systems (for me, a mobile PDA/phone is just a
-> small computer with a crappy keyboard, but not an embedded system).
-
-True. For embedded, this would not be an important thing to do, but
-also not hurt. For anything that a user might want to put a new
-kernel on, this would be helpful though.
-
-> >
-> > Based on these assumptions, my preferred strategy would be to a new
-> > mach-nocrap directory with a documented set of rules (to be adapted when
-> > necessary):
-> >
-> > * Strictly no crap
-> >   * No board files
-> Where do you put code that needs to run very early (e.g. pinging the
-> watchdog)?
-
-Don't know. I'd hope we can get fast enough to the phase where device
-drivers get initialized.
- 
-> >   * No hardcoded memory maps
-> >   * No lists of interrupts and GPIOs
-> > * All infrastructure added must be portable to all ARMv7 based SoCs.
-> >    (ARMv6 can be added later)
-> > * 64 bit safe code only.
-> > * SMP safe code only.
-> > * All board specific information must come from a device tree and
-> >    be run-time detected.
-> What do you mean by "run-time detected"?
-> For powerpc, we currently have the device tree as DTS in the kernel
-> and compile and bundle it together with the kernel.
-> As you wrote above: "Discoverable hardware [...] is not going to happen"
-
-I mean writing
-
-	if (device_is_compatible(dev, SOMETHING))
-		do_something();
-
-instead of
-
-#ifdef CONFIG_SOMETHING
-	do_something();
-#endif
-
-The run-time information could come from anywhere (device tree, hardware
-registers, today one might use the board number), the important point is
-not to assume that hardware is present just because someone enabled
-a Kconfig option.
-
-I believe that rule is generally accepted today, but we don't always
-enforce it.
-
-> > * Must use the same device drivers as existing platforms
-> > * Should share platform drivers (interrupt controller, gpio, timer, ...)
-> >    with existing platforms where appropriate.
-> > * Code quality takes priority over stability in mach-nocrap, but must not
-> >    break other platforms.
+On 2011-04-01 03:47:18, Vivek Goyal wrote:
+> On Thu, Mar 31, 2011 at 11:46:37PM +0800, Lina Lu wrote:
+> > On 2011-03-30 23:54:34, Vivek Goyal wrote:
+> > [..]
+> >    
+> > Here is 20 sec backtrace: 
+> > http://www.fileden.com/files/2010/9/9/2965145/cfq_log.tar.gz
+> > 
+> > This time, I set two IO pid with weight 100, and the device is in iops_mod.  
 > 
-> I agree with the general idea, but nailing down the details in a world
-> as diverse as the ARM world will not be easy...
+> How did you put device in iops mode? What's the device you are using and
+> what kind of configuration dm-0 and dm-1 are in.
 
-Absolutely, I did not claim to have the single solution that everyone else
-couldn't see. Please see this more as an RFC.
+I echo 0 to /sys/block/sdb/queue/iosched/slice_idle to put the device in iops mod.
 
-	Arnd
+Here is the dmsetup table:
+sdbtest-2: 0 2097152 linear 8:16 23068672
+sdbtest-1: 0 2097152 linear 8:16 20971520     
+
+Device dm-0 is sdbtest-1, and dm-1 is sdbtest-2. They are all linear logic devices 
+on sdb.
+
+> 
+> > linux-kzr4:/home/blkio # cat tst1/blkio.weight
+> > 100
+> > linux-kzr4:/home/blkio # cat tst2/blkio.weight
+> > 100
+> > 
+> > iostat:
+> > Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+> > dm-0              0.00     0.00  855.50    0.00     3.34     0.00     8.00     0.82    1.06   0.95  81.70
+> > dm-1              0.00     0.00  844.00    0.00    26.38     0.00    64.00     0.83    0.98   0.98  82.60
+> > Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+> > dm-0              0.00     0.00  840.00    0.00     3.28     0.00     8.00     0.90    0.95   1.07  89.55
+> > dm-1              0.00     0.00  794.00    0.00    24.81     0.00    64.00     0.87    1.10   1.10  87.00
+> > Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+> > dm-0              0.00     0.00  596.50    0.00     2.33     0.00     8.00     0.96    1.77   1.61  95.80
+> > dm-1              0.00     0.00  626.00    0.00    19.56     0.00    64.00     0.94    1.48   1.50  93.70
+> > Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+> > dm-0              0.00     0.00  815.50    0.00     3.19     0.00     8.00     0.81    0.83   1.00  81.40
+> > dm-1              0.00     0.00  828.50    0.00    25.89     0.00    64.00     0.77    0.95   0.93  77.45
+> > Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+> > dm-0              0.00     0.00  910.50    0.00     3.56     0.00     8.00     0.82    1.00   0.90  82.15
+> > dm-1              0.00     0.00  845.00    0.00    26.41     0.00    64.00     0.81    0.96   0.96  80.95
+> > Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+> > dm-0              0.00     0.00  928.86    0.00     3.63     0.00     8.00     0.79    0.90   0.86  79.45
+> > dm-1              0.00     0.00  848.26    0.00    26.51     0.00    64.00     0.65    0.77   0.77  65.17
+> > 
+> > >From the result, we can see that the iops match the weight value very well, but
+> > the rMB/s are not the same as they has different avgrq-sz.
+> > 
+> > If I use the following patch, the rMB/s will be more accuracy.
+> > 
+> > --- block/cfq-iosched.c     2011-03-31 23:43:55.000000000 +0800
+> > +++ block/cfq-iosched.c 2011-03-31 23:44:30.000000000 +0800
+> > @@ -951,7 +951,7 @@
+> >         used_sl = charge = cfq_cfqq_slice_usage(cfqq);
+> > 
+> >         if (iops_mode(cfqd))
+> > -               charge = cfqq->slice_dispatch;
+> > +               charge = cfqq->nr_sectors;
+> 
+> In IOPS mode we calculate the number of IOPS (that is number of requests
+> dispatched) and not number of sectors. nr_sectors is more of getting
+> the equal bandwidth even when we are operating at different request sizes.
+> So instead of operating in iops mode, if you operate in regular time
+> based mode, you should get better results.
+> 
+> Why are you not using regular time based fairness mode?
+> 
+
+I did the same test in regular time based fairness mode without the above patch.
+
+Here is iostat result:
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 1813.00    0.00     7.08     0.00     8.00     0.81    0.42   0.45  81.40
+dm-1              0.00     0.00  627.00    0.00    19.59     0.00    64.00     0.92    1.61   1.47  92.20
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 1799.00    0.00     7.03     0.00     8.00     0.80    0.44   0.44  80.00
+dm-1              0.00     0.00  660.00    0.00    20.62     0.00    64.00     0.95    1.44   1.43  94.70
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 1875.00    0.00     7.32     0.00     8.00     0.68    0.39   0.36  67.60
+dm-1              0.00     0.00  540.00    0.00    16.88     0.00    64.00     0.94    1.59   1.75  94.50
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 1494.06    0.00     5.84     0.00     8.00     0.73    0.45   0.49  73.27
+dm-1              0.00     0.00  688.12    0.00    21.50     0.00    64.00     0.90    1.44   1.31  90.40
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 2079.00    0.00     8.12     0.00     8.00     0.80    0.41   0.38  79.50
+dm-1              0.00     0.00  623.00    0.00    19.47     0.00    64.00     0.94    1.43   1.50  93.70
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 1991.00    0.00     7.78     0.00     8.00     0.87    0.44   0.44  86.80
+dm-1              0.00     0.00  708.00    0.00    22.12     0.00    64.00     0.89    1.25   1.26  89.30
+
+If I apply the above patch, and test in iops mode, the bandwidth will be equal.
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 2579.00    0.00    10.07     0.00     8.00     0.92    0.35   0.36  91.80
+dm-1              0.00     0.00  253.00    0.00     7.91     0.00    64.00     0.98    3.93   3.88  98.10
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 2394.00    0.00     9.35     0.00     8.00     0.93    0.40   0.39  93.00
+dm-1              0.00     0.00  326.00    0.00    10.19     0.00    64.00     0.91    2.41   2.80  91.30
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 2339.00    0.00     9.14     0.00     8.00     0.91    0.37   0.39  90.50
+dm-1              0.00     0.00  267.00    0.00     8.34     0.00    64.00     0.97    4.10   3.63  96.90
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 2298.00    0.00     8.98     0.00     8.00     0.59    0.25   0.26  59.00
+dm-1              0.00     0.00  286.00    0.00     8.94     0.00    64.00     0.98    3.43   3.43  98.10
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+dm-0              0.00     0.00 2298.00    0.00     8.98     0.00     8.00     0.37    0.18   0.16  37.00
+dm-1              0.00     0.00  292.00    0.00     9.12     0.00    64.00     0.98    2.83   3.35  97.80
+
+But it seens the total performance is lower.
+
+Thanks
+Lina 
+
+
+f
