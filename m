@@ -1,109 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab1DANj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:39:28 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:47121 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab1DANjN (ORCPT
+	id S1756414Ab1DANje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 09:39:34 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44849 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755976Ab1DANjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 09:39:13 -0400
-Message-Id: <20110401121725.606666435@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Fri, 01 Apr 2011 14:13:04 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 06/20] sh: mmu_gather rework
-References: <20110401121258.211963744@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-sh-preemptible_mmu_gather.patch
+	Fri, 1 Apr 2011 09:39:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=p8gFrWxxP8RyYJ7vRMuUuHqceCTy1kgteR8Cp0AZHVms0fS0LMt8B8qP3eRNVgFwIr
+         iuKwpXMygy4/FWDeCYBRK75gSK2o9pmi9eeNPoWxzu05LMpKZTGqNJ7lkHL+t+TsmTOB
+         EoPT9wOYmtqP5utnqq8ppqaBBFkmBhdyaS3Oo=
+Subject: Re: [PATCH 1/3 v2] MTD: atmel_nand: modify test case for using DMA
+ operations
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, hong.xu@atmel.com
+In-Reply-To: <1301668844-4500-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1301662188.2789.57.camel@localhost>
+	 <1301668844-4500-1-git-send-email-nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Apr 2011 16:36:42 +0300
+Message-ID: <1301665002.2789.75.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix up the sh mmu_gather code to conform to the new API.
+On Fri, 2011-04-01 at 16:40 +0200, Nicolas Ferre wrote:
+> We have better performances not using DMA for oob operations.
+> Modify size test so that it is using DMA for size greater than oobsize.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Cc: Paul Mundt <lethal@linux-sh.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
----
- arch/sh/include/asm/tlb.h |   28 +++++++++++++++++-----------
- 1 file changed, 17 insertions(+), 11 deletions(-)
+Pushed to l2-mtd-2.6.git, thank you!
 
-Index: linux-2.6/arch/sh/include/asm/tlb.h
-===================================================================
---- linux-2.6.orig/arch/sh/include/asm/tlb.h
-+++ linux-2.6/arch/sh/include/asm/tlb.h
-@@ -23,8 +23,6 @@ struct mmu_gather {
- 	unsigned long		start, end;
- };
- 
--DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
--
- static inline void init_tlb_gather(struct mmu_gather *tlb)
- {
- 	tlb->start = TASK_SIZE;
-@@ -36,17 +34,13 @@ static inline void init_tlb_gather(struc
- 	}
- }
- 
--static inline struct mmu_gather *
--tlb_gather_mmu(struct mm_struct *mm, unsigned int full_mm_flush)
-+static inline void
-+tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
- {
--	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
--
- 	tlb->mm = mm;
- 	tlb->fullmm = full_mm_flush;
- 
- 	init_tlb_gather(tlb);
--
--	return tlb;
- }
- 
- static inline void
-@@ -57,8 +51,6 @@ tlb_finish_mmu(struct mmu_gather *tlb, u
- 
- 	/* keep the page table cache within bounds */
- 	check_pgt_cache();
--
--	put_cpu_var(mmu_gathers);
- }
- 
- static inline void
-@@ -91,7 +83,21 @@ tlb_end_vma(struct mmu_gather *tlb, stru
- 	}
- }
- 
--#define tlb_remove_page(tlb,page)	free_page_and_swap_cache(page)
-+static inline void tlb_flush_mmu(struct mmu_gather *tlb)
-+{
-+}
-+
-+static inline int __tlb_remove_page(struct mmu_gather *tlb, struct page *page)
-+{
-+	free_page_and_swap_cache(page);
-+	return 1; /* avoid calling tlb_flush_mmu */
-+}
-+
-+static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
-+{
-+	__tlb_remove_page(tlb, page);
-+}
-+
- #define pte_free_tlb(tlb, ptep, addr)	pte_free((tlb)->mm, ptep)
- #define pmd_free_tlb(tlb, pmdp, addr)	pmd_free((tlb)->mm, pmdp)
- #define pud_free_tlb(tlb, pudp, addr)	pud_free((tlb)->mm, pudp)
-
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
