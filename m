@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab1DASAY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 14:00:24 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41093 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752644Ab1DASAX (ORCPT
+	id S1755355Ab1DASBU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 14:01:20 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:50256 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754417Ab1DASBS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 14:00:23 -0400
-From: Alan Cox <alan@linux.jf.intel.com>
-Subject: [PATCH 0/9] psb: further clean up and some more fixes
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Fri, 01 Apr 2011 18:37:38 +0100
-Message-ID: <20110401173554.18112.67483.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Fri, 1 Apr 2011 14:01:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
+References: <20110202195417.228e2656@queued.net> <20110202200812.3d8d6cba@queued.net>
+ <20110331230522.GI437@ponder.secretlab.ca> <20110401112030.GA3447@sortiz-mobl>
+ <20110401104756.2f5c6f7a@debxo> <BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 1 Apr 2011 12:00:57 -0600
+X-Google-Sender-Auth: OG5XJ8U0gw1sDkll9tIsXR-eunE
+Message-ID: <BANLkTin5ZdQ+i7e6O98jKux+V7Ncc5Kb3Q@mail.gmail.com>
+Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available to drivers
+To: Andres Salomon <dilinger@queued.net>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
+        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mocean Laboratories <info@mocean-labs.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More nuking 
----
+On Fri, Apr 1, 2011 at 11:56 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Fri, Apr 1, 2011 at 11:47 AM, Andres Salomon <dilinger@queued.net> wrote:
+>> On Fri, 1 Apr 2011 13:20:31 +0200
+>> Samuel Ortiz <sameo@linux.intel.com> wrote:
+>>
+>>> Hi Grant,
+>>>
+>>> On Thu, Mar 31, 2011 at 05:05:22PM -0600, Grant Likely wrote:
+>> [...]
+>>> > Gah.  Not all devices instantiated via mfd will be an mfd device,
+>>> > which means that the driver may very well expect an *entirely
+>>> > different* platform_device pointer; which further means a very high
+>>> > potential of incorrectly dereferenced structures (as evidenced by a
+>>> > patch series that is not bisectable).  For instance, the xilinx ip
+>>> > cores are used by more than just mfd.
+>>> I agree. Since the vast majority of the MFD subdevices are MFD
+>>> specific IPs, I overlooked that part. The impacted drivers are the
+>>> timberdale and the DaVinci voice codec ones.
+>
+> Another option is you could do this for MFD devices:
+>
+> struct mfd_device {
+>        struct platform_devce pdev;
+>        struct mfd_cell *cell;
+> };
+>
+> However, that requires that drivers using the mfd_cell will *never*
+> get instantiated outside of the mfd infrastructure, and there is no
+> way to protect against this so it is probably a bad idea.
+>
+> Or, mfd_cell could be added to platform_device directly which would
+> *by far* be the safest option at the cost of every platform_device
+> having a mostly unused mfd_cell pointer.  Not a significant cost in my
+> opinion.
+>
+> One last option is I'm prototyping a way to add type-safe structure
+> pointers to a device, but that requires nasty CPP tricks and it's not
+> complete yet.  The cure might be worse than the disease here.
 
-Alan Cox (9):
-      gma500: psb_reset actually holds lid functions
-      gma500: Set the TWOD base
-      gma500: cleanup the SDVO messages
-      gma500: begin tidying up the power management
-      gma500: prune more unused fields
-      gma500: Add a test ioctl for issuing 2D accel ops via user space
-      gma500: Fix some set up bugs found by comparing driver versions
-      gma500: kill some more #if 0 bits
-      gma500: Another file we don't need
+And yet another option is to create a mfd_bus_type, but that probably
+isn't helpful since the one of the purposes of MFDs is that it is a
+collection of non-detectable memory mapped devices that
+platform_bus_type is intended to handle.
 
-
- drivers/staging/gma500/Makefile                 |    2 
- drivers/staging/gma500/mrst_crtc.c              |   15 
- drivers/staging/gma500/mrst_lvds.c              |   10 
- drivers/staging/gma500/psb_2d.c                 |    2 
- drivers/staging/gma500/psb_bl.c                 |    9 
- drivers/staging/gma500/psb_drv.c                |   85 +--
- drivers/staging/gma500/psb_drv.h                |  149 -----
- drivers/staging/gma500/psb_fb.c                 |   26 +
- drivers/staging/gma500/psb_gtt.c                |    6 
- drivers/staging/gma500/psb_intel_display.c      |   35 -
- drivers/staging/gma500/psb_intel_lvds.c         |   20 -
- drivers/staging/gma500/psb_intel_sdvo.c         |    4 
- drivers/staging/gma500/psb_irq.c                |  178 ++---
- drivers/staging/gma500/psb_lid.c                |   90 +++
- drivers/staging/gma500/psb_mmu.c                |   61 --
- drivers/staging/gma500/psb_powermgmt.c          |  750 +++++++----------------
- drivers/staging/gma500/psb_powermgmt.h          |   55 --
- drivers/staging/gma500/psb_reset.c              |   90 ---
- drivers/staging/gma500/psb_ttm_placement_user.h |  252 --------
- 19 files changed, 497 insertions(+), 1342 deletions(-)
- create mode 100644 drivers/staging/gma500/psb_lid.c
- delete mode 100644 drivers/staging/gma500/psb_reset.c
- delete mode 100644 drivers/staging/gma500/psb_ttm_placement_user.h
-
--- 
-
+g.
