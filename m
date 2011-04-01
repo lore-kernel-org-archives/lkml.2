@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab1DANM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:12:27 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:53705 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab1DANM0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 09:12:26 -0400
-Date: Fri, 1 Apr 2011 18:42:15 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, cl@linux.com,
-        kamezawa.hiroyu@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
-Message-ID: <20110401131214.GS2879@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20110331144145.0ECA.A69D9226@jp.fujitsu.com>
- <20110331082813.GN2879@balbir.in.ibm.com>
- <20110401165752.A889.A69D9226@jp.fujitsu.com>
+	id S1754100Ab1DANRw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 09:17:52 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38371 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab1DANRv (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 1 Apr 2011 09:17:51 -0400
+Date: Fri, 1 Apr 2011 09:17:13 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Merge window closed - 2.6.39-rc1 out
+Message-ID: <20110401131713.GA16734@dumpdata.com>
+References: <AANLkTikwbY5mm10ZWg7B6XeSBkZXFqKcYVZfJCi2QGx_@mail.gmail.com>
+ <20110330120151.GA23358@infradead.org>
+ <20110330144359.GA16430@dumpdata.com>
+ <20110330222909.GA26174@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110401165752.A889.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20110330222909.GA26174@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4D95D05C.0122:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2011-04-01 16:56:57]:
+On Wed, Mar 30, 2011 at 06:29:09PM -0400, Christoph Hellwig wrote:
+>  (1) it still has the totally stupid interface of a global dispatch table.
+>      Either it does make sense to have different providers, in which
+>      case you want the dispatch table on a per-superblock or whatever
+>      granularity, or you really want just one and can have static calls
+>      into it, and get rid of this whole layer
+>  (2) it still requires totally pointless calls from local filesystem to
+>      initialize a pool ID.  The filesystem really should not need to
+>      care about any of this.
 
-> Hi
+Thank you for taking a look at the patches. I think what you are saying
+is that the opt-in interface (where only those fs that want it) are using,
+is not proper. It should be in for everybody? Hmm.. let me ponder this.
+
+>  (3) it's still lacking a good user submitted with it.  And with that
+>      I don't mean junk code shoved into staging where it's bitrotting.
+
+I think when one takes user cases and try to use one type of matrix (say,
+how many customers are using it) but use another (how many enterprise
+clients are clamoring for it) you get drastically different numbers.
+
+If you just use one ruler to evaluate acceptance, then maybe
+unicore32 (just one company), or ILO (small community compared to SCST)
+should have not been merged b/c of that? But if you think of other
+acceptance rules then it makes sense.
+
 > 
-> > > 1) zone reclaim doesn't work if the system has multiple node and the
-> > >    workload is file cache oriented (eg file server, web server, mail server, et al). 
-> > >    because zone recliam make some much free pages than zone->pages_min and
-> > >    then new page cache request consume nearest node memory and then it
-> > >    bring next zone reclaim. Then, memory utilization is reduced and
-> > >    unnecessary LRU discard is increased dramatically.
-> > > 
-> > >    SGI folks added CPUSET specific solution in past. (cpuset.memory_spread_page)
-> > >    But global recliam still have its issue. zone recliam is HPC workload specific 
-> > >    feature and HPC folks has no motivation to don't use CPUSET.
-> > 
-> > I am afraid you misread the patches and the intent. The intent to
-> > explictly enable control of unmapped pages and has nothing
-> > specifically to do with multiple nodes at this point. The control is
-> > system wide and carefully enabled by the administrator.
+> It also has an entirely new bug, in that it assumes every inode has
+> a dentry on the alias list.  Did you only ever test this with filesystem
+> that do not have export operations?  Otherwise the no-dentry case should
+> be fairly trivial to trigger due the placement of the hooks.
+
+Aha! Thank you for spotting that. Dan did post a patch for this:
+https://lkml.org/lkml/2011/3/3/291
+
+And he should have pulled it in his tree <sigh> Will ask him to create
+a branch with this bug-fix.
 > 
-> Hm. OK, I may misread.
-> Can you please explain the reason why de-duplication feature need to selectable and
-> disabled by defaut. "explicity enable" mean this feature want to spot corner case issue??
->
-
-Yes, because given a selection of choices (including what you
-mentioned in the review), it would be nice to have
-this selectable.
-
--- 
-	Three Cheers,
-	Balbir
+> And of course there's still no convincing use case for all of this.
