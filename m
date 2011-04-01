@@ -1,89 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758473Ab1DARLl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 13:11:41 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:34854 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab1DARLk (ORCPT
+	id S1758528Ab1DARMK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 13:12:10 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:57667 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758461Ab1DARMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 13:11:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=fbc3EV7KlruHUUnDQUBBdR3dERCVVSKyQCQ7vx50wnsM7pAKQAT4DIYrPoqFcR5P1R
-         kNu2o1tgioR5B9owI899fvslweK4DE8Hnq1/qVGzr4guj5uratA+MPrYbuyJru8Kme40
-         If0XPzw4h2oNH5zCNSam7hPCjbwL+TFQ/hQqs=
-Message-ID: <4D96072E.4060902@gmail.com>
-Date: Fri, 01 Apr 2011 11:11:10 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
-References: <20110324113137.20235.42265.stgit@localhost6.localdomain6> <20110324113209.20235.61900.stgit@localhost6.localdomain6> <4D8B79E6.2050603@gmail.com> <4D8C6B1B.70409@hitachi.com> <4D8CAE74.9080805@gmail.com> <4D906450.1040809@hitachi.com> <4D909BBB.5020500@gmail.com> <20110401151313.GC2335@nowhere>
-In-Reply-To: <20110401151313.GC2335@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Apr 2011 13:12:08 -0400
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans Verkuil <hverkuil@xs4all.nl>
+Subject: [PATCH] v4l: make sure drivers supply a zeroed struct v4l2_subdev
+Date: Fri,  1 Apr 2011 14:12:02 -0300
+Message-Id: <1301677922-6765-1-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some v4l drivers currently don't initialize their struct v4l2_subdev
+with zeros, and this is a problem since some of the v4l2 code expects
+this. One example is the addition of internal_ops in commit 45f6f84,
+after that we are at risk of random oopses with these drivers when code
+in v4l2_device_register_subdev tries to dereference sd->internal_ops->*,
+as can be shown by the report at http://bugs.launchpad.net/bugs/745213
+and analysis of its crash at https://lkml.org/lkml/2011/4/1/168
 
+Use kzalloc within problematic drivers to ensure we have a zeroed struct
+v4l2_subdev.
 
-On 04/01/11 09:13, Frederic Weisbecker wrote:
-> On Mon, Mar 28, 2011 at 08:31:23AM -0600, David Ahern wrote:
->> On 03/28/11 04:34, Akihiro Nagai wrote:
->>>> from is sample->ip? to is sample->addr? In the above example
->>>> 0x39d3015260 is the value from sample->addr, 1526f is sample->ip which
->>>> resolves to _dl_next_ld_env_entry from /lib64/ld-2.13.so.
->>> Yes.
->>> In this example, resolved address is only sample->ip (branch from).
->>> We need the resolved address of sample->addr (branch to) too, because
->>> both of them are addresses of execution code.
->>
->> Ok, now I understand. In that case add conversion of sample->addr to
->> symbols to perf-script.
-> 
-> I agree that we should rather use perf script for branch dumps.
-> Sorry Akihiro, I think we suggested you to create this dedicated
-> perf branch by the past. But then perf script became the vanilla dump
-> tool in the middle and it seems more suitable today.
-> 
-> We can still create a perf branch later in order to produce some more
-> advanced post-processing tools. But for sample dumps perf script (which starts
-> to show itself as a misnomer BTW) seems to be the right place.
+BugLink: http://bugs.launchpad.net/bugs/745213
+Cc: <stable@kernel.org>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/media/radio/saa7706h.c  |    2 +-
+ drivers/media/radio/tef6862.c   |    2 +-
+ drivers/media/video/m52790.c    |    2 +-
+ drivers/media/video/tda9840.c   |    2 +-
+ drivers/media/video/tea6415c.c  |    2 +-
+ drivers/media/video/tea6420.c   |    2 +-
+ drivers/media/video/upd64031a.c |    2 +-
+ drivers/media/video/upd64083.c  |    2 +-
+ 8 files changed, 8 insertions(+), 8 deletions(-)
 
-perf-dump?
+diff --git a/drivers/media/radio/saa7706h.c b/drivers/media/radio/saa7706h.c
+index 585680f..b1193df 100644
+--- a/drivers/media/radio/saa7706h.c
++++ b/drivers/media/radio/saa7706h.c
+@@ -376,7 +376,7 @@ static int __devinit saa7706h_probe(struct i2c_client *client,
+ 	v4l_info(client, "chip found @ 0x%02x (%s)\n",
+ 			client->addr << 1, client->adapter->name);
+ 
+-	state = kmalloc(sizeof(struct saa7706h_state), GFP_KERNEL);
++	state = kzalloc(sizeof(struct saa7706h_state), GFP_KERNEL);
+ 	if (state == NULL)
+ 		return -ENOMEM;
+ 	sd = &state->sd;
+diff --git a/drivers/media/radio/tef6862.c b/drivers/media/radio/tef6862.c
+index 7c0d777..0991e19 100644
+--- a/drivers/media/radio/tef6862.c
++++ b/drivers/media/radio/tef6862.c
+@@ -176,7 +176,7 @@ static int __devinit tef6862_probe(struct i2c_client *client,
+ 	v4l_info(client, "chip found @ 0x%02x (%s)\n",
+ 			client->addr << 1, client->adapter->name);
+ 
+-	state = kmalloc(sizeof(struct tef6862_state), GFP_KERNEL);
++	state = kzalloc(sizeof(struct tef6862_state), GFP_KERNEL);
+ 	if (state == NULL)
+ 		return -ENOMEM;
+ 	state->freq = TEF6862_LO_FREQ;
+diff --git a/drivers/media/video/m52790.c b/drivers/media/video/m52790.c
+index 5e1c9a8..303ffa7 100644
+--- a/drivers/media/video/m52790.c
++++ b/drivers/media/video/m52790.c
+@@ -174,7 +174,7 @@ static int m52790_probe(struct i2c_client *client,
+ 	v4l_info(client, "chip found @ 0x%x (%s)\n",
+ 			client->addr << 1, client->adapter->name);
+ 
+-	state = kmalloc(sizeof(struct m52790_state), GFP_KERNEL);
++	state = kzalloc(sizeof(struct m52790_state), GFP_KERNEL);
+ 	if (state == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/media/video/tda9840.c b/drivers/media/video/tda9840.c
+index 5d4cf3b..22fa820 100644
+--- a/drivers/media/video/tda9840.c
++++ b/drivers/media/video/tda9840.c
+@@ -171,7 +171,7 @@ static int tda9840_probe(struct i2c_client *client,
+ 	v4l_info(client, "chip found @ 0x%x (%s)\n",
+ 			client->addr << 1, client->adapter->name);
+ 
+-	sd = kmalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
++	sd = kzalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
+ 	if (sd == NULL)
+ 		return -ENOMEM;
+ 	v4l2_i2c_subdev_init(sd, client, &tda9840_ops);
+diff --git a/drivers/media/video/tea6415c.c b/drivers/media/video/tea6415c.c
+index 19621ed..827425c 100644
+--- a/drivers/media/video/tea6415c.c
++++ b/drivers/media/video/tea6415c.c
+@@ -152,7 +152,7 @@ static int tea6415c_probe(struct i2c_client *client,
+ 
+ 	v4l_info(client, "chip found @ 0x%x (%s)\n",
+ 			client->addr << 1, client->adapter->name);
+-	sd = kmalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
++	sd = kzalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
+ 	if (sd == NULL)
+ 		return -ENOMEM;
+ 	v4l2_i2c_subdev_init(sd, client, &tea6415c_ops);
+diff --git a/drivers/media/video/tea6420.c b/drivers/media/video/tea6420.c
+index 5ea8404..f350b6c 100644
+--- a/drivers/media/video/tea6420.c
++++ b/drivers/media/video/tea6420.c
+@@ -125,7 +125,7 @@ static int tea6420_probe(struct i2c_client *client,
+ 	v4l_info(client, "chip found @ 0x%x (%s)\n",
+ 			client->addr << 1, client->adapter->name);
+ 
+-	sd = kmalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
++	sd = kzalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
+ 	if (sd == NULL)
+ 		return -ENOMEM;
+ 	v4l2_i2c_subdev_init(sd, client, &tea6420_ops);
+diff --git a/drivers/media/video/upd64031a.c b/drivers/media/video/upd64031a.c
+index f8138c7..1aab96a 100644
+--- a/drivers/media/video/upd64031a.c
++++ b/drivers/media/video/upd64031a.c
+@@ -230,7 +230,7 @@ static int upd64031a_probe(struct i2c_client *client,
+ 	v4l_info(client, "chip found @ 0x%x (%s)\n",
+ 			client->addr << 1, client->adapter->name);
+ 
+-	state = kmalloc(sizeof(struct upd64031a_state), GFP_KERNEL);
++	state = kzalloc(sizeof(struct upd64031a_state), GFP_KERNEL);
+ 	if (state == NULL)
+ 		return -ENOMEM;
+ 	sd = &state->sd;
+diff --git a/drivers/media/video/upd64083.c b/drivers/media/video/upd64083.c
+index 28e0e6b..9bbe617 100644
+--- a/drivers/media/video/upd64083.c
++++ b/drivers/media/video/upd64083.c
+@@ -202,7 +202,7 @@ static int upd64083_probe(struct i2c_client *client,
+ 	v4l_info(client, "chip found @ 0x%x (%s)\n",
+ 			client->addr << 1, client->adapter->name);
+ 
+-	state = kmalloc(sizeof(struct upd64083_state), GFP_KERNEL);
++	state = kzalloc(sizeof(struct upd64083_state), GFP_KERNEL);
+ 	if (state == NULL)
+ 		return -ENOMEM;
+ 	sd = &state->sd;
+-- 
+1.7.1
 
-> 
-> So, in this context, if we have PERF_SAMPLE_ADDR, we are going to always
-> follow the ip with a "=>" and then resolve the address, etc...
-> 
-> Yeah it makes sense for this default mode. But what about when we'll want
-> a function graph kind of output? This will require a totally different
-> layout. Also PERF_SAMPLE_ADDR may be used for different context in the
-> future.
-> 
-> Perhaps we want a kind of per evsel callback that makes its own
-> interpretation of the pid/tid/dso/sym/etc... options asked by the
-> user?
-
-The print addr function can take the evsel as an input. It includes the
-event type which can be used to decide what the address means.
-
-> 
-> But well, we can start simple and make and just do the => trick
-> if we have PERF_SAMPLE_ADDR and resolve addr if the user asked
-> the sym. Then when we have the graph output, have these per evsel
-> display callbacks.
-
-There is another email thread about page faults. The user wants sample
-address resolved to symbols. I was going to look into it next week when
-I get back from vacation.
