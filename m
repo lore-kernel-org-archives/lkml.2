@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab1DAGlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 02:41:40 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38191 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754633Ab1DAGli (ORCPT
+	id S1754794Ab1DAGl2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 02:41:28 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:45590 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754633Ab1DAGlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 02:41:38 -0400
+	Fri, 1 Apr 2011 02:41:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=ZWBJqZQafwZ0ynsFIbmo7PjTb2z/GQ/hVUwmGb8twzSiHOhzIfe+J9paK0Ni8z5B6G
-         w+cRQWcxhHUXX/mPlAwIBXKc62T3Zzhgb9R8bDQJLku4K8Gi4tWWz4lEcoJ+mNIhHsDg
-         wi93j0sqxUiYQfW+yvPClx/Lj9bgZ/hSG+s1Y=
+        b=pi/SXSNsngtApvYOWztKhfSepIS7vQw0yTXM0ULQrJHt7spEZoXmxT5tPLiyjFAzpO
+         isL19H14xSurIaS8Qjy7iYpQhN5vJhN6aP7hvkSxypx2CccWwLj3CpySKPxnQRlQhdYL
+         PfKpx+SFkJL0nt0cci9gWZWTUr4uNUDhwZXZY=
 From: "Cho, Yu-Chen" <acho@novell.com>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, segooon@gmail.com, huajun.li.lee@gmail.com,
         kkatuev@gmail.com, devel@driverdev.osuosl.org, jlee@novell.com,
         acho@novell.com
-Subject: [PATCH 4/5] staging/keucr: smilmain use pr_<level> for messages
-Date: Fri,  1 Apr 2011 14:38:42 +0800
-Message-Id: <249d7f9c127bf8cc04c23033ec138494a800da87.1301638704.git.acho@novell.com>
+Subject: [PATCH 2/5] staging/keucr: msscsi use pr_<level> for messages
+Date: Fri,  1 Apr 2011 14:38:40 +0800
+Message-Id: <32d911d6fd431320a766c1b5cf64f1946dc1c1b2.1301638704.git.acho@novell.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1301638704.git.acho@novell.com>
 References: <cover.1301638704.git.acho@novell.com>
@@ -31,79 +31,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-smilmain.c use pr_<level> for messages
+msscsi.c use pr_<level> for messages
 
 Signed-off-by: Cho, Yu-Chen <acho@novell.com>
 ---
- drivers/staging/keucr/smilmain.c |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
+ drivers/staging/keucr/msscsi.c |   29 +++++++++++++++++------------
+ 1 files changed, 17 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/keucr/smilmain.c b/drivers/staging/keucr/smilmain.c
-index 2cbe9f8..311c23b 100644
---- a/drivers/staging/keucr/smilmain.c
-+++ b/drivers/staging/keucr/smilmain.c
-@@ -102,12 +102,12 @@ int SM_FreeMem(void)
+diff --git a/drivers/staging/keucr/msscsi.c b/drivers/staging/keucr/msscsi.c
+index cb92d25..d1a919b 100644
+--- a/drivers/staging/keucr/msscsi.c
++++ b/drivers/staging/keucr/msscsi.c
+@@ -1,3 +1,5 @@
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/sched.h>
+ #include <linux/errno.h>
+ #include <linux/slab.h>
+@@ -44,7 +46,7 @@ int MS_SCSIIrp(struct us_data *us, struct scsi_cmnd *srb)
+ //----- MS_SCSI_Test_Unit_Ready() --------------------------------------------------
+ int MS_SCSI_Test_Unit_Ready(struct us_data *us, struct scsi_cmnd *srb)
  {
- 	int	i;
+-	//printk("MS_SCSI_Test_Unit_Ready\n");
++	/* pr_info("MS_SCSI_Test_Unit_Ready\n"); */
+ 	if (us->MS_Status.Insert && us->MS_Status.Ready)
+ 		return USB_STOR_TRANSPORT_GOOD;
+ 	else
+@@ -59,7 +61,7 @@ int MS_SCSI_Test_Unit_Ready(struct us_data *us, struct scsi_cmnd *srb)
+ //----- MS_SCSI_Inquiry() --------------------------------------------------
+ int MS_SCSI_Inquiry(struct us_data *us, struct scsi_cmnd *srb)
+ {
+-	//printk("MS_SCSI_Inquiry\n");
++	/* pr_info("MS_SCSI_Inquiry\n"); */
+ 	BYTE data_ptr[36] = {0x00, 0x80, 0x02, 0x00, 0x1F, 0x00, 0x00, 0x00, 0x55, 0x53, 0x42, 0x32, 0x2E, 0x30, 0x20, 0x20, 0x43, 0x61, 0x72, 0x64, 0x52, 0x65, 0x61, 0x64, 0x65, 0x72, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x30, 0x31, 0x30, 0x30};
  
--	printk("SM_FreeMem start\n");
-+	pr_info("SM_FreeMem start\n");
- 	for (i=0; i<MAX_ZONENUM; i++)
- 	{
- 		if (Log2Phy[i]!=NULL)
+ 	usb_stor_set_xfer_buf(us, data_ptr, 36, srb, TO_XFER_BUF);
+@@ -91,7 +93,7 @@ int MS_SCSI_Read_Capacity(struct us_data *us, struct scsi_cmnd *srb)
+ 	WORD    bl_len;
+ 	BYTE    buf[8];
+ 
+-	printk("MS_SCSI_Read_Capacity\n");
++	pr_info("MS_SCSI_Read_Capacity\n");
+ 
+ 	bl_len = 0x200;
+ 	if ( us->MS_Status.IsMSPro )
+@@ -100,8 +102,8 @@ int MS_SCSI_Read_Capacity(struct us_data *us, struct scsi_cmnd *srb)
+ 		bl_num = us->MS_Lib.NumberOfLogBlock * us->MS_Lib.blockSize * 2 - 1;
+ 
+ 	us->bl_num = bl_num;
+-	printk("bl_len = %x\n", bl_len);
+-	printk("bl_num = %x\n", bl_num);
++	pr_info("bl_len = %x\n", bl_len);
++	pr_info("bl_num = %x\n", bl_num);
+ 
+ 	//srb->request_bufflen = 8;
+ 	buf[0] = (bl_num>>24) & 0xff;
+@@ -130,7 +132,8 @@ int MS_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
+ 	WORD  blen = ((Cdb[7]<< 8) & 0xff00)     | ((Cdb[8]<< 0) & 0x00ff);
+ 	DWORD	blenByte = blen * 0x200;
+ 
+-	//printk("SCSIOP_READ --- bn = %X, blen = %X, srb->use_sg = %X\n", bn, blen, srb->use_sg);
++	/* pr_info("SCSIOP_READ --- bn = %X, blen = %X, srb->use_sg = %X\n",
++						bn, blen, srb->use_sg); */
+ 	
+ 	if (bn > us->bl_num)
+ 		return USB_STOR_TRANSPORT_ERROR;
+@@ -140,7 +143,7 @@ int MS_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
+ 		result = ENE_LoadBinCode(us, MSP_RW_PATTERN);
+ 		if (result != USB_STOR_XFER_GOOD)
  		{
--			printk("Free Zone = %x, Addr = %p\n", i, Log2Phy[i]);
-+			pr_info("Free Zone = %x, Addr = %p\n", i, Log2Phy[i]);
- 			kfree(Log2Phy[i]);
- 			Log2Phy[i] = NULL;
+-			printk("Load MSP RW pattern Fail !!\n");
++			pr_info("Load MSP RW pattern Fail !!\n");
+ 			return USB_STOR_TRANSPORT_ERROR;
  		}
-@@ -198,7 +198,7 @@ int Media_D_CopySector(struct us_data *us, DWORD start,WORD count,BYTE *buf)
- 	//SSFDCTYPE_T aa = (SSFDCTYPE_T ) &Ssfdc;
- 	//ADDRESS_T   bb = (ADDRESS_T) &Media;
  
--	//printk("Media_D_CopySector !!!\n");
-+	/* pr_info("Media_D_CopySector !!!\n"); */
- 	if (Conv_D_MediaAddr(us, start))
- 		return(ErrCode);
+@@ -174,7 +177,7 @@ int MS_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
+ 		result = ENE_LoadBinCode(us, MS_RW_PATTERN);
+ 		if (result != USB_STOR_XFER_GOOD)
+ 		{
+-			printk("Load MS RW pattern Fail !!\n");
++			pr_info("Load MS RW pattern Fail !!\n");
+ 			result = USB_STOR_TRANSPORT_ERROR;
+ 			goto exit;
+ 		}
+@@ -207,7 +210,8 @@ int MS_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
+ 			result = ENE_SendScsiCmd(us, FDIR_READ, buf+offset, 0);
+ 			if (result != USB_STOR_XFER_GOOD)
+ 			{
+-				printk("MS_SCSI_Read --- result = %x\n", result);
++				pr_info("MS_SCSI_Read --- result = %x\n",
++								result);
+ 				result =  USB_STOR_TRANSPORT_ERROR;
+ 				goto exit;
+ 			}
+@@ -245,7 +249,7 @@ int MS_SCSI_Write(struct us_data *us, struct scsi_cmnd *srb)
+ 		result = ENE_LoadBinCode(us, MSP_RW_PATTERN);
+ 		if (result != USB_STOR_XFER_GOOD)
+ 		{
+-			printk("Load MSP RW pattern Fail !!\n");
++			pr_info("Load MSP RW pattern Fail !!\n");
+ 			return USB_STOR_TRANSPORT_ERROR;
+ 		}
  
-@@ -657,7 +657,7 @@ int Media_D_OneSectWriteFlush(PFDO_DEVICE_EXTENSION fdoExt)
- //----- Check_D_MediaFmt() ---------------------------------------------
- int Check_D_MediaFmt(struct us_data *us)
- {
--	printk("Check_D_MediaFmt\n");
-+	pr_info("Check_D_MediaFmt\n");
- 	//ULONG i,j, result=FALSE, zone,block;
- 
- 	//usleep(56*1024);
-@@ -1334,7 +1334,7 @@ int Copy_D_PhyOneSect(struct us_data *us)
- 	//SSFDCTYPE_T aa = (SSFDCTYPE_T ) &Ssfdc;
- 	//ADDRESS_T   bb = (ADDRESS_T) &Media;
- 
--	//printk("Copy_D_PhyOneSect --- Secotr = %x\n", Media.Sector);
-+	/* pr_info("Copy_D_PhyOneSect --- Secotr = %x\n", Media.Sector); */
- 	if (ReadBlock!=NO_ASSIGN)
- 	{
- 		Media.PhyBlock=ReadBlock;
-@@ -1620,7 +1620,8 @@ int Make_D_LogTable(struct us_data *us)
- 	if (Log2Phy[Media.Zone]==NULL)
- 	{
- 		Log2Phy[Media.Zone] = kmalloc(MAX_LOGBLOCK*sizeof(WORD), GFP_KERNEL);
--		//printk("ExAllocatePool Zone = %x, Addr = %x\n", Media.Zone, Log2Phy[Media.Zone]);
-+		/* pr_info("ExAllocatePool Zone = %x, Addr = %x\n",
-+				Media.Zone, Log2Phy[Media.Zone]); */
- 		if (Log2Phy[Media.Zone]==NULL)
- 			return(ERROR);
- 	}
-@@ -1630,7 +1631,8 @@ int Make_D_LogTable(struct us_data *us)
- 	//for(Media.Zone=0; Media.Zone<MAX_ZONENUM; Media.Zone++)
- 	//for(Media.Zone=0; Media.Zone<Ssfdc.MaxZones; Media.Zone++)
- 	{
--		//printk("Make_D_LogTable --- MediaZone = 0x%x\n", Media.Zone);
-+		/* pr_info("Make_D_LogTable --- MediaZone = 0x%x\n",
-+							Media.Zone); */
- 		for(Media.LogBlock=0; Media.LogBlock<Ssfdc.MaxLogBlocks; Media.LogBlock++)
- 			Log2Phy[Media.Zone][Media.LogBlock]=NO_ASSIGN;
- 
+@@ -280,7 +284,7 @@ int MS_SCSI_Write(struct us_data *us, struct scsi_cmnd *srb)
+ 		result = ENE_LoadBinCode(us, MS_RW_PATTERN);
+ 		if (result != USB_STOR_XFER_GOOD)
+ 		{
+-			printk("Load MS RW pattern Fail !!\n");
++			pr_info("Load MS RW pattern Fail !!\n");
+ 			result = USB_STOR_TRANSPORT_ERROR;
+ 			goto exit;
+ 		}
+@@ -301,7 +305,8 @@ int MS_SCSI_Write(struct us_data *us, struct scsi_cmnd *srb)
+ 			result = MS_ReaderCopyBlock(us, oldphy, newphy, PhyBlockAddr, PageNum, buf+offset, len);
+ 			if (result != USB_STOR_XFER_GOOD)
+ 			{
+-				printk("MS_SCSI_Write --- result = %x\n", result);
++				pr_info("MS_SCSI_Write --- result = %x\n",
++								result);
+ 				result =  USB_STOR_TRANSPORT_ERROR;
+ 				goto exit;
+ 			}
 -- 
 1.7.1
 
