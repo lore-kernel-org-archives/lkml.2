@@ -1,99 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab1DATeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 15:34:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50120 "EHLO mail.zytor.com"
+	id S1754570Ab1DATg7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 15:36:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56351 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752887Ab1DATeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 15:34:44 -0400
-Message-ID: <4D9628C8.3040309@zytor.com>
-Date: Fri, 01 Apr 2011 12:34:32 -0700
+	id S1752120Ab1DATg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 15:36:58 -0400
+Message-ID: <4D96294B.5050909@zytor.com>
+Date: Fri, 01 Apr 2011 12:36:43 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Maksym Planeta <mcsim.planeta@gmail.com>
-CC: mingo@redhat.com, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] page: get_order() optimization
-References: <1301685493-2567-1-git-send-email-mcsim.planeta@gmail.com>
-In-Reply-To: <1301685493-2567-1-git-send-email-mcsim.planeta@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ingo Molnar <mingo@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Michael Leun <lkml20101129@newton.leun.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Mike Pagano <mpagano@gentoo.org>
+Subject: Re: 2.6.38.2 breaks suspend to disk
+References: <20110330203215.0a1a41a7@xenia.leun.net> <20110331090524.07ad0069@xenia.leun.net> <alpine.DEB.2.00.1103311546480.16492@kaball-desktop> <201103312348.53678.rjw@sisk.pl> <4D94FE37.8070109@kernel.org> <alpine.DEB.2.00.1104011230550.16492@kaball-desktop> <4D95F80D.7070201@kernel.org> <4D95FBDD.9050901@zytor.com> <alpine.DEB.2.00.1104011729000.16492@kaball-desktop> <4D961FBC.2030105@zytor.com> <4D962837.2070300@kernel.org>
+In-Reply-To: <4D962837.2070300@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2011 12:18 PM, Maksym Planeta wrote:
-> Loop was repalaced with __builtin_clz(). This still allows to precompute
-> constants, but on some architectures it uses special instruction to
-> calculate order.
+On 04/01/2011 12:32 PM, Yinghai Lu wrote:
 > 
-> Signed-off-by: Maksym Planeta <mcsim.planeta@gmail.com>
-> ---
->  include/asm-generic/getorder.h |    8 +++-----
->  1 files changed, 3 insertions(+), 5 deletions(-)
+> So for 32 bit, PAE support is not compiled in for old 486 cpus.
+> mmu_cr4_feautres will be used to make sure head_32.S will not access cr4.
 > 
-> diff --git a/include/asm-generic/getorder.h b/include/asm-generic/getorder.h
-> index 67e7245..fe8020c 100644
-> --- a/include/asm-generic/getorder.h
-> +++ b/include/asm-generic/getorder.h
-> @@ -11,11 +11,9 @@ static inline __attribute_const__ int get_order(unsigned long size)
->  	int order;
->  
->  	size = (size - 1) >> (PAGE_SHIFT - 1);
-> -	order = -1;
-> -	do {
-> -		size >>= 1;
-> -		order++;
-> -	} while (size);
-> +	order = (__builtin_clzl(size) ^ (BITS_PER_LONG - 1));
-> +	if (size == 0)
-> +		order = 0;
->  	return order;
->  }
->  
+> that could be the reason why 32 bit does not do read back at beginning.
+> 
 
-You need to guard this with __GNUC__ >= 4; there are still laggards
-using gcc 3.  Furthermore, on some platforms __builtin_clz*() does a
-libgcc call which may be undesirable.
+Yes, but that doesn't explain why we shouldn't set new bits like NX and
+PSE in this register.
 
-For the generic case, one can do something like this instead of a loop:
-
-static inline unsigned int __clzl(unsigned long v)
-{
-        unsigned int p;
-
-#if BITS_PER_LONG == 64
-	p = 63;
-
-	if (v & 0xffffffff00000000UL) {
-		p -= 32;
-		v >>= 32;
-	}
-#else
-	p = 31;
-#endif
-
-        if (v & 0xffff0000) {
-                p -= 16;
-                v >>= 16;
-        }
-        if (v & 0xff00) {
-                p -= 8;
-                v >>= 8;
-        }
-        if (v & 0xf0) {
-                p -= 4;
-                v >>= 4;
-        }
-        if (v & 0xc) {
-                p -= 2;
-                v >>= 2;
-        }
-        if (v & 0x2) {
-                p -= 1;
-                v >>= 1;
-        }
-
-        return p;
-}
+	-hpa
