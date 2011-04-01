@@ -1,120 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab1DAVXT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 17:23:19 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1658 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756319Ab1DAVXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 17:23:18 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Subject: Re: [PATCH 5/6] drivers/scsi/bnx2fc/bnx2fc_hwi.c: introduce
- missing kfree
-From: "Bhanu Gollapudi" <bprakash@broadcom.com>
-To: "Julia Lawall" <julia@diku.dk>
-cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "Nithin Sujir" <nsujir@broadcom.com>,
-        "Michael Chan" <mchan@broadcom.com>,
-        "Mike Christie" <michaelc@cs.wisc.edu>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1301667827-20056-5-git-send-email-julia@diku.dk>
-References: <1301667827-20056-5-git-send-email-julia@diku.dk>
-Date: Fri, 1 Apr 2011 14:23:06 -0700
-Message-ID: <1301692986.4340.2.camel@LTSJC-BPRAKASH.corp.ad.broadcom.com>
+	id S1756516Ab1DAVYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 17:24:55 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43101 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755357Ab1DAVYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 17:24:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=dmxyP3z2nXXYGTb/5TaR/Fvwpzsb0y9UppYxV2xwUMzwEJr2RbuKg4+9mAGMHWPLaF
+         3JcrHAzKwRJ8zMs7sQyM7J2gBdDFxt1/M2PV9DcMhsYfeqoCVnka071ET5lHD+D/LAXu
+         9tB4yzV3N5GEW81Q1Oca3DOPGICtvO4J3SfVk=
 MIME-Version: 1.0
-X-WSS-ID: 61889D553I85178497-01-01
-Content-Type: text/plain;
- charset=cp1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4D9633E7.1010707@zytor.com>
+References: <20110330203215.0a1a41a7@xenia.leun.net>
+	<20110331090524.07ad0069@xenia.leun.net>
+	<alpine.DEB.2.00.1103311546480.16492@kaball-desktop>
+	<201103312348.53678.rjw@sisk.pl>
+	<4D94FE37.8070109@kernel.org>
+	<alpine.DEB.2.00.1104011230550.16492@kaball-desktop>
+	<4D95F80D.7070201@kernel.org>
+	<4D95FBDD.9050901@zytor.com>
+	<alpine.DEB.2.00.1104011729000.16492@kaball-desktop>
+	<4D961FBC.2030105@zytor.com>
+	<4D962837.2070300@kernel.org>
+	<4D96294B.5050909@zytor.com>
+	<4D962D72.2010501@kernel.org>
+	<4D9633E7.1010707@zytor.com>
+Date: Fri, 1 Apr 2011 14:24:53 -0700
+X-Google-Sender-Auth: Sfz8hKSlCfG-_w8A94vgYBfoyes
+Message-ID: <AANLkTi=VzMh84szSBNujVU8oLZfzQd_z2bg+O3K_8GMd@mail.gmail.com>
+Subject: Re: 2.6.38.2 breaks suspend to disk
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ingo Molnar <mingo@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Michael Leun <lkml20101129@newton.leun.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Mike Pagano <mpagano@gentoo.org>
+Content-Type: multipart/mixed; boundary=90e6ba6e8a0c6e47bf049fe20ab0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 07:23 -0700, Julia Lawall wrote: 
-> Error handling code following a kmalloc should free the allocated data.
-> 
-> The semantic match that finds the problem is as follows:
-> (http://www.emn.fr/x-info/coccinelle/)
-> 
-> // <smpl>
-> @r exists@
-> local idexpression x;
-> statement S;
-> expression E;
-> identifier f,f1,l;
-> position p1,p2;
-> expression *ptr != NULL;
-> @@
-> 
-> x@p1 = \(kmalloc\|kzalloc\|kcalloc\)(...);
-> ...
-> if (x == NULL) S
-> <... when != x
->      when != if (...) { <+...x...+> }
-> (
-> x->f1 = E
-> |
->  (x->f1 == NULL || ...)
-> |
->  f(...,x->f1,...)
-> )
-> ...>
-> (
->  return \(0\|<+...x...+>\|ptr\);
-> |
->  return@p2 ...;
-> )
-> 
-> @script:python@
-> p1 << r.p1;
-> p2 << r.p2;
-> @@
-> 
-> print "* file: %s kmalloc %s return %s" % (p1[0].file,p1[0].line,p2[0].line)
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+--90e6ba6e8a0c6e47bf049fe20ab0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Thanks Julia. 
+On Fri, Apr 1, 2011 at 1:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/01/2011 12:54 PM, Yinghai Lu wrote:
+>>
+>> ok, please check if you are happy with this one.
+>>
+>
+> The best would simply be:
+>
+> =A0 =A0 =A0 =A0mmu_cr4_features =3D read_cr4_safe();
+>
+> If this has to run before we can handle exceptions, one can verify the
+> existence by testing for the CPUID instruction (a CPU has CR4 if and
+> only if it has CPUID):
+>
+> =A0 =A0 =A0 =A0if (boot_cpu_data.cpuid_level >=3D 0)
+> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0mmu_cr4_features =3D read_cr4_safe();
+>
+> ... since we set cpuid_level to -1 if there is no CPUID instruction.
 
-Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+in that case could use read_cr4 directly.
 
-> 
-> ---
->  drivers/scsi/bnx2fc/bnx2fc_hwi.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/scsi/bnx2fc/bnx2fc_hwi.c b/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-> index 1b680e2..f756d5f 100644
-> --- a/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-> +++ b/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-> @@ -522,6 +522,7 @@ void bnx2fc_process_l2_frame_compl(struct bnx2fc_rport *tgt,
->  	fp = fc_frame_alloc(lport, payload_len);
->  	if (!fp) {
->  		printk(KERN_ERR PFX "fc_frame_alloc failure\n");
-> +		kfree(unsol_els);
->  		return;
->  	}
->  
-> @@ -547,6 +548,7 @@ void bnx2fc_process_l2_frame_compl(struct bnx2fc_rport *tgt,
->  				 */
->  				printk(KERN_ERR PFX "dropping ELS 0x%x\n", op);
->  				kfree_skb(skb);
-> +				kfree(unsol_els);
->  				return;
->  			}
->  		}
-> @@ -563,6 +565,7 @@ void bnx2fc_process_l2_frame_compl(struct bnx2fc_rport *tgt,
->  	} else {
->  		BNX2FC_HBA_DBG(lport, "fh_r_ctl = 0x%x\n", fh->fh_r_ctl);
->  		kfree_skb(skb);
-> +		kfree(unsol_els);
->  	}
->  }
->  
-> 
-> 
+please check attached -v4
 
+Thanks
 
+--90e6ba6e8a0c6e47bf049fe20ab0
+Content-Type: text/x-patch; charset=US-ASCII; name="fix_store.patch"
+Content-Disposition: attachment; filename="fix_store.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_glzmevhn0
 
+RnJvbTogU3RlZmFubyBTdGFiZWxsaW5pIDxzdGVmYW5vLnN0YWJlbGxpbmlAZXUuY2l0cml4LmNv
+bT4KCltQQVRDSCAtdjRdIHg4NjogU2F2ZSBjcjQgdG8gbW11X2NyNF9mZWF0dXJlcyBhdCBib290
+IHRpbWUKClNhdmUgY3I0IHRvIG1tdV9jcjRfZmVhdHVyZXMgYXQgYm9vdCB0aW1lCgpNaWNoYWVs
+IHJlcG9ydGVkIDIuNi4zOC4yIGhpYmVybmF0aW9uIGlzIGJyb2tlbiBieSBvbmUgYmFja3BvcnRl
+ZCBwYXRjaC4KaXQgY2F1c2UgYSBmcmVlemUgd2hlbiByZXN1bWluZyBmcm9tIGhpYmVybmF0aW9u
+Cgp8ICJ4ODY6IENsZWFudXAgaGlnaG1hcCBhZnRlciBicmsgaXMgY29uY2x1ZGVkIgp8IGNvbW1p
+dCBpZCBlNWYxNWI0NWRkZjNhZmEyYmJiYjEwYzdlYTM0ZmIzMmI2ZGUwYTBlLgoKaXQgdHVybnMg
+b3V0IHRoZSBtbXVfY3I0IHNhdmUgaXQgbG9zdCBzb21laG93LgoKLXYzOiByZWFkIGJhY2sgY3I0
+IGZvciAzMmJpdCB0b28gYWNjb3JkaW5nIHRvIEhQQQotdjQ6IHVzZSBjcHVpZF9sZXZlbCB0byBj
+aGVjayBpZiB3ZSBjYW4gcmVhZCBjcjQgYWNjb3JkaW5nIHRvIEhQQQogICAgIGRvbid0IHRvdWNo
+IG1tdV9jcjRfZmVhdHVyZXMgaWYgQ09ORklHX0hJQkVSTkFUSU9OIGlzIGRlZmluZWQgZnJvbSBZ
+aW5naGFpCgpCaXNlY3RlZC1hbmQtdGVzdGVkLWJ5OiBNaWNoYWVsIExldW4gPGxrbWwyMDEwMTEy
+OUBuZXd0b24ubGV1bi5uZXQ+ClNpZ25lZC1vZmYtYnk6IFN0ZWZhbm8gU3RhYmVsbGluaSA8c3Rl
+ZmFuby5zdGFiZWxsaW5pQGV1LmNpdHJpeC5jb20+ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUg
+PHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogYXJjaC94ODYvaW5jbHVkZS9hc20vcHJvY2Vzc29y
+LmggfCAgICA0ICsrKysKIGFyY2gveDg2L2tlcm5lbC9zZXR1cC5jICAgICAgICAgIHwgICAxMSAr
+KysrKysrKysrLQogMiBmaWxlcyBjaGFuZ2VkLCAxNCBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9u
+KC0pCgpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCj09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K
+LS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCisrKyBsaW51eC0yLjYv
+YXJjaC94ODYva2VybmVsL3NldHVwLmMKQEAgLTIxMiw3ICsyMTIsMTEgQEAgc3RydWN0IGNwdWlu
+Zm9feDg2IGJvb3RfY3B1X2RhdGEgX19yZWFkXwogRVhQT1JUX1NZTUJPTChib290X2NwdV9kYXRh
+KTsKICNlbmRpZgogCi0KKy8qCisgKiBtbXVfY3I0X2ZlYXR1cmVzIHR3byBwdXJwb3NlOgorICog
+IGEuIGhlYWRfMzIuUyB3aWxsIGFjY2VzcyBjcjQgYWNjb3JkaW5nIGlmIFg4Nl9DUjRfUEFFIGlz
+IHNldCBpbiBpdC4KKyAqICBiLiBzdG9yZSByZWFkIGJhY2sgY3I0IGZvciBoaWJlcm5hdGlvbgor
+ICovCiAjaWYgIWRlZmluZWQoQ09ORklHX1g4Nl9QQUUpIHx8IGRlZmluZWQoQ09ORklHX1g4Nl82
+NCkKIHVuc2lnbmVkIGxvbmcgbW11X2NyNF9mZWF0dXJlczsKICNlbHNlCkBAIC04OTIsNiArODk2
+LDExIEBAIHZvaWQgX19pbml0IHNldHVwX2FyY2goY2hhciAqKmNtZGxpbmVfcCkKIAogCWhpZ2hf
+bWVtb3J5ID0gKHZvaWQgKilfX3ZhKG1heF9wZm4gKiBQQUdFX1NJWkUgLSAxKSArIDE7CiAjZW5k
+aWYKKyNpZmRlZiBDT05GSUdfSElCRVJOQVRJT04KKwkvKiBhIENQVSBoYXMgQ1I0IGlmZiBpdCBo
+YXMgQ1BVSUQgLS0tIGhwYSAqLworCWlmIChib290X2NwdV9kYXRhLmNwdWlkX2xldmVsID49IDAp
+CisJCW1tdV9jcjRfZmVhdHVyZXMgPSByZWFkX2NyNCgpOworI2VuZGlmCiAKIAkvKgogCSAqIEZp
+bmQgYW5kIHJlc2VydmUgcG9zc2libGUgYm9vdC10aW1lIFNNUCBjb25maWd1cmF0aW9uOgpJbmRl
+eDogbGludXgtMi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL3Byb2Nlc3Nvci5oCj09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K
+LS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2luY2x1ZGUvYXNtL3Byb2Nlc3Nvci5oCisrKyBs
+aW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vcHJvY2Vzc29yLmgKQEAgLTYwMSw3ICs2MDEs
+OSBAQCBzdGF0aWMgaW5saW5lIHZvaWQgc2V0X2luX2NyNCh1bnNpZ25lZCBsCiB7CiAJdW5zaWdu
+ZWQgbG9uZyBjcjQ7CiAKKyNpZmRlZiBDT05GSUdfSElCRVJOQVRJT04KIAltbXVfY3I0X2ZlYXR1
+cmVzIHw9IG1hc2s7CisjZW5kaWYKIAljcjQgPSByZWFkX2NyNCgpOwogCWNyNCB8PSBtYXNrOwog
+CXdyaXRlX2NyNChjcjQpOwpAQCAtNjExLDcgKzYxMyw5IEBAIHN0YXRpYyBpbmxpbmUgdm9pZCBj
+bGVhcl9pbl9jcjQodW5zaWduZWQKIHsKIAl1bnNpZ25lZCBsb25nIGNyNDsKIAorI2lmZGVmIENP
+TkZJR19ISUJFUk5BVElPTgogCW1tdV9jcjRfZmVhdHVyZXMgJj0gfm1hc2s7CisjZW5kaWYKIAlj
+cjQgPSByZWFkX2NyNCgpOwogCWNyNCAmPSB+bWFzazsKIAl3cml0ZV9jcjQoY3I0KTsK
+--90e6ba6e8a0c6e47bf049fe20ab0--
