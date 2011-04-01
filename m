@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757655Ab1DAO5e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:57:34 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48254 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757587Ab1DAO5c convert rfc822-to-8bit (ORCPT
+	id S1757616Ab1DAO6q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:58:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53519 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757311Ab1DAO6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:57:32 -0400
+	Fri, 1 Apr 2011 10:58:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Sr0AnROrhfOg5N5YArp1sgy5j9s/Zuz7MqLzJYGMqvnrqG3LAcvJnReqkrxwdjyUAz
-         /143LZpyoU0Xzu8fbTJfV1mtjsd2b6nH0w5KRtON/bPlYNW0B8xh5yxpOPq+6kSjUfJO
-         llVeRWT03/uOA7iaEbL8lk5ChpUae/ndXd3oA=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimpKhzHsZFSVrsZckfDQZ2GFwN1kw@mail.gmail.com>
-References: <SNT111-DS16E628E3B6501DBCF9E19CA7BF0@phx.gbl> <BANLkTimpKhzHsZFSVrsZckfDQZ2GFwN1kw@mail.gmail.com>
-From: Rafael Fernandez <rafaelefernandez@gmail.com>
-Date: Fri, 1 Apr 2011 09:57:12 -0500
-Message-ID: <BANLkTimoubhOk3tDwzgAek644C0AUCxN4w@mail.gmail.com>
-Subject: Re: Minimum time slice for relaible Linux execution
-To: limp <johnkyr83@hotmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Y/MAWktK7YTXrvpi+/RHTSH57OqVKOzYqzvzkJtXBm+yulf6VcDA6ewl6KZD701YCW
+         S3+YSGBsNikHnhckSAwAqBTX209/DhltabH8hxPHOJn/BqlP4GzbcGipocJQFe5lTZES
+         pu7JOa94hxf7LRJ1y/oI1AgQIrWPuAQ/OqjQQ=
+Subject: Re: [PATCH 0/2] do not select KALLSYMS_ALL
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Paulo Marques <pmarques@grupopie.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        MTD list <linux-mtd@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D948D52.4040708@grupopie.com>
+References: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>
+	 <4D948D52.4040708@grupopie.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Apr 2011 17:56:16 +0300
+Message-ID: <1301669776.2789.92.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also, how is this different than placing a starvation limit around the
-RT set of tasks?
+On Thu, 2011-03-31 at 15:18 +0100, Paulo Marques wrote:
+> Artem Bityutskiy wrote:
+> > [...]
+> > I personally think KALLSYMS_ALL should be just merged with KALLSYMS and
+> > disappear - we should have only one option. CONFIG_KALLSYMS_EXTRA_PASS should
+> > die as well.
+> 
+> That sounds a little too extreme...
+> 
+> KALLSYMS is useful for most kernels, since it provides nice readable
+> stack dumps for panics and BUG's.
+> 
+> KALLSYMS_ALL adds a lot of extra symbols that can be useful mostly to
+> development kernels and shouldn't be used to add unnecessary bloat to
+> user kernels.
 
-On Fri, Apr 1, 2011 at 9:19 AM, Rafael Fernandez
-<rafaelefernandez@gmail.com> wrote:
-> Hi,
->
-> This is pretty interesting to me. How would your framework handle an
-> RT application that does quite a bit of I/O? Does it block and go to
-> Linux, get serviced, and come back?
->
-> Thank you,
-> Rafael
->
-> On Thu, Mar 31, 2011 at 7:13 AM, limp <johnkyr83@hotmail.com> wrote:
->> Dear all,
->>
->> I have developed a framework similar to a hypervisor that switches between
->> Linux and a RT domain.
->> As RT priority is of highest importance, I want to give more time to the RT
->> domain *but* I also want to give Linux adequate time for being able to
->> operate.
->>
->> Could anyone advise me on how to determine the minimum possible time slice
->> that I can give to Linux so that it doesn't crash?
->>
->> That is, if I periodically execute my RT domain every ms and then I switch
->> to Linux, what's the minimum time that should be given to Linux, until the
->> next RT domain execution?
->>
->> NOTE: The RT domain and Linux are not executed concurrently, i.e. the RT
->> domain is executed first and then Linux executes until the next RT domain
->> execution.
->>
->> Thank you all in advance.
->>
->> John K.
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at �http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at �http://www.tux.org/lkml/
->>
->
-
-
+Well, ok, I've measured how much is this "a lot". On an embedded arm
+platform this makes the kernel only 1.5% larger.
 
 -- 
-Rafael E. Fern�ndez
-B.S. Computer Science
-University of Illinois at Urbana-Champaign
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
