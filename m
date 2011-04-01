@@ -1,130 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab1DABH0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 21:07:26 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:55888 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751746Ab1DABHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 21:07:25 -0400
-Message-ID: <4D9524DF.10405@sgi.com>
-Date: Thu, 31 Mar 2011 20:05:35 -0500
-From: Mike Habeck <habeck@sgi.com>
-User-Agent: Thunderbird 2.0.0.9 (X11/20071115)
-MIME-Version: 1.0
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: Mike Travis <travis@sgi.com>, David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+	id S1753487Ab1DABLB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 21:11:01 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:63371 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab1DABLA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 21:11:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=mRhLBagBuBz3liQqAoCyR/0yGGpA5Rd3o9AsHEq36lQ89TXpkILIxbDsl2hFYhPD4q
+         w6uL60xsXsG5MldgRguztUlb5dstJJfjbk/iycPvp36wbgCYWhuE9I2y7QsFnUPRiCIt
+         7OWnPvV41ZafwiOKFW6uL2QtWm02lY7onQaI4=
+Subject: Re: [PATCH 1/6] nommu: sort mm->mmap list properly
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Mundt <lethal@linux-sh.org>, David Howells <dhowells@redhat.com>,
+        Greg Ungerer <gerg@snapgear.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] Intel pci: Limit dmar_init_reserved_ranges
-References: <20110329233602.272459647@gulag1.americas.sgi.com> <20110329233602.735667875@gulag1.americas.sgi.com> <4D94FC21.6040601@sgi.com> <20110331225316.GC18712@sequoia.sous-sol.org> <4D950D52.8080100@sgi.com> <4D951109.1040707@sgi.com> <20110331235657.GG18712@sequoia.sous-sol.org>
-In-Reply-To: <20110331235657.GG18712@sequoia.sous-sol.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110331115141.bd8f28d8.akpm@linux-foundation.org>
+References: <1301320607-7259-1-git-send-email-namhyung@gmail.com>
+	 <1301320607-7259-2-git-send-email-namhyung@gmail.com>
+	 <20110331115141.bd8f28d8.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Apr 2011 10:10:52 +0900
+Message-ID: <1301620252.1496.2.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Chris Wright wrote:
-> * Mike Habeck (habeck@sgi.com) wrote:
->> On 03/31/2011 06:25 PM, Mike Travis wrote:
->>> I'll probably need help from our Hardware PCI Engineer to help explain
->>> this further, though here's a pointer to an earlier email thread:
->>>
->>> http://marc.info/?l=linux-kernel&m=129259816925973&w=2
->>>
->>> I'll also dig out the specs you're asking for.
->>>
->>> Thanks,
->>> Mike
->>>
->>> Chris Wright wrote:
->>>> * Mike Travis (travis@sgi.com) wrote:
->>>>> Chris - did you have any comment on this patch?
->>>> It doesn't actually look right to me. It means that particular range
->>>> is no longer reserved. But perhaps I've misunderstood something.
->>>>
->>>>> Mike Travis wrote:
->>>>>> dmar_init_reserved_ranges() reserves the card's MMIO ranges to
->>>>>> prevent handing out a DMA map that would overlap with the MMIO range.
->>>>>> The problem while the Nvidia GPU has 64bit BARs, it's capable of
->>>>>> receiving > 40bit PIOs, but can't generate > 40bit DMAs.
->>>> I don't undertand what you mean here.
->> What Mike is getting at is there is no reason to reserve the MMIO
->> range if it's greater than the dma_mask, given the MMIO range is
->> outside of what the IOVA code will ever hand back to the IOMMU
->> code.  In this case the nVidia card has a 64bit BAR and is assigned
->> the MMIO range [0xf8200000000 - 0xf820fffffff].  But the Nvidia
->> card can only generate a 40bit DMA (thus has a 40bit dma_mask). If
->> the IOVA code honors the limit_pfn (i.e., dma_mask) passed in it
->> will never hand back a >40bit address back to the IOMMU code. Thus
->> there is no reason to reserve the cards MMIO range if it is greater
->> than the dma_mask. (And that is what the patch is doing).
+2011-03-31 (목), 11:51 -0700, Andrew Morton:
+> On Mon, 28 Mar 2011 22:56:42 +0900
+> Namhyung Kim <namhyung@gmail.com> wrote:
 > 
-> The reserved ranges are for all devices.  Another device with a 64bit
-> dma_mask could get that region if it's not properly reserved.  The
-> driver would then program that device to dma to an address to is an
-> alias to a MMIO region.  The memory transaction travels up towards
-> root...and sees the MMIO range in some bridge and would go straight down
-> to the GPU.
-
-Chris,
-
-OK, I understand now what you meant by the patch possibly causing
-the DMA transaction to become a peer to peer transaction.  Mike and
-I will have to rethink this one.  Thanks for your input.
-
--mike
-
-
+> > @vma added into @mm should be sorted by start addr, end addr and VMA struct
+> > addr in that order because we may get identical VMAs in the @mm. However
+> > this was true only for the rbtree, not for the list.
+> > 
+> > This patch fixes this by remembering 'rb_prev' during the tree traversal
+> > like find_vma_prepare() does and linking the @vma via __vma_link_list().
+> > After this patch, we can iterate the whole VMAs in correct order simply
+> > by using @mm->mmap list.
+> > 
+> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> > ---
+> >  mm/nommu.c |   62 ++++++++++++++++++++++++++++++++++++++---------------------
+> >  1 files changed, 40 insertions(+), 22 deletions(-)
+> > 
+> > diff --git a/mm/nommu.c b/mm/nommu.c
+> > index e7dbd3fae187..20d9c330eb0e 100644
+> > --- a/mm/nommu.c
+> > +++ b/mm/nommu.c
+> > @@ -672,6 +672,30 @@ static void protect_vma(struct vm_area_struct *vma, unsigned long flags)
+> >  #endif
+> >  }
+> >  
+> > +/* borrowed from mm/mmap.c */
+> > +static inline void
+> > +__vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+> > +		struct vm_area_struct *prev, struct rb_node *rb_parent)
+> > +{
+> > +	struct vm_area_struct *next;
+> > +
+> > +	vma->vm_prev = prev;
+> > +	if (prev) {
+> > +		next = prev->vm_next;
+> > +		prev->vm_next = vma;
+> > +	} else {
+> > +		mm->mmap = vma;
+> > +		if (rb_parent)
+> > +			next = rb_entry(rb_parent,
+> > +					struct vm_area_struct, vm_rb);
+> > +		else
+> > +			next = NULL;
+> > +	}
+> > +	vma->vm_next = next;
+> > +	if (next)
+> > +		next->vm_prev = vma;
+> > +}
 > 
->> More below,,,
->>
->>>>>> So when the iommu code reserves these MMIO ranges a > 40bit
->>>>>> entry ends up getting in the rbtree. On a UV test system with
->>>>>> the Nvidia cards, the BARs are:
->>>>>>
->>>>>> 0001:36:00.0 VGA compatible controller: nVidia Corporation
->>>>>> GT200GL Region 0: Memory at 92000000 (32-bit, non-prefetchable)
->>>>>> [size=16M]
->>>>>> Region 1: Memory at f8200000000 (64-bit, prefetchable) [size=256M]
->>>>>> Region 3: Memory at 90000000 (64-bit, non-prefetchable) [size=32M]
->>>>>>
->>>>>> So this 44bit MMIO address 0xf8200000000 ends up in the rbtree. As DMA
->>>>>> maps get added and deleted from the rbtree we can end up getting a cached
->>>>>> entry to this 0xf8200000000 entry... this is what results in the code
->>>>>> handing out the invalid DMA map of 0xf81fffff000:
->>>>>>
->>>>>> [ 0xf8200000000-1 >> PAGE_SIZE << PAGE_SIZE ]
->>>>>>
->>>>>> The IOVA code needs to better honor the "limit_pfn" when allocating
->>>>>> these maps.
->>>> This means we could get the MMIO address range (it's no longer reserved).
->> Not true, the MMIO address is greater than the dma_mask (i.e., the
->> limit_pfn passed into alloc_iova()) thus the IOVA code will never
->> hand back that address range given it's greater than the dma_mask).
+> Duplicating code is rather bad.  And putting random vma functions into
+> mm/util.c is pretty ugly too, but I suppose it's less bad.
 > 
-> Well, as you guys are seeing, the iova allocation code is making the
-> assumption that if the range is in the tree, it's valid.  And it is
-> handing out an address that's too large.
+
+Agreed. Thanks for doing this.
+
+
+>  mm/internal.h |    4 ++++
+>  mm/mmap.c     |   22 ----------------------
+>  mm/nommu.c    |   24 ------------------------
+>  mm/util.c     |   24 ++++++++++++++++++++++++
+>  4 files changed, 28 insertions(+), 46 deletions(-)
 > 
->>>> It seems to me the DMA transaction would then become a peer to peer
->>>> transaction if ACS is not enabled, which could show up as random register
->>>> write in that GPUs 256M BAR (i.e. broken).
->>>>
->>>> The iova allocation should not hand out an address bigger than the
->>>> dma_mask. What is the device's dma_mask?
->> Agree.  But there is a bug.  The IOVA doesn't validate the limit_pfn
->> if it uses the cached entry.  One could argue that it should validate
->> the limit_pfn, but then again a entry outside the limit_pfn should
->> have never got into the rbtree...  (it got in due to the IOMMU's
->> dmar_init_reserved_ranges() adding it).
+> diff -puN mm/nommu.c~mm-nommu-sort-mm-mmap-list-properly-fix mm/nommu.c
+> --- a/mm/nommu.c~mm-nommu-sort-mm-mmap-list-properly-fix
+> +++ a/mm/nommu.c
+> @@ -672,30 +672,6 @@ static void protect_vma(struct vm_area_s
+>  #endif
+>  }
+>  
+> -/* borrowed from mm/mmap.c */
+> -static inline void
+> -__vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+> -		struct vm_area_struct *prev, struct rb_node *rb_parent)
+> -{
+> -	struct vm_area_struct *next;
+> -
+> -	vma->vm_prev = prev;
+> -	if (prev) {
+> -		next = prev->vm_next;
+> -		prev->vm_next = vma;
+> -	} else {
+> -		mm->mmap = vma;
+> -		if (rb_parent)
+> -			next = rb_entry(rb_parent,
+> -					struct vm_area_struct, vm_rb);
+> -		else
+> -			next = NULL;
+> -	}
+> -	vma->vm_next = next;
+> -	if (next)
+> -		next->vm_prev = vma;
+> -}
+> -
+>  /*
+>   * add a VMA into a process's mm_struct in the appropriate place in the list
+>   * and tree and add to the address space's page tree also if not an anonymous
+> diff -puN mm/util.c~mm-nommu-sort-mm-mmap-list-properly-fix mm/util.c
+> --- a/mm/util.c~mm-nommu-sort-mm-mmap-list-properly-fix
+> +++ a/mm/util.c
+> @@ -6,6 +6,8 @@
+>  #include <linux/sched.h>
+>  #include <asm/uaccess.h>
+>  
+> +#include "internal.h"
+> +
+>  #define CREATE_TRACE_POINTS
+>  #include <trace/events/kmem.h>
+>  
+> @@ -215,6 +217,28 @@ char *strndup_user(const char __user *s,
+>  }
+>  EXPORT_SYMBOL(strndup_user);
+>  
+> +void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+> +		struct vm_area_struct *prev, struct rb_node *rb_parent)
+> +{
+> +	struct vm_area_struct *next;
+> +
+> +	vma->vm_prev = prev;
+> +	if (prev) {
+> +		next = prev->vm_next;
+> +		prev->vm_next = vma;
+> +	} else {
+> +		mm->mmap = vma;
+> +		if (rb_parent)
+> +			next = rb_entry(rb_parent,
+> +					struct vm_area_struct, vm_rb);
+> +		else
+> +			next = NULL;
+> +	}
+> +	vma->vm_next = next;
+> +	if (next)
+> +		next->vm_prev = vma;
+> +}
+> +
+>  #if defined(CONFIG_MMU) && !defined(HAVE_ARCH_PICK_MMAP_LAYOUT)
+>  void arch_pick_mmap_layout(struct mm_struct *mm)
+>  {
+> diff -puN mm/internal.h~mm-nommu-sort-mm-mmap-list-properly-fix mm/internal.h
+> --- a/mm/internal.h~mm-nommu-sort-mm-mmap-list-properly-fix
+> +++ a/mm/internal.h
+> @@ -66,6 +66,10 @@ static inline unsigned long page_order(s
+>  	return page_private(page);
+>  }
+>  
+> +/* mm/util.c */
+> +void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+> +		struct vm_area_struct *prev, struct rb_node *rb_parent);
+> +
+>  #ifdef CONFIG_MMU
+>  extern long mlock_vma_pages_range(struct vm_area_struct *vma,
+>  			unsigned long start, unsigned long end);
+> diff -puN mm/mmap.c~mm-nommu-sort-mm-mmap-list-properly-fix mm/mmap.c
+> --- a/mm/mmap.c~mm-nommu-sort-mm-mmap-list-properly-fix
+> +++ a/mm/mmap.c
+> @@ -398,28 +398,6 @@ find_vma_prepare(struct mm_struct *mm, u
+>  	return vma;
+>  }
+>  
+> -void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+> -		struct vm_area_struct *prev, struct rb_node *rb_parent)
+> -{
+> -	struct vm_area_struct *next;
+> -
+> -	vma->vm_prev = prev;
+> -	if (prev) {
+> -		next = prev->vm_next;
+> -		prev->vm_next = vma;
+> -	} else {
+> -		mm->mmap = vma;
+> -		if (rb_parent)
+> -			next = rb_entry(rb_parent,
+> -					struct vm_area_struct, vm_rb);
+> -		else
+> -			next = NULL;
+> -	}
+> -	vma->vm_next = next;
+> -	if (next)
+> -		next->vm_prev = vma;
+> -}
+> -
+>  void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		struct rb_node **rb_link, struct rb_node *rb_parent)
+>  {
+> _
 > 
-> Yeah, I think it needs to be in the global reserved list.  But perhaps
-> not copied into the domain specific iova.  Or simply skipped on iova
-> allocation (don't just assume rb_last is <= dma_mask).
 > 
-> thanks,
-> -chris
+
+
+-- 
+Regards,
+Namhyung Kim
+
+
