@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864Ab1DAPTi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:19:38 -0400
-Received: from ra.se.axis.com ([195.60.68.13]:55517 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754203Ab1DAPTh convert rfc822-to-8bit (ORCPT
+	id S1757854Ab1DAPUg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:20:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48097 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab1DAPUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:19:37 -0400
-X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Apr 2011 11:19:36 EDT
-Date: Fri, 1 Apr 2011 17:11:36 +0200 (CEST)
-From: Ricard Wanderlof <ricard.wanderlof@axis.com>
-X-X-Sender: ricardw@lnxricardw.se.axis.com
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: Paulo Marques <pmarques@grupopie.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        MTD list <linux-mtd@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] do not select KALLSYMS_ALL
-In-Reply-To: <1301670104.2789.94.camel@localhost>
-Message-ID: <Pine.LNX.4.64.1104011710460.18181@lnxricardw.se.axis.com>
-References: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>
- <4D948D52.4040708@grupopie.com>  <1301669776.2789.92.camel@localhost>
- <1301670104.2789.94.camel@localhost>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Apr 2011 11:20:35 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=esbOCb5XK58A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=Nx3cEeQ_6quQnEfi0vIA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/4] [GIT PULL] jump label: Cleanups for 2.6.39
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, jbaron@redhat.com
+In-Reply-To: <20110401143202.GA1910@jolsa.brq.redhat.com>
+References: <20110317164148.550876008@goodmis.org>
+	 <20110401143202.GA1910@jolsa.brq.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 01 Apr 2011 11:20:31 -0400
+Message-ID: <1301671231.2160.24.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-04-01 at 16:32 +0200, Jiri Olsa wrote:
+> On Thu, Mar 17, 2011 at 12:41:48PM -0400, Steven Rostedt wrote:
+> > 
+> > Ingo,
+> > 
+> > Please pull the latest tip/perf/urgent tree, which can be found at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> > tip/perf/urgent
+> 
+> hi,
+> 
+> I have a change to use batch update for jump label key's entries.
+> 
+> I wanted to rebase it to latest Jason's changes, but I dont see them
+> in the mentioned git tree and branch.. not sure what I missed.
+> 
+> also, any idea when this could get in?
 
-On Fri, 1 Apr 2011, Artem Bityutskiy wrote:
+Yes, I still need to rebase these for 2.6.39+. I've been sucked into my
+real job for a little bit, but when I get a chance, I'll push these out.
+I'll have them out by Monday.
 
-> > On Fri, 2011-04-01 at 17:56 +0300, Artem Bityutskiy wrote:
-> > Well, ok, I've measured how much is this "a lot". On an embedded arm
-> > platform this makes the kernel only 1.5% larger. 
->
-> But in absolute numbers this is 70KiB in my case, which is indeed
-> considerable amount. So, I agree that it makes sense to keep this as a
-> separate option.
+Thanks,
 
-Yes there are platforms where space is tight and 70 KiB could make or 
-break a given setup.
+-- Steve
 
-/Ricard
--- 
-Ricard Wolf Wanderlöf                           ricardw(at)axis.com
-Axis Communications AB, Lund, Sweden            www.axis.com
-Phone +46 46 272 2016                           Fax +46 46 13 61 30
+
