@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab1DAKNV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 06:13:21 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:43429 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755477Ab1DAKNU (ORCPT
+	id S1755536Ab1DAKZe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 06:25:34 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35066 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322Ab1DAKZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 06:13:20 -0400
-To: Karel Zak <kzak@redhat.com>
-CC: miklos@szeredi.hu, aneesh.kumar@linux.vnet.ibm.com, victor.vde@gmail.com,
-        util-linux@vger.kernel.org, linuxram@us.ibm.com,
-        viro@zeniv.linux.org.uk, ejmarkow@yahoo.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lennart@poettering.net
-In-reply-to: <20110401093240.GA11012@nb.net.home> (message from Karel Zak on
-	Fri, 1 Apr 2011 11:32:40 +0200)
-Subject: Re: [BUG] libmount misparses mountinfo on Linux v2.6.39-rc1
-References: <19860.58082.277944.875401@gargle.gargle.HOWL> <87d3l62z3k.fsf@linux.vnet.ibm.com> <E1Q5ZzI-0001M4-0j@pomaz-ex.szeredi.hu> <20110401093240.GA11012@nb.net.home>
-Message-Id: <E1Q5bLG-0001eG-9d@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Fri, 01 Apr 2011 12:12:34 +0200
+	Fri, 1 Apr 2011 06:25:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=CoHbe7m1nfmct0f5Fa0ufKu5+WJvIHwI09BgBdXXaHfOCJH5UuKvmmBQJXfNlOlf/h
+         ZyE1mrjZ0TExmC1rG6cvvCaOYrVpXYXvXd8jphnHbDyaqvC8eJMEO7oZc0ndhzYdnSJ0
+         wP7/CsUaE2oF/y7GBW0gph0tv67xkiCSpcUNo=
+Subject: [PATCH] regulator: Fix the argument of calling
+ regulator_mode_constrain
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Apr 2011 18:25:25 +0800
+Message-ID: <1301653525.22820.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Apr 2011, Karel Zak wrote:
-> On Fri, Apr 01, 2011 at 10:45:48AM +0200, Miklos Szeredi wrote:
-> > On Fri, 01 Apr 2011, Aneesh Kumar K. V wrote:
-> > > On Thu, 31 Mar 2011 22:24:01 +0200, victor.vde@gmail.com wrote:
-> > > > /proc/self/mountinfo on Linux v2.6.39-rc1 includes the UUID of ext4
-> > > > and ext3 mounts, for example:
-> > > > 
-> > > > 15 1 8:3 / / rw,noatime uuid:c645234d-9756-4d84-825e-6fe999252a34 - ext4 /dev/sda3 rw,user_xattr,acl,barrier=1,data=ordered
-> > > > 
-> > > > It seems the hyphens in the uuid confuse the parser
-> > > > mnt_parse_mountinfo_line in tab_parse.c of libmount in util-linux.
-> > > 
-> > > shouldn't the parser look for " " followed by "-" followed by " " as the
-> > > field seperator ? 
-> > > 
-> > > I am adding Miklos and Ram Pai to CC to check whether the kernel or the libmount 
-> > > should be fixed ?
-> > 
-> > I think libmount should be fixed, though there is always the question
-> > of backward compatibility.
-> 
->  The parser uses
-> 
-> 	rc = sscanf(s,	"%u "		/* (1) id */
-> 			"%u "		/* (2) parent */
-> 			"%u:%u "	/* (3) maj:min */
-> 			"%ms "		/* (4) mountroot */
-> 			"%ms "		/* (5) target */
-> 			"%ms"		/* (6) vfs options (fs-independent) */
-> 			"%*[^-]"	/* (7) optional fields */
+The second parameter of regulator_mode_constrain takes a pointer.
 
-So this says, "skip everything up to the first hyphen", even though
-the rule might be better expressed as "skip all space delimited words
-up to the first standalone hyphen".  I guess that's not possible to
-express with a scanf expression, though.
+This patch fixes below warning:
+drivers/regulator/core.c: In function 'regulator_set_mode':
+drivers/regulator/core.c:2014: warning: passing argument 2 of 'regulator_mode_constrain' makes pointer from integer without a cast
+drivers/regulator/core.c:200: note: expected 'int *' but argument is of type 'unsigned int'
 
-> 			"- "		/* (8) separator */
-> 			"%ms "		/* (9) FS type */
-> 			"%ms "		/* (10) source */
-> 			"%ms",		/* (11) fs options (fs specific) */
-> 
->  note that almost the same code is in systemd.
-> 
-> > However I don't see how the kernel could be fixed, given that libmount
-> > doesn't seem to parse escape sequences (e.g. "\040" for space), which
-> > it also should.
-> 
->  It calls unmangle_string() for all fields, so all sequences should be
->  decoded.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Okay, so the kernel can simply escape the troublesome hyphens, which
-would make the human parsing of /proc/pid/mountinfo more difficult but
-at least would fix compatibility with util-linux's parser.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index a634946..fff95c3 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2011,7 +2011,7 @@ int regulator_set_mode(struct regulator *regulator, unsigned int mode)
+ 	}
+ 
+ 	/* constraints check */
+-	ret = regulator_mode_constrain(rdev, mode);
++	ret = regulator_mode_constrain(rdev, &mode);
+ 	if (ret < 0)
+ 		goto out;
+ 
+-- 
+1.7.1
 
-Thanks,
-Miklos
+
+
