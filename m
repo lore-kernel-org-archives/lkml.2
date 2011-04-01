@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758665Ab1DASWp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 14:22:45 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:65176 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758039Ab1DASWn convert rfc822-to-8bit (ORCPT
+	id S1758697Ab1DASW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 14:22:56 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60170 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758593Ab1DASWx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 14:22:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type:content-transfer-encoding;
-        b=lcD72GHCM+19vBa4td2SCgLCaPjdb6bPjwoUUMji75N9G1b33ulmOv4+WDNS9QLddd
-         Jqr1VWSPx0nSFNGhkZ9/ET04ZHb6oPBZEmd48fAsG69STJB8Xk6eHIGbGjPgh1OQOL9S
-         FG5WalAj2Wi2ifhaB99pPS6LffEZPL6uErOUQ=
+	Fri, 1 Apr 2011 14:22:53 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 1 Apr 2011 20:22:41 +0200
-Message-ID: <AANLkTimhD_cu46Bhtt9v8MjKMVCnVMT6Es+Ys9RNPOp1@mail.gmail.com>
-Subject: Re: linux-next: Tree for April 1 [BROKEN ubifs when CONFIG_DEBUG_SECTION_MISMATCH=y]s
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: dedekind1@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110331153010.GD2704@sortiz-mobl>
+References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
+ <20110325142648.GC3879@sortiz-mobl> <99B09243E1A5DA4898CDD8B7001114481085E2375D@EXMB04.eu.tieto.com>
+ <201103291305.02293.arnd@arndb.de> <20110331141650.GB2704@sortiz-mobl>
+ <99B09243E1A5DA4898CDD8B7001114481085F0FE5A@EXMB04.eu.tieto.com>
+ <20110331150939.GC2704@sortiz-mobl> <99B09243E1A5DA4898CDD8B7001114481085F0FE7C@EXMB04.eu.tieto.com>
+ <20110331153010.GD2704@sortiz-mobl>
+From: Aloisio Almeida <aloisio.almeida@openbossa.org>
+Date: Fri, 1 Apr 2011 15:19:30 -0300
+Message-ID: <AANLkTikjTAFrhS7_P+KJ-r-33K6fW2+63OnLhjXE-u0k@mail.gmail.com>
+Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Waldemar.Rymarkiewicz@tieto.com, arnd@arndb.de, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hthebaud@insidefr.com,
+        matti.j.aaltonen@nokia.com, alan@lxorguk.ukuu.org.uk,
+        Sebastian.Chlad@tieto.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 1, 2011 at 7:02 PM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Fri, 2011-04-01 at 18:10 +0200, Sedat Dilek wrote:
->> On Fri, Apr 1, 2011 at 6:06 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> > Cc'ing Artem,
->> >
->> > On Fri, 1 Apr 2011 17:55:52 +0200 Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->> >>
->> >> With CONFIG_DEBUG_SECTION_MISMATCH=y set, I see in my build.log:
->> >> ...
->> >> MODPOST 2742 modules
->> >> ...
->> >> ERROR: "empty_aops" [fs/ubifs/ubifs.ko] undefined!
->> >> make[5]: *** [__modpost] Error 1
->> >> make[4]: *** [modules] Error 2
->> >> make[3]: *** [sub-make] Error 2
->> >> make[2]: *** [all] Error 2
->> >> make[2]: Leaving directory
->> >> `/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/build_i386_none_686-iniza'
->> >>
->> >> - Sedat -
->> >>
->> >
->> >
->> > --
->> > Cheers,
->> > Stephen Rothwell                    sfr@canb.auug.org.au
->> > http://www.canb.auug.org.au/~sfr/
->> >
+Hi all,
+
+On Thu, Mar 31, 2011 at 12:30 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> On Thu, Mar 31, 2011 at 06:24:50PM +0300, Waldemar.Rymarkiewicz@tieto.com wrote:
+>> Hi Samuel,
 >>
->> Speculative patch (untested).
+>> >That's the Bluetooth approach, and it works just fine as well.
+>> >However, the netlink option for sending commands and receiving
+>> >answers to/from a subsystem sounds more appropriate, at least to me.
 >>
->> - Sedat -
+>> I haven't used netlink in practice, so just wondering why netlink. I assume, then, it's more suitable :)
 >>
->> $ diff -uprN fs/ubifs/xattr.c.orig fs/ubifs/xattr.c
->> --- fs/ubifs/xattr.c.orig       2011-04-01 15:56:08.471082117 +0200
->> +++ fs/ubifs/xattr.c    2011-04-01 18:08:27.355276827 +0200
->> @@ -81,6 +81,7 @@ enum {
->>
->>  static const struct inode_operations none_inode_operations;
->>  static const struct file_operations none_file_operations;
->> +static const struct address_space_operations empty_aops;
->>
->>  /**
->>   * create_xattr - create an extended attribute.
->
-> ubifs doess not have 'empty_aops' symbol and does not use such symbol. I
-> do not understand how you got that build issue, but this must be
-> something to do with your local setup.
->
-> Also:
->
-> [dedekind@eru linux-next (master)]$ grep -r 'empty_aops' *
-> fs/nilfs2/page.c:       static const struct address_space_operations empty_aops;
-> fs/nilfs2/page.c:       mapping->a_ops = &empty_aops;
-> fs/inode.c:     static const struct address_space_operations empty_aops;
-> fs/inode.c:     mapping->a_ops = &empty_aops;
->
-> in the current linux-next.
+> Have a look at the wireless nl80211.c implementation. It's a good example for
+> that sort of usage.
+
+We are finalizing a NFC stack prototype and we decided to use generic
+netlink. But during the implementation we found a disadvantage of this
+approach.
+
+While implementing data_exchange through netlink, it was not possible
+to avoid memcpy as the skbuff coming from netlink can contain more
+than one message.
+
+We didn't find any implementation that uses netlink to exchage data.
+As in the nl80211, the netlink is used only for control commands.
+
+We plan to publish for comments this prototype early next week. Then
+we plan to implement a version using AF_NFC.
+
+Regards,
+
+Aloisio Almeida Jr
+INdT - Instituto Nokia de Tecnologia
+
+> Cheers,
+> Samuel.
 >
 > --
-> Best Regards,
-> Artem Bityutskiy (Артём Битюцкий)
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at �http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at �http://www.tux.org/lkml/
 >
->
-
-You are right, I pulled linux-2.6-block.git#for-linus into linux-next.
-Looks like linux-2.6-block-for-linus/0007-fs-export-empty_aops.patch
-is causing this [1].
-
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commit;h=2c9214b7b72cf440024d8b91523eea25bbc76040
