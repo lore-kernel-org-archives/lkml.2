@@ -1,65 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab1DANdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:33:18 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:13771 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755444Ab1DANdR (ORCPT
+	id S1756031Ab1DANjL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 09:39:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33725 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755911Ab1DANjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 09:33:17 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, hong.xu@atmel.com,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 1/3 v2] MTD: atmel_nand: modify test case for using DMA operations
-Date: Fri,  1 Apr 2011 16:40:44 +0200
-Message-Id: <1301668844-4500-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1301662188.2789.57.camel@localhost>
-References: <1301662188.2789.57.camel@localhost>
+	Fri, 1 Apr 2011 09:39:08 -0400
+Message-Id: <20110401121725.702209344@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Fri, 01 Apr 2011 14:13:06 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: [PATCH 08/20] um: mmu_gather rework
+References: <20110401121258.211963744@chello.nl>
+Content-Disposition: inline; filename=peter_zijlstra-um-preemptible_mmu_gather.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have better performances not using DMA for oob operations.
-Modify size test so that it is using DMA for size greater than oobsize.
+Fix up the um mmu_gather code to conform to the new API.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jeff Dike <jdike@addtoit.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
 ---
-Artem,
+ arch/um/include/asm/tlb.h |   29 +++++++++++------------------
+ 1 file changed, 11 insertions(+), 18 deletions(-)
 
-Here is the v2 version with embedded comment as you suggested.
+Index: linux-2.6/arch/um/include/asm/tlb.h
+===================================================================
+--- linux-2.6.orig/arch/um/include/asm/tlb.h
++++ linux-2.6/arch/um/include/asm/tlb.h
+@@ -22,9 +22,6 @@ struct mmu_gather {
+ 	unsigned int		fullmm; /* non-zero means full mm flush */
+ };
+ 
+-/* Users of the generic TLB shootdown code must declare this storage space. */
+-DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
+-
+ static inline void __tlb_remove_tlb_entry(struct mmu_gather *tlb, pte_t *ptep,
+ 					  unsigned long address)
+ {
+@@ -47,27 +44,20 @@ static inline void init_tlb_gather(struc
+ 	}
+ }
+ 
+-/* tlb_gather_mmu
+- *	Return a pointer to an initialized struct mmu_gather.
+- */
+-static inline struct mmu_gather *
+-tlb_gather_mmu(struct mm_struct *mm, unsigned int full_mm_flush)
++static inline void
++tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
+ {
+-	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
+-
+ 	tlb->mm = mm;
+ 	tlb->fullmm = full_mm_flush;
+ 
+ 	init_tlb_gather(tlb);
+-
+-	return tlb;
+ }
+ 
+ extern void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 			       unsigned long end);
+ 
+ static inline void
+-tlb_flush_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end)
++tlb_flush_mmu(struct mmu_gather *tlb)
+ {
+ 	if (!tlb->need_flush)
+ 		return;
+@@ -83,12 +73,10 @@ tlb_flush_mmu(struct mmu_gather *tlb, un
+ static inline void
+ tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end)
+ {
+-	tlb_flush_mmu(tlb, start, end);
++	tlb_flush_mmu(tlb);
+ 
+ 	/* keep the page table cache within bounds */
+ 	check_pgt_cache();
+-
+-	put_cpu_var(mmu_gathers);
+ }
+ 
+ /* tlb_remove_page
+@@ -96,11 +84,16 @@ tlb_finish_mmu(struct mmu_gather *tlb, u
+  *	while handling the additional races in SMP caused by other CPUs
+  *	caching valid mappings in their TLBs.
+  */
+-static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
++static inline int __tlb_remove_page(struct mmu_gather *tlb, struct page *page)
+ {
+ 	tlb->need_flush = 1;
+ 	free_page_and_swap_cache(page);
+-	return;
++	return 1; /* avoid calling tlb_flush_mmu */
++}
++
++static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
++{
++	__tlb_remove_page(tlb, page);
+ }
+ 
+ /**
 
-Best regards,
-
- drivers/mtd/nand/atmel_nand.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-index 6fae04b..5872f2a 100644
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -280,7 +280,8 @@ static void atmel_read_buf(struct mtd_info *mtd, u8 *buf, int len)
- 	struct nand_chip *chip = mtd->priv;
- 	struct atmel_nand_host *host = chip->priv;
- 
--	if (use_dma && len >= mtd->oobsize)
-+	if (use_dma && len > mtd->oobsize)
-+		/* only use DMA for bigger than oob size: better performances */
- 		if (atmel_nand_dma_op(mtd, buf, len, 1) == 0)
- 			return;
- 
-@@ -295,7 +296,8 @@ static void atmel_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
- 	struct nand_chip *chip = mtd->priv;
- 	struct atmel_nand_host *host = chip->priv;
- 
--	if (use_dma && len >= mtd->oobsize)
-+	if (use_dma && len > mtd->oobsize)
-+		/* only use DMA for bigger than oob size: better performances */
- 		if (atmel_nand_dma_op(mtd, (void *)buf, len, 0) == 0)
- 			return;
- 
--- 
-1.7.3
 
