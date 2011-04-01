@@ -1,199 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab1DAK2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 06:28:08 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:47137 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755322Ab1DAK2G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 06:28:06 -0400
-Content-Type: multipart/mixed;
-	boundary="_000_CEE6BB42CAD6E947908279175AF8470A0C79DED455EXDCVYMBSTM00_"
-From: Robert ROSENGREN <robert.rosengren@stericsson.com>
-To: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>
-Cc: Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Date: Fri, 1 Apr 2011 12:03:42 +0200
-Subject: Re: Re: [PATCH] regulator: recursive locking detected
-Thread-Topic: Re: [PATCH] regulator: recursive locking detected
-Thread-Index: AcvwVBSI4paAU+ldRvqZ+NREHH+0Zw==
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A0C79DED455@EXDCVYMBSTM006.EQ1STM.local>
-References: <1301650411-17762-1-git-send-email-robert.rosengren@stericsson.com>
-In-Reply-To: <1301650411-17762-1-git-send-email-robert.rosengren@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: <CEE6BB42CAD6E947908279175AF8470A0C79DED455@EXDCVYMBSTM006.EQ1STM.local>
-acceptlanguage: en-US
+	id S1755570Ab1DAKia (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 06:38:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13500 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754266Ab1DAKi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 06:38:29 -0400
+Date: Fri, 1 Apr 2011 12:38:17 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: aneesh.kumar@linux.vnet.ibm.com, victor.vde@gmail.com,
+        util-linux@vger.kernel.org, linuxram@us.ibm.com,
+        viro@zeniv.linux.org.uk, ejmarkow@yahoo.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lennart@poettering.net
+Subject: Re: [BUG] libmount misparses mountinfo on Linux v2.6.39-rc1
+Message-ID: <20110401103817.GB11012@nb.net.home>
+References: <19860.58082.277944.875401@gargle.gargle.HOWL> <87d3l62z3k.fsf@linux.vnet.ibm.com> <E1Q5ZzI-0001M4-0j@pomaz-ex.szeredi.hu> <20110401093240.GA11012@nb.net.home> <E1Q5bLG-0001eG-9d@pomaz-ex.szeredi.hu>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1Q5bLG-0001eG-9d@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_000_CEE6BB42CAD6E947908279175AF8470A0C79DED455EXDCVYMBSTM00_
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+On Fri, Apr 01, 2011 at 12:12:34PM +0200, Miklos Szeredi wrote:
+> On Fri, 1 Apr 2011, Karel Zak wrote:
+> > On Fri, Apr 01, 2011 at 10:45:48AM +0200, Miklos Szeredi wrote:
+> > > On Fri, 01 Apr 2011, Aneesh Kumar K. V wrote:
+> > > > On Thu, 31 Mar 2011 22:24:01 +0200, victor.vde@gmail.com wrote:
+> > > > > /proc/self/mountinfo on Linux v2.6.39-rc1 includes the UUID of ext4
+> > > > > and ext3 mounts, for example:
+> > > > > 
+> > > > > 15 1 8:3 / / rw,noatime uuid:c645234d-9756-4d84-825e-6fe999252a34 - ext4 /dev/sda3 rw,user_xattr,acl,barrier=1,data=ordered
+> > > > > 
+> > > > > It seems the hyphens in the uuid confuse the parser
+> > > > > mnt_parse_mountinfo_line in tab_parse.c of libmount in util-linux.
+> > > > 
+> > > > shouldn't the parser look for " " followed by "-" followed by " " as the
+> > > > field seperator ? 
+> > > > 
+> > > > I am adding Miklos and Ram Pai to CC to check whether the kernel or the libmount 
+> > > > should be fixed ?
+> > > 
+> > > I think libmount should be fixed, though there is always the question
+> > > of backward compatibility.
+> > 
+> >  The parser uses
+> > 
+> > 	rc = sscanf(s,	"%u "		/* (1) id */
+> > 			"%u "		/* (2) parent */
+> > 			"%u:%u "	/* (3) maj:min */
+> > 			"%ms "		/* (4) mountroot */
+> > 			"%ms "		/* (5) target */
+> > 			"%ms"		/* (6) vfs options (fs-independent) */
+> > 			"%*[^-]"	/* (7) optional fields */
+> 
+> So this says, "skip everything up to the first hyphen", even though
+> the rule might be better expressed as "skip all space delimited words
+> up to the first standalone hyphen".  I guess that's not possible to
+> express with a scanf expression, though.
 
-UmVncmV0dGFibHksIHRoaXMgcGF0Y2ggY2FtZSBvdXQgb25seSBpbiBoYWxmLiBQbGVhc2UgZGlz
-cmVnYXJkLCB1cGRhdGVkCnBhdGNoIHdpbGwgYmUgc2VudCBpbnN0YW50bHkuIFNvcnJ5IGZvciBt
-eSBzcGFtbWluZyEKCkJSLApSb2JlcnQKCk9uIEZyaSwgMjAxMS0wNC0wMSBhdCAxMTozMyArMDIw
-MCwgUm9iZXJ0IFJPU0VOR1JFTiB3cm90ZToKPiAicG9zc2libGUgcmVjdXJzaXZlIGxvY2tpbmcg
-ZGV0ZWN0ZWQiLXdhcm5pbmdzIGFyZSBpc3N1ZWQgd2hlbiBhCj4gcmVndWxhdG9yIGhhcyBzcGVj
-aWZpZWQgc3VwcGx5IHJlZ3VsYXRvci4gQm90aCB3aGVuIGVuYWJsaW5nIGFuZAo+IGRpc2FibGlu
-ZyByZWd1bGF0b3JzIHVzZXMgcmVjdXJzaXZlIGNhbGwgY2hhaW5zIGZvciBub3RpZnkgdGhlIHN1
-cHBseQo+IHJlZ3VsYXRvcnMuIFRoaXMgaXMgZHVlIHRvIGxvY2tpbmcgbXV0ZXhlcyBvZiB0aGUg
-c2FtZSBsb2NrIGNsYXNzLAo+IGkuZS4gdGhlIGxvY2tzIHJlc2lkZSBpbiB0aGUgcmVndWxhdG9y
-X2RldiBzdHJ1Y3QuCj4gCj4gU2luY2UgdGhpcyBpcyB2YWxpZCBiZWhhdmlvciBmb3IgdGhlIHJl
-Z3VsYXRvcnMsIHRoaXMgcGF0Y2ggY2hhbmdlcyB0aGUKPiBtdXRleCBsb2NrIGludG8gbmVzdGVk
-LCBhcyBzdWdnZXN0ZWQgaW4gbG9ja2RlcC1kZXNpZ24udHh0Lgo+IAo+IFNpZ25lZC1vZmYtYnk6
-IFJvYmVydCBSb3NlbmdyZW4gPHJvYmVydC5yb3NlbmdyZW5Ac3Rlcmljc3Nvbi5jb20+Cj4gQWNr
-ZWQtYnk6IExpbnVzIFdhbGxlaWogPGxpbnVzLndhbGxlaWpAbGluYXJvLm9yZz4KPiAtLS0KPiAg
-ZHJpdmVycy9yZWd1bGF0b3IvY29yZS5jIHwgICAyMCArKysrKysrKysrKystLS0tLS0tLQo+ICAx
-IGZpbGVzIGNoYW5nZWQsIDEyIGluc2VydGlvbnMoKyksIDggZGVsZXRpb25zKC0pCj4gCj4gZGlm
-ZiAtLWdpdCBhL2RyaXZlcnMvcmVndWxhdG9yL2NvcmUuYyBiL2RyaXZlcnMvcmVndWxhdG9yL2Nv
-cmUuYwo+IGluZGV4IDNmZmM2OTcuLjJhNjZjNmIgMTAwNjQ0Cj4gLS0tIGEvZHJpdmVycy9yZWd1
-bGF0b3IvY29yZS5jCj4gKysrIGIvZHJpdmVycy9yZWd1bGF0b3IvY29yZS5jCj4gQEAgLTg3LDcg
-Kzg3LDcgQEAgc3RhdGljIGludCBfcmVndWxhdG9yX2dldF92b2x0YWdlKHN0cnVjdCByZWd1bGF0
-b3JfZGV2ICpyZGV2KTsKPiAgc3RhdGljIGludCBfcmVndWxhdG9yX2dldF9jdXJyZW50X2xpbWl0
-KHN0cnVjdCByZWd1bGF0b3JfZGV2ICpyZGV2KTsKPiAgc3RhdGljIHVuc2lnbmVkIGludCBfcmVn
-dWxhdG9yX2dldF9tb2RlKHN0cnVjdCByZWd1bGF0b3JfZGV2ICpyZGV2KTsKPiAgc3RhdGljIHZv
-aWQgX25vdGlmaWVyX2NhbGxfY2hhaW4oc3RydWN0IHJlZ3VsYXRvcl9kZXYgKnJkZXYsCj4gLQkJ
-CQkgIHVuc2lnbmVkIGxvbmcgZXZlbnQsIHZvaWQgKmRhdGEpOwo+ICsJCQkJICB1bnNpZ25lZCBs
-b25nIGV2ZW50LCB2b2lkICpkYXRhLCBpbnQgbG9ja19zdWJsZXZlbCk7Cj4gIHN0YXRpYyBpbnQg
-X3JlZ3VsYXRvcl9kb19zZXRfdm9sdGFnZShzdHJ1Y3QgcmVndWxhdG9yX2RldiAqcmRldiwKPiAg
-CQkJCSAgICAgaW50IG1pbl91ViwgaW50IG1heF91Vik7Cj4gIAo+IEBAIC0xNDA3LDcgKzE0MDcs
-NyBAQCBzdGF0aWMgaW50IF9yZWd1bGF0b3JfZGlzYWJsZShzdHJ1Y3QgcmVndWxhdG9yX2RldiAq
-cmRldiwKPiAgCQkJdHJhY2VfcmVndWxhdG9yX2Rpc2FibGVfY29tcGxldGUocmRldl9nZXRfbmFt
-ZShyZGV2KSk7Cj4gIAo+ICAJCQlfbm90aWZpZXJfY2FsbF9jaGFpbihyZGV2LCBSRUdVTEFUT1Jf
-RVZFTlRfRElTQUJMRSwKPiAtCQkJCQkgICAgIE5VTEwpOwo+ICsJCQkJCSAgICAgTlVMTCwgMCk7
-Cj4gIAkJfQo+ICAKPiAgCQkvKiBkZWNyZWFzZSBvdXIgc3VwcGxpZXMgcmVmIGNvdW50IGFuZCBk
-aXNhYmxlIGlmIHJlcXVpcmVkICovCj4gQEAgLTE0NzcsNyArMTQ3Nyw3IEBAIHN0YXRpYyBpbnQg
-X3JlZ3VsYXRvcl9mb3JjZV9kaXNhYmxlKHN0cnVjdCByZWd1bGF0b3JfZGV2ICpyZGV2LAo+ICAJ
-CX0KPiAgCQkvKiBub3RpZnkgb3RoZXIgY29uc3VtZXJzIHRoYXQgcG93ZXIgaGFzIGJlZW4gZm9y
-Y2VkIG9mZiAqLwo+ICAJCV9ub3RpZmllcl9jYWxsX2NoYWluKHJkZXYsIFJFR1VMQVRPUl9FVkVO
-VF9GT1JDRV9ESVNBQkxFIHwKPiAtCQkJUkVHVUxBVE9SX0VWRU5UX0RJU0FCTEUsIE5VTEwpOwo+
-ICsJCQlSRUdVTEFUT1JfRVZFTlRfRElTQUJMRSwgTlVMTCwgMCk7Cj4gIAl9Cj4gIAo+ICAJLyog
-ZGVjcmVhc2Ugb3VyIHN1cHBsaWVzIHJlZiBjb3VudCBhbmQgZGlzYWJsZSBpZiByZXF1aXJlZCAq
-Lwo+IEBAIC0xNjk5LDcgKzE2OTksNyBAQCBzdGF0aWMgaW50IF9yZWd1bGF0b3JfZG9fc2V0X3Zv
-bHRhZ2Uoc3RydWN0IHJlZ3VsYXRvcl9kZXYgKnJkZXYsCj4gIAo+ICAJaWYgKHJldCA9PSAwKQo+
-ICAJCV9ub3RpZmllcl9jYWxsX2NoYWluKHJkZXYsIFJFR1VMQVRPUl9FVkVOVF9WT0xUQUdFX0NI
-QU5HRSwKPiAtCQkJCSAgICAgTlVMTCk7Cj4gKwkJCQkgICAgIE5VTEwsIDApOwo+ICAKPiAgCXRy
-YWNlX3JlZ3VsYXRvcl9zZXRfdm9sdGFnZV9jb21wbGV0ZShyZGV2X2dldF9uYW1lKHJkZXYpLCBz
-ZWxlY3Rvcik7Cj4gIAo+IEBAIC0yMTY3LDE5ICsyMTY3LDIzIEBAIEVYUE9SVF9TWU1CT0xfR1BM
-KHJlZ3VsYXRvcl91bnJlZ2lzdGVyX25vdGlmaWVyKTsKPiAgCj4gIC8qIG5vdGlmeSByZWd1bGF0
-b3IgY29uc3VtZXJzIGFuZCBkb3duc3RyZWFtIHJlZ3VsYXRvciBjb25zdW1lcnMuCj4gICAqIE5v
-dGUgbXV0ZXggbXVzdCBiZSBoZWxkIGJ5IGNhbGxlci4KPiArICogbG9ja19zdWJsZXZlbCBzaG91
-bGQgYWx3YXlzIGJlIDAsIG9ubHkgdXNlZCBmb3IgcmVjdXJzaXZlIGNhbGxzLgo+ICAgKi8KPiAg
-c3RhdGljIHZvaWQgX25vdGlmaWVyX2NhbGxfY2hhaW4oc3RydWN0IHJlZ3VsYXRvcl9kZXYgKnJk
-ZXYsCj4gLQkJCQkgIHVuc2lnbmVkIGxvbmcgZXZlbnQsIHZvaWQgKmRhdGEpCj4gKwkJCQkgIHVu
-c2lnbmVkIGxvbmcgZXZlbnQsIHZvaWQgKmRhdGEsIGludCBsb2NrX3N1YmxldmVsKQo+ICB7Cj4g
-IAlzdHJ1Y3QgcmVndWxhdG9yX2RldiAqX3JkZXY7Cj4gIAo+ICAJLyogY2FsbCByZGV2IGNoYWlu
-IGZpcnN0ICovCj4gIAlibG9ja2luZ19ub3RpZmllcl9jYWxsX2NoYWluKCZyZGV2LT5ub3RpZmll
-ciwgZXZlbnQsIE5VTEwpOwo+ICAKPiArCS8qIGluY3JlYXNlIHN1YmxldmVsIGJlZm9yZSBzdGVw
-cGluZyBpbnRvIG5lc3RlZCByZWd1bGF0b3JzICovCj4gKwlsb2NrX3N1YmxldmVsKys7Cj4gKwo+
-ICAJLyogbm93IG5vdGlmeSByZWd1bGF0b3Igd2Ugc3VwcGx5ICovCj4gIAlsaXN0X2Zvcl9lYWNo
-X2VudHJ5KF9yZGV2LCAmcmRldi0+c3VwcGx5X2xpc3QsIHNsaXN0KSB7Cj4gLQkJbXV0ZXhfbG9j
-aygmX3JkZXYtPm11dGV4KTsKPiAtCQlfbm90aWZpZXJfY2FsbF9jaGFpbihfcmRldiwgZXZlbnQs
-IGRhdGEpOwo+ICsJCW11dGV4X2xvY2tfbmVzdGVkKCZfcmRldi0+bXV0ZXgsIGxvY2tfc3VibGV2
-ZWwpOwo+ICsJCV9ub3RpZmllcl9jYWxsX2NoYWluKF9yZGV2LCBldmVudCwgZGF0YSwgbG9ja19z
-dWJsZXZlbCk7Cj4gIAkJbXV0ZXhfdW5sb2NrKCZfcmRldi0+bXV0ZXgpOwo+ICAJfQo+ICB9Cj4g
-QEAgLTIzMzMsNyArMjMzNyw3IEBAIEVYUE9SVF9TWU1CT0xfR1BMKHJlZ3VsYXRvcl9idWxrX2Zy
-ZWUpOwo+ICBpbnQgcmVndWxhdG9yX25vdGlmaWVyX2NhbGxfY2hhaW4oc3RydWN0IHJlZ3VsYXRv
-cl9kZXYgKnJkZXYsCj4gIAkJCQkgIHVuc2lnbmVkIGxvbmcgZXZlbnQsIHZvaWQgKmRhdGEpCj4g
-IHsKPiAtCV9ub3RpZmllcl9jYWxsX2NoYWluKHJkZXYsIGV2ZW50LCBkYXRhKTsKPiArCV9ub3Rp
-Zmllcl9jYWxsX2NoYWluKHJkZXYsIGV2ZW50LCBkYXRhLCAwKTsKPiAgCXJldHVybiBOT1RJRllf
-RE9ORTsKPiAgCj4gIH0KPiAtLSAKPiAxLjcuNC4xCj4gCgo=
+ Yes, I'll probably use two sscanf(), %n and strstr(), something like:
 
---_000_CEE6BB42CAD6E947908279175AF8470A0C79DED455EXDCVYMBSTM00_
-Content-Disposition: attachment; filename="winmail.dat"
-Content-Transfer-Encoding: base64
-Content-Type: application/ms-tnef; name="winmail.dat"
+	rc = sscanf(s,	"%u "		/* (1) id */
+			"%u "		/* (2) parent */
+			"%u:%u "	/* (3) maj:min */
+			"%ms "		/* (4) mountroot */
+			"%ms "		/* (5) target */
+			"%ms"		/* (6) vfs options (fs-independent) */
+			"%n",
 
-eJ8+IoZDAQaQCAAEAAAAAAABAAEAAQeQBgAIAAAA5AQAAAAAAADoAAEJgAEAIQAAAEM5QzVGMDFG
-RUU4QUNCNDQ5NTI2MzY4MjNEMEI1NURBAFIHAQ2ABAACAAAAAgACAAEFgAMADgAAANsHBAABAAoA
-AwAqAAUAIwEBIIADAA4AAADbBwQAAQAKAAMAKgAFACMBAQiABwAYAAAASVBNLk1pY3Jvc29mdCBN
-YWlsLk5vdGUAMQgBBIABADYAAABSZTogUmU6IFtQQVRDSF0gcmVndWxhdG9yOiByZWN1cnNpdmUg
-bG9ja2luZyBkZXRlY3RlZADaEgEDkAYAYBEAACwAAAACAX8AAQAAAEkAAAA8Q0VFNkJCNDJDQUQ2
-RTk0NzkwODI3OTE3NUFGODQ3MEEwQzc5REVENDU1QEVYRENWWU1CU1RNMDA2LkVRMVNUTS5sb2Nh
-bD4AAAAAAgEJEAEAAABJCAAARQgAADsUAABMWkZ11mTHBGEACmZiaWQEAABjY8BwZzEyNTIA/gND
-8HRleHQB9wKkA+MCAARjaArAc2V0MCDvB20CgwBQEU0yCoAGtAKAln0KgAjIOwliMTkOwL8JwxZy
-CjIWcQKAFWIqCbBzCfAEkGF0BbIOUANgc6JvAYAgRXgRwW4YMF0GUnYEkBe2AhByAMB0fQhQbhox
-ECAFwAWgG2RkmiADUiAQIheyXHYIkOR3awuAZDUdUwTwB0ANF3AwCnEX8mJrbWsGcwGQACAgQk1f
-QuBFR0lOfQr7C/IBMDh7UmUJwQJAAaBseaosHMBoBAAgCrB0EcD1G9BhB4AgCGAFQAIgIiAKIAuA
-IBHQbGYuIGpQHnBhEgAgDeEJcGdjCxEiQHVwZBiACYBcumwLgGUKgCK0A/BsAyD+YhngEgACMCPh
-H2ECMCIgNSRgUwWwciPQGuEgbSUj0HMKsG1tC4BnIeMmFSYVQlIsJhUIACcw6wAgKcxPA6BGBRAi
-QAHQIDExLTA0LUAxIAUYgCAtIDozMyArOjAB0DAiQCtEB/BPU/BFTkdSL1Am0ANgECDCOiYVPiAi
-cBkQAJB3AmAZ4AlwYwhwAJAaMCD1CQBjHaFnJOASEAWQHEH4Ii13CsADABnABCAKwM8Z4AQBClAc
-YHdoCfAtoPswJyUhdQtgGJIR0AQgKTDfBZAGkAiQHGA0AHALUCPQ+zVHJGBCL+AmwTRiCfAiAf8y
-MgBwJgYwkA3hOKU1RwQg/nUSAAQgMVgeUQMgEcEnsf0os24v4AaQI9AiYCdBNtO3NL8R8CRgVCJy
-IoFkClD1HMBvMedtI3AQMAeRGTD/PXQjIjHyG9ALYAQQKsYwkPhpLmUkYD2CMfI7UgCQrwEAI+I9
-gjVHXwEAdidQaHRydTKwLjAnMCdT7QuAY0ARP4V2B0AN0Cch/xHQHWAFsSjCRPtCsCJbGaP/BCA9
-gTAnQONCFAuAQDEYUM8fYAmAIkA18nVnS6EcQmcj8THyAQBwLQEAAJBnfG4uDNBGb0dzT+AJgC3B
-GTBmLWJ5Oi6nGRC3CfAJwQOgPANgK2IuGQFtUwRATcEFEGMEEAIgLukFoG0+MCdBMhBRsVIiJkwL
-gDsgIFc8IWVpbmpTYCYhOyAuMxBXM0BTJiEKwG8uBbBnVXgtn1nAMCck4AUQGjFzLzVHxi8FoUOA
-YyB8WnAs8f8uMFyZWcFdU1n4LZA2cB5w/wQgGZQlcQ6QJ6IbgUkwAIDoKCspIkA4MmEecGAEPC0p
-UF8k4QEgWbFnadkFQGEvWp9bpmJjb1uWF0LYHcBM0TMBIGM2OYA3Li4yYTY2Z8DGYi3QHqA2NDRZ
-OmNPP2YPMJBckWT/at8wkEBA4VmwODcsNy4wbrNucc8fYT0wXABNUSBfRTgYMLh0X3YG8AGQGDAo
-RhTtRS0qCyBF4CkWIFoHb5+/cKcxcVMxcRAmIClwdHGv+3K/c8p1AIFRknR/cQEEYt92j3efc8px
-MEixXz0TCJH/daA8IXWgPHJ7b3x4QshZ4P8Mk4JYXDF5ZwkAMkFF4CdxqyJAfkMqJcFhfRkrgj/f
-g0+EXiJAefIx8l80ADERzRowbH0fdG9kb4nQcQ9/gE+BWwMwhi+QwnnyKXFf7HVWiTQAwHiRkYpq
-bev4MTQwbsOUFW9vRVc54/+NX45vj38cwBhwR9CV75pw91VBC1AygSh80nDjOJAHgP2cMymSj5kf
-fo9/k4FDB/ABIABVTEFUT1JfBEVWL1BUX0RJU3BBQkxFgY+P71wxTr2hgEyFX6PPpNYiQDCde52G
-plwgQJ2vqMkvKjJh/wUAJKMIYTa0CJA7UkFwBaB/eWBjMR3AOcUzwUFwCXBxrHVpCXF8sC+TTTeU
-Rf+wI5UPRVYa4Zphlp+Xr5i//6lOquk9FTfxG7Q0AAeAOvH3ImAtsTDAdxuxNeInMDRx/7KDHGBR
-4a8Ktaifr6C/ocfyRqHAQ0WiRlwQot+GxP+hX6JlpQ/Av8HPwtan/6lPf8crq2+sf62Prp+TtWfQ
-Of+UU85UsP+MD40ftB/IL8eFx8yRnDASECA9PcbBu08HvF+9b8U5Vk9MVEHiR79gQ0hBL2Civ6av
-/8Mf20+nf9Ovmf9FodD5m6//nLoiQBIAHnAysAWw329uNr4yzkBuwBZwLjDmwzIuIDFucUVYUMVQ
-ojBTWYRNQtmwX0dQTNUh/0VWeWAlIQQAG6HW9+U/WkP/t5g1SLiYy9O5kCfBygEcsP/s/z8xWfh8
-sAewL+FMlUDg9x9gJyI0YGxIwSPQPBIEkN9QSGwgybCJmydQaAhg8oH7B0AzEHm6AsbAIkAjozsh
-/xxhBbE7fPBMuzl9337v0c//0t/bH4cPiB+FQNz//m//f/+Ir4m61ckQYMcc+698g3BA/0XR6w/J
-GjwTfNI8VF6BEfC/lcC7LicgMfX6X/tiJnzS/C0+DlYiQAPV3J3rqAGz/8mSR7HKBPR39eAowSdB
-G6D/NuAyMk1ZOmqvGRKkiZtckPfc6gpPPRB37H8m0D2mDK/3MeDqEbJyXySgXvAeECeA/SiQKAkz
-IkAPlTbEdiHPYPvkkR2SKQa6/edA1HYgMgH/D4AJMw/gQOOKaSGoDk/7Yv8e1QPVhR8hz4nAFaQi
-7EqQ/4mfJ88lHyYvJzMqz9XPIia/eWAiryO6x5/H6uaDMzYg327SNhGwtegP6RliG3AvwPpmyzBl
-imqVokU4LR/7f//8j55/An8DjwDNIO8s/9f5fybfEllDn0SvBKTG38shdAN1wAwwTk9USUZZ8aJA
-T05FEW807Wmh8GfEMS5n8DQuMWGO8GUMfX3wsFCgAAAAHwBCAAEAAAAiAAAAUgBvAGIAZQByAHQA
-IABSAE8AUwBFAE4ARwBSAEUATgAAAAAAHwBlAAEAAABAAAAAcgBvAGIAZQByAHQALgByAG8AcwBl
-AG4AZwByAGUAbgBAAHMAdABlAHIAaQBjAHMAcwBvAG4ALgBjAG8AbQAAAB8AZAABAAAACgAAAFMA
-TQBUAFAAAAAAAAIBQQABAAAAhAAAAAAAAACBKx+kvqMQGZ1uAN0BD1QCAAAAgFIAbwBiAGUAcgB0
-ACAAUgBPAFMARQBOAEcAUgBFAE4AAABTAE0AVABQAAAAcgBvAGIAZQByAHQALgByAG8AcwBlAG4A
-ZwByAGUAbgBAAHMAdABlAHIAaQBjAHMAcwBvAG4ALgBjAG8AbQAAAB8AGgwBAAAAIgAAAFIAbwBi
-AGUAcgB0ACAAUgBPAFMARQBOAEcAUgBFAE4AAAAAAB8AHwwBAAAAQAAAAHIAbwBiAGUAcgB0AC4A
-cgBvAHMAZQBuAGcAcgBlAG4AQABzAHQAZQByAGkAYwBzAHMAbwBuAC4AYwBvAG0AAAAfAB4MAQAA
-AAoAAABTAE0AVABQAAAAAAACARkMAQAAAIQAAAAAAAAAgSsfpL6jEBmdbgDdAQ9UAgAAAIBSAG8A
-YgBlAHIAdAAgAFIATwBTAEUATgBHAFIARQBOAAAAUwBNAFQAUAAAAHIAbwBiAGUAcgB0AC4AcgBv
-AHMAZQBuAGcAcgBlAG4AQABzAHQAZQByAGkAYwBzAHMAbwBuAC4AYwBvAG0AAAALAEA6AQAAAB8A
-GgABAAAAEgAAAEkAUABNAC4ATgBvAHQAZQAAAAAAAwDxPwkEAAALAEA6AQAAAAMA/T/kBAAAAgEL
-MAEAAAAQAAAAycXwH+6Ky0SVJjaCPQtV2gMAFwABAAAAQAA5AADTYBRU8MsBQAAIMA8liBRU8MsB
-AwA2AAAAAAAfAHAAAQAAAGQAAABSAGUAOgAgAFsAUABBAFQAQwBIAF0AIAByAGUAZwB1AGwAYQB0
-AG8AcgA6ACAAcgBlAGMAdQByAHMAaQB2AGUAIABsAG8AYwBrAGkAbgBnACAAZABlAHQAZQBjAHQA
-ZQBkAAAAAgFxAAEAAAAWAAAAAcvwVBSI4paAU+ldRvqZ+NREHH+0ZwAAHwA1EAEAAACSAAAAPABD
-AEUARQA2AEIAQgA0ADIAQwBBAEQANgBFADkANAA3ADkAMAA4ADIANwA5ADEANwA1AEEARgA4ADQA
-NwAwAEEAMABDADcAOQBEAEUARAA0ADUANQBAAEUAWABEAEMAVgBZAE0AQgBTAFQATQAwADAANgAu
-AEUAUQAxAFMAVABNAC4AbABvAGMAYQBsAD4AAAAAAB8AORABAAAAiAAAADwAMQAzADAAMQA2ADUA
-MAA0ADEAMQAtADEANwA3ADYAMgAtADEALQBnAGkAdAAtAHMAZQBuAGQALQBlAG0AYQBpAGwALQBy
-AG8AYgBlAHIAdAAuAHIAbwBzAGUAbgBnAHIAZQBuAEAAcwB0AGUAcgBpAGMAcwBzAG8AbgAuAGMA
-bwBtAD4AAAAfAEIQAQAAAIgAAAA8ADEAMwAwADEANgA1ADAANAAxADEALQAxADcANwA2ADIALQAx
-AC0AZwBpAHQALQBzAGUAbgBkAC0AZQBtAGEAaQBsAC0AcgBvAGIAZQByAHQALgByAG8AcwBlAG4A
-ZwByAGUAbgBAAHMAdABlAHIAaQBjAHMAcwBvAG4ALgBjAG8AbQA+AAAACwDyEAEAAAAfAPMQAQAA
-AIAAAABSAGUAJQAzAEEAIABSAGUAJQAzAEEAIABbAFAAQQBUAEMASABdACAAcgBlAGcAdQBsAGEA
-dABvAHIAJQAzAEEAIAByAGUAYwB1AHIAcwBpAHYAZQAgAGwAbwBjAGsAaQBuAGcAIABkAGUAdABl
-AGMAdABlAGQALgBFAE0ATAAAAAsA9BAAAAAACwD1EAAAAAALAPYQAAAAAEAABzDRJ0oUVPDLAQMA
-3j/p/QAAHwD4PwEAAAAiAAAAUgBvAGIAZQByAHQAIABSAE8AUwBFAE4ARwBSAEUATgAAAAAAAgH5
-PwEAAAB4AAAAAAAAANynQMjAQhAatLkIACsv4YIBAAAAAAAAAC9PPU9SR0FOSVpBVElPTi9PVT1F
-WENIQU5HRSBBRE1JTklTVFJBVElWRSBHUk9VUCAoRllESUJPSEYyM1NQRExUKS9DTj1SRUNJUElF
-TlRTL0NOPUVST0JST1MAHwD6PwEAAAAiAAAAUgBvAGIAZQByAHQAIABSAE8AUwBFAE4ARwBSAEUA
-TgAAAAAAAgH7PwEAAAB4AAAAAAAAANynQMjAQhAatLkIACsv4YIBAAAAAAAAAC9PPU9SR0FOSVpB
-VElPTi9PVT1FWENIQU5HRSBBRE1JTklTVFJBVElWRSBHUk9VUCAoRllESUJPSEYyM1NQRExUKS9D
-Tj1SRUNJUElFTlRTL0NOPUVST0JST1MAAwAZQAAAAAADABpAAAAAAAMADTT5PwAAAgEUNAEAAAAQ
-AAAAVJShwCl/EBulhwgAKyolFx8APQABAAAACgAAAFIAZQA6ACAAAAAAAB8ANwABAAAAbAAAAFIA
-ZQA6ACAAUgBlADoAIABbAFAAQQBUAEMASABdACAAcgBlAGcAdQBsAGEAdABvAHIAOgAgAHIAZQBj
-AHUAcgBzAGkAdgBlACAAbABvAGMAawBpAG4AZwAgAGQAZQB0AGUAYwB0AGUAZAAAAB8AAICGAwIA
-AAAAAMAAAAAAAABGAQAAAB4AAABhAGMAYwBlAHAAdABsAGEAbgBnAHUAYQBnAGUAAAAAAAEAAAAM
-AAAAZQBuAC0AVQBTAAAAHwAAgIYDAgAAAAAAwAAAAAAAAEYBAAAAIAAAAHgALQBtAHMALQBoAGEA
-cwAtAGEAdAB0AGEAYwBoAAAAAQAAAAIAAAAAAAAAWcI=
+			&id,
+			&parent,
+			&maj, &min,
+			&root,
+			&target,
+			&vfs_optstr,
+			&end);
 
---_000_CEE6BB42CAD6E947908279175AF8470A0C79DED455EXDCVYMBSTM00_--
+	s += end;
+
+	/* (7) optional fields, terminated by " - " */
+	p = strstr(s, " - ");
+	if (p)
+		s = p + 3;
+
+	rc += sscanf(s,	"%ms "		/* (8) FS type */
+			"%ms "		/* (9) source */
+			"%ms",		/* (10) fs options (fs specific) */
+
+			&fstype,
+			&src,
+			&fs_optstr);
+
+
+...or anyone has a better idea?
+
+> >  It calls unmangle_string() for all fields, so all sequences should be
+> >  decoded.
+> 
+> Okay, so the kernel can simply escape the troublesome hyphens, which
+> would make the human parsing of /proc/pid/mountinfo more difficult but
+> at least would fix compatibility with util-linux's parser.
+
+Hmm.. IMHO it will be better to fix the parsers in libmount and systemd. The 
+both projects are young, nobody will be surprised with bugs :-)
+
+I think the example in Documentation/filesystems/proc.txt is pretty
+obvious, the separator is an extra field with " - ".
+
+    Karel
+
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
