@@ -1,138 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab1DANyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:54:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59908 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753792Ab1DANym (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 09:54:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Date: Fri, 1 Apr 2011 15:54:07 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: David Brown <davidb@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>, david@lang.hm,
-        Tony Lindgren <tony@atomide.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <8ya39m2mv65.fsf@huya.qualcomm.com> <20110401074519.GC7594@elte.hu>
-In-Reply-To: <20110401074519.GC7594@elte.hu>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1756745Ab1DAN5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 09:57:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:28294 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754340Ab1DAN5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 09:57:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,282,1299484800"; 
+   d="scan'208";a="412326816"
+Subject: Re: [RFC PATCH] perf report: add sort by file lines
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "2nddept-manager@sdl.hitachi.co.jp" 
+	<2nddept-manager@sdl.hitachi.co.jp>
+In-Reply-To: <1301665752.4859.678.camel@twins>
+References: <1301391136.14111.98.camel@minggr.sh.intel.com>
+	 <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost>
+	 <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop>
+	 <1301418533.2250.419.camel@laptop>
+	 <20110329174556.GC24129@ghostprotocols.net> <4D92818A.8020405@hitachi.com>
+	 <1301561155.14111.288.camel@minggr.sh.intel.com>
+	 <1301580117.4859.286.camel@twins>  <1301582056.2271.15.camel@localhost>
+	 <1301588922.2250.498.camel@laptop>  <4D95AC94.1080303@hitachi.com>
+	 <1301655903.4859.494.camel@twins>  <1301664130.2399.10.camel@localhost>
+	 <1301665752.4859.678.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Apr 2011 21:57:37 +0800
+Message-Id: <1301666257.2399.12.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104011554.07924.arnd@arndb.de>
-X-Provags-ID: V02:K0:jpVkdsirNct/EO2beuIJP9FSj5PAEUmAOpIqn/YZsWK
- nW5SOc+Cj/k4+5W+kN3LTAijEzMFNISJsRzQb0JI0anmYDtfPd
- AE7Go11rHZL/I4+6GBZ8RkVrSA1eMxS4X4xdQJMAVffcirA0io
- Jfyu56ePc2VbJRfiAQIUb6tAbNMs/zcN+e81tXa0yMDZvkAAIX
- dBhxDREpqigJ34GF6e7eA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 April 2011, Ingo Molnar wrote:
-> IMO the right answer is what Linus and Thomas outlined:
+On Fri, 2011-04-01 at 21:49 +0800, Peter Zijlstra wrote:
+> On Fri, 2011-04-01 at 21:22 +0800, Lin Ming wrote:
+> > On Fri, 2011-04-01 at 19:05 +0800, Peter Zijlstra wrote:
+> > > On Fri, 2011-04-01 at 19:44 +0900, Masami Hiramatsu wrote:
+> > > > E.g. an indirect jump makes it hard to find where it jumps to.
+> > > 
+> > > Yes indirect jumps are 'interesting', is there anything in the debug
+> > > info that will help us out with the possible target sites?
+> > > 
+> > > Also what generates indirect jumps, switch() stmts? Indirect function
+> > > call that get optimized might also be, but hopefully DWARF would tell us
+> > > about that and allow us to know the state right after the jump.
+> > 
+> > I'm not sure.
+> > 
+> > But I'm thinking another way to trace the register assignment by LBR
+> > records.
+> > 
+> > LBR will introduce overhead, but it can tell us all the branches,
+> > including the indirect jump.
 > 
->    1) provide a small number of clean examples and clean abstractions
->    2) to not pull new crap from that point on
->    3) do this gradually but consistently
 > 
-> I.e. make all your requirements technical and actionable - avoid sweeping, 
-> impossible to meet requirements. Do not require people to clean up all of the 
-> existing mess straight away (they cannot realistically do it), do not summarily 
-> block the flow of patches, but be firm about drawing a line in the sand and be 
-> firm about not introducing new mess in a gradually growing list of well-chosen 
-> areas of focus.
-> 
-> Rinse, repeat.
+> Yeah, but it would be nice to see how far we can get without using extra
+> information, we can always try and complement stuff later.
 
-I believe getting to point 1 is the hard part here. There are a lot of things
-that are wrong with the mach-* (and also plat-*) implementations, and I don't
-think we have one today that can really serve as an example. Most decisions
-made in there made a lot of sense when they were introduced, and declaring
-code that was perfectly acceptable yesterday to be unacceptable crap today
-is not going to be met with much understanding by the someone who just
-wants to add support for one more board to 100 already existing ones in the
-same SoC family.
+Well, let me start working out a prototype.
 
-I would actually suggest a different much more radical start: Fork the way
-that platforms are managed today, and start an alternative way of setting
-up boards and devices together with the proven ARM core kernel infrastructure,
-based on these observations (please correct me if some of them they don't make
-sense):
+Thanks for all the comments from your guys :)
 
-1. The core arch code is not a problem (Russell does a great job here)
-2. The platform specific code contains a lot of crap that doesn't belong there
-   (not enough reviewers to push back on crap)
-3. The amount of crap in platform specfic files is growing exponentially,
-   despite the best efforts of a handful of people to clean it up.
-4. Having one source file per board does not scale any more.
-5. Discoverable hardware would solve this, but is not going to happen
-   in practice.
-6. Board firmware would not solve this and is usually not present.
-7. Boot loaders can not be trusted to pass valid information
-8. Device tree blobs can solve a lot of the problems, and nobody has
-   come up with a better solution.
-9. All interesting work is going into a handful of platforms, all of which
-   are ARMv7 based.
-10. We do not want to discontinue support for old boards that work fine.
-11. Massive changes to existing platforms would cause massive breakage.
-12. Supporting many different boards with a single kernel binary is a
-    useful goal.
-13. Infrastructure code should be cross-platform, not duplicated across
-    platforms.
-14. 32 bit ARM is hitting the wall in the next years (Cortex-A15 is
-    actually adding PAE support, which has failed to solve this on
-    other architectures).
-15. We need to solve the platform problem before 64 bit support comes
-    and adds another dimension to the complexity.
 
-Based on these assumptions, my preferred strategy would be to a new
-mach-nocrap directory with a documented set of rules (to be adapted when
-necessary):
-
-* Strictly no crap
- * No board files
- * No hardcoded memory maps
- * No lists of interrupts and GPIOs
-* All infrastructure added must be portable to all ARMv7 based SoCs.
-  (ARMv6 can be added later)
-* 64 bit safe code only.
-* SMP safe code only.
-* All board specific information must come from a device tree and
-  be run-time detected.
-* Must use the same device drivers as existing platforms
-* Should share platform drivers (interrupt controller, gpio, timer, ...)
-  with existing platforms where appropriate.
-* Code quality takes priority over stability in mach-nocrap, but must not
-  break other platforms.
-
-Until we have something working there, I think we should still generally
-allow new code to the existing platforms, and even new platforms to be
-added, while trying to keep the quality as high as possible but without
-changing the rules for them or doing any major treewide reworks.
-
-Once the mach-nocrap approach has turned into something usable, we can
-proceed on three fronts:
-1. delete actively maintained boards from the other platforms once they
-   are no longer needed there
-2. generalize concepts from mach-nocrap by applying them to all boards,
-   similar to the cleanup work that people have always been doing.
-3. gradually make the rules for adding new code in other platforms stricter,
-   up to the point where they are bugfix only.
-
-> If companies do not 'bother to push upstream', then management will eventually 
-> notice negative economic consequences:
-> 
-> ...
-
-Good points, I fully agree with these. I also think that the SoC companies
-are actually understanding this nowadays, and that is exactly the reason
-why we see so much code getting pushed in.
-
-	Arnd
