@@ -1,51 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab1DAAmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 20:42:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48000 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180Ab1DAAmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 20:42:03 -0400
-Date: Thu, 31 Mar 2011 20:34:50 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Josef Bacik <josef@redhat.com>, Sunil Mushran <sunil.mushran@oracle.com>,
-        Tristan Ye <tristan.ye@oracle.com>, ocfs2-devel@oss.oracle.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, chris.mason@oracle.com, tm@tao.ma
-Subject: Re: [PATCH 1/3] VFS/ioctl: Add punching-hole support to ioctl().
-Message-ID: <20110401003450.GD7484@dhcp231-156.rdu.redhat.com>
-References: <1301556810-8438-1-git-send-email-tristan.ye@oracle.com> <4D94EEC3.2030206@oracle.com> <20110331225618.GB7484@dhcp231-156.rdu.redhat.com> <20110331234454.GB18808@noexit>
+	id S1753017Ab1DAApN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 20:45:13 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:33588 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751860Ab1DAApM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 20:45:12 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Mar 2011 20:45:12 EDT
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Michael Sundius <msundius@cisco.com>, David VomLehn <dvomlehn@cisco.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andy Whitcroft <apw@shadowen.org>, Jon Fraser <jfraser@broadcom.com>,
+        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>,
+        <stable@kernel.org>
+Subject: [PATCH v2] MIPS: Kernel crashes on boot with SPARSEMEM + HIGHMEM enabled
+Date: Thu, 31 Mar 2011 17:27:07 -0700
+Message-Id: <c300b67a7a723369872c0b9a023d0b2e@localhost>
+User-Agent: vim 7.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110331234454.GB18808@noexit>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 04:44:55PM -0700, Joel Becker wrote:
-> On Thu, Mar 31, 2011 at 06:56:18PM -0400, Josef Bacik wrote:
-> > On Thu, Mar 31, 2011 at 02:14:43PM -0700, Sunil Mushran wrote:
-> > > Frankly I see no point extending the ioctl interface when we have
-> > > a syscall interface.
-> > >
-> > 
-> > I'd even go so far as to say we could probably axe the xfs and ocfs2 ioctls
-> > since we have the fallocate interface :).  Thanks,
-> 
-> 	These ioctls are in long use.  Granted, it is for the small
-> subset of users that know xfs and ocfs2 can do this, but still.
-> <venkman>Breaking userspace is *bad*.</venkman>
+From: Michael Sundius <msundius@cisco.com>
 
-Yeah I wasn't serious, though I do wish there was a way to mark these sort of
-interfaces deprecated to give us a path to retire old interfaces.
+Fix 3 problems in the MIPS SPARSEMEM implementation:
 
-> 	More interesting would be to bring the ioctls up to generic code
-> and have them backended by fallocate.  I'm not sure they map without
-> looking deeper, but it's at least an idea.
-> 
+1) mem_init() sets/clears PG_reserved on all pages in the HIGHMEM range
+without checking to see whether the page descriptor actually exists.
 
-I just did a cursory look and it seems like that would work out ok.  Thanks,
+2) bootmem_init() never calls memory_present() on HIGHMEM pages, so
+page descriptors are never created for them if SPARSEMEM is enabled.
 
-Josef
+3) bootmem_init() calls memory_present() on lowmem pages before bootmem
+is fully set up.  This is bad because memory_present() can allocate
+bootmem in some circumstances (e.g. if SPARSEMEM_EXTREME ever got
+enabled).
+
+Signed-off-by: Michael Sundius <msundius@cisco.com>
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Cc: stable@kernel.org
+---
+ arch/mips/kernel/setup.c |   18 +++++++++++++++++-
+ arch/mips/mm/init.c      |    3 +++
+ 2 files changed, 20 insertions(+), 1 deletions(-)
+
+diff --git a/arch/mips/kernel/setup.c b/arch/mips/kernel/setup.c
+index 8ad1d56..1f9f902 100644
+--- a/arch/mips/kernel/setup.c
++++ b/arch/mips/kernel/setup.c
+@@ -390,7 +390,6 @@ static void __init bootmem_init(void)
+ 
+ 		/* Register lowmem ranges */
+ 		free_bootmem(PFN_PHYS(start), size << PAGE_SHIFT);
+-		memory_present(0, start, end);
+ 	}
+ 
+ 	/*
+@@ -402,6 +401,23 @@ static void __init bootmem_init(void)
+ 	 * Reserve initrd memory if needed.
+ 	 */
+ 	finalize_initrd();
++
++	/*
++	 * Call memory_present() on all valid ranges, for SPARSEMEM.
++	 * This must be done after setting up bootmem, since memory_present()
++	 * may allocate bootmem.
++	 */
++	for (i = 0; i < boot_mem_map.nr_map; i++) {
++		unsigned long start, end;
++
++		if (boot_mem_map.map[i].type != BOOT_MEM_RAM)
++			continue;
++
++		start = PFN_UP(boot_mem_map.map[i].addr);
++		end   = PFN_DOWN(boot_mem_map.map[i].addr
++				    + boot_mem_map.map[i].size);
++		memory_present(0, start, end);
++	}
+ }
+ 
+ #endif	/* CONFIG_SGI_IP27 */
+diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
+index 279599e..78a4cf2 100644
+--- a/arch/mips/mm/init.c
++++ b/arch/mips/mm/init.c
+@@ -392,6 +392,9 @@ void __init mem_init(void)
+ 	for (tmp = highstart_pfn; tmp < highend_pfn; tmp++) {
+ 		struct page *page = pfn_to_page(tmp);
+ 
++		if (!pfn_valid(tmp))
++			continue;
++
+ 		if (!page_is_ram(tmp)) {
+ 			SetPageReserved(page);
+ 			continue;
+-- 
+1.7.4.2
