@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab1DAGle (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 02:41:34 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:45590 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754633Ab1DAGlb (ORCPT
+	id S1754906Ab1DAGlk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 02:41:40 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38191 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754633Ab1DAGli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 02:41:31 -0400
+	Fri, 1 Apr 2011 02:41:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=hWyaBmPasSyMT3QrlFpPurR0S+11WvnvIhdHUCuzq6uLR/ARI/WRZ/MKC6r8Z10avd
-         n4XZrA9Ax3T+G0BT4C2nUOH3flBtj/pARuVH60sOqyOYz0JXyIIOY3tolfNqfdC922pD
-         Ph/2dXmBCvurDGb8f6ZCOEp+FxcR0JQuH1Efo=
+        b=ZWBJqZQafwZ0ynsFIbmo7PjTb2z/GQ/hVUwmGb8twzSiHOhzIfe+J9paK0Ni8z5B6G
+         w+cRQWcxhHUXX/mPlAwIBXKc62T3Zzhgb9R8bDQJLku4K8Gi4tWWz4lEcoJ+mNIhHsDg
+         wi93j0sqxUiYQfW+yvPClx/Lj9bgZ/hSG+s1Y=
 From: "Cho, Yu-Chen" <acho@novell.com>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, segooon@gmail.com, huajun.li.lee@gmail.com,
         kkatuev@gmail.com, devel@driverdev.osuosl.org, jlee@novell.com,
         acho@novell.com
-Subject: [PATCH 3/5] staging/keucr: scsiglue use pr_<level> for messages
-Date: Fri,  1 Apr 2011 14:38:41 +0800
-Message-Id: <39c9fd8f54b4942e5106d310c1b0c3e0abc6a99a.1301638704.git.acho@novell.com>
+Subject: [PATCH 4/5] staging/keucr: smilmain use pr_<level> for messages
+Date: Fri,  1 Apr 2011 14:38:42 +0800
+Message-Id: <249d7f9c127bf8cc04c23033ec138494a800da87.1301638704.git.acho@novell.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1301638704.git.acho@novell.com>
 References: <cover.1301638704.git.acho@novell.com>
@@ -31,164 +31,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scsiglue.c use pr_<level> for messages
+smilmain.c use pr_<level> for messages
 
 Signed-off-by: Cho, Yu-Chen <acho@novell.com>
 ---
- drivers/staging/keucr/scsiglue.c |   35 +++++++++++++++++++----------------
- 1 files changed, 19 insertions(+), 16 deletions(-)
+ drivers/staging/keucr/smilmain.c |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/keucr/scsiglue.c b/drivers/staging/keucr/scsiglue.c
-index da4f42a..5e35d94 100644
---- a/drivers/staging/keucr/scsiglue.c
-+++ b/drivers/staging/keucr/scsiglue.c
-@@ -1,3 +1,5 @@
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
-@@ -16,7 +18,7 @@
- //----- host_info() ---------------------
- static const char* host_info(struct Scsi_Host *host)
+diff --git a/drivers/staging/keucr/smilmain.c b/drivers/staging/keucr/smilmain.c
+index 2cbe9f8..311c23b 100644
+--- a/drivers/staging/keucr/smilmain.c
++++ b/drivers/staging/keucr/smilmain.c
+@@ -102,12 +102,12 @@ int SM_FreeMem(void)
  {
--	//printk("scsiglue --- host_info\n");
-+	/* pr_info("scsiglue --- host_info\n"); */
- 	return "SCSI emulation for USB Mass Storage devices";
- }
+ 	int	i;
  
-@@ -25,7 +27,7 @@ static int slave_alloc(struct scsi_device *sdev)
- {
- 	struct us_data *us = host_to_us(sdev->host);
- 
--	//printk("scsiglue --- slave_alloc\n");
-+	/* pr_info("scsiglue --- slave_alloc\n"); */
- 	sdev->inquiry_len = 36;
- 
- 	blk_queue_update_dma_alignment(sdev->request_queue, (512 - 1));
-@@ -41,7 +43,7 @@ static int slave_configure(struct scsi_device *sdev)
- {
- 	struct us_data *us = host_to_us(sdev->host);
- 
--	//printk("scsiglue --- slave_configure\n");
-+	/* pr_info("scsiglue --- slave_configure\n"); */
- 	if (us->fflags & (US_FL_MAX_SECTORS_64 | US_FL_MAX_SECTORS_MIN))
+-	printk("SM_FreeMem start\n");
++	pr_info("SM_FreeMem start\n");
+ 	for (i=0; i<MAX_ZONENUM; i++)
  	{
- 		unsigned int max_sectors = 64;
-@@ -91,19 +93,20 @@ static int queuecommand_lck(struct scsi_cmnd *srb, void (*done)(struct scsi_cmnd
+ 		if (Log2Phy[i]!=NULL)
+ 		{
+-			printk("Free Zone = %x, Addr = %p\n", i, Log2Phy[i]);
++			pr_info("Free Zone = %x, Addr = %p\n", i, Log2Phy[i]);
+ 			kfree(Log2Phy[i]);
+ 			Log2Phy[i] = NULL;
+ 		}
+@@ -198,7 +198,7 @@ int Media_D_CopySector(struct us_data *us, DWORD start,WORD count,BYTE *buf)
+ 	//SSFDCTYPE_T aa = (SSFDCTYPE_T ) &Ssfdc;
+ 	//ADDRESS_T   bb = (ADDRESS_T) &Media;
+ 
+-	//printk("Media_D_CopySector !!!\n");
++	/* pr_info("Media_D_CopySector !!!\n"); */
+ 	if (Conv_D_MediaAddr(us, start))
+ 		return(ErrCode);
+ 
+@@ -657,7 +657,7 @@ int Media_D_OneSectWriteFlush(PFDO_DEVICE_EXTENSION fdoExt)
+ //----- Check_D_MediaFmt() ---------------------------------------------
+ int Check_D_MediaFmt(struct us_data *us)
  {
- 	struct us_data *us = host_to_us(srb->device->host);
+-	printk("Check_D_MediaFmt\n");
++	pr_info("Check_D_MediaFmt\n");
+ 	//ULONG i,j, result=FALSE, zone,block;
  
--	//printk("scsiglue --- queuecommand\n");
-+	/* pr_info("scsiglue --- queuecommand\n"); */
+ 	//usleep(56*1024);
+@@ -1334,7 +1334,7 @@ int Copy_D_PhyOneSect(struct us_data *us)
+ 	//SSFDCTYPE_T aa = (SSFDCTYPE_T ) &Ssfdc;
+ 	//ADDRESS_T   bb = (ADDRESS_T) &Media;
  
- 	/* check for state-transition errors */
- 	if (us->srb != NULL)
+-	//printk("Copy_D_PhyOneSect --- Secotr = %x\n", Media.Sector);
++	/* pr_info("Copy_D_PhyOneSect --- Secotr = %x\n", Media.Sector); */
+ 	if (ReadBlock!=NO_ASSIGN)
  	{
--		printk("Error in %s: us->srb = %p\n", __FUNCTION__, us->srb);
-+		/* pr_info("Error in %s: us->srb = %p\n"
-+				 __FUNCTION__, us->srb); */
- 		return SCSI_MLQUEUE_HOST_BUSY;
+ 		Media.PhyBlock=ReadBlock;
+@@ -1620,7 +1620,8 @@ int Make_D_LogTable(struct us_data *us)
+ 	if (Log2Phy[Media.Zone]==NULL)
+ 	{
+ 		Log2Phy[Media.Zone] = kmalloc(MAX_LOGBLOCK*sizeof(WORD), GFP_KERNEL);
+-		//printk("ExAllocatePool Zone = %x, Addr = %x\n", Media.Zone, Log2Phy[Media.Zone]);
++		/* pr_info("ExAllocatePool Zone = %x, Addr = %x\n",
++				Media.Zone, Log2Phy[Media.Zone]); */
+ 		if (Log2Phy[Media.Zone]==NULL)
+ 			return(ERROR);
  	}
- 
- 	/* fail the command if we are disconnecting */
- 	if (test_bit(US_FLIDX_DISCONNECTING, &us->dflags))
+@@ -1630,7 +1631,8 @@ int Make_D_LogTable(struct us_data *us)
+ 	//for(Media.Zone=0; Media.Zone<MAX_ZONENUM; Media.Zone++)
+ 	//for(Media.Zone=0; Media.Zone<Ssfdc.MaxZones; Media.Zone++)
  	{
--		printk("Fail command during disconnect\n");
-+		pr_info("Fail command during disconnect\n");
- 		srb->result = DID_NO_CONNECT << 16;
- 		done(srb);
- 		return 0;
-@@ -129,7 +132,7 @@ static int command_abort(struct scsi_cmnd *srb)
- {
- 	struct us_data *us = host_to_us(srb->device->host);
+-		//printk("Make_D_LogTable --- MediaZone = 0x%x\n", Media.Zone);
++		/* pr_info("Make_D_LogTable --- MediaZone = 0x%x\n",
++							Media.Zone); */
+ 		for(Media.LogBlock=0; Media.LogBlock<Ssfdc.MaxLogBlocks; Media.LogBlock++)
+ 			Log2Phy[Media.Zone][Media.LogBlock]=NO_ASSIGN;
  
--	//printk("scsiglue --- command_abort\n");
-+	/* pr_info("scsiglue --- command_abort\n"); */
- 
- 	scsi_lock(us_to_host(us));
- 	if (us->srb != srb)
-@@ -159,7 +162,7 @@ static int device_reset(struct scsi_cmnd *srb)
- 	struct us_data *us = host_to_us(srb->device->host);
- 	int result;
- 
--	//printk("scsiglue --- device_reset\n");
-+	/* pr_info("scsiglue --- device_reset\n"); */
- 
- 	/* lock the device pointers and do the reset */
- 	mutex_lock(&(us->dev_mutex));
-@@ -175,7 +178,7 @@ static int bus_reset(struct scsi_cmnd *srb)
- 	struct us_data *us = host_to_us(srb->device->host);
- 	int result;
- 
--	//printk("scsiglue --- bus_reset\n");
-+	/* pr_info("scsiglue --- bus_reset\n"); */
- 	result = usb_stor_port_reset(us);
- 	return result < 0 ? FAILED : SUCCESS;
- }
-@@ -186,7 +189,7 @@ void usb_stor_report_device_reset(struct us_data *us)
- 	int i;
- 	struct Scsi_Host *host = us_to_host(us);
- 
--	//printk("scsiglue --- usb_stor_report_device_reset\n");
-+	/* pr_info("scsiglue --- usb_stor_report_device_reset\n"); */
- 	scsi_report_device_reset(host, 0, 0);
- 	if (us->fflags & US_FL_SCM_MULT_TARG)
- 	{
-@@ -200,7 +203,7 @@ void usb_stor_report_bus_reset(struct us_data *us)
- {
- 	struct Scsi_Host *host = us_to_host(us);
- 
--	//printk("scsiglue --- usb_stor_report_bus_reset\n");
-+	/* pr_info("scsiglue --- usb_stor_report_bus_reset\n"); */
- 	scsi_lock(host);
- 	scsi_report_bus_reset(host, 0);
- 	scsi_unlock(host);
-@@ -222,7 +225,7 @@ static int proc_info (struct Scsi_Host *host, char *buffer, char **start, off_t
- 	char *pos = buffer;
- 	const char *string;
- 
--	//printk("scsiglue --- proc_info\n");
-+	/* pr_info("scsiglue --- proc_info\n"); */
- 	if (inout)
- 		return length;
- 
-@@ -288,7 +291,7 @@ static ssize_t show_max_sectors(struct device *dev, struct device_attribute *att
- {
- 	struct scsi_device *sdev = to_scsi_device(dev);
- 
--	//printk("scsiglue --- ssize_t show_max_sectors\n");
-+	/* pr_info("scsiglue --- ssize_t show_max_sectors\n"); */
- 	return sprintf(buf, "%u\n", queue_max_sectors(sdev->request_queue));
- }
- 
-@@ -299,7 +302,7 @@ static ssize_t store_max_sectors(struct device *dev, struct device_attribute *at
- 	struct scsi_device *sdev = to_scsi_device(dev);
- 	unsigned short ms;
- 
--	//printk("scsiglue --- ssize_t store_max_sectors\n");
-+	/* pr_info("scsiglue --- ssize_t store_max_sectors\n"); */
- 	if (sscanf(buf, "%hu", &ms) > 0 && ms <= SCSI_DEFAULT_MAX_SECTORS)
- 	{
- 		blk_queue_max_hw_sectors(sdev->request_queue, ms);
-@@ -383,7 +386,7 @@ unsigned int usb_stor_access_xfer_buf(struct us_data *us, unsigned char *buffer,
- {
- 	unsigned int cnt;
- 
--	//printk("transport --- usb_stor_access_xfer_buf\n");
-+	/* pr_info("transport --- usb_stor_access_xfer_buf\n"); */
- 	struct scatterlist *sg = *sgptr;
- 
- 	if (!sg)
-@@ -441,7 +444,7 @@ void usb_stor_set_xfer_buf(struct us_data *us, unsigned char *buffer, unsigned i
- 	unsigned int offset = 0;
- 	struct scatterlist *sg = NULL;
- 
--	//printk("transport --- usb_stor_set_xfer_buf\n");
-+	/* pr_info("transport --- usb_stor_set_xfer_buf\n"); */
- 	// TO_XFER_BUF = 0, FROM_XFER_BUF = 1
- 	buflen = min(buflen, scsi_bufflen(srb));
- 	buflen = usb_stor_access_xfer_buf(us, buffer, buflen, srb, &sg, &offset, dir);
 -- 
 1.7.1
 
