@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386Ab1DARRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 13:17:08 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:58848 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932305Ab1DARRG (ORCPT
+	id S1758553Ab1DARW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 13:22:56 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:42354 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757852Ab1DARWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 13:17:06 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=EZbM7QqB+OkEZHPVu5DFVuKeNdCV/6fUDIjBb5kuGDoNkmlr+k7UenJRUPeKrtWSLEFTwV5EHmNqjPfCAz6w0TnwY8wci9QvqowOa7mcM20tfKXIQa4cZupZe5ydrwv8;
-Date: Fri, 1 Apr 2011 10:17:01 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Ameya Palande <ameya.palande@nokia.com>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation: Add Documentation/leds/00-INDEX
-Message-Id: <20110401101701.e440ad6d.rdunlap@xenotime.net>
-In-Reply-To: <1301648314-3441-1-git-send-email-ameya.palande@nokia.com>
-References: <20110331084420.47eaa91c.rdunlap@xenotime.net>
-	<1301648314-3441-1-git-send-email-ameya.palande@nokia.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 1 Apr 2011 13:22:55 -0400
+Date: Fri, 1 Apr 2011 18:22:41 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Andrea Gelmini <andrea.gelmini@gmail.com>
+Cc: anssi.hannula@iki.fi, linux-acpi@vger.kernel.org, axel.lin@gmail.com,
+        trenn@suse.de, len.brown@intel.com, error27@gmail.com,
+        malattia@linux.it, linux-kernel@vger.kernel.org
+Subject: Re: Regression 2.6.39-rc1 for sony-laptop
+Message-ID: <20110401172241.GA26851@srcf.ucam.org>
+References: <AANLkTi=1xtjEZc2C1=W-v2oYbvvcGH9k_DGGXvJ8=swq@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=1xtjEZc2C1=W-v2oYbvvcGH9k_DGGXvJ8=swq@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  1 Apr 2011 11:58:34 +0300 Ameya Palande wrote:
+On Fri, Apr 01, 2011 at 07:16:43PM +0200, Andrea Gelmini wrote:
 
-> Signed-off-by: Ameya Palande <ameya.palande@nokia.com>
+> Git bisect blames this commit:
 
-Applied, thanks.
+Pretty convinced that git bisect's got that wrong, given that it doesn't 
+touch any Sony code. I'll take a look at the Sony patches, thanks for 
+the report!
 
-> ---
->  Documentation/leds/00-INDEX |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/leds/00-INDEX
-> 
-> diff --git a/Documentation/leds/00-INDEX b/Documentation/leds/00-INDEX
-> new file mode 100644
-> index 0000000..762d676
-> --- /dev/null
-> +++ b/Documentation/leds/00-INDEX
-> @@ -0,0 +1,10 @@
-> +00-INDEX
-> +	- This file
-> +leds-class.txt
-> +	- Info about led sysfs class
-> +leds-lp3944.txt
-> +	- Info on National Semiconductor LP3944 fun-light chip
-> +leds-lp5521.txt
-> +	- Info on National Semiconductor LP5521 led driver chip
-> +leds-lp5523.txt
-> +	- Info on National Semiconductor LP5523 led driver chip
-> -- 
-> 1.7.1
-> 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
