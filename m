@@ -1,115 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab1DAGjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 02:39:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64022 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753569Ab1DAGjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 02:39:04 -0400
-Message-ID: <4D9573DB.4010009@cn.fujitsu.com>
-Date: Fri, 01 Apr 2011 14:42:35 +0800
-From: liubo <liubo2009@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1754649Ab1DAGj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 02:39:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62025 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035Ab1DAGj1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 02:39:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=j6kWTF/GZx5IPINVwm+BueR6toiWUmrBgUka3xBQhngDv/kGpsHraTa2MxHQYd2rIf
+         FfyUMOQ/HBxLrzSFnvGba86sfp11elWWnlgWL4mrh8mq+SKlxBFKg9EEHxFnlWtL7M/1
+         vt5rpPWNhsOYt5ofrmyuNgO/066D19rRNQTwI=
+Date: Fri, 1 Apr 2011 08:39:21 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Aakash Goenka <aakash.goenka@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Jiri Kosina <jkosina@suse.cz>, Jesper Juhl <jj@chaosbits.net>
+Subject: Re: [PATCH] kernel: Fix style problems in time.c
+Message-ID: <20110401063921.GA3063@riccoc20.at.omicron.at>
+References: <AANLkTi=SegGu5ue=n23e1fhdoZ1jNyTardFJvtAo6vE1@mail.gmail.com>
+ <AANLkTinoda73UrHztF4bN_tZNLQyu2qoV5WQT1=J8Rag@mail.gmail.com>
 MIME-Version: 1.0
-To: Linux Btrfs <linux-btrfs@vger.kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [RFC PATCH] Trace: use unsigned long long in trace print frames
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-01 14:37:23,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-01 14:37:23,
-	Serialize complete at 2011-04-01 14:37:23
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinoda73UrHztF4bN_tZNLQyu2qoV5WQT1=J8Rag@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 01, 2011 at 02:41:16AM +0530, Aakash Goenka wrote:
+> I am really sorry, there is a mistake in the patch I sent before.
+> Please ignore the last patch and use this instead -
+> 
+>  Fixes most style errors and warnings. Only left out the ones about
+> using include from linux directory instead of asm.
 
-While adding tracepoint for btrfs, I got a problem:
+I have been put on CC, but it is not my code. Still, I'll take this
+chance to ask, what is the policy regarding patches that only fix
+coding style?
 
-btrfs uses some macros with "ULL" type, but tracepoint's macros,
-__print_[flags,symbols](), only have "unsigned long", so on 32bit box
-there will be 64->32 truncate WARNINGs when compiling.
+(my 2 cents: they spoil annote/blame)
 
-Here I'm inclined to make the replacement to clear those WARNINGs.
+Thanks,
+Richard
 
-Signed-off-by: Liu Bo <liubo2009@cn.fujitsu.com>
----
- include/linux/ftrace_event.h |    7 ++++---
- kernel/trace/trace_output.c  |   10 +++++-----
- 2 files changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 22b32af..b52f2c5 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -12,15 +12,16 @@ struct tracer;
- struct dentry;
- 
- struct trace_print_flags {
--	unsigned long		mask;
-+	unsigned long long	mask;
- 	const char		*name;
- };
- 
- const char *ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
--				   unsigned long flags,
-+				   unsigned long long flags,
- 				   const struct trace_print_flags *flag_array);
- 
--const char *ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
-+const char *ftrace_print_symbols_seq(struct trace_seq *p,
-+				     unsigned long long val,
- 				     const struct trace_print_flags *symbol_array);
- 
- const char *ftrace_print_hex_seq(struct trace_seq *p,
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 456be90..97ba902 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -294,10 +294,10 @@ int trace_seq_path(struct trace_seq *s, struct path *path)
- 
- const char *
- ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
--		       unsigned long flags,
-+		       unsigned long long flags,
- 		       const struct trace_print_flags *flag_array)
- {
--	unsigned long mask;
-+	unsigned long long mask;
- 	const char *str;
- 	const char *ret = p->buffer + p->len;
- 	int i;
-@@ -319,7 +319,7 @@ ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
- 	if (flags) {
- 		if (p->len && delim)
- 			trace_seq_puts(p, delim);
--		trace_seq_printf(p, "0x%lx", flags);
-+		trace_seq_printf(p, "0x%llx", flags);
- 	}
- 
- 	trace_seq_putc(p, 0);
-@@ -329,7 +329,7 @@ ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
- EXPORT_SYMBOL(ftrace_print_flags_seq);
- 
- const char *
--ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
-+ftrace_print_symbols_seq(struct trace_seq *p, unsigned long long val,
- 			 const struct trace_print_flags *symbol_array)
- {
- 	int i;
-@@ -345,7 +345,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
- 	}
- 
- 	if (!p->len)
--		trace_seq_printf(p, "0x%lx", val);
-+		trace_seq_printf(p, "0x%llx", val);
- 		
- 	trace_seq_putc(p, 0);
- 
--- 
-1.6.5.2
 
