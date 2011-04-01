@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab1DACAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 22:00:55 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59890 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752696Ab1DACAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 22:00:53 -0400
-Date: Fri, 1 Apr 2011 13:00:44 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Jean Delvare <khali@linux-fr.org>
-Subject: linux-next: build failure after merge of the tip tree
-Message-Id: <20110401130044.c5aed052.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+	id S1753914Ab1DAC3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 22:29:20 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34208 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab1DAC3T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 22:29:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=heiU81EOvKgplir+yHcADYxmdQXb7TCLLjSg0ZtvlcWPqvZV63Q3HQ8vN5fHgxXVd8
+         V/VNAniogjh37iCsnR11lcBfyKwyqbQgxA4Lo1I7UMHASKVdoDLQGFZAZMxvPUv4PxNx
+         g7CA4h/MQz6HN8Uxbp/EF1AKLcRk0QJ14ceD8=
+Subject: Re: [PATCH] MAINTAINERS: add mm/page_cgroup.c into memcg subsystem
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <1301624733-6141-1-git-send-email-namhyung@gmail.com>
+References: <1301624733-6141-1-git-send-email-namhyung@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Apr 2011 11:29:07 +0900
+Message-ID: <1301624947.1496.11.camel@leonhard>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Oops, add CC's of the maintainers.
 
-After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
 
-drivers/i2c/busses/i2c-designware-core.c: In function 'i2c_dw_wait_bus_not_busy':
-drivers/i2c/busses/i2c-designware-core.c:321: error: implicit declaration of function 'mdelay'
-
-Caused by commit 800c56383dcb ("i2c-designware: split of i2c-designware.c
-into core and bus specific parts") from the bjdooks-i2c tree and exposed
-by commit ca444564a947 ("x86: Stop including <linux/delay.h> in two asm
-header files").
-
-I have added this patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 1 Apr 2011 12:48:53 +1100
-Subject: [PATCH] i2c-designware: mdelay use needs linux/delay.h inclusion
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/i2c/busses/i2c-designware-core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 299e717..f87e25a 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -25,6 +25,7 @@
-  * ----------------------------------------------------------------------------
-  *
-  */
-+#include <linux/delay.h>
- #include <linux/clk.h>
- #include <linux/errno.h>
- #include <linux/err.h>
--- 
-1.7.4.1
+2011-04-01 (금), 11:25 +0900, Namhyung Kim:
+> AFAICS mm/page_cgroup.c is for memcg subsystem, but it was directed
+> only to generic cgroup maintainers. Fix it.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  MAINTAINERS |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 6b4b9cdec370..a19a1b9677a3 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -4121,6 +4121,7 @@ M:	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>  L:	linux-mm@kvack.org
+>  S:	Maintained
+>  F:	mm/memcontrol.c
+> +F:	mm/page_cgroup.c
+>  
+>  MEMORY TECHNOLOGY DEVICES (MTD)
+>  M:	David Woodhouse <dwmw2@infradead.org>
 
 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Regards,
+Namhyung Kim
+
+
