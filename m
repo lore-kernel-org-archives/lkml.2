@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab1DAW3X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 18:29:23 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59832 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758588Ab1DAW3L (ORCPT
+	id S1758843Ab1DAWeu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 18:34:50 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:25136 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758791Ab1DAWet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 18:29:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=HuIXuxMXoLFCx7lJ7jb+LtRZH3mt5sWq6HM+hC1OJzO7HaDB7Gdco3wyqJRstWtrRj
-         buNjUYAn+YSg5M3t4OhA==
-MIME-Version: 1.0
-In-Reply-To: <4D959058.7010606@codeaurora.org>
-References: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com>
-	<BANLkTimtAcPLmcFKoHkCtWcJipy+rSSP+A@mail.gmail.com>
-	<4D959058.7010606@codeaurora.org>
-Date: Fri, 1 Apr 2011 15:29:08 -0700
-X-Google-Sender-Auth: SnSMKK0dSmg26psT-NuL-QnvDU0
-Message-ID: <BANLkTim8GhUAZ7L-MiJiqi6xM=P_Q8kqfg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: BUG() dies silently
-From: Simon Glass <sjg@chromium.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        lk <linux-kernel@vger.kernel.org>,
-        lak <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Fri, 1 Apr 2011 18:34:49 -0400
+Subject: [PATCH] Drivers: cpufreq/cpufreq_stats.c: Fixed brace coding style
+ issue
+From: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
+To: davej@redhat.com, Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Apr 2011 17:34:47 -0500
+Message-ID: <1301697287.15937.5.camel@ks-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+>From 0f157586affbd149943440eb26ea2981359d79c1 Mon Sep 17 00:00:00 2001
+From: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
+Date: Fri, 1 Apr 2011 17:20:49 -0500
+Subject: [PATCH] Drivers: cpufreq/cpufreq_stats.c: Fixed brace coding
+style issue
 
-Sorry for the confusion, but in fact I was talking about the patch to
-make ARM use the generic bug handling via an undef instruction instead
-of calling ______bug() or writing to memory address 0. Please see
-here:
+Fixed brace coding style issue.
 
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6808/1
+Signed-off-by: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
+---
+ drivers/cpufreq/cpufreq_stats.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Regards,
-Simon
+diff --git a/drivers/cpufreq/cpufreq_stats.c
+b/drivers/cpufreq/cpufreq_stats.c
+index 00d73fc..78bf713 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -324,8 +324,7 @@ static int __cpuinit
+cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+ 	return NOTIFY_OK;
+ }
+ 
+-static struct notifier_block cpufreq_stat_cpu_notifier __refdata =
+-{
++static struct notifier_block cpufreq_stat_cpu_notifier __refdata = {
+ 	.notifier_call = cpufreq_stat_cpu_callback,
+ };
+ 
+-- 
+1.7.1
 
-On Fri, Apr 1, 2011 at 1:44 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 3/31/2011 6:47 PM, Simon Glass wrote:
->> You might try the generic bug patch and see if it also fixes this
->> problem - Simon
->
-> It probably won't because presumably Omar has CONFIG_BUG=n otherwise
-> Omar would have sent a patch against __bug() in arch/arm/kernel/traps.c
->
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->
->
+
+
