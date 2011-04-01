@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1DAJ2o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 05:28:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53106 "EHLO mx1.suse.de"
+	id S1755416Ab1DAJc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 05:32:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53201 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755299Ab1DAJ2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 05:28:42 -0400
-Date: Fri, 1 Apr 2011 11:28:36 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Len Brown <lenb@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        linux-pm@lists.linux-foundation.org,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH] x86 idle APM: delete apm_cpu_idle(), and its use of
- pm_idle
-In-Reply-To: <alpine.LFD.2.02.1103302311500.2444@x980>
-Message-ID: <alpine.LNX.2.00.1104011127480.22712@pobox.suse.cz>
-References: <20110326172204.05e52c10.sfr@canb.auug.org.au> <alpine.LRH.2.00.1103281443240.8162@twin.jikos.cz> <20110329004438.d9e755ef.sfr@canb.auug.org.au> <alpine.LNX.2.00.1103281604040.26754@pobox.suse.cz> <20110328174542.GW21838@one.firstfloor.org>
- <4D90CC0B.8070105@zytor.com> <20110328182123.GX21838@one.firstfloor.org> <AANLkTimqE2YZCH5GonnqeHGGBwzggTymauS1KYuTsqOX@mail.gmail.com> <alpine.LNX.2.00.1103282309290.26754@pobox.suse.cz> <alpine.LFD.2.02.1103302311500.2444@x980>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755193Ab1DAJc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 05:32:57 -0400
+Date: Fri, 1 Apr 2011 11:32:40 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        victor.vde@gmail.com, util-linux@vger.kernel.org, linuxram@us.ibm.com,
+        viro@zeniv.linux.org.uk, ejmarkow@yahoo.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lennart Poettering <lennart@poettering.net>
+Subject: Re: [BUG] libmount misparses mountinfo on Linux v2.6.39-rc1
+Message-ID: <20110401093240.GA11012@nb.net.home>
+References: <19860.58082.277944.875401@gargle.gargle.HOWL> <87d3l62z3k.fsf@linux.vnet.ibm.com> <E1Q5ZzI-0001M4-0j@pomaz-ex.szeredi.hu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1Q5ZzI-0001M4-0j@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Mar 2011, Len Brown wrote:
-
-> From: Len Brown <len.brown@intel.com>
+On Fri, Apr 01, 2011 at 10:45:48AM +0200, Miklos Szeredi wrote:
+> On Fri, 01 Apr 2011, Aneesh Kumar K. V wrote:
+> > On Thu, 31 Mar 2011 22:24:01 +0200, victor.vde@gmail.com wrote:
+> > > /proc/self/mountinfo on Linux v2.6.39-rc1 includes the UUID of ext4
+> > > and ext3 mounts, for example:
+> > > 
+> > > 15 1 8:3 / / rw,noatime uuid:c645234d-9756-4d84-825e-6fe999252a34 - ext4 /dev/sda3 rw,user_xattr,acl,barrier=1,data=ordered
+> > > 
+> > > It seems the hyphens in the uuid confuse the parser
+> > > mnt_parse_mountinfo_line in tab_parse.c of libmount in util-linux.
+> > 
+> > shouldn't the parser look for " " followed by "-" followed by " " as the
+> > field seperator ? 
+> > 
+> > I am adding Miklos and Ram Pai to CC to check whether the kernel or the libmount 
+> > should be fixed ?
 > 
-> There is some doubt whether the APM idle feature
-> to call into the BIOS from the idle loop is reliable.
-> Certainly it was known to fail on some machines,
-> but more importantly, APM machines have not shipped
-> for a decade and so finding machines to test the code
-> is problematic.
-> 
-> After this patch, systems running in APM mode will
-> simply run default_idle() and HALT without calling
-> into the BIOS from their idle loop.
-> 
-> This deletes a much-maligned modular user of the (pm_idle)()
-> function pointer.
-> 
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> ---
-> Jiri,
-> If you can review, test, ack, that would be great.
-> I'll probably end up shipping this via the idle tree
-> because subsequent patches to delete pm_idle
-> will depend on it.
+> I think libmount should be fixed, though there is always the question
+> of backward compatibility.
 
-Looks fine, works here.
+ The parser uses
 
-	Acked-by: Jiri Kosina <jkosina@suse.cz>
+	rc = sscanf(s,	"%u "		/* (1) id */
+			"%u "		/* (2) parent */
+			"%u:%u "	/* (3) maj:min */
+			"%ms "		/* (4) mountroot */
+			"%ms "		/* (5) target */
+			"%ms"		/* (6) vfs options (fs-independent) */
+			"%*[^-]"	/* (7) optional fields */
+			"- "		/* (8) separator */
+			"%ms "		/* (9) FS type */
+			"%ms "		/* (10) source */
+			"%ms",		/* (11) fs options (fs specific) */
 
-Thanks Len.
+ note that almost the same code is in systemd.
+
+> However I don't see how the kernel could be fixed, given that libmount
+> doesn't seem to parse escape sequences (e.g. "\040" for space), which
+> it also should.
+
+ It calls unmangle_string() for all fields, so all sequences should be
+ decoded.
+
+    Karel
+
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
