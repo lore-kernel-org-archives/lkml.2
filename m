@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab1DAOmZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:42:25 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41763 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757307Ab1DAOmX (ORCPT
+	id S1757376Ab1DAOmk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:42:40 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:48269 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406Ab1DAOmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:42:23 -0400
+	Fri, 1 Apr 2011 10:42:38 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -14,61 +14,180 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 01 Apr 2011 20:02:38 +0530
-Message-Id: <20110401143238.15455.69361.sendpatchset@localhost6.localdomain6>
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 01 Apr 2011 20:02:53 +0530
+Message-Id: <20110401143253.15455.84368.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
 References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v3 2.6.39-rc1-tip 1/26]  1: mm: replace_page() loses static attribute
+Subject: [PATCH v3 2.6.39-rc1-tip 2/26]  2: mm: Move replace_page() to mm/memory.c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-User bkpt will use background page replacement approach to insert/delete
-breakpoints. Background page replacement approach is based on
-replace_page. Hence replace_page() loses its static attribute.
-This is a precursor to moving replace_page() to mm/memory.c
+move replace_page() out of mm/ksm.c to mm/memory.c so that replace_page
+can be used even when CONFIG_KSM is not defined.
+replace_page() is used to implement background page replacement.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 ---
- include/linux/mm.h |    2 ++
- mm/ksm.c           |    2 +-
- 2 files changed, 3 insertions(+), 1 deletions(-)
+ mm/ksm.c    |   62 -----------------------------------------------------------
+ mm/memory.c |   62 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 62 insertions(+), 62 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 7606d7d..089bda4 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1008,6 +1008,8 @@ void account_page_writeback(struct page *page);
- int set_page_dirty(struct page *page);
- int set_page_dirty_lock(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
-+int replace_page(struct vm_area_struct *vma, struct page *page,
-+					struct page *kpage, pte_t orig_pte);
- 
- /* Is the vma a continuation of the stack vma above it? */
- static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
 diff --git a/mm/ksm.c b/mm/ksm.c
-index 1bbe785..f444158 100644
+index f444158..61df1db 100644
 --- a/mm/ksm.c
 +++ b/mm/ksm.c
-@@ -760,7 +760,7 @@ out:
-  *
-  * Returns 0 on success, -EFAULT on failure.
-  */
--static int replace_page(struct vm_area_struct *vma, struct page *page,
-+int replace_page(struct vm_area_struct *vma, struct page *page,
- 			struct page *kpage, pte_t orig_pte)
+@@ -751,68 +751,6 @@ out:
+ 	return err;
+ }
+ 
+-/**
+- * replace_page - replace page in vma by new ksm page
+- * @vma:      vma that holds the pte pointing to page
+- * @page:     the page we are replacing by kpage
+- * @kpage:    the ksm page we replace page by
+- * @orig_pte: the original value of the pte
+- *
+- * Returns 0 on success, -EFAULT on failure.
+- */
+-int replace_page(struct vm_area_struct *vma, struct page *page,
+-			struct page *kpage, pte_t orig_pte)
+-{
+-	struct mm_struct *mm = vma->vm_mm;
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	pte_t *ptep;
+-	spinlock_t *ptl;
+-	unsigned long addr;
+-	int err = -EFAULT;
+-
+-	addr = page_address_in_vma(page, vma);
+-	if (addr == -EFAULT)
+-		goto out;
+-
+-	pgd = pgd_offset(mm, addr);
+-	if (!pgd_present(*pgd))
+-		goto out;
+-
+-	pud = pud_offset(pgd, addr);
+-	if (!pud_present(*pud))
+-		goto out;
+-
+-	pmd = pmd_offset(pud, addr);
+-	BUG_ON(pmd_trans_huge(*pmd));
+-	if (!pmd_present(*pmd))
+-		goto out;
+-
+-	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
+-	if (!pte_same(*ptep, orig_pte)) {
+-		pte_unmap_unlock(ptep, ptl);
+-		goto out;
+-	}
+-
+-	get_page(kpage);
+-	page_add_anon_rmap(kpage, vma, addr);
+-
+-	flush_cache_page(vma, addr, pte_pfn(*ptep));
+-	ptep_clear_flush(vma, addr, ptep);
+-	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+-
+-	page_remove_rmap(page);
+-	if (!page_mapped(page))
+-		try_to_free_swap(page);
+-	put_page(page);
+-
+-	pte_unmap_unlock(ptep, ptl);
+-	err = 0;
+-out:
+-	return err;
+-}
+-
+ static int page_trans_compound_anon_split(struct page *page)
  {
- 	struct mm_struct *mm = vma->vm_mm;
+ 	int ret = 0;
+diff --git a/mm/memory.c b/mm/memory.c
+index 9da8cab..60b8494 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2733,6 +2733,68 @@ void unmap_mapping_range(struct address_space *mapping,
+ }
+ EXPORT_SYMBOL(unmap_mapping_range);
+ 
++/**
++ * replace_page - replace page in vma by new ksm page
++ * @vma:      vma that holds the pte pointing to page
++ * @page:     the page we are replacing by kpage
++ * @kpage:    the ksm page we replace page by
++ * @orig_pte: the original value of the pte
++ *
++ * Returns 0 on success, -EFAULT on failure.
++ */
++int replace_page(struct vm_area_struct *vma, struct page *page,
++			struct page *kpage, pte_t orig_pte)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++	pte_t *ptep;
++	spinlock_t *ptl;
++	unsigned long addr;
++	int err = -EFAULT;
++
++	addr = page_address_in_vma(page, vma);
++	if (addr == -EFAULT)
++		goto out;
++
++	pgd = pgd_offset(mm, addr);
++	if (!pgd_present(*pgd))
++		goto out;
++
++	pud = pud_offset(pgd, addr);
++	if (!pud_present(*pud))
++		goto out;
++
++	pmd = pmd_offset(pud, addr);
++	BUG_ON(pmd_trans_huge(*pmd));
++	if (!pmd_present(*pmd))
++		goto out;
++
++	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
++	if (!pte_same(*ptep, orig_pte)) {
++		pte_unmap_unlock(ptep, ptl);
++		goto out;
++	}
++
++	get_page(kpage);
++	page_add_anon_rmap(kpage, vma, addr);
++
++	flush_cache_page(vma, addr, pte_pfn(*ptep));
++	ptep_clear_flush(vma, addr, ptep);
++	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
++
++	page_remove_rmap(page);
++	if (!page_mapped(page))
++		try_to_free_swap(page);
++	put_page(page);
++
++	pte_unmap_unlock(ptep, ptl);
++	err = 0;
++out:
++	return err;
++}
++
+ int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
