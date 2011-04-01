@@ -1,47 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab1DAI6i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 04:58:38 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:42823 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330Ab1DAI6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 04:58:36 -0400
-From: Ameya Palande <ameya.palande@nokia.com>
-To: rdunlap@xenotime.net
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH] Documentation: Add Documentation/leds/00-INDEX
-Date: Fri,  1 Apr 2011 11:58:34 +0300
-Message-Id: <1301648314-3441-1-git-send-email-ameya.palande@nokia.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20110331084420.47eaa91c.rdunlap@xenotime.net>
-References: <20110331084420.47eaa91c.rdunlap@xenotime.net>
-X-Nokia-AV: Clean
+	id S1754600Ab1DAJBo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 05:01:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47769 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab1DAJBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 05:01:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YRuKIYK0xf7Tpjz8A42zAWty1dej9GWYD6GrB9si1KL60zKwOK2Gzg+tHYi3p0CYv4
+         uYT6364mZLOcbaujVbyj1HnwXYIer8CKWMZ0288+RyzvFrqX1Hr0lWPrKygNcZ9vdiYG
+         9JFpDDohSKuUh3wc3NYDbe7xgjTEDdKlZMlT0=
+Date: Fri, 1 Apr 2011 11:01:35 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: werner@guyane.yi.org, linux-kernel@vger.kernel.org, gregkh@suse.de,
+        mingo@elte.hu, linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: 2.6.39-rc1 problem
+Message-ID: <20110401090135.GI3385@htj.dyndns.org>
+References: <1301536052.9909@guyane.yi.org>
+ <20110331113523.3c34f360.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110331113523.3c34f360.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ameya Palande <ameya.palande@nokia.com>
----
- Documentation/leds/00-INDEX |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/leds/00-INDEX
+(cc linux-scsi)
+Hello,
 
-diff --git a/Documentation/leds/00-INDEX b/Documentation/leds/00-INDEX
-new file mode 100644
-index 0000000..762d676
---- /dev/null
-+++ b/Documentation/leds/00-INDEX
-@@ -0,0 +1,10 @@
-+00-INDEX
-+	- This file
-+leds-class.txt
-+	- Info about led sysfs class
-+leds-lp3944.txt
-+	- Info on National Semiconductor LP3944 fun-light chip
-+leds-lp5521.txt
-+	- Info on National Semiconductor LP5521 led driver chip
-+leds-lp5523.txt
-+	- Info on National Semiconductor LP5523 led driver chip
+On Thu, Mar 31, 2011 at 11:35:23AM -0700, Andrew Morton wrote:
+> (cc linux-ide)
+> 
+> On Wed, 30 Mar 2011 22:47:32 -0300 (GFT)
+> werner@guyane.yi.org wrote:
+> 
+> > The mailing list is anyhow blocking my mails, I suppose it didnt
+> > appear there, so I send my error report to you You can send it to
+> > someone wich can correct these erros
+
+Can you please provide more details on the circumstances?  When did
+this happen and how reproducible is it?  Which controller is in use
+(lspci -nn)?  Please also attach full output of dmesg including the
+boot messages.
+
+> > ==============================================
+> > Mar 30 03:48:42 werner kernel: ------------[ cut here ]------------
+> > Mar 30 03:48:42 werner kernel: WARNING: at drivers/ata/libata-core.c:5015 ata_qc_issue+0x1ba/0x33c()
+> > Mar 30 03:48:42 werner kernel: Hardware name: System Product Name
+> > Mar 30 03:48:42 werner kernel: Modules linked in: ipv6 snd_usb_audio snd_usbmidi_lib snd_rawmidi snd_seq_device rt2860sta(C) uvcvideo lp snd_hda_codec_realtek tpm_tis tpm tpm_bios rtc_cmos rtc_core rtc_lib asus_atk0110 snd_hda_intel 8139too snd_hda_codec snd_hwdep snd_pcm snd_timer k8temp atl1 snd soundcore snd_page_alloc i2c_nforce2
+> > Mar 30 03:48:42 werner kernel: Pid: 0, comm: swapper Tainted: G         C  2.6.39-rc1 #1
+> 
+> I assume that 2.6.38 was OK and that this is a post-2.6.38 regression?
+> 
+> > Mar 30 03:48:42 werner kernel: Call Trace:
+> > Mar 30 03:48:42 werner kernel:  [<c1a22e33>] ? ata_qc_issue+0x1ba/0x33c
+> > Mar 30 03:48:42 werner kernel:  [<c103ce4b>] warn_slowpath_common+0x7a/0x8f
+> > Mar 30 03:48:42 werner kernel:  [<c1a22e33>] ? ata_qc_issue+0x1ba/0x33c
+> > Mar 30 03:48:42 werner kernel:  [<c103ce82>] warn_slowpath_null+0x22/0x24
+> > Mar 30 03:48:42 werner kernel:  [<c1a22e33>] ata_qc_issue+0x1ba/0x33c
+> > Mar 30 03:48:42 werner kernel:  [<c1a2806c>] ata_scsi_translate+0xdd/0x10b
+> > Mar 30 03:48:43 werner kernel:  [<c1a27d4f>] ? ata_gen_passthru_sense+0x125/0x125
+> > Mar 30 03:48:43 werner kernel:  [<c1a28d98>] ata_scsi_queuecmd+0x178/0x1bb
+> > Mar 30 03:48:43 werner kernel:  [<c17f9c5b>] scsi_dispatch_cmd+0x164/0x1ee
+> > Mar 30 03:48:43 werner kernel:  [<c15526a0>] ? blk_add_timer+0x89/0xab
+> > Mar 30 03:48:43 werner kernel:  [<c17ff113>] scsi_request_fn+0x348/0x483
+> > Mar 30 03:48:43 werner kernel:  [<c154cae0>] __blk_run_queue+0x6c/0xce
+> > Mar 30 03:48:43 werner kernel:  [<c154cfe0>] blk_run_queue+0x22/0x33
+> > Mar 30 03:48:43 werner kernel:  [<c17fe80a>] scsi_run_queue+0x297/0x318
+> > Mar 30 03:48:43 werner kernel:  [<c17ff3f9>] scsi_next_command+0x2d/0x39
+> > Mar 30 03:48:43 werner kernel:  [<c17fff29>] scsi_io_completion+0x41f/0x457
+> > Mar 30 03:48:43 werner kernel:  [<c1a108e4>] ? sd_done+0xe/0x26d
+> > Mar 30 03:48:43 werner kernel:  [<c17ffa2a>] ? scsi_device_unbusy+0x80/0x86
+> > Mar 30 03:48:43 werner kernel:  [<c17f99db>] scsi_finish_command+0xce/0xd6
+> > Mar 30 03:48:43 werner kernel:  [<c17fcafd>] ? scsi_decide_disposition+0xe8/0x16e
+> > Mar 30 03:48:43 werner kernel:  [<c1800058>] scsi_softirq_done+0xe3/0xeb
+> > Mar 30 03:48:43 werner kernel:  [<c107da3b>] ? __rcu_process_callbacks+0x6b/0x227
+> > Mar 30 03:48:43 werner kernel:  [<c155248f>] blk_done_softirq+0x5b/0x68
+> > Mar 30 03:48:43 werner kernel:  [<c10423aa>] __do_softirq+0xa1/0x169
+> > Mar 30 03:48:43 werner kernel:  [<c1042309>] ? irq_enter+0x4d/0x4d
+> > Mar 30 03:48:43 werner kernel:  <IRQ>  [<c1079bf8>] ? irq_to_desc+0x8/0x1e
+> > Mar 30 03:48:43 werner kernel:  [<c10421b8>] ? irq_exit+0x37/0x53
+> > Mar 30 03:48:43 werner kernel:  [<c1004715>] ? do_IRQ+0x8b/0xa1
+> > Mar 30 03:48:43 werner kernel:  [<c1df2330>] ? common_interrupt+0x30/0x40
+> > Mar 30 03:48:43 werner kernel:  [<c10266c4>] ? native_safe_halt+0xa/0xc
+> > Mar 30 03:48:43 werner kernel:  [<c10093ca>] ? default_idle+0xa5/0x11b
+> > Mar 30 03:48:43 werner kernel:  [<c100986e>] ? c1e_idle+0xdd/0xe3
+> > Mar 30 03:48:43 werner kernel:  [<c100262a>] ? cpu_idle+0x86/0x9c
+> > Mar 30 03:48:43 werner kernel:  [<c1d7aaad>] ? rest_init+0x5d/0x5f
+> > Mar 30 03:48:43 werner kernel:  [<c231981d>] ? start_kernel+0x317/0x31d
+> > Mar 30 03:48:43 werner kernel:  [<c231931c>] ? kernel_init+0x12a/0x12a
+> > Mar 30 03:48:43 werner kernel:  [<c23190b6>] ? i386_start_kernel+0xb6/0xbd
+> > Mar 30 03:48:43 werner kernel: ---[ end trace 2f5b85b514efe967 ]---
+> > Mar 30 03:48:43 werner kernel: ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
+> > Mar 30 03:48:43 werner kernel: ata1.00: failed command: WRITE DMA
+> > Mar 30 03:48:43 werner kernel: ata1.00: cmd ca/00:08:27:06:bc/00:00:00:00:00/e7 tag 0 dma 4096 out
+> > Mar 30 03:48:43 werner kernel:          res 50/00:00:4e:00:bc/00:00:00:00:00/e7 Emask 0x40 (internal error)
+> > Mar 30 03:48:43 werner kernel: ata1.00: status: { DRDY }
+> > Mar 30 03:48:43 werner kernel: ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
+> > Mar 30 03:48:43 werner kernel: ata1.00: failed command: WRITE DMA
+> > Mar 30 03:48:43 werner kernel: ata1.00: cmd ca/00:08:27:06:bc/00:00:00:00:00/e7 tag 0 dma 4096 out
+> > Mar 30 03:48:43 werner kernel:          res 50/00:00:af:88:e0/00:00:00:00:00/e0 Emask 0x40 (internal error)
+> > Mar 30 03:48:43 werner kernel: ata1.00: status: { DRDY }
+> > Mar 30 03:48:43 werner kernel: ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
+> > Mar 30 03:48:43 werner kernel: ata1.00: failed command: WRITE DMA
+> > Mar 30 03:48:43 werner kernel: ata1.00: cmd ca/00:08:27:06:bc/00:00:00:00:00/e7 tag 0 dma 4096 out
+> > Mar 30 03:48:43 werner kernel:          res 50/00:00:af:88:e0/00:00:00:00:00/e0 Emask 0x40 (internal error)
+> > Mar 30 03:48:43 werner kernel: ata1.00: status: { DRDY }
+> > Mar 30 03:48:43 werner kernel: ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
+> > Mar 30 03:48:43 werner kernel: ata1.00: failed command: WRITE DMA
+> > Mar 30 03:48:43 werner kernel: ata1.00: cmd ca/00:08:27:06:bc/00:00:00:00:00/e7 tag 0 dma 4096 out
+> > Mar 30 03:48:43 werner kernel:          res 50/00:00:af:88:e0/00:00:00:00:00/e0 Emask 0x40 (internal error)
+> > Mar 30 03:48:43 werner kernel: ata1.00: status: { DRDY }
+> > Mar 30 03:48:43 werner kernel: ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
+> > Mar 30 03:48:43 werner kernel: ata1.00: failed command: WRITE DMA
+> > Mar 30 03:48:43 werner kernel: ata1.00: cmd ca/00:08:27:06:bc/00:00:00:00:00/e7 tag 0 dma 4096 out
+> > Mar 30 03:48:43 werner kernel:          res 50/00:00:af:88:e0/00:00:00:00:00/e0 Emask 0x40 (internal error)
+> > Mar 30 03:48:43 werner kernel: ata1.00: status: { DRDY }
+> > Mar 30 03:48:43 werner kernel: ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
+> > Mar 30 03:48:43 werner kernel: ata1.00: failed command: WRITE DMA
+> > Mar 30 03:48:43 werner kernel: ata1.00: cmd ca/00:08:27:06:bc/00:00:00:00:00/e7 tag 0 dma 4096 out
+> > Mar 30 03:48:43 werner kernel:          res 50/00:00:af:88:e0/00:00:00:00:00/e0 Emask 0x40 (internal error)
+> > Mar 30 03:48:43 werner kernel: ata1.00: status: { DRDY }
+
+The triggered condition is the following.
+
+	if (WARN_ON_ONCE(ata_is_data(prot) &&
+	    (!qc->sg || !qc->n_elem || !qc->nbytes)))
+		goto sys_err;
+
+qc->nbytes is 4096 as printed out in "dma 4096 out" in the command
+error messages, so either qc->sg or n_elem is not initialized and both
+are initialized directly from the SCSI command using scsi_sglist(scmd)
+and scsi_sg_count(scmd), so the root cause could be in SCSI layer.
+
+Anyways, too little info to determine anything at this point.
+
+Thanks.
+
 -- 
-1.7.1
-
+tejun
