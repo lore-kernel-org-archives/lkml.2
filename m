@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab1DAUjc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 16:39:32 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:43043 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab1DAUjb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 16:39:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=dqoVGkLUkNje6madXuVFP2NJblNT3LvcV3wv8jmX5I+F/BxQf3CHffoTm5vz4fJLcH
-         a+Ni+HqCxke2Phak8HZw==
+	id S1756887Ab1DAVAe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 17:00:34 -0400
+Received: from kroah.org ([198.145.64.141]:53027 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753604Ab1DAVAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 17:00:33 -0400
+Date: Fri, 1 Apr 2011 13:59:39 -0700
+From: Greg KH <greg@kroah.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "lkml20101129@newton.leun.net" <lkml20101129@newton.leun.net>,
+        "x86@kernel.org" <x86@kernel.org>, Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        stable kernel team <stable@kernel.org>
+Subject: Re: [stable] [PATCH urgent] x86: Save cr4 to mmu_cr4_features at
+ boot time
+Message-ID: <20110401205939.GA12759@kroah.com>
+References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop>
+ <20110401062338.GA6434@elte.hu>
+ <alpine.DEB.2.00.1104011212070.16492@kaball-desktop>
+ <20110401190812.GA16830@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <20110330155911.6dc0ef63@absol.kitzblitz>
-References: <20110330155911.6dc0ef63@absol.kitzblitz>
-Date: Fri, 1 Apr 2011 13:39:27 -0700
-X-Google-Sender-Auth: 8Gp6VbQ7Xia46Pq7fMIdmCAMkQQ
-Message-ID: <BANLkTimxRd6X2JhchrVw45MpbdpQw8Zpeg@mail.gmail.com>
-Subject: Re: [PATCH] arm: tegra: fix error check in tegra2_clocks.c
-From: Colin Cross <ccross@android.com>
-To: Nicolas Kaiser <nikai@nikai.net>
-Cc: Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110401190812.GA16830@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 6:59 AM, Nicolas Kaiser <nikai@nikai.net> wrote:
-> Checking 'rate < 0' doesn't work because 'rate' is unsigned.
->
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
-> ---
-> Untested.
->
->  arch/arm/mach-tegra/tegra2_clocks.c |    9 +++++----
->  1 files changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/arm/mach-tegra/tegra2_clocks.c b/arch/arm/mach-tegra/tegra2_clocks.c
-> index 6d7c4ee..4459470 100644
-> --- a/arch/arm/mach-tegra/tegra2_clocks.c
-> +++ b/arch/arm/mach-tegra/tegra2_clocks.c
-> @@ -1362,14 +1362,15 @@ static int tegra_clk_shared_bus_set_rate(struct clk *c, unsigned long rate)
->  {
->        unsigned long flags;
->        int ret;
-> +       long new_rate = rate;
->
-> -       rate = clk_round_rate(c->parent, rate);
-> -       if (rate < 0)
-> -               return rate;
-> +       new_rate = clk_round_rate(c->parent, new_rate);
-> +       if (new_rate < 0)
-> +               return new_rate;
->
->        spin_lock_irqsave(&c->parent->spinlock, flags);
->
-> -       c->u.shared_bus_user.rate = rate;
-> +       c->u.shared_bus_user.rate = new_rate;
->        ret = tegra_clk_shared_bus_update(c->parent);
->
->        spin_unlock_irqrestore(&c->parent->spinlock, flags);
-> --
-> 1.7.3.4
->
+On Fri, Apr 01, 2011 at 09:08:12PM +0200, Ingo Molnar wrote:
+> 
+> * Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> 
+> > P.S.
+> >
+> > I asked for a backport of e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e to the 
+> > stable trees because I forgot to add "CC stable@kernel.org" to the commit 
+> > message and this commit is needed to fix a critical crash on boot on xen.
+> 
+> You are displaying a dangerously amateurish attitude towards quality control 
+> and you clealy have no idea what it takes to push fixes into -stable.
+> 
+> You forwarded a brand-new, visibly dangerous native kernel commit to -stable 
+> without Cc:-ing the maintainers and you have caused a native kernel regression 
+> that way. You are not maintaining the code in question and you have not 
+> committed the patch in question.
+> 
+> -stable team, please revert this commit. The whole issue obviously needs more 
+> testing and we'll forward a proper fix once it's available and tested.
 
-Acked-by: Colin Cross <ccross@android.com>
+Ok, when I return from vacation on Tuesday I will revert it and do new
+releases.
+
+thanks,
+
+greg k-h
