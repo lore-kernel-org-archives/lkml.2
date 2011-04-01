@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab1DAK5M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 06:57:12 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:37985 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492Ab1DAK5L (ORCPT
+	id S1755761Ab1DALCy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 07:02:54 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:13730
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751145Ab1DALCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 06:57:11 -0400
-X-AuditID: b753bd60-a20f6ba000000ee4-01-4d95af842428
-X-AuditID: b753bd60-a20f6ba000000ee4-01-4d95af842428
-Message-ID: <4D95AF81.5050306@hitachi.com>
-Date: Fri, 01 Apr 2011 19:57:05 +0900
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Fri, 1 Apr 2011 07:02:53 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i637h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LIZ00J-02-5NO-02
+X-M-MSG: 
+Date: Fri, 1 Apr 2011 13:02:43 +0200
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Len Brown <lenb@kernel.org>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@lists.linux-foundation.org>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 9/9] x86 idle: delete mwait_idle()
+Message-ID: <20110401110243.GN11175@alberich.amd.com>
+References: <67e90d97e0a77df4acd0c75e1bacc7714e011f3e.1301550524.git.len.brown@intel.com>
+ <9797d1edfe558e20297785ce5b4e26339b74ea2c.1301550524.git.len.brown@intel.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp, David Ahern <daahern@cisco.com>
-Subject: Re: [PATCH -tip v3 0/6] perf: Introduce branch sub commands
-References: <20110324113137.20235.42265.stgit@localhost6.localdomain6> <20110330144639.GA2204@nowhere>
-In-Reply-To: <20110330144639.GA2204@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <9797d1edfe558e20297785ce5b4e26339b74ea2c.1301550524.git.len.brown@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/03/30 23:46), Frederic Weisbecker wrote:
-<snip>
->> 'perf branch trace' can parse and analyze recorded BTS log and print various
->> information of execution path. This command can show address, pid, command name,
->> function+offset, file path of elf.
->> You can choose the printed information with option.
->>
->> Example: 'perf branch trace'
->> function+offset
->> irq_return+0x0  =>  _start+0x0
->> irq_return+0x0  =>  _start+0x0
->> _start+0x3      =>  _dl_start+0x0
->> irq_return+0x0  =>  _dl_start+0x0
->> irq_return+0x0  =>  _dl_start+0x26
->> irq_return+0x0  =>  _dl_start+0x2d
->
-> These results are a bit surprising. May be we can
-> jump once from irq_return to _start, in the first schedule()
-> of a new task perhaps, but thereafter I would expect
-> further jumps not to happen from irq_return, but rather
-> from _start. When we have x as a destination in line n, then
-> I would expect to have x as a source in n + 1.
-Agree with the opinion "irq_start" surprising users.
-However, I think it is not a better solution that uses a
-previous destination as a next source.
-Because, users want to know what happen in userspace and,
-do not want to know interrupts from kernel.
+On Thu, Mar 31, 2011 at 02:03:24AM -0400, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
+> 
+> For ACPI mode, mwait_with_hints() in cstate.c is used instead of
+> process.c's mwait_idle().
+> 
+> For INTEL_IDLE mode, the mwait in intel_idle() is used instead of
+> process.c's mwait_idle().
+> 
+> So delete process.c's mwait_idle().
+> This will change the behaviour of SMP sysgtems that are
+> running !ACPI and !INTEL_IDLE kernels -- they will use
+> HALT instead of MWAIT.
+> 
+> This deletes the "idle=mwait" parameter, and thus the
+> boot_option_idle_override == IDLE_FORCE_MWAIT flag.
+> 
+> Signed-off-by: Len Brown <len.brown@intel.com>
 
-I think the better solution is to implement the filter that
-eliminate the record including kernel functions from output.
-For example, leading example will be filtered like this.
+Acked-by: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-_start+0x3      =>  _dl_start+0x0
 
-In the future, I think the solution is available that using BTS records
-with trace event like irq:irq_handler_entry to analyze interrupt.
-However, to do it, we need to fix perf.
+Regards,
+Andreas
 
->
-> Also we are supposed to only trace BTS in userspace, but
-> perhaps, if we are interrupted, after the execution of the iret instruction,
-> BTS considers the following jump "iret ->  interrupted inst" as a branch
-> in userspace. After all it makes sense, it is a jump in userspace.
->
-> So BTS, because of the way it defines a jump inside userspace,
-> traces irq returns but not irq entries, that would explain the trace
-> you gave as an example.
->
-> I suspect we want to filter irq returns. ie: if the source comes
-> from the kernel, then filter it by default. And then we can later
-> think about an option to enable interrupt return tracing if
-> people want them.
-Agree.
-I will implement the option that enable/disable the filter.
 
->
-> Thanks.
-Thank you for your advise.
