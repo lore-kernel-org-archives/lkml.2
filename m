@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab1DAOD0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:03:26 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34522 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756620Ab1DAODZ convert rfc822-to-8bit (ORCPT
+	id S1756838Ab1DAODq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:03:46 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:33969 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756620Ab1DAODo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:03:25 -0400
-Subject: Re: cpuidle asymmetry (was Re: [RFC PATCH V4 5/5] cpuidle: cpuidle
- driver for apm)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Trinabh Gupta <trinabh@linux.vnet.ibm.com>, arjan@linux.intel.com,
-        Stephen Rothwell <sfr@canb.auug.org.au>, suresh.b.siddha@intel.com,
-        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-In-Reply-To: <alpine.LFD.2.02.1104010006210.2797@x980>
-References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
-	 <20110322123336.28725.29810.stgit@tringupt.in.ibm.com>
-	 <20110323121458.ec7cdaf9.sfr@canb.auug.org.au>
-	 <4D89CA7D.8080108@linux.vnet.ibm.com>
-	 <alpine.LFD.2.02.1103231623450.12911@x980>
-	 <4D8B550D.5000409@linux.vnet.ibm.com>
-	 <alpine.LFD.2.02.1103250321480.32565@x980>
-	 <20110325180156.GC19214@dirshya.in.ibm.com>
-	 <alpine.LFD.2.02.1103302203490.1920@x980> <1301577536.4859.249.camel@twins>
-	 <alpine.LFD.2.02.1104010006210.2797@x980>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 01 Apr 2011 16:02:36 +0200
-Message-ID: <1301666556.4859.695.camel@twins>
+	Fri, 1 Apr 2011 10:03:44 -0400
+Subject: Re: [PATCH 04/12] mm: alloc_contig_freed_pages() added
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>
+In-Reply-To: <op.vs8cf5xd3l0zgt@mnazarewicz-glaptop>
+References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
+	 <1301577368-16095-5-git-send-email-m.szyprowski@samsung.com>
+	 <1301587083.31087.1032.camel@nimitz>
+	 <op.vs77qfx03l0zgt@mnazarewicz-glaptop>
+	 <1301606078.31087.1275.camel@nimitz>
+	 <op.vs8awkrx3l0zgt@mnazarewicz-glaptop> <1301610411.30870.29.camel@nimitz>
+	 <op.vs8cf5xd3l0zgt@mnazarewicz-glaptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 01 Apr 2011 07:03:16 -0700
+Message-ID: <1301666596.30870.176.camel@nimitz>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 00:09 -0400, Len Brown wrote:
-> > > Moorestown is already an example of an asymmetric system,
-> > > since its deepest c-state is available on cpu0, but not on cpu1.
-> > > So it needs different tables for each cpu. 
-> > 
-> > wtf are these hardware guys smoking and how the heck are we supposed to
-> > schedule on such a machine? Prefer to keep cpu1 busy while idling cpu0?
+On Fri, 2011-04-01 at 00:51 +0200, Michal Nazarewicz wrote:
+> On Fri, 01 Apr 2011 00:26:51 +0200, Dave Hansen <dave@linux.vnet.ibm.com>  
+> wrote:
+> >> Bug in the above place does not mean that we could not allocate  
+> >> memory.  It means caller is broken.
+> >
+> > Could you explain that a bit?
+> >
+> > Is this a case where a device is mapped to a very *specific* range of
+> > physical memory and no where else?  What are the reasons for not marking
+> > it off limits at boot?  I also saw some bits of isolation and migration
+> > in those patches.  Can't the migration fail?
 > 
-> they are smoking micro-amps:-)
-
-Has anybody told them that pushing lots of logic into software generally
-burns more amps because it keeps the thing running longer?
-
-> S0i3 on cpu0 can be entered only after cpu1 is already off-line,
-> among other system hardware dependencies...
+> The function is called from alloc_contig_range() (see patch 05/12) which
+> makes sure that the PFN is valid.  Situation where there is not enough
+> space is caught earlier in alloc_contig_range().
 > 
-> So it makes no sense to export S0i3 as a c-state on cpu1.
-> 
-> When cpu1 is online, the scheduler treats it as a normal SMP.
+> alloc_contig_freed_pages() must be given a valid PFN range such that all
+> the pages in that range are free (as in are within the region tracked by
+> page allocator) and of MIGRATETYPE_ISOLATE so that page allocator won't
+> touch them.
 
-Dipankar's reply seems to address this issue well.
+OK, so it really is a low-level function only.  How about a comment that
+explicitly says this?  "Only called from $FOO with the area already
+isolated."  It probably also deserves an __ prefix.
+
+> That's why invalid PFN is a bug in the caller and not an exception that
+> has to be handled.
+> 
+> Also, the function is not called during boot time.  It is called while
+> system is already running.
+
+What kind of success have you had running this in practice?  I'd be
+worried that some silly task or a sticky dentry would end up in the
+range that you want to allocate in.  
+
+
+-- Dave
+
