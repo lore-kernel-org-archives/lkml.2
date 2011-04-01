@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab1DAOZX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:25:23 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35635 "EHLO mgw2.diku.dk"
+	id S1753991Ab1DAOX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:23:56 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35616 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754722Ab1DAOX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:23:57 -0400
+	id S1751809Ab1DAOXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 10:23:54 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Andreas Bombe <aeb@debian.org>, Joe Perches <joe@perches.com>,
+To: Brett Rudley <brudley@broadcom.com>
+Cc: kernel-janitors@vger.kernel.org, Henry Ptasinski <henryp@broadcom.com>,
+        Dowan Kim <dowan@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jason Cooper <jason@lakedaemon.net>, linux-wireless@vger.kernel.org,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6] drivers/staging/cx25821/cx25821-video.c: introduce missing kfree
-Date: Fri,  1 Apr 2011 16:23:44 +0200
-Message-Id: <1301667827-20056-3-git-send-email-julia@diku.dk>
+Subject: [PATCH 1/6] drivers/staging/brcm80211/brcmfmac/wl_iw.c: introduce missing kfree
+Date: Fri,  1 Apr 2011 16:23:42 +0200
+Message-Id: <1301667827-20056-1-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -67,19 +67,26 @@ print "* file: %s kmalloc %s return %s" % (p1[0].file,p1[0].line,p2[0].line)
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/staging/cx25821/cx25821-video.c |    1 +
- 1 file changed, 1 insertion(+)
+There is some other error handling code about 10 lines down where it looks
+like a kfree is needed as well.  If that is the case, I can extend the patch.
 
-diff --git a/drivers/staging/cx25821/cx25821-video.c b/drivers/staging/cx25821/cx25821-video.c
-index ab05392..04b18f4 100644
---- a/drivers/staging/cx25821/cx25821-video.c
-+++ b/drivers/staging/cx25821/cx25821-video.c
-@@ -832,6 +832,7 @@ static int video_open(struct file *file)
+ drivers/staging/brcm80211/brcmfmac/wl_iw.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/brcm80211/brcmfmac/wl_iw.c b/drivers/staging/brcm80211/brcmfmac/wl_iw.c
+index b49957f..4e4cf36 100644
+--- a/drivers/staging/brcm80211/brcmfmac/wl_iw.c
++++ b/drivers/staging/brcm80211/brcmfmac/wl_iw.c
+@@ -3672,8 +3672,10 @@ int wl_iw_attach(struct net_device *dev, void *dhdp)
+ 		return -ENOMEM;
  
-        if (NULL == dev) {
- 		mutex_unlock(&cx25821_devlist_mutex);
-+		kfree(fh);
- 		return -ENODEV;
-        }
+ 	iscan->iscan_ex_params_p = kmalloc(params_size, GFP_KERNEL);
+-	if (!iscan->iscan_ex_params_p)
++	if (!iscan->iscan_ex_params_p) {
++		kfree(iscan);
+ 		return -ENOMEM;
++	}
+ 	iscan->iscan_ex_param_size = params_size;
+ 	iscan->sysioc_tsk = NULL;
  
 
