@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757981Ab1DAPum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:50:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56292 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab1DAPuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:50:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Detlef Vollmann <dv@vollmann.ch>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Date: Fri, 1 Apr 2011 17:50:17 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, david@lang.hm,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <201104011659.40443.arnd@arndb.de> <4D95EF8E.9080902@vollmann.ch>
-In-Reply-To: <4D95EF8E.9080902@vollmann.ch>
+	id S1758057Ab1DAPwW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:52:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41497 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754723Ab1DAPwS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 11:52:18 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104011750.17344.arnd@arndb.de>
-X-Provags-ID: V02:K0:gr9k8EoUyuVVpA1fVkEJMZ1N9CcMrfGd+3TPWEnUDcU
- gRx1gX38udt8TEGJ65ZHRfD7oPzxLL7Faxxy1oHKSMvJcN8l/L
- 2zeHgE5wG2shHsRKeigg4VE0B0fWh8KAJN6ATGoIK6qt7fK1Zb
- wqGlE/HSASzkOvPdZ+Bi+HkOXs2jN7qZhUKgguXd17dCQCsQsq
- EHbWKRo4CNOYr9kbZhonA==
+In-Reply-To: <BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
+References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
+ <AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
+ <AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
+ <alpine.LSU.2.00.1103182158200.18771@sister.anvils> <BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 1 Apr 2011 08:44:50 -0700
+Message-ID: <AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
+To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Michel Lespinasse <walken@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 April 2011, Detlef Vollmann wrote:
-> On 04/01/11 16:59, Arnd Bergmann wrote:
-> > On Friday 01 April 2011, Detlef Vollmann wrote:
-> >> On 04/01/11 15:54, Arnd Bergmann wrote:
-> >
-> >>> 9. All interesting work is going into a handful of platforms, all of which
-> >>>      are ARMv7 based.
-> >> Define interesting.
-> >
-> > The ones that are causing the churn that we're talking about.
-> > Platforms that have been working forever and only need to get
-> > the occasional bug fix are boring, i.e. not the problem.
-> In the ARM tree I only know mach-at91.
-> Atmel still introduces new SOCs based on ARM926EJ-S, and that makes
-> perfect sense for lots of applications.
+On Fri, Apr 1, 2011 at 7:34 AM, Robert Święcki <robert@swiecki.net> wrote:
+>
+> Hey, I'll apply your patch and check it out. In the meantime I
+> triggered another Oops (NULL-ptr deref via sys_mprotect).
+>
+> The oops is here:
+>
+> http://alt.swiecki.net/linux_kernel/sys_mprotect-2.6.38.txt
 
-I thought new ones were generally Cortex-M3 based. Either way, even
-if there are exceptions, focusing on ARMv7 at first should give
-a good representation of the new development.
+That's not a NULL pointer dereference. That's a BUG_ON().
 
-> >>> 12. Supporting many different boards with a single kernel binary is a
-> >>>       useful goal.
-> >> Generally not for embedded systems (for me, a mobile PDA/phone is just a
-> >> small computer with a crappy keyboard, but not an embedded system).
-> >
-> > True. For embedded, this would not be an important thing to do, but
-> > also not hurt.
-> It costs you flash space.
+And for some reason you've turned off the BUG_ON() messages, saving
+some tiny amount of memory.
 
-Well, the idea was not to force everyone to enable all options. When this
-is done right, the kernel would not be any bigger.
+Anyway, it looks like the first BUG_ON() in vma_prio_tree_add(), so it
+would be this one:
 
-> >>> * Strictly no crap
-> >>>    * No board files
-> >> Where do you put code that needs to run very early (e.g. pinging the
-> >> watchdog)?
-> >
-> > Don't know. I'd hope we can get fast enough to the phase where device
-> > drivers get initialized.
-> Nope, never happened for me :-(
-> (Watchdog timeouts are often 1s or less.)
+        BUG_ON(RADIX_INDEX(vma) != RADIX_INDEX(old));
 
-1s is a long time. Most of the boot process is drivers anyway, so we
-just need to make sure that the watchdog is early enough.
+but it is possible that gcc has shuffled things around (so it _might_
+be the HEAP_INDEX() one). If you had CONFIG_DEBUG_BUGVERBOSE=y, you'd
+get a filename and line number. One reason I hate -O2 in cases like
+this is that the basic block movement makes it way harder to actually
+debug things. I would suggest using -Os too (CONFIG_OPTIMIZE_FOR_SIZE
+or whatever it's called).
 
-> > I believe that rule is generally accepted today, but we don't always
-> > enforce it.
-> Without device tree, Kconfig option is the only way that really
-> works today (no runtime HW detection, and same board ID with different
-> setups).
+Anyway, I do find it worrying. The vma code shouldn't be this fragile.  Hugh?
 
-I believe that has never been an accepted way of doing things, you are
-supposed to get a new board ID for every new board, hence the name ;-).
+I do wonder what triggers this. Is it a huge-page vma? We seem to be
+lacking the check to see that mprotect() is on a hugepage boundary -
+and that seems bogus. Or am I missing some check? The new transparent
+hugepage support splits the page, but what if it's a _static_ hugepage
+thing?
 
-	ARnd
+But why would that affect the radix_index thing? I have no idea. I'd
+like to blame the anon_vma rewrites last year, but I can't see why
+that should matter either. Again, hugepages had some special rules, I
+think (and that would explain why nobody normal sees this).
+
+Guys, please give this one a look.
+
+                          Linus
