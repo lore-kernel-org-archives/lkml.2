@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab1DAIqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 04:46:18 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:47845 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781Ab1DAIqQ (ORCPT
+	id S1752638Ab1DAItH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 04:49:07 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:63078 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750800Ab1DAItC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 04:46:16 -0400
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: victor.vde@gmail.com, util-linux@vger.kernel.org, miklos@szeredi.hu,
-        linuxram@us.ibm.com, viro@zeniv.linux.org.uk, victor.vde@gmail.com,
-        ejmarkow@yahoo.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-reply-to: <87d3l62z3k.fsf@linux.vnet.ibm.com>
-	(aneesh.kumar@linux.vnet.ibm.com)
-Subject: Re: [BUG] libmount misparses mountinfo on Linux v2.6.39-rc1
-References: <19860.58082.277944.875401@gargle.gargle.HOWL> <87d3l62z3k.fsf@linux.vnet.ibm.com>
-Message-Id: <E1Q5ZzI-0001M4-0j@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Fri, 01 Apr 2011 10:45:48 +0200
+	Fri, 1 Apr 2011 04:49:02 -0400
+X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Apr 2011 04:49:02 EDT
+X-IronPort-AV: E=Sophos;i="4.63,281,1299452400"; 
+   d="scan'208";a="104204826"
+Date: Fri, 1 Apr 2011 10:39:02 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: linux-kernel@vger.kernel.org
+Subject: hurd 0.401 is released!
+Message-ID: <20110401083902.GE4963@const.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 01 Apr 2011, Aneesh Kumar K. V wrote:
-> On Thu, 31 Mar 2011 22:24:01 +0200, victor.vde@gmail.com wrote:
-> > /proc/self/mountinfo on Linux v2.6.39-rc1 includes the UUID of ext4
-> > and ext3 mounts, for example:
-> > 
-> > 15 1 8:3 / / rw,noatime uuid:c645234d-9756-4d84-825e-6fe999252a34 - ext4 /dev/sda3 rw,user_xattr,acl,barrier=1,data=ordered
-> > 
-> > It seems the hyphens in the uuid confuse the parser
-> > mnt_parse_mountinfo_line in tab_parse.c of libmount in util-linux.
-> 
-> shouldn't the parser look for " " followed by "-" followed by " " as the
-> field seperator ? 
-> 
-> I am adding Miklos and Ram Pai to CC to check whether the kernel or the libmount 
-> should be fixed ?
+Hello,
 
-I think libmount should be fixed, though there is always the question
-of backward compatibility.
+There are rumors that Duke Nukem Forever will actually be released in
+Apr^WMa^WJune 2011, so there's no escape for the Hurd any more, we had
+to finish and release. There has been considerable progress lately,
+so it is with great pleasure that the Hurd maintainers team decided
+to release version 0.401 of the GNU/Hurd Operating System. As the
+version number and image size suggest, this is only a small preview
+of course, but we expect GNU/Hurd to be of production-quality within
+the third millenium, to be sure.
 
-However I don't see how the kernel could be fixed, given that libmount
-doesn't seem to parse escape sequences (e.g. "\040" for space), which
-it also should.
+A LiveCD demo is available on
+http://people.debian.org/~sthibault/hurd-0.401/hurd-0.401.iso
+and can be trivially tried using
+qemu -cdrom hurd-0.401.iso
 
-Karel?
+We hope that you will appreciate its features and speed.
 
-Thanks,
-Miklos
+Are you interested in contributing to the GNU Hurd project?  Just
+request an shell account on one of our servers and get started.
+
+http://www.gnu.org/software/hurd/public_hurd_boxen.html
+
+It is also worth noting that like in previous years, GNU/Hurd runs
+for the GSoC program, details can be found on
+
+http://www.gnu.org/software/hurd/community/gsoc.html
