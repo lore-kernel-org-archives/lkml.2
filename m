@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab1DATRW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 15:17:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43358 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab1DATRV (ORCPT
+	id S1753538Ab1DATcp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 15:32:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56417 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081Ab1DATco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 15:17:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=AyH7ZhzML7ZNgmjQ8dIPXqQUNSr7Ra+6WqEfQQeNKKl4rR3kbdRvHmKSTT8J/j1il1
-         QuWeBQ7kijNcTtDzyOlBToH0WqOwINn1pvW+Df4kj3h52IxDuVrHpM2kaLTbO1PjM+cP
-         RCRdlJpJ1MLGfHCMW73+mgtcHSX9PduG5mMSs=
-Subject: Re: [PATCH v2] x86: page: get_order() optimization
-From: Maksym Planeta <mcsim.planeta@gmail.com>
+	Fri, 1 Apr 2011 15:32:44 -0400
+Message-ID: <4D962837.2070300@kernel.org>
+Date: Fri, 01 Apr 2011 12:32:07 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
 To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, mingo@redhat.com,
-        kernel-janitors@vger.kernel.org, namhyung@gmail.com,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Jan Beulich <JBeulich@novell.com>
-In-Reply-To: <4D90E539.7060908@zytor.com>
-References: <1301215556-8898-1-git-send-email-mcsim.planeta@gmail.com>
-	 <20110327113323.GA27825@elte.hu> <1301246136.2291.49.camel@debian>
-	 <20110328050844.GC26322@elte.hu> <1301340822.6302.90.camel@debian>
-	 <4D90E539.7060908@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Apr 2011 17:08:44 +0300
-Message-ID: <1301666924.734.6.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ingo Molnar <mingo@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Michael Leun <lkml20101129@newton.leun.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Mike Pagano <mpagano@gentoo.org>
+Subject: Re: 2.6.38.2 breaks suspend to disk
+References: <20110330203215.0a1a41a7@xenia.leun.net> <20110331090524.07ad0069@xenia.leun.net> <alpine.DEB.2.00.1103311546480.16492@kaball-desktop> <201103312348.53678.rjw@sisk.pl> <4D94FE37.8070109@kernel.org> <alpine.DEB.2.00.1104011230550.16492@kaball-desktop> <4D95F80D.7070201@kernel.org> <4D95FBDD.9050901@zytor.com> <alpine.DEB.2.00.1104011729000.16492@kaball-desktop> <4D961FBC.2030105@zytor.com>
+In-Reply-To: <4D961FBC.2030105@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D962844.0116,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28/03/2011 at 12:44 -0700, H. Peter Anvin wrote:
-> With what options?
-> 
-> 	-hpa
+On 04/01/2011 11:55 AM, H. Peter Anvin wrote:
+> On 04/01/2011 11:14 AM, Stefano Stabellini wrote:
+>>> Why the heck should we save and restore CR4 only for x86-64?
+>>
+>> AFAICT it has always been the case since the beginning of time (Initial
+>> git repository build).
+>
+> Doesn't change the fact that at least conceptually it's wrong; consider
+> bits like NX.  Rafael, do you have any thoughts on this?
+>
+more info:
 
-$ gcc -v
-Using built-in specs.
-COLLECT_GCC=gcc
-COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/4.5.2/lto-wrapper
-Target: x86_64-linux-gnu
-Configured with: ../src/configure -v --with-pkgversion='Debian 4.5.2-4'
---with-bugurl=file:///usr/share/doc/gcc-4.5/README.Bugs
---enable-languages=c,c++,fortran,objc,obj-c++ --prefix=/usr
---program-suffix=-4.5 --enable-shared --enable-multiarch
---enable-linker-build-id --with-system-zlib --libexecdir=/usr/lib
---without-included-gettext --enable-threads=posix
---with-gxx-include-dir=/usr/include/c++/4.5 --libdir=/usr/lib
---enable-nls --enable-clocale=gnu --enable-libstdcxx-debug
---enable-libstdcxx-time=yes --enable-plugin --enable-gold
---enable-ld=default --with-plugin-ld=ld.gold --enable-objc-gc
---with-arch-32=i586 --with-tune=generic --enable-checking=release
---build=x86_64-linux-gnu --host=x86_64-linux-gnu
---target=x86_64-linux-gnu
-Thread model: posix
-gcc version 4.5.2 (Debian 4.5.2-4) 
+in arch/x86/kernel/setup.c  we have
+#if !defined(CONFIG_X86_PAE) || defined(CONFIG_X86_64)
+unsigned long mmu_cr4_features;
+#else
+unsigned long mmu_cr4_features = X86_CR4_PAE;
+#endif
 
-for compiling kernel I've used: make defconfig && make -j3
--- 
-Thanks,
 
-Maksym Planeta
+in arch/x86/kernel/head_32.S
 
+/*
+  *      New page tables may be in 4Mbyte page mode and may
+  *      be using the global pages.
+  *
+  *      NOTE! If we are on a 486 we may have no cr4 at all!
+  *      So we do not try to touch it unless we really have
+  *      some bits in it to set.  This won't work if the BSP
+  *      implements cr4 but this AP does not -- very unlikely
+  *      but be warned!  The same applies to the pse feature
+  *      if not equally supported. --macro
+  *
+  *      NOTE! We have to correct for the fact that we're
+  *      not yet offset PAGE_OFFSET..
+  */
+#define cr4_bits pa(mmu_cr4_features)
+         movl cr4_bits,%edx
+         andl %edx,%edx
+         jz 6f
+         movl %cr4,%eax          # Turn on paging options (PSE,PAE,..)
+         orl %edx,%eax
+         movl %eax,%cr4
+...
+6:
+
+So for 32 bit, PAE support is not compiled in for old 486 cpus.
+mmu_cr4_feautres will be used to make sure head_32.S will not access cr4.
+
+that could be the reason why 32 bit does not do read back at beginning.
+
+Thanks
+
+Yinghai
