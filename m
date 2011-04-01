@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758253Ab1DAVvW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 17:51:22 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62894 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757529Ab1DAVvU convert rfc822-to-8bit (ORCPT
+	id S1758479Ab1DAVyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 17:54:37 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:23889 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab1DAVyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 17:51:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=C3lzhCt6FP70BqP7oIu4cZ0FqlqgotwTyevWPIilseZWvfLQEZtSIAwIsAWPyzh04w
-         LRwwBEImZOuoCZiuiiZhhdqTiqudxZG3i5SApQqTmXgEqOP+0tVp4Vfpee0ZtzgPhHNi
-         O9r8nDZLR9yHiIrDVypZXd+a26aZXZBpfcZDc=
+	Fri, 1 Apr 2011 17:54:36 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6303"; a="83520468"
+Message-ID: <4D96499B.5070402@codeaurora.org>
+Date: Fri, 01 Apr 2011 14:54:35 -0700
+From: Bryan Huntsman <bryanh@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <201104012332.24319.arnd@arndb.de>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
-	<201104011659.40443.arnd@arndb.de>
-	<87vcyxllub.fsf@ti.com>
-	<201104012332.24319.arnd@arndb.de>
-Date: Fri, 1 Apr 2011 22:51:19 +0100
-X-Google-Sender-Auth: Zu5kIHcwuGP4RyIwCiTSoKzWoG4
-Message-ID: <AANLkTin46Hu7BRNrTYYxHwaE10emUM7VNPWwg9w4r9n6@mail.gmail.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@ti.com>, "david@lang.hm" <david@lang.hm>,
+To: Will Deacon <will.deacon@arm.com>
+CC: Neil Leeder <nleeder@codeaurora.org>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Brown <davidb@codeaurora.org>, Detlef Vollmann <dv@vollmann.ch>
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        Sheetal Sahasrabudhe <sheetals@codeaurora.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, jamie.iles@picochip.com,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: accessing vfpinstr macros from outside vfp directory
+References: <4D924966.2050707@codeaurora.org> <1301678843.17592.5.camel@e102144-lin.cambridge.arm.com>
+In-Reply-To: <1301678843.17592.5.camel@e102144-lin.cambridge.arm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, 1 April 2011, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 01 April 2011 23:10:04 Kevin Hilman wrote:
->> Arnd Bergmann <arnd@arndb.de> writes:
+On 04/01/11 10:27, Will Deacon wrote:
+> Neil,
+> 
+> On Tue, 2011-03-29 at 22:04 +0100, Neil Leeder wrote:
+>> Any opinions on what would be the best thing to do here? Choices appear to be:
 >>
->> > On Friday 01 April 2011, Detlef Vollmann wrote:
->> >> On 04/01/11 15:54, Arnd Bergmann wrote:
->> >
->> >> > 9. All interesting work is going into a handful of platforms, all of which
->> >> >     are ARMv7 based.
->> >> Define interesting.
->> >
->> > The ones that are causing the churn that we're talking about.
->> > Platforms that have been working forever and only need to get
->> > the occasional bug fix are boring, i.e. not the problem.
+>> 1) allow the relative include path of ../vfp/vfpinstr.h
+>> 2) move the definitions of fmrx, fmxr from vfp/vfpinstr.h to include/asm/vfp.h
+>> 3) move vfp/vfpinstr.h to include/asm
+>> 4) other...?
 >>
->> I'm not sure I follow the ARMv7-only thinking either.
+>> If it helps, I can create a patch for whichever is considered the preferred solution.
 >>
->> Picking ARMv7 only would be a good way to avoid part of the problem, but
->> IMO, it doesn't really address the root causes.  Part of the ugliness of
->> the platform-specific hackery (and the "churn" to clean some of it up)
->> is precisely due to support for multiple ARM architecture versions, and
->> the various SoCs in a family that use them.  For example, linux-omap
->> supports OMAP1 (ARMv5), OMAP2 (ARMv6), OMAP3 (ARMv7) and OMAP4 (ARMv7
->> SMP), and OMAP2/3/4 in a single binary.
->>
->> Also, since we've only very recently got to the point of being able to
->> support ARMv6 + ARMv7 UP & SMP in the same kernel, making a decision now
->> that only ARMv7 is important seems like a step backwards.  If the
->> ultimate goal is getting to a point where we have infrastrucure that can
->> be cross-SoC, surely this same infrastrucure should support multiple ARM
->> architecture revisions.
->
-> Yes, forget about the ARMv7 part of my proposal, that was not a main point.
->
-> If we decide to have a new clean platform variant the way I suggested,
-> it would be nice to support all machines in a single kernel binary,
-> and at least v6+v7 is a solved problem.
->
-> Supporting a second kernel binary up to v5 with the same source is also
-> simple, as would be big-endian/little-endian variants, or thumb2/arm variants.
-> We might not want to do all combinations from the start though, and I would
-> choose ARMv6/v7-thumb2-le simply because that's what Linaro is focusing
-> on. The idea is to start with a clearly defined set, but write the code
-> in a way that makes it possible to extend in other directions.
+> 
+> I personally don't find option (1) that offensive - Bryan seemed to
+> differ though so perhaps option (2) would keep him happy?
+> 
+> I don't think option (3) is sensible given that the majority of the
+> header file is private to /vfp.
+> 
+> Will
 
-Thumb-2 is ARMv7 only. If you want a v6+v7 binary it would need to be
-compiled to ARM.
+I raised it as a question.  If that's the only sane thing to do here,
+then do it.  Since no one else seems to have chimed in on (2) or (3),
+I'm fine with the patch as-is.
 
+- Bryan
 
 -- 
-Catalin
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
