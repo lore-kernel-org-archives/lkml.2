@@ -1,152 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab1DAO5F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:57:05 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:60075 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753551Ab1DAO5D (ORCPT
+	id S1757655Ab1DAO5e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:57:34 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48254 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757587Ab1DAO5c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:57:03 -0400
-Date: Fri, 1 Apr 2011 20:17:12 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RESEND] [PATCH v3 2.6.39-rc1-tip 21/26] 21: Uprobe tracer
- documentation Dronamraju <srikar@linux.vnet.ibm.com>
-Message-ID: <20110401144712.GA15638@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
- <20110401143647.15455.19384.sendpatchset@localhost6.localdomain6>
+	Fri, 1 Apr 2011 10:57:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Sr0AnROrhfOg5N5YArp1sgy5j9s/Zuz7MqLzJYGMqvnrqG3LAcvJnReqkrxwdjyUAz
+         /143LZpyoU0Xzu8fbTJfV1mtjsd2b6nH0w5KRtON/bPlYNW0B8xh5yxpOPq+6kSjUfJO
+         llVeRWT03/uOA7iaEbL8lk5ChpUae/ndXd3oA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110401143647.15455.19384.sendpatchset@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTimpKhzHsZFSVrsZckfDQZ2GFwN1kw@mail.gmail.com>
+References: <SNT111-DS16E628E3B6501DBCF9E19CA7BF0@phx.gbl> <BANLkTimpKhzHsZFSVrsZckfDQZ2GFwN1kw@mail.gmail.com>
+From: Rafael Fernandez <rafaelefernandez@gmail.com>
+Date: Fri, 1 Apr 2011 09:57:12 -0500
+Message-ID: <BANLkTimoubhOk3tDwzgAek644C0AUCxN4w@mail.gmail.com>
+Subject: Re: Minimum time slice for relaible Linux execution
+To: limp <johnkyr83@hotmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Resending the patch after correcting the Subject and with sign-off in
-body.]
+Also, how is this different than placing a starvation limit around the
+RT set of tasks?
 
-uprobetracer Documentation.
+On Fri, Apr 1, 2011 at 9:19 AM, Rafael Fernandez
+<rafaelefernandez@gmail.com> wrote:
+> Hi,
+>
+> This is pretty interesting to me. How would your framework handle an
+> RT application that does quite a bit of I/O? Does it block and go to
+> Linux, get serviced, and come back?
+>
+> Thank you,
+> Rafael
+>
+> On Thu, Mar 31, 2011 at 7:13 AM, limp <johnkyr83@hotmail.com> wrote:
+>> Dear all,
+>>
+>> I have developed a framework similar to a hypervisor that switches between
+>> Linux and a RT domain.
+>> As RT priority is of highest importance, I want to give more time to the RT
+>> domain *but* I also want to give Linux adequate time for being able to
+>> operate.
+>>
+>> Could anyone advise me on how to determine the minimum possible time slice
+>> that I can give to Linux so that it doesn't crash?
+>>
+>> That is, if I periodically execute my RT domain every ms and then I switch
+>> to Linux, what's the minimum time that should be given to Linux, until the
+>> next RT domain execution?
+>>
+>> NOTE: The RT domain and Linux are not executed concurrently, i.e. the RT
+>> domain is executed first and then Linux executes until the next RT domain
+>> execution.
+>>
+>> Thank you all in advance.
+>>
+>> John K.
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- Documentation/trace/uprobetrace.txt |   94 +++++++++++++++++++++++++++++++++++
- 1 files changed, 94 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/trace/uprobetrace.txt
 
-diff --git a/Documentation/trace/uprobetrace.txt b/Documentation/trace/uprobetrace.txt
-new file mode 100644
-index 0000000..6c18ffe
---- /dev/null
-+++ b/Documentation/trace/uprobetrace.txt
-@@ -0,0 +1,94 @@
-+		Uprobe-tracer: Uprobe-based Event Tracing
-+		=========================================
-+                 Documentation is written by Srikar Dronamraju
-+
-+Overview
-+--------
-+These events are similar to kprobe based events.
-+To enable this feature, build your kernel with CONFIG_UPROBE_EVENTS=y.
-+
-+Similar to the kprobe-event tracer, this doesn't need to be activated via
-+current_tracer. Instead of that, add probe points via
-+/sys/kernel/debug/tracing/uprobe_events, and enable it via
-+/sys/kernel/debug/tracing/events/uprobes/<EVENT>/enabled.
-+
-+
-+Synopsis of uprobe_tracer
-+-------------------------
-+  p[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS]	: Set a probe
-+
-+ GRP		: Group name. If omitted, use "uprobes" for it.
-+ EVENT		: Event name. If omitted, the event name is generated
-+		  based on SYMBOL+offs.
-+ PATH		: path to an executable or a library.
-+ SYMBOL[+offs]	: Symbol+offset where the probe is inserted.
-+
-+ FETCHARGS	: Arguments. Each probe can have up to 128 args.
-+  %REG		: Fetch register REG
-+
-+Event Profiling
-+---------------
-+ You can check the total number of probe hits and probe miss-hits via
-+/sys/kernel/debug/tracing/uprobe_profile.
-+ The first column is event name, the second is the number of probe hits,
-+the third is the number of probe miss-hits.
-+
-+Usage examples
-+--------------
-+To add a probe as a new event, write a new definition to uprobe_events
-+as below.
-+
-+  echo 'p: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
-+
-+ This sets a uprobe at an offset of 0x4245c0 in the executable /bin/bash
-+
-+
-+  echo > /sys/kernel/debug/tracing/uprobe_events
-+
-+ This clears all probe points.
-+
-+The following example shows how to dump the instruction pointer and %ax
-+a register at the probed text address.  Here we are trying to probe
-+function zfree in /bin/zsh
-+
-+    # cd /sys/kernel/debug/tracing/
-+    # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
-+    00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
-+    # objdump -T /bin/zsh | grep -w zfree
-+    0000000000446420 g    DF .text  0000000000000012  Base        zfree
-+
-+0x46420 is the offset of zfree in object /bin/zsh that is loaded at
-+0x00400000. Hence the command to probe would be :
-+
-+    # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
-+
-+We can see the events that are registered by looking at the uprobe_events
-+file.
-+
-+    # cat uprobe_events
-+    p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
-+
-+Right after definition, each event is disabled by default. For tracing these
-+events, you need to enable it by:
-+
-+    # echo 1 > events/uprobes/enable
-+
-+Lets disable the event after sleeping for some time.
-+    # sleep 20
-+    # echo 0 > events/uprobes/enable
-+
-+And you can see the traced information via /sys/kernel/debug/tracing/trace.
-+
-+    # cat trace
-+    # tracer: nop
-+    #
-+    #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-+    #              | |       |          |         |
-+                 zsh-24842 [006] 258544.995456: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
-+                 zsh-24842 [007] 258545.000270: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
-+                 zsh-24842 [002] 258545.043929: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
-+                 zsh-24842 [004] 258547.046129: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
-+
-+Each line shows us probes were triggered for a pid 24842 with ip being
-+0x446421 and contents of ax register being 79.
-+
+
+-- 
+Rafael E. Fernández
+B.S. Computer Science
+University of Illinois at Urbana-Champaign
