@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab1DAMH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 08:07:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:59170 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab1DAMH1 (ORCPT
+	id S1753661Ab1DAMIZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 08:08:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43685 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab1DAMIX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 08:07:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Date: Fri, 1 Apr 2011 14:07:20 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-References: <201103301906.42429.arnd@arndb.de> <201104011322.44729.arnd@arndb.de> <1301658919.27593.72.camel@deskari>
-In-Reply-To: <1301658919.27593.72.camel@deskari>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104011407.20716.arnd@arndb.de>
-X-Provags-ID: V02:K0:WxbHs5rjlBtXGUgX1Q8JjnmhgTOL0abNkaRKfoRkqU0
- 5izyCsLH4xEMnQ3uRjoxSRUocGn1g7MlLDKb1Jau6ydNJZ2QMM
- MyWbmmjoGCdqibK7aFS5uHxMNSqwDfh6dJm+2RY9SMrO6l+sY1
- PiDzBxT4p1e4J1FgVqawAvNxiavDyh2cRw92rxvWcfLinvhB8s
- dxf7khtiLyb47KAcLc2lw==
+	Fri, 1 Apr 2011 08:08:23 -0400
+Subject: Re: [PATCH 02/17] mm: mmu_gather rework
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Avi Kivity <avi@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Tony Luck <tony.luck@intel.com>,
+        Hugh Dickins <hughd@google.com>
+In-Reply-To: <4D87109A.1010005@redhat.com>
+References: <20110217162327.434629380@chello.nl>
+	 <20110217163234.823185666@chello.nl>  <20110310155032.GB32302@csn.ul.ie>
+	 <1300301742.2203.1899.camel@twins>  <4D87109A.1010005@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 01 Apr 2011 14:07:11 +0200
+Message-ID: <1301659631.4859.565.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 April 2011, Tomi Valkeinen wrote:
-> Thanks for pointing me to the MCDE stuff. I doesn't seem to be merged,
-> though. I need to contact them and see if they're still interested in
-> working on the common interface.
+On Mon, 2011-03-21 at 10:47 +0200, Avi Kivity wrote:
+> On 03/16/2011 08:55 PM, Peter Zijlstra wrote:
+> > On Thu, 2011-03-10 at 15:50 +0000, Mel Gorman wrote:
+> >
+> > >  >  +static inline void
+> > >  >  +tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
+> > >  >   {
+> > >
+> > >  checkpatch will bitch about line length.
+> >
+> > I did a s/full_mm_flush/fullmm/ which puts the line length at 81. At
+> > which point I'll ignore it ;-)
+> 
+> How about s/unsigned int/bool/?  IIRC you aren't a "bool was invented 
+> after 1971, therefore it is evil" type.
 
-I pushed back quite hard on some of the aspects there, which probably
-prevented it from going in so far. If the code is as much based on
-the OMAP DSS as I think, quite a number of changes are required to
-both in order to get them into shape for a decent cross-platform layer,
-but there should not be any fundamental issues.
-
-	Arnd
+No, although I do try to avoid it in structures because I'm ever unsure
+of the storage type used. But yes, good suggestion, thanks!
