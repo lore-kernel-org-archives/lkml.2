@@ -1,24 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab1DAOYE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:24:04 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35660 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813Ab1DAOYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757043Ab1DAOYB (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Apr 2011 10:24:01 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35646 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813Ab1DAOX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 10:23:58 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: kernel-janitors@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Carpenter <error27@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] drivers/video/bfin-lq035q1-fb.c: introduce missing kfree
-Date: Fri,  1 Apr 2011 16:23:47 +0200
-Message-Id: <1301667827-20056-6-git-send-email-julia@diku.dk>
+Subject: [PATCH 4/6] drivers/staging/intel_sst/intel_sst_app_interface.c: introduce missing kfree
+Date: Fri,  1 Apr 2011 16:23:45 +0200
+Message-Id: <1301667827-20056-4-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Error handling code following a kmalloc should free the allocated data.
+Stream_bufs is initialized at the beginning of the function, and then the
+#ifdef code declares a new variable with the same name and initializes
+that.  If the if in the ifdef is taken, the then branch returns, implying
+that the first stream_bufs is never used and is leaked.  The first
+initialization is thus moved down after the ifdef.
 
 The semantic match that finds the problem is as follows:
 (http://www.emn.fr/x-info/coccinelle/)
@@ -63,23 +69,33 @@ print "* file: %s kmalloc %s return %s" % (p1[0].file,p1[0].line,p2[0].line)
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/video/bfin-lq035q1-fb.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/staging/intel_sst/intel_sst_app_interface.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/bfin-lq035q1-fb.c b/drivers/video/bfin-lq035q1-fb.c
-index c8e1f04..23b6c4b 100644
---- a/drivers/video/bfin-lq035q1-fb.c
-+++ b/drivers/video/bfin-lq035q1-fb.c
-@@ -154,8 +154,10 @@ static int __devinit lq035q1_spidev_probe(struct spi_device *spi)
+diff --git a/drivers/staging/intel_sst/intel_sst_app_interface.c b/drivers/staging/intel_sst/intel_sst_app_interface.c
+index a367991..401961a 100644
+--- a/drivers/staging/intel_sst/intel_sst_app_interface.c
++++ b/drivers/staging/intel_sst/intel_sst_app_interface.c
+@@ -418,10 +418,6 @@ static int snd_sst_fill_kernel_list(struct stream_info *stream,
+ 	static int sent_offset;
+ 	static unsigned long sent_index;
  
- 	ret = lq035q1_control(spi, LQ035_SHUT_CTL, LQ035_ON);
- 	ret |= lq035q1_control(spi, LQ035_DRIVER_OUTPUT_CTL, ctl->mode);
--	if (ret)
-+	if (ret) {
-+		kfree(ctl);
- 		return ret;
-+	}
- 
- 	spi_set_drvdata(spi, ctl);
- 
+-	stream_bufs = kzalloc(sizeof(*stream_bufs), GFP_KERNEL);
+-	if (!stream_bufs)
+-		return -ENOMEM;
+-	stream_bufs->addr = sst_drv_ctx->mmap_mem;
+ #ifdef CONFIG_MRST_RAR_HANDLER
+ 	if (stream->ops == STREAM_OPS_PLAYBACK_DRM) {
+ 		for (index = stream->sg_index; index < nr_segs; index++) {
+@@ -448,6 +444,10 @@ static int snd_sst_fill_kernel_list(struct stream_info *stream,
+ 		return retval;
+ 	}
+ #endif
++	stream_bufs = kzalloc(sizeof(*stream_bufs), GFP_KERNEL);
++	if (!stream_bufs)
++		return -ENOMEM;
++	stream_bufs->addr = sst_drv_ctx->mmap_mem;
+ 	mmap_len = sst_drv_ctx->mmap_len;
+ 	stream_bufs->addr = sst_drv_ctx->mmap_mem;
+ 	bufp = stream->cur_ptr;
 
