@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758093Ab1DAP5Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:57:16 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:40794 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752508Ab1DAP5O (ORCPT
+	id S1758066Ab1DAP7s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:59:48 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45059 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab1DAP7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:57:14 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Wwnf1I4Ugo0K6aCENrkPK96wtR+VCnBWZNmsawy9kuk7nWOZRXQ6D9WSnrSVLbW1O7fZPMLi9PCxzk4cbBEiGmlKrHi/orpSJKxbAz25n3z4Sak7iKsDUUoiMDzE8dqK;
-Date: Fri, 1 Apr 2011 08:57:12 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Joachim Eastwood <manabian@gmail.com>
-Subject: [PATCH -mm] leds: fix pca9532 build when GPIOLIB is disabled
-Message-Id: <20110401085712.2eb1d567.rdunlap@xenotime.net>
-In-Reply-To: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>
-References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 1 Apr 2011 11:59:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IFftE9bgYxX6V7Qj33ue0ZIvGeygFPUJPZOclhvIWvZacPutQShKxC+D8+YWnmdEOg
+         EbxwsEW/Ej1RmeTrVZpkZzi7P28T1SNUu2L8XjSxUM5KbE47cM1HOIbsdnMLNnLACUgh
+         N/+Ek7ovoRrPdkUhRTkToHDUSOxIsoTXxI2Ig=
+Date: Fri, 1 Apr 2011 08:59:38 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jeremy Jackson <jerj@coplanar.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org
+Subject: Re: signal to PID 1 from serial console like KeyboardRequest or CAD
+Message-ID: <20110401155938.GA9163@core.coreip.homeip.net>
+References: <4D8CD3D4.90900@coplanar.net>
+ <20110331125706.9159a13d.rdunlap@xenotime.net>
+ <20110401053757.GA9866@core.coreip.homeip.net>
+ <4D95F1B0.9060304@coplanar.net>
+ <20110401084218.d803b38d.rdunlap@xenotime.net>
+ <4D95F37E.8080107@coplanar.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D95F37E.8080107@coplanar.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Fri, Apr 01, 2011 at 11:47:10AM -0400, Jeremy Jackson wrote:
+> On 04/01/2011 11:42 AM, Randy Dunlap wrote:
+> >On Fri, 01 Apr 2011 11:39:28 -0400 Jeremy Jackson wrote:
+> >
+> >>On 04/01/2011 01:37 AM, Dmitry Torokhov wrote:
+> >>>On Thu, Mar 31, 2011 at 12:57:06PM -0700, Randy Dunlap wrote:
+> >>>>On Fri, 25 Mar 2011 13:41:40 -0400 Jeremy Jackson wrote:
+> >>>>
+> >>>>>Hi,
+> >>>>>
+> >>>>>Sent to linux-console with no reply for over a week...
+> >>>>>
+> >>>>>I ran into a problem recently on a Linux server with a remote serial
+> >>>>>console.  /sbin/init (actually Upstart) was in a state where nothing
+> >>>>>(useful) was running.  I had to power cycle the machine to get back to
+> >>>>>the boot prompt.  This has the side-effect of triggering raid rebuilds.
+> >>>>>
+> >>>>>It would be nice to have what Ctrl-Alt-Del does at the VGA console with
+> >>>>>PS/2 or USB keyboard. This sends a SIGINT to PID 1, and most distros
+> >>>>>have this set to do "shutdown -r now" which attempts a clean reboot.
+> >>>>
+> >>>>so C_A_D works at console via PS/2 or USB keyboard, but not on a remote
+> >>>>serial console?  Could it be an issue with whatever remote/serial software
+> >>>>you are using?
+> >>>
+> >>>I believe it is simply a matter of console keymap and assigning "boot"
+> >>>value to the desired combination.
+> >>
+> >>The VGA console/keyboard isn't an issue here, C_A_D works great.  The
+> >>problem is, that functionality isn't available when using *serial* console.
+> >
+> >That's why I asked whether it could be an issue with the serial interface
+> >software.  E.g., minicom handles/processes certain keystrokes, other apps do things
+> >differently, etc...
+> 
+> OK I guess I should clarify... when using Linux serial console, you
+> can send BREAK <letter> to use SysRq functions.
 
-Fix build when GPIOLIB is not enabled:
+Ah, right, we hardwire BREAK to SysRq when using serial console...
 
-drivers/leds/leds-pca9532.c:39: error: field 'gpio' has incomplete type
+>  In minicom, META-F
+> sends break.  This works fine for all the existing functions linux
+> offers, r = reboot immediate, i = kill all tasks, etc.  But, there
+> is no function available to reboot *clean*, or to signal PID 1
+> (/sbin/init) to do same.  So, minicom is working/configured
+> properly, Linux just doesn't offer a feature similar to C_A_D via
+> serial.
 
-for: drivers-leds-leds-pca9532c-add-gpio-capability.patch
+SysRQ+REISUB should do it I think.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Joachim Eastwood <manabian@gmail.com>
----
- drivers/leds/leds-pca9532.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- mmotm-2011-0331-1448.orig/drivers/leds/leds-pca9532.c
-+++ mmotm-2011-0331-1448/drivers/leds/leds-pca9532.c
-@@ -36,7 +36,9 @@ struct pca9532_data {
- 	struct mutex update_lock;
- 	struct input_dev *idev;
- 	struct work_struct work;
-+#ifdef CONFIG_LEDS_PCA9532_GPIO
- 	struct gpio_chip gpio;
-+#endif
- 	u8 pwm[2];
- 	u8 psc[2];
- };
+-- 
+Dmitry
