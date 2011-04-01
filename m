@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab1DASg0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 14:36:26 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53398 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412Ab1DASgY (ORCPT
+	id S1758300Ab1DASls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 14:41:48 -0400
+Received: from sj-iport-2.cisco.com ([171.71.176.71]:19735 "EHLO
+	sj-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003Ab1DASlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 14:36:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=M70kDGyNhZiBwLwWc7RHXZTgC9sWMOszLUj/wvI21NTqeVdJxprqTSiHM83YDo5UP4
-         m2SJ1bBg0109rZJsXQZyQtcfcwslaa7J0OKVhxcdadVKyPfRxC03Xrx8ZMQ7yUXQjHWF
-         /0zXpUmS866a4ewLjLhbwuJzqsDvGVrlcm4ag=
-Date: Fri, 1 Apr 2011 20:36:27 +0200
-From: Kristoffer Ericson <kristoffer.ericson@gmail.com>
-To: alan@linux.jf.intel.com
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: Syncing linux-gma500.git with updates
-Message-ID: <20110401183627.GA10797@Boggieman>
-Reply-To: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+	Fri, 1 Apr 2011 14:41:47 -0400
+X-IronPort-AV: E=Sophos;i="4.63,283,1299456000"; 
+   d="scan'208";a="329149870"
+Message-ID: <4D961C6A.9070808@cisco.com>
+Date: Fri, 01 Apr 2011 11:41:46 -0700
+From: Michael Sundius <msundius@cisco.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Daney <ddaney@caviumnetworks.com>
+CC: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        David VomLehn <dvomlehn@cisco.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andy Whitcroft <apw@shadowen.org>, Jon Fraser <jfraser@broadcom.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH v2] MIPS: Kernel crashes on boot with SPARSEMEM + HIGHMEM
+ enabled
+References: <c300b67a7a723369872c0b9a023d0b2e@localhost> <4D9603D8.2010709@caviumnetworks.com>
+In-Reply-To: <4D9603D8.2010709@caviumnetworks.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+David Daney wrote:
+>
+>
+> I think this may do the same thing as my patch:
+>
+> http://patchwork.linux-mips.org/patch/1988/
+>
+> Although my patch had different motivations, and changes some other 
+> things around too.
+>
+> David Daney
+>
+I'm not really sure why your kernel or initrd would be in memory was not 
+within
+the range that had been accounted for.  are you saying its in high mem?
 
-I keep a gma500 repository, for personal use (Sony Vaio P21z/r with gma500) but incase someone wants to keep updated with alans latest patches. heres the links.
 
-Branches are:
-v2.6.38-rc8-gma500
-v2.6.39-rc1-gma500
-
-git://git.kernel.org/pub/scm/linux/kernel/git/kristoffer/linux-gma500.git
-
-Btw, big thanks Alan for your hard work so far.
-
-Best wishes
-Kristoffer
 
