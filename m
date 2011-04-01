@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab1DAHrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 03:47:10 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:57617 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755182Ab1DAHrI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 03:47:08 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: victor.vde@gmail.com, util-linux@vger.kernel.org,
-        Miklos Szeredi <miklos@szeredi.hu>, linuxram@us.ibm.com
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Victor van den Elzen <victor.vde@gmail.com>,
-        "Eugene J. Markow" <ejmarkow@yahoo.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] libmount misparses mountinfo on Linux v2.6.39-rc1
-In-Reply-To: <19860.58082.277944.875401@gargle.gargle.HOWL>
-References: <19860.58082.277944.875401@gargle.gargle.HOWL>
-User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Fri, 01 Apr 2011 13:16:23 +0530
-Message-ID: <87d3l62z3k.fsf@linux.vnet.ibm.com>
+	id S1755268Ab1DAHuY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 03:50:24 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43521 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755193Ab1DAHuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 03:50:23 -0400
+Date: Fri, 1 Apr 2011 09:50:11 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Len Brown <lenb@kernel.org>
+Cc: Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
+        maciej.rutecki@gmail.com, rjw@sisk.pl, sedat.dilek@gmail.com,
+        stable@kernel.org, #.34+@schatten.dmk.lab
+Subject: Re: [PATCH v2] x86, ioapic: Skip looking for ioapic overrides when
+ ioapics are not present
+Message-ID: <20110401075011.GD7594@elte.hu>
+References: <20110331084342.GA30105@elte.hu>
+ <1301621025-3858-1-git-send-email-florian@mickler.org>
+ <20110401062006.GC32378@elte.hu>
+ <alpine.LFD.2.02.1104010245290.2797@x980>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1104010245290.2797@x980>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Mar 2011 22:24:01 +0200, victor.vde@gmail.com wrote:
-> /proc/self/mountinfo on Linux v2.6.39-rc1 includes the UUID of ext4
-> and ext3 mounts, for example:
-> 
-> 15 1 8:3 / / rw,noatime uuid:c645234d-9756-4d84-825e-6fe999252a34 - ext4 /dev/sda3 rw,user_xattr,acl,barrier=1,data=ordered
-> 
-> It seems the hyphens in the uuid confuse the parser
-> mnt_parse_mountinfo_line in tab_parse.c of libmount in util-linux.
 
-shouldn't the parser look for " " followed by "-" followed by " " as the
-field seperator ? 
-
-I am adding Miklos and Ram Pai to CC to check whether the kernel or the libmount 
-should be fixed ?
+* Len Brown <lenb@kernel.org> wrote:
 
 > 
-> My util-linux version is 2.19-4 Arch Linux.
+> > > --- a/arch/x86/kernel/apic/io_apic.c
+> > > +++ b/arch/x86/kernel/apic/io_apic.c
+> > > @@ -3789,6 +3789,10 @@ int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
+> > >  {
+> > >  	int ioapic, pin, idx;
+> > >  
+> > > +#ifdef CONFIG_ACPI
+> > > +	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+> > > +		return -1;
+> > > +#endif
+> > 
+> > That #ifdef is very ugly. Please introduce a suitable helper function in 
+> > arch/x86/include/asm/acpi.h - acpi_irq_ioapic_model() or so, which could be 
+> > used like this:
+> > 
+> > 	if (!acpi_irq_ioapic_model())
+> > 		return -1;
+> > 
+> > And would be defined in the !CONFIG_ACPI case as well.
 > 
-> ~ $ findmnt -l /
-> TARGET SOURCE FSTYPE                      OPTIONS
-> /      -      9756-4d84-825e-6fe999252a34 rw,noatime,ext4
-> 
-> For reference, the commits in Linus' tree that introduced these uuids
-> are:
-> 
-> 93f1c20bc8cdb757be50566eff88d65c3b26881f vfs: Export file system uuid via /proc/<pid>/mountinfo
-> 03cb5f03dcb26846fcad345d8c15aae91579a53d ext3: Copy fs UUID to superblock.
-> f2fa2ffc2046fdc35f96366d1ec8675f4d578522 ext4: Copy fs UUID to superblock
+> It would be better to compile _none_ of acpi_get_override_irq() for !ACPI.
 
--aneesh
+Yeah, agreed - so just move the function into acpi.c and provide an inline stub 
+in acpi.h for the !ACPI case.
+
+Note: find_irq_entry() would have to be exported from io_apic.c in this case, 
+renamed to ioapic_find_irq_entry() or so - and a stub provided for the !IO_APIC 
+case.
+
+Thanks,
+
+	Ingo
