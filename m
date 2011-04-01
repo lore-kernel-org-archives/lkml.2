@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324Ab1DAPy5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:54:57 -0400
-Received: from bipbip.grupopie.com ([195.23.16.24]:50598 "EHLO
-	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755230Ab1DAPy4 (ORCPT
+	id S1758060Ab1DAPzz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:55:55 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:60894 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab1DAPzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:54:56 -0400
-Message-ID: <4D95F54D.8020802@grupopie.com>
-Date: Fri, 01 Apr 2011 16:54:53 +0100
-From: Paulo Marques <pmarques@grupopie.com>
-Organization: Grupo PIE
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Fri, 1 Apr 2011 11:55:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type;
+        b=by8vZG/ayZXdWxr5vjCoT2vIKqJa2x/spBuOX8OjhjG865BUpaImCJZVIjJwsyxZU7
+         38vTEfFWTBO0hOn/Mc+4sqddkqe/+oqcQLmnmF2YPQKXnXj3mzK/R5FXFLb6SINGzE7M
+         WT19IBn/zjCnAeaO98mNbbFjMkHahTIEQZJZU=
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-        MTD list <linux-mtd@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] do not select KALLSYMS_ALL
-References: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>	 <4D948D52.4040708@grupopie.com>  <1301669776.2789.92.camel@localhost>	 <1301670104.2789.94.camel@localhost>  <4D95F092.4080604@grupopie.com> <1301672549.2789.107.camel@localhost>
-In-Reply-To: <1301672549.2789.107.camel@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+Date: Fri, 1 Apr 2011 17:55:52 +0200
+Message-ID: <AANLkTi=td3J2duwv9RuXJHquA6=wRRq8vWLkJY97xtP9@mail.gmail.com>
+Subject: Re: linux-next: Tree for April 1 [BROKEN ubifs when CONFIG_DEBUG_SECTION_MISMATCH=y]
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Artem Bityutskiy wrote:
-> On Fri, 2011-04-01 at 16:34 +0100, Paulo Marques wrote:
->>[...]
->> With an automatic makefile mechanism, the problem would go unnoticed and
->> it just wouldn't be fixed, increasing the kernel compile time for
->> everyone who hits the same troublesome configuration.
-> 
-> Yes, the build system may print a message:
-> 
-> Your symbols table is screwed, this is a bug, report about it. As a
-> temporary workaround use "make KALLSYMS_EXTRA_PASS=1"
-> 
-> Or something like that.
+On Fri, Apr 1, 2011 at 5:25 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20110331:
+>
+> Dropped tree: xen
+>
+> The sparc-current tree lost its build failure.
+>
+> The gfs2 tree gained a conflict against Linus' tree.
+>
+> The tip tree gained a build failure (due to a change in the bjdooks-i2c
+> tree) for which I applied a patch.
+>
 
-Yes, I think that would work too, and it would even prevent the option
-from being on for no good reason.
+With CONFIG_DEBUG_SECTION_MISMATCH=y set, I see in my build.log:
+...
+MODPOST 2742 modules
+...
+ERROR: "empty_aops" [fs/ubifs/ubifs.ko] undefined!
+make[5]: *** [__modpost] Error 1
+make[4]: *** [modules] Error 2
+make[3]: *** [sub-make] Error 2
+make[2]: *** [all] Error 2
+make[2]: Leaving directory
+`/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/build_i386_none_686-iniza'
 
--- 
-Paulo Marques - www.grupopie.com
-
-"Nostalgia isn't what it used to be."
+- Sedat -
