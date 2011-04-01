@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab1DASFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 14:05:11 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:50414 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757316Ab1DASFH (ORCPT
+	id S1757495Ab1DASFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 14:05:09 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37989 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756871Ab1DASFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 14:05:07 -0400
-Date: Fri, 1 Apr 2011 23:34:55 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, cl@linux.com,
-        kamezawa.hiroyu@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
-Message-ID: <20110401180455.GU2879@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20110401165752.A889.A69D9226@jp.fujitsu.com>
- <20110401131214.GS2879@balbir.in.ibm.com>
- <20110401222250.A894.A69D9226@jp.fujitsu.com>
+	Fri, 1 Apr 2011 14:05:04 -0400
+From: Alan Cox <alan@linux.jf.intel.com>
+Subject: [PATCH 7/9] gma500: cleanup the SDVO messages
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Fri, 01 Apr 2011 18:42:22 +0100
+Message-ID: <20110401174214.18112.25445.stgit@localhost.localdomain>
+In-Reply-To: <20110401173554.18112.67483.stgit@localhost.localdomain>
+References: <20110401173554.18112.67483.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110401222250.A894.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2011-04-01 22:21:26]:
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-> > * KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2011-04-01 16:56:57]:
-> > 
-> > > Hi
-> > > 
-> > > > > 1) zone reclaim doesn't work if the system has multiple node and the
-> > > > >    workload is file cache oriented (eg file server, web server, mail server, et al). 
-> > > > >    because zone recliam make some much free pages than zone->pages_min and
-> > > > >    then new page cache request consume nearest node memory and then it
-> > > > >    bring next zone reclaim. Then, memory utilization is reduced and
-> > > > >    unnecessary LRU discard is increased dramatically.
-> > > > > 
-> > > > >    SGI folks added CPUSET specific solution in past. (cpuset.memory_spread_page)
-> > > > >    But global recliam still have its issue. zone recliam is HPC workload specific 
-> > > > >    feature and HPC folks has no motivation to don't use CPUSET.
-> > > > 
-> > > > I am afraid you misread the patches and the intent. The intent to
-> > > > explictly enable control of unmapped pages and has nothing
-> > > > specifically to do with multiple nodes at this point. The control is
-> > > > system wide and carefully enabled by the administrator.
-> > > 
-> > > Hm. OK, I may misread.
-> > > Can you please explain the reason why de-duplication feature need to selectable and
-> > > disabled by defaut. "explicity enable" mean this feature want to spot corner case issue??
-> > 
-> > Yes, because given a selection of choices (including what you
-> > mentioned in the review), it would be nice to have
-> > this selectable.
-> 
-> It's no good answer. :-/
+ drivers/staging/gma500/psb_drv.c        |    3 ++-
+ drivers/staging/gma500/psb_intel_sdvo.c |    4 ++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-I am afraid I cannot please you with my answers
+diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
+index be8f11d..8978ed6 100644
+--- a/drivers/staging/gma500/psb_drv.c
++++ b/drivers/staging/gma500/psb_drv.c
+@@ -493,7 +493,8 @@ static int psb_do_init(struct drm_device *dev)
+         PSB_WSGX32(PSB_RSGX32(PSB_CR_BIF_CTRL) | _PSB_MMU_ER_MASK,
+ 							PSB_CR_BIF_CTRL);
+ 	psb_spank(dev_priv);
+-       
++
++	printk(KERN_INFO "TWOD base %08lX\n", (u32) pg->mmu_gatt_start);
+       	PSB_WSGX32(pg->mmu_gatt_start, PSB_CR_BIF_TWOD_REQ_BASE);
+ 
+ 	return 0;
+diff --git a/drivers/staging/gma500/psb_intel_sdvo.c b/drivers/staging/gma500/psb_intel_sdvo.c
+index 731a5a2..d005227 100644
+--- a/drivers/staging/gma500/psb_intel_sdvo.c
++++ b/drivers/staging/gma500/psb_intel_sdvo.c
+@@ -204,7 +204,7 @@ static void psb_intel_sdvo_write_cmd(struct psb_intel_output *psb_intel_output,
+ 	struct psb_intel_sdvo_priv *sdvo_priv = psb_intel_output->dev_priv;
+ 	int i;
+ 
+-	if (1) {
++	if (0) {
+ 		DRM_DEBUG("%s: W: %02X ", SDVO_NAME(sdvo_priv), cmd);
+ 		for (i = 0; i < args_len; i++)
+ 			printk(KERN_INFO"%02X ", ((u8 *) args)[i]);
+@@ -266,7 +266,7 @@ static u8 psb_intel_sdvo_read_response(
+ 					 SDVO_I2C_CMD_STATUS,
+ 					 &status);
+ 
+-		if (1) {
++		if (0) {
+ 			DRM_DEBUG("%s: R: ", SDVO_NAME(sdvo_priv));
+ 			for (i = 0; i < response_len; i++)
+ 				printk(KERN_INFO"%02X ", ((u8 *) response)[i]);
 
-> Who need the feature and who shouldn't use it? It this enough valuable for enough large
-> people? That's my question point.
-> 
-
-You can see the use cases documented, including when running Linux as
-a guest under other hypervisors, today we have a choice of not using
-host page cache with cache=none, but nothing the other way round.
-There are other use cases for embedded folks (in terms of controlling
-unmapped page cache), please see previous discussions.
-
--- 
-	Three Cheers,
-	Balbir
