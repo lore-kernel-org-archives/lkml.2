@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab1DAN6l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:58:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33922 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754321Ab1DAN6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 09:58:40 -0400
-Date: Fri, 1 Apr 2011 09:58:38 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Juerg Haefliger <juergh@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Support for global block IO throttling?
-Message-ID: <20110401135838.GA20986@redhat.com>
-References: <AANLkTikEYDdL08=DdJ7fLR08r6sWDCHbNoOuGhxGhm7G@mail.gmail.com>
- <20110323142505.GD13315@redhat.com>
- <AANLkTi=EoPKcBE1miW_-RHgHTBCSDKJ1My=Z40rrhm1x@mail.gmail.com>
- <20110323145418.GE13315@redhat.com>
- <AANLkTi=rMdCz97QLkz=xHy7AxfxFVEgsf=qmXKc5ORWE@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=rMdCz97QLkz=xHy7AxfxFVEgsf=qmXKc5ORWE@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756790Ab1DAOD0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:03:26 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34522 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756620Ab1DAODZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 10:03:25 -0400
+Subject: Re: cpuidle asymmetry (was Re: [RFC PATCH V4 5/5] cpuidle: cpuidle
+ driver for apm)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Trinabh Gupta <trinabh@linux.vnet.ibm.com>, arjan@linux.intel.com,
+        Stephen Rothwell <sfr@canb.auug.org.au>, suresh.b.siddha@intel.com,
+        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+In-Reply-To: <alpine.LFD.2.02.1104010006210.2797@x980>
+References: <20110322123208.28725.30945.stgit@tringupt.in.ibm.com>
+	 <20110322123336.28725.29810.stgit@tringupt.in.ibm.com>
+	 <20110323121458.ec7cdaf9.sfr@canb.auug.org.au>
+	 <4D89CA7D.8080108@linux.vnet.ibm.com>
+	 <alpine.LFD.2.02.1103231623450.12911@x980>
+	 <4D8B550D.5000409@linux.vnet.ibm.com>
+	 <alpine.LFD.2.02.1103250321480.32565@x980>
+	 <20110325180156.GC19214@dirshya.in.ibm.com>
+	 <alpine.LFD.2.02.1103302203490.1920@x980> <1301577536.4859.249.camel@twins>
+	 <alpine.LFD.2.02.1104010006210.2797@x980>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 01 Apr 2011 16:02:36 +0200
+Message-ID: <1301666556.4859.695.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 01, 2011 at 10:05:41AM +0200, Juerg Haefliger wrote:
-> Hi Vivek,
+On Fri, 2011-04-01 at 00:09 -0400, Len Brown wrote:
+> > > Moorestown is already an example of an asymmetric system,
+> > > since its deepest c-state is available on cpu0, but not on cpu1.
+> > > So it needs different tables for each cpu. 
+> > 
+> > wtf are these hardware guys smoking and how the heck are we supposed to
+> > schedule on such a machine? Prefer to keep cpu1 busy while idling cpu0?
 > 
+> they are smoking micro-amps:-)
+
+Has anybody told them that pushing lots of logic into software generally
+burns more amps because it keeps the thing running longer?
+
+> S0i3 on cpu0 can be entered only after cpu1 is already off-line,
+> among other system hardware dependencies...
 > 
-> > Also current IO controller does not work for NFS. So if a global limit
-> > is imposed in higher layers it will solve that issue too.
-> >
-> > Also if you implement it above page cache then it should automatically
-> > handle the case of async writes too. The downside is that if limits
-> > are low, buffered writers will be throttled very frequently.
+> So it makes no sense to export S0i3 as a c-state on cpu1.
 > 
-> I'm not exactly sure where in the stack you see this global bandwidth
-> controller. What do you mean by 'above the page cache'? I interpret
-> this such that access to the page cache would be bandwidth limited as
-> well? That doesn't sound right to me.
+> When cpu1 is online, the scheduler treats it as a normal SMP.
 
-You are right. For reads it will not make sense to implement it above
-page cache as reads coming out of page cache need not be throttled.
-
-So it will probably boil down to that implement buffered write throttling
-when entring the page cache and read throttling somewhere below.
-generic_make_request()? But that will not take care of network file system
-case I think. 
-
-May be we can enhance blk_throtl_bio() itself to also check for global
-rules and subject bio to first global rules and put in a global
-queue. This probably will work for your virtual machine cases but
-it does not take care of buffered writes and NFS IO. May be that is
-still a good first step towards global IO limit implementation.
-
-Thanks
-Vivek
+Dipankar's reply seems to address this issue well.
