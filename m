@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab1DAOmk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:42:40 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:48269 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406Ab1DAOmi (ORCPT
+	id S1757398Ab1DAOmv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:42:51 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:37376 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab1DAOmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:42:38 -0400
+	Fri, 1 Apr 2011 10:42:49 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -14,180 +14,95 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>,
         Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 01 Apr 2011 20:02:53 +0530
-Message-Id: <20110401143253.15455.84368.sendpatchset@localhost6.localdomain6>
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 01 Apr 2011 20:03:08 +0530
+Message-Id: <20110401143308.15455.70181.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
 References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v3 2.6.39-rc1-tip 2/26]  2: mm: Move replace_page() to mm/memory.c
+Subject: [PATCH v3 2.6.39-rc1-tip 3/26]  3: X86 specific breakpoint definitions.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-move replace_page() out of mm/ksm.c to mm/memory.c so that replace_page
-can be used even when CONFIG_KSM is not defined.
-replace_page() is used to implement background page replacement.
+Provides definitions for the breakpoint instruction and x86 specific
+uprobe info structure.
 
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 ---
- mm/ksm.c    |   62 -----------------------------------------------------------
- mm/memory.c |   62 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 62 insertions(+), 62 deletions(-)
+ arch/x86/Kconfig               |    3 +++
+ arch/x86/include/asm/uprobes.h |   40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/uprobes.h
 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index f444158..61df1db 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -751,68 +751,6 @@ out:
- 	return err;
- }
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index da3b204..051fe74 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -238,6 +238,9 @@ config ARCH_CPU_PROBE_RELEASE
+ 	def_bool y
+ 	depends on HOTPLUG_CPU
  
--/**
-- * replace_page - replace page in vma by new ksm page
-- * @vma:      vma that holds the pte pointing to page
-- * @page:     the page we are replacing by kpage
-- * @kpage:    the ksm page we replace page by
-- * @orig_pte: the original value of the pte
-- *
-- * Returns 0 on success, -EFAULT on failure.
-- */
--int replace_page(struct vm_area_struct *vma, struct page *page,
--			struct page *kpage, pte_t orig_pte)
--{
--	struct mm_struct *mm = vma->vm_mm;
--	pgd_t *pgd;
--	pud_t *pud;
--	pmd_t *pmd;
--	pte_t *ptep;
--	spinlock_t *ptl;
--	unsigned long addr;
--	int err = -EFAULT;
--
--	addr = page_address_in_vma(page, vma);
--	if (addr == -EFAULT)
--		goto out;
--
--	pgd = pgd_offset(mm, addr);
--	if (!pgd_present(*pgd))
--		goto out;
--
--	pud = pud_offset(pgd, addr);
--	if (!pud_present(*pud))
--		goto out;
--
--	pmd = pmd_offset(pud, addr);
--	BUG_ON(pmd_trans_huge(*pmd));
--	if (!pmd_present(*pmd))
--		goto out;
--
--	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
--	if (!pte_same(*ptep, orig_pte)) {
--		pte_unmap_unlock(ptep, ptl);
--		goto out;
--	}
--
--	get_page(kpage);
--	page_add_anon_rmap(kpage, vma, addr);
--
--	flush_cache_page(vma, addr, pte_pfn(*ptep));
--	ptep_clear_flush(vma, addr, ptep);
--	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
--
--	page_remove_rmap(page);
--	if (!page_mapped(page))
--		try_to_free_swap(page);
--	put_page(page);
--
--	pte_unmap_unlock(ptep, ptl);
--	err = 0;
--out:
--	return err;
--}
--
- static int page_trans_compound_anon_split(struct page *page)
- {
- 	int ret = 0;
-diff --git a/mm/memory.c b/mm/memory.c
-index 9da8cab..60b8494 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2733,6 +2733,68 @@ void unmap_mapping_range(struct address_space *mapping,
- }
- EXPORT_SYMBOL(unmap_mapping_range);
++config ARCH_SUPPORTS_UPROBES
++	def_bool y
++
+ source "init/Kconfig"
+ source "kernel/Kconfig.freezer"
  
-+/**
-+ * replace_page - replace page in vma by new ksm page
-+ * @vma:      vma that holds the pte pointing to page
-+ * @page:     the page we are replacing by kpage
-+ * @kpage:    the ksm page we replace page by
-+ * @orig_pte: the original value of the pte
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+new file mode 100644
+index 0000000..5026359
+--- /dev/null
++++ b/arch/x86/include/asm/uprobes.h
+@@ -0,0 +1,40 @@
++#ifndef _ASM_UPROBES_H
++#define _ASM_UPROBES_H
++/*
++ * Userspace Probes (UProbes) for x86
 + *
-+ * Returns 0 on success, -EFAULT on failure.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2008-2010
++ * Authors:
++ *	Srikar Dronamraju
++ *	Jim Keniston
 + */
-+int replace_page(struct vm_area_struct *vma, struct page *page,
-+			struct page *kpage, pte_t orig_pte)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
-+	pgd_t *pgd;
-+	pud_t *pud;
-+	pmd_t *pmd;
-+	pte_t *ptep;
-+	spinlock_t *ptl;
-+	unsigned long addr;
-+	int err = -EFAULT;
 +
-+	addr = page_address_in_vma(page, vma);
-+	if (addr == -EFAULT)
-+		goto out;
++typedef u8 uprobe_opcode_t;
++#define MAX_UINSN_BYTES 16
++#define UPROBES_XOL_SLOT_BYTES	128	/* to keep it cache aligned */
 +
-+	pgd = pgd_offset(mm, addr);
-+	if (!pgd_present(*pgd))
-+		goto out;
++#define UPROBES_BKPT_INSN 0xcc
++#define UPROBES_BKPT_INSN_SIZE 1
 +
-+	pud = pud_offset(pgd, addr);
-+	if (!pud_present(*pud))
-+		goto out;
-+
-+	pmd = pmd_offset(pud, addr);
-+	BUG_ON(pmd_trans_huge(*pmd));
-+	if (!pmd_present(*pmd))
-+		goto out;
-+
-+	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
-+	if (!pte_same(*ptep, orig_pte)) {
-+		pte_unmap_unlock(ptep, ptl);
-+		goto out;
-+	}
-+
-+	get_page(kpage);
-+	page_add_anon_rmap(kpage, vma, addr);
-+
-+	flush_cache_page(vma, addr, pte_pfn(*ptep));
-+	ptep_clear_flush(vma, addr, ptep);
-+	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
-+
-+	page_remove_rmap(page);
-+	if (!page_mapped(page))
-+		try_to_free_swap(page);
-+	put_page(page);
-+
-+	pte_unmap_unlock(ptep, ptl);
-+	err = 0;
-+out:
-+	return err;
-+}
-+
- int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
- {
- 	struct address_space *mapping = inode->i_mapping;
++#ifdef CONFIG_X86_64
++struct uprobe_arch_info {
++	unsigned long rip_rela_target_address;
++};
++#else
++struct uprobe_arch_info {};
++#endif
++#endif	/* _ASM_UPROBES_H */
