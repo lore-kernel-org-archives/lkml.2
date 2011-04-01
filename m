@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572Ab1DANtZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:49:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59128 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756077Ab1DANtY (ORCPT
+	id S1756661Ab1DANto (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 09:49:44 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59861 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756077Ab1DANtn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 09:49:24 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=lhBBPvcAZnUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=dfkWLsp_ea4wK32n42kA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC PATCH] Trace: use unsigned long long in trace print frames
-From: Steven Rostedt <rostedt@goodmis.org>
-To: liubo <liubo2009@cn.fujitsu.com>
-Cc: Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-In-Reply-To: <4D9573DB.4010009@cn.fujitsu.com>
-References: <4D9573DB.4010009@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 01 Apr 2011 09:49:22 -0400
-Message-ID: <1301665762.2160.22.camel@gandalf.stny.rr.com>
+	Fri, 1 Apr 2011 09:49:43 -0400
+Subject: Re: [RFC PATCH] perf report: add sort by file lines
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "2nddept-manager@sdl.hitachi.co.jp" 
+	<2nddept-manager@sdl.hitachi.co.jp>
+In-Reply-To: <1301664130.2399.10.camel@localhost>
+References: <1301391136.14111.98.camel@minggr.sh.intel.com>
+	 <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost>
+	 <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop>
+	 <1301418533.2250.419.camel@laptop>
+	 <20110329174556.GC24129@ghostprotocols.net> <4D92818A.8020405@hitachi.com>
+	 <1301561155.14111.288.camel@minggr.sh.intel.com>
+	 <1301580117.4859.286.camel@twins>  <1301582056.2271.15.camel@localhost>
+	 <1301588922.2250.498.camel@laptop>  <4D95AC94.1080303@hitachi.com>
+	 <1301655903.4859.494.camel@twins>  <1301664130.2399.10.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 01 Apr 2011 15:49:12 +0200
+Message-ID: <1301665752.4859.678.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 14:42 +0800, liubo wrote:
-> While adding tracepoint for btrfs, I got a problem:
+On Fri, 2011-04-01 at 21:22 +0800, Lin Ming wrote:
+> On Fri, 2011-04-01 at 19:05 +0800, Peter Zijlstra wrote:
+> > On Fri, 2011-04-01 at 19:44 +0900, Masami Hiramatsu wrote:
+> > > E.g. an indirect jump makes it hard to find where it jumps to.
+> > 
+> > Yes indirect jumps are 'interesting', is there anything in the debug
+> > info that will help us out with the possible target sites?
+> > 
+> > Also what generates indirect jumps, switch() stmts? Indirect function
+> > call that get optimized might also be, but hopefully DWARF would tell us
+> > about that and allow us to know the state right after the jump.
 > 
-> btrfs uses some macros with "ULL" type, but tracepoint's macros,
-> __print_[flags,symbols](), only have "unsigned long", so on 32bit box
-> there will be 64->32 truncate WARNINGs when compiling.
+> I'm not sure.
 > 
-> Here I'm inclined to make the replacement to clear those WARNINGs.
+> But I'm thinking another way to trace the register assignment by LBR
+> records.
+> 
+> LBR will introduce overhead, but it can tell us all the branches,
+> including the indirect jump.
 
-Hmm, I don't like this. unsigned long is a natural word for
-architectures, I don't want to have 32 bit suffer because one user is
-doing something with ULL.
 
-A better solution is to add a trace_print_flags_u64 or something, that
-can be used for cases that u64 is needed. For archs were sizeof(long) ==
-sizeof(u64) we can have the two macros/structs be the same.
-
--- Steve
+Yeah, but it would be nice to see how far we can get without using extra
+information, we can always try and complement stuff later.
 
 
