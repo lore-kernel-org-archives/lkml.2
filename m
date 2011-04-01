@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab1DAP7s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:59:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45059 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab1DAP7r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:59:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IFftE9bgYxX6V7Qj33ue0ZIvGeygFPUJPZOclhvIWvZacPutQShKxC+D8+YWnmdEOg
-         EbxwsEW/Ej1RmeTrVZpkZzi7P28T1SNUu2L8XjSxUM5KbE47cM1HOIbsdnMLNnLACUgh
-         N/+Ek7ovoRrPdkUhRTkToHDUSOxIsoTXxI2Ig=
-Date: Fri, 1 Apr 2011 08:59:38 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jeremy Jackson <jerj@coplanar.net>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org
-Subject: Re: signal to PID 1 from serial console like KeyboardRequest or CAD
-Message-ID: <20110401155938.GA9163@core.coreip.homeip.net>
-References: <4D8CD3D4.90900@coplanar.net>
- <20110331125706.9159a13d.rdunlap@xenotime.net>
- <20110401053757.GA9866@core.coreip.homeip.net>
- <4D95F1B0.9060304@coplanar.net>
- <20110401084218.d803b38d.rdunlap@xenotime.net>
- <4D95F37E.8080107@coplanar.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D95F37E.8080107@coplanar.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758118Ab1DAQGj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 12:06:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35916 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758075Ab1DAQGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 12:06:38 -0400
+Date: Sat, 2 Apr 2011 03:06:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: sedat.dilek@gmail.com
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Re: linux-next: Tree for April 1 [BROKEN ubifs when
+ CONFIG_DEBUG_SECTION_MISMATCH=y]
+Message-Id: <20110402030628.36a0b822.sfr@canb.auug.org.au>
+In-Reply-To: <AANLkTi=td3J2duwv9RuXJHquA6=wRRq8vWLkJY97xtP9@mail.gmail.com>
+References: <AANLkTi=td3J2duwv9RuXJHquA6=wRRq8vWLkJY97xtP9@mail.gmail.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__2_Apr_2011_03_06_28_+1100_D4GUIo8BDlyBX/5C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 01, 2011 at 11:47:10AM -0400, Jeremy Jackson wrote:
-> On 04/01/2011 11:42 AM, Randy Dunlap wrote:
-> >On Fri, 01 Apr 2011 11:39:28 -0400 Jeremy Jackson wrote:
-> >
-> >>On 04/01/2011 01:37 AM, Dmitry Torokhov wrote:
-> >>>On Thu, Mar 31, 2011 at 12:57:06PM -0700, Randy Dunlap wrote:
-> >>>>On Fri, 25 Mar 2011 13:41:40 -0400 Jeremy Jackson wrote:
-> >>>>
-> >>>>>Hi,
-> >>>>>
-> >>>>>Sent to linux-console with no reply for over a week...
-> >>>>>
-> >>>>>I ran into a problem recently on a Linux server with a remote serial
-> >>>>>console.  /sbin/init (actually Upstart) was in a state where nothing
-> >>>>>(useful) was running.  I had to power cycle the machine to get back to
-> >>>>>the boot prompt.  This has the side-effect of triggering raid rebuilds.
-> >>>>>
-> >>>>>It would be nice to have what Ctrl-Alt-Del does at the VGA console with
-> >>>>>PS/2 or USB keyboard. This sends a SIGINT to PID 1, and most distros
-> >>>>>have this set to do "shutdown -r now" which attempts a clean reboot.
-> >>>>
-> >>>>so C_A_D works at console via PS/2 or USB keyboard, but not on a remote
-> >>>>serial console?  Could it be an issue with whatever remote/serial software
-> >>>>you are using?
-> >>>
-> >>>I believe it is simply a matter of console keymap and assigning "boot"
-> >>>value to the desired combination.
-> >>
-> >>The VGA console/keyboard isn't an issue here, C_A_D works great.  The
-> >>problem is, that functionality isn't available when using *serial* console.
-> >
-> >That's why I asked whether it could be an issue with the serial interface
-> >software.  E.g., minicom handles/processes certain keystrokes, other apps do things
-> >differently, etc...
-> 
-> OK I guess I should clarify... when using Linux serial console, you
-> can send BREAK <letter> to use SysRq functions.
+--Signature=_Sat__2_Apr_2011_03_06_28_+1100_D4GUIo8BDlyBX/5C
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ah, right, we hardwire BREAK to SysRq when using serial console...
+Cc'ing Artem,
 
->  In minicom, META-F
-> sends break.  This works fine for all the existing functions linux
-> offers, r = reboot immediate, i = kill all tasks, etc.  But, there
-> is no function available to reboot *clean*, or to signal PID 1
-> (/sbin/init) to do same.  So, minicom is working/configured
-> properly, Linux just doesn't offer a feature similar to C_A_D via
-> serial.
+On Fri, 1 Apr 2011 17:55:52 +0200 Sedat Dilek <sedat.dilek@googlemail.com> =
+wrote:
+>=20
+> With CONFIG_DEBUG_SECTION_MISMATCH=3Dy set, I see in my build.log:
+> ...
+> MODPOST 2742 modules
+> ...
+> ERROR: "empty_aops" [fs/ubifs/ubifs.ko] undefined!
+> make[5]: *** [__modpost] Error 1
+> make[4]: *** [modules] Error 2
+> make[3]: *** [sub-make] Error 2
+> make[2]: *** [all] Error 2
+> make[2]: Leaving directory
+> `/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/build_i386_none_686=
+-iniza'
+>=20
+> - Sedat -
+>=20
 
-SysRQ+REISUB should do it I think.
 
--- 
-Dmitry
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Sat__2_Apr_2011_03_06_28_+1100_D4GUIo8BDlyBX/5C
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNlfgEAAoJEDMEi1NhKgbsEQ4H/2S1/0OEiLTVGEsVm4DYB8WV
+SqfjX0qggS8sCLnyn9MWx+Q2gDLnhavQAJ+4XeGhQ7uGhyibBl8uvDoJ/D1Q1pza
+Uf4Xmf/mImLrzC1XyqDMw6/jYM9v8loGFtmAtXgxRpmP0NQr5Ea7B4mixSKiSZ51
+NQtu31ZdXfbNqV2yuHV0XTK36D3+pZmi+2BkGmxbrg/Tt7Uv3Eev/769WB082Lx+
+2xMxVVZN1PqEEm5Go6QMqCsLNbY0o8Zp8eFC7jeg95iQK88EzRk6lFhLDYyvcNtR
+SvIvImipkpembVzoYqRB5Cj50GUlNU3weZgZKDGSkxt2a3+Z6Z+gUrpgTT6NE9M=
+=zSGN
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__2_Apr_2011_03_06_28_+1100_D4GUIo8BDlyBX/5C--
