@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab1DAOX6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:23:58 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35623 "EHLO mgw2.diku.dk"
+	id S1757278Ab1DAOZX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:25:23 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35635 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813Ab1DAOXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:23:55 -0400
+	id S1754722Ab1DAOX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 10:23:57 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Steve Cornelius <sec@pobox.com>, Dan Carpenter <error27@gmail.com>,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6] drivers/crypto/caam/caamalg.c: introduce missing kfree
-Date: Fri,  1 Apr 2011 16:23:43 +0200
-Message-Id: <1301667827-20056-2-git-send-email-julia@diku.dk>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: kernel-janitors@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
+        Andreas Bombe <aeb@debian.org>, Joe Perches <joe@perches.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/6] drivers/staging/cx25821/cx25821-video.c: introduce missing kfree
+Date: Fri,  1 Apr 2011 16:23:44 +0200
+Message-Id: <1301667827-20056-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -65,19 +67,19 @@ print "* file: %s kmalloc %s return %s" % (p1[0].file,p1[0].line,p2[0].line)
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/crypto/caam/caamalg.c |    1 +
+ drivers/staging/cx25821/cx25821-video.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/crypto/caam/caamalg.c b/drivers/crypto/caam/caamalg.c
-index dce44b2..20e1215 100644
---- a/drivers/crypto/caam/caamalg.c
-+++ b/drivers/crypto/caam/caamalg.c
-@@ -1120,6 +1120,7 @@ static int __init caam_algapi_init(void)
- 	if (err < 0 && i == 0) {
- 		dev_err(ctrldev, "algapi error in job ring registration: %d\n",
- 			err);
-+		kfree(jrdev);
- 		return err;
- 	}
+diff --git a/drivers/staging/cx25821/cx25821-video.c b/drivers/staging/cx25821/cx25821-video.c
+index ab05392..04b18f4 100644
+--- a/drivers/staging/cx25821/cx25821-video.c
++++ b/drivers/staging/cx25821/cx25821-video.c
+@@ -832,6 +832,7 @@ static int video_open(struct file *file)
+ 
+        if (NULL == dev) {
+ 		mutex_unlock(&cx25821_devlist_mutex);
++		kfree(fh);
+ 		return -ENODEV;
+        }
  
 
