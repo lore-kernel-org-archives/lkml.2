@@ -1,110 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab1DAPmW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:42:22 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:53995 "HELO
-	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750777Ab1DAPmU (ORCPT
+	id S1757924Ab1DAPnf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:43:35 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64948 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab1DAPnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:42:20 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=t5ytFk8/XEy9/d0aBE9jDWnS/NL3dWkemJskivlt6JoqVTYf5i3EifjJwZZCDuqp8UdM13uSfPy+orzlSIqU6jxnQc7XK2JTrhCvy0+r2f4zi2QR29LxH8YcXtm77Kcs;
-Date: Fri, 1 Apr 2011 08:42:18 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Jeremy Jackson <jerj@coplanar.net>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: signal to PID 1 from serial console like KeyboardRequest or CAD
-Message-Id: <20110401084218.d803b38d.rdunlap@xenotime.net>
-In-Reply-To: <4D95F1B0.9060304@coplanar.net>
-References: <4D8CD3D4.90900@coplanar.net>
-	<20110331125706.9159a13d.rdunlap@xenotime.net>
-	<20110401053757.GA9866@core.coreip.homeip.net>
-	<4D95F1B0.9060304@coplanar.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 1 Apr 2011 11:43:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=wYxKtc+fF/gSNcdRVxIYywuHNsF0Y1Ij5dVUTk85hCf2U8R2iyCtsMiVMDNdmeTagR
+         rvnJzJM3DWAXztXicPuSmpObv7hoTXZ+fk9eH3Aj8efODN2GUI1jren4vF2Ecn1f/a8M
+         LszLNXRXbJCuVsORrdD1ji48IUOcOymziA3xY=
+Date: Fri, 1 Apr 2011 17:43:27 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>
+Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
+Message-ID: <20110401154327.GA6593@mtj.dyndns.org>
+References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 01 Apr 2011 11:39:28 -0400 Jeremy Jackson wrote:
+Hello,
 
-> On 04/01/2011 01:37 AM, Dmitry Torokhov wrote:
-> > On Thu, Mar 31, 2011 at 12:57:06PM -0700, Randy Dunlap wrote:
-> >> On Fri, 25 Mar 2011 13:41:40 -0400 Jeremy Jackson wrote:
-> >>
-> >>> Hi,
-> >>>
-> >>> Sent to linux-console with no reply for over a week...
-> >>>
-> >>> I ran into a problem recently on a Linux server with a remote serial
-> >>> console.  /sbin/init (actually Upstart) was in a state where nothing
-> >>> (useful) was running.  I had to power cycle the machine to get back to
-> >>> the boot prompt.  This has the side-effect of triggering raid rebuilds.
-> >>>
-> >>> It would be nice to have what Ctrl-Alt-Del does at the VGA console with
-> >>> PS/2 or USB keyboard. This sends a SIGINT to PID 1, and most distros
-> >>> have this set to do "shutdown -r now" which attempts a clean reboot.
-> >>
-> >> so C_A_D works at console via PS/2 or USB keyboard, but not on a remote
-> >> serial console?  Could it be an issue with whatever remote/serial software
-> >> you are using?
-> >
-> > I believe it is simply a matter of console keymap and assigning "boot"
-> > value to the desired combination.
+On Thu, Mar 31, 2011 at 11:50:04PM +0530, Amit Shah wrote:
+> After the first GET_EVENT_STATUS_NOTIFICATION command, any new media
+> notification is reset by the device.  The following is then noticed:
 > 
-> The VGA console/keyboard isn't an issue here, C_A_D works great.  The 
-> problem is, that functionality isn't available when using *serial* console.
-
-That's why I asked whether it could be an issue with the serial interface
-software.  E.g., minicom handles/processes certain keystrokes, other apps do things
-differently, etc...
-
-
-> >>> Once upon a time there was KeyboardRequest, which would send a SIGWINCH
-> >>> to PID 1 (when pressing Alt-UP_arrow?).  I don't see any sign of this
-> >>> feature in Linux 2.6.32 though.
-> >>
-> >> I couldn't find it in 2.4.37 either.
-> >>
-> >> Can 'loadkeys' help you any?
-> >>
-> >>> Looking at the Sysrq handlers in the kernel I don't see any keystrokes
-> >>> that send SIGINT to PID 1 either.
-> >>>
-> >>> So, I'm wondering if it makes sense to add a Sysrq key to send a signal
-> >>> to PID1 ?
-> >>
-> >> Dmitry, any ideas?
-> >
-> > We have SysRq bindings to unmount filesystems and reboot, isn't that
-> > enough?
+> 1. insert a CD of a particular size
+> 2. mount it
+> 3. note /sys/block/sr0/size
+> 4. unmount cd
+> 5. replace cd with a size greater than previous one
+> 6. mount it
+> 7. /sys/block/sr0/size isn't updated
+> 8. copy all files from cd to somewhere; IO errors will pop up where the
+>    files lie beyond previous CD's geometry
 > 
-> Reboot isn't clean... it doesn't signal MD-raid to "unmount" does it? 
-> SysRq powerOff does cleanly shutdown md-raid, but who will drive to the 
-> datacenter to press the power button to turn it back on?
+> The cause is:
 > 
-> I guess there are two ways to achieve clean (md-raid) reboot when using 
-> serial console... a new SysRq to reboot "clean", or a new SysRq to 
-> signal init.  Looking at ctrlaltdel(8), perhaps it could just one SysRq, 
-> and let userspace (/sbin/init) configure it as needed.
+>  cdrom_open()
+>      open_for_data()
+>          cdo->drive_status() = sr_drive_status()
+>              cdrom_get_media_event()
+>              --> GPCMD_GET_EVENT_STATUS_NOTIFICATION
+>          --> med.media_present is true, return CDS_DISK_OK
+>      (success)
+>  check_disk_change()
+>     ... -> 2nd call to GPCMD_GET_EVENT_STATUS_NOTIFICATION
 > 
-> 
-> -- 
-> Coplanar Networks
-> http://www.coplanar.net
-> (519)489-4903
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> at this point the device has already reset the new media event and the
+> call to revalidate_disk() in check_disk_change() is never made.
 
+Hmm... I see.  That's something I didn't expect.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> All of this is noticed in a qemu-kvm virtual machine where two CD images
+> are created from two files different in size.
+...
+> diff --git a/drivers/scsi/sr_ioctl.c b/drivers/scsi/sr_ioctl.c
+> index 8be3055..0651448 100644
+> --- a/drivers/scsi/sr_ioctl.c
+> +++ b/drivers/scsi/sr_ioctl.c
+> @@ -316,12 +316,19 @@ int sr_drive_status(struct cdrom_device_info *cdi, int slot)
+>  		return CDS_DRIVE_NOT_READY;
+>  
+>  	if (!cdrom_get_media_event(cdi, &med)) {
+> -		if (med.media_present)
+> +		if (med.media_present) {
+> +			/*
+> +			 * New media was inserted; ensure disk data is
+> +			 * revalidated.
+> +			 */
+> +			if (cdi->disk->fops->revalidate_disk)
+> +				cdi->disk->fops->revalidate_disk(cdi->disk);
+>  			return CDS_DISC_OK;
+> -		else if (med.door_open)
+> +		} else if (med.door_open) {
+>  			return CDS_TRAY_OPEN;
+> -		else
+> +		} else {
+>  			return CDS_NO_DISC;
+> +		}
+>  	}
+
+But I don't think this is the correct place to do it.  The problem
+happens because block layer consumes the event but doesn't remember it
+when the time for revalidation comes.  It should be done by block
+layer, not sr.  Hmmm... looking at the code, the new disk event code
+should handle this correctly.  Was 2.6.38 showing the problem too?
+
+Thanks.
+
+-- 
+tejun
