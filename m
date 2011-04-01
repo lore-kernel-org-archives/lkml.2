@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553Ab1DARW4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 13:22:56 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42354 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757852Ab1DARWz (ORCPT
+	id S1758589Ab1DAR2J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 13:28:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61992 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758468Ab1DAR2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 13:22:55 -0400
-Date: Fri, 1 Apr 2011 18:22:41 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Andrea Gelmini <andrea.gelmini@gmail.com>
-Cc: anssi.hannula@iki.fi, linux-acpi@vger.kernel.org, axel.lin@gmail.com,
-        trenn@suse.de, len.brown@intel.com, error27@gmail.com,
-        malattia@linux.it, linux-kernel@vger.kernel.org
-Subject: Re: Regression 2.6.39-rc1 for sony-laptop
-Message-ID: <20110401172241.GA26851@srcf.ucam.org>
-References: <AANLkTi=1xtjEZc2C1=W-v2oYbvvcGH9k_DGGXvJ8=swq@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=1xtjEZc2C1=W-v2oYbvvcGH9k_DGGXvJ8=swq@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 1 Apr 2011 13:28:07 -0400
+Subject: Re: accessing vfpinstr macros from outside vfp directory
+From: Will Deacon <will.deacon@arm.com>
+To: Neil Leeder <nleeder@codeaurora.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        Sheetal Sahasrabudhe <sheetals@codeaurora.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, jamie.iles@picochip.com,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4D924966.2050707@codeaurora.org>
+References: <4D924966.2050707@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Apr 2011 18:27:23 +0100
+Message-ID: <1301678843.17592.5.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 01, 2011 at 07:16:43PM +0200, Andrea Gelmini wrote:
+Neil,
 
-> Git bisect blames this commit:
+On Tue, 2011-03-29 at 22:04 +0100, Neil Leeder wrote:
+> Any opinions on what would be the best thing to do here? Choices appear to be:
+> 
+> 1) allow the relative include path of ../vfp/vfpinstr.h
+> 2) move the definitions of fmrx, fmxr from vfp/vfpinstr.h to include/asm/vfp.h
+> 3) move vfp/vfpinstr.h to include/asm
+> 4) other...?
+> 
+> If it helps, I can create a patch for whichever is considered the preferred solution.
+> 
 
-Pretty convinced that git bisect's got that wrong, given that it doesn't 
-touch any Sony code. I'll take a look at the Sony patches, thanks for 
-the report!
+I personally don't find option (1) that offensive - Bryan seemed to
+differ though so perhaps option (2) would keep him happy?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I don't think option (3) is sensible given that the majority of the
+header file is private to /vfp.
+
+Will
+
