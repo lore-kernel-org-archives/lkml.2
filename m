@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757830Ab1DAPSw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:18:52 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:37658 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757193Ab1DAPSv (ORCPT
+	id S1757864Ab1DAPTi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:19:38 -0400
+Received: from ra.se.axis.com ([195.60.68.13]:55517 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754203Ab1DAPTh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:18:51 -0400
-Date: Fri, 1 Apr 2011 18:18:44 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH] Input: twl4030_keypad - fix potential NULL dereference
- in twl4030_kp_probe()
-Message-ID: <20110401151843.GB2164@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1301670483.6013.4.camel@phoenix>
+	Fri, 1 Apr 2011 11:19:37 -0400
+X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Apr 2011 11:19:36 EDT
+Date: Fri, 1 Apr 2011 17:11:36 +0200 (CEST)
+From: Ricard Wanderlof <ricard.wanderlof@axis.com>
+X-X-Sender: ricardw@lnxricardw.se.axis.com
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: Paulo Marques <pmarques@grupopie.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        MTD list <linux-mtd@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] do not select KALLSYMS_ALL
+In-Reply-To: <1301670104.2789.94.camel@localhost>
+Message-ID: <Pine.LNX.4.64.1104011710460.18181@lnxricardw.se.axis.com>
+References: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>
+ <4D948D52.4040708@grupopie.com>  <1301669776.2789.92.camel@localhost>
+ <1301670104.2789.94.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301670483.6013.4.camel@phoenix>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 01, 2011 at 11:08:03PM +0800, Axel Lin wrote:
-> We should first check whether platform data is NULL or not, before
-> dereferencing it to get the keymap.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+On Fri, 1 Apr 2011, Artem Bityutskiy wrote:
 
+> > On Fri, 2011-04-01 at 17:56 +0300, Artem Bityutskiy wrote:
+> > Well, ok, I've measured how much is this "a lot". On an embedded arm
+> > platform this makes the kernel only 1.5% larger. 
+>
+> But in absolute numbers this is 70KiB in my case, which is indeed
+> considerable amount. So, I agree that it makes sense to keep this as a
+> separate option.
+
+Yes there are platforms where space is tight and 70 KiB could make or 
+break a given setup.
+
+/Ricard
 -- 
-balbi
+Ricard Wolf Wanderlöf                           ricardw(at)axis.com
+Axis Communications AB, Lund, Sweden            www.axis.com
+Phone +46 46 272 2016                           Fax +46 46 13 61 30
