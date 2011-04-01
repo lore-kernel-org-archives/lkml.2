@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757781Ab1DAPSB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:18:01 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:51465 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753358Ab1DAPSA (ORCPT
+	id S1757830Ab1DAPSw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:18:52 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:37658 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757193Ab1DAPSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:18:00 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=FPV/KtuzfywevqvqHAnsyQ0VGxT020I+cDhmnHR1c1TMIr+uQo3nRBvP3RalEE3MqBl2fvnGh507defyb3nzKcIez3jEY8SFAJwtk5RejWMz8XrBDYT5G4t5p0asRxEG;
-Date: Fri, 1 Apr 2011 08:17:58 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: support for Synopsys DesignWare APB GPIO
-Message-Id: <20110401081758.2d06bab7.rdunlap@xenotime.net>
-In-Reply-To: <1301665638-29841-1-git-send-email-jamie@jamieiles.com>
-References: <1301665638-29841-1-git-send-email-jamie@jamieiles.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 1 Apr 2011 11:18:51 -0400
+Date: Fri, 1 Apr 2011 18:18:44 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: twl4030_keypad - fix potential NULL dereference
+ in twl4030_kp_probe()
+Message-ID: <20110401151843.GB2164@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1301670483.6013.4.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301670483.6013.4.camel@phoenix>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  1 Apr 2011 14:47:18 +0100 Jamie Iles wrote:
+On Fri, Apr 01, 2011 at 11:08:03PM +0800, Axel Lin wrote:
+> We should first check whether platform data is NULL or not, before
+> dereferencing it to get the keymap.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index d3b2953..135d996 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -131,6 +131,14 @@ config GPIO_VX855
->  	  additional drivers must be enabled in order to use the
->  	  functionality of the device.
->  
-> +config GPIO_DW
-> +	bool "Synopsys DesignWare APB GPIO controller"
-> +	depends on GPIOLIB
-> +	help
-> +	  Say M here to build support for the Synopsys DesignWare APB
-> +	  GPIO controller found in some ARM systems.  This GPIO controller
-> +	  supports upto 4 ports of GPIO and GPIO interrupts on port A.
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-	           up to
-
-> +
->  comment "I2C GPIO expanders:"
->  
->  config GPIO_MAX7300
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+balbi
