@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab1DAQgf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 12:36:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49948 "EHLO
+	id S932293Ab1DAQkd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 12:40:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36648 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757919Ab1DAQge convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 12:36:34 -0400
+	by vger.kernel.org with ESMTP id S1751316Ab1DAQkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 12:40:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <BANLkTim3x=1n+F7yD-euY0=RhmyXViUamg@mail.gmail.com>
-References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
- <AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
- <AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
- <alpine.LSU.2.00.1103182158200.18771@sister.anvils> <BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
- <AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com> <BANLkTim3x=1n+F7yD-euY0=RhmyXViUamg@mail.gmail.com>
+In-Reply-To: <201104011755.57412.arnd@arndb.de>
+References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
+ <201104011554.07924.arnd@arndb.de> <1301671655.28467.52.camel@e102144-lin.cambridge.arm.com>
+ <201104011755.57412.arnd@arndb.de>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 1 Apr 2011 09:35:41 -0700
-Message-ID: <AANLkTik4q8N9vYUibSZfepUmhYoREo2dbH5NFZAHuOFb@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
-To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Michel Lespinasse <walken@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Fri, 1 Apr 2011 09:39:38 -0700
+Message-ID: <AANLkTikfBhCH5wrpYzKbws0F_UVaskhtN_SUGQ+hU8Ab@mail.gmail.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        david@lang.hm, Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 1, 2011 at 9:21 AM, Robert Święcki <robert@swiecki.net> wrote:
+On Fri, Apr 1, 2011 at 8:55 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 >
-> Is it possible to turn it off via config flags? Looking into
-> arch/x86/include/asm/bug.h it seems it's unconditional (as in "it
-> always manifests itself somehow") and I have
-> CONFIG_DEBUG_BUGVERBOSE=y.
+> Well, except that because of point 7, device trees are still inferior to
+> having correct and complete information in hardware.
 
-Ok, if you have CONFIG_DEBUG_BUGVERBOSE then, you do have the bug-table.
+Oh, absolutely.
 
-Maybe it's just kdb that is broken, and doesn't print it. I wouldn't
-be surprised. It's not the first time I've seen debugging features
-that just make debugging a mess.
+If you have discoverable hardware, use it.
 
-> Anything that could help you debugging this? Uploading kernel image
-> (unfortunately I've overwritten this one), dumping more kgdb data?
+But by "discoverable hardware" I mean something like PCI config
+cycles. IOW, real hardware features. Not some code like
 
-So in this case kgdb just dropped the most important data on the floor.
+   if (board_signature_is(xyz)) {
+     ...
 
-But if you have kdb active next time, print out the vma/old contents
-in that function that has the BUG() in it.
+that just maps some _other_ hardware knowledge (reading a SoC ID or
+something) into an unrelated thing ("I know this SoC has these bits of
+hardware").
 
-> I must admit I'm not up-to-date with current linux kernel debugging
-> techniques. The kernel config is here:
-> http://alt.swiecki.net/linux_kernel/ise-test-2.6.38-kernel-config.txt
->
-> For now I'll compile with -O0 -fno-inline (are you sure you'd like -Os?)
+So devicetree should never override actual "hardware tells me it
+exists here". But you might well have a mapping from SoC ID's to a
+compiled-in devicetree thing (this is largely what POWER does, iirc).
 
-Oh, don't do that. -O0 makes the code totally unreadable (the compiler
-just does _stupid_ things, making the asm code look so horrible that
-you can't match it up against anything sane), and -fno-inline isn't
-worth the pain either.
-
--Os is much better than those.
-
-But in this case, just getting the filename and line number would have
-made the thing moot anyway - without kdb it _should_ have said
-something clear like
-
-   kernel BUG at %s:%u!
-
-where %s:%u is the filename and line number.
-
-                          Linus
+                Linus
