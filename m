@@ -1,125 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab1DATqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 15:46:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43303 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647Ab1DATqa (ORCPT
+	id S1754633Ab1DATyu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 15:54:50 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:37041 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab1DATyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 15:46:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type;
-        b=hFIR+QgPBbLfsLwy3qK61cLvo4nR5lgqxwxnXEu9S1vHwgPMTJ6aaf7hvtd6lBAGtX
-         pXIyflm0rMv9rK2MZWH0dU36B7vEiZe6n5kH1weHM19z3OQakYsXUdMLu7W3sRuXwcEX
-         CQeW5+7+qFSXRYrSJEECEuRVnz1K5r1SNXykw=
-Message-ID: <4D962B91.5090702@gmail.com>
-Date: Fri, 01 Apr 2011 21:46:25 +0200
-From: =?UTF-8?B?QmVuZWRlayBMw6FzemzDsw==?= <benedekl@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b13pre) Gecko/20110313 Thunderbird/3.3a3pre
-MIME-Version: 1.0
-To: linux-usb-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: New FTDI serial io vendor/product id patch
-Content-Type: multipart/mixed;
- boundary="------------000603060508010507040304"
+	Fri, 1 Apr 2011 15:54:49 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Fri, 01 Apr 2011 15:54:47 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Detlef Vollmann <dv@vollmann.ch>, Ingo Molnar <mingo@elte.hu>,
+        david@lang.hm, Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+In-reply-to: <201104011750.17344.arnd@arndb.de>
+Message-id: <alpine.LFD.2.00.1104011441150.28032@xanadu.home>
+References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
+ <201104011659.40443.arnd@arndb.de> <4D95EF8E.9080902@vollmann.ch>
+ <201104011750.17344.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000603060508010507040304
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+On Fri, 1 Apr 2011, Arnd Bergmann wrote:
 
-Dear list,
+> On Friday 01 April 2011, Detlef Vollmann wrote:
+> > On 04/01/11 16:59, Arnd Bergmann wrote:
+> > > On Friday 01 April 2011, Detlef Vollmann wrote:
+> > >> On 04/01/11 15:54, Arnd Bergmann wrote:
+> > >
+> > >>> 9. All interesting work is going into a handful of platforms, all of which
+> > >>>      are ARMv7 based.
+> > >> Define interesting.
+> > >
+> > > The ones that are causing the churn that we're talking about.
+> > > Platforms that have been working forever and only need to get
+> > > the occasional bug fix are boring, i.e. not the problem.
+> > In the ARM tree I only know mach-at91.
+> > Atmel still introduces new SOCs based on ARM926EJ-S, and that makes
+> > perfect sense for lots of applications.
+> 
+> I thought new ones were generally Cortex-M3 based. Either way, even
+> if there are exceptions, focusing on ARMv7 at first should give
+> a good representation of the new development.
 
-I have an USB Atmel programmer which uses the FTDI driver. It has a
-VID/PID pair of 0403:FA33. It identifies itself as "TavIR STK500". Here
-is a photo of the the device:
-http://avr.tavir.hu/images/contents/809/809l-stk500-m.jpg
+The actual CPU core doesn't matter at all.  Whether it is ARM926EJ-S, 
+XScale, PJ4 or Cortex-A8/A9, _that_ is the part that is extremely well 
+maintained and abstracted already.  The focus should instead be put on 
+those platforms that are the most used irrespective of their cores.  And 
+by selecting the most used platforms, we have a greater chance to create 
+community momentum, and good examples will be spread more quickly.
 
-lsusb output:
-Bus 002 Device 005: ID 0403:fa33 Future Technology Devices
-International, Ltd
+> > >>> 12. Supporting many different boards with a single kernel binary is a
+> > >>>       useful goal.
+> > >> Generally not for embedded systems (for me, a mobile PDA/phone is just a
+> > >> small computer with a crappy keyboard, but not an embedded system).
+> > >
+> > > True. For embedded, this would not be an important thing to do, but
+> > > also not hurt.
+> > It costs you flash space.
+> 
+> Well, the idea was not to force everyone to enable all options. When this
+> is done right, the kernel would not be any bigger.
 
-dmesg output with patched kernel:
-[ 1835.915073] usb 2-1.3: new full speed USB device using ehci_hcd and
-address 5
-[ 1836.012322] usb 2-1.3: New USB device found, idVendor=0403,
-idProduct=fa33
-[ 1836.012329] usb 2-1.3: New USB device strings: Mfr=1, Product=2,
-SerialNumber=0
-[ 1836.012336] usb 2-1.3: Product: TavIR STK500
-[ 1836.012340] usb 2-1.3: Manufacturer: TavIR AVR
-[ 1836.014620] ftdi_sio 2-1.3:1.0: FTDI USB Serial Device converter detected
-[ 1836.014723] usb 2-1.3: Detected FT232RL
-[ 1836.014730] usb 2-1.3: Number of endpoints 2
-[ 1836.014737] usb 2-1.3: Endpoint 1 MaxPacketSize 64
-[ 1836.014743] usb 2-1.3: Endpoint 2 MaxPacketSize 64
-[ 1836.014749] usb 2-1.3: Setting MaxPacketSize 64
-[ 1836.015394] usb 2-1.3: FTDI USB Serial Device converter now attached
-to ttyUSB1
+With many SOCs each with their own peculiarities, the kernel would 
+obviously grow bigger.  But the major advantage of being _able_ to do 
+that is not ultimately to have only one kernel with multi-board support 
+even if in some context this has great value, but rather to enforce good 
+code reuse and abstraction.
 
-Please consider applying this trivial patch which allows the system to
-recognise the device as a serial io port.
+Russell suggested that we enable CONFIG_ARM_PATCH_PHYS_VIRT by 
+default.  This is already one way to remove one of the most 
+fundamental board specific piece of information that can be deduced at 
+run time instead of having compile time constants per SOC.
 
-I'm not a subscriber of this mailing list, so please CC the answers
-personally too. Thank you.
+I however don't think it is practical to go off in a separate 
+mach-nocrap space and do things in parallel.  Taking OMAP as an example, 
+there is already way too big of an infrastructure in place to simply 
+rewrite it in parallel to new OMAP versions coming up.
 
-Regards,
-Benedek László
+It would be more useful and scalable to simply sit down, look at the 
+current mess, and identify common patterns that can be easily factored 
+out into some shared library code, and all that would be left in the 
+board or SOC specific files eventually is the data to register with that 
+library code.  Nothing so complicated as grand plans or planification 
+that makes it look like a mountain.
 
---------------000603060508010507040304
-Content-Type: text/x-diff;
- name="0001-USB-serial-FTDI-with-product-code-FA33-and-vendor-id.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-USB-serial-FTDI-with-product-code-FA33-and-vendor-id.pa";
- filename*1="tch"
+Two patterns were identified so far, and they are:
 
->From 8f1c09d60e70f793bf818380a0c7d2a5064088e3 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Benedek=20L=C3=A1szl=C3=B3?= <benedekl@gmail.com>
-Date: Fri, 1 Apr 2011 19:48:14 +0200
-Subject: [PATCH] USB: serial: FTDI with product code FA33 and vendor id 0403
+1) GPIO drivers
 
-The TavIR-AVR USB STK500 Atmel programmer (0403:FA33) uses the
-FTDI serial io driver, so add support for this device.
----
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+   As Linus observed, in the majority of the cases GPIOs are accessed 
+   through simple memory-mapped registers.  Some have absolute state 
+   registers, the others have separate clear/set registers.  Suffice to 
+   create two generic GPIO drivers each covering those two common cases, 
+   and those generic drivers would simply register with the higher level 
+   gpiolib code, and all the board code would have to do is to provide 
+   the data for those GPIOs (register offsets, number of GPIOs, etc.).  
+   Whether this data eventually comes from DT is an orthogonal issue.
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index f349a36..f1b047a 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -563,6 +563,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_APP70_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PEDO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PROD_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
- 	/*
- 	 * ELV devices:
- 	 */
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 117e8e6..ce6ed76 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -489,6 +489,11 @@
- /* www.canusb.com Lawicel CANUSB device (FTDI_VID) */
- #define FTDI_CANUSB_PID 0xFFA8 /* Product Id */
- 
-+/*
-+ * TavIR AVR product ids (FTDI_VID)
-+ */
-+#define FTDI_TAVIR_STK500_PID	0xFA33	/* STK500 AVR programmer */
-+
- 
- 
- /********************************/
--- 
-1.7.4.1
+2) IRQ chip drivers
+
+   Again, as Thomas observed, the same issue exists with the majority of 
+   the IRQ chip drivers.  Most of them follow a common simple pattern 
+   that can be abstracted in some generic library code due to their very 
+   similar mode of operation.  Writing a common driver would leave the 
+   board specific code with only a data table describing hardware 
+   registers.
+
+A good example of such rationalization that already happened is the 
+leds-gpio driver (./drivers/leds/leds-gpio.c), or similarly the 
+gpio-keys driver (drivers/input/keyboard/gpio_keys.c).  I remember when 
+those board files were implementing their own simple drivers hooking 
+directly to the input API or the LED API.
+
+After that let's take another identified common pattern and factorize it 
+out from board code.  That might be timers (see RMK's recent 
+sched_clock() rationalization).  That might be clocks (patches from 
+Jeremy Kerr exist and need merged). Etc.
+
+Eventually we won't be able to find any more identifiable patterns which 
+are factorisable, and what will be left in board files is only genuine 
+SOC differences.  And if all that is left is actually only data tables, 
+then maybe such board files could go entirely and that data be passed 
+via device tree, but that is still a long way off.
+
+I think what is needed here is a bunch of people willing to work on such 
+things, extracting those common patterns, and creating the 
+infrastructure to cover them.  Once that is in place then we will be in 
+a position to push back on code submissions that don't use that 
+infrastructure, and be on the lookout for new patterns to emerge.
+
+Just with the above I think there is sufficient work to keep us busy for 
+a while.
 
 
---------------000603060508010507040304--
+Nicolas
