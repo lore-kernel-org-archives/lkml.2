@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab1DAPNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:13:22 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63268 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab1DAPNU (ORCPT
+	id S1754500Ab1DAPPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:15:22 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56061 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab1DAPPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:13:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sF6XodOCDz3IOG3CEMfVkFcHILkUeJhJxXiB0TAb1z5zSH29sd+as8pi17wdWyQmsy
-         XmclCYQGYoXwjwSJ63dzehIpBcvJwzX+A/J5oDnL9ib+EkyjL51IBOeccErLlILe/a8g
-         NrCW8pk8dCD+pIHnJINLHBT+0Bzx9QxF0ZqiI=
-Date: Fri, 1 Apr 2011 17:13:16 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
-Message-ID: <20110401151313.GC2335@nowhere>
-References: <20110324113137.20235.42265.stgit@localhost6.localdomain6>
- <20110324113209.20235.61900.stgit@localhost6.localdomain6>
- <4D8B79E6.2050603@gmail.com>
- <4D8C6B1B.70409@hitachi.com>
- <4D8CAE74.9080805@gmail.com>
- <4D906450.1040809@hitachi.com>
- <4D909BBB.5020500@gmail.com>
+	Fri, 1 Apr 2011 11:15:20 -0400
+Date: Fri, 1 Apr 2011 12:15:14 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] v4l: subdev: initialize sd->internal_ops in
+ v4l2_subdev_init
+Message-ID: <20110401151513.GA2347@herton-IdeaPad-Y430>
+References: <1301667857-5145-1-git-send-email-herton.krzesinski@canonical.com>
+ <1301667857-5145-2-git-send-email-herton.krzesinski@canonical.com>
+ <201104011705.27742.hverkuil@xs4all.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D909BBB.5020500@gmail.com>
+In-Reply-To: <201104011705.27742.hverkuil@xs4all.nl>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 08:31:23AM -0600, David Ahern wrote:
-> On 03/28/11 04:34, Akihiro Nagai wrote:
-> >> from is sample->ip? to is sample->addr? In the above example
-> >> 0x39d3015260 is the value from sample->addr, 1526f is sample->ip which
-> >> resolves to _dl_next_ld_env_entry from /lib64/ld-2.13.so.
-> > Yes.
-> > In this example, resolved address is only sample->ip (branch from).
-> > We need the resolved address of sample->addr (branch to) too, because
-> > both of them are addresses of execution code.
+On Fri, Apr 01, 2011 at 05:05:27PM +0200, Hans Verkuil wrote:
+> On Friday, April 01, 2011 16:24:17 Herton Ronaldo Krzesinski wrote:
+> > Many v4l drivers currently don't initialize their struct v4l2_subdev
+> > with zeros, so since the addition of internal_ops in commit 45f6f84, we
+> > are at risk of random oopses when code in v4l2_device_register_subdev
+> > tries to dereference sd->internal_ops->*, as can be shown by the report
+> > at http://bugs.launchpad.net/bugs/745213
+> > 
+> > So make sure internal_ops is cleared in v4l2_subdev_init.
 > 
-> Ok, now I understand. In that case add conversion of sample->addr to
-> symbols to perf-script.
+> NACK: we need to replace those kmalloc's with kzalloc. This patch will just
+> fix the internal_ops problem, but sd->entity isn't zeroed. It's going to be
+> a neverending problem unless we fix those kmalloc's. It is my fault, I guess:
+> I should always have required the use of kzalloc.
+> 
+> I grepped for this and the number of kmalloc's is quite small:
+> 
+> drivers/media/video/tda9840.c
+> drivers/media/video/upd64031a.c
+> drivers/media/video/m52790.c
+> drivers/media/video/tea6415c.c
+> drivers/media/video/tea6420.c
+> drivers/media/video/upd64083.c
+> drivers/media/radio/saa7706h.c
+> drivers/media/radio/tef6862.c
+> 
+> If you fix those kmalloc's, then I'll ack those changes. There is just one
+> relevant kmalloc in each file.
+> 
+> The reason this wasn't noticed before is that all these devices are all
+> pretty rare. All the more common device drivers use kzalloc. I am really
+> surprised to hear of mxb boards still in use! Just for the record: I have
+> one myself for testing, although I clearly never realized that I should
+> test that particular change with that board...
+> 
+> Thanks for doing such a great job of tracking this down!
 
-I agree that we should rather use perf script for branch dumps.
-Sorry Akihiro, I think we suggested you to create this dedicated
-perf branch by the past. But then perf script became the vanilla dump
-tool in the middle and it seems more suitable today.
+No problem, I'll take a look and send a new patch.
 
-We can still create a perf branch later in order to produce some more
-advanced post-processing tools. But for sample dumps perf script (which starts
-to show itself as a misnomer BTW) seems to be the right place.
+> 
+> Regards,
+> 
+> 	Hans
+> 
 
-So, in this context, if we have PERF_SAMPLE_ADDR, we are going to always
-follow the ip with a "=>" and then resolve the address, etc...
-
-Yeah it makes sense for this default mode. But what about when we'll want
-a function graph kind of output? This will require a totally different
-layout. Also PERF_SAMPLE_ADDR may be used for different context in the
-future.
-
-Perhaps we want a kind of per evsel callback that makes its own
-interpretation of the pid/tid/dso/sym/etc... options asked by the
-user?
-
-But well, we can start simple and make and just do the => trick
-if we have PERF_SAMPLE_ADDR and resolve addr if the user asked
-the sym. Then when we have the graph output, have these per evsel
-display callbacks.
+-- 
+[]'s
+Herton
