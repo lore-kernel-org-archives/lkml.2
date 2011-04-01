@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab1DANCO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:02:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13548 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754089Ab1DANCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 09:02:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,282,1299484800"; 
-   d="scan'208";a="727920575"
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-In-Reply-To: <1301589129.2250.499.camel@laptop>
-References: <1301391136.14111.98.camel@minggr.sh.intel.com>
-	 <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost>
-	 <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop>
-	 <1301418533.2250.419.camel@laptop>
-	 <20110329174556.GC24129@ghostprotocols.net>  <4D92818A.8020405@hitachi.com>
-	 <1301561155.14111.288.camel@minggr.sh.intel.com>
-	 <1301580117.4859.286.camel@twins>  <1301582056.2271.15.camel@localhost>
-	 <1301588922.2250.498.camel@laptop>  <1301589129.2250.499.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Apr 2011 21:02:14 +0800
-Message-Id: <1301662934.2399.2.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1755706Ab1DANM1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 09:12:27 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:53705 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478Ab1DANM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 09:12:26 -0400
+Date: Fri, 1 Apr 2011 18:42:15 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
+Message-ID: <20110401131214.GS2879@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20110331144145.0ECA.A69D9226@jp.fujitsu.com>
+ <20110331082813.GN2879@balbir.in.ibm.com>
+ <20110401165752.A889.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110401165752.A889.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 00:32 +0800, Peter Zijlstra wrote:
-> On Thu, 2011-03-31 at 18:28 +0200, Peter Zijlstra wrote:
-> > 
-> > You could even first build the basic block tree and only follow those
-> > branches that end up covering the region IP is in.
+* KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2011-04-01 16:56:57]:
+
+> Hi
 > 
-> s/tree/directed-graph/ clearly the basic blocks don't form a tree and
-> can contain cycles.
+> > > 1) zone reclaim doesn't work if the system has multiple node and the
+> > >    workload is file cache oriented (eg file server, web server, mail server, et al). 
+> > >    because zone recliam make some much free pages than zone->pages_min and
+> > >    then new page cache request consume nearest node memory and then it
+> > >    bring next zone reclaim. Then, memory utilization is reduced and
+> > >    unnecessary LRU discard is increased dramatically.
+> > > 
+> > >    SGI folks added CPUSET specific solution in past. (cpuset.memory_spread_page)
+> > >    But global recliam still have its issue. zone recliam is HPC workload specific 
+> > >    feature and HPC folks has no motivation to don't use CPUSET.
+> > 
+> > I am afraid you misread the patches and the intent. The intent to
+> > explictly enable control of unmapped pages and has nothing
+> > specifically to do with multiple nodes at this point. The control is
+> > system wide and carefully enabled by the administrator.
+> 
+> Hm. OK, I may misread.
+> Can you please explain the reason why de-duplication feature need to selectable and
+> disabled by defaut. "explicity enable" mean this feature want to spot corner case issue??
+>
 
-There may be multiple different paths from the beginning of the function
-to the point we are interested in.
+Yes, because given a selection of choices (including what you
+mentioned in the review), it would be nice to have
+this selectable.
 
-Any idea how to handle this case?
-
+-- 
+	Three Cheers,
+	Balbir
