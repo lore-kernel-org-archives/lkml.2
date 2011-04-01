@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab1DAJWY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 05:22:24 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38173 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab1DAJWX (ORCPT
+	id S1755329Ab1DAJX0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 05:23:26 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:49335 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab1DAJXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 05:22:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=FsPapngg+QFck7BU4v0cNFlcDTajJEveAICAykYa2LQuFwBnyIp0BX06zYist7mEuz
-         mx5crnJ8GYk/HBLzuts/QeWEZ2psfIfOLRWNG2hKLvL04bCvJh0Iay98300P+V+4zT0e
-         o5/sOMtlXkYsUiCNCW6zfVDWWId0iPdMr1Dnw=
-Date: Fri, 1 Apr 2011 11:22:18 +0200
-From: Tejun Heo <tj@kernel.org>
-To: mingo@elte.hu
-Cc: yinghai@kernel.org, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, cl@linux.com
-Subject: [GIT PULL tip:x86/mm] this_cpu_has() changes and phys_to_nid()
- removal
-Message-ID: <20110401092218.GJ3385@htj.dyndns.org>
+	Fri, 1 Apr 2011 05:23:25 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6302"; a="83168550"
+Message-ID: <4D959986.2040108@codeaurora.org>
+Date: Fri, 01 Apr 2011 14:53:18 +0530
+From: Anirudh Ghayal <aghayal@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Boyd <sboyd@codeaurora.org>, linux-input@vger.kernel.org
+CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trilok Soni <tsoni@codeaurora.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [rtc-linux] Re: [PATCH 2/3] input: pmic8xxx_pwrkey: Add support
+ for power key
+References: <1301158345-22206-1-git-send-email-aghayal@codeaurora.org> <1301158345-22206-3-git-send-email-aghayal@codeaurora.org> <4D90F631.908@codeaurora.org>
+In-Reply-To: <4D90F631.908@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo.
+Hi Stephen,
 
-Please pull from the following git branch to receive five patches.
-Three of them are Christoph's this_cpu_has() patches.  One removes the
-custom x86-64 phys_to_nid() implementation and the last one cleans up
-arch/x86/Kconfig a bit.  HEAD is 3b16651f80 (x86: Clean up memory
-model related configs in arch/x86/Kconfig).
+Thanks for reviewing. I will submit a V2 patch with the changes.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+On 3/29/2011 2:27 AM, Stephen Boyd wrote:
+> On 3/26/2011 9:52 AM, Anirudh Ghayal wrote:
+>> +static void pmic8xxx_pwrkey_timer(unsigned long handle)
+>> +{
+>> +	unsigned long flags;
+>> +	struct pmic8xxx_pwrkey *pwrkey = (struct pmic8xxx_pwrkey *)handle;
+>> +
+>> +	spin_lock_irqsave(&pwrkey->lock, flags);
+>> +	pwrkey->key_pressed = true;
+>> +
+>> +	input_report_key(pwrkey->pwr, KEY_POWER, 1);
+>> +	input_sync(pwrkey->pwr);
+>> +	spin_unlock_irqrestore(&pwrkey->lock, flags);
+>> +}
+>> +
+>>
+> [snip]
+>> +
+>> +static irqreturn_t pwrkey_release_irq(int irq, void *_pwrkey)
+>> +{
+>> +	struct pmic8xxx_pwrkey *pwrkey = _pwrkey;
+>> +	unsigned long flags;
+>> +
+>> +	/* no pwrkey time, means no delay in pwr key reporting */
+>> +	if (!pwrkey->pdata->pwrkey_time_ms) {
+>> +		input_report_key(pwrkey->pwr, KEY_POWER, 0);
+>> +		input_sync(pwrkey->pwr);
+>> +		return IRQ_HANDLED;
+>> +	}
+>> +
+>> +	spin_lock_irqsave(&pwrkey->lock, flags);
+>> +	del_timer_sync(&pwrkey->timer);
+>
+> Can you call del_timer_sync() while holding the lock that your timer
+> function also acquires? I thought lockdep would have complained loudly
+> about that but I'm not sure. It looks like a deadlock scenario.
+Right. I will move del_timer_sync outside the spinlock.
 
-As usual, if HEAD doesn't appear, please pull from master.
+>
+>> +static int __devinit pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+>> +{
+>>
+> [snip]
+>> +
+>> +	if (pdata->kpd_trigger_delay_us>  62500) {
+>> +		dev_err(&pdev->dev, "invalid pwr key trigger delay\n");
+>
+> Nitpick: Can you spell out "power" here instead of pwr? Or use
+> "kpd_trigger_delay_us" instead.
+Ok.
 
- ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+>
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	if (pdata->pwrkey_time_ms&&
+>> +	     (pdata->pwrkey_time_ms<  500 || pdata->pwrkey_time_ms>  1000)) {
+>> +		dev_err(&pdev->dev, "invalid pwr key time supplied\n");
+>
+Ok.
+> Ditto
+>
+>> +
+>> +	pon_cntl&= ~PON_CNTL_TRIG_DELAY_MASK;
+>> +	pon_cntl |= (delay&  PON_CNTL_TRIG_DELAY_MASK);
+>> +	pon_cntl |= (pdata->pull_up ? PON_CNTL_PULL_UP : ~PON_CNTL_PULL_UP);
+>
+> Did you just set a bunch of bits you didn't want to when pdata->pull_up
+> == false?
+Oops right. I will fix this.
+>
 
-Thanks.
+Thank you,
+~Anirudh
 
-Christoph Lameter (3):
-      x86: A fast way to check capabilities of the current cpu
-      x86: Use this_cpu_has for thermal_interrupt current cpu
-      acpi throttling: Use this_cpu_has and simplify code current cpu
-
-Tejun Heo (2):
-      x86-64, NUMA: Remove custom phys_to_nid() implementation
-      x86: Clean up memory model related configs in arch/x86/Kconfig
-
- arch/x86/Kconfig                         |   30 +++----
- arch/x86/include/asm/cpufeature.h        |   13 ++-
- arch/x86/include/asm/mmzone_64.h         |   23 ------
- arch/x86/include/asm/percpu.h            |   27 +++++++
- arch/x86/kernel/apic/apic.c              |    2 +-
- arch/x86/kernel/cpu/mcheck/therm_throt.c |    7 +-
- arch/x86/kernel/process.c                |    4 +-
- arch/x86/kernel/smpboot.c                |    4 +-
- arch/x86/mm/numa_64.c                    |  123 +-----------------------------
- drivers/acpi/processor_throttling.c      |   32 +++-----
- 10 files changed, 68 insertions(+), 197 deletions(-)
-
- --
- tejun
- 
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
