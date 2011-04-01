@@ -1,119 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab1DAKia (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 06:38:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13500 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754266Ab1DAKi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 06:38:29 -0400
-Date: Fri, 1 Apr 2011 12:38:17 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: aneesh.kumar@linux.vnet.ibm.com, victor.vde@gmail.com,
-        util-linux@vger.kernel.org, linuxram@us.ibm.com,
-        viro@zeniv.linux.org.uk, ejmarkow@yahoo.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lennart@poettering.net
-Subject: Re: [BUG] libmount misparses mountinfo on Linux v2.6.39-rc1
-Message-ID: <20110401103817.GB11012@nb.net.home>
-References: <19860.58082.277944.875401@gargle.gargle.HOWL> <87d3l62z3k.fsf@linux.vnet.ibm.com> <E1Q5ZzI-0001M4-0j@pomaz-ex.szeredi.hu> <20110401093240.GA11012@nb.net.home> <E1Q5bLG-0001eG-9d@pomaz-ex.szeredi.hu>
+	id S1755614Ab1DAKoo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 06:44:44 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55647 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755580Ab1DAKol (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 06:44:41 -0400
+X-AuditID: b753bd60-a46baba000004916-ec-4d95ac9626a1
+X-AuditID: b753bd60-a46baba000004916-ec-4d95ac9626a1
+Message-ID: <4D95AC94.1080303@hitachi.com>
+Date: Fri, 01 Apr 2011 19:44:36 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1Q5bLG-0001eG-9d@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "2nddept-manager@sdl.hitachi.co.jp" 
+	<2nddept-manager@sdl.hitachi.co.jp>
+Subject: Re: [RFC PATCH] perf report: add sort by file lines
+References: <1301391136.14111.98.camel@minggr.sh.intel.com>	 <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost>	 <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop>	 <1301418533.2250.419.camel@laptop>	 <20110329174556.GC24129@ghostprotocols.net>  <4D92818A.8020405@hitachi.com>	 <1301561155.14111.288.camel@minggr.sh.intel.com>	 <1301580117.4859.286.camel@twins>  <1301582056.2271.15.camel@localhost> <1301588922.2250.498.camel@laptop>
+In-Reply-To: <1301588922.2250.498.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 01, 2011 at 12:12:34PM +0200, Miklos Szeredi wrote:
-> On Fri, 1 Apr 2011, Karel Zak wrote:
-> > On Fri, Apr 01, 2011 at 10:45:48AM +0200, Miklos Szeredi wrote:
-> > > On Fri, 01 Apr 2011, Aneesh Kumar K. V wrote:
-> > > > On Thu, 31 Mar 2011 22:24:01 +0200, victor.vde@gmail.com wrote:
-> > > > > /proc/self/mountinfo on Linux v2.6.39-rc1 includes the UUID of ext4
-> > > > > and ext3 mounts, for example:
-> > > > > 
-> > > > > 15 1 8:3 / / rw,noatime uuid:c645234d-9756-4d84-825e-6fe999252a34 - ext4 /dev/sda3 rw,user_xattr,acl,barrier=1,data=ordered
-> > > > > 
-> > > > > It seems the hyphens in the uuid confuse the parser
-> > > > > mnt_parse_mountinfo_line in tab_parse.c of libmount in util-linux.
-> > > > 
-> > > > shouldn't the parser look for " " followed by "-" followed by " " as the
-> > > > field seperator ? 
-> > > > 
-> > > > I am adding Miklos and Ram Pai to CC to check whether the kernel or the libmount 
-> > > > should be fixed ?
-> > > 
-> > > I think libmount should be fixed, though there is always the question
-> > > of backward compatibility.
-> > 
-> >  The parser uses
-> > 
-> > 	rc = sscanf(s,	"%u "		/* (1) id */
-> > 			"%u "		/* (2) parent */
-> > 			"%u:%u "	/* (3) maj:min */
-> > 			"%ms "		/* (4) mountroot */
-> > 			"%ms "		/* (5) target */
-> > 			"%ms"		/* (6) vfs options (fs-independent) */
-> > 			"%*[^-]"	/* (7) optional fields */
+(2011/04/01 1:28), Peter Zijlstra wrote:
+> On Thu, 2011-03-31 at 22:34 +0800, Lin Ming wrote:
+>> I'm afraid that fwd scan may not work, because of branch instruction.
+>>
+>> void foo(struct foo *foo, struct tmp *tmp, int flag)
+>> { 
+>>         if (flag)
+>>                 foo->bar->fubar = tmp->blah;   
+>>         else    
+>>                 tmp->blah = foo->bar->fubar;
+>> }
+>>
+>> ===>
+>>
+>> void foo(struct foo *foo, struct tmp *tmp, int flag)
+>> {
+>>   400494:       55                      push   %rbp
+>>   400495:       48 89 e5                mov    %rsp,%rbp
+>>   400498:       48 89 7d f8             mov    %rdi,-0x8(%rbp)
+>>   40049c:       48 89 75 f0             mov    %rsi,-0x10(%rbp)
+>>   4004a0:       89 55 ec                mov    %edx,-0x14(%rbp)
+>>         if (flag)
+>>   4004a3:       83 7d ec 00             cmpl   $0x0,-0x14(%rbp)
+>>   4004a7:       74 14                   je     4004bd <foo+0x29>
+>>                 foo->bar->fubar = tmp->blah;
+>>   4004a9:       48 8b 45 f8             mov    -0x8(%rbp),%rax
+>>   4004ad:       48 8b 40 18             mov    0x18(%rax),%rax
+>>   4004b1:       48 8b 55 f0             mov    -0x10(%rbp),%rdx
+>>   4004b5:       8b 52 20                mov    0x20(%rdx),%edx
+>>   4004b8:       89 50 14                mov    %edx,0x14(%rax)
+>>   4004bb:       eb 12                   jmp    4004cf <foo+0x3b>
+>>         else
+>>                 tmp->blah = foo->bar->fubar;
+>>   4004bd:       48 8b 45 f8             mov    -0x8(%rbp),%rax
+>>   4004c1:       48 8b 40 18             mov    0x18(%rax),%rax
+>>   4004c5:       8b 50 14                mov    0x14(%rax),%edx
+>>   4004c8:       48 8b 45 f0             mov    -0x10(%rbp),%rax
+>>   4004cc:       89 50 20                mov    %edx,0x20(%rax)
+>> }
+>>   4004cf:       c9                      leaveq
+>>   4004d0:       c3                      retq
+>>
+>> Assume we are at ip 4004c5, the fwd scan from the beginning of
+>> function(400494) to 4004c5 will not get what we want about %rax.
 > 
-> So this says, "skip everything up to the first hyphen", even though
-> the rule might be better expressed as "skip all space delimited words
-> up to the first standalone hyphen".  I guess that's not possible to
-> express with a scanf expression, though.
-
- Yes, I'll probably use two sscanf(), %n and strstr(), something like:
-
-	rc = sscanf(s,	"%u "		/* (1) id */
-			"%u "		/* (2) parent */
-			"%u:%u "	/* (3) maj:min */
-			"%ms "		/* (4) mountroot */
-			"%ms "		/* (5) target */
-			"%ms"		/* (6) vfs options (fs-independent) */
-			"%n",
-
-			&id,
-			&parent,
-			&maj, &min,
-			&root,
-			&target,
-			&vfs_optstr,
-			&end);
-
-	s += end;
-
-	/* (7) optional fields, terminated by " - " */
-	p = strstr(s, " - ");
-	if (p)
-		s = p + 3;
-
-	rc += sscanf(s,	"%ms "		/* (8) FS type */
-			"%ms "		/* (9) source */
-			"%ms",		/* (10) fs options (fs specific) */
-
-			&fstype,
-			&src,
-			&fs_optstr);
-
-
-...or anyone has a better idea?
-
-> >  It calls unmangle_string() for all fields, so all sequences should be
-> >  decoded.
+> Conversely backwards scans can get confused if there's more places to
+> come from (intercal ftw!).
 > 
-> Okay, so the kernel can simply escape the troublesome hyphens, which
-> would make the human parsing of /proc/pid/mountinfo more difficult but
-> at least would fix compatibility with util-linux's parser.
+> That said, your example above should not get confused about %rax if it
+> knows about the jumps, simply clone your context on any jump instruction
+> and follow both branches. That would then give you:
+> 
+> 400494 -> 4004a7 -> 4004bb -> 4004cf
+>                  -> 4004bd
 
-Hmm.. IMHO it will be better to fix the parsers in libmount and systemd. The 
-both projects are young, nobody will be surprised with bugs :-)
+Hm, I think that is the easiest case (like as kprobes does in the kernel)
+E.g. an indirect jump makes it hard to find where it jumps to.
 
-I think the example in Documentation/filesystems/proc.txt is pretty
-obvious, the separator is an extra field with " - ".
+> You could even first build the basic block tree and only follow those
+> branches that end up covering the region IP is in.
 
-    Karel
+Ah, that's reasonable :)
+
+Thank you,
 
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
