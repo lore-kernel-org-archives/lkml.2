@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757764Ab1DAPPx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:15:53 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34981 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568Ab1DAPPw convert rfc822-to-8bit (ORCPT
+	id S1757781Ab1DAPSB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:18:01 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:51465 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753358Ab1DAPSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:15:52 -0400
-Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>
-In-Reply-To: <20110401151313.GC2335@nowhere>
-References: <20110324113137.20235.42265.stgit@localhost6.localdomain6>
-	 <20110324113209.20235.61900.stgit@localhost6.localdomain6>
-	 <4D8B79E6.2050603@gmail.com> <4D8C6B1B.70409@hitachi.com>
-	 <4D8CAE74.9080805@gmail.com> <4D906450.1040809@hitachi.com>
-	 <4D909BBB.5020500@gmail.com>  <20110401151313.GC2335@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 01 Apr 2011 17:15:17 +0200
-Message-ID: <1301670917.4859.696.camel@twins>
+	Fri, 1 Apr 2011 11:18:00 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=FPV/KtuzfywevqvqHAnsyQ0VGxT020I+cDhmnHR1c1TMIr+uQo3nRBvP3RalEE3MqBl2fvnGh507defyb3nzKcIez3jEY8SFAJwtk5RejWMz8XrBDYT5G4t5p0asRxEG;
+Date: Fri, 1 Apr 2011 08:17:58 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] gpio: support for Synopsys DesignWare APB GPIO
+Message-Id: <20110401081758.2d06bab7.rdunlap@xenotime.net>
+In-Reply-To: <1301665638-29841-1-git-send-email-jamie@jamieiles.com>
+References: <1301665638-29841-1-git-send-email-jamie@jamieiles.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 17:13 +0200, Frederic Weisbecker wrote:
-> On Mon, Mar 28, 2011 at 08:31:23AM -0600, David Ahern wrote:
-> > On 03/28/11 04:34, Akihiro Nagai wrote:
-> > >> from is sample->ip? to is sample->addr? In the above example
-> > >> 0x39d3015260 is the value from sample->addr, 1526f is sample->ip which
-> > >> resolves to _dl_next_ld_env_entry from /lib64/ld-2.13.so.
-> > > Yes.
-> > > In this example, resolved address is only sample->ip (branch from).
-> > > We need the resolved address of sample->addr (branch to) too, because
-> > > both of them are addresses of execution code.
-> > 
-> > Ok, now I understand. In that case add conversion of sample->addr to
-> > symbols to perf-script.
-> 
-> I agree that we should rather use perf script for branch dumps.
-> Sorry Akihiro, I think we suggested you to create this dedicated
-> perf branch by the past. But then perf script became the vanilla dump
-> tool in the middle and it seems more suitable today.
-> 
-> We can still create a perf branch later in order to produce some more
-> advanced post-processing tools. But for sample dumps perf script (which starts
-> to show itself as a misnomer BTW) seems to be the right place.
+On Fri,  1 Apr 2011 14:47:18 +0100 Jamie Iles wrote:
 
-Why do something with snakes if its perfectly possible to do in C ?
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index d3b2953..135d996 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -131,6 +131,14 @@ config GPIO_VX855
+>  	  additional drivers must be enabled in order to use the
+>  	  functionality of the device.
+>  
+> +config GPIO_DW
+> +	bool "Synopsys DesignWare APB GPIO controller"
+> +	depends on GPIOLIB
+> +	help
+> +	  Say M here to build support for the Synopsys DesignWare APB
+> +	  GPIO controller found in some ARM systems.  This GPIO controller
+> +	  supports upto 4 ports of GPIO and GPIO interrupts on port A.
+
+	           up to
+
+> +
+>  comment "I2C GPIO expanders:"
+>  
+>  config GPIO_MAX7300
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
