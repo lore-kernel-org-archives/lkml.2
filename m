@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1DAOqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:46:40 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:23397 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932218Ab1DAOqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:46:38 -0400
-From: Roman Borisov <ext-roman.borisov@nokia.com>
-To: viro@zeniv.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, vda.linux@googlemail.com, cebbert@redhat.com,
-        virtuoso@slind.org, Roman Borisov <ext-roman.borisov@nokia.com>
-Subject: [PATCH] fs: bound mount propagation fix
-Date: Fri,  1 Apr 2011 18:48:20 +0400
-Message-Id: <7b9aa806294aadd47704d56ae3e7c757bf0ce6db.1301667509.git.ext-roman.borisov@nokia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <201103262243.18031.vda.linux@googlemail.com>
-References: <201103262243.18031.vda.linux@googlemail.com>
-X-OriginalArrivalTime: 01 Apr 2011 14:46:24.0133 (UTC) FILETIME=[9298EB50:01CBF07B]
-X-Nokia-AV: Clean
+	id S1757447Ab1DAOn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:43:26 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43349 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757386Ab1DAOnT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 10:43:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=yFE6GSuf2WB3nFFxiHlZva6byWS5RZVXtldiNr5OiGGY/n4Wo7WSms7Fha28ZVuZWx
+         qc9R09RsFCYxksfUFYERRAdLfBms7wtdSuu59VB8cVKNHTEJs/zxnNBdDtIBhZRKK5bS
+         hwjBf3hRwASRk8WvR35Hn1EuFL0yOilmfz8HI=
+Date: Fri, 1 Apr 2011 16:43:15 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH -tip v3 0/6] perf: Introduce branch sub commands
+Message-ID: <20110401144312.GB2335@nowhere>
+References: <20110324113137.20235.42265.stgit@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110324113137.20235.42265.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think MS_SILENT shouldn't be cleared anywhere. I suppose the bug is in 
-MS_SHARED options checking. Please see the patch below.
+On Thu, Mar 24, 2011 at 08:31:37PM +0900, Akihiro Nagai wrote:
+> Hi,
+> 
+> This patch series provides the commands 'perf branch record' and 'perf branch trace'
+> version 3. These commands record and analyze a BTS (Branch Trace Store) log.
+> And, they provide the interface to use BTS log for application developers.
+> 
+> BTS is a facility of Intel x86 processors, which records the address of
+> 'branch to/from' on every branch/jump instruction and interrupt.
+> This facility is very useful for developers to test their software,
+> for example, coverage test, execution path analysis, dynamic step count ...etc.
+> These test tools have a big advantage, which user doesn't have to modify target
+> executable binaries, because the BTS is a hardware feauture.
+> 
+> But, there are few applications using BTS. Reasons I guess are ...
+>  - Few people know what BTS is.
+>  - Few people know how to use BTS on Linux box.
+>  - It's hard to analyze the BTS log because it includes just a series of addresses.
+> 
+> So, I want to provide a user-friendly interface to BTS for application developers.
+> 
+> 
+>  About new sub commands
+> ========================
+> 'perf branch record' provides an easy way to record BTS log.
+> Usage is 'perf branch record <command>'.  This command is just an alias to
+> 'perf record -e branches:u -c 1 <command>'. But, new one is more simple and
+> more intuitive.
+> 
+> 'perf branch trace' can parse and analyze recorded BTS log and print various
+> information of execution path. This command can show address, pid, command name,
+> function+offset, file path of elf.
+> You can choose the printed information with option.
+> 
+> Example: 'perf branch trace'
+> function+offset
+> irq_return+0x0  => _start+0x0
+> irq_return+0x0  => _start+0x0
+> _start+0x3      => _dl_start+0x0
+> irq_return+0x0  => _dl_start+0x0
+> irq_return+0x0  => _dl_start+0x26
+> irq_return+0x0  => _dl_start+0x2d
+> _dl_start+0x71  => _dl_start+0x93
+> _dl_start+0x97  => _dl_start+0x78
+> ...
+> 
+> This is the default behavior of 'perf branch trace'. It prints function+offset.
+> 
+> 
+> Example2: 'perf branch -cas trace'
+> command address            function+offset                  
+> ls      0xffffffff8146fe0e irq_return+0x0  => ls   0x0000003806200b20 _start+0x0
 
-Fixed MS_SHARED, MS_SLAVE, MS_UNBINDABLE option handling; 
-Existing options check doesn't allow to have any options combinations 
-because of integer comparison (not bitwise).
-
-Signed-off-by: Roman Borisov <ext-roman.borisov@nokia.com>
----
- fs/namespace.c |    2 +-
- fs/pnode.c     |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 2beb0fb..e0cf263 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1434,7 +1434,7 @@ static int do_change_type(struct path *path, int flag)
- 		return -EINVAL;
- 
- 	down_write(&namespace_sem);
--	if (type == MS_SHARED) {
-+	if (type & MS_SHARED) {
- 		err = invent_group_ids(mnt, recurse);
- 		if (err)
- 			goto out_unlock;
-diff --git a/fs/pnode.c b/fs/pnode.c
-index 8d5f392..0c9dc54 100644
---- a/fs/pnode.c
-+++ b/fs/pnode.c
-@@ -128,15 +128,15 @@ static int do_make_slave(struct vfsmount *mnt)
- 
- void change_mnt_propagation(struct vfsmount *mnt, int type)
- {
--	if (type == MS_SHARED) {
-+	if (type & MS_SHARED) {
- 		set_mnt_shared(mnt);
- 		return;
- 	}
- 	do_make_slave(mnt);
--	if (type != MS_SLAVE) {
-+	if (!(type & MS_SLAVE)) {
- 		list_del_init(&mnt->mnt_slave);
- 		mnt->mnt_master = NULL;
--		if (type == MS_UNBINDABLE)
-+		if (type & MS_UNBINDABLE)
- 			mnt->mnt_flags |= MNT_UNBINDABLE;
- 		else
- 			mnt->mnt_flags &= ~MNT_UNBINDABLE;
--- 
-1.7.0.4
-
+You probably want to display the comm (and/or the pid/tid) only once. Those are not
+going to change between the source and destination.
