@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab1DAIoP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 04:44:15 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:16234 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753392Ab1DAIoO (ORCPT
+	id S1755011Ab1DAIqS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 04:46:18 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:47845 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab1DAIqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 04:44:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6302"; a="83164939"
-Message-ID: <4D959058.7010606@codeaurora.org>
-Date: Fri, 01 Apr 2011 01:44:08 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Simon Glass <sjg@chromium.org>
-CC: Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        lk <linux-kernel@vger.kernel.org>,
-        lak <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: BUG() dies silently
-References: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com> <BANLkTimtAcPLmcFKoHkCtWcJipy+rSSP+A@mail.gmail.com>
-In-Reply-To: <BANLkTimtAcPLmcFKoHkCtWcJipy+rSSP+A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Apr 2011 04:46:16 -0400
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: victor.vde@gmail.com, util-linux@vger.kernel.org, miklos@szeredi.hu,
+        linuxram@us.ibm.com, viro@zeniv.linux.org.uk, victor.vde@gmail.com,
+        ejmarkow@yahoo.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-reply-to: <87d3l62z3k.fsf@linux.vnet.ibm.com>
+	(aneesh.kumar@linux.vnet.ibm.com)
+Subject: Re: [BUG] libmount misparses mountinfo on Linux v2.6.39-rc1
+References: <19860.58082.277944.875401@gargle.gargle.HOWL> <87d3l62z3k.fsf@linux.vnet.ibm.com>
+Message-Id: <E1Q5ZzI-0001M4-0j@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Fri, 01 Apr 2011 10:45:48 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/31/2011 6:47 PM, Simon Glass wrote:
-> You might try the generic bug patch and see if it also fixes this
-> problem - Simon
+On Fri, 01 Apr 2011, Aneesh Kumar K. V wrote:
+> On Thu, 31 Mar 2011 22:24:01 +0200, victor.vde@gmail.com wrote:
+> > /proc/self/mountinfo on Linux v2.6.39-rc1 includes the UUID of ext4
+> > and ext3 mounts, for example:
+> > 
+> > 15 1 8:3 / / rw,noatime uuid:c645234d-9756-4d84-825e-6fe999252a34 - ext4 /dev/sda3 rw,user_xattr,acl,barrier=1,data=ordered
+> > 
+> > It seems the hyphens in the uuid confuse the parser
+> > mnt_parse_mountinfo_line in tab_parse.c of libmount in util-linux.
+> 
+> shouldn't the parser look for " " followed by "-" followed by " " as the
+> field seperator ? 
+> 
+> I am adding Miklos and Ram Pai to CC to check whether the kernel or the libmount 
+> should be fixed ?
 
-It probably won't because presumably Omar has CONFIG_BUG=n otherwise
-Omar would have sent a patch against __bug() in arch/arm/kernel/traps.c
+I think libmount should be fixed, though there is always the question
+of backward compatibility.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+However I don't see how the kernel could be fixed, given that libmount
+doesn't seem to parse escape sequences (e.g. "\040" for space), which
+it also should.
 
+Karel?
+
+Thanks,
+Miklos
