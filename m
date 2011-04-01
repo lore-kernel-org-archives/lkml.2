@@ -1,126 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab1DAHpo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 03:45:44 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40516 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755060Ab1DAHpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 03:45:43 -0400
-Date: Fri, 1 Apr 2011 09:45:19 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Brown <davidb@codeaurora.org>
-Cc: Nicolas Pitre <nico@fluxnic.net>,
+	id S1755240Ab1DAHpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 03:45:53 -0400
+Received: from relay.parallels.com ([195.214.232.42]:34596 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab1DAHpv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 03:45:51 -0400
+Subject: [PATCH] x86, defconfig: replace ext3 with ext4
+To: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, david@lang.hm,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110401074519.GC7594@elte.hu>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
- <20110331080634.GA18022@elte.hu>
- <20110331083044.GB14323@n2100.arm.linux.org.uk>
- <alpine.DEB.2.00.1103310855450.29543@asgard.lang.hm>
- <20110331164539.GB19452@n2100.arm.linux.org.uk>
- <AANLkTi=tyifvJU-hhdd7gT74GMctrCbQBdUAoEaRXOCy@mail.gmail.com>
- <alpine.LFD.2.00.1103311429590.28032@xanadu.home>
- <AANLkTi=kbozPcWEk9wVZb7emSWx48BJQS=7Uzaya9Lor@mail.gmail.com>
- <alpine.LFD.2.00.1103311649450.28032@xanadu.home>
- <8ya39m2mv65.fsf@huya.qualcomm.com>
+        <linux-kernel@vger.kernel.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Jan Kara <jack@suse.cz>, <linux-ext4@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Date: Fri, 1 Apr 2011 11:45:48 +0400
+Message-ID: <20110401074548.17629.77638.stgit@localhost6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8ya39m2mv65.fsf@huya.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace ext3 with ext4, because now it is a de facto standard file system.
+And set CONFIG_EXT4_USE_FOR_EXT23=y to use it also for mounting ext2/ext3.
 
-* David Brown <davidb@codeaurora.org> wrote:
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ arch/x86/configs/i386_defconfig   |    9 +++++----
+ arch/x86/configs/x86_64_defconfig |    9 +++++----
+ 2 files changed, 10 insertions(+), 8 deletions(-)
 
-> When we push back, there is a good chance they just won't bother, not because 
-> they don't want to do it, but because it doesn't fit a schedule, and there is 
-> already something else for them to work on.
-> 
-> So what's the right answer here. [...]
+diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+index 6f98726..cb8268c 100644
+--- a/arch/x86/configs/i386_defconfig
++++ b/arch/x86/configs/i386_defconfig
+@@ -269,10 +269,11 @@ CONFIG_RTC_CLASS=y
+ CONFIG_DMADEVICES=y
+ CONFIG_EEEPC_LAPTOP=y
+ CONFIG_EFI_VARS=y
+-CONFIG_EXT3_FS=y
+-# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+-CONFIG_EXT3_FS_POSIX_ACL=y
+-CONFIG_EXT3_FS_SECURITY=y
++CONFIG_EXT4_FS=y
++CONFIG_EXT4_USE_FOR_EXT23=y
++CONFIG_EXT4_FS_XATTR=y
++CONFIG_EXT4_FS_POSIX_ACL=y
++CONFIG_EXT4_FS_SECURITY=y
+ CONFIG_QUOTA=y
+ CONFIG_QUOTA_NETLINK_INTERFACE=y
+ # CONFIG_PRINT_QUOTA_WARNING is not set
+diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+index ee01a9d..033ec9a 100644
+--- a/arch/x86/configs/x86_64_defconfig
++++ b/arch/x86/configs/x86_64_defconfig
+@@ -270,10 +270,11 @@ CONFIG_RTC_CLASS=y
+ CONFIG_DMADEVICES=y
+ CONFIG_EEEPC_LAPTOP=y
+ CONFIG_EFI_VARS=y
+-CONFIG_EXT3_FS=y
+-# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+-CONFIG_EXT3_FS_POSIX_ACL=y
+-CONFIG_EXT3_FS_SECURITY=y
++CONFIG_EXT4_FS=y
++CONFIG_EXT4_USE_FOR_EXT23=y
++CONFIG_EXT4_FS_XATTR=y
++CONFIG_EXT4_FS_POSIX_ACL=y
++CONFIG_EXT4_FS_SECURITY=y
+ CONFIG_QUOTA=y
+ CONFIG_QUOTA_NETLINK_INTERFACE=y
+ # CONFIG_PRINT_QUOTA_WARNING is not set
 
-IMO the right answer is what Linus and Thomas outlined:
-
-   1) provide a small number of clean examples and clean abstractions
-   2) to not pull new crap from that point on
-   3) do this gradually but consistently
-
-I.e. make all your requirements technical and actionable - avoid sweeping, 
-impossible to meet requirements. Do not require people to clean up all of the 
-existing mess straight away (they cannot realistically do it), do not summarily 
-block the flow of patches, but be firm about drawing a line in the sand and be 
-firm about not introducing new mess in a gradually growing list of well-chosen 
-areas of focus.
-
-Rinse, repeat.
-
-If companies do not 'bother to push upstream', then management will eventually 
-notice negative economic consequences:
-
- - Higher short-term production costs: upstream feedback/review/testing
-   improves the product, so the lack of upstream feedback/review/testing
-   increases the production costs of the product.
-
- - Higher long-term production costs: gradually slower SoC development due to a 
-   morass of out-of-tree hacks that werent pushed upstream causing gradually 
-   higher development costs. This means higher payroll costs and longer time to
-   market - in which time more flexible competitors can beat you.
-
- - Brain drain: developers like to show their good work upstream as well, not
-   just in some ship-and-forget out-of-tree kernel. Good developers will
-   gravitate towards SoC companies that encourage them to work upstream.
-   No matter how good of a business idea a company has if there's no good 
-   developers.
-
- - Less revenue: a product can not possibly be more appealing to SoC customers
-   if the upstream Linux kernel does not support it. As ARM moves up the food 
-   chain towards more complex, higher profit margin products longer term 
-   thinking gains foothold gradually.
-
- - Competitive disadvantages: most SoC competitors push their changes upstream,
-   so they get free development assistance, they get free exposure, they get 
-   free PR and they get opportunities. Not pushing upstream is a lost 
-   opportunity.
-
-All of these effects translate into real $$$$$$$ and affect the bottom line 
-very directly, both short and long term. These costs also increase with time so 
-they are not fixed.
-
-If management does not actively encourage upstream-quality changes then 
-management will have to justify why they exposed the company to these extra 
-costs, complications and risks - just to save on the relatively minor (and 
-fixed) cost of working with upstream.
-
-If despite all that management still believes (rightly or wrongly) that it's 
-cheaper for the company to do low quality throw-away code and does not care 
-about any of the short and long-term costs listed above then this really means 
-that they really do not care about you or about the upstream kernel - so they 
-do not exist as far as the upstream kernel is concerned.
-
-Why should you then reward them with pulling crap and why should you be willing 
-to invest future maintenance overhead into their "we do not care about you" 
-solution?
-
-Working with upstream is a quid pro quo with plenty of advantages on both 
-sides, which gives maintainers a heck of a leverage to push back on crap while 
-still having all the incentives in the world to help produce a high quality 
-kernel.
-
-Thanks,
-
-	Ingo
