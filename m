@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757887Ab1DAPYn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:24:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48790 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab1DAPYm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:24:42 -0400
-Date: Fri, 1 Apr 2011 12:24:31 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, David Ahern <dsahern@gmail.com>,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
-Message-ID: <20110401152431.GA26938@ghostprotocols.net>
-References: <20110324113137.20235.42265.stgit@localhost6.localdomain6>
- <20110324113209.20235.61900.stgit@localhost6.localdomain6>
- <4D8B79E6.2050603@gmail.com>
- <4D8C6B1B.70409@hitachi.com>
- <4D8CAE74.9080805@gmail.com>
- <4D906450.1040809@hitachi.com>
- <4D909BBB.5020500@gmail.com>
- <20110401151313.GC2335@nowhere>
- <1301670917.4859.696.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301670917.4859.696.camel@twins>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1757915Ab1DAP1d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:27:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17115 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757795Ab1DAP1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 11:27:31 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110331190428.GI2258@linux.vnet.ibm.com>
+References: <20110331190428.GI2258@linux.vnet.ibm.com> <4D82DB5B.9000302@cn.fujitsu.com> <16158.1301597440@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, James Morris <jmorris@namei.org>,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 31/36] security,rcu: convert call_rcu(user_update_rcu_disposal) to kfree_rcu()
+Date: Fri, 01 Apr 2011 16:27:09 +0100
+Message-ID: <8112.1301671629@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Apr 01, 2011 at 05:15:17PM +0200, Peter Zijlstra escreveu:
-> On Fri, 2011-04-01 at 17:13 +0200, Frederic Weisbecker wrote:
-> > On Mon, Mar 28, 2011 at 08:31:23AM -0600, David Ahern wrote:
-> > > On 03/28/11 04:34, Akihiro Nagai wrote:
-> > > >> from is sample->ip? to is sample->addr? In the above example
-> > > >> 0x39d3015260 is the value from sample->addr, 1526f is sample->ip which
-> > > >> resolves to _dl_next_ld_env_entry from /lib64/ld-2.13.so.
-> > > > Yes.
-> > > > In this example, resolved address is only sample->ip (branch from).
-> > > > We need the resolved address of sample->addr (branch to) too, because
-> > > > both of them are addresses of execution code.
-> > > 
-> > > Ok, now I understand. In that case add conversion of sample->addr to
-> > > symbols to perf-script.
-> > 
-> > I agree that we should rather use perf script for branch dumps.
-> > Sorry Akihiro, I think we suggested you to create this dedicated
-> > perf branch by the past. But then perf script became the vanilla dump
-> > tool in the middle and it seems more suitable today.
-> > 
-> > We can still create a perf branch later in order to produce some more
-> > advanced post-processing tools. But for sample dumps perf script (which starts
-> > to show itself as a misnomer BTW) seems to be the right place.
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+
+> commit 316b740440ea0a54615a3516df536fbf9a4c11b8
+> Author: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Date:   Fri Mar 18 11:15:47 2011 +0800
 > 
-> Why do something with snakes if its perfectly possible to do in C ?
+>     rcu: introduce kfree_rcu()
+>     
+>     Many rcu callbacks functions just call kfree() on the base structure.
+>     These functions are trivial, but their size adds up, and furthermore
+>     when they are used in a kernel module, that module must invoke the
+>     high-latency rcu_barrier() function at module-unload time.
+>     
+>     The kfree_rcu() function introduced by this commit addresses this issue.
+>     Rather than encoding a function address in the embedded rcu_head
+>     structure, kfree_rcu() instead encodes the offset of the rcu_head
+>     structure within the base structure.  Because the functions are not
+>     allowed in the low-order 4096 bytes of kernel virtual memory, offsets
+>     up to 4095 bytes can be accommodated.  If the offset is larger than
+>     4095 bytes, a compile-time error will be generated in __kfree_rcu().
+>     If this error is triggered, you can either fall back to use of call_rcu()
+>     or rearrange the structure to position the rcu_head structure into the
+>     first 4096 bytes.
+>     
+>     Note that the allowable offset might decrease in the future, for example,
+>     to allow something like kmem_cache_free_rcu().
+>     
+>     The new kfree_rcu() function can replace code as follows:
+>     
+>     	call_rcu(&p->rcu, simple_kfree_callback);
+>     
+>     where "simple_kfree_callback()" might be defined as follows:
+>     
+>     	void simple_kfree_callback(struct rcu_head *p)
+>     	{
+>     		struct foo *q = container_of(p, struct foo, rcu);
+>     
+>     		kfree(q);
+>     	}
+>     
+>     with the following:
+>     
+>     	kfree_rcu(&p->rcu, rcu);
+>     
+>     Note that the "rcu" is the name of a field in the structure being
+>     freed.  The reason for using this rather than passing in a pointer
+>     to the base structure is that the above approach allows better type
+>     checking.
+>     
+>     This commit is based on earlier work by Lai Jiangshan and Manfred Spraul:
+>     
+>     Lai's V1 patch: http://lkml.org/lkml/2008/9/18/1
+>     Manfred's patch: http://lkml.org/lkml/2009/1/2/115
+>     
+>     Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>     Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-He is not meaning using python, hence the "misnomer" comment.
-
-- Arnaldo
+Reviewed-and-sneakiness-appreciated-by: David Howells <dhowells@redhat.com>
