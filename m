@@ -1,94 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab1DAF7M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 01:59:12 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:36474 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab1DAF7K (ORCPT
+	id S1753647Ab1DAGI7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 02:08:59 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:17289
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752274Ab1DAGI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 01:59:10 -0400
-Date: Fri, 01 Apr 2011 01:59:01 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Subject: [PATCH 2.6.39 & -stable] x86 intel power: Initialize
- MSR_IA32_ENERGY_PERF_BIAS
-Message-id: <alpine.LFD.2.02.1104010156570.2797@x980>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 1 Apr 2011 02:08:57 -0400
+X-SpamScore: -19
+X-BigFish: VS-19(zz1432N98dK1447Rzz1202hzz8275bh8275dhz2dh2a8h637h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Fri, 1 Apr 2011 14:10:21 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Shawn Guo <shawn.guo@linaro.org>, <linaro-dev@lists.linaro.org>,
+        <sameo@linux.intel.com>, <patches@linaro.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] mmc: sdhci: make sdhci-pltfm device drivers self
+ registered
+Message-ID: <20110401061020.GF25866@S2100-06.ap.freescale.net>
+References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
+ <1301042931-4869-2-git-send-email-shawn.guo@linaro.org>
+ <20110331153322.GA26612@ponder.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110331153322.GA26612@ponder.secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+On Thu, Mar 31, 2011 at 09:33:22AM -0600, Grant Likely wrote:
+> On Fri, Mar 25, 2011 at 04:48:47PM +0800, Shawn Guo wrote:
+> > The patch turns the common stuff in sdhci-pltfm.c into functions, and
+> > add device drivers their own .probe and .remove which in turn call
+> > into the common functions, so that those sdhci-pltfm device drivers
+> > register itself and keep all device specific things away from common
+> > sdhci-pltfm file.
+> > 
+> > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> 
+> Looks really good.  Relatively minor comments below, but you can add
+> this to the next version:
+> 
+> Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
+> 
+Thanks for the review.
 
-Since 2.6.36 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
-Since 2.6.38 (d5532ee7b40), the x86_energy_perf_policy(8) utility has
-been available in-tree to update MSR_IA32_ENERGY_PERF_BIAS.
+[...]
+> > +
+> > +static int __devinit sdhci_cns3xxx_probe(struct platform_device *pdev)
+> > +{
+> > +	struct sdhci_host *host;
+> > +	int ret;
+> > +
+> > +	host = sdhci_pltfm_init(pdev, &sdhci_cns3xxx_pdata);
+> > +	if (!host)
+> > +		return -ENOMEM;
+> > +
+> > +	ret = sdhci_add_host(host);
+> > +	if (ret)
+> > +		goto err_add_host;
+> > +
+> > +	return 0;
+> > +
+> > +err_add_host:
+> > +	sdhci_pltfm_free(pdev);
+> > +	return ret;
+> > +}
+> 
+> This pattern in this function is used by 2 drivers in this patch, and
+> 2 more users (with the addition of an sdhci_get_of_property() call) in
+> the 3rd patch.  An sdchi_pltfm_register(pdev, &pdata) that does the
+> whole sequence would probably be valuable.  Same for the _remove hook.
+> 
+OK, one more pair of helper function will be added.
 
-However, the typical BIOS fails to initialize the MSR, presumably
-because this is handled by high-volume shrink-wrap operating systems...
+> Drivers that still need 2 stage registration, like the tegra driver,
+> would still be able to call sdhci_pltfm_init() and sdhci_add_host()
+> directly.
+> 
+> > +
+> > +static int __devexit sdhci_cns3xxx_remove(struct platform_device *pdev)
+> > +{
+> > +	struct sdhci_host *host = platform_get_drvdata(pdev);
+> > +	int dead = 0;
+> > +	u32 scratch;
+> > +
+> > +	scratch = readl(host->ioaddr + SDHCI_INT_STATUS);
+> > +	if (scratch == (u32)-1)
+> > +		dead = 1;
+> > +
+> > +	sdhci_remove_host(host, dead);
+> 
+> The following would be equivalent to the above three lines:
+> 
+> 	sdhci_remove_host(host, scratch == (u32)-1);
+> 
+OK.
 
-Linux distros, on the other hand, do not yet invoke x86_energy_perf_policy(8).
-As a result, WSM-EP, SNB, and later hardware from Intel will run in its
-default hardware power-on state (performance), which assumes that users
-care for performance at all costs and not for energy efficiency.
-While that is fine for performance benchmarks, the hardware's intended default
-operating point is "normal" mode...
+[...]
+> > @@ -3,7 +3,7 @@
+> >   *
+> >   * Author: Saeed Bishara <saeed@marvell.com>
+> >   *	   Mike Rapoport <mike@compulab.co.il>
+> > - * Based on sdhci-cns3xxx.c
+> > + * Based on sdhci-dove.c
+> 
+> This file *is* sdhci-dove.c.  Did you intend this change?  :-)
+> 
+My bad.
 
-Initialize the MSR to the "normal" by default during kernel boot.
+[...]
+> > +#ifdef CONFIG_OF
+> > +	plat = kzalloc(sizeof(*plat), GFP_KERNEL);
+> > +	if (!plat) {
+> > +		rc = -ENOMEM;
+> > +		goto err_no_plat;
+> > +	}
+> > +	pdev->dev.platform_data = plat;
+> > +
+> > +	plat->cd_gpio = of_get_gpio(pdev->dev.of_node, 0);
+> > +	plat->wp_gpio = of_get_gpio(pdev->dev.of_node, 1);
+> > +	plat->power_gpio = of_get_gpio(pdev->dev.of_node, 2);
+> > +
+> > +	dev_info(&pdev->dev, "using gpios cd=%i, wp=%i power=%i\n",
+> > +		plat->cd_gpio, plat->wp_gpio, plat->power_gpio);
+> > +#endif
+> 
+> This will need to be reworked for mainline since the Tegra device tree
+> support only exists in my git tree.  Basing it on devicetree/arm would
+> work.
+> 
+OK. Will against mmc-next and test esdhc dt changes on devicetree/arm.
 
-x86_energy_perf_policy(8) is available to change the default after boot,
-should the user have a different preference.
-
-cc: stable@kernel.org
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- arch/x86/include/asm/msr-index.h |    3 +++
- arch/x86/kernel/cpu/intel.c      |   14 ++++++++++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 43a18c7..91fedd9 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -250,6 +250,9 @@
- #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
- 
- #define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
-+#define ENERGY_PERF_BIAS_PERFORMANCE	0
-+#define ENERGY_PERF_BIAS_NORMAL		6
-+#define ENERGY_PERF_BIAS_POWERSWAVE	15
- 
- #define MSR_IA32_PACKAGE_THERM_STATUS		0x000001b1
- 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index d16c2c5..48cca4a 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -448,6 +448,20 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
- 
- 	if (cpu_has(c, X86_FEATURE_VMX))
- 		detect_vmx_virtcap(c);
-+
-+	/*
-+	 * Initialize MSR_IA32_ENERGY_PERF_BIAS if BIOS did not.
-+	 * x86_energy_perf_policy(8) is available to change it at run-time
-+	 */
-+	if (cpu_has(c, X86_FEATURE_EPB)) {
-+		u64 epb;
-+
-+		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-+		if ((epb & 0xF) == 0) {
-+			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
-+			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-+		}
-+	}
- }
- 
- #ifdef CONFIG_X86_32
 -- 
-1.7.4.2.406.gbe91
+Regards,
+Shawn
 
