@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab1DAWeu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 18:34:50 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:25136 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758791Ab1DAWet (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 18:34:49 -0400
-Subject: [PATCH] Drivers: cpufreq/cpufreq_stats.c: Fixed brace coding style
- issue
-From: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
-To: davej@redhat.com, Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Apr 2011 17:34:47 -0500
-Message-ID: <1301697287.15937.5.camel@ks-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758853Ab1DAWlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 18:41:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10436 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758810Ab1DAWlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 18:41:07 -0400
+Date: Fri, 1 Apr 2011 18:41:00 -0400
+From: Dave Jones <davej@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: GPF in __call_for_each_cic
+Message-ID: <20110401224059.GA2050@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Jens Axboe <axboe@kernel.dk>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20110331223034.GA31371@redhat.com>
+ <4D95D630.4010806@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D95D630.4010806@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 0f157586affbd149943440eb26ea2981359d79c1 Mon Sep 17 00:00:00 2001
-From: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
-Date: Fri, 1 Apr 2011 17:20:49 -0500
-Subject: [PATCH] Drivers: cpufreq/cpufreq_stats.c: Fixed brace coding
-style issue
+On Fri, Apr 01, 2011 at 03:42:08PM +0200, Jens Axboe wrote:
 
-Fixed brace coding style issue.
-
-Signed-off-by: Karthigan Srinivasan <karthigan.srinivasan@hp.com>
----
- drivers/cpufreq/cpufreq_stats.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_stats.c
-b/drivers/cpufreq/cpufreq_stats.c
-index 00d73fc..78bf713 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -324,8 +324,7 @@ static int __cpuinit
-cpufreq_stat_cpu_callback(struct notifier_block *nfb,
- 	return NOTIFY_OK;
- }
+ > >  ---[ end trace 044e02f5767b491a ]---
+ > >  Fixing recursive fault but reboot is needed!
+ > 
+ > This looks like the ellusive cic bug that has never been fixed and
+ > strikes once in a blue moon. What was the system doing?
  
--static struct notifier_block cpufreq_stat_cpu_notifier __refdata =
--{
-+static struct notifier_block cpufreq_stat_cpu_notifier __refdata = {
- 	.notifier_call = cpufreq_stat_cpu_callback,
- };
- 
--- 
-1.7.1
+indeed, I've seen it before too.
+first time I saw it, system was booting.
+yesterdays hit was while syscall fuzzing sys_adjtimex (so the only
+real io should have been the fuzzers own logging routines)
 
-
-
+	Dave
