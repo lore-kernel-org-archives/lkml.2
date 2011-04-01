@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab1DAFhZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 01:37:25 -0400
-Received: from gate.crashing.org ([63.228.1.57]:40492 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942Ab1DAFhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 01:37:23 -0400
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Apr 2011 16:36:40 +1100
-Message-ID: <1301636200.2549.25.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753272Ab1DAFiF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 01:38:05 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43367 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab1DAFiD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 01:38:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=OMtaDiSI11DZXzKZRpY9PLYCh14xLtABy08/pzKaRfkqV7t4h2BwGM8aGakXrLMZEk
+         GnFTCGMqBc9XyGEw+uoHoMKZv4zKdRpshpjF2g4HESv7XwMAQMwZBLnlk8+c1aT2s0pb
+         tD9YFv6vFWHKnRGovAD4nlAVT2YnaSaa+Jvqw=
+Date: Thu, 31 Mar 2011 22:37:57 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Jeremy Jackson <jerj@coplanar.net>, linux-kernel@vger.kernel.org
+Subject: Re: signal to PID 1 from serial console like KeyboardRequest or CAD
+Message-ID: <20110401053757.GA9866@core.coreip.homeip.net>
+References: <4D8CD3D4.90900@coplanar.net>
+ <20110331125706.9159a13d.rdunlap@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110331125706.9159a13d.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On Thu, Mar 31, 2011 at 12:57:06PM -0700, Randy Dunlap wrote:
+> On Fri, 25 Mar 2011 13:41:40 -0400 Jeremy Jackson wrote:
+> 
+> > Hi,
+> > 
+> > Sent to linux-console with no reply for over a week...
+> > 
+> > I ran into a problem recently on a Linux server with a remote serial 
+> > console.  /sbin/init (actually Upstart) was in a state where nothing 
+> > (useful) was running.  I had to power cycle the machine to get back to 
+> > the boot prompt.  This has the side-effect of triggering raid rebuilds.
+> > 
+> > It would be nice to have what Ctrl-Alt-Del does at the VGA console with 
+> > PS/2 or USB keyboard. This sends a SIGINT to PID 1, and most distros 
+> > have this set to do "shutdown -r now" which attempts a clean reboot.
+> 
+> so C_A_D works at console via PS/2 or USB keyboard, but not on a remote
+> serial console?  Could it be an issue with whatever remote/serial software
+> you are using?
 
-Some more powerpc bits for you.
+I believe it is simply a matter of console keymap and assigning "boot"
+value to the desired combination.
 
-One is actually a change from Anton to the generic kexec to make a
-function weak so powerpc can override it.
+> 
+> > Once upon a time there was KeyboardRequest, which would send a SIGWINCH 
+> > to PID 1 (when pressing Alt-UP_arrow?).  I don't see any sign of this 
+> > feature in Linux 2.6.32 though.
+> 
+> I couldn't find it in 2.4.37 either.
+> 
+> Can 'loadkeys' help you any?
+> 
+> > Looking at the Sysrq handlers in the kernel I don't see any keystrokes 
+> > that send SIGINT to PID 1 either.
+> > 
+> > So, I'm wondering if it makes sense to add a Sysrq key to send a signal 
+> > to PID1 ?
+> 
+> Dmitry, any ideas?
 
-It has been around for ever, there were initial objections I think
-mostly due to a misunderstanding of the problem.
+We have SysRq bindings to unmount filesystems and reboot, isn't that
+enough?
 
-Since then, it's been a deafening silence to our responses/expanations
-and no answers from Eric so I think it should go in as the powerpc
-counterpart that implements our version of that weak function is already
-(and has been for a while as d72e063bb32c06c6c1cec14f6857b7c37ba62d7a)
-and it fixes a real nasty bug.
-
-The rest is a series of fixes to our CPU hotplug code that I've been
-sitting on for a little while (by myself) and was originally thinking
-about putting in for the next release.
-
-I eventually changed my mind, there is no point in sitting on them any
-longer since they fix some real issues on some machines (such as G5's
-crashing on re-plug) and brings us in line with what other archs do for
-setting up and re-initializing the idle threads.
-
-Cheers,
-Ben.
-
-The following changes since commit ecb78ab6f30106ab72a575a25b1cdfd1633b7ca2:
-
-  Merge branch 'release' of git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux-2.6 (2011-03-30 12:22:15 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-Anton Blanchard (1):
-      kdump: Allow shrinking of kdump region to be overridden
-
-Benjamin Herrenschmidt (18):
-      powerpc: Make decrementer interrupt robust against offlined CPUs
-      powerpc/smp: soft-replugged CPUs must go back to start_secondary
-      powerpc/smp: Fix generic_mach_cpu_die()
-      powerpc/smp: Remove unused generic_cpu_enable()
-      powerpc/smp: Remove unused smp_ops->cpu_enable()
-      powerpc/pmac/smp: Fix 32-bit PowerMac cpu_die
-      powerpc/pmac/smp: Rename fixup_irqs() to migrate_irqs() and use it on ppc32
-      powerpc/pmac/smp: Fixup smp_core99_cpu_disable() and use it on 64-bit
-      powerpc/pmac/smp: Consolidate 32-bit and 64-bit PowerMac cpu_die in one file
-      powerpc/pmac/smp: Remove HMT changes for PowerMac offline code
-      powerpc/pmac/smp: Properly NAP offlined CPU on G5
-      powerpc/pmac: Rename cpu_state in therm_pm72 to avoid collision
-      powerpc/smp: Add a smp_ops->bringup_up() done callback
-      powerpc/pmac/smp: Fix CPU hotplug crashes on some machines
-      powerpc/smp: Don't expose per-cpu "cpu_state" array
-      powerpc/smp: Create idle threads on demand and properly reset them
-      powerpc/smp: Increase vdso_data->processorCount, not just decrease it
-      powerpc/pmac/smp: Remove no-longer needed preempt workaround
-
- arch/powerpc/include/asm/machdep.h              |    3 +-
- arch/powerpc/include/asm/smp.h                  |    5 +-
- arch/powerpc/kernel/head_32.S                   |    9 ++
- arch/powerpc/kernel/head_64.S                   |    7 +
- arch/powerpc/kernel/idle_power4.S               |   21 ---
- arch/powerpc/kernel/irq.c                       |    3 +-
- arch/powerpc/kernel/smp.c                       |  153 ++++++++++++++--------
- arch/powerpc/kernel/time.c                      |   15 ++-
- arch/powerpc/platforms/powermac/pmac.h          |    1 -
- arch/powerpc/platforms/powermac/setup.c         |   56 --------
- arch/powerpc/platforms/powermac/smp.c           |  154 ++++++++++++++++-------
- arch/powerpc/platforms/pseries/offline_states.h |    2 -
- drivers/macintosh/therm_pm72.c                  |   60 +++++-----
- include/linux/kexec.h                           |    1 +
- kernel/kexec.c                                  |    5 +-
- 15 files changed, 272 insertions(+), 223 deletions(-)
-
-
+-- 
+Dmitry
