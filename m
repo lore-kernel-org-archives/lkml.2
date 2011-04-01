@@ -1,92 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab1DAOX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:23:56 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35616 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab1DAOXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:23:54 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Brett Rudley <brudley@broadcom.com>
-Cc: kernel-janitors@vger.kernel.org, Henry Ptasinski <henryp@broadcom.com>,
-        Dowan Kim <dowan@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jason Cooper <jason@lakedaemon.net>, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] drivers/staging/brcm80211/brcmfmac/wl_iw.c: introduce missing kfree
-Date: Fri,  1 Apr 2011 16:23:42 +0200
-Message-Id: <1301667827-20056-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1757078Ab1DAO00 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:26:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:56574 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab1DAO0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 10:26:24 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=XYJHFtupD_QA:10 a=j0K6ckRaiZIA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=k21Gf1b7f-wo76QCuYcA:9 a=CjuIK1q_8ugA:10 a=cLsBJGWjX5pnAJco:21 a=vQErCsEIqAWUXR6d:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Fri, 1 Apr 2011 10:26:23 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, aarcange@redhat.com, avi@redhat.com,
+        mtosatti@redhat.com, kvm@vger.kernel.org, joro@8bytes.org,
+        penberg@cs.helsinki.fi, asias.hejun@gmail.com, gorcunov@gmail.com,
+        mingo@elte.hu
+Subject: Re: [ANNOUNCE] Native Linux KVM tool
+Message-ID: <20110401142623.GI14441@home.goodmis.org>
+References: <1301592656.586.15.camel@jaguar>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301592656.586.15.camel@jaguar>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Error handling code following a kmalloc should free the allocated data.
+On Thu, Mar 31, 2011 at 08:30:56PM +0300, Pekka Enberg wrote:
+> 
+> The goal of this tool is to provide a clean, from-scratch, lightweight
+> KVM host tool implementation that can boot Linux guest images (just a
+> hobby, won't be big and professional like QEMU)
 
-The semantic match that finds the problem is as follows:
-(http://www.emn.fr/x-info/coccinelle/)
+That line looks very familiar...
 
-// <smpl>
-@r exists@
-local idexpression x;
-statement S;
-expression E;
-identifier f,f1,l;
-position p1,p2;
-expression *ptr != NULL;
-@@
+"I'm doing a (free) operating system (just a hobby, won't be big and
+professional like gnu) for 386(486) AT clones."
 
-x@p1 = \(kmalloc\|kzalloc\|kcalloc\)(...);
-...
-if (x == NULL) S
-<... when != x
-     when != if (...) { <+...x...+> }
-(
-x->f1 = E
-|
- (x->f1 == NULL || ...)
-|
- f(...,x->f1,...)
-)
-...>
-(
- return \(0\|<+...x...+>\|ptr\);
-|
- return@p2 ...;
-)
+;)
 
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-print "* file: %s kmalloc %s return %s" % (p1[0].file,p1[0].line,p2[0].line)
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
-There is some other error handling code about 10 lines down where it looks
-like a kfree is needed as well.  If that is the case, I can extend the patch.
-
- drivers/staging/brcm80211/brcmfmac/wl_iw.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/brcm80211/brcmfmac/wl_iw.c b/drivers/staging/brcm80211/brcmfmac/wl_iw.c
-index b49957f..4e4cf36 100644
---- a/drivers/staging/brcm80211/brcmfmac/wl_iw.c
-+++ b/drivers/staging/brcm80211/brcmfmac/wl_iw.c
-@@ -3672,8 +3672,10 @@ int wl_iw_attach(struct net_device *dev, void *dhdp)
- 		return -ENOMEM;
- 
- 	iscan->iscan_ex_params_p = kmalloc(params_size, GFP_KERNEL);
--	if (!iscan->iscan_ex_params_p)
-+	if (!iscan->iscan_ex_params_p) {
-+		kfree(iscan);
- 		return -ENOMEM;
-+	}
- 	iscan->iscan_ex_param_size = params_size;
- 	iscan->sysioc_tsk = NULL;
- 
+-- Steve
 
