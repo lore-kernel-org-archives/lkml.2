@@ -1,241 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab1DALId (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 07:08:33 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35844 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755830Ab1DALIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 07:08:22 -0400
-From: Jamie Iles <jamie@jamieiles.com>
-To: linux-kernel@vger.kernel.org
-Cc: johnstul@us.ibm.com, tglx@linutronix.de, jacob.jun.pan@linux.intel.com,
-        Jamie Iles <jamie@jamieiles.com>
-Subject: [RFC PATCH 2/2] clocksource: platform driver for APB timers
-Date: Fri,  1 Apr 2011 12:08:11 +0100
-Message-Id: <1301656091-1284-3-git-send-email-jamie@jamieiles.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1301656091-1284-1-git-send-email-jamie@jamieiles.com>
-References: <1301656091-1284-1-git-send-email-jamie@jamieiles.com>
+	id S1755830Ab1DALUo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 07:20:44 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47815 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752503Ab1DALUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 07:20:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,282,1299484800"; 
+   d="scan'208";a="412264789"
+Date: Fri, 1 Apr 2011 13:20:31 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Andres Salomon <dilinger@queued.net>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
+        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mocean Laboratories <info@mocean-labs.com>
+Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
+ to drivers
+Message-ID: <20110401112030.GA3447@sortiz-mobl>
+References: <20110202195417.228e2656@queued.net>
+ <20110202200812.3d8d6cba@queued.net>
+ <20110331230522.GI437@ponder.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110331230522.GI437@ponder.secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a platform driver for the APB timers that can be used for embedded
-systems such as ARM SoC.  This uses early_platform so that the timers
-can be used early in the boot sequence.
+Hi Grant,
 
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Jamie Iles <jamie@jamieiles.com>
----
- drivers/clocksource/Kconfig                 |    5 +
- drivers/clocksource/Makefile                |    1 +
- drivers/clocksource/dw_apb_timer_platform.c |  173 +++++++++++++++++++++++++++
- 3 files changed, 179 insertions(+), 0 deletions(-)
- create mode 100644 drivers/clocksource/dw_apb_timer_platform.c
+On Thu, Mar 31, 2011 at 05:05:22PM -0600, Grant Likely wrote:
+> On Wed, Feb 02, 2011 at 08:08:12PM -0800, Andres Salomon wrote:
+> > 
+> > No need to explicitly set the cell's platform_data/data_size.
+> > 
+> > In this case, move the various platform_data pointers
+> > to driver_data.  All of the clients which make use of it
+> > are also changed.
+> > 
+> > Signed-off-by: Andres Salomon <dilinger@queued.net>
+> > ---
+> >  drivers/dma/timb_dma.c           |    2 +-
+> >  drivers/gpio/timbgpio.c          |    5 +-
+> >  drivers/i2c/busses/i2c-ocores.c  |    2 +-
+> >  drivers/i2c/busses/i2c-xiic.c    |    2 +-
+> >  drivers/media/radio/radio-timb.c |    2 +-
+> >  drivers/media/video/timblogiw.c  |    2 +-
+> >  drivers/mfd/timberdale.c         |   81 +++++++++++++-------------------------
+> >  drivers/net/ks8842.c             |    2 +-
+> >  drivers/spi/xilinx_spi.c         |    2 +-
+> >  9 files changed, 36 insertions(+), 64 deletions(-)
+> > 
+> > diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
+> > index 3b88a4e..aa06ca4 100644
+> > --- a/drivers/dma/timb_dma.c
+> > +++ b/drivers/dma/timb_dma.c
+> > @@ -684,7 +684,7 @@ static irqreturn_t td_irq(int irq, void *devid)
+> >  
+> >  static int __devinit td_probe(struct platform_device *pdev)
+> >  {
+> > -	struct timb_dma_platform_data *pdata = pdev->dev.platform_data;
+> > +	struct timb_dma_platform_data *pdata = platform_get_drvdata(pdev);
+> 
+> Hold the phone.  I know this has already been merged, but this isn't correct.
+> 
+> drvdata is under the ownership of the driver, which means it should
+> *not* be set when .probe() gets called.  It is for driver private data
+> to do with as it needs, usually for internal state.
+We didn't merge that version of the patchset, but one getting the
+platform_data pointer from mfd_get_data(). That introduces the issue you're
+talking about below.
 
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 09081ab..fa53da8 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -4,3 +4,8 @@
+
+> Gah.  Not all devices instantiated via mfd will be an mfd device,
+> which means that the driver may very well expect an *entirely
+> different* platform_device pointer; which further means a very high
+> potential of incorrectly dereferenced structures (as evidenced by a
+> patch series that is not bisectable).  For instance, the xilinx ip
+> cores are used by more than just mfd.
+I agree. Since the vast majority of the MFD subdevices are MFD specific IPs, I
+overlooked that part. The impacted drivers are the timberdale and the DaVinci
+voice codec ones.
+To fix that problem I propose 2 alternatives:
+
+1) When declaring the sub devices cells, the MFD driver should specify an
+mfd_data_size value for sub devices that are not MFD specific. It's the MFD
+driver responsibility to set the cell properly, and the non MFD specific
+drivers are kept MFD agnostic.
+See my patch below for the timberdale case.
+
+2) Revert the mfd_get_data() call for getting sub devices platform data
+pointers. That was introduced to ease the MFD cell sharing work, so if we take
+this route we'll need the cs5535 MFD driver to pass its cells as platform_data
+pointer. Andres, can you confirm that this would be fine for the
+mfd_clone_cell() routine to keep working ?
+
+Patch for solution 1:
+
+
+ drivers/mfd/mfd-core.c          |   13 ++++++++++---
+ drivers/mfd/timberdale.c        |   11 +++++++++++
+ include/linux/mfd/core.h        |    1 +
+ drivers/i2c/busses/i2c-ocores.c |    3 +--
+ drivers/i2c/busses/i2c-xiic.c   |    3 +--
+ drivers/net/ks8842.c            |    3 +--
+ drivers/spi/xilinx_spi.c        |    3 +--
+ 7 files changed, 26 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index d01574d..8abe510 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -75,9 +75,16 @@ static int mfd_add_device(struct device *parent, int id,
  
- config DW_APB_TIMER
- 	bool
-+
-+config DW_APB_TIMER_PLATFORM
-+	depends on HAVE_CLK
-+	select DW_APB_TIMER
-+	bool
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index c3785c3..9e2de99 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -7,3 +7,4 @@ obj-$(CONFIG_SH_TIMER_CMT)	+= sh_cmt.o
- obj-$(CONFIG_SH_TIMER_MTU2)	+= sh_mtu2.o
- obj-$(CONFIG_SH_TIMER_TMU)	+= sh_tmu.o
- obj-$(CONFIG_DW_APB_TIMER)	+= dw_apb_timer.o
-+obj-$(CONFIG_DW_APB_TIMER_PLATFORM) += dw_apb_timer_platform.o
-diff --git a/drivers/clocksource/dw_apb_timer_platform.c b/drivers/clocksource/dw_apb_timer_platform.c
-new file mode 100644
-index 0000000..22b5fcd
---- /dev/null
-+++ b/drivers/clocksource/dw_apb_timer_platform.c
-@@ -0,0 +1,173 @@
-+/*
-+ * Copyright (c) 2011 Picochip Ltd., Jamie Iles
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Platform driver support for Synopsys DesignWare APB timers.
-+ */
-+#include <linux/clk.h>
-+#include <linux/dw_apb_timer.h>
-+#include <linux/err.h>
-+#include <linux/clockchips.h>
-+#include <linux/clocksource.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+static int dw_apb_event_probe(struct platform_device *pdev, int irq)
-+{
-+	int err;
-+	struct resource *mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	struct dw_apb_clock_event_device *dwclk;
-+	void __iomem *base;
-+	struct clk *clk;
-+
-+	if (!request_mem_region(mem->start, resource_size(mem),
-+				"dw_apb_timer"))
-+		return -ENOMEM;
-+
-+	base = ioremap(mem->start, resource_size(mem));
-+	if (!base) {
-+		dev_err(&pdev->dev, "failed to remap i/o memory\n");
-+		err = -ENOMEM;
-+		goto out_release_mem;
+ 	pdev->dev.parent = parent;
+ 
+-	ret = platform_device_add_data(pdev, cell, sizeof(*cell));
+-	if (ret)
+-		goto fail_res;
++	if (cell->mfd_data_size > 0) {
++		ret = platform_device_add_data(pdev,
++					cell->mfd_data, cell->mfd_data_size);
++		if (ret)
++			goto fail_res;
++	} else {
++		ret = platform_device_add_data(pdev, cell, sizeof(*cell));
++		if (ret)
++			goto fail_res;
 +	}
-+
-+	clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "no clk\n");
-+		err = PTR_ERR(clk);
-+		goto out_unmap;
-+	}
-+
-+	err = clk_enable(clk);
-+	if (err) {
-+		dev_err(&pdev->dev, "failed to enable clk\n");
-+		goto out_put_clk;
-+	}
-+
-+	dwclk = dw_apb_clockevent_init(0, "dw_apb_timer_plat0", 300, base,
-+				       irq, clk_get_rate(clk));
-+	if (!dwclk) {
-+		err = -ENODEV;
-+		goto out_disable_clk;
-+	}
-+
-+	dw_apb_clockevent_register(dwclk);
-+
-+	return 0;
-+
-+out_disable_clk:
-+	clk_disable(clk);
-+out_put_clk:
-+	clk_put(clk);
-+out_unmap:
-+	iounmap(base);
-+out_release_mem:
-+	release_mem_region(mem->start, resource_size(mem));
-+
-+	return err;
-+}
-+
-+static int dw_apb_source_probe(struct platform_device *pdev)
-+{
-+	struct resource *mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	int err;
-+	void __iomem *base;
-+	struct clk *clk;
-+	struct dw_apb_clocksource *dwclk;
-+
-+	if (!request_mem_region(mem->start, resource_size(mem),
-+				"dw_apb_timer"))
-+		return -ENOMEM;
-+
-+	base = ioremap(mem->start, resource_size(mem));
-+	if (!base) {
-+		dev_err(&pdev->dev, "failed to remap i/o memory\n");
-+		err = -ENOMEM;
-+		goto out_release_mem;
-+	}
-+
-+	clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "no clk\n");
-+		err = PTR_ERR(clk);
-+		goto out_unmap;
-+	}
-+
-+	err = clk_enable(clk);
-+	if (err) {
-+		dev_err(&pdev->dev, "failed to enable clk\n");
-+		goto out_put_clk;
-+	}
-+
-+	dwclk = dw_apb_clocksource_init(300, "dw_apb_plat0", base,
-+					clk_get_rate(clk));
-+	if (!dwclk) {
-+		err = -ENODEV;
-+		goto out_disable_clk;
-+	}
-+	dw_apb_clocksource_start(dwclk);
-+	dw_apb_clocksource_register(dwclk);
-+
-+	return 0;
-+
-+out_disable_clk:
-+	clk_disable(clk);
-+out_put_clk:
-+	clk_put(clk);
-+out_unmap:
-+	iounmap(base);
-+out_release_mem:
-+	release_mem_region(mem->start, resource_size(mem));
-+
-+	return err;
-+}
-+
-+static int __devinit dw_apb_timer_probe(struct platform_device *pdev)
-+{
-+	int irq = platform_get_irq(pdev, 0);
-+
-+	/*
-+	 * If the timer has an interrupt defined then we use it as a
-+	 * clockevents device otherwise we use it as a clocksource device.
-+	 */
-+	return irq >= 0 ? dw_apb_event_probe(pdev, irq) :
-+		dw_apb_source_probe(pdev);
-+}
-+
-+static int __devexit dw_apb_timer_remove(struct platform_device *pdev)
-+{
-+	return -EBUSY;
-+}
-+
-+static struct platform_driver dw_apb_timer_driver = {
-+	.probe		= dw_apb_timer_probe,
-+	.remove		= __devexit_p(dw_apb_timer_remove),
-+	.driver		= {
-+		.owner	= THIS_MODULE,
-+		.name	= "dw_apb_timer",
-+	},
-+};
-+early_platform_init("earlytimer", &dw_apb_timer_driver);
-+
-+
-+static int __init dw_apb_timers_init(void)
-+{
-+	return platform_driver_register(&dw_apb_timer_driver);
-+}
-+module_init(dw_apb_timers_init);
-+
-+static void __exit dw_apb_timers_exit(void)
-+{
-+	platform_driver_unregister(&dw_apb_timer_driver);
-+}
-+module_exit(dw_apb_timers_exit);
-+
-+MODULE_AUTHOR("Jamie Iles");
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Timer driver for Synopsys DesignWare APB timers");
--- 
-1.7.4
+ 
+ 	for (r = 0; r < cell->num_resources; r++) {
+ 		res[r].name = cell->resources[r].name;
+diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
+index 94c6c8a..b4d2d09 100644
+--- a/drivers/mfd/timberdale.c
++++ b/drivers/mfd/timberdale.c
+@@ -396,6 +396,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
+ 		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
+ 		.resources = timberdale_xiic_resources,
+ 		.mfd_data = &timberdale_xiic_platform_data,
++		.mfd_data_size = sizeof(timberdale_xiic_platform_data)
+ 	},
+ 	{
+ 		.name = "timb-gpio",
+@@ -420,12 +421,14 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
+ 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
+ 		.resources = timberdale_spi_resources,
+ 		.mfd_data = &timberdale_xspi_platform_data,
++		.mfd_data_size = sizeof(timberdale_xspi_platform_data)
+ 	},
+ 	{
+ 		.name = "ks8842",
+ 		.num_resources = ARRAY_SIZE(timberdale_eth_resources),
+ 		.resources = timberdale_eth_resources,
+ 		.mfd_data = &timberdale_ks8842_platform_data,
++		.mfd_data_size = sizeof(timberdale_ks8842_platform_data)
+ 	},
+ };
+ 
+@@ -451,6 +454,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
+ 		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
+ 		.resources = timberdale_xiic_resources,
+ 		.mfd_data = &timberdale_xiic_platform_data,
++		.mfd_data_size = sizeof(timberdale_xiic_platform_data)
+ 	},
+ 	{
+ 		.name = "timb-gpio",
+@@ -480,12 +484,14 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
+ 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
+ 		.resources = timberdale_spi_resources,
+ 		.mfd_data = &timberdale_xspi_platform_data,
++		.mfd_data_size = sizeof(timberdale_xspi_platform_data)
+ 	},
+ 	{
+ 		.name = "ks8842",
+ 		.num_resources = ARRAY_SIZE(timberdale_eth_resources),
+ 		.resources = timberdale_eth_resources,
+ 		.mfd_data = &timberdale_ks8842_platform_data,
++		.mfd_data_size = sizeof(timberdale_ks8842_platform_data)
+ 	},
+ };
+ 
+@@ -506,6 +512,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
+ 		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
+ 		.resources = timberdale_xiic_resources,
+ 		.mfd_data = &timberdale_xiic_platform_data,
++		.mfd_data_size = sizeof(timberdale_xiic_platform_data)
+ 	},
+ 	{
+ 		.name = "timb-gpio",
+@@ -530,6 +537,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
+ 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
+ 		.resources = timberdale_spi_resources,
+ 		.mfd_data = &timberdale_xspi_platform_data,
++		.mfd_data_size = sizeof(timberdale_xspi_platform_data)
+ 	},
+ };
+ 
+@@ -550,6 +558,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg3[] = {
+ 		.num_resources = ARRAY_SIZE(timberdale_ocores_resources),
+ 		.resources = timberdale_ocores_resources,
+ 		.mfd_data = &timberdale_ocores_platform_data,
++		.mfd_data_size = sizeof(timberdale_ocores_platform_data)
+ 	},
+ 	{
+ 		.name = "timb-gpio",
+@@ -574,12 +583,14 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg3[] = {
+ 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
+ 		.resources = timberdale_spi_resources,
+ 		.mfd_data = &timberdale_xspi_platform_data,
++		.mfd_data_size = sizeof(timberdale_xspi_platform_data)
+ 	},
+ 	{
+ 		.name = "ks8842",
+ 		.num_resources = ARRAY_SIZE(timberdale_eth_resources),
+ 		.resources = timberdale_eth_resources,
+ 		.mfd_data = &timberdale_ks8842_platform_data,
++		.mfd_data_size = sizeof(timberdale_ks8842_platform_data)
+ 	},
+ };
+ 
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index ad1b19a..3687e10 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -35,6 +35,7 @@ struct mfd_cell {
+ 
+ 	/* mfd_data can be used to pass data to client drivers */
+ 	void			*mfd_data;
++	size_t			mfd_data_size;
+ 
+ 	/*
+ 	 * These resources can be specified relative to the parent device.
+diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
+index fee1a26..1b46a9d 100644
+--- a/drivers/i2c/busses/i2c-ocores.c
++++ b/drivers/i2c/busses/i2c-ocores.c
+@@ -49,7 +49,6 @@
+ #include <linux/init.h>
+ #include <linux/errno.h>
+ #include <linux/platform_device.h>
+-#include <linux/mfd/core.h>
+ #include <linux/i2c.h>
+ #include <linux/interrupt.h>
+ #include <linux/wait.h>
+@@ -306,7 +305,7 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
+ 		return -EIO;
+ 	}
+ 
+-	pdata = mfd_get_data(pdev);
++	pdata = pdev->dev.platform_data;
+ 	if (pdata) {
+ 		i2c->regstep = pdata->regstep;
+ 		i2c->clock_khz = pdata->clock_khz;
+diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
+index 9fbd7e6..a9c419e 100644
+--- a/drivers/i2c/busses/i2c-xiic.c
++++ b/drivers/i2c/busses/i2c-xiic.c
+@@ -34,7 +34,6 @@
+ #include <linux/errno.h>
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
+-#include <linux/mfd/core.h>
+ #include <linux/i2c.h>
+ #include <linux/interrupt.h>
+ #include <linux/wait.h>
+@@ -705,7 +704,7 @@ static int __devinit xiic_i2c_probe(struct platform_device *pdev)
+ 	if (irq < 0)
+ 		goto resource_missing;
+ 
+-	pdata = mfd_get_data(pdev);
++	pdata = (struct xiic_i2c_platform_data *) pdev->dev.platform_data;
+ 	if (!pdata)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/net/ks8842.c b/drivers/net/ks8842.c
+index efd44af..928b2b8 100644
+--- a/drivers/net/ks8842.c
++++ b/drivers/net/ks8842.c
+@@ -26,7 +26,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+-#include <linux/mfd/core.h>
+ #include <linux/netdevice.h>
+ #include <linux/etherdevice.h>
+ #include <linux/ethtool.h>
+@@ -1146,7 +1145,7 @@ static int __devinit ks8842_probe(struct platform_device *pdev)
+ 	struct resource *iomem;
+ 	struct net_device *netdev;
+ 	struct ks8842_adapter *adapter;
+-	struct ks8842_platform_data *pdata = mfd_get_data(pdev);
++	struct ks8842_platform_data *pdata = pdev->dev.platform_data;
+ 	u16 id;
+ 	unsigned i;
+ 
+diff --git a/drivers/spi/xilinx_spi.c b/drivers/spi/xilinx_spi.c
+index c69c6f2..4d2c75d 100644
+--- a/drivers/spi/xilinx_spi.c
++++ b/drivers/spi/xilinx_spi.c
+@@ -18,7 +18,6 @@
+ #include <linux/interrupt.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+-#include <linux/mfd/core.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/spi_bitbang.h>
+ #include <linux/spi/xilinx_spi.h>
+@@ -471,7 +470,7 @@ static int __devinit xilinx_spi_probe(struct platform_device *dev)
+ 	struct spi_master *master;
+ 	u8 i;
+ 
+-	pdata = mfd_get_data(dev);
++	pdata = dev->dev.platform_data;
+ 	if (pdata) {
+ 		num_cs = pdata->num_chipselect;
+ 		little_endian = pdata->little_endian;
 
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
