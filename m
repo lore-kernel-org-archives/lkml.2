@@ -1,81 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab1DAAxW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 20:53:22 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38676 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab1DAAxV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 20:53:21 -0400
-Date: Fri, 1 Apr 2011 01:53:05 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, david@lang.hm,
-        Ingo Molnar <mingo@elte.hu>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110401005304.GA17857@sirena.org.uk>
-References: <alpine.DEB.2.00.1103302130500.29543@asgard.lang.hm> <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <20110331080634.GA18022@elte.hu> <20110331083044.GB14323@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1103310855450.29543@asgard.lang.hm> <20110331164539.GB19452@n2100.arm.linux.org.uk> <AANLkTi=tyifvJU-hhdd7gT74GMctrCbQBdUAoEaRXOCy@mail.gmail.com> <alpine.LFD.2.00.1103311429590.28032@xanadu.home> <AANLkTi=kbozPcWEk9wVZb7emSWx48BJQS=7Uzaya9Lor@mail.gmail.com> <alpine.LFD.2.00.1103311649450.28032@xanadu.home>
+	id S1753661Ab1DABH0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 21:07:26 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:55888 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751746Ab1DABHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 21:07:25 -0400
+Message-ID: <4D9524DF.10405@sgi.com>
+Date: Thu, 31 Mar 2011 20:05:35 -0500
+From: Mike Habeck <habeck@sgi.com>
+User-Agent: Thunderbird 2.0.0.9 (X11/20071115)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103311649450.28032@xanadu.home>
-X-Cookie: YOU PICKED KARL MALDEN'S NOSE!!
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: Mike Travis <travis@sgi.com>, David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Intel pci: Limit dmar_init_reserved_ranges
+References: <20110329233602.272459647@gulag1.americas.sgi.com> <20110329233602.735667875@gulag1.americas.sgi.com> <4D94FC21.6040601@sgi.com> <20110331225316.GC18712@sequoia.sous-sol.org> <4D950D52.8080100@sgi.com> <4D951109.1040707@sgi.com> <20110331235657.GG18712@sequoia.sous-sol.org>
+In-Reply-To: <20110331235657.GG18712@sequoia.sous-sol.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 06:49:11PM -0400, Nicolas Pitre wrote:
-> On Thu, 31 Mar 2011, Linus Torvalds wrote:
 
-> > The only way to get quality code is to try to improve the quality from
-> > the "leaf nodes", because otherwise you'll always end up playing
-> > catch-up. You'll get new bad code faster than you can clean it up.
+
+Chris Wright wrote:
+> * Mike Habeck (habeck@sgi.com) wrote:
+>> On 03/31/2011 06:25 PM, Mike Travis wrote:
+>>> I'll probably need help from our Hardware PCI Engineer to help explain
+>>> this further, though here's a pointer to an earlier email thread:
+>>>
+>>> http://marc.info/?l=linux-kernel&m=129259816925973&w=2
+>>>
+>>> I'll also dig out the specs you're asking for.
+>>>
+>>> Thanks,
+>>> Mike
+>>>
+>>> Chris Wright wrote:
+>>>> * Mike Travis (travis@sgi.com) wrote:
+>>>>> Chris - did you have any comment on this patch?
+>>>> It doesn't actually look right to me. It means that particular range
+>>>> is no longer reserved. But perhaps I've misunderstood something.
+>>>>
+>>>>> Mike Travis wrote:
+>>>>>> dmar_init_reserved_ranges() reserves the card's MMIO ranges to
+>>>>>> prevent handing out a DMA map that would overlap with the MMIO range.
+>>>>>> The problem while the Nvidia GPU has 64bit BARs, it's capable of
+>>>>>> receiving > 40bit PIOs, but can't generate > 40bit DMAs.
+>>>> I don't undertand what you mean here.
+>> What Mike is getting at is there is no reason to reserve the MMIO
+>> range if it's greater than the dma_mask, given the MMIO range is
+>> outside of what the IOVA code will ever hand back to the IOMMU
+>> code.  In this case the nVidia card has a 64bit BAR and is assigned
+>> the MMIO range [0xf8200000000 - 0xf820fffffff].  But the Nvidia
+>> card can only generate a 40bit DMA (thus has a 40bit dma_mask). If
+>> the IOVA code honors the limit_pfn (i.e., dma_mask) passed in it
+>> will never hand back a >40bit address back to the IOMMU code. Thus
+>> there is no reason to reserve the cards MMIO range if it is greater
+>> than the dma_mask. (And that is what the patch is doing).
 > 
-> Leaf nodes on ARM are people coming from corporate background with the 
-> old school software development methodologies.  They do it as a _job_ 
-> first and foremost.  They only work on Linux because that's what their 
-> boss assigned them to. Don't get me wrong: that doesn't mean they are 
-> bad people.  Simply that they are not into it for the public recognition 
-> (or flaming) from their peers.  Once their code works they lose interest 
-> and move on.  That mindset is extremely hard to change and take time, on 
-> a scale of years.  Much more time than required to produce the code 
-> needed to support that new SOC out of the pipeline.  There are notable 
-> exceptions obviously.  But this is still a scalability problem in 
-> itself.  So we need men-in-the-middle attacks.
+> The reserved ranges are for all devices.  Another device with a 64bit
+> dma_mask could get that region if it's not properly reserved.  The
+> driver would then program that device to dma to an address to is an
+> alias to a MMIO region.  The memory transaction travels up towards
+> root...and sees the MMIO range in some bridge and would go straight down
+> to the GPU.
 
-It's also often the case that the leaf maintainers are themselves
-overloaded with work, especially those who don't have much code in tree
-already or who have advanced power management features in their devices
-that they're trying to support (which tend to be the area that requires
-most work as they're system wide in impact).  
+Chris,
 
-> > This really isn't the argument. The argument should be that if they
-> > want their code up-stream, they need to do a good job. If they don't,
-> > why should you take it at all?
+OK, I understand now what you meant by the patch possibly causing
+the DMA transaction to become a peer to peer transaction.  Mike and
+I will have to rethink this one.  Thanks for your input.
 
-> Embedded vendors did keep their code out of the kernel before.  We've 
-> been hammering them about upstreaming their code for years.  Now they 
-> are striking back with too much code for our review capacity.  So 
-> problematic code gets merged without anyone noticing because it compiles 
-> and does work, until someone comes along with a wide scale API cleanup 
-> and stumble on it.
+-mike
 
-Plus the fact that even if the code isn't of the quality we'd ideally
-like you do tend to get *some* quality improvement from pushing things
-into mainline simply by virtue of 1000 foot review and it's much more
-likely that random people will come along and contribute improvements to
-mainline than to vendor BSPs.  Speaking as someone who works over many
-different embedded CPUs (not just ARM) I'm generally thankful when I'm
-working with mainline code, even if it's not the mainline code I might
-dream of.  There are some great out of tree BSPs but there's also
-others.
+
+> 
+>> More below,,,
+>>
+>>>>>> So when the iommu code reserves these MMIO ranges a > 40bit
+>>>>>> entry ends up getting in the rbtree. On a UV test system with
+>>>>>> the Nvidia cards, the BARs are:
+>>>>>>
+>>>>>> 0001:36:00.0 VGA compatible controller: nVidia Corporation
+>>>>>> GT200GL Region 0: Memory at 92000000 (32-bit, non-prefetchable)
+>>>>>> [size=16M]
+>>>>>> Region 1: Memory at f8200000000 (64-bit, prefetchable) [size=256M]
+>>>>>> Region 3: Memory at 90000000 (64-bit, non-prefetchable) [size=32M]
+>>>>>>
+>>>>>> So this 44bit MMIO address 0xf8200000000 ends up in the rbtree. As DMA
+>>>>>> maps get added and deleted from the rbtree we can end up getting a cached
+>>>>>> entry to this 0xf8200000000 entry... this is what results in the code
+>>>>>> handing out the invalid DMA map of 0xf81fffff000:
+>>>>>>
+>>>>>> [ 0xf8200000000-1 >> PAGE_SIZE << PAGE_SIZE ]
+>>>>>>
+>>>>>> The IOVA code needs to better honor the "limit_pfn" when allocating
+>>>>>> these maps.
+>>>> This means we could get the MMIO address range (it's no longer reserved).
+>> Not true, the MMIO address is greater than the dma_mask (i.e., the
+>> limit_pfn passed into alloc_iova()) thus the IOVA code will never
+>> hand back that address range given it's greater than the dma_mask).
+> 
+> Well, as you guys are seeing, the iova allocation code is making the
+> assumption that if the range is in the tree, it's valid.  And it is
+> handing out an address that's too large.
+> 
+>>>> It seems to me the DMA transaction would then become a peer to peer
+>>>> transaction if ACS is not enabled, which could show up as random register
+>>>> write in that GPUs 256M BAR (i.e. broken).
+>>>>
+>>>> The iova allocation should not hand out an address bigger than the
+>>>> dma_mask. What is the device's dma_mask?
+>> Agree.  But there is a bug.  The IOVA doesn't validate the limit_pfn
+>> if it uses the cached entry.  One could argue that it should validate
+>> the limit_pfn, but then again a entry outside the limit_pfn should
+>> have never got into the rbtree...  (it got in due to the IOMMU's
+>> dmar_init_reserved_ranges() adding it).
+> 
+> Yeah, I think it needs to be in the global reserved list.  But perhaps
+> not copied into the domain specific iova.  Or simply skipped on iova
+> allocation (don't just assume rb_last is <= dma_mask).
+> 
+> thanks,
+> -chris
