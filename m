@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab1DAL3v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 07:29:51 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:50549 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab1DAL3u (ORCPT
+	id S1752184Ab1DALaZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 07:30:25 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58864 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244Ab1DALaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 07:29:50 -0400
-X-IronPort-AV: E=Sophos;i="4.63,282,1299456000"; 
-   d="scan'208";a="5094522"
-Date: Fri, 1 Apr 2011 12:30:25 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Ingo Molnar <mingo@elte.hu>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        "lkml20101129@newton.leun.net" <lkml20101129@newton.leun.net>
-Subject: Re: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
-In-Reply-To: <20110401062338.GA6434@elte.hu>
-Message-ID: <alpine.DEB.2.00.1104011212070.16492@kaball-desktop>
-References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop> <20110401062338.GA6434@elte.hu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 1 Apr 2011 07:30:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Date: Fri, 1 Apr 2011 13:29:42 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, Nicolas Pitre <nico@fluxnic.net>,
+        david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
+        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+References: <201103301906.42429.arnd@arndb.de> <201103311723.02301.arnd@arndb.de> <87y63vav01.fsf@ti.com>
+In-Reply-To: <87y63vav01.fsf@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104011329.42191.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZDBjym0PydCuJKmwegpCb97P0WGgm/FzVC/C2nv4SUZ
+ dFLnSLh1gljGxTEgSeud8vsaEfOX/PvKY8d46hg4wB5sXQcmeE
+ xmhSo/HZfB8C9Tgm0L89aEeS69WDUiLr8ba4JWnYdZ9Km7VTQj
+ THWvbgnWKaH52/X870awltVESntpdKeTG3kFuqHNrboqJ9l6SS
+ cnORKVgjrQfEq43U7Vcrg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Apr 2011, Ingo Molnar wrote:
+On Thursday 31 March 2011, Kevin Hilman wrote:
+> Arnd Bergmann <arnd@arndb.de> writes:
+> >
+> > But that's the point. The incentive is there for managing the infrastructure
+> > within the SoC, but not across SoCs. 
 > 
-> * Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> OK, but the rest of my thread went on to describe how at least a few ARM
+> SoC maintainers are actually actively working infrastructure that is
+> cross SoC, like runtime PM.  It might start because of an abstraction
+> within an SoC family like supporting both SH and SH-mobile, or
+> OMAP[12345], but it does sometimes result in not only cross-SoC code but
+> cross-platform frameworks.
 > 
-> > Save cr4 to mmu_cr4_features at boot time
-> > 
-> > This patch fixes a freeze when resuming from hibernation, introduced by
-> > "x86: Cleanup highmap after brk is concluded", commit id
-> > e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e.
-> > This patch should be backported to all the stable tree where the
-> > offending commit is present.
-> 
-> No, the offending commit should be reverted from -stable. It's not at all clear 
-> yet why this fix patch helps.
+> Admiteddly, the percentage of ARM SoC developers actively working on
+> these common, cross-platform infrastructure layers is rather small, but
+> at least it is non-zero. :)    
 
-e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e removes cleanup_highmap_brk_end
-because the initial mapping of the region between _brk_end and _end is
-going to be cleared by cleanup_highmap instead.
+True, I was oversimplifying. Still, the problem exists that to a large
+degree, infrastructure also gets added to platform specific code where it
+has no place.
 
-However cleanup_highmap_brk_end was not only clearing mappings, it was
-also setting mmu_cr4_features, and this bit was lost with the removal of
-cleanup_highmap_brk_end.
+> With that as background, hwmod was never inteded as something to be
+> cross-SoC.  If you look at the data that's in an omap_hwmod, it's
+> entirely OMAP hardware specific, and mostly focused on power management
+> hardware details, register descriptions, feature capabilities etc.  This
+> allows the OMAP PM core code to be generalized and work across all SoCs
+> in the OMAP family.  But again, it was intended for OMAP PM core code.
+> At that level, there really isn't much to share with other SoCs since
+> the PM hardware for the various SoC vendors is so "differentiated"
+> (a.k.a fsck'd up in extremely different ways.)
 
-So this fix patch restores things back to how they were before
-e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e (apart from the fact that
-mappings between _brk_end and _end are cleared in cleanup_highmap now).
+There is an important difference between code that knows about board,
+soc and platform specific issues ("drivers") and code that manages
+these ("infrastructure"). Obviously, any hardware implementation, broadly
+speaking, that is different from the other ones needs a driver.
 
-Obviously settings mmu_cr4_features shouldn't have been done in
-cleanup_highmap_brk_end, since it doesn't have anything to do with
-mappings.
+However, the infrastructure for managing multiple drivers should be
+written in a way that works for as many similar drivers as possible.
 
+My complaint about the four examples I've given is that they mix the
+driver with the infrastructure.
 
-
-P.S.
-I asked for a backport of e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e to
-the stable trees because I forgot to add "CC stable@kernel.org" to the
-commit message and this commit is needed to fix a critical crash on boot
-on xen.
+	Arnd
