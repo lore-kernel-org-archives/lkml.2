@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab1DAQ1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 12:27:24 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:58130 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754635Ab1DAQ1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 12:27:23 -0400
-Date: Fri, 1 Apr 2011 18:26:53 +0200
-From: Florian Mickler <florian@mickler.org>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
-        maciej.rutecki@gmail.com, rjw@sisk.pl, sedat.dilek@gmail.com
-Subject: Re: [PATCH] x86, ioapic: move acpi_get_override_irq to acpi.c
-Message-ID: <20110401182653.340abaa4@schatten.dmk.lab>
-In-Reply-To: <1301672686-10096-1-git-send-email-florian@mickler.org>
-References: <20110401075011.GD7594@elte.hu>
-	<1301672686-10096-1-git-send-email-florian@mickler.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758279Ab1DAQgf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 12:36:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49948 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757919Ab1DAQge convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 12:36:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTim3x=1n+F7yD-euY0=RhmyXViUamg@mail.gmail.com>
+References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
+ <AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
+ <AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
+ <alpine.LSU.2.00.1103182158200.18771@sister.anvils> <BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
+ <AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com> <BANLkTim3x=1n+F7yD-euY0=RhmyXViUamg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 1 Apr 2011 09:35:41 -0700
+Message-ID: <AANLkTik4q8N9vYUibSZfepUmhYoREo2dbH5NFZAHuOFb@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
+To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Michel Lespinasse <walken@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  1 Apr 2011 17:44:46 +0200
-Florian Mickler <florian@mickler.org> wrote:
+On Fri, Apr 1, 2011 at 9:21 AM, Robert Święcki <robert@swiecki.net> wrote:
+>
+> Is it possible to turn it off via config flags? Looking into
+> arch/x86/include/asm/bug.h it seems it's unconditional (as in "it
+> always manifests itself somehow") and I have
+> CONFIG_DEBUG_BUGVERBOSE=y.
 
+Ok, if you have CONFIG_DEBUG_BUGVERBOSE then, you do have the bug-table.
 
-> 
-> Hi Ingo,
-> 
-> Instead of exporting find_irq_entry, irq_trigger and irq_polarity, I added a 
-> new helper function 'ioapic_get_irq(..)' and exported that. 
-> 
-> Also I did it as a seperate commit, since it is more of a cleanup and the other 
-> commit is already tested... hope this is ok. 
-> 
-> Regards,
-> Flo
-> 
+Maybe it's just kdb that is broken, and doesn't print it. I wouldn't
+be surprised. It's not the first time I've seen debugging features
+that just make debugging a mess.
 
-btw, include/linux/acpi.h:
-120 
-121 #ifdef CONFIG_X86_IO_APIC
-122 extern int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity);
-123 #else
-124 #define acpi_get_override_irq(gsi, trigger, polarity) (-1)
-125 #endif
+> Anything that could help you debugging this? Uploading kernel image
+> (unfortunately I've overwritten this one), dumping more kgdb data?
 
-this shouldn't be needed anymore, as acpi_get_override_irq is now
-independent of CONFIG_X86_IO_APIC (because of ioapic_get_irq having
-a placeholder in the !CONFIG_X86_IO_APIC case)
+So in this case kgdb just dropped the most important data on the floor.
 
-But on the other hand, the code flow for the !CONFIG_X86_IO_APIC would
-be kind of silly...  what's the rationale for mp_find_ioapic returning
-0 in the !CONFIG_X86_IO_APIC case? And how do I check compilation
-of !CONFIG_X86_IO_APIC?   It looks like it already has problems, as
-mp_find_ioapic_pin is not stubbed out, or am I overlooking something?
+But if you have kdb active next time, print out the vma/old contents
+in that function that has the BUG() in it.
 
-Regards,
-Flo
+> I must admit I'm not up-to-date with current linux kernel debugging
+> techniques. The kernel config is here:
+> http://alt.swiecki.net/linux_kernel/ise-test-2.6.38-kernel-config.txt
+>
+> For now I'll compile with -O0 -fno-inline (are you sure you'd like -Os?)
+
+Oh, don't do that. -O0 makes the code totally unreadable (the compiler
+just does _stupid_ things, making the asm code look so horrible that
+you can't match it up against anything sane), and -fno-inline isn't
+worth the pain either.
+
+-Os is much better than those.
+
+But in this case, just getting the filename and line number would have
+made the thing moot anyway - without kdb it _should_ have said
+something clear like
+
+   kernel BUG at %s:%u!
+
+where %s:%u is the filename and line number.
+
+                          Linus
