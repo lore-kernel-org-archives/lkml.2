@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab1DAN5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:57:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:28294 "EHLO mga03.intel.com"
+	id S1756758Ab1DAN6l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 09:58:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33922 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754340Ab1DAN5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 09:57:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,282,1299484800"; 
-   d="scan'208";a="412326816"
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-In-Reply-To: <1301665752.4859.678.camel@twins>
-References: <1301391136.14111.98.camel@minggr.sh.intel.com>
-	 <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost>
-	 <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop>
-	 <1301418533.2250.419.camel@laptop>
-	 <20110329174556.GC24129@ghostprotocols.net> <4D92818A.8020405@hitachi.com>
-	 <1301561155.14111.288.camel@minggr.sh.intel.com>
-	 <1301580117.4859.286.camel@twins>  <1301582056.2271.15.camel@localhost>
-	 <1301588922.2250.498.camel@laptop>  <4D95AC94.1080303@hitachi.com>
-	 <1301655903.4859.494.camel@twins>  <1301664130.2399.10.camel@localhost>
-	 <1301665752.4859.678.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Apr 2011 21:57:37 +0800
-Message-Id: <1301666257.2399.12.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754321Ab1DAN6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 09:58:40 -0400
+Date: Fri, 1 Apr 2011 09:58:38 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Juerg Haefliger <juergh@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Support for global block IO throttling?
+Message-ID: <20110401135838.GA20986@redhat.com>
+References: <AANLkTikEYDdL08=DdJ7fLR08r6sWDCHbNoOuGhxGhm7G@mail.gmail.com>
+ <20110323142505.GD13315@redhat.com>
+ <AANLkTi=EoPKcBE1miW_-RHgHTBCSDKJ1My=Z40rrhm1x@mail.gmail.com>
+ <20110323145418.GE13315@redhat.com>
+ <AANLkTi=rMdCz97QLkz=xHy7AxfxFVEgsf=qmXKc5ORWE@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=rMdCz97QLkz=xHy7AxfxFVEgsf=qmXKc5ORWE@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 21:49 +0800, Peter Zijlstra wrote:
-> On Fri, 2011-04-01 at 21:22 +0800, Lin Ming wrote:
-> > On Fri, 2011-04-01 at 19:05 +0800, Peter Zijlstra wrote:
-> > > On Fri, 2011-04-01 at 19:44 +0900, Masami Hiramatsu wrote:
-> > > > E.g. an indirect jump makes it hard to find where it jumps to.
-> > > 
-> > > Yes indirect jumps are 'interesting', is there anything in the debug
-> > > info that will help us out with the possible target sites?
-> > > 
-> > > Also what generates indirect jumps, switch() stmts? Indirect function
-> > > call that get optimized might also be, but hopefully DWARF would tell us
-> > > about that and allow us to know the state right after the jump.
-> > 
-> > I'm not sure.
-> > 
-> > But I'm thinking another way to trace the register assignment by LBR
-> > records.
-> > 
-> > LBR will introduce overhead, but it can tell us all the branches,
-> > including the indirect jump.
+On Fri, Apr 01, 2011 at 10:05:41AM +0200, Juerg Haefliger wrote:
+> Hi Vivek,
 > 
 > 
-> Yeah, but it would be nice to see how far we can get without using extra
-> information, we can always try and complement stuff later.
+> > Also current IO controller does not work for NFS. So if a global limit
+> > is imposed in higher layers it will solve that issue too.
+> >
+> > Also if you implement it above page cache then it should automatically
+> > handle the case of async writes too. The downside is that if limits
+> > are low, buffered writers will be throttled very frequently.
+> 
+> I'm not exactly sure where in the stack you see this global bandwidth
+> controller. What do you mean by 'above the page cache'? I interpret
+> this such that access to the page cache would be bandwidth limited as
+> well? That doesn't sound right to me.
 
-Well, let me start working out a prototype.
+You are right. For reads it will not make sense to implement it above
+page cache as reads coming out of page cache need not be throttled.
 
-Thanks for all the comments from your guys :)
+So it will probably boil down to that implement buffered write throttling
+when entring the page cache and read throttling somewhere below.
+generic_make_request()? But that will not take care of network file system
+case I think. 
 
+May be we can enhance blk_throtl_bio() itself to also check for global
+rules and subject bio to first global rules and put in a global
+queue. This probably will work for your virtual machine cases but
+it does not take care of buffered writes and NFS IO. May be that is
+still a good first step towards global IO limit implementation.
 
+Thanks
+Vivek
