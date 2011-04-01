@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab1DAGRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 02:17:11 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:28789
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752690Ab1DAGRI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 02:17:08 -0400
-X-SpamScore: -8
-X-BigFish: VS-8(zz1432N98dKzz1202hzz8275dh1497iz2dh2a8h637h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 1 Apr 2011 14:18:36 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Shawn Guo <shawn.guo@linaro.org>, <linaro-dev@lists.linaro.org>,
-        <sameo@linux.intel.com>, <patches@linaro.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] mmc: sdhci: consolidate sdhci-of-esdhc and
- sdhci-esdhc-imx
-Message-ID: <20110401061835.GG25866@S2100-06.ap.freescale.net>
-References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
- <1301042931-4869-5-git-send-email-shawn.guo@linaro.org>
- <20110331155312.GC26709@ponder.secretlab.ca>
+	id S1754121Ab1DAGUQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 02:20:16 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47045 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752690Ab1DAGUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 02:20:14 -0400
+Date: Fri, 1 Apr 2011 08:20:06 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Florian Mickler <florian@mickler.org>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        kurup_avinash@yahoo.com, maciej.rutecki@gmail.com, rjw@sisk.pl,
+        sedat.dilek@gmail.com, stable@kernel.org, #.34+@schatten.dmk.lab
+Subject: Re: [PATCH v2] x86, ioapic: Skip looking for ioapic overrides when
+ ioapics are not present
+Message-ID: <20110401062006.GC32378@elte.hu>
+References: <20110331084342.GA30105@elte.hu>
+ <1301621025-3858-1-git-send-email-florian@mickler.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110331155312.GC26709@ponder.secretlab.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1301621025-3858-1-git-send-email-florian@mickler.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 09:53:12AM -0600, Grant Likely wrote:
-> On Fri, Mar 25, 2011 at 04:48:50PM +0800, Shawn Guo wrote:
-> > This patch is to consolidate SDHCI driver for Freescale eSDHC
-> > controller found on both MPCxxx and i.MX platforms.  It turns
-> > sdhci-of-esdhc.c and sdhci-esdhc-imx.c into one sdhci-esdhc.c,
-> > which gets the same pair of .probe and .remove serving two cases.
-> > 
-> > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> > ---
-> >  drivers/mmc/host/Kconfig           |   38 ++--
-> >  drivers/mmc/host/Makefile          |    3 +-
-> >  drivers/mmc/host/sdhci-esdhc-imx.c |  210 ------------------
-> >  drivers/mmc/host/sdhci-esdhc.c     |  413 ++++++++++++++++++++++++++++++++++++
-> >  drivers/mmc/host/sdhci-of-esdhc.c  |  162 --------------
-> 
-> This patch would be easier to review if it was split into two patches;
-> first rename sdhci-esdhc-imx.c to sdhci-esdhc.c without any changes to
-> the .c code, and then a second patch to merge the ppc bits into the
-> imx version.
-> 
-OK.
 
-> > +#if defined(CONFIG_OF)
-> > +#include <linux/of_device.h>
-> > +static const struct of_device_id sdhci_esdhc_dt_ids[] = {
-> > +#ifdef CONFIG_MMC_SDHCI_ESDHC_IMX
-> > +	{ .compatible = "fsl,imx-esdhc", .data = &sdhci_esdhc_imx_pdata },
-> > +#endif
-> > +#ifdef CONFIG_MMC_SDHCI_ESDHC_MPC
-> > +	{ .compatible = "fsl,mpc8379-esdhc", .data = &sdhci_esdhc_mpc_pdata },
-> > +	{ .compatible = "fsl,mpc8536-esdhc", .data = &sdhci_esdhc_mpc_pdata },
-> > +	{ .compatible = "fsl,esdhc", .data = &sdhci_esdhc_mpc_pdata },
-> > +#endif
-> > +	{ }
-> > +};
-> > +MODULE_DEVICE_TABLE(platform, sdhci_esdhc_dt_ids);
-> > +
-> > +static const struct of_device_id *
-> > +sdhci_esdhc_get_of_device_id(struct platform_device *pdev)
-> > +{
-> > +	return of_match_device(sdhci_esdhc_dt_ids, &pdev->dev);
-> 
-> You can add an empty implementation of of_match_device() to
-> linux/of_device.h.  That would eliminate the need for this function.
-> 
-Will follow what you suggested later to use .of_match pointer newly
-added into struct device.
+* Florian Mickler <florian@mickler.org> wrote:
 
--- 
-Regards,
-Shawn
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -3789,6 +3789,10 @@ int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
+>  {
+>  	int ioapic, pin, idx;
+>  
+> +#ifdef CONFIG_ACPI
+> +	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+> +		return -1;
+> +#endif
 
+That #ifdef is very ugly. Please introduce a suitable helper function in 
+arch/x86/include/asm/acpi.h - acpi_irq_ioapic_model() or so, which could be 
+used like this:
+
+	if (!acpi_irq_ioapic_model())
+		return -1;
+
+And would be defined in the !CONFIG_ACPI case as well.
+
+Thanks,
+
+	Ingo
