@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab1DAD1I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 23:27:08 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64536 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab1DAD1H convert rfc822-to-8bit (ORCPT
+	id S1754879Ab1DAD2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 23:28:46 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:47786 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203Ab1DAD2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 23:27:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tsCqyaSTf1QEZ/OMS/e6BHYZ/AvDcmHjVgMbC2R1ANVqoNcNlU0chgUt1LUjU1EFYd
-         uRP5TMwTpxi71s4J6ZE2LOKVQRFtCA7bzmYY5aBwuXK0dIad+thQDn9K2lkYXipThn9e
-         wpWBkpyizXxBf1MEfGz9jOzuGF/wcmhLP51us=
+	Thu, 31 Mar 2011 23:28:45 -0400
+Date: Thu, 31 Mar 2011 20:28:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Michal Marek <mmarek@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+Message-ID: <20110401032838.GA4443@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110330004725.GO2261@linux.vnet.ibm.com>
+ <4D92BECA.50802@cn.fujitsu.com>
+ <4D92DA32.2010809@cn.fujitsu.com>
+ <20110330105505.GA3195@sepie.suse.cz>
+ <1301482656.4859.171.camel@twins>
+ <4D931814.9090100@suse.cz>
+ <4D93D29C.5010702@cn.fujitsu.com>
+ <20110331012155.GZ2255@linux.vnet.ibm.com>
+ <4D93DE91.1050606@cn.fujitsu.com>
+ <20110331233004.GP2258@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <4D952B76.7000201@silka.with-linux.com>
-References: <AANLkTin17=rCU4eDGYtnVFZ1ffbUn+var4Q_AQUuGKaw@mail.gmail.com>
-	<4D946C73.4090402@ladisch.de>
-	<AANLkTinyRqEa_ML47DOqAJU8aLDEA12geiUUrPGjXHrN@mail.gmail.com>
-	<4D94F728.60609@silka.with-linux.com>
-	<4D952B76.7000201@silka.with-linux.com>
-Date: Fri, 1 Apr 2011 05:05:54 +0200
-Message-ID: <AANLkTi=g6C5T3x-GoncuHNvhZ1r3h8WOjmouYR0JqpFz@mail.gmail.com>
-Subject: Re: Linux 2.6.38 freeze because of sound/core/pcm_lib.c commit 59ff878ffb26bc0be812ca8295799164f413ae88
-From: "Christopher K." <c.krooss@googlemail.com>
-To: Kelly Anderson <kelly@silka.with-linux.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110331233004.GP2258@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 03/31/11 15:50, Kelly Anderson wrote:
->>
->> Just to let you know.  I'm using a gtx460 also.  I haven't had a chance to
->> reboot into the newly patched kernel yet.  It is interesting that we both
->> have gtx460's.  I have a machine with a gtx430 that doesn't seem to exhibit
->> the problem.
->>
->> cat /etc/modprobe.d/snd_hda_intel.conf
->>
->> options snd-hda-intel probe_mask=-1,0xa
->>
-> OK, I debugged the problem and came up with a solution.  The bottom line is
-> that it's a problem with a signed to unsigned compare.  First the fix:
+On Thu, Mar 31, 2011 at 04:30:04PM -0700, Paul E. McKenney wrote:
+> On Thu, Mar 31, 2011 at 09:53:21AM +0800, Lai Jiangshan wrote:
+> > On 03/31/2011 09:21 AM, Paul E. McKenney wrote:
+> > > On Thu, Mar 31, 2011 at 09:02:20AM +0800, Lai Jiangshan wrote:
+> > >> On 03/30/2011 07:46 PM, Michal Marek wrote:
+> > >>> On 30.3.2011 12:57, Peter Zijlstra wrote:
+> > >>>> On Wed, 2011-03-30 at 12:55 +0200, Michal Marek wrote:
+> > >>>>> Subject: [PATCH] headers: Allow for lightweight inclusion of task_struct definition
+> > >>>>>
+> > >>>>> Factor out a couple of type definitions to <header>_types.h to allow
+> > >>>>> using task_struct without pulling tons of new dependencies via sched.h.
+> > >>>>
+> > >>>> Urgh, not pretty.. so why not clean up sched.h properly? There's way too
+> > >>>> much cruft in there.
+> > >>>
+> > >>> It was a proof-of-concept to show that it is doable to have proper
+> > >>> definition of task_struct in rcupdate.h. Not an entry for any code
+> > >>> beauty contest.
+> > >>>
+> > >>> Michal
+> > >>>
+> > >>
+> > >> I like this cleanup, could you continue for this hard job? I will help you if required.
+> > >>
+> > >> Ingo & Peter - will you accept the patches when it is done.
+> > >>
+> > >> Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > 
+> > > I certainly like the idea of being able to inline TREE_PREEMPT_RCU's
+> > > rcu_read_lock() and rcu_read_unlock() using normal C code!
+> > > 
+> > > 							Thanx, Paul
+> > > 
+> > 
+> > kernel-offset.c can be merged to some branch of your tree for
+> > testing inlined TREE_PREEMPT_RCU's rcu_read_lock() and rcu_read_unlock()
+> > before the kernel headers splitting is done.
+> > 
+> > Can the [patch 1/5] be merged to mainline earlier? could you add it to origin/rcu/next?
+> 
+> Let's first settle on the overall direction, on the off-chance that someone
+> comes up with an approach that doesn't require task_rcu_struct, or that
+> requires it to be located somewhere other than include/linux/rcupdate.h.
 
-I can confirm that this patch fixes the issue. Thanks a lot!
+And I have created a branch rcu/dev that contains the commits that
+I don't yet trust enough to send to -next.  As before, rcu/kfree_rcu
+contains the commits that apply kfree_rcu() elsewhere in the kernel.
+
+							Thanx, Paul
