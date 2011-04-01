@@ -1,110 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab1DABaS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Mar 2011 21:30:18 -0400
-Received: from mail.tpi.com ([70.99.223.143]:2216 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752532Ab1DABaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Mar 2011 21:30:16 -0400
-Message-ID: <4D952A9E.6070109@canonical.com>
-Date: Thu, 31 Mar 2011 19:30:06 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1753240Ab1DABeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Mar 2011 21:34:05 -0400
+Received: from 216-146-103-100.dsl.nemontel.net ([216.146.103.100]:37452 "EHLO
+	silka.with-linux.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab1DABeE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Mar 2011 21:34:04 -0400
+Message-ID: <4D952B76.7000201@silka.with-linux.com>
+Date: Thu, 31 Mar 2011 19:33:42 -0600
+From: Kelly Anderson <kelly@silka.with-linux.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110309 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Dan Kegel <dank@kegel.com>
-Subject: Re: [PATCH V2] Raise default hard ulimit on number of files to 4096
-References: <1301606810-11001-1-git-send-email-tim.gardner@canonical.com> <20110331143512.2bd5703b.akpm@linux-foundation.org>
-In-Reply-To: <20110331143512.2bd5703b.akpm@linux-foundation.org>
-Content-Type: multipart/mixed;
- boundary="------------010904090101000308060501"
+To: "Christopher K." <c.krooss@googlemail.com>
+CC: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: Linux 2.6.38 freeze because of sound/core/pcm_lib.c commit 59ff878ffb26bc0be812ca8295799164f413ae88
+References: <AANLkTin17=rCU4eDGYtnVFZ1ffbUn+var4Q_AQUuGKaw@mail.gmail.com>	<4D946C73.4090402@ladisch.de> <AANLkTinyRqEa_ML47DOqAJU8aLDEA12geiUUrPGjXHrN@mail.gmail.com> <4D94F728.60609@silka.with-linux.com>
+In-Reply-To: <4D94F728.60609@silka.with-linux.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010904090101000308060501
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-
-On 03/31/2011 03:35 PM, Andrew Morton wrote:
+On 03/31/11 15:50, Kelly Anderson wrote:
 >
-> ^^ how not to write a changelog.
+> Just to let you know.  I'm using a gtx460 also.  I haven't had a 
+> chance to reboot into the newly patched kernel yet.  It is interesting 
+> that we both have gtx460's.  I have a machine with a gtx430 that 
+> doesn't seem to exhibit the problem.
 >
+> cat /etc/modprobe.d/snd_hda_intel.conf
+>
+> options snd-hda-intel probe_mask=-1,0xa
+>
+OK, I debugged the problem and came up with a solution.  The bottom line 
+is that it's a problem with a signed to unsigned compare.  First the fix:
 
-It seemed like plagiarism to just copy Dan's argument, but now here you 
-have it.
+--- ./sound/core/pcm_lib.c.orig    2011-03-27 12:37:20.000000000 -0600
++++ ./sound/core/pcm_lib.c    2011-03-31 19:01:35.392739127 -0600
+@@ -379,17 +379,17 @@ static int snd_pcm_update_hw_ptr0(struct
+           * Without regular period interrupts, we have to check
+           * the elapsed time to detect xruns.
+           */
+-        jdelta = jiffies - runtime->hw_ptr_jiffies;
+-        if (jdelta < runtime->hw_ptr_buffer_jiffies / 2)
++        jdelta = (snd_pcm_sframes_t)(jiffies - runtime->hw_ptr_jiffies);
++        if (jdelta < (snd_pcm_sframes_t)runtime->hw_ptr_buffer_jiffies / 2)
+              goto no_delta_check;
+          hdelta = jdelta - delta * HZ / runtime->rate;
+-        while (hdelta > runtime->hw_ptr_buffer_jiffies / 2 + 1) {
++        while (hdelta > 
+(snd_pcm_sframes_t)runtime->hw_ptr_buffer_jiffies / 2 + 1) {
+              delta += runtime->buffer_size;
+              hw_base += runtime->buffer_size;
+              if (hw_base >= runtime->boundary)
+                  hw_base = 0;
+              new_hw_ptr = hw_base + pos;
+-            hdelta -= runtime->hw_ptr_buffer_jiffies;
++            hdelta -= (snd_pcm_sframes_t)runtime->hw_ptr_buffer_jiffies;
+          }
+          goto no_delta_check;
+      }
 
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+And here's the patch I used to debug the problem:
 
---------------010904090101000308060501
-Content-Type: text/x-patch;
- name="0001-Raise-default-hard-ulimit-on-number-of-files-to-4096.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-Raise-default-hard-ulimit-on-number-of-files-to-4096.pa";
- filename*1="tch"
-
->From 819066637c964290fbab058b578dadbb31ae4235 Mon Sep 17 00:00:00 2001
-From: Tim Gardner <tim.gardner@canonical.com>
-Date: Thu, 31 Mar 2011 15:07:48 -0600
-Subject: [PATCH] Raise default hard ulimit on number of files to 4096
-
-Apps are increasingly using more than 1024 file descriptors.
-See discussion in several distro bug trackers, e.g.
-BugLink: http://bugs.launchpad.net/bugs/663090
-https://issues.rpath.com/browse/RPL-2054
-
-You don't want to raise the default soft limit, since that might break
-apps that use select(), but it's safe to raise the default hard limit;
-that way, apps that know they need lots of file descriptors can raise their
-soft limit without needing root, and without user intervention.
-
-Ubuntu is doing this with a kernel change because they have a policy
-of not changing kernel defaults in userland.
-
-While 4096 might not be enough for *all* apps, it seems to be plenty
-for the apps I've seen lately that are unhappy with 1024.
-
-Cc: Dan Kegel <dank@kegel.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- include/asm-generic/resource.h |    2 +-
- include/linux/fs.h             |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/include/asm-generic/resource.h b/include/asm-generic/resource.h
-index 587566f..61fa862 100644
---- a/include/asm-generic/resource.h
-+++ b/include/asm-generic/resource.h
-@@ -78,7 +78,7 @@
- 	[RLIMIT_CORE]		= {              0,  RLIM_INFINITY },	\
- 	[RLIMIT_RSS]		= {  RLIM_INFINITY,  RLIM_INFINITY },	\
- 	[RLIMIT_NPROC]		= {              0,              0 },	\
--	[RLIMIT_NOFILE]		= {       INR_OPEN,       INR_OPEN },	\
-+	[RLIMIT_NOFILE]		= {   INR_OPEN_CUR,   INR_OPEN_MAX },	\
- 	[RLIMIT_MEMLOCK]	= {    MLOCK_LIMIT,    MLOCK_LIMIT },	\
- 	[RLIMIT_AS]		= {  RLIM_INFINITY,  RLIM_INFINITY },	\
- 	[RLIMIT_LOCKS]		= {  RLIM_INFINITY,  RLIM_INFINITY },	\
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 52f283c..6e1e4e6 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -23,7 +23,8 @@
- 
- /* Fixed constants first: */
- #undef NR_OPEN
--#define INR_OPEN 1024		/* Initial setting for nfile rlimits */
-+#define INR_OPEN_CUR 1024	/* Initial setting for nfile rlimits */
-+#define INR_OPEN_MAX 4096	/* Hard limit for nfile rlimits */
- 
- #define BLOCK_SIZE_BITS 10
- #define BLOCK_SIZE (1<<BLOCK_SIZE_BITS)
--- 
-1.7.0.4
+--- ./sound/core/pcm_lib.c.orig    2011-03-27 12:37:20.000000000 -0600
++++ ./sound/core/pcm_lib.c    2011-03-31 18:44:23.701411841 -0600
+@@ -379,18 +379,31 @@ static int snd_pcm_update_hw_ptr0(struct
+           * Without regular period interrupts, we have to check
+           * the elapsed time to detect xruns.
+           */
++        int loopCount = 0;
++        BUG_ON(runtime->hw_ptr_jiffies < 0);
++        BUG_ON(runtime->hw_ptr_jiffies == 0);
++        BUG_ON(runtime->hw_ptr_jiffies > jiffies);
+          jdelta = jiffies - runtime->hw_ptr_jiffies;
+          if (jdelta < runtime->hw_ptr_buffer_jiffies / 2)
+              goto no_delta_check;
+          hdelta = jdelta - delta * HZ / runtime->rate;
+-        while (hdelta > runtime->hw_ptr_buffer_jiffies / 2 + 1) {
++        printk(KERN_INFO "Before loop: jdelta=%ld, hdelta=%ld 
+runtime->hw_ptr_buffer_jiffies=%lu\n"
++                        , jdelta , hdelta , 
+runtime->hw_ptr_buffer_jiffies);
++        while (hdelta > runtime->hw_ptr_buffer_jiffies / 2 + 1) {
+              delta += runtime->buffer_size;
+              hw_base += runtime->buffer_size;
+              if (hw_base >= runtime->boundary)
+                  hw_base = 0;
+              new_hw_ptr = hw_base + pos;
+-            hdelta -= runtime->hw_ptr_buffer_jiffies;
++            hdelta -= runtime->hw_ptr_buffer_jiffies;
++            if (++loopCount >= 1024*1024*4)
++            {
++                printk(KERN_INFO "stopped the madness at 4 thousand\n");
++                break;
++            }
+          }
++        printk(KERN_INFO "After loop: jdelta=%ld, hdelta=%ld 
+runtime->hw_ptr_buffer_jiffies=%lu\n"
++                        , jdelta , hdelta , 
+runtime->hw_ptr_buffer_jiffies);
+          goto no_delta_check;
+      }
 
 
---------------010904090101000308060501--
+The kernel output with the testing patch applied:
+
+Mar 31 18:37:02 speedy kernel: Before loop: jdelta=352, hdelta=352 
+runtime->hw_ptr_buffer_jiffies=371
+Mar 31 18:37:02 speedy kernel: stopped the madness at 4 million
+Mar 31 18:37:02 speedy kernel: After loop: jdelta=352, 
+hdelta=-1556086432 runtime->hw_ptr_buffer_jiffies=371
+
+
