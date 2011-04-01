@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab1DAH3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 03:29:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60871 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754989Ab1DAH3k (ORCPT
+	id S1755099Ab1DAHcC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 03:32:02 -0400
+Received: from relay.parallels.com ([195.214.232.42]:36324 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755044Ab1DAHcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 03:29:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=HVi0oBnZCfK8nzYoqZYOBYTjzTdG6Sk0FbWO+4BQQnecPOi5TAD8cbPHSXsRBOoOcy
-         zGuW5a7ijAA+jVcS7u8uWR11fpVW6gErCWZAjnInr6z2eePMN/iZgzWeAjwduWAt1w8c
-         Jwf5pXlLDxX94aSjKftyy4c3KRYD+WNNoGqWI=
-Date: Fri, 1 Apr 2011 09:29:35 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH 1/2] percpu: unify input section names
-Message-ID: <20110401072935.GH3385@htj.dyndns.org>
-References: <1301601122-25431-1-git-send-email-vapier@gentoo.org>
+	Fri, 1 Apr 2011 03:32:01 -0400
+Subject: [PATCH] proc: add used mem and swap to meminfo
+To: <linux-kernel@vger.kernel.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Pavel Emelyanov <xemul@openvz.org>
+Date: Fri, 1 Apr 2011 11:31:56 +0400
+Message-ID: <20110401073156.17372.80123.stgit@localhost6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301601122-25431-1-git-send-email-vapier@gentoo.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 03:52:01PM -0400, Mike Frysinger wrote:
-> The two percpu helper macros have the section names duplicated.  So create
-> a new define to merge the two.  This also allows arches who need to link
-> things more directly themselves to avoid duplicating the input sections in
-> their linker script.
-> 
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+It makes meminfo more human-friendly.
 
-Looks good to me but can you please rebase it on top of the following
-branch?
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ fs/proc/meminfo.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git fixes-2.6.39
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index ed257d1..8f39076 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -55,6 +55,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ 	seq_printf(m,
+ 		"MemTotal:       %8lu kB\n"
+ 		"MemFree:        %8lu kB\n"
++		"MemUsed:        %8lu kB\n"
+ 		"Buffers:        %8lu kB\n"
+ 		"Cached:         %8lu kB\n"
+ 		"SwapCached:     %8lu kB\n"
+@@ -77,6 +78,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ #endif
+ 		"SwapTotal:      %8lu kB\n"
+ 		"SwapFree:       %8lu kB\n"
++		"SwapUsed:       %8lu kB\n"
+ 		"Dirty:          %8lu kB\n"
+ 		"Writeback:      %8lu kB\n"
+ 		"AnonPages:      %8lu kB\n"
+@@ -107,6 +109,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ 		,
+ 		K(i.totalram),
+ 		K(i.freeram),
++		K(i.totalram-i.freeram),
+ 		K(i.bufferram),
+ 		K(cached),
+ 		K(total_swapcache_pages),
+@@ -129,6 +132,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ #endif
+ 		K(i.totalswap),
+ 		K(i.freeswap),
++		K(i.totalswap-i.freeswap),
+ 		K(global_page_state(NR_FILE_DIRTY)),
+ 		K(global_page_state(NR_WRITEBACK)),
+ 		K(global_page_state(NR_ANON_PAGES)
 
-You'll probably need to add @cacheline to the macro.
-
-Thanks.
-
--- 
-tejun
