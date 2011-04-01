@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620Ab1DAV4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 17:56:54 -0400
-Received: from manam.hhs.nl ([145.52.2.15]:53413 "EHLO manam.hhs.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758021Ab1DAV4v convert rfc822-to-8bit (ORCPT
+	id S1758644Ab1DAV6q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 17:58:46 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:32854 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758565Ab1DAV6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 17:56:51 -0400
-X-Greylist: delayed 1042 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Apr 2011 17:56:51 EDT
-From: "Sande, M.C.E. van de" <m.c.e.vandesande@hhs.nl>
-Thread-Topic: Web Mail User Alert : Important Notice!!! Your webmail Account
- Expires in 24 Hours!!!
-Thread-Index: AcvwtR8zW/wuMVmhSfCXQjDLfm+dPw==
-Date: Fri, 1 Apr 2011 21:38:22 +0000
-Accept-Language: nl-NL, en-US
-Content-Language: nl-NL
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [41.206.11.19]
-MIME-Version: 1.0
-Message-ID: <F6965143FD9CE148885515109F727B50F7D4CE@naka.ads.hhs.nl>
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: Web Mail User Alert : Important Notice!!! Your webmail Account
- Expires in 24 Hours!!!
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.42/RELEASE,
-	 bases: 20110401 #5156407, check: 20110401 clean
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 1 Apr 2011 17:58:45 -0400
+Date: Fri, 1 Apr 2011 23:51:13 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Alessandro Rubini <rubini@unipv.it>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arm: nomadik: avoid assigning u32 to bool
+Message-ID: <20110401235113.083787a7@absol.kitzblitz>
+Organization: -
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
+ AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
+ T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
+ ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
+ BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Important Notice!!! Your webmail Account Expires in 24 Hours!!!
+Avoid assigning u32 to the bool 'enabled'.
 
-This message is from Administration centre Maintenance Policy, Your Web-mail Quota Has Exceeded The Set Quota/Limit
-Which Is 20GB. You Are Currently Running On 23GB Due To Hidden Files And Folder On Your Mailbox.
-Please Click the Link Below To Validate Your Mailbox And Increase Your Quota.
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ arch/arm/plat-nomadik/gpio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-http://www.formchamp.com/form.php?id=14021
-
-Failure To Click This Link And Validate Your Quota May Result In Loss Of Important Information
-In Your Mailbox/Or Cause Limited Access to it and may also result in the cancellation of your webmail account..
-
-Thank you for your cooperation.
-Web Mail Technical Services.
+diff --git a/arch/arm/plat-nomadik/gpio.c b/arch/arm/plat-nomadik/gpio.c
+index f49748e..8b722f7 100644
+--- a/arch/arm/plat-nomadik/gpio.c
++++ b/arch/arm/plat-nomadik/gpio.c
+@@ -636,7 +636,7 @@ static int nmk_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+ 	if (type & IRQ_TYPE_LEVEL_LOW)
+ 		return -EINVAL;
+ 
+-	enabled = nmk_chip->enabled & bitmask;
++	enabled = !!(nmk_chip->enabled & bitmask);
+ 
+ 	spin_lock_irqsave(&nmk_chip->lock, flags);
+ 
+-- 
+1.7.3.4
