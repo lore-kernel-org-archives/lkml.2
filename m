@@ -1,158 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab1DANlv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:41:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33772 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756125Ab1DANjW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 09:39:22 -0400
-Message-Id: <20110401121726.285750519@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Fri, 01 Apr 2011 14:13:18 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: [PATCH 20/20] mm: Optimize page_lock_anon_vma() fast-path
-References: <20110401121258.211963744@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-mm-optimize_page_lock_anon_vma_fast-path.patch
+	id S1756516Ab1DANmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 09:42:13 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:59974 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756211Ab1DANmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 09:42:09 -0400
+Message-ID: <4D95D630.4010806@kernel.dk>
+Date: Fri, 01 Apr 2011 15:42:08 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: GPF in __call_for_each_cic
+References: <20110331223034.GA31371@redhat.com>
+In-Reply-To: <20110331223034.GA31371@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Optimize the page_lock_anon_vma() fast path to be one atomic op,
-instead of two.
+On 2011-04-01 00:30, Dave Jones wrote:
+> Just hit this on current git head.
+> 
+> 	Dave
+> 
+>  general protection fault: 0000 [#1] SMP 
+>  last sysfs file: /sys/devices/system/cpu/cpu1/cache/index2/shared_cpu_map
+>  CPU 0 
+>  Modules linked in: cmtp kernelcapi can_bcm rfcomm sctp libcrc32c hidp bnep af_802154 ipx p8022 p8023 rds phonet decnet pppoe pppox ppp_generic slhc appletalk psnap llc af_key can rose ax25 irda crc_ccitt atm tun tcp_lp nfs fscache fuse nfsd lockd nfs_acl auth_rpcgss sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6 uinput arc4 iwlagn mac80211 snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_usb_audio snd_hda_codec btusb bluetooth snd_seq uvcvideo snd_pcm dell_wmi cfg80211 sparse_keymap snd_hwdep zaurus snd_usbmidi_lib videodev dell_laptop snd_rawmidi snd_timer cdc_ether dcdbas snd_seq_device usbnet microcode v4l2_compat_ioctl32 mii cdc_acm snd cdc_wdm iTCO_wdt joydev tg3 rfkill i2c_i801 pcspkr iTCO_vendor_support soundcore snd_page_alloc wmi i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
+>  
+>  Pid: 14365, comm: trinity Not tainted 2.6.38-09065-g89078d5-dirty #6 Dell Inc. Adamo 13   /0N70T0
+>  RIP: 0010:[<ffffffff8125703b>]  [<ffffffff8125703b>] __call_for_each_cic+0x32/0x51
+>  RSP: 0018:ffff880007c05e28  EFLAGS: 00010202
+>  RAX: 0000000000000001 RBX: ffff88010e48abd0 RCX: 0000042c0d869707
+>  RDX: 0000000000000246 RSI: ffffffff81a268f0 RDI: 0000000000000246
+>  RBP: ffff880007c05e48 R08: 0000000000000286 R09: 0000000000000001
+>  R10: ffff88010e48abf8 R11: ffffffff8125893b R12: ffffffff8125708a
+>  R13: 6b6b6b6b6b6b6b6b R14: ffff880007c05c08 R15: 0000000000000001
+>  FS:  0000000000000000(0000) GS:ffff88013fa00000(0000) knlGS:0000000000000000
+>  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>  CR2: 000000000157ea88 CR3: 0000000001a03000 CR4: 00000000000406f0
+>  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  Process trinity (pid: 14365, threadinfo ffff880007c04000, task ffff88007c99a3b0)
+>  Stack:
+>   ffff880007c05c08 ffff88010e48abd0 ffff88007c99a3b0 ffff88007c99a980
+>   ffff880007c05e58 ffffffff8125706f ffff880007c05e78 ffffffff8124c70c
+>   ffff880007c05e78 ffff88010e48abd0 ffff880007c05ea8 ffffffff8124c798
+>  Call Trace:
+>   [<ffffffff8125706f>] cfq_free_io_context+0x15/0x17
+>   [<ffffffff8124c70c>] put_io_context+0x44/0x61
+>   [<ffffffff8124c798>] exit_io_context+0x6f/0x77
+>   [<ffffffff8105e9c6>] do_exit+0x759/0x780
+>   [<ffffffff814cdaf7>] ? schedule+0x6d9/0x70b
+>   [<ffffffff8105ec67>] do_group_exit+0x88/0xb6
+>   [<ffffffff8105ecac>] sys_exit_group+0x17/0x1b
+>   [<ffffffff814d6bc2>] system_call_fastpath+0x16/0x1b
+>  Code: 54 53 48 83 ec 08 0f 1f 44 00 00 4c 8b af 80 00 00 00 48 89 fb 49 89 f4 e8 e3 db e1 ff 85 c0 74 05 e8 ac ff ff ff 4d 85 ed 74 17 
+>   8b 45 00 49 8d 75 b0 48 89 df 0f 18 08 41 ff d4 4d 8b 6d 00 
+>  RIP  [<ffffffff8125703b>] __call_for_each_cic+0x32/0x51
+>   RSP <ffff880007c05e28>
+>  ---[ end trace 044e02f5767b491a ]---
+>  Fixing recursive fault but reboot is needed!
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
----
- mm/rmap.c |   86 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 82 insertions(+), 4 deletions(-)
+This looks like the ellusive cic bug that has never been fixed and
+strikes once in a blue moon. What was the system doing?
 
-Index: linux-2.6/mm/rmap.c
-===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -85,6 +85,29 @@ static inline struct anon_vma *anon_vma_
- static inline void anon_vma_free(struct anon_vma *anon_vma)
- {
- 	VM_BUG_ON(atomic_read(&anon_vma->refcount));
-+
-+	/*
-+	 * Synchronize against page_lock_anon_vma() such that
-+	 * we can safely hold the lock without the anon_vma getting
-+	 * freed.
-+	 *
-+	 * Relies on the full mb implied by the atomic_dec_and_test() from
-+	 * put_anon_vma() against the acquire barrier implied by
-+	 * mutex_trylock() from page_lock_anon_vma(). This orders:
-+	 *
-+	 * page_lock_anon_vma()		VS	put_anon_vma()
-+	 *   mutex_trylock()			  atomic_dec_and_test()
-+	 *   LOCK				  MB
-+	 *   atomic_read()			  mutex_is_locked()
-+	 *
-+	 * LOCK should suffice since the actual taking of the lock must
-+	 * happen _before_ what follows.
-+	 */
-+	if (mutex_is_locked(&anon_vma->root->mutex)) {
-+		anon_vma_lock(anon_vma);
-+		anon_vma_unlock(anon_vma);
-+	}
-+
- 	kmem_cache_free(anon_vma_cachep, anon_vma);
- }
- 
-@@ -371,20 +394,75 @@ struct anon_vma *page_get_anon_vma(struc
- 	return anon_vma;
- }
- 
-+/*
-+ * Similar to page_get_anon_vma() except it locks the anon_vma.
-+ *
-+ * Its a little more complex as it tries to keep the fast path to a single
-+ * atomic op -- the trylock. If we fail the trylock, we fall back to getting a
-+ * reference like with page_get_anon_vma() and then block on the mutex.
-+ */
- struct anon_vma *page_lock_anon_vma(struct page *page)
- {
--	struct anon_vma *anon_vma = page_get_anon_vma(page);
-+	struct anon_vma *anon_vma = NULL;
-+	unsigned long anon_mapping;
- 
--	if (anon_vma)
--		anon_vma_lock(anon_vma);
-+	rcu_read_lock();
-+	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
-+	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
-+		goto out;
-+	if (!page_mapped(page))
-+		goto out;
-+
-+	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
-+	if (mutex_trylock(&anon_vma->root->mutex)) {
-+		/*
-+		 * If we observe a !0 refcount, then holding the lock ensures
-+		 * the anon_vma will not go away, see __put_anon_vma().
-+		 */
-+		if (!atomic_read(&anon_vma->refcount)) {
-+			anon_vma_unlock(anon_vma);
-+			anon_vma = NULL;
-+		}
-+		goto out;
-+	}
-+
-+	/* trylock failed, we got to sleep */
-+	if (!atomic_inc_not_zero(&anon_vma->refcount)) {
-+		anon_vma = NULL;
-+		goto out;
-+	}
- 
-+	if (!page_mapped(page)) {
-+		put_anon_vma(anon_vma);
-+		anon_vma = NULL;
-+		goto out;
-+	}
-+
-+	/* we pinned the anon_vma, its safe to sleep */
-+	rcu_read_unlock();
-+	anon_vma_lock(anon_vma);
-+
-+	if (atomic_dec_and_test(&anon_vma->refcount)) {
-+		/*
-+		 * Oops, we held the last refcount, release the lock
-+		 * and bail -- can't simply use put_anon_vma() because
-+		 * we'll deadlock on the anon_vma_lock() recursion.
-+		 */
-+		anon_vma_unlock(anon_vma);
-+		__put_anon_vma(anon_vma);
-+		anon_vma = NULL;
-+	}
-+
-+	return anon_vma;
-+
-+out:
-+	rcu_read_unlock();
- 	return anon_vma;
- }
- 
- void page_unlock_anon_vma(struct anon_vma *anon_vma)
- {
- 	anon_vma_unlock(anon_vma);
--	put_anon_vma(anon_vma);
- }
- 
- /*
 
+-- 
+Jens Axboe
 
