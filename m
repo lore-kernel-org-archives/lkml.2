@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab1DAFPR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 01:15:17 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:33076 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab1DAFPN (ORCPT
+	id S1752944Ab1DAFbU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 01:31:20 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:46060 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752511Ab1DAFbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 01:15:13 -0400
-Date: Fri, 1 Apr 2011 14:15:11 +0900
-From: Norbert Preining <preining@logic.at>
-To: dri-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Lenovo resume from suspends hangs in i915_gpu_busy or so
-Message-ID: <20110401051511.GE9128@gamma.logic.tuwien.ac.at>
-References: <20110401021055.GB6071@gamma.logic.tuwien.ac.at>
+	Fri, 1 Apr 2011 01:31:18 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqkFAPRilU15LK5JTmdsb2JhbAClWQsBASADIyXAQw2FXgQ
+Date: Fri, 1 Apr 2011 16:31:02 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
+Message-ID: <20110401053102.GB6957@dastard>
+References: <20110330052819.8212.1359.stgit@localhost6.localdomain6>
+ <20110331214033.GA2904@dastard>
+ <20110401030811.GP2879@balbir.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110401021055.GB6071@gamma.logic.tuwien.ac.at>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110401030811.GP2879@balbir.in.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-
-adding dri-devel as I found it is actually not completely dead, 
-but hanging in some i915 problem.
-
-Copyied from screen:
-Process ips-adjust (....
-Stack:
-  ....
-   ....
-  ...
-Call Trace:
-  <IRQ>
-  ... ? tick_program_event
-  call_sortirq
-  do_softirq
-  irq_exit
-  smp_apic_timer_interrupt
-  apic_timer_interrupt
-  <EOI>
-  ? _raw_spin_lock
-  i915_gpu_busy
-  ips_adjust
-  ? show_cpu_temp
-  kthread
-  kernel_thread_helper
-  ? kthread_worker_fn
-  ? gs_change
-Code: ...
-(once more more or less the same as above)
-
-Here the original message.
-
-> I got a new laptop, Lenovo Thinkpad Edge (intel , intel graphic)
-> and I am running 2.6.39-rc1 on it (but tried also 2.6.38).
+On Fri, Apr 01, 2011 at 08:38:11AM +0530, Balbir Singh wrote:
+> * Dave Chinner <david@fromorbit.com> [2011-04-01 08:40:33]:
 > 
-> Suspend to RAM, either by pm-suspend or by echo "mem" >/sys/..
-> works, both wiht  running or from a recovery session where nothing
-> else is running.
+> > On Wed, Mar 30, 2011 at 11:00:26AM +0530, Balbir Singh wrote:
+> > > 
+> > > The following series implements page cache control,
+> > > this is a split out version of patch 1 of version 3 of the
+> > > page cache optimization patches posted earlier at
+> > > Previous posting http://lwn.net/Articles/425851/ and analysis
+> > > at http://lwn.net/Articles/419713/
+> > > 
+> > > Detailed Description
+> > > ====================
+> > > This patch implements unmapped page cache control via preferred
+> > > page cache reclaim. The current patch hooks into kswapd and reclaims
+> > > page cache if the user has requested for unmapped page control.
+> > > This is useful in the following scenario
+> > > - In a virtualized environment with cache=writethrough, we see
+> > >   double caching - (one in the host and one in the guest). As
+> > >   we try to scale guests, cache usage across the system grows.
+> > >   The goal of this patch is to reclaim page cache when Linux is running
+> > >   as a guest and get the host to hold the page cache and manage it.
+> > >   There might be temporary duplication, but in the long run, memory
+> > >   in the guests would be used for mapped pages.
+> > 
+> > What does this do that "cache=none" for the VMs and using the page
+> > cache inside the guest doesn't acheive? That avoids double caching
+> > and doesn't require any new complexity inside the host OS to
+> > acheive...
+> >
 > 
-> But wake-up hangs the machine. The video comes back, I see the last
-> lines I typed before I suspended, but after that no keypress nor
-> anything else (Sysrq) does work, but 4sec-hard-off. No traces in the
-> log files.
+> There was a long discussion on cache=none in the first posting and the
+> downsides/impact on throughput. Please see
+> http://www.mail-archive.com/kvm@vger.kernel.org/msg30655.html 
 
-Full logs etc:
-kernel config:
-	http://www.logic.at/people/preining/lenovo/config.edge
-dmesg output after boot:
-	http://www.logic.at/people/preining/lenovo/dmesg.edge
-lsmod, lspci, lsusb
-	http://www.logic.at/people/preining/lenovo/lsmod.edge
-	http://www.logic.at/people/preining/lenovo/lspci.edge
-	http://www.logic.at/people/preining/lenovo/lsusb.edge
-photo of the hang:
-	http://www.logic.at/people/preining/lenovo/i915-hang-after-resume.jpg
+All there is in that thread is handwaving about the differences
+between cache=none vs cache=writeback behaviour and about the amount
+of data loss/corruption when failures occur.  There is only one real
+example provided about real world performance in the entire thread,
+but the root cause of the performance difference is not analysed,
+determined and understood.  Hence I'm not convinced from this thread
+that using cache=write* and using this functionality is
+anything other than papering over some still unknown problem....
 
-Hope that helps, looking forward to any suggestions
+Cheers,
 
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-SCREMBY (n.)
-The dehydrated felt-tip pen attached by a string to the 'Don't Forget'
-board in the kitchen which has never worked in living memory but which
-no one can be bothered to throw away.
-			--- Douglas Adams, The Meaning of Liff
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
