@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab1DAMmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 08:42:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49765 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247Ab1DAMmG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 08:42:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Bill Gatliff <bgat@billgatliff.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Date: Fri, 1 Apr 2011 14:41:38 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Nicolas Pitre <nico@fluxnic.net>,
-        Dave Airlie <airlied@gmail.com>, david@lang.hm,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-References: <alpine.LFD.2.00.1103301531420.28032@xanadu.home> <20110331130123.GB17547@n2100.arm.linux.org.uk> <BANLkTinmoTyceJCT+K-RCm4NC76qfDyeVw@mail.gmail.com>
-In-Reply-To: <BANLkTinmoTyceJCT+K-RCm4NC76qfDyeVw@mail.gmail.com>
+	id S1754608Ab1DAMpR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 08:45:17 -0400
+Received: from snt0-omc1-s3.snt0.hotmail.com ([65.55.90.14]:8941 "EHLO
+	snt0-omc1-s3.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753487Ab1DAMpP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 08:45:15 -0400
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Apr 2011 08:45:15 EDT
+X-Originating-IP: [94.195.177.167]
+X-Originating-Email: [johnkyr83@hotmail.com]
+Message-ID: <SNT111-DS223A836C90F9E0C2A8AB07A7BE0@phx.gbl>
+From: limp <johnkyr83@hotmail.com>
+To: "'Steven Rostedt'" <rostedt@goodmis.org>,
+        "'Dario Faggioli'" <raistlin@linux.it>
+CC: <linux-kernel@vger.kernel.org>
+References: <SNT111-DS16E628E3B6501DBCF9E19CA7BF0@phx.gbl>	 <20110331151214.GB14441@home.goodmis.org> <1301645110.4331.17.camel@Palantir>
+In-Reply-To: <1301645110.4331.17.camel@Palantir>
+Subject: RE: Minimum time slice for relaible Linux execution
+Date: Fri, 1 Apr 2011 13:39:01 +0100
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104011441.38902.arnd@arndb.de>
-X-Provags-ID: V02:K0:2mDUc5pWG5PnF80b+v8YZM/PvdkSk8GOm/NDrPemkFh
- UvGVAwHL2xTYedzUYmnXOmcBtwW+yjv92AZNDjtce0QOG+tEVU
- tBpImPIkKiFjTKFBjUXfIYVjoYmKLQVKQ4gfjabnlpQ3Uve45A
- kjp2T8HRYdaePZt0fzN4AGJCr6Iu5m+JXNoPf59ukxZdcSgFF/
- Kf24NUf6kDEoyyx399jog==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcvwQ5ctDKbM0Tt3TxqxovsFwnz/PwAJHcTw
+Content-Language: en-gb
+X-OriginalArrivalTime: 01 Apr 2011 12:39:05.0815 (UTC) FILETIME=[C9CE1670:01CBF069]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 31 March 2011, Bill Gatliff wrote:
-> On Thu, Mar 31, 2011 at 8:01 AM, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+Thank you guys for your responses,
 
-> > Just look at the removal of AAEC2000, LH7A40x and 2000 lines from the
-> > mach-types file removed 6000 lines, which in itself is about the number
-> > of lines of change submitted during the last merge window for any one
-> > non-ARM architecture.  At this point in time with this complaint, I've
-> > absolutely no idea why I bothered to do that.  I should've left it well
-> > alone and then the diffstat percentage would've been smaller.  After
-> > all, it's "pointless churn".
+To be honest I haven’t looked in detail how RTAI and Xenomai does it but
+AFAIK, they don't give a fixed time slice to Linux either (i.e. they switch
+To Linux only when they have finished with their RT tasks).
+
+A difference between their implementation and mine is that I don't acknowledge
+any Linux interrupt while the RT domain is executed so maybe, if Linux code
+is not smart enough to re-issue a lost interrupt, and if the RT domain takes most
+of CPU time starving Linux, this can cause Linux to crash at some point. 
+
+The idea of not acknowledging Linux interrupts on RT domain is that I don't
+want to add *random* overhead into RT tasks execution.
+
+What do you guys thing?
+
+Kind regards,
+
+John K.
+
+
+-----Original Message-----
+From: Dario Faggioli [mailto:raistlin@linux.it] 
+Sent: Friday, April 01, 2011 9:05 AM
+To: Steven Rostedt
+Cc: limp; linux-kernel@vger.kernel.org
+Subject: Re: Minimum time slice for relaible Linux execution
+
+On Thu, 2011-03-31 at 11:12 -0400, Steven Rostedt wrote: 
+> On Thu, Mar 31, 2011 at 01:13:55PM +0100, limp wrote:
+> > Dear all,
+> > 
+> > I have developed a framework similar to a hypervisor that switches 
+> > between Linux and a RT domain.
+> > As RT priority is of highest importance, I want to give more time to 
+> > the RT domain *but* I also want to give Linux adequate time for 
+> > being able to operate.
+> > 
+> I'm not sure there is any requirement. The only problem I guess that 
+> can happen is if you give such little time that the timer interrupt 
+> can't finish, or that every time you schedule Linux back in, the timer 
+> interrupt goes off and nothing else gets done.
 > 
-> I think you did it because it was the Right Thing To Do.  Even
-> positive change can be painful at times.
-> 
-> The majority is exceedingly grateful for the effort you make.
+Right. Moreover, what you're doing seems very very similar to what these guys do: https://www.rtai.org/ , http://www.xenomai.org/ .
 
-Defintely. I haven't seen anyone in this thread blame Russell for the
-mess. As far as I'm concerned, the code in arch/arm consists of
-the well-maintained {mm,kernel,lib,common,tools,include} directories
-that are actively being taken care of by Russell, and a huge amount
-of crap that has accumulated in mach-* and plat-*. Some of it is
-arguably better than other parts, but the problem is not that someone
-in particular did a bad job writing the code. The problem is that
-nobody today is pushing back hard enough on crap getting added.
+I've never checked if (and if yes how) they do such thing as you're thinking, but maybe they do... Have you already looked at them?
 
-There is a lot of good work going on to reduce the amount of crap in
-the mach code, but my feeling is that it's not keeping up with the
-rate of crap getting added by other people. In some ways, the Linaro
-project has actually made this worse by helping people get their code
-into shape for inclusion (which of course is generally a good thing
-to do).
+Regards,
+Dario
 
-	Arnd
+--
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
+
