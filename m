@@ -1,34 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab1DMTA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 15:00:58 -0400
-Received: from adsl-065-015-252-011.sip.hsv.bellsouth.net ([65.15.252.11]:41422
-	"EHLO globalfiresprinklers.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754362Ab1DMTA5 (ORCPT
+	id S1751049Ab1DAEAM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 00:00:12 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:38084 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab1DAEAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 15:00:57 -0400
-From: "Iztasi" <qizhn@ccuci.com>
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: Ncf Exrzoa
-Date: Wed, 9 Mar 2011 06:52:55 +0800
-X-Mailer: Internet Mail Service (5.5.2650.21)
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-X-Priority: 1
-Message-ID: <W2K3GFSDC001fWoqFXf00000aa5@globalfiresprinklers.com>
-X-OriginalArrivalTime: 08 Mar 2011 22:46:22.0390 (UTC) FILETIME=[A5C83560:01CBDDE2]
-X-TM-AS-Product-Ver: SMEX-7.2.0.1122-6.5.1024-18070.004
-X-TM-AS-Result: No-1.585800-5.000000-31
+	Fri, 1 Apr 2011 00:00:07 -0400
+From: Bill Gatliff <bgat@billgatliff.com>
+To: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
+Cc: Bill Gatliff <bgat@billgatliff.com>
+Subject: [PWM v9 0/3] Implement a generic PWM framework
+Date: Thu, 31 Mar 2011 22:59:49 -0500
+Message-Id: <1301630392-20793-1-git-send-email-bgat@billgatliff.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3DJ1DVj015338
 
-´ó¼ÒºÃ!¬FÎÒ¹«Ë¾éLÆÚÓĞ‡øµØºÌ¶Ò°lÆ±Œ¦Íâ´úé_
+This patch series contains the ninth attempt at implementation of a
+generic PWM device interface framework.  Think gpiolib, but for
+devices and pseudo-devices that generate pulse-wave-modulated outputs.
 
-¼Û¸ñÊÊÖĞ,½^Œ¦°üÕæ,¿Éò×CááÔÙ¸¶¿î!
+Compared to the previous version, this patch series:
 
-ÓĞĞèÒª¿ÉíëŠÖJÔƒ:I359O342I95ÍõÉú
-yipwtayfdbiyfdkjqomtryxecjipntszxwdbiholsrywÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ * Fixes an unbalanced get_device()/put_device()
+
+A git tree containing these patches may be found here:
+
+    http://git.billgatliff.com/pwm.git
+
+
+Regards,
+
+
+b.g.
+
+Bill Gatliff (3):
+  PWM: Implement a generic PWM framework
+  PWM: GPIO+hrtimer device emulation
+  PWM: Atmel PWMC driver
+
+ Documentation/pwm.txt    |  276 ++++++++++++++++++++++
+ MAINTAINERS              |    8 +
+ drivers/Kconfig          |    2 +
+ drivers/Makefile         |    2 +
+ drivers/pwm/Kconfig      |   29 +++
+ drivers/pwm/Makefile     |    7 +
+ drivers/pwm/atmel-pwmc.c |  452 ++++++++++++++++++++++++++++++++++++
+ drivers/pwm/gpio-pwm.c   |  332 ++++++++++++++++++++++++++
+ drivers/pwm/pwm.c        |  580 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pwm/pwm.h  |  143 ++++++++++++
+ 10 files changed, 1831 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/pwm.txt
+ create mode 100644 drivers/pwm/Kconfig
+ create mode 100644 drivers/pwm/Makefile
+ create mode 100644 drivers/pwm/atmel-pwmc.c
+ create mode 100644 drivers/pwm/gpio-pwm.c
+ create mode 100644 drivers/pwm/pwm.c
+ create mode 100644 include/linux/pwm/pwm.h
+
+-- 
+1.7.4.1
+
