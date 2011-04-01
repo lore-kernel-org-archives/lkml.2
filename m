@@ -1,38 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758766Ab1DAS4R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 14:56:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38287 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758051Ab1DAS4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 14:56:17 -0400
-Message-ID: <4D961FBC.2030105@zytor.com>
-Date: Fri, 01 Apr 2011 11:55:56 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1752014Ab1DATBq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 15:01:46 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:43110 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab1DATBo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 15:01:44 -0400
+X-Greylist: delayed 488 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Apr 2011 15:01:44 EDT
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: kernel BUG at mm/slub.c:1193!
+Date: Fri, 1 Apr 2011 20:53:29 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38; KDE/4.6.1; i686; ; )
+Cc: linux-mm@kvack.org
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Michael Leun <lkml20101129@newton.leun.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Mike Pagano <mpagano@gentoo.org>
-Subject: Re: 2.6.38.2 breaks suspend to disk
-References: <20110330203215.0a1a41a7@xenia.leun.net> <20110331090524.07ad0069@xenia.leun.net> <alpine.DEB.2.00.1103311546480.16492@kaball-desktop> <201103312348.53678.rjw@sisk.pl> <4D94FE37.8070109@kernel.org> <alpine.DEB.2.00.1104011230550.16492@kaball-desktop> <4D95F80D.7070201@kernel.org> <4D95FBDD.9050901@zytor.com> <alpine.DEB.2.00.1104011729000.16492@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1104011729000.16492@kaball-desktop>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104012053.30458.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2011 11:14 AM, Stefano Stabellini wrote:
->> Why the heck should we save and restore CR4 only for x86-64?
-> 
-> AFAICT it has always been the case since the beginning of time (Initial
-> git repository build).
+When I tried to create squashfs image my system suprised me with a 
 
-Doesn't change the fact that at least conceptually it's wrong; consider
-bits like NX.  Rafael, do you have any thoughts on this?
+------------[ cut here ]------------
+kernel BUG at mm/slub.c:1193!
+invalid opcode: 0000 [#1] SMP 
+last sysfs file: /sys/devices/virtual/block/loop0/uevent
+CPU 1 
+Modules linked in: ext4 mbcache jbd2 crc16 snd_seq_midi snd_emu10k1_synth 
+snd_emux_synth snd_seq_virmidi snd_seq_midi_emul snd_seq_oss 
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss snd_emu10k1 snd_rawmidi 
+snd_ac97_codec ac97_bus snd_pcm snd_seq_device snd_timer snd_page_alloc 
+snd_util_mem snd_hwdep snd sg ohci_hcd sr_mod 3w_xxxx uhci_hcd sata_sil 
+i2c_amd756 i2c_amd8111 amd64_edac_mod edac_core k8temp hwmon edac_mce_amd
 
-	-hpa
+Pid: 7298, comm: mksquashfs Tainted: G        W   2.6.38.1 #1 To Be Filled By 
+O.E.M. To Be Filled By O.E.M./TYAN Tiger K8W Dual AMD Opteron, S2875
+RIP: 0010:[<ffffffff81098ebb>]  [<ffffffff81098ebb>] new_slab+0x16/0x20e
+RSP: 0000:ffff8800068bd688  EFLAGS: 00010202
+RAX: 0000000000000000 RBX: ffff8800bb30c6c0 RCX: ffff8800068bd6d0
+RDX: 00000000ffffffff RSI: 000000000002011a RDI: ffff8800bb30c6c0
+RBP: ffff8800bb30c6c0 R08: ffff8800bfc97fe8 R09: 0000000000000000
+R10: dead000000200200 R11: dead000000100100 R12: 00000000ffffffff
+R13: 0000000000000010 R14: 00000000ffffffff R15: ffff8800068bd6d0
+FS:  00007f3b6bf06700(0000) GS:ffff8800bfc80000(0000) knlGS:00000000f760fb40
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000002d8b84f CR3: 000000000689a000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process mksquashfs (pid: 7298, threadinfo ffff8800068bc000, task ffff8800bc25a6f0)
+Stack:
+ ffff8800bb30c6c0 000000000002011a 00000000ffffffff 0000000000000010
+ 0000000000000003 ffffffff81099287 0000000000000000 ffffffff811cac77
+ ffff8800b992c038 0000000000000000 ffff8800bb30c6c0 ffff8800bb30c6c0
+Call Trace:
+ [<ffffffff81099287>] ? __slab_alloc+0x1d4/0x2ba
+ [<ffffffff811cac77>] ? alloc_extent_state+0x12/0x55
+ [<ffffffff811cac77>] ? alloc_extent_state+0x12/0x55
+ [<ffffffff810995e6>] ? kmem_cache_alloc+0x5a/0x86
+ [<ffffffff811cac77>] ? alloc_extent_state+0x12/0x55
+ [<ffffffff811cb6cf>] ? clear_extent_bit+0x92/0x31d
+ [<ffffffff811ce572>] ? try_release_extent_state+0x74/0x84
+ [<ffffffff811ac624>] ? btree_releasepage+0x3e/0x76
+ [<ffffffff81073939>] ? shrink_page_list+0x32d/0x4d6
+ [<ffffffff81073ec4>] ? shrink_inactive_list+0x1d4/0x2ab
+ [<ffffffff8102ae1e>] ? enqueue_task_fair+0x14a/0x167
+ [<ffffffff8107450a>] ? shrink_zone+0x2ec/0x3da
+ [<ffffffff81074924>] ? try_to_free_pages+0xf6/0x2f2
+ [<ffffffff8106f0ec>] ? __alloc_pages_nodemask+0x4b2/0x71a
+ [<ffffffff810706aa>] ? __do_page_cache_readahead+0x96/0x1b5
+ [<ffffffff81070a8e>] ? ra_submit+0x1c/0x23
+ [<ffffffff81070cba>] ? page_cache_async_readahead+0x7b/0xaa
+ [<ffffffff81068d8f>] ? find_get_page+0x18/0x69
+ [<ffffffff81069fc3>] ? generic_file_aio_read+0x2a0/0x5b0
+ [<ffffffff8118d791>] ? xfs_file_aio_read+0x1b3/0x209
+ [<ffffffff8107faf1>] ? handle_pte_fault+0x23f/0x665
+ [<ffffffff810a08ab>] ? do_sync_read+0xb1/0xea
+ [<ffffffff810801d6>] ? handle_mm_fault+0x1dd/0x24c
+ [<ffffffff81225846>] ? __percpu_counter_add+0x30/0x4f
+ [<ffffffff81084ba4>] ? do_brk+0x278/0x2cb
+ [<ffffffff810a0eb4>] ? vfs_read+0xac/0x126
+ [<ffffffff810a0f73>] ? sys_read+0x45/0x6e
+ [<ffffffff81001f3b>] ? system_call_fastpath+0x16/0x1b
+Code: c0 74 0b 48 83 c4 08 48 89 ef 5b 5d ff e0 48 83 c4 08 5b 5d c3 41 56 f7 
+c6 06 00 80 ff 41 89 d6 41 55 41 54 55 48 89 fd 53 74 02 <0f> 0b 41 89 f4 4c 8b 
+6f 20 41 81 e4 f0 1e 07 00 44 0b 67 38 4c 
+RIP  [<ffffffff81098ebb>] new_slab+0x16/0x20e
+ RSP <ffff8800068bd688>
+---[ end trace 56d1588e41a62ee3 ]---
+
+The system was idle except for the mksquashfs process. If more infos are 
+needed please tell me.
+
+regards,
+  Johannes
