@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab1DAHuY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 03:50:24 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43521 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755193Ab1DAHuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 03:50:23 -0400
-Date: Fri, 1 Apr 2011 09:50:11 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Len Brown <lenb@kernel.org>
-Cc: Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
-        maciej.rutecki@gmail.com, rjw@sisk.pl, sedat.dilek@gmail.com,
-        stable@kernel.org, #.34+@schatten.dmk.lab
-Subject: Re: [PATCH v2] x86, ioapic: Skip looking for ioapic overrides when
- ioapics are not present
-Message-ID: <20110401075011.GD7594@elte.hu>
-References: <20110331084342.GA30105@elte.hu>
- <1301621025-3858-1-git-send-email-florian@mickler.org>
- <20110401062006.GC32378@elte.hu>
- <alpine.LFD.2.02.1104010245290.2797@x980>
+	id S1752555Ab1DAH5E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 03:57:04 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35050 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab1DAH5C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 03:57:02 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: balbir@linux.vnet.ibm.com
+Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
+        akpm@linux-foundation.org, npiggin@kernel.dk, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+In-Reply-To: <20110331082813.GN2879@balbir.in.ibm.com>
+References: <20110331144145.0ECA.A69D9226@jp.fujitsu.com> <20110331082813.GN2879@balbir.in.ibm.com>
+Message-Id: <20110401165752.A889.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1104010245290.2797@x980>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Fri,  1 Apr 2011 16:56:57 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
-* Len Brown <lenb@kernel.org> wrote:
-
+> > 1) zone reclaim doesn't work if the system has multiple node and the
+> >    workload is file cache oriented (eg file server, web server, mail server, et al). 
+> >    because zone recliam make some much free pages than zone->pages_min and
+> >    then new page cache request consume nearest node memory and then it
+> >    bring next zone reclaim. Then, memory utilization is reduced and
+> >    unnecessary LRU discard is increased dramatically.
+> > 
+> >    SGI folks added CPUSET specific solution in past. (cpuset.memory_spread_page)
+> >    But global recliam still have its issue. zone recliam is HPC workload specific 
+> >    feature and HPC folks has no motivation to don't use CPUSET.
 > 
-> > > --- a/arch/x86/kernel/apic/io_apic.c
-> > > +++ b/arch/x86/kernel/apic/io_apic.c
-> > > @@ -3789,6 +3789,10 @@ int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
-> > >  {
-> > >  	int ioapic, pin, idx;
-> > >  
-> > > +#ifdef CONFIG_ACPI
-> > > +	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
-> > > +		return -1;
-> > > +#endif
+> I am afraid you misread the patches and the intent. The intent to
+> explictly enable control of unmapped pages and has nothing
+> specifically to do with multiple nodes at this point. The control is
+> system wide and carefully enabled by the administrator.
+
+Hm. OK, I may misread.
+Can you please explain the reason why de-duplication feature need to selectable and
+disabled by defaut. "explicity enable" mean this feature want to spot corner case issue??
+
+
+> > 2) Before 2.6.27, VM has only one LRU and calc_reclaim_mapped() is used to
+> >    decide to filter out mapped pages. It made a lot of problems for DB servers
+> >    and large application servers. Because, if the system has a lot of mapped
+> >    pages, 1) LRU was churned and then reclaim algorithm become lotree one. 2)
+> >    reclaim latency become terribly slow and hangup detectors misdetect its
+> >    state and start to force reboot. That was big problem of RHEL5 based banking
+> >    system.
+> >    So, sc->may_unmap should be killed in future. Don't increase uses.
 > > 
-> > That #ifdef is very ugly. Please introduce a suitable helper function in 
-> > arch/x86/include/asm/acpi.h - acpi_irq_ioapic_model() or so, which could be 
-> > used like this:
-> > 
-> > 	if (!acpi_irq_ioapic_model())
-> > 		return -1;
-> > 
-> > And would be defined in the !CONFIG_ACPI case as well.
 > 
-> It would be better to compile _none_ of acpi_get_override_irq() for !ACPI.
+> Can you remove sc->may_unmap without removing zone_reclaim()? The LRU
+> churn can be addressed at the time of isolation, I'll send out an
+> incremental patch for that.
 
-Yeah, agreed - so just move the function into acpi.c and provide an inline stub 
-in acpi.h for the !ACPI case.
+At least, I don't plan to do it. because current zone_reclaim() works good on SGI
+HPC workload and uncareful change can lead to break them. In other word, they 
+understand their workloads are HPC specific and they understand they do how.
 
-Note: find_irq_entry() would have to be exported from io_apic.c in this case, 
-renamed to ioapic_find_irq_entry() or so - and a stub provided for the !IO_APIC 
-case.
+I'm worry about to spread out zone_reclaim() usage _without_ removing its assumption.
+I wrote following by last mail.
 
-Thanks,
+> In other words, you have to kill following three for getting ack 1) zone 
+> reclaim oriented reclaim 2) filter based LRU scanning (eg sc->may_unmap)
+> 3) fastpath overhead. 
 
-	Ingo
+But another ways is there, probably. If you can improve zone_reclaim() for more generic
+workload and fitting so so much people, I'll ack this.
+
+Thanks.
+
+
