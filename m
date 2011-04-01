@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab1DANWL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:22:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12105 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874Ab1DANWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 09:22:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,282,1299484800"; 
-   d="scan'208";a="727926654"
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-In-Reply-To: <1301655903.4859.494.camel@twins>
-References: <1301391136.14111.98.camel@minggr.sh.intel.com>
-	 <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost>
-	 <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop>
-	 <1301418533.2250.419.camel@laptop>
-	 <20110329174556.GC24129@ghostprotocols.net> <4D92818A.8020405@hitachi.com>
-	 <1301561155.14111.288.camel@minggr.sh.intel.com>
-	 <1301580117.4859.286.camel@twins>  <1301582056.2271.15.camel@localhost>
-	 <1301588922.2250.498.camel@laptop>  <4D95AC94.1080303@hitachi.com>
-	 <1301655903.4859.494.camel@twins>
+	id S1755669Ab1DANcJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 09:32:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:47208 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab1DANcI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 09:32:08 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=4ay608aMGH4A:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=-N8UvQ2GvdtjTz83sZ8A:9 a=QEXdDO2ut3YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: RE: Minimum time slice for relaible Linux execution
+From: Steven Rostedt <rostedt@goodmis.org>
+To: limp <johnkyr83@hotmail.com>
+Cc: "'Dario Faggioli'" <raistlin@linux.it>, linux-kernel@vger.kernel.org
+In-Reply-To: <SNT111-DS223A836C90F9E0C2A8AB07A7BE0@phx.gbl>
+References: <SNT111-DS16E628E3B6501DBCF9E19CA7BF0@phx.gbl>
+	 <20110331151214.GB14441@home.goodmis.org>
+	 <1301645110.4331.17.camel@Palantir>
+	 <SNT111-DS223A836C90F9E0C2A8AB07A7BE0@phx.gbl>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Apr 2011 21:22:10 +0800
-Message-Id: <1301664130.2399.10.camel@localhost>
+Date: Fri, 01 Apr 2011 09:32:04 -0400
+Message-ID: <1301664724.2160.5.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 19:05 +0800, Peter Zijlstra wrote:
-> On Fri, 2011-04-01 at 19:44 +0900, Masami Hiramatsu wrote:
-> > E.g. an indirect jump makes it hard to find where it jumps to.
+On Fri, 2011-04-01 at 13:39 +0100, limp wrote:
+> Thank you guys for your responses,
 > 
-> Yes indirect jumps are 'interesting', is there anything in the debug
-> info that will help us out with the possible target sites?
+> To be honest I haven’t looked in detail how RTAI and Xenomai does it but
+> AFAIK, they don't give a fixed time slice to Linux either (i.e. they switch
+> To Linux only when they have finished with their RT tasks).
+
+Perhaps you should look into more detail, maybe they do more than you
+expect. Honestly, I haven't looked into detail of what they do either,
+so I can not comment on how they work.
+
 > 
-> Also what generates indirect jumps, switch() stmts? Indirect function
-> call that get optimized might also be, but hopefully DWARF would tell us
-> about that and allow us to know the state right after the jump.
+> A difference between their implementation and mine is that I don't acknowledge
+> any Linux interrupt while the RT domain is executed so maybe, if Linux code
+> is not smart enough to re-issue a lost interrupt, and if the RT domain takes most
+> of CPU time starving Linux, this can cause Linux to crash at some point. 
 
-I'm not sure.
+What exactly do you mean by not acknowledging Linux interrupts? If an
+interrupt takes place while an RT domain is running, you simply drop it?
+Yes that will break things. How will Linux know to reissue an interrupt
+for a network packet coming in if it never knew it happened?
 
-But I'm thinking another way to trace the register assignment by LBR
-records.
+If your microkernel stores off the interrupt and reissues it to Linux
+when Linux gets a chance to run again, then everything would work.
+That's pretty much what the virtualization code does.
 
-LBR will introduce overhead, but it can tell us all the branches,
-including the indirect jump.
+> 
+> The idea of not acknowledging Linux interrupts on RT domain is that I don't
+> want to add *random* overhead into RT tasks execution.
+
+Or do you simply mask the interrupts that the RT domain does not care
+about when the RT domain runs? This should work as when you unmask them
+they should trigger, and then you can pass it to the Linux irq handlers.
+
+-- Steve
 
 
