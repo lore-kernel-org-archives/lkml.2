@@ -1,155 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab1DAXFn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 19:05:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23089 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab1DAXFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 19:05:42 -0400
-Message-ID: <4D965A08.2080203@kernel.org>
-Date: Fri, 01 Apr 2011 16:04:40 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1754722Ab1DAXLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 19:11:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59581 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751011Ab1DAXLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 19:11:21 -0400
+Message-ID: <4D965B7B.9070208@redhat.com>
+Date: Fri, 01 Apr 2011 19:10:51 -0400
+From: Satoru Moriya <smoriya@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ingo Molnar <mingo@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Michael Leun <lkml20101129@newton.leun.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Mike Pagano <mpagano@gentoo.org>
-Subject: Re: 2.6.38.2 breaks suspend to disk
-References: <20110330203215.0a1a41a7@xenia.leun.net>	<20110331090524.07ad0069@xenia.leun.net>	<alpine.DEB.2.00.1103311546480.16492@kaball-desktop>	<201103312348.53678.rjw@sisk.pl>	<4D94FE37.8070109@kernel.org>	<alpine.DEB.2.00.1104011230550.16492@kaball-desktop>	<4D95F80D.7070201@kernel.org>	<4D95FBDD.9050901@zytor.com>	<alpine.DEB.2.00.1104011729000.16492@kaball-desktop>	<4D961FBC.2030105@zytor.com>	<4D962837.2070300@kernel.org>	<4D96294B.5050909@zytor.com>	<4D962D72.2010501@kernel.org>	<4D9633E7.1010707@zytor.com>	<AANLkTi=VzMh84szSBNujVU8oLZfzQd_z2bg+O3K_8GMd@mail.gmail.com>	<4D9643F1.1090807@zytor.com> <AANLkTimd22epcYvZRrvP5p3CzArpnR3To_mKCjdKKuf8@mail.gmail.com> <4D9646C6.7060301@zytor.com>
-In-Reply-To: <4D9646C6.7060301@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Christoph Lameter <cl@linux.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
+References: <20110331144145.0ECA.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1103311451530.28364@router.home> <20110401221921.A890.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20110401221921.A890.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D965A1A.0041,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2011 02:42 PM, H. Peter Anvin wrote:
->
-> And why on Earth is it worth saving a couple of instructions (and
-> introducing code ugliness and a more complex testing matrix) in the case
-> when it is not?
+On 04/01/2011 09:17 AM, KOSAKI Motohiro wrote:
+> Hi Christoph,
+> 
+> Thanks, long explanation.
+> 
+> 
+>> On Thu, 31 Mar 2011, KOSAKI Motohiro wrote:
+>>
+>>> 1) zone reclaim doesn't work if the system has multiple node and the
+>>>    workload is file cache oriented (eg file server, web server, mail server, et al).
+>>>    because zone recliam make some much free pages than zone->pages_min and
+>>>    then new page cache request consume nearest node memory and then it
+>>>    bring next zone reclaim. Then, memory utilization is reduced and
+>>>    unnecessary LRU discard is increased dramatically.
+>>
+>> That is only true if the webserver only allocates from a single node. If
+>> the allocation load is balanced then it will be fine. It is useful to
+>> reclaim pages from the node where we allocate memory since that keeps the
+>> dataset node local.
+> 
+> Why?
+> Scheduler load balancing only consider cpu load. Then, usually memory
+> pressure is no complete symmetric. That's the reason why we got the
+> bug report periodically.
 
-Please check this one, it moves storing mmu_cr4 to arch_prepare_suspend.
+Agreed. As Christoph said if the allocation load is balanced it will be fine.
+But I think it's not always true that the allocation load is balanced.
 
-Thanks
+>>> But, I agree that now we have to concern slightly large VM change parhaps
+>>> (or parhaps not). Ok, it's good opportunity to fill out some thing.
+>>> Historically, Linux MM has "free memory are waste memory" policy, and It
+>>> worked completely fine. But now we have a few exceptions.
+>>>
+>>> 1) RT, embedded and finance systems. They really hope to avoid reclaim
+>>>    latency (ie avoid foreground reclaim completely) and they can accept
+>>>    to make slightly much free pages before memory shortage.
+>>
+>> In general we need a mechanism to ensure we can avoid reclaim during
+>> critical sections of application. So some way to give some hints to the
+>> machine to free up lots of memory (/proc/sys/vm/dropcaches is far too
+>> drastic) may be useful.
+> 
+> Exactly.
+> I've heard multiple times this request from finance people. And I've also 
+> heared the same request from bullet train control software people recently.
 
-Yinghai
+I completely agree with you. I have both customers and they really need it
+to make their critical section deterministic.
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-[PATCH -v5] x86: Save cr4 to mmu_cr4_features at boot time
-
-Save cr4 to mmu_cr4_features at boot time
-
-Michael reported 2.6.38.2 hibernation is broken by one backported patch.
-it cause a freeze when resuming from hibernation
-
-| "x86: Cleanup highmap after brk is concluded"
-| commit id e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e.
-
-it turns out the mmu_cr4 save it lost somehow.
-
--v3: read back cr4 for 32bit too according to HPA
--v4: use cpuid_level to check if we can read cr4 according to HPA
-      don't touch mmu_cr4_features if CONFIG_HIBERNATION is defined from Yinghai
--v5: reduce the using of CONFIG_HIBERNATION
-
-Bisected-and-tested-by: Michael Leun <lkml20101129@newton.leun.net>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
-  arch/x86/include/asm/processor.h  |    2 --
-  arch/x86/include/asm/suspend_32.h |    2 +-
-  arch/x86/include/asm/suspend_64.h |    5 +----
-  arch/x86/kernel/setup.c           |   16 +++++++++++++++-
-  4 files changed, 17 insertions(+), 8 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/setup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup.c
-+++ linux-2.6/arch/x86/kernel/setup.c
-@@ -212,12 +212,26 @@ struct cpuinfo_x86 boot_cpu_data __read_
-  EXPORT_SYMBOL(boot_cpu_data);
-  #endif
-  
--
-+/*
-+ * mmu_cr4_features has two purposes:
-+ *  a. head_32.S will access cr4 according if X86_CR4_PAE is set in it.
-+ *  b. store read back cr4 for hibernation
-+ */
-  #if !defined(CONFIG_X86_PAE) || defined(CONFIG_X86_64)
-  unsigned long mmu_cr4_features;
-  #else
-  unsigned long mmu_cr4_features = X86_CR4_PAE;
-  #endif
-+#ifdef CONFIG_HIBERNATION
-+int arch_prepare_suspend(void)
-+{
-+	/* a CPU has CR4 iff it has CPUID --- hpa */
-+	if (boot_cpu_data.cpuid_level >= 0)
-+		mmu_cr4_features = read_cr4();
-+
-+	return 0;
-+}
-+#endif
-  
-  /* Boot loader ID and version as integers, for the benefit of proc_dointvec */
-  int bootloader_type, bootloader_version;
-Index: linux-2.6/arch/x86/include/asm/processor.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/processor.h
-+++ linux-2.6/arch/x86/include/asm/processor.h
-@@ -601,7 +601,6 @@ static inline void set_in_cr4(unsigned l
-  {
-  	unsigned long cr4;
-  
--	mmu_cr4_features |= mask;
-  	cr4 = read_cr4();
-  	cr4 |= mask;
-  	write_cr4(cr4);
-@@ -611,7 +610,6 @@ static inline void clear_in_cr4(unsigned
-  {
-  	unsigned long cr4;
-  
--	mmu_cr4_features &= ~mask;
-  	cr4 = read_cr4();
-  	cr4 &= ~mask;
-  	write_cr4(cr4);
-Index: linux-2.6/arch/x86/include/asm/suspend_32.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/suspend_32.h
-+++ linux-2.6/arch/x86/include/asm/suspend_32.h
-@@ -9,7 +9,7 @@
-  #include <asm/desc.h>
-  #include <asm/i387.h>
-  
--static inline int arch_prepare_suspend(void) { return 0; }
-+int arch_prepare_suspend(void);
-  
-  /* image of the saved processor state */
-  struct saved_context {
-Index: linux-2.6/arch/x86/include/asm/suspend_64.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/suspend_64.h
-+++ linux-2.6/arch/x86/include/asm/suspend_64.h
-@@ -9,10 +9,7 @@
-  #include <asm/desc.h>
-  #include <asm/i387.h>
-  
--static inline int arch_prepare_suspend(void)
--{
--	return 0;
--}
-+int arch_prepare_suspend(void);
-  
-  /*
-   * Image of the saved processor state, used by the low level ACPI suspend to
+Thanks,
+Satoru
