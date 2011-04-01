@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab1DALFi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 07:05:38 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58687 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755746Ab1DALFh convert rfc822-to-8bit (ORCPT
+	id S1755800Ab1DALIS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 07:08:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33013 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab1DALIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 07:05:37 -0400
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-From: Peter Zijlstra <peterz@infradead.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-In-Reply-To: <4D95AC94.1080303@hitachi.com>
-References: <1301391136.14111.98.camel@minggr.sh.intel.com>
-	 <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost>
-	 <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop>
-	 <1301418533.2250.419.camel@laptop>
-	 <20110329174556.GC24129@ghostprotocols.net> <4D92818A.8020405@hitachi.com>
-	 <1301561155.14111.288.camel@minggr.sh.intel.com>
-	 <1301580117.4859.286.camel@twins>  <1301582056.2271.15.camel@localhost>
-	 <1301588922.2250.498.camel@laptop>  <4D95AC94.1080303@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 01 Apr 2011 13:05:03 +0200
-Message-ID: <1301655903.4859.494.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 1 Apr 2011 07:08:17 -0400
+From: Jamie Iles <jamie@jamieiles.com>
+To: linux-kernel@vger.kernel.org
+Cc: johnstul@us.ibm.com, tglx@linutronix.de, jacob.jun.pan@linux.intel.com,
+        Jamie Iles <jamie@jamieiles.com>
+Subject: [RFC PATCH 0/2] Permit reuse of APB timers on other platforms
+Date: Fri,  1 Apr 2011 12:08:09 +0100
+Message-Id: <1301656091-1284-1-git-send-email-jamie@jamieiles.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 19:44 +0900, Masami Hiramatsu wrote:
-> E.g. an indirect jump makes it hard to find where it jumps to.
+These patches allow the APB timers to be used by platforms other than
+x86.  The first patch moves the actual timer handling and
+clocksource/clock_event_device abstraction into drivers/clocksource and
+converts x86 to use this.  The second patch adds a platform_driver to
+allow other systems to use them.
 
-Yes indirect jumps are 'interesting', is there anything in the debug
-info that will help us out with the possible target sites?
+I've tested these on an ARM platform with NO_HZ but I don't have an x86
+platform with these timers that I can test them on so that's just
+compile tested.
 
-Also what generates indirect jumps, switch() stmts? Indirect function
-call that get optimized might also be, but hopefully DWARF would tell us
-about that and allow us to know the state right after the jump.
+Jamie Iles (2):
+  x86, mrst: share APB timer code with other platforms
+  clocksource: platform driver for APB timers
+
+ arch/x86/Kconfig                            |    1 +
+ arch/x86/include/asm/apb_timer.h            |   22 +--
+ arch/x86/kernel/apb_timer.c                 |  401 ++++-----------------------
+ drivers/Kconfig                             |    2 +
+ drivers/clocksource/Kconfig                 |   11 +
+ drivers/clocksource/Makefile                |    2 +
+ drivers/clocksource/dw_apb_timer.c          |  291 +++++++++++++++++++
+ drivers/clocksource/dw_apb_timer_platform.c |  173 ++++++++++++
+ include/linux/dw_apb_timer.h                |  122 ++++++++
+ 9 files changed, 662 insertions(+), 363 deletions(-)
+ create mode 100644 drivers/clocksource/Kconfig
+ create mode 100644 drivers/clocksource/dw_apb_timer.c
+ create mode 100644 drivers/clocksource/dw_apb_timer_platform.c
+ create mode 100644 include/linux/dw_apb_timer.h
+
+-- 
+1.7.4
+
