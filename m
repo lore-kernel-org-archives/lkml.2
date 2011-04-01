@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab1DAKsX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 06:48:23 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56030 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755442Ab1DAKsV (ORCPT
+	id S1755602Ab1DAKxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 06:53:54 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55462 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754268Ab1DAKxx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 06:48:21 -0400
-X-AuditID: b753bd60-a16f5ba000000ee4-f3-4d95ad6eaf5f
-X-AuditID: b753bd60-a16f5ba000000ee4-f3-4d95ad6eaf5f
-Message-ID: <4D95AD68.6030500@hitachi.com>
-Date: Fri, 01 Apr 2011 19:48:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-Subject: Re: [RFC PATCH] perf report: add sort by file lines
-References: <1301391136.14111.98.camel@minggr.sh.intel.com>	 <1301392457.4859.74.camel@twins> <1301417155.3620.8.camel@localhost>	 <1301418183.2250.416.camel@laptop> <1301418404.2250.417.camel@laptop>	 <1301418533.2250.419.camel@laptop>	 <20110329174556.GC24129@ghostprotocols.net>  <4D92818A.8020405@hitachi.com> <1301554645.14111.215.camel@minggr.sh.intel.com>
-In-Reply-To: <1301554645.14111.215.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 1 Apr 2011 06:53:53 -0400
+Subject: Re: [RFC] [PATCH] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <4D94EF4B.6070905@gmail.com>
+References: <4D94EF4B.6070905@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 01 Apr 2011 12:53:14 +0200
+Message-ID: <1301655194.4859.479.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/03/31 15:57), Lin Ming wrote:
->> So that what we need is a kind of the reverse compiler which generates
->> intermediate code (a sequence of register assignments) from
->> instruction code. That's not impossible task, but just hard and fun. :)
->> For that purpose, we'll need an instruction decoder and an evaluator
->> which allows us to trace the sequence of address dereferences.
+On Fri, 2011-04-01 at 01:16 +0400, Cyrill Gorcunov wrote:
+> Because of Netburst HW restriction we can't move events arbitrary
+> between counters and this makes 'perf top' unable to run if nmi-watchdog
+> is running (since both uses PERF_COUNT_HW_CPU_CYCLES but such event is
+> bound to run on a few counters only). So as a workaround we could count that named
+> non-sleeping ticks (as oprofile does) and both perf top and nmi-watchdog would co-exsist
+> without conflicts but kernel needs to know about such specifics -- so PERF_COUNT_HW_NMI_WATCHDOG
+> event is introduced. This event is an alias of PERF_COUNT_HW_CPU_CYCLES for non-P4 x86
+> architecture so nothing much changed I think.
 > 
-> I may borrow code from objdump to decode instruction.
-> But not sure about the instruction evaluator, any hints?
+> Please review, I might be missing something. Also comments on idea is quite welcome since
+> it touches ABI part.
 
-I think using objdump is a fast path to make it.
-But since we already have a decoder(insn.c) and an evaluator like code (in kvm)
-inside the kernel, we'd better reuse it in user space tools too :)
 
-Thank you,
+>  arch/x86/kernel/cpu/perf_event_amd.c   |    1 +
+>  arch/x86/kernel/cpu/perf_event_intel.c |    1 +
+>  arch/x86/kernel/cpu/perf_event_p4.c    |   15 +++++++++++++++
+>  arch/x86/kernel/cpu/perf_event_p6.c    |    1 +
+>  include/linux/perf_event.h             |    1 +
+>  kernel/watchdog.c                      |    2 +-
+>  6 files changed, 20 insertions(+), 1 deletions(-)
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+is x86 the only arch using the watchdog things?
