@@ -1,71 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab1DANRw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 09:17:52 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38371 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab1DANRv (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 1 Apr 2011 09:17:51 -0400
-Date: Fri, 1 Apr 2011 09:17:13 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Merge window closed - 2.6.39-rc1 out
-Message-ID: <20110401131713.GA16734@dumpdata.com>
-References: <AANLkTikwbY5mm10ZWg7B6XeSBkZXFqKcYVZfJCi2QGx_@mail.gmail.com>
- <20110330120151.GA23358@infradead.org>
- <20110330144359.GA16430@dumpdata.com>
- <20110330222909.GA26174@infradead.org>
+	id S1755218Ab1DANSG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 09:18:06 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41251 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754304Ab1DANSD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 09:18:03 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
+Cc: kosaki.motohiro@jp.fujitsu.com, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1103311451530.28364@router.home>
+References: <20110331144145.0ECA.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1103311451530.28364@router.home>
+Message-Id: <20110401221921.A890.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110330222909.GA26174@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D95D05C.0122:SCFSTAT5015188,ss=1,fgs=0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Fri,  1 Apr 2011 22:17:56 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 06:29:09PM -0400, Christoph Hellwig wrote:
->  (1) it still has the totally stupid interface of a global dispatch table.
->      Either it does make sense to have different providers, in which
->      case you want the dispatch table on a per-superblock or whatever
->      granularity, or you really want just one and can have static calls
->      into it, and get rid of this whole layer
->  (2) it still requires totally pointless calls from local filesystem to
->      initialize a pool ID.  The filesystem really should not need to
->      care about any of this.
+Hi Christoph,
 
-Thank you for taking a look at the patches. I think what you are saying
-is that the opt-in interface (where only those fs that want it) are using,
-is not proper. It should be in for everybody? Hmm.. let me ponder this.
+Thanks, long explanation.
 
->  (3) it's still lacking a good user submitted with it.  And with that
->      I don't mean junk code shoved into staging where it's bitrotting.
 
-I think when one takes user cases and try to use one type of matrix (say,
-how many customers are using it) but use another (how many enterprise
-clients are clamoring for it) you get drastically different numbers.
-
-If you just use one ruler to evaluate acceptance, then maybe
-unicore32 (just one company), or ILO (small community compared to SCST)
-should have not been merged b/c of that? But if you think of other
-acceptance rules then it makes sense.
-
+> On Thu, 31 Mar 2011, KOSAKI Motohiro wrote:
 > 
-> It also has an entirely new bug, in that it assumes every inode has
-> a dentry on the alias list.  Did you only ever test this with filesystem
-> that do not have export operations?  Otherwise the no-dentry case should
-> be fairly trivial to trigger due the placement of the hooks.
-
-Aha! Thank you for spotting that. Dan did post a patch for this:
-https://lkml.org/lkml/2011/3/3/291
-
-And he should have pulled it in his tree <sigh> Will ask him to create
-a branch with this bug-fix.
+> > 1) zone reclaim doesn't work if the system has multiple node and the
+> >    workload is file cache oriented (eg file server, web server, mail server, et al).
+> >    because zone recliam make some much free pages than zone->pages_min and
+> >    then new page cache request consume nearest node memory and then it
+> >    bring next zone reclaim. Then, memory utilization is reduced and
+> >    unnecessary LRU discard is increased dramatically.
 > 
-> And of course there's still no convincing use case for all of this.
+> That is only true if the webserver only allocates from a single node. If
+> the allocation load is balanced then it will be fine. It is useful to
+> reclaim pages from the node where we allocate memory since that keeps the
+> dataset node local.
+
+Why?
+Scheduler load balancing only consider cpu load. Then, usually memory
+pressure is no complete symmetric. That's the reason why we got the
+bug report periodically.
+
+
+> >    SGI folks added CPUSET specific solution in past. (cpuset.memory_spread_page)
+> >    But global recliam still have its issue. zone recliam is HPC workload specific
+> >    feature and HPC folks has no motivation to don't use CPUSET.
+> 
+> The spreading can also be done via memory policies. But that is only
+> required if the application has an unbalanced allocation behavior.
+
+??
+I didin't talking about memory isolation. CPUSETS has a backdoor of memory
+isolation for file cache. But global allocation/reclaim doesn't.
+
+memory policy is for application specific behavior customization. If all
+of application required the same memory policy customization, it's bad and
+unpractical. Application developer know application behavior but don't know
+machine configuration and system administrator is opposite. then, for application
+tuning feature can't alternative system's one.
+
+
+> > 2) Before 2.6.27, VM has only one LRU and calc_reclaim_mapped() is used to
+> >    decide to filter out mapped pages. It made a lot of problems for DB servers
+> >    and large application servers. Because, if the system has a lot of mapped
+> >    pages, 1) LRU was churned and then reclaim algorithm become lotree one. 2)
+> >    reclaim latency become terribly slow and hangup detectors misdetect its
+> >    state and start to force reboot. That was big problem of RHEL5 based banking
+> >    system.
+> >    So, sc->may_unmap should be killed in future. Don't increase uses.
+> 
+> Because a bank could not configure its system properly we need to get rid
+> of may_unmap? Maybe raise min_unmapped_ratio instead and take care that
+> either the allocation load is balanced or a round robin scheme is
+> used by the app?
+
+Hmm..
+I and you seems to talk different topic. I didn't talk about zone reclaim here. 
+I did explain why filter based selective page reclaim may cause disaster. And
+you seems to talk about zone_reclaim() customization tips.
+
+Firstly, If we don't think this patch and if we are using zone_reclaim,
+raising min_unmapped_ratio is a option. I agree. search is alywas problematic 
+beucase it's no scale. But we have some workarounds and we used them so.
+
+Secondly, If we think this patch, "by the app" is no option. We can't
+hold any specific assumption of workloads on VM guest in general.
+
+
+> > And, this patch introduce new allocator fast path overhead. I haven't seen
+> > any justification for it.
+> 
+> We could do the triggering differently.
+
+ok.
+and, I'd like to put supplimental explanation. If the feature is widely used one,
+I don't put objection fastpath thing. It should be compared cost vs benefit fairly.
+but If the feature is for only a few person, I strongly hope to avoid fastpath
+overhead. number of people is one of most big considerable componet of a benefit.
+
+
+
+> > In other words, you have to kill following three for getting ack 1) zone
+> > reclaim oriented reclaim 2) filter based LRU scanning (eg sc->may_unmap)
+> > 3) fastpath overhead. In other words, If you want a feature for vm guest,
+> > Any hardcoded machine configration assumption and/or workload assumption
+> > are wrong.
+> 
+> It would be good if you could come up with a new reclaim scheme that
+> avoids the need for zone reclaim and still allows one to take advantage of
+> memory distances. I agree that the current scheme sometimes requires
+> tuning too many esoteric knobs to get useful behavior.
+
+To be honest, I hope to sort out balbir and virtulization people requirements
+at first. I feel his [patch 0/3] explanation and the implementaion are not
+exactly match. I'm worry about it.
+
+btw, when we are talking about memory distance aware reclaim, we have to
+recognize traditional numa (ie external node interconnect) and on-chip
+numa have different performance characteristics. on-chip remote node access
+is not so slow, then elaborated nearest node allocation effort doesn't have
+so much worth. especially, a workload use a lot of short lived object.
+Current zone-reclaim don't have so much issue when using traditiona numa
+because it's fit your original design and assumption and administrators of
+such systems have good skill and don't hesitate to learn esoteric knobs.
+But recent on-chip and cheap numa are used for much different people against
+past. therefore new issues and claims were raised. 
+
+
+
+> > But, I agree that now we have to concern slightly large VM change parhaps
+> > (or parhaps not). Ok, it's good opportunity to fill out some thing.
+> > Historically, Linux MM has "free memory are waste memory" policy, and It
+> > worked completely fine. But now we have a few exceptions.
+> >
+> > 1) RT, embedded and finance systems. They really hope to avoid reclaim
+> >    latency (ie avoid foreground reclaim completely) and they can accept
+> >    to make slightly much free pages before memory shortage.
+> 
+> In general we need a mechanism to ensure we can avoid reclaim during
+> critical sections of application. So some way to give some hints to the
+> machine to free up lots of memory (/proc/sys/vm/dropcaches is far too
+> drastic) may be useful.
+
+Exactly.
+I've heard multiple times this request from finance people. And I've also 
+heared the same request from bullet train control software people recently.
+
+
+
