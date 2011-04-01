@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab1DAOTt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:19:49 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64020 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781Ab1DAOTs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:19:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=FOhwcwchjilLGpBfTLaqeqflVE9c1sbdbHj6JuZ+Yy6akIY3dHwlroains072n/7nW
-         tvMpLl7TCxOfcpdN//FXAfX7u66lZHMkNzZCRkVi9bzNUtcawxry3UiJld9ZjlzF7+ST
-         XGhNy8T1lKlghyudekVDiybs0gGxQdeNLivxc=
-MIME-Version: 1.0
-In-Reply-To: <SNT111-DS16E628E3B6501DBCF9E19CA7BF0@phx.gbl>
-References: <SNT111-DS16E628E3B6501DBCF9E19CA7BF0@phx.gbl>
-From: Rafael Fernandez <rafaelefernandez@gmail.com>
-Date: Fri, 1 Apr 2011 09:19:28 -0500
-Message-ID: <BANLkTimpKhzHsZFSVrsZckfDQZ2GFwN1kw@mail.gmail.com>
-Subject: Re: Minimum time slice for relaible Linux execution
-To: limp <johnkyr83@hotmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757087Ab1DAOYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:24:04 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35660 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813Ab1DAOYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 10:24:01 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 6/6] drivers/video/bfin-lq035q1-fb.c: introduce missing kfree
+Date: Fri,  1 Apr 2011 16:23:47 +0200
+Message-Id: <1301667827-20056-6-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Error handling code following a kmalloc should free the allocated data.
 
-This is pretty interesting to me. How would your framework handle an
-RT application that does quite a bit of I/O? Does it block and go to
-Linux, get serviced, and come back?
+The semantic match that finds the problem is as follows:
+(http://www.emn.fr/x-info/coccinelle/)
 
-Thank you,
-Rafael
+// <smpl>
+@r exists@
+local idexpression x;
+statement S;
+expression E;
+identifier f,f1,l;
+position p1,p2;
+expression *ptr != NULL;
+@@
 
-On Thu, Mar 31, 2011 at 7:13 AM, limp <johnkyr83@hotmail.com> wrote:
-> Dear all,
->
-> I have developed a framework similar to a hypervisor that switches between
-> Linux and a RT domain.
-> As RT priority is of highest importance, I want to give more time to the RT
-> domain *but* I also want to give Linux adequate time for being able to
-> operate.
->
-> Could anyone advise me on how to determine the minimum possible time slice
-> that I can give to Linux so that it doesn't crash?
->
-> That is, if I periodically execute my RT domain every ms and then I switch
-> to Linux, what's the minimum time that should be given to Linux, until the
-> next RT domain execution?
->
-> NOTE: The RT domain and Linux are not executed concurrently, i.e. the RT
-> domain is executed first and then Linux executes until the next RT domain
-> execution.
->
-> Thank you all in advance.
->
-> John K.
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+x@p1 = \(kmalloc\|kzalloc\|kcalloc\)(...);
+...
+if (x == NULL) S
+<... when != x
+     when != if (...) { <+...x...+> }
+(
+x->f1 = E
+|
+ (x->f1 == NULL || ...)
+|
+ f(...,x->f1,...)
+)
+...>
+(
+ return \(0\|<+...x...+>\|ptr\);
+|
+ return@p2 ...;
+)
+
+@script:python@
+p1 << r.p1;
+p2 << r.p2;
+@@
+
+print "* file: %s kmalloc %s return %s" % (p1[0].file,p1[0].line,p2[0].line)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/video/bfin-lq035q1-fb.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/video/bfin-lq035q1-fb.c b/drivers/video/bfin-lq035q1-fb.c
+index c8e1f04..23b6c4b 100644
+--- a/drivers/video/bfin-lq035q1-fb.c
++++ b/drivers/video/bfin-lq035q1-fb.c
+@@ -154,8 +154,10 @@ static int __devinit lq035q1_spidev_probe(struct spi_device *spi)
+ 
+ 	ret = lq035q1_control(spi, LQ035_SHUT_CTL, LQ035_ON);
+ 	ret |= lq035q1_control(spi, LQ035_DRIVER_OUTPUT_CTL, ctl->mode);
+-	if (ret)
++	if (ret) {
++		kfree(ctl);
+ 		return ret;
++	}
+ 
+ 	spi_set_drvdata(spi, ctl);
+ 
+
