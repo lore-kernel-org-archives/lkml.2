@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758200Ab1DAQRn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 12:17:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46829 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab1DAQRm (ORCPT
+	id S932218Ab1DAQV0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 12:21:26 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35304 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab1DAQVZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 12:17:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=ZF7RBWcvwnm+q0Ome241inUMuSWpVAoLsFgJQhBIvK2X3yGja6WKx0uAOtfXbutQWh
-         TVGO3PDf5bs6B+3CVI9Ixi5ukysWBp+JY3265b2JWiDtn/E6cwZI3ZZcKfO4BlxZjdKU
-         MjalDkBAbWLXTYErtnhvkRiRloik5BOjrsQkw=
-Date: Fri, 1 Apr 2011 18:17:35 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, security@kernel.org
-Subject: [PATCH] ntp, security: fix non privileged system time shifting
-Message-ID: <20110401161735.GA459@riccoc20.at.omicron.at>
+	Fri, 1 Apr 2011 12:21:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
+References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
+	<AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
+	<AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
+	<alpine.LSU.2.00.1103182158200.18771@sister.anvils>
+	<BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
+	<AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
+Date: Fri, 1 Apr 2011 18:21:23 +0200
+Message-ID: <BANLkTim3x=1n+F7yD-euY0=RhmyXViUamg@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Michel Lespinasse <walken@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ADJ_SETOFFSET bit added in commit 094aa188 also introduced a way for
-any user to change the system time. Sneaky or buggy calls to adjtimex()
-could set
+On Fri, Apr 1, 2011 at 5:44 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Apr 1, 2011 at 7:34 AM, Robert Święcki <robert@swiecki.net> wrote:
+>>
+>> Hey, I'll apply your patch and check it out. In the meantime I
+>> triggered another Oops (NULL-ptr deref via sys_mprotect).
+>>
+>> The oops is here:
+>>
+>> http://alt.swiecki.net/linux_kernel/sys_mprotect-2.6.38.txt
+>
+> That's not a NULL pointer dereference. That's a BUG_ON().
+>
+> And for some reason you've turned off the BUG_ON() messages, saving
+> some tiny amount of memory.
 
-    ADJ_OFFSET_SS_READ | ADJ_SETOFFSET
+Is it possible to turn it off via config flags? Looking into
+arch/x86/include/asm/bug.h it seems it's unconditional (as in "it
+always manifests itself somehow") and I have
+CONFIG_DEBUG_BUGVERBOSE=y.
 
-which would result in a successful call to timekeeping_inject_offset().
-This patch fixes the issue by adding the capability check.
+This BUG/Oopps was triggered before I applied Hugh's patch on a vanilla kernel.
 
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
----
- kernel/time/ntp.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Anything that could help you debugging this? Uploading kernel image
+(unfortunately I've overwritten this one), dumping more kgdb data? I
+must admit I'm not up-to-date with current linux kernel debugging
+techniques. The kernel config is here:
+http://alt.swiecki.net/linux_kernel/ise-test-2.6.38-kernel-config.txt
 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 35e68e3..5e65fd5 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -652,6 +652,8 @@ int do_adjtimex(struct timex *txc)
- 		struct timespec delta;
- 		delta.tv_sec  = txc->time.tv_sec;
- 		delta.tv_nsec = txc->time.tv_usec;
-+		if (!capable(CAP_SYS_TIME))
-+			return -EPERM;
- 		if (!(txc->modes & ADJ_NANO))
- 			delta.tv_nsec *= 1000;
- 		result = timekeeping_inject_offset(&delta);
+For now I'll compile with -O0 -fno-inline (are you sure you'd like -Os?)
+
+> Anyway, it looks like the first BUG_ON() in vma_prio_tree_add(), so it
+> would be this one:
+>
+>        BUG_ON(RADIX_INDEX(vma) != RADIX_INDEX(old));
+>
+> but it is possible that gcc has shuffled things around (so it _might_
+> be the HEAP_INDEX() one). If you had CONFIG_DEBUG_BUGVERBOSE=y, you'd
+> get a filename and line number. One reason I hate -O2 in cases like
+> this is that the basic block movement makes it way harder to actually
+> debug things. I would suggest using -Os too (CONFIG_OPTIMIZE_FOR_SIZE
+> or whatever it's called).
+>
+> Anyway, I do find it worrying. The vma code shouldn't be this fragile.  Hugh?
+>
+> I do wonder what triggers this. Is it a huge-page vma? We seem to be
+> lacking the check to see that mprotect() is on a hugepage boundary -
+> and that seems bogus. Or am I missing some check? The new transparent
+> hugepage support splits the page, but what if it's a _static_ hugepage
+> thing?
+>
+> But why would that affect the radix_index thing? I have no idea. I'd
+> like to blame the anon_vma rewrites last year, but I can't see why
+> that should matter either. Again, hugepages had some special rules, I
+> think (and that would explain why nobody normal sees this).
+>
+> Guys, please give this one a look.
+>
+>                          Linus
+>
+
+
+
 -- 
-1.7.0.4
-
+Robert Święcki
