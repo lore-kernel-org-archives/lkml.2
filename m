@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab1DARb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 13:31:58 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:38724 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757973Ab1DARb5 (ORCPT
+	id S1752339Ab1DARjF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 13:39:05 -0400
+Received: from saarni.dnainternet.net ([83.102.40.136]:46837 "EHLO
+	saarni.dnainternet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab1DARjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 13:31:57 -0400
-Date: Fri, 1 Apr 2011 23:01:45 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, npiggin@kernel.dk, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        cl@linux.com, kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
-Message-ID: <20110401173145.GT2879@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20110330052819.8212.1359.stgit@localhost6.localdomain6>
- <20110330163607.0984b831.akpm@linux-foundation.org>
- <20110331052703.GJ2879@balbir.in.ibm.com>
- <20110330223231.e1f149eb.akpm@linux-foundation.org>
+	Fri, 1 Apr 2011 13:39:03 -0400
+X-Greylist: delayed 511 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Apr 2011 13:39:03 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -1.44
+Message-ID: <4D960BAA.3020700@iki.fi>
+Date: Fri, 01 Apr 2011 20:30:18 +0300
+From: Anssi Hannula <anssi.hannula@iki.fi>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101214 Mandriva/3.1.7-1mdv2011.0 (2011.0) Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110330223231.e1f149eb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Andrea Gelmini <andrea.gelmini@gmail.com>, linux-acpi@vger.kernel.org,
+        axel.lin@gmail.com, trenn@suse.de, len.brown@intel.com,
+        error27@gmail.com, malattia@linux.it, linux-kernel@vger.kernel.org
+Subject: Re: Regression 2.6.39-rc1 for sony-laptop
+References: <AANLkTi=1xtjEZc2C1=W-v2oYbvvcGH9k_DGGXvJ8=swq@mail.gmail.com> <20110401172241.GA26851@srcf.ucam.org>
+In-Reply-To: <20110401172241.GA26851@srcf.ucam.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andrew Morton <akpm@linux-foundation.org> [2011-03-30 22:32:31]:
-
-> On Thu, 31 Mar 2011 10:57:03 +0530 Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+On 01.04.2011 20:22, Matthew Garrett wrote:
+> On Fri, Apr 01, 2011 at 07:16:43PM +0200, Andrea Gelmini wrote:
 > 
-> > * Andrew Morton <akpm@linux-foundation.org> [2011-03-30 16:36:07]:
-> > 
-> > > On Wed, 30 Mar 2011 11:00:26 +0530
-> > > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > Data from the previous patchsets can be found at
-> > > > https://lkml.org/lkml/2010/11/30/79
-> > > 
-> > > It would be nice if the data for the current patchset was present in
-> > > the current patchset's changelog!
-> > >
-> > 
-> > Sure, since there were no major changes, I put in a URL. The main
-> > change was the documentation update. 
+>> Git bisect blames this commit:
 > 
-> Well some poor schmuck has to copy and paste the data into the
-> changelog so it's still there in five years time.  It's better to carry
-> this info around in the patch's own metedata, and to maintain
-> and update it.
->
+> Pretty convinced that git bisect's got that wrong, given that it doesn't 
+> touch any Sony code. I'll take a look at the Sony patches, thanks for 
+> the report!
 
-Agreed, will do. 
+The same issue was posted yesterday on platform-driver-x86@ as "NULL
+pointer dereference in sony-laptop" by Alessandro Guido, with a
+preliminary patch from Mattia Dongili:
+
+http://thread.gmane.org/gmane.linux.drivers.platform.x86.devel/1720
 
 -- 
-	Three Cheers,
-	Balbir
+Anssi Hannula
