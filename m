@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252Ab1DAGXp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 02:23:45 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60389 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753613Ab1DAGXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 02:23:44 -0400
-Date: Fri, 1 Apr 2011 08:23:38 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        lkml20101129@newton.leun.net
-Subject: Re: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
-Message-ID: <20110401062338.GA6434@elte.hu>
-References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754427Ab1DAGYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 02:24:00 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61781 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753568Ab1DAGX6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 02:23:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Clwu3Rm4JZsfK8aN7dVwkJbKnCPpbb8dJvUGrUnmEkx/4xNReYpKOGeA4+au/ctv/L
+         r1Uqq4nDitMrNl57dCAyTnb3+FZLzt20HBX7PUrq15PrOCtaJdYa5AztNNUmFH40sgzd
+         TxLsaLfBLXsjUIx/7ebFp2kKCQxg6pc0MKGaY=
+From: Liu Yuan <namei.unix@gmail.com>
+To: Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org (open list:NETEFFECT IWARP R...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] drivers/infiniband: Add a check for strict_strtoul()
+Date: Fri,  1 Apr 2011 14:23:49 +0800
+Message-Id: <1301639029-15251-1-git-send-email-namei.unix@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Liu Yuan <tailai.ly@taobao.com>
 
-* Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+It should check if strict_strtoul() succeeds before using
+'wqm_quanta_value'.
 
-> Save cr4 to mmu_cr4_features at boot time
-> 
-> This patch fixes a freeze when resuming from hibernation, introduced by
-> "x86: Cleanup highmap after brk is concluded", commit id
-> e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e.
-> This patch should be backported to all the stable tree where the
-> offending commit is present.
+Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
+---
+ drivers/infiniband/hw/nes/nes.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-No, the offending commit should be reverted from -stable. It's not at all clear 
-yet why this fix patch helps.
+diff --git a/drivers/infiniband/hw/nes/nes.c b/drivers/infiniband/hw/nes/nes.c
+index 13de119..119d60d 100644
+--- a/drivers/infiniband/hw/nes/nes.c
++++ b/drivers/infiniband/hw/nes/nes.c
+@@ -1138,7 +1138,9 @@ static ssize_t nes_store_wqm_quanta(struct device_driver *ddp,
+ 	u32 i = 0;
+ 	struct nes_device *nesdev;
+ 
+-	strict_strtoul(buf, 0, &wqm_quanta_value);
++	if (strict_strtoul(buf, 0, &wqm_quanta_value) < 0)
++		return -EINVAL;
++
+ 	list_for_each_entry(nesdev, &nes_dev_list, list) {
+ 		if (i == ee_flsh_adapter) {
+ 			nesdev->nesadapter->wqm_quanta = wqm_quanta_value;
+-- 
+1.7.1
 
-Thanks,
-
-	Ingo
