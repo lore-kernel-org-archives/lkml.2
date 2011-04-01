@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab1DAVDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 17:03:45 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:36093 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab1DAVDn (ORCPT
+	id S1755486Ab1DAVKM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 17:10:12 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:56218 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753383Ab1DAVKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 17:03:43 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Simon Budig <simon@budig.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH resend] hid-magicmouse: Increase evdev buffer size
-Date: Fri,  1 Apr 2011 17:03:39 -0400
-Message-Id: <1301691819-2090-1-git-send-email-chase.douglas@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 1 Apr 2011 17:10:10 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Detlef Vollmann <dv@vollmann.ch>, Ingo Molnar <mingo@elte.hu>,
+        david@lang.hm, "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Organization: Texas Instruments, Inc.
+References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
+	<201104011554.07924.arnd@arndb.de> <4D95E112.4020400@vollmann.ch>
+	<201104011659.40443.arnd@arndb.de>
+Date: Fri, 01 Apr 2011 14:10:04 -0700
+In-Reply-To: <201104011659.40443.arnd@arndb.de> (Arnd Bergmann's message of
+	"Fri, 1 Apr 2011 16:59:40 +0200")
+Message-ID: <87vcyxllub.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The evdev buffer isn't big enough when you get many fingers on the
-device. Bump up the buffer to a reasonable size, matching what other
-multitouch devices use. Without this change, events may be discarded in
-the evdev buffer before they are read.
+Arnd Bergmann <arnd@arndb.de> writes:
 
-Reported-by: Simon Budig <simon@budig.de>
-Cc: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: stable@kernel.org
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
----
-Forgot to Cc the mailing lists on the first send.
+> On Friday 01 April 2011, Detlef Vollmann wrote:
+>> On 04/01/11 15:54, Arnd Bergmann wrote:
+>
+>> > 9. All interesting work is going into a handful of platforms, all of which
+>> >     are ARMv7 based.
+>> Define interesting.
+>
+> The ones that are causing the churn that we're talking about.
+> Platforms that have been working forever and only need to get
+> the occasional bug fix are boring, i.e. not the problem.
 
- drivers/hid/hid-magicmouse.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+I'm not sure I follow the ARMv7-only thinking either.  
 
-diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-index 698e645..404dcbc 100644
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -418,6 +418,8 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
- 			input_set_abs_params(input, ABS_MT_POSITION_Y, -2456,
- 				2565, 4, 0);
- 		}
-+
-+		input_set_events_per_packet(input, 60);
- 	}
- 
- 	if (report_undeciphered) {
--- 
-1.7.4.1
+Picking ARMv7 only would be a good way to avoid part of the problem, but
+IMO, it doesn't really address the root causes.  Part of the ugliness of
+the platform-specific hackery (and the "churn" to clean some of it up)
+is precisely due to support for multiple ARM architecture versions, and
+the various SoCs in a family that use them.  For example, linux-omap
+supports OMAP1 (ARMv5), OMAP2 (ARMv6), OMAP3 (ARMv7) and OMAP4 (ARMv7
+SMP), and OMAP2/3/4 in a single binary.
 
+Also, since we've only very recently got to the point of being able to
+support ARMv6 + ARMv7 UP & SMP in the same kernel, making a decision now
+that only ARMv7 is important seems like a step backwards.  If the
+ultimate goal is getting to a point where we have infrastrucure that can
+be cross-SoC, surely this same infrastrucure should support multiple ARM
+architecture revisions.
+
+The kernel is only part of many open-source projects, and many of these
+projects are still using older hardware because it's cheap, available
+and hackable.  Supporting ARMv7 only might be a win for those selling
+new hardware, but not necessarily a win for the broader open-source
+community.
+
+Kevin (obviously not speaking for my new employer)
