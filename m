@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab1DAGlW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 02:41:22 -0400
+	id S1754863Ab1DAGle (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 02:41:34 -0400
 Received: from mail-gw0-f46.google.com ([74.125.83.46]:45590 "EHLO
 	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754633Ab1DAGlT (ORCPT
+	with ESMTP id S1754633Ab1DAGlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 02:41:19 -0400
+	Fri, 1 Apr 2011 02:41:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=oPsnwxmz0EJZmoLQT3rMnCPsNe5I8uBnttFJAw2LnBQg+COmy1vYwE6uoDfRXfWG2D
-         rX9DTHZiYDtjISxIH/UOH6khQIm/NInLSThekfwGjRDFyCnsr51ifoKgWU8tcwpcD6Va
-         y5FDA7YKNUAJ/vQC98iGTxYgaoQKT8vsCs37I=
+        b=hWyaBmPasSyMT3QrlFpPurR0S+11WvnvIhdHUCuzq6uLR/ARI/WRZ/MKC6r8Z10avd
+         n4XZrA9Ax3T+G0BT4C2nUOH3flBtj/pARuVH60sOqyOYz0JXyIIOY3tolfNqfdC922pD
+         Ph/2dXmBCvurDGb8f6ZCOEp+FxcR0JQuH1Efo=
 From: "Cho, Yu-Chen" <acho@novell.com>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, segooon@gmail.com, huajun.li.lee@gmail.com,
         kkatuev@gmail.com, devel@driverdev.osuosl.org, jlee@novell.com,
         acho@novell.com
-Subject: [PATCH 1/5] staging/keucr: init use pr_<level> for messages
-Date: Fri,  1 Apr 2011 14:38:39 +0800
-Message-Id: <76f478d6f68cb72cc615e380ba595514c4e10da7.1301638704.git.acho@novell.com>
+Subject: [PATCH 3/5] staging/keucr: scsiglue use pr_<level> for messages
+Date: Fri,  1 Apr 2011 14:38:41 +0800
+Message-Id: <39c9fd8f54b4942e5106d310c1b0c3e0abc6a99a.1301638704.git.acho@novell.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1301638704.git.acho@novell.com>
 References: <cover.1301638704.git.acho@novell.com>
@@ -31,281 +31,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-init.c use pr_<level> for messages
+scsiglue.c use pr_<level> for messages
 
 Signed-off-by: Cho, Yu-Chen <acho@novell.com>
 ---
- drivers/staging/keucr/init.c |   95 ++++++++++++++++++++---------------------
- 1 files changed, 46 insertions(+), 49 deletions(-)
+ drivers/staging/keucr/scsiglue.c |   35 +++++++++++++++++++----------------
+ 1 files changed, 19 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/staging/keucr/init.c b/drivers/staging/keucr/init.c
-index 5c01f28..0727de8 100644
---- a/drivers/staging/keucr/init.c
-+++ b/drivers/staging/keucr/init.c
+diff --git a/drivers/staging/keucr/scsiglue.c b/drivers/staging/keucr/scsiglue.c
+index da4f42a..5e35d94 100644
+--- a/drivers/staging/keucr/scsiglue.c
++++ b/drivers/staging/keucr/scsiglue.c
 @@ -1,3 +1,5 @@
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
- #include <linux/sched.h>
- #include <linux/errno.h>
  #include <linux/slab.h>
-@@ -22,13 +24,13 @@ int ENE_InitMedia(struct us_data *us)
- 	int	result;
- 	BYTE	MiscReg03 = 0;
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+@@ -16,7 +18,7 @@
+ //----- host_info() ---------------------
+ static const char* host_info(struct Scsi_Host *host)
+ {
+-	//printk("scsiglue --- host_info\n");
++	/* pr_info("scsiglue --- host_info\n"); */
+ 	return "SCSI emulation for USB Mass Storage devices";
+ }
  
--	printk(KERN_INFO "--- Init Media ---\n");
-+	pr_info("--- Init Media ---\n");
- 	result = ENE_Read_BYTE(us, REG_CARD_STATUS, &MiscReg03);
- 	if (result != USB_STOR_XFER_GOOD) {
--		printk(KERN_ERR "Read register fail !!\n");
-+		pr_err("Read register fail !!\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
--	printk(KERN_INFO "MiscReg03 = %x\n", MiscReg03);
-+	pr_info("MiscReg03 = %x\n", MiscReg03);
+@@ -25,7 +27,7 @@ static int slave_alloc(struct scsi_device *sdev)
+ {
+ 	struct us_data *us = host_to_us(sdev->host);
  
- 	if (MiscReg03 & 0x02) {
- 		if (!us->SM_Status.Ready && !us->MS_Status.Ready) {
-@@ -74,10 +76,10 @@ int ENE_MSInit(struct us_data *us)
- 	BYTE	buf[0x200];
- 	WORD	MSP_BlockSize, MSP_UserAreaBlocks;
+-	//printk("scsiglue --- slave_alloc\n");
++	/* pr_info("scsiglue --- slave_alloc\n"); */
+ 	sdev->inquiry_len = 36;
  
--	printk(KERN_INFO "transport --- ENE_MSInit\n");
-+	pr_info("transport --- ENE_MSInit\n");
- 	result = ENE_LoadBinCode(us, MS_INIT_PATTERN);
- 	if (result != USB_STOR_XFER_GOOD) {
--		printk(KERN_ERR "Load MS Init Code Fail !!\n");
-+		pr_err("Load MS Init Code Fail !!\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
+ 	blk_queue_update_dma_alignment(sdev->request_queue, (512 - 1));
+@@ -41,7 +43,7 @@ static int slave_configure(struct scsi_device *sdev)
+ {
+ 	struct us_data *us = host_to_us(sdev->host);
  
-@@ -90,18 +92,18 @@ int ENE_MSInit(struct us_data *us)
+-	//printk("scsiglue --- slave_configure\n");
++	/* pr_info("scsiglue --- slave_configure\n"); */
+ 	if (us->fflags & (US_FL_MAX_SECTORS_64 | US_FL_MAX_SECTORS_MIN))
+ 	{
+ 		unsigned int max_sectors = 64;
+@@ -91,19 +93,20 @@ static int queuecommand_lck(struct scsi_cmnd *srb, void (*done)(struct scsi_cmnd
+ {
+ 	struct us_data *us = host_to_us(srb->device->host);
  
- 	result = ENE_SendScsiCmd(us, FDIR_READ, &buf, 0);
- 	if (result != USB_STOR_XFER_GOOD) {
--		printk(KERN_ERR "Exection MS Init Code Fail !!\n");
-+		pr_err("Exection MS Init Code Fail !!\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
+-	//printk("scsiglue --- queuecommand\n");
++	/* pr_info("scsiglue --- queuecommand\n"); */
  
- 	us->MS_Status = *(PMS_STATUS)&buf[0];
- 
- 	if (us->MS_Status.Insert && us->MS_Status.Ready) {
--		printk(KERN_INFO "Insert     = %x\n", us->MS_Status.Insert);
--		printk(KERN_INFO "Ready      = %x\n", us->MS_Status.Ready);
--		printk(KERN_INFO "IsMSPro    = %x\n", us->MS_Status.IsMSPro);
--		printk(KERN_INFO "IsMSPHG    = %x\n", us->MS_Status.IsMSPHG);
--		printk(KERN_INFO "WtP        = %x\n", us->MS_Status.WtP);
-+		pr_info("Insert     = %x\n", us->MS_Status.Insert);
-+		pr_info("Ready      = %x\n", us->MS_Status.Ready);
-+		pr_info("IsMSPro    = %x\n", us->MS_Status.IsMSPro);
-+		pr_info("IsMSPHG    = %x\n", us->MS_Status.IsMSPHG);
-+		pr_info("WtP        = %x\n", us->MS_Status.WtP);
- 		if (us->MS_Status.IsMSPro) {
- 			MSP_BlockSize      = (buf[6] << 8) | buf[7];
- 			MSP_UserAreaBlocks = (buf[10] << 8) | buf[11];
-@@ -109,9 +111,9 @@ int ENE_MSInit(struct us_data *us)
- 		} else {
- 			MS_CardInit(us);
- 		}
--		printk(KERN_INFO "MS Init Code OK !!\n");
-+		pr_info("MS Init Code OK !!\n");
- 	} else {
--		printk(KERN_INFO "MS Card Not Ready --- %x\n", buf[0]);
-+		pr_info("MS Card Not Ready --- %x\n", buf[0]);
- 		return USB_STOR_TRANSPORT_ERROR;
+ 	/* check for state-transition errors */
+ 	if (us->srb != NULL)
+ 	{
+-		printk("Error in %s: us->srb = %p\n", __FUNCTION__, us->srb);
++		/* pr_info("Error in %s: us->srb = %p\n"
++				 __FUNCTION__, us->srb); */
+ 		return SCSI_MLQUEUE_HOST_BUSY;
  	}
  
-@@ -127,11 +129,11 @@ int ENE_SMInit(struct us_data *us)
- 	int	result;
- 	BYTE	buf[0x200];
+ 	/* fail the command if we are disconnecting */
+ 	if (test_bit(US_FLIDX_DISCONNECTING, &us->dflags))
+ 	{
+-		printk("Fail command during disconnect\n");
++		pr_info("Fail command during disconnect\n");
+ 		srb->result = DID_NO_CONNECT << 16;
+ 		done(srb);
+ 		return 0;
+@@ -129,7 +132,7 @@ static int command_abort(struct scsi_cmnd *srb)
+ {
+ 	struct us_data *us = host_to_us(srb->device->host);
  
--	printk(KERN_INFO "transport --- ENE_SMInit\n");
-+	pr_info("transport --- ENE_SMInit\n");
+-	//printk("scsiglue --- command_abort\n");
++	/* pr_info("scsiglue --- command_abort\n"); */
  
- 	result = ENE_LoadBinCode(us, SM_INIT_PATTERN);
- 	if (result != USB_STOR_XFER_GOOD) {
--		printk(KERN_INFO "Load SM Init Code Fail !!\n");
-+		pr_info("Load SM Init Code Fail !!\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
-@@ -144,8 +146,7 @@ int ENE_SMInit(struct us_data *us)
- 
- 	result = ENE_SendScsiCmd(us, FDIR_READ, &buf, 0);
- 	if (result != USB_STOR_XFER_GOOD) {
--		printk(KERN_ERR
--		       "Exection SM Init Code Fail !! result = %x\n", result);
-+		pr_err("Exection SM Init Code Fail !! result = %x\n", result);
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
-@@ -155,15 +156,15 @@ int ENE_SMInit(struct us_data *us)
- 	us->SM_CardID   = buf[2];
- 
- 	if (us->SM_Status.Insert && us->SM_Status.Ready) {
--		printk(KERN_INFO "Insert     = %x\n", us->SM_Status.Insert);
--		printk(KERN_INFO "Ready      = %x\n", us->SM_Status.Ready);
--		printk(KERN_INFO "WtP        = %x\n", us->SM_Status.WtP);
--		printk(KERN_INFO "DeviceID   = %x\n", us->SM_DeviceID);
--		printk(KERN_INFO "CardID     = %x\n", us->SM_CardID);
-+		pr_info("Insert     = %x\n", us->SM_Status.Insert);
-+		pr_info("Ready      = %x\n", us->SM_Status.Ready);
-+		pr_info("WtP        = %x\n", us->SM_Status.WtP);
-+		pr_info("DeviceID   = %x\n", us->SM_DeviceID);
-+		pr_info("CardID     = %x\n", us->SM_CardID);
- 		MediaChange = 1;
- 		Check_D_MediaFmt(us);
- 	} else {
--		printk(KERN_ERR "SM Card Not Ready --- %x\n", buf[0]);
-+		pr_err("SM Card Not Ready --- %x\n", buf[0]);
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
-@@ -180,7 +181,7 @@ int ENE_LoadBinCode(struct us_data *us, BYTE flag)
- 	/* void *buf; */
- 	PBYTE buf;
- 
--	/* printk(KERN_INFO "transport --- ENE_LoadBinCode\n"); */
-+	/* pr_info("transport --- ENE_LoadBinCode\n"); */
- 	if (us->BIN_FLAG == flag)
- 		return USB_STOR_TRANSPORT_GOOD;
- 
-@@ -190,24 +191,24 @@ int ENE_LoadBinCode(struct us_data *us, BYTE flag)
- 	switch (flag) {
- 	/* For MS */
- 	case MS_INIT_PATTERN:
--		printk(KERN_INFO "MS_INIT_PATTERN\n");
-+		pr_info("MS_INIT_PATTERN\n");
- 		memcpy(buf, MS_Init, 0x800);
- 		break;
- 	case MSP_RW_PATTERN:
--		printk(KERN_INFO "MSP_RW_PATTERN\n");
-+		pr_info("MSP_RW_PATTERN\n");
- 		memcpy(buf, MSP_Rdwr, 0x800);
- 		break;
- 	case MS_RW_PATTERN:
--		printk(KERN_INFO "MS_RW_PATTERN\n");
-+		pr_info("MS_RW_PATTERN\n");
- 		memcpy(buf, MS_Rdwr, 0x800);
- 		break;
- 	/* For SS */
- 	case SM_INIT_PATTERN:
--		printk(KERN_INFO "SM_INIT_PATTERN\n");
-+		pr_info("SM_INIT_PATTERN\n");
- 		memcpy(buf, SM_Init, 0x800);
- 		break;
- 	case SM_RW_PATTERN:
--		printk(KERN_INFO "SM_RW_PATTERN\n");
-+		pr_info("SM_RW_PATTERN\n");
- 		memcpy(buf, SM_Rdwr, 0x800);
- 		break;
- 	}
-@@ -238,12 +239,12 @@ int ENE_SendScsiCmd(struct us_data *us, BYTE fDir, void *buf, int use_sg)
- 		     cswlen = 0, partial = 0;
- 	unsigned int residue;
- 
--	/* printk(KERN_INFO "transport --- ENE_SendScsiCmd\n"); */
-+	/* pr_info("transport --- ENE_SendScsiCmd\n"); */
- 	/* send cmd to out endpoint */
- 	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe,
- 					    bcb, US_BULK_CB_WRAP_LEN, NULL);
- 	if (result != USB_STOR_XFER_GOOD) {
--		printk(KERN_ERR "send cmd to out endpoint fail ---\n");
-+		pr_err("send cmd to out endpoint fail ---\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
-@@ -262,7 +263,7 @@ int ENE_SendScsiCmd(struct us_data *us, BYTE fDir, void *buf, int use_sg)
- 			result = usb_stor_bulk_transfer_sg(us, pipe, buf,
- 						transfer_length, 0, &partial);
- 		if (result != USB_STOR_XFER_GOOD) {
--			printk(KERN_ERR "data transfer fail ---\n");
-+			pr_err("data transfer fail ---\n");
- 			return USB_STOR_TRANSPORT_ERROR;
- 		}
- 	}
-@@ -272,14 +273,14 @@ int ENE_SendScsiCmd(struct us_data *us, BYTE fDir, void *buf, int use_sg)
- 						US_BULK_CS_WRAP_LEN, &cswlen);
- 
- 	if (result == USB_STOR_XFER_SHORT && cswlen == 0) {
--		printk(KERN_WARNING "Received 0-length CSW; retrying...\n");
-+		pr_warning("Received 0-length CSW; retrying...\n");
- 		result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe,
- 					bcs, US_BULK_CS_WRAP_LEN, &cswlen);
- 	}
- 
- 	if (result == USB_STOR_XFER_STALLED) {
- 		/* get the status again */
--		printk(KERN_WARNING "Attempting to get CSW (2nd try)...\n");
-+		pr_warning("Attempting to get CSW (2nd try)...\n");
- 		result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe,
- 						bcs, US_BULK_CS_WRAP_LEN, NULL);
- 	}
-@@ -316,7 +317,7 @@ int ENE_Read_Data(struct us_data *us, void *buf, unsigned int length)
- 	struct bulk_cs_wrap *bcs = (struct bulk_cs_wrap *) us->iobuf;
+ 	scsi_lock(us_to_host(us));
+ 	if (us->srb != srb)
+@@ -159,7 +162,7 @@ static int device_reset(struct scsi_cmnd *srb)
+ 	struct us_data *us = host_to_us(srb->device->host);
  	int result;
  
--	/* printk(KERN_INFO "transport --- ENE_Read_Data\n"); */
-+	/* pr_info("transport --- ENE_Read_Data\n"); */
- 	/* set up the command wrapper */
- 	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
- 	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-@@ -358,7 +359,7 @@ int ENE_Write_Data(struct us_data *us, void *buf, unsigned int length)
- 	struct bulk_cs_wrap *bcs = (struct bulk_cs_wrap *) us->iobuf;
+-	//printk("scsiglue --- device_reset\n");
++	/* pr_info("scsiglue --- device_reset\n"); */
+ 
+ 	/* lock the device pointers and do the reset */
+ 	mutex_lock(&(us->dev_mutex));
+@@ -175,7 +178,7 @@ static int bus_reset(struct scsi_cmnd *srb)
+ 	struct us_data *us = host_to_us(srb->device->host);
  	int result;
  
--	/* printk("transport --- ENE_Write_Data\n"); */
-+	/* pr_info("transport --- ENE_Write_Data\n"); */
- 	/* set up the command wrapper */
- 	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
- 	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-@@ -406,37 +407,33 @@ void usb_stor_print_cmd(struct scsi_cmnd *srb)
+-	//printk("scsiglue --- bus_reset\n");
++	/* pr_info("scsiglue --- bus_reset\n"); */
+ 	result = usb_stor_port_reset(us);
+ 	return result < 0 ? FAILED : SUCCESS;
+ }
+@@ -186,7 +189,7 @@ void usb_stor_report_device_reset(struct us_data *us)
+ 	int i;
+ 	struct Scsi_Host *host = us_to_host(us);
  
- 	switch (cmd) {
- 	case TEST_UNIT_READY:
--		/* printk(KERN_INFO
--			 "scsi cmd %X --- SCSIOP_TEST_UNIT_READY\n", cmd); */
-+		/* pr_info("scsi cmd %X --- SCSIOP_TEST_UNIT_READY\n", cmd); */
- 		break;
- 	case INQUIRY:
--		printk(KERN_INFO "scsi cmd %X --- SCSIOP_INQUIRY\n", cmd);
-+		pr_info("scsi cmd %X --- SCSIOP_INQUIRY\n", cmd);
- 		break;
- 	case MODE_SENSE:
--		printk(KERN_INFO "scsi cmd %X --- SCSIOP_MODE_SENSE\n", cmd);
-+		pr_info("scsi cmd %X --- SCSIOP_MODE_SENSE\n", cmd);
- 		break;
- 	case START_STOP:
--		printk(KERN_INFO "scsi cmd %X --- SCSIOP_START_STOP\n", cmd);
-+		pr_info("scsi cmd %X --- SCSIOP_START_STOP\n", cmd);
- 		break;
- 	case READ_CAPACITY:
--		printk(KERN_INFO "scsi cmd %X --- SCSIOP_READ_CAPACITY\n", cmd);
-+		pr_info("scsi cmd %X --- SCSIOP_READ_CAPACITY\n", cmd);
- 		break;
- 	case READ_10:
--		/*  printk(KERN_INFO
--			   "scsi cmd %X --- SCSIOP_READ,bn = %X, blen = %X\n"
-+		/*  pr_info("scsi cmd %X --- SCSIOP_READ,bn = %X, blen = %X\n"
- 			   ,cmd, bn, blen); */
- 		break;
- 	case WRITE_10:
--		/* printk(KERN_INFO
--			  "scsi cmd %X --- SCSIOP_WRITE,
-+		/* pr_ifno("scsi cmd %X --- SCSIOP_WRITE,
- 			  bn = %X, blen = %X\n" , cmd, bn, blen); */
- 		break;
- 	case ALLOW_MEDIUM_REMOVAL:
--		printk(KERN_INFO
--			"scsi cmd %X --- SCSIOP_ALLOW_MEDIUM_REMOVAL\n", cmd);
-+		pr_info("scsi cmd %X --- SCSIOP_ALLOW_MEDIUM_REMOVAL\n", cmd);
- 		break;
- 	default:
--		printk(KERN_INFO "scsi cmd %X --- Other cmd\n", cmd);
-+		pr_info("scsi cmd %X --- Other cmd\n", cmd);
- 		break;
- 	}
- 	bn = 0;
+-	//printk("scsiglue --- usb_stor_report_device_reset\n");
++	/* pr_info("scsiglue --- usb_stor_report_device_reset\n"); */
+ 	scsi_report_device_reset(host, 0, 0);
+ 	if (us->fflags & US_FL_SCM_MULT_TARG)
+ 	{
+@@ -200,7 +203,7 @@ void usb_stor_report_bus_reset(struct us_data *us)
+ {
+ 	struct Scsi_Host *host = us_to_host(us);
+ 
+-	//printk("scsiglue --- usb_stor_report_bus_reset\n");
++	/* pr_info("scsiglue --- usb_stor_report_bus_reset\n"); */
+ 	scsi_lock(host);
+ 	scsi_report_bus_reset(host, 0);
+ 	scsi_unlock(host);
+@@ -222,7 +225,7 @@ static int proc_info (struct Scsi_Host *host, char *buffer, char **start, off_t
+ 	char *pos = buffer;
+ 	const char *string;
+ 
+-	//printk("scsiglue --- proc_info\n");
++	/* pr_info("scsiglue --- proc_info\n"); */
+ 	if (inout)
+ 		return length;
+ 
+@@ -288,7 +291,7 @@ static ssize_t show_max_sectors(struct device *dev, struct device_attribute *att
+ {
+ 	struct scsi_device *sdev = to_scsi_device(dev);
+ 
+-	//printk("scsiglue --- ssize_t show_max_sectors\n");
++	/* pr_info("scsiglue --- ssize_t show_max_sectors\n"); */
+ 	return sprintf(buf, "%u\n", queue_max_sectors(sdev->request_queue));
+ }
+ 
+@@ -299,7 +302,7 @@ static ssize_t store_max_sectors(struct device *dev, struct device_attribute *at
+ 	struct scsi_device *sdev = to_scsi_device(dev);
+ 	unsigned short ms;
+ 
+-	//printk("scsiglue --- ssize_t store_max_sectors\n");
++	/* pr_info("scsiglue --- ssize_t store_max_sectors\n"); */
+ 	if (sscanf(buf, "%hu", &ms) > 0 && ms <= SCSI_DEFAULT_MAX_SECTORS)
+ 	{
+ 		blk_queue_max_hw_sectors(sdev->request_queue, ms);
+@@ -383,7 +386,7 @@ unsigned int usb_stor_access_xfer_buf(struct us_data *us, unsigned char *buffer,
+ {
+ 	unsigned int cnt;
+ 
+-	//printk("transport --- usb_stor_access_xfer_buf\n");
++	/* pr_info("transport --- usb_stor_access_xfer_buf\n"); */
+ 	struct scatterlist *sg = *sgptr;
+ 
+ 	if (!sg)
+@@ -441,7 +444,7 @@ void usb_stor_set_xfer_buf(struct us_data *us, unsigned char *buffer, unsigned i
+ 	unsigned int offset = 0;
+ 	struct scatterlist *sg = NULL;
+ 
+-	//printk("transport --- usb_stor_set_xfer_buf\n");
++	/* pr_info("transport --- usb_stor_set_xfer_buf\n"); */
+ 	// TO_XFER_BUF = 0, FROM_XFER_BUF = 1
+ 	buflen = min(buflen, scsi_bufflen(srb));
+ 	buflen = usb_stor_access_xfer_buf(us, buffer, buflen, srb, &sg, &offset, dir);
 -- 
 1.7.1
 
