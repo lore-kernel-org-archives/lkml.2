@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab1DAOsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 10:48:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46019 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044Ab1DAOnB (ORCPT
+	id S1757484Ab1DAOuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 10:50:52 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:32757 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753360Ab1DAOuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 10:43:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=o5LIFOVmfQEuviQez6m1mZq1EwPj4HrBeSsU9B2gVLeoe/gUjd7qO27cUDYQeTDXOx
-         lhkFKg1X0/Sj52RUY6YyeMxl6IpycWyOmQh2i/x+v33A68nXYHM7KP8IrQD5MUpJA7Mf
-         kyBBphNy/Hde/2E3Cv6mU4IdjfW9MptbC36PE=
-Subject: Re: [PATCH 0/2] do not select KALLSYMS_ALL
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Paulo Marques <pmarques@grupopie.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        MTD list <linux-mtd@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D948D52.4040708@grupopie.com>
-References: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>
-	 <4D948D52.4040708@grupopie.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Apr 2011 17:40:33 +0300
-Message-ID: <1301668833.2789.90.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Fri, 1 Apr 2011 10:50:50 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: GJ4nszgVM1k58wasmsK_HwgI4BiH.OCGqwdFV0Zo9jZyHIq
+ 3ue2jfI3PmHptMmWRzPPPpz7xgKq8kx97Jc3_FKUA2_i6bu.Ionf3RdpG.QW
+ i_BXhXJMVMwkcEVKf1HDMmk.61vYL5p.bZx.MTVbYh75OLsayw6WTYzi.EQz
+ aFpbF_0T0dMv9bKwpl5MsH4GUXYrGl_dyeMSL9mkd.c_i6TqLRl3aK07lg0c
+ 61azQrFYHO7mqyiMfgO0gO0Eb9dq36IVKi2YzY71ImrPPxKcfcwGp8LzEGaT
+ WVJWInXGk9_Rk2pKpcKHjFthttSXnGwe89M1B8Ds.IqbHsJvB
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 1 Apr 2011 09:50:45 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, npiggin@kernel.dk, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
+In-Reply-To: <20110401221921.A890.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1104010945190.17929@router.home>
+References: <20110331144145.0ECA.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1103311451530.28364@router.home> <20110401221921.A890.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-31 at 15:18 +0100, Paulo Marques wrote:
-> Artem Bityutskiy wrote:
-> > [...]
-> > I personally think KALLSYMS_ALL should be just merged with KALLSYMS and
-> > disappear - we should have only one option. CONFIG_KALLSYMS_EXTRA_PASS should
-> > die as well.
-> 
-> That sounds a little too extreme...
-> 
-> KALLSYMS is useful for most kernels, since it provides nice readable
-> stack dumps for panics and BUG's.
-> 
-> KALLSYMS_ALL adds a lot of extra symbols that can be useful mostly to
-> development kernels and shouldn't be used to add unnecessary bloat to
-> user kernels.
+On Fri, 1 Apr 2011, KOSAKI Motohiro wrote:
 
-OK, thanks.
+> > On Thu, 31 Mar 2011, KOSAKI Motohiro wrote:
+> >
+> > > 1) zone reclaim doesn't work if the system has multiple node and the
+> > >    workload is file cache oriented (eg file server, web server, mail server, et al).
+> > >    because zone recliam make some much free pages than zone->pages_min and
+> > >    then new page cache request consume nearest node memory and then it
+> > >    bring next zone reclaim. Then, memory utilization is reduced and
+> > >    unnecessary LRU discard is increased dramatically.
+> >
+> > That is only true if the webserver only allocates from a single node. If
+> > the allocation load is balanced then it will be fine. It is useful to
+> > reclaim pages from the node where we allocate memory since that keeps the
+> > dataset node local.
+>
+> Why?
+> Scheduler load balancing only consider cpu load. Then, usually memory
+> pressure is no complete symmetric. That's the reason why we got the
+> bug report periodically.
 
-> Now as for CONFIG_KALLSYMS_EXTRA_PASS: to build the kallsyms table, the
-> build process first links a kernel image with an empty kallsyms table
-> and use that to fetch information for all the symbols.
-> 
-> It then uses that information to build the table with the right size,
-> and links it again. If everything goes ok, this new version as all the
-> symbols in the correct places and the final table can be built with the
-> correct addresses.
-> 
-> The final linking should produce the same result as only the data on the
-> kallsyms table changed, but not its size.
-> 
-> However, there have been bugs in the past with section alignments and
-> symbol reordering for symbols with the same address, etc., etc. that
-> make this final table not have the exact same size, and the build fails
-> with an inconsistent kallsyms data message. At this point, the user can
-> turn on the CONFIG_KALLSYMS_EXTRA_PASS and temporarily solve the problem
-> while the developers find the correct fix. Without this option, in this
-> situation the kernel would simply fail the compilation.
-> 
-> All this has been stable for a while and this option hasn't been needed
-> recently (AFAIK), but if there is some bug in some new binutils or
-> something, the option might be needed again.
+The scheduler load balancing also considers caching effects. It does not
+consider NUMA effects aside from heuritics though. If processes are
+randomly moving around then zone reclaim is not effective. Processes need
+to stay mainly on a certain node and memory needs to be allocatable from
+that node in order to improve performance. zone_reclaim is useless if you
+toss processes around the box.
 
-Thanks for explanation!
+> btw, when we are talking about memory distance aware reclaim, we have to
+> recognize traditional numa (ie external node interconnect) and on-chip
+> numa have different performance characteristics. on-chip remote node access
+> is not so slow, then elaborated nearest node allocation effort doesn't have
+> so much worth. especially, a workload use a lot of short lived object.
+> Current zone-reclaim don't have so much issue when using traditiona numa
+> because it's fit your original design and assumption and administrators of
+> such systems have good skill and don't hesitate to learn esoteric knobs.
+> But recent on-chip and cheap numa are used for much different people against
+> past. therefore new issues and claims were raised.
 
-But... why on earth this option is in Kconfig then, if this is only
-about extra pass during the kernel _compilation_ ? This and the vague
-help message in Kconfig help section are very misleading. This should
-not be in Kconfig at all then, it should be purely a Makefile thing!
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+You can switch NUMA off completely at the bios level. Then the distances
+are not considered by the OS. If they are not relevant then lets just
+switch NUMA off. Managing NUMA distances can cause significant overhead.
