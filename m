@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab1DAPoZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 11:44:25 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:61830 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab1DAPoY (ORCPT
+	id S1758024Ab1DAPpA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 11:45:00 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57130 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab1DAPo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 11:44:24 -0400
+	Fri, 1 Apr 2011 11:44:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=NCuXR1m6sOeJIHftl7CiNhQZeH6W0itt2/J9wbTmI8jvPXPnH4oDKPk/kTT6gJ5eiv
-         iGiGuRynby0LjpA+WM4ouyMlDIn4Wn/uWOIQeAUoujCBJnC1ZHuTYQTtjQ7FTe6ptD8j
-         OP2dKdwJ6MTXPBfqrRfFF7hr5Z0sJZFm952CU=
-MIME-Version: 1.0
-Date: Fri, 1 Apr 2011 17:44:23 +0200
-Message-ID: <BANLkTimKwW7d2x1RDCPnu1LHMBKHy3PYgw@mail.gmail.com>
-Subject: [PATCH] Define a fixed elementary logic type
-From: Georgette Boole <georgette.boole@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=kMzv7Ny+89OZlZZulujnS1xM5NlXjc+9C3NBh/34xosJ8mKztcc+1T8oYS2KmAvEDR
+         w8zFKDQj5qalnUJs7qQVFr12SiYVFjv/z28dTHpFrgN3ZU5DUoBxvJbJWmkpC5ft04mW
+         awu/29/Iny/j1UnnwF5M8DKOyFCRIslTJm6tw=
+Subject: Re: [PATCH 0/2] do not select KALLSYMS_ALL
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Paulo Marques <pmarques@grupopie.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        MTD list <linux-mtd@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D95F092.4080604@grupopie.com>
+References: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>
+	 <4D948D52.4040708@grupopie.com>  <1301669776.2789.92.camel@localhost>
+	 <1301670104.2789.94.camel@localhost>  <4D95F092.4080604@grupopie.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Apr 2011 18:42:29 +0300
+Message-ID: <1301672549.2789.107.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unfortunately, my father's elementary logic type is incomplete. This patch
-introduces the correct type with a plan to transition the kernel over to
-it and to deprecate the "bool" type in the v3.0 timeframe.
+On Fri, 2011-04-01 at 16:34 +0100, Paulo Marques wrote:
+> Artem Bityutskiy wrote:
+> > On Fri, 2011-04-01 at 17:56 +0300, Artem Bityutskiy wrote:
+> >> Well, ok, I've measured how much is this "a lot". On an embedded arm
+> >> platform this makes the kernel only 1.5% larger. 
+> > 
+> > But in absolute numbers this is 70KiB in my case, which is indeed
+> > considerable amount. So, I agree that it makes sense to keep this as a
+> > separate option.
+> 
+> Yes, and this depends a lot on the kernel configuration options you've
+> selected (and that 1.5% of the kernel size, might be 50%~100% of the
+> kallsyms table).
+> 
+> IIRC, I had configurations where the KALLSYMS_ALL option was increasing
+> the kallsyms table from something like 150kB to above 500kB (before
+> compression). This was a long time ago though and I can't say exactly
+> what was the configuration that made this happen.
 
-Signed-off-by: Georgette Boole <georgette.boole@googlemail.com>
----
-diff --git a/include/linux/types.h b/include/linux/types.h
-index 176da8c..80d9b0f 100644
---- a/include/linux/types.h
-+++ b/include/linux/types.h
-@@ -36,6 +36,14 @@ typedef __kernel_mqd_t		mqd_t;
+Yes, thanks, I agree that having 2 separate options is OK.
 
- typedef _Bool			bool;
+> As for the CONFIG_KALLSYMS_EXTRA_PASS, I think the original idea (it was
+> not mine) was that it should be off by default and then the user would
+> need to turn it on when something went wrong.
 
-+enum _Wool {
-+	w_false	= 0,
-+	w_true	= 1,
-+	w_maybe	= 1 / 2,
-+};
-+
-+typedef enum _Wool		wool;
-+
- typedef __kernel_uid32_t	uid_t;
- typedef __kernel_gid32_t	gid_t;
- typedef __kernel_uid16_t        uid16_t;
+Yes, but my point is that this feature is about the build and it does
+not affect run-time, so it should not be in Kconfig.
+
+> With an automatic makefile mechanism, the problem would go unnoticed and
+> it just wouldn't be fixed, increasing the kernel compile time for
+> everyone who hits the same troublesome configuration.
+
+Yes, the build system may print a message:
+
+Your symbols table is screwed, this is a bug, report about it. As a
+temporary workaround use "make KALLSYMS_EXTRA_PASS=1"
+
+Or something like that.
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
