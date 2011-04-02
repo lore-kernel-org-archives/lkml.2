@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab1DBA1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 20:27:13 -0400
-Received: from mout.perfora.net ([74.208.4.194]:56282 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786Ab1DBA1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 20:27:11 -0400
-Date: Fri, 1 Apr 2011 20:26:33 -0400
-From: Stephen Wilson <wilsons@start.ca>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 6/26]  6: Uprobes:
-	register/unregister probes.
-Message-ID: <20110402002633.GA13277@fibrous.localdomain>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6> <20110401143338.15455.98645.sendpatchset@localhost6.localdomain6>
+	id S1756573Ab1DBAdU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 20:33:20 -0400
+Received: from sous-sol.org ([216.99.217.87]:54070 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756237Ab1DBAdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 20:33:15 -0400
+Date: Fri, 1 Apr 2011 17:32:53 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Mike Travis <travis@sgi.com>, Mike Habeck <habeck@sgi.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, Chris Wright <chrisw@sous-sol.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4 v2] intel-iommu: don't cache iova above 32bit caching
+ boundary
+Message-ID: <20110402003253.GQ18712@sequoia.sous-sol.org>
+References: <20110329233602.272459647@gulag1.americas.sgi.com>
+ <20110329233602.735667875@gulag1.americas.sgi.com>
+ <4D94FC21.6040601@sgi.com>
+ <20110331225316.GC18712@sequoia.sous-sol.org>
+ <4D950D52.8080100@sgi.com>
+ <4D951109.1040707@sgi.com>
+ <20110331235657.GG18712@sequoia.sous-sol.org>
+ <4D9524DF.10405@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110401143338.15455.98645.sendpatchset@localhost6.localdomain6>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Provags-ID: V02:K0:zHMjlRuTSf7PR6MafPTAdNDEVy05/1t/yKXAo9iwiSa
- +2+L1o9Q9D7WBOFhrZ5L2lJDdvc/m8z0uFUih2olX07rAMK6Gg
- xUsexkRFwX/HdP5LbxeAoLy4Ah3Z5O+u/1MHwp3sb/HhFRvfnr
- ojx/vzJmp2yLdUlIP3jLwdr3YvD3be7FiKT5dB232XMJWHFsLv
- SjgeHrJSnF8ODhiuA/TpagTb/xJ12MAx4rIwDxX3EI=
+In-Reply-To: <4D9524DF.10405@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 01, 2011 at 08:03:38PM +0530, Srikar Dronamraju wrote:
-> +int register_uprobe(struct inode *inode, loff_t offset,
-> +				struct uprobe_consumer *consumer)
-> +{
-> +	struct prio_tree_iter iter;
-> +	struct list_head try_list, success_list;
-> +	struct address_space *mapping;
-> +	struct mm_struct *mm, *tmpmm;
-> +	struct vm_area_struct *vma;
-> +	struct uprobe *uprobe;
-> +	int ret = -1;
-> +
-> +	if (!inode || !consumer || consumer->next)
-> +		return -EINVAL;
-> +
-> +	uprobe = uprobes_add(inode, offset);
-> +	if (!uprobe)
-> +		return -ENOMEM;
-> +
-> +	INIT_LIST_HEAD(&try_list);
-> +	INIT_LIST_HEAD(&success_list);
-> +	mapping = inode->i_mapping;
-> +
-> +	mutex_lock(&uprobes_mutex);
-> +	if (uprobe->consumers) {
-> +		ret = 0;
-> +		goto consumers_add;
-> +	}
-> +
-> +	spin_lock(&mapping->i_mmap_lock);
-> +	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, 0, 0) {
-> +		loff_t vaddr;
-> +
-> +		if (!atomic_inc_not_zero(&vma->vm_mm->mm_users))
-> +			continue;
-> +
-> +		mm = vma->vm_mm;
-> +		if (!valid_vma(vma)) {
-> +			mmput(mm);
-> +			continue;
-> +		}
-> +
-> +		vaddr = vma->vm_start + offset;
-> +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+Mike Travis and Mike Habeck reported an issue where iova allocation
+would return a range that was larger than a device's dma mask.
 
-What happens here when someone passes an offset that is out of bounds
-for the vma?  Looks like we could oops when the kernel tries to set a
-breakpoint.  Perhaps check wrt ->vm_end?
+https://lkml.org/lkml/2011/3/29/423
 
+The dmar initialization code will reserve all PCI MMIO regions and copy
+those reservations into a domain specific iova tree.  It is possible for
+one of those regions to be above the dma mask of a device.  It is typical
+to allocate iovas with a 32bit mask (despite device's dma mask possibly
+being larger) and cache the result until it exhausts the lower 32bit
+address space.  Freeing the iova range that is >= the last iova in the
+lower 32bit range when there is still an iova above the 32bit range will
+corrupt the cached iova by pointing it to a region that is above 32bit.
+If that region is also larger than the device's dma mask, a subsequent
+allocation will return an unusable iova and cause dma failure.
+
+Simply don't cache an iova that is above the 32bit caching boundary.
+
+Reported-by: Mike Travis <travis@sgi.com>
+Reported-by: Mike Habeck <habeck@sgi.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: stable@kernel.org 
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+---
+Mike or Mike, can you try this?  I was able to reproduce the failure
+in a few different ways and successfully test this patch against those
+failures, but w/out real hw.
+
+ drivers/pci/iova.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pci/iova.c b/drivers/pci/iova.c
+index 7914951..1690ca4 100644
+--- a/drivers/pci/iova.c
++++ b/drivers/pci/iova.c
+@@ -63,8 +63,16 @@ __cached_rbnode_delete_update(struct iova_domain *iovad, struct iova *free)
+ 	curr = iovad->cached32_node;
+ 	cached_iova = container_of(curr, struct iova, node);
+ 
+-	if (free->pfn_lo >= cached_iova->pfn_lo)
+-		iovad->cached32_node = rb_next(&free->node);
++	if (free->pfn_lo >= cached_iova->pfn_lo) {
++		struct rb_node *node = rb_next(&free->node);
++		struct iova *iova = container_of(node, struct iova, node);
++
++		/* only cache if it's below 32bit pfn */
++		if (iova->pfn_lo < iovad->dma_32bit_pfn)
++			iovad->cached32_node = node;
++		else
++			iovad->cached32_node = NULL;
++	}
+ }
+ 
+ /* Computes the padding size required, to make the
 -- 
-steve
-
+1.7.4
