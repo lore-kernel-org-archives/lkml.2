@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab1DBGXS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 02:23:18 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:40294 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778Ab1DBGXP (ORCPT
+	id S1753417Ab1DBGXV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 02:23:21 -0400
+Received: from vms173007pub.verizon.net ([206.46.173.7]:44586 "EHLO
+	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab1DBGXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 02:23:15 -0400
+	Sat, 2 Apr 2011 02:23:19 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-pm@lists.linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        x86@kernel.org, stable@kernel.org
-Subject: [PATCH 02/18] x86 idle floppy: deprecate disable_hlt()
-Date: Sat, 02 Apr 2011 02:22:44 -0400
-Message-id: <f925862949eb722b15453ab6c053d674147580d3.1301724243.git.len.brown@intel.com>
+        x86@kernel.org, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 04/18] x86 idle: EXPORT_SYMBOL(default_idle,
+ pm_idle) only when APM demands it
+Date: Sat, 02 Apr 2011 02:22:46 -0400
+Message-id: <dba24a423948935d0a0c1eb32414a476f3f90e02.1301724243.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.5.rc0
 In-reply-to: <1301725380-10579-1-git-send-email-lenb@kernel.org>
 References: <alpine.LFD.2.02.1104010020280.2797@x980>
@@ -27,53 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-Plan to remove floppy_disable_hlt in 2.6.40, an ancient
-workaround with comments that it should be removed.
-
-This allows us to remove clutter and a run-time branch
-from the idle code.
-
-WARN_ONCE() on invocation until it is removed.
+In the long run, we don't want default_idle() or (pm_idle)() to
+be exported outside of process.c.  Start by not exporting them
+to modules, unless the APM build demands it.
 
 cc: x86@kernel.org
-cc: stable@kernel.org
+cc: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- Documentation/feature-removal-schedule.txt |    8 ++++++++
- drivers/block/floppy.c                     |    1 +
- 2 files changed, 9 insertions(+), 0 deletions(-)
+ arch/x86/kernel/process.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index b3f35e5..54db467 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -6,6 +6,14 @@ be removed from this file.
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index ff45541..17b8771 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -340,7 +340,9 @@ EXPORT_SYMBOL(boot_option_idle_override);
+  * Powermanagement idle function, if any..
+  */
+ void (*pm_idle)(void);
++#if defined(CONFIG_APM_MODULE) && defined(CONFIG_APM_CPU_IDLE)
+ EXPORT_SYMBOL(pm_idle);
++#endif
  
- ---------------------------
+ #ifdef CONFIG_X86_32
+ /*
+@@ -400,7 +402,7 @@ void default_idle(void)
+ 		cpu_relax();
+ 	}
+ }
+-#ifdef CONFIG_APM_MODULE
++#if defined(CONFIG_APM_MODULE) && defined(CONFIG_APM_CPU_IDLE)
+ EXPORT_SYMBOL(default_idle);
+ #endif
  
-+What:	x86 floppy disable_hlt
-+When:	2.6.40
-+Why:	ancient workaround of dubious utility clutters the
-+	code used by everybody else.
-+Who:	Len Brown <len.brown@intel.com>
-+
-+---------------------------
-+
- What:	PRISM54
- When:	2.6.34
- 
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index 77fc76f..41ea03f 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -1038,6 +1038,7 @@ static void floppy_disable_hlt(void)
- {
- 	unsigned long flags;
- 
-+	WARN_ONCE(1, "floppy_disable_hlt() scheduled for removal in 2.6.40");
- 	spin_lock_irqsave(&floppy_hlt_lock, flags);
- 	if (!hlt_disabled) {
- 		hlt_disabled = 1;
 -- 
 1.7.5.rc0
 
