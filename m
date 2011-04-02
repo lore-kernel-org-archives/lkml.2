@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614Ab1DBGlq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 02:41:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48018 "EHLO
+	id S1752265Ab1DBGyv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 02:54:51 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47831 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab1DBGlp (ORCPT
+	with ESMTP id S1751254Ab1DBGyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 02:41:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=FbjHAmd+eafQ8urDBUsPXJi/rA4sE2V9Kq6R8apg/Q0qXhOHLjmib82AUFDHRHxFLp
-         1w1As0wAo1z5KGV+53iYovn+ySx4rZfN8SnNVFq2anCVC13g/GJQa0fVSQ+NqnlSdDCP
-         Mo6dvDWDEc/A85WqHOXyboB/pbYM2B4deORu8=
-From: Liu Yuan <namei.unix@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] drivers, mfd: Remove unused variable 'val'
-Date: Sat,  2 Apr 2011 14:41:39 +0800
-Message-Id: <1301726499-6010-1-git-send-email-namei.unix@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Sat, 2 Apr 2011 02:54:49 -0400
+From: Jeff Brown <jeffbrown@android.com>
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se, djkurtz@google.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Brown <jeffbrown@google.com>, jeffbrown@android.com
+Subject: [PATCH v2 1/4] input: Set default events per packet.
+Date: Fri,  1 Apr 2011 23:54:16 -0700
+Message-Id: <1301727259-5185-1-git-send-email-jeffbrown@android.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu Yuan <tailai.ly@taobao.com>
+From: Jeff Brown <jeffbrown@google.com>
 
+Calculate a default based on the number of ABS axes, REL axes,
+and MT slots for the device during input device registration.
 
-Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
+Signed-off-by: jeffbrown@android.com
 ---
- drivers/mfd/wl1273-core.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/input/input.c    |   40 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/input/mt.h |    6 ++++++
+ 2 files changed, 46 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/wl1273-core.c b/drivers/mfd/wl1273-core.c
-index 04914f2..37af778 100644
---- a/drivers/mfd/wl1273-core.c
-+++ b/drivers/mfd/wl1273-core.c
-@@ -153,7 +153,6 @@ out:
-  */
- static int wl1273_fm_set_volume(struct wl1273_core *core, unsigned int volume)
- {
--	u16 val;
- 	int r;
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index d6e8bd8..53fccee 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -1746,6 +1746,43 @@ void input_set_capability(struct input_dev *dev, unsigned int type, unsigned int
+ }
+ EXPORT_SYMBOL(input_set_capability);
  
- 	if (volume > WL1273_MAX_VOLUME)
++static void input_set_default_events_per_packet(struct input_dev *dev)
++{
++	int mt_slots;
++	int i;
++	int events;
++
++	if (dev->hint_events_per_packet)
++		return;
++
++	if (dev->mtsize)
++		mt_slots = dev->mtsize;
++	else if (test_bit(ABS_MT_TRACKING_ID, dev->absbit))
++		mt_slots = min(dev->absinfo[ABS_MT_TRACKING_ID].maximum -
++			dev->absinfo[ABS_MT_TRACKING_ID].minimum + 1, 32);
++	else if (test_bit(ABS_MT_POSITION_X, dev->absbit))
++		mt_slots = 2;
++	else
++		mt_slots = 0;
++
++	events = mt_slots + 1; /* count SYN_MT_REPORT and SYN_REPORT */
++
++	for (i = 0; i < ABS_CNT; i++) {
++		if (test_bit(i, dev->absbit)) {
++			if (is_mt_axis(i))
++				events += mt_slots;
++			else
++				events++;
++		}
++	}
++
++	for (i = 0; i < REL_CNT; i++)
++		if (test_bit(i, dev->relbit))
++			events++;
++
++	input_set_events_per_packet(dev, events);
++}
++
+ #define INPUT_CLEANSE_BITMASK(dev, type, bits)				\
+ 	do {								\
+ 		if (!test_bit(EV_##type, dev->evbit))			\
+@@ -1784,6 +1821,9 @@ int input_register_device(struct input_dev *dev)
+ 	const char *path;
+ 	int error;
+ 
++	/* Use a larger default input buffer for MT devices */
++	input_set_default_events_per_packet(dev);
++
+ 	/* Every input device generates EV_SYN/SYN_REPORT events. */
+ 	__set_bit(EV_SYN, dev->evbit);
+ 
+diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
+index b3ac06a..0ef2f87 100644
+--- a/include/linux/input/mt.h
++++ b/include/linux/input/mt.h
+@@ -48,6 +48,12 @@ static inline void input_mt_slot(struct input_dev *dev, int slot)
+ 	input_event(dev, EV_ABS, ABS_MT_SLOT, slot);
+ }
+ 
++static inline bool is_mt_axis(int axis)
++{
++	return axis == ABS_MT_SLOT ||
++		(axis >= ABS_MT_FIRST && axis <= ABS_MT_LAST);
++}
++
+ void input_mt_report_slot_state(struct input_dev *dev,
+ 				unsigned int tool_type, bool active);
+ 
 -- 
-1.7.1
+1.7.0.4
 
