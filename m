@@ -1,152 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab1DBCYw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 22:24:52 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:47876 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab1DBCYu (ORCPT
+	id S1752472Ab1DBCuG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 22:50:06 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39052 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751299Ab1DBCuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 22:24:50 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Fri, 01 Apr 2011 22:24:49 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Detlef Vollmann <dv@vollmann.ch>, Ingo Molnar <mingo@elte.hu>,
-        david@lang.hm, Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-In-reply-to: <201104020008.16795.arnd@arndb.de>
-Message-id: <alpine.LFD.2.00.1104012129320.28032@xanadu.home>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
- <201104011750.17344.arnd@arndb.de>
- <alpine.LFD.2.00.1104011441150.28032@xanadu.home>
- <201104020008.16795.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 1 Apr 2011 22:50:05 -0400
+Date: Sat, 2 Apr 2011 11:50:13 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Collins <collinsd@codeaurora.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm-owner@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: pm8921-regulator: Add regulator driver
+ for PM8921
+Message-ID: <20110402025012.GD25424@opensource.wolfsonmicro.com>
+References: <1301523361-5982-1-git-send-email-collinsd@codeaurora.org>
+ <1301523432-6017-1-git-send-email-collinsd@codeaurora.org>
+ <20110330234613.GA21487@opensource.wolfsonmicro.com>
+ <4D93DAD2.5080501@codeaurora.org>
+ <20110331234359.GD21726@opensource.wolfsonmicro.com>
+ <4D965F9D.3060907@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D965F9D.3060907@codeaurora.org>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Apr 2011, Arnd Bergmann wrote:
+On Fri, Apr 01, 2011 at 04:28:29PM -0700, David Collins wrote:
 
-> On Friday 01 April 2011 21:54:47 Nicolas Pitre wrote:
-> > I however don't think it is practical to go off in a separate 
-> > mach-nocrap space and do things in parallel.  Taking OMAP as an example, 
-> > there is already way too big of an infrastructure in place to simply 
-> > rewrite it in parallel to new OMAP versions coming up.
-> >
-> > It would be more useful and scalable to simply sit down, look at the 
-> > current mess, and identify common patterns that can be easily factored 
-> > out into some shared library code, and all that would be left in the 
-> > board or SOC specific files eventually is the data to register with that 
-> > library code.  Nothing so complicated as grand plans or planification 
-> > that makes it look like a mountain.
-> 
-> This is exactly the question it comes down to. So far, we have focused
-> on cleaning up platforms bit by bit. Given sufficient resources, I'm
-> sure this can work. You assume that continuing on this path is the
-> fastest way to clean up the whole mess, while my suggestion is based
-> on the assumption that we can do better by starting a small fork.
+> the device while asleep.  However, the regulator would need to be
+> configured for pin control to ensure that it is enabled when the second
+> consumer expects it to be.  It is also normal to mask off pin control if
+> the second consumer is to be disabled.
 
-I don't think any fork would gain any traction.  That would only, heh, 
-fork the work force into two suboptimal branches for quite a while, and 
-given that we're talking about platform code, by the time the new branch 
-is usable and useful the hardware will probably be obsolete.  The only 
-way this may work is for totally new platforms but we're not talking 
-about a fork in that case.
+This all seems fairly standard and like many other regulators except for
+the the masking off the pin control.  The only unusual thing is that the
+hardware control is being managed by software at runtime, usually it's
+set up and then left alone by software.
 
-> I think we can both agree that by equally distributing the workforce
-> to both approaches, we'd be off worse than doing one of them right ;-)
+The first thing I'm thinking here is that this maps fairly well onto a
+semi-virtual regulator where the operations map onto the control for the
+hardware mode.  The enable/disable control via the pin is totally
+orthogonal to the control via the regular register interface, and it
+sounds like the mode control is too though that was less clear to me.
+Enabling would then translate into turning pin control on rather than
+actually enabling but that seems OK.  Does that sound like it'd work?
 
-Absolutely.
+> >> We consider this to be the native PMIC 8921 regulator driver because it
+> >> accesses the PMIC directly.  There will be a subsequent PMIC 8921
+> >> regulator driver which issues requests to a separate processor which
+> >> aggregates our requests with those of other SOC processors.
 
-> > I think what is needed here is a bunch of people willing to work on such 
-> > things, extracting those common patterns, and creating the 
-> > infrastructure to cover them.  Once that is in place then we will be in 
-> > a position to push back on code submissions that don't use that 
-> > infrastructure, and be on the lookout for new patterns to emerge.
-> > 
-> > Just with the above I think there is sufficient work to keep us busy for 
-> > a while.
-> 
-> That is true, and I think we will need to do this. But as far as I can tell,
-> the problems that you talk about addressing are a different class from the
-> ones I was thinking of, because they only deal with areas that are already
-> isolated drivers with an existing API.
+> > That's not an issue - the regulator API won't write to the regulators
+> > unless the machine driver explicitly tells it that this is OK so all
+> > that will happen is that we'll be able to read back the state of the
+> > regulators directly.  If your driver is modifying the state of the
+> > regulators without the API telling it to then we should fix that as the
+> > no-write behaviour is an important safety feature.
 
-They are areas with the best return on the investment.  This has the 
-potential of making quite a bunch of code go away quickly.  And the 
-goal is indeed to keep platform code hooking into existing APIs under 
-control, so that global maintenance tasks such as the one tglx did are 
-less painful.  Obscure board code that no one else care about because no 
-other boards share the same hardware model, and which doesn't rely on 
-common kernel infrastructure, is not really a problem even if it looks 
-like crap because no one will have to touch it.  And eventually the 
-board will become unused and we'll just delete that code.
+> The regulator probe function reads the regulator register values to figure
+> out the initial hardware state.  It also sets some regulator controls not
+> handled by other regulator framework callback functions; e.g.: pull down
 
-> The things that I see as harder to do are where we need to change the
-> way that parts of the platform code interact with each other:
-> 
-> * platform specific IOMMU interfaces that need to be migrated to common
->   interfaces
+That just sounds like platform data which could just work in the same
+way as the regulator core - no platform data would mean nothing gets
+changed.
 
-This can be done by actually forking the platform specific IOMMU code 
-only, just for the time required to migrate drivers to the common 
-interface.
+> enable.  I'm not sure if this could be moved into an init_data
+> regulator_init callback because that pointer would need to be specified in
+> the board file where the function would be unknown.
 
-> * duplicated but slightly different header files in include/mach/
+I'm sorry, I don't understand what you're saying here.  Could you
+clarify?
 
-Oh, actually that's part of the easy problems.  This simply require time 
-to progressively do the boring work.
+> Also, it would pollute the system with unusable devices if all natively
+> controlled regulator devices were registered if the shared driver was
+> being used for many regulators.
 
-With CONFIG_ARM_PATCH_PHYS_VIRT turned on we can get rid of almost all 
-instances of arch/arm/mach-*/include/mach/memory.h already.
+Depends if you view it as pollution or not; also note that the devices
+aren't totally unusuable as you can still use them for readback.
 
-Getting rid of all instances of arch/arm/mach-*/include/mach/vmalloc.h 
-can be trivially achieved by simply moving the VMALLOC_END values into 
-the corresponding struct machine_desc instances.
+> I guess I will change the set voltage callbacks so that they round up the
+> vprog value:
+> 	vprog = (min_uV - band_min_uV + step_size - 1) / step_size
+> instead of
+> 	vprog = (min_uV - band_min_uV) / step_size
+> It will also check that the resulting output voltage is <= max_uV.
 
-And so on for many other files.  This is all necessary for the 
-single-binary multi-SOC kernel work anyway.
-
-> * static platform device definitions that get migrated to device tree
->   definitions.
-
-That require some kind of compatibility layer to make the transition 
-transparent to users.  I think Grant had some good ideas for this.
-
-> Changing these tree-wide feels like open-heart surgery, and we'd spend
-> much time trying not to break stuff that could better be used to fix
-> other stuff.
-
-Well, depends how you see it.  Sure this might cause some occasional 
-breakages, but normally those should be pretty obvious and easy to fix.  
-And the more we can do that stuff, the better future code adhering to the 
-new model will be.
-
-> The example that I have in mind is the time when we had a powerpc and a
-> ppc architecture in parallel, with ppc supporting a lot of hardware
-> that powerpc did not, but all new development getting done on powerpc.
-> 
-> This took years longer than we had expected at first, but I still think
-> it was a helpful fork. On ARM, we are in a much better shape in the
-> core code than what arch/ppc was, so there would be no point forking
-> that, but the problem on the platform code is quite similar.
-
-Nah, I don't think we want to go there at all. The problem on the 
-platform code is probably much worse on ARM due to the greater diversity 
-of supported hardware.  If on PPC moving stuff across the fork took more 
-time on a year scale than expected, I think that on ARM we would simply 
-never see the end of it.  And the incentive would not really be there 
-either, unlike when the core code is concerned and everyone is affected.
-
-
-Nicolas
+That sounds right, yes.
