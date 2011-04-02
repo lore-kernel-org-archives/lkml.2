@@ -1,36 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab1DBFMJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 01:12:09 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60120 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab1DBFMH (ORCPT
+	id S1752012Ab1DBFqn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 01:46:43 -0400
+Received: from cdie.upeu.edu.pe ([190.81.172.96]:44038 "EHLO cdie.upeu.edu.pe"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab1DBFql convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 01:12:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=PXHBmIGBAkgRErUvfHC1QvsUXcbHwhMNdcIqRopdn3Oevj+vQ7FmxGrxZep1kWCA5y
-         0v+XWUi1ac9vNMBVHbPwH6MQEQ99BOptIZUvQ7yayzkavTE2yZRGQUD4vf2aH4J4rD72
-         IWQH7s0NiJizOcusIgnBxvRpOhxd1HBMg9Zc8=
+	Sat, 2 Apr 2011 01:46:41 -0400
+X-Greylist: delayed 2110 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Apr 2011 01:46:41 EDT
+Message-ID: <20110402000950.bwx2hndis8c0ggso@correo2.upeu.edu.pe>
+Date: Sat, 02 Apr 2011 00:09:50 -0500
+From: SALLIE MAE INC <salliemae00@hotmail.com>
+Reply-To: sallie.mae@gncn.net
+To: undisclosed-recipients:;
+Subject: SUA FAZENDA
 MIME-Version: 1.0
-In-Reply-To: <1301667827-20056-6-git-send-email-julia@diku.dk>
-References: <1301667827-20056-6-git-send-email-julia@diku.dk>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sat, 2 Apr 2011 01:05:57 -0400
-Message-ID: <BANLkTinF-Z_1J8UiPJ0wnaDLxgHRv0MsPw@mail.gmail.com>
-Subject: Re: [PATCH 6/6] drivers/video/bfin-lq035q1-fb.c: introduce missing kfree
-To: Julia Lawall <julia@diku.dk>
-Cc: Paul Mundt <lethal@linux-sh.org>, kernel-janitors@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+X-Originating-IP: 41.203.64.251
+X-User: investigacion
+X-Remote-Browser: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1;
+	Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR
+	3.0.30729; Media Center PC 6.0; InfoPath.2; .NET4.0C; Crazy Browser 3.0.0
+	RC2)
+X-Assp-noDelay: 192.168.13.97
+X-Assp-Score: 10 (bombSuspiciousRe: 'hotmail.com')
+X-Assp-Envelope-From: salliemae00@hotmail.com
+X-Assp-Intended-For: lindinhafdj@gmail.com
+X-Assp-ID: ass (m-30172-51575)
+X-Assp-Version: 1.8.5.6(1.0.07)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 1, 2011 at 10:23, Julia Lawall wrote:
-> Error handling code following a kmalloc should free the allocated data.
+Olá,
+   Você está enfrentando alguma dificuldade financeira em sua vida  
+profissional ou social, então você precisa de ajuda financeira.
+   Meu nome é Dr. Alli Sallie Mae. O director da SALLIE MAE  
+INTERNACIONAL. O nosso seguro de crédito irá garantir que você não  
+está perdendo um único centavo que você receberá. Oferecemos  
+empréstimos seguro e sem garantia de uma taxa de juro de 3.75%.
+    Este é o nosso endereço para contato:
+sallie.mae@gncn.net
+salliemae00@hotmail.com
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+(N º de segurança social e sem verificação de crédito, 100% garantido!)
+Espero que nos dará a oportunidade de atendê-lo.
+Novamente, obrigado pela sua atenção.
+
+SALLIE MAE INC.
+
