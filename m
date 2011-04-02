@@ -1,36 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab1DBVqi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 17:46:38 -0400
-Received: from snt0-omc4-s19.snt0.hotmail.com ([65.55.90.222]:55270 "EHLO
-	snt0-omc4-s19.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756944Ab1DBVqh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 17:46:37 -0400
-X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Apr 2011 17:46:37 EDT
-Message-ID: <SNT125-W289B1DC285FE71DB4ED9F8C3A10@phx.gbl>
-X-Originating-IP: [71.112.243.235]
-From: Yuhong Bao <yuhongbao_386@hotmail.com>
-To: <lenb@kernel.org>, <sfr@canb.auug.org.au>
-CC: <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] APM: delete APM in Linux-2.6.40
-Date: Sat, 2 Apr 2011 14:40:27 -0700
-Importance: Normal
-In-Reply-To: <alpine.LFD.2.02.1103240336590.4529@x980>
-References: <alpine.LFD.2.02.1103232321070.3848@x980>
- <20110324154505.934a56a0.sfr@canb.auug.org.au>,<alpine.LFD.2.02.1103240336590.4529@x980>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1757267Ab1DBWAt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 18:00:49 -0400
+Received: from mail.aknet.ru ([78.158.192.28]:34633 "EHLO mail.aknet.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757114Ab1DBWAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 18:00:48 -0400
+Message-ID: <4D979C6E.2090503@aknet.ru>
+Date: Sun, 03 Apr 2011 02:00:14 +0400
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-X-OriginalArrivalTime: 02 Apr 2011 21:40:27.0407 (UTC) FILETIME=[94C171F0:01CBF17E]
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command
+References: <20110223191442.GA717@redhat.com> <4D656F87.3090005@aknet.ru> <20110224132906.GA15733@redhat.com> <4D6675B0.2010700@aknet.ru> <20110224153221.GA22770@redhat.com> <4D94A788.1050806@aknet.ru> <20110331170244.GA13271@redhat.com> <4D94BE19.7050001@aknet.ru> <20110331181816.GA17101@redhat.com> <4D94EAEE.2010505@aknet.ru> <20110402135523.GA26316@redhat.com>
+In-Reply-To: <20110402135523.GA26316@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+02.04.2011 17:55, Oleg Nesterov wrote:
+>
+>>>>   +			if (me->real_parent == init_pid_ns.child_reaper)
+>>>   Also, the task can be the child of /sbin/init's sub-thread.
+>> Hmm, how to check then? Should I add the "exact_parent" just
+>> for that? Or traverse the sibling list? How bad. :(
+> You can check same_thread_group(real_parent, ns->child_reaper)
+But real_parent==ns->child_reaper in our case, so what does
+this check give?
 
-> +Why: Microsoft deleted APM from Windows as of Vista in in 2006.
+>  acked, I'd try to nack this;)  do_wait() from parent should
+>  always work or it should always return ECHLD, but it should
+>  not depend on /dev/random. This is really weird, imho.
+OK, this can be fixed by delaying the wait() from init till
+the old parent wait()s or die. Will fix.
 
-To be more precise, support for all hardware that do not support ACPI.
-Also required for Vista and later is a 586 processor with TSC, such as Intel Pentium or later
- 
-Yuhong Bao 		 	   		  
