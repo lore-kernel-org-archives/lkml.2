@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab1DBHCf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 03:02:35 -0400
+	id S1754617Ab1DBHC2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 03:02:28 -0400
 Received: from vms173009pub.verizon.net ([206.46.173.9]:59186 "EHLO
 	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab1DBHCB (ORCPT
+	with ESMTP id S1751922Ab1DBHCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 03:02:01 -0400
+	Sat, 2 Apr 2011 03:02:00 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-pm@lists.linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
         x86@kernel.org
-Subject: [PATCH 18/18] 2.6.40: x86 idle: remove deprecated mwait_idle()
-Date: Sat, 02 Apr 2011 02:23:00 -0400
-Message-id: <d29645381f953dd00b853ae69e2347b1c5274465.1301724243.git.len.brown@intel.com>
+Subject: [PATCH 13/18] 2.6.40: x86 idle: remove deprecated "hlt_bug: no" in
+ 32-bit /proc/cpuinfo
+Date: Sat, 02 Apr 2011 02:22:55 -0400
+Message-id: <b499d75b1c21e1f3183001847172b6b71baf1c8b.1301724243.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.5.rc0
 In-reply-to: <1301725380-10579-1-git-send-email-lenb@kernel.org>
 References: <alpine.LFD.2.02.1104010020280.2797@x980>
@@ -27,158 +28,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-For ACPI mode, mwait_with_hints() in cstate.c is used instead of
-mwait_idle().
+Now that the "no-hlt" cmdline param is gone...
 
-For INTEL_IDLE mode, the mwait in intel_idle() is used instead of
-mwait_idle().
+cpuinfo_x86.hlt_works_ok, halt_works() and the
+"hlt_bug: no" line in 32-bit /proc/cpuinfo are NOPS.
 
-So mwait_idle() is used only on hardware that supports MWAIT,
-but is running a !ACPI && !INTEL_IDLE kernel.
-Such a system will run HLT instead of MWAIT after this change.
+remove them.
 
 cc: x86@kernel.org
-Acked-by: Andreas Herrmann <andreas.herrmann3@amd.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- Documentation/feature-removal-schedule.txt |    7 -----
- Documentation/kernel-parameters.txt        |    7 +----
- arch/x86/include/asm/processor.h           |    2 +-
- arch/x86/kernel/process.c                  |   35 +---------------------------
- drivers/acpi/processor_idle.c              |    1 -
- 5 files changed, 3 insertions(+), 49 deletions(-)
+ arch/x86/include/asm/processor.h |   10 ----------
+ arch/x86/kernel/cpu/bugs.c       |    5 +----
+ arch/x86/kernel/cpu/proc.c       |    2 --
+ arch/x86/kernel/process.c        |    5 ++---
+ arch/x86/kernel/setup.c          |    4 ++--
+ arch/x86/xen/setup.c             |    3 ---
+ 6 files changed, 5 insertions(+), 24 deletions(-)
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 9b84b1a..f55ba2c 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -6,13 +6,6 @@ be removed from this file.
- 
- ----------------------------
- 
--What:	x86 "idle=mwait" cmdline param
--When:	2.6.40
--Why:	simplify x86 idle code
--Who:	Len Brown <len.brown@intel.com>
--
------------------------------
--
- What:	PRISM54
- When:	2.6.34
- 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a9db94e..52c956a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -920,16 +920,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Claim all unknown PCI IDE storage controllers.
- 
- 	idle=		[X86]
--			Format: idle=poll, idle=mwait, idle=halt, idle=nomwait
-+			Format: idle=poll, idle=halt, idle=nomwait
- 			Poll forces a polling idle loop that can slightly
- 			improve the performance of waking up a idle CPU, but
- 			will use a lot of power and make the system run hot.
- 			Not recommended.
--			idle=mwait: On systems which support MONITOR/MWAIT but
--			the kernel chose to not use it because it doesn't save
--			as much power as a normal idle loop, use the
--			MONITOR/MWAIT idle loop anyways. Performance should be
--			the same as idle=poll.
- 			idle=halt: Halt is forced to be used for CPU idle.
- 			In such case C2/C3 won't be used again.
- 			idle=nomwait: Disable mwait for CPU C-states
 diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 10cdee8..3424009 100644
+index fd02787..10cdee8 100644
 --- a/arch/x86/include/asm/processor.h
 +++ b/arch/x86/include/asm/processor.h
-@@ -752,7 +752,7 @@ extern unsigned long		boot_option_idle_override;
- extern bool			amd_e400_detected;
+@@ -67,7 +67,6 @@ struct cpuinfo_x86 {
+ 	char			wp_works_ok;	/* It doesn't on 386's */
  
- enum idle_boot_override {IDLE_NO_OVERRIDE=0, IDLE_HALT, IDLE_NOMWAIT,
--			 IDLE_POLL, IDLE_FORCE_MWAIT};
-+			 IDLE_POLL};
+ 	/* Problems on some 486Dx4's and old 386's: */
+-	char			hlt_works_ok;
+ 	char			hard_math;
+ 	char			rfu;
+ 	char			fdiv_bug;
+@@ -148,15 +147,6 @@ DECLARE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
  
- extern void enable_sep_cpu(void);
- extern int sysenter_setup(void);
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 8daa323..4ab4bba 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -399,27 +399,6 @@ void cpu_idle_wait(void)
- }
- EXPORT_SYMBOL_GPL(cpu_idle_wait);
+ extern const struct seq_operations cpuinfo_op;
  
--/* Default MONITOR/MWAIT with no hints, used for default C1 state */
--static void mwait_idle(void)
+-static inline int hlt_works(int cpu)
 -{
--	if (!need_resched()) {
--		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
--		trace_cpu_idle(1, smp_processor_id());
--		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
--			clflush((void *)&current_thread_info()->flags);
--
--		__monitor((void *)&current_thread_info()->flags, 0, 0);
--		smp_mb();
--		if (!need_resched())
--			__sti_mwait(0, 0);
--		else
--			local_irq_enable();
--		trace_power_end(smp_processor_id());
--		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
--	} else
--		local_irq_enable();
+-#ifdef CONFIG_X86_32
+-	return cpu_data(cpu).hlt_works_ok;
+-#else
+-	return 1;
+-#endif
 -}
 -
- /*
-  * On SMP it's slightly faster (but much more power-consuming!)
-  * to poll the ->work.need_resched flag instead of waiting for the
-@@ -457,9 +436,6 @@ int mwait_usable(const struct cpuinfo_x86 *c)
- {
- 	u32 eax, ebx, ecx, edx;
+ #define cache_line_size()	(boot_cpu_data.x86_cache_alignment)
  
--	if (boot_option_idle_override == IDLE_FORCE_MWAIT)
--		return 1;
--
- 	if (c->cpuid_level < MWAIT_INFO)
- 		return 0;
- 
-@@ -548,13 +524,7 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
- 	if (pm_idle)
+ extern void cpu_detect(struct cpuinfo_x86 *c);
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index 4c91631..b5e2910 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -82,10 +82,7 @@ static void __init check_hlt(void)
  		return;
  
--	if (cpu_has(c, X86_FEATURE_MWAIT) && mwait_usable(c)) {
--		/*
--		 * One CPU supports mwait => All CPUs supports mwait
--		 */
--		printk(KERN_INFO "using mwait in idle threads.\n");
--		pm_idle = mwait_idle;
--	} else if (cpu_has_amd_erratum(amd_erratum_400)) {
-+	if (cpu_has_amd_erratum(amd_erratum_400)) {
- 		/* E400: APIC timer interrupt does not wake up CPU from C1e */
- 		printk(KERN_INFO "using E400 aware idle routine\n");
- 		pm_idle = amd_e400_idle;
-@@ -578,9 +548,6 @@ static int __init idle_setup(char *str)
- 		printk("using polling idle threads.\n");
- 		pm_idle = poll_idle;
- 		boot_option_idle_override = IDLE_POLL;
--	} else if (!strcmp(str, "mwait")) {
--		boot_option_idle_override = IDLE_FORCE_MWAIT;
--		WARN_ONCE(1, "\idle=mwait\" will be removed in 2.6.40\"\n");
- 	} else if (!strcmp(str, "halt")) {
- 		/*
- 		 * When the boot option of idle=halt is added, halt is
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index 53d9f10..954a9d3 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -82,7 +82,6 @@ module_param(latency_factor, uint, 0644);
- static int disabled_by_idle_boot_param(void)
+ 	printk(KERN_INFO "Checking 'hlt' instruction... ");
+-	if (!boot_cpu_data.hlt_works_ok) {
+-		printk("disabled\n");
+-		return;
+-	}
++
+ 	halt();
+ 	halt();
+ 	halt();
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 62ac8cb..203feb7 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -33,7 +33,6 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ 	int fpu_exception = c->hard_math && (ignore_fpu_irq || cpu_has_fpu);
+ 	seq_printf(m,
+ 		   "fdiv_bug\t: %s\n"
+-		   "hlt_bug\t\t: %s\n"
+ 		   "f00f_bug\t: %s\n"
+ 		   "coma_bug\t: %s\n"
+ 		   "fpu\t\t: %s\n"
+@@ -41,7 +40,6 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ 		   "cpuid level\t: %d\n"
+ 		   "wp\t\t: %s\n",
+ 		   c->fdiv_bug ? "yes" : "no",
+-		   c->hlt_works_ok ? "no" : "yes",
+ 		   c->f00f_bug ? "yes" : "no",
+ 		   c->coma_bug ? "yes" : "no",
+ 		   c->hard_math ? "yes" : "no",
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 579c78f..c485629 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -364,7 +364,7 @@ EXPORT_SYMBOL(enable_hlt);
+ 
+ static inline int hlt_use_halt(void)
  {
- 	return boot_option_idle_override == IDLE_POLL ||
--		boot_option_idle_override == IDLE_FORCE_MWAIT ||
- 		boot_option_idle_override == IDLE_HALT;
+-	return (!hlt_counter && boot_cpu_data.hlt_works_ok);
++	return !hlt_counter;
  }
+ #else
+ static inline int hlt_use_halt(void)
+@@ -416,8 +416,7 @@ void stop_this_cpu(void *dummy)
+ 	disable_local_APIC();
+ 
+ 	for (;;) {
+-		if (hlt_works(smp_processor_id()))
+-			halt();
++		halt();
+ 	}
+ }
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d3cfe26..fab5631 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -175,9 +175,9 @@ static struct resource bss_resource = {
+ 
+ #ifdef CONFIG_X86_32
+ /* cpu data as detected by the assembly code in head.S */
+-struct cpuinfo_x86 new_cpu_data __cpuinitdata = {0, 0, 0, 0, -1, 1, 0, 0, -1};
++struct cpuinfo_x86 new_cpu_data __cpuinitdata = {0, 0, 0, 0, -1, 0, 0, -1};
+ /* common cpu data for all cpus */
+-struct cpuinfo_x86 boot_cpu_data __read_mostly = {0, 0, 0, 0, -1, 1, 0, 0, -1};
++struct cpuinfo_x86 boot_cpu_data __read_mostly = {0, 0, 0, 0, -1, 0, 0, -1};
+ EXPORT_SYMBOL(boot_cpu_data);
+ static void set_mca_bus(int x)
+ {
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index aa02cce..32069fb 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -352,9 +352,6 @@ void __init xen_arch_setup(void)
+ 	       COMMAND_LINE_SIZE : MAX_GUEST_CMDLINE);
+ 
+ 	/* Set up idle, making sure it calls safe_halt() pvop */
+-#ifdef CONFIG_X86_32
+-	boot_cpu_data.hlt_works_ok = 1;
+-#endif
+ 	disable_cpuidle();
+ 	boot_option_idle_override = IDLE_HALT;
  
 -- 
 1.7.5.rc0
