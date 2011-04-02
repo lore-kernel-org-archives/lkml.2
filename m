@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829Ab1DBBDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 21:03:50 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:45076 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756514Ab1DBBDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 21:03:48 -0400
-Date: Sat, 2 Apr 2011 06:23:53 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Stephen Wilson <wilsons@start.ca>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 6/26]  6: Uprobes:
- register/unregister probes.
-Message-ID: <20110402005353.GA17416@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
- <20110401143338.15455.98645.sendpatchset@localhost6.localdomain6>
- <20110402002633.GA13277@fibrous.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110402002633.GA13277@fibrous.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1757031Ab1DBBES (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 21:04:18 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:45364 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756873Ab1DBBEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 21:04:16 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=RwHsMpI7tq1KYsQojnu6NW888uPpv2uvBC5UninWTXn7dgzsmQAHoHLK1XHtYNcyei+6CbdSP2vAReUl1veG0R+IxaTby6TuPYAZNaCnxnvt3nMqrKSfJ2XuiiWWIe4+;
+Date: Fri, 1 Apr 2011 18:04:13 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>,
+        torvalds <torvalds@linux-foundation.org>
+Cc: lud <linux-usb@vger.kernel.org>, gregkh <greg@kroah.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [PATCH] usb/serial: fix function args warnings, dropping *filp
+Message-Id: <20110401180413.cb6e35fa.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +
-> > +		mm = vma->vm_mm;
-> > +		if (!valid_vma(vma)) {
-> > +			mmput(mm);
-> > +			continue;
-> > +		}
-> > +
-> > +		vaddr = vma->vm_start + offset;
-> > +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> 
-> What happens here when someone passes an offset that is out of bounds
-> for the vma?  Looks like we could oops when the kernel tries to set a
-> breakpoint.  Perhaps check wrt ->vm_end?
-> 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-If the offset is wrong, install_uprobe will fail, since
-grab_cache_page() should not be able to find that page for us.
-And hence we return gracefully.
+Fix build warnings caused by removal of *filp arg in
+struct usb_serial_driver.
+These changes were missed somehow in commits
+00a0d0d65b61241a718d0aee96f46b9a2d93bf26 and
+60b33c133ca0b7c0b6072c87234b63fee6e80558.
 
-I will surely test this case and I am happy to add a check for
-vm_end.
+drivers/usb/serial/mct_u232.c:159: warning: initialization from incompatible pointer type
+drivers/usb/serial/opticon.c:627: warning: initialization from incompatible pointer type
 
--- 
-Thanks and Regards
-Srikar
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Alan Cox <alan@linux.intel.com>
+---
+ drivers/usb/serial/mct_u232.c |    4 ++--
+ drivers/usb/serial/opticon.c  |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+--- linux-next-20110401.orig/drivers/usb/serial/mct_u232.c
++++ linux-next-20110401/drivers/usb/serial/mct_u232.c
+@@ -106,7 +106,7 @@ static void mct_u232_break_ctl(struct tt
+ static int  mct_u232_tiocmget(struct tty_struct *tty);
+ static int  mct_u232_tiocmset(struct tty_struct *tty,
+ 			unsigned int set, unsigned int clear);
+-static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
++static int  mct_u232_ioctl(struct tty_struct *tty,
+ 			unsigned int cmd, unsigned long arg);
+ static int  mct_u232_get_icount(struct tty_struct *tty,
+ 			struct serial_icounter_struct *icount);
+@@ -874,7 +874,7 @@ static void mct_u232_unthrottle(struct t
+ 	}
+ }
+ 
+-static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
++static int  mct_u232_ioctl(struct tty_struct *tty,
+ 			unsigned int cmd, unsigned long arg)
+ {
+ 	DEFINE_WAIT(wait);
+--- linux-next-20110401.orig/drivers/usb/serial/opticon.c
++++ linux-next-20110401/drivers/usb/serial/opticon.c
+@@ -413,7 +413,7 @@ static int opticon_tiocmget(struct tty_s
+ 	return result;
+ }
+ 
+-static int opticon_tiocmset(struct tty_struct *tty, struct file *file,
++static int opticon_tiocmset(struct tty_struct *tty,
+ 			   unsigned int set, unsigned int clear)
+ {
+ 	struct usb_serial_port *port = tty->driver_data;
