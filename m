@@ -1,124 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab1DBKVa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 06:21:30 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46000 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909Ab1DBKV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 06:21:28 -0400
-Date: Sat, 2 Apr 2011 12:21:14 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Subject: [GIT PULL] core kernel fixes
-Message-ID: <20110402102114.GA15391@elte.hu>
+	id S1752339Ab1DBKYX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 06:24:23 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:43273 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab1DBKYW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 06:24:22 -0400
+Message-ID: <4D96F945.3030101@ahsoftware.de>
+Date: Sat, 02 Apr 2011 12:24:05 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Carsten Emde <C.Emde@osadl.org>
+CC: Mike Galbraith <efault@gmx.de>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Len Brown <lenb@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Linux 2.6.33.8
+References: <20110321204104.GA2702@kroah.com>  <4D94C666.3060206@osadl.org> <1301632555.4766.5.camel@marge.simson.net> <4D96E90D.9000905@osadl.org>
+In-Reply-To: <4D96E90D.9000905@osadl.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hello,
 
-Please pull the latest core-fixes-for-linus git tree from:
+Am 02.04.2011 11:14, schrieb Carsten Emde:
+> model name : Intel(R) Core(TM) i7 CPU X 980 @ 3.33GHz
+> stepping : 2
+>
+> This is the situation:
+>
+> 1. Without commit ea53069231f9317062910d6e772cca4ce93de8c8:
+> Everyting is fine. The system correctly powers off.
+>
+> 2. With commit ea53069231f9317062910d6e772cca4ce93de8c8:
+> a) Frequency scaling never enabled (acpi_cpufreq not loaded,
+> cpufreq_ondemand not loaded):
+> Everything is fine. The system correctly powers off.
+> b) Frequency scaling enabled (acpi_cpufreq loaded, cpufreq_ondemand
+> loaded) or
+> c) Frequency scaling enabled and disabled (acpi_cpufreq still loaded
+> since it cannot be removed easily, cpufreq_ondemand no longer
+> loaded) or
+> d) Frequency scaling enabled and disabled (acpi_cpufreq unloaded
+> with force, cpufreq_ondemand no longer loaded):
+> Not powering off, message:
+> ACPI: Preparing to enter system sleep state S5
+> Disabling non-boot CPUs ...
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-fixes-for-linus
+I'm using a
 
- Thanks,
+model name      : Intel(R) Core(TM) i7 CPU         860  @ 2.80GHz
 
-	Ingo
+and can confirm some problem with power down, at least in 2.6.38.2. 
+Sometimes I only see the powerdown message but the machine will stay on 
+(and the fan starts getting louder).
 
------------------->
-Paul E. McKenney (1):
-      rcu: create new rcu_access_index() and use in mce
+But in contrast to the above description (that commit seems to have been 
+already included in 2.6.37), I never had a problem with powerdown with a 
+kernel <2.6.38.
+I have CONFIG_X86_ACPI_CPUFREQ enabled, but I currently can't offer much 
+more insights, because I haven't tried to analyze that problem. The 
+problem doesn't appear with any shutdown, and I don't know (and can't 
+remember) if that already happened with 2.6.38.
 
-Steven Rostedt (1):
-      WARN_ON_SMP(): Add comment to explain ({0;})
+Besides switching from BKL to non-BKL, I haven't changed the config when 
+I've switched from 2.6.37.x to 2.6.38 (other than what make oldconfig does).
 
+Maybe it's a totally unrelated problem, but I thought it might be good 
+to mention that I'm having a problem with powerdown in 2.6.38 too.
 
- arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
- include/asm-generic/bug.h        |    7 +++++++
- include/linux/rcupdate.h         |   20 ++++++++++++++++++++
- 3 files changed, 28 insertions(+), 1 deletions(-)
+Regards,
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 5a05ef6..3385ea2 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1626,7 +1626,7 @@ out:
- static unsigned int mce_poll(struct file *file, poll_table *wait)
- {
- 	poll_wait(file, &mce_wait, wait);
--	if (rcu_dereference_check_mce(mcelog.next))
-+	if (rcu_access_index(mcelog.next))
- 		return POLLIN | POLLRDNORM;
- 	if (!mce_apei_read_done && apei_check_mce())
- 		return POLLIN | POLLRDNORM;
-diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-index f2d2faf..e5a3f58 100644
---- a/include/asm-generic/bug.h
-+++ b/include/asm-generic/bug.h
-@@ -194,6 +194,13 @@ extern void warn_slowpath_null(const char *file, const int line);
- #ifdef CONFIG_SMP
- # define WARN_ON_SMP(x)			WARN_ON(x)
- #else
-+/*
-+ * Use of ({0;}) because WARN_ON_SMP(x) may be used either as
-+ * a stand alone line statement or as a condition in an if ()
-+ * statement.
-+ * A simple "0" would cause gcc to give a "statement has no effect"
-+ * warning.
-+ */
- # define WARN_ON_SMP(x)			({0;})
- #endif
- 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index af56148..ff422d2 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -339,6 +339,12 @@ extern int rcu_my_thread_group_empty(void);
- 		((typeof(*p) __force __kernel *)(p)); \
- 	})
- 
-+#define __rcu_access_index(p, space) \
-+	({ \
-+		typeof(p) _________p1 = ACCESS_ONCE(p); \
-+		rcu_dereference_sparse(p, space); \
-+		(_________p1); \
-+	})
- #define __rcu_dereference_index_check(p, c) \
- 	({ \
- 		typeof(p) _________p1 = ACCESS_ONCE(p); \
-@@ -429,6 +435,20 @@ extern int rcu_my_thread_group_empty(void);
- #define rcu_dereference_raw(p) rcu_dereference_check(p, 1) /*@@@ needed? @@@*/
- 
- /**
-+ * rcu_access_index() - fetch RCU index with no dereferencing
-+ * @p: The index to read
-+ *
-+ * Return the value of the specified RCU-protected index, but omit the
-+ * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
-+ * when the value of this index is accessed, but the index is not
-+ * dereferenced, for example, when testing an RCU-protected index against
-+ * -1.  Although rcu_access_index() may also be used in cases where
-+ * update-side locks prevent the value of the index from changing, you
-+ * should instead use rcu_dereference_index_protected() for this use case.
-+ */
-+#define rcu_access_index(p) __rcu_access_index((p), __rcu)
-+
-+/**
-  * rcu_dereference_index_check() - rcu_dereference for indices with debug checking
-  * @p: The pointer to read, prior to dereferencing
-  * @c: The conditions under which the dereference will take place
+Alexander Holler
