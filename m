@@ -1,98 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab1DBPUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 11:20:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55891 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752778Ab1DBPUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 11:20:14 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: linux-media@vger.kernel.org, Huber Andreas <hobrom@corax.at>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>, linux-kernel@vger.kernel.org,
-        andrew.walker27@ntlworld.com
-In-Reply-To: <20110402093856.GA17015@elie>
-References: <20110327150610.4029.95961.reportbug@xen.corax.at>
-	 <20110327152810.GA32106@elie>  <20110402093856.GA17015@elie>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-9i/AS1nb8S9mURR4iR84"
-Date: Sat, 02 Apr 2011 16:19:59 +0100
-Message-ID: <1301757599.10056.186.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [RFC/PATCH 0/3] locking fixes for cx88
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
+	id S1754884Ab1DBPU7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 11:20:59 -0400
+Received: from atl.turmel.org ([74.117.157.138]:44761 "EHLO atl.turmel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752778Ab1DBPU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 11:20:58 -0400
+X-Greylist: delayed 1139 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Apr 2011 11:20:58 EDT
+Message-ID: <4D973A65.3000003@turmel.org>
+Date: Sat, 02 Apr 2011 11:01:57 -0400
+From: Phil Turmel <philip@turmel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110305 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: haael <haael@wp.pl>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Bug: Apparent memory exhaustion WTF?
+References: <4D9632BD.1050504@wp.pl>
+In-Reply-To: <4D9632BD.1050504@wp.pl>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/01/2011 04:17 PM, haael wrote:
+> 
+> Hello, guys. My server keeps hanging up with the error output as seen on the bottom of this message. I run non-patched vanilla kernel. Full system upgrade didn't help. Kernel upgrade from 2.6.28.7 to 2.6.35.10 didn't help. I tried also turning swap on/off, upgrading memory and adding new CPU. After the CPU upgrade things actually went worse, now my system blows up every few hours.
+> 
+> Here you see the squid process running out of memory, but nothing changed when I killed squid; some other process would always cause this error. Just before a hangup, all processes are being killed, as if OOM killer went wild. But the OOM killer shouldn't disable the network stack, right?
+> 
+> After a hangup, the system becomes completely unresponsive, doesn't answer on ping and even on ARP requests. The only thing that still works is the serial console from which I get the following error. This message is being printed continuously, one per second, for infinity. The only thing I can do with my server is to turn off the power.
+> 
+> Tell me, guys, what to do? The server is 2x Intel dual core, 16GB RAM, HP Proliant. It has RAID-1 disk and a Broadcom network adapter, which is the most suspicious for me. Attached: lspci, /proc/meminfo, /proc/cpuinfo, kernel config and the actual error message from the serial console.
 
---=-9i/AS1nb8S9mURR4iR84
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I think this is part of your problem:
 
-On Sat, 2011-04-02 at 04:38 -0500, Jonathan Nieder wrote:
-> Hi,
->=20
-> Huber Andreas wrote[1]:
->=20
-> > Processes that try to open a cx88-blackbird driven MPEG device will han=
-g up.
->=20
-> Here's a possible fix based on a patch by Ben Hutchings and
-> corrections from Andi Huber.  Warning: probably full of mistakes (my
-> fault) since I'm not familiar with any of this stuff.  Untested.
-> Review and testing would be welcome.
+> # CONFIG_64BIT is not set
+> CONFIG_X86_32=y
+> # CONFIG_X86_64 is not set
+> CONFIG_X86=y
 
-Since you have split up and otherwise modified the patch I sent, please
-remove the 'From' and 'Signed-off-by' lines with my name and address.
-Just state that the patches are based on my work.
+Everything I've seen on these lists says 32bit kernels and large amounts of RAM are a bad combination.  As I understand it, the information the kernel needs to track all of the memory above 4G must fit in kernel memory below 4G, which is usually just the 1G under the kernel/user split.
 
-Ben.
+> [83155.718040] Free swap  = 0kB
+> [83155.718040] Total swap = 0kB
 
-> Ben Hutchings (2):
->   [media] cx88: fix locking of sub-driver operations
->   [media] cx88: use a mutex to protect cx8802_devlist
->=20
-> Jonathan Nieder (1):
->   [media] cx88: protect per-device driver list with device lock
->=20
->  drivers/media/video/cx88/cx88-blackbird.c |    3 +-
->  drivers/media/video/cx88/cx88-dvb.c       |    2 +
->  drivers/media/video/cx88/cx88-mpeg.c      |   35 +++++++++++++++++++----=
------
->  drivers/media/video/cx88/cx88.h           |   10 +++++++-
->  4 files changed, 37 insertions(+), 13 deletions(-)
->=20
+And no swap to fall back on.  Which might be OK on a 64bit kernel.
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+Just my $0.02.
 
---=-9i/AS1nb8S9mURR4iR84
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATZc+lee/yOyVhhEJAQrddBAAvf/5rIKUVP9XG9ZdwBrKdLczTaZm8yJm
-3BHMcpXlz1P7fFZUvf6Q8Y+eLxz/OxtEL/wjyZVwatOAuGvoM+idTi0BVJKz2pSN
-kVcGLZDT428By5yZYSU4dhg1WxShoJdC1iG8WRO8Do8n9vcW2XoiT14a4i78DWIP
-TiZKC/qcDgfMuXEGy9LGM1HNPDy7FrGTrC8yxpMm37KTySSp5HEdrlRnumUDQyuE
-izB8A+wB789oJdg8b6Drd3GPgPi8BCQee6kU3D29f0Qf4W8StTs2gODzdIQH7aRc
-Ckda6I2yTsHyP+BS8seasT6SLgm4opehqClz33nz4Iv2pbTw8ydbMhg1pEwuYEUS
-YwCzdJz/DJdj5Flk6/dhNCDGy0ghVPJNudwzKAnXxEDaveDbFOLwnOPc3H+b/4ak
-fH96iGItICkbNyHp+IDOZ6G270W6n/f2o/mnR7szQrJJZsv3pPI0nZqDGPniuWPv
-QbYCUnOTP/x6vxxGDCNW5zVZA/nFP3+GeUfJgCf5sBjESj4EJD7cqCSWLjmR28jc
-Rntp7L4vrV3kngYd5WtfoUSJg+YiS6rWmqnN+v2wanGbyGpffLT2x7J7eTpn3USX
-1h5oaT/nlILCX4EznnlE80I1vtat3VPZZbnrxj2wn1l3fygGYayxAKc03FQEOtBo
-xRb7JuOGwbY=
-=uugJ
------END PGP SIGNATURE-----
-
---=-9i/AS1nb8S9mURR4iR84--
+Phil
