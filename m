@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab1DBGXo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 02:23:44 -0400
-Received: from vms173001pub.verizon.net ([206.46.173.1]:59936 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100Ab1DBGXd (ORCPT
+	id S1753471Ab1DBGX1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 02:23:27 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:42466 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753869Ab1DBGXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 02:23:33 -0400
+	Sat, 2 Apr 2011 02:23:24 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-pm@lists.linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        xen-devel@lists.xensource.com
-Subject: [PATCH 09/18] cpuidle: replace xen access to x86 pm_idle and
- default_idle
-Date: Sat, 02 Apr 2011 02:22:51 -0400
-Message-id: <e2f656a28f548ed19c829563e5168ce48026570b.1301724243.git.len.brown@intel.com>
+        x86@kernel.org, stable@kernel.org
+Subject: [PATCH 06/18] x86 idle: deprecate mwait_idle() and "idle=mwait"
+ cmdline param
+Date: Sat, 02 Apr 2011 02:22:48 -0400
+Message-id: <7eaf17a79efa960a4a317d3cb8651375ed61f5a6.1301724243.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.5.rc0
 In-reply-to: <1301725380-10579-1-git-send-email-lenb@kernel.org>
 References: <alpine.LFD.2.02.1104010020280.2797@x980>
@@ -28,78 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-When a Xen Dom0 kernel boots on a hypervisor, it gets access
-to the raw-hardware ACPI tables.  While it parses the idle tables
-for the hypervisor's beneift, it uses HLT for its own idle.
+mwait_idle() is a C1-only idle loop intended to be more efficient
+than HLT on SMP hardware that supports it.
 
-Rather than have xen scribble on pm_idle and access default_idle,
-have it simply disable_cpuidle() so acpi_idle will not load and
-architecture default HLT will be used.
+But mwait_idle() has been replaced by the more general
+mwait_idle_with_hints(), which handles both C1 and deeper C-states.
+ACPI uses only mwait_idle_with_hints(), and never uses mwait_idle().
 
-cc: xen-devel@lists.xensource.com
+Deprecate mwait_idle() and the "idle=mwait" cmdline param
+to simplify the x86 idle code.
+
+After this change, kernels configured with
+(!CONFIG_ACPI=n && !CONFIG_INTEL_IDLE=n) when run on hardware
+that support MWAIT will simply use HLT.  If MWAIT is desired
+on those systems, cpuidle and the cpuidle drivers above
+will support it.
+
+cc: x86@kernel.org
+cc: stable@kernel.org
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/x86/xen/setup.c      |    3 ++-
- drivers/cpuidle/cpuidle.c |    4 ++++
- include/linux/cpuidle.h   |    2 ++
- 3 files changed, 8 insertions(+), 1 deletions(-)
+ Documentation/feature-removal-schedule.txt |    7 +++++++
+ arch/x86/kernel/process.c                  |    1 +
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index a8a66a5..aa02cce 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -9,6 +9,7 @@
- #include <linux/mm.h>
- #include <linux/pm.h>
- #include <linux/memblock.h>
-+#include <linux/cpuidle.h>
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index f587159..9ee4a2c 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -35,6 +35,13 @@ Who:	Len Brown <len.brown@intel.com>
  
- #include <asm/elf.h>
- #include <asm/vdso.h>
-@@ -354,7 +355,7 @@ void __init xen_arch_setup(void)
- #ifdef CONFIG_X86_32
- 	boot_cpu_data.hlt_works_ok = 1;
- #endif
--	pm_idle = default_idle;
-+	disable_cpuidle();
- 	boot_option_idle_override = IDLE_HALT;
+ ----------------------------
  
- 	fiddle_vdso();
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index faae2c3..041df0b 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -34,6 +34,10 @@ int cpuidle_disabled(void)
- {
- 	return off;
- }
-+void disable_cpuidle(void)
-+{
-+	off = 1;
-+}
++What:	x86 "idle=mwait" cmdline param
++When:	2.6.40
++Why:	simplify x86 idle code
++Who:	Len Brown <len.brown@intel.com>
++
++----------------------------
++
+ What:	PRISM54
+ When:	2.6.34
  
- #if defined(CONFIG_ARCH_HAS_CPU_IDLE_WAIT)
- static void cpuidle_kick_cpus(void)
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 36719ea..b89f67d 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -122,6 +122,7 @@ struct cpuidle_driver {
- };
- 
- #ifdef CONFIG_CPU_IDLE
-+extern void disable_cpuidle(void);
- 
- extern int cpuidle_register_driver(struct cpuidle_driver *drv);
- struct cpuidle_driver *cpuidle_get_driver(void);
-@@ -135,6 +136,7 @@ extern int cpuidle_enable_device(struct cpuidle_device *dev);
- extern void cpuidle_disable_device(struct cpuidle_device *dev);
- 
- #else
-+static inline void disable_cpuidle(void) { }
- 
- static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
- {return -ENODEV; }
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 17b8771..1f64501 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -645,6 +645,7 @@ static int __init idle_setup(char *str)
+ 		boot_option_idle_override = IDLE_POLL;
+ 	} else if (!strcmp(str, "mwait")) {
+ 		boot_option_idle_override = IDLE_FORCE_MWAIT;
++		WARN_ONCE(1, "\idle=mwait\" will be removed in 2.6.40\"\n");
+ 	} else if (!strcmp(str, "halt")) {
+ 		/*
+ 		 * When the boot option of idle=halt is added, halt is
 -- 
 1.7.5.rc0
 
