@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab1DBGX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 02:23:27 -0400
-Received: from vms173017pub.verizon.net ([206.46.173.17]:42466 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869Ab1DBGXY (ORCPT
+	id S1754993Ab1DBGXs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 02:23:48 -0400
+Received: from vms173003pub.verizon.net ([206.46.173.3]:54087 "EHLO
+	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab1DBGXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 02:23:24 -0400
+	Sat, 2 Apr 2011 02:23:44 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        x86@kernel.org, stable@kernel.org
-Subject: [PATCH 06/18] x86 idle: deprecate mwait_idle() and "idle=mwait"
- cmdline param
-Date: Sat, 02 Apr 2011 02:22:48 -0400
-Message-id: <7eaf17a79efa960a4a317d3cb8651375ed61f5a6.1301724243.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: [PATCH 08/18] cpuidle: create bootparam "cpuidle.off=1"
+Date: Sat, 02 Apr 2011 02:22:50 -0400
+Message-id: <d0d4b0749cf60042ce56636fdb019ab496fb45ff.1301724243.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.5.rc0
 In-reply-to: <1301725380-10579-1-git-send-email-lenb@kernel.org>
 References: <alpine.LFD.2.02.1104010020280.2797@x980>
@@ -28,60 +26,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-mwait_idle() is a C1-only idle loop intended to be more efficient
-than HLT on SMP hardware that supports it.
+useful for disabling cpuidle to fall back
+to architecture-default idle loop
 
-But mwait_idle() has been replaced by the more general
-mwait_idle_with_hints(), which handles both C1 and deeper C-states.
-ACPI uses only mwait_idle_with_hints(), and never uses mwait_idle().
+cpuidle drivers and governors will fail to register.
+on x86 they'll say so:
 
-Deprecate mwait_idle() and the "idle=mwait" cmdline param
-to simplify the x86 idle code.
+intel_idle: intel_idle yielding to (null)
+ACPI: acpi_idle yielding to (null)
 
-After this change, kernels configured with
-(!CONFIG_ACPI=n && !CONFIG_INTEL_IDLE=n) when run on hardware
-that support MWAIT will simply use HLT.  If MWAIT is desired
-on those systems, cpuidle and the cpuidle drivers above
-will support it.
-
-cc: x86@kernel.org
-cc: stable@kernel.org
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- Documentation/feature-removal-schedule.txt |    7 +++++++
- arch/x86/kernel/process.c                  |    1 +
- 2 files changed, 8 insertions(+), 0 deletions(-)
+ Documentation/kernel-parameters.txt |    3 +++
+ drivers/cpuidle/cpuidle.c           |   10 ++++++++++
+ drivers/cpuidle/cpuidle.h           |    1 +
+ drivers/cpuidle/driver.c            |    3 +++
+ drivers/cpuidle/governor.c          |    3 +++
+ 5 files changed, 20 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index f587159..9ee4a2c 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -35,6 +35,13 @@ Who:	Len Brown <len.brown@intel.com>
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index f4a04c0..08e8a22 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -546,6 +546,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			/proc/<pid>/coredump_filter.
+ 			See also Documentation/filesystems/proc.txt.
  
- ----------------------------
- 
-+What:	x86 "idle=mwait" cmdline param
-+When:	2.6.40
-+Why:	simplify x86 idle code
-+Who:	Len Brown <len.brown@intel.com>
++	cpuidle.off=1	[CPU_IDLE]
++			disable the cpuidle sub-system
 +
-+----------------------------
-+
- What:	PRISM54
- When:	2.6.34
+ 	cpcihp_generic=	[HW,PCI] Generic port I/O CompactPCI driver
+ 			Format:
+ 			<first_slot>,<last_slot>,<port>,<enum_bit>[,<debug>]
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index bf50924..faae2c3 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -28,6 +28,12 @@ LIST_HEAD(cpuidle_detected_devices);
+ static void (*pm_idle_old)(void);
  
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 17b8771..1f64501 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -645,6 +645,7 @@ static int __init idle_setup(char *str)
- 		boot_option_idle_override = IDLE_POLL;
- 	} else if (!strcmp(str, "mwait")) {
- 		boot_option_idle_override = IDLE_FORCE_MWAIT;
-+		WARN_ONCE(1, "\idle=mwait\" will be removed in 2.6.40\"\n");
- 	} else if (!strcmp(str, "halt")) {
- 		/*
- 		 * When the boot option of idle=halt is added, halt is
+ static int enabled_devices;
++static int off __read_mostly;
++
++int cpuidle_disabled(void)
++{
++	return off;
++}
+ 
+ #if defined(CONFIG_ARCH_HAS_CPU_IDLE_WAIT)
+ static void cpuidle_kick_cpus(void)
+@@ -427,6 +433,9 @@ static int __init cpuidle_init(void)
+ {
+ 	int ret;
+ 
++	if (cpuidle_disabled())
++		return -ENODEV;
++
+ 	pm_idle_old = pm_idle;
+ 
+ 	ret = cpuidle_add_class_sysfs(&cpu_sysdev_class);
+@@ -438,4 +447,5 @@ static int __init cpuidle_init(void)
+ 	return 0;
+ }
+ 
++module_param(off, int, 0444);
+ core_initcall(cpuidle_init);
+diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
+index 33e50d5..38c3fd8 100644
+--- a/drivers/cpuidle/cpuidle.h
++++ b/drivers/cpuidle/cpuidle.h
+@@ -13,6 +13,7 @@ extern struct list_head cpuidle_governors;
+ extern struct list_head cpuidle_detected_devices;
+ extern struct mutex cpuidle_lock;
+ extern spinlock_t cpuidle_driver_lock;
++extern int cpuidle_disabled(void);
+ 
+ /* idle loop */
+ extern void cpuidle_install_idle_handler(void);
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index fd1601e..3f7e3ce 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -26,6 +26,9 @@ int cpuidle_register_driver(struct cpuidle_driver *drv)
+ 	if (!drv)
+ 		return -EINVAL;
+ 
++	if (cpuidle_disabled())
++		return -ENODEV;
++
+ 	spin_lock(&cpuidle_driver_lock);
+ 	if (cpuidle_curr_driver) {
+ 		spin_unlock(&cpuidle_driver_lock);
+diff --git a/drivers/cpuidle/governor.c b/drivers/cpuidle/governor.c
+index 724c164..ea2f8e7 100644
+--- a/drivers/cpuidle/governor.c
++++ b/drivers/cpuidle/governor.c
+@@ -81,6 +81,9 @@ int cpuidle_register_governor(struct cpuidle_governor *gov)
+ 	if (!gov || !gov->select)
+ 		return -EINVAL;
+ 
++	if (cpuidle_disabled())
++		return -ENODEV;
++
+ 	mutex_lock(&cpuidle_lock);
+ 	if (__cpuidle_find_governor(gov->name) == NULL) {
+ 		ret = 0;
 -- 
 1.7.5.rc0
 
