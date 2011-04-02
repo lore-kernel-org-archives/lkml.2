@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab1DBC73 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 22:59:29 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33584 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755319Ab1DBC7Z (ORCPT
+	id S1757494Ab1DBC7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 22:59:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:32917 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857Ab1DBCyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 22:59:25 -0400
-Date: Sat, 2 Apr 2011 03:59:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, Detlef Vollmann <dv@vollmann.ch>,
-        Ingo Molnar <mingo@elte.hu>, david@lang.hm,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110402025901.GB13341@sirena.org.uk>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <201104011659.40443.arnd@arndb.de> <4D95EF8E.9080902@vollmann.ch> <201104011750.17344.arnd@arndb.de> <alpine.LFD.2.00.1104011441150.28032@xanadu.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1104011441150.28032@xanadu.home>
-X-Cookie: On the eighth day, God created FORTRAN.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Fri, 1 Apr 2011 22:54:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=PUaYliTVNMVblFYNASyvJB4QxfhxSofGimNkqvflu30KIIeiqe0CrnaNKpqoqorlBx
+         H74WjubQNB/Si7hxGgyEyDtbHko+jXFOT2ebkbNWeeoreu42t5KurPJdakKMNiCVC7Sh
+         to8b6o7deAT4P1/cQCN2cDVl+twl2Pd1CaOyw=
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+To: "'David S . Miller'" <davem@davemloft.net>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        Octavian Purdila <tavi@cs.pub.ro>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Subject: [PATCH 07/24] sysctl: cookie: share ipv4_route_flush_table between nets
+Date: Sat,  2 Apr 2011 04:53:21 +0200
+Message-Id: <f52d34fd4084fcdfed0450aa1c74fd09d3608518.1301711868.git.lucian.grijincu@gmail.com>
+X-Mailer: git-send-email 1.7.5.rc0
+In-Reply-To: <cover.1301711868.git.lucian.grijincu@gmail.com>
+References: <cover.1301711868.git.lucian.grijincu@gmail.com>
+In-Reply-To: <cover.1301711868.git.lucian.grijincu@gmail.com>
+References: <cover.1301711868.git.lucian.grijincu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 01, 2011 at 03:54:47PM -0400, Nicolas Pitre wrote:
+Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+---
+ net/ipv4/route.c |   30 ++++--------------------------
+ 1 files changed, 4 insertions(+), 26 deletions(-)
 
-> 1) GPIO drivers
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 0c66ea6..1e99f01 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -3015,13 +3015,12 @@ static int ipv4_sysctl_rtcache_flush(ctl_table *__ctl, int write,
+ 	if (write) {
+ 		int flush_delay;
+ 		ctl_table ctl;
+-		struct net *net;
++		struct net *net = (struct net *) cookie;
+ 
+ 		memcpy(&ctl, __ctl, sizeof(ctl));
+ 		ctl.data = &flush_delay;
+ 		proc_dointvec(&ctl, write, buffer, lenp, ppos, NULL);
+ 
+-		net = (struct net *)__ctl->extra1;
+ 		rt_cache_flush(net, flush_delay);
+ 		return 0;
+ 	}
+@@ -3176,37 +3175,16 @@ static __net_initdata struct ctl_path ipv4_route_path[] = {
+ 
+ static __net_init int sysctl_route_net_init(struct net *net)
+ {
+-	struct ctl_table *tbl;
+-
+-	tbl = ipv4_route_flush_table;
+-	if (!net_eq(net, &init_net)) {
+-		tbl = kmemdup(tbl, sizeof(ipv4_route_flush_table), GFP_KERNEL);
+-		if (tbl == NULL)
+-			goto err_dup;
+-	}
+-	tbl[0].extra1 = net;
+-
+-	net->ipv4.route_hdr =
+-		register_net_sysctl_table(net, ipv4_route_path, tbl);
++	net->ipv4.route_hdr = register_net_sysctl_table(net,
++				ipv4_route_path, ipv4_route_flush_table);
+ 	if (net->ipv4.route_hdr == NULL)
+-		goto err_reg;
++		return -ENOMEM;
+ 	return 0;
+-
+-err_reg:
+-	if (tbl != ipv4_route_flush_table)
+-		kfree(tbl);
+-err_dup:
+-	return -ENOMEM;
+ }
+ 
+ static __net_exit void sysctl_route_net_exit(struct net *net)
+ {
+-	struct ctl_table *tbl;
+-
+-	tbl = net->ipv4.route_hdr->ctl_table_arg;
+ 	unregister_net_sysctl_table(net->ipv4.route_hdr);
+-	BUG_ON(tbl == ipv4_route_flush_table);
+-	kfree(tbl);
+ }
+ 
+ static __net_initdata struct pernet_operations sysctl_route_ops = {
+-- 
+1.7.5.rc0
 
->    As Linus observed, in the majority of the cases GPIOs are accessed 
->    through simple memory-mapped registers.  Some have absolute state 
->    registers, the others have separate clear/set registers.  Suffice to 
->    create two generic GPIO drivers each covering those two common cases, 
->    and those generic drivers would simply register with the higher level 
->    gpiolib code, and all the board code would have to do is to provide 
->    the data for those GPIOs (register offsets, number of GPIOs, etc.).  
->    Whether this data eventually comes from DT is an orthogonal issue.
-
-For this case we actually already have the basic_mmio_gpio driver in
-tree, we should be pushing for wider usage of that.
