@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab1DBGXY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 02:23:24 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:65050 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab1DBGXW (ORCPT
+	id S1754765Ab1DBGXe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 02:23:34 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:59858 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab1DBGXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 02:23:22 -0400
+	Sat, 2 Apr 2011 02:23:25 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        x86@kernel.org
-Subject: [PATCH 05/18] x86 idle: deprecate "no-hlt" cmdline param
-Date: Sat, 02 Apr 2011 02:22:47 -0400
-Message-id: <e0077c3d7a17abee4911ddd83d4d968fd1c0203d.1301724243.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Tero Kristo <tero.kristo@nokia.com>,
+        stable@kernel.org, Len Brown <len.brown@intel.com>
+Subject: [PATCH 01/18] cpuidle: menu: fixed wrapping timers at 4.294 seconds
+Date: Sat, 02 Apr 2011 02:22:43 -0400
+Message-id: <c82cf78992a66bfa7f0c82aeb20ba6922127463b.1301724243.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.5.rc0
 In-reply-to: <1301725380-10579-1-git-send-email-lenb@kernel.org>
 References: <alpine.LFD.2.02.1104010020280.2797@x980>
  <1301725380-10579-1-git-send-email-lenb@kernel.org>
-In-reply-to: <c82cf78992a66bfa7f0c82aeb20ba6922127463b.1301724243.git.len.brown@intel.com>
-References: <c82cf78992a66bfa7f0c82aeb20ba6922127463b.1301724243.git.len.brown@intel.com>
 X-Patchwork-Hint: ignore
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+From: Tero Kristo <tero.kristo@nokia.com>
 
-We'd rather that modern machines not check if HLT works on
-every entry into idle, for the benefit of machines that had
-marginal electricals 15-years ago.  If those machines are still running
-the upstream kernel, they can use "idle=poll".  The only difference
-will be that they'll now invoke HLT in machine_hlt().
+Cpuidle menu governor is using u32 as a temporary datatype for storing
+nanosecond values which wrap around at 4.294 seconds. This causes errors
+in predicted sleep times resulting in higher than should be C state
+selection and increased power consumption. This also breaks cpuidle
+state residency statistics.
 
-cc: x86@kernel.org
+cc: stable@kernel.org
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- Documentation/feature-removal-schedule.txt |   11 +++++++++++
- arch/x86/kernel/cpu/bugs.c                 |    1 +
- 2 files changed, 12 insertions(+), 0 deletions(-)
+ drivers/cpuidle/governors/menu.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index bab1acb..f587159 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -24,6 +24,17 @@ Who:	Len Brown <len.brown@intel.com>
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index f508690..c47f3d0 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -237,6 +237,7 @@ static int menu_select(struct cpuidle_device *dev)
+ 	unsigned int power_usage = -1;
+ 	int i;
+ 	int multiplier;
++	struct timespec t;
  
- ----------------------------
+ 	if (data->needs_update) {
+ 		menu_update(dev);
+@@ -251,8 +252,9 @@ static int menu_select(struct cpuidle_device *dev)
+ 		return 0;
  
-+What:	x86_32 "no-hlt" cmdline param
-+When:	2.6.40
-+Why:	remove a branch from idle path, simplify code used by everybody.
-+	This option disabled the use of HLT in idle and machine_halt()
-+	for hardware that was flakey 15-years ago.  Today we have
-+	"idle=poll" that removed HLT from idle, and so if such a machine
-+	is still running the upstream kernel, "idle=poll" is likely sufficient.
-+Who:	Len Brown <len.brown@intel.com>
-+
-+----------------------------
-+
- What:	PRISM54
- When:	2.6.34
+ 	/* determine the expected residency time, round up */
++	t = ktime_to_timespec(tick_nohz_get_sleep_length());
+ 	data->expected_us =
+-	    DIV_ROUND_UP((u32)ktime_to_ns(tick_nohz_get_sleep_length()), 1000);
++		t.tv_sec * USEC_PER_SEC + t.tv_nsec / NSEC_PER_USEC;
  
-diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
-index c39576c..525514c 100644
---- a/arch/x86/kernel/cpu/bugs.c
-+++ b/arch/x86/kernel/cpu/bugs.c
-@@ -19,6 +19,7 @@
  
- static int __init no_halt(char *s)
- {
-+	WARN_ONCE(1, "\"no-hlt\" is deprecated, please use \"idle=poll\"\n");
- 	boot_cpu_data.hlt_works_ok = 0;
- 	return 1;
- }
+ 	data->bucket = which_bucket(data->expected_us);
 -- 
 1.7.5.rc0
 
