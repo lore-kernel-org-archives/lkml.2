@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab1DBC5G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 22:57:06 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40187 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206Ab1DBCyx (ORCPT
+	id S1756551Ab1DBC5w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 22:57:52 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:32917 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756041Ab1DBCyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 22:54:53 -0400
+	Fri, 1 Apr 2011 22:54:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=salHcMB3wcubAZz/KdFPRByvVwFNrIDypzjo8i5dJuwqZpYh5islwdwNMmBkKf+FYH
-         t9LZQq7/fRiHpKjkibQWzYVGzBkCNEG3wtl/rsR8R9YJi4/w22XG4fllScM18ZYIk+UV
-         AP+/wO8ZH1SyulW+2TFmO1a9iznjVSibXyOj0=
+        b=UNI4j/SVkSzCcEO5wYqj5aG6zxmawvWt1NuqLmoHKZE28ZixAwo1mpo1dfn2ds060C
+         TkAtrIv/WWs70IsoeR/8BQ7tQS3brcV/GYHbbjM8BzJO4rT4jfl0bEWLq+LjRb+YOaGf
+         3JEM8yRsKiHpxq5WSut/vpqZBUUEl+BRN5qJc=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: "'David S . Miller'" <davem@davemloft.net>,
         Alexey Dobriyan <adobriyan@gmail.com>,
@@ -20,9 +20,9 @@ To: "'David S . Miller'" <davem@davemloft.net>,
         Octavian Purdila <tavi@cs.pub.ro>, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 18/24] sysctl: ipv4: register /proc/sys/net/ipv4/conf empty directory
-Date: Sat,  2 Apr 2011 04:53:32 +0200
-Message-Id: <b992ffd8be31308937728a05878ead147f20c95e.1301711868.git.lucian.grijincu@gmail.com>
+Subject: [PATCH 14/24] sysctl: cookie: share unix_table between nets
+Date: Sat,  2 Apr 2011 04:53:28 +0200
+Message-Id: <08df352d32bf9a8f1ce37b6ccb5d4d610af21757.1301711868.git.lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.rc0
 In-Reply-To: <cover.1301711868.git.lucian.grijincu@gmail.com>
 References: <cover.1301711868.git.lucian.grijincu@gmail.com>
@@ -32,111 +32,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This does not change any semantics: it just adds a new header that
-will be used in the next patch as a parent for all headers for
-all /proc/sys/net/ipv4/conf/DEVNAME entries.
-
-For now, all interface headers for /proc/sys/net/ipv4/conf/DEVNAME
-will be bound to this header as opposed to another one from above, but
-this shouldn't affect performance or behaviour.
-
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- include/net/netns/ipv4.h |    9 +++++----
- net/ipv4/devinet.c       |   25 +++++++++++++++++++++++--
- 2 files changed, 28 insertions(+), 6 deletions(-)
+ net/unix/sysctl_net_unix.c |   22 +++-------------------
+ 1 files changed, 3 insertions(+), 19 deletions(-)
 
-diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
-index 542195d..cdb8307 100644
---- a/include/net/netns/ipv4.h
-+++ b/include/net/netns/ipv4.h
-@@ -15,10 +15,11 @@ struct sock;
+diff --git a/net/unix/sysctl_net_unix.c b/net/unix/sysctl_net_unix.c
+index 397cffe..d514f62 100644
+--- a/net/unix/sysctl_net_unix.c
++++ b/net/unix/sysctl_net_unix.c
+@@ -21,7 +21,7 @@ static ctl_table unix_table[] = {
+ 		.data		= &init_net.unx.sysctl_max_dgram_qlen,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= netns_proc_dointvec,
+ 	},
+ 	{ }
+ };
+@@ -34,30 +34,14 @@ static struct ctl_path unix_path[] = {
  
- struct netns_ipv4 {
- #ifdef CONFIG_SYSCTL
--	struct ctl_table_header	*forw_hdr;
--	struct ctl_table_header	*frags_hdr;
--	struct ctl_table_header	*ipv4_hdr;
--	struct ctl_table_header *route_hdr;
-+	struct ctl_table_header	*forw_hdr;   /* /proc/sys/net/ipv4/ip_forward */
-+	struct ctl_table_header	*conf_hdr;   /* /proc/sys/net/ipv4/conf/ */
-+	struct ctl_table_header	*frags_hdr;  /* /proc/sys/net/ipv4/ipfrag_* */
-+	struct ctl_table_header	*ipv4_hdr;   /* see @ipv4_net_table */
-+	struct ctl_table_header *route_hdr;  /* /proc/sys/net/ipv4/route/flush */
- #endif
- 	struct ipv4_devconf	*devconf_all;
- 	struct ipv4_devconf	*devconf_dflt;
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index 551786f..a31cc90 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1698,6 +1698,18 @@ static void devinet_sysctl_unregister(struct in_device *idev)
- 	neigh_sysctl_unregister(idev->arp_parms);
+ int __net_init unix_sysctl_register(struct net *net)
+ {
+-	struct ctl_table *table;
+-
+-	table = kmemdup(unix_table, sizeof(unix_table), GFP_KERNEL);
+-	if (table == NULL)
+-		goto err_alloc;
+-
+-	table[0].data = &net->unx.sysctl_max_dgram_qlen;
+-	net->unx.ctl = register_net_sysctl_table(net, unix_path, table);
++	net->unx.ctl = register_net_sysctl_table(net, unix_path, unix_table);
+ 	if (net->unx.ctl == NULL)
+-		goto err_reg;
++		return -ENOMEM;
+ 
+ 	return 0;
+-
+-err_reg:
+-	kfree(table);
+-err_alloc:
+-	return -ENOMEM;
  }
  
-+
-+/* empty entry for '/proc/sys/net/ipv4/conf/' */
-+static __net_initdata struct ctl_table empty[1];
-+static __net_initdata struct ctl_table ipv4_conf_skel[] = {
-+	{
-+		.procname	= "conf",
-+		.mode		= 0555,
-+		.child		= empty,
-+	},
-+	{ },
-+};
-+
- static struct ctl_table ctl_forward_entry[] = {
- 	{
- 		.procname	= "ip_forward",
-@@ -1712,7 +1724,7 @@ static struct ctl_table ctl_forward_entry[] = {
- 	{ },
- };
- 
--static __net_initdata struct ctl_path net_ipv4_path[] = {
-+static __net_initdata const struct ctl_path net_ipv4_path[] = {
- 	{ .procname = "net", },
- 	{ .procname = "ipv4", },
- 	{ },
-@@ -1725,7 +1737,7 @@ static __net_init int devinet_init_net(struct net *net)
- 	struct ipv4_devconf *all, *dflt;
- #ifdef CONFIG_SYSCTL
- 	struct ctl_table *tbl = ctl_forward_entry;
--	struct ctl_table_header *forw_hdr;
-+	struct ctl_table_header *forw_hdr, *conf_hdr;
- #endif
- 
- 	err = -ENOMEM;
-@@ -1753,6 +1765,12 @@ static __net_init int devinet_init_net(struct net *net)
- 	}
- 
- #ifdef CONFIG_SYSCTL
-+	err = -ENOMEM;
-+	conf_hdr = register_net_sysctl_table(net, net_ipv4_path, ipv4_conf_skel);
-+	if (conf_hdr == NULL)
-+		goto err_reg_conf;
-+	net->ipv4.conf_hdr = conf_hdr;
-+
- 	err = __devinet_sysctl_register(net, "all", all);
- 	if (err < 0)
- 		goto err_reg_all;
-@@ -1778,6 +1796,8 @@ err_reg_ctl:
- err_reg_dflt:
- 	__devinet_sysctl_unregister(all);
- err_reg_all:
-+	unregister_net_sysctl_table(conf_hdr);
-+err_reg_conf:
- 	if (tbl != ctl_forward_entry)
- 		kfree(tbl);
- err_alloc_ctl:
-@@ -1800,6 +1820,7 @@ static __net_exit void devinet_exit_net(struct net *net)
- 	unregister_net_sysctl_table(net->ipv4.forw_hdr);
- 	__devinet_sysctl_unregister(net->ipv4.devconf_dflt);
- 	__devinet_sysctl_unregister(net->ipv4.devconf_all);
-+	unregister_net_sysctl_table(net->ipv4.conf_hdr);
- 	kfree(tbl);
- #endif
- 	kfree(net->ipv4.devconf_dflt);
+ void unix_sysctl_unregister(struct net *net)
+ {
+-	struct ctl_table *table;
+-
+-	table = net->unx.ctl->ctl_table_arg;
+ 	unregister_sysctl_table(net->unx.ctl);
+-	kfree(table);
+ }
 -- 
 1.7.5.rc0
 
