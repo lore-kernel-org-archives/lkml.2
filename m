@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab1DBAYQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 20:24:16 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:56235 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702Ab1DBAYO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 20:24:14 -0400
-Date: Sat, 2 Apr 2011 09:24:10 +0900
-From: Norbert Preining <preining@logic.at>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: Lenovo resume from suspends hangs in i915_gpu_busy or so
-Message-ID: <20110402002410.GL6464@gamma.logic.tuwien.ac.at>
-References: <20110401021055.GB6071@gamma.logic.tuwien.ac.at> <20110401051511.GE9128@gamma.logic.tuwien.ac.at> <20110401090817.01717af0@jbarnes-desktop>
+	id S1756546Ab1DBA1N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 20:27:13 -0400
+Received: from mout.perfora.net ([74.208.4.194]:56282 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754786Ab1DBA1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Apr 2011 20:27:11 -0400
+Date: Fri, 1 Apr 2011 20:26:33 -0400
+From: Stephen Wilson <wilsons@start.ca>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 6/26]  6: Uprobes:
+	register/unregister probes.
+Message-ID: <20110402002633.GA13277@fibrous.localdomain>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6> <20110401143338.15455.98645.sendpatchset@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110401090817.01717af0@jbarnes-desktop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110401143338.15455.98645.sendpatchset@localhost6.localdomain6>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Provags-ID: V02:K0:zHMjlRuTSf7PR6MafPTAdNDEVy05/1t/yKXAo9iwiSa
+ +2+L1o9Q9D7WBOFhrZ5L2lJDdvc/m8z0uFUih2olX07rAMK6Gg
+ xUsexkRFwX/HdP5LbxeAoLy4Ah3Z5O+u/1MHwp3sb/HhFRvfnr
+ ojx/vzJmp2yLdUlIP3jLwdr3YvD3be7FiKT5dB232XMJWHFsLv
+ SjgeHrJSnF8ODhiuA/TpagTb/xJ12MAx4rIwDxX3EI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fr, 01 Apr 2011, Jesse Barnes wrote:
-> > Copyied from screen:
-> > Process ips-adjust (....
-> > Stack:
-> >   ....
-> >    ....
-> >   ...
-> > Call Trace:
-> >   <IRQ>
-> >   ... ? tick_program_event
-> >   call_sortirq
-> >   do_softirq
-> >   irq_exit
-> >   smp_apic_timer_interrupt
-> >   apic_timer_interrupt
-> >   <EOI>
-> >   ? _raw_spin_lock
-> >   i915_gpu_busy
-> >   ips_adjust
-> >   ? show_cpu_temp
-> >   kthread
-> >   kernel_thread_helper
-> >   ? kthread_worker_fn
-> >   ? gs_change
-> > Code: ...
-> > (once more more or less the same as above)
-> 
-> Hm, ok so on resume we're checking GPU busyness, which is normal, but
-> end up hanging on the spinlock?  Do you see what scrolls by above the
-> text you took a picture of (probably a "task hung" message?).
+On Fri, Apr 01, 2011 at 08:03:38PM +0530, Srikar Dronamraju wrote:
+> +int register_uprobe(struct inode *inode, loff_t offset,
+> +				struct uprobe_consumer *consumer)
+> +{
+> +	struct prio_tree_iter iter;
+> +	struct list_head try_list, success_list;
+> +	struct address_space *mapping;
+> +	struct mm_struct *mm, *tmpmm;
+> +	struct vm_area_struct *vma;
+> +	struct uprobe *uprobe;
+> +	int ret = -1;
+> +
+> +	if (!inode || !consumer || consumer->next)
+> +		return -EINVAL;
+> +
+> +	uprobe = uprobes_add(inode, offset);
+> +	if (!uprobe)
+> +		return -ENOMEM;
+> +
+> +	INIT_LIST_HEAD(&try_list);
+> +	INIT_LIST_HEAD(&success_list);
+> +	mapping = inode->i_mapping;
+> +
+> +	mutex_lock(&uprobes_mutex);
+> +	if (uprobe->consumers) {
+> +		ret = 0;
+> +		goto consumers_add;
+> +	}
+> +
+> +	spin_lock(&mapping->i_mmap_lock);
+> +	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, 0, 0) {
+> +		loff_t vaddr;
+> +
+> +		if (!atomic_inc_not_zero(&vma->vm_mm->mm_users))
+> +			continue;
+> +
+> +		mm = vma->vm_mm;
+> +		if (!valid_vma(vma)) {
+> +			mmput(mm);
+> +			continue;
+> +		}
+> +
+> +		vaddr = vma->vm_start + offset;
+> +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
 
-More than what I can see on the screen shot I cannot grasp.
+What happens here when someone passes an offset that is out of bounds
+for the vma?  Looks like we could oops when the kernel tries to set a
+breakpoint.  Perhaps check wrt ->vm_end?
 
-> Does this happen reliably?  Does a previous kernel work ok?
+-- 
+steve
 
-Reliable: yes
-Previous: I don't know, but I can try out some older git release.
-   which one do you suggest?
-  (I got the laptop recently so I don't have a long history with that one)
-
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-SCRONKEY (n.)
-Something that hits the window as a result of a violent sneeze.
-			--- Douglas Adams, The Meaning of Liff
