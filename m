@@ -1,59 +1,576 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750916Ab1DBEiU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 00:38:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56790 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab1DBEiS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 00:38:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DOYnWuZB1wXcb0nNylFEZ9u9H5KVKHaTfUnp8jYF7KPuuvVU0x7n1hsNhS6vrOfoxP
-         nwWsaUbM2sTCppvPxS45fi+69AbrdEk4DGnZCqnlpdjasOOgNHnRsV/fSOTqjUqAXgCi
-         v1sYP/AWQUz0ZwmH4yuiMTL2eZOi00EG5GY1k=
-Date: Sat, 2 Apr 2011 06:38:04 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
-        Ingo Molnar <mingo@elte.hu>, david@lang.hm,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110402043804.GB3989@riccoc20.at.omicron.at>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
- <201104011554.07924.arnd@arndb.de>
- <1301671655.28467.52.camel@e102144-lin.cambridge.arm.com>
- <201104011755.57412.arnd@arndb.de>
- <alpine.LFD.2.00.1104011557080.28032@xanadu.home>
+	id S1751412Ab1DBFF4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 01:05:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50298 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750879Ab1DBFFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 01:05:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,286,1299484800"; 
+   d="scan'208";a="728218138"
+Message-ID: <4D96AEAE.2010800@intel.com>
+Date: Sat, 02 Apr 2011 13:05:50 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1104011557080.28032@xanadu.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, "lenb@kernel.org" <lenb@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: About lock-less data structure patches
+References: <4D928405.4050607@intel.com> <20110329182145.e64b66b5.akpm@linux-foundation.org> <4D9287C3.7030103@intel.com> <20110330032203.GC21838@one.firstfloor.org> <20110329202649.137a8a18.akpm@linux-foundation.org> <20110330133411.GA11101@Krystal> <BLU0-SMTP52616BFA7ABB7E8E73E8396BC0@phx.gbl> <4D93DB49.3060205@intel.com> <20110401213748.GA26543@Krystal>
+In-Reply-To: <20110401213748.GA26543@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 01, 2011 at 04:19:31PM -0400, Nicolas Pitre wrote:
+On 04/02/2011 05:37 AM, Mathieu Desnoyers wrote:
+> * Huang Ying (ying.huang@intel.com) wrote:
+>> Hi, Mathieu,
+>>
+>> Thank you very much for your review.  Do you have time to take a look at
+>> the lock-less memory allocator as follow?
+>>
+>> https://lkml.org/lkml/2011/2/21/15
 > 
-> In a perfect world the bootloader would be bug free and always up to 
-> date with the best DT data.  In practice I'm very skeptical this will 
-> always be the case and painless.  At least the above makes it very 
-> simple to have a self contained kernel when (not if) need be.
+> I'll try to have a look in the following weeks.
 
-Yes, my experience with DT on powerpc teaches me that, although DT
-sounds wonderful in theory, in practice kernel/dtb/uboot form a love
-triangle (or perhaps a hate triangle) where all three points must be
-exactly up to date with each other. If one part is even just a month
-or two too old/new, then your kernel might not boot.
+Thanks.
 
-Richard
+> Answer to comments below,
+> 
+>>
+>> On 03/30/2011 11:11 PM, Mathieu Desnoyers wrote:
+>>> * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+>>>> * Andrew Morton (akpm@linux-foundation.org) wrote:
+>>>>> On Wed, 30 Mar 2011 05:22:03 +0200 Andi Kleen <andi@firstfloor.org> wrote:
+>>>>>
+>>>>>> On Wed, Mar 30, 2011 at 09:30:43AM +0800, Huang Ying wrote:
+>>>>>>> On 03/30/2011 09:21 AM, Andrew Morton wrote:
+>>>>>>>> On Wed, 30 Mar 2011 09:14:45 +0800 Huang Ying <ying.huang@intel.com> wrote:
+>>>>>>>>
+>>>>>>>>> Hi, Andrew and Len,
+>>>>>>>>>
+>>>>>>>>> In my original APEI patches for 2.6.39, the following 3 patches is about
+>>>>>>>>> lock-less data structure.
+>>>>>>>>>
+>>>>>>>>> [PATCH 1/7] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
+>>>>>>>>> [PATCH 2/7] lib, Add lock-less NULL terminated single list
+>>>>>>>>> [PATCH 6/7] lib, Make gen_pool memory allocator lockless
+>>>>>>>>>
+>>>>>>>>> Len think we need some non-Intel "Acked-by" or "Reviewed-by" for these
+>>>>>>>>> patches to go through the ACPI git tree.  Or they should go through
+>>>>>>>>> other tree, such as -mm tree.
+>>>>>>>>
+>>>>>>>> I just dropped a couple of your patches because include/linux/llist.h
+>>>>>>>> vanished from linux-next.   Did Len trip over the power cord?
+>>>>>>>
+>>>>>>> Len has dropped lock-less data structure patches from acpi git tree.  He
+>>>>>>> describe the reason in following mails.
+>>>>>>>
+>>>>>>> https://lkml.org/lkml/2011/3/2/501
+>>>>>>> https://lkml.org/lkml/2011/3/23/6
+>>>>>>
+>>>>>> Ok so we still need a lockless reviewer really and I don't count.
+>>>>>
+>>>>> Well I think you count ;) If this is some Intel thing then cluebeat,
+>>>>> cluebeat, cluebeat, overruled.
+>>>>>
+>>>>>> Copying Mathieu who did a lot of lockless stuff. Are you interested
+>>>>>> in reviewing Ying's patches?
+>>>>>
+>>>>> That would be great.
+>>>>
+>>>> Sure, I can have a look. Huang, can you resend those three patches
+>>>> adding me to CC list ? That will help me keep appropriate threading in
+>>>> my review. Adding Paul McKenney would also be appropriate.
+>>>
+>>> I know, I know, I said I would wait for a repost, but now the answer
+>>> burns my fingers. ;-) I'm replying to the patch found in
+>>> https://lkml.org/lkml/2011/2/21/13
+>>>
+>>>
+>>>> --- /dev/null
+>>>> +++ b/include/linux/llist.h
+>>>> @@ -0,0 +1,98 @@
+>>>> +#ifndef LLIST_H
+>>>> +#define LLIST_H
+>>>> +/*
+>>>> + * Lock-less NULL terminated single linked list
+>>>
+>>> Because this single-linked-list works like a stack (with "push"
+>>> operation for llist_add, "pop" operation for llist_del_first), I would
+>>> recommend to rename it accordingly (as a stack rather than "list"). If
+>>> we think about other possible users of this kind of lock-free list, such
+>>> as call_rcu(), a "queue" would be rather more appropriate than a "stack"
+>>> (with enqueue/dequeue operations). So at the very least I would like to
+>>> make sure this API keeps room for lock-free queue implementations that
+>>> won't be confused with this stack API. It would also be important to
+>>> figure out if what we really want is a stack or a queue. Some naming
+>>> ideas follow (maybe they are a bit verbose, comments are welcome).
+>>>
+>>> We should note that this list implements "lock-free" push and pop
+>>> operations (cmpxchg loops), and a "wait-free" "llist_del_all" operation
+>>> (using xchg) (only really true for architectures with "true" xchg
+>>> operation though, not those using LL/SC). We should think about the real
+>>> use-case requirements put on this lockless stack to decide which variant
+>>> is most appropriate. We can either have, with the implementation you
+>>> propose:
+>>>
+>>> - Lock-free push
+>>> - Pop protected by mutex
+>>> - Wait-free pop all
+>>>
+>>> Or, as an example of an alternative structure (as Paul and I implemented
+>>> in the userspace RCU library):
+>>>
+>>> - Wait-free push (stronger real-time guarantees provided by xchg())
+>>> - Blocking pop/pop all (use cmpxchg and busy-wait for very short time
+>>>   periods)
+>>>
+>>> (there are others, with e.g. lock-free push, lock-free pop, lock-free
+>>> pop all, but this one requires RCU read lock across the pop/pop/pop all
+>>> operations and that memory reclaim of the nodes is only performed after
+>>> a RCU grace-period has elapsed. This deals with ABA issues of concurrent
+>>> push/pop you noticed without requiring mutexes protecting pop operations.)
+>>>
+>>> So it all boils down to which are the constraints of the push/pop
+>>> callers.  Typically, I would expect that the "push" operation has the
+>>> most strict real-time constraints (and is possibly executed the most
+>>> often, thus would also benefit from xchg() which is typically slightly
+>>> faster than cmpxchg()), which would argue in favor of a wait-free
+>>> push/blocking pop.  But maybe I'm lacking understanding of what you are
+>>> trying to do with this stack. Do you need to ever pop from a NMI
+>>> handler ?
+>>
+>> In my user case, I don't need to pop in a NMI handler, just push.  But
+>> we need to pop in a IRQ handler, so we can not use blocking pop.  Please
+>> take a look at the user case patches listed later.
+> 
+> Actually, I marked that as a "blocking" in our implementation because I
+> have a busy-loop in there, and because my algorithm was implemented in
+> user-space, I added an adaptative delay to make sure not to busy-loop
+> waiting for a preempted thread to come back.
+> 
+> But by disabling preemption and using a real busy-loop in the kernel,
+> the pop can trivially be made non-blocking, and thus OK for interrupt
+> handlers.
+
+OK.  I see.  Thanks for clarification.  Takes a look at your "wfs"
+implementation.  It seems that we need to disable interrupt in wf push
+side to make it possible to use pop in interrupt handler. Do you think so?
+
+>>> Some ideas for API identifiers:
+>>>
+>>> struct llist_head -> slist_stack_head
+>>> struct llist_node -> slist_stack_node
+>>
+>> Why call it a stack and a list?  Because it is a stack implemented with
+>> single list?  I think it is better to name after usage instead of
+>> implementation.
+>>
+>> The next question is whether it should be named as stack or list.  I
+>> think from current user's point of view, they think they are using a
+>> list instead of stack.  There are 3 users so far as follow.
+>>
+>> https://lkml.org/lkml/2011/1/17/14
+>> https://lkml.org/lkml/2011/1/17/15
+>> https://lkml.org/lkml/2011/2/21/16
+> 
+> Hrm, I'm concerned about the impact of handing the irq work from one
+> execution context to another in the reverse order (because a stack is
+> implemented here). Can this have unwanted side-effects ?
+
+For irq work, this is not an issue.  irq work users should not depend on
+the order of raising.  But if it is necessary, we can reserve the order
+again in irq_work_run to keep the original order.  After deleting all
+nodes from lock-less list, we can operate on them at will.
+
+>>
+>> And if we named this data structure as list, we can still use "queue"
+>> for another data structure.  Do you think so?
+> 
+> Well, the "delete first entry" is really unclear if we call all this a
+> "list". Which is the first entry ? The first added to the list, or the
+> last one ? The natural reflex would be to think it is the first added,
+> but in this case, it's the opposite. This is why I think using stack or
+> lifo (with push/pop) would be clearer than "list" (with add/del).
+
+The llist is ordered list and has only one list "head", so the first
+entry is the one pointed to by the "head".  Is it clear?
+
+> So maybe "lockless stack" could be palatable ? The name "lockless lifo"
+> came to my mind in the past days too.
+
+But what we need is just a lock-less list, not a stack.  It behaves like
+a stack just because we can not implement other functions such as
+llist_add_tail etc in a lock-less way yet.  And we will add these
+functions when we know how to do that.
+
+>>> * For your lock-free push/pop + wait-free pop_all implementation:
+>>>
+>>> llist_add -> slist_stack_push_lf        (lock-free)
+>>> llist_del_first -> _slist_stack_pop     (needs mutex protection)
+>>> llist_del_all -> slist_stack_pop_all_wf (wait-free)
+>>
+>> Do we really need to distinguish between lock-free and wait-free from
+>> interface?
+> 
+> I don't think it is needed, and it's probably even just more confusing
+> for API users.
+> 
+>> Will we implement both slist_stack_push_lf and
+>> slist_stack_push_wf for one data structure?
+> 
+> Those will possibly even require different data structures. It might be
+> less confusing to find out clearly what our needs are, and only propose
+> a single behavior, otherwise it will be confusing for users of these
+> APIs without good reason.
+
+Yes.  I agree.  The semantics of my original lock-less list has already
+been used by irq work and xlist of net rds.  My original implementation
+can be seen as generalizing the existing implementation.  How about take
+my original implementation as the first step, that is, generalizing,
+then consider how to optimize it after that?
+
+But if you want to compare the two semantics above, I am OK too.
+
+>> mutex is needed between multiple "_slist_stack_pop", but not needed
+>> between slist_stack_push_lf and _slist_stack_pop.  I think it is hard to
+>> explain that clearly via function naming.
+> 
+> Good point. A ascii-art table might be appropriate here, e.g.:
+> 
+> 
+> M: Mutual exclusion needed to protect one from another.
+> -: lockless.
+> 
+>              |     push     |   pop    |   pop_all
+> push         |      -       |    -     |     -
+> pop          |              |    L     |     L
+> pop_all      |              |          |     -
+> 
+> How about adding this (or something prettier) to the header ?
+
+Cool!  I will add that to header.
+
+>>> * If we choose to go with an alternate wait-free push implementation:
+>>>
+>>> llist_add -> slist_stack_push_wf              (wait-free)
+>>> llist_del_first -> slist_stack_pop_blocking   (blocking)
+>>> llist_del_all -> slist_stack_pop_all_blocking (blocking)
+>>
+>> We need non-blocking pop, so maybe you need implement another data
+>> structure which has these interface.  I think there can be multiple
+>> lock-less data structure in kernel.
+> 
+> As I noted earlier, the blocking was only due to our user-level
+> implementation. It can be turned in a very short-lived busy loop
+> instead.
+> 
+>>
+>>>> + *
+>>>> + * If there are multiple producers and multiple consumers, llist_add
+>>>> + * can be used in producers and llist_del_all can be used in
+>>>> + * consumers.  They can work simultaneously without lock.  But
+>>>> + * llist_del_first can not be used here.  Because llist_del_first
+>>>> + * depends on list->first->next does not changed if list->first is not
+>>>> + * changed during its operation, but llist_del_first, llist_add,
+>>>> + * llist_add sequence in another consumer may violate that.
+>>>
+>>> You did not seem to define the locking rules when using both
+>>>
+>>>   llist_del_all
+>>> and
+>>>   llist_del_first
+>>>
+>>> in parallel. I expect that a mutex is needed, because a
+>>>
+>>>   llist_del_all, llist_add, llist_add
+>>>
+>>> in parallel with
+>>>
+>>>   llist_del_first
+>>>
+>>> could run into the same ABA problem as described above.
+>>
+>> OK.  I will add that.
+>>
+>>>> + *
+>>>> + * If there are multiple producers and one consumer, llist_add can be
+>>>> + * used in producers and llist_del_all or llist_del_first can be used
+>>>> + * in the consumer.
+>>>> + *
+>>>> + * The list entries deleted via llist_del_all can be traversed with
+>>>> + * traversing function such as llist_for_each etc.  But the list
+>>>> + * entries can not be traversed safely before deleted from the list.
+>>>
+>>> Given that this is in fact a stack, specifying the traversal order of
+>>> llist_for_each and friends would be appropriate.
+>>
+>> Ok.  I will add something like "traversing from head to tail" in the
+>> comments.
+> 
+> Traversing from last element pushed to first element pushed would
+> probably be clearer.
+
+head and tail describe the current state, while "last/first element
+pushed" describe the history.  I think both are understandable.
+
+>>>> + *
+>>>> + * The basic atomic operation of this list is cmpxchg on long.  On
+>>>> + * architectures that don't have NMI-safe cmpxchg implementation, the
+>>>> + * list can NOT be used in NMI handler.  So code uses the list in NMI
+>>>> + * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+>>>> + */
+>>>> +
+>>>> +struct llist_head {
+>>>> +     struct llist_node *first;
+>>>> +};
+>>>> +
+>>>> +struct llist_node {
+>>>> +     struct llist_node *next;
+>>>> +};
+>>>> +
+>>>> +#define LLIST_HEAD_INIT(name)        { NULL }
+>>>> +#define LLIST_HEAD(name)     struct llist_head name = LLIST_HEAD_INIT(name)
+>>>> +
+>>>> +/**
+>>>> + * init_llist_head - initialize lock-less list head
+>>>> + * @head:    the head for your lock-less list
+>>>> + */
+>>>> +static inline void init_llist_head(struct llist_head *list)
+>>>> +{
+>>>> +     list->first = NULL;
+>>>> +}
+>>>> +
+>>>> +/**
+>>>> + * llist_entry - get the struct of this entry
+>>>> + * @ptr:     the &struct llist_node pointer.
+>>>> + * @type:    the type of the struct this is embedded in.
+>>>> + * @member:  the name of the llist_node within the struct.
+>>>> + */
+>>>> +#define llist_entry(ptr, type, member)               \
+>>>> +     container_of(ptr, type, member)
+>>>> +
+>>>> +/**
+>>>> + * llist_for_each - iterate over some deleted entries of a lock-less list
+>>>> + * @pos:     the &struct llist_node to use as a loop cursor
+>>>> + * @node:    the first entry of deleted list entries
+>>>> + *
+>>>> + * In general, some entries of the lock-less list can be traversed
+>>>> + * safely only after being deleted from list, so start with an entry
+>>>> + * instead of list head.
+>>>> + */
+>>>> +#define llist_for_each(pos, node)                    \
+>>>> +     for (pos = (node); pos; pos = pos->next)
+>>>> +
+>>>> +/**
+>>>> + * llist_for_each_entry - iterate over some deleted entries of lock-less list of given type
+>>>> + * @pos:     the type * to use as a loop cursor.
+>>>> + * @node:    the fist entry of deleted list entries.
+>>>> + * @member:  the name of the llist_node with the struct.
+>>>> + *
+>>>> + * In general, some entries of the lock-less list can be traversed
+>>>> + * safely only after being removed from list, so start with an entry
+>>>> + * instead of list head.
+>>>> + */
+>>>> +#define llist_for_each_entry(pos, node, member)                              \
+>>>> +     for (pos = llist_entry((node), typeof(*pos), member);           \
+>>>> +          &pos->member != NULL;                                      \
+>>>> +          pos = llist_entry(pos->member.next, typeof(*pos), member))
+>>>> +
+>>>> +/**
+>>>> + * llist_empty - tests whether a lock-less list is empty
+>>>
+>>> How is this llist_empty test expected to be used in combination with
+>>> other API members ? e.g. llist_del_first, llist_del_all, llist_add ? I
+>>> suspect that without mutex to ensure that there are no concurrent
+>>> changes, llist_empty return value can easily be non-current.
+>>
+>> We don't need llist_empty to be accurate.  Just a quick way to test
+>> whether list/stack is empty without deleting something from list/stack.
+> 
+> OK, maybe specifying this limitation above the function would be
+> appropriate.
+> 
+> Thanks,
+> 
+> Mathieu
+> 
+>>
+>> Best Regards,
+>> Huang Ying
+>>
+>>> Thanks,
+>>>
+>>> Mathieu
+>>>
+>>>> + * @head:    the list to test
+>>>> + */
+>>>> +static inline int llist_empty(const struct llist_head *head)
+>>>> +{
+>>>> +     return head->first == NULL;
+>>>> +}
+>>>> +
+>>>> +void llist_add(struct llist_node *new, struct llist_head *head);
+>>>> +void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
+>>>> +                  struct llist_head *head);
+>>>> +struct llist_node *llist_del_first(struct llist_head *head);
+>>>> +struct llist_node *llist_del_all(struct llist_head *head);
+>>>> +#endif /* LLIST_H */
+>>>> --- a/lib/Kconfig
+>>>> +++ b/lib/Kconfig
+>>>> @@ -219,4 +219,7 @@ config LRU_CACHE
+>>>>  config AVERAGE
+>>>>       bool
+>>>>
+>>>> +config LLIST
+>>>> +     bool
+>>>> +
+>>>>  endmenu
+>>>> --- a/lib/Makefile
+>>>> +++ b/lib/Makefile
+>>>> @@ -110,6 +110,8 @@ obj-$(CONFIG_ATOMIC64_SELFTEST) += atomi
+>>>>
+>>>>  obj-$(CONFIG_AVERAGE) += average.o
+>>>>
+>>>> +obj-$(CONFIG_LLIST) += llist.o
+>>>> +
+>>>>  hostprogs-y  := gen_crc32table
+>>>>  clean-files  := crc32table.h
+>>>>
+>>>> --- /dev/null
+>>>> +++ b/lib/llist.c
+>>>> @@ -0,0 +1,119 @@
+>>>> +/*
+>>>> + * Lock-less NULL terminated single linked list
+>>>> + *
+>>>> + * The basic atomic operation of this list is cmpxchg on long.  On
+>>>> + * architectures that don't have NMI-safe cmpxchg implementation, the
+>>>> + * list can NOT be used in NMI handler.  So code uses the list in NMI
+>>>> + * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+>>>> + *
+>>>> + * Copyright 2010 Intel Corp.
+>>>> + *   Author: Huang Ying <ying.huang@intel.com>
+>>>> + *
+>>>> + * This program is free software; you can redistribute it and/or
+>>>> + * modify it under the terms of the GNU General Public License version
+>>>> + * 2 as published by the Free Software Foundation;
+>>>> + *
+>>>> + * This program is distributed in the hope that it will be useful,
+>>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>>> + * GNU General Public License for more details.
+>>>> + *
+>>>> + * You should have received a copy of the GNU General Public License
+>>>> + * along with this program; if not, write to the Free Software
+>>>> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+>>>> + */
+>>>> +#include <linux/kernel.h>
+>>>> +#include <linux/module.h>
+>>>> +#include <linux/interrupt.h>
+>>>> +#include <linux/llist.h>
+>>>> +
+>>>> +#include <asm/system.h>
+>>>> +
+>>>> +/**
+>>>> + * llist_add - add a new entry
+>>>> + * @new:     new entry to be added
+>>>> + * @head:    the head for your lock-less list
+>>>> + */
+>>>> +void llist_add(struct llist_node *new, struct llist_head *head)
+>>>> +{
+>>>> +     struct llist_node *entry;
+>>>> +
+>>>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+>>>> +     BUG_ON(in_nmi());
+>>>> +#endif
+>>>> +
+>>>> +     do {
+>>>> +             entry = head->first;
+>>>> +             new->next = entry;
+>>>> +     } while (cmpxchg(&head->first, entry, new) != entry);
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(llist_add);
+>>>> +
+>>>> +/**
+>>>> + * llist_add_batch - add several linked entries in batch
+>>>> + * @new_first:       first entry in batch to be added
+>>>> + * @new_last:        last entry in batch to be added
+>>>> + * @head:    the head for your lock-less list
+>>>> + */
+>>>> +void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
+>>>> +                  struct llist_head *head)
+>>>> +{
+>>>> +     struct llist_node *entry;
+>>>> +
+>>>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+>>>> +     BUG_ON(in_nmi());
+>>>> +#endif
+>>>> +
+>>>> +     do {
+>>>> +             entry = head->first;
+>>>> +             new_last->next = entry;
+>>>> +     } while (cmpxchg(&head->first, entry, new_first) != entry);
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(llist_add_batch);
+>>>> +
+>>>> +/**
+>>>> + * llist_del_first - delete the first entry of lock-less list
+>>>> + * @head:    the head for your lock-less list
+>>>> + *
+>>>> + * If list is empty, return NULL, otherwise, return the first entry deleted.
+>>>> + *
+>>>> + * Only one llist_del_first user can be used simultaneously with
+>>>> + * multiple llist_add users without lock. Because otherwise
+>>>> + * llist_del_first, llist_add, llist_add sequence in another user may
+>>>> + * change @head->first->next, but keep @head->first. If multiple
+>>>> + * consumers are needed, please use llist_del_all.
+>>>> + */
+>>>> +struct llist_node *llist_del_first(struct llist_head *head)
+>>>> +{
+>>>> +     struct llist_node *entry;
+>>>> +
+>>>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+>>>> +     BUG_ON(in_nmi());
+>>>> +#endif
+>>>> +
+>>>> +     do {
+>>>> +             entry = head->first;
+>>>> +             if (entry == NULL)
+>>>> +                     return NULL;
+>>>> +     } while (cmpxchg(&head->first, entry, entry->next) != entry);
+>>>> +
+>>>> +     return entry;
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(llist_del_first);
+>>>> +
+>>>> +/**
+>>>> + * llist_del_all - delete all entries from lock-less list
+>>>> + * @head:    the head of lock-less list to delete all entries
+>>>> + *
+>>>> + * If list is empty, return NULL, otherwise, delete all entries and
+>>>> + * return the pointer to the first entry.
+>>>> + */
+>>>> +struct llist_node *llist_del_all(struct llist_head *head)
+>>>> +{
+>>>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+>>>> +     BUG_ON(in_nmi());
+>>>> +#endif
+>>>> +
+>>>> +     return xchg(&head->first, NULL);
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(llist_del_all);
+> 
+> --
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
+
