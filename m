@@ -1,41 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab1DBTba (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 15:31:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42836 "EHLO linutronix.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756426Ab1DBTb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 15:31:28 -0400
-Date: Sat, 2 Apr 2011 21:31:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: John Stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Make clocksource name const
-In-Reply-To: <alpine.LFD.2.00.1104022107520.5929@localhost6.localdomain6>
-Message-ID: <alpine.LFD.2.00.1104022130460.5929@localhost6.localdomain6>
-References: <20110219153450.GI29493@n2100.arm.linux.org.uk> <20110402141134.GA23324@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1104022107520.5929@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756961Ab1DBTbw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 15:31:52 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:57626 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756674Ab1DBTbv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 15:31:51 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Message-ID: <8d4081b4-298b-49fa-ab63-27236c2c819d@default>
+Date: Sat, 2 Apr 2011 12:31:35 -0700 (PDT)
+From: annie.li@oracle.com
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, dfeng@redhat.com
+Subject: Auto Reply: [tip:irq/urgent] genirq: Fix cpumask leak in
+ __setup_irq()
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D977998.00FB:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Apr 2011, Thomas Gleixner wrote:
-
-> On Sat, 2 Apr 2011, Russell King - ARM Linux wrote:
-> 
-> > Has this patch been rejected?
-> 
-> No, I think it just got lost. Will pick it up.
-
-Weird, I don't have it at all. Could you please resend?
-
-Thanks,
-
-	tglx
-
-
+Thanks for you email, i am not in office until Apr 6, 2011. My response may be slowly for the email. 
