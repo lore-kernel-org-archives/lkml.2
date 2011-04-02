@@ -1,28 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab1DBADY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 20:03:24 -0400
-Received: from vms173017pub.verizon.net ([206.46.173.17]:37176 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140Ab1DBADX (ORCPT
+	id S1754073Ab1DBAH0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 20:07:26 -0400
+Received: from vms173007pub.verizon.net ([206.46.173.7]:45135 "EHLO
+	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab1DBAHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 20:03:23 -0400
-Date: Fri, 01 Apr 2011 20:03:10 -0400 (EDT)
+	Fri, 1 Apr 2011 20:07:25 -0400
+Date: Fri, 01 Apr 2011 20:07:04 -0400 (EDT)
 From: Len Brown <lenb@kernel.org>
 X-X-Sender: lenb@x980
-To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Cc: Trinabh Gupta <trinabh@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, peterz@infradead.org,
-        suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V1 1/2] cpuidle: Data structure changes for global
- cpuidle device
-In-reply-to: <20110325174831.GB19214@dirshya.in.ibm.com>
-Message-id: <alpine.LFD.2.02.1104011954000.3461@x980>
-References: <20110322124724.29408.12885.stgit@tringupt.in.ibm.com>
- <20110322124750.29408.17788.stgit@tringupt.in.ibm.com>
- <alpine.LFD.2.02.1103250330470.32565@x980>
- <20110325174831.GB19214@dirshya.in.ibm.com>
+To: Tero Kristo <tero.kristo@nokia.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH] cpuidle: menu: fixed wrapping timers at 4.294 seconds
+In-reply-to: <1298560763-441-1-git-send-email-tero.kristo@nokia.com>
+Message-id: <alpine.LFD.2.02.1104012006370.3461@x980>
+References: <1298560763-441-1-git-send-email-tero.kristo@nokia.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-version: 1.0
 Content-type: TEXT/PLAIN; charset=US-ASCII
@@ -30,74 +23,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I think the real problem that prepare() was trying to solve
-> > is that the driver today does not have the ability to over-rule
-> > the choice made by the governor.  The driver may discover
-> > in the course of trying to satisfy the request of the governor
-> > that it needs to demote to a shallower state; or it may
-> > do its best to satisfy the governor's request, and the hardware
-> > may demote its request to a shallower state.
-> > 
-> > Unfortunately, when this happens, the driver dutifully
-> > returns the time spent in the state to cpuidle_idle_call(),
-> > who then updates the wrong last_residency, time, and usage counters.
-> 
-> I did not get this scenario.  Are you saying 
-> 
-> target_state->enter(dev, target_state) can enter a different state
-> than the one suggested by target_state?  
-
-Yes.
-
-> I understand the hardware demotion part, but can we really detect the
-> target 'demoted' state in that case?  I guess not.
-
-In addition to HW demotion, SW may also notice at the last minute
-that some criteria for entering a state is not met, and need
-to demote in SW.
-
-Effectively it is the same as HW demotion, except SW can see
-that it is going to happen ahead of time.
-
-The example is MRST S0i3, where a number of dependencies on
-SOC device state must be met to enter the state, and those
-dependencies can change state at any time.
-
-> > Sure is ironic for the driver to allocate the data structures and
-> > then hand the timer to the uppper layer, just to have the upper layer
-> > update the wrong data structures...
-> > 
-> > Surely the driver enter routine should update the counters
-> > that the driver was obligated to allocate, and it should return
-> > the state actually entered (for tracing), rather than the time spent
-> > there.
-> 
-> Can we do something like this:
-> 
-> last_state = target_state->enter(dev, target_state)
-> 
-> dev->last_state and dev->last_residency are updated inside
-> target_state->enter() 
-> 
-> The returned last_state is just for tracing, actual data is already
-> updated in the cpuidle_dev structure and used for sysfs display.
-
-dev->last_state and
-dev->last_residency
-seem like part of hacky support for run-time changing of c-states.
-
-I think if we move the couter incrementing into the driver,
-then the upper layer shouldn't need to care about it.
-The driver will always have a better idea of what happened
-than cpuidle_idle_call().
-
-> > The generic cpuidle code should simply handle where the counters live
-> > in the sysfs namespace, not updating the counters.
-> > This needs to be addressed before cpuidle_device.cpuidle_state[]
-> > can be made one/system.
-> 
-> Agreed.
+applied to idle-test
 
 thanks,
-Len Brown, Intel Open Source Technolgy Center
+Len Brown, Intel Open Source Technology Center
 
+ps. please cc linux-pm on cpuidle pathces
+
+On Thu, 24 Feb 2011, Tero Kristo wrote:
+
+> Cpuidle menu governor is using u32 as a temporary datatype for storing
+> nanosecond values which wrap around at 4.294 seconds. This causes errors
+> in predicted sleep times resulting in higher than should be C state
+> selection and increased power consumption. This also breaks cpuidle
+> state residency statistics.
+> 
+> Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+> ---
+>  drivers/cpuidle/governors/menu.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> index f508690..c47f3d0 100644
+> --- a/drivers/cpuidle/governors/menu.c
+> +++ b/drivers/cpuidle/governors/menu.c
+> @@ -237,6 +237,7 @@ static int menu_select(struct cpuidle_device *dev)
+>  	unsigned int power_usage = -1;
+>  	int i;
+>  	int multiplier;
+> +	struct timespec t;
+>  
+>  	if (data->needs_update) {
+>  		menu_update(dev);
+> @@ -251,8 +252,9 @@ static int menu_select(struct cpuidle_device *dev)
+>  		return 0;
+>  
+>  	/* determine the expected residency time, round up */
+> +	t = ktime_to_timespec(tick_nohz_get_sleep_length());
+>  	data->expected_us =
+> -	    DIV_ROUND_UP((u32)ktime_to_ns(tick_nohz_get_sleep_length()), 1000);
+> +		t.tv_sec * USEC_PER_SEC + t.tv_nsec / NSEC_PER_USEC;
+>  
+>  
+>  	data->bucket = which_bucket(data->expected_us);
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
