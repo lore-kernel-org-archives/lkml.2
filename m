@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab1DBCzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 22:55:00 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40187 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756990Ab1DBCyz (ORCPT
+	id S1757478Ab1DBCzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 22:55:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:32917 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756990Ab1DBCzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 22:54:55 -0400
+	Fri, 1 Apr 2011 22:55:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=GZfxjR6l+6RTWJyTAH8nRiABTb90nnMCiCt9vJmktBey6iNkcD6gLDhPRO+3Z98Mu2
-         rhC5/O+IQJ0HrFgP/qEKoQPr1DYfNeHxVWl01yASYH8hOsbWQ7xHHAQGbaXQHVndCGaS
-         kdWkrcht9S3o6W+189cxM3IHBJADvQ5tM2ff4=
+        b=NYEsCkWpfe2iBq5vL9jQcT83wF+xhsrK4qcflW+wWfdbZSXTMgDi5kaoFYCkaxJ7a8
+         m9cjOXZbZR5MREZUUNJZYzcRcqxql7+RVxxT0z09R83oYeu6uVQg1DLsC+RG0JXK1icd
+         QlKJKM1MSZ/qRLAeFGTnXGSkanmctwski6rtE=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: "'David S . Miller'" <davem@davemloft.net>,
         Alexey Dobriyan <adobriyan@gmail.com>,
@@ -20,9 +20,9 @@ To: "'David S . Miller'" <davem@davemloft.net>,
         Octavian Purdila <tavi@cs.pub.ro>, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 19/24] sysctl: ipv4: register devinet tables as private children
-Date: Sat,  2 Apr 2011 04:53:33 +0200
-Message-Id: <8194561cfef6eec0ea462ef2e8e77546a226b499.1301711868.git.lucian.grijincu@gmail.com>
+Subject: [PATCH 22/24] sysctl: ipv4: register /proc/sys/net/ipv4/neigh empty directory
+Date: Sat,  2 Apr 2011 04:53:36 +0200
+Message-Id: <012acbd2c767198bdd88d6bd724b5c8b43997cf7.1301711868.git.lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.rc0
 In-Reply-To: <cover.1301711868.git.lucian.grijincu@gmail.com>
 References: <cover.1301711868.git.lucian.grijincu@gmail.com>
@@ -32,40 +32,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This halves the time it takes to add an interface:
+As opposed to the patches that added the /proc/sys/net/ipv4/conf and
+/proc/sys/net/ipv6/conf empty directories, this patch does include a
+change in semantics.
 
-$ time modprobe dummy numdummies=$n
+Before this patch /proc/sys/net/ipv4/neigh/default/ was registered
+from arp_init() directly.
 
-Without this patch:
- - n=5000 => real: 17:31m, sys 15:29m
- - n=2000 => real:  2:23m, sys  2:19m
- - n=1000 => real:  0:25m, sys  0:24m
+This patch adds new pernet_operations in which it first registers
+/proc/sys/net/ipv4/neigh/ and afterwards /proc/sys/net/ipv4/neigh/default/.
 
-With this patch:
- - n=5000 => real:  9:14m, sys: 8:46m
- - n=2000 => real:  1:19m, sys: 1:17m
- - n=1000 => real:  0:14m, sys: 0:14m
+These operations are ran for each network namespace in part, even for
+init_net (which is the only net that sees the 'default' entry), thus
+/proc/sys/net/ipv4/neigh/default/ gets registered, just that the
+registration now happens later that before this patch.
+
+In testing this did not seem to create problems, but I haven't checked
+the code thoroughly.
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- net/ipv4/devinet.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/net/netns/ipv4.h |    1 +
+ net/ipv4/arp.c           |   70 ++++++++++++++++++++++++++++++++++++++++++++--
+ net/ipv4/route.c         |   13 ++++----
+ 3 files changed, 74 insertions(+), 10 deletions(-)
 
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index a31cc90..2a10365 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1656,8 +1656,8 @@ static int __devinet_sysctl_register(struct net *net, char *dev_name,
+diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
+index cdb8307..182dc69 100644
+--- a/include/net/netns/ipv4.h
++++ b/include/net/netns/ipv4.h
+@@ -17,6 +17,7 @@ struct netns_ipv4 {
+ #ifdef CONFIG_SYSCTL
+ 	struct ctl_table_header	*forw_hdr;   /* /proc/sys/net/ipv4/ip_forward */
+ 	struct ctl_table_header	*conf_hdr;   /* /proc/sys/net/ipv4/conf/ */
++	struct ctl_table_header	*neigh_hdr;  /* /proc/sys/net/ipv4/neigh/ */
+ 	struct ctl_table_header	*frags_hdr;  /* /proc/sys/net/ipv4/ipfrag_* */
+ 	struct ctl_table_header	*ipv4_hdr;   /* see @ipv4_net_table */
+ 	struct ctl_table_header *route_hdr;  /* /proc/sys/net/ipv4/route/flush */
+diff --git a/net/ipv4/arp.c b/net/ipv4/arp.c
+index 090d273..d38654f 100644
+--- a/net/ipv4/arp.c
++++ b/net/ipv4/arp.c
+@@ -1302,6 +1302,7 @@ static struct packet_type arp_packet_type __read_mostly = {
+ };
  
- 	devinet_ctl_path[DEVINET_CTL_PATH_DEV].procname = t->dev_name;
+ static int arp_proc_init(void);
++static int __init arp_sysctl_init(void);
  
--	t->sysctl_header = register_net_sysctl_table(net, devinet_ctl_path,
--			t->devinet_vars);
-+	t->sysctl_header = register_net_sysctl_table_with_parent(net,
-+			 devinet_ctl_path, t->devinet_vars, net->ipv4.conf_hdr);
- 	if (!t->sysctl_header)
- 		goto free_procname;
+ void __init arp_init(void)
+ {
+@@ -1309,9 +1310,7 @@ void __init arp_init(void)
  
+ 	dev_add_pack(&arp_packet_type);
+ 	arp_proc_init();
+-#ifdef CONFIG_SYSCTL
+-	neigh_sysctl_register(NULL, &arp_tbl.parms, "ipv4", NULL);
+-#endif
++	arp_sysctl_init();
+ 	register_netdevice_notifier(&arp_netdev_notifier);
+ }
+ 
+@@ -1478,3 +1477,68 @@ static int __init arp_proc_init(void)
+ }
+ 
+ #endif /* CONFIG_PROC_FS */
++
++
++
++#ifdef CONFIG_SYSCTL
++
++/* empty entry for '/proc/sys/net/ipv4/neigh/' */
++static struct ctl_table empty[1];
++static struct ctl_table ipv4_neigh_skel[] = {
++	{
++		.procname       = "neigh",
++		.mode           = 0555,
++		.child          = empty,
++	},
++	{ },
++};
++static __net_initdata const struct ctl_path net_ipv4_path[] = {
++	{ .procname = "net", },
++	{ .procname = "ipv4", },
++	{ },
++};
++
++static int __net_init arp_sysctl_net_init(struct net *net)
++{
++	/* register empty dir for /proc/sys/net/ipv4/neigh/ */
++	net->ipv4.neigh_hdr = register_net_sysctl_table(net,
++					net_ipv4_path, ipv4_neigh_skel);
++	if (net->ipv4.neigh_hdr == NULL)
++		return -ENOMEM;
++
++	/* register /proc/sys/net/ipv4/neigh/default */
++	if (net_eq(net, &init_net)) {
++		int err;
++		err = neigh_sysctl_register(NULL, &arp_tbl.parms, "ipv4", NULL);
++		if (err) {
++			unregister_net_sysctl_table(net->ipv4.neigh_hdr);
++			return err;
++		}
++	}
++	return 0;
++}
++
++static void __net_exit arp_sysctl_net_exit(struct net *net)
++{
++	neigh_sysctl_unregister(&arp_tbl.parms);
++	unregister_sysctl_table(net->ipv4.neigh_hdr);
++}
++
++static struct pernet_operations arp_sysctl_ops = {
++	.init = arp_sysctl_net_init,
++	.exit = arp_sysctl_net_exit,
++};
++
++static int __init arp_sysctl_init(void)
++{
++	return register_pernet_subsys(&arp_sysctl_ops);
++}
++
++#else /* CONFIG_SYSCTL */
++
++static int __init arp_sysctl_init(void)
++{
++	return 0;
++}
++
++#endif /* CONFIG_SYSCTL */
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 1e99f01..180a10d 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -3139,15 +3139,14 @@ static ctl_table ipv4_route_table[] = {
+ 	{ }
+ };
+ 
+-static struct ctl_table empty[1];
+-
+ static struct ctl_table ipv4_skeleton[] =
+ {
+-	{ .procname = "route", 
+-	  .mode = 0555, .child = ipv4_route_table},
+-	{ .procname = "neigh", 
+-	  .mode = 0555, .child = empty},
+-	{ }
++	{
++		.procname = "route",
++		.mode     = 0555,
++		.child    = ipv4_route_table,
++	},
++	{ },
+ };
+ 
+ static __net_initdata struct ctl_path ipv4_path[] = {
 -- 
 1.7.5.rc0
 
