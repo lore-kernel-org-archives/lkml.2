@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab1DBC7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 22:59:47 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:32917 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857Ab1DBCyZ (ORCPT
+	id S1757541Ab1DBDAN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 23:00:13 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40187 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754184Ab1DBCyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 22:54:25 -0400
+	Fri, 1 Apr 2011 22:54:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=PUaYliTVNMVblFYNASyvJB4QxfhxSofGimNkqvflu30KIIeiqe0CrnaNKpqoqorlBx
-         H74WjubQNB/Si7hxGgyEyDtbHko+jXFOT2ebkbNWeeoreu42t5KurPJdakKMNiCVC7Sh
-         to8b6o7deAT4P1/cQCN2cDVl+twl2Pd1CaOyw=
+        b=rvHIAbehcy0w2XkjgldF6wmn6THW1jNQPWP3rVLffoSdj69wKjW+m/kqvCyCHNRuf7
+         q+Y82aNh72EG3kzmZ84YACT1yiSSnKzRZxrcoVk1iEv6Ba6XZu61l4DWlhEPZ0ynblfk
+         xt4XTPIdmOZ8RcLfXSV+wau6PIPl9HC9j201I=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: "'David S . Miller'" <davem@davemloft.net>,
         Alexey Dobriyan <adobriyan@gmail.com>,
@@ -20,9 +20,9 @@ To: "'David S . Miller'" <davem@davemloft.net>,
         Octavian Purdila <tavi@cs.pub.ro>, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 07/24] sysctl: cookie: share ipv4_route_flush_table between nets
-Date: Sat,  2 Apr 2011 04:53:21 +0200
-Message-Id: <f52d34fd4084fcdfed0450aa1c74fd09d3608518.1301711868.git.lucian.grijincu@gmail.com>
+Subject: [PATCH 05/24] sysctl: cookie: share ip4_frags_ns_ctl_table between nets
+Date: Sat,  2 Apr 2011 04:53:19 +0200
+Message-Id: <45aa3e8a8d47ba8bb697f430fa4e070835b22b96.1301711868.git.lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.rc0
 In-Reply-To: <cover.1301711868.git.lucian.grijincu@gmail.com>
 References: <cover.1301711868.git.lucian.grijincu@gmail.com>
@@ -32,71 +32,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We were creating a copy of this table was to set ctl_table->data to
+point to data from within the newly created 'struct net*'.
+
+The netns_proc_* handlers do this dynamically.
+
+Also change register_net_sysctl_table() to send the net as a cookie.
+
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- net/ipv4/route.c |   30 ++++--------------------------
- 1 files changed, 4 insertions(+), 26 deletions(-)
+ net/ipv4/ip_fragment.c |   34 ++++++----------------------------
+ net/sysctl_net.c       |    2 +-
+ 2 files changed, 7 insertions(+), 29 deletions(-)
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 0c66ea6..1e99f01 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -3015,13 +3015,12 @@ static int ipv4_sysctl_rtcache_flush(ctl_table *__ctl, int write,
- 	if (write) {
- 		int flush_delay;
- 		ctl_table ctl;
--		struct net *net;
-+		struct net *net = (struct net *) cookie;
+diff --git a/net/ipv4/ip_fragment.c b/net/ipv4/ip_fragment.c
+index a1151b8..f8fd613 100644
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -677,21 +677,21 @@ static struct ctl_table ip4_frags_ns_ctl_table[] = {
+ 		.data		= &init_net.ipv4.frags.high_thresh,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= netns_proc_dointvec
+ 	},
+ 	{
+ 		.procname	= "ipfrag_low_thresh",
+ 		.data		= &init_net.ipv4.frags.low_thresh,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= netns_proc_dointvec
+ 	},
+ 	{
+ 		.procname	= "ipfrag_time",
+ 		.data		= &init_net.ipv4.frags.timeout,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_jiffies,
++		.proc_handler	= netns_proc_dointvec_jiffies,
+ 	},
+ 	{ }
+ };
+@@ -717,41 +717,19 @@ static struct ctl_table ip4_frags_ctl_table[] = {
  
- 		memcpy(&ctl, __ctl, sizeof(ctl));
- 		ctl.data = &flush_delay;
- 		proc_dointvec(&ctl, write, buffer, lenp, ppos, NULL);
- 
--		net = (struct net *)__ctl->extra1;
- 		rt_cache_flush(net, flush_delay);
- 		return 0;
- 	}
-@@ -3176,37 +3175,16 @@ static __net_initdata struct ctl_path ipv4_route_path[] = {
- 
- static __net_init int sysctl_route_net_init(struct net *net)
+ static int __net_init ip4_frags_ns_ctl_register(struct net *net)
  {
--	struct ctl_table *tbl;
+-	struct ctl_table *table;
+ 	struct ctl_table_header *hdr;
 -
--	tbl = ipv4_route_flush_table;
+-	table = ip4_frags_ns_ctl_table;
 -	if (!net_eq(net, &init_net)) {
--		tbl = kmemdup(tbl, sizeof(ipv4_route_flush_table), GFP_KERNEL);
--		if (tbl == NULL)
--			goto err_dup;
--	}
--	tbl[0].extra1 = net;
+-		table = kmemdup(table, sizeof(ip4_frags_ns_ctl_table), GFP_KERNEL);
+-		if (table == NULL)
+-			goto err_alloc;
 -
--	net->ipv4.route_hdr =
--		register_net_sysctl_table(net, ipv4_route_path, tbl);
-+	net->ipv4.route_hdr = register_net_sysctl_table(net,
-+				ipv4_route_path, ipv4_route_flush_table);
- 	if (net->ipv4.route_hdr == NULL)
+-		table[0].data = &net->ipv4.frags.high_thresh;
+-		table[1].data = &net->ipv4.frags.low_thresh;
+-		table[2].data = &net->ipv4.frags.timeout;
+-	}
+-
+-	hdr = register_net_sysctl_table(net, net_ipv4_ctl_path, table);
++	hdr = register_net_sysctl_table(net, net_ipv4_ctl_path,
++					ip4_frags_ns_ctl_table);
+ 	if (hdr == NULL)
 -		goto err_reg;
 +		return -ENOMEM;
+ 
+ 	net->ipv4.frags_hdr = hdr;
  	return 0;
 -
 -err_reg:
--	if (tbl != ipv4_route_flush_table)
--		kfree(tbl);
--err_dup:
+-	if (!net_eq(net, &init_net))
+-		kfree(table);
+-err_alloc:
 -	return -ENOMEM;
  }
  
- static __net_exit void sysctl_route_net_exit(struct net *net)
+ static void __net_exit ip4_frags_ns_ctl_unregister(struct net *net)
  {
--	struct ctl_table *tbl;
+-	struct ctl_table *table;
 -
--	tbl = net->ipv4.route_hdr->ctl_table_arg;
- 	unregister_net_sysctl_table(net->ipv4.route_hdr);
--	BUG_ON(tbl == ipv4_route_flush_table);
--	kfree(tbl);
+-	table = net->ipv4.frags_hdr->ctl_table_arg;
+ 	unregister_net_sysctl_table(net->ipv4.frags_hdr);
+-	kfree(table);
  }
  
- static __net_initdata struct pernet_operations sysctl_route_ops = {
+ static void ip4_frags_ctl_register(void)
+diff --git a/net/sysctl_net.c b/net/sysctl_net.c
+index dfff9a3..7447d6e 100644
+--- a/net/sysctl_net.c
++++ b/net/sysctl_net.c
+@@ -110,7 +110,7 @@ struct ctl_table_header *register_net_sysctl_table(struct net *net,
+ 	namespaces = *current->nsproxy;
+ 	namespaces.net_ns = net;
+ 	return __register_sysctl_paths(&net_sysctl_root, &namespaces, path,
+-				       table, NULL);
++				       table, net);
+ }
+ EXPORT_SYMBOL_GPL(register_net_sysctl_table);
+ 
 -- 
 1.7.5.rc0
 
