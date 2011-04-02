@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab1DBIwL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 04:52:11 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:53597
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754803Ab1DBIwJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 04:52:09 -0400
-X-SpamScore: 4
-X-BigFish: VS4(zf6cizzz1202h1082kzz8275bhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Aisheng Dong <b29396@freescale.com>
-To: <hjk@hansjkoch.de>, <greg@kroah.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] uio: clean uioinfo when uninstall uio driver
-Date: Sat, 2 Apr 2011 16:55:23 +0800
-Message-ID: <1301734523-27933-1-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755372Ab1DBIyb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 04:54:31 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:41699 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755142Ab1DBIy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 04:54:29 -0400
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>
+Subject: [GIT PULL] UniCore32 ISA & PKUnity SoC patches for linux-2.6.39-rc1
+Date: Sat, 2 Apr 2011 16:54:13 +0800
+Message-ID: <002701cbf113$8c8db180$a5a91480$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+thread-index: AcvxEtlb3yIVdD+NRLeYmB9Tv3Txig==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jie Zhou <b30303@freescale.com>
+Hi Linus,
+   Could you please pull from:
+     git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git unicore32
+   to add unicore32 isa & pkunity soc patches for linux-2.6.39-rc1.
 
-The uioinfo should be cleaned up when uninstall, otherwise re-install
-failure of uio_pdrv_genirq.ko will happen.
+Thanks & regards,
 
-Signed-off-by: Jie Zhou <b30303@freescale.com>
-Signed-off-by: Aisheng Dong <b29396@freescale.com>
----
- drivers/uio/uio_pdrv_genirq.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Guan Xuetao
 
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index 7174d51..e669a2c 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -189,6 +189,12 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
- 
- 	uio_unregister_device(priv->uioinfo);
- 	pm_runtime_disable(&pdev->dev);
-+
-+	priv->uioinfo->irq_flags = 0;
-+	priv->uioinfo->handler = NULL;
-+	priv->uioinfo->irqcontrol = NULL;
-+	priv->uioinfo->priv = NULL;
-+
- 	kfree(priv);
- 	return 0;
- }
--- 
-1.7.0.4
+Guan Xuetao (4):
+  unicore32 ldscript fix: add cacheline parameter to PERCPU() macro
+  unicore32 fix: remove arch-specific futex support
+  unicore32 rtc driver fix: cleanup irq_set_freq and irq_set_state
+  unicore32 framebuffer fix: get videomemory by __get_free_pages() and
+    make it floatable
+
+Huang Weiyi (1):
+  unicore32 core architecture: remove duplicated #include
+
+ arch/unicore32/Makefile               |    2 +-
+ arch/unicore32/include/asm/futex.h    |  143 ---------------------------------
+ arch/unicore32/include/mach/PKUnity.h |   10 ---
+ arch/unicore32/include/mach/memory.h  |    1 -
+ arch/unicore32/kernel/puv3-core.c     |    5 -
+ arch/unicore32/kernel/rtc.c           |    9 --
+ arch/unicore32/kernel/setup.c         |   15 +---
+ arch/unicore32/kernel/traps.c         |    1 -
+ arch/unicore32/kernel/vmlinux.lds.S   |    7 +-
+ arch/unicore32/mm/mmu.c               |   20 -----
+ drivers/video/fb-puv3.c               |   28 ++++---
+ 11 files changed, 24 insertions(+), 217 deletions(-)
+ delete mode 100644 arch/unicore32/include/asm/futex.h
 
 
