@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab1DBCy0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 22:54:26 -0400
+	id S1755447Ab1DBCyc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 22:54:32 -0400
 Received: from mail-ww0-f44.google.com ([74.125.82.44]:40187 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab1DBCyW (ORCPT
+	with ESMTP id S1754312Ab1DBCy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 22:54:22 -0400
+	Fri, 1 Apr 2011 22:54:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=KKfc0upll2y7AQyLFM9BXm3qleHdk6qJvkJi8HieotUl8m1oo7Lrl7v7qQffaKHMch
-         qOkvesbu8KzeyB41QUpYtWe3JTbh2cdvI0CRoZCYtg/ue6QhDJNLwhs029zyAyXUM/p6
-         fACWrmp7l+pdzCtvwBHzBkZ9duvRF5y4eq4K4=
+        b=VK1qqawKfiqvBwsdxi9dIOu/TtOsCydlJJYPWfu04sldCozOx1RvQvcMKdWUIutUY1
+         FTejAAG5P8WsXZ+YBW8zAq8ZQmIIptynd7eRQ1CEDwdg68+fiiF0tfEzpJo+BhP0ajx6
+         6zupioh6qq8U8F0w2Tphby0pT6kUsezZWF+8g=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: "'David S . Miller'" <davem@davemloft.net>,
         Alexey Dobriyan <adobriyan@gmail.com>,
@@ -20,9 +20,9 @@ To: "'David S . Miller'" <davem@davemloft.net>,
         Octavian Purdila <tavi@cs.pub.ro>, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 06/24] sysctl: cookie: share netns_core_table between nets
-Date: Sat,  2 Apr 2011 04:53:20 +0200
-Message-Id: <d94e115426f8053c5ff5cd8a61149fbbe781f7c6.1301711868.git.lucian.grijincu@gmail.com>
+Subject: [PATCH 08/24] sysctl: cookie: share ipv4_net_table between nets
+Date: Sat,  2 Apr 2011 04:53:22 +0200
+Message-Id: <52083d44430cc1c2ce42bd417d28bb4e0f08f9a4.1301711868.git.lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.rc0
 In-Reply-To: <cover.1301711868.git.lucian.grijincu@gmail.com>
 References: <cover.1301711868.git.lucian.grijincu@gmail.com>
@@ -34,15 +34,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- net/core/sysctl_net_core.c |   28 +++-------------------------
- 1 files changed, 3 insertions(+), 25 deletions(-)
+ net/ipv4/sysctl_net_ipv4.c |   53 +++++++------------------------------------
+ 1 files changed, 9 insertions(+), 44 deletions(-)
 
-diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-index 923ae0f..c4571cc 100644
---- a/net/core/sysctl_net_core.c
-+++ b/net/core/sysctl_net_core.c
-@@ -183,7 +183,7 @@ static struct ctl_table netns_core_table[] = {
- 		.data		= &init_net.core.sysctl_somaxconn,
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index 1766d2e..b7b8dbd 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -635,49 +635,49 @@ static struct ctl_table ipv4_net_table[] = {
+ 		.data		= &init_net.ipv4.sysctl_icmp_echo_ignore_all,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= netns_proc_dointvec,
+ 	},
+ 	{
+ 		.procname	= "icmp_echo_ignore_broadcasts",
+ 		.data		= &init_net.ipv4.sysctl_icmp_echo_ignore_broadcasts,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= netns_proc_dointvec,
+ 	},
+ 	{
+ 		.procname	= "icmp_ignore_bogus_error_responses",
+ 		.data		= &init_net.ipv4.sysctl_icmp_ignore_bogus_error_responses,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= netns_proc_dointvec,
+ 	},
+ 	{
+ 		.procname	= "icmp_errors_use_inbound_ifaddr",
+ 		.data		= &init_net.ipv4.sysctl_icmp_errors_use_inbound_ifaddr,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= netns_proc_dointvec,
+ 	},
+ 	{
+ 		.procname	= "icmp_ratelimit",
+ 		.data		= &init_net.ipv4.sysctl_icmp_ratelimit,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_ms_jiffies,
++		.proc_handler	= netns_proc_dointvec_ms_jiffies,
+ 	},
+ 	{
+ 		.procname	= "icmp_ratemask",
+ 		.data		= &init_net.ipv4.sysctl_icmp_ratemask,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= netns_proc_dointvec,
+ 	},
+ 	{
+ 		.procname	= "rt_cache_rebuild_count",
+ 		.data		= &init_net.ipv4.sysctl_rt_cache_rebuild_count,
  		.maxlen		= sizeof(int),
  		.mode		= 0644,
 -		.proc_handler	= proc_dointvec
@@ -50,50 +98,62 @@ index 923ae0f..c4571cc 100644
  	},
  	{ }
  };
-@@ -196,41 +196,19 @@ __net_initdata struct ctl_path net_core_path[] = {
+@@ -691,53 +691,18 @@ EXPORT_SYMBOL_GPL(net_ipv4_ctl_path);
  
- static __net_init int sysctl_core_net_init(struct net *net)
+ static __net_init int ipv4_sysctl_init_net(struct net *net)
  {
--	struct ctl_table *tbl;
+-	struct ctl_table *table;
 -
- 	net->core.sysctl_somaxconn = SOMAXCONN;
- 
--	tbl = netns_core_table;
+-	table = ipv4_net_table;
 -	if (!net_eq(net, &init_net)) {
--		tbl = kmemdup(tbl, sizeof(netns_core_table), GFP_KERNEL);
--		if (tbl == NULL)
--			goto err_dup;
+-		table = kmemdup(table, sizeof(ipv4_net_table), GFP_KERNEL);
+-		if (table == NULL)
+-			goto err_alloc;
 -
--		tbl[0].data = &net->core.sysctl_somaxconn;
+-		table[0].data =
+-			&net->ipv4.sysctl_icmp_echo_ignore_all;
+-		table[1].data =
+-			&net->ipv4.sysctl_icmp_echo_ignore_broadcasts;
+-		table[2].data =
+-			&net->ipv4.sysctl_icmp_ignore_bogus_error_responses;
+-		table[3].data =
+-			&net->ipv4.sysctl_icmp_errors_use_inbound_ifaddr;
+-		table[4].data =
+-			&net->ipv4.sysctl_icmp_ratelimit;
+-		table[5].data =
+-			&net->ipv4.sysctl_icmp_ratemask;
+-		table[6].data =
+-			&net->ipv4.sysctl_rt_cache_rebuild_count;
 -	}
 -
- 	net->core.sysctl_hdr = register_net_sysctl_table(net,
--			net_core_path, tbl);
-+			net_core_path, netns_core_table);
- 	if (net->core.sysctl_hdr == NULL)
--		goto err_reg;
-+		return -ENOMEM;
+ 	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
  
+ 	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
+-			net_ipv4_ctl_path, table);
++			net_ipv4_ctl_path, ipv4_net_table);
+ 	if (net->ipv4.ipv4_hdr == NULL)
+-		goto err_reg;
+-
++		return -ENOMEM;
  	return 0;
 -
 -err_reg:
--	if (tbl != netns_core_table)
--		kfree(tbl);
--err_dup:
+-	if (!net_eq(net, &init_net))
+-		kfree(table);
+-err_alloc:
 -	return -ENOMEM;
  }
  
- static __net_exit void sysctl_core_net_exit(struct net *net)
+ static __net_exit void ipv4_sysctl_exit_net(struct net *net)
  {
--	struct ctl_table *tbl;
+-	struct ctl_table *table;
 -
--	tbl = net->core.sysctl_hdr->ctl_table_arg;
- 	unregister_net_sysctl_table(net->core.sysctl_hdr);
--	BUG_ON(tbl == netns_core_table);
--	kfree(tbl);
+-	table = net->ipv4.ipv4_hdr->ctl_table_arg;
+ 	unregister_net_sysctl_table(net->ipv4.ipv4_hdr);
+-	kfree(table);
  }
  
- static __net_initdata struct pernet_operations sysctl_core_ops = {
+ static __net_initdata struct pernet_operations ipv4_sysctl_ops = {
 -- 
 1.7.5.rc0
 
