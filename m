@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab1DBLk3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 07:40:29 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54732 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752306Ab1DBLk0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 07:40:26 -0400
-Date: Sat, 2 Apr 2011 12:40:54 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 16/18] 2.6.40: x86 idle APM: remove deprecated
- apm_cpu_idle()
-Message-ID: <20110402124054.49c3a3f4@lxorguk.ukuu.org.uk>
-In-Reply-To: <5d9716021b20302ece48fd486bbad9bcb2502353.1301724243.git.len.brown@intel.com>
-References: <alpine.LFD.2.02.1104010020280.2797@x980>
-	<1301725380-10579-1-git-send-email-lenb@kernel.org>
-	<5d9716021b20302ece48fd486bbad9bcb2502353.1301724243.git.len.brown@intel.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754550Ab1DBLrS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 07:47:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15341 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751216Ab1DBLrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 07:47:17 -0400
+Message-ID: <4D970CB6.3070604@redhat.com>
+Date: Sat, 02 Apr 2011 19:47:02 +0800
+From: Xiaotian Feng <dfeng@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: tglx@linutronix.de, linux-kernel@vger.kernel.org
+CC: mingo@elte.hu
+Subject: BUG: sleeping function called from invalid context at kernel/mutex.c
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 02 Apr 2011 02:22:58 -0400
-Len Brown <lenb@kernel.org> wrote:
+Hi,
 
-> From: Len Brown <len.brown@intel.com>
-> 
-> There is some doubt whether the APM idle feature
-> to call into the BIOS from the idle loop is reliable.
-> Certainly it was known to fail on some machines,
+     I've got following warnings when I'm trying to resume from suspend, so
+sparse_lock is not safe enough as a mutex for the suspend resume case, can
+we simply convert sparse_lock back to spinlock?
 
-And it was known to work on lots - a point that despite repeated
-reminding you seem keen to ignore.
+BUG: sleeping function called from invalid context at kernel/mutex.c:278
+in_atomic(): 1, irqs_disabled(): 1, pid: 2345, name: bash
+INFO: lockdep is turned off.
+irq event stamp: 0
+hardirqs last  enabled at (0): [<          (null)>]           (null)
+hardirqs last disabled at (0): [<ffffffff81068391>] 
+copy_process+0x4d1/0x1070
+softirqs last  enabled at (0): [<ffffffff81068391>] 
+copy_process+0x4d1/0x1070
+softirqs last disabled at (0): [<          (null)>]           (null)
+Pid: 2345, comm: bash Tainted: G          I 2.6.39-rc1+ #59
+Call Trace:
+  [<ffffffff81052d77>] __might_sleep+0x107/0x140
+  [<ffffffff816a57df>] mutex_lock_nested+0x2f/0x50
+  [<ffffffff810e191a>] irq_reserve_irqs+0x4a/0xa0
+  [<ffffffff810e18a8>] ? __irq_put_desc_unlock+0x28/0x50
+  [<ffffffff810e4e78>] irq_set_chip+0x58/0x70
+  [<ffffffff810e4fc0>] ? handle_level_irq+0xe0/0xe0
+  [<ffffffff810e4eb6>] irq_set_chip_and_handler_name+0x26/0x50
+  [<ffffffff8102fbb0>] arch_setup_hpet_msi+0xa0/0xf0
+  [<ffffffff8103613c>] hpet_setup_msi_irq+0x1c/0x40
+  [<ffffffff81036ad3>] hpet_set_mode+0x1a3/0x1f0
+  [<ffffffff81036b34>] hpet_msi_set_mode+0x14/0x20
+  [<ffffffff810a03aa>] clockevents_set_mode+0x2a/0x70
+  [<ffffffff810a0693>] tick_resume+0x53/0xa0
+  [<ffffffff810a0cbd>] tick_notify+0x1cd/0x1e0
+  [<ffffffff810a00a8>] ? clockevents_notify+0x28/0x140
+  [<ffffffff816ab1f4>] notifier_call_chain+0x94/0xd0
+  [<ffffffff810970c6>] raw_notifier_call_chain+0x16/0x20
+  [<ffffffff810a00bd>] clockevents_notify+0x3d/0x140
+  [<ffffffff8109c000>] timekeeping_resume+0x190/0x1d0
+  [<ffffffff813c5fd5>] syscore_resume+0x45/0xf0
+  [<ffffffff810bb977>] suspend_enter+0xe7/0x120
+  [<ffffffff810bba7e>] suspend_devices_and_enter+0x8e/0x2c0
+  [<ffffffff810bbd86>] enter_state+0xd6/0x130
+  [<ffffffff810baf99>] state_store+0x99/0x100
+  [<ffffffff812c82b7>] kobj_attr_store+0x17/0x20
+  [<ffffffff811fc6f3>] sysfs_write_file+0xa3/0x100
+  [<ffffffff81187310>] vfs_write+0xd0/0x1a0
+  [<ffffffff811874e4>] sys_write+0x54/0xa0
+  [<ffffffff816af382>] system_call_fastpath+0x16/0x1b
 
-The fundamental problem I have with this patch set is this
-
-You've provided no architectural overall justification for all this
-effort. What is the big picture around your crusade here ? What is the
-grand plan ?
-
-> but more importantly, APM machines have not shipped
-> for a decade and so finding machines to test the code
-> is problematic.
-
-So don't test it - if it's wrong someone will let you know, believe me 8)
-
-And 2.6.40 is far too soon - it takes about a year for stuff to rattle
-through to leading edge distro users in bulk
-
-Alan
-
+Thanks
+Xiaotian
