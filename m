@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab1DBQgM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 12:36:12 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:55070 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab1DBQgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 12:36:09 -0400
-Message-ID: <4D975072.1040507@canonical.com>
-Date: Sat, 02 Apr 2011 12:36:02 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Thunderbird/3.1.9
+	id S1755598Ab1DBQhs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 12:37:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754225Ab1DBQhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 12:37:47 -0400
+Date: Sat, 2 Apr 2011 18:37:22 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: Re: [PATCH] avr32: Don't acquire siglock when reading sighand
+	action
+Message-ID: <20110402163722.GA2973@redhat.com>
+References: <1301511856-9370-1-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-To: Jeffrey Brown <jeffbrown@android.com>
-CC: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
-        Simon Budig <simon@budig.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] hid-magicmouse: Increase evdev buffer size
-References: <1301691819-2090-1-git-send-email-chase.douglas@canonical.com> <AANLkTim-tN=siA8tJVCzNZHs+oM0hN-N8Ckc+9ynnNpb@mail.gmail.com>
-In-Reply-To: <AANLkTim-tN=siA8tJVCzNZHs+oM0hN-N8Ckc+9ynnNpb@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301511856-9370-1-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2011 07:51 PM, Jeffrey Brown wrote:
-> I've got another change in the works that fixes this problem more
-> systematically.
+On 03/30, Matt Fleming wrote:
+>
+> From: Matt Fleming <matt.fleming@linux.intel.com>
+>
+> There's no need to acquire the siglock when simply reading the action
+> handler. We would need to lock it if we were modifying the handler or
+> we were protecting it from modification across function calls, but if
+> we're just reading it, there's no need to lock it
 
-That would be great :). I still would like to see this patch added so
-it's released with the 2.6.39 kernel and backported to earlier stable
-releases. I hope that's not a problem.
+Agreed, ->siglock buys nothing.
 
-Thanks,
+But,
 
--- Chase
+> --- a/arch/avr32/kernel/traps.c
+> +++ b/arch/avr32/kernel/traps.c
+> @@ -106,9 +106,7 @@ void _exception(long signr, struct pt_regs *regs, int code,
+>  	if (is_global_init(current)) {
 
-> On Fri, Apr 1, 2011 at 2:03 PM, Chase Douglas
-> <chase.douglas@canonical.com> wrote:
->> The evdev buffer isn't big enough when you get many fingers on the
->> device. Bump up the buffer to a reasonable size, matching what other
->> multitouch devices use. Without this change, events may be discarded in
->> the evdev buffer before they are read.
->>
->> Reported-by: Simon Budig <simon@budig.de>
->> Cc: Henrik Rydberg <rydberg@euromail.se>
->> Cc: Jiri Kosina <jkosina@suse.cz>
->> Cc: stable@kernel.org
->> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
->> ---
->> Forgot to Cc the mailing lists on the first send.
->>
->>  drivers/hid/hid-magicmouse.c |    2 ++
->>  1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
->> index 698e645..404dcbc 100644
->> --- a/drivers/hid/hid-magicmouse.c
->> +++ b/drivers/hid/hid-magicmouse.c
->> @@ -418,6 +418,8 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
->>                        input_set_abs_params(input, ABS_MT_POSITION_Y, -2456,
->>                                2565, 4, 0);
->>                }
->> +
->> +               input_set_events_per_packet(input, 60);
->>        }
->>
->>        if (report_undeciphered) {
->> --
->> 1.7.4.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-input" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
+is_global_init() is not right in theory, /sbin/init can be multithreaded.
+And, this doesn't cover the sub-namespace inits... I'd suggest to check
+SIGNAL_UNKILLABLE, but looking closer I think you can simply remove this
+code.
+
+The comment says:
+
+	/*
+	 * Init gets no signals that it doesn't have a handler for.
+	 * That's all very well, but if it has caused a synchronous
+	 * exception and we ignore the resulting signal, it will just
+	 * generate the same exception over and over again and we get
+	 * nowhere.  Better to kill it and let the kernel panic.
+	 */
+
+This is correct, but please look at force_sig_info(), it already does
+what you need:
+
+	* We don't want to have recursive SIGSEGV's etc, for example,
+	* that is why we also clear SIGNAL_UNKILLABLE.
+
+Oleg.
 
