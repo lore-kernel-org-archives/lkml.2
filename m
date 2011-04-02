@@ -1,165 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab1DBIGS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 04:06:18 -0400
-Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:2963 "EHLO
-	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab1DBIGM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 04:06:12 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: Re: [PATCH] v4l: make sure drivers supply a zeroed struct v4l2_subdev
-Date: Sat, 2 Apr 2011 10:05:57 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38-tschai; KDE/4.6.1; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1301677922-6765-1-git-send-email-herton.krzesinski@canonical.com>
-In-Reply-To: <1301677922-6765-1-git-send-email-herton.krzesinski@canonical.com>
+	id S1754304Ab1DBIXZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 04:23:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40296 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753093Ab1DBIXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 04:23:22 -0400
+Date: Sat, 2 Apr 2011 10:23:16 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, x86@kernel.org,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, borislav.petkov@amd.com
+Subject: Re: [PATCH 07/18] x86 idle: clarify AMD erratum 400 workaround
+Message-ID: <20110402082316.GA21804@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Len Brown <lenb@kernel.org>, linux-pm@lists.linux-foundation.org,
+	linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+	x86@kernel.org, Hans Rosenfeld <hans.rosenfeld@amd.com>,
+	Andreas Herrmann <andreas.herrmann3@amd.com>,
+	borislav.petkov@amd.com
+References: <c82cf78992a66bfa7f0c82aeb20ba6922127463b.1301724243.git.len.brown@intel.com>
+ <68477f71a39cd0ba9acd40e94e49969cbe1bec79.1301724243.git.len.brown@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104021005.57200.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <68477f71a39cd0ba9acd40e94e49969cbe1bec79.1301724243.git.len.brown@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 01, 2011 19:12:02 Herton Ronaldo Krzesinski wrote:
-> Some v4l drivers currently don't initialize their struct v4l2_subdev
-> with zeros, and this is a problem since some of the v4l2 code expects
-> this. One example is the addition of internal_ops in commit 45f6f84,
-> after that we are at risk of random oopses with these drivers when code
-> in v4l2_device_register_subdev tries to dereference sd->internal_ops->*,
-> as can be shown by the report at http://bugs.launchpad.net/bugs/745213
-> and analysis of its crash at https://lkml.org/lkml/2011/4/1/168
+On Sat, Apr 02, 2011 at 02:22:49AM -0400, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
 > 
-> Use kzalloc within problematic drivers to ensure we have a zeroed struct
-> v4l2_subdev.
+> The workaround for AMD erratum 400 uses the term "c1e" suggesting:
+> 1. All AMD processors with AMD C1E are involved
+> 2. Any Intel processors with Intel C1E are involved.
 > 
-> BugLink: http://bugs.launchpad.net/bugs/745213
-> Cc: <stable@kernel.org>
-> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-
-Acked-by: Hans Verkuil <hverkuil@xs4all.nl>
-
-Thanks!
-
-	Hans
-
+> Both are false.
+> 
+> Replace occurrences if "c1e" with "amd_e400" in the code to
+> clarify that it is specific to AMD processors with AMD erratum 400.
+> 
+> This patch is text-substitution only, with no functional change.
+> 
+> cc: x86@kernel.org
+> cc: Hans Rosenfeld <hans.rosenfeld@amd.com>
+> cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+> Signed-off-by: Len Brown <len.brown@intel.com>
 > ---
->  drivers/media/radio/saa7706h.c  |    2 +-
->  drivers/media/radio/tef6862.c   |    2 +-
->  drivers/media/video/m52790.c    |    2 +-
->  drivers/media/video/tda9840.c   |    2 +-
->  drivers/media/video/tea6415c.c  |    2 +-
->  drivers/media/video/tea6420.c   |    2 +-
->  drivers/media/video/upd64031a.c |    2 +-
->  drivers/media/video/upd64083.c  |    2 +-
->  8 files changed, 8 insertions(+), 8 deletions(-)
+>  arch/x86/include/asm/acpi.h      |    2 +-
+>  arch/x86/include/asm/idle.h      |    2 +-
+>  arch/x86/include/asm/processor.h |    4 ++--
+>  arch/x86/kernel/cpu/common.c     |    2 +-
+>  arch/x86/kernel/process.c        |   38 +++++++++++++++++++-------------------
+>  arch/x86/kernel/smpboot.c        |    2 +-
+>  drivers/acpi/processor_idle.c    |    2 +-
+>  7 files changed, 26 insertions(+), 26 deletions(-)
 > 
-> diff --git a/drivers/media/radio/saa7706h.c b/drivers/media/radio/saa7706h.c
-> index 585680f..b1193df 100644
-> --- a/drivers/media/radio/saa7706h.c
-> +++ b/drivers/media/radio/saa7706h.c
-> @@ -376,7 +376,7 @@ static int __devinit saa7706h_probe(struct i2c_client *client,
->  	v4l_info(client, "chip found @ 0x%02x (%s)\n",
->  			client->addr << 1, client->adapter->name);
+> diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+> index 4ea15ca..ae5bc1a 100644
+> --- a/arch/x86/include/asm/acpi.h
+> +++ b/arch/x86/include/asm/acpi.h
+> @@ -138,7 +138,7 @@ static inline unsigned int acpi_processor_cstate_check(unsigned int max_cstate)
+>  	    boot_cpu_data.x86_model <= 0x05 &&
+>  	    boot_cpu_data.x86_mask < 0x0A)
+>  		return 1;
+> -	else if (c1e_detected)
+> +	else if (amd_e400_detected)
+>  		return 1;
+>  	else
+>  		return max_cstate;
+> diff --git a/arch/x86/include/asm/idle.h b/arch/x86/include/asm/idle.h
+> index 38d8737..f49253d7 100644
+> --- a/arch/x86/include/asm/idle.h
+> +++ b/arch/x86/include/asm/idle.h
+> @@ -16,6 +16,6 @@ static inline void enter_idle(void) { }
+>  static inline void exit_idle(void) { }
+>  #endif /* CONFIG_X86_64 */
 >  
-> -	state = kmalloc(sizeof(struct saa7706h_state), GFP_KERNEL);
-> +	state = kzalloc(sizeof(struct saa7706h_state), GFP_KERNEL);
->  	if (state == NULL)
->  		return -ENOMEM;
->  	sd = &state->sd;
-> diff --git a/drivers/media/radio/tef6862.c b/drivers/media/radio/tef6862.c
-> index 7c0d777..0991e19 100644
-> --- a/drivers/media/radio/tef6862.c
-> +++ b/drivers/media/radio/tef6862.c
-> @@ -176,7 +176,7 @@ static int __devinit tef6862_probe(struct i2c_client *client,
->  	v4l_info(client, "chip found @ 0x%02x (%s)\n",
->  			client->addr << 1, client->adapter->name);
+> -void c1e_remove_cpu(int cpu);
+> +void amd_e400_remove_cpu(int cpu);
 >  
-> -	state = kmalloc(sizeof(struct tef6862_state), GFP_KERNEL);
-> +	state = kzalloc(sizeof(struct tef6862_state), GFP_KERNEL);
->  	if (state == NULL)
->  		return -ENOMEM;
->  	state->freq = TEF6862_LO_FREQ;
-> diff --git a/drivers/media/video/m52790.c b/drivers/media/video/m52790.c
-> index 5e1c9a8..303ffa7 100644
-> --- a/drivers/media/video/m52790.c
-> +++ b/drivers/media/video/m52790.c
-> @@ -174,7 +174,7 @@ static int m52790_probe(struct i2c_client *client,
->  	v4l_info(client, "chip found @ 0x%x (%s)\n",
->  			client->addr << 1, client->adapter->name);
+>  #endif /* _ASM_X86_IDLE_H */
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index 45636ce..a8c5fed 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -758,10 +758,10 @@ static inline void __sti_mwait(unsigned long eax, unsigned long ecx)
+>  extern void mwait_idle_with_hints(unsigned long eax, unsigned long ecx);
 >  
-> -	state = kmalloc(sizeof(struct m52790_state), GFP_KERNEL);
-> +	state = kzalloc(sizeof(struct m52790_state), GFP_KERNEL);
->  	if (state == NULL)
->  		return -ENOMEM;
+>  extern void select_idle_routine(const struct cpuinfo_x86 *c);
+> -extern void init_c1e_mask(void);
+> +extern void init_amd_e400_mask(void);
 >  
-> diff --git a/drivers/media/video/tda9840.c b/drivers/media/video/tda9840.c
-> index 5d4cf3b..22fa820 100644
-> --- a/drivers/media/video/tda9840.c
-> +++ b/drivers/media/video/tda9840.c
-> @@ -171,7 +171,7 @@ static int tda9840_probe(struct i2c_client *client,
->  	v4l_info(client, "chip found @ 0x%x (%s)\n",
->  			client->addr << 1, client->adapter->name);
+>  extern unsigned long		boot_option_idle_override;
+> -extern bool			c1e_detected;
+> +extern bool			amd_e400_detected;
 >  
-> -	sd = kmalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
-> +	sd = kzalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
->  	if (sd == NULL)
->  		return -ENOMEM;
->  	v4l2_i2c_subdev_init(sd, client, &tda9840_ops);
-> diff --git a/drivers/media/video/tea6415c.c b/drivers/media/video/tea6415c.c
-> index 19621ed..827425c 100644
-> --- a/drivers/media/video/tea6415c.c
-> +++ b/drivers/media/video/tea6415c.c
-> @@ -152,7 +152,7 @@ static int tea6415c_probe(struct i2c_client *client,
+>  enum idle_boot_override {IDLE_NO_OVERRIDE=0, IDLE_HALT, IDLE_NOMWAIT,
+>  			 IDLE_POLL, IDLE_FORCE_MWAIT};
+> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+> index 1d59834..30ce74c 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -887,7 +887,7 @@ static void vgetcpu_set_mode(void)
+>  void __init identify_boot_cpu(void)
+>  {
+>  	identify_cpu(&boot_cpu_data);
+> -	init_c1e_mask();
+> +	init_amd_e400_mask();
+>  #ifdef CONFIG_X86_32
+>  	sysenter_setup();
+>  	enable_sep_cpu();
+> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> index 1f64501..1c45a9c 100644
+> --- a/arch/x86/kernel/process.c
+> +++ b/arch/x86/kernel/process.c
+> @@ -540,45 +540,45 @@ int mwait_usable(const struct cpuinfo_x86 *c)
+>  	return (edx & MWAIT_EDX_C1);
+>  }
 >  
->  	v4l_info(client, "chip found @ 0x%x (%s)\n",
->  			client->addr << 1, client->adapter->name);
-> -	sd = kmalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
-> +	sd = kzalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
->  	if (sd == NULL)
->  		return -ENOMEM;
->  	v4l2_i2c_subdev_init(sd, client, &tea6415c_ops);
-> diff --git a/drivers/media/video/tea6420.c b/drivers/media/video/tea6420.c
-> index 5ea8404..f350b6c 100644
-> --- a/drivers/media/video/tea6420.c
-> +++ b/drivers/media/video/tea6420.c
-> @@ -125,7 +125,7 @@ static int tea6420_probe(struct i2c_client *client,
->  	v4l_info(client, "chip found @ 0x%x (%s)\n",
->  			client->addr << 1, client->adapter->name);
+> -bool c1e_detected;
+> -EXPORT_SYMBOL(c1e_detected);
+> +bool amd_e400_detected;
+> +EXPORT_SYMBOL(amd_e400_detected);
 >  
-> -	sd = kmalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
-> +	sd = kzalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
->  	if (sd == NULL)
->  		return -ENOMEM;
->  	v4l2_i2c_subdev_init(sd, client, &tea6420_ops);
-> diff --git a/drivers/media/video/upd64031a.c b/drivers/media/video/upd64031a.c
-> index f8138c7..1aab96a 100644
-> --- a/drivers/media/video/upd64031a.c
-> +++ b/drivers/media/video/upd64031a.c
-> @@ -230,7 +230,7 @@ static int upd64031a_probe(struct i2c_client *client,
->  	v4l_info(client, "chip found @ 0x%x (%s)\n",
->  			client->addr << 1, client->adapter->name);
+> -static cpumask_var_t c1e_mask;
+> +static cpumask_var_t amd_e400_mask;
+
+Actually, the correct name should be IMHO
+
+	amd_e400_c1e_mask
+
+
 >  
-> -	state = kmalloc(sizeof(struct upd64031a_state), GFP_KERNEL);
-> +	state = kzalloc(sizeof(struct upd64031a_state), GFP_KERNEL);
->  	if (state == NULL)
->  		return -ENOMEM;
->  	sd = &state->sd;
-> diff --git a/drivers/media/video/upd64083.c b/drivers/media/video/upd64083.c
-> index 28e0e6b..9bbe617 100644
-> --- a/drivers/media/video/upd64083.c
-> +++ b/drivers/media/video/upd64083.c
-> @@ -202,7 +202,7 @@ static int upd64083_probe(struct i2c_client *client,
->  	v4l_info(client, "chip found @ 0x%x (%s)\n",
->  			client->addr << 1, client->adapter->name);
+> -void c1e_remove_cpu(int cpu)
+> +void amd_e400_remove_cpu(int cpu)
+>  {
+> -	if (c1e_mask != NULL)
+> -		cpumask_clear_cpu(cpu, c1e_mask);
+> +	if (amd_e400_mask != NULL)
+> +		cpumask_clear_cpu(cpu, amd_e400_mask);
+>  }
 >  
-> -	state = kmalloc(sizeof(struct upd64083_state), GFP_KERNEL);
-> +	state = kzalloc(sizeof(struct upd64083_state), GFP_KERNEL);
->  	if (state == NULL)
->  		return -ENOMEM;
->  	sd = &state->sd;
-> 
+>  /*
+> - * C1E aware idle routine. We check for C1E active in the interrupt
+> + * AMD Erratum 400 aware idle routine. We check for C1E active in the interrupt
+>   * pending message MSR. If we detect C1E, then we handle it the same
+>   * way as C3 power states (local apic timer and TSC stop)
+>   */
+> -static void c1e_idle(void)
+> +static void amd_e400_idle(void)
+>  {
+>  	if (need_resched())
+>  		return;
+>  
+> -	if (!c1e_detected) {
+> +	if (!amd_e400_detected) {
+>  		u32 lo, hi;
+>  
+>  		rdmsr(MSR_K8_INT_PENDING_MSG, lo, hi);
+>  
+>  		if (lo & K8_INTP_C1E_ACTIVE_MASK) {
+> -			c1e_detected = true;
+> +			amd_e400_detected = true;
+
+Hmm, c1e_detected is still the correct name since those two bits in
+the INT_PENDING MSR mean simply that the system can either generate an
+IO read or an SMI to enter C1E irrespective of E400. So I'd leave it
+c1e_detected.
+
+The function name amd_e400_idle() OTOH looks fine to me since we denote
+that this is a special idle routine for CPUs affected by E400.
+
+>  			if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
+>  				mark_tsc_unstable("TSC halt in AMD C1E");
+>  			printk(KERN_INFO "System has AMD C1E enabled\n");
+>  		}
+>  	}
+>  
+> -	if (c1e_detected) {
+> +	if (amd_e400_detected) {
+>  		int cpu = smp_processor_id();
+>  
+> -		if (!cpumask_test_cpu(cpu, c1e_mask)) {
+> -			cpumask_set_cpu(cpu, c1e_mask);
+> +		if (!cpumask_test_cpu(cpu, amd_e400_mask)) {
+> +			cpumask_set_cpu(cpu, amd_e400_mask);
+>  			/*
+>  			 * Force broadcast so ACPI can not interfere.
+>  			 */
+> @@ -621,17 +621,17 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+>  		pm_idle = mwait_idle;
+>  	} else if (cpu_has_amd_erratum(amd_erratum_400)) {
+>  		/* E400: APIC timer interrupt does not wake up CPU from C1e */
+> -		printk(KERN_INFO "using C1E aware idle routine\n");
+> -		pm_idle = c1e_idle;
+> +		printk(KERN_INFO "using E400 aware idle routine\n");
+> +		pm_idle = amd_e400_idle;
+>  	} else
+>  		pm_idle = default_idle;
+>  }
+>  
+> -void __init init_c1e_mask(void)
+> +void __init init_amd_e400_mask(void)
+
+Same here, init_amd_e400_c1e_mask.
+
+>  {
+> -	/* If we're using c1e_idle, we need to allocate c1e_mask. */
+> -	if (pm_idle == c1e_idle)
+> -		zalloc_cpumask_var(&c1e_mask, GFP_KERNEL);
+> +	/* If we're using amd_e400_idle, we need to allocate amd_e400_mask. */
+> +	if (pm_idle == amd_e400_idle)
+> +		zalloc_cpumask_var(&amd_e400_mask, GFP_KERNEL);
+>  }
+>  
+>  static int __init idle_setup(char *str)
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 08776a9..2c33633 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -1379,7 +1379,7 @@ void play_dead_common(void)
+>  {
+>  	idle_task_exit();
+>  	reset_lazy_tlbstate();
+> -	c1e_remove_cpu(raw_smp_processor_id());
+> +	amd_e400_remove_cpu(raw_smp_processor_id());
+>  
+>  	mb();
+>  	/* Ack it */
+> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+> index d615b7d..53d9f10 100644
+> --- a/drivers/acpi/processor_idle.c
+> +++ b/drivers/acpi/processor_idle.c
+> @@ -161,7 +161,7 @@ static void lapic_timer_check_state(int state, struct acpi_processor *pr,
+>  	if (cpu_has(&cpu_data(pr->id), X86_FEATURE_ARAT))
+>  		return;
+>  
+> -	if (c1e_detected)
+> +	if (amd_e400_detected)
+>  		type = ACPI_STATE_C1;
+>  
+>  	/*
+> -- 
+> 1.7.5.rc0
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
