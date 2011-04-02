@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab1DBC4G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Apr 2011 22:56:06 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:32917 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756392Ab1DBCzF (ORCPT
+	id S932226Ab1DBC4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Apr 2011 22:56:37 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40187 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757114Ab1DBCy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Apr 2011 22:55:05 -0400
+	Fri, 1 Apr 2011 22:54:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ZCrXvSD/qooC/RFfxGMY4TzhnwrPFa55IwrY95QVOrZzNwncqyTaSfhFzLmWavQD7H
-         ybEG5Nxe6Gfa0qlpswAf7/6J7/nxqgyPVAKNgUWeH91UwtcX8MdlWxt/V3e3tCflZVyD
-         /RskEKtGqGh5MLVQSC1+1c+UfkJlcAeWRS5Wg=
+        b=MyhG7QILCwjnu+dVvHoWIJ0vmvnudRabdOmDms9r1oLW9jOkdzSa43OirVXe9zMNBR
+         L02h28wENPXOQeRQ2ajZaoNZpdklTfis51BTg/w2tAW/fRVCK94UJQSPJjBBmGe+x5e7
+         URwZOqQVHiEgom26hhFqOfsaVIaUNb6ttusBM=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: "'David S . Miller'" <davem@davemloft.net>,
         Alexey Dobriyan <adobriyan@gmail.com>,
@@ -20,9 +20,9 @@ To: "'David S . Miller'" <davem@davemloft.net>,
         Octavian Purdila <tavi@cs.pub.ro>, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 23/24] sysctl: ipv6: register /proc/sys/net/ipv6/neigh empty directory
-Date: Sat,  2 Apr 2011 04:53:37 +0200
-Message-Id: <0214c88749a0518824f76fdec2c39d1e872329ae.1301711868.git.lucian.grijincu@gmail.com>
+Subject: [PATCH 20/24] sysctl: ipv6: register /proc/sys/net/ipv6/conf empty directory
+Date: Sat,  2 Apr 2011 04:53:34 +0200
+Message-Id: <e5dae2d99266da1ef9e73617678a1c0279c0f46e.1301711868.git.lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.rc0
 In-Reply-To: <cover.1301711868.git.lucian.grijincu@gmail.com>
 References: <cover.1301711868.git.lucian.grijincu@gmail.com>
@@ -32,109 +32,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Similar to the previous patch. This patch also changes the moment
-/proc/sys/net/ipv6/neigh/default is registered:
+This does not change any semantics: it just adds a new header that
+will be used in the next patch as a parent for all headers for
+all /proc/sys/net/ipv6/conf/DEVNAME entries.
 
-- before this patch: the 'default' was registered directly in ndisc_init()
-
-- with this patch: 'default' is registered after the empty
-  /proc/sys/net/ipv6/neigh/ directly which is created for each network
-  namespace as a pernet operation. Because of this the neigh_tables
-  have to be initialised (neigh_table_init) before registering pernet
-  ops and cleaned up after unregistering them.
+For now, all interface headers for /proc/sys/net/ipv6/conf/DEVNAME
+will be bound to this header as opposed to another one from above, but
+this shouldn't affect performance or behaviour.
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- include/net/ipv6.h         |    2 -
- include/net/netns/ipv6.h   |    1 +
- net/ipv6/af_inet6.c        |   12 -------
- net/ipv6/ndisc.c           |   76 ++++++++++++++++++++++++++++++++++----------
- net/ipv6/sysctl_net_ipv6.c |   27 ---------------
- 5 files changed, 60 insertions(+), 58 deletions(-)
+ include/net/netns/ipv6.h |    3 ++-
+ net/ipv6/addrconf.c      |   29 ++++++++++++++++++++++++++++-
+ 2 files changed, 30 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/ipv6.h b/include/net/ipv6.h
-index bd73439..5e535b3 100644
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -661,8 +661,6 @@ extern ctl_table ipv6_icmp_table[];
- 
- extern int ipv6_sysctl_register(void);
- extern void ipv6_sysctl_unregister(void);
--extern int ipv6_static_sysctl_register(void);
--extern void ipv6_static_sysctl_unregister(void);
- #endif
- 
- #endif /* __KERNEL__ */
 diff --git a/include/net/netns/ipv6.h b/include/net/netns/ipv6.h
-index b3c3cd7..58b542f 100644
+index 81abfcb..b3c3cd7 100644
 --- a/include/net/netns/ipv6.h
 +++ b/include/net/netns/ipv6.h
-@@ -15,6 +15,7 @@ struct netns_sysctl_ipv6 {
+@@ -13,7 +13,8 @@ struct ctl_table_header;
+ struct netns_sysctl_ipv6 {
+ #ifdef CONFIG_SYSCTL
  	struct ctl_table_header *table;
- 	struct ctl_table_header *frags_hdr;  /* /proc/sys/net/ipv6/ip6frag_*  */
- 	struct ctl_table_header *conf_hdr;   /* /proc/sys/net/ipv6/conf/      */
-+	struct ctl_table_header *neigh_hdr;  /* /proc/sys/net/ipv6/neigh/     */
+-	struct ctl_table_header *frags_hdr;
++	struct ctl_table_header *frags_hdr;  /* /proc/sys/net/ipv6/ip6frag_*  */
++	struct ctl_table_header *conf_hdr;   /* /proc/sys/net/ipv6/conf/      */
  #endif
  	int bindv6only;
  	int flush_delay;
-diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
-index 4b13d5d..5f81711 100644
---- a/net/ipv6/af_inet6.c
-+++ b/net/ipv6/af_inet6.c
-@@ -1105,11 +1105,6 @@ static int __init inet6_init(void)
- 	if (err)
- 		goto out_sock_register_fail;
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 4a28442..6833fcb 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -4556,8 +4556,25 @@ static void addrconf_sysctl_unregister(struct inet6_dev *idev)
+ 	neigh_sysctl_unregister(idev->nd_parms);
+ }
  
--#ifdef CONFIG_SYSCTL
--	err = ipv6_static_sysctl_register();
--	if (err)
--		goto static_sysctl_fail;
--#endif
- 	/*
- 	 *	ipngwg API draft makes clear that the correct semantics
- 	 *	for TCP and UDP is to consider one TCP and UDP instance
-@@ -1234,10 +1229,6 @@ ipmr_fail:
- icmp_fail:
- 	unregister_pernet_subsys(&inet6_net_ops);
- register_pernet_fail:
--#ifdef CONFIG_SYSCTL
--	ipv6_static_sysctl_unregister();
--static_sysctl_fail:
--#endif
- 	sock_unregister(PF_INET6);
- 	rtnl_unregister_all(PF_INET6);
- out_sock_register_fail:
-@@ -1294,9 +1285,6 @@ static void __exit inet6_exit(void)
- 	rawv6_exit();
- 
- 	unregister_pernet_subsys(&inet6_net_ops);
--#ifdef CONFIG_SYSCTL
--	ipv6_static_sysctl_unregister();
--#endif
- 	proto_unregister(&rawv6_prot);
- 	proto_unregister(&udplitev6_prot);
- 	proto_unregister(&udpv6_prot);
-diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
-index 61ff29b..1cbc3c6 100644
---- a/net/ipv6/ndisc.c
-+++ b/net/ipv6/ndisc.c
-@@ -1790,19 +1790,58 @@ int ndisc_ifinfo_sysctl_change(struct ctl_table *ctl, int write,
- 
- #endif
- 
-+
-+#ifdef CONFIG_SYSCTL
-+
-+/* empty entry for '/proc/sys/net/ipv6/neigh/' */
++/* empty entry for '/proc/sys/net/ipv6/conf/' */
 +static __net_initdata struct ctl_table empty[1];
-+static __net_initdata struct ctl_table ipv6_neigh_skel[] = {
++static __net_initdata struct ctl_table ipv6_conf_skel[] = {
 +	{
-+		.procname       = "neigh",
++		.procname       = "conf",
 +		.mode           = 0555,
 +		.child          = empty,
 +	},
 +	{ },
 +};
++
 +static __net_initdata const struct ctl_path net_ipv6_path[] = {
 +	{ .procname = "net", },
 +	{ .procname = "ipv6", },
@@ -142,157 +86,49 @@ index 61ff29b..1cbc3c6 100644
 +};
 +
 +#endif /* CONFIG_SYSCTL */
-+
- static int __net_init ndisc_net_init(struct net *net)
- {
- 	struct ipv6_pinfo *np;
- 	struct sock *sk;
- 	int err;
  
-+#ifdef CONFIG_SYSCTL
+-#endif
+ 
+ static int __net_init addrconf_init_net(struct net *net)
+ {
+@@ -4586,6 +4603,12 @@ static int __net_init addrconf_init_net(struct net *net)
+ 	net->ipv6.devconf_dflt = dflt;
+ 
+ #ifdef CONFIG_SYSCTL
 +	err = -ENOMEM;
-+	/* register empty dir for /proc/sys/net/ipv6/neigh/ */
-+	net->ipv6.sysctl.neigh_hdr = register_net_sysctl_table(net,
-+					net_ipv6_path, ipv6_neigh_skel);
-+	if (net->ipv6.sysctl.neigh_hdr == NULL)
-+		goto register_net_neigh_skel_fail;
++	net->ipv6.sysctl.conf_hdr = register_net_sysctl_table(net,
++					net_ipv6_path, ipv6_conf_skel);
++	if (net->ipv6.sysctl.conf_hdr == NULL)
++		goto err_reg_conf;
 +
-+	/* register /proc/sys/net/ipv6/neigh/default */
-+	if (net_eq(net, &init_net)) {
-+		err = neigh_sysctl_register(NULL, &nd_tbl.parms, "ipv6",
-+					    &ndisc_ifinfo_sysctl_change);
-+		if (err)
-+			goto neigh_sysctl_register_fail;
-+	}
-+#endif /* CONFIG_SYSCTL */
+ 	err = __addrconf_sysctl_register(net, "all", NULL, all);
+ 	if (err < 0)
+ 		goto err_reg_all;
+@@ -4593,6 +4616,7 @@ static int __net_init addrconf_init_net(struct net *net)
+ 	err = __addrconf_sysctl_register(net, "default", NULL, dflt);
+ 	if (err < 0)
+ 		goto err_reg_dflt;
 +
-+
- 	err = inet_ctl_sock_create(&sk, PF_INET6,
- 				   SOCK_RAW, IPPROTO_ICMPV6, net);
- 	if (err < 0) {
- 		ND_PRINTK0(KERN_ERR
- 			   "ICMPv6 NDISC: Failed to initialize the control socket (err %d).\n",
- 			   err);
--		return err;
-+		goto inet_ctl_sock_create_fail;
- 	}
- 
- 	net->ipv6.ndisc_sk = sk;
-@@ -1813,11 +1852,26 @@ static int __net_init ndisc_net_init(struct net *net)
- 	np->mc_loop = 0;
- 
+ #endif
  	return 0;
-+
-+inet_ctl_sock_create_fail:
-+
-+#ifdef CONFIG_SYSCTL
-+	neigh_sysctl_unregister(&nd_tbl.parms);
-+neigh_sysctl_register_fail:
-+	unregister_net_sysctl_table(net->ipv6.sysctl.neigh_hdr);
-+register_net_neigh_skel_fail:
-+#endif /* CONFIG_SYSCTL */
-+
-+	return err;
- }
  
- static void __net_exit ndisc_net_exit(struct net *net)
- {
- 	inet_ctl_sock_destroy(net->ipv6.ndisc_sk);
-+#ifdef CONFIG_SYSCTL
-+	neigh_sysctl_unregister(&nd_tbl.parms);
-+	unregister_net_sysctl_table(net->ipv6.sysctl.neigh_hdr);
-+#endif /* CONFIG_SYSCTL */
- }
- 
- static struct pernet_operations ndisc_net_ops = {
-@@ -1829,20 +1883,15 @@ int __init ndisc_init(void)
- {
- 	int err;
- 
--	err = register_pernet_subsys(&ndisc_net_ops);
--	if (err)
--		return err;
- 	/*
- 	 * Initialize the neighbour table
- 	 */
- 	neigh_table_init(&nd_tbl);
- 
--#ifdef CONFIG_SYSCTL
--	err = neigh_sysctl_register(NULL, &nd_tbl.parms, "ipv6",
--				    &ndisc_ifinfo_sysctl_change);
-+	err = register_pernet_subsys(&ndisc_net_ops);
- 	if (err)
--		goto out_unregister_pernet;
--#endif
-+		return err;
-+
- 	err = register_netdevice_notifier(&ndisc_netdev_notifier);
- 	if (err)
- 		goto out_unregister_sysctl;
-@@ -1850,10 +1899,6 @@ out:
- 	return err;
- 
- out_unregister_sysctl:
--#ifdef CONFIG_SYSCTL
--	neigh_sysctl_unregister(&nd_tbl.parms);
--out_unregister_pernet:
--#endif
- 	unregister_pernet_subsys(&ndisc_net_ops);
- 	goto out;
- }
-@@ -1861,9 +1906,6 @@ out_unregister_pernet:
- void ndisc_cleanup(void)
- {
- 	unregister_netdevice_notifier(&ndisc_netdev_notifier);
--#ifdef CONFIG_SYSCTL
--	neigh_sysctl_unregister(&nd_tbl.parms);
--#endif
--	neigh_table_clear(&nd_tbl);
- 	unregister_pernet_subsys(&ndisc_net_ops);
-+	neigh_table_clear(&nd_tbl);
- }
-diff --git a/net/ipv6/sysctl_net_ipv6.c b/net/ipv6/sysctl_net_ipv6.c
-index 1b6f6fd..b55462f 100644
---- a/net/ipv6/sysctl_net_ipv6.c
-+++ b/net/ipv6/sysctl_net_ipv6.c
-@@ -15,18 +15,6 @@
- #include <net/addrconf.h>
- #include <net/inet_frag.h>
- 
--static struct ctl_table empty[1];
--
--static ctl_table ipv6_static_skeleton[] = {
--	{
--		.procname	= "neigh",
--		.maxlen		= 0,
--		.mode		= 0555,
--		.child		= empty,
--	},
--	{ }
--};
--
- static ctl_table ipv6_table[] = {
- 	{
- 		.procname	= "route",
-@@ -114,18 +102,3 @@ void ipv6_sysctl_unregister(void)
- 	unregister_net_sysctl_table(ip6_header);
- 	unregister_pernet_subsys(&ipv6_sysctl_net_ops);
- }
--
--static struct ctl_table_header *ip6_base;
--
--int ipv6_static_sysctl_register(void)
--{
--	ip6_base = register_sysctl_paths(net_ipv6_ctl_path, ipv6_static_skeleton);
--	if (ip6_base == NULL)
--		return -ENOMEM;
--	return 0;
--}
--
--void ipv6_static_sysctl_unregister(void)
--{
--	unregister_net_sysctl_table(ip6_base);
--}
+@@ -4600,6 +4624,8 @@ static int __net_init addrconf_init_net(struct net *net)
+ err_reg_dflt:
+ 	__addrconf_sysctl_unregister(all);
+ err_reg_all:
++	unregister_net_sysctl_table(net->ipv6.sysctl.conf_hdr);
++err_reg_conf:
+ 	kfree(dflt);
+ #endif
+ err_alloc_dflt:
+@@ -4613,6 +4639,7 @@ static void __net_exit addrconf_exit_net(struct net *net)
+ #ifdef CONFIG_SYSCTL
+ 	__addrconf_sysctl_unregister(net->ipv6.devconf_dflt);
+ 	__addrconf_sysctl_unregister(net->ipv6.devconf_all);
++	unregister_net_sysctl_table(net->ipv6.sysctl.conf_hdr);
+ #endif
+ 	if (!net_eq(net, &init_net)) {
+ 		kfree(net->ipv6.devconf_dflt);
 -- 
 1.7.5.rc0
 
