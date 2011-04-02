@@ -1,106 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab1DBUiN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 16:38:13 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63982 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756897Ab1DBUiL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 16:38:11 -0400
-Message-ID: <4D978930.1000909@codemonkey.ws>
-Date: Sat, 02 Apr 2011 15:38:08 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	id S1757111Ab1DBUqj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 16:46:39 -0400
+Received: from wnohang.net ([178.79.154.173]:57605 "EHLO mail.wnohang.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756239Ab1DBUqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 16:46:38 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 2F5EE24142
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net A3F162400A
+Date: Sun, 3 Apr 2011 02:16:31 +0530
+From: Raghavendra D Prabhu <rprabhu@wnohang.net>
+To: Michael Witten <mfwitten@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Use the environment variable PYTHON if defined
+Message-ID: <20110402204630.GA5738@Xye>
+References: <20110326224408.GA1336@Xye>
+ <20110328144721.GB17872@ghostprotocols.net>
+ <e987828e-87ec-4973-95e7-47f10f5d9bab-mfwitten@gmail.com>
+ <20110329181524.GA5140@Xye>
+ <AANLkTi=3Wq3Xt-QFR-FLRQ1kBjpWjaBZNFpOiE_T15WH@mail.gmail.com>
+ <20110329204024.GA20824@ghostprotocols.net>
+ <AANLkTinmXdmNX+iCB4svo3QqR6AcwGrasziFJPeu0J=M@mail.gmail.com>
+ <20110329211437.GB20824@ghostprotocols.net>
+ <20110331191507.GA5052@Xye>
+ <AANLkTi=8YiYNUj0o4=XqrRqmNjUq7zPXVEpsysJ6KbMx@mail.gmail.com>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: linux-kernel@vger.kernel.org, aarcange@redhat.com, avi@redhat.com,
-        mtosatti@redhat.com, kvm@vger.kernel.org, joro@8bytes.org,
-        penberg@cs.helsinki.fi, asias.hejun@gmail.com, gorcunov@gmail.com,
-        mingo@elte.hu
-Subject: Re: [ANNOUNCE] Native Linux KVM tool
-References: <1301592656.586.15.camel@jaguar>
-In-Reply-To: <1301592656.586.15.camel@jaguar>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TYecfFk8j8mZq+dy"
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=8YiYNUj0o4=XqrRqmNjUq7zPXVEpsysJ6KbMx@mail.gmail.com>
+X-Operating-System: Arch linux x86_64 2.6.38.2-bldit-db-FAE
+X-Editor: VIM - Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 12:30 PM, Pekka Enberg wrote:
-> Hi all,
->
-> We’re proud to announce the native Linux KVM tool!
 
-Neat!
+--TYecfFk8j8mZq+dy
+Content-Type: multipart/mixed; boundary="b5gNqxB1S1yM7hjW"
+Content-Disposition: inline
 
-As something of a lesson of history, I'd suggest picking a more unique 
-name while it's still a prototype :-)
 
-> The goal of this tool is to provide a clean, from-scratch, lightweight
-> KVM host tool implementation that can boot Linux guest images (just a
-> hobby, won't be big and professional like QEMU) with no BIOS
-> dependencies and with only the minimal amount of legacy device
-> emulation.
+--b5gNqxB1S1yM7hjW
+Content-Type: text/plain; charset=iso-8859-1; format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I see you do provide 16-bit entry points for Linux.  Are you planning on 
-paravirtualizing this within Linux to truly eliminate the BIOS dependency?
+* On Thu, Mar 31, 2011 at 03:29:12PM -0500, Michael Witten <mfwitten@gmail.=
+com> wrote:
+>On Thu, Mar 31, 2011 at 14:15, Raghavendra D Prabhu <rprabhu@wnohang.net> =
+wrote:
+>> Hi,
+>> =A0 =A0Regarding the point where it warns about python-devel not existin=
+g,
+>> it looks like that existing feature test will pass even when python3 is
+>> chosen and fail at a later stage. So I made this little change to feature
+>> test so that it fails when python3 is chosen and perf build succeeds with
+>> the war ning printed rather than failing later.
+>
+>Good point.
+>
+>However, try-cc does not run the resulting program after
+>compiling it, so the test still succeeds.
+>
+>What you want to do is make the compilation fail;
+>to do so, move your test here:
+>
+>  #include <Python.h>
+>
+>  #if PY_VERSION_HEX >=3D 0x03000000
+>    #error "Python 3 is not yet supported; set PYTHON{,_CONFIG}"
+>
+>  int main(void)
+>  ...
+>
+>P.S.
+>Put your replies below the email quote.
+Thanks. I have attached the corrected patch and also have tested it.
+--------------------------
+Raghavendra Prabhu
+GPG ID:D72BE977
 
-Regards,
 
-Anthony Liguori
+--b5gNqxB1S1yM7hjW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-Added-a-py3k-test-to-feature-tests.patch"
+Content-Transfer-Encoding: quoted-printable
 
-> Note that this is a development prototype for the time being: there's no
-> networking support and no graphics support, amongst other missing
-> essentials.
->
-> It's great as a learning tool if you want to get your feet wet in
-> virtualization land: it's only 5 KLOC of clean C code that can already
-> boot a guest Linux image.
->
-> Right now it can boot a Linux image and provide you output via a serial
-> console, over the host terminal, i.e. you can use it to boot a guest
-> Linux image in a terminal or over ssh and log into the guest without
-> much guest or host side setup work needed.
->
-> 1. To try out the tool, clone the git repository:
->
->    git clone git://github.com/penberg/linux-kvm.git
->
-> or alternatively, if you already have a kernel source tree:
->
->    git checkout -b kvm/tool
->    git pull git://github.com/penberg/linux-kvm.git
->
-> 2. Compile the tool:
->
->    cd tools/kvm&&  make
->
-> 3. Download a raw userspace image:
->
->    wget http://wiki.qemu.org/download/linux-0.2.img.bz2&&  bunzip2
-> linux-0.2.img.bz2
->
-> 4. Build a kernel with CONFIG_VIRTIO_BLK=y and
-> CONFIG_SERIAL_8250_CONSOLE=y configuration options. Note: also make sure
-> you have CONFIG_EXT2_FS or CONFIG_EXT4_FS if you use the above image.
->
-> 5. And finally, launch the hypervisor:
->
->    ./kvm --image=linux-0.2.img --kernel=../../arch/x86/boot/bzImage
->
-> The tool has been written by Pekka Enberg, Cyrill Gorcunov, and Asias
-> He. Special thanks to Avi Kivity for his help on KVM internals and Ingo
-> Molnar for all-around support and encouragement!
->
-> See the following thread for original discussion for motivation of this
-> project:
->
-> http://thread.gmane.org/gmane.linux.kernel/962051/focus=962620
->
-> 			Pekka
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+=46rom 8c52bc1f2acb16d3bc12ea43c82665ebef93285a Mon Sep 17 00:00:00 2001
+=46rom: Raghavendra D Prabhu <rprabhu@wnohang.net>
+Date: Sun, 3 Apr 2011 01:59:12 +0530
+Subject: [PATCH] Added a py3k test to feature tests.
 
+Currently, make fails at a later stage when python-devel test succeeds
+incorrectly for Py3k. This fixes that.
+
+Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
+---
+ tools/perf/feature-tests.mak |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
+index b041ca6..8e5d16a 100644
+--- a/tools/perf/feature-tests.mak
++++ b/tools/perf/feature-tests.mak
+@@ -82,6 +82,10 @@ ifndef NO_LIBPYTHON
+ define SOURCE_PYTHON_EMBED
+ #include <Python.h>
+=20
++#if PY_VERSION_HEX >=3D 0x03000000
++	#error "Python 3 is not yet supported; set PYTHON{,_CONFIG}"
++#endif
++
+ int main(void)
+ {
+ 	Py_Initialize();
+--=20
+1.7.4.2
+
+
+--b5gNqxB1S1yM7hjW--
+
+--TYecfFk8j8mZq+dy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNl4smAAoJEKYW3KHXK+l3d4IIAJ9oash0ah3SbRbwSmnC4QwC
+sMewCnjKRK3mF2U+pTPCWQZ1Z7pJD+Ajg+4i3QeItO3Iz4Dojo/VK/HrRcaTS+b7
+1vkF+s9aV9tbYBLWdpg49PaF79EuLato19NG/57KaXQe8WQI1F4ym1i06VIb3wPE
+kFTcFM+zIgcrfKWGSxSTXXj+vYTWlcqVwljiEVEYqetRPfE6kDzVk+UcmDYZQPR9
+1BeKC61GekENYhPquXNBNXkmVF2qTT5u3MvTN1ueMpgPN8Np5gCBZgPhwE+yuS1j
+NQ5n09iUz1SlqiQDmu8D596AV4rpfO1vAlhndy63P8LxXvvAntHffIw/rt+oSDQ=
+=ItR8
+-----END PGP SIGNATURE-----
+
+--TYecfFk8j8mZq+dy--
