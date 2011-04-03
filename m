@@ -1,249 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab1DCNLj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 09:11:39 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:40422 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab1DCNL2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 09:11:28 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andreas Schwab <schwab@linux-m68k.org>
-Subject: [PATCH 2/2] m68k: bitops - Never step beyond the end of the bitmap
-Date: Sun,  3 Apr 2011 15:11:17 +0200
-Message-Id: <1301836277-30185-2-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1301836277-30185-1-git-send-email-geert@linux-m68k.org>
-References: <1301836277-30185-1-git-send-email-geert@linux-m68k.org>
+	id S1752504Ab1DCNTh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 09:19:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34372 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752432Ab1DCNTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 09:19:36 -0400
+Message-ID: <4D9873CD.3080207@redhat.com>
+Date: Sun, 03 Apr 2011 16:19:09 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        aarcange@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
+        joro@8bytes.org, penberg@cs.helsinki.fi, asias.hejun@gmail.com,
+        gorcunov@gmail.com, mingo@elte.hu
+Subject: Re: [ANNOUNCE] Native Linux KVM tool
+References: <1301592656.586.15.camel@jaguar>	<4D982E89.8070502@redhat.com> <BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com> <4D9847BC.9060906@redhat.com> <4D98716D.9040307@codemonkey.ws>
+In-Reply-To: <4D98716D.9040307@codemonkey.ws>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-find_next bitops on m68k (find_next_zero_bit, find_next_bit, and
-find_next_bit_le) may cause out of bounds memory access
-when the bitmap size in bits % 32 != 0 and offset (the bitnumber
-to start searching at) is very close to the bitmap size.
+On 04/03/2011 04:09 PM, Anthony Liguori wrote:
+> On 04/03/2011 05:11 AM, Avi Kivity wrote:
+>> On 04/03/2011 12:59 PM, Pekka Enberg wrote:
+>>> Hi Avi,
+>>>
+>>> On Sun, Apr 3, 2011 at 11:23 AM, Avi Kivity<avi@redhat.com>  wrote:
+>>> >>  Note that this is a development prototype for the time being: 
+>>> there's no
+>>> >>  networking support and no graphics support, amongst other missing
+>>> >>  essentials.
+>>> >
+>>> >  Mind posting a roadmap?  I would put smp support near the top.  
+>>> This sort of
+>>> >  thing has to be designed in, otherwise you wind up with a big 
+>>> lock like
+>>> >  qemu.
+>>>
+>>> What are the pain points with qemu at the moment?
+>>
+>> It's an ugly gooball.
+>
+> Because it solves a lot of very difficult problems.
+>
+> You could drop all of the TCG support and it'd still be an ugly gooball.
+>
+> Supporting lots of different emulated hardware devices, live 
+> migration, tons of different types of networking and image formats, 
+> etc., all adds up over time.
 
-For example,
+Sure, any succcesful project becomes an ugly gooball.  It's almost a 
+compliment.
 
-       unsigned long bitmap[2] = { 0, 0 };
-       find_next_bit(bitmap, 63, 62);
-
-1. find_next_bit() tries to find any set bits in bitmap[1],
-   but no bits set.
-
-2. Then find_first_bit(bimap + 2, -1)
-
-3. Unfortunately find_first_bit() takes unsigned int as the size argument.
-
-4. find_first_bit will access bitmap[2~] until it find any set bits.
-
-Add missing tests for stepping beyond the end of the bitmap to all
-find_{first,next}_*() functions, and make sure they never return a value
-larger than the bitmap size.
-
-Reported-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Andreas Schwab <schwab@linux-m68k.org>
----
- arch/m68k/include/asm/bitops_mm.h |   81 +++++++++++++++++++++++++------------
- 1 files changed, 55 insertions(+), 26 deletions(-)
-
-diff --git a/arch/m68k/include/asm/bitops_mm.h b/arch/m68k/include/asm/bitops_mm.h
-index 5bd3afa..e9020f8 100644
---- a/arch/m68k/include/asm/bitops_mm.h
-+++ b/arch/m68k/include/asm/bitops_mm.h
-@@ -181,14 +181,15 @@ static inline int find_first_zero_bit(const unsigned long *vaddr,
- {
- 	const unsigned long *p = vaddr;
- 	int res = 32;
-+	unsigned int words;
- 	unsigned long num;
- 
- 	if (!size)
- 		return 0;
- 
--	size = (size + 31) >> 5;
-+	words = (size + 31) >> 5;
- 	while (!(num = ~*p++)) {
--		if (!--size)
-+		if (!--words)
- 			goto out;
- 	}
- 
-@@ -196,7 +197,8 @@ static inline int find_first_zero_bit(const unsigned long *vaddr,
- 			      : "=d" (res) : "d" (num & -num));
- 	res ^= 31;
- out:
--	return ((long)p - (long)vaddr - 4) * 8 + res;
-+	res += ((long)p - (long)vaddr - 4) * 8;
-+	return res < size ? res : size;
- }
- 
- static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
-@@ -215,9 +217,14 @@ static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
- 		/* Look for zero in first longword */
- 		__asm__ __volatile__ ("bfffo %1{#0,#0},%0"
- 				      : "=d" (res) : "d" (num & -num));
--		if (res < 32)
--			return offset + (res ^ 31);
-+		if (res < 32) {
-+			offset += res ^ 31;
-+			return offset < size ? offset : size;
-+		}
- 		offset += 32;
-+
-+		if (offset >= size)
-+			return size;
- 	}
- 	/* No zero yet, search remaining full bytes for a zero */
- 	return offset + find_first_zero_bit(p, size - offset);
-@@ -227,14 +234,15 @@ static inline int find_first_bit(const unsigned long *vaddr, unsigned size)
- {
- 	const unsigned long *p = vaddr;
- 	int res = 32;
-+	unsigned int words;
- 	unsigned long num;
- 
- 	if (!size)
- 		return 0;
- 
--	size = (size + 31) >> 5;
-+	words = (size + 31) >> 5;
- 	while (!(num = *p++)) {
--		if (!--size)
-+		if (!--words)
- 			goto out;
- 	}
- 
-@@ -242,7 +250,8 @@ static inline int find_first_bit(const unsigned long *vaddr, unsigned size)
- 			      : "=d" (res) : "d" (num & -num));
- 	res ^= 31;
- out:
--	return ((long)p - (long)vaddr - 4) * 8 + res;
-+	res += ((long)p - (long)vaddr - 4) * 8;
-+	return res < size ? res : size;
- }
- 
- static inline int find_next_bit(const unsigned long *vaddr, int size,
-@@ -261,9 +270,14 @@ static inline int find_next_bit(const unsigned long *vaddr, int size,
- 		/* Look for one in first longword */
- 		__asm__ __volatile__ ("bfffo %1{#0,#0},%0"
- 				      : "=d" (res) : "d" (num & -num));
--		if (res < 32)
--			return offset + (res ^ 31);
-+		if (res < 32) {
-+			offset += res ^ 31;
-+			return offset < size ? offset : size;
-+		}
- 		offset += 32;
-+
-+		if (offset >= size)
-+			return size;
- 	}
- 	/* No one yet, search remaining full bytes for a one */
- 	return offset + find_first_bit(p, size - offset);
-@@ -364,23 +378,25 @@ static inline int test_bit_le(int nr, const void *vaddr)
- static inline int find_first_zero_bit_le(const void *vaddr, unsigned size)
- {
- 	const unsigned long *p = vaddr, *addr = vaddr;
--	int res;
-+	int res = 0;
-+	unsigned int words;
- 
- 	if (!size)
- 		return 0;
- 
--	size = (size >> 5) + ((size & 31) > 0);
--	while (*p++ == ~0UL)
--	{
--		if (--size == 0)
--			return (p - addr) << 5;
-+	words = (size >> 5) + ((size & 31) > 0);
-+	while (*p++ == ~0UL) {
-+		if (--words == 0)
-+			goto out;
- 	}
- 
- 	--p;
- 	for (res = 0; res < 32; res++)
- 		if (!test_bit_le(res, p))
- 			break;
--	return (p - addr) * 32 + res;
-+out:
-+	res += (p - addr) * 32;
-+	return res < size ? res : size;
- }
- 
- static inline unsigned long find_next_zero_bit_le(const void *addr,
-@@ -398,10 +414,15 @@ static inline unsigned long find_next_zero_bit_le(const void *addr,
- 		offset -= bit;
- 		/* Look for zero in first longword */
- 		for (res = bit; res < 32; res++)
--			if (!test_bit_le(res, p))
--				return offset + res;
-+			if (!test_bit_le(res, p)) {
-+				offset += res;
-+				return offset < size ? offset : size;
-+			}
- 		p++;
- 		offset += 32;
-+
-+		if (offset >= size)
-+			return size;
- 	}
- 	/* No zero yet, search remaining full bytes for a zero */
- 	return offset + find_first_zero_bit_le(p, size - offset);
-@@ -410,22 +431,25 @@ static inline unsigned long find_next_zero_bit_le(const void *addr,
- static inline int find_first_bit_le(const void *vaddr, unsigned size)
- {
- 	const unsigned long *p = vaddr, *addr = vaddr;
--	int res;
-+	int res = 0;
-+	unsigned int words;
- 
- 	if (!size)
- 		return 0;
- 
--	size = (size >> 5) + ((size & 31) > 0);
-+	words = (size >> 5) + ((size & 31) > 0);
- 	while (*p++ == 0UL) {
--		if (--size == 0)
--			return (p - addr) << 5;
-+		if (--words == 0)
-+			goto out;
- 	}
- 
- 	--p;
- 	for (res = 0; res < 32; res++)
- 		if (test_bit_le(res, p))
- 			break;
--	return (p - addr) * 32 + res;
-+out:
-+	res += (p - addr) * 32;
-+	return res < size ? res : size;
- }
- 
- static inline unsigned long find_next_bit_le(const void *addr,
-@@ -443,10 +467,15 @@ static inline unsigned long find_next_bit_le(const void *addr,
- 		offset -= bit;
- 		/* Look for one in first longword */
- 		for (res = bit; res < 32; res++)
--			if (test_bit_le(res, p))
--				return offset + res;
-+			if (test_bit_le(res, p)) {
-+				offset += res;
-+				return offset < size ? offset : size;
-+			}
- 		p++;
- 		offset += 32;
-+
-+		if (offset >= size)
-+			return size;
- 	}
- 	/* No set bit yet, search remaining full bytes for a set bit */
- 	return offset + find_first_bit_le(p, size - offset);
 -- 
-1.7.0.4
+error compiling committee.c: too many arguments to function
 
