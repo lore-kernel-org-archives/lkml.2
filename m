@@ -1,295 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525Ab1DCFku (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 01:40:50 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:54922 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751356Ab1DCFkt (ORCPT
+	id S1751688Ab1DCGSl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 02:18:41 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:56517 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751468Ab1DCGSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 01:40:49 -0400
-Date: Sun, 3 Apr 2011 07:40:08 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Aakash Goenka <aakash.goenka@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        x86@kernel.org, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: kernel: acpi : Fix style problems in boot.c
-Message-ID: <20110403054007.GB10921@elf.ucw.cz>
-References: <AANLkTincUPbf23QdtQWhqjH+MaB9n2xKWQ4F54sZit=j@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTincUPbf23QdtQWhqjH+MaB9n2xKWQ4F54sZit=j@mail.gmail.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 3 Apr 2011 02:18:40 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/6zuASACT6GgWgzU8F8ExBKtYcmWabaccjGE2vVw
+	UTb38ZPDNQoe/d
+Subject: Re: Soft lockup during suspend since ~2.6.36
+From: Mike Galbraith <efault@gmx.de>
+To: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <AANLkTim5ctAoaB4+BS7Z-+ARUgTEBO22bkYMUvFtGmoN@mail.gmail.com>
+References: <AANLkTim5ctAoaB4+BS7Z-+ARUgTEBO22bkYMUvFtGmoN@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 03 Apr 2011 08:18:35 +0200
+Message-ID: <1301811515.7592.2.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Adds CC to author of fingered commit.
 
->  Fixes most style errors and warnings.
->  Signed-off-by: Aakash Goenka <aakash.goenka@gmail.com>
+On Sun, 2011-04-03 at 04:03 +0200, Thilo-Alexander Ginkel wrote:
+> Hello everyone,
+> 
+> recently, I upgraded my Linux kernel (running on an Intel Core 2 Quad)
+> from 2.6.35 to 2.6.38. Unfortunately, I have been experiencing
+> frequent (but sporadic) freezes during suspend (S3) since then, i.e.,
+> the system became completely unresponsive (even MagicSysRq stopped
+> working) after having spun down the hard disks.
+> 
+> I performed a bisect, which pointed out the following commit:
+> 
+> bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a is the first bad commit
+> commit bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a
+> Author: Arnd Bergmann <arnd@arndb.de>
+> Date:   Sun Jul 11 15:34:05 2010 +0200
+> 
+>     HID: hiddev: use usb_find_interface, get rid of BKL
+> 
+>     This removes the private hiddev_table in the usbhid
+>     driver and changes it to use usb_find_interface
+>     instead.
+> 
+>     The advantage is that we can avoid the race between
+>     usb_register_dev and usb_open and no longer need the
+>     big kernel lock.
+> 
+>     This doesn't introduce race condition -- the intf pointer could be
+>     invalidated only in hiddev_disconnect() through usb_deregister_dev(),
+>     but that will block on minor_rwsem and not actually remove the device
+>     until usb_open().
+> 
+>     Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>     Cc: Jiri Kosina <jkosina@suse.cz>
+>     Cc: "Greg Kroah-Hartman" <gregkh@suse.de>
+>     Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> 
+> :040000 040000 4ae14b3ba486373d7a354874e9ad334858f094e3
+> 8041ffda20ca3020a6b60d64235ae179f8186bf0 M      drivers
+> 
+> Booting with no_console_suspend also brings up a BUG mentioning a soft
+> lockup. As my serial console breaks during suspend, I had to take
+> photos of the error messages:
+>   https://secure.tgbyte.de/dropbox/eaghoh9M.jpg
+>   https://secure.tgbyte.de/dropbox/ecae8ieR.jpg
+>   https://secure.tgbyte.de/dropbox/vah5ooR9.jpg
+> 
+> Unfortunately, I have so far been unable to get the complete error
+> message in a single screen capture (as the output is either too
+> verbose or too scarce).
+> 
+> This bug is present up to (and including) 2.6.38 (I did not try any
+> later version).
+> 
+> I'd appreciate your help to fix this issue. Let me know if you need
+> further details.
+> 
+> Thanks,
+> Thilo
+> 
+> P.S.: Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=31562
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
-
-
->  static int __init
-> -acpi_parse_lapic_nmi(struct acpi_subtable_header * header, const
-> unsigned long end)
-> +acpi_parse_lapic_nmi(struct acpi_subtable_header *header,
-> +		     const unsigned long end)
->  {
->  	struct acpi_madt_local_apic_nmi *lapic_nmi = NULL;
-> 
-
-Are you sure? Still looks word-wrapped to me.
-
-> @@ -345,7 +344,7 @@ acpi_parse_lapic_nmi(struct acpi_subtable_header *
-> header, const unsigned long e
->  #ifdef CONFIG_X86_IO_APIC
-> 
->  static int __init
-> -acpi_parse_ioapic(struct acpi_subtable_header * header, const
-> unsigned long end)
-> +acpi_parse_ioapic(struct acpi_subtable_header *header, const unsigned long end)
->  {
->  	struct acpi_madt_io_apic *ioapic = NULL;
-> 
-> @@ -365,7 +364,8 @@ acpi_parse_ioapic(struct acpi_subtable_header *
-> header, const unsigned long end)
->  /*
->   * Parse Interrupt Source Override for the ACPI SCI
->   */
-> -static void __init acpi_sci_ioapic_setup(u8 bus_irq, u16 polarity,
-> u16 trigger, u32 gsi)
-> +static void __init acpi_sci_ioapic_setup(u8 bus_irq,
-> +					 u16 polarity, u16 trigger, u32 gsi)
->  {
->  	if (trigger == 0)	/* compatible SCI trigger is level */
->  		trigger = 3;
-> @@ -396,7 +396,7 @@ static void __init acpi_sci_ioapic_setup(u8
-> bus_irq, u16 polarity, u16 trigger,
->  }
-> 
->  static int __init
-> -acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
-> +acpi_parse_int_src_ovr(struct acpi_subtable_header *header,
->  		       const unsigned long end)
->  {
->  	struct acpi_madt_interrupt_override *intsrc = NULL;
-> @@ -410,8 +410,10 @@ acpi_parse_int_src_ovr(struct
-> acpi_subtable_header * header,
-> 
->  	if (intsrc->source_irq == acpi_gbl_FADT.sci_interrupt) {
->  		acpi_sci_ioapic_setup(intsrc->source_irq,
-> -				      intsrc->inti_flags & ACPI_MADT_POLARITY_MASK,
-> -				      (intsrc->inti_flags & ACPI_MADT_TRIGGER_MASK) >> 2,
-> +				      intsrc->inti_flags &
-> +				      ACPI_MADT_POLARITY_MASK,
-> +				      (intsrc->inti_flags &
-> +				      ACPI_MADT_TRIGGER_MASK) >> 2,
->  				      intsrc->global_irq);
->  		return 0;
->  	}
-> @@ -421,7 +423,8 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
->  			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
->  			return 0;
->  		}
-> -		if (acpi_fix_pin2_polarity && (intsrc->inti_flags &
-> ACPI_MADT_POLARITY_MASK)) {
-> +		if (acpi_fix_pin2_polarity &&
-> +		    (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
->  			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
->  			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high
-> active.\n");
->  		}
-> @@ -429,14 +432,16 @@ acpi_parse_int_src_ovr(struct
-> acpi_subtable_header * header,
-> 
->  	mp_override_legacy_irq(intsrc->source_irq,
->  				intsrc->inti_flags & ACPI_MADT_POLARITY_MASK,
-> -				(intsrc->inti_flags & ACPI_MADT_TRIGGER_MASK) >> 2,
-> +				(intsrc->inti_flags &
-> +				ACPI_MADT_TRIGGER_MASK) >> 2,
->  				intsrc->global_irq);
-> 
->  	return 0;
->  }
-> 
->  static int __init
-> -acpi_parse_nmi_src(struct acpi_subtable_header * header, const
-> unsigned long end)
-> +acpi_parse_nmi_src(struct acpi_subtable_header *header,
-> +		   const unsigned long end)
->  {
->  	struct acpi_madt_nmi_source *nmi_src = NULL;
-> 
-> @@ -652,7 +657,7 @@ static int __cpuinit _acpi_map_lsapic(acpi_handle
-> handle, int *pcpu)
->  	 */
->  	cpumask_andnot(new_map, cpu_present_mask, tmp_map);
->  	if (cpumask_empty(new_map)) {
-> -		printk ("Unable to map lapic to logical cpu number\n");
-> +		printk(KERN_WARNING PREFIX "Unable to map lapic to logical cpu number\n");
->  		retval = -EINVAL;
->  		goto free_new_map;
->  	}
-> @@ -686,9 +691,8 @@ int acpi_unmap_lsapic(int cpu)
->  	set_cpu_present(cpu, false);
->  	num_processors--;
-> 
-> -	return (0);
-> +	return 0;
->  }
-> -
->  EXPORT_SYMBOL(acpi_unmap_lsapic);
->  #endif				/* CONFIG_ACPI_HOTPLUG_CPU */
-> 
-> @@ -697,7 +701,6 @@ int acpi_register_ioapic(acpi_handle handle, u64
-> phys_addr, u32 gsi_base)
->  	/* TBD */
->  	return -EINVAL;
->  }
-> -
->  EXPORT_SYMBOL(acpi_register_ioapic);
-> 
->  int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
-> @@ -705,7 +708,6 @@ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
->  	/* TBD */
->  	return -EINVAL;
->  }
-> -
->  EXPORT_SYMBOL(acpi_unregister_ioapic);
-> 
->  static int __init acpi_parse_sbf(struct acpi_table_header *table)
-> @@ -726,7 +728,7 @@ static int __init acpi_parse_sbf(struct
-> acpi_table_header *table)
->  #ifdef CONFIG_HPET_TIMER
->  #include <asm/hpet.h>
-> 
-> -static struct __initdata resource *hpet_res;
-> +static struct __initdata resource * hpet_res;
-> 
->  static int __init acpi_parse_hpet(struct acpi_table_header *table)
->  {
-> @@ -833,7 +835,7 @@ static int __init acpi_parse_fadt(struct
-> acpi_table_header *table)
->  		 * "X" fields are optional extensions to the original V1.0
->  		 * fields, so we must selectively expand V1.0 fields if the
->  		 * corresponding X field is zero.
-> -	 	 */
-> +		 */
->  		if (!pmtmr_ioport)
->  			pmtmr_ioport = acpi_gbl_FADT.pm_timer_block;
->  	} else {
-> @@ -926,7 +928,8 @@ static int __init acpi_parse_madt_lapic_entries(void)
->  	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC_NMI,
->  				  acpi_parse_x2apic_nmi, 0);
->  	count =
-> -	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_NMI,
-> acpi_parse_lapic_nmi, 0);
-> +	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_NMI,
-> +				  acpi_parse_lapic_nmi, 0);
->  	if (count < 0 || x2count < 0) {
->  		printk(KERN_ERR PREFIX "Error parsing LAPIC NMI entry\n");
->  		/* TBD: Cleanup to allow fallback to MPS */
-> @@ -983,7 +986,7 @@ void __init mp_config_acpi_legacy_irqs(void)
->  	int i;
->  	struct mpc_intsrc mp_irq;
-> 
-> -#if defined (CONFIG_MCA) || defined (CONFIG_EISA)
-> +#if defined(CONFIG_MCA) || defined(CONFIG_EISA)
->  	/*
->  	 * Fabricate the legacy ISA bus (bus #31).
->  	 */
-> @@ -1170,8 +1173,8 @@ static int __init acpi_parse_madt_ioapic_entries(void)
->  	}
-> 
->  	count =
-> -	    acpi_table_parse_madt(ACPI_MADT_TYPE_INTERRUPT_OVERRIDE,
-> acpi_parse_int_src_ovr,
-> -				  nr_irqs);
-> +	    acpi_table_parse_madt(ACPI_MADT_TYPE_INTERRUPT_OVERRIDE,
-> +				  acpi_parse_int_src_ovr, nr_irqs);
->  	if (count < 0) {
->  		printk(KERN_ERR PREFIX
->  		       "Error parsing interrupt source overrides entry\n");
-> @@ -1269,10 +1272,10 @@ static void __init acpi_process_madt(void)
->  		}
->  	} else {
->  		/*
-> - 		 * ACPI found no MADT, and so ACPI wants UP PIC mode.
-> - 		 * In the event an MPS table was found, forget it.
-> - 		 * Boot with "acpi=off" to use MPS on such a system.
-> - 		 */
-> +		 * ACPI found no MADT, and so ACPI wants UP PIC mode.
-> +		 * In the event an MPS table was found, forget it.
-> +		 * Boot with "acpi=off" to use MPS on such a system.
-> +		 */
->  		if (smp_found_config) {
->  			printk(KERN_WARNING PREFIX
->  				"No APIC-table, disabling MPS\n");
-> @@ -1496,7 +1499,7 @@ void __init acpi_boot_table_init(void)
->  	 * If acpi_disabled, bail out
->  	 */
->  	if (acpi_disabled)
-> -		return;
-> +		return;
-> 
->  	/*
->  	 * Initialize the ACPI boot-time table parser.
-> @@ -1575,26 +1578,22 @@ static int __init parse_acpi(char *arg)
->  		return -EINVAL;
-> 
->  	/* "acpi=off" disables both ACPI table parsing and interpreter */
-> -	if (strcmp(arg, "off") == 0) {
-> +	if (strcmp(arg, "off") == 0)
->  		disable_acpi();
-> -	}
->  	/* acpi=force to over-ride black-list */
->  	else if (strcmp(arg, "force") == 0) {
->  		acpi_force = 1;
->  		acpi_disabled = 0;
->  	}
->  	/* acpi=strict disables out-of-spec workarounds */
-> -	else if (strcmp(arg, "strict") == 0) {
-> +	else if (strcmp(arg, "strict") == 0)
->  		acpi_strict = 1;
-> -	}
->  	/* acpi=rsdt use RSDT instead of XSDT */
-> -	else if (strcmp(arg, "rsdt") == 0) {
-> +	else if (strcmp(arg, "rsdt") == 0)
->  		acpi_rsdt_forced = 1;
-> -	}
->  	/* "acpi=noirq" disables ACPI interrupt routing */
-> -	else if (strcmp(arg, "noirq") == 0) {
-> +	else if (strcmp(arg, "noirq") == 0)
->  		acpi_noirq_set();
-> -	}
->  	/* "acpi=copy_dsdt" copys DSDT */
->  	else if (strcmp(arg, "copy_dsdt") == 0) {
->  		acpi_gbl_copy_dsdt_locally = 1;
-> @@ -1674,7 +1673,7 @@ int __acpi_acquire_global_lock(unsigned int *lock)
->  		old = *lock;
->  		new = (((old & ~0x3) + 2) + ((old >> 1) & 0x1));
->  		val = cmpxchg(lock, old, new);
-> -	} while (unlikely (val != old));
-> +	} while (unlikely(val != old));
->  	return (new < 3) ? -1 : 0;
->  }
-> 
-> @@ -1685,6 +1684,6 @@ int __acpi_release_global_lock(unsigned int *lock)
->  		old = *lock;
->  		new = old & ~0x3;
->  		val = cmpxchg(lock, old, new);
-> -	} while (unlikely (val != old));
-> +	} while (unlikely(val != old));
->  	return old & 0x1;
->  }
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
