@@ -1,114 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab1DCMDv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 08:03:51 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33857 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab1DCMDu (ORCPT
+	id S1752246Ab1DCMZA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 08:25:00 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46504 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752172Ab1DCMY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 08:03:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cbtfOQCzPXtzgVa0kvPStqupQzp0RI9C5QatotLWrnvWVoM+5JfhD8XTJV1PsDPxGz
-         EqE2Vz/DaOFEqoLtkkQ5xGqNaYIjizoWcGfuw4AOhM9x3Bs0eLIJm3GOrid26cWY6J+j
-         VsgTy4dRKixVkWdU4Mzq0PnSZvCfT1hgJLbzA=
-Date: Sun, 3 Apr 2011 16:03:44 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Jamie Iles <jamie@jamieiles.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nico@fluxnic.net>
-Subject: Re: [PATCH] gpio: support for Synopsys DesignWare APB GPIO
-Message-ID: <20110403120344.GA1540@oksana.dev.rtsoft.ru>
-References: <1301665638-29841-1-git-send-email-jamie@jamieiles.com>
- <alpine.LFD.2.00.1104022300130.5929@localhost6.localdomain6>
- <20110403025907.GA5670@pulham.picochip.com>
- <BANLkTimCG5t0k0XS=ojj_AqKM-7e=GB6-A@mail.gmail.com>
- <alpine.LFD.2.00.1104031118580.5929@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1104031118580.5929@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 3 Apr 2011 08:24:59 -0400
+Subject: Re: accessing vfpinstr macros from outside vfp directory
+From: Will Deacon <will.deacon@arm.com>
+To: Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Neil Leeder <nleeder@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        Sheetal Sahasrabudhe <sheetals@codeaurora.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, jamie.iles@picochip.com,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4D96499B.5070402@codeaurora.org>
+References: <4D924966.2050707@codeaurora.org>
+	 <1301678843.17592.5.camel@e102144-lin.cambridge.arm.com>
+	 <4D96499B.5070402@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 03 Apr 2011 13:24:40 +0100
+Message-ID: <1301833480.5022.11.camel@jazzbox>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 03, 2011 at 11:30:41AM +0200, Thomas Gleixner wrote:
-[...]
-> > Actually, there is a starting point you can work with.  Look at
-> > drivers/gpio/basic_mmio_gpio.c, and see if it can be molded to suit
-> > your purposes.
+Hi Bryan,
 
-It's surely doable for most memory-mapped GPIO controllers, the
-logic for toggling the GPIO values/direction and reading input
-state is pretty much the same across all the controllers.
+On Fri, 2011-04-01 at 22:54 +0100, Bryan Huntsman wrote:
+> On 04/01/11 10:27, Will Deacon wrote:
+> > Neil,
+> >
+> > On Tue, 2011-03-29 at 22:04 +0100, Neil Leeder wrote:
+> >> Any opinions on what would be the best thing to do here? Choices
+> appear to be:
+> >>
+> >> 1) allow the relative include path of ../vfp/vfpinstr.h
+> >> 2) move the definitions of fmrx, fmxr from vfp/vfpinstr.h to
+> include/asm/vfp.h
+> >> 3) move vfp/vfpinstr.h to include/asm
+> >> 4) other...?
+> >>
+> >> If it helps, I can create a patch for whichever is considered the
+> preferred solution.
+> >>
+> >
+> > I personally don't find option (1) that offensive - Bryan seemed to
+> > differ though so perhaps option (2) would keep him happy?
+> >
+> > I don't think option (3) is sensible given that the majority of the
+> > header file is private to /vfp.
+> >
+> > Will
+> 
+> I raised it as a question.  If that's the only sane thing to do here,
+> then do it.  Since no one else seems to have chimed in on (2) or (3),
+> I'm fine with the patch as-is.
 
-> > There don't appear to be any actual users of that driver in mainline
-> > at the moment, so feel free to propose changes if need be.
+Ok, great. Let's leave it like it is for the time-being and if other
+people start using things from the vfp headers then we should consider
+refactoring some of that code (currently I think it's restricted to this
+patch series and some files under vfp/).
 
-Yeah, I haven't had time to post the users (there are two: a custom
-FPGA GPIO controller, and a GPIO controller in the Cavium ECONA
-ARM machine).
+Cheers,
 
-I'll happily review/test any changes to the driver though.
+Will
 
-> > I'm not
-> > hugely thrilled with the current method that the driver uses to define
-> > the register locations (using named resources).  My instinct would be
-> > to use a single register resource region with offsets for each
-> > register type defined from the base of it, but Anton can probably fill
-> > us in on the reason that approach was used.
-
-Well, I did it that way because you don't have to pass the offsets via
-platform data (you don't need platform data most of the time, i.e. if
-you use dynamic bases).
-
-And with device tree, you wouldn't need any constructors:
-
-gpio-controller@f00 {
-	reg = <0xf00 0x4      // would map to "dat" resource
-	       0xf04 0x4      // would maps to "set" resource
-	       0xf08 0x4>;    // would maps to "clr" resource
-};
-
-That is, I dreamed about something like this, the way to (re)map
-DT resources to Linux resources:
-
-static const struct of_resource_map resmap[] = {
-	/* type   DTnum  Lnum  Name  */
-	{  MEM,   0,     1,    "mmio space1" },
-	{  MEM,   1,     0,    "mmio space2" },
-	{  IRQ,   0,     1,    "tx irq" },
-	{  IRQ,   1,     0,    "rx irq" },
-	{},
-};
-
-static struct platform_driver drv = {
-	.driver.of_match_table = ...;
-	.driver.of_resource_map_table = &resmap;
-};
-
-But still, I have no problem with either approaches, be it mutiple
-resources or a resource + offsets.
-
-> Right, that avoids multiple ioremaps for the same physical address
-> space.
-
-I guess this could be solved by a tiny logic inside the driver (i.e.
-if the registers lie within a single page, map them with a single
-ioremap call, otherwise fallback to multiple ioremaps). Not sure if
-that worth a trouble though.
-
-> There are more odds in that driver. It should setup proper
-> function pointers for accessing the registers instead of runtime
-> evaluation of everything.
-
-Good idea, thanks.
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
