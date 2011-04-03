@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab1DCMZA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 08:25:00 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46504 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752172Ab1DCMY7 (ORCPT
+	id S1752441Ab1DCNJH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 09:09:07 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:53096 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab1DCNJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 08:24:59 -0400
-Subject: Re: accessing vfpinstr macros from outside vfp directory
-From: Will Deacon <will.deacon@arm.com>
-To: Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Neil Leeder <nleeder@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jean Pihet <jean.pihet@newoldbits.com>,
-        Sheetal Sahasrabudhe <sheetals@codeaurora.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, jamie.iles@picochip.com,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4D96499B.5070402@codeaurora.org>
-References: <4D924966.2050707@codeaurora.org>
-	 <1301678843.17592.5.camel@e102144-lin.cambridge.arm.com>
-	 <4D96499B.5070402@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 03 Apr 2011 13:24:40 +0100
-Message-ID: <1301833480.5022.11.camel@jazzbox>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Sun, 3 Apr 2011 09:09:05 -0400
+Message-ID: <4D98716D.9040307@codemonkey.ws>
+Date: Sun, 03 Apr 2011 08:09:01 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        aarcange@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
+        joro@8bytes.org, penberg@cs.helsinki.fi, asias.hejun@gmail.com,
+        gorcunov@gmail.com, mingo@elte.hu
+Subject: Re: [ANNOUNCE] Native Linux KVM tool
+References: <1301592656.586.15.camel@jaguar>	<4D982E89.8070502@redhat.com> <BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com> <4D9847BC.9060906@redhat.com>
+In-Reply-To: <4D9847BC.9060906@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bryan,
+On 04/03/2011 05:11 AM, Avi Kivity wrote:
+> On 04/03/2011 12:59 PM, Pekka Enberg wrote:
+>> Hi Avi,
+>>
+>> On Sun, Apr 3, 2011 at 11:23 AM, Avi Kivity<avi@redhat.com>  wrote:
+>> >>  Note that this is a development prototype for the time being: 
+>> there's no
+>> >>  networking support and no graphics support, amongst other missing
+>> >>  essentials.
+>> >
+>> >  Mind posting a roadmap?  I would put smp support near the top.  
+>> This sort of
+>> >  thing has to be designed in, otherwise you wind up with a big lock 
+>> like
+>> >  qemu.
+>>
+>> What are the pain points with qemu at the moment?
+>
+> It's an ugly gooball.
 
-On Fri, 2011-04-01 at 22:54 +0100, Bryan Huntsman wrote:
-> On 04/01/11 10:27, Will Deacon wrote:
-> > Neil,
-> >
-> > On Tue, 2011-03-29 at 22:04 +0100, Neil Leeder wrote:
-> >> Any opinions on what would be the best thing to do here? Choices
-> appear to be:
-> >>
-> >> 1) allow the relative include path of ../vfp/vfpinstr.h
-> >> 2) move the definitions of fmrx, fmxr from vfp/vfpinstr.h to
-> include/asm/vfp.h
-> >> 3) move vfp/vfpinstr.h to include/asm
-> >> 4) other...?
-> >>
-> >> If it helps, I can create a patch for whichever is considered the
-> preferred solution.
-> >>
-> >
-> > I personally don't find option (1) that offensive - Bryan seemed to
-> > differ though so perhaps option (2) would keep him happy?
-> >
-> > I don't think option (3) is sensible given that the majority of the
-> > header file is private to /vfp.
-> >
-> > Will
-> 
-> I raised it as a question.  If that's the only sane thing to do here,
-> then do it.  Since no one else seems to have chimed in on (2) or (3),
-> I'm fine with the patch as-is.
+Because it solves a lot of very difficult problems.
 
-Ok, great. Let's leave it like it is for the time-being and if other
-people start using things from the vfp headers then we should consider
-refactoring some of that code (currently I think it's restricted to this
-patch series and some files under vfp/).
+You could drop all of the TCG support and it'd still be an ugly gooball.
 
-Cheers,
+Supporting lots of different emulated hardware devices, live migration, 
+tons of different types of networking and image formats, etc., all adds 
+up over time.
 
-Will
+>> SMP, networking, and simpler guest to host communication from shell
+>> are most interesting missing features for me.
+>
+> If it is to be more than a toy, then Windows (really generic guest) 
+> support, manageability, live migration, hotplug, etc. are all crucial.
+
+I concur that SMP is probably one of those features you need to start 
+with if you're designing something from scratch.
+
+Regards,
+
+Anthony Liguori
 
