@@ -1,101 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab1DDATr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 20:19:47 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:42330 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752472Ab1DDATq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 20:19:46 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkkEAJwNmU15LK5JgWdsb2JhbAClYBUBARYmJYh5tnQNhV4E
-Date: Mon, 4 Apr 2011 10:19:36 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Christoph Lameter <cl@linux.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
-Message-ID: <20110404001936.GL6957@dastard>
-References: <20110401221921.A890.A69D9226@jp.fujitsu.com>
- <20110402011040.GG6957@dastard>
- <20110403183229.AE4C.A69D9226@jp.fujitsu.com>
+	id S1753548Ab1DDAhh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 20:37:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41307 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753504Ab1DDAhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 20:37:36 -0400
+Date: Sun, 3 Apr 2011 15:22:08 +0200
+From: Jan Kara <jack@suse.cz>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] x86, defconfig: replace ext3 with ext4
+Message-ID: <20110403132208.GC5141@quack.suse.cz>
+References: <20110401074548.17629.77638.stgit@localhost6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110403183229.AE4C.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20110401074548.17629.77638.stgit@localhost6>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 03, 2011 at 06:32:16PM +0900, KOSAKI Motohiro wrote:
-> > On Fri, Apr 01, 2011 at 10:17:56PM +0900, KOSAKI Motohiro wrote:
-> > > > > But, I agree that now we have to concern slightly large VM change parhaps
-> > > > > (or parhaps not). Ok, it's good opportunity to fill out some thing.
-> > > > > Historically, Linux MM has "free memory are waste memory" policy, and It
-> > > > > worked completely fine. But now we have a few exceptions.
-> > > > >
-> > > > > 1) RT, embedded and finance systems. They really hope to avoid reclaim
-> > > > >    latency (ie avoid foreground reclaim completely) and they can accept
-> > > > >    to make slightly much free pages before memory shortage.
-> > > > 
-> > > > In general we need a mechanism to ensure we can avoid reclaim during
-> > > > critical sections of application. So some way to give some hints to the
-> > > > machine to free up lots of memory (/proc/sys/vm/dropcaches is far too
-> > > > drastic) may be useful.
-> > > 
-> > > Exactly.
-> > > I've heard multiple times this request from finance people. And I've also 
-> > > heared the same request from bullet train control software people recently.
-> > 
-[...]
-> > Fundamentally, if you just switch off memory reclaim to avoid the
-> > latencies involved with direct memory reclaim, then all you'll get
-> > instead is ENOMEM because there's no memory available and none will be
-> > reclaimed. That's even more fatal for the system than doing reclaim.
+On Fri 01-04-11 11:45:48, Konstantin Khlebnikov wrote:
+> Replace ext3 with ext4, because now it is a de facto standard file system.
+> And set CONFIG_EXT4_USE_FOR_EXT23=y to use it also for mounting ext2/ext3.
+  I'm sorry but I think it's too early for CONFIG_EXT4_USE_FOR_EXT23 part.
+Although ext4 can handle ext3 and is stable, I believe there hasn't been
+enough testing of ext4 code used as ext3 replacement. Some of the code
+paths used for handling of ext3 are different from those used for ext4 and
+there could be bugs lurking. Also ext4 has some slight differences in
+performance and behavior in corner cases to ext3 which can potentially
+screw users. I'm not saying these differences are showstoppers but we
+should at least (try to) identify them before exposing users to them.
+
+Actually, I want to speak to some people about this this week at LSF to get
+some concensus on what exactly needs to be done so that we can replace
+ext[23] with ext4.
+
+									Honza
+
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> ---
+>  arch/x86/configs/i386_defconfig   |    9 +++++----
+>  arch/x86/configs/x86_64_defconfig |    9 +++++----
+>  2 files changed, 10 insertions(+), 8 deletions(-)
 > 
-> You have two level oversight.
+> diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+> index 6f98726..cb8268c 100644
+> --- a/arch/x86/configs/i386_defconfig
+> +++ b/arch/x86/configs/i386_defconfig
+> @@ -269,10 +269,11 @@ CONFIG_RTC_CLASS=y
+>  CONFIG_DMADEVICES=y
+>  CONFIG_EEEPC_LAPTOP=y
+>  CONFIG_EFI_VARS=y
+> -CONFIG_EXT3_FS=y
+> -# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+> -CONFIG_EXT3_FS_POSIX_ACL=y
+> -CONFIG_EXT3_FS_SECURITY=y
+> +CONFIG_EXT4_FS=y
+> +CONFIG_EXT4_USE_FOR_EXT23=y
+> +CONFIG_EXT4_FS_XATTR=y
+> +CONFIG_EXT4_FS_POSIX_ACL=y
+> +CONFIG_EXT4_FS_SECURITY=y
+>  CONFIG_QUOTA=y
+>  CONFIG_QUOTA_NETLINK_INTERFACE=y
+>  # CONFIG_PRINT_QUOTA_WARNING is not set
+> diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+> index ee01a9d..033ec9a 100644
+> --- a/arch/x86/configs/x86_64_defconfig
+> +++ b/arch/x86/configs/x86_64_defconfig
+> @@ -270,10 +270,11 @@ CONFIG_RTC_CLASS=y
+>  CONFIG_DMADEVICES=y
+>  CONFIG_EEEPC_LAPTOP=y
+>  CONFIG_EFI_VARS=y
+> -CONFIG_EXT3_FS=y
+> -# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+> -CONFIG_EXT3_FS_POSIX_ACL=y
+> -CONFIG_EXT3_FS_SECURITY=y
+> +CONFIG_EXT4_FS=y
+> +CONFIG_EXT4_USE_FOR_EXT23=y
+> +CONFIG_EXT4_FS_XATTR=y
+> +CONFIG_EXT4_FS_POSIX_ACL=y
+> +CONFIG_EXT4_FS_SECURITY=y
+>  CONFIG_QUOTA=y
+>  CONFIG_QUOTA_NETLINK_INTERFACE=y
+>  # CONFIG_PRINT_QUOTA_WARNING is not set
 > 
-> Firstly, *ALL* RT application need to cooperate applications, kernel, 
-> and other various system level daemons. That's no specific issue of 
-> this topic. OK, *IF* RT application run egoistic, a system may hang 
-> up easily even routh mere simple busy loop, yes. But, Who want to do so?
-
-Sure - that's RT-101. I think I have a good understanding of these
-principles after spending 7 years of my life working on wide-area
-distributed real-time control systems (think city-scale water and
-electricity supply).
-
-> Secondly, You misparsed "avoid direct reclaim" paragraph. We don't talk
-> about "avoid direct reclaim even if system memory is no enough", We talk
-> about "avoid direct reclaim by preparing before". 
-
-I don't think I misparsed it. I am addressing the "avoid direct
-reclaim by preparing before" principle directly. The problem with it
-is that just enalrging the free memory pool doesn't guarantee future
-allocation success when there are other concurrent allocations
-occurring. IOWs, if you don't _reserve_ the free memory for the
-critical area in advance then there is no guarantee it will be
-available when needed by the critical section.
-
-A simple example: the radix tree node preallocation code to
-guarantee inserts succeed while holding a spinlock. If just relying
-on free memory was sufficient, then GFP_ATOMIC allocations are all
-that is necessary. However, even that isn't sufficient as even the
-GFP_ATOMIC reserved pool can be exhausted by other concurrent
-GFP_ATOMIC allocations. Hence preallocation is required before
-entering the critical section to guarantee success in all cases.
-
-And to state the obvious: doing allocation before the critical
-section will trigger reclaim if necessary so there is no need to
-have the application trigger reclaim.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
