@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757616Ab1DCCNj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 22:13:39 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54913 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610Ab1DCCNi (ORCPT
+	id S1757628Ab1DCCtD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 22:49:03 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:38859 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757427Ab1DCCtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 22:13:38 -0400
-From: Benson Leung <bleung@chromium.org>
-To: lars@metafoo.de, cbouatmailru@gmail.com
-Cc: rklein@nvidia.com, linux-kernel@vger.kernel.org,
-        Benson Leung <bleung@chromium.org>
-Subject: [PATCH v2] gpio-charger: Add gpio_charger_resume
-Date: Sat,  2 Apr 2011 19:13:12 -0700
-Message-Id: <1301796792-28806-1-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 1.7.1
+	Sat, 2 Apr 2011 22:49:01 -0400
+Message-ID: <4D97E018.1090504@linux.vnet.ibm.com>
+Date: Sun, 03 Apr 2011 08:18:56 +0530
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc11 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [PATCH 16/18] 2.6.40: x86 idle APM: remove deprecated
+ apm_cpu_idle()
+References: <alpine.LFD.2.02.1104010020280.2797@x980> <1301725380-10579-1-git-send-email-lenb@kernel.org> <5d9716021b20302ece48fd486bbad9bcb2502353.1301724243.git.len.brown@intel.com> <20110402124054.49c3a3f4@lxorguk.ukuu.org.uk> <alpine.LFD.2.02.1104021529580.18682@x980> <20110402220021.74ecdb5b@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110402220021.74ecdb5b@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gpio charger should notify if the gpio state had changed
-during suspend. This will send a CHANGED event each time
-the system resumes, ensuring a plug/unplug of the charger
-is not missed.
 
-Signed-off-by: Benson Leung <bleung@chromium.org>
 
---
-Version history :
-v2 : Changed to use dev_pm_ops
-v1 : Initial
----
- drivers/power/gpio-charger.c |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
+On 04/03/2011 02:30 AM, Alan Cox wrote:
+>> This patch series was posted in reply to a table of contents
+>>
+>> https://lkml.org/lkml/2011/4/2/8
+>>
+>> "By the end of this series, pm_idle is removed as a public
+>>   x86 idle-loop registration mechanism.  A few other things are
+>>   cleaned up in the process."
+>
+> Ok so lets rewind a bit - why do we want to remove pm_idle rather than
+> just fix up the way registration occurs. It's just a symbol, one trivial
+> interface that is exported and perhaps wants the export method tidying up.
+>
+>> Trinabh also replied to you, pointing one of the previous
+>> LKML discussions about the mis-use of pm_idle.
+>
+> And there are misuses of just about every kernel symbol - kmalloc for
+> example causes some people a lot of trouble !
 
-diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
-index 25b88ac..df29059 100644
---- a/drivers/power/gpio-charger.c
-+++ b/drivers/power/gpio-charger.c
-@@ -161,12 +161,32 @@ static int __devexit gpio_charger_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#if defined(CONFIG_PM)
-+static int gpio_charger_resume(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct gpio_charger *gpio_charger = platform_get_drvdata(pdev);
-+
-+	power_supply_changed(&gpio_charger->charger);
-+
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops gpio_charger_pm_ops = {
-+	.resume		= gpio_charger_resume,
-+};
-+#endif
-+
-+
- static struct platform_driver gpio_charger_driver = {
- 	.probe = gpio_charger_probe,
- 	.remove = __devexit_p(gpio_charger_remove),
- 	.driver = {
- 		.name = "gpio-charger",
- 		.owner = THIS_MODULE,
-+#if defined(CONFIG_PM)
-+		.pm = &gpio_charger_pm_ops,
-+#endif
- 	},
- };
- 
--- 
-1.7.1
+There are other problems too. This design of pm_idle has been copied
+by numerous other architectures. arm/blackfin/cris/ia64/m32r/m68knomm
+/microblaze/mn10300/sh/sparc all have pm_idle. This will keep spreading
+in future I guess.
 
+>
+>> We'll create a new APM cpuidle driver in Linux (Trinabh prototyped one),
+>> and at the same time, schedule it for removal in a year.  Personally,
+>> I think it is make-work, and in real-life it is more likely to do
+>> more harm than removing apm_idle, but I don't want to stand in the
+>> way of process.
+>
+> So you could just leave it alone - that's less work, less disruption and
+> doesn't do any harm at all.
+>
+> As I read this the plan at the moment otherwise is
+>
+> 	- churn up all the code
+> 	- remove PM idle hook
+> 	- rewrite the APM code
+> 	- replace the APM code
+>
+> whereas you could just leave the symbol exported or even just a hook to
+> make people to do it right using:
+>
+> 	int register_pm_idle(function);
+
+A patch was posted to do exactly this; see
+https://lkml.org/lkml/2010/10/19/449 . The problem  is that it
+results in two places of registration: cpuidle subsystem and
+this. It was pointed that 99.99% of people run cpuidle and
+we should directly call cpuidle and use its registration mechanism
+rather than duplicate code.
+
+Thanks,
+-Trinabh
