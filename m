@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab1DCQC4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 12:02:56 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:39266 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab1DCQCx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752702Ab1DCQCx (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 3 Apr 2011 12:02:53 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D989A8A.3050700@cam.ac.uk>
-Date: Sun, 03 Apr 2011 17:04:26 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:53957 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623Ab1DCQCv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 12:02:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=JGQt4wGCe0XvCTAISCJbPy70QAFm6aWCif9pW4WY/QD6m+xWaXtS94QAbUW4S82/bO
+         4Rl2InJAHqn3hkjhBB0YWDKEEErU5vsRxOGEFodthhjlmN38MIR2snj2yOxcq3GAojXe
+         6BiXtxBEy3QZ05rl0fLyrE52H+dKM9idysArA=
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Possible to software trigger an interrupt?
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110403141509.GA27154@suse.de>
+References: <1301455753-2866-1-git-send-email-bookjovi@gmail.com>
+	<20110403100959.GA4834@p183.telecom.by>
+	<20110403141509.GA27154@suse.de>
+Date: Mon, 4 Apr 2011 00:02:50 +0800
+Message-ID: <BANLkTinHiAdr93C2x7v4pHoRHgLTrvxmpw@mail.gmail.com>
+Subject: Re: [PATCH] tty: update file header info correctly
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Apr 3, 2011 at 10:15 PM, Greg KH <gregkh@suse.de> wrote:
+> On Sun, Apr 03, 2011 at 01:09:59PM +0300, Alexey Dobriyan wrote:
+>> On Tue, Mar 29, 2011 at 11:29:13PM -0400, bookjovi@gmail.com wrote:
+>> > From: Jovi Zhang <bookjovi@gmail.com>
+>> >
+>> > After some files changed location from drivers/char to driver/tty,
+>> > file header info also need to update
+>>
+>> They should be _removed_ exactly to avoid this kind of patches.
+>
+> I agree, please remove these lines.
+>
+> thanks,
+>
+> greg k-h
+>
 
-Having produced a proof of concept for using gpio chips
-to handle the triggers in IIO I am looking at converting
-over our sysfs trigger.  This trigger is used to initialize
-capture on devices in a similar way to dataready interrupts.
-The key point is we want to handle this in the same way within
-drivers as the hardware event triggers. 
-
-It is a very useful tool.  So the upshot is, what is the best
-way to handle causing an interrupt to occur from userspace?
-
-Any pointers on how to do this would be most welcome.
-
-Thanks,
-
-Jonathan
+Make sense, I will resend it.
