@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653Ab1DCWK5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 18:10:57 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:33892 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750936Ab1DCWK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 18:10:56 -0400
-Message-ID: <4D98F061.5030003@kernel.dk>
-Date: Mon, 04 Apr 2011 00:10:41 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752031Ab1DCWMq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 18:12:46 -0400
+Received: from mail.lloydmasika.co.ke ([41.215.68.2]:56577 "EHLO
+	mail.lloydmasika.co.ke" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab1DCWMp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 18:12:45 -0400
+Message-ID: <51331.110.159.153.167.1301868505.squirrel@webmail.lloydmasika.co.ke>
+Date: Mon, 4 Apr 2011 01:08:25 +0300 (EAT)
+Subject: Congratulations"
+From: "MSMPROMO" <clayjames01@gmail.com>
+Reply-To: msmpromo@gmail.com
+User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: fix request sorting at unplug
-References: <20110402153737.15555.75762.stgit@localhost6>
-In-Reply-To: <20110402153737.15555.75762.stgit@localhost6>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-02 17:37, Konstantin Khlebnikov wrote:
-> Comparison function for list_sort() must be anticommutative,
-> otherwise it is not sorting in ordinary meaning.
-> 
-> But fortunately list_sort() always check ((*cmp)(priv, a, b) <= 0)
-> it not distinguish negative and zero, so comparison function can
-> implement only less-or-equal instead of full three-way comparison.
 
-Thanks, good catch! It's an optimization, so no breakage. But if you end
-up often having > 1 queue plugged, it's a good optimization.
 
--- 
-Jens Axboe
+Dear Winner,
+
+Congratulations!!! Your email address has won you 450,000.GBP on this year
+ GSM-WEB Promo if intrested,Kindly provide us with these requirements
+below:
+
+Name:
+Address:
+Country:
+Sex:
+Age:
+Phone Numbers:
+Identity Proof:
+
+For claims call:+447031894678 or Email: msmpromo@gmail.com
+
+Thanks,
+Gary Williams
+GSM-WEB
 
