@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390Ab1DCAIS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Apr 2011 20:08:18 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:32922 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756672Ab1DCAIR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Apr 2011 20:08:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WrEjb6g4+GpePPoRhGoP6TQO+Z785lY/pp6VYSg5FbgFGNNg0RKV0230u/UXrb6Kmf
-         TlOoqUk2riW4dFPxKNJcbZbpcTm6iLV8GAaowSnJH0ZHE11N2jhcMt9VzGd+ca8efnik
-         LnZmJLZXPnZiaj6HVkZ83XbTRfG7UehMR1+Js=
+	id S1757605Ab1DCBha (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Apr 2011 21:37:30 -0400
+Received: from foo.stuge.se ([212.181.44.140]:48919 "HELO foo.stuge.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757573Ab1DCBh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Apr 2011 21:37:29 -0400
+Message-ID: <20110403013046.28837.qmail@stuge.se>
+Date: Sun, 3 Apr 2011 03:30:46 +0200
+From: Peter Stuge <peter@stuge.se>
+To: Norbert Preining <preining@logic.at>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: Lenovo resume from suspends hangs in i915_gpu_busy or so
+Mail-Followup-To: Norbert Preining <preining@logic.at>,
+	Jesse Barnes <jbarnes@virtuousgeek.org>, linux-acpi@vger.kernel.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <20110401021055.GB6071@gamma.logic.tuwien.ac.at> <20110401051511.GE9128@gamma.logic.tuwien.ac.at> <20110401090817.01717af0@jbarnes-desktop> <20110402002410.GL6464@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
-In-Reply-To: <20110402222118.3b5c2fa8@holly>
-References: <20110402222118.3b5c2fa8@holly>
-Date: Sun, 3 Apr 2011 03:08:14 +0300
-Message-ID: <BANLkTi=Y-+7i-4aeqHmk9WKDSqyDbGTduQ@mail.gmail.com>
-Subject: Re: 2.6.39-rc1 data corruption with rtorrent
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Jindrich Makovicka <makovick@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110402002410.GL6464@gamma.logic.tuwien.ac.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 2, 2011 at 11:21 PM, Jindrich Makovicka <makovick@gmail.com> wrote:
-> Hi,
->
-> I hit an rtorrent data corruption issue again. But this time, rtorrent
-> seems to write data that were mmapped by other processes (in the
-> downloaded files, I found my data from Chromium and later the data
-> produced by the testing utility by Linus from
-> http://lkml.org/lkml/2006/12/27/180). Unfortunately, I was so far
-> unable to reproduce the issue just with the testing utility.
->
-> I reverted to stable 2.6.38.2 for now as I don't feel like broadcasting
-> my private data via bittorrent.
->
-> Regards,
-> --
-> Jindrich Makovicka
->
+Norbert Preining wrote:
+> > Do you see what scrolls by above the text you took a picture of
+> 
+> More than what I can see on the screen shot I cannot grasp.
 
-Do you have an r8169 also ?
-I have data coruption in my torent files. But I didn't think to blame
-the kernel for that.
+Maybe try serial console, netconsole or usb debug device.
+
+
+//Peter
