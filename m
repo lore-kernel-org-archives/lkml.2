@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab1DCKcV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 06:32:21 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61709 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab1DCKcT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 06:32:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=attCPJ8IFDX0CwUFr4+p+HkGm4xRdx4vs34cbmGrlRw4Xr6g9k3pfuCpOvczP57Itl
-         apmj1s7youbfhtFInzz00yzmnAvU4qc6IJDEN6O4rlLzbE5goA585F9k1iUpDRLY58KB
-         +dm6UDYjCPR80e1jzfw3gkI+Ekd5cEml+qAw8=
+	id S1751857Ab1DCKx4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 06:53:56 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:63667 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237Ab1DCKxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 06:53:55 -0400
+Date: Sun, 3 Apr 2011 12:52:46 +0200
+From: Alessandro Rubini <rubini@unipv.it>
+To: nikai@nikai.net
+Cc: rabin@rab.in, linus.walleij@stericsson.com,
+        STEricsson_nomadik_linux@list.st.com, linux@arm.linux.org.uk,
+        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: nomadik: avoid assigning u32 to bool
+Message-ID: <20110403105246.GA11998@mail.gnudd.com>
 MIME-Version: 1.0
-In-Reply-To: <4D984A58.5090902@redhat.com>
-References: <1301592656.586.15.camel@jaguar>
-	<4D982E89.8070502@redhat.com>
-	<BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com>
-	<4D9847BC.9060906@redhat.com>
-	<BANLkTik5-ohx47AyLz_mJkCqNtO4uKVBew@mail.gmail.com>
-	<4D984A58.5090902@redhat.com>
-Date: Sun, 3 Apr 2011 13:32:18 +0300
-X-Google-Sender-Auth: iI4HrBTW4LD7cINrS40GapGIH4E
-Message-ID: <BANLkTinKJ68hbt-SZUUMJoKcm4ttnzxv8Q@mail.gmail.com>
-Subject: Re: [ANNOUNCE] Native Linux KVM tool
-From: Pekka Enberg <penberg@kernel.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, aarcange@redhat.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org, joro@8bytes.org, penberg@cs.helsinki.fi,
-        asias.hejun@gmail.com, gorcunov@gmail.com, mingo@elte.hu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
+	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <20110403122611.4cca78b9@absol.kitzblitz>
+References: <20110403122611.4cca78b9@absol.kitzblitz>
+  <20110401235113.083787a7@absol.kitzblitz>
+  <BANLkTinujPcSq86wjue+SGw5ZMiiLRaT_A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Avi,
+>> Why?  There are dozens of places in the kernel where this done, the code
+>> generated should be the same, and it's pretty obvious what is being done
+>> as it is.
+> 
+> Primarily because we were asked to avoid casts to bool even if
+> they are safe.
 
-On Sun, Apr 3, 2011 at 1:22 PM, Avi Kivity <avi@redhat.com> wrote:
->> It's definitely not a toy, it's my main virtualization tool of choice
->> for kernel development! ;-)
->>
->> The features you mention are crucial for servers but not for desktop.
->> I personally don't have much need for managing and live-migrating
->> Windows guests but if someone is interested in working on that, we're
->> happy to take patches!
->
-> Well, I'd say you do need generic guest support for desktop (but not the
-> other stuff I mentioned).  Are you planning to add a real GUI?
+[I have studied, meanwhile]
 
-Yes, we'll hopefully add GUI at some point.
+Actually the point of Rabin is, I think, that the patch is not needed.
+Our "bool" is the C99 "_Bool" type, for which the compiler
+automatically converts all non-0 assignments to 1.  Even if storage
+is still one byte.
 
-Generic guest support would be cool but like I said, I personally
-don't need it because I'm mostly interested in running Linux guests.
-Windows is totally uninteresting and I'm hoping we can get away with
-virtio drivers for other FOSS kernels.
+IIUC, the point of _Bool is allowing comparisong with "true", while in
+general non-0 is considered true if evaluated in a conditional
+but may be "!= 1" so "!= true" if compared explicitly.
 
-                         Pekka
+You can compile a one-liner to check. I used a few more:
+
+    _Bool i[10];
+
+    int main(void)
+    {
+        i[0] = 1;
+        i[1] = 10;
+        return i[0];
+    }
+
+/alessandro
