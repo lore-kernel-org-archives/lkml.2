@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab1DCJjR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 05:39:17 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33150 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab1DCJjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 05:39:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: balbir@linux.vnet.ibm.com
-Subject: Re: [PATCH 0/3] Unmapped page cache control (v5)
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-        akpm@linux-foundation.org, npiggin@kernel.dk, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cl@linux.com,
-        kamezawa.hiroyu@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-In-Reply-To: <20110401180455.GU2879@balbir.in.ibm.com>
-References: <20110401222250.A894.A69D9226@jp.fujitsu.com> <20110401180455.GU2879@balbir.in.ibm.com>
-Message-Id: <20110403183927.AE4D.A69D9226@jp.fujitsu.com>
+	id S1751563Ab1DCJmL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 05:42:11 -0400
+Received: from p15132773.pureserver.info ([217.160.209.225]:54470 "EHLO
+	smtp.chost.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750988Ab1DCJmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 05:42:09 -0400
+Cc: linux-mmc <linux-mmc@vger.kernel.org>, cjb <cjb@laptop.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>,
+        adrian.hunter@flatty.sascha.silbe.org, <adrian.hunter@nokia.com>
+Subject: Re: [PATCH v4 2/3]mmc: enable TRIM/ERASE caps for SDHCI host
+To: Chuanxiao Dong <chuanxiao.dong@intel.com>
+In-reply-to: <20110212062220.GC25519@intel.com>
+References: <20110212062220.GC25519@intel.com>
+Date: Sun, 03 Apr 2011 11:41:41 +0200
+Message-Id: <1301823199-sup-1704@twin.sascha.silbe.org>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Sun,  3 Apr 2011 18:39:12 +0900 (JST)
+From: Sascha Silbe <sascha-ml-reply-to-2011-2@silbe.org>
+Content-Type: multipart/signed; boundary="=-1301823731-978476-32191-9345-4-="; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > Hm. OK, I may misread.
-> > > > Can you please explain the reason why de-duplication feature need to selectable and
-> > > > disabled by defaut. "explicity enable" mean this feature want to spot corner case issue??
-> > > 
-> > > Yes, because given a selection of choices (including what you
-> > > mentioned in the review), it would be nice to have
-> > > this selectable.
-> > 
-> > It's no good answer. :-/
-> 
-> I am afraid I cannot please you with my answers
-> 
-> > Who need the feature and who shouldn't use it? It this enough valuable for enough large
-> > people? That's my question point.
-> > 
-> 
-> You can see the use cases documented, including when running Linux as
-> a guest under other hypervisors, 
 
-Which hypervisor? If this patch is unrelated 99.9999% people, shouldn't you have to reduce
-negative impact?
+--=-1301823731-978476-32191-9345-4-=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
+Excerpts from Chuanxiao Dong's message of Sat Feb 12 07:22:20 +0100 2011:=
 
-> today we have a choice of not using
-> host page cache with cache=none, but nothing the other way round.
-> There are other use cases for embedded folks (in terms of controlling
-> unmapped page cache), please see previous discussions.
+> SDHCI host controller has TRIM/ERASE capability, enable these caps for =
+erasing
+> purpose.
+> =
 
-Is there other usecase? really? Where exist?
-Why do you start to talk about embedded sudenly? I reviewed this as virtualization feature
-beucase you wrote so in [path 0/3]. Why do you change your point suddenly?
+> ERASE command needs R1B response. So for such command with busy signal,=
+ before
+> sending command, SDHCI host driver will simply set a maximum value for =
+timeout
+> control register which is safe to use.
+> =
 
+> Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
 
+Tested-By: Sascha Silbe <sascha-pgp@silbe.org>
 
+Tested on an OLPC XO-1 using a SanDisk 4GB class 4 card (retail). The
+BLKDISCARD ioctl (range 0..card size) returned immediately, no timeout
+issue encountered.
 
+Sascha
+
+-- =
+
+http://sascha.silbe.org/
+http://www.infra-silbe.de/
+
+--=-1301823731-978476-32191-9345-4-=
+Content-Disposition: attachment; filename="signature.asc"
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.1.0-git7d24ffa (GNU/Linux)
+
+iQEcBAEBCgAGBQJNmEDWAAoJELpz82VMF3DaTFQIAI2UGYeSRoU0ij4tYcL0RFl3
+mg5XShD730DNdNfA1AUTNy1tcEmToQ3v8ngF2wUCOuahTOBw2OnwNBw4fLVGi6cF
+x62A4Y05Uqx2lVTzQcCD2icCvQdUa4zm4gLA7jRkRl/LXbNiNEvrMoOxu+VYrh/S
+LYL/V1fKC0L6F3+XB+OVA9wu2AQfHaPolAboLFYhGK0Ugsf+qqesVL9i18yCbZvr
+iGnQPpaJlacSJoyeBXpDPs8vIXN7AEi3za20F1dK1if+2ncIqoG02YdgqR4YsOSb
+/YykP5SXwt3yBMs6HFUVq6jRpfMA0IH7V/UcRBOD04yseGOgza9VIk9ZY+uUrG4=
+=5yzw
+-----END PGP SIGNATURE-----
+
+--=-1301823731-978476-32191-9345-4-=--
