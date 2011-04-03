@@ -1,108 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab1DCS53 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 14:57:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51395 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1DCS52 (ORCPT
+	id S1753254Ab1DCS6a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 14:58:30 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:44953 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753096Ab1DCS63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 14:57:28 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=wom5GMh1gUkA:10 a=rTFi3hi61dwA:10 a=kj9zAlcOel0A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=ybZZDoGAAAAA:8 a=fxJcL_dCAAAA:8 a=Z4Rwk6OoAAAA:8 a=JIoDnU1e-xCkGDGO4_MA:9 a=8bfkpD5TqYDDm08hROgA:7 a=CjuIK1q_8ugA:10 a=qIVjreYYsbEA:10 a=2eKvNQJKnqYA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.154.172
-Date: Sun, 3 Apr 2011 13:57:27 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: ntl@pobox.com
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
-Subject: Re: [PATCH 04/10] Introduce vfs_fcntl() helper
-Message-ID: <20110403185727.GC15044@hallyn.com>
-References: <1298936432-29607-1-git-send-email-ntl@pobox.com>
- <1298936432-29607-5-git-send-email-ntl@pobox.com>
+	Sun, 3 Apr 2011 14:58:29 -0400
+Date: Sun, 3 Apr 2011 20:58:28 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Re: [PATCH] eradicate bashisms in scripts/patch-kernel
+Message-ID: <20110403185828.GA4561@rhlx01.hs-esslingen.de>
+References: <20071101221606.GA10116@rhlx01.hs-esslingen.de>
+ <20071101160857.6e877307.rdunlap@xenotime.net>
+ <20071102020118.GA13852@gondor.apana.org.au>
+ <20071102200935.GA14153@rhlx01.hs-esslingen.de>
+ <20071102131707.6023a5b7.rdunlap@xenotime.net>
+ <20071105195827.GA24117@rhlx01.hs-esslingen.de>
+ <20071114144627.8628f2dd.rdunlap@xenotime.net>
+ <20071117163327.GA4296@rhlx01.hs-esslingen.de>
+ <20071117172816.GC7213@uranus.ravnborg.org>
+ <20071117205125.GA26425@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298936432-29607-5-git-send-email-ntl@pobox.com>
+In-Reply-To: <20071117205125.GA26425@rhlx01.hs-esslingen.de>
+X-Priority: none
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting ntl@pobox.com (ntl@pobox.com):
-> From: Nathan Lynch <ntl@pobox.com>
-> 
-> When restoring process state from a checkpoint image, it will be
-> necessary to restore file status flags; add vfs_fcntl() for this
-> purpose.
-> 
-> Based on original code by Oren Laadan.
-> 
-> Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-> [ntl: extracted from "c/r: checkpoint and restart open file descriptors"]
-> Signed-off-by: Nathan Lynch <ntl@pobox.com>
+Silence a remaining annoying (or worse, irritating - "is my entire patched tree
+broken now!?") bashism-related message that occurs when /bin/sh is configured
+to instead deploy dash, a POSIX-compliant shell, as is the pretty much
+standard case on e.g. Debian.
 
-Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+# linux-2.6.38.patch-kernel_test/scripts/patch-kernel linux-2.6.38.patch-kernel_test patch-2.6
+Current kernel version is 2.6.38 ( Flesh-Eating Bats with Fangs)
+===>  linux-2.6.38.patch-kernel_test/scripts/patch-kernel: line 253: [: =: unary operator expected  <===
+cannot find patch file: patch-2.6.39
+---
 
-> ---
->  fs/fcntl.c         |   21 +++++++++++++--------
->  include/linux/fs.h |    2 ++
->  2 files changed, 15 insertions(+), 8 deletions(-)
-> 
-> diff --git a/fs/fcntl.c b/fs/fcntl.c
-> index ecc8b39..8e797b7 100644
-> --- a/fs/fcntl.c
-> +++ b/fs/fcntl.c
-> @@ -426,6 +426,18 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
->  	return err;
->  }
->  
-> +int vfs_fcntl(int fd, unsigned int cmd, unsigned long arg, struct file *filp)
-> +{
-> +	int err;
-> +
-> +	err = security_file_fcntl(filp, cmd, arg);
-> +	if (err)
-> +		goto out;
-> +	err = do_fcntl(fd, cmd, arg, filp);
-> + out:
-> +	return err;
-> +}
-> +
->  SYSCALL_DEFINE3(fcntl, unsigned int, fd, unsigned int, cmd, unsigned long, arg)
->  {	
->  	struct file *filp;
-> @@ -435,14 +447,7 @@ SYSCALL_DEFINE3(fcntl, unsigned int, fd, unsigned int, cmd, unsigned long, arg)
->  	if (!filp)
->  		goto out;
->  
-> -	err = security_file_fcntl(filp, cmd, arg);
-> -	if (err) {
-> -		fput(filp);
-> -		return err;
-> -	}
-> -
-> -	err = do_fcntl(fd, cmd, arg, filp);
-> -
-> +	err = vfs_fcntl(fd, cmd, arg, filp);
->   	fput(filp);
->  out:
->  	return err;
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 315ded4..175bb75 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1112,6 +1112,8 @@ struct file_lock {
->  
->  #include <linux/fcntl.h>
->  
-> +extern int vfs_fcntl(int fd, unsigned cmd, unsigned long arg, struct file *fp);
-> +
->  extern void send_sigio(struct fown_struct *fown, int fd, int band);
->  
->  #ifdef CONFIG_FILE_LOCKING
-> -- 
-> 1.7.4
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/containers
+Debug log of uncorrected script:
+
+# sh -x linux-2.6.38.patch-kernel_test/scripts/patch-kernel linux-2.6.38.patch-kernel_test patch-2.6
++ PNAME=patch-kernel
++ sourcedir=linux-2.6.38.patch-kernel_test
++ patchdir=patch-2.6
++ stopvers=default
++ '[' linux-2.6.38.patch-kernel_test = -h -o linux-2.6.38.patch-kernel_test = --help -o '!' -r linux-2.6.38.patch-kernel_test/Makefile ']'
++ for PARM in '$*'
++ case $PARM in
++ for PARM in '$*'
++ case $PARM in
+++ mktemp ./.tmpver.XXXXXX
++ TMPFILE=./.tmpver.2Yv11Y
++ grep -E '^(VERSION|PATCHLEVEL|SUBLEVEL|EXTRAVERSION)' linux-2.6.38.patch-kernel_test/Makefile
++ tr -d '[:blank:]'
++ . ./.tmpver.2Yv11Y.1
+++ VERSION=2
+++ PATCHLEVEL=6
+++ SUBLEVEL=38
+++ EXTRAVERSION=
++ rm -f ./.tmpver.2Yv11Y ./.tmpver.2Yv11Y.1
++ '[' -z 2 -o -z 6 -o -z 38 ']'
+++ grep '^NAME' linux-2.6.38.patch-kernel_test/Makefile
++ NAME='NAME = Flesh-Eating Bats with Fangs'
++ NAME=' Flesh-Eating Bats with Fangs'
++ echo 'Current kernel version is 2.6.38 ( Flesh-Eating Bats with Fangs)'
+Current kernel version is 2.6.38 ( Flesh-Eating Bats with Fangs)
++ EXTRAVER=
++ '[' x '!=' x ']'
++ '[' default '!=' default ']'
++ STOPSUBLEVEL=9999
++ STOPEXTRA=9999
++ '[' 9999 -lt 38 ']'
++ '[' x '!=' x ']'
++ CURRENTFULLVERSION=2.6.38
++ '[' x '!=' x ']'
++ '[' 9999 -gt 38 ']'
++ :
++ CURRENTFULLVERSION=2.6.38
++ EXTRAVER=
++ '[' = 2.6.38 ']'
+linux-2.6.38.patch-kernel_test/scripts/patch-kernel: line 253: [: =: unary operator expected
++ SUBLEVEL=39
++ FULLVERSION=2.6.39
++ '[' 39 -gt 9999 ']'
++ patch=patch-2.6.39
++ findFile patch-2.6/patch-2.6.39
++ filebase=patch-2.6/patch-2.6.39
++ '[' -r patch-2.6/patch-2.6.39.gz ']'
++ '[' -r patch-2.6/patch-2.6.39.bz ']'
++ '[' -r patch-2.6/patch-2.6.39.bz2 ']'
++ '[' -r patch-2.6/patch-2.6.39.zip ']'
++ '[' -r patch-2.6/patch-2.6.39.Z ']'
++ '[' -r patch-2.6/patch-2.6.39 ']'
++ return 1
++ noFile patch-2.6.39
++ echo 'cannot find patch file: patch-2.6.39'
+cannot find patch file: patch-2.6.39
++ exit 1
+
+
+
+
+Debug log of patched script (condensed to relevant parts):
+
++ STOPSUBLEVEL=9999
++ STOPEXTRA=9999
++ '[' 9999 -lt 38 ']'
++ '[' x '!=' x ']'
++ CURRENTFULLVERSION=2.6.38
++ '[' x '!=' x ']'
++ '[' 9999 -gt 38 ']'
++ :
++ CURRENTFULLVERSION=2.6.38
++ EXTRAVER=
++ '[' x = x2.6.38 ']'
++ SUBLEVEL=39
++ FULLVERSION=2.6.39
+
+
+Since my last patch (the parent mail) happened to modify the very same line,
+I'm slightly wondering why last time it didn't exhibit this issue
+(IIRC this occurred for the first time a couple months later,
+perhaps in newer shell versions).
+
+Patch has been created on git 2.6.39-rc1,
+run through checkpatch.pl,
+tested to work on dash and still work on bash,
+and tested to apply cleanly to 2.6.37, too.
+
+IMHO this is a low-priority item,
+certainly not requiring service within current -rc handling,
+and neither at -stable (I assume that only point versions
+could make good use of this patch anyway).
+IOW standard patch circulation.
+I'm assuming that Sam would be the one to queue it up,
+just like last time.
+
+Thanks!
+
+Signed-off-by: Andreas Mohr <andi@lisas.de>
+
+
+diff --git a/scripts/patch-kernel b/scripts/patch-kernel
+index 46a59ca..20fb25c 100755
+--- a/scripts/patch-kernel
++++ b/scripts/patch-kernel
+@@ -250,7 +250,7 @@ while :				# incrementing SUBLEVEL (s in v.p.s)
+ do
+     CURRENTFULLVERSION="$VERSION.$PATCHLEVEL.$SUBLEVEL"
+     EXTRAVER=
+-    if [ $STOPFULLVERSION = $CURRENTFULLVERSION ]; then
++    if [ x$STOPFULLVERSION = x$CURRENTFULLVERSION ]; then
+         echo "Stopping at $CURRENTFULLVERSION base as requested."
+         break
+     fi
