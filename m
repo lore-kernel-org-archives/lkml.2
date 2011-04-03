@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1DCRYp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 13:24:45 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:54623 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775Ab1DCRYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 13:24:42 -0400
-From: Florian Mickler <florian@mickler.org>
-To: mchehab@infradead.org
-Cc: oliver@neukum.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, patrick.boettcher@dibcom.fr,
-        Florian Mickler <florian@mickler.org>
-Subject: [PATCH 2/2] [media] dib0700: remove unused variable
-Date: Sun,  3 Apr 2011 19:23:43 +0200
-Message-Id: <1301851423-21969-3-git-send-email-florian@mickler.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1301851423-21969-1-git-send-email-florian@mickler.org>
-References: <1301851423-21969-1-git-send-email-florian@mickler.org>
+	id S1752801Ab1DCRdU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 13:33:20 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37806 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406Ab1DCRdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 13:33:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=ginkel.com; s=google;
+        h=mime-version:x-originating-ip:in-reply-to:references:from:date
+         :message-id:subject:to:cc:content-type;
+        b=TuPZ+QQSMsYLP57yMP1REXaeUx7LFMbJh9zI3gMKO9aX8Dl6/vpxXkrfTqvuP4F7N2
+         dIQ/RRdOqBi1dIkHTh2HrjCo7XnzXo1dIDrRX+13vqbxhPy9/IS5WDoCTQPR3kiMbocD
+         p2071pleB3O6FURQHcUPDNmF5Sb3oLOf1pTM8=
+MIME-Version: 1.0
+X-Originating-IP: [91.17.155.41]
+In-Reply-To: <1301811515.7592.2.camel@marge.simson.net>
+References: <AANLkTim5ctAoaB4+BS7Z-+ARUgTEBO22bkYMUvFtGmoN@mail.gmail.com> <1301811515.7592.2.camel@marge.simson.net>
+From: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Date: Sun, 3 Apr 2011 19:32:48 +0200
+Message-ID: <AANLkTimeRFN_5ZFwjtY6+yo0V=VAoX8T_Ju+ceDJnfHv@mail.gmail.com>
+Subject: Re: Soft lockup during suspend since ~2.6.36
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This variable is never used.
+On Sun, Apr 3, 2011 at 08:18, Mike Galbraith <efault@gmx.de> wrote:
+> Adds CC to author of fingered commit.
+>
+> On Sun, 2011-04-03 at 04:03 +0200, Thilo-Alexander Ginkel wrote:
+>> recently, I upgraded my Linux kernel (running on an Intel Core 2 Quad)
+>> from 2.6.35 to 2.6.38. Unfortunately, I have been experiencing
+>> frequent (but sporadic) freezes during suspend (S3) since then, i.e.,
+>> the system became completely unresponsive (even MagicSysRq stopped
+>> working) after having spun down the hard disks.
+>>
+>> I performed a bisect, which pointed out the following commit:
+>>
+>> bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a is the first bad commit
+>> commit bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a
 
-Signed-off-by: Florian Mickler <florian@mickler.org>
+A good night of sleep and some Googling later I am under the
+impression that this issue was already supposedly fixed by the
+following commit a long time ago:
+  http://git.kernel.org/?p=linux/kernel/git/jikos/hid.git;a=commitdiff;h=9c9e54a8df0be48aa359744f412377cc55c3b7d2
+  http://permalink.gmane.org/gmane.linux.kernel/1024386
 
----
- drivers/media/dvb/dvb-usb/dib0700_core.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+This makes some sense as versions closer to 2.6.36 only lock up
+sporadically whereas the original bug locks up reliably. I'll try to
+get a backtrace for the sporadic bug, but may only be able to do so
+using a tainted kernel as my text console does not survive
+suspend/resume without proprietary drivers (and the serial console
+also breaks during the relevant suspend phase). I hope, this is
+acceptable.
 
-diff --git a/drivers/media/dvb/dvb-usb/dib0700_core.c b/drivers/media/dvb/dvb-usb/dib0700_core.c
-index ca80520..7f6f023 100644
---- a/drivers/media/dvb/dvb-usb/dib0700_core.c
-+++ b/drivers/media/dvb/dvb-usb/dib0700_core.c
-@@ -625,7 +625,6 @@ struct dib0700_rc_response {
- static void dib0700_rc_urb_completion(struct urb *purb)
- {
- 	struct dvb_usb_device *d = purb->context;
--	struct dib0700_state *st;
- 	struct dib0700_rc_response *poll_reply;
- 	u32 uninitialized_var(keycode);
- 	u8 toggle;
-@@ -640,7 +639,6 @@ static void dib0700_rc_urb_completion(struct urb *purb)
- 		return;
- 	}
- 
--	st = d->priv;
- 	poll_reply = purb->transfer_buffer;
- 
- 	if (purb->status < 0) {
--- 
-1.7.4.1
-
+Thanks,
+Thilo
