@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab1DCWTR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 18:19:17 -0400
-Received: from gate.crashing.org ([63.228.1.57]:50118 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273Ab1DCWTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 18:19:15 -0400
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Detlef Vollmann <dv@vollmann.ch>
-Cc: Arnd Bergmann <arnd@arndb.de>, david@lang.hm,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <4D95E112.4020400@vollmann.ch>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
-	 <8ya39m2mv65.fsf@huya.qualcomm.com> <20110401074519.GC7594@elte.hu>
-	 <201104011554.07924.arnd@arndb.de>  <4D95E112.4020400@vollmann.ch>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Apr 2011 08:18:17 +1000
-Message-ID: <1301869097.2549.36.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752440Ab1DCWTe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 18:19:34 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57462 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab1DCWTd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 18:19:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=q2vOhmHfzJf2iEr29ptRHLTW9U9s91l3MH5vRPBvsUfYOvQ57jPxN35Feh5Q7TIfay
+         p2R+PZnSjjKyboOdkESooFJ7G8Yh1XZkZyM/Degbigt0CYLaHv90bwriTXq+DLwTmAvz
+         yk0uGkzY/Fv7UTe0Per9GAqVpaNvqJZuiuF1M=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <4D98F1DA.1060203@fusionio.com>
+References: <AANLkTimhD_cu46Bhtt9v8MjKMVCnVMT6Es+Ys9RNPOp1@mail.gmail.com>
+	<20110402112037.ca288d7b.sfr@canb.auug.org.au>
+	<BANLkTim_y-=rU8r0_LKEMjPco6TXrEpBvw@mail.gmail.com>
+	<BANLkTimfCtqTA5aPYGRMZ1Ndz6eU8HnyJA@mail.gmail.com>
+	<4D98F1DA.1060203@fusionio.com>
+Date: Mon, 4 Apr 2011 00:19:31 +0200
+Message-ID: <BANLkTin4T0CZPK_Vmk=UEh63+6CXM2f7Mg@mail.gmail.com>
+Subject: Re: linux-next: Tree for April 1 [BROKEN ubifs when CONFIG_DEBUG_SECTION_MISMATCH=y]s
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 16:28 +0200, Detlef Vollmann wrote:
-> >   * No board files
-> Where do you put code that needs to run very early (e.g. pinging the
-> watchdog)? 
+On Mon, Apr 4, 2011 at 12:16 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On 2011-04-02 13:02, Sedat Dilek wrote:
+>> On Sat, Apr 2, 2011 at 12:14 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>>> On Sat, Apr 2, 2011 at 2:20 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>>> cc'ing Jens ...
+>>>>
+>>>> On Fri, 1 Apr 2011 20:22:41 +0200 Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>>>>>
+>>>>> On Fri, Apr 1, 2011 at 7:02 PM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+>>>>>> On Fri, 2011-04-01 at 18:10 +0200, Sedat Dilek wrote:
+>>>>>>> On Fri, Apr 1, 2011 at 6:06 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>>>>>>> Cc'ing Artem,
+>>>>>>>>
+>>>>>>>> On Fri, 1 Apr 2011 17:55:52 +0200 Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>>>>>>>>>
+>>>>>>>>> With CONFIG_DEBUG_SECTION_MISMATCH=y set, I see in my build.log:
+>>>>>>>>> ...
+>>>>>>>>> MODPOST 2742 modules
+>>>>>>>>> ...
+>>>>>>>>> ERROR: "empty_aops" [fs/ubifs/ubifs.ko] undefined!
+>>>>>>>>> make[5]: *** [__modpost] Error 1
+>>>>>>>>> make[4]: *** [modules] Error 2
+>>>>>>>>> make[3]: *** [sub-make] Error 2
+>>>>>>>>> make[2]: *** [all] Error 2
+>>>>>>>>> make[2]: Leaving directory
+>>>>>>>>> `/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/build_i386_none_686-iniza'
+>>>>>>>>>
+>> [...]
+>>> Just FYI:
+>>> I contacted Jens last night and he refreshed his for-linus GIT branch.
+>>> Adding missing include <linux/fs.h> did not fix the issue.
+>>> I am trying with the attached one.
+>>>
+>>> - Sedat -
+>>>
+>>
+>> I have split the single patch into two, first reflects ther build-error.
+>> The second considers {inode,file}_operations have also undefined
+>> functions by using "unified" empty_{iops,fops} as used in other fs/*
+>> files.
+>
+> What are these patches against? Not for-next nor my for-linus.
+>
 
-Even on powerpc I keep board files :-)
+I tested with linux-next (next-20110401) as base and pulled-in your
+for-linus GIT branch.
 
-The main thing is:
-
-- The generic -> board linkage must not be hard (ie, no
-platform_restart, but a board_ops.restart() etc....)
-
-- An average board file is a few hundreds line long, that's it, mostly
-it hooks up to generically provided functions, tho it gets the choice of
-_which_ ones to hookup.
-
-- It can still quirk/fixup a thing or two if needed, I thinkt it's
-useful to keep that around, as long as such "quirks" remain small and
-few. At the end of the day, if dealing with one board special case gives
-you the choice between changing a ton of infrastructure/core to
-introduce a new abstraction to deal with -that- special case vs. having
-a one liner fixup in the platform code, the later is the most sensible
-option. The hard part of course is to have sensible maintainers to make
-sure this doesn't grow back to the old mess.
-
-Cheers,
-Ben.
-
-
+- Sedat -
