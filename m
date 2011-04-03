@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab1DCX3e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 19:29:34 -0400
-Received: from borg.medozas.de ([188.40.89.202]:42352 "EHLO borg.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273Ab1DCX3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 19:29:33 -0400
-Date: Mon, 4 Apr 2011 01:29:32 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: gregkh@suse.de
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: staging: gma500: fix "persistant" typo
-Message-ID: <alpine.LNX.2.01.1104040129110.21333@obet.zrqbmnf.qr>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1752527Ab1DCXbD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 19:31:03 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64181 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab1DCXbA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 19:31:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gheiWBqOJWQXh2vPyOeovVZfhUw7db+nO4FXJJlwd886J0BazvVmQqE4ZbQygQhD8T
+         JbfXZ9fraBqJH+WpxVyKhJ3JiBwi/MsHzZAMIh9RV0/aYN37D+pPCs1LPOEYTa7/Lr14
+         i8KS9KdAOD78/5HOKmYEks05qrhsHsEDWgNzk=
+Date: Sun, 3 Apr 2011 16:30:55 -0700
+From: Tejun Heo <tj@kernel.org>
+To: mingo@elte.hu
+Cc: yinghai@kernel.org, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, cl@linux.com, florian@mickler.org
+Subject: Re: [GIT PULL tip:x86/mm] this_cpu_has() changes and phys_to_nid()
+ removal
+Message-ID: <20110403233055.GB1420@mtj.dyndns.org>
+References: <20110401092218.GJ3385@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110401092218.GJ3385@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-parent b0ef5d4e28cd127eef94b300f27ba0104deb5ad6 (v2.6.39-rc1-186-gb0ef5d4)
-commit fdbba80c7a1638bb2041d6349db27762e951a074
-Author: Jan Engelhardt <jengelh@medozas.de>
-Date:   Mon Apr 4 01:28:05 2011 +0200
+Hello, Ingo.
 
-staging: gma500: fix "persistant" typo
+On Fri, Apr 01, 2011 at 11:22:18AM +0200, Tejun Heo wrote:
+> Please pull from the following git branch to receive five patches.
+> Three of them are Christoph's this_cpu_has() patches.  One removes the
+> custom x86-64 phys_to_nid() implementation and the last one cleans up
+> arch/x86/Kconfig a bit.  HEAD is 3b16651f80 (x86: Clean up memory
+> model related configs in arch/x86/Kconfig).
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+> 
+> As usual, if HEAD doesn't appear, please pull from master.
+> 
+>  ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+> 
+> Thanks.
+> 
+> Christoph Lameter (3):
+>       x86: A fast way to check capabilities of the current cpu
+>       x86: Use this_cpu_has for thermal_interrupt current cpu
+>       acpi throttling: Use this_cpu_has and simplify code current cpu
+> 
+> Tejun Heo (2):
+>       x86-64, NUMA: Remove custom phys_to_nid() implementation
+>       x86: Clean up memory model related configs in arch/x86/Kconfig
 
-Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
----
- drivers/staging/gma500/psb_ttm_placement_user.c |    8 ++++----
- drivers/staging/gma500/psb_ttm_userobj_api.h    |    2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+I added a patch from Florian which removes an unused variable warning
+in x86-64 numa_init() when both AMD and ACPI topology configs are
+disabled.  It's a rather pointless configuration, but still.
 
-diff --git a/drivers/staging/gma500/psb_ttm_placement_user.c b/drivers/staging/gma500/psb_ttm_placement_user.c
-index 272b397..6ce592d 100644
---- a/drivers/staging/gma500/psb_ttm_placement_user.c
-+++ b/drivers/staging/gma500/psb_ttm_placement_user.c
-@@ -173,7 +173,7 @@ static int ttm_bo_create_private(struct ttm_bo_device *bdev,
- 			uint32_t page_alignment,
- 			unsigned long buffer_start,
- 			bool interruptible,
--			struct file *persistant_swap_storage,
-+			struct file *persistent_swap_storage,
- 			struct ttm_buffer_object **p_bo)
- {
- 	struct ttm_buffer_object *bo;
-@@ -195,7 +195,7 @@ static int ttm_bo_create_private(struct ttm_bo_device *bdev,
- 
- 	ret = ttm_bo_init(bdev, bo, size, type, placement, page_alignment,
- 				buffer_start, interruptible,
--				persistant_swap_storage, acc_size, NULL);
-+				persistent_swap_storage, acc_size, NULL);
- 	if (likely(ret == 0))
- 		*p_bo = bo;
- 
-@@ -235,7 +235,7 @@ int ttm_buffer_object_create(struct ttm_bo_device *bdev,
- 			uint32_t page_alignment,
- 			unsigned long buffer_start,
- 			bool interruptible,
--			struct file *persistant_swap_storage,
-+			struct file *persistent_swap_storage,
- 			struct ttm_buffer_object **p_bo)
- {
- 	struct ttm_placement placement = default_placement;
-@@ -254,7 +254,7 @@ int ttm_buffer_object_create(struct ttm_bo_device *bdev,
- 			page_alignment,
- 			buffer_start,
- 			interruptible,
--			persistant_swap_storage,
-+			persistent_swap_storage,
- 			p_bo);
- 
- 	return ret;
-diff --git a/drivers/staging/gma500/psb_ttm_userobj_api.h b/drivers/staging/gma500/psb_ttm_userobj_api.h
-index 6a8f7c4..51d579a 100644
---- a/drivers/staging/gma500/psb_ttm_userobj_api.h
-+++ b/drivers/staging/gma500/psb_ttm_userobj_api.h
-@@ -77,7 +77,7 @@ extern int ttm_buffer_object_create(struct ttm_bo_device *bdev,
- 			uint32_t page_alignment,
- 			unsigned long buffer_start,
- 			bool interruptible,
--			struct file *persistant_swap_storage,
-+			struct file *persistent_swap_storage,
- 			struct ttm_buffer_object **p_bo);
- 
- extern int psb_ttm_bo_check_placement(struct ttm_buffer_object *bo,
+ http://thread.gmane.org/gmane.linux.kernel/1122108
+
+Thanks.
+
 -- 
-# Created with git-export-patch
-
+tejun
