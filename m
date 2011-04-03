@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab1DCKPm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 06:15:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47435 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988Ab1DCKPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 06:15:40 -0400
-Date: Sun, 3 Apr 2011 13:15:34 +0300
-From: Alon Levy <alevy@redhat.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [ANNOUNCE] Native Linux KVM tool
-Message-ID: <20110403101533.GJ4047@playa.redhat.com>
-Mail-Followup-To: Pekka Enberg <penberg@kernel.org>,
-	linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-References: <1301592656.586.15.camel@jaguar>
- <20110403090149.GI4047@playa.redhat.com>
- <1301824898.7875.5.camel@jaguar>
+	id S1752046Ab1DCKRz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 06:17:55 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60100 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab1DCKRy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 06:17:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=q+4jkPBH21y/OgzNU5pFExf5QA1i9BZlDT//q8LBgb9NLMxvLtESvSFBL0WiQ8+RyD
+         12fdQ56TWA+Pzt37xJap5C0nW3Wf9cVwgsM6+r40pEYS6Rd3yrk+gW6RT2Cw6YXfVY3U
+         MowwH24NVKS/8WGwqOxLOSsUQGQ0B7GgGVKqo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1301824898.7875.5.camel@jaguar>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D9847BC.9060906@redhat.com>
+References: <1301592656.586.15.camel@jaguar>
+	<4D982E89.8070502@redhat.com>
+	<BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com>
+	<4D9847BC.9060906@redhat.com>
+Date: Sun, 3 Apr 2011 13:17:53 +0300
+X-Google-Sender-Auth: Utr67rlpm0aeL4sFm1DxLlyXAdo
+Message-ID: <BANLkTik5-ohx47AyLz_mJkCqNtO4uKVBew@mail.gmail.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool
+From: Pekka Enberg <penberg@kernel.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aarcange@redhat.com, mtosatti@redhat.com,
+        kvm@vger.kernel.org, joro@8bytes.org, penberg@cs.helsinki.fi,
+        asias.hejun@gmail.com, gorcunov@gmail.com, mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 03, 2011 at 01:01:38PM +0300, Pekka Enberg wrote:
-> On Sun, 2011-04-03 at 12:01 +0300, Alon Levy wrote:
-> > On Thu, Mar 31, 2011 at 08:30:56PM +0300, Pekka Enberg wrote:
-> > > Hi all,
-> > > 
-> > > We’re proud to announce the native Linux KVM tool!
-> > > 
-> > > The goal of this tool is to provide a clean, from-scratch, lightweight
-> > > KVM host tool implementation that can boot Linux guest images (just a
-> > > hobby, won't be big and professional like QEMU) with no BIOS
-> > > dependencies and with only the minimal amount of legacy device
-> > > emulation.
-> > > 
-> > > Note that this is a development prototype for the time being: there's no
-> > > networking support and no graphics support, amongst other missing
-> > > essentials.
-> > 
-> > I've looked at how to add spice to this, the qxl device should be relatively
-> > easy to add as it's just another pci device and you already support the virtio
-> > block pci device. But to add the spice server library there needs to be some
-> > simple fd and timer (i.e. select/epoll) event loop, which I see is missing. Are
-> > you planning on adding something like that?
-> 
-> We have kvm__start_timer() in tools/kvm/kvm.c. Can you use that as a
-> base for qxl?
-> 
+Hi Avi,
 
-Haven't looked at it close enough yet, but if I can set an arbitrary time
-ahead wakeup using it then it's good enough for timers. For waking up as
-a result of a socket being ready for read or write I need something else.
-Maybe I'm missing something and you already have something like that.
+On Sun, Apr 3, 2011 at 1:11 PM, Avi Kivity <avi@redhat.com> wrote:
+>> SMP, networking, and simpler guest to host communication from shell
+>> are most interesting missing features for me.
+>
+> If it is to be more than a toy, then Windows (really generic guest) support,
+> manageability, live migration, hotplug, etc. are all crucial.
 
-> 			Pekka
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+It's definitely not a toy, it's my main virtualization tool of choice
+for kernel development! ;-)
+
+The features you mention are crucial for servers but not for desktop.
+I personally don't have much need for managing and live-migrating
+Windows guests but if someone is interested in working on that, we're
+happy to take patches!
+
+                        Pekka
