@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab1DCXUG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 19:20:06 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:50158 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab1DCXUF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 19:20:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xqXy73stNcrm1qDX7Wd4U9WmaP94CfD5WpguaHMBN41iX3F1YsedIhNCZlfOZD1ih9
-         q819mSdrh3jLELT3mR0ntjDP3hkOaZm/vM72jtCFAsxvmS/BNSjHATJZQrVyP6xy25In
-         ZrgEf/SWEGsaXCHKUESeLjIIkdeIlX69GWy9k=
-Date: Sun, 3 Apr 2011 16:20:00 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Florian Mickler <florian@mickler.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] x86, numa_64: remove unused variable
-Message-ID: <20110403232000.GA1420@mtj.dyndns.org>
-References: <1301843624-22364-1-git-send-email-florian@mickler.org>
- <4D989175.9090400@gmail.com>
+	id S1752366Ab1DCX3e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 19:29:34 -0400
+Received: from borg.medozas.de ([188.40.89.202]:42352 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273Ab1DCX3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Apr 2011 19:29:33 -0400
+Date: Mon, 4 Apr 2011 01:29:32 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: gregkh@suse.de
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: staging: gma500: fix "persistant" typo
+Message-ID: <alpine.LNX.2.01.1104040129110.21333@obet.zrqbmnf.qr>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D989175.9090400@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 03, 2011 at 07:25:41PM +0400, Cyrill Gorcunov wrote:
-> On 04/03/2011 07:13 PM, Florian Mickler wrote:
-> > In case !CONFIG_ACPI_NUMA and !CONFIG_AMD_NUMA gcc emits a warning about
-> > the unused variable ret.
-> > 
-> > As that variable is in fact not needed I choose to remove it.
-> > 
-> > Signed-off-by: Florian Mickler <florian@mickler.org>
-> > ---
-> >  arch/x86/mm/numa_64.c |    8 ++------
-> >  1 files changed, 2 insertions(+), 6 deletions(-)
-> > 
-> 
-> As far as I remember David prefer to have 'ret' in place but since it causes
-> such a warn we better to drop it.
+parent b0ef5d4e28cd127eef94b300f27ba0104deb5ad6 (v2.6.39-rc1-186-gb0ef5d4)
+commit fdbba80c7a1638bb2041d6349db27762e951a074
+Author: Jan Engelhardt <jengelh@medozas.de>
+Date:   Mon Apr 4 01:28:05 2011 +0200
 
-Applied to x86-mm.  Thanks for the cc Cyrill.
+staging: gma500: fix "persistant" typo
 
+Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
+---
+ drivers/staging/gma500/psb_ttm_placement_user.c |    8 ++++----
+ drivers/staging/gma500/psb_ttm_userobj_api.h    |    2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/gma500/psb_ttm_placement_user.c b/drivers/staging/gma500/psb_ttm_placement_user.c
+index 272b397..6ce592d 100644
+--- a/drivers/staging/gma500/psb_ttm_placement_user.c
++++ b/drivers/staging/gma500/psb_ttm_placement_user.c
+@@ -173,7 +173,7 @@ static int ttm_bo_create_private(struct ttm_bo_device *bdev,
+ 			uint32_t page_alignment,
+ 			unsigned long buffer_start,
+ 			bool interruptible,
+-			struct file *persistant_swap_storage,
++			struct file *persistent_swap_storage,
+ 			struct ttm_buffer_object **p_bo)
+ {
+ 	struct ttm_buffer_object *bo;
+@@ -195,7 +195,7 @@ static int ttm_bo_create_private(struct ttm_bo_device *bdev,
+ 
+ 	ret = ttm_bo_init(bdev, bo, size, type, placement, page_alignment,
+ 				buffer_start, interruptible,
+-				persistant_swap_storage, acc_size, NULL);
++				persistent_swap_storage, acc_size, NULL);
+ 	if (likely(ret == 0))
+ 		*p_bo = bo;
+ 
+@@ -235,7 +235,7 @@ int ttm_buffer_object_create(struct ttm_bo_device *bdev,
+ 			uint32_t page_alignment,
+ 			unsigned long buffer_start,
+ 			bool interruptible,
+-			struct file *persistant_swap_storage,
++			struct file *persistent_swap_storage,
+ 			struct ttm_buffer_object **p_bo)
+ {
+ 	struct ttm_placement placement = default_placement;
+@@ -254,7 +254,7 @@ int ttm_buffer_object_create(struct ttm_bo_device *bdev,
+ 			page_alignment,
+ 			buffer_start,
+ 			interruptible,
+-			persistant_swap_storage,
++			persistent_swap_storage,
+ 			p_bo);
+ 
+ 	return ret;
+diff --git a/drivers/staging/gma500/psb_ttm_userobj_api.h b/drivers/staging/gma500/psb_ttm_userobj_api.h
+index 6a8f7c4..51d579a 100644
+--- a/drivers/staging/gma500/psb_ttm_userobj_api.h
++++ b/drivers/staging/gma500/psb_ttm_userobj_api.h
+@@ -77,7 +77,7 @@ extern int ttm_buffer_object_create(struct ttm_bo_device *bdev,
+ 			uint32_t page_alignment,
+ 			unsigned long buffer_start,
+ 			bool interruptible,
+-			struct file *persistant_swap_storage,
++			struct file *persistent_swap_storage,
+ 			struct ttm_buffer_object **p_bo);
+ 
+ extern int psb_ttm_bo_check_placement(struct ttm_buffer_object *bo,
 -- 
-tejun
+# Created with git-export-patch
+
