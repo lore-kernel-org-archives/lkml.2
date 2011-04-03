@@ -1,330 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab1DCUgf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 16:36:35 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:53684 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753414Ab1DCUgd (ORCPT
+	id S1753494Ab1DCVAg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 17:00:36 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:16175
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753415Ab1DCVAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 16:36:33 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Ondrej Zajicek <santiago@crfreenet.org>
-Subject: [PATCH v3] s3fb: add DDC support
-Date: Sun, 3 Apr 2011 22:36:15 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>
+	Sun, 3 Apr 2011 17:00:35 -0400
+X-SpamScore: 3
+X-BigFish: VPS3(zzc8kzz1202hzz8275bhz2dh95h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+From: John Linn <john.linn@xilinx.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
+        <glikely@secretlab.ca>, <jamie@jamieiles.com>, <arnd@arndb.de>
+CC: John Linn <john.linn@xilinx.com>
+Subject: [PATCH 1/3] ARM: Xilinx: add timer and on chip memory support for SMP
+Date: Sun, 3 Apr 2011 15:00:16 -0600
+X-Mailer: git-send-email 1.5.4.7
+In-Reply-To: <1301864418-12425-1-git-send-email-john.linn@xilinx.com>
+References: <1301864418-12425-1-git-send-email-john.linn@xilinx.com>
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201104032236.18936.linux@rainbow-software.org>
+Content-Type: text/plain
+Message-ID: <548833b1-f72d-4ede-8c67-07bb930f9c9c@VA3EHSMHS009.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add I2C support for the DDC bus and also default mode initialization by
-reading monitor EDID to the s3fb driver.
+These changes are required to support SMP.
 
-Tested on Trio64V+ (2 cards), Trio64V2/DX, Virge (3 cards),
-Virge/DX (3 cards), Virge/GX2, Trio3D/2X (4 cards), Trio3D.
+This includes an update so that the non-local timer is set
+to run on the 1st CPU, the addition of local timer support
+and support for on chip memory.
 
-Will probably not work on Trio32 - my 2 cards have DDC support in BIOS that
-looks different from the other cards but the DDC pins on the VGA connector
-are not connected.
+Signed-off-by: John Linn <john.linn@xilinx.com>
+---
+ arch/arm/mach-xilinx/common.c                  |   16 ++++++++++-
+ arch/arm/mach-xilinx/include/mach/irqs.h       |    1 +
+ arch/arm/mach-xilinx/include/mach/xilinx_soc.h |   20 +++++++++++++
+ arch/arm/mach-xilinx/localtimer.c              |   36 ++++++++++++++++++++++++
+ arch/arm/mach-xilinx/timer.c                   |    4 +-
+ 5 files changed, 74 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm/mach-xilinx/localtimer.c
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-
---- linux-2.6.38-rc4-/drivers/video/s3fb.c	2011-03-31 20:57:57.000000000 +0200
-+++ linux-2.6.38-rc4/drivers/video/s3fb.c	2011-04-03 20:32:46.000000000 +0200
-@@ -25,6 +25,10 @@
- #include <linux/console.h> /* Why should fb driver call console functions? because console_lock() */
- #include <video/vga.h>
- 
-+#include <linux/i2c.h>
-+#include <linux/i2c-id.h>
-+#include <linux/i2c-algo-bit.h>
-+
- #ifdef CONFIG_MTRR
- #include <asm/mtrr.h>
+diff --git a/arch/arm/mach-xilinx/common.c b/arch/arm/mach-xilinx/common.c
+index 83b549d..2695b39 100644
+--- a/arch/arm/mach-xilinx/common.c
++++ b/arch/arm/mach-xilinx/common.c
+@@ -101,7 +101,21 @@ static struct map_desc io_desc[] __initdata = {
+ 		.type		= MT_DEVICE,
+ 	},
  #endif
-@@ -36,6 +40,12 @@ struct s3fb_info {
- 	struct mutex open_lock;
- 	unsigned int ref_count;
- 	u32 pseudo_palette[16];
-+#ifdef CONFIG_FB_S3_DDC
-+	u8 __iomem *mmio;
-+	bool ddc_registered;
-+	struct i2c_adapter ddc_adapter;
-+	struct i2c_algo_bit_data ddc_algo;
-+#endif
+-
++	/* create a mapping for the OCM  (256K) leaving a hole for the
++	 * interrupt vectors which are handled in the kernel
++	 */
++	{
++		.virtual	= OCM_LOW_VIRT,
++		.pfn		= __phys_to_pfn(OCM_LOW_PHYS),
++		.length		= (192 * SZ_1K),
++		.type		= MT_DEVICE_CACHED,
++	},
++	{
++		.virtual	= OCM_HIGH_VIRT,
++		.pfn		= __phys_to_pfn(OCM_HIGH_PHYS),
++		.length		= (60 * SZ_1K),
++		.type		= MT_DEVICE,
++	},
  };
  
+ /**
+diff --git a/arch/arm/mach-xilinx/include/mach/irqs.h b/arch/arm/mach-xilinx/include/mach/irqs.h
+index 47a8162..8c41b22 100644
+--- a/arch/arm/mach-xilinx/include/mach/irqs.h
++++ b/arch/arm/mach-xilinx/include/mach/irqs.h
+@@ -22,6 +22,7 @@
+  * GIC Interrupts
+  */
  
-@@ -105,6 +115,9 @@ static const char * const s3_names[] = {
- #define CHIP_UNDECIDED_FLAG	0x80
- #define CHIP_MASK		0xFF
++#define IRQ_SCU_CPU_TIMER	29
+ #define IRQ_GIC_SPI_START	32
+ #define IRQ_TIMERCOUNTER0	42
+ #define IRQ_UART0		59
+diff --git a/arch/arm/mach-xilinx/include/mach/xilinx_soc.h b/arch/arm/mach-xilinx/include/mach/xilinx_soc.h
+index d181c5c..a55a46c 100644
+--- a/arch/arm/mach-xilinx/include/mach/xilinx_soc.h
++++ b/arch/arm/mach-xilinx/include/mach/xilinx_soc.h
+@@ -31,13 +31,33 @@
+ #define SCU_PERIPH_PHYS			0xF8F00000
+ #define SCU_PERIPH_VIRT			SCU_PERIPH_PHYS
  
-+#define MMIO_OFFSET		0x1000000
-+#define MMIO_SIZE		0x10000
++#define OCM_LOW_PHYS			0xFFFC0000
++#define OCM_LOW_VIRT			OCM_LOW_PHYS
 +
- /* CRT timing register sets */
- 
- static const struct vga_regset s3_h_total_regs[]        = {{0x00, 0, 7}, {0x5D, 0, 0}, VGA_REGSET_END};
-@@ -140,7 +153,7 @@ static const struct svga_timing_regs s3_
- /* Module parameters */
- 
- 
--static char *mode_option __devinitdata = "640x480-8@60";
-+static char *mode_option __devinitdata;
- 
- #ifdef CONFIG_MTRR
- static int mtrr __devinitdata = 1;
-@@ -169,6 +182,119 @@ MODULE_PARM_DESC(fasttext, "Enable S3 fa
- 
- /* ------------------------------------------------------------------------- */
- 
-+#ifdef CONFIG_FB_S3_DDC
++#define OCM_HIGH_PHYS			0xFFFF1000
++#define OCM_HIGH_VIRT			OCM_HIGH_PHYS
 +
-+#define DDC_REG		0xaa		/* Trio 3D/1X/2X */
-+#define DDC_MMIO_REG	0xff20		/* all other chips */
-+#define DDC_SCL_OUT	(1 << 0)
-+#define DDC_SDA_OUT	(1 << 1)
-+#define DDC_SCL_IN	(1 << 2)
-+#define DDC_SDA_IN	(1 << 3)
-+#define DDC_DRIVE_EN	(1 << 4)
+ /* The following are intended for the devices that are mapped early */
+ 
+ #define TTC0_BASE			IOMEM(TTC0_VIRT)
+ #define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
+ #define SCU_GIC_CPU_BASE		(SCU_PERIPH_BASE + 0x100)
++#define SCU_CPU_TIMER_BASE		(SCU_PERIPH_BASE + 0x600)
+ #define SCU_GIC_DIST_BASE		(SCU_PERIPH_BASE + 0x1000)
+ #define PL310_L2CC_BASE			IOMEM(PL310_L2CC_VIRT)
++#define OCM_LOW_BASE			IOMEM(OCM_LOW_VIRT)
++#define OCM_HIGH_BASE			IOMEM(OCM_HIGH_VIRT)
 +
-+static bool s3fb_ddc_needs_mmio(int chip)
++/* There are a couple ram addresses needed for communication between the boot
++ * loader software and the linux kernel with multiple cpus in the kernel (SMP).
++ * The memory addresses are in the high on-chip RAM and these addresses are
++ * mapped flat (virtual = physical). The memory must be mapped early and
++ * non-cached.
++ */
++
++#define BOOT_ADDR_OFFSET	0xEFF0
++#define BOOT_LOCK_OFFSET	0xEFF4
++#define BOOT_LOCK_KEY		0xFACECAFE
+ 
+ /*
+  * Mandatory for CONFIG_LL_DEBUG, UART is mapped virtual = physical
+diff --git a/arch/arm/mach-xilinx/localtimer.c b/arch/arm/mach-xilinx/localtimer.c
+new file mode 100644
+index 0000000..4bd0a0d
+--- /dev/null
++++ b/arch/arm/mach-xilinx/localtimer.c
+@@ -0,0 +1,36 @@
++/*
++ * arch/arm/mach-xilinx/localtimer.c
++ *
++ * Both cortex-a9 cores have their own timer in it's CPU domain.
++ *
++ * Copyright (C) 2011 Xilinx, Inc.
++ *
++ * This file is based on arch/arm/plat-versatile/localtimer.c
++ *
++ * Copyright (C) 2002 ARM Ltd.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/init.h>
++#include <asm/smp_twd.h>
++#include <mach/xilinx_soc.h>
++
++/*
++ * Setup the local clock events for a CPU.
++ */
++int __cpuinit local_timer_setup(struct clock_event_device *evt)
 +{
-+	return !(chip == CHIP_360_TRIO3D_1X  ||
-+		 chip == CHIP_362_TRIO3D_2X  ||
-+		 chip == CHIP_368_TRIO3D_2X);
++	twd_base = SCU_CPU_TIMER_BASE;
++
++	evt->irq = IRQ_SCU_CPU_TIMER;
++	twd_timer_setup(evt);
++	return 0;
 +}
 +
-+static u8 s3fb_ddc_read(struct s3fb_info *par)
-+{
-+	if (s3fb_ddc_needs_mmio(par->chip))
-+		return readb(par->mmio + DDC_MMIO_REG);
-+	else
-+		return vga_rcrt(par->state.vgabase, DDC_REG);
-+}
-+
-+static void s3fb_ddc_write(struct s3fb_info *par, u8 val)
-+{
-+	if (s3fb_ddc_needs_mmio(par->chip))
-+		writeb(val, par->mmio + DDC_MMIO_REG);
-+	else
-+		vga_wcrt(par->state.vgabase, DDC_REG, val);
-+}
-+
-+static void s3fb_ddc_setscl(void *data, int val)
-+{
-+	struct s3fb_info *par = data;
-+	unsigned char reg;
-+
-+	reg = s3fb_ddc_read(par) | DDC_DRIVE_EN;
-+	if (val)
-+		reg |= DDC_SCL_OUT;
-+	else
-+		reg &= ~DDC_SCL_OUT;
-+	s3fb_ddc_write(par, reg);
-+}
-+
-+static void s3fb_ddc_setsda(void *data, int val)
-+{
-+	struct s3fb_info *par = data;
-+	unsigned char reg;
-+
-+	reg = s3fb_ddc_read(par) | DDC_DRIVE_EN;
-+	if (val)
-+		reg |= DDC_SDA_OUT;
-+	else
-+		reg &= ~DDC_SDA_OUT;
-+	s3fb_ddc_write(par, reg);
-+}
-+
-+static int s3fb_ddc_getscl(void *data)
-+{
-+	struct s3fb_info *par = data;
-+
-+	return !!(s3fb_ddc_read(par) & DDC_SCL_IN);
-+}
-+
-+static int s3fb_ddc_getsda(void *data)
-+{
-+	struct s3fb_info *par = data;
-+
-+	return !!(s3fb_ddc_read(par) & DDC_SDA_IN);
-+}
-+
-+static int __devinit s3fb_setup_ddc_bus(struct fb_info *info)
-+{
-+	struct s3fb_info *par = info->par;
-+
-+	strlcpy(par->ddc_adapter.name, info->fix.id,
-+		sizeof(par->ddc_adapter.name));
-+	par->ddc_adapter.owner		= THIS_MODULE;
-+	par->ddc_adapter.class		= I2C_CLASS_DDC;
-+	par->ddc_adapter.algo_data	= &par->ddc_algo;
-+	par->ddc_adapter.dev.parent	= info->device;
-+	par->ddc_algo.setsda		= s3fb_ddc_setsda;
-+	par->ddc_algo.setscl		= s3fb_ddc_setscl;
-+	par->ddc_algo.getsda		= s3fb_ddc_getsda;
-+	par->ddc_algo.getscl		= s3fb_ddc_getscl;
-+	par->ddc_algo.udelay		= 10;
-+	par->ddc_algo.timeout		= 20;
-+	par->ddc_algo.data		= par;
-+
-+	i2c_set_adapdata(&par->ddc_adapter, par);
-+
-+	/*
-+	 * some Virge cards have external MUX to switch chip I2C bus between
-+	 * DDC and extension pins - switch it do DDC
-+	 */
-+/*	vga_wseq(par->state.vgabase, 0x08, 0x06); - not needed, already unlocked */
-+	if (par->chip == CHIP_357_VIRGE_GX2 ||
-+	    par->chip == CHIP_359_VIRGE_GX2P)
-+		svga_wseq_mask(par->state.vgabase, 0x0d, 0x01, 0x03);
-+	else
-+		svga_wseq_mask(par->state.vgabase, 0x0d, 0x00, 0x03);
-+	/* some Virge need this or the DDC is ignored */
-+	svga_wcrt_mask(par->state.vgabase, 0x5c, 0x03, 0x03);
-+
-+	return i2c_bit_add_bus(&par->ddc_adapter);
-+}
-+#endif /* CONFIG_FB_S3_DDC */
-+
-+
-+/* ------------------------------------------------------------------------- */
-+
- /* Set font in S3 fast text mode */
+diff --git a/arch/arm/mach-xilinx/timer.c b/arch/arm/mach-xilinx/timer.c
+index b2a72f0..65c336a 100644
+--- a/arch/arm/mach-xilinx/timer.c
++++ b/arch/arm/mach-xilinx/timer.c
+@@ -283,9 +283,9 @@ static void __init xttcpss_timer_init(void)
+ 	xttcpss_clockevent.min_delta_ns =
+ 		clockevent_delta2ns(1, &xttcpss_clockevent);
  
- static void s3fb_settile_fast(struct fb_info *info, struct fb_tilemap *map)
-@@ -994,6 +1120,7 @@ static int __devinit s3_pci_probe(struct
- 	struct s3fb_info *par;
- 	int rc;
- 	u8 regval, cr38, cr39;
-+	bool found = false;
+-	/* Indicate that clock event can be used on any of the CPUs */
++	/* Indicate that clock event is on 1st CPU as SMP boot needs it */
  
- 	/* Ignore secondary VGA device because there is no VGA arbitration */
- 	if (! svga_primary_device(dev)) {
-@@ -1117,15 +1244,64 @@ static int __devinit s3_pci_probe(struct
- 	info->fix.ypanstep = 0;
- 	info->fix.accel = FB_ACCEL_NONE;
- 	info->pseudo_palette = (void*) (par->pseudo_palette);
-+	info->var.bits_per_pixel = 8;
-+
-+#ifdef CONFIG_FB_S3_DDC
-+	/* Enable MMIO if needed */
-+	if (s3fb_ddc_needs_mmio(par->chip)) {
-+		par->mmio = ioremap(info->fix.smem_start + MMIO_OFFSET, MMIO_SIZE);
-+		if (par->mmio)
-+			svga_wcrt_mask(par->state.vgabase, 0x53, 0x08, 0x08);	/* enable MMIO */
-+		else
-+			dev_err(info->device, "unable to map MMIO at 0x%lx, disabling DDC",
-+				info->fix.smem_start + MMIO_OFFSET);
-+	}
-+	if (!s3fb_ddc_needs_mmio(par->chip) || par->mmio)
-+		if (s3fb_setup_ddc_bus(info) == 0) {
-+			u8 *edid = fb_ddc_read(&par->ddc_adapter);
-+			par->ddc_registered = true;
-+			if (edid) {
-+				fb_edid_to_monspecs(edid, &info->monspecs);
-+				kfree(edid);
-+				if (!info->monspecs.modedb)
-+					dev_err(info->device, "error getting mode database\n");
-+				else {
-+					const struct fb_videomode *m;
-+
-+					fb_videomode_to_modelist(info->monspecs.modedb,
-+								 info->monspecs.modedb_len,
-+								 &info->modelist);
-+					m = fb_find_best_display(&info->monspecs, &info->modelist);
-+					if (m) {
-+						fb_videomode_to_var(&info->var, m);
-+						/* fill all other info->var's fields */
-+						if (s3fb_check_var(&info->var, info) == 0)
-+							found = true;
-+					}
-+				}
-+			}
-+		}
-+#endif
-+	if (!mode_option && !found)
-+		mode_option = "640x480-8@60";
+-	xttcpss_clockevent.cpumask = cpu_all_mask;
++	xttcpss_clockevent.cpumask = cpumask_of(0);
+ 	clockevents_register_device(&xttcpss_clockevent);
+ }
  
- 	/* Prepare startup mode */
--	rc = fb_find_mode(&(info->var), info, mode_option, NULL, 0, NULL, 8);
--	if (! ((rc == 1) || (rc == 2))) {
--		rc = -EINVAL;
--		dev_err(info->device, "mode %s not found\n", mode_option);
--		goto err_find_mode;
-+	if (mode_option) {
-+		rc = fb_find_mode(&info->var, info, mode_option,
-+				   info->monspecs.modedb, info->monspecs.modedb_len,
-+				   NULL, info->var.bits_per_pixel);
-+		if (!rc || rc == 4) {
-+			rc = -EINVAL;
-+			dev_err(info->device, "mode %s not found\n", mode_option);
-+			fb_destroy_modedb(info->monspecs.modedb);
-+			info->monspecs.modedb = NULL;
-+			goto err_find_mode;
-+		}
- 	}
- 
-+	fb_destroy_modedb(info->monspecs.modedb);
-+	info->monspecs.modedb = NULL;
-+
- 	/* maximize virtual vertical size for fast scrolling */
- 	info->var.yres_virtual = info->fix.smem_len * 8 /
- 			(info->var.bits_per_pixel * info->var.xres_virtual);
-@@ -1171,6 +1347,12 @@ err_reg_fb:
- 	fb_dealloc_cmap(&info->cmap);
- err_alloc_cmap:
- err_find_mode:
-+#ifdef CONFIG_FB_S3_DDC
-+	if (par->ddc_registered)
-+		i2c_del_adapter(&par->ddc_adapter);
-+	if (par->mmio)
-+		iounmap(par->mmio);
-+#endif
- 	pci_iounmap(dev, info->screen_base);
- err_iomap:
- 	pci_release_regions(dev);
-@@ -1202,6 +1384,13 @@ static void __devexit s3_pci_remove(stru
- 		unregister_framebuffer(info);
- 		fb_dealloc_cmap(&info->cmap);
- 
-+#ifdef CONFIG_FB_S3_DDC
-+		if (par->ddc_registered)
-+			i2c_del_adapter(&par->ddc_adapter);
-+		if (par->mmio)
-+			iounmap(par->mmio);
-+#endif
-+
- 		pci_iounmap(dev, info->screen_base);
- 		pci_release_regions(dev);
- /*		pci_disable_device(dev); */
---- linux-2.6.38-rc4-orig/drivers/video/Kconfig	2011-02-08 01:03:55.000000000 +0100
-+++ linux-2.6.38-rc4/drivers/video/Kconfig	2011-04-03 20:28:26.000000000 +0200
-@@ -1508,6 +1508,14 @@ config FB_S3
- 	---help---
- 	  Driver for graphics boards with S3 Trio / S3 Virge chip.
- 
-+config FB_S3_DDC
-+	bool "DDC for S3 support"
-+	depends on FB_S3
-+	select FB_DDC
-+	default y
-+	help
-+	  Say Y here if you want DDC support for your S3 graphics card.
-+
- config FB_SAVAGE
- 	tristate "S3 Savage support"
- 	depends on FB && PCI && EXPERIMENTAL
-
-
 -- 
-Ondrej Zary
+1.5.4.7
+
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
