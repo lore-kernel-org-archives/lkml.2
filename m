@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab1DDKGZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 06:06:25 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:54196 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464Ab1DDKGX (ORCPT
+	id S1754498Ab1DDKGv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 06:06:51 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63917 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754280Ab1DDKGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 06:06:23 -0400
-X-AuditID: b753bd60-9cf54ba000007e19-bd-4d99981d77ed
-X-AuditID: b753bd60-9cf54ba000007e19-bd-4d99981d77ed
-Message-ID: <4D99981A.4070400@hitachi.com>
-Date: Mon, 04 Apr 2011 19:06:18 +0900
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Mon, 4 Apr 2011 06:06:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=lS0kawc6dj0eaK3vfuh1tQyU9N4gguABRLH7CcCRj4vXWDMTqsQ/b+y3L8St0x+S4a
+         EeLox1YO2ucEYPgw2jIXmRnqtTQOs/ZF5rBXc15pv296IKqb8J2AX0p8nQzRfDERujFJ
+         OQr50/a7H9Jfs5eQhiME+Gfgq6vB7qGoX4sAk=
+Date: Mon, 4 Apr 2011 03:06:45 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH tip:x86/urgent] x86-32, NUMA: Fix ACPI NUMA init broken by
+ recent x86-64 change
+Message-ID: <20110404100645.GE1420@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH -tip v3 0/6] perf: Introduce branch sub commands
-References: <20110324113137.20235.42265.stgit@localhost6.localdomain6> <20110401144312.GB2335@nowhere>
-In-Reply-To: <20110401144312.GB2335@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/04/01 23:43), Frederic Weisbecker wrote:
-> On Thu, Mar 24, 2011 at 08:31:37PM +0900, Akihiro Nagai wrote:
->> Hi,
->>
->> This patch series provides the commands 'perf branch record' and 'perf branch trace'
->> version 3. These commands record and analyze a BTS (Branch Trace Store) log.
->> And, they provide the interface to use BTS log for application developers.
->>
->> BTS is a facility of Intel x86 processors, which records the address of
->> 'branch to/from' on every branch/jump instruction and interrupt.
->> This facility is very useful for developers to test their software,
->> for example, coverage test, execution path analysis, dynamic step count ...etc.
->> These test tools have a big advantage, which user doesn't have to modify target
->> executable binaries, because the BTS is a hardware feauture.
->>
->> But, there are few applications using BTS. Reasons I guess are ...
->>   - Few people know what BTS is.
->>   - Few people know how to use BTS on Linux box.
->>   - It's hard to analyze the BTS log because it includes just a series of addresses.
->>
->> So, I want to provide a user-friendly interface to BTS for application developers.
->>
->>
->>   About new sub commands
->> ========================
->> 'perf branch record' provides an easy way to record BTS log.
->> Usage is 'perf branch record<command>'.  This command is just an alias to
->> 'perf record -e branches:u -c 1<command>'. But, new one is more simple and
->> more intuitive.
->>
->> 'perf branch trace' can parse and analyze recorded BTS log and print various
->> information of execution path. This command can show address, pid, command name,
->> function+offset, file path of elf.
->> You can choose the printed information with option.
->>
->> Example: 'perf branch trace'
->> function+offset
->> irq_return+0x0  =>  _start+0x0
->> irq_return+0x0  =>  _start+0x0
->> _start+0x3      =>  _dl_start+0x0
->> irq_return+0x0  =>  _dl_start+0x0
->> irq_return+0x0  =>  _dl_start+0x26
->> irq_return+0x0  =>  _dl_start+0x2d
->> _dl_start+0x71  =>  _dl_start+0x93
->> _dl_start+0x97  =>  _dl_start+0x78
->> ...
->>
->> This is the default behavior of 'perf branch trace'. It prints function+offset.
->>
->>
->> Example2: 'perf branch -cas trace'
->> command address            function+offset
->> ls      0xffffffff8146fe0e irq_return+0x0  =>  ls   0x0000003806200b20 _start+0x0
->
-> You probably want to display the comm (and/or the pid/tid) only once. Those are not
-> going to change between the source and destination.
-Exactly, perf_sample has only one pid/tid field.
-So, pid/tid and command don't change between source and destination.
-I'll remove desitination's pid/tid and command fields.
-Thank you.
+Commit d8fc3afc49 (x86, NUMA: Move *_numa_init() invocations into
+initmem_init()) moved acpi_numa_init() call into NUMA initmem_init()
+but forgot to update 32bit NUMA init breking ACPI NUMA configuration
+for 32bit.
+
+acpi_numa_init() call was later moved again to srat_64.c.  Match it by
+adding the call to get_memcfg_from_srat() in srat_32.c.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/mm/srat_32.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Index: work/arch/x86/mm/srat_32.c
+===================================================================
+--- work.orig/arch/x86/mm/srat_32.c
++++ work/arch/x86/mm/srat_32.c
+@@ -211,10 +211,12 @@ int __init get_memcfg_from_srat(void)
+ {
+ 	int i, j, nid;
+ 
+-
+ 	if (srat_disabled())
+ 		goto out_fail;
+ 
++	if (acpi_numa_init() < 0)
++		goto out_fail;
++
+ 	if (num_memory_chunks == 0) {
+ 		printk(KERN_DEBUG
+ 			 "could not find any ACPI SRAT memory areas.\n");
