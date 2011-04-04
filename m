@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab1DDNys (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 09:54:48 -0400
-Received: from stinky.trash.net ([213.144.137.162]:52837 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab1DDNyr (ORCPT
+	id S1754120Ab1DDN5P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 09:57:15 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:53802 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751670Ab1DDN5O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 09:54:47 -0400
-Message-ID: <4D99CDA0.3030305@trash.net>
-Date: Mon, 04 Apr 2011 15:54:40 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: rostedt@goodmis.org, linux-kernel@vger.kernel.org, hidden@balabit.hu,
-        akpm@linux-foundation.org, netfilter-devel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] netfilter: Fix build failure when ipv6 but xt_tproxy
- is built in
-References: <1301451199.14261.327.camel@gandalf.stny.rr.com> <20110329.223536.245392030.davem@davemloft.net>
-In-Reply-To: <20110329.223536.245392030.davem@davemloft.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Apr 2011 09:57:14 -0400
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+From: Marc Zyngier <Marc.Zyngier@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: david@lang.hm, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>, Detlef Vollmann <dv@vollmann.ch>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-omap@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>
+In-Reply-To: <20110404133104.GA23266@n2100.arm.linux.org.uk>
+References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
+	 <201104031726.37420.arnd@arndb.de>
+	 <20110403160324.GA8050@n2100.arm.linux.org.uk>
+	 <201104040259.26601.arnd@arndb.de>
+	 <1301915022.15819.28.camel@e102109-lin.cambridge.arm.com>
+	 <20110404112104.GB19854@n2100.arm.linux.org.uk>
+	 <1301923457.417.34.camel@e102391-lin.cambridge.arm.com>
+	 <20110404133104.GA23266@n2100.arm.linux.org.uk>
+Organization: ARM Ltd
+Date: Mon, 04 Apr 2011 14:57:25 +0100
+Message-ID: <1301925445.417.54.camel@e102391-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+X-OriginalArrivalTime: 04 Apr 2011 13:56:59.0667 (UTC) FILETIME=[2AE08E30:01CBF2D0]
+X-MC-Unique: 111040414570402501
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.03.2011 07:35, David Miller wrote:
-> From: Steven Rostedt <rostedt@goodmis.org>
-> Date: Tue, 29 Mar 2011 22:13:19 -0400
+On Mon, 2011-04-04 at 14:31 +0100, Russell King - ARM Linux wrote:
+> On Mon, Apr 04, 2011 at 02:24:17PM +0100, Marc Zyngier wrote:
+> > On Mon, 2011-04-04 at 12:21 +0100, Russell King - ARM Linux wrote:
+> > > Whether its worth it or not is questionable - the above is more lines
+> > > of code than many of the existing implementations, and we're not going
+> > > to shrink the existing implementations by much (maybe one to three
+> > > lines.)  The only thing we gain is the ability to select an implementation
+> > > at runtime.
+> > 
+> > I believe this last point to be rather important if we plan to have this
+> > mythical single kernel covering several architectures. It's also nice
+> > for the A15 to be able to use some default sched_clock() implementation
+> > as a fallback if the generic timers are not available for some reason.
 > 
->> While running ktest.pl doing ranconfigs, the following build error
->> occurred:
-> 
-> Is sending netfilter patches to the explicitly listed maintainer in
-> MAINTAINERS too much to ask Stephen? :-/
-> 
-> CC:'d
-> 
->>
->> net/built-in.o: In function `tproxy_tg6_v1':
->> /home/rostedt/work/autotest/nobackup/linux-test.git/net/netfilter/xt_TPROXY.c:288: undefined reference to `ipv6_find_hdr'
->>
->> This happened because the xt_TPROXY code was compiled into the kernel
->> proper, but the ipv6 netfilter was compiled as a module. The fix is to
->> only enter the code that calls ipv6_find_hdr if ipv6 netfilter is
->> compiled into the kernel, or if it is a module, so is the xt_TPROXY
->> code.
+> If ARM are going to architect a set of timers into the hardware, let's
+> make sure that all such hardware has them so we can dig ourselves out
+> of this crappy mess that we find ourselves in today.
 
-I don't think this is a good fix for the problem since it may lead to
-the confusing situation that both TPROXY and ip6tables are enabled,
-but TPROXY has no IPv6 support.
+As far as I know, A15 always has a set of generic timers.
 
-I think we should solve this by either adding a Kconfig dependency
-on (IP6_NF_IPTABLES || IP6_NF_IPTABLES=n) or using ipv6_skip_exthdr()
-instead of ipv6_find_hdr().
+It may be that they are not available (frequency not programmed into the
+CNTFREQ register), or that someone decided to use a better alternative
+(for some particular interpretation of "better").
 
-Krisztian, what do you think?
+Overall, it seems like we need some degree of flexibility to have
+several sched_clock() implementations within a single image, whether it
+is to support multiple platforms, or to allow a single architecture to
+pick the best alternative given a set of initial conditions.
 
->>
->> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->>
->> diff --git a/net/netfilter/xt_TPROXY.c b/net/netfilter/xt_TPROXY.c
->> index dcfd57e..5915f94 100644
->> --- a/net/netfilter/xt_TPROXY.c
->> +++ b/net/netfilter/xt_TPROXY.c
->> @@ -22,7 +22,13 @@
->>  
->>  #include <net/netfilter/ipv4/nf_defrag_ipv4.h>
->>  
->> -#if defined(CONFIG_IP6_NF_IPTABLES) || defined(CONFIG_IP6_NF_IPTABLES_MODULE)
->> +/*
->> + * Only include the following if ip6 tables is compiled in
->> + * the kernel, or it is a module and this code is also a module.
->> + */
->> +#if defined(CONFIG_IP6_NF_IPTABLES) || \
->> +	(defined(CONFIG_IP6_NF_IPTABLES_MODULE) && \
->> +	 defined(CONFIG_NETFILTER_XT_TARGET_TPROXY_MODULE))
->>  #define XT_TPROXY_HAVE_IPV6 1
->>  #include <net/if_inet6.h>
->>  #include <net/addrconf.h>
->>
->>
-> 
+	M.
+-- 
+Reality is an implementation detail.
+
 
