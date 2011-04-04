@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab1DDRm5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 13:42:57 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56464 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754907Ab1DDRm4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 13:42:56 -0400
-Date: Mon, 4 Apr 2011 10:41:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Nathan Lynch <ntl@pobox.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
-Message-Id: <20110404104119.78189678.akpm@linux-foundation.org>
-In-Reply-To: <20110404162753.GA3456@hallyn.com>
-References: <1298936432-29607-1-git-send-email-ntl@pobox.com>
-	<1298936432-29607-6-git-send-email-ntl@pobox.com>
-	<20110403190324.GD15044@hallyn.com>
-	<1301929228.31531.39.camel@tp-t61>
-	<20110404151017.GA4857@hallyn.com>
-	<1301931608.31531.49.camel@tp-t61>
-	<20110404162753.GA3456@hallyn.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754975Ab1DDRop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 13:44:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57789 "EHLO linutronix.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754027Ab1DDRoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 13:44:44 -0400
+Date: Mon, 4 Apr 2011 19:44:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: john stultz <johnstul@us.ibm.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Make clocksource name const
+In-Reply-To: <1301938920.2319.2.camel@work-vm>
+Message-ID: <alpine.LFD.2.00.1104041943580.19945@localhost6.localdomain6>
+References: <20110219153450.GI29493@n2100.arm.linux.org.uk>  <20110402141134.GA23324@n2100.arm.linux.org.uk> <1301938920.2319.2.camel@work-vm>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Apr 2011 11:27:53 -0500 "Serge E. Hallyn" <serge@hallyn.com> wrote:
+On Mon, 4 Apr 2011, john stultz wrote:
 
-> Andrew (Cc:d), did you see this thread go by, and it did it look
-> in any way more palatable to you?  Have you had any thoughts on
-> checkpoint/restart in the last few months?  Or did that horse quietly
-> die over winter?
+> On Sat, 2011-04-02 at 15:11 +0100, Russell King - ARM Linux wrote:
+> > Has this patch been rejected?
+> 
+> No, just my clocksource cleanups tree didn't get pulled for 2.6.39.
 
-argh, it was the victim of LIFO.
+Crap.
+ 
+> Thomas: The commit can be found here:
+> http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=commit;h=36d8593ec74dc04d3bd7c1c897a7b7cfbd0b0dc6
 
-All I can say at this stage is that I'll be interested next time it
-comes past, sorry.
+Is there more stuff pending ?
+
+Thanks,
+
+	tglx
