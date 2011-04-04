@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab1DDJgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 05:36:23 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:54217 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753949Ab1DDJgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 05:36:22 -0400
-Date: Mon, 4 Apr 2011 11:36:20 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: wanlong.gao@gmail.com
-Cc: davem@davemloft.net, padovan@profusion.mobi, joe@perches.com,
-        marcel@holtmann.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] X86:NET:Replaced a deprecated function .
-Message-ID: <20110404093620.GA4896@isilmar-3.linta.de>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	wanlong.gao@gmail.com, davem@davemloft.net, padovan@profusion.mobi,
-	joe@perches.com, marcel@holtmann.org, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1301909548-20031-1-git-send-email-wanlong.gao@gmail.com>
+	id S1754226Ab1DDJiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 05:38:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44335 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab1DDJiV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 05:38:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=qoE0w1tmcKkt+Zb1r0OQhCZW1Wdh8QhJYPJjZq94JkrirSWjCIOa+sMdgjLvCIPI4P
+         I301nu5PNIrZUYA4O8hjUVdvGYHfY2R6jxeaA7Qhj2huTZijptWTFkopXO9gY4HAvERB
+         eBFe79OPSYAVcV4w4m7jDsWpA0fUsv7FSrtwI=
+Message-ID: <4D999177.4010401@vexillium.org>
+Date: Mon, 04 Apr 2011 10:37:59 +0100
+From: Unavowed <unavowed@vexillium.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301909548-20031-1-git-send-email-wanlong.gao@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: Add NOGET quirk for the CH Pro Throttle
+References: <4d988b60.29c6ec0a.0716.ffffa4bf@mx.google.com> <alpine.LNX.2.00.1104041105250.28516@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1104041105250.28516@pobox.suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Mon, Apr 04, 2011 at 05:32:28PM +0800, wanlong.gao@gmail.com wrote:
-> From: Wanlong Gao <wanlong.gao@gmail.com>
+On 04/04/11 10:05, Jiri Kosina wrote:
+> On Sun, 3 Apr 2011, Unavowed wrote:
 > 
-> kernel_warning: pcmcia_request_exclusive_irq is deprecated .
-
-NACK. This papers over the issue, instead of fixing it. To properly fix it,
-one needs to verify that the IRQ handler used in this driver is capable of
-handling a shared IRQ line.
-
-Best,
-	Dominik
-
-> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
-> ---
->  drivers/net/pcmcia/nmclan_cs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>> The CH Pro Throttle needs the NOGET quirk flag to work, just like other CH
+>> Products devices which already have the flag set.
+>>
+>> Signed-off-by: Unavowed <unavowed@vexillium.org>
 > 
-> diff --git a/drivers/net/pcmcia/nmclan_cs.c b/drivers/net/pcmcia/nmclan_cs.c
-> index 76683d9..bf97231
-> --- a/drivers/net/pcmcia/nmclan_cs.c
-> +++ b/drivers/net/pcmcia/nmclan_cs.c
-> @@ -625,7 +625,7 @@ static int nmclan_config(struct pcmcia_device *link)
->    ret = pcmcia_request_io(link);
->    if (ret)
->  	  goto failed;
-> -  ret = pcmcia_request_exclusive_irq(link, mace_interrupt);
-> +  ret = __pcmcia_request_exclusive_irq(link, mace_interrupt);
->    if (ret)
->  	  goto failed;
->    ret = pcmcia_enable_device(link);
-> -- 
-> 1.7.3
+> Hi,
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> thanks a lot for the patch.
+> 
+> Would it please be possible to have a real name to attribute for patch 
+> authorship and Signed-off-by line?
+
+Hi,
+
+Thanks for such a quick response.
+
+I'm sorry, but I only ever write contributions under a pseudonym.  Is
+this not acceptable, especially for such a trivial patch?
+-- 
+Unavowed
