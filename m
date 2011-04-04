@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab1DDHOk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 03:14:40 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48425 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab1DDHOj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 03:14:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ZAukPNhXGAYMUgVFzZyPrRiSmpG3ADu68SLxGl12+3+eUgt4OAmlIyAYD0Tq76zVN8
-         /TiWxGrRSODkXqBD8Ku4PUhw3Lh3bRSQ/TZFVUdLLmmlipQHVjznsPhi9YkLgu+zCGlN
-         dXjDD/lr9dEn0zJauoo5D/A6DZNPT72PXkKwg=
-Subject: Re: [PATCH 0/2] do not select KALLSYMS_ALL
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Paulo Marques <pmarques@grupopie.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        MTD list <linux-mtd@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D95F54D.8020802@grupopie.com>
-References: <1301474416-8202-1-git-send-email-dedekind1@gmail.com>
-	 <4D948D52.4040708@grupopie.com>  <1301669776.2789.92.camel@localhost>
-	 <1301670104.2789.94.camel@localhost>  <4D95F092.4080604@grupopie.com>
-	 <1301672549.2789.107.camel@localhost>  <4D95F54D.8020802@grupopie.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Apr 2011 10:12:09 +0300
-Message-ID: <1301901129.2760.9.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1753895Ab1DDHRt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 03:17:49 -0400
+Received: from bar.sig21.net ([80.81.252.164]:40886 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753734Ab1DDHRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 03:17:48 -0400
+X-Greylist: delayed 1316 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Apr 2011 03:17:48 EDT
+Message-ID: <4D996B74.4070502@linuxtv.org>
+Date: Mon, 04 Apr 2011 08:55:48 +0200
+From: Michael Hunold <hunold@linuxtv.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: John Stultz <john.stultz@linaro.org>
+Subject: Minimal requirements for RTC drivers
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Spam-21-Score: -4.1 (----)
+X-Spam-21-Report: No, score=-4.1 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.330,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 16:54 +0100, Paulo Marques wrote:
-> Artem Bityutskiy wrote:
-> > On Fri, 2011-04-01 at 16:34 +0100, Paulo Marques wrote:
-> >>[...]
-> >> With an automatic makefile mechanism, the problem would go unnoticed and
-> >> it just wouldn't be fixed, increasing the kernel compile time for
-> >> everyone who hits the same troublesome configuration.
-> > 
-> > Yes, the build system may print a message:
-> > 
-> > Your symbols table is screwed, this is a bug, report about it. As a
-> > temporary workaround use "make KALLSYMS_EXTRA_PASS=1"
-> > 
-> > Or something like that.
-> 
-> Yes, I think that would work too, and it would even prevent the option
-> from being on for no good reason.
+Hello John,
 
-I'll try to find some time and cook a patch.
+I have been working on a new RTC driver for some custom RTC device
+lately. It has the usual features like AIE, UIE and PIE.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+I cloned the rtc-test.c driver as Documentation/rtc.txt suggested and
+noticed that my driver would work with the test application even though
+some of the driver functions were not implemented at all...
 
+So I found out about your recent changes with regard to "RTC
+virtualisation" and I understood the steps you have taken. It's not
+necessary to provide all functionality through the RTC driver directly
+any more, because some of the stuff is emulated via hrtimers.
+
+One problem is that the documentation and the code have gotten out of
+sync. People like me, who dive into the RTC subsystem for the first
+time, can be easily fooled now.
+
+So the main question now is what the minimal required functionality for
+a RTC driver now actually is. Can you give me some hints?
+
+I think it would be best if the rtc-test.c driver could be updated to
+have a template new drivers can be cloned from.
+
+Another thing that catched my eye is the current use of the read_alarm()
+member in struct rtc_class_ops in rtc_read_alarm() in
+drivers/rtc/interface.c. This is the only place where the member is used
+and it's only used as a boolean there. The driver specific read_alarm()
+op is never actually called, so I think that op can be transformed into
+a boolean and all the read_alarm() functions from all the rtc drivers
+can be removed - that's quite a lot of a code.
+
+Best regards
+Michael.
