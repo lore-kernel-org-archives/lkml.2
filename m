@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab1DDO4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 10:56:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63042 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669Ab1DDO4M convert rfc822-to-8bit (ORCPT
+	id S1754741Ab1DDO6K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 10:58:10 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39497 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754601Ab1DDO6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 10:56:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=sTkP461KYwn/nfm/B5UegWyPpKhKzNR2zMGyn/vkBs1fwdX5qOb/hNJN84+NsMAQrQ
-         OdYnLcjFLpFdyfag3vAYeQNyRb/bxuFOwLeTPESjQ9ze5cBQ/99kyaG/SYX8IpPrsxTB
-         GwStKJ842CYfvtOIqo6xBHY6aWq0QZKQhBEqs=
-MIME-Version: 1.0
-In-Reply-To: <131751.1301921295@localhost>
-References: <BANLkTi=pS8Wk9Ymtj=DeVqfgqBsbTXDHZA@mail.gmail.com>
-	<BANLkTi=Mu70wYSM0sVRWZnQzTPBOvqt6xg@mail.gmail.com>
-	<131751.1301921295@localhost>
-Date: Mon, 4 Apr 2011 22:56:11 +0800
-Message-ID: <BANLkTikA8QXXCMPnigP6_cDJNpt2EWMagA@mail.gmail.com>
-Subject: Re: [2.6.39-rc1] LTP hitting max (8) nested links...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Valdis.Kletnieks@vt.edu, Nick Piggin <npiggin@kernel.dk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Apr 2011 10:58:09 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: [PATCH] avr32: init cannot ignore signals sent by force_sig_info()
+Date: Mon,  4 Apr 2011 15:58:04 +0100
+Message-Id: <1301929084-2025-1-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 April 2011 20:48,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Mon, 04 Apr 2011 11:19:08 +0800, Daniel J Blueman said:
->
->> Re-reading everything, nested here is actually recursively nested, not
->> consecutively nested, so will never succeed, so we expect this from
->> the LTP test.
->
-> We expect the LTP test to be handed an error, I suspect.  The LTP test
-> probably shouldn't be able to provoke a BUG_ON.
+From: Matt Fleming <matt.fleming@linux.intel.com>
 
-In fact, since userspace does correctly return ELOOP [1], and I can't
-reproduce it with 2.6.37, it does looks like a race in the RCU VFS
-lookup, so adding Nick in the loop.
+We can delete the code that checks to see if we're sending an ignored
+signal to init because force_sig_info() already handles this case.
+force_sig_info() will kill init even if the signal handler is SIG_DFL
+and the scenario described in the comment where init might "generate
+the same exception over and over again" cannot occur (force_sig_info()
+clears SIGNAL_UNKILLABLE to ensure that init will die).
 
---- [1]
+Also, the use of is_global_init() is not correct in the multhreaded
+case, as Oleg Nesterov explains,
 
-$ ln -s foo bar && ln -s bar foo
-$ strace -e mkdir mkdir foo/a
-mkdir("foo/a", 0777)                    = -1 ELOOP (Too many levels of
-symbolic links)
-mkdir: cannot create directory `foo/a': Too many levels of symbolic links
+	"is_global_init() is not right in theory, /sbin/init can be
+	multithreaded. And, this doesn't cover the sub-namespace
+	inits... I'd suggest to check SIGNAL_UNKILLABLE, but looking
+	closer I think you can simply remove this code."
+
+It seems this code was copied from arch/powerpc in March 2007 in commit
+
+  623b0355d5b1 "[AVR32] Clean up exception handling code"
+
+but the code was deleted from arch/powerpc in November 2009 in commit
+
+  a0592d42fe3e "powerpc: kill the obsolete code under is_global_init()"
+
+So catch up with powerpc and delete the bogus code.
+
+Signed-off-by: Matt Fleming <matt.fleming@linux.intel.com>
+---
+ arch/avr32/kernel/traps.c |   22 ----------------------
+ 1 files changed, 0 insertions(+), 22 deletions(-)
+
+diff --git a/arch/avr32/kernel/traps.c b/arch/avr32/kernel/traps.c
+index b91b204..7aa2575 100644
+--- a/arch/avr32/kernel/traps.c
++++ b/arch/avr32/kernel/traps.c
+@@ -95,28 +95,6 @@ void _exception(long signr, struct pt_regs *regs, int code,
+ 	info.si_code = code;
+ 	info.si_addr = (void __user *)addr;
+ 	force_sig_info(signr, &info, current);
+-
+-	/*
+-	 * Init gets no signals that it doesn't have a handler for.
+-	 * That's all very well, but if it has caused a synchronous
+-	 * exception and we ignore the resulting signal, it will just
+-	 * generate the same exception over and over again and we get
+-	 * nowhere.  Better to kill it and let the kernel panic.
+-	 */
+-	if (is_global_init(current)) {
+-		__sighandler_t handler;
+-
+-		spin_lock_irq(&current->sighand->siglock);
+-		handler = current->sighand->action[signr-1].sa.sa_handler;
+-		spin_unlock_irq(&current->sighand->siglock);
+-		if (handler == SIG_DFL) {
+-			/* init has generated a synchronous exception
+-			   and it doesn't have a handler for the signal */
+-			printk(KERN_CRIT "init has generated signal %ld "
+-			       "but has no handler for it\n", signr);
+-			do_exit(signr);
+-		}
+-	}
+ }
+ 
+ asmlinkage void do_nmi(unsigned long ecr, struct pt_regs *regs)
 -- 
-Daniel J Blueman
+1.7.4
+
