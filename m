@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab1DDKGv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 06:06:51 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63917 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754280Ab1DDKGt (ORCPT
+	id S1754398Ab1DDKJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 06:09:17 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37889 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642Ab1DDKJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 06:06:49 -0400
+	Mon, 4 Apr 2011 06:09:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=lS0kawc6dj0eaK3vfuh1tQyU9N4gguABRLH7CcCRj4vXWDMTqsQ/b+y3L8St0x+S4a
-         EeLox1YO2ucEYPgw2jIXmRnqtTQOs/ZF5rBXc15pv296IKqb8J2AX0p8nQzRfDERujFJ
-         OQr50/a7H9Jfs5eQhiME+Gfgq6vB7qGoX4sAk=
-Date: Mon, 4 Apr 2011 03:06:45 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH tip:x86/urgent] x86-32, NUMA: Fix ACPI NUMA init broken by
- recent x86-64 change
-Message-ID: <20110404100645.GE1420@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Ch3wc2MMMcW0sAOOmawHaLT57O8Q3AnhP/FOMHxUY58pRYQBIIk7lV1iywvsqcgW7D
+         L6SGozZOQYeO2y+RnHs0give5Qqt71vXqQO1qpytZD/VFDFBS2ufUbZjphyYVh9RE3I0
+         rc7O1I5RE1uBtRQHJaNsdw2ep2Th4qLVHu49w=
+Subject: Re: [PATCH] ubifs: Use empty_iops and empty_fops consistently
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: sedat.dilek@gmail.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+In-Reply-To: <BANLkTi=WTWa4yj+ysta8jiHs9r4MX5Gf_g@mail.gmail.com>
+References: <1301874939-2630-1-git-send-email-sedat.dilek@gmail.com>
+	 <1301900656.2760.6.camel@localhost>
+	 <BANLkTi=WTWa4yj+ysta8jiHs9r4MX5Gf_g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Apr 2011 13:06:44 +0300
+Message-ID: <1301911604.2760.52.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d8fc3afc49 (x86, NUMA: Move *_numa_init() invocations into
-initmem_init()) moved acpi_numa_init() call into NUMA initmem_init()
-but forgot to update 32bit NUMA init breking ACPI NUMA configuration
-for 32bit.
+On Mon, 2011-04-04 at 11:38 +0200, Sedat Dilek wrote:
+> Sorry for having flooded your inbox.
 
-acpi_numa_init() call was later moved again to srat_64.c.  Match it by
-adding the call to get_memcfg_from_srat() in srat_32.c.
+That's ok! :-) I think I did not look carefully enough. Your patch is
+just an additional clean-up which makes the names to be consistent. I
+can pick it, but probably it is better if it goes in with the
+'empty_aops' changes? Whatever you prefer.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/mm/srat_32.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-Index: work/arch/x86/mm/srat_32.c
-===================================================================
---- work.orig/arch/x86/mm/srat_32.c
-+++ work/arch/x86/mm/srat_32.c
-@@ -211,10 +211,12 @@ int __init get_memcfg_from_srat(void)
- {
- 	int i, j, nid;
- 
--
- 	if (srat_disabled())
- 		goto out_fail;
- 
-+	if (acpi_numa_init() < 0)
-+		goto out_fail;
-+
- 	if (num_memory_chunks == 0) {
- 		printk(KERN_DEBUG
- 			 "could not find any ACPI SRAT memory areas.\n");
