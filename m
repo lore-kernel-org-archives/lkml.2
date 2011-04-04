@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab1DDNbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 09:31:39 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50572 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941Ab1DDNbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 09:31:38 -0400
-Date: Mon, 4 Apr 2011 14:31:04 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marc Zyngier <Marc.Zyngier@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, david@lang.hm,
-        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Tony Lindgren <tony@atomide.com>, lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Brown <davidb@codeaurora.org>, Detlef Vollmann <dv@vollmann.ch>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110404133104.GA23266@n2100.arm.linux.org.uk>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <201104031726.37420.arnd@arndb.de> <20110403160324.GA8050@n2100.arm.linux.org.uk> <201104040259.26601.arnd@arndb.de> <1301915022.15819.28.camel@e102109-lin.cambridge.arm.com> <20110404112104.GB19854@n2100.arm.linux.org.uk> <1301923457.417.34.camel@e102391-lin.cambridge.arm.com>
+	id S1754179Ab1DDNbl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 09:31:41 -0400
+Received: from ftp.sofha.de ([82.144.60.99]:41462 "EHLO ftp.sofha.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754120Ab1DDNbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 09:31:40 -0400
+Message-ID: <4D99C83A.2080807@snafu.de>
+Date: Mon, 04 Apr 2011 15:31:38 +0200
+From: Oncaphillis <oncaphillis@snafu.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301923457.417.34.camel@e102391-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Xiaofan Chen <xiaofanc@gmail.com>
+CC: Kernel development list <linux-kernel@vger.kernel.org>,
+        libusb-devel@lists.sourceforge.net
+Subject: Re: [Libusb-devel] Kernel bug message and missing data on libusb_interrupt_transfer
+References: <4D99B60D.3030009@snafu.de> <BANLkTi=mU=v_6gH_5VCwZZmiX+UoqAVf+w@mail.gmail.com>
+In-Reply-To: <BANLkTi=mU=v_6gH_5VCwZZmiX+UoqAVf+w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 04, 2011 at 02:24:17PM +0100, Marc Zyngier wrote:
-> On Mon, 2011-04-04 at 12:21 +0100, Russell King - ARM Linux wrote:
-> > Whether its worth it or not is questionable - the above is more lines
-> > of code than many of the existing implementations, and we're not going
-> > to shrink the existing implementations by much (maybe one to three
-> > lines.)  The only thing we gain is the ability to select an implementation
-> > at runtime.
-> 
-> I believe this last point to be rather important if we plan to have this
-> mythical single kernel covering several architectures. It's also nice
-> for the A15 to be able to use some default sched_clock() implementation
-> as a fallback if the generic timers are not available for some reason.
+  Thanks for the reply.
 
-If ARM are going to architect a set of timers into the hardware, let's
-make sure that all such hardware has them so we can dig ourselves out
-of this crappy mess that we find ourselves in today.
+I'm in an environment where we are
+reluctant to switch between versions. I had a hard time to
+argue for 0.1.x to 1.0.x transition. We saw the same bug (or at least
+kernel freezes in 0.1.x) I'll give 1.0.8 a try and report back.
+  Using a git pull isn't an option for us for political reasons.
 
-I do hope they're not missing functionality like the GIC is - otherwise
-they're just going to make the situation worse than it already is.
+Thanks
+
+O.
+
+
+On 04/04/2011 03:06 PM, Xiaofan Chen wrote:
+> On Mon, Apr 4, 2011 at 8:14 PM, Oncaphillis<oncaphillis@snafu.de>  wrote:
+>> Hi,
+>>
+>>   We are experiencing sporadic kernel bug messages and total
+>> kernel freezes on usb communication via libusb-1.0.6.
+> First thing first, why not try the latest release version which
+> is libusb-1.08?
+>
+> Or better yet, try the latest git from libusb-stuge branch
+> which has quite some fixes post 1.08.
+> http://git.libusb.org/?p=libusb-stuge.git;a=summary;js=1
+>
+>
+>>   We are currently under kernel 2.6.30.10 but have seen
+>> it also under older and newer kernel (I think the newest was
+>> a 2.6.36.x).
+>>
+>
+>
+
