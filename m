@@ -1,82 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab1DDWNu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 18:13:50 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:59047 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755672Ab1DDWMo (ORCPT
+	id S1755672Ab1DDWQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 18:16:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46028 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab1DDWQx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 18:12:44 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=gtE260Uhhb13CgRojxm3/RCXvKVAZppCw8/q0raPrW1nqg9OzWHPRDJ/nssXkgEJ/IHND2QT+iGze50Rn2DbLznVP/sV4HTmjOqehISx4bU8w4Ly+bL6o8OVvXNum0D/;
-Date: Mon, 4 Apr 2011 15:02:24 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>, Jesper Juhl <jj@chaosbits.net>
-Subject: [PATCH 4/8] Documentation: update panic parameter info
-Message-Id: <20110404150224.98c6f633.rdunlap@xenotime.net>
-In-Reply-To: <20110404145803.8663081d.rdunlap@xenotime.net>
-References: <20110404145803.8663081d.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 4 Apr 2011 18:16:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110404213659.GC984@core.coreip.homeip.net>
+References: <1301727259-5185-1-git-send-email-jeffbrown@android.com>
+ <1301727259-5185-4-git-send-email-jeffbrown@android.com> <20110404213659.GC984@core.coreip.homeip.net>
+From: Jeffrey Brown <jeffbrown@android.com>
+Date: Mon, 4 Apr 2011 15:16:13 -0700
+Message-ID: <BANLkTi=0q6DbXki5RhE8eakermnVixN67g@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] input: evdev: Make device readable only when it
+ contains a complete packet.
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: rydberg@euromail.se, djkurtz@google.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Hi Dmitry,
+I don't think the new patch is completely correct.
 
-Add a little more info for some of the panic-related kernel parameters.
-Fix "oops=panic" to fit in 80 columns.
+On Mon, Apr 4, 2011 at 2:36 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> I think we should target SYN_REPORT directly. SYN_CONFIG is unused and
+> SYN_DROPPED is not interesting till next SYN_REPORT anyway. Given the
+> changes to the previous patch I have the following:
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
----
- Documentation/kernel-parameters.txt |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+Explicitly checking for SYN_REPORT makes sense.  I wasn't sure to do
+with SYN_CONFIG before so I tried to keep the condition somewhat
+conservative.
 
---- linux-2.6.38-git18.orig/Documentation/kernel-parameters.txt
-+++ linux-2.6.38-git18/Documentation/kernel-parameters.txt
-@@ -1832,15 +1832,17 @@ bytes respectively. Such letter suffixes
- 				perfmon on Intel CPUs instead of the
- 				CPU specific event set.
- 
--	oops=panic	Always panic on oopses. Default is to just kill the process,
--			but there is a small probability of deadlocking the machine.
-+	oops=panic	Always panic on oopses. Default is to just kill the
-+			process, but there is a small probability of
-+			deadlocking the machine.
- 			This will also cause panics on machine check exceptions.
- 			Useful together with panic=30 to trigger a reboot.
- 
- 	OSS		[HW,OSS]
- 			See Documentation/sound/oss/oss-parameters.txt
- 
--	panic=		[KNL] Kernel behaviour on panic
-+	panic=		[KNL] Kernel behaviour on panic: delay <timeout>
-+			seconds before rebooting
- 			Format: <timeout>
- 
- 	parkbd.port=	[HW] Parallel port number the keyboard adapter is
-@@ -2343,6 +2345,7 @@ bytes respectively. Such letter suffixes
- 
- 	softlockup_panic=
- 			[KNL] Should the soft-lockup detector generate panics.
-+			Format: <integer>
- 
- 	sonypi.*=	[HW] Sony Programmable I/O Control Device driver
- 			See Documentation/sonypi.txt
-@@ -2529,8 +2532,7 @@ bytes respectively. Such letter suffixes
- 			reported either.
- 
- 	unknown_nmi_panic
--			[X86]
--			Set unknown_nmi_panic=1 early on boot.
-+			[X86] Cause panic on unknown NMI.
- 
- 	usbcore.autosuspend=
- 			[USB] The autosuspend time delay (in seconds) used
+Per previous comments on an older iteration of this patch, it probably
+makes sense to calculate this flag once in evdev_event and pass it to
+evdev_pass_event.
+
+bool full_sync = (type == EV_SYN && code == SYN_REPORT);
+
+> @@ -41,6 +41,7 @@ struct evdev {
+>  struct evdev_client {
+>        unsigned int head;
+>        unsigned int tail;
+> +       unsigned int last_syn;  /* position of the last EV_SYN/SYN_REPORT */
+
+This comment for last_syn is not quite right.  We need last_syn to
+refer to the position just beyond the last sync.  Otherwise the device
+will not become readable until another event is written there.  The
+invariants for last_syn should be similar to those for head.
+
+Whereas tail != head means buffer non-empty, tail != last_syn should
+mean buffer is readable.
+
+It looks like we almost maintain those invariants here, except for SYN_DROPPED.
+
+>        spinlock_t buffer_lock; /* protects access to buffer, head and tail */
+>        struct fasync_struct *fasync;
+>        struct evdev *evdev;
+> @@ -72,12 +73,16 @@ static void evdev_pass_event(struct evdev_client *client,
+>                client->buffer[client->tail].type = EV_SYN;
+>                client->buffer[client->tail].code = SYN_DROPPED;
+>                client->buffer[client->tail].value = 0;
+> +
+
+Should use client->head here so that the SYN_DROPPED is readable.
+
+> +               client->last_syn = client->tail;
+>        }
+>
+>        spin_unlock(&client->buffer_lock);
+
+Can use full_sync or something equivalent instead of repeating the
+condition on EV_SYN / SYN_REPORT here.
+
+> -       if (event->type == EV_SYN)
+> +       if (event->type == EV_SYN && event->code == SYN_REPORT) {
+
+I don't think it's safe to modify last_syn outside of the spin lock.
+This should be done above.
+
+> +               client->last_syn = client->head;
+>                kill_fasync(&client->fasync, SIGIO, POLL_IN);
+> +       }
+>  }
+
+MISSING: We need to also modify evdev_event to only call
+wake_up_interruptible when enqueuing a sync.  It does not make sense
+to wake up waiters unless the device is about to become readable
+again.
+
+This also means we should wake after having written SYN_DROPPED.  We
+might need to make evdev_pass_event return (or take by reference) a
+boolean that indicates whether at least one client has become
+readable.
+
+Pseudo-code:
+
+if (full_sync || evdev_became_readable_for_a_client_due_to_syn_dropped)
+    wake_up_interruptible(&evdev->wait);
+
+>  /*
+> @@ -387,12 +392,12 @@ static ssize_t evdev_read(struct file *file, char __user *buffer,
+>        if (count < input_event_size())
+>                return -EINVAL;
+> -       if (client->head == client->tail && evdev->exist &&
+> +       if (client->last_syn == client->tail && evdev->exist &&
+>            (file->f_flags & O_NONBLOCK))
+>                return -EAGAIN;
+>
+>        retval = wait_event_interruptible(evdev->wait,
+> -               client->head != client->tail || !evdev->exist);
+> +               client->last_syn != client->tail || !evdev->exist);
+>        if (retval)
+>                return retval;
+>
+> @@ -421,7 +426,7 @@ static unsigned int evdev_poll(struct file *file, poll_table *wait)
+>        poll_wait(file, &evdev->wait, wait);
+>
+>        mask = evdev->exist ? POLLOUT | POLLWRNORM : POLLHUP | POLLERR;
+> -       if (client->head != client->tail)
+> +       if (client->last_syn != client->tail)
+>                mask |= POLLIN | POLLRDNORM;
+>
+>        return mask;
+
+It looks to me like this patch isn't based on top of your previous
+patch for SYN_DROPPED.  Specifically, the SYN_DROPPED should be
+inserted before the newly enqueued event but I don't see that above.
+
+Jeff.
