@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab1DDSXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 14:23:04 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:38477 "EHLO e4.ny.us.ibm.com"
+	id S1755294Ab1DDSYg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 14:24:36 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:50229 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754865Ab1DDSXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 14:23:02 -0400
-Subject: Re: [PATCH] Make clocksource name const
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LFD.2.00.1104041943580.19945@localhost6.localdomain6>
-References: <20110219153450.GI29493@n2100.arm.linux.org.uk>
-	 <20110402141134.GA23324@n2100.arm.linux.org.uk>
-	 <1301938920.2319.2.camel@work-vm>
-	 <alpine.LFD.2.00.1104041943580.19945@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Apr 2011 11:22:53 -0700
-Message-ID: <1301941373.2319.28.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1752864Ab1DDSYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 14:24:35 -0400
+Date: Mon, 4 Apr 2011 20:24:24 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Michal Simek <monstr@monstr.eu>, devicetree-discuss@lists.ozlabs.org,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
+        gregkh@suse.de
+Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
+Message-ID: <20110404182423.GC4830@local>
+References: <20110331124925.GA2202@pengutronix.de>
+ <4D948189.9070606@monstr.eu>
+ <20110331170321.GA2734@local>
+ <4D94C09B.4070506@monstr.eu>
+ <20110331192302.GD2734@local>
+ <AANLkTin6iSVQtKo602hceod+4=cVUMG=GR7cCZvHg4nO@mail.gmail.com>
+ <20110331203024.GE2734@local>
+ <20110402103550.GA21760@pengutronix.de>
+ <20110404170437.GA4830@local>
+ <20110404173149.GB12200@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110404173149.GB12200@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-04 at 19:44 +0200, Thomas Gleixner wrote:
-> On Mon, 4 Apr 2011, john stultz wrote:
+On Mon, Apr 04, 2011 at 07:31:49PM +0200, Wolfram Sang wrote:
 > 
-> > On Sat, 2011-04-02 at 15:11 +0100, Russell King - ARM Linux wrote:
-> > > Has this patch been rejected?
-> > 
-> > No, just my clocksource cleanups tree didn't get pulled for 2.6.39.
-> 
-> Crap.
+> So, the solution for now is to simply add a default value and we can check
+> later if it can be modified at runtime?
 
-Sorry, I probably should have nagged you a bit more.
+Yes.
 
-
-> > Thomas: The commit can be found here:
-> > http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=commit;h=36d8593ec74dc04d3bd7c1c897a7b7cfbd0b0dc6
-> 
-> Is there more stuff pending ?
-
-Just clocksource_register_hz/khz bits, but those aren't critical, and
-can be moved in slowly via arch maintainers if you're not comfortable
-with them. I also need to refresh some of them, as there were some
-collisions in the merge window.
-
-thanks
--john
-
-
-
-
+Thanks,
+Hans
