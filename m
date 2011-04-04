@@ -1,155 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab1DDHaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 03:30:04 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52884 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab1DDHaB (ORCPT
+	id S1753906Ab1DDHhU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 03:37:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33717 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab1DDHhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 03:30:01 -0400
+	Mon, 4 Apr 2011 03:37:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RRKF/d/WV0aSCfdqDI3AhV/8tcNVPxRJ67raTI0bIppcjTV/B01kcf6rjZhVjWRKrB
-         Wqqti3faqnVEF2OpLeVdvKHM/v+4FPugJp0GZe2ThnfIViEKVHTG2IMtPR5c3iqIlZqg
-         pjS4Dn2blLOGEvL3O+zOp4kc1jpGSUybOiKw0=
-Subject: Re: [PATCH] MTD: Retry Read/Write Transfer Buffer Allocations
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Grant Erickson <marathon96@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1301705049-15593-1-git-send-email-marathon96@gmail.com>
-References: <1301705049-15593-1-git-send-email-marathon96@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Apr 2011 10:27:30 +0300
-Message-ID: <1301902050.2760.23.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=xzEwDGJtBoko8rkpBNrSlwjDwIirUWWHsvyUs+qsJQGXqo6DWXDbVREtnkAFbn/o5D
+         4ZOoYgHa0zH9Ic2cF5VkqGlrgjsLCWspqNZMB2VtBddVfluSJHTw4kBBdbquuVHBo6kw
+         SQdh5ooRWOTOYBhqTEsGHoj4AiHUu7G8N6AH4=
+MIME-Version: 1.0
+In-Reply-To: <20110402155549.GA6724@kamineko.org>
+References: <AANLkTi=1xtjEZc2C1=W-v2oYbvvcGH9k_DGGXvJ8=swq@mail.gmail.com>
+	<20110401172241.GA26851@srcf.ucam.org>
+	<BANLkTikPjwowBge82viT+Ma5UnP0fA-pew@mail.gmail.com>
+	<20110402100043.GA5890@kamineko.org>
+	<BANLkTikVGWM3T1y2XvwkHB+Yub5EhG1RPA@mail.gmail.com>
+	<20110402155549.GA6724@kamineko.org>
+Date: Mon, 4 Apr 2011 10:37:17 +0300
+Message-ID: <BANLkTimJa3CSWouTMJD5V0ZuMa67YXy88Q@mail.gmail.com>
+Subject: Re: Regression 2.6.39-rc1 for sony-laptop
+From: Dan Carpenter <error27@gmail.com>
+To: Mattia Dongili <malattia@linux.it>
+Cc: Andrea Gelmini <andrea.gelmini@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, anssi.hannula@iki.fi,
+        linux-acpi@vger.kernel.org, axel.lin@gmail.com, trenn@suse.de,
+        len.brown@intel.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CCing LKML in a hope to get good suggestions]
-[The patch: http://lists.infradead.org/pipermail/linux-mtd/2011-April/034645.html]
+On 4/2/11, Mattia Dongili <malattia@linux.it> wrote:
+> On Sat, Apr 02, 2011 at 02:55:38PM +0300, Dan Carpenter wrote:
+>> On 4/2/11, Mattia Dongili <malattia@linux.it> wrote:
+>> > --- a/drivers/platform/x86/sony-laptop.c
+>> > +++ b/drivers/platform/x86/sony-laptop.c
+>> > @@ -810,6 +810,11 @@ static int sony_nc_handles_cleanup(struct
+>> > platform_device *pd)
+>> >  static int sony_find_snc_handle(int handle)
+>> >  {
+>> >  	int i;
+>> > +
+>> > +	/* not initialized yet, return early */
+>> > +	if (!handles)
+>> > +		return -1;
+>>
+>> -1 is -EPERM.  That's not the right error code here.  Maybe -EINVAL?
+>
+> this error is not propagated to userspace. If necessary I can review all
+> error codes in the sony-laptop internal functions (where -1 is a fairly
+> common return code for error conditions).
 
-Hi Grant,
+That would be good, but it's going beyond the call of duty.  The main thing
+is to not introduce new slop.
 
-Just in case, Jarkko was trying to address the same issue recently:
+>
+> I remember a discussion on LKML recently about error codes but I'm not
+> sure what the outcome was (if any).
+>
 
-http://lists.infradead.org/pipermail/linux-mtd/2011-March/034416.html
-On Fri, 2011-04-01 at 17:44 -0700, Grant Erickson wrote:
-> When handling user space read or write requests via mtd_{read,write},
-> exponentially back off on the size of the requested kernel transfer
-> buffer until it succeeds or until the requested transfer buffer size
-> falls below the page size.
-> 
-> This helps ensure the operation can succeed under low-memory,
-> highly-fragmented situations albeit somewhat more slowly.
-> 
-> Signed-off-by: Grant Erickson <marathon96@gmail.com>
-> ---
->  drivers/mtd/mtdchar.c |   30 ++++++++++++++----------------
->  1 files changed, 14 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
-> index 145b3d0d..d887b91 100644
-> --- a/drivers/mtd/mtdchar.c
-> +++ b/drivers/mtd/mtdchar.c
-> @@ -179,6 +179,7 @@ static ssize_t mtd_read(struct file *file, char __user *buf, size_t count,loff_t
->  	size_t total_retlen=0;
->  	int ret=0;
->  	int len;
-> +	size_t size;
->  	char *kbuf;
->  
->  	DEBUG(MTD_DEBUG_LEVEL0,"MTD_read\n");
-> @@ -192,20 +193,18 @@ static ssize_t mtd_read(struct file *file, char __user *buf, size_t count,loff_t
->  	/* FIXME: Use kiovec in 2.5 to lock down the user's buffers
->  	   and pass them directly to the MTD functions */
->  
-> -	if (count > MAX_KMALLOC_SIZE)
-> -		kbuf=kmalloc(MAX_KMALLOC_SIZE, GFP_KERNEL);
-> -	else
-> -		kbuf=kmalloc(count, GFP_KERNEL);
-> +	size = min_t(size_t, count, MAX_KMALLOC_SIZE);
-> +
-> +	do {
-> +		kbuf=kmalloc(size, GFP_KERNEL);
-> +	} while (!kbuf && ((size >>= 1) >= PAGE_SIZE));
+People sometimes think -1 is a generic error code, but it's not.  It has
+a specific wrong meaning.  In fact, -1 is never the right error code.
+It's should
+either be -EPERM, or the appropriate error code.
 
-This should be a bit more complex I think. First of all, I think it is
-better to make this a separate function. Second, you should make sure
-the system does not print scary warnings when the allocation fails - use
-__GFP_NOWARN flag, just like Jarkko did.
-
-An third, as I wrote in my answer to Jarkko, allocating large contiguous
-buffers is bad for performance: if the system memory is fragmented and
-there is no such large contiguous areas, the kernel will start writing
-back dirty FS data, killing FS caches, shrinking caches and buggers,
-probably even swapping out applications. We do not want MTD to cause
-this at all.
-
-Probably we can mitigate this with kmalloc flags. Now, I'm not sure what
-flags are the optimal, but I'd do:
-
-__GFP_NOWARN | __GFP_WAIT | __GFP_NORETRY
-
-May be even __GFP_WAIT flag could be kicked out.
-
->  
->  	if (!kbuf)
->  		return -ENOMEM;
->  
->  	while (count) {
->  
-> -		if (count > MAX_KMALLOC_SIZE)
-> -			len = MAX_KMALLOC_SIZE;
-> -		else
-> -			len = count;
-> +		len = min_t(size_t, count, size);
->  
->  		switch (mfi->mode) {
->  		case MTD_MODE_OTP_FACTORY:
-> @@ -268,6 +267,7 @@ static ssize_t mtd_write(struct file *file, const char __user *buf, size_t count
->  {
->  	struct mtd_file_info *mfi = file->private_data;
->  	struct mtd_info *mtd = mfi->mtd;
-> +	size_t size;
->  	char *kbuf;
->  	size_t retlen;
->  	size_t total_retlen=0;
-> @@ -285,20 +285,18 @@ static ssize_t mtd_write(struct file *file, const char __user *buf, size_t count
->  	if (!count)
->  		return 0;
->  
-> -	if (count > MAX_KMALLOC_SIZE)
-> -		kbuf=kmalloc(MAX_KMALLOC_SIZE, GFP_KERNEL);
-> -	else
-> -		kbuf=kmalloc(count, GFP_KERNEL);
-> +	size = min_t(size_t, count, MAX_KMALLOC_SIZE);
-> +
-> +	do {
-> +		kbuf=kmalloc(size, GFP_KERNEL);
-> +	} while (!kbuf && ((size >>= 1) >= PAGE_SIZE));
->  
->  	if (!kbuf)
->  		return -ENOMEM;
->  
->  	while (count) {
->  
-> -		if (count > MAX_KMALLOC_SIZE)
-> -			len = MAX_KMALLOC_SIZE;
-> -		else
-> -			len = count;
-> +		len = min_t(size_t, count, size);
->  
->  		if (copy_from_user(kbuf, buf, len)) {
->  			kfree(kbuf);
-
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+regards,
+dan carpenter
