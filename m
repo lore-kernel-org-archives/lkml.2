@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1DDK3t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 06:29:49 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:38244 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929Ab1DDK3s (ORCPT
+	id S1754234Ab1DDKbD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 06:31:03 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60914 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753929Ab1DDKbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 06:29:48 -0400
+	Mon, 4 Apr 2011 06:31:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=Hc4MUuqPX18xIj0vIkIHGmcXaHSPuHNZzBZZqXGpz62AIJWKCuK8a3kOB0c5k9vqMu
-         lk44JlYMoHp7OetdDqmnPB4OKpd1G1MbHdF4fbkLJJ7F3g1h53kvK39YMryLlNmwlT5S
-         lixUMj1Llrw4xGqZ6ezQ+u6pIIT7FU7mdGeaI=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1301911604.2760.52.camel@localhost>
-References: <1301874939-2630-1-git-send-email-sedat.dilek@gmail.com>
-	<1301900656.2760.6.camel@localhost>
-	<BANLkTi=WTWa4yj+ysta8jiHs9r4MX5Gf_g@mail.gmail.com>
-	<1301911604.2760.52.camel@localhost>
-Date: Mon, 4 Apr 2011 12:29:47 +0200
-Message-ID: <BANLkTi=DHTjL7M9bzYY-t5MJS2s1WScBCQ@mail.gmail.com>
-Subject: Re: [PATCH] ubifs: Use empty_iops and empty_fops consistently
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: dedekind1@gmail.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@nokia.com>,
-        Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=UTF-8
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=E/WcrB45hVw5BvMxWMBYWb/yOewO2KWq7axqsCkCtWpF5Sko44NT13gcFEbm74Hb5t
+         3R6PBDZRpteTz8wLPxZ7FWEptlO1zik+e7pdoVhXZeK4p+KmsvIGZUCPFsF1TOxJQJ92
+         sNDMXT/5GFS7UtawXAl8t/RUjol2WDEp8aqoU=
+From: wanlong.gao@gmail.com
+To: gregkh@suse.de, jhovold@gmail.com, alan@linux.intel.com, tsozik@yahoo.com
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jiaweiwei.xiyou@gmail.com, Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH] USB:Fix the wrong function prototype .
+Date: Mon,  4 Apr 2011 18:29:57 +0800
+Message-Id: <1301912997-21248-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 4, 2011 at 12:06 PM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Mon, 2011-04-04 at 11:38 +0200, Sedat Dilek wrote:
->> Sorry for having flooded your inbox.
->
-> That's ok! :-) I think I did not look carefully enough. Your patch is
-> just an additional clean-up which makes the names to be consistent. I
-> can pick it, but probably it is better if it goes in with the
-> 'empty_aops' changes? Whatever you prefer.
->
+From: Wanlong Gao <wanlong.gao@gmail.com>
 
-I dunno the internal organization between block-tree and fs-sub-tree
-maintainers.
-As I was in contact first with Jens in this issue, it might be a good
-idea to let this patch go through his block-tree.
+While the "mct_u232_device.ioctl" initialized by a wrong function
+prototype . And the argument "struct file *file" is unused in
+the function "mct_u232_ioctl()".
 
-- Sedat -
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+---
+ drivers/usb/serial/mct_u232.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/serial/mct_u232.c b/drivers/usb/serial/mct_u232.c
+index d2c0196..ba0d287
+--- a/drivers/usb/serial/mct_u232.c
++++ b/drivers/usb/serial/mct_u232.c
+@@ -106,7 +106,7 @@ static void mct_u232_break_ctl(struct tty_struct *tty, int break_state);
+ static int  mct_u232_tiocmget(struct tty_struct *tty);
+ static int  mct_u232_tiocmset(struct tty_struct *tty,
+ 			unsigned int set, unsigned int clear);
+-static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
++static int  mct_u232_ioctl(struct tty_struct *tty,
+ 			unsigned int cmd, unsigned long arg);
+ static int  mct_u232_get_icount(struct tty_struct *tty,
+ 			struct serial_icounter_struct *icount);
+@@ -874,7 +874,7 @@ static void mct_u232_unthrottle(struct tty_struct *tty)
+ 	}
+ }
+ 
+-static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
++static int  mct_u232_ioctl(struct tty_struct *tty,
+ 			unsigned int cmd, unsigned long arg)
+ {
+ 	DEFINE_WAIT(wait);
+-- 
+1.7.3
+
