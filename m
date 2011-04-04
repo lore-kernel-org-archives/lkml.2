@@ -1,336 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab1DDSM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 14:12:26 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45292 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755112Ab1DDSMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 14:12:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,298,1299484800"; 
-   d="scan'208";a="413602744"
-Date: Tue, 5 Apr 2011 02:12:15 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: async write IO controllers
-Message-ID: <20110404181214.GA12845@localhost>
-References: <20110303064505.718671603@intel.com>
- <20110303201226.GI16720@redhat.com>
- <20110303204827.GJ16720@redhat.com>
- <20110304090609.GA1885@localhost>
+	id S1755207Ab1DDSNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 14:13:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60574 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754675Ab1DDSNw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 14:13:52 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="9jxsPFA5p3P2qPhR"
-Content-Disposition: inline
-In-Reply-To: <20110304090609.GA1885@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LNX.2.00.1104041441530.28516@pobox.suse.cz>
+References: <1301691819-2090-1-git-send-email-chase.douglas@canonical.com>
+ <AANLkTim-tN=siA8tJVCzNZHs+oM0hN-N8Ckc+9ynnNpb@mail.gmail.com> <alpine.LNX.2.00.1104041441530.28516@pobox.suse.cz>
+From: Jeffrey Brown <jeffbrown@android.com>
+Date: Mon, 4 Apr 2011 11:13:12 -0700
+Message-ID: <BANLkTikG-ku9mDebcaPKTwv3X0N+OKiyYQ@mail.gmail.com>
+Subject: Re: [PATCH resend] hid-magicmouse: Increase evdev buffer size
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Simon Budig <simon@budig.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry, I originally sent a reply to the list from my phone but it was
+HTML formatted for some reason and the list server rejected it.  Meh.
 
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Apr 4, 2011 at 5:43 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> Could you just briefly describe what your solution is?
 
-Hi Vivek,
+I have sent a series of 4 patches to linux-input:
 
-To explore the possibility of an integrated async write cgroup IO
-controller in balance_dirty_pages(), I did the attached patches.
-They should serve it well to illustrate the basic ideas.
+* [PATCH v2 1/4] input: Set default events per packet.
 
-It's based on Andrea's two supporting patches and a slightly
-simplified and improved version of this v6 patchset.
+This patch modifies input_register_device to calculate the number of
+events per packet if the driver did not already supply a hint.
+Roughly speaking, it examines the number of MT_SLOTs or
+ABS_MT_TRACKING_IDs and multiplies that by the total number of MT
+axes, then adds in a bit for non-MT axes, REL axes and SYN events.
 
-        root@fat ~# cat test-blkio-cgroup.sh
-        #!/bin/sh
+The intent is to systematically solve the problem of determining the
+number of events per packet so that most drivers won't need to set
+hints themselves.  This fixes the magic mouse issue and related
+problems in other drivers.
 
-        mount /dev/sda7 /fs  
+* [PATCH v2 2/4] hid: hid-input: Remove obsolete default events per
+packet setting.
 
-        rmdir /cgroup/async_write
-        mkdir /cgroup/async_write
-        echo $$ > /cgroup/async_write/tasks
-        # echo "8:16  1048576" > /cgroup/async_write/blkio.throttle.read_bps_device
+Given the first patch, the HID driver no longer needs to hardcode a
+default events per packet value.
 
-        dd if=/dev/zero of=/fs/zero1 bs=1M count=100 &
-        dd if=/dev/zero of=/fs/zero2 bs=1M count=100 &
+* [PATCH v2 3/4] input: evdev: Indicate buffer overrun with SYN_DROPPED.
 
-2-dd case:
+I first discovered that the evdev buffer was too small because of the
+Apple Magic Trackpad.  With more than 3 fingers, some points would
+regularly get dropped and would interrupt the gestures I was trying to
+detect.  User space code got really confused since there was no
+indication that anything unusual had happened and the event streams
+effectively appeared to be truncated and concatenated arbitrarily.
 
-        root@fat ~# 100+0 records in
-        100+0 records out
-        104857600 bytes (105 MB) copied100+0 records in
-        100+0 records out
-        , 11.9477 s, 8.8 MB/s
-        104857600 bytes (105 MB) copied, 11.9496 s, 8.8 MB/s
+So this patch introduces a new type of SYN event code, SYN_DROPPED, to
+mark the point in the event stream where events were dropped.  The
+most recent version of this patch also takes care to drop the entire
+last packet, so the next event received by user-space will be the
+first event of the following compete packet.
 
-1-dd case:
+* [PATCH v2 4/4] input: evdev: Make device readable only when it
+contains a complete packet.
 
-        root@fat ~# 100+0 records in
-        100+0 records out
-        104857600 bytes (105 MB) copied, 6.21919 s, 16.9 MB/s
+There is a significant performance issue on SMP systems where the
+driver and user-space code can race against one another to fill and
+drain the evdev buffer in parallel.  It is possible for a client
+waiting on poll() to wake up and read each event published by the
+driver immediately as it becomes available.  That could mean 60 or
+more calls to poll() and read() to read an entire packet.  It would be
+preferable if the client were only awoken when the entire packet were
+available so it could just make 1 call to poll() and read() everything
+all at once.
 
-The patch hard codes a limit of 16MiB/s or 16.8MB/s.  So the 1-dd case
-is pretty accurate, and the 2-dd case is a bit leaked due to the time
-to take the throttle bandwidth from its initial value 16MiB/s to
-8MiB/s. This could be compensated by some position control in future,
-so that it won't leak in normal cases.
+No changes are required on the part of the client.  This patch changes
+when evdev considers itself readable.  Essentially evdev is made to be
+readable only up to the last non-MT SYN event it contains.  That way
+the client can only read events that belong to packets which have been
+completely buffered.  The client can still read events one at a time
+if it likes.  The client will only wake from poll() when the buffer
+contains a non-MT SYN.
 
-The main bits, blkcg_update_throttle_bandwidth() is in fact a minimal
-version of bdi_update_throttle_bandwidth(); blkcg_update_bandwidth()
-is also a cut-down version of bdi_update_bandwidth().
+This patch works well in combination with the SYN_DROPPED change above.
 
-Thanks,
-Fengguang
+> I'd happuly take Chase's patch, but want to make sure that we don't cause
+> any changes that would make backwards compatilibity an issue later.
 
---9jxsPFA5p3P2qPhR
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="blk-cgroup-nr-dirtied.patch"
+There should be no compatibility issues.  However, we might be better
+off in the long term taking (some variation of) these patches instead.
 
-Subject: blkcg: dirty rate accounting
-Date: Sat Apr 02 20:15:28 CST 2011
-
-To be used by the balance_dirty_pages() async write IO controller.
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- block/blk-cgroup.c         |    4 ++++
- include/linux/blk-cgroup.h |    1 +
- mm/page-writeback.c        |    4 ++++
- 3 files changed, 9 insertions(+)
-
---- linux-next.orig/block/blk-cgroup.c	2011-04-02 20:17:08.000000000 +0800
-+++ linux-next/block/blk-cgroup.c	2011-04-02 21:59:24.000000000 +0800
-@@ -1458,6 +1458,7 @@ static void blkiocg_destroy(struct cgrou
- 
- 	free_css_id(&blkio_subsys, &blkcg->css);
- 	rcu_read_unlock();
-+	percpu_counter_destroy(&blkcg->nr_dirtied);
- 	if (blkcg != &blkio_root_cgroup)
- 		kfree(blkcg);
- }
-@@ -1483,6 +1484,9 @@ done:
- 	INIT_HLIST_HEAD(&blkcg->blkg_list);
- 
- 	INIT_LIST_HEAD(&blkcg->policy_list);
-+
-+	percpu_counter_init(&blkcg->nr_dirtied, 0);
-+
- 	return &blkcg->css;
- }
- 
---- linux-next.orig/include/linux/blk-cgroup.h	2011-04-02 20:17:08.000000000 +0800
-+++ linux-next/include/linux/blk-cgroup.h	2011-04-02 21:59:02.000000000 +0800
-@@ -111,6 +111,7 @@ struct blkio_cgroup {
- 	spinlock_t lock;
- 	struct hlist_head blkg_list;
- 	struct list_head policy_list; /* list of blkio_policy_node */
-+	struct percpu_counter nr_dirtied;
- };
- 
- struct blkio_group_stats {
---- linux-next.orig/mm/page-writeback.c	2011-04-02 20:17:08.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-04-02 21:59:02.000000000 +0800
-@@ -34,6 +34,7 @@
- #include <linux/syscalls.h>
- #include <linux/buffer_head.h>
- #include <linux/pagevec.h>
-+#include <linux/blk-cgroup.h>
- #include <trace/events/writeback.h>
- 
- /*
-@@ -221,6 +222,9 @@ EXPORT_SYMBOL_GPL(bdi_writeout_inc);
- 
- void task_dirty_inc(struct task_struct *tsk)
- {
-+	struct blkio_cgroup *blkcg = task_to_blkio_cgroup(tsk);
-+	if (blkcg)
-+		__percpu_counter_add(&blkcg->nr_dirtied, 1, BDI_STAT_BATCH);
- 	prop_inc_single(&vm_dirties, &tsk->dirties);
- }
- 
-
---9jxsPFA5p3P2qPhR
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="writeback-io-controller.patch"
-
-Subject: writeback: async write IO controllers
-Date: Fri Mar 04 10:38:04 CST 2011
-
-- a bare per-task async write IO controller
-- a bare per-cgroup async write IO controller
-
-XXX: the per-task user interface is reusing RLIMIT_RSS for now.
-XXX: the per-cgroup user interface is missing
-
-CC: Vivek Goyal <vgoyal@redhat.com>
-CC: Andrea Righi <arighi@develer.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- block/blk-cgroup.c         |    2 
- include/linux/blk-cgroup.h |    4 +
- mm/page-writeback.c        |   86 +++++++++++++++++++++++++++++++----
- 3 files changed, 84 insertions(+), 8 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2011-04-05 01:26:38.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-04-05 01:26:53.000000000 +0800
-@@ -1117,6 +1117,49 @@ static unsigned long max_pause(struct ba
- 	return clamp_val(t, MIN_PAUSE, MAX_PAUSE);
- }
- 
-+static void blkcg_update_throttle_bandwidth(struct blkio_cgroup *blkcg,
-+					    unsigned long dirtied,
-+					    unsigned long elapsed)
-+{
-+	unsigned long bw = blkcg->throttle_bandwidth;
-+	unsigned long long ref_bw;
-+	unsigned long dirty_bw;
-+
-+	ref_bw = blkcg->async_write_bps >> (3 + PAGE_SHIFT - RATIO_SHIFT);
-+	dirty_bw = ((dirtied - blkcg->dirtied_stamp)*HZ + elapsed/2) / elapsed;
-+	do_div(ref_bw, dirty_bw | 1);
-+	ref_bw = bw * ref_bw >> RATIO_SHIFT;
-+
-+	blkcg->throttle_bandwidth = (bw + ref_bw) / 2;
-+}
-+
-+void blkcg_update_bandwidth(struct blkio_cgroup *blkcg)
-+{
-+	unsigned long now = jiffies;
-+	unsigned long dirtied;
-+	unsigned long elapsed;
-+
-+	if (!blkcg)
-+		return;
-+	if (!spin_trylock(&blkcg->lock))
-+		return;
-+
-+	elapsed = now - blkcg->bw_time_stamp;
-+	dirtied = percpu_counter_read(&blkcg->nr_dirtied);
-+
-+	if (elapsed > MAX_PAUSE * 2)
-+		goto snapshot;
-+	if (elapsed <= MAX_PAUSE)
-+		goto unlock;
-+
-+	blkcg_update_throttle_bandwidth(blkcg, dirtied, elapsed);
-+snapshot:
-+	blkcg->dirtied_stamp = dirtied;
-+	blkcg->bw_time_stamp = now;
-+unlock:
-+	spin_unlock(&blkcg->lock);
-+}
-+
- /*
-  * balance_dirty_pages() must be called by processes which are generating dirty
-  * data.  It looks at the number of dirty pages in the machine and will force
-@@ -1139,6 +1182,10 @@ static void balance_dirty_pages(struct a
- 	unsigned long pause_max;
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
- 	unsigned long start_time = jiffies;
-+	struct blkio_cgroup *blkcg = task_to_blkio_cgroup(current);
-+
-+	if (blkcg == &blkio_root_cgroup)
-+		blkcg = NULL;
- 
- 	for (;;) {
- 		unsigned long now = jiffies;
-@@ -1178,6 +1225,15 @@ static void balance_dirty_pages(struct a
- 		 * when the bdi limits are ramping up.
- 		 */
- 		if (nr_dirty <= (background_thresh + dirty_thresh) / 2) {
-+			if (blkcg) {
-+				pause_max = max_pause(bdi, 0);
-+				goto cgroup_ioc;
-+			}
-+			if (current->signal->rlim[RLIMIT_RSS].rlim_cur !=
-+			    RLIM_INFINITY) {
-+				pause_max = max_pause(bdi, 0);
-+				goto task_ioc;
-+			}
- 			current->paused_when = now;
- 			current->nr_dirtied = 0;
- 			break;
-@@ -1190,21 +1246,35 @@ static void balance_dirty_pages(struct a
- 			bdi_start_background_writeback(bdi);
- 
- 		pause_max = max_pause(bdi, bdi_dirty);
--
- 		base_bw = bdi->throttle_bandwidth;
--		/*
--		 * Double the bandwidth for PF_LESS_THROTTLE (ie. nfsd) and
--		 * real-time tasks.
--		 */
--		if (current->flags & PF_LESS_THROTTLE || rt_task(current))
--			base_bw *= 2;
- 		bw = position_ratio(bdi, dirty_thresh, nr_dirty, bdi_dirty);
- 		if (unlikely(bw == 0)) {
- 			period = pause_max;
- 			pause = pause_max;
- 			goto pause;
- 		}
--		bw = base_bw * (u64)bw >> RATIO_SHIFT;
-+		bw = (u64)base_bw * bw >> RATIO_SHIFT;
-+		if (blkcg && bw > blkcg->throttle_bandwidth) {
-+cgroup_ioc:
-+			blkcg_update_bandwidth(blkcg);
-+			bw = blkcg->throttle_bandwidth;
-+			base_bw = bw;
-+		}
-+		if (bw > current->signal->rlim[RLIMIT_RSS].rlim_cur >>
-+								PAGE_SHIFT) {
-+task_ioc:
-+			bw = current->signal->rlim[RLIMIT_RSS].rlim_cur >>
-+								PAGE_SHIFT;
-+			base_bw = bw;
-+		}
-+		/*
-+		 * Double the bandwidth for PF_LESS_THROTTLE (ie. nfsd) and
-+		 * real-time tasks.
-+		 */
-+		if (current->flags & PF_LESS_THROTTLE || rt_task(current)) {
-+			bw *= 2;
-+			base_bw = bw;
-+		}
- 		period = (HZ * pages_dirtied + bw / 2) / (bw | 1);
- 		pause = current->paused_when + period - now;
- 		/*
---- linux-next.orig/block/blk-cgroup.c	2011-04-05 01:26:38.000000000 +0800
-+++ linux-next/block/blk-cgroup.c	2011-04-05 01:26:39.000000000 +0800
-@@ -1486,6 +1486,8 @@ done:
- 	INIT_LIST_HEAD(&blkcg->policy_list);
- 
- 	percpu_counter_init(&blkcg->nr_dirtied, 0);
-+	blkcg->async_write_bps = 16 << 23; /* XXX: tunable interface */
-+	blkcg->throttle_bandwidth = 16 << (20 - PAGE_SHIFT);
- 
- 	return &blkcg->css;
- }
---- linux-next.orig/include/linux/blk-cgroup.h	2011-04-05 01:26:38.000000000 +0800
-+++ linux-next/include/linux/blk-cgroup.h	2011-04-05 01:26:39.000000000 +0800
-@@ -112,6 +112,10 @@ struct blkio_cgroup {
- 	struct hlist_head blkg_list;
- 	struct list_head policy_list; /* list of blkio_policy_node */
- 	struct percpu_counter nr_dirtied;
-+	unsigned long bw_time_stamp;
-+	unsigned long dirtied_stamp;
-+	unsigned long throttle_bandwidth;
-+	unsigned long async_write_bps;
- };
- 
- struct blkio_group_stats {
-
---9jxsPFA5p3P2qPhR--
+Jeff.
