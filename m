@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab1DDVGq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 17:06:46 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:52679 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428Ab1DDVGm (ORCPT
+	id S1755759Ab1DDVHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 17:07:21 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:53488 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755449Ab1DDVHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 17:06:42 -0400
-Date: Mon, 4 Apr 2011 22:06:39 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Alexander Beregalov <a.beregalov@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [REGRESSION] 2.6.39-rc1: f23eb2b breaks console output
-Message-ID: <20110404210639.GA6133@sucs.org>
-References: <BANLkTinVd8-VNM+uJ0HReA3cd6DaF-wA=A@mail.gmail.com> <20110404194230.GA8785@sucs.org> <BANLkTik_MNB+4vWXw2k0-B-2B1_4MO3HMg@mail.gmail.com> <BANLkTi=oZ8a8EwbraRm4n-wjmyrLe+MySg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=oZ8a8EwbraRm4n-wjmyrLe+MySg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 4 Apr 2011 17:07:19 -0400
+Subject: Re: [PATCH] Make clocksource name const... RTC: Fix early irqs
+ caused by calling rtc_set_alarm too early
+From: john stultz <johnstul@us.ibm.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110404202544.GB15070@dumpdata.com>
+References: <20110219153450.GI29493@n2100.arm.linux.org.uk>
+	 <20110402141134.GA23324@n2100.arm.linux.org.uk>
+	 <1301938920.2319.2.camel@work-vm>
+	 <alpine.LFD.2.00.1104041943580.19945@localhost6.localdomain6>
+	 <1301941373.2319.28.camel@work-vm>
+	 <alpine.LFD.2.00.1104042106160.19945@localhost6.localdomain6>
+	 <20110404202544.GB15070@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Apr 2011 14:07:11 -0700
+Message-ID: <1301951231.2319.45.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 05, 2011 at 12:42:54AM +0400, Alexander Beregalov wrote:
-> On 4 April 2011 23:59, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> >
-> > Does this patch make a difference?
-> Yes, it works on top of 2.6.39-rc1-00184-g78fca1b9
+On Mon, 2011-04-04 at 16:25 -0400, Konrad Rzeszutek Wilk wrote:
+> On Mon, Apr 04, 2011 at 09:07:03PM +0200, Thomas Gleixner wrote:
+> > On Mon, 4 Apr 2011, john stultz wrote:
+> > 
+> > > On Mon, 2011-04-04 at 19:44 +0200, Thomas Gleixner wrote:
+> > > > On Mon, 4 Apr 2011, john stultz wrote:
+> > > > 
+> > > > > On Sat, 2011-04-02 at 15:11 +0100, Russell King - ARM Linux wrote:
+> > > > > > Has this patch been rejected?
+> > > > > 
+> > > > > No, just my clocksource cleanups tree didn't get pulled for 2.6.39.
+> > > > 
+> > > > Crap.
+> > > 
+> > > Sorry, I probably should have nagged you a bit more.
+> > > 
+> > > 
+> > > > > Thomas: The commit can be found here:
+> > > > > http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=commit;h=36d8593ec74dc04d3bd7c1c897a7b7cfbd0b0dc6
+> > > > 
+> > > > Is there more stuff pending ?
+> 
+> How about the 'RTC: Fix early irqs caused by calling rtc_set_alarm too early'?
+> I tried to search by the git commit dc6b812d1cde06df5c1acba394a79ca80785c776
+> but didn't find it anymore?
+> 
+> It fixes a regression which inhibits Xen guests booting in 2.6.39.
 
-This fixes the problem for me too (on top of
-148086bb64694cc91624bab2a550d50f800eb4b7 ).
+Yep. That's still pending along with other RTC fixes, but in a different
+branch:
+http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=shortlog;h=refs/heads/fortglx/39/tip/timers/rtc
 
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+thanks
+-john
 
--- 
-Sitsofe | http://sucs.org/~sits/
+
