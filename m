@@ -1,146 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab1DDKGP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 06:06:15 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:33787 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754416Ab1DDKGN (ORCPT
+	id S1754484Ab1DDKGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 06:06:25 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54196 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab1DDKGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 06:06:13 -0400
-X-AuditID: b753bd60-a0cf4ba000000ee4-0e-4d9998128719
-X-AuditID: b753bd60-a0cf4ba000000ee4-0e-4d9998128719
-Message-ID: <4D99980E.5080807@hitachi.com>
-Date: Mon, 04 Apr 2011 19:06:06 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
+	Mon, 4 Apr 2011 06:06:23 -0400
+X-AuditID: b753bd60-9cf54ba000007e19-bd-4d99981d77ed
+X-AuditID: b753bd60-9cf54ba000007e19-bd-4d99981d77ed
+Message-ID: <4D99981A.4070400@hitachi.com>
+Date: Mon, 04 Apr 2011 19:06:18 +0900
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 22/26] 22: perf: rename target_module
- to target
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6> <20110401143657.15455.4701.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20110401143657.15455.4701.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH -tip v3 0/6] perf: Introduce branch sub commands
+References: <20110324113137.20235.42265.stgit@localhost6.localdomain6> <20110401144312.GB2335@nowhere>
+In-Reply-To: <20110401144312.GB2335@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/04/01 23:36), Srikar Dronamraju wrote:
-> This is a precursor patch that modifies names that refer to kernel/module
-> to also refer to user space names.
-> 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
->  tools/perf/builtin-probe.c    |   12 ++++++------
->  tools/perf/util/probe-event.c |    6 +++---
->  2 files changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-> index 2c0e64d..98db08f 100644
-> --- a/tools/perf/builtin-probe.c
-> +++ b/tools/perf/builtin-probe.c
-> @@ -61,7 +61,7 @@ static struct {
->  	struct perf_probe_event events[MAX_PROBES];
->  	struct strlist *dellist;
->  	struct line_range line_range;
-> -	const char *target_module;
-> +	const char *target;
->  	int max_probe_points;
->  	struct strfilter *filter;
->  } params;
-> @@ -241,7 +241,7 @@ static const struct option options[] = {
->  		   "file", "vmlinux pathname"),
->  	OPT_STRING('s', "source", &symbol_conf.source_prefix,
->  		   "directory", "path to kernel source"),
-> -	OPT_STRING('m', "module", &params.target_module,
-> +	OPT_STRING('m', "module", &params.target,
->  		   "modname", "target module name"),
->  #endif
->  	OPT__DRY_RUN(&probe_event_dry_run),
-> @@ -327,7 +327,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
->  		if (!params.filter)
->  			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
->  						       NULL);
-> -		ret = show_available_funcs(params.target_module,
-> +		ret = show_available_funcs(params.target,
->  					   params.filter);
->  		strfilter__delete(params.filter);
->  		if (ret < 0)
-> @@ -348,7 +348,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
->  			usage_with_options(probe_usage, options);
->  		}
->  
-> -		ret = show_line_range(&params.line_range, params.target_module);
-> +		ret = show_line_range(&params.line_range, params.target);
->  		if (ret < 0)
->  			pr_err("  Error: Failed to show lines. (%d)\n", ret);
->  		return ret;
-> @@ -365,7 +365,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
->  
->  		ret = show_available_vars(params.events, params.nevents,
->  					  params.max_probe_points,
-> -					  params.target_module,
-> +					  params.target,
->  					  params.filter,
->  					  params.show_ext_vars);
->  		strfilter__delete(params.filter);
-> @@ -387,7 +387,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
->  	if (params.nevents) {
->  		ret = add_perf_probe_events(params.events, params.nevents,
->  					    params.max_probe_points,
-> -					    params.target_module,
-> +					    params.target,
->  					    params.force_add);
->  		if (ret < 0) {
->  			pr_err("  Error: Failed to add events. (%d)\n", ret);
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 5ddee66..09c53c1 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -1979,7 +1979,7 @@ static int filter_available_functions(struct map *map __unused,
->  	return 1;
->  }
->  
-> -int show_available_funcs(const char *module, struct strfilter *_filter)
-> +int show_available_funcs(const char *elfobject, struct strfilter *_filter)
->  {
->  	struct map *map;
->  	int ret;
-> @@ -1990,9 +1990,9 @@ int show_available_funcs(const char *module, struct strfilter *_filter)
->  	if (ret < 0)
->  		return ret;
->  
-> -	map = kernel_get_module_map(module);
-> +	map = kernel_get_module_map(elfobject);
->  	if (!map) {
-> -		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
-> +		pr_err("Failed to find %s map.\n", (elfobject) ? : "kernel");
-
-Hmm, these changes(module -> elfobject) are put back by the next patch.
-Could you check your patch stack?
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+(2011/04/01 23:43), Frederic Weisbecker wrote:
+> On Thu, Mar 24, 2011 at 08:31:37PM +0900, Akihiro Nagai wrote:
+>> Hi,
+>>
+>> This patch series provides the commands 'perf branch record' and 'perf branch trace'
+>> version 3. These commands record and analyze a BTS (Branch Trace Store) log.
+>> And, they provide the interface to use BTS log for application developers.
+>>
+>> BTS is a facility of Intel x86 processors, which records the address of
+>> 'branch to/from' on every branch/jump instruction and interrupt.
+>> This facility is very useful for developers to test their software,
+>> for example, coverage test, execution path analysis, dynamic step count ...etc.
+>> These test tools have a big advantage, which user doesn't have to modify target
+>> executable binaries, because the BTS is a hardware feauture.
+>>
+>> But, there are few applications using BTS. Reasons I guess are ...
+>>   - Few people know what BTS is.
+>>   - Few people know how to use BTS on Linux box.
+>>   - It's hard to analyze the BTS log because it includes just a series of addresses.
+>>
+>> So, I want to provide a user-friendly interface to BTS for application developers.
+>>
+>>
+>>   About new sub commands
+>> ========================
+>> 'perf branch record' provides an easy way to record BTS log.
+>> Usage is 'perf branch record<command>'.  This command is just an alias to
+>> 'perf record -e branches:u -c 1<command>'. But, new one is more simple and
+>> more intuitive.
+>>
+>> 'perf branch trace' can parse and analyze recorded BTS log and print various
+>> information of execution path. This command can show address, pid, command name,
+>> function+offset, file path of elf.
+>> You can choose the printed information with option.
+>>
+>> Example: 'perf branch trace'
+>> function+offset
+>> irq_return+0x0  =>  _start+0x0
+>> irq_return+0x0  =>  _start+0x0
+>> _start+0x3      =>  _dl_start+0x0
+>> irq_return+0x0  =>  _dl_start+0x0
+>> irq_return+0x0  =>  _dl_start+0x26
+>> irq_return+0x0  =>  _dl_start+0x2d
+>> _dl_start+0x71  =>  _dl_start+0x93
+>> _dl_start+0x97  =>  _dl_start+0x78
+>> ...
+>>
+>> This is the default behavior of 'perf branch trace'. It prints function+offset.
+>>
+>>
+>> Example2: 'perf branch -cas trace'
+>> command address            function+offset
+>> ls      0xffffffff8146fe0e irq_return+0x0  =>  ls   0x0000003806200b20 _start+0x0
+>
+> You probably want to display the comm (and/or the pid/tid) only once. Those are not
+> going to change between the source and destination.
+Exactly, perf_sample has only one pid/tid field.
+So, pid/tid and command don't change between source and destination.
+I'll remove desitination's pid/tid and command fields.
+Thank you.
